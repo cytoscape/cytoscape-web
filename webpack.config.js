@@ -2,7 +2,7 @@ const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
-  entry: './src/index.ts',
+  entry: './src/index.tsx',
   devtool: 'inline-source-map',
   module: {
     rules: [
@@ -27,7 +27,11 @@ module.exports = {
     static: './dist',
   },
   // generate html that points to the bundle with the updated hash
-  plugins: [new HtmlWebpackPlugin()],
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './index.html',
+    }),
+  ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other
   // when source code changes, only the source code bundle will need to be updated, not the vendor code
   optimization: {
