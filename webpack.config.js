@@ -6,10 +6,16 @@ module.exports = {
   devtool: 'inline-source-map',
   module: {
     rules: [
+      // look for tsx files to transform into the bundle
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
         exclude: /node_modules/,
+      },
+      // look for css files to transform into the bundle
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
       },
     ],
   },
