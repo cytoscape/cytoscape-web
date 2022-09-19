@@ -18,6 +18,7 @@ module.exports = {
         test: /\.css$/i,
         use: [MiniCssExtractPlugin.loader, 'css-loader'],
       },
+      // load all other assets using webpacks default loader
       {
         test: /\.(png|jpg|jpeg|gif|svg)$/i,
         type: 'asset/resource',
