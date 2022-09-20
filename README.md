@@ -17,3 +17,4 @@ run a command using `yarn <command>`
 - `dev`: run a dev server that watches code changes
 - `lint`: lint code according to the eslint config
 - `format`: format source code according to eslint and prettier configs
+- `test`: run tests
