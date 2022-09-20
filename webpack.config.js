@@ -1,6 +1,7 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const ESLintPlugin = require('eslint-webpack-plugin')
 
 module.exports = {
   entry: './src/index.tsx',
@@ -38,13 +39,18 @@ module.exports = {
   devServer: {
     static: './dist',
   },
-  // generate html that points to the bundle with the updated hash
   plugins: [
+    // generate css files from the found css files in the source
     new MiniCssExtractPlugin({
       filename: '[name].[contenthash].css',
     }),
+    // generate html that points to the bundle with the updated hash
     new HtmlWebpackPlugin({
       template: './index.html',
+    }),
+    // lint all js/jsx/ts/tsx files
+    new ESLintPlugin({
+      extensions: ['js', 'jsx', 'ts', 'tsx'],
     }),
   ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other
