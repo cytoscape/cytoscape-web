@@ -27,7 +27,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: ['.tsx', '.ts'],
   },
   // use content hash for cache busting
   output: {
@@ -50,7 +50,7 @@ module.exports = {
     }),
     // lint all js/jsx/ts/tsx files
     new ESLintPlugin({
-      extensions: ['js', 'jsx', 'ts', 'tsx'],
+      extensions: ['ts', 'tsx'],
     }),
   ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other
