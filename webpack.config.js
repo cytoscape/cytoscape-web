@@ -27,7 +27,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['.tsx', '.ts'],
+    extensions: ['.tsx', '.ts', '.js', '.jsx'], // need .js and .jsx for dependency files
   },
   // use content hash for cache busting
   output: {

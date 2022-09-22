@@ -36,6 +36,10 @@
     "webpack-dev-server": "^4.11.0"
   },
   "dependencies": {
+    "@emotion/react": "^11.10.4",
+    "@emotion/styled": "^11.10.4",
+    "@mui/material": "^5.10.6",
+    "@mui/types": "^7.2.0",
     "@types/react": "^18.0.20",
     "@types/react-dom": "^18.0.6",
     "cytoscape": "^3.23.0",
