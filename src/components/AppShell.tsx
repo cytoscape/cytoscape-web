@@ -6,19 +6,8 @@ import { WorkSpaceEditor } from './WorkspaceEditor'
 const AppShell: FC = () => {
   return (
     <div>
-      <header>
-        <ToolBar />
-      </header>
-      <main>
-        <WorkSpaceEditor />
-      </main>
-      <footer>{/* <TableBrowser/> */}</footer>
-      {/* <main>
-        <MainSplitPane />
-      </main>
-      <footer>
-        <FooterPanel />
-      </footer> */}
+      <ToolBar />
+      <WorkSpaceEditor />
     </div>
   )
 }

@@ -20,8 +20,8 @@ const theme = createTheme({
 const App = (): React.ReactElement => {
   return (
     <>
-      <CssBaseline />
       <ThemeProvider theme={theme}>
+        <CssBaseline />
         <AppShell />
       </ThemeProvider>
     </>
