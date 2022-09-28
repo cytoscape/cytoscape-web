@@ -16,10 +16,11 @@ const Search = styled('div')(({ theme }) => ({
   position: 'relative',
   borderRadius: theme.shape.borderRadius,
   backgroundColor: alpha(theme.palette.common.white, 0.15),
-  '&:hover': {
-    backgroundColor: alpha(theme.palette.common.white, 0.25),
-  },
+  //   '&:hover': {
+  //     backgroundColor: alpha(theme.palette.common.white, 0.25),
+  //   },
   marginLeft: 0,
+  height: 32,
   width: '100%',
   [theme.breakpoints.up('sm')]: {
     marginLeft: theme.spacing(1),
@@ -45,6 +46,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
     // vertical padding + font size from searchIcon
     paddingLeft: `calc(1em + ${theme.spacing(1)})`,
     transition: theme.transitions.create('width'),
+    height: '100%',
     width: '100%',
     [theme.breakpoints.up('sm')]: {
       width: '50ch',
@@ -56,7 +58,10 @@ export const ToolBar: React.FC = () => {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Toolbar
+          variant="dense"
+          sx={{ justifyContent: 'space-between', backgroundColor: '#4F4F4F' }}
+        >
           <Box sx={{ display: 'flex' }}>
             <img src={logo} />
             <DropdownMenu label="Data" />
@@ -68,7 +73,7 @@ export const ToolBar: React.FC = () => {
             <DropdownMenu label="Help" />
           </Box>
 
-          <Box sx={{ display: 'flex' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Search>
               <SearchControlsWrapper>
                 <SearchIcon />
@@ -79,7 +84,7 @@ export const ToolBar: React.FC = () => {
                 inputProps={{ 'aria-label': 'search' }}
               />
             </Search>
-            <Avatar sx={{ marginLeft: 1 }} />
+            <Avatar sx={{ marginLeft: 2, width: 30, height: 30 }} />
           </Box>
         </Toolbar>
       </AppBar>

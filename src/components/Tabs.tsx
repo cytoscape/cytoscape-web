@@ -38,7 +38,7 @@ function a11yProps(index: number): { id: string; 'aria-controls': string } {
   }
 }
 
-export default function BasicTabs(): React.ReactElement {
+export default function TableBrowser(): React.ReactElement {
   const [value, setValue] = React.useState(0)
 
   const handleChange = (
@@ -57,17 +57,37 @@ export default function BasicTabs(): React.ReactElement {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          backgroundColor: '#2F80ED',
+          height: 38,
         }}
       >
         <Tabs
           value={value}
           onChange={handleChange}
-          aria-label="basic tabs example"
+          aria-label="tabs"
+          TabIndicatorProps={{ sx: { backgroundColor: 'white' } }}
+          sx={{
+            fontSize: 10,
+            '& button.Mui-selected': { color: 'white' },
+            '& button': {
+              minHeight: 30,
+              height: 30,
+              width: 300,
+            },
+            height: 30,
+            minHeight: 30,
+          }}
         >
-          <Tab sx={{ width: '300px' }} label="Nodes" {...a11yProps(0)} />
-          <Tab sx={{ width: '300px' }} label="Edges" {...a11yProps(1)} />
+          <Tab
+            label={<Typography variant="caption">Nodes</Typography>}
+            {...a11yProps(0)}
+          />
+          <Tab
+            label={<Typography variant="caption">Edges</Typography>}
+            {...a11yProps(1)}
+          />
         </Tabs>
-        <KeyboardArrowUpIcon />
+        <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={value} index={0}>
         Nodes

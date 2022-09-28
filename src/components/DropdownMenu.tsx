@@ -2,9 +2,9 @@ import * as React from 'react'
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
-
 interface DropdownMenuProps {
   label: string
+  children?: React.ReactNode
 }
 
 export const DropdownMenu: React.FC<DropdownMenuProps> = (props) => {
@@ -25,7 +25,10 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = (props) => {
   return (
     <div>
       <Button
-        sx={{ color: 'white' }}
+        sx={{
+          color: 'white',
+          textTransform: 'none',
+        }}
         id={labelId}
         aria-controls={open ? 'basic-menu' : undefined}
         aria-haspopup="true"
