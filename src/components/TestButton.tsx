@@ -1,2 +1,8 @@
 import * as React from 'react'
-export const TestButton = () => <button>Test Button</button>
+import logo from '../assets/cytoscape.svg'
+
+export const TestButton = (): React.ReactElement => (
+  <div>
+    <img src={logo}></img>
+  </div>
+)

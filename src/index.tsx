@@ -4,6 +4,7 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom/client'
 
 import './index.css'
+import AppShell from './components/AppShell'
 
 const theme = createTheme({
   palette: {
@@ -14,30 +15,15 @@ const theme = createTheme({
       main: '#f50057',
     },
   },
-  // components: {
-  //   // Name of the component
-  //   MuiButtonBase: {
-  //     defaultProps: {
-  //       // The props to change the default for.
-  //       disableRipple: true, // No more ripple, on the whole application 💣!
-  //     },
-  //   },
-  //   MuiAppBar: {
-  //     styleOverrides: {
-  //       colorInherit: {
-  //         backgroundColor: '#2C2C2C',
-  //         color: '#fff',
-  //       },
-  //     },
-  //   },
-  // },
 })
 
 const App = (): React.ReactElement => {
   return (
     <>
-      <ThemeProvider theme={theme}></ThemeProvider>
-      <CssBaseline />
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AppShell />
+      </ThemeProvider>
     </>
   )
 }
