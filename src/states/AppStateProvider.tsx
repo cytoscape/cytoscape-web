@@ -10,6 +10,7 @@ const initialState: ApplicationState = {
   edgeTable: TableFactory.createTable('Edge Table'),
   networkView: null,
   visualStyle: null,
+  appDispatch: null,
 }
 
 export const AppContext: React.Context<ApplicationState> =
@@ -23,9 +24,10 @@ export const AppStateProvider: React.FC<ContainerProps> = ({ children }) => {
   const [state, dispatch] = React.useReducer(
     (state: ApplicationState, action: any) => {
       switch (action.type) {
-        case 'dummyAction':
+        case 'dummyAction': {
           const newState = { ...state }
           return newState
+        }
         default:
           throw new Error()
       }
@@ -33,5 +35,11 @@ export const AppStateProvider: React.FC<ContainerProps> = ({ children }) => {
     initialState,
   )
 
-  return <AppContext.Provider value={state}>{children}</AppContext.Provider>
+  return (
+    <AppContext.Provider
+      value={Object.assign(state, { appDispatch: dispatch })}
+    >
+      {children}
+    </AppContext.Provider>
+  )
 }

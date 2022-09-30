@@ -10,4 +10,6 @@ export interface ApplicationState {
   edgeTable: Table
   networkView: NetworkView | null
   visualStyle: VisualStyle | null
+
+  appDispatch: any
 }

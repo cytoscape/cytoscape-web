@@ -2,11 +2,20 @@ import * as React from 'react'
 import Box from '@mui/material/Box'
 import Cytoscape from 'cytoscape'
 
+// import { AppContext } from '../states/AppStateProvider'
+
 export default function NetworkView(): React.ReactElement {
-  const [cy, setCy] = React.useState(null)
+  const [cy, setCy] = React.useState(null as any)
   const cyContainer = React.useRef(null)
 
-  console.log(cy)
+  // import appcontext to acccess the global state
+  //   const appContext = React.useContext(AppContext)
+  //   console.log(appContext)
+
+  if (cy != null) {
+    console.log(cy.data())
+  }
+
   React.useEffect(() => {
     const cy = new Cytoscape({
       container: cyContainer.current,
