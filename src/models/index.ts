@@ -1,13 +1,5 @@
 import { NetworkView } from './NetworkView'
-import { Table } from './Table'
-import { Row } from './Table/Row'
-
-export interface Workspace {
-  name?: string
-  uuid?: string
-  networkSummaries: NetworkSummary[]
-  currentNetwork: WorkingNetwork
-}
+import { Table, Row } from './Table'
 
 export interface NetworkSummary {
   uuid: string
@@ -24,4 +16,11 @@ export interface WorkingNetwork {
   edgeTable: Table
   networkView: NetworkView
   visualStyle: null
+}
+
+export interface Workspace {
+  name?: string
+  uuid?: string
+  networkSummaries: NetworkSummary[]
+  currentNetwork: WorkingNetwork
 }

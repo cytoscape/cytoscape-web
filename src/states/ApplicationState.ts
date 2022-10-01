@@ -1,7 +1,7 @@
-import { Network } from '../models/Network'
+import { Network } from '../models/network'
 import { NetworkView } from '../models/NetworkView'
 import { Table } from '../models/Table'
-import { VisualStyle } from '../models/VisualMapping/VisualStyle'
+import { VisualStyle } from '../models/Style'
 
 export interface ApplicationState {
   network: Network | null

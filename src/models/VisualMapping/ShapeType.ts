@@ -1,1 +1,0 @@
-export type ShapeType = 'rectangle' | 'ellipse' | 'triangle'

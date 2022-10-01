@@ -1,6 +1,6 @@
 import * as React from 'react'
 // import { Context, createContext, FC, ReactNode, useReducer } from React
-import { TableFactory } from '../models/Table/TableFactory'
+import { TableFactory } from '../models/Table'
 import { ApplicationState } from './ApplicationState'
 
 const initialState: ApplicationState = {
