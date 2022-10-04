@@ -9,6 +9,8 @@ export type Color = RGB | RGBA | HEX
 
 export type ShapeType = 'rectangle' | 'ellipse' | 'triangle'
 
+export type LineType = 'solid' | 'dotted' | 'dashed'
+
 interface Shape {
   name?: string
   type: ShapeType
