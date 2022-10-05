@@ -1,26 +1,30 @@
 import { NetworkView } from './NetworkView'
 import { Table, Row } from './Table'
+import { NetworkModel } from './Network'
+import { VisualStyle } from './Style'
 
 export interface NetworkSummary {
   uuid: string
   name: string
-  url: URL
+  iconUrl: URL
   attributes: Row
-  _key: string // internal storage key for db (TODO: how to store keys if there are multiple data sources? e.g. local indexedDB vs a REST endpoint?)
+  _dbKey: number // internal storage key for db (TODO: how to store keys if there are multiple data sources? e.g. local indexedDB vs a REST endpoint?)
+  createdAt: Date
+  modifiedAt: Date
 }
 
 export interface WorkingNetwork {
-  network: null
-  networkAttributes: Table
+  network: NetworkModel
   nodeTable: Table
   edgeTable: Table
   networkView: NetworkView
-  visualStyle: null
+  visualStyle: VisualStyle
+  summary: NetworkSummary
 }
 
 export interface Workspace {
   name?: string
   uuid?: string
   networkSummaries: NetworkSummary[]
-  currentNetwork: WorkingNetwork
+  currentNetworkId: WorkingNetwork
 }
