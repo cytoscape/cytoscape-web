@@ -1,34 +1,56 @@
 {
-  "workspace": [
-    {
-      "name": "test workspace",
-      "uuid": "4136cd0b-d90b-4af7-b485-5d1ded8db252",
-      "networkSummaries": [
-        {
-          "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db253",
-          "name": "my network 1",
-          "iconUrl": "https://loremflickr.com/1234/2345/abstract",
-          "createdAt": "2022-10-01T08:36:34.639Z",
-          "modifiedAt": "2022-11-01T08:36:34.639Z"
-        },
-        {
-          "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db254",
-          "name": "my network 2",
-          "iconUrl": "https://loremflickr.com/3456/1345/abstract",
-          "createdAt": "2022-10-01T08:36:34.639Z",
-          "modifiedAt": "2022-11-01T08:36:34.639Z"
-        },
-        {
-          "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db255",
-          "name": "my network 3",
-          "iconUrl": "https://loremflickr.com/9999/999/abstract",
-          "_dbkey": 2,
-          "createdAt": "2022-10-01T08:36:34.639Z",
-          "modifiedAt": "2022-11-01T08:36:34.639Z"
+  "workspace": {
+    "name": "test workspace",
+    "uuid": "4136cd0b-d90b-4af7-b485-5d1ded8db252",
+    "networkSummaries": [
+      {
+        "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db253",
+        "name": "my network 1",
+        "iconUrl": "https://loremflickr.com/1234/2345/abstract",
+        "createdAt": "2022-10-01T08:36:34.639Z",
+        "modifiedAt": "2022-11-01T08:36:34.639Z",
+        "attributes": {
+          "key": 0,
+          "data": {
+            "networkAttr1": "a",
+            "networkAttr2": 1,
+            "networkAttr3": true
+          }
         }
-      ]
-    }
-  ],
+      },
+      {
+        "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db254",
+        "name": "my network 2",
+        "iconUrl": "https://loremflickr.com/3456/1345/abstract",
+        "createdAt": "2022-10-01T08:36:34.639Z",
+        "modifiedAt": "2022-11-01T08:36:34.639Z",
+        "attributes": {
+          "key": 0,
+          "data": {
+            "networkAttr1": "a",
+            "networkAttr2": 1,
+            "networkAttr3": true
+          }
+        }
+      },
+      {
+        "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db255",
+        "name": "my network 3",
+        "iconUrl": "https://loremflickr.com/9999/999/abstract",
+        "_dbkey": 2,
+        "createdAt": "2022-10-01T08:36:34.639Z",
+        "modifiedAt": "2022-11-01T08:36:34.639Z",
+        "attributes": {
+          "key": 0,
+          "data": {
+            "networkAttr1": "a",
+            "networkAttr2": 1,
+            "networkAttr3": true
+          }
+        }
+      }
+    ]
+  },
   "currentNetwork": {
     "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db253",
     "summary": {
