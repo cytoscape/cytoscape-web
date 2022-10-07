@@ -1,15 +1,16 @@
 import { Row } from './Table'
+import { IdType } from './IdType'
 
 export interface GraphObject {
-  readonly id: BigInt
+  readonly id: IdType
 
   // Returns all attribute values associated with this node/edge
   getAttributes: () => Row
 }
 
 export interface Edge extends GraphObject {
-  s: BigInt // Source node ID
-  t: BigInt // Target node ID
+  s: number // Source node ID
+  t: number // Target node ID
   type: string // Edge type ("interaction" in Cytoscape desktop)
 }
 
@@ -19,7 +20,7 @@ export interface Node extends GraphObject {
 }
 
 export interface NetworkModel {
-  id: BigInt
+  id: IdType
   attributes: Row // Or special object??
   nodes: Node[]
   edges: Edge[]
@@ -61,7 +62,7 @@ export class NetworkFactory {
    * @param id
    * @returns
    */
-  static createNetwork(id: BigInt): Network {
+  static createNetwork(id: IdType): Network {
     const attr: Row = {
       key: id,
       data: {},
@@ -83,7 +84,7 @@ export class NetworkFactory {
     // TODO: cx->model
 
     // UUID to BigInt
-    const id = BigInt(0)
+    const id = '0'
     const attr: Row = {
       key: id,
       data: {},

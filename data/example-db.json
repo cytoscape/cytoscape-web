@@ -10,7 +10,7 @@
         "createdAt": "2022-10-01T08:36:34.639Z",
         "modifiedAt": "2022-11-01T08:36:34.639Z",
         "attributes": {
-          "key": 0,
+          "key": "0",
           "data": {
             "networkAttr1": "a",
             "networkAttr2": 1,
@@ -25,7 +25,7 @@
         "createdAt": "2022-10-01T08:36:34.639Z",
         "modifiedAt": "2022-11-01T08:36:34.639Z",
         "attributes": {
-          "key": 0,
+          "key": "1",
           "data": {
             "networkAttr1": "a",
             "networkAttr2": 1,
@@ -37,11 +37,10 @@
         "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db255",
         "name": "my network 3",
         "iconUrl": "https://loremflickr.com/9999/999/abstract",
-        "_dbkey": 2,
         "createdAt": "2022-10-01T08:36:34.639Z",
         "modifiedAt": "2022-11-01T08:36:34.639Z",
         "attributes": {
-          "key": 0,
+          "key": "2",
           "data": {
             "networkAttr1": "a",
             "networkAttr2": 1,
@@ -182,7 +181,7 @@
       ],
       "edgeViews": [
         {
-          "key": 0,
+          "key": "0",
           "visualProperties": [
             {
               "name": "color",
@@ -212,24 +211,24 @@
       "name": "node table",
       "columns": [
         {
-          "id": 0,
+          "id": "0",
           "name": "attr1",
           "type": "boolean"
         },
         {
-          "id": 1,
+          "id": "1",
           "name": "attr2",
           "type": "integer"
         },
         {
-          "id": 2,
+          "id": "2",
           "name": "attr3",
           "type": "string"
         }
       ],
       "rows": [
         {
-          "key": 0,
+          "key": "0",
           "data": {
             "attr1": true,
             "attr2": 5,
@@ -237,7 +236,7 @@
           }
         },
         {
-          "key": 1,
+          "key": "1",
           "data": {
             "attr1": false,
             "attr2": 100,
@@ -245,7 +244,7 @@
           }
         },
         {
-          "key": 2,
+          "key": "2",
           "data": {
             "attr1": true,
             "attr2": 90,
@@ -258,14 +257,14 @@
       "name": "edge table",
       "columns": [
         {
-          "id": 0,
+          "id": "0",
           "name": "isSomething",
           "type": "boolean"
         }
       ],
       "rows": [
         {
-          "key": 0,
+          "key": "0",
           "isSomething": true
         }
       ]

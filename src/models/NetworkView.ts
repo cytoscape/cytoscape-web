@@ -1,6 +1,6 @@
 import { VisualStyle } from './Style'
 import { Network, Node, Edge } from './Network'
-
+import { IdType } from './IdType'
 export interface Position {
   x: number
   y: number
@@ -30,7 +30,7 @@ export interface VisualProperty<T> {
 }
 
 export interface View {
-  readonly key: BigInt // Associated model ID (e.g. Node ID)
+  readonly key: IdType // Associated model ID (e.g. Node ID)
   visualProperties: VisualProperty<unknown>[]
 }
 
@@ -59,7 +59,7 @@ export const apply = (view: NetworkView, style: VisualStyle): void => {
 
 export const applyLayout = (
   view: NetworkView,
-  positions: { key: BigInt; position: Position },
+  positions: { key: IdType; position: Position },
 ): void => {
   view.nodeViews.forEach((nodeView: View) => {
     // Set position here

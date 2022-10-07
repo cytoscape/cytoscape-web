@@ -4,16 +4,15 @@ import { NetworkModel } from './Network'
 import { VisualStyle } from './Style'
 
 export interface NetworkSummary {
-  uuid: string
+  ndexUUID: string
   name: string
-  iconUrl: URL
+  iconUrl: string
   attributes: Row
-  _dbKey: number // internal storage key for db (TODO: how to store keys if there are multiple data sources? e.g. local indexedDB vs a REST endpoint?)
-  createdAt: Date
-  modifiedAt: Date
+  createdAt: string
+  modifiedAt: string
 }
 
-export interface WorkingNetwork {
+export interface CurrentNetwork {
   network: NetworkModel
   nodeTable: Table
   edgeTable: Table
@@ -23,8 +22,20 @@ export interface WorkingNetwork {
 }
 
 export interface Workspace {
-  name?: string
-  uuid?: string
+  name: string
+  ndexUUID?: string
   networkSummaries: NetworkSummary[]
-  currentNetworkId: WorkingNetwork
+}
+
+// loads json and serliazes application models
+export const serializeWorkspace = (workspaceJson: any): Workspace => {
+  // for now just return the object
+  // in the future, we need to parse BigInts etc.
+  return workspaceJson
+}
+
+export const serializeCurrentNetwork = (
+  currentNetworkJson: any,
+): CurrentNetwork => {
+  return currentNetworkJson
 }

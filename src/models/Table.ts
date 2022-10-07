@@ -1,4 +1,5 @@
 import { Node } from './Network'
+import { IdType } from './IdType'
 
 /**
  * Compatible attribute data types
@@ -22,13 +23,13 @@ export interface RowData {
 }
 
 export interface Column {
-  id: string
+  id: IdType
   name?: string // (Optional) Human-readable name
   type: ValueTypeName
 }
 
 export interface Row {
-  readonly key: BigInt
+  readonly key: IdType
   data: RowData
 }
 
