@@ -18,11 +18,13 @@ const initialState: ApplicationState = {
 export const AppContext: React.Context<ApplicationState> =
   React.createContext(initialState)
 
-interface ContainerProps {
+interface AppStateProviderProps {
   children?: React.ReactNode
 }
 
-export const AppStateProvider: React.FC<ContainerProps> = ({ children }) => {
+export const AppStateProvider: React.FC<AppStateProviderProps> = ({
+  children,
+}) => {
   const [state, dispatch] = React.useReducer(
     (state: ApplicationState, action: any) => {
       switch (action.type) {

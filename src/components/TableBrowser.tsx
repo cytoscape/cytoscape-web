@@ -5,6 +5,8 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 
+import { Table } from '../models/Table'
+
 interface TabPanelProps {
   children?: React.ReactNode
   index: number
@@ -38,14 +40,23 @@ function a11yProps(index: number): { id: string; 'aria-controls': string } {
   }
 }
 
-export default function TableBrowser(): React.ReactElement {
-  const [value, setValue] = React.useState(0)
+interface TableBrowserProps {
+  edgeTable: Table
+  nodeTable: Table
+}
+
+export default function TableBrowser(
+  props: TableBrowserProps,
+): React.ReactElement {
+  const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
+
+  const { nodeTable, edgeTable } = props
 
   const handleChange = (
     event: React.SyntheticEvent,
     newValue: number,
   ): void => {
-    setValue(newValue)
+    setCurrentTabIndex(newValue)
   }
 
   return (
@@ -62,7 +73,7 @@ export default function TableBrowser(): React.ReactElement {
         }}
       >
         <Tabs
-          value={value}
+          value={currentTabIndex}
           onChange={handleChange}
           aria-label="tabs"
           TabIndicatorProps={{ sx: { backgroundColor: 'white' } }}
@@ -89,11 +100,13 @@ export default function TableBrowser(): React.ReactElement {
         </Tabs>
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
-      <TabPanel value={value} index={0}>
-        Nodes
+      <TabPanel value={currentTabIndex} index={0}>
+        <div>Nodes</div>
+        {JSON.stringify(nodeTable, null, 2)}
       </TabPanel>
-      <TabPanel value={value} index={1}>
-        Edges
+      <TabPanel value={currentTabIndex} index={1}>
+        <div>Edges</div>
+        {JSON.stringify(edgeTable, null, 2)}
       </TabPanel>
     </Box>
   )
