@@ -1,15 +1,17 @@
 import * as React from 'react'
-// import { Context, createContext, FC, ReactNode, useReducer } from React
-import { TableFactory } from '../models/Table'
+
 import { ApplicationState } from './ApplicationState'
+import { serializeCurrentNetwork, serializeWorkspace } from '../models'
+
+import exampleData from '../../data/example-db.json'
+
+const workspace = serializeWorkspace(exampleData.workspace)
+const currentNetwork = serializeCurrentNetwork(exampleData.currentNetwork)
 
 const initialState: ApplicationState = {
-  network: null,
-  networkAttributes: TableFactory.createTable('Network Table'),
-  nodeTable: TableFactory.createTable('Node Table'),
-  edgeTable: TableFactory.createTable('Edge Table'),
-  networkView: null,
-  visualStyle: null,
+  workspace,
+  currentNetwork,
+
   appDispatch: null,
 }
 
@@ -29,7 +31,7 @@ export const AppStateProvider: React.FC<ContainerProps> = ({ children }) => {
           return newState
         }
         default:
-          throw new Error()
+          throw new Error(`Invalid action type`)
       }
     },
     initialState,

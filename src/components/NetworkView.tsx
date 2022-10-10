@@ -13,7 +13,7 @@ export default function NetworkView(): React.ReactElement {
   //   console.log(appContext)
 
   if (cy != null) {
-    console.log(cy.data())
+    cy.data('_init', true)
   }
 
   React.useEffect(() => {

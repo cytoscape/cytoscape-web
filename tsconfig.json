@@ -9,6 +9,7 @@
     "allowJs": true,
     "moduleResolution": "node",
     "sourceMap": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "resolveJsonModule": true
   }
 }
