@@ -32,6 +32,15 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
           const newState = { ...state }
           return newState
         }
+        case 'setCurrentNetwork': {
+          const newState = {
+            ...state,
+            ...Object.assign(workspace, {
+              currentNetworkUUID: action.payload.networkId,
+            }),
+          }
+          return newState
+        }
         default:
           throw new Error(`Invalid action type`)
       }

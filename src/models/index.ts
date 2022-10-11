@@ -4,7 +4,7 @@ import { NetworkModel } from './Network'
 import { VisualStyle } from './Style'
 
 export interface NetworkSummary {
-  ndexUUID: string
+  uuid: string
   name: string
   iconUrl: string
   attributes: Row
@@ -23,8 +23,9 @@ export interface CurrentNetwork {
 
 export interface Workspace {
   name: string
-  ndexUUID?: string
+  uuid: string
   networkSummaries: NetworkSummary[]
+  currentNetworkUUID: string
 }
 
 // loads json and serliazes application models

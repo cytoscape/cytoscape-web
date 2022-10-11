@@ -48,7 +48,8 @@
           }
         }
       }
-    ]
+    ],
+    "currentNetworkUUID": "4136cd0b-d90b-4527-b485-5d1ded8db253"
   },
   "currentNetwork": {
     "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db253",
