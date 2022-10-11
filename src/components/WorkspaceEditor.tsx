@@ -3,7 +3,7 @@ import { Allotment } from 'allotment'
 import { Box } from '@mui/material'
 
 import TableBrowser from './TableBrowser'
-import NetworkRenderer from './NetworkView'
+import NetworkRenderer from './NetworkRenderer'
 import WorkspaceView from './WorkspaceView'
 import VizmapperView from './VizmapperView'
 
