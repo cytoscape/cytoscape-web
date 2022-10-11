@@ -11,7 +11,6 @@ import { AppContext } from '../states/AppStateProvider'
 
 export const WorkSpaceEditor: React.FC = () => {
   const appContext = React.useContext(AppContext)
-  console.log(appContext)
 
   return (
     <Box sx={{ height: 'calc(100vh - 48px)' }}>
