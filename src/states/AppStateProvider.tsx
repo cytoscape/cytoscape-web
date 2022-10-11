@@ -7,7 +7,9 @@ import exampleData from '../../data/example-db.json'
 
 const workspace = serializeWorkspace(exampleData.workspace)
 const currentNetwork = serializeCurrentNetwork(exampleData.currentNetwork)
-
+const allNetworks = exampleData.allNetworks.map((otherNetwork) =>
+  serializeCurrentNetwork(otherNetwork),
+)
 const initialState: ApplicationState = {
   workspace,
   currentNetwork,
@@ -33,12 +35,18 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
           return newState
         }
         case 'setCurrentNetwork': {
+          const newCurrentNetwork = allNetworks.find(
+            (otherNetwork) =>
+              otherNetwork.summary.uuid === action.payload.networkId,
+          )
           const newState = {
             ...state,
             ...Object.assign(workspace, {
               currentNetworkUUID: action.payload.networkId,
             }),
           }
+          Object.assign(newState, { currentNetwork: newCurrentNetwork })
+
           return newState
         }
         default:

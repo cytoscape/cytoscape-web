@@ -18,6 +18,9 @@ const visualStyle2CyJsStyle = (
   visualProperty: NodeVisualPropertyName | EdgeVisualPropertyName,
 ): string => {
   switch (visualProperty) {
+    case 'color': {
+      return 'background-color'
+    }
     case 'labelColor': {
       return 'color'
     }
@@ -43,64 +46,72 @@ export default function NetworkRenderer(
 
   const { networkView, network } = props
 
-  if (cy != null) {
-    cy.startBatch()
-    cy.remove('*')
-    network.nodes.forEach((node) => {
-      cy.add({
-        group: 'nodes',
-        data: {
-          id: node.id,
-        },
+  const renderCyJs = (): void => {
+    console.log('render called')
+    if (cy != null) {
+      cy.startBatch()
+      cy.remove('*')
+      network.nodes.forEach((node) => {
+        cy.add({
+          group: 'nodes',
+          data: {
+            id: node.id,
+          },
+        })
       })
-    })
-    networkView.nodeViews.forEach((nodeView) => {
-      const node = cy.getElementById(nodeView.key)
+      networkView.nodeViews.forEach((nodeView) => {
+        const node = cy.getElementById(nodeView.key)
 
-      if (node != null) {
-        nodeView.visualProperties.forEach((vp) => {
-          const cyJsVpName = visualStyle2CyJsStyle(vp.name)
-          if (cyJsVpName !== 'position') {
-            node.style({
+        if (node != null) {
+          nodeView.visualProperties.forEach((vp) => {
+            const cyJsVpName = visualStyle2CyJsStyle(vp.name)
+            if (cyJsVpName !== 'position') {
+              node.style({
+                [cyJsVpName]: vp.value,
+              })
+            } else {
+              node.position(vp.value)
+            }
+          })
+        }
+      })
+
+      // cant have nodes/edges having the same id
+      const edgeId2CyId = (id: string): string => `e${id}`
+
+      network.edges.forEach((edge) => {
+        cy.add({
+          group: 'edges',
+          data: {
+            id: edgeId2CyId(edge.id),
+            source: `${edge.s}`,
+            target: `${edge.t}`,
+          },
+        })
+      })
+
+      networkView.edgeViews.forEach((edgeView) => {
+        const edge = cy.getElementById(edgeId2CyId(edgeView.key))
+
+        if (edge != null) {
+          edgeView.visualProperties.forEach((vp) => {
+            const cyJsVpName = visualStyle2CyJsStyle(vp.name)
+
+            edge.style({
               [cyJsVpName]: vp.value,
             })
-          } else {
-            node.position(vp.value)
-          }
-        })
-      }
-    })
-
-    // cant have nodes/edges having the same id
-    const edgeId2CyId = (id: string): string => `e${id}`
-
-    network.edges.forEach((edge) => {
-      cy.add({
-        group: 'edges',
-        data: {
-          id: edgeId2CyId(edge.id),
-          source: `${edge.s}`,
-          target: `${edge.t}`,
-        },
-      })
-    })
-
-    networkView.edgeViews.forEach((edgeView) => {
-      const edge = cy.getElementById(edgeId2CyId(edgeView.key))
-
-      if (edge != null) {
-        edgeView.visualProperties.forEach((vp) => {
-          const cyJsVpName = visualStyle2CyJsStyle(vp.name)
-
-          edge.style({
-            [cyJsVpName]: vp.value,
           })
-        })
-      }
-    })
+        }
+      })
 
-    cy.endBatch()
+      cy.endBatch()
+      cy.fit()
+    }
   }
+  renderCyJs()
+  // React.useEffect(() => {
+  //   renderCyJs()
+  // }, [networkView, network])
 
   React.useEffect(() => {
     const cy = new Cytoscape({
