@@ -2,11 +2,37 @@ import * as React from 'react'
 import Box from '@mui/material/Box'
 import Cytoscape from 'cytoscape'
 
-import { NetworkView } from '../models/NetworkView'
+import {
+  EdgeVisualPropertyName,
+  NetworkView,
+  NodeVisualPropertyName,
+} from '../models/NetworkView'
 import { NetworkModel } from '../models/Network'
+
 interface NetworkRendererProps {
   networkView: NetworkView
   network: NetworkModel
+}
+
+const visualStyle2CyJsStyle = (
+  visualProperty: NodeVisualPropertyName | EdgeVisualPropertyName,
+): string => {
+  switch (visualProperty) {
+    case 'labelColor': {
+      return 'color'
+    }
+    case 'labelSize': {
+      return 'font-size'
+    }
+    case 'labelOpacity': {
+      return 'text-opacity'
+    }
+    case 'lineType': {
+      return 'line-style'
+    }
+    default:
+      return visualProperty
+  }
 }
 
 export default function NetworkRenderer(
@@ -33,9 +59,10 @@ export default function NetworkRenderer(
 
       if (node != null) {
         nodeView.visualProperties.forEach((vp) => {
-          if (vp.name !== 'position') {
+          const cyJsVpName = visualStyle2CyJsStyle(vp.name)
+          if (cyJsVpName !== 'position') {
             node.style({
-              [vp.name]: vp.value,
+              [cyJsVpName]: vp.value,
             })
           } else {
             node.position(vp.value)
@@ -63,8 +90,10 @@ export default function NetworkRenderer(
 
       if (edge != null) {
         edgeView.visualProperties.forEach((vp) => {
+          const cyJsVpName = visualStyle2CyJsStyle(vp.name)
+
           edge.style({
-            [vp.name]: vp.value,
+            [cyJsVpName]: vp.value,
           })
         })
       }
