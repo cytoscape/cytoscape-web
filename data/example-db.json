@@ -5,7 +5,7 @@
     "networkSummaries": [
       {
         "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db253",
-        "name": "my network 1",
+        "name": "Test network 1",
         "iconUrl": "https://loremflickr.com/1234/2345/abstract",
         "createdAt": "2022-10-01T08:36:34.639Z",
         "modifiedAt": "2022-11-01T08:36:34.639Z",
@@ -20,7 +20,7 @@
       },
       {
         "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db254",
-        "name": "my network 2",
+        "name": "Example network",
         "iconUrl": "https://loremflickr.com/3456/1345/abstract",
         "createdAt": "2022-10-01T08:36:34.639Z",
         "modifiedAt": "2022-11-01T08:36:34.639Z",
@@ -35,7 +35,7 @@
       },
       {
         "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db255",
-        "name": "my network 3",
+        "name": "Another example network",
         "iconUrl": "https://loremflickr.com/9999/999/abstract",
         "createdAt": "2022-10-01T08:36:34.639Z",
         "modifiedAt": "2022-11-01T08:36:34.639Z",
@@ -301,5 +301,745 @@
     "server": "...",
     "username": "...",
     "...": "..."
-  }
+  },
+  "allNetworks": [
+    {
+      "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db253",
+      "summary": {
+        "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db253",
+        "name": "my network 1",
+        "iconUrl": "https://loremflickr.com/1234/2345/abstract",
+        "_dbkey": 0,
+        "createdAt": "2022-10-01T08:36:34.639Z",
+        "modifiedAt": "2022-11-01T08:36:34.639Z"
+      },
+      "visualStyle": {
+        "default": {
+          "node": {
+            "color": "#000000",
+            "width": 10,
+            "height": 10,
+            "label": "",
+            "labelColor": "#000000",
+            "labelSize": 20,
+            "labelOpacity": 0.5,
+            "shape": "rectangle"
+          },
+          "edge": {
+            "color": "#D6D6D6",
+            "width": 5,
+            "opacity": 1.0,
+            "label": "",
+            "labelColor": "#000000",
+            "labelSize": 10,
+            "labelOpacity": 0.9,
+            "lineType": "dashed"
+          }
+        },
+        "mapping": {
+          "node": {},
+          "edge": {}
+        },
+        "bypasses": [
+          {
+            "id": 0,
+            "color": "#123456"
+          }
+        ]
+      },
+      "networkView": {
+        "nodeViews": [
+          {
+            "key": 0,
+            "visualProperties": [
+              {
+                "name": "color",
+                "value": "#000000"
+              },
+              {
+                "name": "width",
+                "value": 10
+              },
+              {
+                "name": "height",
+                "value": 10
+              },
+              {
+                "name": "label",
+                "value": ""
+              },
+              {
+                "name": "labelSize",
+                "value": 20
+              },
+              {
+                "name": "labelOpacity",
+                "value": 0.5
+              },
+              {
+                "name": "shape",
+                "value": "rectangle"
+              },
+              {
+                "name": "position",
+                "value": {
+                  "x": 10,
+                  "y": 12,
+                  "z": 1
+                }
+              }
+            ]
+          },
+          {
+            "key": 1,
+            "visualProperties": [
+              {
+                "name": "color",
+                "value": "#000000"
+              },
+              {
+                "name": "width",
+                "value": 10
+              },
+              {
+                "name": "height",
+                "value": 10
+              },
+              {
+                "name": "label",
+                "value": ""
+              },
+              {
+                "name": "labelSize",
+                "value": 20
+              },
+              {
+                "name": "labelOpacity",
+                "value": 0.5
+              },
+              {
+                "name": "shape",
+                "value": "rectangle"
+              },
+              {
+                "name": "position",
+                "value": {
+                  "x": 20,
+                  "y": 20,
+                  "z": 2
+                }
+              }
+            ]
+          }
+        ],
+        "edgeViews": [
+          {
+            "key": "0",
+            "visualProperties": [
+              {
+                "name": "color",
+                "value": "#675767"
+              },
+              {
+                "name": "width",
+                "value": 2
+              },
+              {
+                "name": "label",
+                "value": "edge label"
+              },
+              {
+                "name": "labelSize",
+                "value": 10
+              },
+              {
+                "name": "labelOpacity",
+                "value": 0.5
+              }
+            ]
+          }
+        ]
+      },
+      "nodeTable": {
+        "name": "node table",
+        "columns": [
+          {
+            "id": "0",
+            "name": "attr1",
+            "type": "boolean"
+          },
+          {
+            "id": "1",
+            "name": "attr2",
+            "type": "integer"
+          },
+          {
+            "id": "2",
+            "name": "attr3",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          {
+            "key": "0",
+            "data": {
+              "attr1": true,
+              "attr2": 5,
+              "attr3": "test"
+            }
+          },
+          {
+            "key": "1",
+            "data": {
+              "attr1": false,
+              "attr2": 100,
+              "attr3": "foo"
+            }
+          },
+          {
+            "key": "2",
+            "data": {
+              "attr1": true,
+              "attr2": 90,
+              "attr3": "bar"
+            }
+          }
+        ]
+      },
+      "edgeTable": {
+        "name": "edge table",
+        "columns": [
+          {
+            "id": "0",
+            "name": "isSomething",
+            "type": "boolean"
+          }
+        ],
+        "rows": [
+          {
+            "key": "0",
+            "isSomething": true
+          }
+        ]
+      },
+      "network": {
+        "id": 0,
+        "attributes": {
+          "key": 0,
+          "data": {
+            "networkAttr1": "a",
+            "networkAttr2": 1,
+            "networkAttr3": true
+          }
+        },
+        "nodes": [
+          {
+            "id": 0
+          },
+          {
+            "id": 1
+          }
+        ],
+        "edges": [
+          {
+            "id": 0,
+            "s": 0,
+            "t": 1
+          }
+        ]
+      }
+    },
+    {
+      "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db254",
+      "summary": {
+        "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db254",
+        "name": "Example network",
+        "iconUrl": "https://loremflickr.com/1234/2345/abstract",
+        "_dbkey": 0,
+        "createdAt": "2022-09-01T08:36:34.639Z",
+        "modifiedAt": "2022-10-11T08:36:34.639Z"
+      },
+      "visualStyle": {
+        "default": {
+          "node": {
+            "color": "#000000",
+            "width": 10,
+            "height": 10,
+            "label": "",
+            "labelColor": "#000000",
+            "labelSize": 20,
+            "labelOpacity": 0.5,
+            "shape": "rectangle"
+          },
+          "edge": {
+            "color": "#D6D6D6",
+            "width": 5,
+            "opacity": 1.0,
+            "label": "",
+            "labelColor": "#000000",
+            "labelSize": 10,
+            "labelOpacity": 0.9,
+            "lineType": "dashed"
+          }
+        },
+        "mapping": {
+          "node": {},
+          "edge": {}
+        },
+        "bypasses": [
+          {
+            "id": 0,
+            "color": "#123456"
+          }
+        ]
+      },
+      "networkView": {
+        "nodeViews": [
+          {
+            "key": 0,
+            "visualProperties": [
+              {
+                "name": "color",
+                "value": "#4ea536"
+              },
+              {
+                "name": "width",
+                "value": 10
+              },
+              {
+                "name": "height",
+                "value": 10
+              },
+              {
+                "name": "label",
+                "value": ""
+              },
+              {
+                "name": "labelSize",
+                "value": 20
+              },
+              {
+                "name": "labelOpacity",
+                "value": 0.5
+              },
+              {
+                "name": "shape",
+                "value": "rectangle"
+              },
+              {
+                "name": "position",
+                "value": {
+                  "x": 500,
+                  "y": 500,
+                  "z": 1
+                }
+              }
+            ]
+          },
+          {
+            "key": 1,
+            "visualProperties": [
+              {
+                "name": "color",
+                "value": "#000000"
+              },
+              {
+                "name": "width",
+                "value": 10
+              },
+              {
+                "name": "height",
+                "value": 10
+              },
+              {
+                "name": "label",
+                "value": ""
+              },
+              {
+                "name": "labelSize",
+                "value": 20
+              },
+              {
+                "name": "labelOpacity",
+                "value": 0.5
+              },
+              {
+                "name": "shape",
+                "value": "rectangle"
+              },
+              {
+                "name": "position",
+                "value": {
+                  "x": 700,
+                  "y": 700,
+                  "z": 2
+                }
+              }
+            ]
+          }
+        ],
+        "edgeViews": [
+          {
+            "key": "0",
+            "visualProperties": [
+              {
+                "name": "color",
+                "value": "#675767"
+              },
+              {
+                "name": "width",
+                "value": 2
+              },
+              {
+                "name": "label",
+                "value": ""
+              },
+              {
+                "name": "labelSize",
+                "value": 10
+              },
+              {
+                "name": "labelOpacity",
+                "value": 0.5
+              }
+            ]
+          }
+        ]
+      },
+      "nodeTable": {
+        "name": "node table",
+        "columns": [
+          {
+            "id": "0",
+            "name": "attr1",
+            "type": "boolean"
+          },
+          {
+            "id": "1",
+            "name": "attr2",
+            "type": "integer"
+          },
+          {
+            "id": "2",
+            "name": "attr3",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          {
+            "key": "0",
+            "data": {
+              "attr1": true,
+              "attr2": 5,
+              "attr3": "test"
+            }
+          },
+          {
+            "key": "1",
+            "data": {
+              "attr1": false,
+              "attr2": 100,
+              "attr3": "foo"
+            }
+          },
+          {
+            "key": "2",
+            "data": {
+              "attr1": true,
+              "attr2": 90,
+              "attr3": "bar"
+            }
+          }
+        ]
+      },
+      "edgeTable": {
+        "name": "edge table",
+        "columns": [
+          {
+            "id": "0",
+            "name": "isSomething",
+            "type": "boolean"
+          }
+        ],
+        "rows": [
+          {
+            "key": "0",
+            "isSomething": true
+          }
+        ]
+      },
+      "network": {
+        "id": 0,
+        "attributes": {
+          "key": 0,
+          "data": {
+            "networkAttr1": "a",
+            "networkAttr2": 1,
+            "networkAttr3": true
+          }
+        },
+        "nodes": [
+          {
+            "id": 0
+          },
+          {
+            "id": 1
+          }
+        ],
+        "edges": [
+          {
+            "id": 0,
+            "s": 0,
+            "t": 1
+          }
+        ]
+      }
+    },
+    {
+      "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db255",
+      "summary": {
+        "uuid": "4136cd0b-d90b-4527-b485-5d1ded8db255",
+        "name": "Example network",
+        "iconUrl": "https://loremflickr.com/1234/2345/abstract",
+        "_dbkey": 0,
+        "createdAt": "2022-09-01T08:36:34.639Z",
+        "modifiedAt": "2022-10-11T08:36:34.639Z"
+      },
+      "visualStyle": {
+        "default": {
+          "node": {
+            "color": "#c42929",
+            "width": 10,
+            "height": 10,
+            "label": "",
+            "labelColor": "#000000",
+            "labelSize": 20,
+            "labelOpacity": 0.5,
+            "shape": "rectangle"
+          },
+          "edge": {
+            "color": "#D6D6D6",
+            "width": 5,
+            "opacity": 1.0,
+            "label": "",
+            "labelColor": "#000000",
+            "labelSize": 10,
+            "labelOpacity": 0.9,
+            "lineType": "dashed"
+          }
+        },
+        "mapping": {
+          "node": {},
+          "edge": {}
+        },
+        "bypasses": [
+          {
+            "id": 0,
+            "color": "#123456"
+          }
+        ]
+      },
+      "networkView": {
+        "nodeViews": [
+          {
+            "key": 0,
+            "visualProperties": [
+              {
+                "name": "color",
+                "value": "#000000"
+              },
+              {
+                "name": "width",
+                "value": 40
+              },
+              {
+                "name": "height",
+                "value": 40
+              },
+              {
+                "name": "label",
+                "value": ""
+              },
+              {
+                "name": "labelSize",
+                "value": 20
+              },
+              {
+                "name": "labelOpacity",
+                "value": 0.5
+              },
+              {
+                "name": "shape",
+                "value": "triangle"
+              },
+              {
+                "name": "position",
+                "value": {
+                  "x": 300,
+                  "y": 300,
+                  "z": 1
+                }
+              }
+            ]
+          },
+          {
+            "key": 1,
+            "visualProperties": [
+              {
+                "name": "color",
+                "value": "#2179d1"
+              },
+              {
+                "name": "width",
+                "value": 10
+              },
+              {
+                "name": "height",
+                "value": 10
+              },
+              {
+                "name": "label",
+                "value": ""
+              },
+              {
+                "name": "labelSize",
+                "value": 20
+              },
+              {
+                "name": "labelOpacity",
+                "value": 0.5
+              },
+              {
+                "name": "shape",
+                "value": "rectangle"
+              },
+              {
+                "name": "position",
+                "value": {
+                  "x": 100,
+                  "y": 900,
+                  "z": 2
+                }
+              }
+            ]
+          }
+        ],
+        "edgeViews": [
+          {
+            "key": "0",
+            "visualProperties": [
+              {
+                "name": "color",
+                "value": "#675767"
+              },
+              {
+                "name": "width",
+                "value": 2
+              },
+              {
+                "name": "label",
+                "value": ""
+              },
+              {
+                "name": "labelSize",
+                "value": 10
+              },
+              {
+                "name": "labelOpacity",
+                "value": 0.5
+              }
+            ]
+          }
+        ]
+      },
+      "nodeTable": {
+        "name": "node table",
+        "columns": [
+          {
+            "id": "0",
+            "name": "attr1",
+            "type": "boolean"
+          },
+          {
+            "id": "1",
+            "name": "attr2",
+            "type": "integer"
+          },
+          {
+            "id": "2",
+            "name": "attr3",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          {
+            "key": "0",
+            "data": {
+              "attr1": true,
+              "attr2": 5,
+              "attr3": "test"
+            }
+          },
+          {
+            "key": "1",
+            "data": {
+              "attr1": false,
+              "attr2": 100,
+              "attr3": "foo"
+            }
+          },
+          {
+            "key": "2",
+            "data": {
+              "attr1": true,
+              "attr2": 90,
+              "attr3": "bar"
+            }
+          }
+        ]
+      },
+      "edgeTable": {
+        "name": "edge table",
+        "columns": [
+          {
+            "id": "0",
+            "name": "isSomething",
+            "type": "boolean"
+          }
+        ],
+        "rows": [
+          {
+            "key": "0",
+            "isSomething": true
+          }
+        ]
+      },
+      "network": {
+        "id": 0,
+        "attributes": {
+          "key": 0,
+          "data": {
+            "networkAttr1": "a",
+            "networkAttr2": 1,
+            "networkAttr3": true
+          }
+        },
+        "nodes": [
+          {
+            "id": 0
+          },
+          {
+            "id": 1
+          }
+        ],
+        "edges": [
+          {
+            "id": 0,
+            "s": 0,
+            "t": 1
+          }
+        ]
+      }
+    }
+  ]
 }
