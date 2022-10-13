@@ -7,10 +7,15 @@ import NetworkRenderer from './NetworkRenderer'
 import WorkspaceView from './WorkspaceView'
 import VizmapperView from './VizmapperView'
 
-import { AppContext } from '../states/AppStateProvider'
+import { useWorkspaceStore, AppState } from '../hooks/useWorkspaceStore'
 
 export const WorkSpaceEditor: React.FC = () => {
-  const appContext = React.useContext(AppContext)
+  const { workspace, currentNetwork } = useWorkspaceStore(
+    (state: AppState) => ({
+      workspace: state.workspace,
+      currentNetwork: state.currentNetwork,
+    }),
+  )
 
   return (
     <Box sx={{ height: 'calc(100vh - 48px)' }}>
@@ -20,27 +25,25 @@ export const WorkSpaceEditor: React.FC = () => {
             <Allotment.Pane preferredSize="30%">
               <Allotment vertical>
                 <Allotment.Pane preferredSize="50%">
-                  <WorkspaceView workspace={appContext.workspace} />
+                  <WorkspaceView workspace={workspace} />
                 </Allotment.Pane>
                 <Allotment.Pane>
-                  <VizmapperView
-                    networkStyle={appContext.currentNetwork.visualStyle}
-                  />
+                  <VizmapperView networkStyle={currentNetwork.visualStyle} />
                 </Allotment.Pane>
               </Allotment>
             </Allotment.Pane>
             <Allotment.Pane>
               <NetworkRenderer
-                networkView={appContext.currentNetwork.networkView}
-                network={appContext.currentNetwork.network}
+                networkView={currentNetwork.networkView}
+                network={currentNetwork.network}
               />
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>
         <Allotment.Pane minSize={38} preferredSize={38}>
           <TableBrowser
-            nodeTable={appContext.currentNetwork.nodeTable}
-            edgeTable={appContext.currentNetwork.edgeTable}
+            nodeTable={currentNetwork.nodeTable}
+            edgeTable={currentNetwork.edgeTable}
           />
         </Allotment.Pane>
       </Allotment>

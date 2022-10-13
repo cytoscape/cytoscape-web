@@ -2,14 +2,12 @@ import * as React from 'react'
 import Box from '@mui/material/Box'
 import Container from '@mui/material/Container'
 import Button from '@mui/material/Button'
+import { Typography } from '@mui/material'
 
 import AddIcon from '@mui/icons-material/Add'
 
 import { NetworkSummary, Workspace } from '../models'
-import { Typography } from '@mui/material'
-
-import { AppContext } from '../states/AppStateProvider'
-
+import { useWorkspaceStore, AppState } from '../hooks/useWorkspaceStore'
 interface WorkspaceViewProps {
   workspace: Workspace
 }
@@ -23,14 +21,10 @@ function NetworkSummaryView(
   props: NetworkSummaryViewProps,
 ): React.ReactElement {
   const { networkSummary, selected } = props
-  const { appDispatch } = React.useContext(AppContext)
 
-  const onNetworkSummaryClick = (): void => {
-    appDispatch({
-      type: 'setCurrentNetwork',
-      payload: { networkId: networkSummary.uuid },
-    })
-  }
+  const setNetwork = useWorkspaceStore((state: AppState) => state.setNetwork)
+
+  const onNetworkSummaryClick = (): void => setNetwork(networkSummary.uuid)
   return (
     <Box
       sx={{

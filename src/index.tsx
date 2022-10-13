@@ -5,7 +5,6 @@ import * as ReactDOM from 'react-dom/client'
 
 import './index.css'
 import AppShell from './components/AppShell'
-import { AppStateProvider } from './states/AppStateProvider'
 
 const theme = createTheme({
   palette: {
@@ -21,12 +20,10 @@ const theme = createTheme({
 const App = (): React.ReactElement => {
   return (
     <>
-      <AppStateProvider>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <AppShell />
-        </ThemeProvider>
-      </AppStateProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AppShell />
+      </ThemeProvider>
     </>
   )
 }

@@ -47,7 +47,7 @@ export default function NetworkRenderer(
   const { networkView, network } = props
 
   const renderCyJs = (): void => {
-    console.log('render called')
+    console.log('render called', networkView, network)
     if (cy != null) {
       cy.startBatch()
       cy.remove('*')
@@ -108,10 +108,10 @@ export default function NetworkRenderer(
       cy.fit()
     }
   }
-  renderCyJs()
-  // React.useEffect(() => {
-  //   renderCyJs()
-  // }, [networkView, network])
+
+  React.useEffect(() => {
+    renderCyJs()
+  }, [networkView, network])
 
   React.useEffect(() => {
     const cy = new Cytoscape({
