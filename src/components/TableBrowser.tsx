@@ -5,7 +5,12 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 
-import { Table } from '../models/Table'
+import {
+  DataEditor,
+  GridCellKind,
+  GridCell,
+  Item,
+} from '@glideapps/glide-data-grid'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -40,17 +45,16 @@ function a11yProps(index: number): { id: string; 'aria-controls': string } {
   }
 }
 
-interface TableBrowserProps {
-  edgeTable: Table
-  nodeTable: Table
+interface TableDataRow {
+  attributeA: string
+  attributeB: string
+  attributeC: string
 }
-
-export default function TableBrowser(
-  props: TableBrowserProps,
-): React.ReactElement {
+export default function TableBrowser(props: any): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
 
-  const { nodeTable, edgeTable } = props
+  const { tableData } = props
+  console.log(tableData)
 
   const handleChange = (
     event: React.SyntheticEvent,
@@ -58,6 +62,25 @@ export default function TableBrowser(
   ): void => {
     setCurrentTabIndex(newValue)
   }
+
+  const getData = React.useCallback((cell: Item): GridCell => {
+    const [col, row] = cell
+    const dataRow = tableData.rows[row]
+
+    const indexes: Array<keyof TableDataRow> = [
+      'attributeA',
+      'attributeB',
+      'attributeC',
+    ]
+    const d = dataRow[indexes[col]]
+
+    return {
+      kind: GridCellKind.Text,
+      allowOverlay: false,
+      displayData: d,
+      data: d,
+    }
+  }, [])
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -101,12 +124,16 @@ export default function TableBrowser(
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
-        <div>Nodes</div>
-        {JSON.stringify(nodeTable, null, 2)}
+        <DataEditor
+          width={1200}
+          height={400}
+          getCellContent={getData}
+          columns={tableData.columns}
+          rows={tableData.rows.length}
+        />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
         <div>Edges</div>
-        {JSON.stringify(edgeTable, null, 2)}
       </TabPanel>
     </Box>
   )
