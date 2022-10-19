@@ -9,7 +9,7 @@ import {
   // Workspace,
 } from '../models'
 
-import exampleData from '../../data/example-db.json'
+import exampleData from '../../data/exampleAppState.json'
 
 const workspace = serializeWorkspace(exampleData.workspace)
 const currentNetwork = serializeCurrentNetwork(exampleData.currentNetwork)
@@ -32,7 +32,8 @@ export const useWorkspaceStore = create((set, get: () => AppState) => {
       const currentNetwork: CurrentNetwork = state.currentNetwork
       const nextNetwork: CurrentNetwork =
         allNetworks.find(
-          (otherNetwork) => otherNetwork.summary.uuid === networkUUID,
+          (otherNetwork: CurrentNetwork) =>
+            otherNetwork.summary.uuid === networkUUID,
         ) ?? currentNetwork
       if (nextNetwork != null) {
         set(
