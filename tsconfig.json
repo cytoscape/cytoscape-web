@@ -6,10 +6,10 @@
     "module": "es6",
     "target": "es2022",
     "jsx": "react",
-    "allowJs": true,
+    "allowJs": false,
     "moduleResolution": "node",
     "sourceMap": true,
     "strictNullChecks": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
   }
 }

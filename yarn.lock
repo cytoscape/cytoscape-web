@@ -1026,6 +1026,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/cytoscape@^3.19.9":
+  "integrity" "sha512-oqCx0ZGiBO0UESbjgq052vjDAy2X53lZpMrWqiweMpvVwKw/2IiYDdzPFK6+f4tMfdv9YKEM9raO5bAZc3UYBg=="
+  "resolved" "https://registry.npmjs.org/@types/cytoscape/-/cytoscape-3.19.9.tgz"
+  "version" "3.19.9"
+
 "@types/eslint-scope@^3.7.3":
   "integrity" "sha512-9K4zoImiZc3HlIp6AVUDE4CWYx22a+lhSZMYNpbjW04+YF0KWj4pJXnEMjdnFTiQibFFmElcsasJXDbdI/EPhA=="
   "resolved" "https://registry.npmjs.org/@types/eslint-scope/-/eslint-scope-3.7.4.tgz"
