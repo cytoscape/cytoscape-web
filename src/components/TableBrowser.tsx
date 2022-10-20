@@ -4,11 +4,14 @@ import Tab from '@mui/material/Tab'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
+import { Button } from '@mui/material'
 
+import { useTableStore } from '../hooks/useTableStore'
 import {
   DataEditor,
   GridCellKind,
   GridCell,
+  EditableGridCell,
   Item,
 } from '@glideapps/glide-data-grid'
 
@@ -53,8 +56,14 @@ interface TableDataRow {
 export default function TableBrowser(props: any): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
 
-  const { tableData } = props
-  console.log(tableData)
+  const { rows, columns, loadTableState, setCellValue } = useTableStore(
+    (state) => ({
+      rows: state.rows,
+      columns: state.columns,
+      loadTableState: state.loadTableState,
+      setCellValue: state.setCellValue,
+    }),
+  )
 
   const handleChange = (
     event: React.SyntheticEvent,
@@ -63,24 +72,58 @@ export default function TableBrowser(props: any): React.ReactElement {
     setCurrentTabIndex(newValue)
   }
 
-  const getData = React.useCallback((cell: Item): GridCell => {
-    const [col, row] = cell
-    const dataRow = tableData.rows[row]
+  const getContent = React.useCallback(
+    (cell: Item): GridCell => {
+      const [col, row] = cell
+      const dataRow = rows[row]
 
-    const indexes: Array<keyof TableDataRow> = [
-      'attributeA',
-      'attributeB',
-      'attributeC',
-    ]
-    const d = dataRow[indexes[col]]
+      if (dataRow == null) {
+        return {
+          allowOverlay: true,
+          readonly: false,
+          kind: GridCellKind.Text,
+          displayData: '',
+          data: '',
+        }
+      }
 
-    return {
-      kind: GridCellKind.Text,
-      allowOverlay: false,
-      displayData: d,
-      data: d,
-    }
-  }, [])
+      const indexes: Array<keyof TableDataRow> = [
+        'attributeA',
+        'attributeB',
+        'attributeC',
+      ]
+
+      const d = dataRow[indexes[col]]
+
+      return {
+        kind: GridCellKind.Text,
+        allowOverlay: true,
+        displayData: d,
+        readonly: false,
+        data: d,
+      }
+    },
+    [rows, columns],
+  )
+
+  const onCellEdited = React.useCallback(
+    (cell: Item, newValue: EditableGridCell) => {
+      if (newValue.kind !== GridCellKind.Text) {
+        // we only have text cells, might as well just die here.
+        return
+      }
+
+      const indexes: Array<keyof TableDataRow> = [
+        'attributeA',
+        'attributeB',
+        'attributeC',
+      ]
+      const [col, row] = cell
+      const key = indexes[col]
+      setCellValue(newValue.data, row, key)
+    },
+    [rows, columns],
+  )
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -124,13 +167,17 @@ export default function TableBrowser(props: any): React.ReactElement {
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
-        <DataEditor
-          width={1200}
-          height={400}
-          getCellContent={getData}
-          columns={tableData.columns}
-          rows={tableData.rows.length}
-        />
+        <Button onClick={() => loadTableState()}>Load Table State</Button>
+        {rows.length > 0 && columns.length > 0 && (
+          <DataEditor
+            width={1200}
+            height={400}
+            getCellContent={getContent}
+            onCellEdited={onCellEdited}
+            columns={columns}
+            rows={rows.length}
+          />
+        )}
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
         <div>Edges</div>

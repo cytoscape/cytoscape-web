@@ -9,8 +9,6 @@ import VizmapperView from './VizmapperView'
 
 import { useWorkspaceStore, AppState } from '../hooks/useWorkspaceStore'
 
-import tableData from '../data/../../data/exampleTableState.json'
-
 export const WorkSpaceEditor: React.FC = () => {
   const { workspace, currentNetwork } = useWorkspaceStore(
     (state: AppState) => ({
@@ -43,7 +41,7 @@ export const WorkSpaceEditor: React.FC = () => {
           </Allotment>
         </Allotment.Pane>
         <Allotment.Pane minSize={38} preferredSize={38}>
-          <TableBrowser tableData={tableData} />
+          <TableBrowser />
         </Allotment.Pane>
       </Allotment>
     </Box>
