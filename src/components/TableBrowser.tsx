@@ -55,6 +55,8 @@ interface TableDataRow {
 }
 export default function TableBrowser(props: any): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
+  const [showSearch, setShowSearch] = React.useState(false)
+  const onSearchClose = React.useCallback(() => setShowSearch(false), [])
 
   const { rows, columns, loadTableState, setCellValue } = useTableStore(
     (state) => ({
@@ -168,8 +170,15 @@ export default function TableBrowser(props: any): React.ReactElement {
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
         <Button onClick={() => loadTableState()}>Load Table State</Button>
+        <Button onClick={() => setShowSearch(!showSearch)}>
+          Toggle Search
+        </Button>
+
         {rows.length > 0 && columns.length > 0 && (
           <DataEditor
+            keybindings={{ search: true }}
+            getCellsForSelection={true}
+            onSearchClose={onSearchClose}
             width={1200}
             height={400}
             getCellContent={getContent}
