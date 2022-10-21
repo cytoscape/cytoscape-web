@@ -1,6 +1,6 @@
 import * as React from 'react'
 import Box from '@mui/material/Box'
-import Cytoscape from 'cytoscape'
+import Cytoscape, { Core } from 'cytoscape'
 
 import {
   EdgeVisualPropertyName,
@@ -114,7 +114,7 @@ export default function NetworkRenderer(
   }, [networkView, network])
 
   React.useEffect(() => {
-    const cy = new Cytoscape({
+    const cy: Core = Cytoscape({
       container: cyContainer.current,
     })
     cy.resize()
