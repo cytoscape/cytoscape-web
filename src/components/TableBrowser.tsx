@@ -169,13 +169,24 @@ export default function TableBrowser(props: any): React.ReactElement {
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
-        <Button onClick={() => loadTableState()}>Load Table State</Button>
+        <Button onClick={() => loadTableState('small')}>
+          Load 1,000 Row Table
+        </Button>
+        <Button onClick={() => loadTableState('medium')}>
+          Load 10,000 Row Table
+        </Button>
+        <Button onClick={() => loadTableState('large')}>
+          Load 100,000 Row Table
+        </Button>
+
         <Button onClick={() => setShowSearch(!showSearch)}>
           Toggle Search
         </Button>
 
         {rows.length > 0 && columns.length > 0 && (
           <DataEditor
+            rowMarkers={'both'}
+            showSearch={showSearch}
             keybindings={{ search: true }}
             getCellsForSelection={true}
             onSearchClose={onSearchClose}
