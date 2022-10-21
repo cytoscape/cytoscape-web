@@ -1,5 +1,6 @@
 import { GraphObject } from "./GraphObject";
 
-export interface Node extends GraphObject {
-  name?: string;
-}
+/**
+ * Marker interface for nodes
+ */
+export interface Node extends GraphObject {}
