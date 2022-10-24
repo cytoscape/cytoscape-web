@@ -2,7 +2,7 @@ export const CoreAspectTag = {
   Nodes: 'nodes',
   Edges: 'edges',
   NetworkAttributes: 'networkAttributes',
-  AttributeDeclaration: 'attributeDeclaration',
+  AttributeDeclarations: 'attributeDeclarations',
   VisualProperties: 'visualProperties',
   MetaData: 'metaData',
 } as const

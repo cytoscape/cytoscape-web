@@ -11,6 +11,7 @@ import { Node } from './Cx2/CoreAspects/Node'
 import { Edge } from './Cx2/CoreAspects/Edge'
 import { Cx2Network } from './Cx2Network'
 import { MetaData, MetaDataValue } from './Cx2/MetaData'
+import { AttributeDeclarations } from './Cx2/CoreAspects/AttributeDeclarations'
 
 const isAspect = (aspect: Aspect | CxDescriptor): boolean => {
   const keys = Object.keys(aspect)
@@ -45,6 +46,29 @@ const getNetworkAttributes = (cx2: Cx2): NetworkAttributeValue[] => {
 
   const targetEntry: NetworkAttributes = filtered[0] as NetworkAttributes
   return targetEntry.networkAttributes
+}
+
+const getAttributeDeclarations = (cx2: Cx2): AttributeDeclarations => {
+  const filtered = cx2.filter((entry) => {
+    return entry.hasOwnProperty(CoreAspectTag.AttributeDeclarations)
+  })
+
+  if (filtered.length === 0) {
+    return {
+      attributeDeclarations: [
+        {
+          nodes: {},
+          edges: {},
+          networkAttributes: {},
+        },
+      ],
+    }
+  }
+
+  const targetEntry: AttributeDeclarations =
+    filtered[0] as AttributeDeclarations
+
+  return targetEntry
 }
 
 const getMetaData = (cx2: Cx2): MetaDataValue[] => {
@@ -132,4 +156,5 @@ export {
   getEdges,
   getMetaData,
   getNetworkAttributes,
+  getAttributeDeclarations,
 }
