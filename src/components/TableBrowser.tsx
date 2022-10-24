@@ -7,7 +7,6 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import { Button } from '@mui/material'
 
 import { useTableStore } from '../hooks/useTableStore'
-import { useModelTableStore } from '../hooks/useModelTableStore'
 import {
   DataEditor,
   GridCellKind,
@@ -67,15 +66,6 @@ export default function TableBrowser(props: any): React.ReactElement {
       setCellValue: state.setCellValue,
     }),
   )
-  const { table, loadDemoTable } = useModelTableStore((state) => ({
-    table: state.table,
-    loadDemoTable: state.loadDemoTable,
-  }))
-
-  const loadTable = async (): Promise<void> => {
-    await loadDemoTable()
-    console.log(table)
-  }
 
   const handleChange = (
     event: React.SyntheticEvent,
@@ -188,7 +178,6 @@ export default function TableBrowser(props: any): React.ReactElement {
         <Button onClick={() => loadTableState('large')}>
           Load 100,000 Row Table
         </Button>
-        {/* <Button onClick={() => loadTable()}>Load NDEx Network Table</Button> */}
 
         <Button onClick={() => setShowSearch(!showSearch)}>
           Toggle Search
