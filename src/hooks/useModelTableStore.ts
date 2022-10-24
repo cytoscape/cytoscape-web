@@ -4,6 +4,7 @@ import produce from 'immer'
 import * as NetworkFn from '../newModels/Network/network-functions'
 import { Network } from '../newModels/Network'
 import { Table } from '../newModels/Table'
+import { Column } from '../newModels/Table/Column'
 
 import { Cx2 } from '../utils/cx/Cx2'
 
@@ -21,8 +22,13 @@ const fetchNetwork = async (): Promise<[Network, Table]> => {
   return netAndTable
 }
 
+interface DerivedColumn extends Column {
+  title: string
+}
+
 interface TableState {
   table: Table
+  derivedColumns: DerivedColumn[]
   loadDemoTable: () => Promise<void>
   setCellValue: (newValue: string, row: number, key: string) => void
 }
@@ -34,13 +40,19 @@ export const useModelTableStore = create((set, get: () => TableState) => {
       rows: [],
       columns: [],
     },
+    derivedColumns: [],
     loadDemoTable: async (): Promise<void> => {
       const result = await fetchNetwork()
       const table = result[1]
-      console.log(table)
       set(
         produce((state) => {
           state.table = table
+          state.derivedColumns = table.columns.map((c) => {
+            return {
+              ...c,
+              title: c.id,
+            }
+          })
         }),
       )
     },

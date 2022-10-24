@@ -6,13 +6,21 @@ import { Node } from './Node'
 import { Edge } from './Edge'
 import { GraphStore } from './GraphStore'
 import { Core } from 'cytoscape'
+
+import { Table } from '../Table'
+import { Column } from '../Table/Column'
+import { Row } from '../Table/Row'
+import { RowData } from '../Table/RowData'
+
+import { addColumn, addRow, createTable } from '../Table/table-functions'
+
+import * as cxUtil from '../../utils/cx/cx2-util'
+import { AttributeDeclarations } from '../../utils/cx/Cx2/CoreAspects/AttributeDeclarations'
+import { AttributeValue } from '../../utils/cx/Cx2/CoreAspects/AttributeValue'
 import { Cx2 } from '../../utils/cx/Cx2'
 import { Node as CxNode } from '../../utils/cx/Cx2/CoreAspects/Node'
 import { Edge as CxEdge } from '../../utils/cx/Cx2/CoreAspects/Edge'
-
-import * as cxUtil from '../../utils/cx/cx2-util'
-import { Table } from '../Table'
-import { createTable } from '../Table/table-functions'
+import { Attribute } from '../../utils/cx/Cx2/CoreAspects/Attribute'
 
 const GroupType = { Nodes: 'nodes', Edges: 'edges' } as const
 type GroupType = typeof GroupType[keyof typeof GroupType]
@@ -36,12 +44,45 @@ export const createNetworkFromCx = (cx: Cx2, id?: IdType): [Network, Table] => {
   const network: Network = createNetwork(id ?? 'network')
   const table: Table = createTable(id ?? 'table')
 
+  // get all attributes and create columns
+  const attributeDeclarations: AttributeDeclarations =
+    cxUtil.getAttributeDeclarations(cx)
+
+  const nodeColumns: Column[] = Object.keys(
+    attributeDeclarations.attributeDeclarations[0].nodes,
+  )
+    .filter((key: string) => !key.startsWith('__'))
+    .map((key: string) => {
+      const attribute: AttributeValue =
+        attributeDeclarations.attributeDeclarations[0].nodes[key]
+
+      return {
+        id: attribute.a ?? key,
+        name: attribute.a ?? key,
+        type: attribute.d,
+      }
+    })
+  addColumn(table, nodeColumns)
+
+  const nodeRows: Row[] = []
+
   cxNodes.forEach((node: CxNode) => {
     const newNode: Node = {
       id: node.id.toString(),
     }
+
+    // extract node attributes and create row
+    const nodeAttrs: Attribute | undefined = node.v
+    const rowData: RowData = {}
+    if (nodeAttrs != null) {
+      nodeColumns.forEach((column: Column) => {
+        rowData[column.id] = nodeAttrs[column.id]
+      })
+    }
+    nodeRows.push({ key: `${node.id}`, data: rowData })
     addNode(network, newNode)
   })
+  addRow(table, nodeRows)
 
   cxEdges.forEach((edge: CxEdge) => {
     const newEdge: Edge = {

@@ -6,7 +6,6 @@ import Box from '@mui/material/Box'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import { Button } from '@mui/material'
 
-import { useTableStore } from '../hooks/useTableStore'
 import { useModelTableStore } from '../hooks/useModelTableStore'
 import {
   DataEditor,
@@ -59,22 +58,16 @@ export default function TableBrowser(props: any): React.ReactElement {
   const [showSearch, setShowSearch] = React.useState(false)
   const onSearchClose = React.useCallback(() => setShowSearch(false), [])
 
-  const { rows, columns, loadTableState, setCellValue } = useTableStore(
-    (state) => ({
-      rows: state.rows,
-      columns: state.columns,
-      loadTableState: state.loadTableState,
+  const { table, derivedColumns, loadDemoTable, setCellValue } =
+    useModelTableStore((state) => ({
+      table: state.table,
+      derivedColumns: state.derivedColumns,
+      loadDemoTable: state.loadDemoTable,
       setCellValue: state.setCellValue,
-    }),
-  )
-  const { table, loadDemoTable } = useModelTableStore((state) => ({
-    table: state.table,
-    loadDemoTable: state.loadDemoTable,
-  }))
+    }))
 
   const loadTable = async (): Promise<void> => {
     await loadDemoTable()
-    console.log(table)
   }
 
   const handleChange = (
@@ -87,7 +80,7 @@ export default function TableBrowser(props: any): React.ReactElement {
   const getContent = React.useCallback(
     (cell: Item): GridCell => {
       const [col, row] = cell
-      const dataRow = rows[row]
+      const dataRow = table.rows[row]
 
       if (dataRow == null) {
         return {
@@ -99,23 +92,21 @@ export default function TableBrowser(props: any): React.ReactElement {
         }
       }
 
-      const indexes: Array<keyof TableDataRow> = [
-        'attributeA',
-        'attributeB',
-        'attributeC',
-      ]
+      const indexes = derivedColumns.map((c) => c.id)
 
-      const d = dataRow[indexes[col]]
+      const d = dataRow.data[indexes[col]] as string
+
+      const strData = Array.isArray(d) ? d.join(', ') : `${d}`
 
       return {
         kind: GridCellKind.Text,
         allowOverlay: true,
-        displayData: d,
+        displayData: strData,
         readonly: false,
-        data: d,
+        data: strData,
       }
     },
-    [rows, columns],
+    [table.rows, derivedColumns],
   )
 
   const onCellEdited = React.useCallback(
@@ -134,7 +125,7 @@ export default function TableBrowser(props: any): React.ReactElement {
       const key = indexes[col]
       setCellValue(newValue.data, row, key)
     },
-    [rows, columns],
+    [table.rows, derivedColumns],
   )
 
   return (
@@ -179,22 +170,15 @@ export default function TableBrowser(props: any): React.ReactElement {
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
-        <Button onClick={() => loadTableState('small')}>
-          Load 1,000 Row Table
+        <Button onClick={() => loadTable()}>
+          Load NDEx Network Table (editing not implemented yet)
         </Button>
-        <Button onClick={() => loadTableState('medium')}>
-          Load 10,000 Row Table
-        </Button>
-        <Button onClick={() => loadTableState('large')}>
-          Load 100,000 Row Table
-        </Button>
-        {/* <Button onClick={() => loadTable()}>Load NDEx Network Table</Button> */}
 
         <Button onClick={() => setShowSearch(!showSearch)}>
           Toggle Search
         </Button>
 
-        {rows.length > 0 && columns.length > 0 && (
+        {table.rows.length > 0 && derivedColumns.length > 0 && (
           <DataEditor
             rowMarkers={'both'}
             showSearch={showSearch}
@@ -205,8 +189,8 @@ export default function TableBrowser(props: any): React.ReactElement {
             height={400}
             getCellContent={getContent}
             onCellEdited={onCellEdited}
-            columns={columns}
-            rows={rows.length}
+            columns={derivedColumns}
+            rows={table.rows.length}
           />
         )}
       </TabPanel>

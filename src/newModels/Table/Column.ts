@@ -1,5 +1,5 @@
-import { IdType } from "../IdType"
-import { ValueTypeName } from "./ValueTypeName"
+import { IdType } from '../IdType'
+import { ValueTypeName } from './ValueTypeName'
 
 export interface Column {
   readonly id: IdType
