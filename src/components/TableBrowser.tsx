@@ -188,7 +188,7 @@ export default function TableBrowser(props: any): React.ReactElement {
         <Button onClick={() => loadTableState('large')}>
           Load 100,000 Row Table
         </Button>
-        <Button onClick={() => loadTable()}>Load NDEx Network Table</Button>
+        {/* <Button onClick={() => loadTable()}>Load NDEx Network Table</Button> */}
 
         <Button onClick={() => setShowSearch(!showSearch)}>
           Toggle Search
