@@ -1,7 +1,6 @@
 import { Network } from '.'
 import { IdType } from '../IdType'
 
-// @ts-ignore
 import * as cytoscape from 'cytoscape'
 import { Node } from './Node'
 import { Edge } from './Edge'
@@ -34,8 +33,8 @@ export const createNetwork = (id: IdType): Network => {
 export const createNetworkFromCx = (cx: Cx2, id?: IdType): [Network, Table] => {
   const cxNodes: CxNode[] = cxUtil.getNodes(cx)
   const cxEdges: CxEdge[] = cxUtil.getEdges(cx)
-  const network: Network = createNetwork(id || 'network')
-  const table: Table = createTable(id || 'table')
+  const network: Network = createNetwork(id ?? 'network')
+  const table: Table = createTable(id ?? 'table')
 
   cxNodes.forEach((node: CxNode) => {
     const newNode: Node = {
@@ -46,10 +45,10 @@ export const createNetworkFromCx = (cx: Cx2, id?: IdType): [Network, Table] => {
 
   cxEdges.forEach((edge: CxEdge) => {
     const newEdge: Edge = {
-      id: edge.id.toString() as IdType,
-      s: edge.s.toString() as IdType,
-      t: edge.t.toString() as IdType,
-    } as Edge
+      id: edge.id.toString(),
+      s: edge.s.toString(),
+      t: edge.t.toString(),
+    }
     addEdge(network, newEdge)
   })
 
@@ -88,29 +87,24 @@ export const addEdge = (network: Network, edge: Edge): Network => {
 }
 const toEdgeData = (edge: Edge): any => {
   return {
-    id: edge.id as IdType,
-    source: edge.s as IdType,
-    target: edge.t as IdType,
+    id: edge.id,
+    source: edge.s,
+    target: edge.t,
   }
 }
 
 export const nodes = (network: Network): Node[] => {
   const cyNetwork = network as Network & GraphStore<any>
 
-  return cyNetwork.store
-    .nodes()
-    .map((node: any) => ({ id: node.data('id') } as Node))
+  return cyNetwork.store.nodes().map((node: any) => ({ id: node.data('id') }))
 }
 
 export const edges = (network: Network): Edge[] => {
   const cyNetwork = network as Network & GraphStore<any>
 
-  return cyNetwork.store.edges().map(
-    (edge: any) =>
-      ({
-        id: edge.data('id'),
-        s: edge.data('source'),
-        t: edge.data('target'),
-      } as Edge),
-  )
+  return cyNetwork.store.edges().map((edge: any) => ({
+    id: edge.data('id'),
+    s: edge.data('source'),
+    t: edge.data('target'),
+  }))
 }

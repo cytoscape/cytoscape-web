@@ -1,6 +1,9 @@
 import { Cx2 } from './Cx2'
 import { Aspect } from './Cx2/Aspect'
-import { NetworkAttributeValue } from './Cx2/CoreAspects/NetworkAttributes'
+import {
+  NetworkAttributeValue,
+  NetworkAttributes,
+} from './Cx2/CoreAspects/NetworkAttributes'
 import { CoreAspectTag } from './Cx2/CoreAspectTag'
 import { CxDescriptor } from './Cx2/CxDescriptor'
 import { NiceCx } from './Cx2/NiceCx'
@@ -8,7 +11,6 @@ import { Node } from './Cx2/CoreAspects/Node'
 import { Edge } from './Cx2/CoreAspects/Edge'
 import { Cx2Network } from './Cx2Network'
 import { MetaData, MetaDataValue } from './Cx2/MetaData'
-import { NetworkAttributes } from './Cx2/CoreAspects/NetworkAttributes'
 
 const isAspect = (aspect: Aspect | CxDescriptor): boolean => {
   const keys = Object.keys(aspect)
@@ -33,7 +35,7 @@ const getAspect = (cx2: Cx2, aspectTag: string): object[] => {
 }
 
 const getNetworkAttributes = (cx2: Cx2): NetworkAttributeValue[] => {
-  const filtered = cx2.filter(entry => {
+  const filtered = cx2.filter((entry) => {
     return entry.hasOwnProperty(CoreAspectTag.NetworkAttributes)
   })
 
@@ -46,7 +48,7 @@ const getNetworkAttributes = (cx2: Cx2): NetworkAttributeValue[] => {
 }
 
 const getMetaData = (cx2: Cx2): MetaDataValue[] => {
-  const filtered = cx2.filter(entry => {
+  const filtered = cx2.filter((entry) => {
     return entry.hasOwnProperty(CoreAspectTag.MetaData)
   })
 
@@ -123,4 +125,11 @@ const toNiceCx = (cx2: Cx2): NiceCx => {
   return niceCx
 }
 
-export { toNiceCx, toCx2Network, getNodes, getEdges, getMetaData, getNetworkAttributes }
+export {
+  toNiceCx,
+  toCx2Network,
+  getNodes,
+  getEdges,
+  getMetaData,
+  getNetworkAttributes,
+}
