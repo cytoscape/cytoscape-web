@@ -40,7 +40,7 @@ export const WorkSpaceEditor: React.FC = () => {
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>
-        <Allotment.Pane minSize={38} preferredSize={38}>
+        <Allotment.Pane minSize={38} preferredSize={150}>
           <TableBrowser />
         </Allotment.Pane>
       </Allotment>
