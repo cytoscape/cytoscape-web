@@ -1,4 +1,4 @@
 /**
- * Workscpace-unique ID for all objects
+ * Workscpace-unique ID for nodes, edges, networks.
  */
 export type IdType = string
