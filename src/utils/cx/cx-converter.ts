@@ -1,5 +1,5 @@
-import { Network } from "../../newModels/Network"
-import * as NetFn from "../../newModels/Network/network-functions"
+import { Network } from "../../newModels/NetworkModel"
+import * as NetFn from "../../newModels/NetworkModel/impl/network-functions"
 import { Cx2 } from "./Cx2"
 import * as cxUtil from "./cx2-util"
 import { Node as CxNode } from "./Cx2/CoreAspects/Node"

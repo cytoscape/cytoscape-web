@@ -5,7 +5,5 @@ import { IdType } from '../IdType'
  * Will be used as a wrapper for the external graph implementation
  */
 export interface Network {
-  id: IdType
+  readonly id: IdType
 }
-
-
