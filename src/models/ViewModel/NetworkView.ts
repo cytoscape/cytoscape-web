@@ -1,8 +1,17 @@
+import { IdType } from '../IdType'
+import { EdgeView } from './EdgeView'
+import { NodeView } from './NodeView'
+
+export interface NetworkView {
+  id: IdType // ID of the associated network
+  nodeViews: NodeView[]
+  edgeViews: EdgeView[]
+}
+
 // import { VisualStyle } from './Style'
 // import { Network } from './Network'
 // import { Node } from './Network/Node'
 // import { Edge } from './Network/Edge'
-// import { IdType } from './IdType'
 // export interface Position {
 //   x: number
 //   y: number

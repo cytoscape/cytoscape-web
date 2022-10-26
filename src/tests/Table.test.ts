@@ -1,18 +1,18 @@
-import { IdType } from '../newModels/IdType'
+import { IdType } from '../models/IdType'
 import TableFn, {
   AttributeName,
   Column,
   Table,
   ValueType,
   ValueTypeName,
-} from '../newModels/TableModel'
-import { Network } from '../newModels/NetworkModel'
-import { Node } from '../newModels/NetworkModel/Node'
+} from '../models/TableModel'
+import { Network } from '../models/NetworkModel'
+import { Node } from '../models/NetworkModel/Node'
 
 import 'isomorphic-fetch'
 import { Cx2 } from '../utils/cx/Cx2'
 import * as cxUtil from '../utils/cx/cx2-util'
-import { Edge } from '../newModels/NetworkModel/Edge'
+import { Edge } from '../models/NetworkModel/Edge'
 
 test('create an empty Table', () => {
   const tableId1: IdType = 'table1'

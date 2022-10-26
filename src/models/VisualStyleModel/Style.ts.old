@@ -20,8 +20,8 @@
 //   map: (value: T) => K
 // }
 
-// export interface VisualStyle {
-//   name: string
-//   defaults: VisualProperty<any>[]
-//   mappings: VisualMappingFunction<any, any>[]
-// }
+export interface VisualStyle {
+  name: string
+  // defaults: VisualProperty<any>[]
+  // mappings: VisualMappingFunction<any, any>[]
+}

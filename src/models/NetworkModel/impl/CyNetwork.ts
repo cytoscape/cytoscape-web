@@ -64,6 +64,14 @@ export const nodes = (network: Network): Node[] => {
   }))
 }
 
+export const nodeTable = (network: Network): Table => {
+  return (network as CyNetwork).nodeTable
+}
+
+export const edgeTable = (network: Network): Table => {
+  return (network as CyNetwork).edgeTable
+}
+
 /**
  *
  * @returns Initialize Cytoscape

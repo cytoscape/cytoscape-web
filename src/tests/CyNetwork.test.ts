@@ -1,4 +1,4 @@
-import NetworkFn, { Network, Node, Edge } from '../newModels/NetworkModel'
+import NetworkFn, { Network, Node, Edge } from '../models/NetworkModel'
 
 import 'isomorphic-fetch'
 
