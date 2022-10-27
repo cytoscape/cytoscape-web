@@ -5,6 +5,6 @@ import { ValueTypeName } from './ValueTypeName'
 
 export interface Table {
   readonly id: IdType
-  columns: Map<AttributeName, ValueTypeName>
-  rows: Map<IdType, Record<AttributeName, ValueType>>
+  readonly columns: Map<AttributeName, ValueTypeName>
+  readonly rows: Map<IdType, Record<AttributeName, ValueType>>
 }

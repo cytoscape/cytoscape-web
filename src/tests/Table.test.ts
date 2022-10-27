@@ -13,6 +13,8 @@ import 'isomorphic-fetch'
 import { Cx2 } from '../utils/cx/Cx2'
 import * as cxUtil from '../utils/cx/cx2-util'
 import { Edge } from '../models/NetworkModel/Edge'
+import { CxValue } from '../utils/cx/Cx2/CxValue'
+import { tableBodyClasses } from '@mui/material'
 
 test('create an empty Table', () => {
   const tableId1: IdType = 'table1'
@@ -47,7 +49,27 @@ test('load CX and crfeate node/edge tables', async () => {
   expect(Array.isArray(nodes)).toBe(true)
   expect(Array.isArray(edges)).toBe(true)
 
-  const nodeAttributes = cxUtil.getNodeAttributes(cx)
+  const nodeAttributes: Map<
+    string,
+    Record<string, CxValue>
+  > = cxUtil.getNodeAttributes(cx)
 
-  console.log(nodeAttributes)
+  const table = TableFn.createTable('table2')
+
+  const attrLength = nodeAttributes.size
+
+  TableFn.insertRows(
+    table,
+    [...nodeAttributes.keys()].map((id) => [
+      id,
+      nodeAttributes.get(id) as Record<string, ValueType>,
+    ]),
+  )
+
+  expect(table.rows.size).toBe(attrLength)
+  expect(table.rows.size).toBe(nodes.length)
+  const node1 = nodes[0]
+  const attr1 = table.rows.get(node1.id.toString())
+  expect(attr1).toBeDefined()
+  console.log(attr1)
 })

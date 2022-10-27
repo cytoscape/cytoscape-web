@@ -91,19 +91,35 @@ const getNodes = (cx2: Cx2): Node[] => {
   return getAspect(cx2, CoreAspectTag.Nodes) as Node[]
 }
 
-const getNodeAttributes = (cx2: Cx2): Map<string, Record<string, CxValue>> => {
-  const nodes: Node[] = getNodes(cx2)
-  const nodeAttr = new Map<string, Record<string, CxValue>>()
+type ObjType = 'node' | 'edge'
 
-  nodes.forEach((node: Node) => {
-    const attr: Attribute | undefined = node.v
+const getAttributes = (
+  cx2: Cx2,
+  type: ObjType,
+): Map<string, Record<string, CxValue>> => {
+  let objs: Node[] | Edge[] = []
+  if (type === 'node') {
+    objs = getNodes(cx2)
+  } else if (type === 'edge') {
+    objs = getEdges(cx2)
+  }
+
+  const attrs = new Map<string, Record<string, CxValue>>()
+
+  objs.forEach((obj: Node | Edge) => {
+    const attr: Attribute | undefined = obj.v
     if (attr) {
-      nodeAttr.set(node.id.toString(), attr)
+      attrs.set(obj.id.toString(), attr)
     }
   })
 
-  return nodeAttr
+  return attrs
 }
+
+const getNodeAttributes = (cx2: Cx2): Map<string, Record<string, CxValue>> =>
+  getAttributes(cx2, 'node')
+const getEdgeAttributes = (cx2: Cx2): Map<string, Record<string, CxValue>> =>
+  getAttributes(cx2, 'edge')
 
 const getEdges = (cx2: Cx2): Edge[] => {
   return getAspect(cx2, CoreAspectTag.Edges) as Edge[]
@@ -174,4 +190,5 @@ export {
   getNetworkAttributes,
   getAttributeDeclarations,
   getNodeAttributes,
+  getEdgeAttributes,
 }
