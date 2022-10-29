@@ -32,8 +32,8 @@ class CyNetwork implements Network {
   constructor(id: IdType, nodeTable?: Table, edgeTable?: Table) {
     this.id = id
     this._store = createCyDataStore()
-    this._nodeTable = nodeTable || TableFn.createTable(id)
-    this._edgeTable = edgeTable || TableFn.createTable(id)
+    this._nodeTable = nodeTable ?? TableFn.createTable(id)
+    this._edgeTable = edgeTable ?? TableFn.createTable(id)
     this._netAttributes = { id, attributes: {} }
   }
 
@@ -132,7 +132,7 @@ export const edgeTable = (network: Network): Table => {
  * @returns Network instance
  */
 export const createNetworkFromCyjs = (id: IdType, cyjs: any): Network => {
-  //TODO: Implement
+  // TODO: Implement
   const network = createNetwork(id)
   return network
 }
@@ -148,14 +148,30 @@ export const createFromSif = (
   return network
 }
 
-const createCyNode = (nodeId: IdType) => {
+interface CyNode {
+  group: GroupType
+  data: {
+    id: IdType
+  }
+}
+
+interface CyEdge {
+  group: GroupType
+  data: {
+    id: IdType
+    source: IdType
+    target: IdType
+  }
+}
+
+const createCyNode = (nodeId: IdType): CyNode => {
   return {
     group: GroupType.Nodes,
     data: { id: nodeId },
   }
 }
 
-const createCyEdge = (id: IdType, source: IdType, target: IdType) => ({
+const createCyEdge = (id: IdType, source: IdType, target: IdType): CyEdge => ({
   group: GroupType.Edges,
   data: {
     id,
@@ -194,12 +210,8 @@ export const addNodeRow = (
 ): Network => {
   const cyGraph = network as CyNetwork
   const store = cyGraph.store
-  const nodeTable = cyGraph.nodeTable
   const node = createCyNode(newNodeId)
   store.add(node)
-  if (row) {
-    // TableFn.addRow(nodeTable, row)
-  }
   return network
 }
 
@@ -207,7 +219,7 @@ export const addNodesWithRows = (
   network: Network,
   nodes:
     | [Node, Record<AttributeName, ValueType>?]
-    | [Node, Record<AttributeName, ValueType>?][],
+    | Array<[Node, Record<AttributeName, ValueType>?]>,
 ): Network => {
   const cyGraph = network as CyNetwork
   const nodeTable = cyGraph.nodeTable
@@ -219,11 +231,7 @@ export const addNodesWithRows = (
     store.add(createCyNode(nodeId))
 
     const row: Record<AttributeName, ValueType> = nodes[1]
-    if (row) {
-      TableFn.insertRow(nodeTable, [nodeId, row])
-    }
-  } else {
-    // store.add(nodes.map((node: Node) => newNode(node.id)))
+    TableFn.insertRow(nodeTable, [nodeId, row])
   }
 
   return network
