@@ -2,7 +2,7 @@ import * as React from 'react'
 import Box from '@mui/material/Box'
 
 // import { AppContext } from '../states/AppStateProvider'
-import { VisualStyle } from '../models/Style'
+import { VisualStyle } from '../models/VisualStyleModel'
 
 interface VizmmaperView {
   networkStyle: VisualStyle

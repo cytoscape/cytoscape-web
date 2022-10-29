@@ -7,7 +7,7 @@ import {
   serializeWorkspace,
   Workspace,
   // Workspace,
-} from '../models'
+} from '../models/WorkspacedModel'
 
 import exampleData from '../../data/exampleAppState.json'
 

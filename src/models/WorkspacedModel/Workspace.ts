@@ -1,8 +1,9 @@
 import { NetworkSummary } from './NetworkSummary'
 
 export interface Workspace {
+  name: string
   currentNetworkId: string
-  networks: NetworkSummary[]
+  networkSummaries: NetworkSummary[]
   oprions: any // ???
 
   // Add more fields here...

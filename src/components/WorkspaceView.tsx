@@ -1,4 +1,4 @@
-import * as React from 'react'
+import { ReactElement } from 'react'
 import Box from '@mui/material/Box'
 import Container from '@mui/material/Container'
 import Button from '@mui/material/Button'
@@ -6,8 +6,9 @@ import { Typography } from '@mui/material'
 
 import AddIcon from '@mui/icons-material/Add'
 
-import { NetworkSummary, Workspace } from '../models'
+import { NetworkSummary, Workspace } from '../models/WorkspacedModel'
 import { useWorkspaceStore, AppState } from '../hooks/useWorkspaceStore'
+
 interface WorkspaceViewProps {
   workspace: Workspace
 }
@@ -17,14 +18,12 @@ interface NetworkSummaryViewProps {
   selected: boolean
 }
 
-function NetworkSummaryView(
-  props: NetworkSummaryViewProps,
-): React.ReactElement {
+function NetworkSummaryView(props: NetworkSummaryViewProps): ReactElement {
   const { networkSummary, selected } = props
 
   const setNetwork = useWorkspaceStore((state: AppState) => state.setNetwork)
 
-  const onNetworkSummaryClick = (): void => setNetwork(networkSummary.uuid)
+  const onNetworkSummaryClick = (): void => setNetwork(networkSummary.id)
   return (
     <Box
       sx={{
@@ -35,7 +34,7 @@ function NetworkSummaryView(
       onClick={onNetworkSummaryClick}
     >
       <Box>{networkSummary.name}</Box>
-      <Box>{networkSummary.modifiedAt}</Box>
+      <Box>{networkSummary.modifiedAt.toLocaleDateString()}</Box>
     </Box>
   )
 }
@@ -69,8 +68,8 @@ export default function WorkspaceView(
         {workspace.networkSummaries.map((networkSummary) => (
           <NetworkSummaryView
             networkSummary={networkSummary}
-            selected={networkSummary.uuid === workspace.currentNetworkUUID}
-            key={networkSummary.uuid}
+            selected={networkSummary.id === workspace.currentNetworkId}
+            key={networkSummary.id}
           />
         ))}
       </Box>

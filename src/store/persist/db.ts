@@ -1,9 +1,12 @@
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
-import { IdType } from '../../models/IdType'
-
 import { Network } from '../../models/NetworkModel'
-import { Table, ValueType } from '../../models/TableModel'
 
+/**
+ * TODO: we need a schema for indexes
+ *  - name
+ *  - n
+ *  - description
+ */
 export class CyDB extends Dexie {
   cyNetworks!: DxTable<Network>
   cyTables!: DxTable<any>

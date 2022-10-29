@@ -5,5 +5,7 @@
 import { Network } from '../models/NetworkModel'
 
 export const useNetwork = (url: string): Network => {
-  return {} as Network
+  return {
+    id: url,
+  }
 }

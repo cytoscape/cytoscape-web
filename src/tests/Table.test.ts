@@ -1,20 +1,14 @@
+import 'isomorphic-fetch'
+
 import { IdType } from '../models/IdType'
 import TableFn, {
   AttributeName,
-  Column,
-  Table,
   ValueType,
   ValueTypeName,
 } from '../models/TableModel'
-import { Network } from '../models/NetworkModel'
-import { Node } from '../models/NetworkModel/Node'
-
-import 'isomorphic-fetch'
 import { Cx2 } from '../utils/cx/Cx2'
 import * as cxUtil from '../utils/cx/cx2-util'
-import { Edge } from '../models/NetworkModel/Edge'
 import { CxValue } from '../utils/cx/Cx2/CxValue'
-import { tableBodyClasses } from '@mui/material'
 
 test('create an empty Table', () => {
   const tableId1: IdType = 'table1'

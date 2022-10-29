@@ -108,7 +108,7 @@ const getAttributes = (
 
   objs.forEach((obj: Node | Edge) => {
     const attr: Attribute | undefined = obj.v
-    if (attr) {
+    if (attr !== undefined && attr !== null) {
       attrs.set(obj.id.toString(), attr)
     }
   })

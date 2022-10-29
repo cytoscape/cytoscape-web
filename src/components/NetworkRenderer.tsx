@@ -6,12 +6,12 @@ import {
   EdgeVisualPropertyName,
   NetworkView,
   NodeVisualPropertyName,
-} from '../models/NetworkView'
-import { NetworkModel } from '../models/Network'
+} from '../models/ViewModel'
+import NetworkFn, { Network, Node } from '../models/NetworkModel'
 
 interface NetworkRendererProps {
   networkView: NetworkView
-  network: NetworkModel
+  network: Network
 }
 
 const visualStyle2CyJsStyle = (
@@ -51,7 +51,7 @@ export default function NetworkRenderer(
     if (cy != null) {
       cy.startBatch()
       cy.remove('*')
-      network.nodes.forEach((node) => {
+      NetworkFn.nodes(network).forEach((node: Node) => {
         cy.add({
           group: 'nodes',
           data: {

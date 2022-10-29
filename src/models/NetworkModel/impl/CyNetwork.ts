@@ -1,5 +1,5 @@
 import { IdType } from '../../IdType'
-import TableFn, { AttributeName, Row, Table, ValueType } from '../../TableModel'
+import TableFn, { AttributeName, Table, ValueType } from '../../TableModel'
 import { Network, Node, Edge, NetworkAttributes } from '..'
 
 import { Cx2 } from '../../../utils/cx/Cx2'
