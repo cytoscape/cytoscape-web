@@ -15,8 +15,8 @@ export const createTable = (id: IdType): Table => ({
 })
 
 export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
-  const nodeTable = createTable(id)
-  const edgeTable = createTable(id)
+  const nodeTable = createTable(`${id}-nodes`)
+  const edgeTable = createTable(`${id}-edges`)
 
   const nodeAttr: Map<
     string,

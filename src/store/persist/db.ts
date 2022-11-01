@@ -1,5 +1,5 @@
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
-import { Network } from '../../models/NetworkModel'
+import NetworkFn, { Network, Node, Edge } from '../../models/NetworkModel'
 
 /**
  * TODO: we need a schema for indexes
@@ -8,7 +8,7 @@ import { Network } from '../../models/NetworkModel'
  *  - description
  */
 export class CyDB extends Dexie {
-  cyNetworks!: DxTable<Network>
+  cyNetworks!: DxTable<any>
   cyTables!: DxTable<any>
 
   constructor(dbName: string) {
@@ -23,19 +23,12 @@ export class CyDB extends Dexie {
 export const db = new CyDB('cyDB')
 
 export const addNetwork = async (network: Network): Promise<IndexableType> => {
-  // @ts-ignore
-  const networkStore = network.store as cytoscape.Core
+  const nodes: Node[] = NetworkFn.nodes(network)
+  const edges: Edge[] = NetworkFn.edges(network)
 
   return await db.cyNetworks.add({
     id: network.id,
-    // @ts-ignore
-    nodes: networkStore.nodes().map((n) => ({
-      id: n.id(),
-    })),
-    edges: networkStore.edges().map((e) => ({
-      id: e.id(),
-      s: e.source().id(),
-      t: e.target().id(),
-    })),
+    nodes,
+    edges,
   })
 }

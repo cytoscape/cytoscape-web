@@ -115,6 +115,16 @@ export const nodes = (network: Network): Node[] => {
   }))
 }
 
+export const edges = (network: Network): Edge[] => {
+  const cyGraph = network as CyNetwork
+  const store = cyGraph.store
+  return store.edges().map((edge) => ({
+    id: edge.id(),
+    s: edge.source().id(),
+    t: edge.target().id(),
+  }))
+}
+
 export const nodeTable = (network: Network): Table => {
   return (network as CyNetwork).nodeTable
 }
