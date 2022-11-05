@@ -1,6 +1,6 @@
 import { ReactElement, useEffect } from 'react'
 import { Network } from '../../models/NetworkModel'
-import { useNdexNetwork } from '../../store/useNetwork'
+import { useNdexNetwork, networkFetcher } from '../../store/useNetwork'
 
 const BASE_URL = 'https://public.ndexbio.org/v3/networks'
 
@@ -14,7 +14,11 @@ interface NetworkViewerProps {
  * @returns
  */
 export const NetworkViewer = ({ uuid }: NetworkViewerProps): ReactElement => {
-  const network: Network = useNdexNetwork(uuid, `${BASE_URL}/${uuid}`)
+  const network: Network = useNdexNetwork(
+    uuid,
+    `${BASE_URL}/${uuid}`,
+    networkFetcher,
+  )
 
   useEffect(() => {
     console.log('Viewer Initialised:', uuid)

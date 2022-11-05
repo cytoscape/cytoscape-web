@@ -21,7 +21,12 @@ export const NetworkPanel = ({ uuids }: NetworkPanelProps): JSX.Element => {
       <h1>Multiple Netowrks</h1>
       {/* <button onClick={handleUpdate}>Add Node</button> */}
       {uuids.map((uuid) => (
-        <Suspense fallback={<div>Loading Network {uuid}...</div>} key={uuid}>
+        <Suspense
+          fallback={
+            <div style={{ color: 'red' }}>Loading Network {uuid}...</div>
+          }
+          key={uuid}
+        >
           <NetworkViewer key={uuid} uuid={uuid} />
         </Suspense>
       ))}
