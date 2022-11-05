@@ -49,6 +49,20 @@ class CyNetwork implements Network {
     return this._edgeTable
   }
 
+  get nodes(): Node[] {
+    return this._store.nodes().map((node) => ({
+      id: node.id(),
+    }))
+  }
+
+  get edges(): Edge[] {
+    return this._store.edges().map((edge) => ({
+      id: edge.id(),
+      s: edge.source().id(),
+      t: edge.target().id(),
+    }))
+  }
+
   get netAttributes(): NetworkAttributes {
     return this._netAttributes
   }
@@ -65,6 +79,7 @@ class CyNetwork implements Network {
 const createCyDataStore = (): Core =>
   cytoscape({
     headless: true,
+    styleEnabled: false,
   })
 
 /**
@@ -105,6 +120,34 @@ export const createNetworkFromCx = (cx: Cx2, id: IdType): Network => {
   )
 
   return cyNet
+}
+
+export const createFromCyJson = (id: IdType, cyJson: object): Network => {
+  const nodeTable = TableFn.createTable(id)
+  const edgeTable = TableFn.createTable(id)
+  const cyNet: CyNetwork = new CyNetwork(id, nodeTable, edgeTable)
+  cyNet.store.json(cyJson)
+  return cyNet
+}
+
+export const createNetworkFromLists = (
+  id: IdType,
+  nodes: Node[],
+  edges: Edge[],
+): Network => {
+  const cyNet: Network = new CyNetwork(id)
+  addNodes(
+    cyNet,
+    nodes.map((node) => node.id),
+  )
+  addEdges(cyNet, edges)
+  return cyNet
+}
+
+export const createCyJSON = (network: Network): object => {
+  const cyGraph = network as CyNetwork
+  const store = cyGraph.store
+  return store.json()
 }
 
 export const nodes = (network: Network): Node[] => {
@@ -199,7 +242,13 @@ const createCyEdge = (id: IdType, source: IdType, target: IdType): CyEdge => ({
 export const addNode = (network: Network, nodeId: IdType): Network => {
   const cyNet: CyNetwork = network as CyNetwork
   cyNet.store.add(createCyNode(nodeId))
-  return network
+  return cyNet
+}
+
+export const deleteNode = (network: Network, nodeId: IdType): Network => {
+  const cyNet: CyNetwork = network as CyNetwork
+  cyNet.store.remove(nodeId)
+  return cyNet
 }
 
 export const addNodes = (network: Network, nodeIds: IdType[]): Network => {
@@ -209,7 +258,14 @@ export const addNodes = (network: Network, nodeIds: IdType[]): Network => {
 }
 
 export const addEdge = (network: Network, edge: Edge): Network => {
-  // TODO: Implement
+  const cyNet: CyNetwork = network as CyNetwork
+  cyNet.store.add(createCyEdge(edge.id, edge.s, edge.t))
+  return network
+}
+
+export const addEdges = (network: Network, edges: Edge[]): Network => {
+  const cyNet: CyNetwork = network as CyNetwork
+  cyNet.store.add(edges.map((edge) => createCyEdge(edge.id, edge.s, edge.t)))
   return network
 }
 

@@ -4,90 +4,81 @@
  */
 import { useEffect, useState } from 'react'
 import { IdType } from '../models/IdType'
-import NetworkFn, { Node, Edge, Network } from '../models/NetworkModel'
+import NetworkFn, { Network } from '../models/NetworkModel'
 import { Cx2 } from '../utils/cx/Cx2'
-import { db } from './persist/db'
+import { useNetworkStore } from './NetworkStore'
+import { db, putNetworkToDb, addTables, getNetworkFromDB } from './persist/db'
 
-const NETWORK_CACHE_NAME = 'cy-network-cache'
+// import { atom, useAtom } from 'jotai'
+// import { useLiveQuery } from 'dexie-react-hooks'
+// import { networkAtom } from './NetworkStore'
 
 /**
  * Custom Hook to fetch data from remote or local Cache
+ * State will be shared via globaz zustand store
+ *
  *
  * @param url
  * @returns
  */
-export const useNetwork = (
-  id: IdType,
-  url: string,
-  options?: any,
-): { loading: boolean; error?: Error | undefined; data?: Network } => {
-  const [status, setStatus] = useState<{
-    loading: boolean
-    error?: Error
-    data?: Network
-  }>({
-    loading: false,
-    data: undefined,
-    error: undefined,
+export const useNdexNetwork = (id: IdType, url: string): Network => {
+  const addNewNetwork = useNetworkStore((state) => state.add)
+
+  // Global state via zustand
+  const networks: Record<IdType, Network> = useNetworkStore(
+    (state) => state.networks,
+  )
+
+  const [network, setNetwork] = useState<Network>({
+    id,
+    nodes: [],
+    edges: [],
   })
+
+  // const [error, setError] = useState<Error | undefined>(undefined)
 
   const fetchNetwork = async (
     id: IdType,
     url: string,
     options?: any,
   ): Promise<void> => {
-    setStatus({ loading: true })
-
-    // First, check the local IndexedDB cache
-    // const networkFromDB: Network | undefined = await db.cyNetworks.get(id)
-
-    const cache: Cache = await caches.open(NETWORK_CACHE_NAME)
-
-    if (cache !== undefined) {
-      const cacheResponse = await cache.match(url)
-      if (cacheResponse !== undefined) {
-        console.log('@@@@@@@@@@@@ LOCAL CACHE CALL ======================')
-        const data = await cacheResponse.json()
-        setStatus({ loading: false, data })
-      } else {
-        console.log(
-          status.loading,
-          '===============EXTERNAL API CALL ======================',
-        )
-        try {
-          const response = await fetch(url)
-          if (!response.ok) {
-            throw new Error(`Error! status: ${response.status}`)
-          }
-          const data = (await response.json()) as Cx2
-          const network = NetworkFn.createNetworkFromCx(data, id)
-          const nodeList: Node[] = NetworkFn.nodes(network)
-          const edgeList: Edge[] = NetworkFn.edges(network)
-          await db.cyNetworks.put({
-            id,
-            nodes: nodeList,
-            edges: edgeList,
-          })
-
-          await db.cyTables.put({
-            id,
-            nodeTable: NetworkFn.nodeTable(network),
-            edgeTable: NetworkFn.edgeTable(network),
-          })
-
-          setStatus({ loading: false, data: network })
-          // await cache.add(url)
-        } catch (error: any) {
-          setStatus({ ...status, loading: false, error })
+    try {
+      // Try local DB first
+      const cachedNet = await db.cyNetworks.get({ id })
+      if (cachedNet === undefined) {
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`Error! status: ${response.status}`)
         }
+        const cxData: Cx2 = (await response.json()) as Cx2
+        const network: Network = NetworkFn.createNetworkFromCx(cxData, id)
+
+        // Add network to local IndexedDB
+        putNetworkToDb(network)
+        addTables(network)
+
+        addNewNetwork(network)
+        setNetwork(network)
+      } else {
+        const newNet: Network = await getNetworkFromDB(id)
+        addNewNetwork(newNet)
+        setNetwork(newNet)
       }
+    } catch (err: any) {
+      console.log(err)
+      // setError(err)
     }
   }
 
   useEffect(() => {
-    fetchNetwork(id, url, options)
+    const network: Network | undefined = networks[id]
+    if (network === undefined) {
+      fetchNetwork(id, url)
+    } else {
+      setNetwork(network)
+    }
     return () => {}
   }, [])
 
-  return { ...status }
+  return network
 }

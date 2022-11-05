@@ -1,24 +1,36 @@
-import { Suspense, ReactElement } from 'react'
+import { ReactElement, useEffect } from 'react'
 import { Network } from '../../models/NetworkModel'
-import { useNetwork } from '../../store/useNetwork'
-import { LoadingMessage } from './LoadingMessage'
+import { useNdexNetwork } from '../../store/useNetwork'
 
-const NET_ID = '7fc70ab6-9fb1-11ea-aaef-0ac135e8bacf'
-const NET_URL = `https://public.ndexbio.org/v3/networks/${NET_ID}`
+const BASE_URL = 'https://public.ndexbio.org/v3/networks'
 
-export const NetworkViewer = (): ReactElement => {
-  const response: { loading: boolean; error?: any; data?: Network } =
-    useNetwork(NET_ID, NET_URL)
+interface NetworkViewerProps {
+  uuid: string
+}
 
-  const id = response.data !== undefined ? response.data.id : 'N/A'
+/**
+ *
+ * @param param0
+ * @returns
+ */
+export const NetworkViewer = ({ uuid }: NetworkViewerProps): ReactElement => {
+  const network: Network = useNdexNetwork(uuid, `${BASE_URL}/${uuid}`)
 
+  useEffect(() => {
+    console.log('Viewer Initialised:', uuid)
+  }, [])
+
+  useEffect(() => {
+    console.log('Network Data Updated', network?.nodes.length)
+  }, [network])
+
+  const { id, nodes, edges } = network
   return (
-    <Suspense
-      fallback={<LoadingMessage message={'Loading network from NDEx'} />}
-    >
-      <h1>Test Network Viewer</h1>
-
-      <div>Network Loaded: {id}</div>
-    </Suspense>
+    <>
+      <div>Current Network: {id}</div>
+      <p>Num nodes = {nodes.length}</p>
+      <p>Num edges = {edges.length}</p>
+      <p>{network.nodes.map((node) => node.id).join(',')}</p>
+    </>
   )
 }

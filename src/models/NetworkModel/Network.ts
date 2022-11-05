@@ -1,4 +1,5 @@
 import { IdType } from '../IdType'
+import { Node, Edge } from '.'
 
 /**
  * Minimal graph object interface
@@ -6,4 +7,6 @@ import { IdType } from '../IdType'
  */
 export interface Network {
   readonly id: IdType
+  readonly nodes: Node[]
+  readonly edges: Edge[]
 }
