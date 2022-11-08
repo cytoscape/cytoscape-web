@@ -1,0 +1,10 @@
+export type NodeShapeType =
+  | 'rectangle'
+  | 'diamond'
+  | 'ellipse'
+  | 'hexagon'
+  | 'octagon'
+  | 'parallelogram'
+  | 'round-rectangle'
+  | 'triangle'
+  | 'vee'

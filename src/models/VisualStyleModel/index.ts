@@ -1,1 +1,1 @@
-export { VisualStyle } from './VisualStyle'
+export { VisualStyle, VisualProperty } from './VisualStyle'

@@ -1,6 +1,9 @@
 import { IdType } from '../IdType'
 import { EdgeView } from './EdgeView'
 import { NodeView } from './NodeView'
+// import { VisualStyle } from '../VisualStyleModel'
+// import { Table } from '../TableModel'
+// import { Network } from '../NetworkModel'
 
 export interface NetworkView {
   id: IdType // ID of the associated network
