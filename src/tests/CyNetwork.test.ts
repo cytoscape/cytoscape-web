@@ -1,13 +1,10 @@
-import NetworkFn, { Network } from '../models/NetworkModel'
+import NetworkFn, { Network, Node } from '../models/NetworkModel'
 
 import 'isomorphic-fetch'
 import { Cx2 } from '../utils/cx/Cx2'
 
 import { db } from '../store/persist/db'
 import * as cxUtil from '../utils/cx/cx2-util'
-
-import * as cytoscape from 'cytoscape'
-import { IndexableType } from 'dexie'
 
 test('create CyNetwork objects', () => {
   const net1: Network = NetworkFn.createNetwork('test')
@@ -58,21 +55,15 @@ test('create CyNetwork from CX2', async () => {
   let status = null
   try {
     // Add a CyJS graph
-    // @ts-ignore
-    const networkStore = net1.store as cytoscape.Core
+    // const networkStore = net1.store as cytoscape.Core
 
     let t0 = performance.now()
+    const nodeList: Node[] = NetworkFn.nodes(net1)
+    const edgeList = NetworkFn.edges(net1)
     await db.cyNetworks.add({
       id: net1.id,
-      // @ts-ignore
-      nodes: networkStore.nodes().map((n) => ({
-        id: n.id(),
-      })),
-      edges: networkStore.edges().map((e) => ({
-        id: e.id(),
-        s: e.source().id(),
-        t: e.target().id(),
-      })),
+      nodes: nodeList,
+      edges: edgeList,
     })
     console.log(`Added network in ${performance.now() - t0} ms`)
 
@@ -95,6 +86,4 @@ test('create CyNetwork from CX2', async () => {
   const networkFromDB: Network | undefined = await db.cyNetworks.get(net1.id)
   expect(networkFromDB).toBeDefined()
   console.log(`Recovered in ${performance.now() - t0} ms`)
-
-  console.log(networkFromDB)
 })
