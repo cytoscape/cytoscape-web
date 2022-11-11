@@ -99,7 +99,10 @@ const vs: VisualStyle = {
   },
   nodeLabelPosition: {
     name: 'nodeLabelPosition',
-    default: 'center',
+    default: {
+      horizontalAlign: 'center',
+      verticalAlign: 'center',
+    },
     mapping: null,
     bypassMap: {},
   },
@@ -115,9 +118,21 @@ const vs: VisualStyle = {
     mapping: null,
     bypassMap: {},
   },
-  nodePosition: {
-    name: 'nodePosition',
-    default: { x: 0, y: 0, z: 0 },
+  nodePositionX: {
+    name: 'nodePositionX',
+    default: 0,
+    mapping: null,
+    bypassMap: {},
+  },
+  nodePositionY: {
+    name: 'nodePositionY',
+    default: 0,
+    mapping: null,
+    bypassMap: {},
+  },
+  nodePositionZ: {
+    name: 'nodePositionZ',
+    default: 0,
     mapping: null,
     bypassMap: {},
   },
