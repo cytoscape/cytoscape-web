@@ -1,12 +1,11 @@
 import { MappingFunctionType } from './MappingFunctionType'
-import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { AttributeName } from '../../TableModel'
 import { ValueType } from '../../TableModel'
 
-export interface VisualMappingFunction {
+export interface VisualMappingFunction<T> {
   type: MappingFunctionType
   attribute: AttributeName
-  map: (value: ValueType) => VisualPropertyValueType
+  map: (value: ValueType) => T
 }
 
 export { DiscreteMappingFunction } from './DiscreteMappingFunction'

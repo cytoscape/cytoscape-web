@@ -5,6 +5,8 @@ export const CoreAspectTag = {
   AttributeDeclarations: 'attributeDeclarations',
   VisualProperties: 'visualProperties',
   MetaData: 'metaData',
+  NodeBypasses: 'nodeBypasses',
+  EdgeBypasses: 'edgeBypasses',
 } as const
 
 export type CoreAspectTag = typeof CoreAspectTag[keyof typeof CoreAspectTag]

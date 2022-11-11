@@ -12,8 +12,12 @@ import { Edge } from './Cx2/CoreAspects/Edge'
 import { Cx2Network } from './Cx2Network'
 import { MetaData, MetaDataValue } from './Cx2/MetaData'
 import { AttributeDeclarations } from './Cx2/CoreAspects/AttributeDeclarations'
+import { VisualProperties } from './Cx2/CoreAspects/VisualProperties'
+
 import { CxValue } from './Cx2/CxValue'
 import { Attribute } from './Cx2/CoreAspects/Attribute'
+import { NodeBypasses } from './Cx2/CoreAspects/NodeBypasses'
+import { EdgeBypasses } from './Cx2/CoreAspects/EdgeBypasses'
 
 const isAspect = (aspect: Aspect | CxDescriptor): boolean => {
   const keys = Object.keys(aspect)
@@ -35,6 +39,50 @@ const getAspect = (cx2: Cx2, aspectTag: string): object[] => {
   }
 
   return []
+}
+
+const getVisualProperties = (cx2: Cx2): VisualProperties => {
+  const filtered = cx2.filter((entry) => {
+    return entry.hasOwnProperty(CoreAspectTag.VisualProperties)
+  })
+
+  if (filtered.length === 0) {
+    return {
+      visualProperties: [],
+    }
+  }
+  const targetEntry: VisualProperties = filtered[0] as VisualProperties
+  return targetEntry
+}
+
+const getNodeBypasses = (cx2: Cx2): NodeBypasses => {
+  const filtered = cx2.filter((entry) => {
+    return entry.hasOwnProperty(CoreAspectTag.NodeBypasses)
+  })
+
+  if (filtered.length === 0) {
+    return {
+      nodeBypasses: [],
+    }
+  }
+
+  const targetEntry: NodeBypasses = filtered[0] as NodeBypasses
+  return targetEntry
+}
+
+const getEdgeBypasses = (cx2: Cx2): EdgeBypasses => {
+  const filtered = cx2.filter((entry) => {
+    return entry.hasOwnProperty(CoreAspectTag.NodeBypasses)
+  })
+
+  if (filtered.length === 0) {
+    return {
+      edgeBypasses: [],
+    }
+  }
+
+  const targetEntry: EdgeBypasses = filtered[0] as EdgeBypasses
+  return targetEntry
 }
 
 const getNetworkAttributes = (cx2: Cx2): NetworkAttributeValue[] => {
@@ -191,4 +239,7 @@ export {
   getAttributeDeclarations,
   getNodeAttributes,
   getEdgeAttributes,
+  getVisualProperties,
+  getNodeBypasses,
+  getEdgeBypasses,
 }

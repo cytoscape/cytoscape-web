@@ -8,16 +8,22 @@ import { Bypass } from './Bypass'
 export type VisualStyleSelector = 'node' | 'edge' | 'network'
 
 export type VisualStyleChangeSet = {
-  [key in VisualPropertyName]: VisualProperty
+  [key in VisualPropertyName]: VisualProperty<VisualPropertyValueType>
 }
 
 export interface VisualStyleFn {
   createVisualStyle: () => VisualStyle
   createVisualStyleFromCx: (cx: Cx2) => VisualStyle
 
-  nodeVisualProperties: (visualStyle: VisualStyle) => VisualProperty[]
-  edgeVisualProperties: (visualStyle: VisualStyle) => VisualProperty[]
-  networkVisualProperties: (visualStyle: VisualStyle) => VisualProperty[]
+  nodeVisualProperties: (
+    visualStyle: VisualStyle,
+  ) => VisualProperty<VisualPropertyValueType>[]
+  edgeVisualProperties: (
+    visualStyle: VisualStyle,
+  ) => VisualProperty<VisualPropertyValueType>[]
+  networkVisualProperties: (
+    visualStyle: VisualStyle,
+  ) => VisualProperty<VisualPropertyValueType>[]
 
   setVisualStyle: (
     vs: VisualStyle,
@@ -27,7 +33,7 @@ export interface VisualStyleFn {
   setMapping: (
     visualStyle: VisualStyle,
     visualPropertyName: VisualPropertyName,
-    mapping: VisualMappingFunction,
+    mapping: VisualMappingFunction<VisualPropertyValueType>,
   ) => VisualStyle
   setDefault: (
     visualStyle: VisualStyle,
@@ -38,7 +44,7 @@ export interface VisualStyleFn {
   setBypass: (
     visualStyle: VisualStyle,
     visualPropertyName: VisualPropertyName,
-    bypass: Bypass,
+    bypass: Bypass<VisualPropertyValueType>,
   ) => VisualStyle
 
   getStyleValue: (

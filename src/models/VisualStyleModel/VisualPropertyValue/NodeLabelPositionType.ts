@@ -1,6 +1,4 @@
-export type NodeLabelPositionType =
-  | 'top'
-  | 'bottom'
-  | 'left'
-  | 'right'
-  | 'center'
+export interface NodeLabelPositionType {
+  horizontalAlign: 'left' | 'center' | 'right'
+  verticalAlign: 'top' | 'center' | 'bottom'
+}

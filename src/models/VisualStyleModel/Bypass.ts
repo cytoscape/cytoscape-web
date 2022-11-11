@@ -1,4 +1,3 @@
 import { IdType } from '../IdType'
-import { VisualPropertyValueType } from './VisualPropertyValue'
 
-export type Bypass = Record<IdType, VisualPropertyValueType>
+export type Bypass<T> = Record<IdType, T>

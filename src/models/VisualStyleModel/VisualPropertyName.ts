@@ -14,7 +14,9 @@ export type NodeVisualPropertyName =
   | 'nodeLabelPosition'
   | 'nodeLabelRotation'
   | 'nodeLabelOpacity'
-  | 'nodePosition'
+  | 'nodePositionX'
+  | 'nodePositionY'
+  | 'nodePositionZ'
   | 'nodeOpacity'
   | 'nodeVisibility'
 

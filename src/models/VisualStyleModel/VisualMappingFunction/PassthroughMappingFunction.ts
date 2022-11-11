@@ -1,5 +1,7 @@
 import { VisualMappingFunction } from '.'
-export interface PassthroughMappingFunction extends VisualMappingFunction {}
+import { VisualPropertyValueType } from '../VisualPropertyValue'
+export interface PassthroughMappingFunction
+  extends VisualMappingFunction<VisualPropertyValueType> {}
 
 // cx discrete mapping fn
 // "NODE_LABEL": {

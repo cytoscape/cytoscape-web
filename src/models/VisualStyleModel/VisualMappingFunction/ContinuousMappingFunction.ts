@@ -12,7 +12,8 @@ export interface ContinuousFunctionInterval {
   maxVPValue: VisualPropertyValueType
 }
 
-export interface ContinuousMappingFunction extends VisualMappingFunction {
+export interface ContinuousMappingFunction
+  extends VisualMappingFunction<VisualPropertyValueType> {
   intervals: ContinuousFunctionInterval[]
 }
 

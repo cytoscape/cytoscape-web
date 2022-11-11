@@ -1,6 +1,26 @@
 import { VisualStyle } from '..'
 import { Cx2 } from '../../../utils/cx/Cx2'
+import * as cxUtil from '../../../utils/cx/cx2-util'
+import { VisualPropertyName } from '../VisualPropertyName'
+
 import { VisualStyleChangeSet } from '../VisualStyleFn'
+
+import {
+  cxVisualPropertyConverter,
+  CXVisualPropertyValue,
+} from './cxVisualPropertyMap'
+
+export const nodeVisualProperties = (visualStyle: VisualStyle) => {
+  return Object.keys(visualStyle).filter((key) => key.startsWith('node'))
+}
+
+export const edgeVisualProperties = (visualStyle: VisualStyle) => {
+  return Object.keys(visualStyle).filter((key) => key.startsWith('edge'))
+}
+
+export const networkVisualProperties = (visualStyle: VisualStyle) => {
+  return Object.keys(visualStyle).filter((key) => key.startsWith('network'))
+}
 
 const defaultVisualStyle: VisualStyle = {
   nodeShape: {
@@ -77,7 +97,10 @@ const defaultVisualStyle: VisualStyle = {
   },
   nodeLabelPosition: {
     name: 'nodeLabelPosition',
-    default: 'center',
+    default: {
+      horizontalAlign: 'center',
+      verticalAlign: 'center',
+    },
     mapping: null,
     bypassMap: {},
   },
@@ -93,9 +116,21 @@ const defaultVisualStyle: VisualStyle = {
     mapping: null,
     bypassMap: {},
   },
-  nodePosition: {
-    name: 'nodePosition',
-    default: { x: 0, y: 0 },
+  nodePositionX: {
+    name: 'nodePositionX',
+    default: 0,
+    mapping: null,
+    bypassMap: {},
+  },
+  nodePositionY: {
+    name: 'nodePositionY',
+    default: 0,
+    mapping: null,
+    bypassMap: {},
+  },
+  nodePositionZ: {
+    name: 'nodePositionZ',
+    default: 0,
     mapping: null,
     bypassMap: {},
   },
@@ -107,7 +142,7 @@ const defaultVisualStyle: VisualStyle = {
   },
   nodeVisibility: {
     name: 'nodeVisibility',
-    default: true,
+    default: 'element',
     mapping: null,
     bypassMap: {},
   },
@@ -203,7 +238,7 @@ const defaultVisualStyle: VisualStyle = {
   },
   edgeVisibility: {
     name: 'edgeVisibility',
-    default: true,
+    default: 'element',
     mapping: null,
     bypassMap: {},
   },
@@ -215,24 +250,68 @@ const defaultVisualStyle: VisualStyle = {
   },
 }
 
-export const createVisualStyle = (visualStyle: VisualStyle): VisualStyle => {
+export const createVisualStyle = (): VisualStyle => {
   return defaultVisualStyle
 }
 
 export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
-  return defaultVisualStyle
-}
+  const visualStyle: VisualStyle = createVisualStyle()
+  const visualProperties = cxUtil.getVisualProperties(cx)
+  const nodeBypasses = cxUtil.getNodeBypasses(cx)
+  const edgeBypasses = cxUtil.getEdgeBypasses(cx)
+  const defaultNodeProperties =
+    visualProperties.visualProperties[0].default.node
+  const defaultEdgeProperties =
+    visualProperties.visualProperties[0].default.edge
+  const defaultNetworkProperties =
+    visualProperties.visualProperties[0].default.network
+  const nodeMapping = visualProperties.visualProperties[0].nodeMapping
+  const edgeMapping = visualProperties.visualProperties[0].edgeMapping
 
-export const nodeVisualProperties = (visualStyle: VisualStyle) => {
-  return Object.keys(visualStyle).filter((key) => key.startsWith('node'))
-}
+  const vpGroups = [
+    {
+      vps: nodeVisualProperties(visualStyle),
+      getDefault: (cxVPName: string) => defaultNodeProperties[cxVPName],
+      getMapping: (cxVPName: string) => nodeMapping[cxVPName],
+      getBypass: (cxVPName: string) => {}, // TODO
+    },
+    {
+      vps: edgeVisualProperties(visualStyle),
+      getDefault: (cxVPName: string) => defaultEdgeProperties[cxVPName],
+      getMapping: (cxVPName: string) => edgeMapping[cxVPName],
+      getBypass: (cxVPName: string) => {}, // TODO
+    },
+    {
+      vps: networkVisualProperties(visualStyle),
+      getDefault: (cxVPName: string) => defaultNetworkProperties[cxVPName],
+      getMapping: (cxVPName: string) => null,
+      getBypass: (cxVPName: string) => {}, // TODO
+    },
+  ]
 
-export const edgeVisualProperties = (visualStyle: VisualStyle) => {
-  return Object.keys(visualStyle).filter((key) => key.startsWith('edge'))
-}
+  vpGroups.forEach((group) => {
+    const { vps, getDefault, getMapping, getBypass } = group
+    vps.forEach((vpName: VisualPropertyName) => {
+      const converter = cxVisualPropertyConverter[vpName]
 
-export const networkVisualProperties = (visualStyle: VisualStyle) => {
-  return Object.keys(visualStyle).filter((key) => key.startsWith('network'))
+      if (converter) {
+        const value = getDefault(converter.cxVPName) as CXVisualPropertyValue
+        // const mapping = getMapping(converter.cxVPName)
+        // const bypass = getBypass(converter.cxVPName)
+
+        visualStyle[vpName].default =
+          value != null
+            ? converter.valueConverter(value)
+            : visualStyle[vpName].default
+
+        // todo convert bypasses and mappings
+        // visualStyle[vpName].mapping = mapping != null ? converter.mappingConverter(mapping) : visualStyle[vpName].mapping
+        // visualStyle[vpName].bypassMap = bypass != null ? converter.bypassConverter(bypass) : visualStyle[vpName].bypassMap
+      }
+    })
+  })
+
+  return visualStyle
 }
 
 export const setVisualStyle = (

@@ -8,7 +8,8 @@ export interface DiscreteFunctionEntry {
   vpValue: VisualPropertyValueType
 }
 
-export interface DiscreteMappingFunction extends VisualMappingFunction {
+export interface DiscreteMappingFunction
+  extends VisualMappingFunction<VisualPropertyValueType> {
   vpValueMap: DiscreteFunctionEntry[]
 }
 
