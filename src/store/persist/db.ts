@@ -2,26 +2,32 @@ import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Network } from '../../models/NetworkModel'
 
+const DB_NAME = 'cyweb-db'
+
 /**
  * TODO: we need a schema for indexes
  *  - name
  *  - n
  *  - description
  */
-export class CyDB extends Dexie {
+class CyDB extends Dexie {
   cyNetworks!: DxTable<any>
   cyTables!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
     this.version(1).stores({
-      cyNetworks: 'id, nodes, edges',
+      cyNetworks: 'id',
       cyTables: 'id',
     })
   }
 }
 
-export const db = new CyDB('cyDB')
+const db = new CyDB(DB_NAME)
+
+export const deleteDb = async (): Promise<void> => {
+  await Dexie.delete(DB_NAME)
+}
 
 /**
  *
@@ -51,13 +57,19 @@ export const putNetworkToDb = async (
  * @param id
  * @returns
  */
-export const getNetworkFromDB = async (id: IdType): Promise<Network> => {
+export const getNetworkFromDb = async (
+  id: IdType,
+): Promise<Network | undefined> => {
   const cached: any = await db.cyNetworks.get({ id })
   if (cached === undefined) {
-    throw new Error(`Network ${id} not found in local DB`)
+    return cached
   }
 
   return NetworkFn.createFromCyJson(id, cached)
+}
+
+export const deleteNetworkFromDb = async (id: IdType): Promise<void> => {
+  await db.cyNetworks.delete(id)
 }
 
 /**

@@ -1,8 +1,6 @@
 import { ReactElement, useEffect } from 'react'
 import { Network } from '../../models/NetworkModel'
-import { useNdexNetwork, networkFetcher } from '../../store/useNetwork'
-
-const BASE_URL = 'https://public.ndexbio.org/v3/networks'
+import { useNdexNetwork } from '../../store/useNdexNetwork'
 
 interface NetworkViewerProps {
   uuid: string
@@ -14,27 +12,29 @@ interface NetworkViewerProps {
  * @returns
  */
 export const NetworkViewer = ({ uuid }: NetworkViewerProps): ReactElement => {
-  const network: Network = useNdexNetwork(
-    uuid,
-    `${BASE_URL}/${uuid}`,
-    networkFetcher,
-  )
+  const network: Network = useNdexNetwork(uuid)
 
   useEffect(() => {
-    console.log('Viewer Initialised:', uuid)
+    console.log('Viewer Initialised:', network?.id)
+    return () => {
+      console.log('Viewer Unmounted:', network?.id)
+    }
   }, [])
 
   useEffect(() => {
     console.log('Network Data Updated', network?.nodes.length)
   }, [network])
 
+  if (network === undefined) {
+    return <div />
+  }
+
   const { id, nodes, edges } = network
   return (
     <>
-      <div>Current Network: {id}</div>
+      <div>Viewer: {id}</div>
       <p>Num nodes = {nodes.length}</p>
       <p>Num edges = {edges.length}</p>
-      <p>{network.nodes.map((node) => node.id).join(',')}</p>
     </>
   )
 }
