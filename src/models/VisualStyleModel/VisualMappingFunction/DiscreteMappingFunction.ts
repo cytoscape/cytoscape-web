@@ -11,6 +11,7 @@ export interface DiscreteFunctionEntry {
 export interface DiscreteMappingFunction
   extends VisualMappingFunction<VisualPropertyValueType> {
   vpValueMap: DiscreteFunctionEntry[]
+  default: VisualPropertyValueType
 }
 
 // "NODE_BACKGROUND_COLOR": {

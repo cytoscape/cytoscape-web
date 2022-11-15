@@ -1,7 +1,10 @@
 import { IdType } from '../IdType'
-
+import { VisualPropertyValueType } from '../VisualStyleModel'
+import { VisualPropertyName } from '../VisualStyleModel/VisualPropertyName'
 export interface EdgeView {
   id: IdType // ID of the associated edge
-  w?: number // Width of the edge
-  // Add more props here...
+  computedVisualProperties: {
+    vpName: VisualPropertyName
+    vpValue: VisualPropertyValueType
+  }[]
 }

@@ -1,5 +1,5 @@
 import { Bypass } from '../Bypass'
-import { VisualMappingFunction } from '../VisualMappingFunction'
+
 import { VisualPropertyName } from '../VisualPropertyName'
 import {
   Color,
@@ -32,92 +32,112 @@ export type CXVisualPropertyValue =
   | CXLabelPositionType
   | CXFontFaceType
 
-// TODO
-export type CXVisualMappingFunction = any
-// TODO
-export type CXBypass = any
+export interface CXDiscreteMappingFunction<T> {
+  type: 'DISCRETE'
+  definition: {
+    attribute: string
+    map: {
+      v: number
+      vp: T
+    }[]
+  }
+}
 
-export interface CxVisualPropertyConverter<T> {
+export interface CXPassthroughMappingFunction<T> {
+  type: 'PASSTHROUGH'
+  definition: {
+    attribute: string
+  }
+}
+
+export interface CXContinuousMappingFunction<T> {
+  type: 'CONTINUOUS'
+  definition: {
+    attribute: string
+    map: {
+      max?: number
+      min?: number
+      maxVPValue?: T
+      minVPValue?: T
+      includeMax: boolean
+      includeMin: boolean
+    }[]
+  }
+}
+
+export type CXVisualMappingFunction<T> =
+  | CXDiscreteMappingFunction<T>
+  | CXContinuousMappingFunction<T>
+  | CXPassthroughMappingFunction<T>
+
+export type CXId = number
+
+export interface CXVisualPropertyConverter<T> {
   cxVPName: string
   valueConverter: (cxVPValue: CXVisualPropertyValue) => T
-  // mappingConverter: () => VisualMappingFunction<T>
-  mappingConverter: () => null
-  bypassConverter: () => Bypass<T>
 }
 
 export const VPColorConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<Color> => {
+): CXVisualPropertyConverter<Color> => {
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXVisualPropertyValue): Color =>
       cxVPValue as Color,
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<Color>),
   }
 }
 export const VPStringConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<string> => {
+): CXVisualPropertyConverter<string> => {
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXVisualPropertyValue): string =>
       cxVPValue as string,
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<string>),
   }
 }
 
 export const VPNumberConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<number> => {
+): CXVisualPropertyConverter<number> => {
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXVisualPropertyValue): number =>
       cxVPValue as number,
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<number>),
   }
 }
 export const VPFontTypeConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<FontType> => {
+): CXVisualPropertyConverter<FontType> => {
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXFontFaceType): FontType =>
       cxVPValue.FONT_FAMILY as FontType,
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<FontType>),
   }
 }
 
 export const VPNodeBorderLineTypeConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<NodeBorderLineType> => {
+): CXVisualPropertyConverter<NodeBorderLineType> => {
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXVisualPropertyValue): NodeBorderLineType =>
       cxVPValue as NodeBorderLineType,
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<NodeBorderLineType>),
   }
 }
 
 export const VPNodeShapeTypeConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<NodeShapeType> => {
+): CXVisualPropertyConverter<NodeShapeType> => {
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXVisualPropertyValue): NodeShapeType =>
       cxVPValue as NodeShapeType,
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<NodeShapeType>),
   }
 }
 
 export const VPNodeLabelPositionTypeConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<NodeLabelPositionType> => {
+): CXVisualPropertyConverter<NodeLabelPositionType> => {
   return {
     cxVPName,
     // TODO
@@ -127,62 +147,51 @@ export const VPNodeLabelPositionTypeConverter = (
         verticalAlign: 'center',
       }
     },
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<NodeLabelPositionType>),
   }
 }
 
 export const VPVisibilityTypeConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<VisibilityType> => {
+): CXVisualPropertyConverter<VisibilityType> => {
   return {
     cxVPName,
     valueConverter: (cxVPValue: VisibilityType): VisibilityType =>
       cxVPValue as VisibilityType,
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<VisibilityType>),
   }
 }
 
 export const VPEdgeLineTypeConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<EdgeLineType> => {
+): CXVisualPropertyConverter<EdgeLineType> => {
   return {
     cxVPName,
     valueConverter: (cxVPValue: EdgeLineType): EdgeLineType =>
       cxVPValue as EdgeLineType,
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<EdgeLineType>),
   }
 }
 
 export const VPEdgeArrowShapeTypeConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<EdgeArrowShapeType> => {
+): CXVisualPropertyConverter<EdgeArrowShapeType> => {
   return {
     cxVPName,
     valueConverter: (cxVPValue: EdgeArrowShapeType): EdgeArrowShapeType =>
       cxVPValue as EdgeArrowShapeType,
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<EdgeArrowShapeType>),
   }
 }
 export const VPBooleanConverter = (
   cxVPName: string,
-): CxVisualPropertyConverter<boolean> => {
+): CXVisualPropertyConverter<boolean> => {
   return {
     cxVPName,
-    // TODO
     valueConverter: (cxVPValue: boolean): boolean => cxVPValue as boolean,
-    mappingConverter: () => null,
-    bypassConverter: () => ({} as Bypass<boolean>),
   }
 }
 
 // lookup table of visual style property names to cx property names
 export const cxVisualPropertyConverter: Record<
   VisualPropertyName,
-  CxVisualPropertyConverter<VisualPropertyValueType>
+  CXVisualPropertyConverter<VisualPropertyValueType>
 > = {
   nodeShape: VPNodeShapeTypeConverter('NODE_SHAPE'),
   nodeBorderColor: VPColorConverter('NODE_BORDER_COLOR'),
@@ -225,5 +234,6 @@ export const cxVisualPropertyConverter: Record<
   edgeLabelOpacity: VPNumberConverter('EDGE_LABEL_OPACITY'),
   edgeOpacity: VPNumberConverter('EDGE_OPACITY'),
   edgeVisibility: VPVisibilityTypeConverter('EDGE_VISIBILITY'),
+
   networkBackgroundColor: VPColorConverter('NETWORK_BACKGROUND_COLOR'),
 }

@@ -8,8 +8,8 @@ export interface ContinuousFunctionInterval {
   max?: ValueType
   includeMin: boolean
   includeMax: boolean
-  minVPValue: VisualPropertyValueType
-  maxVPValue: VisualPropertyValueType
+  minVPValue?: VisualPropertyValueType
+  maxVPValue?: VisualPropertyValueType
 }
 
 export interface ContinuousMappingFunction

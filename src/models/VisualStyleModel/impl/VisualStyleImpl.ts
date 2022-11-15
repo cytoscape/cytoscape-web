@@ -1,12 +1,25 @@
 import { VisualStyle } from '..'
 import { Cx2 } from '../../../utils/cx/Cx2'
 import * as cxUtil from '../../../utils/cx/cx2-util'
+import { Network } from '../../NetworkModel'
+import { Table, ValueType } from '../../TableModel'
+import { EdgeView, NetworkView } from '../../ViewModel'
+import {
+  DiscreteMappingFunction,
+  ContinuousMappingFunction,
+} from '../VisualMappingFunction'
 import { VisualPropertyName } from '../VisualPropertyName'
 
 import { VisualStyleChangeSet } from '../VisualStyleFn'
+import { VisualPropertyValueType, VisualProperty, Bypass } from '..'
+
+import { NodeView } from '../../ViewModel'
 
 import {
+  CXId,
+  CXVisualMappingFunction,
   cxVisualPropertyConverter,
+  CXVisualPropertyConverter,
   CXVisualPropertyValue,
 } from './cxVisualPropertyMap'
 
@@ -254,6 +267,7 @@ export const createVisualStyle = (): VisualStyle => {
   return defaultVisualStyle
 }
 
+// convert cx visual properties to app visual style model
 export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   const visualStyle: VisualStyle = createVisualStyle()
   const visualProperties = cxUtil.getVisualProperties(cx)
@@ -268,24 +282,97 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   const nodeMapping = visualProperties.visualProperties[0].nodeMapping
   const edgeMapping = visualProperties.visualProperties[0].edgeMapping
 
+  const nodeBypassMap: Map<
+    VisualPropertyName,
+    Bypass<VisualPropertyValueType>
+  > = new Map()
+  const edgeBypassMap: Map<
+    VisualPropertyName,
+    Bypass<VisualPropertyValueType>
+  > = new Map()
+
+  nodeBypasses?.nodeBypasses.forEach(
+    (entry: { id: CXId; v: Record<string, object> }) => {
+      const { id, v } = entry
+      Object.keys(v).forEach((cxVPName) => {
+        const entry = Object.entries(cxVisualPropertyConverter).find(
+          ([vpName, cxVPConverter]) => cxVPConverter.cxVPName === cxVPName,
+        )
+
+        if (entry != null) {
+          const [vpName, cxVPConverter] = entry as [
+            VisualPropertyName,
+            CXVisualPropertyConverter<VisualPropertyValueType>,
+          ]
+
+          if (nodeBypassMap.has(vpName)) {
+            const entry = nodeBypassMap.get(vpName) ?? {}
+            entry[id] = cxVPConverter.valueConverter(
+              v[cxVPName] as CXVisualPropertyValue,
+            )
+            nodeBypassMap.set(vpName, entry)
+          } else {
+            nodeBypassMap.set(vpName, {})
+          }
+        }
+      })
+    },
+  )
+
+  edgeBypasses?.edgeBypasses.forEach(
+    (entry: { id: CXId; v: Record<string, object> }) => {
+      const { id, v } = entry
+      Object.keys(v).forEach((cxVPName) => {
+        const entry = Object.entries(cxVisualPropertyConverter).find(
+          ([vpName, cxVPConverter]) => cxVPConverter.cxVPName === cxVPName,
+        )
+
+        if (entry != null) {
+          const [vpName, cxVPConverter] = entry as [
+            VisualPropertyName,
+            CXVisualPropertyConverter<VisualPropertyValueType>,
+          ]
+
+          if (edgeBypassMap.has(vpName)) {
+            const entry = edgeBypassMap.get(vpName) ?? {}
+            entry[id] = cxVPConverter.valueConverter(
+              v[cxVPName] as CXVisualPropertyValue,
+            )
+            edgeBypassMap.set(vpName, entry)
+          } else {
+            edgeBypassMap.set(vpName, {})
+          }
+        }
+      })
+    },
+  )
+
   const vpGroups = [
     {
       vps: nodeVisualProperties(visualStyle),
       getDefault: (cxVPName: string) => defaultNodeProperties[cxVPName],
-      getMapping: (cxVPName: string) => nodeMapping[cxVPName],
-      getBypass: (cxVPName: string) => {}, // TODO
+      getMapping: (
+        cxVPName: string,
+      ): CXVisualMappingFunction<CXVisualPropertyValue> | null =>
+        nodeMapping[cxVPName] as CXVisualMappingFunction<CXVisualPropertyValue>,
+      getBypass: (): Map<VisualPropertyName, Bypass<VisualPropertyValueType>> =>
+        nodeBypassMap, // TODO
     },
     {
       vps: edgeVisualProperties(visualStyle),
       getDefault: (cxVPName: string) => defaultEdgeProperties[cxVPName],
-      getMapping: (cxVPName: string) => edgeMapping[cxVPName],
-      getBypass: (cxVPName: string) => {}, // TODO
+      getMapping: (
+        cxVPName: string,
+      ): CXVisualMappingFunction<CXVisualPropertyValue> | null =>
+        edgeMapping[cxVPName] as CXVisualMappingFunction<CXVisualPropertyValue>,
+      getBypass: (): Map<VisualPropertyName, Bypass<VisualPropertyValueType>> =>
+        edgeBypassMap,
     },
     {
       vps: networkVisualProperties(visualStyle),
       getDefault: (cxVPName: string) => defaultNetworkProperties[cxVPName],
       getMapping: (cxVPName: string) => null,
-      getBypass: (cxVPName: string) => {}, // TODO
+      getBypass: () => new Map(), // no mappings or bypasses for network vps
     },
   ]
 
@@ -294,21 +381,86 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     vps.forEach((vpName: VisualPropertyName) => {
       const converter = cxVisualPropertyConverter[vpName]
 
-      if (converter) {
-        const value = getDefault(converter.cxVPName) as CXVisualPropertyValue
-        // const mapping = getMapping(converter.cxVPName)
-        // const bypass = getBypass(converter.cxVPName)
+      const isSupportedCXProperty = converter != null
 
-        visualStyle[vpName].default =
-          value != null
-            ? converter.valueConverter(value)
-            : visualStyle[vpName].default
+      if (isSupportedCXProperty) {
+        const cxDefault = getDefault(
+          converter.cxVPName,
+        ) as CXVisualPropertyValue
+        const cxMapping = getMapping(converter.cxVPName)
+        const cxBypass = getBypass()
 
-        // todo convert bypasses and mappings
-        // visualStyle[vpName].mapping = mapping != null ? converter.mappingConverter(mapping) : visualStyle[vpName].mapping
-        // visualStyle[vpName].bypassMap = bypass != null ? converter.bypassConverter(bypass) : visualStyle[vpName].bypassMap
+        if (cxDefault != null) {
+          visualStyle[vpName].default = converter.valueConverter(cxDefault)
+        }
+
+        if (cxMapping != null) {
+          switch (cxMapping.type) {
+            case 'PASSTHROUGH':
+              visualStyle[vpName].mapping = {
+                type: 'passthrough',
+                attribute: cxMapping.definition.attribute,
+              }
+              break
+            case 'DISCRETE':
+              visualStyle[vpName].mapping = {
+                type: 'discrete',
+                attribute: cxMapping.definition.attribute,
+                default: visualStyle[vpName].default,
+                vpValueMap: cxMapping.definition.map.map((mapEntry) => {
+                  const { v, vp } = mapEntry
+                  return {
+                    value: v,
+                    vpValue: converter.valueConverter(vp),
+                  }
+                }),
+              } as DiscreteMappingFunction
+              break
+            case 'CONTINUOUS':
+              visualStyle[vpName].mapping = {
+                type: 'continuous',
+                attribute: cxMapping.definition.attribute,
+                intervals: cxMapping.definition.map.map((interval) => {
+                  const convertedInterval = { ...interval }
+                  if (
+                    convertedInterval.includeMin &&
+                    convertedInterval.minVPValue != null
+                  ) {
+                    convertedInterval.minVPValue = converter.valueConverter(
+                      convertedInterval.minVPValue,
+                    )
+                  }
+
+                  if (
+                    convertedInterval.includeMax &&
+                    convertedInterval.maxVPValue != null
+                  ) {
+                    convertedInterval.maxVPValue = converter.valueConverter(
+                      convertedInterval.maxVPValue,
+                    )
+                  }
+
+                  return convertedInterval
+                }),
+              } as ContinuousMappingFunction
+              break
+            default:
+              break
+          }
+        }
+
+        if (cxBypass != null) {
+          visualStyle[vpName].bypassMap = cxBypass.get(vpName)
+        }
+      } else {
+        // property is not found in cx, in theory all cytoscape web properties should be in
+        // cx, if this happens, it is a bug
+        throw new Error(`Property ${vpName} not found in CX`)
       }
     })
+
+    // some cx properties are probably not handled in this conversion,
+    // we should find a way to store them and then restore them when we round trip
   })
 
   return visualStyle
@@ -319,4 +471,60 @@ export const setVisualStyle = (
   changeSet: VisualStyleChangeSet,
 ) => {
   return { ...visualStyle, ...changeSet }
+}
+
+export const applyVisualStyle = (
+  vs: VisualStyle,
+  network: Network,
+  nodeTable: Table,
+  edgeTable: Table,
+): NetworkView => {
+  const nodeViews = network.nodes.map((node) => {
+    const computedVisualProperties: {
+      vpName: VisualPropertyName
+      vpValue: VisualPropertyValueType
+    }[] = []
+
+    nodeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
+      const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
+      const vpValue = vp.bypassMap?.[node.id] ?? vp.default
+      computedVisualProperties.push({ vpName, vpValue })
+    })
+    const nodeView: NodeView = {
+      id: node.id,
+      computedVisualProperties: computedVisualProperties as {
+        vpName: VisualPropertyName
+        vpValue: VisualPropertyValueType
+      }[],
+    }
+    return nodeView
+  })
+
+  const edgeViews = network.edges.map((edge) => {
+    const computedVisualProperties: {
+      vpName: VisualPropertyName
+      vpValue: VisualPropertyValueType
+    }[] = []
+
+    nodeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
+      const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
+      const vpValue = vp.bypassMap?.[edge.id] ?? vp.default
+      computedVisualProperties.push({ vpName, vpValue })
+    })
+    const edgeView: EdgeView = {
+      id: edge.id,
+      computedVisualProperties: computedVisualProperties as {
+        vpName: VisualPropertyName
+        vpValue: VisualPropertyValueType
+      }[],
+    }
+    return edgeView
+  })
+  const networkView = {
+    id: network.id,
+    nodeViews,
+    edgeViews,
+  }
+
+  return networkView
 }
