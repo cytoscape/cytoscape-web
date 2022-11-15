@@ -4,7 +4,10 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom/client'
 
 import './index.css'
+import * as appConfig from './assets/config.json'
+
 import AppShell from './components/AppShell'
+import { AppConfigContext } from './AppConfigContext'
 
 const theme = createTheme({
   palette: {
@@ -19,17 +22,17 @@ const theme = createTheme({
 
 const App = (): React.ReactElement => {
   return (
-    <>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <AppShell />
-      </ThemeProvider>
-    </>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AppShell />
+    </ThemeProvider>
   )
 }
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <AppConfigContext.Provider value={appConfig}>
+      <App />
+    </AppConfigContext.Provider>
   </React.StrictMode>,
 )
