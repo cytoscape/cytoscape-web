@@ -1,6 +1,8 @@
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Network } from '../../models/NetworkModel'
+import { Table } from '../../models/TableModel'
+import { VisualStyle } from '../../models/VisualStyleModel'
 
 const DB_NAME = 'cyweb-db'
 
@@ -13,12 +15,14 @@ const DB_NAME = 'cyweb-db'
 class CyDB extends Dexie {
   cyNetworks!: DxTable<any>
   cyTables!: DxTable<any>
+  cyVisualStyles!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
     this.version(1).stores({
       cyNetworks: 'id',
       cyTables: 'id',
+      cyVisualStyles: 'id',
     })
   }
 }
@@ -37,16 +41,17 @@ export const deleteDb = async (): Promise<void> => {
  * @returns
  */
 export const putNetworkToDb = async (
+  id: IdType,
   network: Network,
 ): Promise<IndexableType> => {
   const cyJs: any = NetworkFn.createCyJSON(network)
   const minimalCyjs = {
-    id: network.id,
+    id,
     elements: cyJs.elements,
     data: cyJs.data,
   }
 
-  minimalCyjs.data.id = network.id
+  minimalCyjs.data.id = id
   return await db.cyNetworks.put(minimalCyjs)
 }
 
@@ -68,6 +73,25 @@ export const getNetworkFromDb = async (
   return NetworkFn.createFromCyJson(id, cached)
 }
 
+export const getVisualStyleFromDb = async (
+  id: IdType,
+): Promise<VisualStyle | undefined> => {
+  const cached: any = await db.cyVisualStyles.get({ id })
+  if (cached === undefined) {
+    return cached
+  }
+  return cached.visualStyle
+}
+
+export const getTablesFromDb = async (id: IdType): Promise<any> => {
+  const cached: any = await db.cyTables.get({ id })
+  if (cached === undefined) {
+    return cached
+  }
+
+  return cached
+}
+
 export const deleteNetworkFromDb = async (id: IdType): Promise<void> => {
   await db.cyNetworks.delete(id)
 }
@@ -75,13 +99,28 @@ export const deleteNetworkFromDb = async (id: IdType): Promise<void> => {
 /**
  *
  * @param id associated with the network
- * @param network network object containing tables
+ * @param nodeTable node table
+ * @param nodeTable edge table
  * @returns
  */
-export const addTables = async (network: Network): Promise<IndexableType> => {
+export const putTablesToDb = async (
+  id: IdType,
+  nodeTable: Table,
+  edgeTable: Table,
+): Promise<IndexableType> => {
   return await db.cyTables.put({
-    id: network.id,
-    nodeTable: NetworkFn.nodeTable(network),
-    edgeTable: NetworkFn.edgeTable(network),
+    id,
+    nodeTable,
+    edgeTable,
+  })
+}
+
+export const putVisualStylesToDb = async (
+  id: IdType,
+  visualStyle: VisualStyle,
+): Promise<IndexableType> => {
+  return await db.cyVisualStyles.put({
+    id,
+    visualStyle,
   })
 }

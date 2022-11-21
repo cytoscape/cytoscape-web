@@ -4,16 +4,20 @@ import Tab from '@mui/material/Tab'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
-import { Button } from '@mui/material'
+// import { Button } from '@mui/material'
 
-import { useTableStore } from '../hooks/useTableStore'
-import {
-  DataEditor,
-  GridCellKind,
-  GridCell,
-  EditableGridCell,
-  Item,
-} from '@glideapps/glide-data-grid'
+import { Table } from '../models/TableModel'
+import { useTableStore } from '../store/TableStore'
+import { IdType } from '../models/IdType'
+
+// import { useTableStore } from '../hooks/useTableStore'
+// import {
+//   DataEditor,
+//   GridCellKind,
+//   GridCell,
+//   EditableGridCell,
+//   Item,
+// } from '@glideapps/glide-data-grid'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -48,24 +52,31 @@ function a11yProps(index: number): { id: string; 'aria-controls': string } {
   }
 }
 
-interface TableDataRow {
-  attributeA: string
-  attributeB: string
-  attributeC: string
-}
-export default function TableBrowser(props: any): React.ReactElement {
+// interface TableDataRow {
+//   attributeA: string
+//   attributeB: string
+//   attributeC: string
+// }
+export default function TableBrowser(props: {
+  currentNetworkId: IdType
+}): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
-  const [showSearch, setShowSearch] = React.useState(false)
-  const onSearchClose = React.useCallback(() => setShowSearch(false), [])
+  const networkId = props.currentNetworkId
+  const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
+    useTableStore((state) => state.tables)
+  const nodeTable = tables[networkId]?.nodeTable
+  const edgeTable = tables[networkId]?.edgeTable
+  // const [showSearch, setShowSearch] = React.useState(false)
+  // const onSearchClose = React.useCallback(() => setShowSearch(false), [])
 
-  const { rows, columns, loadTableState, setCellValue } = useTableStore(
-    (state) => ({
-      rows: state.rows,
-      columns: state.columns,
-      loadTableState: state.loadTableState,
-      setCellValue: state.setCellValue,
-    }),
-  )
+  // const { rows, columns, loadTableState, setCellValue } = useTableStore(
+  //   (state) => ({
+  //     rows: state.rows,
+  //     columns: state.columns,
+  //     loadTableState: state.loadTableState,
+  //     setCellValue: state.setCellValue,
+  //   }),
+  // )
 
   const handleChange = (
     event: React.SyntheticEvent,
@@ -74,58 +85,58 @@ export default function TableBrowser(props: any): React.ReactElement {
     setCurrentTabIndex(newValue)
   }
 
-  const getContent = React.useCallback(
-    (cell: Item): GridCell => {
-      const [col, row] = cell
-      const dataRow = rows[row]
+  // const getContent = React.useCallback(
+  //   (cell: Item): GridCell => {
+  //     const [col, row] = cell
+  //     const dataRow = rows[row]
 
-      if (dataRow == null) {
-        return {
-          allowOverlay: true,
-          readonly: false,
-          kind: GridCellKind.Text,
-          displayData: '',
-          data: '',
-        }
-      }
+  //     if (dataRow == null) {
+  //       return {
+  //         allowOverlay: true,
+  //         readonly: false,
+  //         kind: GridCellKind.Text,
+  //         displayData: '',
+  //         data: '',
+  //       }
+  //     }
 
-      const indexes: Array<keyof TableDataRow> = [
-        'attributeA',
-        'attributeB',
-        'attributeC',
-      ]
+  //     const indexes: Array<keyof TableDataRow> = [
+  //       'attributeA',
+  //       'attributeB',
+  //       'attributeC',
+  //     ]
 
-      const d = dataRow[indexes[col]]
+  //     const d = dataRow[indexes[col]]
 
-      return {
-        kind: GridCellKind.Text,
-        allowOverlay: true,
-        displayData: d,
-        readonly: false,
-        data: d,
-      }
-    },
-    [rows, columns],
-  )
+  //     return {
+  //       kind: GridCellKind.Text,
+  //       allowOverlay: true,
+  //       displayData: d,
+  //       readonly: false,
+  //       data: d,
+  //     }
+  //   },
+  //   [rows, columns],
+  // )
 
-  const onCellEdited = React.useCallback(
-    (cell: Item, newValue: EditableGridCell) => {
-      if (newValue.kind !== GridCellKind.Text) {
-        // we only have text cells, might as well just die here.
-        return
-      }
+  // const onCellEdited = React.useCallback(
+  //   (cell: Item, newValue: EditableGridCell) => {
+  //     if (newValue.kind !== GridCellKind.Text) {
+  //       // we only have text cells, might as well just die here.
+  //       return
+  //     }
 
-      const indexes: Array<keyof TableDataRow> = [
-        'attributeA',
-        'attributeB',
-        'attributeC',
-      ]
-      const [col, row] = cell
-      const key = indexes[col]
-      setCellValue(newValue.data, row, key)
-    },
-    [rows, columns],
-  )
+  //     const indexes: Array<keyof TableDataRow> = [
+  //       'attributeA',
+  //       'attributeB',
+  //       'attributeC',
+  //     ]
+  //     const [col, row] = cell
+  //     const key = indexes[col]
+  //     setCellValue(newValue.data, row, key)
+  //   },
+  //   [rows, columns],
+  // )
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -169,7 +180,7 @@ export default function TableBrowser(props: any): React.ReactElement {
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
-        <Button onClick={() => loadTableState('small')}>
+        {/* <Button onClick={() => loadTableState('small')}>
           Load 1,000 Row Table
         </Button>
         <Button onClick={() => loadTableState('medium')}>
@@ -181,9 +192,9 @@ export default function TableBrowser(props: any): React.ReactElement {
 
         <Button onClick={() => setShowSearch(!showSearch)}>
           Toggle Search
-        </Button>
+        </Button> */}
 
-        {rows.length > 0 && columns.length > 0 && (
+        {/* {rows.length > 0 && columns.length > 0 && (
           <DataEditor
             rowMarkers={'both'}
             showSearch={showSearch}
@@ -197,10 +208,31 @@ export default function TableBrowser(props: any): React.ReactElement {
             columns={columns}
             rows={rows.length}
           />
-        )}
+        )} */}
+        <div>Nodes</div>
+        <div>
+          {JSON.stringify(
+            [
+              Object.fromEntries(nodeTable?.columns ?? new Map()),
+              Object.fromEntries(nodeTable?.rows ?? new Map()),
+            ],
+            null,
+            2,
+          )}
+        </div>
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
         <div>Edges</div>
+        <div>
+          {JSON.stringify(
+            [
+              Object.fromEntries(edgeTable?.columns ?? new Map()),
+              Object.fromEntries(edgeTable?.rows ?? new Map()),
+            ],
+            null,
+            2,
+          )}
+        </div>
       </TabPanel>
     </Box>
   )

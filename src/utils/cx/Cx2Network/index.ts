@@ -7,6 +7,9 @@ export interface Cx2Core {
 
   nodes: {
     [id: number]: Node
+    x?: number
+    y?: number
+    z?: number
   }
 
   edges: {

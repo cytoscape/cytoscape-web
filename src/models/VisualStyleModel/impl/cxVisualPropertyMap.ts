@@ -1,5 +1,3 @@
-import { Bypass } from '../Bypass'
-
 import { VisualPropertyName } from '../VisualPropertyName'
 import {
   Color,
@@ -7,7 +5,8 @@ import {
   NodeBorderLineType,
   NodeShapeType,
   VisualPropertyValueType,
-  NodeLabelPositionType,
+  HoritzontalAlignType,
+  VerticalAlignType,
   VisibilityType,
   EdgeLineType,
   EdgeArrowShapeType,
@@ -36,14 +35,14 @@ export interface CXDiscreteMappingFunction<T> {
   type: 'DISCRETE'
   definition: {
     attribute: string
-    map: {
+    map: Array<{
       v: number
       vp: T
-    }[]
+    }>
   }
 }
 
-export interface CXPassthroughMappingFunction<T> {
+export interface CXPassthroughMappingFunction {
   type: 'PASSTHROUGH'
   definition: {
     attribute: string
@@ -54,21 +53,21 @@ export interface CXContinuousMappingFunction<T> {
   type: 'CONTINUOUS'
   definition: {
     attribute: string
-    map: {
+    map: Array<{
       max?: number
       min?: number
       maxVPValue?: T
       minVPValue?: T
       includeMax: boolean
       includeMin: boolean
-    }[]
+    }>
   }
 }
 
 export type CXVisualMappingFunction<T> =
   | CXDiscreteMappingFunction<T>
   | CXContinuousMappingFunction<T>
-  | CXPassthroughMappingFunction<T>
+  | CXPassthroughMappingFunction
 
 export type CXId = number
 
@@ -135,17 +134,23 @@ export const VPNodeShapeTypeConverter = (
   }
 }
 
-export const VPNodeLabelPositionTypeConverter = (
+export const VPNodeLabelHorizonalAlignTypeConverter = (
   cxVPName: string,
-): CXVisualPropertyConverter<NodeLabelPositionType> => {
+): CXVisualPropertyConverter<HoritzontalAlignType> => {
   return {
     cxVPName,
-    // TODO
-    valueConverter: (cxVPValue: CXLabelPositionType): NodeLabelPositionType => {
-      return {
-        horizontalAlign: 'center',
-        verticalAlign: 'center',
-      }
+    valueConverter: (cxVPValue: CXLabelPositionType): HoritzontalAlignType => {
+      return 'center' // TODO - implement real conversion
+    },
+  }
+}
+export const VPNodeLabelVerticalAlignTypeConverter = (
+  cxVPName: string,
+): CXVisualPropertyConverter<VerticalAlignType> => {
+  return {
+    cxVPName,
+    valueConverter: (cxVPValue: CXLabelPositionType): VerticalAlignType => {
+      return 'center' // TODO - implement real conversion
     },
   }
 }
@@ -155,8 +160,7 @@ export const VPVisibilityTypeConverter = (
 ): CXVisualPropertyConverter<VisibilityType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: VisibilityType): VisibilityType =>
-      cxVPValue as VisibilityType,
+    valueConverter: (cxVPValue: VisibilityType): VisibilityType => cxVPValue,
   }
 }
 
@@ -165,8 +169,7 @@ export const VPEdgeLineTypeConverter = (
 ): CXVisualPropertyConverter<EdgeLineType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: EdgeLineType): EdgeLineType =>
-      cxVPValue as EdgeLineType,
+    valueConverter: (cxVPValue: EdgeLineType): EdgeLineType => cxVPValue,
   }
 }
 
@@ -176,7 +179,7 @@ export const VPEdgeArrowShapeTypeConverter = (
   return {
     cxVPName,
     valueConverter: (cxVPValue: EdgeArrowShapeType): EdgeArrowShapeType =>
-      cxVPValue as EdgeArrowShapeType,
+      cxVPValue,
   }
 }
 export const VPBooleanConverter = (
@@ -184,7 +187,7 @@ export const VPBooleanConverter = (
 ): CXVisualPropertyConverter<boolean> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: boolean): boolean => cxVPValue as boolean,
+    valueConverter: (cxVPValue: boolean): boolean => cxVPValue,
   }
 }
 
@@ -205,7 +208,12 @@ export const cxVisualPropertyConverter: Record<
   nodeLabelColor: VPColorConverter('NODE_LABEL_COLOR'),
   nodeLabelFontSize: VPNumberConverter('NODE_LABEL_FONT_SIZE'),
   nodeLabelFont: VPFontTypeConverter('NODE_LABEL_FONT_FACE'),
-  nodeLabelPosition: VPNodeLabelPositionTypeConverter('NODE_LABEL_POSITION'),
+  nodeLabelHorizontalAlign: VPNodeLabelHorizonalAlignTypeConverter(
+    'NODE_LABEL_POSITION',
+  ),
+  nodeLabelVerticalAlign: VPNodeLabelVerticalAlignTypeConverter(
+    'NODE_LABEL_POSITION',
+  ),
   nodeLabelRotation: VPNumberConverter('NODE_LABEL_ROTATION'),
   nodeLabelOpacity: VPNumberConverter('NODE_LABEL_OPACITY'),
   nodePositionX: VPNumberConverter('NODE_X_LOCATION'),

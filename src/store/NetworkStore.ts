@@ -2,7 +2,7 @@ import { IdType } from '../models/IdType'
 import NetworkFn, { Network } from '../models/NetworkModel'
 import create from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { deleteNetworkFromDb } from './persist/db'
+// import { deleteNetworkFromDb } from './persist/db'
 // import { persist, StateStorage } from 'zustand/middleware'
 // import { db, putNetworkToDb, addTables, getNetworkFromDB } from './persist/db'
 

@@ -5,7 +5,7 @@ export interface AppConfig {
 }
 
 export const defaultAppConfig: AppConfig = {
-  ndexBaseUrl: 'https://public.ndexbio.org/v2',
+  ndexBaseUrl: 'https://public.ndexbio.org/v3',
 }
 
 export const AppConfigContext = createContext<AppConfig>(defaultAppConfig)

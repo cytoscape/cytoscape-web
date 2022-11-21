@@ -1,6 +1,7 @@
 import { Column, Table } from '..'
 import { Cx2 } from '../../../utils/cx/Cx2'
 import * as cxUtil from '../../../utils/cx/cx2-util'
+import { Node } from '../../../utils/cx/Cx2/CoreAspects/Node'
 import { IdType } from '../../IdType'
 import { AttributeName } from '../AttributeName'
 import { ValueType } from '../ValueType'
@@ -27,7 +28,17 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     Record<string, CxValue>
   > = cxUtil.getEdgeAttributes(cx)
 
+  const cxNodes: Node[] = cxUtil.getNodes(cx)
+
+  const positionXKey = 'positionX' // todo this can conflict with exiting property keys
+  // generate a unique key for position and also need some thought into where positions should go
+  const positionYKey = 'positionY'
+
   nodeAttr.forEach((attr, nodeId) => {
+    const posX = (cxNodes[+nodeId].x ?? 0) as ValueType
+    const posY = (cxNodes[+nodeId].y ?? 0) as ValueType
+    attr[positionXKey] = posX
+    attr[positionYKey] = posY
     nodeTable.rows.set(nodeId, attr as Record<AttributeName, ValueType>)
   })
 
@@ -46,6 +57,8 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   nodeAttrNames.forEach((attrName) => {
     nodeTable.columns.set(attrName, nodes[attrName].d as ValueTypeName)
   })
+  nodeTable.columns.set(positionXKey, 'double')
+  nodeTable.columns.set(positionYKey, 'double')
   edgeAttrNames.forEach((attrName) => {
     edgeTable.columns.set(attrName, edges[attrName].d as ValueTypeName)
   })

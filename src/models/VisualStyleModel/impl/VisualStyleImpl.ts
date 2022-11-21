@@ -1,19 +1,24 @@
-import { VisualStyle } from '..'
 import { Cx2 } from '../../../utils/cx/Cx2'
 import * as cxUtil from '../../../utils/cx/cx2-util'
 import { Network } from '../../NetworkModel'
-import { Table, ValueType } from '../../TableModel'
-import { EdgeView, NetworkView } from '../../ViewModel'
+import { Table } from '../../TableModel'
+import { CyJsEdgeView, CyJsNodeView, CyJsNetworkView } from '../../ViewModel'
 import {
   DiscreteMappingFunction,
   ContinuousMappingFunction,
 } from '../VisualMappingFunction'
+import { ContinuousFunctionInterval } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyName } from '../VisualPropertyName'
 
 import { VisualStyleChangeSet } from '../VisualStyleFn'
-import { VisualPropertyValueType, VisualProperty, Bypass } from '..'
+import {
+  VisualStyle,
+  VisualPropertyValueType,
+  VisualProperty,
+  Bypass,
+} from '..'
 
-import { NodeView } from '../../ViewModel'
+import { cyJsVisualPropertyConverter } from './cyJsVisualPropertyMap'
 
 import {
   CXId,
@@ -23,16 +28,33 @@ import {
   CXVisualPropertyValue,
 } from './cxVisualPropertyMap'
 
-export const nodeVisualProperties = (visualStyle: VisualStyle) => {
-  return Object.keys(visualStyle).filter((key) => key.startsWith('node'))
+// import {
+//   cyJsVisualPropertyConverter,
+//   CyJsPropertyName,
+// } from './cyJsVisualPropertyMap'
+
+export const nodeVisualProperties = (
+  visualStyle: VisualStyle,
+): VisualPropertyName[] => {
+  return Object.keys(visualStyle).filter((key) =>
+    key.startsWith('node'),
+  ) as VisualPropertyName[]
 }
 
-export const edgeVisualProperties = (visualStyle: VisualStyle) => {
-  return Object.keys(visualStyle).filter((key) => key.startsWith('edge'))
+export const edgeVisualProperties = (
+  visualStyle: VisualStyle,
+): VisualPropertyName[] => {
+  return Object.keys(visualStyle).filter((key) =>
+    key.startsWith('edge'),
+  ) as VisualPropertyName[]
 }
 
-export const networkVisualProperties = (visualStyle: VisualStyle) => {
-  return Object.keys(visualStyle).filter((key) => key.startsWith('network'))
+export const networkVisualProperties = (
+  visualStyle: VisualStyle,
+): VisualPropertyName[] => {
+  return Object.keys(visualStyle).filter((key) =>
+    key.startsWith('network'),
+  ) as VisualPropertyName[]
 }
 
 const defaultVisualStyle: VisualStyle = {
@@ -104,16 +126,19 @@ const defaultVisualStyle: VisualStyle = {
   },
   nodeLabelFont: {
     name: 'nodeLabelFont',
-    default: 'Arial',
+    default: 'serif',
     mapping: null,
     bypassMap: {},
   },
-  nodeLabelPosition: {
-    name: 'nodeLabelPosition',
-    default: {
-      horizontalAlign: 'center',
-      verticalAlign: 'center',
-    },
+  nodeLabelHorizontalAlign: {
+    name: 'nodeLabelHorizontalAlign',
+    default: 'center',
+    mapping: null,
+    bypassMap: {},
+  },
+  nodeLabelVerticalAlign: {
+    name: 'nodeLabelVerticalAlign',
+    default: 'center',
     mapping: null,
     bypassMap: {},
   },
@@ -221,7 +246,7 @@ const defaultVisualStyle: VisualStyle = {
   },
   edgeLabelFont: {
     name: 'edgeLabelFont',
-    default: 'Arial',
+    default: 'serif',
     mapping: null,
     bypassMap: {},
   },
@@ -402,8 +427,8 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 attribute: cxMapping.definition.attribute,
               }
               break
-            case 'DISCRETE':
-              visualStyle[vpName].mapping = {
+            case 'DISCRETE': {
+              const m: DiscreteMappingFunction = {
                 type: 'discrete',
                 attribute: cxMapping.definition.attribute,
                 default: visualStyle[vpName].default,
@@ -414,10 +439,12 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                     vpValue: converter.valueConverter(vp),
                   }
                 }),
-              } as DiscreteMappingFunction
+              }
+              visualStyle[vpName].mapping = m
               break
-            case 'CONTINUOUS':
-              visualStyle[vpName].mapping = {
+            }
+            case 'CONTINUOUS': {
+              const m: ContinuousMappingFunction = {
                 type: 'continuous',
                 attribute: cxMapping.definition.attribute,
                 intervals: cxMapping.definition.map.map((interval) => {
@@ -440,10 +467,12 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                     )
                   }
 
-                  return convertedInterval
+                  return convertedInterval as ContinuousFunctionInterval
                 }),
-              } as ContinuousMappingFunction
+              }
+              visualStyle[vpName].mapping = m
               break
+            }
             default:
               break
           }
@@ -469,61 +498,88 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
 export const setVisualStyle = (
   visualStyle: VisualStyle,
   changeSet: VisualStyleChangeSet,
-) => {
+): VisualStyle => {
   return { ...visualStyle, ...changeSet }
 }
 
-export const applyVisualStyle = (
+export const createCyJsView = (
   vs: VisualStyle,
   network: Network,
   nodeTable: Table,
   edgeTable: Table,
-): NetworkView => {
-  const nodeViews = network.nodes.map((node) => {
-    const computedVisualProperties: {
-      vpName: VisualPropertyName
-      vpValue: VisualPropertyValueType
-    }[] = []
+): CyJsNetworkView => {
+  const cyNodeViews = network.nodes.map((node): CyJsNodeView => {
+    const positionX = nodeTable.rows.get(node.id)?.positionX ?? 0
+    const positionY = nodeTable.rows.get(node.id)?.positionY ?? 0
+    const nodeAttrs = nodeTable.rows.get(node.id)
+    const name = (nodeAttrs?.n ??
+      nodeAttrs?.name ??
+      '') as VisualPropertyValueType
+
+    const cyStyle: Record<string, VisualPropertyValueType> = {}
 
     nodeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
       const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
       const vpValue = vp.bypassMap?.[node.id] ?? vp.default
-      computedVisualProperties.push({ vpName, vpValue })
+      const cyStyleName = cyJsVisualPropertyConverter[vpName]?.cyJsVPName
+
+      if (cyStyleName != null) {
+        cyStyle[cyStyleName] = vpValue
+      }
     })
-    const nodeView: NodeView = {
-      id: node.id,
-      computedVisualProperties: computedVisualProperties as {
-        vpName: VisualPropertyName
-        vpValue: VisualPropertyValueType
-      }[],
+
+    cyStyle.label = name
+
+    const cyNodeView = {
+      group: 'nodes',
+      data: {
+        id: node.id,
+      },
+      position: {
+        x: positionX as number,
+        y: positionY as number,
+      },
+      style: cyStyle,
     }
-    return nodeView
+
+    return cyNodeView
   })
 
-  const edgeViews = network.edges.map((edge) => {
-    const computedVisualProperties: {
-      vpName: VisualPropertyName
-      vpValue: VisualPropertyValueType
-    }[] = []
+  const cyEdgeViews = network.edges.map((edge): CyJsEdgeView => {
+    const cyStyle: Record<string, VisualPropertyValueType> = {}
 
-    nodeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
+    edgeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
       const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
       const vpValue = vp.bypassMap?.[edge.id] ?? vp.default
-      computedVisualProperties.push({ vpName, vpValue })
+      const cyStyleName = cyJsVisualPropertyConverter[vpName]?.cyJsVPName
+
+      if (cyStyleName != null) {
+        cyStyle[cyStyleName] = vpValue
+      }
     })
-    const edgeView: EdgeView = {
-      id: edge.id,
-      computedVisualProperties: computedVisualProperties as {
-        vpName: VisualPropertyName
-        vpValue: VisualPropertyValueType
-      }[],
+
+    if (cyStyle.autorotate === true) {
+      delete cyStyle.autorotate
+      cyStyle['text-rotation'] = 'autorotate'
     }
-    return edgeView
+
+    const cyEdge = {
+      group: 'edges',
+      data: {
+        id: edge.id,
+        source: edge.s,
+        target: edge.t,
+      },
+      style: cyStyle,
+    }
+
+    return cyEdge
   })
+
   const networkView = {
     id: network.id,
-    nodeViews,
-    edgeViews,
+    nodeViews: cyNodeViews,
+    edgeViews: cyEdgeViews,
   }
 
   return networkView

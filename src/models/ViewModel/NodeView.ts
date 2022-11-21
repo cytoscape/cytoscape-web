@@ -1,10 +1,17 @@
 import { IdType } from '../IdType'
 import { VisualPropertyValueType } from '../VisualStyleModel'
-import { VisualPropertyName } from '../VisualStyleModel/VisualPropertyName'
 export interface NodeView {
   id: IdType // ID of the associated node
-  computedVisualProperties: {
-    vpName: VisualPropertyName
-    vpValue: VisualPropertyValueType
-  }[]
+}
+
+export interface CyJsNodeView {
+  group: string
+  data: {
+    id: IdType
+  }
+  position: {
+    x: number
+    y: number
+  }
+  style: Record<string, VisualPropertyValueType>
 }
