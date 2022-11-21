@@ -30,6 +30,7 @@ export default function NetworkRenderer(
   const cyContainer = React.useRef(null)
 
   const renderCyJs = (): void => {
+    const computeStyleSheets = true
     const computedRender = (): void => {
       const networkView = VisualStyleFn.createCyJsView(
         vs,
@@ -41,20 +42,23 @@ export default function NetworkRenderer(
       cy.add(networkView.edgeViews)
     }
 
-    // const styleSheetRender = (): void => {
-    //   const styleSheet = VisualStyleFn.createCyJsStyleSheet(
-    //     vs,
-    //     n,
-    //     table.nodeTable,
-    //     table.edgeTable,
-    //   )
-    //   // cy.style().fromJson(styleSheet).update()
-    // }
+    const styleSheetRender = (): void => {
+      const { defaultStyle, cyNodes, cyEdges } =
+        VisualStyleFn.createCyJsStyleSheetView(
+          vs,
+          n,
+          table.nodeTable,
+          table.edgeTable,
+        )
+      cy.add(cyNodes)
+      cy.add(cyEdges)
+      cy.style(defaultStyle)
+    }
 
     if (cy != null) {
       cy.startBatch()
       cy.remove('*')
-      computedRender()
+      computeStyleSheets ? styleSheetRender() : computedRender()
       cy.endBatch()
       cy.fit()
       cy.style().update()

@@ -28,6 +28,8 @@ import {
   CXVisualPropertyValue,
 } from './cxVisualPropertyMap'
 
+import { NodeSingular } from 'cytoscape'
+
 // import {
 //   cyJsVisualPropertyConverter,
 //   CyJsPropertyName,
@@ -583,4 +585,82 @@ export const createCyJsView = (
   }
 
   return networkView
+}
+
+export const createCyJsStyleSheetView = (
+  vs: VisualStyle,
+  network: Network,
+  nodeTable: Table,
+  edgeTable: Table,
+): { defaultStyle: object; cyNodes: object[]; cyEdges: object[] } => {
+  const defaultNodeStyle: Record<string, VisualPropertyValueType | any> = {}
+  nodeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
+    const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
+    const vpValue = vp.default
+    const cyStyleName = cyJsVisualPropertyConverter[vpName]?.cyJsVPName
+
+    if (cyStyleName != null) {
+      defaultNodeStyle[cyStyleName] = vpValue
+    }
+  })
+
+  defaultNodeStyle.label = (node: NodeSingular): string => {
+    const nodeId = node.data('id')
+    const nodeAttrs = nodeTable.rows.get(nodeId)
+    const name: string =
+      (nodeAttrs?.n as string) ?? (nodeAttrs?.name as string) ?? ''
+    return name
+  }
+
+  const defaultEdgeStyle: Record<string, VisualPropertyValueType | any> = {}
+  edgeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
+    const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
+    const vpValue = vp.default
+    const cyStyleName = cyJsVisualPropertyConverter[vpName]?.cyJsVPName
+
+    if (cyStyleName != null) {
+      defaultEdgeStyle[cyStyleName] = vpValue
+    }
+  })
+
+  const defaultStyle = [
+    {
+      selector: 'node',
+      style: defaultNodeStyle,
+    },
+    {
+      selector: 'edge',
+      style: defaultEdgeStyle,
+    },
+  ]
+
+  const cyNodes = network.nodes.map((node) => {
+    const positionX = nodeTable.rows.get(node.id)?.positionX ?? 0
+    const positionY = nodeTable.rows.get(node.id)?.positionY ?? 0
+    return {
+      group: 'nodes',
+      data: {
+        id: node.id,
+      },
+      position: {
+        x: positionX as number,
+        y: positionY as number,
+      },
+    }
+  })
+
+  const cyEdges = network.edges.map((edge) => {
+    const cyEdge = {
+      group: 'edges',
+      data: {
+        id: edge.id,
+        source: edge.s,
+        target: edge.t,
+      },
+    }
+
+    return cyEdge
+  })
+
+  return { defaultStyle, cyNodes, cyEdges }
 }
