@@ -1,6 +1,10 @@
 import * as React from 'react'
 import Box from '@mui/material/Box'
 import { Typography } from '@mui/material'
+import InputLabel from '@mui/material/InputLabel'
+import MenuItem from '@mui/material/MenuItem'
+import FormControl from '@mui/material/FormControl'
+import Select from '@mui/material/Select'
 import { IdType } from '../models/IdType'
 import VisualStyleFn, {
   VisualProperty,
@@ -8,6 +12,7 @@ import VisualStyleFn, {
   VisualStyle,
 } from '../models/VisualStyleModel'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
+import { NodeShapeType } from '../models/VisualStyleModel/VisualPropertyValue'
 
 // interface VizmmaperView {}
 
@@ -18,6 +23,37 @@ function VisualPropertyView(props: {
   const { visualProperty } = props
   const setDefault = useVisualStyleStore((state) => state.setDefault)
 
+  const defaultVal =
+    visualProperty.name === 'nodeShape' ? (
+      <Box>
+        <FormControl fullWidth>
+          <InputLabel id="node-shape">Node Shape</InputLabel>
+          <Select
+            labelId="node-shape"
+            id="node-shape-select"
+            value={visualProperty.default}
+            label="Node shape"
+            onChange={(e) =>
+              setDefault(
+                props.currentNetworkId,
+                visualProperty.name,
+                e.target.value,
+              )
+            }
+          >
+            {Object.values(NodeShapeType).map((nodeShape) => {
+              return (
+                <MenuItem key={nodeShape} value={nodeShape}>
+                  {nodeShape}
+                </MenuItem>
+              )
+            })}
+          </Select>
+        </FormControl>
+      </Box>
+    ) : (
+      <Box>{visualProperty.default}</Box>
+    )
   return (
     <Box
       sx={{
@@ -26,12 +62,9 @@ function VisualPropertyView(props: {
         flexDirection: 'row',
         justifyContent: 'space-between',
       }}
-      onClick={() =>
-        setDefault(props.currentNetworkId, 'nodeShape', 'rectangle')
-      }
     >
       <Box>{visualProperty.name}</Box>
-      <Box>{visualProperty.default}</Box>
+      {defaultVal}
     </Box>
   )
 }
