@@ -28,7 +28,12 @@ import {
   CXVisualPropertyValue,
 } from './cxVisualPropertyMap'
 
-import { NodeSingular } from 'cytoscape'
+import {
+  NodeSingular,
+  Stylesheet,
+  ElementDefinition,
+  ElementGroup,
+} from 'cytoscape'
 
 // import {
 //   cyJsVisualPropertyConverter,
@@ -592,7 +597,11 @@ export const createCyJsStyleSheetView = (
   network: Network,
   nodeTable: Table,
   edgeTable: Table,
-): { defaultStyle: object; cyNodes: object[]; cyEdges: object[] } => {
+): {
+  defaultStyle: Stylesheet[]
+  cyNodes: ElementDefinition[]
+  cyEdges: ElementDefinition[]
+} => {
   const defaultNodeStyle: Record<string, VisualPropertyValueType | any> = {}
   nodeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
     const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
@@ -638,7 +647,7 @@ export const createCyJsStyleSheetView = (
     const positionX = nodeTable.rows.get(node.id)?.positionX ?? 0
     const positionY = nodeTable.rows.get(node.id)?.positionY ?? 0
     return {
-      group: 'nodes',
+      group: 'nodes' as ElementGroup,
       data: {
         id: node.id,
       },
@@ -651,7 +660,7 @@ export const createCyJsStyleSheetView = (
 
   const cyEdges = network.edges.map((edge) => {
     const cyEdge = {
-      group: 'edges',
+      group: 'edges' as ElementGroup,
       data: {
         id: edge.id,
         source: edge.s,
