@@ -1,2 +1,17 @@
-export type HoritzontalAlignType = 'left' | 'center' | 'right'
-export type VerticalAlignType = 'top' | 'center' | 'bottom'
+export const HoritzontalAlignType = {
+  Left: 'left',
+  Center: 'center',
+  Right: 'right',
+} as const
+
+export type HoritzontalAlignType =
+  typeof HoritzontalAlignType[keyof typeof HoritzontalAlignType]
+
+export const VerticalAlignType = {
+  Top: 'top',
+  Center: 'center',
+  Bottom: 'bottom',
+} as const
+
+export type VerticalAlignType =
+  typeof VerticalAlignType[keyof typeof VerticalAlignType]

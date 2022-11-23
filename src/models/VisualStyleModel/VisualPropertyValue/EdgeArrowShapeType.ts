@@ -1,6 +1,10 @@
+export const EdgeArrowShapeType = {
+  Triangle: 'triangle',
+  Circle: 'circle',
+  Diamond: 'diamond',
+  Square: 'square',
+  Tee: 'tee',
+} as const
+
 export type EdgeArrowShapeType =
-  | 'triangle'
-  | 'circle'
-  | 'diamond'
-  | 'square'
-  | 'tee'
+  typeof EdgeArrowShapeType[keyof typeof EdgeArrowShapeType]

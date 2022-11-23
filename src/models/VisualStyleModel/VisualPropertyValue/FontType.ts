@@ -1,9 +1,7 @@
-// export type FontType =
-//   | 'Arial'
-//   | 'Verdana'
-//   | 'Tahoma'
-//   | 'Times New Roman'
-//   | 'Garamond'
-//   | 'Courier New'
+export const FontType = {
+  Serif: 'serif',
+  SansSerif: 'sans-serif',
+  Monospace: 'monospace',
+} as const
 
-export type FontType = 'serif' | 'sans-serif' | 'monospace'
+export type FontType = typeof FontType[keyof typeof FontType]
