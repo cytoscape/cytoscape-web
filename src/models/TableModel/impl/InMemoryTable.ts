@@ -12,6 +12,7 @@ import { AttributeDeclaration } from '../../../utils/cx/Cx2/CoreAspects/Attribut
 export const createTable = (id: IdType): Table => ({
   id,
   columns: new Map<AttributeName, ValueTypeName>(),
+  aliases: new Map<AttributeName, AttributeName>(),
   rows: new Map<IdType, Record<AttributeName, ValueType>>(),
 })
 
@@ -49,18 +50,23 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   // Columns
   const attrDec = cxUtil.getAttributeDeclarations(cx)
   const attrDefs: AttributeDeclaration = attrDec.attributeDeclarations[0]
-  const { nodes, edges } = attrDefs
 
-  const nodeAttrNames: string[] = Object.keys(nodes)
-  const edgeAttrNames = Object.keys(edges)
+  Object.entries(attrDefs.nodes).forEach(([attrName, attrDef]) => {
+    nodeTable.columns.set(attrName, attrDef.d as ValueTypeName)
 
-  nodeAttrNames.forEach((attrName) => {
-    nodeTable.columns.set(attrName, nodes[attrName].d as ValueTypeName)
+    if (attrDef.a != null) {
+      nodeTable.aliases.set(attrName, attrDef.a)
+    }
   })
   nodeTable.columns.set(positionXKey, 'double')
   nodeTable.columns.set(positionYKey, 'double')
-  edgeAttrNames.forEach((attrName) => {
-    edgeTable.columns.set(attrName, edges[attrName].d as ValueTypeName)
+
+  Object.entries(attrDefs.edges).forEach(([attrName, attrDef]) => {
+    edgeTable.columns.set(attrName, attrDef.d)
+
+    if (attrDef.a != null) {
+      edgeTable.aliases.set(attrName, attrDef.a)
+    }
   })
 
   return [nodeTable, edgeTable]

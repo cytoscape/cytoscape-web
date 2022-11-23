@@ -11,13 +11,13 @@ import { useTableStore } from '../store/TableStore'
 import { IdType } from '../models/IdType'
 
 // import { useTableStore } from '../hooks/useTableStore'
-// import {
-//   DataEditor,
-//   GridCellKind,
-//   GridCell,
-//   EditableGridCell,
-//   Item,
-// } from '@glideapps/glide-data-grid'
+import {
+  DataEditor,
+  GridCellKind,
+  GridCell,
+  // EditableGridCell,
+  Item,
+} from '@glideapps/glide-data-grid'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -52,11 +52,6 @@ function a11yProps(index: number): { id: string; 'aria-controls': string } {
   }
 }
 
-// interface TableDataRow {
-//   attributeA: string
-//   attributeB: string
-//   attributeC: string
-// }
 export default function TableBrowser(props: {
   currentNetworkId: IdType
 }): React.ReactElement {
@@ -66,17 +61,12 @@ export default function TableBrowser(props: {
     useTableStore((state) => state.tables)
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
+  const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
+  const columns = Array.from(currentTable?.columns.entries() ?? new Map()).map(
+    ([key, value], index) => ({ id: key, title: key, index }),
+  )
   // const [showSearch, setShowSearch] = React.useState(false)
   // const onSearchClose = React.useCallback(() => setShowSearch(false), [])
-
-  // const { rows, columns, loadTableState, setCellValue } = useTableStore(
-  //   (state) => ({
-  //     rows: state.rows,
-  //     columns: state.columns,
-  //     loadTableState: state.loadTableState,
-  //     setCellValue: state.setCellValue,
-  //   }),
-  // )
 
   const handleChange = (
     event: React.SyntheticEvent,
@@ -85,39 +75,36 @@ export default function TableBrowser(props: {
     setCurrentTabIndex(newValue)
   }
 
-  // const getContent = React.useCallback(
-  //   (cell: Item): GridCell => {
-  //     const [col, row] = cell
-  //     const dataRow = rows[row]
+  const getContent = React.useCallback(
+    (cell: Item): GridCell => {
+      const [col, row] = cell
+      const dataRow = currentTable.rows.get(`${row}`)
 
-  //     if (dataRow == null) {
-  //       return {
-  //         allowOverlay: true,
-  //         readonly: false,
-  //         kind: GridCellKind.Text,
-  //         displayData: '',
-  //         data: '',
-  //       }
-  //     }
+      if (dataRow == null) {
+        return {
+          allowOverlay: true,
+          readonly: false,
+          kind: GridCellKind.Text,
+          displayData: '',
+          data: '',
+        }
+      }
 
-  //     const indexes: Array<keyof TableDataRow> = [
-  //       'attributeA',
-  //       'attributeB',
-  //       'attributeC',
-  //     ]
+      const colId = columns[col].id
+      const colKey = currentTable.aliases.get(colId) ?? colId
 
-  //     const d = dataRow[indexes[col]]
+      const cellData = String(dataRow[colKey]) ?? ''
 
-  //     return {
-  //       kind: GridCellKind.Text,
-  //       allowOverlay: true,
-  //       displayData: d,
-  //       readonly: false,
-  //       data: d,
-  //     }
-  //   },
-  //   [rows, columns],
-  // )
+      return {
+        kind: GridCellKind.Text,
+        allowOverlay: true,
+        displayData: cellData,
+        readonly: false,
+        data: cellData,
+      }
+    },
+    [props.currentNetworkId, currentTable],
+  )
 
   // const onCellEdited = React.useCallback(
   //   (cell: Item, newValue: EditableGridCell) => {
@@ -180,59 +167,35 @@ export default function TableBrowser(props: {
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
-        {/* <Button onClick={() => loadTableState('small')}>
-          Load 1,000 Row Table
-        </Button>
-        <Button onClick={() => loadTableState('medium')}>
-          Load 10,000 Row Table
-        </Button>
-        <Button onClick={() => loadTableState('large')}>
-          Load 100,000 Row Table
-        </Button>
-
-        <Button onClick={() => setShowSearch(!showSearch)}>
-          Toggle Search
-        </Button> */}
-
-        {/* {rows.length > 0 && columns.length > 0 && (
-          <DataEditor
-            rowMarkers={'both'}
-            showSearch={showSearch}
-            keybindings={{ search: true }}
-            getCellsForSelection={true}
-            onSearchClose={onSearchClose}
-            width={1200}
-            height={400}
-            getCellContent={getContent}
-            onCellEdited={onCellEdited}
-            columns={columns}
-            rows={rows.length}
-          />
-        )} */}
-        <div>Nodes</div>
-        <div>
-          {JSON.stringify(
-            [
-              Object.fromEntries(nodeTable?.columns ?? new Map()),
-              Object.fromEntries(nodeTable?.rows ?? new Map()),
-            ],
-            null,
-            2,
-          )}
-        </div>
+        <DataEditor
+          rowMarkers={'both'}
+          // showSearch={showSearch}
+          keybindings={{ search: true }}
+          getCellsForSelection={true}
+          // onSearchClose={onSearchClose}
+          width={1200}
+          height={400}
+          getCellContent={getContent}
+          // onCellEdited={onCellEdited}
+          columns={columns}
+          rows={currentTable?.rows.size}
+        />
+        {/* )} */}
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
-        <div>Edges</div>
-        <div>
-          {JSON.stringify(
-            [
-              Object.fromEntries(edgeTable?.columns ?? new Map()),
-              Object.fromEntries(edgeTable?.rows ?? new Map()),
-            ],
-            null,
-            2,
-          )}
-        </div>
+        <DataEditor
+          rowMarkers={'both'}
+          // showSearch={showSearch}
+          keybindings={{ search: true }}
+          getCellsForSelection={true}
+          // onSearchClose={onSearchClose}
+          width={1200}
+          height={400}
+          getCellContent={getContent}
+          // onCellEdited={onCellEdited}
+          columns={columns}
+          rows={currentTable?.rows.size}
+        />
       </TabPanel>
     </Box>
   )
