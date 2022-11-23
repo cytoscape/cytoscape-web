@@ -76,6 +76,7 @@ export default function NetworkRenderer(
   React.useEffect(() => {
     const cy: Core = Cytoscape({
       container: cyContainer.current,
+      hideEdgesOnViewport: true,
     })
     cy.resize()
     setCy(cy)

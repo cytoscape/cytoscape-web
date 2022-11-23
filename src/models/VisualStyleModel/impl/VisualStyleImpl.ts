@@ -612,6 +612,7 @@ export const createCyJsStyleSheetView = (
       defaultNodeStyle[cyStyleName] = vpValue
     }
   })
+  defaultNodeStyle['min-zoomed-font-size'] = 14
 
   defaultNodeStyle.label = (node: NodeSingular): string => {
     const nodeId = node.data('id')
@@ -631,6 +632,12 @@ export const createCyJsStyleSheetView = (
       defaultEdgeStyle[cyStyleName] = vpValue
     }
   })
+  defaultEdgeStyle['min-zoomed-font-size'] = 14
+
+  if (defaultEdgeStyle.autorotate === true) {
+    delete defaultEdgeStyle.autorotate
+    defaultEdgeStyle['text-rotation'] = 'autorotate'
+  }
 
   const defaultStyle = [
     {
