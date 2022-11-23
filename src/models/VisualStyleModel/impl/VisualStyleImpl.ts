@@ -18,7 +18,7 @@ import {
   Bypass,
 } from '..'
 
-import { cyJsVisualPropertyConverter } from './cyJsVisualPropertyMap'
+import { cyJsVisualPropertyConverter } from './cyJsVisualPropertyConverter'
 
 import {
   CXId,
@@ -26,7 +26,7 @@ import {
   cxVisualPropertyConverter,
   CXVisualPropertyConverter,
   CXVisualPropertyValue,
-} from './cxVisualPropertyMap'
+} from './cxVisualPropertyConverter'
 
 import {
   NodeSingular,
@@ -34,11 +34,6 @@ import {
   ElementDefinition,
   ElementGroup,
 } from 'cytoscape'
-
-// import {
-//   cyJsVisualPropertyConverter,
-//   CyJsPropertyName,
-// } from './cyJsVisualPropertyMap'
 
 export const nodeVisualProperties = (
   visualStyle: VisualStyle,
