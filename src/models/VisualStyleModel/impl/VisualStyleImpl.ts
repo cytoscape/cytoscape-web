@@ -674,12 +674,7 @@ export const createCyJsStyleSheetView = (
                   ? row?.[column.alias]
                   : row?.[attribute]) ?? column?.defaultValue
 
-              if (cyStyleName === 'target-arrow-shape') {
-                return 'triangle'
-              }
-
               if (!Array.isArray(value) && value != null) {
-                console.log(value, m.vpValueMap.get(value), cyStyleName)
                 return m.vpValueMap.get(value) ?? defaultValue
               }
 
@@ -814,6 +809,7 @@ export const createCyJsStyleSheetView = (
                         const minVP = minVPValue as number
                         const maxVP = maxVPValue as number
                         const t = (v - minV) / (maxV - minV)
+
                         return minVP + t * (maxVP - minVP)
                       }
                     }
@@ -835,6 +831,7 @@ export const createCyJsStyleSheetView = (
     }
   })
   edgeStyle['min-zoomed-font-size'] = 14
+  edgeStyle['curve-style'] = 'bezier'
 
   if (edgeStyle.autorotate === true) {
     delete edgeStyle.autorotate
@@ -851,9 +848,6 @@ export const createCyJsStyleSheetView = (
       style: edgeStyle,
     },
   ]
-
-  console.log(vs, defaultStyle)
-
   const cyNodes = network.nodes.map((node) => {
     const positionX = nodeTable.rows.get(node.id)?.positionX ?? 0
     const positionY = nodeTable.rows.get(node.id)?.positionY ?? 0
@@ -882,5 +876,9 @@ export const createCyJsStyleSheetView = (
     return cyEdge
   })
 
-  return { defaultStyle, cyNodes, cyEdges }
+  return {
+    defaultStyle,
+    cyNodes,
+    cyEdges,
+  }
 }

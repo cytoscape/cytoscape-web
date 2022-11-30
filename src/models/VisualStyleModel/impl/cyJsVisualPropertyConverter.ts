@@ -168,7 +168,7 @@ export const cyJsVisualPropertyConverter: Record<
   edgeLabelRotation: numberConverter('text-rotation'),
   edgeLabelAutoRotation: booleanConverter('autorotate'),
   edgeLabelOpacity: numberConverter('text-opacity'),
-  edgeOpacity: numberConverter('background-opacity'),
+  edgeOpacity: numberConverter('line-opacity'),
   edgeVisibility: visibilityTypeConverter('display'),
 
   networkBackgroundColor: null,
