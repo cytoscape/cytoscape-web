@@ -37,6 +37,7 @@ import {
   EdgeSingular,
 } from 'cytoscape'
 import { defaultVisualStyle } from './DefaultVisualStyle'
+import { IdType } from '../../IdType'
 
 export const nodeVisualProperties = (
   visualStyle: VisualStyle,
@@ -372,6 +373,8 @@ export const createCyJsStyleSheetView = (
   defaultStyle: Stylesheet[]
   cyNodes: ElementDefinition[]
   cyEdges: ElementDefinition[]
+  nodeBypasses: Record<IdType, Partial<Record<string, VisualPropertyValueType>>>
+  edgeBypasses: Record<IdType, Partial<Record<string, VisualPropertyValueType>>>
 } => {
   // edge ids are of the form 'e1', 'e2', etc. but our app stores them as '1', '2', etc.
   const nodeStyle: Record<
@@ -383,20 +386,20 @@ export const createCyJsStyleSheetView = (
     VisualPropertyValueType | ((edge: EdgeSingular) => VisualPropertyValueType)
   > = {}
 
-  // const nodeBypasses: Record<
-  //   IdType,
-  //   Partial<Record<VisualPropertyName, VisualPropertyValueType>>
-  // > = {}
-  // const edgeBypasses: Record<
-  //   IdType,
-  //   Partial<Record<VisualPropertyName, VisualPropertyValueType>>
-  // > = {}
+  const nodeBypasses: Record<
+    IdType,
+    Partial<Record<string, VisualPropertyValueType>>
+  > = {}
+  const edgeBypasses: Record<
+    IdType,
+    Partial<Record<string, VisualPropertyValueType>>
+  > = {}
 
   nodeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
     const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
     const defaultValue = vp.defaultValue
     const mapping = vp.mapping
-    // const bypassMap = vp.bypassMap
+    const bypassMap = vp.bypassMap
     const cyStyleName = cyJsVisualPropertyConverter[vpName]?.cyJsVPName
 
     if (cyStyleName != null) {
@@ -441,17 +444,6 @@ export const createCyJsStyleSheetView = (
                 (column?.alias != null
                   ? row?.[column.alias]
                   : row?.[attribute]) ?? column?.defaultValue
-
-              // if (cyStyleName === 'background-opacity') {
-              //   console.log(
-              //     node.data('id'),
-              //     row,
-              //     column,
-              //     value,
-              //     m.vpValueMap,
-              //     defaultValue,
-              //   )
-              // }
 
               if (!Array.isArray(value) && value != null) {
                 return m.vpValueMap.get(value) ?? defaultValue
@@ -605,6 +597,18 @@ export const createCyJsStyleSheetView = (
           }
         }
       }
+
+      if (bypassMap != null) {
+        Object.entries(bypassMap).forEach(([cxNodeId, bypassValue]) => {
+          if (nodeBypasses[cxNodeId] != null) {
+            nodeBypasses[cxNodeId][cyStyleName] = bypassValue
+          } else {
+            nodeBypasses[cxNodeId] = {
+              [cyStyleName]: bypassValue,
+            }
+          }
+        })
+      }
     }
   })
   // default label mapping function (TODO this depends on many assumptions, revist this later)
@@ -629,6 +633,7 @@ export const createCyJsStyleSheetView = (
     const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
     const defaultValue = vp.defaultValue
     const mapping = vp.mapping
+    const bypassMap = vp.bypassMap
     const cyStyleName = cyJsVisualPropertyConverter[vpName]?.cyJsVPName
 
     if (cyStyleName != null) {
@@ -828,6 +833,18 @@ export const createCyJsStyleSheetView = (
           }
         }
       }
+
+      if (bypassMap != null) {
+        Object.entries(bypassMap).forEach(([cxEdgeId, bypassValue]) => {
+          if (edgeBypasses[cxEdgeId] != null) {
+            edgeBypasses[cxEdgeId][cyStyleName] = bypassValue
+          } else {
+            edgeBypasses[cxEdgeId] = {
+              [cyStyleName]: bypassValue,
+            }
+          }
+        })
+      }
     }
   })
   edgeStyle['min-zoomed-font-size'] = 14
@@ -880,5 +897,7 @@ export const createCyJsStyleSheetView = (
     defaultStyle,
     cyNodes,
     cyEdges,
+    nodeBypasses,
+    edgeBypasses,
   }
 }
