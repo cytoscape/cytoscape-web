@@ -6,7 +6,7 @@ import { VisualMappingFunction } from './VisualMappingFunction'
 // include both the visualpropertyvaluetype and the input value
 export interface VisualProperty<T> {
   name: VisualPropertyName
-  default: T
+  defaultValue: T
   mapping: VisualMappingFunction<T> | null
   bypassMap: Bypass<T>
 }

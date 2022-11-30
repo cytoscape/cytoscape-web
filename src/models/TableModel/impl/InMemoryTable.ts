@@ -11,10 +11,24 @@ import { AttributeDeclaration } from '../../../utils/cx/Cx2/CoreAspects/Attribut
 
 export const createTable = (id: IdType): Table => ({
   id,
-  columns: new Map<AttributeName, ValueTypeName>(),
-  aliases: new Map<AttributeName, AttributeName>(),
+  columns: new Map<AttributeName, Column>(),
   rows: new Map<IdType, Record<AttributeName, ValueType>>(),
 })
+
+// a particular row may not have a value associated with it and a column may not define the default value
+// in such cases fallback to the model defined default value
+export const valueTypeDefaults: Record<ValueTypeName, ValueType> = {
+  list_of_boolean: [],
+  list_of_double: [],
+  list_of_integer: [],
+  list_of_long: [],
+  list_of_string: [],
+  string: '',
+  long: 0,
+  integer: 0,
+  double: 0.0,
+  boolean: false,
+}
 
 export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   const nodeTable = createTable(`${id}-nodes`)
@@ -29,54 +43,80 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     Record<string, CxValue>
   > = cxUtil.getEdgeAttributes(cx)
 
-  const cxNodes: Node[] = cxUtil.getNodes(cx)
-
+  // append position specific data to columns/rows
   const positionXKey = 'positionX' // todo this can conflict with exiting property keys
   // generate a unique key for position and also need some thought into where positions should go
   const positionYKey = 'positionY'
-
-  nodeAttr.forEach((attr, nodeId) => {
-    const posX = (cxNodes[+nodeId].x ?? 0) as ValueType
-    const posY = (cxNodes[+nodeId].y ?? 0) as ValueType
-    attr[positionXKey] = posX
-    attr[positionYKey] = posY
-    nodeTable.rows.set(nodeId, attr as Record<AttributeName, ValueType>)
-  })
-
-  edgeAttr.forEach((attr, edgeId) => {
-    edgeTable.rows.set(edgeId, attr as Record<AttributeName, ValueType>)
-  })
+  const cxIdKey = 'cxId'
 
   // Columns
   const attrDec = cxUtil.getAttributeDeclarations(cx)
   const attrDefs: AttributeDeclaration = attrDec.attributeDeclarations[0]
 
   Object.entries(attrDefs.nodes).forEach(([attrName, attrDef]) => {
-    nodeTable.columns.set(attrName, attrDef.d as ValueTypeName)
-
-    if (attrDef.a != null) {
-      nodeTable.aliases.set(attrName, attrDef.a)
+    const columnDef: Column = {
+      type: attrDef.d as ValueTypeName,
+      name: attrName,
+      defaultValue: (attrDef.v ?? valueTypeDefaults[attrDef.d]) as ValueType,
+      ...(attrDef.a != null ? { alias: attrDef.a } : {}),
     }
+
+    nodeTable.columns.set(attrName, columnDef)
   })
-  nodeTable.columns.set(positionXKey, 'double')
-  nodeTable.columns.set(positionYKey, 'double')
+  nodeTable.columns.set(positionXKey, {
+    type: 'double',
+    name: positionXKey,
+    defaultValue: 0.0,
+  })
+  nodeTable.columns.set(positionYKey, {
+    type: 'double',
+    name: positionYKey,
+    defaultValue: 0.0,
+  })
+  nodeTable.columns.set(cxIdKey, {
+    type: 'string',
+    name: cxIdKey,
+    defaultValue: '',
+  })
 
   Object.entries(attrDefs.edges).forEach(([attrName, attrDef]) => {
-    edgeTable.columns.set(attrName, attrDef.d)
-
-    if (attrDef.a != null) {
-      edgeTable.aliases.set(attrName, attrDef.a)
+    const columnDef = {
+      type: attrDef.d as ValueTypeName,
+      name: attrName,
+      defaultValue: (attrDef.v ?? valueTypeDefaults[attrDef.d]) as ValueType,
+      ...(attrDef.a != null ? { alias: attrDef.a } : {}),
     }
+
+    edgeTable.columns.set(attrName, columnDef)
+  })
+  edgeTable.columns.set(cxIdKey, {
+    type: 'string',
+    name: cxIdKey,
+    defaultValue: '',
+  })
+
+  // Rows
+  const cxNodes: Node[] = cxUtil.getNodes(cx)
+
+  nodeAttr.forEach((attr, nodeId) => {
+    const posX = (cxNodes[+nodeId]?.x ?? 0) as ValueType
+    const posY = (cxNodes[+nodeId]?.y ?? 0) as ValueType
+    attr[positionXKey] = posX
+    attr[positionYKey] = posY
+    attr[cxIdKey] = nodeId
+    nodeTable.rows.set(nodeId, attr as Record<AttributeName, ValueType>)
+  })
+
+  edgeAttr.forEach((attr, edgeId) => {
+    attr[cxIdKey] = edgeId
+    edgeTable.rows.set(edgeId, attr as Record<AttributeName, ValueType>)
   })
 
   return [nodeTable, edgeTable]
 }
 // Utility function to get list of columns from a table
 export const columns = (table: Table): Column[] =>
-  [...table.columns.keys()].map((name: AttributeName) => ({
-    name,
-    type: table.columns.get(name) as ValueTypeName,
-  }))
+  Array.from(table.columns.values())
 
 export const addColumn = (table: Table, columns: Column[]): Table => {
   // const newColumns: Column[] = [...table.columns, ...columns]

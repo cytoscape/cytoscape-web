@@ -36,11 +36,7 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          <Typography>{children}</Typography>
-        </Box>
-      )}
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   )
 }
@@ -63,7 +59,13 @@ export default function TableBrowser(props: {
   const edgeTable = tables[networkId]?.edgeTable
   const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
   const columns = Array.from(currentTable?.columns.entries() ?? new Map()).map(
-    ([key, value], index) => ({ id: key, title: key, index }),
+    ([key, value], index) => ({
+      id: key,
+      title: key,
+      index,
+      alias: value.alias,
+      defaultValue: value.defaultValue,
+    }),
   )
   // const [showSearch, setShowSearch] = React.useState(false)
   // const onSearchClose = React.useCallback(() => setShowSearch(false), [])
@@ -77,8 +79,12 @@ export default function TableBrowser(props: {
 
   const getContent = React.useCallback(
     (cell: Item): GridCell => {
-      const [col, row] = cell
-      const dataRow = currentTable.rows.get(`${row}`)
+      const [columnIndex, rowIndex] = cell
+      const dataRow = currentTable.rows.get(`${rowIndex}`)
+      const column = columns[columnIndex]
+      const columnKey = column.alias ?? column.title
+      const cellData =
+        String(dataRow?.[columnKey]) ?? String(column.defaultValue)
 
       if (dataRow == null) {
         return {
@@ -90,11 +96,6 @@ export default function TableBrowser(props: {
         }
       }
 
-      const colId = columns[col].id
-      const colKey = currentTable.aliases.get(colId) ?? colId
-
-      const cellData = String(dataRow[colKey]) ?? ''
-
       return {
         kind: GridCellKind.Text,
         allowOverlay: true,
@@ -103,7 +104,7 @@ export default function TableBrowser(props: {
         data: cellData,
       }
     },
-    [props.currentNetworkId, currentTable],
+    [props.currentNetworkId, currentTable, tables],
   )
 
   // const onCellEdited = React.useCallback(

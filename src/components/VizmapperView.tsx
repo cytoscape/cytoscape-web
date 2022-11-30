@@ -31,7 +31,7 @@ function VisualPropertyView(props: {
           <Select
             labelId="node-shape"
             id="node-shape-select"
-            value={visualProperty.default}
+            value={visualProperty.defaultValue}
             label="Node shape"
             onChange={(e) =>
               setDefault(
@@ -52,7 +52,7 @@ function VisualPropertyView(props: {
         </FormControl>
       </Box>
     ) : (
-      <Box>{visualProperty.default}</Box>
+      <Box>{visualProperty.defaultValue}</Box>
     )
   return (
     <Box

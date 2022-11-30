@@ -116,3 +116,28 @@ export const networkFetcher = async (
 
   return { network, visualStyle, nodeTable, edgeTable }
 }
+
+export const getNdexNetwork = async (
+  ndexNetworkId: string,
+): Promise<{
+  network: Network
+  nodeTable: Table
+  edgeTable: Table
+  visualStyle: VisualStyle
+}> => {
+  const ndexUrl = `https://public.ndexbio.org/v3/networks/${ndexNetworkId}`
+  const response = await fetch(ndexUrl)
+  if (!response.ok) {
+    throw new Error(`Error! status: ${response.status}`)
+  }
+
+  const cxData: Cx2 = (await response.json()) as Cx2
+  const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
+  const network: Network = NetworkFn.createNetworkFromCx(ndexNetworkId, cxData)
+  const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
+    ndexNetworkId,
+    cxData,
+  )
+
+  return { network, nodeTable, edgeTable, visualStyle }
+}

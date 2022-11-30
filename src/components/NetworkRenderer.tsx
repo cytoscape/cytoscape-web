@@ -4,8 +4,7 @@ import Cytoscape, { Core } from 'cytoscape'
 import { IdType } from '../models/IdType'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useTableStore } from '../store/TableStore'
-import { useNdexNetwork } from '../store/useNdexNetwork'
-
+import { useNetworkStore } from '../store/NetworkStore'
 import VisualStyleFn from '../models/VisualStyleModel' // VisualPropertyValueType,
 // import { cyJsVisualPropertyConverter } from '../models/VisualStyleModel/impl/cyJsVisualPropertyMap'
 
@@ -16,15 +15,12 @@ interface NetworkRendererProps {
 export default function NetworkRenderer(
   props: NetworkRendererProps,
 ): React.ReactElement {
-  const n = useNdexNetwork(props.currentNetworkId)
+  const networks = useNetworkStore((state) => state.networks)
+  const network = networks[props.currentNetworkId]
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
   const vs = visualStyles[props.currentNetworkId]
   const table = tables[props.currentNetworkId]
-
-  if (n == null || vs == null || table == null) {
-    return <div>Loading Network...</div>
-  }
 
   const [cy, setCy] = React.useState(null as any)
   const cyContainer = React.useRef(null)
@@ -34,7 +30,7 @@ export default function NetworkRenderer(
     const computedRender = (): void => {
       const networkView = VisualStyleFn.createCyJsView(
         vs,
-        n,
+        network,
         table.nodeTable,
         table.edgeTable,
       )
@@ -46,13 +42,18 @@ export default function NetworkRenderer(
       const { defaultStyle, cyNodes, cyEdges } =
         VisualStyleFn.createCyJsStyleSheetView(
           vs,
-          n,
+          network,
           table.nodeTable,
           table.edgeTable,
         )
+      cy.style(defaultStyle)
+
       cy.add(cyNodes)
       cy.add(cyEdges)
-      cy.style(defaultStyle)
+    }
+
+    if (network == null || vs == null || table == null) {
+      return
     }
 
     if (cy != null) {
@@ -61,7 +62,6 @@ export default function NetworkRenderer(
       computeStyleSheets ? styleSheetRender() : computedRender()
       cy.endBatch()
       cy.fit()
-      cy.style().update()
     }
   }
 
@@ -80,6 +80,7 @@ export default function NetworkRenderer(
     })
     cy.resize()
     setCy(cy)
+    window.cy = cy
     renderCyJs()
   }, [])
 

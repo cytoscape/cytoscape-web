@@ -60,7 +60,7 @@ export const useVisualStyleStore = create(
         vpValue: VisualPropertyValueType,
       ) => {
         set((state) => {
-          state.visualStyles[networkId][vpName].default = vpValue
+          state.visualStyles[networkId][vpName].defaultValue = vpValue
           return state
         })
       },
