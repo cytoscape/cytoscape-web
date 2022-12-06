@@ -5,6 +5,7 @@ import { IdType } from '../models/IdType'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useTableStore } from '../store/TableStore'
 import { useNetworkStore } from '../store/NetworkStore'
+import { useViewModelStore } from '../store/ViewModelStore'
 import VisualStyleFn from '../models/VisualStyleModel' // VisualPropertyValueType,
 // import { cyJsVisualPropertyConverter } from '../models/VisualStyleModel/impl/cyJsVisualPropertyMap'
 
@@ -16,9 +17,11 @@ export default function NetworkRenderer(
   props: NetworkRendererProps,
 ): React.ReactElement {
   const networks = useNetworkStore((state) => state.networks)
-  const network = networks[props.currentNetworkId]
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
+  const viewModels = useViewModelStore((state) => state.viewModels)
+  const network = networks[props.currentNetworkId]
+  const networkView = viewModels[props.currentNetworkId]
   const vs = visualStyles[props.currentNetworkId]
   const table = tables[props.currentNetworkId]
 
@@ -39,17 +42,26 @@ export default function NetworkRenderer(
     }
 
     const styleSheetRender = (): void => {
-      const { defaultStyle, cyNodes, cyEdges } =
+      const { defaultStyle, cyNodes, cyEdges, nodeBypasses, edgeBypasses } =
         VisualStyleFn.createCyJsStyleSheetView(
           vs,
           network,
           table.nodeTable,
           table.edgeTable,
+          networkView,
         )
       cy.style(defaultStyle)
-
       cy.add(cyNodes)
       cy.add(cyEdges)
+
+      // apply bypasses
+      Object.entries(nodeBypasses).forEach(([nodeId, bypass]) => {
+        cy.getElementById(nodeId).style(bypass)
+      })
+
+      Object.entries(edgeBypasses).forEach(([edgeId, bypass]) => {
+        cy.getElementById(edgeId).style(bypass)
+      })
     }
 
     if (network == null || vs == null || table == null) {

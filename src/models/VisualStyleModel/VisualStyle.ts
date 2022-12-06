@@ -3,9 +3,31 @@ import { VisualPropertyName } from './VisualPropertyName'
 import { Bypass } from './Bypass'
 import { VisualMappingFunction } from './VisualMappingFunction'
 
+//  this is an actual string representation of the visual property value typ
+// needed by ui code to make it easier to determine what to render
+export const VisualPropertyValueTypeString = {
+  Color: 'color',
+  NodeShape: 'nodeShape',
+  EdgeLine: 'edgeLine',
+  EdgeArrowShape: 'edgeArrowShape',
+  Font: 'font',
+  HoritzontalAlign: 'horitzontalAlign',
+  VerticalAlign: 'verticalAlign',
+  NodeBorderLine: 'nodeBorderLine',
+  Visibility: 'visibility',
+  Number: 'number',
+  String: 'string',
+  Boolean: 'boolean',
+}
+
+export type VisualPropertyValueTypeString =
+  typeof VisualPropertyValueTypeString[keyof typeof VisualPropertyValueTypeString]
+
 // include both the visualpropertyvaluetype and the input value
 export interface VisualProperty<T> {
   name: VisualPropertyName
+  displayName: string
+  type: VisualPropertyValueTypeString
   defaultValue: T
   mapping: VisualMappingFunction<T> | null
   bypassMap: Bypass<T>

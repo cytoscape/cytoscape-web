@@ -4,6 +4,7 @@ export const EdgeArrowShapeType = {
   Diamond: 'diamond',
   Square: 'square',
   Tee: 'tee',
+  None: 'none',
 } as const
 
 export type EdgeArrowShapeType =

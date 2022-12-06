@@ -6,25 +6,22 @@ import { Box } from '@mui/material'
 import TableBrowser from './TableBrowser'
 import NetworkRenderer from './NetworkRenderer'
 // import WorkspaceView from './WorkspaceView'
-import VizmapperView from './VizmapperView'
+import VizmapperView from './Vizmapper/VizmapperView'
 
-import { getNdexNetwork } from '../store/useNdexNetwork'
+import { getNdexNetwork, getNdexNetworkSet } from '../store/useNdexNetwork'
 import { useTableStore } from '../store/TableStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useNetworkStore } from '../store/NetworkStore'
+import { useViewModelStore } from '../store/ViewModelStore'
+
+const testNetworkSet = '8d72ec80-1fc5-11ec-9fe4-0ac135e8bacf'
 
 export const WorkSpaceEditor: React.FC = () => {
-  // const [currentNetworkId] = useState('182ca98d-84c0-11ec-b3be-0ac135e8bacf')
-  const [currentNetworkId, setCurrentNetworkId] = useState(
-    '3c94930a-6e12-11ed-a157-005056ae23aa',
-  )
+  const [currentNetworkId, setCurrentNetworkId] = useState('')
 
-  const [networks] = useState([
-    { name: 'liver', id: '3c94930a-6e12-11ed-a157-005056ae23aa' },
-    { name: 'medium', id: 'f7a218c0-2376-11ea-bb65-0ac135e8bacf' },
-    { name: 'small 1', id: '182ca98d-84c0-11ec-b3be-0ac135e8bacf' },
-    { name: 'small 2', id: '7d9598db-659d-11ed-a157-005056ae23aa' },
-  ])
+  const [networkSetSummaries, setNetworkSummaries] = useState(
+    [] as Array<{ id: string; name: string }>,
+  )
   const addNewNetwork = useNetworkStore((state) => state.add)
 
   // Visual Style Store
@@ -33,23 +30,49 @@ export const WorkSpaceEditor: React.FC = () => {
   // Table Store
   const setTables = useTableStore((state) => state.setTables)
 
-  const getNetwork = async (): Promise<void> => {
+  const setViewModel = useViewModelStore((state) => state.setViewModel)
+
+  const loadNetworkSet = async (networkSetId: string): Promise<void> => {
     try {
-      const res = await getNdexNetwork(currentNetworkId)
-      const { network, nodeTable, edgeTable, visualStyle } = res
+      const summaries = await getNdexNetworkSet(networkSetId)
+      setNetworkSummaries(summaries)
+      setCurrentNetworkId(summaries[0].id)
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  const loadCurrentNetworkById = async (networkId: string): Promise<void> => {
+    try {
+      const res = await getNdexNetwork(networkId)
+      const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
       addNewNetwork(network)
-      setVisualStyle(currentNetworkId, visualStyle)
-      setTables(currentNetworkId, nodeTable, edgeTable)
+      setVisualStyle(networkId, visualStyle)
+      setTables(networkId, nodeTable, edgeTable)
+      setViewModel(networkId, networkView)
+      window.n = network
+      window.nt = nodeTable
+      window.et = edgeTable
+      window.vs = visualStyle
+      window.nv = networkView
     } catch (err) {
       console.error(err)
     }
   }
 
   React.useEffect(() => {
-    getNetwork()
+    loadNetworkSet(testNetworkSet)
       .then(() => {})
       .catch((err) => console.error(err))
+  }, [])
+
+  React.useEffect(() => {
+    if (currentNetworkId !== '') {
+      loadCurrentNetworkById(currentNetworkId)
+        .then(() => {})
+        .catch((err) => console.error(err))
+    }
   }, [currentNetworkId])
 
   return (
@@ -60,21 +83,43 @@ export const WorkSpaceEditor: React.FC = () => {
             <Allotment.Pane preferredSize="30%">
               <Allotment vertical>
                 <Allotment.Pane preferredSize="50%">
-                  {networks.map((n) => {
-                    return (
-                      <Box
-                        sx={{
-                          backgroundColor:
-                            n.id === currentNetworkId ? 'gray' : 'white',
-                          p: 1,
-                        }}
-                        onClick={() => setCurrentNetworkId(n.id)}
-                        key={n.id}
-                      >
-                        {n.name}
-                      </Box>
-                    )
-                  })}
+                  <Box
+                    sx={{ overflow: 'scroll', height: '100%', width: '100%' }}
+                  >
+                    {networkSetSummaries.map((n) => {
+                      const ndexLink = `https://ndexbio.org/viewer/networks/${n.id}`
+                      const cxLink = `https://ndexbio.org/v3/networks/${n.id}`
+                      return (
+                        <Box
+                          sx={{
+                            backgroundColor:
+                              n.id === currentNetworkId ? 'gray' : 'white',
+                            p: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                          }}
+                          onClick={() => setCurrentNetworkId(n.id)}
+                          key={n.id}
+                        >
+                          <Box sx={{ p: 1 }}> {n.name}</Box>
+                          <Box
+                            sx={{
+                              p: 1,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                            }}
+                          >
+                            <a href={ndexLink} target="_blank" rel="noreferrer">
+                              Compare in NDEx
+                            </a>
+                            <a href={cxLink} target="_blank" rel="noreferrer">
+                              Debug cx
+                            </a>
+                          </Box>
+                        </Box>
+                      )
+                    })}
+                  </Box>
                 </Allotment.Pane>
                 <Allotment.Pane>
                   <Suspense

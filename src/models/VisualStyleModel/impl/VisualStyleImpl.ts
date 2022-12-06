@@ -3,7 +3,12 @@ import { Cx2 } from '../../../utils/cx/Cx2'
 import * as cxUtil from '../../../utils/cx/cx2-util'
 import { Network } from '../../NetworkModel'
 import { Table } from '../../TableModel'
-import { CyJsEdgeView, CyJsNodeView, CyJsNetworkView } from '../../ViewModel'
+import {
+  CyJsEdgeView,
+  CyJsNodeView,
+  CyJsNetworkView,
+  NetworkView,
+} from '../../ViewModel'
 import {
   DiscreteMappingFunction,
   ContinuousMappingFunction,
@@ -263,7 +268,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
       } else {
         // property is not found in cx, in theory all cytoscape web properties should be in
         // cx, if this happens, it is a bug
-        throw new Error(`Property ${vpName} not found in CX`)
+        console.error(`Property ${vpName} not found in CX`)
       }
     })
 
@@ -369,6 +374,7 @@ export const createCyJsStyleSheetView = (
   network: Network,
   nodeTable: Table,
   edgeTable: Table,
+  networkView: NetworkView,
 ): {
   defaultStyle: Stylesheet[]
   cyNodes: ElementDefinition[]
@@ -414,21 +420,19 @@ export const createCyJsStyleSheetView = (
             ): VisualPropertyValueType => {
               const row = nodeTable.rows.get(node.data('id'))
               const column = nodeTable.columns.get(attribute)
-              const value =
-                (column?.alias != null
-                  ? row?.[column.alias]
-                  : row?.[attribute]) ?? column?.defaultValue
+              const value = row?.[attribute] ?? column?.defaultValue
 
               if (!Array.isArray(value) && value != null) {
                 return value
               }
-              throw new Error(
+              console.error(
                 `Error applying passthrough mapping function on node ${
                   node.data('id') as string
                 }.  Value: ${String(
                   value,
                 )} should not be an array or undefined`,
               )
+              return defaultValue
             }
             break
           }
@@ -440,22 +444,13 @@ export const createCyJsStyleSheetView = (
             ): VisualPropertyValueType => {
               const row = nodeTable.rows.get(node.data('id'))
               const column = nodeTable.columns.get(attribute)
-              const value =
-                (column?.alias != null
-                  ? row?.[column.alias]
-                  : row?.[attribute]) ?? column?.defaultValue
+              const value = row?.[attribute] ?? column?.defaultValue
 
               if (!Array.isArray(value) && value != null) {
                 return m.vpValueMap.get(value) ?? defaultValue
               }
 
-              throw new Error(
-                `Error applying discrete mapping function on node ${
-                  node.data('id') as string
-                }.  Value: ${String(
-                  value,
-                )} should not be an array or undefined`,
-              )
+              return defaultValue
             }
             break
           }
@@ -467,10 +462,7 @@ export const createCyJsStyleSheetView = (
             ): VisualPropertyValueType => {
               const row = nodeTable.rows.get(node.data('id'))
               const column = nodeTable.columns.get(attribute)
-              const value =
-                (column?.alias != null
-                  ? row?.[column.alias]
-                  : row?.[attribute]) ?? column?.defaultValue
+              const value = row?.[attribute] ?? column?.defaultValue
 
               if (
                 !Array.isArray(value) &&
@@ -535,8 +527,8 @@ export const createCyJsStyleSheetView = (
                       const vpsAreColors =
                         maxVPValue != null &&
                         minVPValue != null &&
-                        chroma.valid(maxVPValue) &&
-                        chroma.valid(minVPValue)
+                        chroma.valid(maxVPValue, 'hex') &&
+                        chroma.valid(minVPValue, 'hex')
 
                       const vpsAreNumbers =
                         maxVPValue != null &&
@@ -557,7 +549,7 @@ export const createCyJsStyleSheetView = (
                           ])
                         return colorMapper(
                           value as unknown as number,
-                        ) as unknown as VisualPropertyValueType
+                        ).hex() as unknown as VisualPropertyValueType
                       }
 
                       if (vpsAreNumbers) {
@@ -585,13 +577,14 @@ export const createCyJsStyleSheetView = (
                   }
                 }
               }
-              throw new Error(
+              console.error(
                 `Error applying continuous mapping function on node ${
                   node.data('id') as string
                 }.  Value: ${String(
                   value,
                 )} should be a number, minVP, maxVP should be numbers or colors, min and max should be colors`,
               )
+              return defaultValue
             }
             break
           }
@@ -627,7 +620,7 @@ export const createCyJsStyleSheetView = (
 
   nodeStyle['min-zoomed-font-size'] = 14
 
-  const getEdgeId = (edge: EdgeSingular): string => edge.data('id').slice(1)
+  const getEdgeId = (edge: EdgeSingular): string => edge.data('id')
 
   edgeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
     const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
@@ -647,21 +640,19 @@ export const createCyJsStyleSheetView = (
             ): VisualPropertyValueType {
               const row = edgeTable.rows.get(getEdgeId(edge))
               const column = edgeTable.columns.get(attribute)
-              const value =
-                (column?.alias != null
-                  ? row?.[column.alias]
-                  : row?.[attribute]) ?? column?.defaultValue
+              const value = row?.[attribute] ?? column?.defaultValue
 
               if (!Array.isArray(value) && value != null) {
                 return value
               }
-              throw new Error(
+              console.error(
                 `Error applying passthrough mapping function on edge ${getEdgeId(
                   edge,
                 )}.  Value: ${String(
                   value,
                 )} should not be an array or undefined`,
               )
+              return defaultValue
             }
 
             break
@@ -674,22 +665,20 @@ export const createCyJsStyleSheetView = (
             ): VisualPropertyValueType {
               const row = edgeTable.rows.get(getEdgeId(edge))
               const column = edgeTable.columns.get(attribute)
-              const value =
-                (column?.alias != null
-                  ? row?.[column.alias]
-                  : row?.[attribute]) ?? column?.defaultValue
+              const value = row?.[attribute] ?? column?.defaultValue
 
               if (!Array.isArray(value) && value != null) {
                 return m.vpValueMap.get(value) ?? defaultValue
               }
 
-              throw new Error(
+              console.error(
                 `Error applying discrete mapping function on edge ${getEdgeId(
                   edge,
                 )}.  Value: ${String(
                   value,
                 )} should not be an array or undefined`,
               )
+              return defaultValue
             }
 
             break
@@ -700,12 +689,9 @@ export const createCyJsStyleSheetView = (
             edgeStyle[cyStyleName] = function (
               edge: EdgeSingular,
             ): VisualPropertyValueType {
-              const row = edgeTable.rows.get(`${Number(getEdgeId(edge))}`)
+              const row = edgeTable.rows.get(getEdgeId(edge))
               const column = edgeTable.columns.get(attribute)
-              const value =
-                (column?.alias != null
-                  ? row?.[column.alias]
-                  : row?.[attribute]) ?? column?.defaultValue
+              const value = row?.[attribute] ?? column?.defaultValue
 
               if (
                 !Array.isArray(value) &&
@@ -821,14 +807,16 @@ export const createCyJsStyleSheetView = (
                   }
                 }
               }
-              throw new Error(
+              console.error(
                 `Error applying continuous mapping function on edge ${getEdgeId(
                   edge,
                 )}.  Value: ${String(
                   value,
                 )} should be a number, minVP, maxVP should be numbers or colors, min and max should be colors`,
               )
+              return defaultValue
             }
+
             break
           }
         }
@@ -866,8 +854,9 @@ export const createCyJsStyleSheetView = (
     },
   ]
   const cyNodes = network.nodes.map((node) => {
-    const positionX = nodeTable.rows.get(node.id)?.positionX ?? 0
-    const positionY = nodeTable.rows.get(node.id)?.positionY ?? 0
+    const positionX = networkView.nodeViews[node.id]?.x ?? 0
+    const positionY = networkView.nodeViews[node.id]?.y ?? 0
+
     return {
       group: 'nodes' as ElementGroup,
       data: {

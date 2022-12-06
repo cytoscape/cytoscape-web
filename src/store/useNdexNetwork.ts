@@ -21,6 +21,7 @@ import {
 import { useVisualStyleStore } from './VisualStyleStore'
 import { useNetworkStore } from './NetworkStore'
 import { useTableStore } from './TableStore'
+import ViewModelFn, { NetworkView } from '../models/ViewModel'
 /**
  * Custom Hook to fetch data from remote or local Cache
  * State will be shared via globaz zustand store
@@ -124,20 +125,63 @@ export const getNdexNetwork = async (
   nodeTable: Table
   edgeTable: Table
   visualStyle: VisualStyle
+  networkView: NetworkView
 }> => {
-  const ndexUrl = `https://public.ndexbio.org/v3/networks/${ndexNetworkId}`
-  const response = await fetch(ndexUrl)
-  if (!response.ok) {
-    throw new Error(`Error! status: ${response.status}`)
+  try {
+    const ndexUrl = `https://public.ndexbio.org/v3/networks/${ndexNetworkId}`
+    const response = await fetch(ndexUrl)
+
+    const cxData: Cx2 = (await response.json()) as Cx2
+    const visualStyle: VisualStyle =
+      VisualStyleFn.createVisualStyleFromCx(cxData)
+    const network: Network = NetworkFn.createNetworkFromCx(
+      ndexNetworkId,
+      cxData,
+    )
+    const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
+      ndexNetworkId,
+      cxData,
+    )
+
+    const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
+      ndexNetworkId,
+      cxData,
+    )
+
+    return { network, nodeTable, edgeTable, visualStyle, networkView }
+  } catch (error) {
+    console.error(error)
+    throw error
   }
+}
 
-  const cxData: Cx2 = (await response.json()) as Cx2
-  const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
-  const network: Network = NetworkFn.createNetworkFromCx(ndexNetworkId, cxData)
-  const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
-    ndexNetworkId,
-    cxData,
-  )
+export const getNdexNetworkSet = async (
+  networkSetId: string,
+): Promise<Array<{ name: string; id: string }>> => {
+  try {
+    const ndexUrl = `https://ndexbio.org/v2/networkset/${networkSetId}`
+    const response = await fetch(ndexUrl)
+    const json = await response.json()
+    const networkIds = json.networks
 
-  return { network, nodeTable, edgeTable, visualStyle }
+    const summaries = await fetch(
+      `https://ndexbio.org/v2/batch/network/summary`,
+      {
+        method: 'POST',
+        body: JSON.stringify(networkIds),
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
+    const summariesJson = await summaries.json()
+
+    return summariesJson.map((summary: any) => {
+      return {
+        id: summary.externalId,
+        name: summary.name,
+      }
+    })
+  } catch (error) {
+    console.error(error)
+    return []
+  }
 }

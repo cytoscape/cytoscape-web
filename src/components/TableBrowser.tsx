@@ -18,6 +18,7 @@ import {
   // EditableGridCell,
   Item,
 } from '@glideapps/glide-data-grid'
+import { translateCXEdgeId } from '../models/NetworkModel/impl/CyNetwork'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -58,12 +59,17 @@ export default function TableBrowser(props: {
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
   const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
+  const maxNodeId = Array.from(nodeTable?.rows.keys() ?? new Map())
+    .map((v) => +v)
+    .sort((a, b) => b - a)[0]
+  const maxEdgeId = Array.from(edgeTable?.rows.keys() ?? new Map())
+    .map((v) => +v.slice(1))
+    .sort((a, b) => b - a)[0]
   const columns = Array.from(currentTable?.columns.entries() ?? new Map()).map(
     ([key, value], index) => ({
       id: key,
       title: key,
       index,
-      alias: value.alias,
       defaultValue: value.defaultValue,
     }),
   )
@@ -80,9 +86,11 @@ export default function TableBrowser(props: {
   const getContent = React.useCallback(
     (cell: Item): GridCell => {
       const [columnIndex, rowIndex] = cell
-      const dataRow = currentTable.rows.get(`${rowIndex}`)
+      const rowKey =
+        currentTable === nodeTable ? rowIndex : translateCXEdgeId(`${rowIndex}`)
+      const dataRow = currentTable.rows.get(`${rowKey}`)
       const column = columns[columnIndex]
-      const columnKey = column.alias ?? column.title
+      const columnKey = column.title
       const cellData =
         String(dataRow?.[columnKey]) ?? String(column.defaultValue)
 
@@ -91,7 +99,7 @@ export default function TableBrowser(props: {
           allowOverlay: true,
           readonly: false,
           kind: GridCellKind.Text,
-          displayData: '',
+          displayData: 'N/A',
           data: '',
         }
       }
@@ -179,7 +187,7 @@ export default function TableBrowser(props: {
           getCellContent={getContent}
           // onCellEdited={onCellEdited}
           columns={columns}
-          rows={currentTable?.rows.size}
+          rows={maxNodeId}
         />
         {/* )} */}
       </TabPanel>
@@ -195,7 +203,7 @@ export default function TableBrowser(props: {
           getCellContent={getContent}
           // onCellEdited={onCellEdited}
           columns={columns}
-          rows={currentTable?.rows.size}
+          rows={maxEdgeId}
         />
       </TabPanel>
     </Box>

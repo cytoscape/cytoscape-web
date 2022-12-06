@@ -11,8 +11,6 @@ import * as cxUtil from '../../../utils/cx/cx2-util'
 import { Core } from 'cytoscape'
 import * as cytoscape from 'cytoscape'
 import { createTablesFromCx } from '../../TableModel/impl/InMemoryTable'
-import VisualStyleFn, { VisualStyle } from '../../VisualStyleModel'
-import { createVisualStyleFromCx } from '../../VisualStyleModel/impl/VisualStyleImpl'
 
 const GroupType = { Nodes: 'nodes', Edges: 'edges' } as const
 type GroupType = typeof GroupType[keyof typeof GroupType]
@@ -28,23 +26,14 @@ class CyNetwork implements Network {
   private readonly _nodeTable: Table
   private readonly _edgeTable: Table
 
-  // Visual Style
-  private readonly _visualStyle: VisualStyle
-
   // Network properties as a Record
   private readonly _netAttributes: NetworkAttributes
 
-  constructor(
-    id: IdType,
-    nodeTable?: Table,
-    edgeTable?: Table,
-    visualStyle?: VisualStyle,
-  ) {
+  constructor(id: IdType, nodeTable?: Table, edgeTable?: Table) {
     this.id = id
     this._store = createCyDataStore()
     this._nodeTable = nodeTable ?? TableFn.createTable(id)
     this._edgeTable = edgeTable ?? TableFn.createTable(id)
-    this._visualStyle = visualStyle ?? VisualStyleFn.createVisualStyle()
     this._netAttributes = { id, attributes: {} }
   }
 
@@ -58,10 +47,6 @@ class CyNetwork implements Network {
 
   get edgeTable(): Table {
     return this._edgeTable
-  }
-
-  get visualStyle(): VisualStyle {
-    return this._visualStyle
   }
 
   get nodes(): Node[] {
@@ -104,6 +89,10 @@ const createCyDataStore = (): Core =>
  */
 export const createNetwork = (id: IdType): Network => new CyNetwork(id)
 
+// cy.js does not allow nodes and edges to have the same ids
+// when converting cx ids to cy ids, we add a prefix to edges
+export const translateCXEdgeId = (id: IdType): IdType => `e${id}`
+
 /**
  * Create a network from a CX object
  *
@@ -114,10 +103,9 @@ export const createNetwork = (id: IdType): Network => new CyNetwork(id)
  */
 export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
   const tables: [Table, Table] = createTablesFromCx(id, cx)
-  const visualStyle: VisualStyle = createVisualStyleFromCx(cx)
 
   // Create an empty CyNetwork
-  const cyNet: CyNetwork = new CyNetwork(id, tables[0], tables[1], visualStyle)
+  const cyNet: CyNetwork = new CyNetwork(id, tables[0], tables[1])
 
   // Extract nodes and edges from CX2 object
   const cxNodes: CxNode[] = cxUtil.getNodes(cx)
@@ -132,7 +120,7 @@ export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
   cyNet.store.add(
     cxEdges.map((edge: CxEdge, i: number) => {
       const e = createCyEdge(
-        `e${edge.id.toString()}`,
+        translateCXEdgeId(edge.id.toString()),
         edge.s.toString(),
         edge.t.toString(),
       )
