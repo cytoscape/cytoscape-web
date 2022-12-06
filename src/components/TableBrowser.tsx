@@ -59,12 +59,14 @@ export default function TableBrowser(props: {
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
   const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
-  const maxNodeId = Array.from(nodeTable?.rows.keys() ?? new Map())
-    .map((v) => +v)
-    .sort((a, b) => b - a)[0]
-  const maxEdgeId = Array.from(edgeTable?.rows.keys() ?? new Map())
-    .map((v) => +v.slice(1))
-    .sort((a, b) => b - a)[0]
+  const nodeIds = Array.from(nodeTable?.rows.keys() ?? new Map()).map((v) => +v)
+  const edgeIds = Array.from(edgeTable?.rows.keys() ?? new Map()).map(
+    (v) => +v.slice(1),
+  )
+  const maxNodeId = nodeIds.sort((a, b) => b - a)[0]
+  const minNodeId = nodeIds.sort((a, b) => a - b)[0]
+  const maxEdgeId = edgeIds.sort((a, b) => b - a)[0]
+  const minEdgeId = edgeIds.sort((a, b) => a - b)[0]
   const columns = Array.from(currentTable?.columns.entries() ?? new Map()).map(
     ([key, value], index) => ({
       id: key,
@@ -86,8 +88,11 @@ export default function TableBrowser(props: {
   const getContent = React.useCallback(
     (cell: Item): GridCell => {
       const [columnIndex, rowIndex] = cell
+      const minId = currentTable === nodeTable ? minNodeId : minEdgeId
       const rowKey =
-        currentTable === nodeTable ? rowIndex : translateCXEdgeId(`${rowIndex}`)
+        currentTable === nodeTable
+          ? +rowIndex + minId
+          : translateCXEdgeId(`${+rowIndex + minId}`)
       const dataRow = currentTable.rows.get(`${rowKey}`)
       const column = columns[columnIndex]
       const columnKey = column.title
@@ -178,6 +183,7 @@ export default function TableBrowser(props: {
       <TabPanel value={currentTabIndex} index={0}>
         <DataEditor
           rowMarkers={'both'}
+          rowMarkerStartIndex={minNodeId}
           // showSearch={showSearch}
           keybindings={{ search: true }}
           getCellsForSelection={true}
@@ -187,13 +193,14 @@ export default function TableBrowser(props: {
           getCellContent={getContent}
           // onCellEdited={onCellEdited}
           columns={columns}
-          rows={maxNodeId}
+          rows={maxNodeId - minNodeId}
         />
         {/* )} */}
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
         <DataEditor
           rowMarkers={'both'}
+          rowMarkerStartIndex={minEdgeId}
           // showSearch={showSearch}
           keybindings={{ search: true }}
           getCellsForSelection={true}
@@ -203,7 +210,7 @@ export default function TableBrowser(props: {
           getCellContent={getContent}
           // onCellEdited={onCellEdited}
           columns={columns}
-          rows={maxEdgeId}
+          rows={maxEdgeId - minEdgeId}
         />
       </TabPanel>
     </Box>

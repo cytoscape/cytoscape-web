@@ -863,8 +863,8 @@ export const createCyJsStyleSheetView = (
         id: node.id,
       },
       position: {
-        x: positionX as number,
-        y: positionY as number,
+        x: positionX,
+        y: positionY,
       },
     }
   })
