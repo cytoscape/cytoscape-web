@@ -222,7 +222,7 @@ export const cxVisualPropertyConverter: Record<
   nodeOpacity: VPNumberConverter('NODE_BACKGROUND_OPACITY'),
   nodeVisibility: VPVisibilityTypeConverter('NODE_VISIBLITY'),
 
-  edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_TYPE'),
+  edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),
   edgeWidth: VPNumberConverter('EDGE_WIDTH'),
   edgeTargetArrowShape: VPEdgeArrowShapeTypeConverter(
