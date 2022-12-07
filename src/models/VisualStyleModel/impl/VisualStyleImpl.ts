@@ -41,26 +41,20 @@ import { createCyJsMappingFn } from './MappingFunctionImpl'
 
 export const nodeVisualProperties = (
   visualStyle: VisualStyle,
-): VisualPropertyName[] => {
-  return Object.keys(visualStyle).filter((key) =>
-    key.startsWith('node'),
-  ) as VisualPropertyName[]
+): Array<VisualProperty<VisualPropertyValueType>> => {
+  return Object.values(visualStyle).filter((value) => value.group === 'node')
 }
 
 export const edgeVisualProperties = (
   visualStyle: VisualStyle,
-): VisualPropertyName[] => {
-  return Object.keys(visualStyle).filter((key) =>
-    key.startsWith('edge'),
-  ) as VisualPropertyName[]
+): Array<VisualProperty<VisualPropertyValueType>> => {
+  return Object.values(visualStyle).filter((value) => value.group === 'edge')
 }
 
 export const networkVisualProperties = (
   visualStyle: VisualStyle,
-): VisualPropertyName[] => {
-  return Object.keys(visualStyle).filter((key) =>
-    key.startsWith('network'),
-  ) as VisualPropertyName[]
+): Array<VisualProperty<VisualPropertyValueType>> => {
+  return Object.values(visualStyle).filter((value) => value.group === 'network')
 }
 
 export const createVisualStyle = (): VisualStyle => {
@@ -183,7 +177,8 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
 
   vpGroups.forEach((group) => {
     const { vps, getDefault, getMapping, getBypass } = group
-    vps.forEach((vpName: VisualPropertyName) => {
+    vps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
+      const { name: vpName } = vp
       const converter = cxVisualPropertyConverter[vpName]
 
       const isSupportedCXProperty = converter != null
@@ -313,37 +308,38 @@ export const createCyJsStyleSheetView = (
     Partial<Record<string, VisualPropertyValueType>>
   > = {}
 
-  nodeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
-    const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
-    const defaultValue = vp.defaultValue
-    const mapping = vp.mapping
-    const bypassMap = vp.bypassMap
-    const cyStyleName = cyJsVisualPropertyConverter[vpName]?.cyJsVPName
+  nodeVisualProperties(vs).forEach(
+    (vp: VisualProperty<VisualPropertyValueType>) => {
+      const defaultValue = vp.defaultValue
+      const mapping = vp.mapping
+      const bypassMap = vp.bypassMap
+      const cyStyleName = cyJsVisualPropertyConverter[vp.name]?.cyJsVPName
 
-    if (cyStyleName != null) {
-      nodeStyle[cyStyleName] = defaultValue
+      if (cyStyleName != null) {
+        nodeStyle[cyStyleName] = defaultValue
 
-      if (mapping != null) {
-        nodeStyle[cyStyleName] = createCyJsMappingFn(
-          mapping,
-          nodeTable,
-          defaultValue,
-        )
-      }
+        if (mapping != null) {
+          nodeStyle[cyStyleName] = createCyJsMappingFn(
+            mapping,
+            nodeTable,
+            defaultValue,
+          )
+        }
 
-      if (bypassMap != null) {
-        Object.entries(bypassMap).forEach(([cxNodeId, bypassValue]) => {
-          if (nodeBypasses[cxNodeId] != null) {
-            nodeBypasses[cxNodeId][cyStyleName] = bypassValue
-          } else {
-            nodeBypasses[cxNodeId] = {
-              [cyStyleName]: bypassValue,
+        if (bypassMap != null) {
+          Object.entries(bypassMap).forEach(([cxNodeId, bypassValue]) => {
+            if (nodeBypasses[cxNodeId] != null) {
+              nodeBypasses[cxNodeId][cyStyleName] = bypassValue
+            } else {
+              nodeBypasses[cxNodeId] = {
+                [cyStyleName]: bypassValue,
+              }
             }
-          }
-        })
+          })
+        }
       }
-    }
-  })
+    },
+  )
   // default label mapping function (TODO this depends on many assumptions, revist this later)
   // if there is no default label mapping function defined, define a default label mapping function
   // looking for the attributes 'n' or 'name'
@@ -360,36 +356,37 @@ export const createCyJsStyleSheetView = (
 
   nodeStyle['min-zoomed-font-size'] = 14
 
-  edgeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
-    const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
-    const defaultValue = vp.defaultValue
-    const mapping = vp.mapping
-    const bypassMap = vp.bypassMap
-    const cyStyleName = cyJsVisualPropertyConverter[vpName]?.cyJsVPName
+  edgeVisualProperties(vs).forEach(
+    (vp: VisualProperty<VisualPropertyValueType>) => {
+      const defaultValue = vp.defaultValue
+      const mapping = vp.mapping
+      const bypassMap = vp.bypassMap
+      const cyStyleName = cyJsVisualPropertyConverter[vp.name]?.cyJsVPName
 
-    if (cyStyleName != null) {
-      edgeStyle[cyStyleName] = defaultValue
-      if (mapping != null) {
-        edgeStyle[cyStyleName] = createCyJsMappingFn(
-          mapping,
-          edgeTable,
-          defaultValue,
-        )
-      }
+      if (cyStyleName != null) {
+        edgeStyle[cyStyleName] = defaultValue
+        if (mapping != null) {
+          edgeStyle[cyStyleName] = createCyJsMappingFn(
+            mapping,
+            edgeTable,
+            defaultValue,
+          )
+        }
 
-      if (bypassMap != null) {
-        Object.entries(bypassMap).forEach(([cxEdgeId, bypassValue]) => {
-          if (edgeBypasses[cxEdgeId] != null) {
-            edgeBypasses[cxEdgeId][cyStyleName] = bypassValue
-          } else {
-            edgeBypasses[cxEdgeId] = {
-              [cyStyleName]: bypassValue,
+        if (bypassMap != null) {
+          Object.entries(bypassMap).forEach(([cxEdgeId, bypassValue]) => {
+            if (edgeBypasses[cxEdgeId] != null) {
+              edgeBypasses[cxEdgeId][cyStyleName] = bypassValue
+            } else {
+              edgeBypasses[cxEdgeId] = {
+                [cyStyleName]: bypassValue,
+              }
             }
-          }
-        })
+          })
+        }
       }
-    }
-  })
+    },
+  )
   edgeStyle['min-zoomed-font-size'] = 14
   edgeStyle['curve-style'] = 'bezier'
 

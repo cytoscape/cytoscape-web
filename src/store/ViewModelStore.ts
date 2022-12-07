@@ -18,16 +18,37 @@ interface ViewModelState {
 // }
 
 interface ViewModelAction {
-  setViewModel: (id: IdType, networkView: NetworkView) => void
+  setViewModel: (networkId: IdType, networkView: NetworkView) => void
+  setSelected: (networkId: IdType, ids: IdType[]) => void
 }
 
 export const useViewModelStore = create(
   immer<ViewModelState & ViewModelAction>((set) => ({
     viewModels: {},
 
-    setViewModel: (id: IdType, networkView: NetworkView) => {
+    setViewModel: (networkId: IdType, networkView: NetworkView) => {
       set((state) => {
-        state.viewModels[id] = networkView
+        state.viewModels[networkId] = networkView
+      })
+    },
+    setSelected: (networkId: IdType, elementsToSelect: IdType[]) => {
+      set((state) => {
+        const networkView = state.viewModels[networkId]
+
+        // unset all elements
+        Object.values(networkView.nodeViews).forEach((nodeView) => {
+          nodeView.selected = false
+        })
+        Object.values(networkView.edgeViews).forEach((edgeView) => {
+          edgeView.selected = false
+        })
+
+        // set new selected elements
+        elementsToSelect.forEach((eleId) => {
+          const view =
+            networkView.nodeViews[eleId] ?? networkView.edgeViews[eleId]
+          view.selected = true
+        })
       })
     },
   })),

@@ -1,6 +1,11 @@
 import * as React from 'react'
 import Box from '@mui/material/Box'
-import Cytoscape, { Core } from 'cytoscape'
+import debounce from 'lodash.debounce'
+import Cytoscape, {
+  Core,
+  EventObject,
+  SingularElementArgument,
+} from 'cytoscape'
 import { IdType } from '../models/IdType'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useTableStore } from '../store/TableStore'
@@ -20,6 +25,7 @@ export default function NetworkRenderer(
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
   const viewModels = useViewModelStore((state) => state.viewModels)
+  const setSelected = useViewModelStore((state) => state.setSelected)
   const network = networks[props.currentNetworkId]
   const networkView = viewModels[props.currentNetworkId]
   const vs = visualStyles[props.currentNetworkId]
@@ -59,7 +65,29 @@ export default function NetworkRenderer(
     if (cy != null) {
       cy.startBatch()
       cy.remove('*')
+      cy.removeAllListeners()
       styleSheetRender()
+      cy.on(
+        'boxselect select',
+        debounce((e: EventObject) => {
+          console.log('here')
+          setSelected(
+            props.currentNetworkId,
+            cy
+              .elements()
+              .filter((e: SingularElementArgument) => e.selected())
+              .map((ele: SingularElementArgument) => ele.data('id')),
+          )
+        }),
+        100,
+      )
+      cy.on('tap', (e: EventObject) => {
+        // check for background click
+        // on background click deselect all
+        if (e.target === cy) {
+          setSelected(props.currentNetworkId, [])
+        }
+      })
       cy.endBatch()
       cy.fit()
     }

@@ -12,11 +12,13 @@ import VisualStyleFn, {
   VisualStyle,
 } from '../../models/VisualStyleModel'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
+import { useViewModelStore } from '../../store/ViewModelStore'
 
 import Accordion from '@mui/material/Accordion'
 import AccordionSummary from '@mui/material/AccordionSummary'
 import AccordionDetails from '@mui/material/AccordionDetails'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import CloseIcon from '@mui/icons-material/Close'
 
 import { NodeShapePicker } from './NodeShape'
 import { ColorPicker } from './Color'
@@ -57,6 +59,10 @@ function VisualPropertyView(props: {
   const { visualProperty } = props
   const [expanded, setExpanded] = React.useState('')
   const setDefault = useVisualStyleStore((state) => state.setDefault)
+  const setBypass = useVisualStyleStore((state) => state.setBypass)
+  const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
+  const viewModels = useViewModelStore((state) => state.viewModels)
+  const networkView = viewModels[props.currentNetworkId]
 
   const handleChange = (panel: string): void => {
     setExpanded(panel === expanded ? '' : panel)
@@ -65,20 +71,128 @@ function VisualPropertyView(props: {
   const defaultExpandedContent = (
     type2RenderFnMap[visualProperty.type] ?? (() => {})
   )({
-    onClick: (defaultValue: VisualPropertyValueType): void => {
-      setDefault(props.currentNetworkId, visualProperty.name, defaultValue)
+    onClick: (newDefaultValue: VisualPropertyValueType): void => {
+      setDefault(props.currentNetworkId, visualProperty.name, newDefaultValue)
     },
     currentValue: visualProperty.defaultValue,
   })
 
   const mappingExanpdedContent = <div></div>
-  const bypassExpandedContent = <div></div>
+  const bypassExpandedContent = (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          border: '1px solid gray',
+          p: 1,
+          m: 1,
+        }}
+      >
+        <Box
+          sx={{
+            p: 1,
+            m: 1,
+            border: '1px solid gray',
+            maxHeight: '300px',
+            overflow: 'scroll',
+          }}
+        >
+          <Box>Selected Elements</Box>
+          {visualProperty.group === 'node'
+            ? Object.values(networkView?.nodeViews)
+                .filter((nodeView) => nodeView.selected)
+                .map((nodeView) => {
+                  return <Box key={nodeView.id}>{`Node: ${nodeView.id}`}</Box>
+                })
+            : null}
+          {visualProperty.group === 'edge'
+            ? Object.values(networkView?.edgeViews)
+                .filter((edgeView) => edgeView.selected)
+                .map((edgeView) => {
+                  return <Box key={edgeView.id}>{`Edge: ${edgeView.id}`}</Box>
+                })
+            : null}
+        </Box>
+        <Box
+          sx={{
+            p: 1,
+            m: 1,
+            border: '1px solid gray',
+            maxHeight: '300px',
+            overflow: 'scroll',
+          }}
+        >
+          <Box>Current Bypasses</Box>
+          {Object.entries(visualProperty?.bypassMap ?? {}).map(
+            ([eleId, value]) => {
+              return (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                  }}
+                  key={eleId}
+                >
+                  <Box>{`${eleId}`}</Box>
+                  <Box>{value as string}</Box>
+                  <CloseIcon
+                    onClick={() =>
+                      deleteBypass(
+                        props.currentNetworkId,
+                        visualProperty.name,
+                        [eleId],
+                      )
+                    }
+                  />
+                </Box>
+              )
+            },
+          )}
+        </Box>
+      </Box>
+      <Box sx={{ border: '1px solid gray', p: 1, m: 1 }}>
+        <Box>Value Picker</Box>
+        {(type2RenderFnMap[visualProperty.type] ?? (() => {}))({
+          onClick: (newBypassValue: VisualPropertyValueType): void => {
+            let ids: IdType[] = []
+            const nodeIds = Object.values(networkView?.nodeViews)
+              .filter((nodeView) => nodeView.selected)
+              .map((nodeView) => nodeView.id)
+            const edgeIds = Object.values(networkView?.edgeViews)
+              .filter((edgeView) => edgeView.selected)
+              .map((edgeView) => edgeView.id)
+            if (visualProperty.group === 'node') {
+              ids = nodeIds
+            } else if (visualProperty.group === 'edge') {
+              ids = edgeIds
+            }
+            setBypass(
+              props.currentNetworkId,
+              visualProperty.name,
+              ids,
+              newBypassValue,
+            )
+          },
+          currentValue: visualProperty.defaultValue,
+        })}
+      </Box>
+    </Box>
+  )
 
   const expandedContentMap: Record<string, React.ReactElement> = {
     defaultValue: defaultExpandedContent,
     mapping: mappingExanpdedContent,
     bypass: bypassExpandedContent,
-    '': <div></div>,
+    '': <Box></Box>,
   }
 
   return (
@@ -86,6 +200,7 @@ function VisualPropertyView(props: {
       <AccordionSummary
         expandIcon={
           <ExpandMoreIcon
+            sx={{ width: 50, height: 50, p: 1 }}
             onClick={() =>
               expanded !== '' ? handleChange('') : handleChange('defaultValue')
             }
@@ -201,37 +316,30 @@ export default function VizmapperView(props: {
     return <div></div>
   }
 
-  const nodeVps = VisualStyleFn.nodeVisualProperties(visualStyle).map(
-    (vpName) => {
-      const vp = visualStyle[vpName]
-      return (
-        <VisualPropertyView
-          key={vpName}
-          currentNetworkId={props.currentNetworkId}
-          visualProperty={vp}
-        />
-      )
-    },
-  )
-  const edgeVps = VisualStyleFn.edgeVisualProperties(visualStyle).map(
-    (vpName) => {
-      const vp = visualStyle[vpName]
-      return (
-        <VisualPropertyView
-          key={vpName}
-          currentNetworkId={props.currentNetworkId}
-          visualProperty={vp}
-        />
-      )
-    },
-  )
+  const nodeVps = VisualStyleFn.nodeVisualProperties(visualStyle).map((vp) => {
+    return (
+      <VisualPropertyView
+        key={vp.name}
+        currentNetworkId={props.currentNetworkId}
+        visualProperty={vp}
+      />
+    )
+  })
+  const edgeVps = VisualStyleFn.edgeVisualProperties(visualStyle).map((vp) => {
+    return (
+      <VisualPropertyView
+        key={vp.name}
+        currentNetworkId={props.currentNetworkId}
+        visualProperty={vp}
+      />
+    )
+  })
 
   const networkVps = VisualStyleFn.networkVisualProperties(visualStyle).map(
-    (vpName) => {
-      const vp = visualStyle[vpName]
+    (vp) => {
       return (
         <VisualPropertyView
-          key={vpName}
+          key={vp.name}
           currentNetworkId={props.currentNetworkId}
           visualProperty={vp}
         />

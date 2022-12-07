@@ -2,6 +2,7 @@ import { VisualStyle } from '../VisualStyle'
 
 export const defaultVisualStyle: VisualStyle = {
   nodeShape: {
+    group: 'node',
     name: 'nodeShape',
     type: 'nodeShape',
     displayName: 'shape',
@@ -10,6 +11,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeBorderColor: {
+    group: 'node',
     name: 'nodeBorderColor',
     displayName: 'border color',
     type: 'color',
@@ -18,6 +20,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeBorderLineType: {
+    group: 'node',
     name: 'nodeBorderLineType',
     displayName: 'border line',
     type: 'nodeBorderLine',
@@ -26,6 +29,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeBorderWidth: {
+    group: 'node',
     name: 'nodeBorderWidth',
     displayName: 'border width',
     type: 'number',
@@ -34,6 +38,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeBorderOpacity: {
+    group: 'node',
     name: 'nodeBorderOpacity',
     displayName: 'border opacity',
     type: 'number',
@@ -42,6 +47,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeHeight: {
+    group: 'node',
     name: 'nodeHeight',
     displayName: 'height',
     type: 'number',
@@ -50,6 +56,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeWidth: {
+    group: 'node',
     name: 'nodeWidth',
     displayName: 'width',
     type: 'number',
@@ -58,6 +65,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeBackgroundColor: {
+    group: 'node',
     name: 'nodeBackgroundColor',
     displayName: 'background color',
     type: 'color',
@@ -66,6 +74,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeLabel: {
+    group: 'node',
     name: 'nodeLabel',
     displayName: 'label',
     type: 'string',
@@ -74,6 +83,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeLabelColor: {
+    group: 'node',
     name: 'nodeLabelColor',
     displayName: 'label color',
     type: 'color',
@@ -82,6 +92,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeLabelFontSize: {
+    group: 'node',
     name: 'nodeLabelFontSize',
     displayName: 'label font size',
     type: 'number',
@@ -90,6 +101,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeLabelFont: {
+    group: 'node',
     name: 'nodeLabelFont',
     displayName: 'label font',
     type: 'font',
@@ -98,6 +110,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeLabelHorizontalAlign: {
+    group: 'node',
     name: 'nodeLabelHorizontalAlign',
     displayName: 'label horizontal align',
     type: 'horizontalAlign',
@@ -106,6 +119,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeLabelVerticalAlign: {
+    group: 'node',
     name: 'nodeLabelVerticalAlign',
     displayName: 'label vertical align',
     type: 'verticalAlign',
@@ -114,6 +128,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeLabelRotation: {
+    group: 'node',
     name: 'nodeLabelRotation',
     displayName: 'label rotation',
     type: 'number',
@@ -122,6 +137,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeLabelOpacity: {
+    group: 'node',
     name: 'nodeLabelOpacity',
     displayName: 'label opacity',
     type: 'number',
@@ -130,6 +146,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodePositionX: {
+    group: 'node',
     name: 'nodePositionX',
     displayName: 'position x',
     type: 'number',
@@ -138,6 +155,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodePositionY: {
+    group: 'node',
     name: 'nodePositionY',
     displayName: 'position y',
     type: 'number',
@@ -146,6 +164,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodePositionZ: {
+    group: 'node',
     name: 'nodePositionZ',
     displayName: 'position z',
     type: 'number',
@@ -154,6 +173,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeOpacity: {
+    group: 'node',
     name: 'nodeOpacity',
     displayName: 'opacity',
     type: 'number',
@@ -162,6 +182,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   nodeVisibility: {
+    group: 'node',
     name: 'nodeVisibility',
     displayName: 'visibility',
     type: 'visibility',
@@ -170,6 +191,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeLineColor: {
+    group: 'edge',
     name: 'edgeLineColor',
     displayName: 'line color',
     type: 'color',
@@ -178,6 +200,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeLineType: {
+    group: 'edge',
     name: 'edgeLineType',
     displayName: 'line type',
     type: 'edgeLine',
@@ -186,6 +209,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeOpacity: {
+    group: 'edge',
     name: 'edgeOpacity',
     displayName: 'opacity',
     type: 'number',
@@ -194,6 +218,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeSourceArrowColor: {
+    group: 'edge',
     name: 'edgeSourceArrowColor',
     displayName: 'source arrow color',
     type: 'color',
@@ -202,6 +227,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeSourceArrowShape: {
+    group: 'edge',
     name: 'edgeSourceArrowShape',
     displayName: 'source arrow shape',
     type: 'edgeArrowShape',
@@ -210,6 +236,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeTargetArrowColor: {
+    group: 'edge',
     name: 'edgeTargetArrowColor',
     displayName: 'target arrow color',
     type: 'color',
@@ -218,6 +245,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeTargetArrowShape: {
+    group: 'edge',
     name: 'edgeTargetArrowShape',
     displayName: 'target arrow shape',
     type: 'edgeArrowShape',
@@ -226,6 +254,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeLabel: {
+    group: 'edge',
     name: 'edgeLabel',
     displayName: 'label',
     type: 'string',
@@ -234,6 +263,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeLabelColor: {
+    group: 'edge',
     name: 'edgeLabelColor',
     displayName: 'label color',
     type: 'color',
@@ -242,6 +272,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeLabelFontSize: {
+    group: 'edge',
     name: 'edgeLabelFontSize',
     displayName: 'label font size',
     type: 'number',
@@ -250,6 +281,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeLabelFont: {
+    group: 'edge',
     name: 'edgeLabelFont',
     displayName: 'label font',
     type: 'font',
@@ -258,6 +290,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeLabelRotation: {
+    group: 'edge',
     name: 'edgeLabelRotation',
     displayName: 'label rotation',
     type: 'number',
@@ -266,6 +299,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeLabelOpacity: {
+    group: 'edge',
     name: 'edgeLabelOpacity',
     displayName: 'label opacity',
     defaultValue: 1.0,
@@ -274,6 +308,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeLabelAutoRotation: {
+    group: 'edge',
     name: 'edgeLabelAutoRotation',
     displayName: 'label auto rotation',
     defaultValue: true,
@@ -282,6 +317,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeWidth: {
+    group: 'edge',
     name: 'edgeWidth',
     displayName: 'width',
     type: 'number',
@@ -290,6 +326,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   edgeVisibility: {
+    group: 'edge',
     name: 'edgeVisibility',
     displayName: 'visibility',
     type: 'visibility',
@@ -298,6 +335,7 @@ export const defaultVisualStyle: VisualStyle = {
     bypassMap: {},
   },
   networkBackgroundColor: {
+    group: 'network',
     name: 'networkBackgroundColor',
     type: 'color',
     displayName: 'background color',

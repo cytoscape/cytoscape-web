@@ -23,9 +23,12 @@ export const VisualPropertyValueTypeString = {
 export type VisualPropertyValueTypeString =
   typeof VisualPropertyValueTypeString[keyof typeof VisualPropertyValueTypeString]
 
+export type VisualPropertyGroup = 'node' | 'edge' | 'network'
+
 // include both the visualpropertyvaluetype and the input value
 export interface VisualProperty<T> {
   name: VisualPropertyName
+  group: VisualPropertyGroup
   displayName: string
   type: VisualPropertyValueTypeString
   defaultValue: T

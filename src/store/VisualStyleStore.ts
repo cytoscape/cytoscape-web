@@ -27,8 +27,13 @@ interface UpdateVisualStyleAction {
   setBypass: (
     networkId: IdType,
     vpName: VisualPropertyName,
-    elementId: IdType,
+    elementIds: IdType[],
     vpValue: VisualPropertyValueType,
+  ) => void
+  deleteBypass: (
+    networkId: IdType,
+    vpName: VisualPropertyName,
+    elementIds: IdType[],
   ) => void
   // setMapping: () // TODO
 }
@@ -68,11 +73,29 @@ export const useVisualStyleStore = create(
       setBypass: (
         networkId: IdType,
         vpName: VisualPropertyName,
-        elementId: IdType,
+        elementIds: IdType[],
         vpValue: VisualPropertyValueType,
       ) => {
         set((state) => {
-          state.visualStyles[networkId][vpName].bypassMap[elementId] = vpValue
+          elementIds.forEach((eleId) => {
+            if (state.visualStyles[networkId][vpName].bypassMap == null) {
+              state.visualStyles[networkId][vpName].bypassMap = {}
+            }
+            state.visualStyles[networkId][vpName].bypassMap[eleId] = vpValue
+          })
+        })
+      },
+      deleteBypass(networkId, vpName, elementIds) {
+        set((state) => {
+          elementIds.forEach((eleId) => {
+            if (state.visualStyles[networkId][vpName].bypassMap == null) {
+              return
+            }
+            // create a copy of the bypassmap without the element to delete
+            const { [eleId]: _, ...rest } =
+              state.visualStyles[networkId][vpName].bypassMap
+            state.visualStyles[networkId][vpName].bypassMap = { ...rest }
+          })
         })
       },
     }),
