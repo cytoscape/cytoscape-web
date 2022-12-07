@@ -1,14 +1,8 @@
-import chroma, { Color } from 'chroma-js'
 import { Cx2 } from '../../../utils/cx/Cx2'
 import * as cxUtil from '../../../utils/cx/cx2-util'
 import { Network } from '../../NetworkModel'
 import { Table } from '../../TableModel'
-import {
-  CyJsEdgeView,
-  CyJsNodeView,
-  CyJsNetworkView,
-  NetworkView,
-} from '../../ViewModel'
+import { NetworkView } from '../../ViewModel'
 import {
   DiscreteMappingFunction,
   ContinuousMappingFunction,
@@ -43,6 +37,7 @@ import {
 } from 'cytoscape'
 import { defaultVisualStyle } from './DefaultVisualStyle'
 import { IdType } from '../../IdType'
+import { createCyJsMappingFn } from './MappingFunctionImpl'
 
 export const nodeVisualProperties = (
   visualStyle: VisualStyle,
@@ -164,7 +159,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
       ): CXVisualMappingFunction<CXVisualPropertyValue> | null =>
         nodeMapping[cxVPName] as CXVisualMappingFunction<CXVisualPropertyValue>,
       getBypass: (): Map<VisualPropertyName, Bypass<VisualPropertyValueType>> =>
-        nodeBypassMap, // TODO
+        nodeBypassMap,
     },
     {
       vps: edgeVisualProperties(visualStyle),
@@ -286,89 +281,6 @@ export const setVisualStyle = (
   return { ...visualStyle, ...changeSet }
 }
 
-export const createCyJsView = (
-  vs: VisualStyle,
-  network: Network,
-  nodeTable: Table,
-  edgeTable: Table,
-): CyJsNetworkView => {
-  const cyNodeViews = network.nodes.map((node): CyJsNodeView => {
-    const positionX = nodeTable.rows.get(node.id)?.positionX ?? 0
-    const positionY = nodeTable.rows.get(node.id)?.positionY ?? 0
-    const nodeAttrs = nodeTable.rows.get(node.id)
-    const name = (nodeAttrs?.n ??
-      nodeAttrs?.name ??
-      '') as VisualPropertyValueType
-
-    const cyStyle: Record<string, VisualPropertyValueType> = {}
-
-    nodeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
-      const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
-      const vpValue = vp.bypassMap?.[node.id] ?? vp.defaultValue
-      const cyStyleName = cyJsVisualPropertyConverter[vpName]?.cyJsVPName
-
-      if (cyStyleName != null) {
-        cyStyle[cyStyleName] = vpValue
-      }
-    })
-
-    cyStyle.label = name
-
-    const cyNodeView = {
-      group: 'nodes',
-      data: {
-        id: node.id,
-      },
-      position: {
-        x: positionX as number,
-        y: positionY as number,
-      },
-      style: cyStyle,
-    }
-
-    return cyNodeView
-  })
-
-  const cyEdgeViews = network.edges.map((edge): CyJsEdgeView => {
-    const cyStyle: Record<string, VisualPropertyValueType> = {}
-
-    edgeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
-      const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
-      const vpValue = vp.bypassMap?.[edge.id] ?? vp.defaultValue
-      const cyStyleName = cyJsVisualPropertyConverter[vpName]?.cyJsVPName
-
-      if (cyStyleName != null) {
-        cyStyle[cyStyleName] = vpValue
-      }
-    })
-
-    if (cyStyle.autorotate === true) {
-      delete cyStyle.autorotate
-      cyStyle['text-rotation'] = 'autorotate'
-    }
-
-    const cyEdge = {
-      group: 'edges',
-      data: {
-        id: edge.id,
-        source: edge.s,
-        target: edge.t,
-      },
-      style: cyStyle,
-    }
-
-    return cyEdge
-  })
-
-  const networkView = {
-    id: network.id,
-    nodeViews: cyNodeViews,
-    edgeViews: cyEdgeViews,
-  }
-
-  return networkView
-}
-
 export const createCyJsStyleSheetView = (
   vs: VisualStyle,
   network: Network,
@@ -412,183 +324,11 @@ export const createCyJsStyleSheetView = (
       nodeStyle[cyStyleName] = defaultValue
 
       if (mapping != null) {
-        switch (mapping.type) {
-          case 'passthrough': {
-            const { attribute } = mapping
-            nodeStyle[cyStyleName] = (
-              node: NodeSingular,
-            ): VisualPropertyValueType => {
-              const row = nodeTable.rows.get(node.data('id'))
-              const column = nodeTable.columns.get(attribute)
-              const value = row?.[attribute] ?? column?.defaultValue
-
-              if (!Array.isArray(value) && value != null) {
-                return value
-              }
-              console.error(
-                `Error applying passthrough mapping function on node ${
-                  node.data('id') as string
-                }.  Value: ${String(
-                  value,
-                )} should not be an array or undefined`,
-              )
-              return defaultValue
-            }
-            break
-          }
-          case 'discrete': {
-            const { attribute } = mapping
-            const m = mapping as DiscreteMappingFunction
-            nodeStyle[cyStyleName] = (
-              node: NodeSingular,
-            ): VisualPropertyValueType => {
-              const row = nodeTable.rows.get(node.data('id'))
-              const column = nodeTable.columns.get(attribute)
-              const value = row?.[attribute] ?? column?.defaultValue
-
-              if (!Array.isArray(value) && value != null) {
-                return m.vpValueMap.get(value) ?? defaultValue
-              }
-
-              return defaultValue
-            }
-            break
-          }
-          case 'continuous': {
-            const { attribute } = mapping
-            const m = mapping as ContinuousMappingFunction
-            nodeStyle[cyStyleName] = (
-              node: NodeSingular,
-            ): VisualPropertyValueType => {
-              const row = nodeTable.rows.get(node.data('id'))
-              const column = nodeTable.columns.get(attribute)
-              const value = row?.[attribute] ?? column?.defaultValue
-
-              if (
-                !Array.isArray(value) &&
-                value != null &&
-                Number.isFinite(value)
-              ) {
-                // find the first interval that the value is in
-
-                for (let i = 0; i < m.intervals.length; i++) {
-                  const {
-                    min,
-                    max,
-                    minVPValue,
-                    maxVPValue,
-                    includeMax,
-                    includeMin,
-                  } = m.intervals[i]
-
-                  const minOnly = min != null && max == null
-                  const maxOnly = max != null && min == null
-                  const isInterval = max != null && min != null
-
-                  if (minOnly) {
-                    const valueGreaterThanEqual =
-                      includeMin && min <= value && minVPValue != null
-                    const valueGreaterThan =
-                      !includeMin && min < value && minVPValue != null
-
-                    if (valueGreaterThan || valueGreaterThanEqual) {
-                      return minVPValue
-                    }
-                  }
-
-                  if (maxOnly) {
-                    const valueLessThanEqual =
-                      includeMax && max >= value && maxVPValue != null
-                    const valueLessThan =
-                      !includeMax && max > value && maxVPValue != null
-                    if (valueLessThan || valueLessThanEqual) {
-                      return maxVPValue
-                    }
-                  }
-
-                  if (isInterval) {
-                    const valueIsContained =
-                      (includeMax &&
-                        max >= value &&
-                        includeMin &&
-                        min <= value) ||
-                      (!includeMax &&
-                        max > value &&
-                        includeMin &&
-                        min <= value) ||
-                      (includeMax &&
-                        max >= value &&
-                        !includeMin &&
-                        min < value) ||
-                      (!includeMax && max > value && !includeMin && min < value)
-
-                    if (valueIsContained) {
-                      // map linear number/color
-                      const vpsAreColors =
-                        maxVPValue != null &&
-                        minVPValue != null &&
-                        chroma.valid(maxVPValue, 'hex') &&
-                        chroma.valid(minVPValue, 'hex')
-
-                      const vpsAreNumbers =
-                        maxVPValue != null &&
-                        minVPValue != null &&
-                        Number.isFinite(maxVPValue) &&
-                        Number.isFinite(minVPValue)
-
-                      if (vpsAreColors) {
-                        // map color
-                        const colorMapper = chroma
-                          .scale([
-                            minVPValue as unknown as Color,
-                            maxVPValue as unknown as Color,
-                          ])
-                          .domain([
-                            min as unknown as number,
-                            max as unknown as number,
-                          ])
-                        return colorMapper(
-                          value as unknown as number,
-                        ).hex() as unknown as VisualPropertyValueType
-                      }
-
-                      if (vpsAreNumbers) {
-                        // map number
-                        // export const mapLinearNumber = (
-                        //   value: number,
-                        //   min: number,
-                        //   max: number,
-                        //   styleMin: number,
-                        //   styleMax: number,
-                        // ): number => {
-                        //   const t = (value - min) / (max - min)
-                        //   return styleMin + t * (styleMax - styleMin)
-                        // }
-                        // map linear numbers
-                        const v = value as number
-                        const minV = min as number
-                        const maxV = max as number
-                        const minVP = minVPValue as number
-                        const maxVP = maxVPValue as number
-                        const t = (v - minV) / (maxV - minV)
-                        return minVP + t * (maxVP - minVP)
-                      }
-                    }
-                  }
-                }
-              }
-              console.error(
-                `Error applying continuous mapping function on node ${
-                  node.data('id') as string
-                }.  Value: ${String(
-                  value,
-                )} should be a number, minVP, maxVP should be numbers or colors, min and max should be colors`,
-              )
-              return defaultValue
-            }
-            break
-          }
-        }
+        nodeStyle[cyStyleName] = createCyJsMappingFn(
+          mapping,
+          nodeTable,
+          defaultValue,
+        )
       }
 
       if (bypassMap != null) {
@@ -620,8 +360,6 @@ export const createCyJsStyleSheetView = (
 
   nodeStyle['min-zoomed-font-size'] = 14
 
-  const getEdgeId = (edge: EdgeSingular): string => edge.data('id')
-
   edgeVisualProperties(vs).forEach((vpName: VisualPropertyName) => {
     const vp = vs[vpName] as VisualProperty<VisualPropertyValueType>
     const defaultValue = vp.defaultValue
@@ -632,194 +370,11 @@ export const createCyJsStyleSheetView = (
     if (cyStyleName != null) {
       edgeStyle[cyStyleName] = defaultValue
       if (mapping != null) {
-        switch (mapping.type) {
-          case 'passthrough': {
-            const { attribute } = mapping
-            edgeStyle[cyStyleName] = function (
-              edge: EdgeSingular,
-            ): VisualPropertyValueType {
-              const row = edgeTable.rows.get(getEdgeId(edge))
-              const column = edgeTable.columns.get(attribute)
-              const value = row?.[attribute] ?? column?.defaultValue
-
-              if (!Array.isArray(value) && value != null) {
-                return value
-              }
-              console.error(
-                `Error applying passthrough mapping function on edge ${getEdgeId(
-                  edge,
-                )}.  Value: ${String(
-                  value,
-                )} should not be an array or undefined`,
-              )
-              return defaultValue
-            }
-
-            break
-          }
-          case 'discrete': {
-            const { attribute } = mapping
-            const m = mapping as DiscreteMappingFunction
-            edgeStyle[cyStyleName] = function (
-              edge: EdgeSingular,
-            ): VisualPropertyValueType {
-              const row = edgeTable.rows.get(getEdgeId(edge))
-              const column = edgeTable.columns.get(attribute)
-              const value = row?.[attribute] ?? column?.defaultValue
-
-              if (!Array.isArray(value) && value != null) {
-                return m.vpValueMap.get(value) ?? defaultValue
-              }
-
-              console.error(
-                `Error applying discrete mapping function on edge ${getEdgeId(
-                  edge,
-                )}.  Value: ${String(
-                  value,
-                )} should not be an array or undefined`,
-              )
-              return defaultValue
-            }
-
-            break
-          }
-          case 'continuous': {
-            const { attribute } = mapping
-            const m = mapping as ContinuousMappingFunction
-            edgeStyle[cyStyleName] = function (
-              edge: EdgeSingular,
-            ): VisualPropertyValueType {
-              const row = edgeTable.rows.get(getEdgeId(edge))
-              const column = edgeTable.columns.get(attribute)
-              const value = row?.[attribute] ?? column?.defaultValue
-
-              if (
-                !Array.isArray(value) &&
-                value != null &&
-                Number.isFinite(value)
-              ) {
-                // find the first interval that the value is in
-
-                for (let i = 0; i < m.intervals.length; i++) {
-                  const {
-                    min,
-                    max,
-                    minVPValue,
-                    maxVPValue,
-                    includeMax,
-                    includeMin,
-                  } = m.intervals[i]
-
-                  const minOnly = min != null && max == null
-                  const maxOnly = max != null && min == null
-                  const isInterval = max != null && min != null
-
-                  if (minOnly) {
-                    const valueGreaterThanEqual =
-                      includeMin && min <= value && minVPValue != null
-                    const valueGreaterThan =
-                      !includeMin && min < value && minVPValue != null
-
-                    if (valueGreaterThan || valueGreaterThanEqual) {
-                      return minVPValue
-                    }
-                  }
-
-                  if (maxOnly) {
-                    const valueLessThanEqual =
-                      includeMax && max >= value && maxVPValue != null
-                    const valueLessThan =
-                      !includeMax && max > value && maxVPValue != null
-                    if (valueLessThan || valueLessThanEqual) {
-                      return maxVPValue
-                    }
-                  }
-
-                  if (isInterval) {
-                    const valueIsContained =
-                      (includeMax &&
-                        max >= value &&
-                        includeMin &&
-                        min <= value) ||
-                      (!includeMax &&
-                        max > value &&
-                        includeMin &&
-                        min <= value) ||
-                      (includeMax &&
-                        max >= value &&
-                        !includeMin &&
-                        min < value) ||
-                      (!includeMax && max > value && !includeMin && min < value)
-
-                    if (valueIsContained) {
-                      // map linear number/color
-                      const vpsAreColors =
-                        maxVPValue != null &&
-                        minVPValue != null &&
-                        chroma.valid(maxVPValue, 'hex') &&
-                        chroma.valid(minVPValue, 'hex')
-
-                      const vpsAreNumbers =
-                        maxVPValue != null &&
-                        minVPValue != null &&
-                        Number.isFinite(maxVPValue) &&
-                        Number.isFinite(minVPValue)
-
-                      if (vpsAreColors) {
-                        // map color
-                        const colorMapper = chroma
-                          .scale([
-                            minVPValue as unknown as Color,
-                            maxVPValue as unknown as Color,
-                          ])
-                          .domain([
-                            min as unknown as number,
-                            max as unknown as number,
-                          ])
-                        return colorMapper(
-                          value as unknown as number,
-                        ).hex() as VisualPropertyValueType
-                      }
-
-                      if (vpsAreNumbers) {
-                        // map number
-                        // export const mapLinearNumber = (
-                        //   value: number,
-                        //   min: number,
-                        //   max: number,
-                        //   styleMin: number,
-                        //   styleMax: number,
-                        // ): number => {
-                        //   const t = (value - min) / (max - min)
-                        //   return styleMin + t * (styleMax - styleMin)
-                        // }
-                        // map linear numbers
-                        const v = value as number
-                        const minV = min as number
-                        const maxV = max as number
-                        const minVP = minVPValue as number
-                        const maxVP = maxVPValue as number
-                        const t = (v - minV) / (maxV - minV)
-
-                        return minVP + t * (maxVP - minVP)
-                      }
-                    }
-                  }
-                }
-              }
-              console.error(
-                `Error applying continuous mapping function on edge ${getEdgeId(
-                  edge,
-                )}.  Value: ${String(
-                  value,
-                )} should be a number, minVP, maxVP should be numbers or colors, min and max should be colors`,
-              )
-              return defaultValue
-            }
-
-            break
-          }
-        }
+        edgeStyle[cyStyleName] = createCyJsMappingFn(
+          mapping,
+          edgeTable,
+          defaultValue,
+        )
       }
 
       if (bypassMap != null) {
