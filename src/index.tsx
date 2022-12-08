@@ -9,6 +9,9 @@ import * as appConfig from './assets/config.json'
 import AppShell from './components/AppShell'
 import { AppConfigContext } from './AppConfigContext'
 
+// this allows immer to work with Map and Set
+import { enableMapSet } from 'immer'
+enableMapSet()
 const theme = createTheme({
   palette: {
     primary: {

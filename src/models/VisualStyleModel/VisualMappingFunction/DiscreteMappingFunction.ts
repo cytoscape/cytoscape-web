@@ -3,13 +3,7 @@ import { ValueType } from '../../TableModel'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualMappingFunction } from '.'
 
-export interface DiscreteFunctionEntry {
-  value: ValueType
-  vpValue: VisualPropertyValueType
-}
-
-export interface DiscreteMappingFunction
-  extends VisualMappingFunction<VisualPropertyValueType> {
+export interface DiscreteMappingFunction extends VisualMappingFunction {
   vpValueMap: Map<ValueType, VisualPropertyValueType>
   defaultValue: VisualPropertyValueType
 }

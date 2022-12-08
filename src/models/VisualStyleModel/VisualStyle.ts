@@ -32,7 +32,7 @@ export interface VisualProperty<T> {
   displayName: string
   type: VisualPropertyValueTypeString
   defaultValue: T
-  mapping: VisualMappingFunction<T> | null
+  mapping: VisualMappingFunction | null
   bypassMap: Bypass<T>
 }
 

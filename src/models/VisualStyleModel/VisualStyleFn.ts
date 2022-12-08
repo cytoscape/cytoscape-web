@@ -33,7 +33,7 @@ export interface VisualStyleFn {
   setMapping: (
     visualStyle: VisualStyle,
     visualPropertyName: VisualPropertyName,
-    mapping: VisualMappingFunction<VisualPropertyValueType>,
+    mapping: VisualMappingFunction,
   ) => VisualStyle
   setDefault: (
     visualStyle: VisualStyle,

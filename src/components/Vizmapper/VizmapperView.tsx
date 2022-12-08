@@ -1,19 +1,30 @@
 import * as React from 'react'
-import Box from '@mui/material/Box'
-import { Typography } from '@mui/material'
-// import InputLabel from '@mui/material/InputLabel'
-// import MenuItem from '@mui/material/MenuItem'
-// import FormControl from '@mui/material/FormControl'
-// import Select from '@mui/material/Select'
+import {
+  Box,
+  Typography,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+} from '@mui/material'
+
 import { IdType } from '../../models/IdType'
+import { Table, ValueType } from '../../models/TableModel'
 import VisualStyleFn, {
   VisualProperty,
   VisualPropertyValueType,
   VisualStyle,
 } from '../../models/VisualStyleModel'
+import {
+  ContinuousMappingFunction,
+  DiscreteMappingFunction,
+  MappingFunctionType,
+} from '../../models/VisualStyleModel/VisualMappingFunction'
+import { VisualPropertyValueTypeString } from '../../models/VisualStyleModel/VisualStyle'
+
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
-
+import { useTableStore } from '../../store/TableStore'
 import Accordion from '@mui/material/Accordion'
 import AccordionSummary from '@mui/material/AccordionSummary'
 import AccordionDetails from '@mui/material/AccordionDetails'
@@ -24,7 +35,6 @@ import { NodeShapePicker } from './NodeShape'
 import { ColorPicker } from './Color'
 import { NodeBorderLinePicker } from './NodeBorderLine'
 import { NumberInput } from './Number'
-import { VisualPropertyValueTypeString } from '../../models/VisualStyleModel/VisualStyle'
 import { FontPicker } from './Font'
 import { HoritzontalAlignPicker } from './HorizontalAlign'
 import { VerticalAlignPicker } from './VerticalAlign'
@@ -33,6 +43,7 @@ import { EdgeArrowShapePicker } from './EdgeArrowShape'
 import { EdgeLinePicker } from './EdgeLine'
 import { StringInput } from './String'
 import { BooleanSwitch } from './Boolean'
+import { ContinuousFunctionInterval } from '../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 
 const type2RenderFnMap: Record<
   VisualPropertyValueTypeString,
@@ -52,6 +63,145 @@ const type2RenderFnMap: Record<
   boolean: BooleanSwitch,
 }
 
+function MappingFunctionView(props: {
+  currentNetworkId: IdType
+  visualProperty: VisualProperty<VisualPropertyValueType>
+}): React.ReactElement {
+  const [attribute, setAttribute] = React.useState(
+    props.visualProperty.mapping?.attribute ?? '',
+  )
+  const [mappingType, setMappingType] = React.useState(
+    props.visualProperty.mapping?.type ?? '',
+  )
+
+  const mapping = props.visualProperty.mapping
+  const deleteDiscreteMappingValue = useVisualStyleStore(
+    (state) => state.deleteDiscreteMappingValue,
+  )
+
+  const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
+    useTableStore((state) => state.tables)
+  const nodeTable = tables[props.currentNetworkId]?.nodeTable
+  const edgeTable = tables[props.currentNetworkId]?.edgeTable
+  const currentTable =
+    props.visualProperty.group === 'node' ? nodeTable : edgeTable
+  const columns = Array.from(currentTable.columns.values())
+
+  const mappingFnContent = {
+    [MappingFunctionType.Discrete]: (
+      <Box>
+        <Box>Discrete Value Map</Box>
+
+        {Array.from(
+          (mapping as DiscreteMappingFunction)?.vpValueMap?.entries() ??
+            new Map(),
+        ).map(([value, vpValue]: [ValueType, VisualPropertyValueType]) => {
+          return (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}
+              key={String(value)}
+            >
+              <Box>{String(value)}</Box>
+              <Box>{vpValue as string}</Box>
+              <CloseIcon
+                onClick={() =>
+                  deleteDiscreteMappingValue(
+                    props.currentNetworkId,
+                    props.visualProperty.name,
+                    value,
+                  )
+                }
+              />
+            </Box>
+          )
+        })}
+      </Box>
+    ),
+    [MappingFunctionType.Continuous]: (
+      <Box>
+        <Box>{JSON.stringify(mapping, null, 2)}</Box>
+        {((mapping as ContinuousMappingFunction)?.intervals ?? []).map(
+          (interval: ContinuousFunctionInterval, index: number) => {
+            return (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                }}
+                key={index}
+              >
+                {JSON.stringify(interval, null, 2)}
+              </Box>
+            )
+          },
+        )}
+      </Box>
+    ),
+    [MappingFunctionType.Passthrough]: <Box></Box>,
+  }
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          border: '1px solid gray',
+          p: 1,
+          m: 1,
+        }}
+      >
+        <Box>
+          <FormControl>
+            <InputLabel>Column</InputLabel>
+            <Select
+              value={attribute ?? 'None'}
+              label="Column"
+              onChange={(e) => setAttribute(e.target.value)}
+            >
+              {columns.map((column) => (
+                <MenuItem key={column.name} value={column.name}>
+                  {column.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+        <Box>
+          <FormControl>
+            <InputLabel>Mapping Type</InputLabel>
+            <Select
+              value={mappingType ?? 'None'}
+              label="Column"
+              onChange={(e) => setMappingType(e.target.value)}
+            >
+              {Object.values(MappingFunctionType).map((mappingFnType) => (
+                <MenuItem key={mappingFnType} value={mappingFnType}>
+                  {mappingFnType}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      </Box>
+      <Box sx={{ p: 1, m: 1, border: '1px solid gray' }}>
+        {mappingFnContent[mappingType as MappingFunctionType]}
+      </Box>
+    </Box>
+  )
+}
+
 function VisualPropertyView(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
@@ -61,6 +211,10 @@ function VisualPropertyView(props: {
   const setDefault = useVisualStyleStore((state) => state.setDefault)
   const setBypass = useVisualStyleStore((state) => state.setBypass)
   const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
+  const tables = useTableStore((state) => state.tables)
+  const table = tables[props.currentNetworkId]
+  const nodeTable = table?.nodeTable
+  const edgeTable = table?.edgeTable
   const viewModels = useViewModelStore((state) => state.viewModels)
   const networkView = viewModels[props.currentNetworkId]
 
@@ -77,7 +231,14 @@ function VisualPropertyView(props: {
     currentValue: visualProperty.defaultValue,
   })
 
-  const mappingExanpdedContent = <div></div>
+  const mappingExanpdedContent = (
+    <Box>
+      <MappingFunctionView
+        currentNetworkId={props.currentNetworkId}
+        visualProperty={visualProperty}
+      />
+    </Box>
+  )
   const bypassExpandedContent = (
     <Box
       sx={{
@@ -133,6 +294,9 @@ function VisualPropertyView(props: {
           <Box>Current Bypasses</Box>
           {Object.entries(visualProperty?.bypassMap ?? {}).map(
             ([eleId, value]) => {
+              const eleTable =
+                visualProperty.group === 'node' ? nodeTable : edgeTable
+              const name = eleTable.rows.get(eleId)?.name
               return (
                 <Box
                   sx={{
@@ -143,6 +307,7 @@ function VisualPropertyView(props: {
                   key={eleId}
                 >
                   <Box>{`${eleId}`}</Box>
+                  <Box>{name}</Box>
                   <Box>{value as string}</Box>
                   <CloseIcon
                     onClick={() =>

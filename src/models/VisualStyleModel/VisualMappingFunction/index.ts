@@ -1,7 +1,7 @@
 import { MappingFunctionType } from './MappingFunctionType'
 import { AttributeName } from '../../TableModel'
 
-export interface VisualMappingFunction<T> {
+export interface VisualMappingFunction {
   type: MappingFunctionType
   attribute: AttributeName
 }

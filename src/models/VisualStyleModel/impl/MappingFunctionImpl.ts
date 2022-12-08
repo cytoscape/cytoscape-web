@@ -1,6 +1,6 @@
 import chroma, { Color } from 'chroma-js'
 
-import { Table } from '../../TableModel'
+import { Table, ValueType } from '../../TableModel'
 import {
   ContinuousMappingFunction,
   DiscreteMappingFunction,
@@ -9,65 +9,123 @@ import {
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 
 import { SingularElementArgument } from 'cytoscape'
+import { IdType } from '../../IdType'
 
 export type CyJsMappingFunction = (
-  mappingFn: VisualMappingFunction<VisualPropertyValueType>,
+  mappingFn: VisualMappingFunction,
   table: Table,
   defaultValue: VisualPropertyValueType,
 ) => (Ele: SingularElementArgument) => VisualPropertyValueType
 
+// only allow non-array values that are defined
+const isValidMappingValue = (value: ValueType | undefined): boolean => {
+  return value != null && !Array.isArray(value)
+}
+
+// a value is valid for continuous mapping if it is a number
+const isNumber = (value: ValueType | undefined): boolean => {
+  return isValidMappingValue(value) && Number.isFinite(value as number)
+}
+
+// check if a given value is a valid hex color
+const isHexColor = (vp: VisualPropertyValueType | undefined): boolean => {
+  return vp != null && chroma.valid(vp, 'hex')
+}
+
+// get the value of a column for a given node/edge
+// first check if the value is in the row, then check if there is a column default and finally return undefined if neither are defined
+const getColumnValue = (
+  networkElementId: IdType,
+  table: Table,
+  attribute: string,
+): ValueType | undefined => {
+  const row = table.rows.get(networkElementId)
+  const column = table.columns.get(attribute)
+  return row?.[attribute] ?? column?.defaultValue ?? undefined
+}
+
+// precondition: value is in the interval of (min/max)
+// create color scale with min/max color values and map the value to a color in that scale
+const mapColor = (
+  min: number,
+  max: number,
+  minVPValue: Color,
+  maxVPValue: Color,
+  value: number,
+): VisualPropertyValueType => {
+  const colorMapper = chroma.scale([minVPValue, maxVPValue]).domain([min, max])
+
+  return colorMapper(value).hex() as unknown as VisualPropertyValueType
+}
+
+// precondition: value is in the interval of (min/max)
+// map value to a number in the interval of (styleMin/styleMax)
+const mapLinearNumber = (
+  value: number,
+  min: number,
+  max: number,
+  styleMin: number,
+  styleMax: number,
+): number => {
+  const t = (value - min) / (max - min)
+  return styleMin + t * (styleMax - styleMin)
+}
+
 const createCyJsPassthroughMappingFn: CyJsMappingFunction = (
-  mappingFn: VisualMappingFunction<VisualPropertyValueType>,
+  mappingFn: VisualMappingFunction,
   table: Table,
   defaultValue: VisualPropertyValueType,
 ) => {
   const { attribute } = mappingFn
-  return (ele: SingularElementArgument): VisualPropertyValueType => {
-    const row = table.rows.get(ele.data('id'))
-    const column = table.columns.get(attribute)
-    const value = row?.[attribute] ?? column?.defaultValue
+  const cyJsPassthroughMappingFn = (
+    ele: SingularElementArgument,
+  ): VisualPropertyValueType => {
+    const value = getColumnValue(ele.data('id'), table, attribute)
 
-    if (!Array.isArray(value) && value != null) {
-      return value
+    if (isValidMappingValue(value)) {
+      return value as VisualPropertyValueType
     }
 
     return defaultValue
   }
+  return cyJsPassthroughMappingFn
 }
 
 const createCyJsDiscreteMappingFn: CyJsMappingFunction = (
-  mappingFn: VisualMappingFunction<VisualPropertyValueType>,
+  mappingFn: VisualMappingFunction,
   table: Table,
   defaultValue: VisualPropertyValueType,
 ) => {
   const { attribute, vpValueMap } = mappingFn as DiscreteMappingFunction
 
-  return (ele: SingularElementArgument): VisualPropertyValueType => {
-    const row = table.rows.get(ele.data('id'))
-    const column = table.columns.get(attribute)
-    const value = row?.[attribute] ?? column?.defaultValue
+  const cyJsDiscreteMappingFn = (
+    ele: SingularElementArgument,
+  ): VisualPropertyValueType => {
+    const value = getColumnValue(ele.data('id'), table, attribute)
 
-    if (!Array.isArray(value) && value != null) {
-      return vpValueMap.get(value) ?? defaultValue
+    if (isValidMappingValue(value)) {
+      return vpValueMap.get(value as ValueType) ?? defaultValue
     }
 
     return defaultValue
   }
+
+  return cyJsDiscreteMappingFn
 }
 
 const createCyJsContinuousMappingFn: CyJsMappingFunction = (
-  mappingFn: VisualMappingFunction<VisualPropertyValueType>,
+  mappingFn: VisualMappingFunction,
   table: Table,
   defaultValue: VisualPropertyValueType,
 ) => {
   const { attribute, intervals } = mappingFn as ContinuousMappingFunction
 
-  return (ele: SingularElementArgument): VisualPropertyValueType => {
-    const row = table.rows.get(ele.data('id'))
-    const column = table.columns.get(attribute)
-    const value = row?.[attribute] ?? column?.defaultValue
+  const cyJsContinuousMappingFn = (
+    ele: SingularElementArgument,
+  ): VisualPropertyValueType => {
+    const value = getColumnValue(ele.data('id'), table, attribute) as number
 
-    if (!Array.isArray(value) && value != null && Number.isFinite(value)) {
+    if (isNumber(value)) {
       // find the first interval that the value is in
 
       for (let i = 0; i < intervals.length; i++) {
@@ -108,62 +166,44 @@ const createCyJsContinuousMappingFn: CyJsMappingFunction = (
           if (valueInInterval) {
             // map linear number/color
             const vpsAreColors =
-              maxVPValue != null &&
-              minVPValue != null &&
-              chroma.valid(maxVPValue, 'hex') &&
-              chroma.valid(minVPValue, 'hex')
+              isHexColor(maxVPValue) && isHexColor(minVPValue)
 
-            const vpsAreNumbers =
-              maxVPValue != null &&
-              minVPValue != null &&
-              Number.isFinite(maxVPValue) &&
-              Number.isFinite(minVPValue)
+            const vpsAreNumbers = isNumber(maxVPValue) && isNumber(minVPValue)
 
             if (vpsAreColors) {
               // map color
-              const colorMapper = chroma
-                .scale([
-                  minVPValue as unknown as Color,
-                  maxVPValue as unknown as Color,
-                ])
-                .domain([min as unknown as number, max as unknown as number])
-              return colorMapper(
-                value as unknown as number,
-              ).hex() as unknown as VisualPropertyValueType
-            }
-
-            if (vpsAreNumbers) {
-              // map number
-              // export const mapLinearNumber = (
-              //   value: number,
-              //   min: number,
-              //   max: number,
-              //   styleMin: number,
-              //   styleMax: number,
-              // ): number => {
-              //   const t = (value - min) / (max - min)
-              //   return styleMin + t * (styleMax - styleMin)
-              // }
-              // map linear numbers
-              const v = value as number
-              const minV = min as number
-              const maxV = max as number
-              const minVP = minVPValue as number
-              const maxVP = maxVPValue as number
-              const t = (v - minV) / (maxV - minV)
-              return minVP + t * (maxVP - minVP)
+              return mapColor(
+                min as number,
+                max as number,
+                minVPValue as unknown as Color,
+                maxVPValue as unknown as Color,
+                value,
+              )
+            } else {
+              if (vpsAreNumbers) {
+                return mapLinearNumber(
+                  value,
+                  min as number,
+                  max as number,
+                  minVPValue as number,
+                  maxVPValue as number,
+                ) as unknown as VisualPropertyValueType
+              }
             }
           }
         }
       }
     }
 
+    // if no interval is found, return the default style value
     return defaultValue
   }
+
+  return cyJsContinuousMappingFn
 }
 
 const createDefaultCyJsMappingFn: CyJsMappingFunction = (
-  mappingFn: VisualMappingFunction<VisualPropertyValueType>,
+  mappingFn: VisualMappingFunction,
   table: Table,
   defaultValue: VisualPropertyValueType,
 ) => {
@@ -171,11 +211,11 @@ const createDefaultCyJsMappingFn: CyJsMappingFunction = (
 }
 
 export const createCyJsMappingFn: (
-  mappingFn: VisualMappingFunction<VisualPropertyValueType>,
+  mappingFn: VisualMappingFunction,
   table: Table,
   defaultValue: VisualPropertyValueType,
 ) => (Ele: SingularElementArgument) => VisualPropertyValueType = (
-  mappingFn: VisualMappingFunction<VisualPropertyValueType>,
+  mappingFn: VisualMappingFunction,
   table: Table,
   defaultValue: VisualPropertyValueType,
 ) => {
