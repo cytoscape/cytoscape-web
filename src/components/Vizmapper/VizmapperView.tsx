@@ -20,7 +20,7 @@ import {
   DiscreteMappingFunction,
   MappingFunctionType,
 } from '../../models/VisualStyleModel/VisualMappingFunction'
-import { VisualPropertyValueTypeString } from '../../models/VisualStyleModel/VisualStyle'
+import { VisualPropertyValueTypeString } from '../../models/VisualStyleModel/VisualPropertyValueTypeString'
 
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useViewModelStore } from '../../store/ViewModelStore'

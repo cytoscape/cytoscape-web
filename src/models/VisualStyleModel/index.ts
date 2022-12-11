@@ -1,6 +1,7 @@
 import * as VisualStyleFn from './impl/VisualStyleImpl'
 
-export { VisualStyle, VisualProperty } from './VisualStyle'
+export { VisualStyle } from './VisualStyle'
+export { VisualProperty } from './VisualProperty'
 export { VisualPropertyName } from './VisualPropertyName'
 export { VisualPropertyValueType } from './VisualPropertyValue'
 export { VisualMappingFunction } from './VisualMappingFunction'
