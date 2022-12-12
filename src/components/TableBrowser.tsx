@@ -40,16 +40,9 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <Box>{children}</Box>}
     </div>
   )
-}
-
-function a11yProps(index: number): { id: string; 'aria-controls': string } {
-  return {
-    id: `simple-tab-${index}`,
-    'aria-controls': `simple-tabpanel-${index}`,
-  }
 }
 
 // serialize lists of different value types into a string to display in the table
@@ -138,6 +131,8 @@ const isListType = (type: ValueTypeName): boolean => {
 
 export default function TableBrowser(props: {
   currentNetworkId: IdType
+  height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
+  width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
   const networkId = props.currentNetworkId
@@ -242,13 +237,21 @@ export default function TableBrowser(props: {
       if (isListType(column.type)) {
         data = deserializeValueList(column.type, data as string)
       }
-      setCellValue(
-        props.currentNetworkId,
-        currentTable === nodeTable ? 'node' : 'edge',
-        `${rowKey}`,
-        columnKey,
-        data as ValueType,
-      )
+
+      const newDataIsValid = true
+
+      // TODO validate the new data
+      if (newDataIsValid) {
+        setCellValue(
+          props.currentNetworkId,
+          currentTable === nodeTable ? 'node' : 'edge',
+          `${rowKey}`,
+          columnKey,
+          data as ValueType,
+        )
+      } else {
+        // dont edit the value or do something else
+      }
     },
     [props.currentNetworkId, currentTable, tables],
   )
@@ -283,14 +286,8 @@ export default function TableBrowser(props: {
             minHeight: 30,
           }}
         >
-          <Tab
-            label={<Typography variant="caption">Nodes</Typography>}
-            {...a11yProps(0)}
-          />
-          <Tab
-            label={<Typography variant="caption">Edges</Typography>}
-            {...a11yProps(1)}
-          />
+          <Tab label={<Typography variant="caption">Nodes</Typography>} />
+          <Tab label={<Typography variant="caption">Edges</Typography>} />
         </Tabs>
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
@@ -302,8 +299,8 @@ export default function TableBrowser(props: {
           keybindings={{ search: true }}
           getCellsForSelection={true}
           // onSearchClose={onSearchClose}
-          width={1200}
-          height={400}
+          width={props.width}
+          height={props.height}
           getCellContent={getContent}
           onCellEdited={onCellEdited}
           columns={columns}
@@ -319,8 +316,8 @@ export default function TableBrowser(props: {
           keybindings={{ search: true }}
           getCellsForSelection={true}
           // onSearchClose={onSearchClose}
-          width={1200}
-          height={400}
+          width={props.width}
+          height={props.height}
           getCellContent={getContent}
           onCellEdited={onCellEdited}
           columns={columns}
