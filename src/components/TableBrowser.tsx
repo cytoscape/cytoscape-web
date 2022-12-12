@@ -4,7 +4,9 @@ import Tab from '@mui/material/Tab'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
-// import { Button } from '@mui/material'
+import Card from '@mui/material/Card'
+import { MenuItem } from '@mui/material'
+import { useLayer } from 'react-laag'
 
 import { Table, ValueType, ValueTypeName } from '../models/TableModel'
 import { useTableStore } from '../store/TableStore'
@@ -16,6 +18,7 @@ import {
   GridCell,
   EditableGridCell,
   Item,
+  Rectangle,
 } from '@glideapps/glide-data-grid'
 import { translateCXEdgeId } from '../models/NetworkModel/impl/CyNetwork'
 import {
@@ -135,10 +138,23 @@ export default function TableBrowser(props: {
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
+  const [menu, setMenu] = React.useState<
+    | {
+        col: number
+        bounds: Rectangle
+      }
+    | undefined
+  >(undefined)
+  const [showSearch, setShowSearch] = React.useState(false)
+  const onSearchClose = React.useCallback(() => setShowSearch(false), [])
+
+  const isOpen = menu !== undefined
+
   const networkId = props.currentNetworkId
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
+  const duplicateColumn = useTableStore((state) => state.duplicateColumn)
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
   const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
@@ -157,10 +173,39 @@ export default function TableBrowser(props: {
       type: col.type,
       index,
       defaultValue: col.defaultValue,
+      hasMenu: true,
     }),
   )
-  // const [showSearch, setShowSearch] = React.useState(false)
-  // const onSearchClose = React.useCallback(() => setShowSearch(false), [])
+
+  const { layerProps, renderLayer } = useLayer({
+    isOpen,
+    auto: true,
+    placement: 'bottom-end',
+    triggerOffset: 2,
+
+    // TODO does not work presumably because of multiple render inefficiencies
+    // TODO investigate
+    // onOutsideClick: () => {
+    //   console.log('outside click')
+    //   console.log(menu)
+
+    //   setMenu(undefined)
+    // },
+
+    trigger: {
+      getBounds: () => {
+        const bounds = {
+          left: (menu?.bounds.x ?? 0) + 30,
+          top: (menu?.bounds.y ?? 0) + 30,
+          width: (menu?.bounds.width ?? 0) + 30,
+          height: (menu?.bounds.height ?? 0) + 30,
+          right: (menu?.bounds.x ?? 0) + (menu?.bounds.width ?? 0) + 30,
+          bottom: (menu?.bounds.y ?? 0) + (menu?.bounds.height ?? 0) + 30,
+        }
+        return bounds
+      },
+    },
+  })
 
   const handleChange = (
     event: React.SyntheticEvent,
@@ -256,6 +301,20 @@ export default function TableBrowser(props: {
     [props.currentNetworkId, currentTable, tables],
   )
 
+  const onHeaderMenuClick = React.useCallback(
+    (col: number, bounds: Rectangle): void => {
+      setMenu({
+        bounds,
+        col,
+      })
+    },
+    [],
+  )
+
+  const onHeaderClicked = React.useCallback((): void => {
+    // eslint-disable-next-line no-console
+    console.log('Header clicked')
+  }, [])
   return (
     <Box sx={{ width: '100%' }}>
       <Box
@@ -295,10 +354,12 @@ export default function TableBrowser(props: {
         <DataEditor
           rowMarkers={'both'}
           rowMarkerStartIndex={minNodeId}
-          // showSearch={showSearch}
+          showSearch={showSearch}
           keybindings={{ search: true }}
           getCellsForSelection={true}
-          // onSearchClose={onSearchClose}
+          onSearchClose={onSearchClose}
+          onHeaderMenuClick={onHeaderMenuClick}
+          onHeaderClicked={onHeaderClicked}
           width={props.width}
           height={props.height}
           getCellContent={getContent}
@@ -306,16 +367,52 @@ export default function TableBrowser(props: {
           columns={columns}
           rows={maxNodeId - minNodeId}
         />
+        {isOpen &&
+          renderLayer(
+            <Card
+              sx={{
+                backgroundColor: 'white',
+                width: 175,
+                zIndex: 100,
+              }}
+              {...layerProps}
+            >
+              <MenuItem>Sort ascending</MenuItem>
+              <MenuItem>Sort descending</MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    // duplicateColumn(col)
+                    const column = columns[col]
+                    const columnKey = column.id
+                    duplicateColumn(
+                      props.currentNetworkId,
+                      currentTable === nodeTable ? 'node' : 'edge',
+                      columnKey,
+                    )
+                  }
+                  // duplicateColumn()
+                  setMenu(undefined)
+                }}
+              >
+                Duplicate column
+              </MenuItem>
+            </Card>,
+          )}
+
         {/* )} */}
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
         <DataEditor
           rowMarkers={'both'}
           rowMarkerStartIndex={minEdgeId}
-          // showSearch={showSearch}
+          showSearch={showSearch}
           keybindings={{ search: true }}
           getCellsForSelection={true}
-          // onSearchClose={onSearchClose}
+          onSearchClose={onSearchClose}
+          onHeaderMenuClick={onHeaderMenuClick}
+          onHeaderClicked={onHeaderClicked}
           width={props.width}
           height={props.height}
           getCellContent={getContent}
@@ -323,6 +420,40 @@ export default function TableBrowser(props: {
           columns={columns}
           rows={maxEdgeId - minEdgeId}
         />
+        {isOpen &&
+          renderLayer(
+            <Card
+              sx={{
+                backgroundColor: 'white',
+                width: 100,
+                height: 100,
+                zIndex: 10,
+              }}
+              {...layerProps}
+            >
+              <MenuItem>Sort ascending</MenuItem>
+              <MenuItem>Sort descending</MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    // duplicateColumn(col)
+                    const column = columns[col]
+                    const columnKey = column.id
+                    duplicateColumn(
+                      props.currentNetworkId,
+                      currentTable === nodeTable ? 'node' : 'edge',
+                      columnKey,
+                    )
+                  }
+                  // duplicateColumn()
+                  setMenu(undefined)
+                }}
+              >
+                Duplicate column
+              </MenuItem>
+            </Card>,
+          )}
       </TabPanel>
     </Box>
   )
