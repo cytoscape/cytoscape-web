@@ -10,7 +10,6 @@ import {
 import { ContinuousFunctionInterval } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyName } from '../VisualPropertyName'
 
-import { VisualStyleChangeSet } from '../VisualStyleFn'
 import {
   VisualStyle,
   VisualPropertyValueType,
@@ -267,13 +266,6 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   })
 
   return visualStyle
-}
-
-export const setVisualStyle = (
-  visualStyle: VisualStyle,
-  changeSet: VisualStyleChangeSet,
-): VisualStyle => {
-  return { ...visualStyle, ...changeSet }
 }
 
 export const createCyJsStyleSheetView = (
