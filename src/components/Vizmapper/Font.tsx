@@ -1,0 +1,38 @@
+import { FontType } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { Box } from '@mui/material'
+
+export function FontPicker(props: {
+  currentValue: FontType
+  onClick: (font: FontType) => void
+}): React.ReactElement {
+  const { onClick, currentValue } = props
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+      }}
+    >
+      {Object.values(FontType).map((font: FontType) => (
+        <Box
+          sx={{
+            color: currentValue === font ? 'blue' : 'black',
+            width: 100,
+            p: 1,
+            '&:hover': { cursor: 'pointer' },
+          }}
+          onClick={() => onClick(font)}
+          key={font}
+        >
+          {font}
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+export function Font(props: { font: FontType }): React.ReactElement {
+  return <Box>{props.font}</Box>
+}

@@ -1,15 +1,12 @@
-import { FC } from 'react'
-import * as React from 'react'
+import { ReactElement } from 'react'
 import { ToolBar } from './ToolBar'
 import { WorkSpaceEditor } from './WorkspaceEditor'
 
-const AppShell: FC = () => {
-  return (
-    <div>
-      <ToolBar />
-      <WorkSpaceEditor />
-    </div>
-  )
-}
+const AppShell = (): ReactElement => (
+  <>
+    <ToolBar />
+    <WorkSpaceEditor />
+  </>
+)
 
 export default AppShell
