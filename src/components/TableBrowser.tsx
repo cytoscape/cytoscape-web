@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import Card from '@mui/material/Card'
-import { MenuItem } from '@mui/material'
+import { Button, MenuItem } from '@mui/material'
 import { useLayer } from 'react-laag'
 
 import { Table, ValueType, ValueTypeName } from '../models/TableModel'
@@ -195,12 +195,12 @@ export default function TableBrowser(props: {
     trigger: {
       getBounds: () => {
         const bounds = {
-          left: (menu?.bounds.x ?? 0) + 30,
-          top: (menu?.bounds.y ?? 0) + 30,
-          width: (menu?.bounds.width ?? 0) + 30,
-          height: (menu?.bounds.height ?? 0) + 30,
-          right: (menu?.bounds.x ?? 0) + (menu?.bounds.width ?? 0) + 30,
-          bottom: (menu?.bounds.y ?? 0) + (menu?.bounds.height ?? 0) + 30,
+          left: menu?.bounds.x ?? 0,
+          top: menu?.bounds.y ?? 0,
+          width: menu?.bounds.width ?? 0,
+          height: menu?.bounds.height ?? 0,
+          right: (menu?.bounds.x ?? 0) + (menu?.bounds.width ?? 0),
+          bottom: (menu?.bounds.y ?? 0) + (menu?.bounds.height ?? 0),
         }
         return bounds
       },
@@ -351,6 +351,9 @@ export default function TableBrowser(props: {
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
+        <Button onClick={() => setShowSearch(!showSearch)}>
+          Toggle Search
+        </Button>
         <DataEditor
           rowMarkers={'both'}
           rowMarkerStartIndex={minNodeId}
@@ -404,6 +407,10 @@ export default function TableBrowser(props: {
         {/* )} */}
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
+        <Button onClick={() => setShowSearch(!showSearch)}>
+          Toggle Search
+        </Button>
+
         <DataEditor
           rowMarkers={'both'}
           rowMarkerStartIndex={minEdgeId}
