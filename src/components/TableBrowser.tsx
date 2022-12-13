@@ -8,7 +8,12 @@ import Card from '@mui/material/Card'
 import { Button, MenuItem } from '@mui/material'
 import { useLayer } from 'react-laag'
 
-import { Table, ValueType, ValueTypeName } from '../models/TableModel'
+import {
+  Table,
+  ValueType,
+  ValueTypeName,
+  AttributeName,
+} from '../models/TableModel'
 import { useTableStore } from '../store/TableStore'
 import { IdType } from '../models/IdType'
 
@@ -132,6 +137,11 @@ const isListType = (type: ValueTypeName): boolean => {
   ].includes(type)
 }
 
+interface SortType {
+  column: AttributeName | undefined
+  direction: 'asc' | 'desc' | undefined
+}
+
 export default function TableBrowser(props: {
   currentNetworkId: IdType
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
@@ -147,6 +157,10 @@ export default function TableBrowser(props: {
   >(undefined)
   const [showSearch, setShowSearch] = React.useState(false)
   const onSearchClose = React.useCallback(() => setShowSearch(false), [])
+  const [sort, setSort] = React.useState<SortType>({
+    column: undefined,
+    direction: undefined,
+  })
 
   const isOpen = menu !== undefined
 
@@ -176,6 +190,18 @@ export default function TableBrowser(props: {
       hasMenu: true,
     }),
   )
+
+  const rows = Array.from((currentTable?.rows ?? new Map()).values())
+  if (sort.column != null && sort.direction != null) {
+    rows.sort((a, b) => {
+      const aVal = a[sort.column as AttributeName]
+      const bVal = b[sort.column as AttributeName]
+      if (sort.direction === 'asc') {
+        return aVal > bVal ? 1 : -1
+      }
+      return aVal > bVal ? -1 : 1
+    })
+  }
 
   const { layerProps, renderLayer } = useLayer({
     isOpen,
@@ -217,12 +243,12 @@ export default function TableBrowser(props: {
   const getContent = React.useCallback(
     (cell: Item): GridCell => {
       const [columnIndex, rowIndex] = cell
-      const minId = currentTable === nodeTable ? minNodeId : minEdgeId
-      const rowKey =
-        currentTable === nodeTable
-          ? +rowIndex + minId
-          : translateCXEdgeId(`${+rowIndex + minId}`)
-      const dataRow = currentTable.rows.get(`${rowKey}`)
+      // const minId = currentTable === nodeTable ? minNodeId : minEdgeId
+      // const rowKey =
+      //   currentTable === nodeTable
+      //     ? +rowIndex + minId
+      //     : translateCXEdgeId(`${+rowIndex + minId}`)
+      const dataRow = rows[rowIndex]
       const column = columns[columnIndex]
       const columnKey = column.id
       const cellValue = dataRow?.[columnKey] ?? column.defaultValue
@@ -264,7 +290,7 @@ export default function TableBrowser(props: {
         }
       }
     },
-    [props.currentNetworkId, currentTable, tables],
+    [props.currentNetworkId, currentTable, tables, sort],
   )
 
   const onCellEdited = React.useCallback(
@@ -298,7 +324,7 @@ export default function TableBrowser(props: {
         // dont edit the value or do something else
       }
     },
-    [props.currentNetworkId, currentTable, tables],
+    [props.currentNetworkId, currentTable, tables, sort],
   )
 
   const onHeaderMenuClick = React.useCallback(
@@ -310,6 +336,7 @@ export default function TableBrowser(props: {
     },
     [],
   )
+  console.log(rows)
 
   const onHeaderClicked = React.useCallback((): void => {
     // eslint-disable-next-line no-console
@@ -380,8 +407,38 @@ export default function TableBrowser(props: {
               }}
               {...layerProps}
             >
-              <MenuItem>Sort ascending</MenuItem>
-              <MenuItem>Sort descending</MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    const column = columns[col]
+                    const columnKey = column.id
+                    setSort({
+                      column: columnKey,
+                      direction: 'asc',
+                    })
+                  }
+                  setMenu(undefined)
+                }}
+              >
+                Sort ascending
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    const column = columns[col]
+                    const columnKey = column.id
+                    setSort({
+                      column: columnKey,
+                      direction: 'desc',
+                    })
+                  }
+                  setMenu(undefined)
+                }}
+              >
+                Sort descending
+              </MenuItem>
               <MenuItem
                 onClick={() => {
                   const col = menu?.col
@@ -438,13 +495,42 @@ export default function TableBrowser(props: {
               }}
               {...layerProps}
             >
-              <MenuItem>Sort ascending</MenuItem>
-              <MenuItem>Sort descending</MenuItem>
               <MenuItem
                 onClick={() => {
                   const col = menu?.col
                   if (col != null) {
-                    // duplicateColumn(col)
+                    const column = columns[col]
+                    const columnKey = column.id
+                    setSort({
+                      column: columnKey,
+                      direction: 'asc',
+                    })
+                  }
+                  setMenu(undefined)
+                }}
+              >
+                Sort ascending
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    const column = columns[col]
+                    const columnKey = column.id
+                    setSort({
+                      column: columnKey,
+                      direction: 'desc',
+                    })
+                  }
+                  setMenu(undefined)
+                }}
+              >
+                Sort descending
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
                     const column = columns[col]
                     const columnKey = column.id
                     duplicateColumn(
@@ -453,7 +539,6 @@ export default function TableBrowser(props: {
                       columnKey,
                     )
                   }
-                  // duplicateColumn()
                   setMenu(undefined)
                 }}
               >
