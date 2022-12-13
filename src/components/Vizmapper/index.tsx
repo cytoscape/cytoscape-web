@@ -6,6 +6,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Popover,
 } from '@mui/material'
 
 import { IdType } from '../../models/IdType'
@@ -63,6 +64,47 @@ const type2RenderFnMap: Record<
   boolean: BooleanSwitch,
 }
 
+const ClickableVisualPropertyValue = (props: {
+  visualProperty: VisualProperty<VisualPropertyValueType>
+  currentValue: VisualPropertyValueType
+  onValueChange: (newValue: VisualPropertyValueType) => void
+}): React.ReactElement => {
+  const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
+
+  const showValuePicker = (value: Element | null): void => {
+    setValuePicker(value)
+  }
+
+  return (
+    <Box>
+      <Box
+        sx={{
+          p: 1,
+          m: 1,
+          '&:hover': { border: '1px solid gray', cursor: 'pointer' },
+        }}
+        onClick={(e) => showValuePicker(e.currentTarget)}
+      >
+        {props.currentValue}
+      </Box>
+      <Popover
+        open={Boolean(valuePicker)}
+        anchorEl={valuePicker}
+        onClose={() => showValuePicker(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Box sx={{ width: 300, height: 150, p: 1, m: 1 }}>
+          {(type2RenderFnMap[props.visualProperty.type] ?? (() => {}))({
+            onClick: (value: VisualPropertyValueType) =>
+              props.onValueChange(value),
+            currentValue: props.currentValue,
+          })}
+        </Box>
+      </Popover>
+    </Box>
+  )
+}
+
 function MappingFunctionView(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
@@ -77,6 +119,10 @@ function MappingFunctionView(props: {
   const mapping = props.visualProperty.mapping
   const deleteDiscreteMappingValue = useVisualStyleStore(
     (state) => state.deleteDiscreteMappingValue,
+  )
+
+  const setDiscreteMappingValue = useVisualStyleStore(
+    (state) => state.setDiscreteMappingValue,
   )
 
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
@@ -106,7 +152,18 @@ function MappingFunctionView(props: {
               key={String(value)}
             >
               <Box>{String(value)}</Box>
-              <Box>{vpValue as string}</Box>
+              <ClickableVisualPropertyValue
+                currentValue={vpValue}
+                onValueChange={(newValue: VisualPropertyValueType) => {
+                  setDiscreteMappingValue(
+                    props.currentNetworkId,
+                    props.visualProperty.name,
+                    value,
+                    newValue,
+                  )
+                }}
+                visualProperty={props.visualProperty}
+              />
               <CloseIcon
                 onClick={() =>
                   deleteDiscreteMappingValue(
@@ -166,6 +223,7 @@ function MappingFunctionView(props: {
           <FormControl>
             <InputLabel>Column</InputLabel>
             <Select
+              defaultValue=""
               value={attribute ?? 'None'}
               label="Column"
               onChange={(e) => setAttribute(e.target.value)}
@@ -182,6 +240,7 @@ function MappingFunctionView(props: {
           <FormControl>
             <InputLabel>Mapping Type</InputLabel>
             <Select
+              defaultValue=""
               value={mappingType ?? 'None'}
               label="Column"
               onChange={(e) => setMappingType(e.target.value)}
@@ -223,13 +282,14 @@ function VisualPropertyView(props: {
   }
 
   const defaultExpandedContent = (
-    type2RenderFnMap[visualProperty.type] ?? (() => {})
-  )({
-    onClick: (newDefaultValue: VisualPropertyValueType): void => {
-      setDefault(props.currentNetworkId, visualProperty.name, newDefaultValue)
-    },
-    currentValue: visualProperty.defaultValue,
-  })
+    <ClickableVisualPropertyValue
+      visualProperty={visualProperty}
+      currentValue={visualProperty.defaultValue}
+      onValueChange={(value) =>
+        setDefault(props.currentNetworkId, visualProperty.name, value)
+      }
+    ></ClickableVisualPropertyValue>
+  )
 
   const mappingExanpdedContent = (
     <Box>
@@ -303,13 +363,26 @@ function VisualPropertyView(props: {
                     display: 'flex',
                     flexDirection: 'row',
                     justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}
                   key={eleId}
                 >
                   <Box>{`${eleId}`}</Box>
                   <Box>{name}</Box>
-                  <Box>{value as string}</Box>
+                  <ClickableVisualPropertyValue
+                    visualProperty={visualProperty}
+                    currentValue={value}
+                    onValueChange={(value) => {
+                      setBypass(
+                        props.currentNetworkId,
+                        visualProperty.name,
+                        [eleId],
+                        value,
+                      )
+                    }}
+                  />
                   <CloseIcon
+                    sx={{ '&:hover': { cursor: 'pointer' } }}
                     onClick={() =>
                       deleteBypass(
                         props.currentNetworkId,
