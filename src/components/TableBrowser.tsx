@@ -56,7 +56,7 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
 // serialize lists of different value types into a string to display in the table
 // e.g. [1, 2, 3] -> '1, 2, 3'
 const serializeValueList = (value: ListOfValueType): string => {
-  return value.map((v) => String(v)).join(', ')
+  return value?.map((v) => String(v)).join(', ') ?? ''
 }
 
 // deserialize a string into a list of value types
@@ -137,9 +137,52 @@ const isListType = (type: ValueTypeName): boolean => {
   ].includes(type)
 }
 
+type SortDirection = 'asc' | 'desc'
 interface SortType {
   column: AttributeName | undefined
-  direction: 'asc' | 'desc' | undefined
+  direction: SortDirection | undefined
+  valueType: ValueTypeName | undefined
+}
+
+const compareStrings = (
+  a: string,
+  b: string,
+  sortDirection: SortDirection,
+): number => (sortDirection === 'asc' ? a.localeCompare(b) : b.localeCompare(a))
+const compareNumbers = (
+  a: number,
+  b: number,
+  sortDirection: SortDirection,
+): number => (sortDirection === 'asc' ? a - b : b - a)
+
+const compareBooleans = (
+  a: boolean,
+  b: boolean,
+  sortDirection: SortDirection,
+): number => compareStrings(String(a), String(b), sortDirection)
+
+// TODO come up with better idea of what users want when sorting cells which have list values
+const compareLists = (
+  a: ListOfValueType,
+  b: ListOfValueType,
+  sortDirection: SortDirection,
+): number =>
+  compareStrings(serializeValueList(a), serializeValueList(b), sortDirection)
+
+const sortFnToType: Record<
+  ValueTypeName,
+  (a: ValueType, b: ValueType, sortDirection: SortDirection) => number
+> = {
+  list_of_string: compareLists,
+  list_of_long: compareLists,
+  list_of_integer: compareLists,
+  list_of_double: compareLists,
+  list_of_boolean: compareLists,
+  string: compareStrings,
+  long: compareNumbers,
+  integer: compareNumbers,
+  double: compareNumbers,
+  boolean: compareBooleans,
 }
 
 export default function TableBrowser(props: {
@@ -160,6 +203,7 @@ export default function TableBrowser(props: {
   const [sort, setSort] = React.useState<SortType>({
     column: undefined,
     direction: undefined,
+    valueType: undefined,
   })
 
   const isOpen = menu !== undefined
@@ -192,14 +236,12 @@ export default function TableBrowser(props: {
   )
 
   const rows = Array.from((currentTable?.rows ?? new Map()).values())
-  if (sort.column != null && sort.direction != null) {
+  if (sort.column != null && sort.direction != null && sort.valueType != null) {
+    const sortFn = sortFnToType[sort.valueType]
     rows.sort((a, b) => {
       const aVal = a[sort.column as AttributeName]
       const bVal = b[sort.column as AttributeName]
-      if (sort.direction === 'asc') {
-        return aVal > bVal ? 1 : -1
-      }
-      return aVal > bVal ? -1 : 1
+      return sortFn(aVal, bVal, sort.direction as SortDirection)
     })
   }
 
@@ -419,9 +461,12 @@ export default function TableBrowser(props: {
                   if (col != null) {
                     const column = columns[col]
                     const columnKey = column.id
+                    const columnType = column.type
+
                     setSort({
                       column: columnKey,
                       direction: 'asc',
+                      valueType: columnType,
                     })
                   }
                   setMenu(undefined)
@@ -435,9 +480,11 @@ export default function TableBrowser(props: {
                   if (col != null) {
                     const column = columns[col]
                     const columnKey = column.id
+                    const columnType = column.type
                     setSort({
                       column: columnKey,
                       direction: 'desc',
+                      valueType: columnType,
                     })
                   }
                   setMenu(undefined)
@@ -507,9 +554,11 @@ export default function TableBrowser(props: {
                   if (col != null) {
                     const column = columns[col]
                     const columnKey = column.id
+                    const columnType = column.type
                     setSort({
                       column: columnKey,
-                      direction: 'asc',
+                      direction: 'desc',
+                      valueType: columnType,
                     })
                   }
                   setMenu(undefined)
@@ -523,9 +572,11 @@ export default function TableBrowser(props: {
                   if (col != null) {
                     const column = columns[col]
                     const columnKey = column.id
+                    const columnType = column.type
                     setSort({
                       column: columnKey,
                       direction: 'desc',
+                      valueType: columnType,
                     })
                   }
                   setMenu(undefined)
