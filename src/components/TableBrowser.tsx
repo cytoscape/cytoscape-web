@@ -296,11 +296,18 @@ export default function TableBrowser(props: {
   const onCellEdited = React.useCallback(
     (cell: Item, newValue: EditableGridCell) => {
       const [columnIndex, rowIndex] = cell
-      const minId = currentTable === nodeTable ? minNodeId : minEdgeId
+      // const minId = currentTable === nodeTable ? minNodeId : minEdgeId
+      // const rowKey =
+      //   currentTable === nodeTable
+      //     ? +rowIndex + minId
+      //     : translateCXEdgeId(`${+rowIndex + minId}`)
+
+      const rowData = rows[rowIndex]
       const rowKey =
         currentTable === nodeTable
-          ? +rowIndex + minId
-          : translateCXEdgeId(`${+rowIndex + minId}`)
+          ? +rowData.cxId
+          : translateCXEdgeId(`${rowData.cxId as string}`)
+
       const column = columns[columnIndex]
       const columnKey = column.id
       let data = newValue.data
@@ -336,7 +343,6 @@ export default function TableBrowser(props: {
     },
     [],
   )
-  console.log(rows)
 
   const onHeaderClicked = React.useCallback((): void => {
     // eslint-disable-next-line no-console
