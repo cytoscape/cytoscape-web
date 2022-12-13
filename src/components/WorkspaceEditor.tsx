@@ -3,7 +3,6 @@ import { Suspense, useState } from 'react'
 import { Allotment } from 'allotment'
 import { Box } from '@mui/material'
 import debounce from 'lodash.debounce'
-
 import TableBrowser from './TableBrowser'
 import NetworkRenderer from './NetworkRenderer'
 // import WorkspaceView from './WorkspaceView'
@@ -67,7 +66,7 @@ export const WorkSpaceEditor: React.FC = () => {
   React.useEffect(() => {
     const windowWidthListener = debounce(() => {
       setTableBrowserWidth(window.innerWidth)
-    }, 100)
+    }, 200)
     window.addEventListener('resize', windowWidthListener)
 
     loadNetworkSet(testNetworkSet)
@@ -91,11 +90,11 @@ export const WorkSpaceEditor: React.FC = () => {
     <Box sx={{ height: 'calc(100vh - 48px)' }}>
       <Allotment
         vertical
-        onChange={(sizes: number[]) => {
+        onChange={debounce((sizes: number[]) => {
           // sizes[0] represents the height of the top pane (network list, network renderer, vizmapper)
           // sizes[1] represents the height of the bottom pane (table browser)
           setTableBrowserHeight(sizes[1])
-        }}
+        }, 200)}
       >
         <Allotment.Pane>
           <Allotment>

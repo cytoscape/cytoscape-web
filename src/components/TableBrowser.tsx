@@ -148,18 +148,24 @@ const compareStrings = (
   a: string,
   b: string,
   sortDirection: SortDirection,
-): number => (sortDirection === 'asc' ? a.localeCompare(b) : b.localeCompare(a))
+): number =>
+  sortDirection === 'asc'
+    ? (a ?? '').localeCompare(b)
+    : (b ?? '').localeCompare(a)
 const compareNumbers = (
   a: number,
   b: number,
   sortDirection: SortDirection,
-): number => (sortDirection === 'asc' ? a - b : b - a)
+): number =>
+  sortDirection === 'asc'
+    ? (a ?? Infinity) - (b ?? -Infinity) // always put undefined values at the bottom of the list
+    : (b ?? Infinity) - (a ?? -Infinity)
 
 const compareBooleans = (
   a: boolean,
   b: boolean,
   sortDirection: SortDirection,
-): number => compareStrings(String(a), String(b), sortDirection)
+): number => compareStrings(String(a ?? ''), String(b ?? ''), sortDirection)
 
 // TODO come up with better idea of what users want when sorting cells which have list values
 const compareLists = (

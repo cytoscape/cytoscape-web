@@ -6,6 +6,7 @@ import Cytoscape, {
   EventObject,
   SingularElementArgument,
 } from 'cytoscape'
+
 import { IdType } from '../models/IdType'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useTableStore } from '../store/TableStore'
@@ -93,9 +94,12 @@ export default function NetworkRenderer(
     }
   }
 
-  React.useEffect(() => {
-    renderCyJs()
-  })
+  React.useEffect(
+    debounce(() => {
+      renderCyJs()
+    }, 200),
+    [props.currentNetworkId, vs, table, networkView],
+  )
 
   // React.useEffect(() => {
   //   renderCyJs()
