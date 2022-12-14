@@ -396,6 +396,14 @@ export const createCyJsStyleSheetView = (
       selector: 'edge',
       style: edgeStyle,
     },
+    {
+      selector: ':selected',
+      style: {
+        'underlay-color': 'blue',
+        'underlay-padding': 5,
+        'underlay-opacity': 0.5,
+      },
+    },
   ]
   const cyNodes = network.nodes.map((node) => {
     const positionX = networkView.nodeViews[node.id]?.x ?? 0
