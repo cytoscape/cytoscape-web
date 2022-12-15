@@ -2,14 +2,14 @@ import { Box, Switch } from '@mui/material'
 
 export function BooleanSwitch(props: {
   currentValue: boolean
-  onClick: (value: boolean) => void
+  onValueChange: (value: boolean) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
   return (
     <Box>
       <Switch
         checked={currentValue}
-        onChange={(e) => onClick(e.target.checked)}
+        onChange={(e) => onValueChange(e.target.checked)}
       ></Switch>
     </Box>
   )

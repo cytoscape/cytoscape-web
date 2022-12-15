@@ -3,9 +3,9 @@ import { Box } from '@mui/material'
 
 export function VisibilityPicker(props: {
   currentValue: VisibilityType
-  onClick: (visibility: VisibilityType) => void
+  onValueChange: (visibility: VisibilityType) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
 
   return (
     <Box
@@ -23,7 +23,7 @@ export function VisibilityPicker(props: {
             p: 1,
             '&:hover': { cursor: 'pointer' },
           }}
-          onClick={() => onClick(visibility)}
+          onClick={() => onValueChange(visibility)}
           key={visibility}
         >
           {visibility}

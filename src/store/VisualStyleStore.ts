@@ -90,25 +90,23 @@ export const useVisualStyleStore = create(
         vpValue: VisualPropertyValueType,
       ) => {
         set((state) => {
+          const bypassMap = state.visualStyles[networkId][vpName].bypassMap
+
           elementIds.forEach((eleId) => {
-            if (state.visualStyles[networkId][vpName].bypassMap == null) {
-              state.visualStyles[networkId][vpName].bypassMap = {}
-            }
-            state.visualStyles[networkId][vpName].bypassMap[eleId] = vpValue
+            bypassMap.set(eleId, vpValue)
           })
+
+          return state
         })
       },
-      deleteBypass(networkId, vpName, elementIds) {
+      deleteBypass(networkId, vpName, elementIds: IdType[]) {
         set((state) => {
+          const bypassMap = state.visualStyles[networkId][vpName].bypassMap
           elementIds.forEach((eleId) => {
-            if (state.visualStyles[networkId][vpName].bypassMap == null) {
-              return
-            }
-            // create a copy of the bypassmap without the element to delete
-            const { [eleId]: _, ...rest } =
-              state.visualStyles[networkId][vpName].bypassMap
-            state.visualStyles[networkId][vpName].bypassMap = { ...rest }
+            bypassMap.delete(eleId)
           })
+
+          return state
         })
       },
       setDiscreteMappingValue: (networkId, vpName, value, vpValue) => {

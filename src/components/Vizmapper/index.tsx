@@ -48,7 +48,10 @@ import { ContinuousFunctionInterval } from '../../models/VisualStyleModel/Visual
 
 const type2RenderFnMap: Record<
   VisualPropertyValueTypeString,
-  (props: any) => React.ReactElement
+  (props: {
+    currentValue: VisualPropertyValueType
+    onValueChange: (newValue: VisualPropertyValueType) => void
+  }) => React.ReactElement
 > = {
   nodeShape: NodeShapePicker,
   color: ColorPicker,
@@ -95,7 +98,7 @@ const ClickableVisualPropertyValue = (props: {
       >
         <Box sx={{ width: 300, height: 150, p: 1, m: 1 }}>
           {(type2RenderFnMap[props.visualProperty.type] ?? (() => {}))({
-            onClick: (value: VisualPropertyValueType) =>
+            onValueChange: (value: VisualPropertyValueType) =>
               props.onValueChange(value),
             currentValue: props.currentValue,
           })}
@@ -352,7 +355,7 @@ function VisualPropertyView(props: {
           }}
         >
           <Box>Current Bypasses</Box>
-          {Object.entries(visualProperty?.bypassMap ?? {}).map(
+          {Array.from(visualProperty?.bypassMap?.entries() ?? []).map(
             ([eleId, value]) => {
               const eleTable =
                 visualProperty.group === 'node' ? nodeTable : edgeTable
@@ -383,13 +386,13 @@ function VisualPropertyView(props: {
                   />
                   <CloseIcon
                     sx={{ '&:hover': { cursor: 'pointer' } }}
-                    onClick={() =>
+                    onClick={() => {
                       deleteBypass(
                         props.currentNetworkId,
                         visualProperty.name,
                         [eleId],
                       )
-                    }
+                    }}
                   />
                 </Box>
               )
@@ -399,8 +402,10 @@ function VisualPropertyView(props: {
       </Box>
       <Box sx={{ border: '1px solid gray', p: 1, m: 1 }}>
         <Box>Value Picker</Box>
-        {(type2RenderFnMap[visualProperty.type] ?? (() => {}))({
-          onClick: (newBypassValue: VisualPropertyValueType): void => {
+        <ClickableVisualPropertyValue
+          visualProperty={visualProperty}
+          currentValue={visualProperty.defaultValue}
+          onValueChange={(newBypassValue: VisualPropertyValueType): void => {
             let ids: IdType[] = []
             const nodeIds = Object.values(networkView?.nodeViews)
               .filter((nodeView) => nodeView.selected)
@@ -419,9 +424,8 @@ function VisualPropertyView(props: {
               ids,
               newBypassValue,
             )
-          },
-          currentValue: visualProperty.defaultValue,
-        })}
+          }}
+        />
       </Box>
     </Box>
   )

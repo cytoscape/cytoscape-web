@@ -3,9 +3,9 @@ import { Box } from '@mui/material'
 
 export function NodeShapePicker(props: {
   currentValue: NodeShapeType
-  onClick: (shape: NodeShapeType) => void
+  onValueChange: (shape: NodeShapeType) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
 
   return (
     <Box
@@ -23,7 +23,7 @@ export function NodeShapePicker(props: {
             p: 1,
             '&:hover': { cursor: 'pointer' },
           }}
-          onClick={() => onClick(shape)}
+          onClick={() => onValueChange(shape)}
           key={shape}
         >
           {shape}

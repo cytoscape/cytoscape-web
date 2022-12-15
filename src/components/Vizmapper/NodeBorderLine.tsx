@@ -3,9 +3,9 @@ import { Box } from '@mui/material'
 
 export function NodeBorderLinePicker(props: {
   currentValue: NodeBorderLineType
-  onClick: (borderLine: NodeBorderLineType) => void
+  onValueChange: (borderLine: NodeBorderLineType) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
 
   return (
     <Box
@@ -24,7 +24,7 @@ export function NodeBorderLinePicker(props: {
               p: 1,
               '&:hover': { cursor: 'pointer' },
             }}
-            onClick={() => onClick(borderLine)}
+            onClick={() => onValueChange(borderLine)}
             key={borderLine}
           >
             {borderLine}

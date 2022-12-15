@@ -101,13 +101,16 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           ]
 
           if (nodeBypassMap.has(vpName)) {
-            const entry = nodeBypassMap.get(vpName) ?? {}
-            entry[id] = cxVPConverter.valueConverter(
-              v[cxVPName] as CXVisualPropertyValue,
+            const entry = nodeBypassMap.get(vpName) ?? new Map()
+            entry.set(
+              id,
+              cxVPConverter.valueConverter(
+                v[cxVPName] as CXVisualPropertyValue,
+              ),
             )
             nodeBypassMap.set(vpName, entry)
           } else {
-            nodeBypassMap.set(vpName, {})
+            nodeBypassMap.set(vpName, new Map())
           }
         }
       })
@@ -130,13 +133,16 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           ]
 
           if (edgeBypassMap.has(vpName)) {
-            const entry = edgeBypassMap.get(vpName) ?? {}
-            entry[id] = cxVPConverter.valueConverter(
-              v[cxVPName] as CXVisualPropertyValue,
+            const entry = edgeBypassMap.get(vpName) ?? new Map()
+            entry.set(
+              id,
+              cxVPConverter.valueConverter(
+                v[cxVPName] as CXVisualPropertyValue,
+              ),
             )
             edgeBypassMap.set(vpName, entry)
           } else {
-            edgeBypassMap.set(vpName, {})
+            edgeBypassMap.set(vpName, new Map())
           }
         }
       })
@@ -251,9 +257,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           }
         }
 
-        if (cxBypass != null) {
-          visualStyle[vpName].bypassMap = cxBypass.get(vpName)
-        }
+        visualStyle[vpName].bypassMap = cxBypass.get(vpName) ?? new Map()
       } else {
         // property is not found in cx, in theory all cytoscape web properties should be in
         // cx, if this happens, it is a bug
@@ -319,7 +323,7 @@ export const createCyJsStyleSheetView = (
         }
 
         if (bypassMap != null) {
-          Object.entries(bypassMap).forEach(([cxNodeId, bypassValue]) => {
+          Array.from(bypassMap.entries()).forEach(([cxNodeId, bypassValue]) => {
             if (nodeBypasses[cxNodeId] != null) {
               nodeBypasses[cxNodeId][cyStyleName] = bypassValue
             } else {
@@ -366,7 +370,7 @@ export const createCyJsStyleSheetView = (
         }
 
         if (bypassMap != null) {
-          Object.entries(bypassMap).forEach(([cxEdgeId, bypassValue]) => {
+          Array.from(bypassMap.entries()).forEach(([cxEdgeId, bypassValue]) => {
             if (edgeBypasses[cxEdgeId] != null) {
               edgeBypasses[cxEdgeId][cyStyleName] = bypassValue
             } else {

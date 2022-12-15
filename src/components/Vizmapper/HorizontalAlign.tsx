@@ -3,9 +3,9 @@ import { Box } from '@mui/material'
 
 export function HoritzontalAlignPicker(props: {
   currentValue: HoritzontalAlignType
-  onClick: (horizontalAlign: HoritzontalAlignType) => void
+  onValueChange: (horizontalAlign: HoritzontalAlignType) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
 
   return (
     <Box
@@ -24,7 +24,7 @@ export function HoritzontalAlignPicker(props: {
               p: 1,
               '&:hover': { cursor: 'pointer' },
             }}
-            onClick={() => onClick(horizontalAlign)}
+            onClick={() => onValueChange(horizontalAlign)}
             key={horizontalAlign}
           >
             {horizontalAlign}

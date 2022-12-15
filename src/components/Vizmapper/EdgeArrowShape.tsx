@@ -3,9 +3,9 @@ import { Box } from '@mui/material'
 
 export function EdgeArrowShapePicker(props: {
   currentValue: EdgeArrowShapeType
-  onClick: (edgeArrowShape: EdgeArrowShapeType) => void
+  onValueChange: (edgeArrowShape: EdgeArrowShapeType) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
 
   return (
     <Box
@@ -24,7 +24,7 @@ export function EdgeArrowShapePicker(props: {
               p: 1,
               '&:hover': { cursor: 'pointer' },
             }}
-            onClick={() => onClick(edgeArrowShape)}
+            onClick={() => onValueChange(edgeArrowShape)}
             key={edgeArrowShape}
           >
             {edgeArrowShape}
