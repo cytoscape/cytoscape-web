@@ -56,7 +56,6 @@ export default function NetworkRenderer(
       cy.on(
         'boxselect select',
         debounce((e: EventObject) => {
-          console.log('here')
           setSelected(
             props.currentNetworkId,
             cy
@@ -82,6 +81,11 @@ export default function NetworkRenderer(
   const applyStyleUpdate = (): void => {
     if (cy != null) {
       cy.startBatch()
+
+      // remove previous bypasses
+      // e.g. if a node has a bypass and then the bypass was removed, we need to reset the style
+      cy.nodes().removeStyle()
+      cy.edges().removeStyle()
       const { defaultStyle, nodeBypasses, edgeBypasses } =
         VisualStyleFn.createCyJsStyleSheetView(
           vs,
