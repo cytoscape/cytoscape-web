@@ -4,15 +4,15 @@ import { ChromePicker } from 'react-color'
 
 export function ColorPicker(props: {
   currentValue: Color
-  onClick: (shape: Color) => void
+  onValueChange: (shape: Color) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
 
   return (
     <Box>
       <ChromePicker
         color={currentValue}
-        onChange={(color: any) => onClick(color.hex)}
+        onChange={(color: any) => onValueChange(color.hex)}
       />
     </Box>
   )

@@ -6,6 +6,7 @@ import Cytoscape, {
   EventObject,
   SingularElementArgument,
 } from 'cytoscape'
+
 import { IdType } from '../models/IdType'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useTableStore } from '../store/TableStore'
@@ -34,30 +35,7 @@ export default function NetworkRenderer(
   const [cy, setCy] = React.useState(null as any)
   const cyContainer = React.useRef(null)
 
-  const renderCyJs = (): void => {
-    const styleSheetRender = (): void => {
-      const { defaultStyle, cyNodes, cyEdges, nodeBypasses, edgeBypasses } =
-        VisualStyleFn.createCyJsStyleSheetView(
-          vs,
-          network,
-          table.nodeTable,
-          table.edgeTable,
-          networkView,
-        )
-      cy.style(defaultStyle)
-      cy.add(cyNodes)
-      cy.add(cyEdges)
-
-      // apply bypasses
-      Object.entries(nodeBypasses).forEach(([nodeId, bypass]) => {
-        cy.getElementById(nodeId).style(bypass)
-      })
-
-      Object.entries(edgeBypasses).forEach(([edgeId, bypass]) => {
-        cy.getElementById(edgeId).style(bypass)
-      })
-    }
-
+  const loadAndRenderNetwork = (): void => {
     if (network == null || vs == null || table == null) {
       return
     }
@@ -66,11 +44,18 @@ export default function NetworkRenderer(
       cy.startBatch()
       cy.remove('*')
       cy.removeAllListeners()
-      styleSheetRender()
+      const { cyNodes, cyEdges } = VisualStyleFn.createCyJsStyleSheetView(
+        vs,
+        network,
+        table.nodeTable,
+        table.edgeTable,
+        networkView,
+      )
+      cy.add(cyNodes)
+      cy.add(cyEdges)
       cy.on(
         'boxselect select',
         debounce((e: EventObject) => {
-          console.log('here')
           setSelected(
             props.currentNetworkId,
             cy
@@ -93,12 +78,56 @@ export default function NetworkRenderer(
     }
   }
 
-  React.useEffect(() => {
-    renderCyJs()
-  })
+  const applyStyleUpdate = (): void => {
+    if (cy != null) {
+      cy.startBatch()
+
+      // remove previous bypasses
+      // e.g. if a node has a bypass and then the bypass was removed, we need to reset the style
+      cy.nodes().removeStyle()
+      cy.edges().removeStyle()
+      const { defaultStyle, nodeBypasses, edgeBypasses } =
+        VisualStyleFn.createCyJsStyleSheetView(
+          vs,
+          network,
+          table.nodeTable,
+          table.edgeTable,
+          networkView,
+        )
+      cy.style(defaultStyle)
+
+      // apply bypasses
+      Object.entries(nodeBypasses).forEach(([nodeId, bypass]) => {
+        cy.getElementById(nodeId).style(bypass)
+      })
+
+      Object.entries(edgeBypasses).forEach(([edgeId, bypass]) => {
+        cy.getElementById(edgeId).style(bypass)
+      })
+
+      cy.endBatch()
+    }
+  }
+
+  // when the currentNetworkId changes, reset the cyjs element by
+  // removing all elements and event listeners
+  // this assumes we have a new network to render that was different from the current one
+  React.useEffect(
+    debounce(() => {
+      loadAndRenderNetwork()
+    }, 200),
+    [props.currentNetworkId, network],
+  )
+
+  React.useEffect(
+    debounce(() => {
+      applyStyleUpdate()
+    }, 200),
+    [vs, table, networkView],
+  )
 
   // React.useEffect(() => {
-  //   renderCyJs()
+  //   loadAndRenderNetwork()
   // }, [props.currentNetworkId, vs, table])
 
   React.useEffect(() => {
@@ -109,7 +138,7 @@ export default function NetworkRenderer(
     cy.resize()
     setCy(cy)
     window.cy = cy
-    renderCyJs()
+    loadAndRenderNetwork()
   }, [])
 
   return (

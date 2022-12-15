@@ -3,9 +3,9 @@ import { Box } from '@mui/material'
 
 export function FontPicker(props: {
   currentValue: FontType
-  onClick: (font: FontType) => void
+  onValueChange: (font: FontType) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
 
   return (
     <Box
@@ -23,7 +23,7 @@ export function FontPicker(props: {
             p: 1,
             '&:hover': { cursor: 'pointer' },
           }}
-          onClick={() => onClick(font)}
+          onClick={() => onValueChange(font)}
           key={font}
         >
           {font}

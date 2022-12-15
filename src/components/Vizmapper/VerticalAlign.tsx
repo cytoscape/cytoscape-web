@@ -3,9 +3,9 @@ import { Box } from '@mui/material'
 
 export function VerticalAlignPicker(props: {
   currentValue: VerticalAlignType
-  onClick: (verticalAlign: VerticalAlignType) => void
+  onValueChange: (verticalAlign: VerticalAlignType) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
 
   return (
     <Box
@@ -24,7 +24,7 @@ export function VerticalAlignPicker(props: {
               p: 1,
               '&:hover': { cursor: 'pointer' },
             }}
-            onClick={() => onClick(verticalAlign)}
+            onClick={() => onValueChange(verticalAlign)}
             key={verticalAlign}
           >
             {verticalAlign}

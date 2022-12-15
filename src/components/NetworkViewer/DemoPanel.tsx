@@ -34,7 +34,7 @@ export const DemoPanel = (): JSX.Element => {
 
   const handleDbDelete = async (): Promise<void> => {
     await deleteDb()
-    console.log('DB Deleted')
+    // console.log('DB Deleted')
   }
 
   const handleDelete = async (uuid: string): Promise<void> => {

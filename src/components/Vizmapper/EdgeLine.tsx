@@ -3,9 +3,9 @@ import { Box } from '@mui/material'
 
 export function EdgeLinePicker(props: {
   currentValue: EdgeLineType
-  onClick: (edgeLine: EdgeLineType) => void
+  onValueChange: (edgeLine: EdgeLineType) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
 
   return (
     <Box
@@ -23,7 +23,7 @@ export function EdgeLinePicker(props: {
             p: 1,
             '&:hover': { cursor: 'pointer' },
           }}
-          onClick={() => onClick(edgeLine)}
+          onClick={() => onValueChange(edgeLine)}
           key={edgeLine}
         >
           {edgeLine}

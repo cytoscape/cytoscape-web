@@ -2,15 +2,15 @@ import { Box, TextField } from '@mui/material'
 
 export function StringInput(props: {
   currentValue: string
-  onClick: (value: string) => void
+  onValueChange: (value: string) => void
 }): React.ReactElement {
-  const { onClick, currentValue } = props
+  const { onValueChange, currentValue } = props
   return (
     <Box>
       <TextField
         value={currentValue}
         type="string"
-        onChange={(e) => onClick(e.target.value)}
+        onChange={(e) => onValueChange(e.target.value)}
       >
         {currentValue}
       </TextField>

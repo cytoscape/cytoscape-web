@@ -4,9 +4,16 @@ import Tab from '@mui/material/Tab'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
-// import { Button } from '@mui/material'
+import Card from '@mui/material/Card'
+import { Button, MenuItem } from '@mui/material'
+import { useLayer } from 'react-laag'
 
-import { Table, ValueType, ValueTypeName } from '../models/TableModel'
+import {
+  Table,
+  ValueType,
+  ValueTypeName,
+  AttributeName,
+} from '../models/TableModel'
 import { useTableStore } from '../store/TableStore'
 import { IdType } from '../models/IdType'
 
@@ -16,6 +23,7 @@ import {
   GridCell,
   EditableGridCell,
   Item,
+  Rectangle,
 } from '@glideapps/glide-data-grid'
 import { translateCXEdgeId } from '../models/NetworkModel/impl/CyNetwork'
 import {
@@ -40,22 +48,15 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <Box>{children}</Box>}
     </div>
   )
-}
-
-function a11yProps(index: number): { id: string; 'aria-controls': string } {
-  return {
-    id: `simple-tab-${index}`,
-    'aria-controls': `simple-tabpanel-${index}`,
-  }
 }
 
 // serialize lists of different value types into a string to display in the table
 // e.g. [1, 2, 3] -> '1, 2, 3'
 const serializeValueList = (value: ListOfValueType): string => {
-  return value.map((v) => String(v)).join(', ')
+  return value?.map((v) => String(v)).join(', ') ?? ''
 }
 
 // deserialize a string into a list of value types
@@ -136,14 +137,88 @@ const isListType = (type: ValueTypeName): boolean => {
   ].includes(type)
 }
 
+type SortDirection = 'asc' | 'desc'
+interface SortType {
+  column: AttributeName | undefined
+  direction: SortDirection | undefined
+  valueType: ValueTypeName | undefined
+}
+
+const compareStrings = (
+  a: string,
+  b: string,
+  sortDirection: SortDirection,
+): number =>
+  sortDirection === 'asc'
+    ? (a ?? '').localeCompare(b)
+    : (b ?? '').localeCompare(a)
+const compareNumbers = (
+  a: number,
+  b: number,
+  sortDirection: SortDirection,
+): number =>
+  sortDirection === 'asc'
+    ? (a ?? Infinity) - (b ?? -Infinity) // always put undefined values at the bottom of the list
+    : (b ?? Infinity) - (a ?? -Infinity)
+
+const compareBooleans = (
+  a: boolean,
+  b: boolean,
+  sortDirection: SortDirection,
+): number => compareStrings(String(a ?? ''), String(b ?? ''), sortDirection)
+
+// TODO come up with better idea of what users want when sorting cells which have list values
+const compareLists = (
+  a: ListOfValueType,
+  b: ListOfValueType,
+  sortDirection: SortDirection,
+): number =>
+  compareStrings(serializeValueList(a), serializeValueList(b), sortDirection)
+
+const sortFnToType: Record<
+  ValueTypeName,
+  (a: ValueType, b: ValueType, sortDirection: SortDirection) => number
+> = {
+  list_of_string: compareLists,
+  list_of_long: compareLists,
+  list_of_integer: compareLists,
+  list_of_double: compareLists,
+  list_of_boolean: compareLists,
+  string: compareStrings,
+  long: compareNumbers,
+  integer: compareNumbers,
+  double: compareNumbers,
+  boolean: compareBooleans,
+}
+
 export default function TableBrowser(props: {
   currentNetworkId: IdType
+  height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
+  width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
+  const [menu, setMenu] = React.useState<
+    | {
+        col: number
+        bounds: Rectangle
+      }
+    | undefined
+  >(undefined)
+  const [showSearch, setShowSearch] = React.useState(false)
+  const onSearchClose = React.useCallback(() => setShowSearch(false), [])
+  const [sort, setSort] = React.useState<SortType>({
+    column: undefined,
+    direction: undefined,
+    valueType: undefined,
+  })
+
+  const isOpen = menu !== undefined
+
   const networkId = props.currentNetworkId
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
+  const duplicateColumn = useTableStore((state) => state.duplicateColumn)
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
   const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
@@ -162,10 +237,49 @@ export default function TableBrowser(props: {
       type: col.type,
       index,
       defaultValue: col.defaultValue,
+      hasMenu: true,
     }),
   )
-  // const [showSearch, setShowSearch] = React.useState(false)
-  // const onSearchClose = React.useCallback(() => setShowSearch(false), [])
+
+  const rows = Array.from((currentTable?.rows ?? new Map()).values())
+  if (sort.column != null && sort.direction != null && sort.valueType != null) {
+    const sortFn = sortFnToType[sort.valueType]
+    rows.sort((a, b) => {
+      const aVal = a[sort.column as AttributeName]
+      const bVal = b[sort.column as AttributeName]
+      return sortFn(aVal, bVal, sort.direction as SortDirection)
+    })
+  }
+
+  const { layerProps, renderLayer } = useLayer({
+    isOpen,
+    auto: true,
+    placement: 'bottom-end',
+    triggerOffset: 2,
+
+    // TODO does not work presumably because of multiple render inefficiencies
+    // TODO investigate
+    // onOutsideClick: () => {
+    //   console.log('outside click')
+    //   console.log(menu)
+
+    //   setMenu(undefined)
+    // },
+
+    trigger: {
+      getBounds: () => {
+        const bounds = {
+          left: menu?.bounds.x ?? 0,
+          top: menu?.bounds.y ?? 0,
+          width: menu?.bounds.width ?? 0,
+          height: menu?.bounds.height ?? 0,
+          right: (menu?.bounds.x ?? 0) + (menu?.bounds.width ?? 0),
+          bottom: (menu?.bounds.y ?? 0) + (menu?.bounds.height ?? 0),
+        }
+        return bounds
+      },
+    },
+  })
 
   const handleChange = (
     event: React.SyntheticEvent,
@@ -177,12 +291,12 @@ export default function TableBrowser(props: {
   const getContent = React.useCallback(
     (cell: Item): GridCell => {
       const [columnIndex, rowIndex] = cell
-      const minId = currentTable === nodeTable ? minNodeId : minEdgeId
-      const rowKey =
-        currentTable === nodeTable
-          ? +rowIndex + minId
-          : translateCXEdgeId(`${+rowIndex + minId}`)
-      const dataRow = currentTable.rows.get(`${rowKey}`)
+      // const minId = currentTable === nodeTable ? minNodeId : minEdgeId
+      // const rowKey =
+      //   currentTable === nodeTable
+      //     ? +rowIndex + minId
+      //     : translateCXEdgeId(`${+rowIndex + minId}`)
+      const dataRow = rows[rowIndex]
       const column = columns[columnIndex]
       const columnKey = column.id
       const cellValue = dataRow?.[columnKey] ?? column.defaultValue
@@ -224,17 +338,24 @@ export default function TableBrowser(props: {
         }
       }
     },
-    [props.currentNetworkId, currentTable, tables],
+    [props.currentNetworkId, currentTable, tables, sort],
   )
 
   const onCellEdited = React.useCallback(
     (cell: Item, newValue: EditableGridCell) => {
       const [columnIndex, rowIndex] = cell
-      const minId = currentTable === nodeTable ? minNodeId : minEdgeId
+      // const minId = currentTable === nodeTable ? minNodeId : minEdgeId
+      // const rowKey =
+      //   currentTable === nodeTable
+      //     ? +rowIndex + minId
+      //     : translateCXEdgeId(`${+rowIndex + minId}`)
+
+      const rowData = rows[rowIndex]
       const rowKey =
         currentTable === nodeTable
-          ? +rowIndex + minId
-          : translateCXEdgeId(`${+rowIndex + minId}`)
+          ? +rowData.cxId
+          : translateCXEdgeId(`${rowData.cxId as string}`)
+
       const column = columns[columnIndex]
       const columnKey = column.id
       let data = newValue.data
@@ -242,17 +363,39 @@ export default function TableBrowser(props: {
       if (isListType(column.type)) {
         data = deserializeValueList(column.type, data as string)
       }
-      setCellValue(
-        props.currentNetworkId,
-        currentTable === nodeTable ? 'node' : 'edge',
-        `${rowKey}`,
-        columnKey,
-        data as ValueType,
-      )
+
+      const newDataIsValid = true
+
+      // TODO validate the new data
+      if (newDataIsValid) {
+        setCellValue(
+          props.currentNetworkId,
+          currentTable === nodeTable ? 'node' : 'edge',
+          `${rowKey}`,
+          columnKey,
+          data as ValueType,
+        )
+      } else {
+        // dont edit the value or do something else
+      }
     },
-    [props.currentNetworkId, currentTable, tables],
+    [props.currentNetworkId, currentTable, tables, sort],
   )
 
+  const onHeaderMenuClick = React.useCallback(
+    (col: number, bounds: Rectangle): void => {
+      setMenu({
+        bounds,
+        col,
+      })
+    },
+    [],
+  )
+
+  const onHeaderClicked = React.useCallback((): void => {
+    // eslint-disable-next-line no-console
+    console.log('Header clicked')
+  }, [])
   return (
     <Box sx={{ width: '100%' }}>
       <Box
@@ -283,49 +426,189 @@ export default function TableBrowser(props: {
             minHeight: 30,
           }}
         >
-          <Tab
-            label={<Typography variant="caption">Nodes</Typography>}
-            {...a11yProps(0)}
-          />
-          <Tab
-            label={<Typography variant="caption">Edges</Typography>}
-            {...a11yProps(1)}
-          />
+          <Tab label={<Typography variant="caption">Nodes</Typography>} />
+          <Tab label={<Typography variant="caption">Edges</Typography>} />
         </Tabs>
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
+        <Button onClick={() => setShowSearch(!showSearch)}>
+          Toggle Search
+        </Button>
         <DataEditor
           rowMarkers={'both'}
           rowMarkerStartIndex={minNodeId}
-          // showSearch={showSearch}
+          showSearch={showSearch}
           keybindings={{ search: true }}
           getCellsForSelection={true}
-          // onSearchClose={onSearchClose}
-          width={1200}
-          height={400}
+          onSearchClose={onSearchClose}
+          onHeaderMenuClick={onHeaderMenuClick}
+          onHeaderClicked={onHeaderClicked}
+          width={props.width}
+          height={props.height}
           getCellContent={getContent}
           onCellEdited={onCellEdited}
           columns={columns}
           rows={maxNodeId - minNodeId}
         />
+        {isOpen &&
+          renderLayer(
+            <Card
+              sx={{
+                backgroundColor: 'white',
+                width: 175,
+                zIndex: 100,
+              }}
+              {...layerProps}
+            >
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    const column = columns[col]
+                    const columnKey = column.id
+                    const columnType = column.type
+
+                    setSort({
+                      column: columnKey,
+                      direction: 'asc',
+                      valueType: columnType,
+                    })
+                  }
+                  setMenu(undefined)
+                }}
+              >
+                Sort ascending
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    const column = columns[col]
+                    const columnKey = column.id
+                    const columnType = column.type
+                    setSort({
+                      column: columnKey,
+                      direction: 'desc',
+                      valueType: columnType,
+                    })
+                  }
+                  setMenu(undefined)
+                }}
+              >
+                Sort descending
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    // duplicateColumn(col)
+                    const column = columns[col]
+                    const columnKey = column.id
+                    duplicateColumn(
+                      props.currentNetworkId,
+                      currentTable === nodeTable ? 'node' : 'edge',
+                      columnKey,
+                    )
+                  }
+                  // duplicateColumn()
+                  setMenu(undefined)
+                }}
+              >
+                Duplicate column
+              </MenuItem>
+            </Card>,
+          )}
+
         {/* )} */}
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
+        <Button onClick={() => setShowSearch(!showSearch)}>
+          Toggle Search
+        </Button>
+
         <DataEditor
           rowMarkers={'both'}
           rowMarkerStartIndex={minEdgeId}
-          // showSearch={showSearch}
+          showSearch={showSearch}
           keybindings={{ search: true }}
           getCellsForSelection={true}
-          // onSearchClose={onSearchClose}
-          width={1200}
-          height={400}
+          onSearchClose={onSearchClose}
+          onHeaderMenuClick={onHeaderMenuClick}
+          onHeaderClicked={onHeaderClicked}
+          width={props.width}
+          height={props.height}
           getCellContent={getContent}
           onCellEdited={onCellEdited}
           columns={columns}
           rows={maxEdgeId - minEdgeId}
         />
+        {isOpen &&
+          renderLayer(
+            <Card
+              sx={{
+                backgroundColor: 'white',
+                width: 100,
+                height: 100,
+                zIndex: 10,
+              }}
+              {...layerProps}
+            >
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    const column = columns[col]
+                    const columnKey = column.id
+                    const columnType = column.type
+                    setSort({
+                      column: columnKey,
+                      direction: 'desc',
+                      valueType: columnType,
+                    })
+                  }
+                  setMenu(undefined)
+                }}
+              >
+                Sort ascending
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    const column = columns[col]
+                    const columnKey = column.id
+                    const columnType = column.type
+                    setSort({
+                      column: columnKey,
+                      direction: 'desc',
+                      valueType: columnType,
+                    })
+                  }
+                  setMenu(undefined)
+                }}
+              >
+                Sort descending
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  const col = menu?.col
+                  if (col != null) {
+                    const column = columns[col]
+                    const columnKey = column.id
+                    duplicateColumn(
+                      props.currentNetworkId,
+                      currentTable === nodeTable ? 'node' : 'edge',
+                      columnKey,
+                    )
+                  }
+                  setMenu(undefined)
+                }}
+              >
+                Duplicate column
+              </MenuItem>
+            </Card>,
+          )}
       </TabPanel>
     </Box>
   )

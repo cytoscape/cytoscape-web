@@ -8,7 +8,7 @@ export const defaultVisualStyle: VisualStyle = {
     displayName: 'shape',
     defaultValue: 'ellipse',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeBorderColor: {
     group: 'node',
@@ -17,7 +17,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeBorderLineType: {
     group: 'node',
@@ -26,7 +26,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'nodeBorderLine',
     defaultValue: 'solid',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeBorderWidth: {
     group: 'node',
@@ -35,7 +35,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 1,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeBorderOpacity: {
     group: 'node',
@@ -44,7 +44,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 1.0,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeHeight: {
     group: 'node',
@@ -53,7 +53,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 40,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeWidth: {
     group: 'node',
@@ -62,7 +62,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 40,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeBackgroundColor: {
     group: 'node',
@@ -71,7 +71,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'color',
     defaultValue: '#FFFFFF',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeLabel: {
     group: 'node',
@@ -80,7 +80,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'string',
     defaultValue: '',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeLabelColor: {
     group: 'node',
@@ -89,7 +89,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeLabelFontSize: {
     group: 'node',
@@ -98,7 +98,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 12,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeLabelFont: {
     group: 'node',
@@ -107,7 +107,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'font',
     defaultValue: 'serif',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeLabelHorizontalAlign: {
     group: 'node',
@@ -116,7 +116,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'horizontalAlign',
     defaultValue: 'center',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeLabelVerticalAlign: {
     group: 'node',
@@ -125,7 +125,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'verticalAlign',
     defaultValue: 'center',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeLabelRotation: {
     group: 'node',
@@ -134,7 +134,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 0,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeLabelOpacity: {
     group: 'node',
@@ -143,7 +143,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 1.0,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodePositionX: {
     group: 'node',
@@ -152,7 +152,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 0,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodePositionY: {
     group: 'node',
@@ -161,7 +161,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 0,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodePositionZ: {
     group: 'node',
@@ -170,7 +170,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 0,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeOpacity: {
     group: 'node',
@@ -179,7 +179,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 1.0,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   nodeVisibility: {
     group: 'node',
@@ -188,7 +188,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'visibility',
     defaultValue: 'element',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeLineColor: {
     group: 'edge',
@@ -197,7 +197,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeLineType: {
     group: 'edge',
@@ -206,7 +206,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'edgeLine',
     defaultValue: 'solid',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeOpacity: {
     group: 'edge',
@@ -215,7 +215,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 1.0,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeSourceArrowColor: {
     group: 'edge',
@@ -224,7 +224,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeSourceArrowShape: {
     group: 'edge',
@@ -233,7 +233,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'edgeArrowShape',
     defaultValue: 'none',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeTargetArrowColor: {
     group: 'edge',
@@ -242,7 +242,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeTargetArrowShape: {
     group: 'edge',
@@ -251,7 +251,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'edgeArrowShape',
     defaultValue: 'none',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeLabel: {
     group: 'edge',
@@ -260,7 +260,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'string',
     defaultValue: '',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeLabelColor: {
     group: 'edge',
@@ -269,7 +269,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeLabelFontSize: {
     group: 'edge',
@@ -278,7 +278,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 12,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeLabelFont: {
     group: 'edge',
@@ -287,7 +287,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'font',
     defaultValue: 'serif',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeLabelRotation: {
     group: 'edge',
@@ -296,7 +296,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 0,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeLabelOpacity: {
     group: 'edge',
@@ -305,7 +305,7 @@ export const defaultVisualStyle: VisualStyle = {
     defaultValue: 1.0,
     type: 'number',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeLabelAutoRotation: {
     group: 'edge',
@@ -314,7 +314,7 @@ export const defaultVisualStyle: VisualStyle = {
     defaultValue: true,
     type: 'boolean',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeWidth: {
     group: 'edge',
@@ -323,7 +323,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'number',
     defaultValue: 1,
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   edgeVisibility: {
     group: 'edge',
@@ -332,7 +332,7 @@ export const defaultVisualStyle: VisualStyle = {
     type: 'visibility',
     defaultValue: 'element',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
   networkBackgroundColor: {
     group: 'network',
@@ -341,6 +341,6 @@ export const defaultVisualStyle: VisualStyle = {
     displayName: 'background color',
     defaultValue: '#FFFFFF',
     mapping: null,
-    bypassMap: {},
+    bypassMap: new Map(),
   },
 }

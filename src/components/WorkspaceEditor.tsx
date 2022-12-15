@@ -2,11 +2,11 @@ import * as React from 'react'
 import { Suspense, useState } from 'react'
 import { Allotment } from 'allotment'
 import { Box } from '@mui/material'
-
+import debounce from 'lodash.debounce'
 import TableBrowser from './TableBrowser'
 import NetworkRenderer from './NetworkRenderer'
 // import WorkspaceView from './WorkspaceView'
-import VizmapperView from './Vizmapper/VizmapperView'
+import VizmapperView from './Vizmapper'
 
 import { getNdexNetwork, getNdexNetworkSet } from '../store/useNdexNetwork'
 import { useTableStore } from '../store/TableStore'
@@ -18,6 +18,8 @@ const testNetworkSet = '8d72ec80-1fc5-11ec-9fe4-0ac135e8bacf'
 
 export const WorkSpaceEditor: React.FC = () => {
   const [currentNetworkId, setCurrentNetworkId] = useState('')
+  const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
+  const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
 
   const [networkSetSummaries, setNetworkSummaries] = useState(
     [] as Array<{ id: string; name: string }>,
@@ -62,9 +64,18 @@ export const WorkSpaceEditor: React.FC = () => {
   }
 
   React.useEffect(() => {
+    const windowWidthListener = debounce(() => {
+      setTableBrowserWidth(window.innerWidth)
+    }, 200)
+    window.addEventListener('resize', windowWidthListener)
+
     loadNetworkSet(testNetworkSet)
       .then(() => {})
       .catch((err) => console.error(err))
+
+    return () => {
+      window.removeEventListener('resize', windowWidthListener)
+    }
   }, [])
 
   React.useEffect(() => {
@@ -77,7 +88,14 @@ export const WorkSpaceEditor: React.FC = () => {
 
   return (
     <Box sx={{ height: 'calc(100vh - 48px)' }}>
-      <Allotment vertical>
+      <Allotment
+        vertical
+        onChange={debounce((sizes: number[]) => {
+          // sizes[0] represents the height of the top pane (network list, network renderer, vizmapper)
+          // sizes[1] represents the height of the bottom pane (table browser)
+          setTableBrowserHeight(sizes[1])
+        }, 200)}
+      >
         <Allotment.Pane>
           <Allotment>
             <Allotment.Pane preferredSize="30%">
@@ -146,7 +164,11 @@ export const WorkSpaceEditor: React.FC = () => {
             fallback={<div>{`Loading from NDEx`}</div>}
             key={currentNetworkId}
           >
-            <TableBrowser currentNetworkId={currentNetworkId} />
+            <TableBrowser
+              height={tableBrowserHeight}
+              width={tableBrowserWidth}
+              currentNetworkId={currentNetworkId}
+            />
           </Suspense>
         </Allotment.Pane>
       </Allotment>
