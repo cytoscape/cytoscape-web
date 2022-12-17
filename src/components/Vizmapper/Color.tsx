@@ -1,24 +1,32 @@
-import { Color } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { ColorType } from '../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 import { ChromePicker } from 'react-color'
+import React from 'react'
+import debounce from 'lodash.debounce'
 
 export function ColorPicker(props: {
-  currentValue: Color
-  onValueChange: (shape: Color) => void
+  currentValue: ColorType
+  onValueChange: (color: ColorType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
+  const debouncedValueChange = debounce(onValueChange, 200)
+  const [localColorValue, setLocalColorValue] =
+    React.useState<ColorType>(currentValue)
 
   return (
     <Box>
       <ChromePicker
-        color={currentValue}
-        onChange={(color: any) => onValueChange(color.hex)}
+        color={localColorValue}
+        onChange={(color: any) => {
+          setLocalColorValue(color.hex)
+          debouncedValueChange(color.hex)
+        }}
       />
     </Box>
   )
 }
 
-export function Color(props: { value: Color }): React.ReactElement {
+export function Color(props: { value: ColorType }): React.ReactElement {
   return (
     <Box
       sx={{

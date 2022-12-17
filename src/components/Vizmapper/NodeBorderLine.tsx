@@ -44,12 +44,13 @@ export function NodeBorderLinePicker(props: {
               sx={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignContent: 'center',
+                flexDirection: 'column',
+                alignItems: 'center',
                 width: 100,
               }}
             >
-              <Box>{borderLine}</Box>
               <NodeBorderLine value={borderLine} />
+              <Box>{borderLine}</Box>
             </Box>
           </Box>
         ),

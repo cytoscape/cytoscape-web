@@ -38,13 +38,14 @@ export function EdgeLinePicker(props: {
           <Box
             sx={{
               display: 'flex',
+              flexDirection: 'column',
               justifyContent: 'space-between',
-              alignContent: 'center',
+              alignItems: 'center',
               width: 100,
             }}
           >
-            <Box>{edgeLine}</Box>
             <EdgeLine value={edgeLine} />
+            <Box>{edgeLine}</Box>
           </Box>
         </Box>
       ))}

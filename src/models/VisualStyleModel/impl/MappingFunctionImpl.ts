@@ -1,4 +1,4 @@
-import chroma, { Color } from 'chroma-js'
+import chroma, { Color as ChromaColor } from 'chroma-js'
 
 import { Table, ValueType } from '../../TableModel'
 import {
@@ -49,8 +49,8 @@ const getColumnValue = (
 const mapColor = (
   min: number,
   max: number,
-  minVPValue: Color,
-  maxVPValue: Color,
+  minVPValue: ChromaColor,
+  maxVPValue: ChromaColor,
   value: number,
 ): VisualPropertyValueType => {
   const colorMapper = chroma.scale([minVPValue, maxVPValue]).domain([min, max])
@@ -175,8 +175,8 @@ const createCyJsContinuousMappingFn: CyJsMappingFunction = (
               return mapColor(
                 min as number,
                 max as number,
-                minVPValue as unknown as Color,
-                maxVPValue as unknown as Color,
+                minVPValue as unknown as ChromaColor,
+                maxVPValue as unknown as ChromaColor,
                 value,
               )
             } else {

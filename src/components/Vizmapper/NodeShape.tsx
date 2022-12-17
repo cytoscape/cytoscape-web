@@ -37,6 +37,7 @@ export function NodeShapePicker(props: {
         display: 'flex',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
+        width: 300,
       }}
     >
       {Object.values(NodeShapeType).map((shape: NodeShapeType) => (
@@ -53,13 +54,14 @@ export function NodeShapePicker(props: {
           <Box
             sx={{
               display: 'flex',
+              flexDirection: 'column',
               justifyContent: 'space-between',
-              alignContent: 'center',
+              alignItems: 'center',
               width: 100,
             }}
           >
-            <Box>{shape}</Box>
             <NodeShape value={shape} />
+            <Box>{shape}</Box>
           </Box>
         </Box>
       ))}

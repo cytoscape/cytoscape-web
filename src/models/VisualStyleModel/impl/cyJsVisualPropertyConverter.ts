@@ -1,6 +1,6 @@
 import { VisualPropertyValueType, VisualPropertyName } from '..'
 import {
-  Color,
+  ColorType,
   FontType,
   NodeBorderLineType,
   NodeShapeType,
@@ -28,10 +28,10 @@ export const nodeShapeConverter = (
 
 export const colorConverter = (
   cyJsVPName: string,
-): CyJsVisualPropertyConverter<Color> => {
+): CyJsVisualPropertyConverter<ColorType> => {
   return {
     cyJsVPName,
-    valueConverter: (vpValue: Color): Color => vpValue,
+    valueConverter: (vpValue: ColorType): ColorType => vpValue,
   }
 }
 

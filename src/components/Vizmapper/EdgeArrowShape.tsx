@@ -47,13 +47,14 @@ export function EdgeArrowShapePicker(props: {
             <Box
               sx={{
                 display: 'flex',
+                flexDirection: 'column',
                 justifyContent: 'space-between',
                 alignContent: 'center',
                 width: 100,
               }}
             >
-              <Box>{edgeArrowShape}</Box>
               <EdgeArrowShape value={edgeArrowShape} />
+              <Box>{edgeArrowShape}</Box>
             </Box>
           </Box>
         ),

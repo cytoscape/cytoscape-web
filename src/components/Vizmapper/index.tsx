@@ -146,7 +146,7 @@ function ClickableVisualPropertyValue(props: {
         onClose={() => showValuePicker(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
-        <Box sx={{ width: 300, height: 150, p: 1, m: 1 }}>
+        <Box sx={{ p: 1, m: 1 }}>
           {(
             type2RenderFnMap[props.visualProperty.type].pickerRender ??
             (() => {})
