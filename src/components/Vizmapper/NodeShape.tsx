@@ -1,5 +1,29 @@
 import { NodeShapeType } from '../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
+import {
+  EllipseIcon,
+  RectangleIcon,
+  RoundRectangleIcon,
+  TriangleIcon,
+  DiamondIcon,
+  OctagonIcon,
+  HexagonIcon,
+  ParallelogramIcon,
+  VeeIcon,
+} from './VisualPropertyValueIcons'
+import React from 'react'
+
+const nodeShapeMap: Record<NodeShapeType, React.ReactElement> = {
+  ellipse: <EllipseIcon />,
+  rectangle: <RectangleIcon />,
+  'round-rectangle': <RoundRectangleIcon />,
+  triangle: <TriangleIcon />,
+  diamond: <DiamondIcon />,
+  hexagon: <HexagonIcon />,
+  octagon: <OctagonIcon />,
+  parallelogram: <ParallelogramIcon />,
+  vee: <VeeIcon />,
+}
 
 export function NodeShapePicker(props: {
   currentValue: NodeShapeType
@@ -26,13 +50,23 @@ export function NodeShapePicker(props: {
           onClick={() => onValueChange(shape)}
           key={shape}
         >
-          {shape}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignContent: 'center',
+              width: 100,
+            }}
+          >
+            <Box>{shape}</Box>
+            <NodeShape value={shape} />
+          </Box>
         </Box>
       ))}
     </Box>
   )
 }
 
-export function NodeShape(props: { shape: NodeShapeType }): React.ReactElement {
-  return <Box>{props.shape}</Box>
+export function NodeShape(props: { value: NodeShapeType }): React.ReactElement {
+  return nodeShapeMap[props.value] ?? <Box>{props.value}</Box>
 }

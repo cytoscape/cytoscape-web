@@ -33,6 +33,6 @@ export function FontPicker(props: {
   )
 }
 
-export function Font(props: { font: FontType }): React.ReactElement {
-  return <Box>{props.font}</Box>
+export function Font(props: { value: FontType }): React.ReactElement {
+  return <Box>{props.value}</Box>
 }

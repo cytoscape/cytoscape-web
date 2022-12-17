@@ -36,7 +36,7 @@ export function HoritzontalAlignPicker(props: {
 }
 
 export function HorizontalAlign(props: {
-  horizontalAlign: HoritzontalAlignType
+  value: HoritzontalAlignType
 }): React.ReactElement {
-  return <Box>{props.horizontalAlign}</Box>
+  return <Box>{props.value}</Box>
 }

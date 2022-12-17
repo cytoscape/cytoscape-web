@@ -36,7 +36,7 @@ export function VerticalAlignPicker(props: {
 }
 
 export function VerticalAlign(props: {
-  verticalAlign: VerticalAlignType
+  value: VerticalAlignType
 }): React.ReactElement {
-  return <Box>{props.verticalAlign}</Box>
+  return <Box>{props.value}</Box>
 }

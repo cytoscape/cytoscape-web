@@ -18,6 +18,16 @@ export function ColorPicker(props: {
   )
 }
 
-export function Color(props: { color: Color }): React.ReactElement {
-  return <Box sx={{ backgroundColor: props.color }}></Box>
+export function Color(props: { value: Color }): React.ReactElement {
+  return (
+    <Box
+      sx={{
+        backgroundColor: props.value,
+        flex: 1,
+        width: 50,
+        height: 50,
+        borderRadius: '20%',
+      }}
+    ></Box>
+  )
 }

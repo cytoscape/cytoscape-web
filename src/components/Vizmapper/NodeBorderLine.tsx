@@ -1,5 +1,18 @@
 import { NodeBorderLineType } from '../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
+import {
+  SolidLineIcon,
+  DottedLineIcon,
+  DashedLineIcon,
+  DoubleLineIcon,
+} from './VisualPropertyValueIcons'
+
+const nodeLineMap: Record<NodeBorderLineType, React.ReactElement> = {
+  solid: <SolidLineIcon />,
+  dotted: <DottedLineIcon />,
+  dashed: <DashedLineIcon />,
+  double: <DoubleLineIcon />,
+}
 
 export function NodeBorderLinePicker(props: {
   currentValue: NodeBorderLineType
@@ -27,7 +40,17 @@ export function NodeBorderLinePicker(props: {
             onClick={() => onValueChange(borderLine)}
             key={borderLine}
           >
-            {borderLine}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignContent: 'center',
+                width: 100,
+              }}
+            >
+              <Box>{borderLine}</Box>
+              <NodeBorderLine value={borderLine} />
+            </Box>
           </Box>
         ),
       )}
@@ -36,7 +59,7 @@ export function NodeBorderLinePicker(props: {
 }
 
 export function NodeBorderLine(props: {
-  borderLine: NodeBorderLineType
+  value: NodeBorderLineType
 }): React.ReactElement {
-  return <Box>{props.borderLine}</Box>
+  return nodeLineMap[props.value] ?? <Box>{props.value}</Box>
 }

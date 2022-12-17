@@ -34,7 +34,7 @@ export function VisibilityPicker(props: {
 }
 
 export function Visibility(props: {
-  visibility: VisibilityType
+  value: VisibilityType
 }): React.ReactElement {
-  return <Box>{props.visibility}</Box>
+  return <Box>{props.value}</Box>
 }

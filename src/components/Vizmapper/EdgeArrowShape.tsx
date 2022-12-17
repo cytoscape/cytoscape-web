@@ -1,5 +1,22 @@
 import { EdgeArrowShapeType } from '../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
+import {
+  CircleArrowIcon,
+  DiamondArrowIcon,
+  TeeArrowIcon,
+  TriangleArrowIcon,
+  SquareArrowIcon,
+  NoneArrowIcon,
+} from './VisualPropertyValueIcons'
+
+const edgeArrowShapeMap: Record<EdgeArrowShapeType, React.ReactElement> = {
+  none: <NoneArrowIcon />,
+  circle: <CircleArrowIcon />,
+  diamond: <DiamondArrowIcon />,
+  square: <SquareArrowIcon />,
+  triangle: <TriangleArrowIcon />,
+  tee: <TeeArrowIcon />,
+}
 
 export function EdgeArrowShapePicker(props: {
   currentValue: EdgeArrowShapeType
@@ -27,7 +44,17 @@ export function EdgeArrowShapePicker(props: {
             onClick={() => onValueChange(edgeArrowShape)}
             key={edgeArrowShape}
           >
-            {edgeArrowShape}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignContent: 'center',
+                width: 100,
+              }}
+            >
+              <Box>{edgeArrowShape}</Box>
+              <EdgeArrowShape value={edgeArrowShape} />
+            </Box>
           </Box>
         ),
       )}
@@ -36,7 +63,7 @@ export function EdgeArrowShapePicker(props: {
 }
 
 export function EdgeArrowShape(props: {
-  edgeArrowShape: EdgeArrowShapeType
+  value: EdgeArrowShapeType
 }): React.ReactElement {
-  return <Box>{props.edgeArrowShape}</Box>
+  return edgeArrowShapeMap[props.value] ?? <Box>{props.value}</Box>
 }
