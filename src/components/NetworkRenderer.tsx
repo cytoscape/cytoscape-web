@@ -10,7 +10,7 @@ import Cytoscape, {
 import { IdType } from '../models/IdType'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useTableStore } from '../store/TableStore'
-import { useNetworkStore } from '../store/NetworkStore'
+import { useWorkspaceStore } from '../store/NetworkStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import VisualStyleFn from '../models/VisualStyleModel' // VisualPropertyValueType,
 // import { cyJsVisualPropertyConverter } from '../models/VisualStyleModel/impl/cyJsVisualPropertyMap'
@@ -22,7 +22,7 @@ interface NetworkRendererProps {
 export default function NetworkRenderer(
   props: NetworkRendererProps,
 ): React.ReactElement {
-  const networks = useNetworkStore((state) => state.networks)
+  const networks = useWorkspaceStore((state) => state.networks)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
   const viewModels = useViewModelStore((state) => state.viewModels)

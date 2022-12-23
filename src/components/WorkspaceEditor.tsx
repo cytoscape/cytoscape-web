@@ -11,12 +11,12 @@ import VizmapperView from './Vizmapper'
 import { getNdexNetwork, getNdexNetworkSet } from '../store/useNdexNetwork'
 import { useTableStore } from '../store/TableStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
-import { useNetworkStore } from '../store/NetworkStore'
+import { useWorkspaceStore } from '../store/NetworkStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 
 const testNetworkSet = '8d72ec80-1fc5-11ec-9fe4-0ac135e8bacf'
 
-export const WorkSpaceEditor: React.FC = () => {
+const WorkSpaceEditor: React.FC = () => {
   const [currentNetworkId, setCurrentNetworkId] = useState('')
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
@@ -24,7 +24,7 @@ export const WorkSpaceEditor: React.FC = () => {
   const [networkSetSummaries, setNetworkSummaries] = useState(
     [] as Array<{ id: string; name: string }>,
   )
-  const addNewNetwork = useNetworkStore((state) => state.add)
+  const addNewNetwork = useWorkspaceStore((state) => state.add)
 
   // Visual Style Store
   const setVisualStyle = useVisualStyleStore((state) => state.set)
@@ -175,3 +175,5 @@ export const WorkSpaceEditor: React.FC = () => {
     </Box>
   )
 }
+
+export default WorkSpaceEditor
