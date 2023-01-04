@@ -4,19 +4,22 @@ import { Allotment } from 'allotment'
 import { Box } from '@mui/material'
 import debounce from 'lodash.debounce'
 import TableBrowser from './TableBrowser'
-import NetworkRenderer from './NetworkRenderer'
 // import WorkspaceView from './WorkspaceView'
 import VizmapperView from './Vizmapper'
+
+import { Outlet, useNavigate } from 'react-router-dom'
 
 import { getNdexNetwork, getNdexNetworkSet } from '../store/useNdexNetwork'
 import { useTableStore } from '../store/TableStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
-import { useNetworkStore } from '../store/NetworkStore'
+import { useWorkspaceStore } from '../store/NetworkStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 
 const testNetworkSet = '8d72ec80-1fc5-11ec-9fe4-0ac135e8bacf'
 
-export const WorkSpaceEditor: React.FC = () => {
+const WorkSpaceEditor: React.FC = () => {
+  const navigate = useNavigate()
+
   const [currentNetworkId, setCurrentNetworkId] = useState('')
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
@@ -24,7 +27,7 @@ export const WorkSpaceEditor: React.FC = () => {
   const [networkSetSummaries, setNetworkSummaries] = useState(
     [] as Array<{ id: string; name: string }>,
   )
-  const addNewNetwork = useNetworkStore((state) => state.add)
+  const addNewNetwork = useWorkspaceStore((state) => state.add)
 
   // Visual Style Store
   const setVisualStyle = useVisualStyleStore((state) => state.set)
@@ -83,6 +86,8 @@ export const WorkSpaceEditor: React.FC = () => {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {})
         .catch((err) => console.error(err))
+
+      navigate(`/workspaceIdHere/networks/${currentNetworkId}`)
     }
   }, [currentNetworkId])
 
@@ -150,12 +155,7 @@ export const WorkSpaceEditor: React.FC = () => {
               </Allotment>
             </Allotment.Pane>
             <Allotment.Pane>
-              <Suspense
-                fallback={<div>{`Loading from NDEx`}</div>}
-                key={currentNetworkId}
-              >
-                <NetworkRenderer currentNetworkId={currentNetworkId} />
-              </Suspense>
+              <Outlet /> {/* Network Renderer will be injected here */}
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>
@@ -175,3 +175,5 @@ export const WorkSpaceEditor: React.FC = () => {
     </Box>
   )
 }
+
+export default WorkSpaceEditor

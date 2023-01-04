@@ -1,8 +1,12 @@
 import { NetworkSummary } from './NetworkSummary'
 import { IdType } from '../IdType'
+
 export interface Workspace {
-  currentNetworkId: IdType
+  id: IdType
+  selectedNetworkId: IdType
   networks: NetworkSummary[]
   name: string
-  // options: any
+  modificationTime: Date
+  creationTime: Date
+  options: any
 }

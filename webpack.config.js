@@ -4,7 +4,8 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const ESLintPlugin = require('eslint-webpack-plugin')
 
 module.exports = {
-  entry: './src/index.tsx',
+  entry: path.resolve(__dirname, './src/index.tsx'),
+  // entry: './src/index.tsx',
   devtool: 'inline-source-map',
   module: {
     rules: [
@@ -34,10 +35,14 @@ module.exports = {
     filename: '[name].[contenthash].js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
+    publicPath: '/',
   },
   // watch the dist file for changes when using the dev server
   devServer: {
-    static: './dist',
+    // static: './dist',
+    hot: true,
+    static: path.resolve(__dirname, './dist'),
+    historyApiFallback: true,
   },
   plugins: [
     // generate css files from the found css files in the source
