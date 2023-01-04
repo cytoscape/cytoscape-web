@@ -4,9 +4,10 @@ import { Allotment } from 'allotment'
 import { Box } from '@mui/material'
 import debounce from 'lodash.debounce'
 import TableBrowser from './TableBrowser'
-import NetworkRenderer from './NetworkRenderer'
 // import WorkspaceView from './WorkspaceView'
 import VizmapperView from './Vizmapper'
+
+import { Outlet, useNavigate } from 'react-router-dom'
 
 import { getNdexNetwork, getNdexNetworkSet } from '../store/useNdexNetwork'
 import { useTableStore } from '../store/TableStore'
@@ -17,6 +18,8 @@ import { useViewModelStore } from '../store/ViewModelStore'
 const testNetworkSet = '8d72ec80-1fc5-11ec-9fe4-0ac135e8bacf'
 
 const WorkSpaceEditor: React.FC = () => {
+  const navigate = useNavigate()
+
   const [currentNetworkId, setCurrentNetworkId] = useState('')
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
@@ -83,6 +86,8 @@ const WorkSpaceEditor: React.FC = () => {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {})
         .catch((err) => console.error(err))
+
+      navigate(`/workspaceIdHere/networks/${currentNetworkId}`)
     }
   }, [currentNetworkId])
 
@@ -150,12 +155,7 @@ const WorkSpaceEditor: React.FC = () => {
               </Allotment>
             </Allotment.Pane>
             <Allotment.Pane>
-              <Suspense
-                fallback={<div>{`Loading from NDEx`}</div>}
-                key={currentNetworkId}
-              >
-                <NetworkRenderer currentNetworkId={currentNetworkId} />
-              </Suspense>
+              <Outlet /> {/* Network Renderer will be injected here */}
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>

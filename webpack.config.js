@@ -35,6 +35,7 @@ module.exports = {
     filename: '[name].[contenthash].js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
+    publicPath: '/',
   },
   // watch the dist file for changes when using the dev server
   devServer: {

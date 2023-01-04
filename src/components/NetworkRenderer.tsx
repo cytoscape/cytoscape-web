@@ -1,4 +1,5 @@
 import * as React from 'react'
+
 import Box from '@mui/material/Box'
 import debounce from 'lodash.debounce'
 import Cytoscape, {
@@ -22,15 +23,17 @@ interface NetworkRendererProps {
 export default function NetworkRenderer(
   props: NetworkRendererProps,
 ): React.ReactElement {
+  const { currentNetworkId } = props
+
   const networks = useWorkspaceStore((state) => state.networks)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
   const viewModels = useViewModelStore((state) => state.viewModels)
   const setSelected = useViewModelStore((state) => state.setSelected)
-  const network = networks[props.currentNetworkId]
-  const networkView = viewModels[props.currentNetworkId]
-  const vs = visualStyles[props.currentNetworkId]
-  const table = tables[props.currentNetworkId]
+  const network = networks[currentNetworkId]
+  const networkView = viewModels[currentNetworkId]
+  const vs = visualStyles[currentNetworkId]
+  const table = tables[currentNetworkId]
 
   const [cy, setCy] = React.useState(null as any)
   const cyContainer = React.useRef(null)
@@ -57,7 +60,7 @@ export default function NetworkRenderer(
         'boxselect select',
         debounce((e: EventObject) => {
           setSelected(
-            props.currentNetworkId,
+            currentNetworkId,
             cy
               .elements()
               .filter((e: SingularElementArgument) => e.selected())
@@ -70,7 +73,7 @@ export default function NetworkRenderer(
         // check for background click
         // on background click deselect all
         if (e.target === cy) {
-          setSelected(props.currentNetworkId, [])
+          setSelected(currentNetworkId, [])
         }
       })
       cy.endBatch()
@@ -116,7 +119,7 @@ export default function NetworkRenderer(
     debounce(() => {
       loadAndRenderNetwork()
     }, 200),
-    [props.currentNetworkId, network],
+    [currentNetworkId, network],
   )
 
   React.useEffect(
