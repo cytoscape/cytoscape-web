@@ -2,8 +2,12 @@ import React from 'react'
 import { SvgIcon } from '@mui/material'
 import { SxProps } from '@mui/system'
 
+import continuousMappingFunctionIcon from '../../assets/continuous_mapping.svg'
+import passthroughMappingFunctionIcon from '../../assets/passthrough_mapping.svg'
+import discreteMappingFunctionIcon from '../../assets/discrete_mapping.svg'
+
 const defaultIconStyle = {
-  style: { fontSize: 24, margin: 0 },
+  style: { fontSize: 32, margin: 0 },
   sx: {
     p: 0,
     m: 0,
@@ -397,5 +401,35 @@ export function DoubleLineIcon(props: IconProps): React.ReactElement {
       <path d="M-5.09,24.789 L24.789,-5.09 26.91,-3.211 L-3.211,26.91 L-5.09,24.789 z" />
       <path d="M5.09,34.789 L34.789,5.09 L36.91,7.211 L7.211,36.91 L5.09,34.789 z" />
     </SvgIcon>
+  )
+}
+
+export function PassthroughMappingFunctionIcon(
+  props: IconProps,
+): React.ReactElement {
+  return (
+    <img
+      style={{ width: 32, height: 32 }}
+      src={passthroughMappingFunctionIcon}
+    />
+  )
+}
+
+export function DiscreteMappingFunctionIcon(
+  props: IconProps,
+): React.ReactElement {
+  return (
+    <img style={{ width: 32, height: 32 }} src={discreteMappingFunctionIcon} />
+  )
+}
+
+export function ContinuousMappingFunctionIcon(
+  props: IconProps,
+): React.ReactElement {
+  return (
+    <img
+      style={{ width: 32, height: 32 }}
+      src={continuousMappingFunctionIcon}
+    />
   )
 }

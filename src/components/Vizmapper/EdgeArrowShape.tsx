@@ -7,7 +7,7 @@ import {
   TriangleArrowIcon,
   SquareArrowIcon,
   NoneArrowIcon,
-} from './VisualPropertyValueIcons'
+} from './VisualStyleIcons'
 
 const edgeArrowShapeMap: Record<EdgeArrowShapeType, React.ReactElement> = {
   none: <NoneArrowIcon />,

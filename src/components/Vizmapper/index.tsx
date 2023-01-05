@@ -45,6 +45,11 @@ import { EdgeLinePicker, EdgeLine } from './EdgeLine'
 import { StringInput, String as StringRender } from './String'
 import { BooleanSwitch, Boolean as BooleanRender } from './Boolean'
 import { ContinuousFunctionInterval } from '../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
+import {
+  PassthroughMappingFunctionIcon,
+  DiscreteMappingFunctionIcon,
+  ContinuousMappingFunctionIcon,
+} from './VisualStyleIcons'
 
 const type2RenderFnMap: Record<
   VisualPropertyValueTypeString,
@@ -369,13 +374,11 @@ function VisualPropertyView(props: {
           flexDirection: 'row',
           justifyContent: 'space-between',
           border: '1px solid gray',
-          p: 1,
           m: 1,
         }}
       >
         <Box
           sx={{
-            p: 1,
             m: 1,
             border: '1px solid gray',
             maxHeight: '300px',
@@ -423,8 +426,10 @@ function VisualPropertyView(props: {
                   }}
                   key={eleId}
                 >
-                  <Box>{`${eleId}`}</Box>
-                  <Box>{name}</Box>
+                  <Box
+                    sx={{ width: 50, m: 1 }}
+                  >{`${visualProperty.group}:  ${eleId}`}</Box>
+                  <Box sx={{ width: 50, m: 1 }}>{name}</Box>
                   <ClickableVisualPropertyValue
                     visualProperty={visualProperty}
                     currentValue={value}
@@ -453,7 +458,7 @@ function VisualPropertyView(props: {
           )}
         </Box>
       </Box>
-      <Box sx={{ border: '1px solid gray', p: 1, m: 1 }}>
+      <Box sx={{ border: '1px solid gray', m: 1 }}>
         <Box>Value Picker</Box>
         <ClickableVisualPropertyValue
           visualProperty={visualProperty}
@@ -488,6 +493,12 @@ function VisualPropertyView(props: {
     mapping: mappingExanpdedContent,
     bypass: bypassExpandedContent,
     '': <Box></Box>,
+  }
+
+  const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
+    passthrough: <PassthroughMappingFunctionIcon />,
+    discrete: <DiscreteMappingFunctionIcon />,
+    continuous: <ContinuousMappingFunctionIcon />,
   }
 
   return (
@@ -563,7 +574,9 @@ function VisualPropertyView(props: {
                 justifyContent: 'center',
               }}
             >
-              {visualProperty.mapping?.type ?? '+'}
+              {visualProperty.mapping?.type != null
+                ? mappingFnIconMap[visualProperty.mapping?.type]
+                : '+'}
             </Box>
             <Box
               onClick={() => handleChange('bypass')}

@@ -10,7 +10,7 @@ import {
   HexagonIcon,
   ParallelogramIcon,
   VeeIcon,
-} from './VisualPropertyValueIcons'
+} from './VisualStyleIcons'
 import React from 'react'
 
 const nodeShapeMap: Record<NodeShapeType, React.ReactElement> = {

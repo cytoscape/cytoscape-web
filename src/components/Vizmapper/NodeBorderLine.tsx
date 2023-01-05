@@ -5,7 +5,7 @@ import {
   DottedLineIcon,
   DashedLineIcon,
   DoubleLineIcon,
-} from './VisualPropertyValueIcons'
+} from './VisualStyleIcons'
 
 const nodeLineMap: Record<NodeBorderLineType, React.ReactElement> = {
   solid: <SolidLineIcon />,

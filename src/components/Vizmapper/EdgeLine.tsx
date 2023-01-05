@@ -4,7 +4,7 @@ import {
   DottedLineIcon,
   SolidLineIcon,
   DashedLineIcon,
-} from './VisualPropertyValueIcons'
+} from './VisualStyleIcons'
 const edgeLineMap: Record<EdgeLineType, React.ReactElement> = {
   solid: <SolidLineIcon />,
   dotted: <DottedLineIcon />,

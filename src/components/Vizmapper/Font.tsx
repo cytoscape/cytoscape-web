@@ -22,6 +22,7 @@ export function FontPicker(props: {
             width: 100,
             p: 1,
             '&:hover': { cursor: 'pointer' },
+            fontFamily: font,
           }}
           onClick={() => onValueChange(font)}
           key={font}
@@ -34,5 +35,5 @@ export function FontPicker(props: {
 }
 
 export function Font(props: { value: FontType }): React.ReactElement {
-  return <Box>{props.value}</Box>
+  return <Box sx={{ fontFamily: props.value }}>{props.value}</Box>
 }
