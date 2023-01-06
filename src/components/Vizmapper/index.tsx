@@ -6,7 +6,8 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Popover,
+  Tabs,
+  Tab,
 } from '@mui/material'
 
 import { IdType } from '../../models/IdType'
@@ -21,7 +22,6 @@ import {
   DiscreteMappingFunction,
   MappingFunctionType,
 } from '../../models/VisualStyleModel/VisualMappingFunction'
-import { VisualPropertyValueTypeString } from '../../models/VisualStyleModel/VisualPropertyValueTypeString'
 
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
@@ -32,18 +32,6 @@ import AccordionDetails from '@mui/material/AccordionDetails'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import CloseIcon from '@mui/icons-material/Close'
 
-import { NodeShape, NodeShapePicker } from './NodeShape'
-import { Color, ColorPicker } from './Color'
-import { NodeBorderLine, NodeBorderLinePicker } from './NodeBorderLine'
-import { NumberInput, Number as NumberRender } from './Number'
-import { Font, FontPicker } from './Font'
-import { HoritzontalAlignPicker, HorizontalAlign } from './HorizontalAlign'
-import { VerticalAlignPicker, VerticalAlign } from './VerticalAlign'
-import { Visibility, VisibilityPicker } from './Visibility'
-import { EdgeArrowShape, EdgeArrowShapePicker } from './EdgeArrowShape'
-import { EdgeLinePicker, EdgeLine } from './EdgeLine'
-import { StringInput, String as StringRender } from './String'
-import { BooleanSwitch, Boolean as BooleanRender } from './Boolean'
 import { ContinuousFunctionInterval } from '../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import {
   PassthroughMappingFunctionIcon,
@@ -51,120 +39,7 @@ import {
   ContinuousMappingFunctionIcon,
 } from './VisualStyleIcons'
 
-const type2RenderFnMap: Record<
-  VisualPropertyValueTypeString,
-  {
-    pickerRender: (props: {
-      currentValue: VisualPropertyValueType
-      onValueChange: (newValue: VisualPropertyValueType) => void
-    }) => React.ReactElement
-    valueRender: (props: {
-      value: VisualPropertyValueType
-    }) => React.ReactElement
-  }
-> = {
-  nodeShape: {
-    pickerRender: NodeShapePicker,
-    valueRender: NodeShape,
-  },
-  color: {
-    pickerRender: ColorPicker,
-    valueRender: Color,
-  },
-  nodeBorderLine: {
-    pickerRender: NodeBorderLinePicker,
-    valueRender: NodeBorderLine,
-  },
-  number: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  font: {
-    pickerRender: FontPicker,
-    valueRender: Font,
-  },
-  horizontalALign: {
-    pickerRender: HoritzontalAlignPicker,
-    valueRender: HorizontalAlign,
-  },
-  verticalAlign: {
-    pickerRender: VerticalAlignPicker,
-    valueRender: VerticalAlign,
-  },
-  visibility: {
-    pickerRender: VisibilityPicker,
-    valueRender: Visibility,
-  },
-  edgeArrowShape: {
-    pickerRender: EdgeArrowShapePicker,
-    valueRender: EdgeArrowShape,
-  },
-  edgeLine: {
-    pickerRender: EdgeLinePicker,
-    valueRender: EdgeLine,
-  },
-  string: {
-    pickerRender: StringInput,
-    valueRender: StringRender,
-  },
-  boolean: {
-    pickerRender: BooleanSwitch,
-    valueRender: BooleanRender,
-  },
-}
-
-function ClickableVisualPropertyValue(props: {
-  visualProperty: VisualProperty<VisualPropertyValueType>
-  currentValue: VisualPropertyValueType
-  onValueChange: (newValue: VisualPropertyValueType) => void
-}): React.ReactElement {
-  const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
-
-  const showValuePicker = (value: Element | null): void => {
-    setValuePicker(value)
-  }
-
-  if (type2RenderFnMap[props.visualProperty.type] == null) {
-    return <Box></Box>
-  }
-
-  return (
-    <Box>
-      <Box
-        sx={{
-          p: 1,
-          m: 1,
-          '&:hover': { border: '1px solid gray', cursor: 'pointer' },
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-        }}
-        onClick={(e) => showValuePicker(e.currentTarget)}
-      >
-        {type2RenderFnMap[props.visualProperty.type].valueRender({
-          value: props.currentValue,
-        })}
-      </Box>
-      <Popover
-        open={valuePicker != null}
-        anchorEl={valuePicker}
-        onClose={() => showValuePicker(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        <Box sx={{ p: 1, m: 1 }}>
-          {(
-            type2RenderFnMap[props.visualProperty.type].pickerRender ??
-            (() => {})
-          )({
-            onValueChange: (value: VisualPropertyValueType) =>
-              props.onValueChange(value),
-            currentValue: props.currentValue,
-          })}
-        </Box>
-      </Popover>
-    </Box>
-  )
-}
+import { ClickableVisualPropertyValue } from './ClickableVisualPropertyValue'
 
 function MappingFunctionView(props: {
   currentNetworkId: IdType
@@ -620,6 +495,7 @@ function VisualPropertyView(props: {
 export default function VizmapperView(props: {
   currentNetworkId: IdType
 }): React.ReactElement {
+  const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
   const visualStyles: Record<IdType, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
   )
@@ -662,19 +538,47 @@ export default function VizmapperView(props: {
   )
 
   return (
-    <Box sx={{ overflow: 'scroll', height: '100%', width: '100%' }}>
-      <Typography variant="body1" sx={{ p: 1 }}>
-        Node Visual Properties
-      </Typography>
-      {nodeVps}
-      <Typography variant="h6" sx={{ p: 1 }}>
-        Edge Visual Properties
-      </Typography>
-      {edgeVps}
-      <Typography variant="h6" sx={{ p: 1 }}>
-        Network Visual Properties
-      </Typography>
-      {networkVps}
+    <Box
+      sx={{
+        borderBottom: 1,
+        overflow: 'scroll',
+        height: '100%',
+        width: '100%',
+      }}
+    >
+      <Tabs
+        value={currentTabIndex}
+        TabIndicatorProps={{ sx: { backgroundColor: 'white' } }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          fontSize: 10,
+          pb: 0.5,
+          backgroundColor: '#2F80ED',
+          '& button.Mui-selected': { color: 'white' },
+          '& button': {
+            minHeight: 30,
+            height: 30,
+            width: 30,
+          },
+          height: 38,
+          minHeight: 30,
+        }}
+        onChange={(e, nextTab) => setCurrentTabIndex(nextTab)}
+      >
+        <Tab label={<Typography variant="caption">Nodes</Typography>} />
+        <Tab label={<Typography variant="caption">Edges</Typography>} />
+        <Tab label={<Typography variant="caption">Network</Typography>} />
+      </Tabs>
+      <div hidden={currentTabIndex !== 0}>
+        {currentTabIndex === 0 && <Box>{nodeVps}</Box>}
+      </div>
+      <div hidden={currentTabIndex !== 1}>
+        {currentTabIndex === 1 && <Box>{edgeVps}</Box>}
+      </div>
+      <div hidden={currentTabIndex !== 2}>
+        {currentTabIndex === 2 && <Box>{networkVps}</Box>}
+      </div>
     </Box>
   )
 }
