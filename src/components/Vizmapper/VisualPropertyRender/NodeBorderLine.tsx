@@ -1,11 +1,11 @@
-import { NodeBorderLineType } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { NodeBorderLineType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 import {
   SolidLineIcon,
   DottedLineIcon,
   DashedLineIcon,
   DoubleLineIcon,
-} from './VisualStyleIcons'
+} from '../VisualStyleIcons'
 
 const nodeLineMap: Record<NodeBorderLineType, React.ReactElement> = {
   solid: <SolidLineIcon />,

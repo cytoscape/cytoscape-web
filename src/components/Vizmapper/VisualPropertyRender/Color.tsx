@@ -1,4 +1,4 @@
-import { ColorType } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { ColorType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 import { ChromePicker } from 'react-color'
 import React from 'react'
@@ -32,8 +32,8 @@ export function Color(props: { value: ColorType }): React.ReactElement {
       sx={{
         backgroundColor: props.value,
         flex: 1,
-        width: 50,
-        height: 50,
+        width: 45,
+        height: 45,
         borderRadius: '20%',
       }}
     ></Box>

@@ -1,4 +1,4 @@
-import { FontType } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { FontType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 
 export function FontPicker(props: {

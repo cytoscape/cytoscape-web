@@ -1,4 +1,4 @@
-import { HoritzontalAlignType } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { HoritzontalAlignType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 
 export function HoritzontalAlignPicker(props: {

@@ -1,4 +1,4 @@
-import { EdgeArrowShapeType } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { EdgeArrowShapeType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 import {
   CircleArrowIcon,
@@ -7,7 +7,7 @@ import {
   TriangleArrowIcon,
   SquareArrowIcon,
   NoneArrowIcon,
-} from './VisualStyleIcons'
+} from '../VisualStyleIcons'
 
 const edgeArrowShapeMap: Record<EdgeArrowShapeType, React.ReactElement> = {
   none: <NoneArrowIcon />,

@@ -4,21 +4,45 @@ import { Box, Popover } from '@mui/material'
 import {
   VisualProperty,
   VisualPropertyValueType,
-} from '../../models/VisualStyleModel'
-import { VisualPropertyValueTypeString } from '../../models/VisualStyleModel/VisualPropertyValueTypeString'
+} from '../../../models/VisualStyleModel'
+import { VisualPropertyValueTypeString } from '../../../models/VisualStyleModel/VisualPropertyValueTypeString'
 
-import { NodeShape, NodeShapePicker } from './NodeShape'
-import { Color, ColorPicker } from './Color'
-import { NodeBorderLine, NodeBorderLinePicker } from './NodeBorderLine'
-import { NumberInput, Number as NumberRender } from './Number'
-import { Font, FontPicker } from './Font'
-import { HoritzontalAlignPicker, HorizontalAlign } from './HorizontalAlign'
-import { VerticalAlignPicker, VerticalAlign } from './VerticalAlign'
-import { Visibility, VisibilityPicker } from './Visibility'
-import { EdgeArrowShape, EdgeArrowShapePicker } from './EdgeArrowShape'
-import { EdgeLinePicker, EdgeLine } from './EdgeLine'
-import { StringInput, String as StringRender } from './String'
-import { BooleanSwitch, Boolean as BooleanRender } from './Boolean'
+import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
+import { Color, ColorPicker } from '../VisualPropertyRender/Color'
+import {
+  NodeBorderLine,
+  NodeBorderLinePicker,
+} from '../VisualPropertyRender/NodeBorderLine'
+import {
+  NumberInput,
+  Number as NumberRender,
+} from '../VisualPropertyRender/Number'
+import { Font, FontPicker } from '../VisualPropertyRender/Font'
+import {
+  HoritzontalAlignPicker,
+  HorizontalAlign,
+} from '../VisualPropertyRender/HorizontalAlign'
+import {
+  VerticalAlignPicker,
+  VerticalAlign,
+} from '../VisualPropertyRender/VerticalAlign'
+import {
+  Visibility,
+  VisibilityPicker,
+} from '../VisualPropertyRender/Visibility'
+import {
+  EdgeArrowShape,
+  EdgeArrowShapePicker,
+} from '../VisualPropertyRender/EdgeArrowShape'
+import { EdgeLinePicker, EdgeLine } from '../VisualPropertyRender/EdgeLine'
+import {
+  StringInput,
+  String as StringRender,
+} from '../VisualPropertyRender/String'
+import {
+  BooleanSwitch,
+  Boolean as BooleanRender,
+} from '../VisualPropertyRender/Boolean'
 
 const type2RenderFnMap: Record<
   VisualPropertyValueTypeString,
@@ -82,11 +106,16 @@ const type2RenderFnMap: Record<
   },
 }
 
-export function ClickableVisualPropertyValue(props: {
+interface VisualPropertyValueFormProps {
   visualProperty: VisualProperty<VisualPropertyValueType>
   currentValue: VisualPropertyValueType
   onValueChange: (newValue: VisualPropertyValueType) => void
-}): React.ReactElement {
+}
+
+// this component combines rendering vp values and a mechanism to mutate them via popover
+export function VisualPropertyValueForm(
+  props: VisualPropertyValueFormProps,
+): React.ReactElement {
   const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
 
   const showValuePicker = (value: Element | null): void => {
@@ -103,7 +132,7 @@ export function ClickableVisualPropertyValue(props: {
         sx={{
           p: 1,
           m: 1,
-          '&:hover': { border: '1px solid gray', cursor: 'pointer' },
+          '&:hover': { cursor: 'pointer' },
           display: 'flex',
           flexDirection: 'row',
           justifyContent: 'space-between',
@@ -118,9 +147,9 @@ export function ClickableVisualPropertyValue(props: {
         open={valuePicker != null}
         anchorEl={valuePicker}
         onClose={() => showValuePicker(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
-        <Box sx={{ p: 1, m: 1 }}>
+        <Box>
           {(
             type2RenderFnMap[props.visualProperty.type].pickerRender ??
             (() => {})

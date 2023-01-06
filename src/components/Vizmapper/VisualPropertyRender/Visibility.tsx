@@ -1,4 +1,4 @@
-import { VisibilityType } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { VisibilityType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 
 export function VisibilityPicker(props: {

@@ -1,4 +1,4 @@
-import { VerticalAlignType } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { VerticalAlignType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 
 export function VerticalAlignPicker(props: {

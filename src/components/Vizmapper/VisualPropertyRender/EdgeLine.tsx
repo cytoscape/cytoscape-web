@@ -1,10 +1,10 @@
-import { EdgeLineType } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { EdgeLineType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 import {
   DottedLineIcon,
   SolidLineIcon,
   DashedLineIcon,
-} from './VisualStyleIcons'
+} from '../VisualStyleIcons'
 const edgeLineMap: Record<EdgeLineType, React.ReactElement> = {
   solid: <SolidLineIcon />,
   dotted: <DottedLineIcon />,

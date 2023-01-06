@@ -1,4 +1,4 @@
-import { NodeShapeType } from '../../models/VisualStyleModel/VisualPropertyValue'
+import { NodeShapeType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 import {
   EllipseIcon,
@@ -10,7 +10,7 @@ import {
   HexagonIcon,
   ParallelogramIcon,
   VeeIcon,
-} from './VisualStyleIcons'
+} from '../VisualStyleIcons'
 import React from 'react'
 
 const nodeShapeMap: Record<NodeShapeType, React.ReactElement> = {
