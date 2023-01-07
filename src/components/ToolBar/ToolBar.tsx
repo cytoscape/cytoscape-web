@@ -9,8 +9,9 @@ import TuneIcon from '@mui/icons-material/Tune'
 import Avatar from '@mui/material/Avatar'
 
 import { DropdownMenu } from './DropdownMenu'
+import { DataMenu } from './DataMenu'
 
-import logo from '../assets/cytoscape.svg'
+import logo from '../../assets/cytoscape.svg'
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -54,7 +55,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }))
 
-const ToolBar: React.FC = () => {
+export const ToolBar: React.FC = () => {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
@@ -64,7 +65,7 @@ const ToolBar: React.FC = () => {
         >
           <Box sx={{ display: 'flex' }}>
             <img src={logo} />
-            <DropdownMenu label="Data" />
+            <DataMenu label="Data" />
             <DropdownMenu label="Edit" />
             <DropdownMenu label="View" />
             <DropdownMenu label="Select" />
@@ -91,5 +92,3 @@ const ToolBar: React.FC = () => {
     </Box>
   )
 }
-
-export default ToolBar

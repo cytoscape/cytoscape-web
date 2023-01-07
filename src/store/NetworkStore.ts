@@ -21,14 +21,14 @@ interface WorkspaceState {
 /**
  * Actions to mutate network structure
  */
-interface UpdateAction {
+interface UpdateActions {
   addNode: (networkId: IdType, nodeId: IdType) => void
   addNodes: (networkId: IdType, nodeIds: IdType[]) => void
   deleteNode: (networkId: IdType, nodeId: IdType) => void
   addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => void
 }
 
-interface NetworkAction {
+interface NetworkActions {
   add: (network: Network) => void
   delete: (networkId: IdType) => void
   deleteAll: () => void
@@ -41,7 +41,7 @@ interface NetworkAction {
 // }
 
 export const useWorkspaceStore = create(
-  immer<WorkspaceState & NetworkAction & UpdateAction>((set) => ({
+  immer<WorkspaceState & NetworkActions & UpdateActions>((set) => ({
     id: '-' as IdType,
     name: 'workspace',
     networks: {},

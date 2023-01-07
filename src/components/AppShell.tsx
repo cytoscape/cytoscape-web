@@ -1,20 +1,29 @@
-import React, { ReactElement } from 'react'
-import { Outlet } from 'react-router-dom'
-// import { v4 as uuidv4 } from 'uuid'
+import React, { ReactElement, useEffect } from 'react'
+import { Outlet, useNavigate } from 'react-router-dom'
+import { Workspace } from '../models/WorkspaceModel'
+import { useWorkspaceStore } from '../store/WorkspaceStore'
 
-const ToolBar = React.lazy(() => import('./ToolBar'))
+import { ToolBar } from './ToolBar'
 
+/**
+ *
+ * Empty application shell only with a toolbar
+ *
+ */
 const AppShell = (): ReactElement => {
-  // const isWorkspace = true
-  // const navigate = useNavigate()
+  const navigate = useNavigate()
 
-  // useEffect(() => {
-  //   if (isWorkspace) {
-  //     const wsUuid: string = uuidv4()
+  const initWorkspace = useWorkspaceStore((state) => state.init)
+  const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
 
-  //     navigate(`/${wsUuid}`)
-  //   }
-  // }, [isWorkspace])
+  useEffect(() => {
+    const id = workspace.id
+    if (id === '') {
+      initWorkspace()
+    } else {
+      navigate(`/${id}/networks`)
+    }
+  }, [workspace])
 
   return (
     <>
