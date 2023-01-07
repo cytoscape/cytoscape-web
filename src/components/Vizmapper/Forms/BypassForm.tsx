@@ -40,6 +40,8 @@ function BypassFormContent(props: {
         minWidth: '30vw',
         minHeight: '30vh',
       }}
+      // make sure there is no hovered component when the mouse leaves the bypass form
+      onMouseLeave={() => setHovered(props.currentNetworkId, null)}
     >
       <Typography variant="body1">{`${visualProperty.displayName} bypasses`}</Typography>
 

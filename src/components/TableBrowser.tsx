@@ -15,6 +15,7 @@ import {
   AttributeName,
 } from '../models/TableModel'
 import { useTableStore } from '../store/TableStore'
+import { useViewModelStore } from '../store/ViewModelStore'
 import { IdType } from '../models/IdType'
 
 import {
@@ -215,6 +216,7 @@ export default function TableBrowser(props: {
   const isOpen = menu !== undefined
 
   const networkId = props.currentNetworkId
+  const setHovered = useViewModelStore((state) => state.setHovered)
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
@@ -291,11 +293,6 @@ export default function TableBrowser(props: {
   const getContent = React.useCallback(
     (cell: Item): GridCell => {
       const [columnIndex, rowIndex] = cell
-      // const minId = currentTable === nodeTable ? minNodeId : minEdgeId
-      // const rowKey =
-      //   currentTable === nodeTable
-      //     ? +rowIndex + minId
-      //     : translateCXEdgeId(`${+rowIndex + minId}`)
       const dataRow = rows[rowIndex]
       const column = columns[columnIndex]
       const columnKey = column.id
@@ -339,6 +336,19 @@ export default function TableBrowser(props: {
       }
     },
     [props.currentNetworkId, currentTable, tables, sort],
+  )
+
+  const onItemHovered = React.useCallback(
+    (cell: Item) => {
+      const rowIndex = cell[1]
+      const rowData = rows[rowIndex]
+      const eleId =
+        currentTable === nodeTable
+          ? rowData.cxId
+          : translateCXEdgeId(`${rowData.cxId as string}`)
+      setHovered(props.currentNetworkId, String(eleId))
+    },
+    [props.currentNetworkId, currentTable, tables],
   )
 
   const onCellEdited = React.useCallback(
@@ -435,22 +445,25 @@ export default function TableBrowser(props: {
         <Button onClick={() => setShowSearch(!showSearch)}>
           Toggle Search
         </Button>
-        <DataEditor
-          rowMarkers={'both'}
-          rowMarkerStartIndex={minNodeId}
-          showSearch={showSearch}
-          keybindings={{ search: true }}
-          getCellsForSelection={true}
-          onSearchClose={onSearchClose}
-          onHeaderMenuClick={onHeaderMenuClick}
-          onHeaderClicked={onHeaderClicked}
-          width={props.width}
-          height={props.height}
-          getCellContent={getContent}
-          onCellEdited={onCellEdited}
-          columns={columns}
-          rows={maxNodeId - minNodeId}
-        />
+        <Box onMouseLeave={() => setHovered(props.currentNetworkId, null)}>
+          <DataEditor
+            rowMarkers={'both'}
+            rowMarkerStartIndex={minNodeId}
+            showSearch={showSearch}
+            keybindings={{ search: true }}
+            getCellsForSelection={true}
+            onSearchClose={onSearchClose}
+            onHeaderMenuClick={onHeaderMenuClick}
+            onHeaderClicked={onHeaderClicked}
+            onItemHovered={(e) => onItemHovered(e.location)}
+            width={props.width}
+            height={props.height}
+            getCellContent={getContent}
+            onCellEdited={onCellEdited}
+            columns={columns}
+            rows={maxNodeId - minNodeId}
+          />
+        </Box>
         {isOpen &&
           renderLayer(
             <Card
@@ -527,22 +540,25 @@ export default function TableBrowser(props: {
           Toggle Search
         </Button>
 
-        <DataEditor
-          rowMarkers={'both'}
-          rowMarkerStartIndex={minEdgeId}
-          showSearch={showSearch}
-          keybindings={{ search: true }}
-          getCellsForSelection={true}
-          onSearchClose={onSearchClose}
-          onHeaderMenuClick={onHeaderMenuClick}
-          onHeaderClicked={onHeaderClicked}
-          width={props.width}
-          height={props.height}
-          getCellContent={getContent}
-          onCellEdited={onCellEdited}
-          columns={columns}
-          rows={maxEdgeId - minEdgeId}
-        />
+        <Box onMouseLeave={() => setHovered(props.currentNetworkId, null)}>
+          <DataEditor
+            rowMarkers={'both'}
+            rowMarkerStartIndex={minEdgeId}
+            showSearch={showSearch}
+            keybindings={{ search: true }}
+            getCellsForSelection={true}
+            onSearchClose={onSearchClose}
+            onHeaderMenuClick={onHeaderMenuClick}
+            onHeaderClicked={onHeaderClicked}
+            onItemHovered={(e) => onItemHovered(e.location)}
+            width={props.width}
+            height={props.height}
+            getCellContent={getContent}
+            onCellEdited={onCellEdited}
+            columns={columns}
+            rows={maxEdgeId - minEdgeId}
+          />
+        </Box>
         {isOpen &&
           renderLayer(
             <Card
