@@ -80,11 +80,13 @@ function MappingFormContent(props: {
               sx={{
                 display: 'flex',
                 flexDirection: 'row',
-                justifyContent: 'space-between',
+                alignItems: 'center',
               }}
               key={String(value)}
             >
-              <Box>{String(value)}</Box>
+              <Box sx={{ width: 100, overflowX: 'scroll', ml: 1 }}>
+                {String(value)}
+              </Box>
               <VisualPropertyValueForm
                 currentValue={vpValue}
                 onValueChange={(newValue: VisualPropertyValueType) => {
@@ -98,6 +100,7 @@ function MappingFormContent(props: {
                 visualProperty={props.visualProperty}
               />
               <CloseIcon
+                sx={{ '&:hover': { cursor: 'pointer' } }}
                 onClick={() =>
                   deleteDiscreteMappingValue(
                     props.currentNetworkId,
@@ -141,6 +144,10 @@ function MappingFormContent(props: {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
+        width: '400px',
+        height: '400px',
+        minWidth: '30vw',
+        minHeight: '30vh',
       }}
     >
       <Box

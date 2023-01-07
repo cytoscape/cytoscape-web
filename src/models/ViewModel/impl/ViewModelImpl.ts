@@ -34,5 +34,6 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
     id,
     nodeViews,
     edgeViews,
+    hoveredElement: null,
   }
 }

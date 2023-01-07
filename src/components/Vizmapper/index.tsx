@@ -147,6 +147,11 @@ export default function VizmapperView(props: {
         <Tab label={<Typography variant="caption">Edges</Typography>} />
         <Tab label={<Typography variant="caption">Network</Typography>} />
       </Tabs>
+      <Box sx={{ display: 'flex', p: 1 }}>
+        <Box sx={{ width: 50, textAlign: 'center', mr: 1 }}>Def.</Box>
+        <Box sx={{ width: 50, textAlign: 'center', mr: 1 }}>Map.</Box>
+        <Box sx={{ width: 50, textAlign: 'center' }}>Byp.</Box>
+      </Box>
       <div hidden={currentTabIndex !== 0}>
         {currentTabIndex === 0 && <Box>{nodeVps}</Box>}
       </div>

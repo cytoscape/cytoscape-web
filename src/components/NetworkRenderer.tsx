@@ -32,6 +32,9 @@ export default function NetworkRenderer(
   const setSelected = useViewModelStore((state) => state.setSelected)
   const network = networks[currentNetworkId]
   const networkView = viewModels[currentNetworkId]
+  const nodeViews = networkView?.nodeViews
+  const edgeViews = networkView?.edgeViews
+  const hoveredElement = networkView?.hoveredElement
   const vs = visualStyles[currentNetworkId]
   const table = tables[currentNetworkId]
 
@@ -82,6 +85,10 @@ export default function NetworkRenderer(
   }
 
   const applyStyleUpdate = (): void => {
+    if (nodeViews == null || edgeViews == null || vs == null || table == null) {
+      return
+    }
+
     if (cy != null) {
       cy.startBatch()
 
@@ -112,6 +119,17 @@ export default function NetworkRenderer(
     }
   }
 
+  const applyHoverStyle = (): void => {
+    if (cy != null) {
+      cy.nodes().removeClass('hovered')
+      cy.edges().removeClass('hovered')
+
+      if (hoveredElement != null) {
+        cy.getElementById(hoveredElement).addClass('hovered')
+      }
+    }
+  }
+
   // when the currentNetworkId changes, reset the cyjs element by
   // removing all elements and event listeners
   // this assumes we have a new network to render that was different from the current one
@@ -122,16 +140,21 @@ export default function NetworkRenderer(
     [currentNetworkId, network],
   )
 
+  // when the visual style model, table model, or edge/node views change re-render cy.js style
   React.useEffect(
     debounce(() => {
       applyStyleUpdate()
     }, 200),
-    [vs, table, networkView],
+    [vs, table, edgeViews, nodeViews],
   )
 
-  // React.useEffect(() => {
-  //   loadAndRenderNetwork()
-  // }, [props.currentNetworkId, vs, table])
+  // when hovered element changes, apply hover style to that element
+  React.useEffect(
+    debounce(() => {
+      applyHoverStyle()
+    }, 200),
+    [hoveredElement],
+  )
 
   React.useEffect(() => {
     const cy: Core = Cytoscape({

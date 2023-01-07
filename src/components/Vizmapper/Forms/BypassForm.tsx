@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Box, Popover } from '@mui/material'
+import { Box, Popover, Typography } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 
 import { IdType } from '../../../models/IdType'
@@ -23,6 +23,7 @@ function BypassFormContent(props: {
   const networkView = viewModels[currentNetworkId]
   const setBypass = useVisualStyleStore((state) => state.setBypass)
   const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
+  const setHovered = useViewModelStore((state) => state.setHovered)
   const tables = useTableStore((state) => state.tables)
   const table = tables[currentNetworkId]
   const nodeTable = table?.nodeTable
@@ -34,8 +35,14 @@ function BypassFormContent(props: {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
+        width: '400px',
+        height: '400px',
+        minWidth: '30vw',
+        minHeight: '30vh',
       }}
     >
+      <Typography variant="body1">{`${visualProperty.displayName} bypasses`}</Typography>
+
       <Box
         sx={{
           display: 'flex',
@@ -47,6 +54,7 @@ function BypassFormContent(props: {
       >
         <Box
           sx={{
+            p: 1,
             m: 1,
             border: '1px solid gray',
             maxHeight: '300px',
@@ -86,6 +94,8 @@ function BypassFormContent(props: {
               const name = eleTable.rows.get(eleId)?.name
               return (
                 <Box
+                  onMouseEnter={() => setHovered(props.currentNetworkId, eleId)}
+                  onMouseLeave={() => setHovered(props.currentNetworkId, null)}
                   sx={{
                     display: 'flex',
                     flexDirection: 'row',
@@ -168,7 +178,13 @@ export function BypassForm(props: {
   return (
     <Box>
       <Box
-        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        sx={{
+          width: 48,
+          height: 48,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
         onClick={(e) => showForm(e.currentTarget)}
       >
         {props.visualProperty.bypassMap != null ? '+' : '-'}

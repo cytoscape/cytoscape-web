@@ -408,6 +408,15 @@ export const createCyJsStyleSheetView = (
         'underlay-opacity': 0.5,
       },
     },
+    {
+      selector: '.hovered',
+      style: {
+        'underlay-color': 'red',
+        'underlay-padding': 10,
+        'underlay-opacity': 0.8,
+        'z-index': 1,
+      },
+    },
   ]
   const cyNodes = network.nodes.map((node) => {
     const positionX = networkView.nodeViews[node.id]?.x ?? 0
