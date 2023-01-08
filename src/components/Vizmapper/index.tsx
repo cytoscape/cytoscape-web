@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { Box, Typography, Tabs, Tab } from '@mui/material'
-import { styled } from '@mui/material/styles'
 
 import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
@@ -14,22 +13,6 @@ import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { MappingForm } from './Forms/MappingForm'
 import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
-
-const VisualPropertyViewBox = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(1),
-  marginRight: theme.spacing(1),
-  height: 50,
-  width: 50,
-  border: '1px solid gray',
-  borderRadius: '20%',
-  '&:hover': {
-    cursor: 'pointer',
-    border: '3px solid gray',
-  },
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-}))
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -46,24 +29,21 @@ function VisualPropertyView(props: {
         p: 1,
       }}
     >
-      <VisualPropertyViewBox>
-        <DefaultValueForm
-          visualProperty={visualProperty}
-          currentNetworkId={currentNetworkId}
-        />
-      </VisualPropertyViewBox>
-      <VisualPropertyViewBox>
-        <MappingForm
-          currentNetworkId={currentNetworkId}
-          visualProperty={visualProperty}
-        />
-      </VisualPropertyViewBox>
-      <VisualPropertyViewBox>
-        <BypassForm
-          currentNetworkId={currentNetworkId}
-          visualProperty={visualProperty}
-        />
-      </VisualPropertyViewBox>
+      <DefaultValueForm
+        sx={{ mr: 1 }}
+        visualProperty={visualProperty}
+        currentNetworkId={currentNetworkId}
+      />
+      <MappingForm
+        sx={{ mr: 1 }}
+        currentNetworkId={currentNetworkId}
+        visualProperty={visualProperty}
+      />
+      <BypassForm
+        sx={{ mr: 1 }}
+        currentNetworkId={currentNetworkId}
+        visualProperty={visualProperty}
+      />
       <Box sx={{ ml: 1 }}>{visualProperty.displayName}</Box>
     </Box>
   )

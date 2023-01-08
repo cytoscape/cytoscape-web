@@ -44,6 +44,8 @@ import {
   Boolean as BooleanRender,
 } from '../VisualPropertyRender/Boolean'
 
+import { VisualPropertyViewBox } from './VisualPropertyViewBox'
+
 const type2RenderFnMap: Record<
   VisualPropertyValueTypeString,
   {
@@ -76,7 +78,7 @@ const type2RenderFnMap: Record<
     pickerRender: FontPicker,
     valueRender: Font,
   },
-  horizontalALign: {
+  horizontalAlign: {
     pickerRender: HoritzontalAlignPicker,
     valueRender: HorizontalAlign,
   },
@@ -106,6 +108,23 @@ const type2RenderFnMap: Record<
   },
 }
 
+interface VisualPropertyRenderProps {
+  value: VisualPropertyValueType
+  vpValueType: VisualPropertyValueTypeString
+}
+
+export function VisualPropertyValueRender(
+  props: VisualPropertyRenderProps,
+): React.ReactElement {
+  return (
+    <VisualPropertyViewBox>
+      {type2RenderFnMap[props.vpValueType].valueRender({
+        value: props.value,
+      })}
+    </VisualPropertyViewBox>
+  )
+}
+
 interface VisualPropertyValueFormProps {
   visualProperty: VisualProperty<VisualPropertyValueType>
   currentValue: VisualPropertyValueType
@@ -123,25 +142,22 @@ export function VisualPropertyValueForm(
   }
 
   if (type2RenderFnMap[props.visualProperty.type] == null) {
+    console.log(
+      props.visualProperty,
+      props.visualProperty.type,
+      type2RenderFnMap[props.visualProperty.type],
+    )
+
     return <Box></Box>
   }
 
   return (
     <Box>
-      <Box
-        sx={{
-          p: 1,
-          m: 1,
-          '&:hover': { cursor: 'pointer' },
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-        }}
-        onClick={(e) => showValuePicker(e.currentTarget)}
-      >
-        {type2RenderFnMap[props.visualProperty.type].valueRender({
-          value: props.currentValue,
-        })}
+      <Box onClick={(e) => showValuePicker(e.currentTarget)}>
+        <VisualPropertyValueRender
+          value={props.currentValue}
+          vpValueType={props.visualProperty.type}
+        />
       </Box>
       <Popover
         open={valuePicker != null}

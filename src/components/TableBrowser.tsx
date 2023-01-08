@@ -342,11 +342,14 @@ export default function TableBrowser(props: {
     (cell: Item) => {
       const rowIndex = cell[1]
       const rowData = rows[rowIndex]
-      const eleId =
-        currentTable === nodeTable
-          ? rowData.cxId
-          : translateCXEdgeId(`${rowData.cxId as string}`)
-      setHovered(props.currentNetworkId, String(eleId))
+      const cxId = rowData?.cxId
+      if (cxId != null) {
+        const eleId =
+          currentTable === nodeTable
+            ? rowData.cxId
+            : translateCXEdgeId(`${rowData.cxId as string}`)
+        setHovered(props.currentNetworkId, String(eleId))
+      }
     },
     [props.currentNetworkId, currentTable, tables],
   )

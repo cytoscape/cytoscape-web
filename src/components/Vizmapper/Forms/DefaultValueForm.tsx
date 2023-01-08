@@ -1,3 +1,5 @@
+import { SxProps, Box } from '@mui/material'
+
 import {
   VisualProperty,
   VisualPropertyValueType,
@@ -11,17 +13,20 @@ import { VisualPropertyValueForm } from './VisualPropertyValueForm'
 export function DefaultValueForm(props: {
   visualProperty: VisualProperty<VisualPropertyValueType>
   currentNetworkId: IdType
+  sx?: SxProps
 }): React.ReactElement {
   const { visualProperty, currentNetworkId } = props
   const setDefault = useVisualStyleStore((state) => state.setDefault)
 
   return (
-    <VisualPropertyValueForm
-      visualProperty={visualProperty}
-      currentValue={visualProperty.defaultValue}
-      onValueChange={(newValue) =>
-        setDefault(currentNetworkId, visualProperty.name, newValue)
-      }
-    />
+    <Box sx={props.sx ?? {}}>
+      <VisualPropertyValueForm
+        visualProperty={visualProperty}
+        currentValue={visualProperty.defaultValue}
+        onValueChange={(newValue) =>
+          setDefault(currentNetworkId, visualProperty.name, newValue)
+        }
+      />
+    </Box>
   )
 }

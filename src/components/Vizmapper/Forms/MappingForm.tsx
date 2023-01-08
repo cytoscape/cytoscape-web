@@ -6,6 +6,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  SxProps,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 
@@ -31,6 +32,11 @@ import {
   ContinuousMappingFunctionIcon,
 } from '../VisualStyleIcons'
 import { VisualPropertyValueForm } from './VisualPropertyValueForm'
+
+import {
+  EmptyVisualPropertyViewBox,
+  VisualPropertyViewBox,
+} from './VisualPropertyViewBox'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   passthrough: <PassthroughMappingFunctionIcon />,
@@ -204,22 +210,28 @@ function MappingFormContent(props: {
 export function MappingForm(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
+  sx?: SxProps
 }): React.ReactElement {
   const [formAnchorEl, setFormAnchorEl] = React.useState<Element | null>(null)
 
   const showForm = (value: Element | null): void => {
     setFormAnchorEl(value)
   }
-  return (
-    <Box>
-      <Box
-        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        onClick={(e) => showForm(e.currentTarget)}
-      >
+  const viewBox =
+    props.visualProperty.mapping?.type == null ? (
+      <EmptyVisualPropertyViewBox onClick={(e) => showForm(e.currentTarget)}>
+        {'+'}
+      </EmptyVisualPropertyViewBox>
+    ) : (
+      <VisualPropertyViewBox onClick={(e) => showForm(e.currentTarget)}>
         {props.visualProperty.mapping?.type != null
           ? mappingFnIconMap[props.visualProperty.mapping?.type]
           : '+'}{' '}
-      </Box>
+      </VisualPropertyViewBox>
+    )
+  return (
+    <Box sx={props.sx ?? {}}>
+      {viewBox}
       <Popover
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}

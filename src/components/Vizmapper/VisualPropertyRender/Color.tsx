@@ -32,8 +32,8 @@ export function Color(props: { value: ColorType }): React.ReactElement {
       sx={{
         backgroundColor: props.value,
         flex: 1,
-        width: 45,
-        height: 45,
+        width: 50,
+        height: 50,
         borderRadius: '20%',
       }}
     ></Box>

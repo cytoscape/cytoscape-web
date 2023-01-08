@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Box, Popover, Typography, Button } from '@mui/material'
+import { Box, Popover, Typography, Button, SxProps, Badge } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 
 import { IdType } from '../../../models/IdType'
@@ -12,7 +12,14 @@ import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useTableStore } from '../../../store/TableStore'
 
-import { VisualPropertyValueForm } from './VisualPropertyValueForm'
+import {
+  VisualPropertyValueForm,
+  VisualPropertyValueRender,
+} from './VisualPropertyValueForm'
+import {
+  EmptyVisualPropertyViewBox,
+  VisualPropertyViewBox,
+} from './VisualPropertyViewBox'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType
@@ -111,7 +118,7 @@ function BypassFormContent(props: {
                 })
               ) : (
                 <Typography variant="caption">
-                  Select nodes to apply a style bypass to them
+                  Select nodes to create a style bypass
                 </Typography>
               )
             ) : null}
@@ -146,7 +153,7 @@ function BypassFormContent(props: {
                 })
               ) : (
                 <Typography variant="caption">
-                  Select edges to apply a style bypass to them
+                  Select edges to create a style bypass
                 </Typography>
               )
             ) : null}
@@ -249,6 +256,7 @@ function BypassFormContent(props: {
 export function BypassForm(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
+  sx?: SxProps
 }): React.ReactElement {
   const [formAnchorEl, setFormAnchorEl] = React.useState<Element | null>(null)
 
@@ -256,20 +264,34 @@ export function BypassForm(props: {
     setFormAnchorEl(value)
   }
 
-  return (
-    <Box>
-      <Box
-        sx={{
-          width: 48,
-          height: 48,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-        onClick={(e) => showForm(e.currentTarget)}
+  const noBypasses = props.visualProperty.bypassMap?.size === 0
+
+  let viewBox = null
+
+  if (noBypasses) {
+    viewBox = (
+      <EmptyVisualPropertyViewBox onClick={(e) => showForm(e.currentTarget)} />
+    )
+  } else {
+    viewBox = (
+      <Badge
+        color="primary"
+        badgeContent={props.visualProperty.bypassMap.size}
+        invisible={props.visualProperty.bypassMap.size <= 1}
       >
-        {props.visualProperty.bypassMap != null ? '+' : '-'}
-      </Box>
+        <VisualPropertyViewBox onClick={(e) => showForm(e.currentTarget)}>
+          <VisualPropertyValueRender
+            value={Array.from(props.visualProperty.bypassMap.values())[0]}
+            vpValueType={props.visualProperty.type}
+          />
+        </VisualPropertyViewBox>
+      </Badge>
+    )
+  }
+
+  return (
+    <Box sx={props.sx ?? {}}>
+      {viewBox}
       <Popover
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
