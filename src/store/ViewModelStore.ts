@@ -21,6 +21,7 @@ interface ViewModelAction {
   setViewModel: (networkId: IdType, networkView: NetworkView) => void
   setSelected: (networkId: IdType, ids: IdType[]) => void
   setHovered: (networkId: IdType, eleToHover: IdType | null) => void
+  toggleSelected: (networkId: IdType, eles: IdType[]) => void
 }
 
 export const useViewModelStore = create(
@@ -59,6 +60,21 @@ export const useViewModelStore = create(
         if (networkView != null) {
           networkView.hoveredElement = eleToHover
         }
+      })
+    },
+    toggleSelected: (networkId: IdType, eles: IdType[]) => {
+      set((state) => {
+        eles.forEach((id) => {
+          const nodeView = state.viewModels[networkId]?.nodeViews[id]
+          const edgeView = state.viewModels[networkId]?.edgeViews[id]
+          if (nodeView != null) {
+            nodeView.selected = !(nodeView.selected ?? false)
+          } else {
+            if (edgeView != null) {
+              edgeView.selected = !(edgeView.selected ?? false)
+            }
+          }
+        })
       })
     },
   })),

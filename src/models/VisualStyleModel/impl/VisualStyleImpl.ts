@@ -421,6 +421,7 @@ export const createCyJsStyleSheetView = (
   const cyNodes = network.nodes.map((node) => {
     const positionX = networkView.nodeViews[node.id]?.x ?? 0
     const positionY = networkView.nodeViews[node.id]?.y ?? 0
+    const selected = networkView.nodeViews[node.id].selected ?? false
 
     return {
       group: 'nodes' as ElementGroup,
@@ -431,6 +432,7 @@ export const createCyJsStyleSheetView = (
         x: positionX,
         y: positionY,
       },
+      selected,
     }
   })
 
@@ -442,6 +444,7 @@ export const createCyJsStyleSheetView = (
         source: edge.s,
         target: edge.t,
       },
+      selected: networkView.edgeViews[edge.id].selected ?? false,
     }
 
     return cyEdge

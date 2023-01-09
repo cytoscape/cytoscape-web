@@ -115,6 +115,23 @@ export default function NetworkRenderer(
         cy.getElementById(edgeId).style(bypass)
       })
 
+      Object.values(nodeViews).forEach((nv) => {
+        const ele = cy.getElementById(nv.id)
+        if (nv.selected ?? false) {
+          ele.select()
+        } else {
+          ele.unselect()
+        }
+      })
+      Object.values(edgeViews).forEach((ev) => {
+        const ele = cy.getElementById(ev.id)
+        if (ev.selected ?? false) {
+          ele.select()
+        } else {
+          ele.unselect()
+        }
+      })
+
       cy.endBatch()
     }
   }

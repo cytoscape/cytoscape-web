@@ -17,6 +17,7 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
   cxNodes.forEach((node: CxNode) => {
     nodeViews[node.id.toString()] = {
       id: node.id.toString(),
+      selected: false,
       ...(node.x != null ? { x: node.x } : {}),
       ...(node.y != null ? { y: node.y } : {}),
       ...(node.z != null ? { z: node.z } : {}),
@@ -27,6 +28,7 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
     const translatedId = translateCXEdgeId(edge.id.toString())
     edgeViews[translatedId] = {
       id: translatedId,
+      selected: false,
     }
   })
 
