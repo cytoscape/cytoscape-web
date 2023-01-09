@@ -1,6 +1,16 @@
 import * as React from 'react'
-import { Box, Popover, Typography, Button, SxProps, Badge } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
+import {
+  Box,
+  Popover,
+  Typography,
+  Button,
+  SxProps,
+  Badge,
+  IconButton,
+  Checkbox,
+  FormControlLabel,
+} from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
 
 import { IdType } from '../../../models/IdType'
 import {
@@ -35,6 +45,7 @@ function BypassFormContent(props: {
   const setBypass = useVisualStyleStore((state) => state.setBypass)
   const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
   const setHovered = useViewModelStore((state) => state.setHovered)
+  const toggleSelected = useViewModelStore((state) => state.toggleSelected)
   const tables = useTableStore((state) => state.tables)
   const table = tables[currentNetworkId]
   const nodeTable = table?.nodeTable
@@ -50,6 +61,133 @@ function BypassFormContent(props: {
     (selectedNodes.length > 0 && visualProperty.group === 'node') ||
     (selectedEdges.length > 0 && visualProperty.group === 'edge')
 
+  // get union of selected elements and bypass elements
+  // put all selected elements first (even if they have a bypass)
+  // render all elements, if they dont have a bypass, leave it empty
+  const selectedElements =
+    visualProperty.group === 'node' ? selectedNodes : selectedEdges
+
+  const selectedElementTable =
+    visualProperty.group === 'node' ? nodeTable : edgeTable
+
+  const bypassElementIds = new Set(visualProperty?.bypassMap?.keys() ?? [])
+
+  const elementsToRender: Array<{
+    id: IdType
+    name: string
+    selected: boolean
+    hasBypass: boolean
+  }> = []
+
+  selectedElements.forEach((e) => {
+    elementsToRender.push({
+      id: e.id,
+      selected: e.selected ?? false,
+      name: (selectedElementTable.rows.get(e.id)?.name ?? '') as string,
+
+      hasBypass: visualProperty?.bypassMap.has(e.id) ?? false,
+    })
+
+    if (bypassElementIds.has(e.id)) {
+      bypassElementIds.delete(e.id)
+    }
+  })
+
+  Array.from(bypassElementIds).forEach((eleId) => {
+    elementsToRender.push({
+      id: eleId,
+      selected: false,
+      name: (selectedElementTable.rows.get(eleId)?.name ?? '') as string,
+
+      hasBypass: true,
+    })
+  })
+
+  const emptyBypassForm = (
+    <>
+      <Typography>Select network elements to apply a bypass</Typography>
+    </>
+  )
+
+  const nonEmptyBypassForm = (
+    <>
+      <Box sx={{ height: 250, overflow: 'scroll' }}>
+        {elementsToRender.map((ele) => {
+          const { id, selected, hasBypass, name } = ele
+          const bypassValue = visualProperty.bypassMap?.get(id)
+
+          const viewBox =
+            bypassValue != null ? (
+              <VisualPropertyValueForm
+                visualProperty={visualProperty}
+                currentValue={bypassValue}
+                onValueChange={(value) => {
+                  setBypass(currentNetworkId, visualProperty.name, [id], value)
+                }}
+              />
+            ) : (
+              <EmptyVisualPropertyViewBox />
+            )
+
+          return (
+            <Box
+              onMouseEnter={() => setHovered(props.currentNetworkId, id)}
+              onMouseLeave={() => setHovered(props.currentNetworkId, null)}
+              sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 1,
+              }}
+              key={id}
+            >
+              <FormControlLabel
+                onClick={() => toggleSelected(currentNetworkId, [id])}
+                control={<Checkbox checked={selected} />}
+                label="Selected"
+              />
+              <Box sx={{ width: 100, mr: 1 }}>{name}</Box>
+              {viewBox}
+              <IconButton
+                onClick={() => {
+                  deleteBypass(currentNetworkId, visualProperty.name, [id])
+                  setHovered(currentNetworkId, null)
+                }}
+                disabled={!hasBypass}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          )
+        })}
+      </Box>
+      <Box sx={{ p: 1, m: 1, mr: 1, display: 'flex', justifyContent: 'end' }}>
+        <VisualPropertyValueForm
+          visualProperty={visualProperty}
+          currentValue={bypassValue}
+          onValueChange={(newBypassValue: VisualPropertyValueType): void =>
+            setBypassValue(newBypassValue)
+          }
+        />
+        <Button
+          disabled={!validElementsSelected}
+          onClick={() => {
+            const selectedElementIds = selectedElements.map((e) => e.id)
+            setBypass(
+              currentNetworkId,
+              visualProperty.name,
+              selectedElementIds,
+              bypassValue,
+            )
+          }}
+        >
+          Apply bypass to selected
+        </Button>
+      </Box>
+    </>
+  )
+
   return (
     <Box
       sx={{
@@ -59,6 +197,7 @@ function BypassFormContent(props: {
         height: '400px',
         minWidth: '30vw',
         minHeight: '30vh',
+        overflow: 'scroll',
       }}
       // make sure there is no hovered component when the mouse leaves the bypass form
       onMouseLeave={() => setHovered(props.currentNetworkId, null)}
@@ -67,187 +206,8 @@ function BypassFormContent(props: {
         sx={{ m: 1 }}
         variant="h6"
       >{`${visualProperty.displayName} bypasses`}</Typography>
-
-      <Box
-        sx={{
-          p: 1,
-          m: 1,
-          border: '1px solid gray',
-          maxHeight: '300px',
-          overflow: 'scroll',
-        }}
-      >
-        <Box>Create Bypasses</Box>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'start',
-          }}
-        >
-          <Box sx={{ width: '200px', border: '1px solid gray', m: 1 }}>
-            <Box>Selected Elements</Box>
-            {visualProperty.group === 'node' ? (
-              selectedNodes.length > 0 ? (
-                selectedNodes.map((nodeView) => {
-                  const eleTable =
-                    visualProperty.group === 'node' ? nodeTable : edgeTable
-                  const name = eleTable.rows.get(nodeView.id)?.name
-                  return (
-                    <Box
-                      onMouseEnter={() =>
-                        setHovered(props.currentNetworkId, nodeView.id)
-                      }
-                      onMouseLeave={() =>
-                        setHovered(props.currentNetworkId, null)
-                      }
-                      sx={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                      key={nodeView.id}
-                    >
-                      <Box
-                        sx={{ width: 50, m: 1 }}
-                      >{`${visualProperty.group}:  ${nodeView.id}`}</Box>
-                      <Box sx={{ width: 50, m: 1 }}>{name}</Box>
-                    </Box>
-                  )
-                })
-              ) : (
-                <Typography variant="caption">
-                  Select nodes to create a style bypass
-                </Typography>
-              )
-            ) : null}
-            {visualProperty.group === 'edge' ? (
-              selectedEdges.length > 0 ? (
-                selectedEdges.map((edgeView) => {
-                  const eleTable =
-                    visualProperty.group === 'node' ? nodeTable : edgeTable
-                  const name = eleTable.rows.get(edgeView.id)?.name
-                  return (
-                    <Box
-                      onMouseEnter={() =>
-                        setHovered(props.currentNetworkId, edgeView.id)
-                      }
-                      onMouseLeave={() =>
-                        setHovered(props.currentNetworkId, null)
-                      }
-                      sx={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                      key={edgeView.id}
-                    >
-                      <Box
-                        sx={{ width: 50, m: 1 }}
-                      >{`${visualProperty.group}:  ${edgeView.id}`}</Box>
-                      <Box sx={{ width: 50, m: 1 }}>{name}</Box>
-                    </Box>
-                  )
-                })
-              ) : (
-                <Typography variant="caption">
-                  Select edges to create a style bypass
-                </Typography>
-              )
-            ) : null}
-          </Box>
-          <Box sx={{ width: '200px', border: '1px solid gray', m: 1 }}>
-            <Box>Bypass Value</Box>
-            {validElementsSelected ? (
-              <Box>
-                <VisualPropertyValueForm
-                  visualProperty={visualProperty}
-                  currentValue={bypassValue}
-                  onValueChange={(
-                    newBypassValue: VisualPropertyValueType,
-                  ): void => setBypassValue(newBypassValue)}
-                />
-              </Box>
-            ) : null}
-          </Box>
-        </Box>
-        <Button
-          disabled={!validElementsSelected}
-          onClick={() => {
-            let ids: IdType[] = []
-            const nodeIds = Object.values(networkView?.nodeViews)
-              .filter((nodeView) => nodeView.selected)
-              .map((nodeView) => nodeView.id)
-            const edgeIds = Object.values(networkView?.edgeViews)
-              .filter((edgeView) => edgeView.selected)
-              .map((edgeView) => edgeView.id)
-            if (visualProperty.group === 'node') {
-              ids = nodeIds
-            } else if (visualProperty.group === 'edge') {
-              ids = edgeIds
-            }
-            setBypass(currentNetworkId, visualProperty.name, ids, bypassValue)
-          }}
-        >
-          Apply bypass to selected elements
-        </Button>
-      </Box>
-      <Box
-        sx={{
-          p: 1,
-          m: 1,
-          border: '1px solid gray',
-          maxHeight: '300px',
-          overflow: 'scroll',
-        }}
-      >
-        <Box>Edit Bypasses</Box>
-        {Array.from(visualProperty?.bypassMap?.entries() ?? []).map(
-          ([eleId, value]) => {
-            const eleTable =
-              visualProperty.group === 'node' ? nodeTable : edgeTable
-            const name = eleTable.rows.get(eleId)?.name
-            return (
-              <Box
-                onMouseEnter={() => setHovered(props.currentNetworkId, eleId)}
-                onMouseLeave={() => setHovered(props.currentNetworkId, null)}
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-                key={eleId}
-              >
-                <Box
-                  sx={{ width: 50, m: 1 }}
-                >{`${visualProperty.group}:  ${eleId}`}</Box>
-                <Box sx={{ width: 50, m: 1 }}>{name}</Box>
-                <VisualPropertyValueForm
-                  visualProperty={visualProperty}
-                  currentValue={value}
-                  onValueChange={(value) => {
-                    setBypass(
-                      currentNetworkId,
-                      visualProperty.name,
-                      [eleId],
-                      value,
-                    )
-                  }}
-                />
-                <CloseIcon
-                  sx={{ '&:hover': { cursor: 'pointer' } }}
-                  onClick={() => {
-                    deleteBypass(currentNetworkId, visualProperty.name, [eleId])
-                    setHovered(currentNetworkId, null)
-                  }}
-                />
-              </Box>
-            )
-          },
-        )}
+      <Box sx={{ p: 1, m: 1 }}>
+        {elementsToRender.length > 0 ? nonEmptyBypassForm : emptyBypassForm}
       </Box>
     </Box>
   )
@@ -269,9 +229,7 @@ export function BypassForm(props: {
   let viewBox = null
 
   if (noBypasses) {
-    viewBox = (
-      <EmptyVisualPropertyViewBox onClick={(e) => showForm(e.currentTarget)} />
-    )
+    viewBox = <EmptyVisualPropertyViewBox />
   } else {
     viewBox = (
       <Badge
@@ -279,7 +237,7 @@ export function BypassForm(props: {
         badgeContent={props.visualProperty.bypassMap.size}
         invisible={props.visualProperty.bypassMap.size <= 1}
       >
-        <VisualPropertyViewBox onClick={(e) => showForm(e.currentTarget)}>
+        <VisualPropertyViewBox>
           <VisualPropertyValueRender
             value={Array.from(props.visualProperty.bypassMap.values())[0]}
             vpValueType={props.visualProperty.type}
@@ -291,7 +249,7 @@ export function BypassForm(props: {
 
   return (
     <Box sx={props.sx ?? {}}>
-      {viewBox}
+      <Box onClick={(e) => showForm(e.currentTarget)}>{viewBox}</Box>
       <Popover
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}

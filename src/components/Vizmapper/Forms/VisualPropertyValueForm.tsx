@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Box, Popover } from '@mui/material'
+import { Box, Popover, Typography } from '@mui/material'
 
 import {
   VisualProperty,
@@ -166,14 +166,20 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box>
-          {(
-            type2RenderFnMap[props.visualProperty.type].pickerRender ??
-            (() => {})
-          )({
-            onValueChange: (value: VisualPropertyValueType) =>
-              props.onValueChange(value),
-            currentValue: props.currentValue,
-          })}
+          <Typography
+            sx={{ m: 1 }}
+            variant="h6"
+          >{`Default ${props.visualProperty.displayName}`}</Typography>
+          <Box sx={{ p: 1 }}>
+            {(
+              type2RenderFnMap[props.visualProperty.type].pickerRender ??
+              (() => {})
+            )({
+              onValueChange: (value: VisualPropertyValueType) =>
+                props.onValueChange(value),
+              currentValue: props.currentValue,
+            })}
+          </Box>
         </Box>
       </Popover>
     </Box>
