@@ -213,6 +213,8 @@ export function BypassForm(props: {
 }): React.ReactElement {
   const [formAnchorEl, setFormAnchorEl] = React.useState<Element | null>(null)
 
+  const setHovered = useViewModelStore((state) => state.setHovered)
+
   const showForm = (value: Element | null): void => {
     setFormAnchorEl(value)
   }
@@ -246,7 +248,10 @@ export function BypassForm(props: {
       <Popover
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
-        onClose={() => showForm(null)}
+        onClose={() => {
+          showForm(null)
+          setHovered(props.currentNetworkId, null)
+        }}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <BypassFormContent {...props} />

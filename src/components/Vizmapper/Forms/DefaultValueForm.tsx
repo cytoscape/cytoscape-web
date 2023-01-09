@@ -21,6 +21,7 @@ export function DefaultValueForm(props: {
   return (
     <Box sx={props.sx ?? {}}>
       <VisualPropertyValueForm
+        title={`Default ${visualProperty.displayName}`}
         visualProperty={visualProperty}
         currentValue={visualProperty.defaultValue}
         onValueChange={(newValue) =>

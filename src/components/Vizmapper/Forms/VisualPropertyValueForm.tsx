@@ -135,6 +135,7 @@ interface VisualPropertyValueFormProps {
   visualProperty: VisualProperty<VisualPropertyValueType>
   currentValue: VisualPropertyValueType | null
   onValueChange: (newValue: VisualPropertyValueType) => void
+  title?: string
 }
 
 // this component combines rendering vp values and a mechanism to mutate them via popover
@@ -166,10 +167,12 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box>
-          <Typography
-            sx={{ m: 1 }}
-            variant="h6"
-          >{`Default ${props.visualProperty.displayName}`}</Typography>
+          {props.title != null ? (
+            <Typography sx={{ m: 1 }} variant="h6">
+              {props.title}
+            </Typography>
+          ) : null}
+
           <Box sx={{ p: 1 }}>
             {(
               type2RenderFnMap[props.visualProperty.type].pickerRender ??

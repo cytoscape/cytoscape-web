@@ -419,7 +419,7 @@ export default function TableBrowser(props: {
           justifyContent: 'space-between',
           alignItems: 'center',
           backgroundColor: '#2F80ED',
-          height: 38,
+          height: 28,
         }}
       >
         <Tabs
