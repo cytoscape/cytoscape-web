@@ -19,7 +19,7 @@ const edgeArrowShapeMap: Record<EdgeArrowShapeType, React.ReactElement> = {
 }
 
 export function EdgeArrowShapePicker(props: {
-  currentValue: EdgeArrowShapeType
+  currentValue: EdgeArrowShapeType | null
   onValueChange: (edgeArrowShape: EdgeArrowShapeType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props

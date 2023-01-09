@@ -114,20 +114,7 @@ function BypassFormContent(props: {
       <Box sx={{ height: 250, overflow: 'scroll' }}>
         {elementsToRender.map((ele) => {
           const { id, selected, hasBypass, name } = ele
-          const bypassValue = visualProperty.bypassMap?.get(id)
-
-          const viewBox =
-            bypassValue != null ? (
-              <VisualPropertyValueForm
-                visualProperty={visualProperty}
-                currentValue={bypassValue}
-                onValueChange={(value) => {
-                  setBypass(currentNetworkId, visualProperty.name, [id], value)
-                }}
-              />
-            ) : (
-              <EmptyVisualPropertyViewBox />
-            )
+          const bypassValue = visualProperty.bypassMap?.get(id) ?? null
 
           return (
             <Box
@@ -148,7 +135,13 @@ function BypassFormContent(props: {
                 label="Selected"
               />
               <Box sx={{ width: 100, mr: 1 }}>{name}</Box>
-              {viewBox}
+              <VisualPropertyValueForm
+                visualProperty={visualProperty}
+                currentValue={bypassValue}
+                onValueChange={(value) => {
+                  setBypass(currentNetworkId, visualProperty.name, [id], value)
+                }}
+              />
               <IconButton
                 onClick={() => {
                   deleteBypass(currentNetworkId, visualProperty.name, [id])
@@ -197,7 +190,7 @@ function BypassFormContent(props: {
         height: '400px',
         minWidth: '30vw',
         minHeight: '30vh',
-        overflow: 'scroll',
+        overflow: 'hidden',
       }}
       // make sure there is no hovered component when the mouse leaves the bypass form
       onMouseLeave={() => setHovered(props.currentNetworkId, null)}

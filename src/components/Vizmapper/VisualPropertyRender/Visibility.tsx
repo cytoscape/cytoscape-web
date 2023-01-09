@@ -2,7 +2,7 @@ import { VisibilityType } from '../../../models/VisualStyleModel/VisualPropertyV
 import { Box } from '@mui/material'
 
 export function VisibilityPicker(props: {
-  currentValue: VisibilityType
+  currentValue: VisibilityType | null
   onValueChange: (visibility: VisibilityType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props

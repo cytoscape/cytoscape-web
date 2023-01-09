@@ -1,14 +1,14 @@
 import { Box, TextField, Typography } from '@mui/material'
 
 export function NumberInput(props: {
-  currentValue: number
+  currentValue: number | null
   onValueChange: (value: number) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   return (
     <Box>
       <TextField
-        value={currentValue}
+        value={currentValue ?? 0}
         type="number"
         onChange={(e) => onValueChange(+e.target.value)}
       >

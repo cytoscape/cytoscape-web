@@ -44,13 +44,16 @@ import {
   Boolean as BooleanRender,
 } from '../VisualPropertyRender/Boolean'
 
-import { VisualPropertyViewBox } from './VisualPropertyViewBox'
+import {
+  EmptyVisualPropertyViewBox,
+  VisualPropertyViewBox,
+} from './VisualPropertyViewBox'
 
 const type2RenderFnMap: Record<
   VisualPropertyValueTypeString,
   {
     pickerRender: (props: {
-      currentValue: VisualPropertyValueType
+      currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
     }) => React.ReactElement
     valueRender: (props: {
@@ -109,13 +112,16 @@ const type2RenderFnMap: Record<
 }
 
 interface VisualPropertyRenderProps {
-  value: VisualPropertyValueType
+  value: VisualPropertyValueType | null
   vpValueType: VisualPropertyValueTypeString
 }
 
 export function VisualPropertyValueRender(
   props: VisualPropertyRenderProps,
 ): React.ReactElement {
+  if (props.value == null) {
+    return <EmptyVisualPropertyViewBox />
+  }
   return (
     <VisualPropertyViewBox>
       {type2RenderFnMap[props.vpValueType].valueRender({
@@ -127,7 +133,7 @@ export function VisualPropertyValueRender(
 
 interface VisualPropertyValueFormProps {
   visualProperty: VisualProperty<VisualPropertyValueType>
-  currentValue: VisualPropertyValueType
+  currentValue: VisualPropertyValueType | null
   onValueChange: (newValue: VisualPropertyValueType) => void
 }
 
@@ -142,12 +148,6 @@ export function VisualPropertyValueForm(
   }
 
   if (type2RenderFnMap[props.visualProperty.type] == null) {
-    console.log(
-      props.visualProperty,
-      props.visualProperty.type,
-      type2RenderFnMap[props.visualProperty.type],
-    )
-
     return <Box></Box>
   }
 

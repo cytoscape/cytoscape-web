@@ -2,7 +2,7 @@ import { VerticalAlignType } from '../../../models/VisualStyleModel/VisualProper
 import { Box } from '@mui/material'
 
 export function VerticalAlignPicker(props: {
-  currentValue: VerticalAlignType
+  currentValue: VerticalAlignType | null
   onValueChange: (verticalAlign: VerticalAlignType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props

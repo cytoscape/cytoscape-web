@@ -2,7 +2,7 @@ import { HoritzontalAlignType } from '../../../models/VisualStyleModel/VisualPro
 import { Box } from '@mui/material'
 
 export function HoritzontalAlignPicker(props: {
-  currentValue: HoritzontalAlignType
+  currentValue: HoritzontalAlignType | null
   onValueChange: (horizontalAlign: HoritzontalAlignType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props

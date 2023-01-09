@@ -5,13 +5,14 @@ import React from 'react'
 import debounce from 'lodash.debounce'
 
 export function ColorPicker(props: {
-  currentValue: ColorType
+  currentValue: ColorType | null
   onValueChange: (color: ColorType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const debouncedValueChange = debounce(onValueChange, 200)
-  const [localColorValue, setLocalColorValue] =
-    React.useState<ColorType>(currentValue)
+  const [localColorValue, setLocalColorValue] = React.useState<ColorType>(
+    currentValue ?? `#ffffff`,
+  )
 
   return (
     <Box>
