@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Box, Popover } from '@mui/material'
+import { Box, Popover, Typography } from '@mui/material'
 
 import {
   VisualProperty,
@@ -44,11 +44,16 @@ import {
   Boolean as BooleanRender,
 } from '../VisualPropertyRender/Boolean'
 
+import {
+  EmptyVisualPropertyViewBox,
+  VisualPropertyViewBox,
+} from './VisualPropertyViewBox'
+
 const type2RenderFnMap: Record<
   VisualPropertyValueTypeString,
   {
     pickerRender: (props: {
-      currentValue: VisualPropertyValueType
+      currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
     }) => React.ReactElement
     valueRender: (props: {
@@ -76,7 +81,7 @@ const type2RenderFnMap: Record<
     pickerRender: FontPicker,
     valueRender: Font,
   },
-  horizontalALign: {
+  horizontalAlign: {
     pickerRender: HoritzontalAlignPicker,
     valueRender: HorizontalAlign,
   },
@@ -106,10 +111,31 @@ const type2RenderFnMap: Record<
   },
 }
 
+interface VisualPropertyRenderProps {
+  value: VisualPropertyValueType | null
+  vpValueType: VisualPropertyValueTypeString
+}
+
+export function VisualPropertyValueRender(
+  props: VisualPropertyRenderProps,
+): React.ReactElement {
+  if (props.value == null) {
+    return <EmptyVisualPropertyViewBox />
+  }
+  return (
+    <VisualPropertyViewBox>
+      {type2RenderFnMap[props.vpValueType].valueRender({
+        value: props.value,
+      })}
+    </VisualPropertyViewBox>
+  )
+}
+
 interface VisualPropertyValueFormProps {
   visualProperty: VisualProperty<VisualPropertyValueType>
-  currentValue: VisualPropertyValueType
+  currentValue: VisualPropertyValueType | null
   onValueChange: (newValue: VisualPropertyValueType) => void
+  title?: string
 }
 
 // this component combines rendering vp values and a mechanism to mutate them via popover
@@ -128,20 +154,11 @@ export function VisualPropertyValueForm(
 
   return (
     <Box>
-      <Box
-        sx={{
-          p: 1,
-          m: 1,
-          '&:hover': { cursor: 'pointer' },
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-        }}
-        onClick={(e) => showValuePicker(e.currentTarget)}
-      >
-        {type2RenderFnMap[props.visualProperty.type].valueRender({
-          value: props.currentValue,
-        })}
+      <Box onClick={(e) => showValuePicker(e.currentTarget)}>
+        <VisualPropertyValueRender
+          value={props.currentValue}
+          vpValueType={props.visualProperty.type}
+        />
       </Box>
       <Popover
         open={valuePicker != null}
@@ -150,14 +167,22 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box>
-          {(
-            type2RenderFnMap[props.visualProperty.type].pickerRender ??
-            (() => {})
-          )({
-            onValueChange: (value: VisualPropertyValueType) =>
-              props.onValueChange(value),
-            currentValue: props.currentValue,
-          })}
+          {props.title != null ? (
+            <Typography sx={{ m: 1 }} variant="h6">
+              {props.title}
+            </Typography>
+          ) : null}
+
+          <Box sx={{ p: 1 }}>
+            {(
+              type2RenderFnMap[props.visualProperty.type].pickerRender ??
+              (() => {})
+            )({
+              onValueChange: (value: VisualPropertyValueType) =>
+                props.onValueChange(value),
+              currentValue: props.currentValue,
+            })}
+          </Box>
         </Box>
       </Popover>
     </Box>

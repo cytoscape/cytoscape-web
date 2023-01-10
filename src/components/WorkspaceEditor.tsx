@@ -1,10 +1,11 @@
 import * as React from 'react'
 import { Suspense, useState } from 'react'
 import { Allotment } from 'allotment'
-import { Box } from '@mui/material'
+import { Box, Tabs, Tab, Typography } from '@mui/material'
+import ShareIcon from '@mui/icons-material/Share'
+import PaletteIcon from '@mui/icons-material/Palette'
 import debounce from 'lodash.debounce'
 import TableBrowser from './TableBrowser'
-// import WorkspaceView from './WorkspaceView'
 import VizmapperView from './Vizmapper'
 
 import { Outlet, useNavigate } from 'react-router-dom'
@@ -23,7 +24,11 @@ const WorkSpaceEditor: React.FC = () => {
   const [currentNetworkId, setCurrentNetworkId] = useState('')
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
+  const [currentTabIndex, setCurrentTabIndex] = useState(0)
 
+  const changeTab = (event: React.SyntheticEvent, newValue: number): void => {
+    setCurrentTabIndex(newValue)
+  }
   const [networkSetSummaries, setNetworkSummaries] = useState(
     [] as Array<{ id: string; name: string }>,
   )
@@ -104,62 +109,96 @@ const WorkSpaceEditor: React.FC = () => {
         <Allotment.Pane>
           <Allotment>
             <Allotment.Pane preferredSize="30%">
-              <Allotment vertical>
-                <Allotment.Pane preferredSize="50%">
-                  <Box
-                    sx={{ overflow: 'scroll', height: '100%', width: '100%' }}
-                  >
-                    {networkSetSummaries.map((n) => {
-                      const ndexLink = `https://ndexbio.org/viewer/networks/${n.id}`
-                      const cxLink = `https://ndexbio.org/v3/networks/${n.id}`
-                      return (
-                        <Box
-                          sx={{
-                            backgroundColor:
-                              n.id === currentNetworkId ? 'gray' : 'white',
-                            p: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                          }}
-                          onClick={() => setCurrentNetworkId(n.id)}
-                          key={n.id}
-                        >
-                          <Box sx={{ p: 1 }}> {n.name}</Box>
+              <Box
+                sx={{
+                  overflow: 'scroll',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }}
+              >
+                <Tabs
+                  sx={{ display: 'flex', alignItems: 'center' }}
+                  value={currentTabIndex}
+                  onChange={changeTab}
+                >
+                  <Tab
+                    icon={<ShareIcon />}
+                    iconPosition="start"
+                    label={<Typography variant="body2">NETWORKS</Typography>}
+                  />
+                  <Tab
+                    icon={<PaletteIcon />}
+                    iconPosition="start"
+                    label={<Typography variant="body2">STYLE</Typography>}
+                  />
+                </Tabs>
+                <div hidden={currentTabIndex !== 0}>
+                  {currentTabIndex === 0 && (
+                    <Box
+                      sx={{ overflow: 'scroll', height: '100%', width: '100%' }}
+                    >
+                      {networkSetSummaries.map((n) => {
+                        const ndexLink = `https://ndexbio.org/viewer/networks/${n.id}`
+                        const cxLink = `https://ndexbio.org/v3/networks/${n.id}`
+                        return (
                           <Box
                             sx={{
+                              backgroundColor:
+                                n.id === currentNetworkId ? 'gray' : 'white',
                               p: 1,
                               display: 'flex',
-                              justifyContent: 'space-between',
+                              flexDirection: 'column',
                             }}
+                            onClick={() => setCurrentNetworkId(n.id)}
+                            key={n.id}
                           >
-                            <a href={ndexLink} target="_blank" rel="noreferrer">
-                              Compare in NDEx
-                            </a>
-                            <a href={cxLink} target="_blank" rel="noreferrer">
-                              Debug cx
-                            </a>
+                            <Box sx={{ p: 1 }}> {n.name}</Box>
+                            <Box
+                              sx={{
+                                p: 1,
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <a
+                                href={ndexLink}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Compare in NDEx
+                              </a>
+                              <a href={cxLink} target="_blank" rel="noreferrer">
+                                Debug cx
+                              </a>
+                            </Box>
                           </Box>
-                        </Box>
-                      )
-                    })}
-                  </Box>
-                </Allotment.Pane>
-                <Allotment.Pane>
-                  <Suspense
-                    fallback={<div>{`Loading from NDEx`}</div>}
-                    key={currentNetworkId}
-                  >
-                    <VizmapperView currentNetworkId={currentNetworkId} />
-                  </Suspense>
-                </Allotment.Pane>
-              </Allotment>
+                        )
+                      })}
+                    </Box>
+                  )}
+                </div>
+                <div hidden={currentTabIndex !== 1}>
+                  {currentTabIndex === 1 && (
+                    <Box sx={{ overflow: 'scroll', height: '100%' }}>
+                      {' '}
+                      <Suspense
+                        fallback={<div>{`Loading from NDEx`}</div>}
+                        key={currentNetworkId}
+                      >
+                        <VizmapperView currentNetworkId={currentNetworkId} />
+                      </Suspense>
+                    </Box>
+                  )}
+                </div>
+              </Box>
             </Allotment.Pane>
             <Allotment.Pane>
               <Outlet /> {/* Network Renderer will be injected here */}
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>
-        <Allotment.Pane minSize={38} preferredSize={150}>
+        <Allotment.Pane minSize={28} preferredSize={150}>
           <Suspense
             fallback={<div>{`Loading from NDEx`}</div>}
             key={currentNetworkId}

@@ -15,7 +15,7 @@ const nodeLineMap: Record<NodeBorderLineType, React.ReactElement> = {
 }
 
 export function NodeBorderLinePicker(props: {
-  currentValue: NodeBorderLineType
+  currentValue: NodeBorderLineType | null
   onValueChange: (borderLine: NodeBorderLineType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props

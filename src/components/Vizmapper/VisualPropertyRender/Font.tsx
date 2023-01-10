@@ -2,7 +2,7 @@ import { FontType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
 
 export function FontPicker(props: {
-  currentValue: FontType
+  currentValue: FontType | null
   onValueChange: (font: FontType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props

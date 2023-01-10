@@ -26,7 +26,7 @@ const nodeShapeMap: Record<NodeShapeType, React.ReactElement> = {
 }
 
 export function NodeShapePicker(props: {
-  currentValue: NodeShapeType
+  currentValue: NodeShapeType | null
   onValueChange: (shape: NodeShapeType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props

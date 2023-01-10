@@ -11,7 +11,7 @@ const edgeLineMap: Record<EdgeLineType, React.ReactElement> = {
   dashed: <DashedLineIcon />,
 }
 export function EdgeLinePicker(props: {
-  currentValue: EdgeLineType
+  currentValue: EdgeLineType | null
   onValueChange: (edgeLine: EdgeLineType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
