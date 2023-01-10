@@ -20,6 +20,10 @@ export function FontPicker(props: {
           sx={{
             color: currentValue === font ? 'blue' : 'black',
             width: 100,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             p: 1,
             '&:hover': { cursor: 'pointer' },
             fontFamily: font,
@@ -27,6 +31,7 @@ export function FontPicker(props: {
           onClick={() => onValueChange(font)}
           key={font}
         >
+          <Font value={font} />
           {font}
         </Box>
       ))}
@@ -35,5 +40,5 @@ export function FontPicker(props: {
 }
 
 export function Font(props: { value: FontType }): React.ReactElement {
-  return <Box sx={{ fontFamily: props.value }}>{props.value}</Box>
+  return <Box sx={{ fontFamily: props.value }}>Aa</Box>
 }
