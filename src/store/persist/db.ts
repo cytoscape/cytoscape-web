@@ -158,7 +158,8 @@ const createWorkspace = (): Workspace => {
   return {
     id: DEF_WORKSPACE_ID as IdType,
     name: DEF_WORKSPACE_NAME,
-    networkSummaries: {},
+    networkIds: [],
     creationTime: new Date(),
+    currentNetworkId: '',
   }
 }

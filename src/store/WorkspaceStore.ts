@@ -12,13 +12,15 @@ interface WorkspaceActions {
   init: () => void
   setId: (id: IdType) => void
   setName: (name: string) => void
+  setCurrentNetworkId: (id: IdType) => void
 }
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
   name: '',
-  networkSummaries: {},
+  networkIds: [],
   creationTime: new Date(),
+  currentNetworkId: '',
 }
 
 export const useWorkspaceStore = create(
@@ -35,6 +37,14 @@ export const useWorkspaceStore = create(
     setId: (id: IdType) => {
       set((state) => {
         return { ...state, workspace: { ...state.workspace, id } }
+      })
+    },
+    setCurrentNetworkId: (newId: IdType) => {
+      set((state) => {
+        return {
+          ...state,
+          workspace: { ...state.workspace, currentNetworkId: newId },
+        }
       })
     },
 

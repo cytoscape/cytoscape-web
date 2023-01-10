@@ -1,10 +1,9 @@
 import * as React from 'react'
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import { Box } from '@mui/material'
 import debounce from 'lodash.debounce'
 import TableBrowser from './TableBrowser'
-// import WorkspaceView from './WorkspaceView'
 import VizmapperView from './Vizmapper'
 
 import { Outlet, useNavigate } from 'react-router-dom'
@@ -12,22 +11,30 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { getNdexNetwork, getNdexNetworkSet } from '../store/useNdexNetwork'
 import { useTableStore } from '../store/TableStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
-import { useWorkspaceStore } from '../store/NetworkStore'
+import { useNetworkStore } from '../store/NetworkStore'
 import { useViewModelStore } from '../store/ViewModelStore'
+import { useWorkspaceStore } from '../store/WorkspaceStore'
+import { IdType } from '../models/IdType'
 
 const testNetworkSet = '8d72ec80-1fc5-11ec-9fe4-0ac135e8bacf'
 
 const WorkSpaceEditor: React.FC = () => {
   const navigate = useNavigate()
+  const currentNetworkId: IdType = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
 
-  const [currentNetworkId, setCurrentNetworkId] = useState('')
+  const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
+
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
 
   const [networkSetSummaries, setNetworkSummaries] = useState(
     [] as Array<{ id: string; name: string }>,
   )
-  const addNewNetwork = useWorkspaceStore((state) => state.add)
+  const addNewNetwork = useNetworkStore((state) => state.add)
 
   // Visual Style Store
   const setVisualStyle = useVisualStyleStore((state) => state.set)
@@ -41,13 +48,14 @@ const WorkSpaceEditor: React.FC = () => {
     try {
       const summaries = await getNdexNetworkSet(networkSetId)
       setNetworkSummaries(summaries)
-      setCurrentNetworkId(summaries[0].id)
+      const curId: IdType = summaries[0].id
+      setCurrentNetworkId(curId)
     } catch (err) {
       console.log(err)
     }
   }
 
-  const loadCurrentNetworkById = async (networkId: string): Promise<void> => {
+  const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     try {
       const res = await getNdexNetwork(networkId)
       const { network, nodeTable, edgeTable, visualStyle, networkView } = res
@@ -66,7 +74,7 @@ const WorkSpaceEditor: React.FC = () => {
     }
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     const windowWidthListener = debounce(() => {
       setTableBrowserWidth(window.innerWidth)
     }, 200)
@@ -81,10 +89,12 @@ const WorkSpaceEditor: React.FC = () => {
     }
   }, [])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentNetworkId !== '') {
       loadCurrentNetworkById(currentNetworkId)
-        .then(() => {})
+        .then(() => {
+          console.log('Network loaded')
+        })
         .catch((err) => console.error(err))
 
       navigate(`/workspaceIdHere/networks/${currentNetworkId}`)

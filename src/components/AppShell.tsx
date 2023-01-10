@@ -17,11 +17,13 @@ const AppShell = (): ReactElement => {
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
 
   useEffect(() => {
-    const id = workspace.id
+    const { id, currentNetworkId } = workspace
     if (id === '') {
       initWorkspace()
     } else {
-      navigate(`/${id}/networks`)
+      if (currentNetworkId === '') {
+        navigate(`/${id}/networks`)
+      }
     }
   }, [workspace])
 
