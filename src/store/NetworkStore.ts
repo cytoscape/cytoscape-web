@@ -9,12 +9,7 @@ import { immer } from 'zustand/middleware/immer'
 /**
  * Network State manager based on zustand
  */
-interface WorkspaceState {
-  id: IdType
-  name: string
-  modificationTime?: Date
-  creationTime?: Date
-  options?: any
+interface NetworkState {
   networks: Record<IdType, Network>
 }
 
@@ -34,18 +29,9 @@ interface NetworkAction {
   deleteAll: () => void
 }
 
-// interface WorkspaceAction {
-//   setTime: (modificationTime: Date) => void
-//   setName: (name: string) => void
-//   setOptions: (options: any) => void
-// }
-
-export const useWorkspaceStore = create(
-  immer<WorkspaceState & NetworkAction & UpdateAction>((set) => ({
-    id: '-' as IdType,
-    name: 'workspace',
+export const useNetworkStore = create(
+  immer<NetworkState & NetworkAction & UpdateAction>((set) => ({
     networks: {},
-    creationTime: new Date(),
 
     addNode: (networkId: IdType, nodeId: IdType) => {
       set((state) => {
@@ -113,3 +99,67 @@ export const useWorkspaceStore = create(
     deleteAll: () => set({ networks: {} }),
   })),
 )
+
+// {
+//   name: 'net-storage',
+//   getStorage: () => localStorage,
+//   partialize: (state) => ({ networks: state.networks }),
+//   serialize: (storageVal) => {
+//     const { networks } = storageVal.state
+//     const serializable = Object.keys(networks).map((key: IdType) =>
+//       createSerializableNetwork(networks[key]),
+//     )
+//     return JSON.stringify(serializable)
+//   },
+//   deserialize: (str) => {
+//     const networks: Record<IdType, Network> = {}
+//     const parsedNetworks: any = JSON.parse(str)
+//     Object.keys(parsedNetworks).forEach((key) => {
+//       const network = NetworkFn.createFromCyJson(key, parsedNetworks[key])
+//       networks[key] = network
+//     })
+//     return { state: { networks } }
+//   },
+// },
+
+// const createSerializableNetwork = (network: Network): object => {
+//   const cyJs: any = NetworkFn.createCyJSON(network)
+//   return {
+//     id: network.id,
+//     elements: cyJs.elements,
+//     data: cyJs.data,
+//   }
+// }
+
+// const IDBStorage = {
+//   getItem: (name: string) => {
+//     console.log('=====>', name)
+//     const network = getNetworkFromDB(name)
+//     return
+//   },
+//   setItem: (name: string, value: Network): Promise<void> => {
+//     console.log('setItem', name, value)
+//     await putNetworkToDb(value)
+//   },
+//   removeItem: (name: string): void | Promise<void> => {},
+// }
+
+// {
+//   name: 'Net-storage',
+//   serialize: (storageVal) => {
+//     const { networks } = storageVal.state
+//     const serializable = Object.keys(networks).map((key: IdType) =>
+//       createSerializableNetwork(networks[key]),
+//     )
+//     return JSON.stringify(serializable)
+//   },
+//   deserialize: (str) => {
+//     const networks: Record<IdType, Network> = {}
+//     const parsedNetworks: any = JSON.parse(str)
+//     Object.keys(parsedNetworks).forEach((key) => {
+//       const network = NetworkFn.createFromCyJson(key, parsedNetworks[key])
+//       networks[key] = network
+//     })
+//     return { state: { networks } }
+//   },
+// },

@@ -1,27 +1,12 @@
-import React, { ReactElement } from 'react'
-import { Outlet } from 'react-router-dom'
-// import { v4 as uuidv4 } from 'uuid'
+import { ReactElement } from 'react'
+import { ToolBar } from './ToolBar'
+import { WorkSpaceEditor } from './WorkspaceEditor'
 
-const ToolBar = React.lazy(() => import('./ToolBar'))
-
-const AppShell = (): ReactElement => {
-  // const isWorkspace = true
-  // const navigate = useNavigate()
-
-  // useEffect(() => {
-  //   if (isWorkspace) {
-  //     const wsUuid: string = uuidv4()
-
-  //     navigate(`/${wsUuid}`)
-  //   }
-  // }, [isWorkspace])
-
-  return (
-    <>
-      <ToolBar />
-      <Outlet />
-    </>
-  )
-}
+const AppShell = (): ReactElement => (
+  <>
+    <ToolBar />
+    <WorkSpaceEditor />
+  </>
+)
 
 export default AppShell

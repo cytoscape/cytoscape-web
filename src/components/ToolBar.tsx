@@ -54,7 +54,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }))
 
-const ToolBar: React.FC = () => {
+export const ToolBar: React.FC = () => {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
@@ -91,5 +91,3 @@ const ToolBar: React.FC = () => {
     </Box>
   )
 }
-
-export default ToolBar

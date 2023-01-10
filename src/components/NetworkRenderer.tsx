@@ -1,5 +1,4 @@
 import * as React from 'react'
-
 import Box from '@mui/material/Box'
 import debounce from 'lodash.debounce'
 import Cytoscape, {
@@ -11,7 +10,7 @@ import Cytoscape, {
 import { IdType } from '../models/IdType'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useTableStore } from '../store/TableStore'
-import { useWorkspaceStore } from '../store/NetworkStore'
+import { useNetworkStore } from '../store/NetworkStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import VisualStyleFn from '../models/VisualStyleModel' // VisualPropertyValueType,
 // import { cyJsVisualPropertyConverter } from '../models/VisualStyleModel/impl/cyJsVisualPropertyMap'
@@ -24,8 +23,7 @@ export default function NetworkRenderer(
   props: NetworkRendererProps,
 ): React.ReactElement {
   const { currentNetworkId } = props
-
-  const networks = useWorkspaceStore((state) => state.networks)
+  const networks = useNetworkStore((state) => state.networks)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
   const viewModels = useViewModelStore((state) => state.viewModels)
@@ -63,7 +61,7 @@ export default function NetworkRenderer(
         'boxselect select',
         debounce((e: EventObject) => {
           setSelected(
-            currentNetworkId,
+            props.currentNetworkId,
             cy
               .elements()
               .filter((e: SingularElementArgument) => e.selected())
@@ -76,7 +74,7 @@ export default function NetworkRenderer(
         // check for background click
         // on background click deselect all
         if (e.target === cy) {
-          setSelected(currentNetworkId, [])
+          setSelected(props.currentNetworkId, [])
         }
       })
       cy.endBatch()
@@ -154,7 +152,7 @@ export default function NetworkRenderer(
     debounce(() => {
       loadAndRenderNetwork()
     }, 200),
-    [currentNetworkId, network],
+    [props.currentNetworkId, network],
   )
 
   // when the visual style model, table model, or edge/node views change re-render cy.js style
