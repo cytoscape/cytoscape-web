@@ -1,0 +1,6 @@
+{
+  "ndexBaseUrl": "https://public.ndexbio.org/v3",
+  "options": {
+    "debug": true
+  }
+}
