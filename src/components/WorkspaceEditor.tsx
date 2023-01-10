@@ -118,7 +118,7 @@ const WorkSpaceEditor: React.FC = () => {
                 }}
               >
                 <Tabs
-                  sx={{ display: 'flex', alignItems: 'center' }}
+                  sx={{ display: 'flex', alignItems: 'center', height: '40px' }}
                   value={currentTabIndex}
                   onChange={changeTab}
                 >
