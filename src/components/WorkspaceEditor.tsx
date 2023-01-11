@@ -108,7 +108,7 @@ const WorkSpaceEditor: React.FC = () => {
       >
         <Allotment.Pane>
           <Allotment>
-            <Allotment.Pane preferredSize="30%">
+            <Allotment.Pane preferredSize="20%">
               <Box
                 sx={{
                   overflow: 'scroll',

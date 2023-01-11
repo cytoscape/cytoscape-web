@@ -26,7 +26,8 @@ function VisualPropertyView(props: {
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
-        p: 1,
+        p: 0.5,
+        pb: 1,
       }}
     >
       <DefaultValueForm
@@ -44,7 +45,9 @@ function VisualPropertyView(props: {
         currentNetworkId={currentNetworkId}
         visualProperty={visualProperty}
       />
-      <Box sx={{ ml: 1 }}>{visualProperty.displayName}</Box>
+      <Typography variant="body2" sx={{ ml: 1 }}>
+        {visualProperty.displayName}
+      </Typography>
     </Box>
   )
 }
@@ -127,19 +130,19 @@ export default function VizmapperView(props: {
         <Tab label={<Typography variant="caption">Edges</Typography>} />
         <Tab label={<Typography variant="caption">Network</Typography>} />
       </Tabs>
-      <Box sx={{ display: 'flex', p: 1 }}>
-        <Box sx={{ width: 50, textAlign: 'center', mr: 1 }}>Def.</Box>
-        <Box sx={{ width: 50, textAlign: 'center', mr: 1 }}>Map.</Box>
-        <Box sx={{ width: 50, textAlign: 'center' }}>Byp.</Box>
+      <Box sx={{ display: 'flex', p: 1, ml: 1 }}>
+        <Box sx={{ width: 40, textAlign: 'center', mr: 1 }}>Def.</Box>
+        <Box sx={{ width: 40, textAlign: 'center', mr: 1 }}>Map.</Box>
+        <Box sx={{ width: 40, textAlign: 'center' }}>Byp.</Box>
       </Box>
       <div hidden={currentTabIndex !== 0}>
-        {currentTabIndex === 0 && <Box>{nodeVps}</Box>}
+        {currentTabIndex === 0 && <Box sx={{ ml: 1, mb: 1 }}>{nodeVps}</Box>}
       </div>
       <div hidden={currentTabIndex !== 1}>
-        {currentTabIndex === 1 && <Box>{edgeVps}</Box>}
+        {currentTabIndex === 1 && <Box sx={{ ml: 1, mb: 1 }}>{edgeVps}</Box>}
       </div>
       <div hidden={currentTabIndex !== 2}>
-        {currentTabIndex === 2 && <Box>{networkVps}</Box>}
+        {currentTabIndex === 2 && <Box sx={{ ml: 1, mb: 1 }}>{networkVps}</Box>}
       </div>
     </Box>
   )
