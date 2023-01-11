@@ -19,7 +19,9 @@ interface ViewModelState {
 
 interface ViewModelAction {
   setViewModel: (networkId: IdType, networkView: NetworkView) => void
-  setSelected: (networkId: IdType, ids: IdType[]) => void
+  exclusiveSelect: (networkId: IdType, ids: IdType[]) => void
+  additiveSelect: (networkId: IdType, ids: IdType[]) => void
+  additiveUnselect: (networkId: IdType, ids: IdType[]) => void
   setHovered: (networkId: IdType, eleToHover: IdType | null) => void
   toggleSelected: (networkId: IdType, eles: IdType[]) => void
 }
@@ -33,7 +35,8 @@ export const useViewModelStore = create(
         state.viewModels[networkId] = networkView
       })
     },
-    setSelected: (networkId: IdType, elementsToSelect: IdType[]) => {
+    // select elementsToSelect and unselect everything else
+    exclusiveSelect: (networkId: IdType, elementsToSelect: IdType[]) => {
       set((state) => {
         const networkView = state.viewModels[networkId]
 
@@ -74,6 +77,33 @@ export const useViewModelStore = create(
               edgeView.selected = !(edgeView.selected ?? false)
             }
           }
+        })
+      })
+    },
+
+    // select elements without unselecing anything else
+    additiveSelect: (networkId: IdType, eles: IdType[]) => {
+      set((state) => {
+        const networkView = state.viewModels[networkId]
+
+        // set new selected elements
+        eles.forEach((eleId) => {
+          const view =
+            networkView.nodeViews[eleId] ?? networkView.edgeViews[eleId]
+          view.selected = true
+        })
+      })
+    },
+    // unselect elements without selecting anything else
+    additiveUnselect: (networkId: IdType, eles: IdType[]) => {
+      set((state) => {
+        const networkView = state.viewModels[networkId]
+
+        // set new selected elements
+        eles.forEach((eleId) => {
+          const view =
+            networkView.nodeViews[eleId] ?? networkView.edgeViews[eleId]
+          view.selected = false
         })
       })
     },

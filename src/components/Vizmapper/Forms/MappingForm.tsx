@@ -7,6 +7,7 @@ import {
   MenuItem,
   Select,
   SxProps,
+  Tooltip,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 
@@ -229,9 +230,15 @@ export function MappingForm(props: {
           : '+'}{' '}
       </VisualPropertyViewBox>
     )
+
+  const mappingExists = props.visualProperty.mapping?.type != null
+
+  const tooltipText = `${props.visualProperty.displayName} Mapping${
+    mappingExists ? `: ${String(props.visualProperty.mapping?.type)}` : ''
+  }`
   return (
     <Box sx={props.sx ?? {}}>
-      {viewBox}
+      <Tooltip title={tooltipText}>{viewBox}</Tooltip>
       <Popover
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}

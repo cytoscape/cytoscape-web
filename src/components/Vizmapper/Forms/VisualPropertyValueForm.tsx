@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Box, Popover, Typography } from '@mui/material'
+import { Box, Popover, Typography, Tooltip } from '@mui/material'
 
 import {
   VisualProperty,
@@ -136,6 +136,7 @@ interface VisualPropertyValueFormProps {
   currentValue: VisualPropertyValueType | null
   onValueChange: (newValue: VisualPropertyValueType) => void
   title?: string
+  tooltipText?: string
 }
 
 // this component combines rendering vp values and a mechanism to mutate them via popover
@@ -154,12 +155,15 @@ export function VisualPropertyValueForm(
 
   return (
     <Box>
-      <Box onClick={(e) => showValuePicker(e.currentTarget)}>
-        <VisualPropertyValueRender
-          value={props.currentValue}
-          vpValueType={props.visualProperty.type}
-        />
-      </Box>
+      <Tooltip title={props.tooltipText}>
+        <Box onClick={(e) => showValuePicker(e.currentTarget)}>
+          <VisualPropertyValueRender
+            value={props.currentValue}
+            vpValueType={props.visualProperty.type}
+          />
+        </Box>
+      </Tooltip>
+
       <Popover
         open={valuePicker != null}
         anchorEl={valuePicker}
