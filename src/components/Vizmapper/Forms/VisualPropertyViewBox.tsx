@@ -14,6 +14,7 @@ export const VisualPropertyViewBox = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  overflow: 'hidden',
 }))
 
 export const EmptyVisualPropertyViewBox = styled(Box)(({ theme }) => ({
@@ -29,4 +30,5 @@ export const EmptyVisualPropertyViewBox = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  overflow: 'hidden',
 }))

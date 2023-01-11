@@ -27,7 +27,7 @@ export default function NetworkRenderer(
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
   const viewModels = useViewModelStore((state) => state.viewModels)
-  const setSelected = useViewModelStore((state) => state.setSelected)
+  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const network = networks[currentNetworkId]
   const networkView = viewModels[currentNetworkId]
   const nodeViews = networkView?.nodeViews
@@ -60,8 +60,8 @@ export default function NetworkRenderer(
       cy.on(
         'boxselect select',
         debounce((e: EventObject) => {
-          setSelected(
-            props.currentNetworkId,
+          exclusiveSelect(
+            currentNetworkId,
             cy
               .elements()
               .filter((e: SingularElementArgument) => e.selected())
@@ -74,7 +74,7 @@ export default function NetworkRenderer(
         // check for background click
         // on background click deselect all
         if (e.target === cy) {
-          setSelected(props.currentNetworkId, [])
+          exclusiveSelect(currentNetworkId, [])
         }
       })
       cy.endBatch()

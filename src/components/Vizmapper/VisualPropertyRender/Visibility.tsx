@@ -1,5 +1,11 @@
 import { VisibilityType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
+const visibilityMap: Record<VisibilityType, React.ReactElement> = {
+  element: <VisibilityIcon />,
+  none: <VisibilityOffIcon />,
+}
 
 export function VisibilityPicker(props: {
   currentValue: VisibilityType | null
@@ -22,11 +28,16 @@ export function VisibilityPicker(props: {
             width: 100,
             p: 1,
             '&:hover': { cursor: 'pointer' },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
           }}
           onClick={() => onValueChange(visibility)}
           key={visibility}
         >
-          {visibility}
+          <Visibility value={visibility} />
+          <Box>{visibility}</Box>
         </Box>
       ))}
     </Box>
@@ -36,5 +47,5 @@ export function VisibilityPicker(props: {
 export function Visibility(props: {
   value: VisibilityType
 }): React.ReactElement {
-  return <Box>{props.value}</Box>
+  return <Box>{visibilityMap[props.value]}</Box>
 }

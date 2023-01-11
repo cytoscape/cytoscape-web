@@ -184,7 +184,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeVisibility: {
     group: 'node',
     name: 'nodeVisibility',
-    displayName: 'Node ',
+    displayName: 'Visibility',
     type: 'visibility',
     defaultValue: 'element',
     mapping: null,

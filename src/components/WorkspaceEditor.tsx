@@ -108,8 +108,6 @@ export const WorkSpaceEditor: React.FC = () => {
               <Box
                 sx={{
                   overflow: 'scroll',
-                  display: 'flex',
-                  flexDirection: 'column',
                   height: '100%',
                 }}
               >
@@ -121,7 +119,7 @@ export const WorkSpaceEditor: React.FC = () => {
                   <Tab
                     icon={<ShareIcon />}
                     iconPosition="start"
-                    label={<Typography variant="body2">NETWORKS</Typography>}
+                    label={<Typography variant="body2">WORKSPACE</Typography>}
                   />
                   <Tab
                     icon={<PaletteIcon />}

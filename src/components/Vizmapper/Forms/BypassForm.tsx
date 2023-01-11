@@ -9,6 +9,8 @@ import {
   IconButton,
   Checkbox,
   FormControlLabel,
+  Tooltip,
+  Divider,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 
@@ -111,7 +113,7 @@ function BypassFormContent(props: {
 
   const nonEmptyBypassForm = (
     <>
-      <Box sx={{ height: 250, overflow: 'scroll' }}>
+      <Box sx={{ height: 400, overflow: 'scroll' }}>
         {elementsToRender.map((ele) => {
           const { id, selected, hasBypass, name } = ele
           const bypassValue = visualProperty.bypassMap?.get(id) ?? null
@@ -155,6 +157,8 @@ function BypassFormContent(props: {
           )
         })}
       </Box>
+      <Divider />
+
       <Box sx={{ p: 1, m: 1, mr: 1, display: 'flex', justifyContent: 'end' }}>
         <VisualPropertyValueForm
           visualProperty={visualProperty}
@@ -187,7 +191,7 @@ function BypassFormContent(props: {
         display: 'flex',
         flexDirection: 'column',
         width: '400px',
-        height: '400px',
+        height: '600px',
         minWidth: '30vw',
         minHeight: '30vh',
         overflow: 'hidden',
@@ -200,6 +204,7 @@ function BypassFormContent(props: {
         variant="h6"
       >{`${visualProperty.displayName} bypasses`}</Typography>
       <Box sx={{ p: 1, m: 1 }}>
+        <Divider />
         {elementsToRender.length > 0 ? nonEmptyBypassForm : emptyBypassForm}
       </Box>
     </Box>
@@ -244,7 +249,9 @@ export function BypassForm(props: {
 
   return (
     <Box sx={props.sx ?? {}}>
-      <Box onClick={(e) => showForm(e.currentTarget)}>{viewBox}</Box>
+      <Tooltip title={`${props.visualProperty.displayName} Bypasses`}>
+        <Box onClick={(e) => showForm(e.currentTarget)}>{viewBox}</Box>
+      </Tooltip>
       <Popover
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
