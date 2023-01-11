@@ -3,8 +3,22 @@ import { Box } from '@mui/material'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 const visibilityMap: Record<VisibilityType, React.ReactElement> = {
-  element: <VisibilityIcon />,
-  none: <VisibilityOffIcon />,
+  element: (
+    <VisibilityIcon
+      sx={{
+        p: 0,
+        m: 0,
+      }}
+    />
+  ),
+  none: (
+    <VisibilityOffIcon
+      sx={{
+        p: 0,
+        m: 0,
+      }}
+    />
+  ),
 }
 
 export function VisibilityPicker(props: {
@@ -47,5 +61,9 @@ export function VisibilityPicker(props: {
 export function Visibility(props: {
   value: VisibilityType
 }): React.ReactElement {
-  return <Box>{visibilityMap[props.value]}</Box>
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      {visibilityMap[props.value]}
+    </Box>
+  )
 }
