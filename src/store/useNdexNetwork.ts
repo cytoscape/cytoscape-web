@@ -55,11 +55,11 @@ export const useNdexNetwork = (
   const setTables = useTableStore((state) => state.setTables)
 
   // Global state via zustand
-  const networks: Record<IdType, Network> = useNetworkStore(
+  const networks: Map<IdType, Network> = useNetworkStore(
     (state) => state.networks,
   )
 
-  const network: Network | undefined = networks[id]
+  const network: Network | undefined = networks.get(id)
 
   if (network == null) {
     // eslint-disable-next-line @typescript-eslint/no-throw-literal

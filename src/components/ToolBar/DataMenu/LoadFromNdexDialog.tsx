@@ -20,9 +20,11 @@ export const LoadFromNdexDialog = (
   const { open, handleClose, handleLoad } = props
   return (
     <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Load from NDEx:</DialogTitle>
+      <DialogTitle>Load Networks from NDEx:</DialogTitle>
       <DialogContent>
-        <DialogContentText>Enter an UUID for the netowrk</DialogContentText>
+        <DialogContentText>
+          Enter UUID(s), separated by spaces
+        </DialogContentText>
         <TextField
           autoFocus
           margin="dense"

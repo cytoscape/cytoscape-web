@@ -14,7 +14,7 @@ import { useTableStore } from '../store/TableStore'
 import { useNetworkStore } from '../store/NetworkStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import VisualStyleFn from '../models/VisualStyleModel' // VisualPropertyValueType,
-// import { cyJsVisualPropertyConverter } from '../models/VisualStyleModel/impl/cyJsVisualPropertyMap'
+import { Network } from '../models/NetworkModel'
 
 interface NetworkRendererProps {
   currentNetworkId: IdType
@@ -24,13 +24,18 @@ export default function NetworkRenderer(
   props: NetworkRendererProps,
 ): React.ReactElement {
   const { currentNetworkId } = props
+  const EMPTY_NET = {
+    nodes: [],
+    edges: [],
+    id: currentNetworkId,
+  }
 
   const networks = useNetworkStore((state) => state.networks)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
   const viewModels = useViewModelStore((state) => state.viewModels)
   const setSelected = useViewModelStore((state) => state.setSelected)
-  const network = networks[currentNetworkId]
+  const network: Network = networks.get(currentNetworkId) ?? EMPTY_NET
   const networkView = viewModels[currentNetworkId]
   const vs = visualStyles[currentNetworkId]
   const table = tables[currentNetworkId]

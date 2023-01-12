@@ -10,7 +10,7 @@ import { immer } from 'zustand/middleware/immer'
  * Network State manager based on zustand
  */
 interface NetworkState {
-  networks: Record<IdType, Network>
+  networks: Map<IdType, Network>
 }
 
 /**
@@ -31,11 +31,11 @@ interface NetworkActions {
 
 export const useNetworkStore = create(
   immer<NetworkState & NetworkActions & UpdateActions>((set) => ({
-    networks: {},
+    networks: new Map<IdType, Network>(),
 
     addNode: (networkId: IdType, nodeId: IdType) => {
       set((state) => {
-        const network = state.networks[networkId]
+        const network = state.networks.get(networkId)
         if (network !== undefined) {
           NetworkFn.addNode(network, nodeId)
         }
@@ -47,7 +47,7 @@ export const useNetworkStore = create(
 
     addNodes: (networkId: IdType, nodeIds: IdType[]) => {
       set((state) => {
-        const network = state.networks[networkId]
+        const network = state.networks.get(networkId)
         if (network !== undefined) {
           NetworkFn.addNodes(network, nodeIds)
         }
@@ -59,7 +59,7 @@ export const useNetworkStore = create(
 
     deleteNode: (networkId: IdType, nodeId: IdType) => {
       set((state) => {
-        const network = state.networks[networkId]
+        const network = state.networks.get(networkId)
         if (network !== undefined) {
           NetworkFn.deleteNode(network, nodeId)
         }
@@ -71,7 +71,7 @@ export const useNetworkStore = create(
 
     addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => {
       set((state) => {
-        const network = state.networks[networkId]
+        const network = state.networks.get(networkId)
         if (network !== undefined) {
           NetworkFn.addEdge(network, { id, s, t })
         }
@@ -83,19 +83,19 @@ export const useNetworkStore = create(
 
     add: (network: Network) =>
       set((state) => {
+        const newNetworkMap = new Map(state.networks).set(network.id, network)
         return {
-          networks: { ...state.networks, [network.id]: network },
+          networks: newNetworkMap,
         }
       }),
     delete: (networkId: IdType) =>
       set((state) => {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete state.networks[networkId]
+        const newNetworkMap = new Map(state.networks).delete(networkId)
         // await deleteNetworkFromDb(networkId)
         return {
-          networks: { ...state.networks },
+          networks: newNetworkMap,
         }
       }),
-    deleteAll: () => set({ networks: {} }),
+    deleteAll: () => set({ networks: new Map<IdType, Network>() }),
   })),
 )

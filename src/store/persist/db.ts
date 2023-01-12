@@ -25,7 +25,7 @@ class CyDB extends Dexie {
     super(dbName)
     this.version(1).stores({
       workspace: 'id',
-      summaries: 'id',
+      summaries: 'externalId',
       cyNetworks: 'id',
       cyTables: 'id',
       cyVisualStyles: 'id',
@@ -72,7 +72,7 @@ export const getNetworkFromDb = async (
   id: IdType,
 ): Promise<Network | undefined> => {
   const cached: any = await db.cyNetworks.get({ id })
-  if (cached === undefined) {
+  if (cached !== undefined) {
     return cached
   }
 
@@ -131,10 +131,19 @@ export const putVisualStylesToDb = async (
   })
 }
 
+// Workspace management
+
 export const putWorkspaceToDb = async (
   workspace: Workspace,
 ): Promise<IndexableType> => {
-  return await db.workspace.put({ id: workspace.id, workspace })
+  return await db.workspace.put({ ...workspace })
+}
+
+export const updateWorkspaceDb = async (
+  id: IdType,
+  value: Record<string, any>,
+): Promise<IndexableType> => {
+  return await db.workspace.update(id, value)
 }
 
 export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
@@ -167,8 +176,23 @@ const createWorkspace = (): Workspace => {
   }
 }
 
+// Network Summaries. For now, it is NDEx Summary
+
 export const getNetworkSummaryFromDb = async (
-  id: IdType,
+  externalId: IdType,
 ): Promise<NdexNetworkSummary | undefined> => {
-  return await db.summaries.get({ id })
+  return await db.summaries.get({ externalId })
+}
+
+export const getNetworkSummariesFromDb = async (
+  externalIds: IdType[],
+): Promise<NdexNetworkSummary[]> => {
+  return await db.summaries.bulkGet(externalIds)
+}
+
+export const putNetworkSummaryToDb = async (
+  summary: NdexNetworkSummary,
+): Promise<IndexableType> => {
+  // ExternalId will be used as the primary key
+  return await db.summaries.put({ ...summary })
 }

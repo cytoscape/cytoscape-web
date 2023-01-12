@@ -2,7 +2,11 @@ import create from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
 import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
-// import { getNetworkSummaryFromDb } from './persist/db'
+import {
+  getNetworkSummariesFromDb,
+  getNetworkSummaryFromDb,
+  putNetworkSummaryToDb,
+} from './persist/db'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 
@@ -11,7 +15,7 @@ interface NetworkSummaryStore {
 }
 
 interface NetworkSummaryActions {
-  fetch: (networkId: IdType, url: string) => Promise<void>
+  fetch: (networkId: IdType, url: string) => Promise<NdexNetworkSummary>
   fetchAll: (networkIds: IdType[], url: string) => Promise<NdexNetworkSummary[]>
   delete: (networkId: IdType) => void
 }
@@ -20,20 +24,18 @@ const networkSummaryFetcher = async (
   id: IdType | IdType[],
   url: string,
 ): Promise<NdexNetworkSummary | NdexNetworkSummary[]> => {
-  // Try local DB first
-  // const cachedSummary = await getNetworkSummaryFromDb(id)
-  const cachedSummary = undefined
-
-  if (cachedSummary !== undefined) {
-    return cachedSummary
-  }
-
   const ndexClient = new NDEx(`${url}/v2`)
   if (Array.isArray(id)) {
     const summaries: Promise<NdexNetworkSummary[]> =
-      ndexClient.getNetworkSummariesByUUIDs(id)
+      await ndexClient.getNetworkSummariesByUUIDs(id)
+
     return await summaries
   } else {
+    // Try local DB first
+    const cachedSummary = await getNetworkSummaryFromDb(id)
+    if (cachedSummary !== undefined) {
+      return cachedSummary
+    }
     const summary: Promise<NdexNetworkSummary> =
       ndexClient.getNetworkSummary(id)
     return await summary
@@ -44,6 +46,12 @@ export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore & NetworkSummaryActions>((set) => ({
     summaries: new Map<IdType, NdexNetworkSummary>(),
     fetch: async (networkId: IdType, url: string) => {
+      const localData: NdexNetworkSummary | undefined =
+        await getNetworkSummaryFromDb(networkId)
+      if (localData !== undefined) {
+        return localData
+      }
+
       const newSummary = (await networkSummaryFetcher(
         networkId,
         url,
@@ -56,13 +64,25 @@ export const useNetworkSummaryStore = create(
           summaries: newSummaries,
         }
       })
+
+      return newSummary
     },
     fetchAll: async (networkIds: IdType[], url: string) => {
+      // Check local database first
+      // const localData: NdexNetworkSummary[] = await getNetworkSummariesFromDb(
+      //   networkIds,
+      // )
+
       // NDEx server URL
       const newSummaries = (await networkSummaryFetcher(
         networkIds,
         url,
       )) as NdexNetworkSummary[]
+
+      // Put those to DB
+      newSummaries.forEach(async (summary: NdexNetworkSummary) => {
+        await putNetworkSummaryToDb(summary)
+      })
 
       set((state) => {
         const newSummaryMap = new Map(state.summaries)

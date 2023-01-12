@@ -20,12 +20,9 @@ import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
 import { AppConfigContext } from '../AppConfigContext'
 import { Workspace } from '../models/WorkspaceModel'
 
-// const testNetworkSet = '8d72ec80-1fc5-11ec-9fe4-0ac135e8bacf'
-
 const WorkSpaceEditor: React.FC = () => {
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
-
   const navigate = useNavigate()
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -56,18 +53,16 @@ const WorkSpaceEditor: React.FC = () => {
 
   const setViewModel = useViewModelStore((state) => state.setViewModel)
 
-  const loadNetworkSet = async (): Promise<void> => {
-    if (workspace.networkIds.length === 0) {
-      return
-    }
-
+  const loadNetworkSummaries = async (): Promise<void> => {
     try {
-      const summaries: NdexNetworkSummary[] = await fetchAllSummaries(
+      const newSummaries: NdexNetworkSummary[] = await fetchAllSummaries(
         workspace.networkIds,
         ndexBaseUrl,
       )
-      // setNetworkSummaries(summaries)
-      const curId: IdType = summaries[0].externalId
+      if (newSummaries.length === 0) {
+        return
+      }
+      const curId: IdType = newSummaries[0].externalId
       setCurrentNetworkId(curId)
     } catch (err) {
       console.log(err)
@@ -94,7 +89,7 @@ const WorkSpaceEditor: React.FC = () => {
   }
 
   /**
-   * Initialization
+   * Initializations
    */
   useEffect(() => {
     const windowWidthListener = debounce(() => {
@@ -102,13 +97,19 @@ const WorkSpaceEditor: React.FC = () => {
     }, 200)
     window.addEventListener('resize', windowWidthListener)
 
-    loadNetworkSet()
-      .then(() => {})
-      .catch((err) => console.error(err))
-
     return () => {
       window.removeEventListener('resize', windowWidthListener)
     }
+  }, [])
+
+  useEffect(() => {
+    if (workspace.networkIds.length === 0) {
+      return
+    }
+
+    loadNetworkSummaries()
+      .then(() => {})
+      .catch((err) => console.error(err))
   }, [workspace.networkIds])
 
   useEffect(() => {
@@ -133,7 +134,7 @@ const WorkSpaceEditor: React.FC = () => {
 
       navigate(`/workspaceIdHere/networks/${currentNetworkId}`)
     }
-  }, [currentNetworkId])
+  }, [currentNetworkId, summaries])
 
   return (
     <Box sx={{ height: 'calc(100vh - 48px)' }}>
