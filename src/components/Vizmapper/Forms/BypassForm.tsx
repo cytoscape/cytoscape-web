@@ -239,6 +239,7 @@ export function BypassForm(props: {
       >
         <VisualPropertyViewBox>
           <VisualPropertyValueRender
+            vpName={props.visualProperty.name}
             value={Array.from(props.visualProperty.bypassMap.values())[0]}
             vpValueType={props.visualProperty.type}
           />

@@ -10,6 +10,9 @@ export function ColorPicker(props: {
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const debouncedValueChange = debounce(onValueChange, 200)
+
+  // use local state to appear instantaneous in the color picker,
+  // but the actual visual style model updates are debounced
   const [localColorValue, setLocalColorValue] = React.useState<ColorType>(
     currentValue ?? `#ffffff`,
   )
