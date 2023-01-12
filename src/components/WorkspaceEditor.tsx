@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import { Box } from '@mui/material'
 import debounce from 'lodash.debounce'
@@ -8,32 +8,44 @@ import VizmapperView from './Vizmapper'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
-import { getNdexNetwork, getNdexNetworkSet } from '../store/useNdexNetwork'
+import { getNdexNetwork } from '../store/useNdexNetwork'
 import { useTableStore } from '../store/TableStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useNetworkStore } from '../store/NetworkStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { IdType } from '../models/IdType'
+import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
+import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
+import { AppConfigContext } from '../AppConfigContext'
+import { Workspace } from '../models/WorkspaceModel'
 
-const testNetworkSet = '8d72ec80-1fc5-11ec-9fe4-0ac135e8bacf'
+// const testNetworkSet = '8d72ec80-1fc5-11ec-9fe4-0ac135e8bacf'
 
 const WorkSpaceEditor: React.FC = () => {
+  // Server location
+  const { ndexBaseUrl } = useContext(AppConfigContext)
+
   const navigate = useNavigate()
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
 
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
 
+  // Network Summaries
+  const summaries: Map<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
+    (state) => state.summaries,
+  )
+  const fetchSummary = useNetworkSummaryStore((state) => state.fetch)
+  const fetchAllSummaries = useNetworkSummaryStore((state) => state.fetchAll)
+
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
 
-  const [networkSetSummaries, setNetworkSummaries] = useState(
-    [] as Array<{ id: string; name: string }>,
-  )
   const addNewNetwork = useNetworkStore((state) => state.add)
 
   // Visual Style Store
@@ -44,11 +56,18 @@ const WorkSpaceEditor: React.FC = () => {
 
   const setViewModel = useViewModelStore((state) => state.setViewModel)
 
-  const loadNetworkSet = async (networkSetId: string): Promise<void> => {
+  const loadNetworkSet = async (): Promise<void> => {
+    if (workspace.networkIds.length === 0) {
+      return
+    }
+
     try {
-      const summaries = await getNdexNetworkSet(networkSetId)
-      setNetworkSummaries(summaries)
-      const curId: IdType = summaries[0].id
+      const summaries: NdexNetworkSummary[] = await fetchAllSummaries(
+        workspace.networkIds,
+        ndexBaseUrl,
+      )
+      // setNetworkSummaries(summaries)
+      const curId: IdType = summaries[0].externalId
       setCurrentNetworkId(curId)
     } catch (err) {
       console.log(err)
@@ -57,7 +76,7 @@ const WorkSpaceEditor: React.FC = () => {
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     try {
-      const res = await getNdexNetwork(networkId)
+      const res = await getNdexNetwork(networkId, ndexBaseUrl)
       const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
       addNewNetwork(network)
@@ -74,23 +93,38 @@ const WorkSpaceEditor: React.FC = () => {
     }
   }
 
+  /**
+   * Initialization
+   */
   useEffect(() => {
     const windowWidthListener = debounce(() => {
       setTableBrowserWidth(window.innerWidth)
     }, 200)
     window.addEventListener('resize', windowWidthListener)
 
-    loadNetworkSet(testNetworkSet)
+    loadNetworkSet()
       .then(() => {})
       .catch((err) => console.error(err))
 
     return () => {
       window.removeEventListener('resize', windowWidthListener)
     }
-  }, [])
+  }, [workspace.networkIds])
 
   useEffect(() => {
     if (currentNetworkId !== '') {
+      const summary = summaries.get(currentNetworkId)
+      if (summary === undefined) {
+        fetchSummary(currentNetworkId, ndexBaseUrl)
+          .then((result) => {
+            console.log('fetched Summary in', result)
+          })
+          .catch((err) => {
+            console.error(err)
+          })
+      }
+
+      console.log('Summary map', summaries)
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
           console.log('Network loaded')
@@ -119,22 +153,24 @@ const WorkSpaceEditor: React.FC = () => {
                   <Box
                     sx={{ overflow: 'scroll', height: '100%', width: '100%' }}
                   >
-                    {networkSetSummaries.map((n) => {
-                      const ndexLink = `https://ndexbio.org/viewer/networks/${n.id}`
-                      const cxLink = `https://ndexbio.org/v3/networks/${n.id}`
+                    {[...summaries.values()].map((summary) => {
+                      const uuid: IdType = summary.externalId
+
+                      const ndexLink = `https://ndexbio.org/viewer/networks/${uuid}`
+                      const cxLink = `https://ndexbio.org/v3/networks/${uuid}`
                       return (
                         <Box
                           sx={{
                             backgroundColor:
-                              n.id === currentNetworkId ? 'gray' : 'white',
+                              uuid === currentNetworkId ? 'gray' : 'white',
                             p: 1,
                             display: 'flex',
                             flexDirection: 'column',
                           }}
-                          onClick={() => setCurrentNetworkId(n.id)}
-                          key={n.id}
+                          onClick={() => setCurrentNetworkId(uuid)}
+                          key={uuid}
                         >
-                          <Box sx={{ p: 1 }}> {n.name}</Box>
+                          <Box sx={{ p: 1 }}> {summary.name}</Box>
                           <Box
                             sx={{
                               p: 1,

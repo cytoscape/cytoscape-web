@@ -9,5 +9,6 @@ export interface Workspace {
   // networkLocalModificationTimes: Record<IdType, Date>
   // modificationTime: Date
   creationTime: Date // Optional?
+  modifiedFlags?: Record<IdType, boolean> // Network is editied locally or not
   options?: any // ???
 }

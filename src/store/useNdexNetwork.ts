@@ -120,6 +120,7 @@ export const networkFetcher = async (
 
 export const getNdexNetwork = async (
   ndexNetworkId: string,
+  url: string,
 ): Promise<{
   network: Network
   nodeTable: Table
@@ -128,7 +129,7 @@ export const getNdexNetwork = async (
   networkView: NetworkView
 }> => {
   try {
-    const ndexUrl = `https://public.ndexbio.org/v3/networks/${ndexNetworkId}`
+    const ndexUrl = `${url}/v3/networks/${ndexNetworkId}`
     const response = await fetch(ndexUrl)
 
     const cxData: Cx2 = (await response.json()) as Cx2
@@ -152,36 +153,5 @@ export const getNdexNetwork = async (
   } catch (error) {
     console.error(error)
     throw error
-  }
-}
-
-export const getNdexNetworkSet = async (
-  networkSetId: string,
-): Promise<Array<{ name: string; id: string }>> => {
-  try {
-    const ndexUrl = `https://ndexbio.org/v2/networkset/${networkSetId}`
-    const response = await fetch(ndexUrl)
-    const json = await response.json()
-    const networkIds = json.networks
-
-    const summaries = await fetch(
-      `https://ndexbio.org/v2/batch/network/summary`,
-      {
-        method: 'POST',
-        body: JSON.stringify(networkIds),
-        headers: { 'Content-Type': 'application/json' },
-      },
-    )
-    const summariesJson = await summaries.json()
-
-    return summariesJson.map((summary: any) => {
-      return {
-        id: summary.externalId,
-        name: summary.name,
-      }
-    })
-  } catch (error) {
-    console.error(error)
-    return []
   }
 }

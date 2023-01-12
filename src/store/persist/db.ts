@@ -1,6 +1,7 @@
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Network } from '../../models/NetworkModel'
+import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { Table } from '../../models/TableModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { Workspace } from '../../models/WorkspaceModel'
@@ -18,11 +19,13 @@ class CyDB extends Dexie {
   cyNetworks!: DxTable<any>
   cyTables!: DxTable<any>
   cyVisualStyles!: DxTable<any>
+  summaries!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
     this.version(1).stores({
       workspace: 'id',
+      summaries: 'id',
       cyNetworks: 'id',
       cyTables: 'id',
       cyVisualStyles: 'id',
@@ -162,4 +165,10 @@ const createWorkspace = (): Workspace => {
     creationTime: new Date(),
     currentNetworkId: '',
   }
+}
+
+export const getNetworkSummaryFromDb = async (
+  id: IdType,
+): Promise<NdexNetworkSummary | undefined> => {
+  return await db.summaries.get({ id })
 }

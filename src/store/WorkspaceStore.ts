@@ -15,10 +15,17 @@ interface WorkspaceActions {
   setCurrentNetworkId: (id: IdType) => void
 }
 
+// Sample networks in dev server
+const SAMPLE_NETWORKS: string[] = [
+  '4acf76b6-23e0-11ed-9208-0242c246b7fb',
+  'f33836d8-23df-11ed-9208-0242c246b7fb',
+  'f9ca49da-3055-11ec-94bf-525400c25d22',
+]
+
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
   name: '',
-  networkIds: [],
+  networkIds: SAMPLE_NETWORKS,
   creationTime: new Date(),
   currentNetworkId: '',
 }

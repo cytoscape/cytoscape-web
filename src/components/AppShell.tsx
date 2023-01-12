@@ -12,7 +12,6 @@ import { ToolBar } from './ToolBar'
  */
 const AppShell = (): ReactElement => {
   const navigate = useNavigate()
-
   const initWorkspace = useWorkspaceStore((state) => state.init)
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
 
