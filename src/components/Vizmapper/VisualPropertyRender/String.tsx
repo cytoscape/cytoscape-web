@@ -1,4 +1,4 @@
-import { Box, TextField } from '@mui/material'
+import { Box, TextField, Typography } from '@mui/material'
 
 export function StringInput(props: {
   currentValue: string | null
@@ -19,5 +19,5 @@ export function StringInput(props: {
 }
 
 export function String(props: { value: string }): React.ReactElement {
-  return <Box>{props.value}</Box>
+  return <Typography variant="body1">{props.value}</Typography>
 }

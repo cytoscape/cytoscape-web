@@ -21,7 +21,7 @@ export function NumberInput(props: {
 export function Number(props: { value: number }): React.ReactElement {
   return (
     <Box>
-      <Typography variant="h6">{props.value}</Typography>
+      <Typography variant="body1">{props.value}</Typography>
     </Box>
   )
 }
