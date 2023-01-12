@@ -4,6 +4,7 @@ import { Box, Popover, Typography, Tooltip } from '@mui/material'
 import {
   VisualProperty,
   VisualPropertyValueType,
+  VisualPropertyName,
 } from '../../../models/VisualStyleModel'
 import { VisualPropertyValueTypeString } from '../../../models/VisualStyleModel/VisualPropertyValueTypeString'
 
@@ -45,11 +46,16 @@ import {
 } from '../VisualPropertyRender/Boolean'
 
 import {
+  OpacitySlider,
+  Opacity as OpacityRender,
+} from '../VisualPropertyRender/Opacity'
+
+import {
   EmptyVisualPropertyViewBox,
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
 
-const type2RenderFnMap: Record<
+const vpType2RenderMap: Record<
   VisualPropertyValueTypeString,
   {
     pickerRender: (props: {
@@ -111,9 +117,49 @@ const type2RenderFnMap: Record<
   },
 }
 
+// in some cases, we have specialized value renders
+// e.g. opacity needs to be rendered as 0% -> 100% instead of 0.0 to 1.0
+// another example is label rotation which will be rendered in angles
+const vpName2RenderMap: Partial<
+  Record<
+    VisualPropertyName,
+    {
+      pickerRender: (props: {
+        currentValue: VisualPropertyValueType | null
+        onValueChange: (newValue: VisualPropertyValueType) => void
+      }) => React.ReactElement
+      valueRender: (props: {
+        value: VisualPropertyValueType
+      }) => React.ReactElement
+    }
+  >
+> = {
+  nodeBorderOpacity: {
+    pickerRender: OpacitySlider,
+    valueRender: OpacityRender,
+  },
+  nodeLabelOpacity: {
+    pickerRender: OpacitySlider,
+    valueRender: OpacityRender,
+  },
+  nodeOpacity: {
+    pickerRender: OpacitySlider,
+    valueRender: OpacityRender,
+  },
+  edgeOpacity: {
+    pickerRender: OpacitySlider,
+    valueRender: OpacityRender,
+  },
+  edgeLabelOpacity: {
+    pickerRender: OpacitySlider,
+    valueRender: OpacityRender,
+  },
+}
+
 interface VisualPropertyRenderProps {
   value: VisualPropertyValueType | null
   vpValueType: VisualPropertyValueTypeString
+  vpName: VisualPropertyName
 }
 
 export function VisualPropertyValueRender(
@@ -122,9 +168,24 @@ export function VisualPropertyValueRender(
   if (props.value == null) {
     return <EmptyVisualPropertyViewBox />
   }
+
+  // check if the vpname has a special render function
+  // if it does, use that instead of the default value render
+  const vpNameRender = vpName2RenderMap[props.vpName]?.valueRender
+  if (vpNameRender != null) {
+    return (
+      <VisualPropertyViewBox>
+        {vpNameRender({
+          value: props.value,
+        })}
+      </VisualPropertyViewBox>
+    )
+  }
+
+  // if not, use the default render for the vp type
   return (
     <VisualPropertyViewBox>
-      {type2RenderFnMap[props.vpValueType].valueRender({
+      {vpType2RenderMap[props.vpValueType].valueRender({
         value: props.value,
       })}
     </VisualPropertyViewBox>
@@ -149,7 +210,10 @@ export function VisualPropertyValueForm(
     setValuePicker(value)
   }
 
-  if (type2RenderFnMap[props.visualProperty.type] == null) {
+  if (
+    vpType2RenderMap[props.visualProperty.type] == null &&
+    vpName2RenderMap[props.visualProperty.name] == null
+  ) {
     return <Box></Box>
   }
 
@@ -158,6 +222,7 @@ export function VisualPropertyValueForm(
       <Tooltip title={props.tooltipText}>
         <Box onClick={(e) => showValuePicker(e.currentTarget)}>
           <VisualPropertyValueRender
+            vpName={props.visualProperty.name}
             value={props.currentValue}
             vpValueType={props.visualProperty.type}
           />
@@ -179,7 +244,8 @@ export function VisualPropertyValueForm(
 
           <Box sx={{ p: 1 }}>
             {(
-              type2RenderFnMap[props.visualProperty.type].pickerRender ??
+              vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+              vpType2RenderMap[props.visualProperty.type].pickerRender ??
               (() => {})
             )({
               onValueChange: (value: VisualPropertyValueType) =>
