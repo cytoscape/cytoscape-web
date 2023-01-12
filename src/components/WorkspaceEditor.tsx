@@ -23,6 +23,9 @@ export const WorkSpaceEditor: React.FC = () => {
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
   const [currentTabIndex, setCurrentTabIndex] = useState(0)
+  const [allotmentDimensions, setAllotmentDimensions] = useState<
+    [number, number]
+  >([0, 0])
 
   const changeTab = (event: React.SyntheticEvent, newValue: number): void => {
     setCurrentTabIndex(newValue)
@@ -99,6 +102,7 @@ export const WorkSpaceEditor: React.FC = () => {
         onChange={debounce((sizes: number[]) => {
           // sizes[0] represents the height of the top pane (network list, network renderer, vizmapper)
           // sizes[1] represents the height of the bottom pane (table browser)
+          setAllotmentDimensions([sizes[0], sizes[1]])
           setTableBrowserHeight(sizes[1])
         }, 200)}
       >
@@ -107,7 +111,7 @@ export const WorkSpaceEditor: React.FC = () => {
             <Allotment.Pane preferredSize="20%">
               <Box
                 sx={{
-                  overflow: 'scroll',
+                  // overflow: 'scroll',
                   height: '100%',
                 }}
               >
@@ -130,7 +134,12 @@ export const WorkSpaceEditor: React.FC = () => {
                 <div hidden={currentTabIndex !== 0}>
                   {currentTabIndex === 0 && (
                     <Box
-                      sx={{ overflow: 'scroll', height: '100%', width: '100%' }}
+                      sx={{
+                        overflow: 'scroll',
+                        height: allotmentDimensions[0] - 48, // need to set a height to enable scroll in the network list
+                        // 48 is the height of the tool bar
+                        width: '100%',
+                      }}
                     >
                       {networkSetSummaries.map((n) => {
                         const ndexLink = `https://ndexbio.org/viewer/networks/${n.id}`
@@ -174,13 +183,16 @@ export const WorkSpaceEditor: React.FC = () => {
                 </div>
                 <div hidden={currentTabIndex !== 1}>
                   {currentTabIndex === 1 && (
-                    <Box sx={{ overflow: 'scroll', height: '100%' }}>
+                    <Box>
                       {' '}
                       <Suspense
                         fallback={<div>{`Loading from NDEx`}</div>}
                         key={currentNetworkId}
                       >
-                        <VizmapperView currentNetworkId={currentNetworkId} />
+                        <VizmapperView
+                          currentNetworkId={currentNetworkId}
+                          height={allotmentDimensions[0]}
+                        />
                       </Suspense>
                     </Box>
                   )}

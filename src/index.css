@@ -51,7 +51,9 @@ body {
 
 .allotment-module_splitView__L-yRc
   > .allotment-module_splitViewContainer__rQnVa
-  > .allotment-module_splitViewView__MGZ6O:not(.allotment-module_visible__AHq-h) {
+  > .allotment-module_splitViewView__MGZ6O:not(
+    .allotment-module_visible__AHq-h
+  ) {
   display: none;
 }
 
@@ -165,16 +167,24 @@ body {
   position: absolute;
 }
 
-.sash-module_sash__K-9lB.sash-module_horizontal__kFbiw.sash-module_orthogonal-edge-north__f7Noe:not(.sash-module_disabled__Hm-wx)
+.sash-module_sash__K-9lB.sash-module_horizontal__kFbiw.sash-module_orthogonal-edge-north__f7Noe:not(
+    .sash-module_disabled__Hm-wx
+  )
   > .sash-module_orthogonal-drag-handle__Yii2-.sash-module_start__uZEDk,
-.sash-module_sash__K-9lB.sash-module_horizontal__kFbiw.sash-module_orthogonal-edge-south__6ZrFC:not(.sash-module_disabled__Hm-wx)
+.sash-module_sash__K-9lB.sash-module_horizontal__kFbiw.sash-module_orthogonal-edge-south__6ZrFC:not(
+    .sash-module_disabled__Hm-wx
+  )
   > .sash-module_orthogonal-drag-handle__Yii2-.sash-module_end__0TP-R {
   cursor: nwse-resize;
 }
 
-.sash-module_sash__K-9lB.sash-module_horizontal__kFbiw.sash-module_orthogonal-edge-north__f7Noe:not(.sash-module_disabled__Hm-wx)
+.sash-module_sash__K-9lB.sash-module_horizontal__kFbiw.sash-module_orthogonal-edge-north__f7Noe:not(
+    .sash-module_disabled__Hm-wx
+  )
   > .sash-module_orthogonal-drag-handle__Yii2-.sash-module_end__0TP-R,
-.sash-module_sash__K-9lB.sash-module_horizontal__kFbiw.sash-module_orthogonal-edge-south__6ZrFC:not(.sash-module_disabled__Hm-wx)
+.sash-module_sash__K-9lB.sash-module_horizontal__kFbiw.sash-module_orthogonal-edge-south__6ZrFC:not(
+    .sash-module_disabled__Hm-wx
+  )
   > .sash-module_orthogonal-drag-handle__Yii2-.sash-module_start__uZEDk {
   cursor: nesw-resize;
 }

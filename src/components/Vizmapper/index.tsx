@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Box, Typography, Tabs, Tab } from '@mui/material'
+import { Box, Typography, Tabs, Tab, Divider } from '@mui/material'
 
 import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
@@ -54,6 +54,7 @@ function VisualPropertyView(props: {
 
 export default function VizmapperView(props: {
   currentNetworkId: IdType
+  height: number
 }): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
   const visualStyles: Record<IdType, VisualStyle> = useVisualStyleStore(
@@ -101,8 +102,7 @@ export default function VizmapperView(props: {
     <Box
       sx={{
         borderBottom: 1,
-        overflow: 'scroll',
-        height: '100%',
+        // height: props.height,
         width: '100%',
       }}
     >
@@ -135,14 +135,50 @@ export default function VizmapperView(props: {
         <Box sx={{ width: 40, textAlign: 'center', mr: 1 }}>Map.</Box>
         <Box sx={{ width: 40, textAlign: 'center' }}>Byp.</Box>
       </Box>
+      <Divider />
       <div hidden={currentTabIndex !== 0}>
-        {currentTabIndex === 0 && <Box sx={{ ml: 1, mb: 1 }}>{nodeVps}</Box>}
+        {currentTabIndex === 0 && (
+          <Box
+            sx={{
+              ml: 1,
+              mb: 1,
+              overflow: 'scroll',
+              height: props.height - 135, // we want to only scroll the vp list instead of the whole allotment
+              // height has to be computed based on allotment size to allow overflow scroll
+              // height is passed as a prop but this could be pulled from a uiState store instead in the future
+            }}
+          >
+            {nodeVps}
+          </Box>
+        )}
       </div>
       <div hidden={currentTabIndex !== 1}>
-        {currentTabIndex === 1 && <Box sx={{ ml: 1, mb: 1 }}>{edgeVps}</Box>}
+        {currentTabIndex === 1 && (
+          <Box
+            sx={{
+              ml: 1,
+              mb: 1,
+              overflow: 'scroll',
+              height: props.height - 135,
+            }}
+          >
+            {edgeVps}
+          </Box>
+        )}
       </div>
       <div hidden={currentTabIndex !== 2}>
-        {currentTabIndex === 2 && <Box sx={{ ml: 1, mb: 1 }}>{networkVps}</Box>}
+        {currentTabIndex === 2 && (
+          <Box
+            sx={{
+              ml: 1,
+              mb: 1,
+              overflow: 'scroll',
+              height: props.height - 135,
+            }}
+          >
+            {networkVps}
+          </Box>
+        )}
       </div>
     </Box>
   )
