@@ -1,12 +1,13 @@
-import { NetworkSummary } from './NetworkSummary'
 import { IdType } from '../IdType'
 
 export interface Workspace {
-  id: IdType
-  selectedNetworkId: IdType
-  networks: NetworkSummary[]
+  id: IdType // UUID of the workspace. Who generates this?
+  currentNetworkId: IdType
+  networkIds: IdType[]
   name: string
-  modificationTime: Date
-  creationTime: Date
-  options: any
+  // localModificationTime: Date
+  // networkLocalModificationTimes: Record<IdType, Date>
+  // modificationTime: Date
+  creationTime: Date // Optional?
+  options?: any // ???
 }

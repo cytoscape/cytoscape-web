@@ -2,7 +2,7 @@ import { NetworkViewer } from './NetworkViewer'
 import { Suspense, useState } from 'react'
 import { LoadingMessage } from './LoadingMessage'
 import { deleteDb } from '../../store/persist/db'
-import { useWorkspaceStore } from '../../store/NetworkStore'
+import { useNetworkStore } from '../../store/NetworkStore'
 import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 
@@ -26,8 +26,8 @@ export const DemoPanel = (): JSX.Element => {
   const [newUuid, setNewUuid] = useState<string>('')
   const [networkIds, setNetworkIds] = useState<string[]>([S_NET_ID])
 
-  const deleteNetwork = useWorkspaceStore((state) => state.delete)
-  const networks: Record<string, Network> = useWorkspaceStore(
+  const deleteNetwork = useNetworkStore((state) => state.delete)
+  const networks: Record<string, Network> = useNetworkStore(
     (state) => state.networks,
   )
   // const addNetwork = useNetworkStore((state) => state.add)

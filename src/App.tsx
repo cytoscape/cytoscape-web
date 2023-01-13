@@ -40,7 +40,8 @@ const router = createBrowserRouter(
           </Suspense>
         }
       >
-        <Route path="networks/:networkId" index element={<NetworkPanel />} />
+        <Route path="networks" element={<h1>Select a network</h1>} />
+        <Route path="networks/:networkId" element={<NetworkPanel />} />
       </Route>
     </Route>,
   ),

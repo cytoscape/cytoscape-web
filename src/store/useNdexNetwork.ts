@@ -19,7 +19,7 @@ import {
 } from './persist/db'
 
 import { useVisualStyleStore } from './VisualStyleStore'
-import { useWorkspaceStore } from './NetworkStore'
+import { useNetworkStore } from './NetworkStore'
 import { useTableStore } from './TableStore'
 import ViewModelFn, { NetworkView } from '../models/ViewModel'
 /**
@@ -46,7 +46,7 @@ export const useNdexNetwork = (
   const ndexUrl = `${ndexBaseUrl}/networks/${id}`
 
   // Network Store
-  const addNewNetwork = useWorkspaceStore((state) => state.add)
+  const addNewNetwork = useNetworkStore((state) => state.add)
 
   // Visual Style Store
   const setVisualStyle = useVisualStyleStore((state) => state.set)
@@ -55,7 +55,7 @@ export const useNdexNetwork = (
   const setTables = useTableStore((state) => state.setTables)
 
   // Global state via zustand
-  const networks: Record<IdType, Network> = useWorkspaceStore(
+  const networks: Record<IdType, Network> = useNetworkStore(
     (state) => state.networks,
   )
 

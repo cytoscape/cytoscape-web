@@ -9,43 +9,29 @@ import { immer } from 'zustand/middleware/immer'
 /**
  * Network State manager based on zustand
  */
-interface WorkspaceState {
-  id: IdType
-  name: string
-  modificationTime?: Date
-  creationTime?: Date
-  options?: any
+interface NetworkState {
   networks: Record<IdType, Network>
 }
 
 /**
  * Actions to mutate network structure
  */
-interface UpdateAction {
+interface UpdateActions {
   addNode: (networkId: IdType, nodeId: IdType) => void
   addNodes: (networkId: IdType, nodeIds: IdType[]) => void
   deleteNode: (networkId: IdType, nodeId: IdType) => void
   addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => void
 }
 
-interface NetworkAction {
+interface NetworkActions {
   add: (network: Network) => void
   delete: (networkId: IdType) => void
   deleteAll: () => void
 }
 
-// interface WorkspaceAction {
-//   setTime: (modificationTime: Date) => void
-//   setName: (name: string) => void
-//   setOptions: (options: any) => void
-// }
-
-export const useWorkspaceStore = create(
-  immer<WorkspaceState & NetworkAction & UpdateAction>((set) => ({
-    id: '-' as IdType,
-    name: 'workspace',
+export const useNetworkStore = create(
+  immer<NetworkState & NetworkActions & UpdateActions>((set) => ({
     networks: {},
-    creationTime: new Date(),
 
     addNode: (networkId: IdType, nodeId: IdType) => {
       set((state) => {

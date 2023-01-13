@@ -3,6 +3,7 @@ import { IdType } from '../../models/IdType'
 import NetworkFn, { Network } from '../../models/NetworkModel'
 import { Table } from '../../models/TableModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
+import { Workspace } from '../../models/WorkspaceModel'
 
 const DB_NAME = 'cyweb-db'
 
@@ -13,6 +14,7 @@ const DB_NAME = 'cyweb-db'
  *  - description
  */
 class CyDB extends Dexie {
+  workspace!: DxTable<any>
   cyNetworks!: DxTable<any>
   cyTables!: DxTable<any>
   cyVisualStyles!: DxTable<any>
@@ -20,6 +22,7 @@ class CyDB extends Dexie {
   constructor(dbName: string) {
     super(dbName)
     this.version(1).stores({
+      workspace: 'id',
       cyNetworks: 'id',
       cyTables: 'id',
       cyVisualStyles: 'id',
@@ -123,4 +126,40 @@ export const putVisualStylesToDb = async (
     id,
     visualStyle,
   })
+}
+
+export const putWorkspaceToDb = async (
+  workspace: Workspace,
+): Promise<IndexableType> => {
+  return await db.workspace.put({ id: workspace.id, workspace })
+}
+
+export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
+  if (id === undefined) {
+    const newWs: Workspace = createWorkspace()
+    await putWorkspaceToDb(newWs)
+    return newWs
+  }
+
+  const cachedWorkspace: any = await db.workspace.get({ id })
+  if (cachedWorkspace !== undefined) {
+    return cachedWorkspace
+  } else {
+    const newWs: Workspace = createWorkspace()
+    await putWorkspaceToDb(newWs)
+    return newWs
+  }
+}
+
+const DEF_WORKSPACE_ID = 'newWorkspace'
+const DEF_WORKSPACE_NAME = 'New Workspace'
+
+const createWorkspace = (): Workspace => {
+  return {
+    id: DEF_WORKSPACE_ID as IdType,
+    name: DEF_WORKSPACE_NAME,
+    networkIds: [],
+    creationTime: new Date(),
+    currentNetworkId: '',
+  }
 }
