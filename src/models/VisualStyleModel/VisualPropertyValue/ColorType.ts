@@ -4,4 +4,4 @@ export type HEX = `#${string}`
 
 // restrict the type of color for now as most logic in the app assumes
 // that the color is a hex string
-export type Color = HEX
+export type ColorType = HEX

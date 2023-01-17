@@ -5,7 +5,7 @@ export const defaultVisualStyle: VisualStyle = {
     group: 'node',
     name: 'nodeShape',
     type: 'nodeShape',
-    displayName: 'shape',
+    displayName: 'Shape',
     defaultValue: 'ellipse',
     mapping: null,
     bypassMap: new Map(),
@@ -13,7 +13,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeBorderColor: {
     group: 'node',
     name: 'nodeBorderColor',
-    displayName: 'border color',
+    displayName: 'Border Color',
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
@@ -22,7 +22,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeBorderLineType: {
     group: 'node',
     name: 'nodeBorderLineType',
-    displayName: 'border line',
+    displayName: 'Border Line',
     type: 'nodeBorderLine',
     defaultValue: 'solid',
     mapping: null,
@@ -31,7 +31,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeBorderWidth: {
     group: 'node',
     name: 'nodeBorderWidth',
-    displayName: 'border width',
+    displayName: 'Border Width',
     type: 'number',
     defaultValue: 1,
     mapping: null,
@@ -40,7 +40,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeBorderOpacity: {
     group: 'node',
     name: 'nodeBorderOpacity',
-    displayName: 'border opacity',
+    displayName: 'Border Opacity',
     type: 'number',
     defaultValue: 1.0,
     mapping: null,
@@ -49,7 +49,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeHeight: {
     group: 'node',
     name: 'nodeHeight',
-    displayName: 'height',
+    displayName: 'Height',
     type: 'number',
     defaultValue: 40,
     mapping: null,
@@ -58,7 +58,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeWidth: {
     group: 'node',
     name: 'nodeWidth',
-    displayName: 'width',
+    displayName: 'Width',
     type: 'number',
     defaultValue: 40,
     mapping: null,
@@ -67,7 +67,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeBackgroundColor: {
     group: 'node',
     name: 'nodeBackgroundColor',
-    displayName: 'background color',
+    displayName: 'Background Color',
     type: 'color',
     defaultValue: '#FFFFFF',
     mapping: null,
@@ -76,7 +76,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeLabel: {
     group: 'node',
     name: 'nodeLabel',
-    displayName: 'label',
+    displayName: 'Label',
     type: 'string',
     defaultValue: '',
     mapping: null,
@@ -85,7 +85,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeLabelColor: {
     group: 'node',
     name: 'nodeLabelColor',
-    displayName: 'label color',
+    displayName: 'Label Color',
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
@@ -94,7 +94,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeLabelFontSize: {
     group: 'node',
     name: 'nodeLabelFontSize',
-    displayName: 'label font size',
+    displayName: 'Label Font Size',
     type: 'number',
     defaultValue: 12,
     mapping: null,
@@ -103,7 +103,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeLabelFont: {
     group: 'node',
     name: 'nodeLabelFont',
-    displayName: 'label font',
+    displayName: 'Label Font',
     type: 'font',
     defaultValue: 'serif',
     mapping: null,
@@ -112,7 +112,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeLabelHorizontalAlign: {
     group: 'node',
     name: 'nodeLabelHorizontalAlign',
-    displayName: 'label horizontal align',
+    displayName: 'Label Horizontal Align',
     type: 'horizontalAlign',
     defaultValue: 'center',
     mapping: null,
@@ -121,7 +121,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeLabelVerticalAlign: {
     group: 'node',
     name: 'nodeLabelVerticalAlign',
-    displayName: 'label vertical align',
+    displayName: 'Label Vertical Align',
     type: 'verticalAlign',
     defaultValue: 'center',
     mapping: null,
@@ -130,7 +130,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeLabelRotation: {
     group: 'node',
     name: 'nodeLabelRotation',
-    displayName: 'label rotation',
+    displayName: 'Label Rotation',
     type: 'number',
     defaultValue: 0,
     mapping: null,
@@ -139,7 +139,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeLabelOpacity: {
     group: 'node',
     name: 'nodeLabelOpacity',
-    displayName: 'label opacity',
+    displayName: 'Label Opacity',
     type: 'number',
     defaultValue: 1.0,
     mapping: null,
@@ -148,7 +148,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodePositionX: {
     group: 'node',
     name: 'nodePositionX',
-    displayName: 'position x',
+    displayName: 'Position X',
     type: 'number',
     defaultValue: 0,
     mapping: null,
@@ -157,7 +157,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodePositionY: {
     group: 'node',
     name: 'nodePositionY',
-    displayName: 'position y',
+    displayName: 'Position Y',
     type: 'number',
     defaultValue: 0,
     mapping: null,
@@ -166,7 +166,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodePositionZ: {
     group: 'node',
     name: 'nodePositionZ',
-    displayName: 'position z',
+    displayName: 'Position Z',
     type: 'number',
     defaultValue: 0,
     mapping: null,
@@ -175,7 +175,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeOpacity: {
     group: 'node',
     name: 'nodeOpacity',
-    displayName: 'opacity',
+    displayName: 'Opacity',
     type: 'number',
     defaultValue: 1.0,
     mapping: null,
@@ -184,7 +184,7 @@ export const defaultVisualStyle: VisualStyle = {
   nodeVisibility: {
     group: 'node',
     name: 'nodeVisibility',
-    displayName: 'visibility',
+    displayName: 'Visibility',
     type: 'visibility',
     defaultValue: 'element',
     mapping: null,
@@ -193,7 +193,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeLineColor: {
     group: 'edge',
     name: 'edgeLineColor',
-    displayName: 'line color',
+    displayName: 'Line Color',
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
@@ -202,7 +202,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeLineType: {
     group: 'edge',
     name: 'edgeLineType',
-    displayName: 'line type',
+    displayName: 'Line Type',
     type: 'edgeLine',
     defaultValue: 'solid',
     mapping: null,
@@ -211,7 +211,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeOpacity: {
     group: 'edge',
     name: 'edgeOpacity',
-    displayName: 'opacity',
+    displayName: 'Opacity',
     type: 'number',
     defaultValue: 1.0,
     mapping: null,
@@ -220,7 +220,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeSourceArrowColor: {
     group: 'edge',
     name: 'edgeSourceArrowColor',
-    displayName: 'source arrow color',
+    displayName: 'Source Arrow Color',
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
@@ -229,7 +229,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeSourceArrowShape: {
     group: 'edge',
     name: 'edgeSourceArrowShape',
-    displayName: 'source arrow shape',
+    displayName: 'Source Arrow Shape',
     type: 'edgeArrowShape',
     defaultValue: 'none',
     mapping: null,
@@ -238,7 +238,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeTargetArrowColor: {
     group: 'edge',
     name: 'edgeTargetArrowColor',
-    displayName: 'target arrow color',
+    displayName: 'Target Arrow Color',
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
@@ -247,7 +247,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeTargetArrowShape: {
     group: 'edge',
     name: 'edgeTargetArrowShape',
-    displayName: 'target arrow shape',
+    displayName: 'Target Arrow Shape',
     type: 'edgeArrowShape',
     defaultValue: 'none',
     mapping: null,
@@ -256,7 +256,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeLabel: {
     group: 'edge',
     name: 'edgeLabel',
-    displayName: 'label',
+    displayName: 'Label',
     type: 'string',
     defaultValue: '',
     mapping: null,
@@ -265,7 +265,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeLabelColor: {
     group: 'edge',
     name: 'edgeLabelColor',
-    displayName: 'label color',
+    displayName: 'Label Color',
     type: 'color',
     defaultValue: '#000000',
     mapping: null,
@@ -274,7 +274,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeLabelFontSize: {
     group: 'edge',
     name: 'edgeLabelFontSize',
-    displayName: 'label font size',
+    displayName: 'Label Font Size',
     type: 'number',
     defaultValue: 12,
     mapping: null,
@@ -283,7 +283,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeLabelFont: {
     group: 'edge',
     name: 'edgeLabelFont',
-    displayName: 'label font',
+    displayName: 'Label Font',
     type: 'font',
     defaultValue: 'serif',
     mapping: null,
@@ -292,7 +292,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeLabelRotation: {
     group: 'edge',
     name: 'edgeLabelRotation',
-    displayName: 'label rotation',
+    displayName: 'Label Rotation',
     type: 'number',
     defaultValue: 0,
     mapping: null,
@@ -301,7 +301,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeLabelOpacity: {
     group: 'edge',
     name: 'edgeLabelOpacity',
-    displayName: 'label opacity',
+    displayName: 'Label Opacity',
     defaultValue: 1.0,
     type: 'number',
     mapping: null,
@@ -310,7 +310,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeLabelAutoRotation: {
     group: 'edge',
     name: 'edgeLabelAutoRotation',
-    displayName: 'label auto rotation',
+    displayName: 'Label Auto Rotation',
     defaultValue: true,
     type: 'boolean',
     mapping: null,
@@ -319,7 +319,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeWidth: {
     group: 'edge',
     name: 'edgeWidth',
-    displayName: 'width',
+    displayName: 'Width',
     type: 'number',
     defaultValue: 1,
     mapping: null,
@@ -328,7 +328,7 @@ export const defaultVisualStyle: VisualStyle = {
   edgeVisibility: {
     group: 'edge',
     name: 'edgeVisibility',
-    displayName: 'visibility',
+    displayName: 'Visibility',
     type: 'visibility',
     defaultValue: 'element',
     mapping: null,
@@ -338,7 +338,7 @@ export const defaultVisualStyle: VisualStyle = {
     group: 'network',
     name: 'networkBackgroundColor',
     type: 'color',
-    displayName: 'background color',
+    displayName: 'Background Color',
     defaultValue: '#FFFFFF',
     mapping: null,
     bypassMap: new Map(),

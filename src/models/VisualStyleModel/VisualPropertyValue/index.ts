@@ -1,4 +1,4 @@
-import { Color } from './Color'
+import { ColorType } from './ColorType'
 import { NodeShapeType } from './NodeShapeType'
 import { EdgeLineType } from './EdgeLineType'
 import { EdgeArrowShapeType } from './EdgeArrowShapeType'
@@ -11,7 +11,7 @@ import { NodeBorderLineType } from './NodeBorderLineType'
 import { VisibilityType } from './VisibilityType'
 
 export type VisualPropertyValueType =
-  | Color
+  | ColorType
   | NodeShapeType
   | EdgeLineType
   | EdgeArrowShapeType
@@ -24,7 +24,7 @@ export type VisualPropertyValueType =
   | number
   | boolean
 
-export { Color } from './Color'
+export { ColorType } from './ColorType'
 export { NodeShapeType } from './NodeShapeType'
 export { EdgeLineType } from './EdgeLineType'
 export { EdgeArrowShapeType } from './EdgeArrowShapeType'

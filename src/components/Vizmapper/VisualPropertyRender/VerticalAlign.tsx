@@ -1,8 +1,8 @@
-import { VerticalAlignType } from '../../models/VisualStyleModel/VisualPropertyValue'
-import { Box } from '@mui/material'
+import { VerticalAlignType } from '../../../models/VisualStyleModel/VisualPropertyValue'
+import { Box, Typography } from '@mui/material'
 
 export function VerticalAlignPicker(props: {
-  currentValue: VerticalAlignType
+  currentValue: VerticalAlignType | null
   onValueChange: (verticalAlign: VerticalAlignType) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
@@ -36,7 +36,7 @@ export function VerticalAlignPicker(props: {
 }
 
 export function VerticalAlign(props: {
-  verticalAlign: VerticalAlignType
+  value: VerticalAlignType
 }): React.ReactElement {
-  return <Box>{props.verticalAlign}</Box>
+  return <Typography variant="body1">{props.value}</Typography>
 }

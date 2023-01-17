@@ -29,9 +29,12 @@ export default function NetworkRenderer(
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
   const viewModels = useViewModelStore((state) => state.viewModels)
-  const setSelected = useViewModelStore((state) => state.setSelected)
+  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const network = networks[currentNetworkId]
   const networkView = viewModels[currentNetworkId]
+  const nodeViews = networkView?.nodeViews
+  const edgeViews = networkView?.edgeViews
+  const hoveredElement = networkView?.hoveredElement
   const vs = visualStyles[currentNetworkId]
   const table = tables[currentNetworkId]
 
@@ -59,7 +62,7 @@ export default function NetworkRenderer(
       cy.on(
         'boxselect select',
         debounce((e: EventObject) => {
-          setSelected(
+          exclusiveSelect(
             currentNetworkId,
             cy
               .elements()
@@ -73,7 +76,7 @@ export default function NetworkRenderer(
         // check for background click
         // on background click deselect all
         if (e.target === cy) {
-          setSelected(currentNetworkId, [])
+          exclusiveSelect(currentNetworkId, [])
         }
       })
       cy.endBatch()
@@ -82,6 +85,10 @@ export default function NetworkRenderer(
   }
 
   const applyStyleUpdate = (): void => {
+    if (nodeViews == null || edgeViews == null || vs == null || table == null) {
+      return
+    }
+
     if (cy != null) {
       cy.startBatch()
 
@@ -108,7 +115,35 @@ export default function NetworkRenderer(
         cy.getElementById(edgeId).style(bypass)
       })
 
+      Object.values(nodeViews).forEach((nv) => {
+        const ele = cy.getElementById(nv.id)
+        if (nv.selected ?? false) {
+          ele.select()
+        } else {
+          ele.unselect()
+        }
+      })
+      Object.values(edgeViews).forEach((ev) => {
+        const ele = cy.getElementById(ev.id)
+        if (ev.selected ?? false) {
+          ele.select()
+        } else {
+          ele.unselect()
+        }
+      })
+
       cy.endBatch()
+    }
+  }
+
+  const applyHoverStyle = (): void => {
+    if (cy != null) {
+      cy.nodes().removeClass('hovered')
+      cy.edges().removeClass('hovered')
+
+      if (hoveredElement != null) {
+        cy.getElementById(hoveredElement).addClass('hovered')
+      }
     }
   }
 
@@ -122,16 +157,21 @@ export default function NetworkRenderer(
     [currentNetworkId, network],
   )
 
+  // when the visual style model, table model, or edge/node views change re-render cy.js style
   React.useEffect(
     debounce(() => {
       applyStyleUpdate()
     }, 200),
-    [vs, table, networkView],
+    [vs, table, edgeViews, nodeViews],
   )
 
-  // React.useEffect(() => {
-  //   loadAndRenderNetwork()
-  // }, [props.currentNetworkId, vs, table])
+  // when hovered element changes, apply hover style to that element
+  React.useEffect(
+    debounce(() => {
+      applyHoverStyle()
+    }, 200),
+    [hoveredElement],
+  )
 
   React.useEffect(() => {
     const cy: Core = Cytoscape({

@@ -1,6 +1,6 @@
 import { VisualPropertyName } from '../VisualPropertyName'
 import {
-  Color,
+  ColorType,
   FontType,
   NodeBorderLineType,
   NodeShapeType,
@@ -78,11 +78,11 @@ export interface CXVisualPropertyConverter<T> {
 
 export const VPColorConverter = (
   cxVPName: string,
-): CXVisualPropertyConverter<Color> => {
+): CXVisualPropertyConverter<ColorType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: CXVisualPropertyValue): Color =>
-      cxVPValue as Color,
+    valueConverter: (cxVPValue: CXVisualPropertyValue): ColorType =>
+      cxVPValue as ColorType,
   }
 }
 export const VPStringConverter = (

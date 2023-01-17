@@ -5,5 +5,5 @@ export interface NodeView {
   x?: number // X coordinate of the node
   y?: number // Y coordinate of the node
   z?: number // Z coordinate of the node
-  selected?: boolean
+  selected: boolean
 }

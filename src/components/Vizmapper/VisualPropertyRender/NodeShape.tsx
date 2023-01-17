@@ -1,0 +1,74 @@
+import { NodeShapeType } from '../../../models/VisualStyleModel/VisualPropertyValue'
+import { Box } from '@mui/material'
+import {
+  EllipseIcon,
+  RectangleIcon,
+  RoundRectangleIcon,
+  TriangleIcon,
+  DiamondIcon,
+  OctagonIcon,
+  HexagonIcon,
+  ParallelogramIcon,
+  VeeIcon,
+} from '../VisualStyleIcons'
+import React from 'react'
+
+const nodeShapeMap: Record<NodeShapeType, React.ReactElement> = {
+  ellipse: <EllipseIcon />,
+  rectangle: <RectangleIcon />,
+  'round-rectangle': <RoundRectangleIcon />,
+  triangle: <TriangleIcon />,
+  diamond: <DiamondIcon />,
+  hexagon: <HexagonIcon />,
+  octagon: <OctagonIcon />,
+  parallelogram: <ParallelogramIcon />,
+  vee: <VeeIcon />,
+}
+
+export function NodeShapePicker(props: {
+  currentValue: NodeShapeType | null
+  onValueChange: (shape: NodeShapeType) => void
+}): React.ReactElement {
+  const { onValueChange, currentValue } = props
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        width: 300,
+      }}
+    >
+      {Object.values(NodeShapeType).map((shape: NodeShapeType) => (
+        <Box
+          sx={{
+            color: currentValue === shape ? 'blue' : 'black',
+            width: 100,
+            p: 1,
+            '&:hover': { cursor: 'pointer' },
+          }}
+          onClick={() => onValueChange(shape)}
+          key={shape}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: 100,
+            }}
+          >
+            <NodeShape value={shape} />
+            <Box>{shape}</Box>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+export function NodeShape(props: { value: NodeShapeType }): React.ReactElement {
+  return nodeShapeMap[props.value] ?? <Box>{props.value}</Box>
+}
