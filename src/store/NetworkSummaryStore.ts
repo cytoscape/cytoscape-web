@@ -16,7 +16,7 @@ interface NetworkSummaryStore {
 
 interface NetworkSummaryActions {
   fetch: (networkId: IdType, url: string) => Promise<NdexNetworkSummary>
-  fetchAll: (networkIds: IdType[], url: string) => Promise<NdexNetworkSummary[]>
+  fetchAll: (networkIds: IdType[], url: string) => Promise<void>
   delete: (networkId: IdType) => void
 }
 
@@ -69,22 +69,38 @@ export const useNetworkSummaryStore = create(
     },
     fetchAll: async (networkIds: IdType[], url: string) => {
       // Check local database first
-      // const localData: NdexNetworkSummary[] = await getNetworkSummariesFromDb(
-      //   networkIds,
-      // )
-
-      // NDEx server URL
-      const newSummaries = (await networkSummaryFetcher(
+      const localData: NdexNetworkSummary[] = await getNetworkSummariesFromDb(
         networkIds,
-        url,
-      )) as NdexNetworkSummary[]
+      )
 
-      // Put those to DB
-      newSummaries.forEach(async (summary: NdexNetworkSummary) => {
-        await putNetworkSummaryToDb(summary)
+      const results: NdexNetworkSummary[] = []
+      localData.forEach((summary) => {
+        if (summary !== undefined) {
+          results.push(summary)
+        }
       })
 
+      let newSummaries: NdexNetworkSummary[] = []
+      if (results.length !== 0) {
+        newSummaries = results
+      } else {
+        // NDEx server URL
+        newSummaries = (await networkSummaryFetcher(
+          networkIds,
+          url,
+        )) as NdexNetworkSummary[]
+
+        // Put those to DB
+        newSummaries.forEach(async (summary: NdexNetworkSummary) => {
+          await putNetworkSummaryToDb(summary)
+        })
+      }
+
       set((state) => {
+        if (newSummaries.length === 0) {
+          return state
+        }
+
         const newSummaryMap = new Map(state.summaries)
         newSummaries.forEach((summary, index) => {
           newSummaryMap.set(summary.externalId, summary)
@@ -95,7 +111,7 @@ export const useNetworkSummaryStore = create(
         }
       })
 
-      return newSummaries
+      // return newSummaries
     },
     delete: (networkId: IdType) => {
       set((state) => {

@@ -1,4 +1,4 @@
-import React, { ReactElement, useEffect } from 'react'
+import { ReactElement, useEffect } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { Workspace } from '../models/WorkspaceModel'
 import { useWorkspaceStore } from '../store/WorkspaceStore'

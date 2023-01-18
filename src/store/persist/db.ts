@@ -5,6 +5,7 @@ import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { Table } from '../../models/TableModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { Workspace } from '../../models/WorkspaceModel'
+import { v4 as uuidv4 } from 'uuid'
 
 const DB_NAME = 'cyweb-db'
 
@@ -33,10 +34,23 @@ class CyDB extends Dexie {
   }
 }
 
-const db = new CyDB(DB_NAME)
+// Initialize the DB
+let db = new CyDB(DB_NAME)
+db.open()
+  .then((dexi) => {
+    console.info('Local DB opened', dexi)
+  })
+  .catch((err) => {
+    console.log(err)
+  })
+
+db.on('ready', () => {
+  console.info('Local DB is ready')
+})
 
 export const deleteDb = async (): Promise<void> => {
   await Dexie.delete(DB_NAME)
+  db = new CyDB(DB_NAME)
 }
 
 /**
@@ -147,13 +161,31 @@ export const updateWorkspaceDb = async (
 }
 
 export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
+  // Check there is no workspace in the DB or not
+
+  const workspaceCount: number = await db.workspace.count()
+
   if (id === undefined) {
-    const newWs: Workspace = createWorkspace()
-    await putWorkspaceToDb(newWs)
-    return newWs
+    if (workspaceCount === 0) {
+      // Initialize all data
+      const newWs: Workspace = createWorkspace()
+      await db.transaction('rw', db.workspace, async () => {
+        await putWorkspaceToDb(newWs)
+        console.info('New workspace created')
+      })
+      return newWs
+    } else {
+      // There is a workspace in the DB
+      const allWS: Workspace[] = await db.workspace.toArray()
+
+      // TODO: pick the newest one in the production
+      const lastWs: Workspace = allWS[0]
+      console.info('Last workspace loaded from DB', lastWs)
+      return lastWs
+    }
   }
 
-  const cachedWorkspace: any = await db.workspace.get({ id })
+  const cachedWorkspace: Workspace = await db.workspace.get(id)
   if (cachedWorkspace !== undefined) {
     return cachedWorkspace
   } else {
@@ -163,12 +195,12 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
   }
 }
 
-const DEF_WORKSPACE_ID = 'newWorkspace'
+// const DEF_WORKSPACE_ID = 'newWorkspace'
 const DEF_WORKSPACE_NAME = 'New Workspace'
 
 const createWorkspace = (): Workspace => {
   return {
-    id: DEF_WORKSPACE_ID as IdType,
+    id: uuidv4(),
     name: DEF_WORKSPACE_NAME,
     networkIds: [],
     creationTime: new Date(),

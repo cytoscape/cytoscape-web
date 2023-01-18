@@ -14,6 +14,7 @@ import AppShell from './components/AppShell'
 // this allows immer to work with Map and Set
 import { enableMapSet } from 'immer'
 import NetworkPanel from './components/NetworkPanel'
+import { MessagePanel } from './components/MessagePanel'
 enableMapSet()
 
 const WorkspaceEditor = React.lazy(() => import('./components/WorkspaceEditor'))
@@ -35,7 +36,9 @@ const router = createBrowserRouter(
       <Route
         path=":workspaceId"
         element={
-          <Suspense fallback={<h2>Loading Workspace...</h2>}>
+          <Suspense
+            fallback={<MessagePanel message={'Loading Workspace...'} />}
+          >
             <WorkspaceEditor />
           </Suspense>
         }

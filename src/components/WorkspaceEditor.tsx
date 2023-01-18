@@ -19,6 +19,8 @@ import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
 import { AppConfigContext } from '../AppConfigContext'
 import { Workspace } from '../models/WorkspaceModel'
+import { SummaryPanel } from './SummaryPanel'
+import { MessagePanel } from './MessagePanel'
 
 const WorkSpaceEditor: React.FC = () => {
   // Server location
@@ -55,15 +57,12 @@ const WorkSpaceEditor: React.FC = () => {
 
   const loadNetworkSummaries = async (): Promise<void> => {
     try {
-      const newSummaries: NdexNetworkSummary[] = await fetchAllSummaries(
-        workspace.networkIds,
-        ndexBaseUrl,
-      )
-      if (newSummaries.length === 0) {
-        return
-      }
-      const curId: IdType = newSummaries[0].externalId
-      setCurrentNetworkId(curId)
+      await fetchAllSummaries(workspace.networkIds, ndexBaseUrl)
+      // if (newSummaries.length === 0) {
+      //   return
+      // }
+      // const curId: IdType = newSummaries[0].externalId
+      // setCurrentNetworkId(curId)
     } catch (err) {
       console.log(err)
     }
@@ -132,7 +131,11 @@ const WorkSpaceEditor: React.FC = () => {
         })
         .catch((err) => console.error(err))
 
-      navigate(`/workspaceIdHere/networks/${currentNetworkId}`)
+      navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+    } else {
+      const curId: IdType = [...summaries.keys()][0]
+      // const curId: IdType = newSummaries[0].externalId
+      setCurrentNetworkId(curId)
     }
   }, [currentNetworkId, summaries])
 
@@ -154,50 +157,34 @@ const WorkSpaceEditor: React.FC = () => {
                   <Box
                     sx={{ overflow: 'scroll', height: '100%', width: '100%' }}
                   >
-                    {[...summaries.values()].map((summary) => {
-                      const uuid: IdType = summary.externalId
+                    {summaries.size !== 0 ? (
+                      [...summaries.values()].map((summary) => {
+                        const uuid: IdType = summary.externalId
 
-                      const ndexLink = `https://ndexbio.org/viewer/networks/${uuid}`
-                      const cxLink = `https://ndexbio.org/v3/networks/${uuid}`
-                      return (
-                        <Box
-                          sx={{
-                            backgroundColor:
-                              uuid === currentNetworkId ? 'gray' : 'white',
-                            p: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                          }}
-                          onClick={() => setCurrentNetworkId(uuid)}
-                          key={uuid}
-                        >
-                          <Box sx={{ p: 1 }}> {summary.name}</Box>
-                          <Box
-                            sx={{
-                              p: 1,
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <a href={ndexLink} target="_blank" rel="noreferrer">
-                              Compare in NDEx
-                            </a>
-                            <a href={cxLink} target="_blank" rel="noreferrer">
-                              Debug cx
-                            </a>
-                          </Box>
-                        </Box>
-                      )
-                    })}
+                        return (
+                          <SummaryPanel
+                            key={uuid}
+                            summary={summary}
+                            currentNetworkId={currentNetworkId}
+                          />
+                        )
+                      })
+                    ) : (
+                      <MessagePanel message="No network in workspace" />
+                    )}
                   </Box>
                 </Allotment.Pane>
                 <Allotment.Pane>
-                  <Suspense
-                    fallback={<div>{`Loading from NDEx`}</div>}
-                    key={currentNetworkId}
-                  >
-                    <VizmapperView currentNetworkId={currentNetworkId} />
-                  </Suspense>
+                  {currentNetworkId === '' || currentNetworkId === undefined ? (
+                    <MessagePanel message={'Visual Style Panel'} />
+                  ) : (
+                    <Suspense
+                      fallback={<div>{`Loading from NDEx`}</div>}
+                      key={currentNetworkId}
+                    >
+                      <VizmapperView currentNetworkId={currentNetworkId} />
+                    </Suspense>
+                  )}
                 </Allotment.Pane>
               </Allotment>
             </Allotment.Pane>
