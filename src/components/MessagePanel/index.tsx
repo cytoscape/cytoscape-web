@@ -1,9 +1,18 @@
 import { ReactElement } from 'react'
+import Box from '@mui/material/Box'
 
-export const MessagePanel = (): ReactElement => {
+interface MessagePanelProps {
+  message: string
+}
+
+export const MessagePanel = (props: MessagePanelProps): ReactElement => {
   return (
-    <div>
-      <h1>Initializing New Workspace...</h1>
-    </div>
+    <Box
+      sx={{ width: '100%', height: '100%', display: 'grid', padding: '1em' }}
+    >
+      <Box sx={{ margin: 'auto' }}>
+        <h2>{props.message}</h2>
+      </Box>
+    </Box>
   )
 }

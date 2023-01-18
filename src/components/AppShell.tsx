@@ -1,4 +1,4 @@
-import React, { ReactElement, useEffect } from 'react'
+import { ReactElement, useEffect } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { Workspace } from '../models/WorkspaceModel'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
@@ -12,7 +12,6 @@ import { ToolBar } from './ToolBar'
  */
 const AppShell = (): ReactElement => {
   const navigate = useNavigate()
-
   const initWorkspace = useWorkspaceStore((state) => state.init)
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
 

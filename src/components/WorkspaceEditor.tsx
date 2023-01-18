@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import { Box, Tabs, Tab, Typography } from '@mui/material'
 import ShareIcon from '@mui/icons-material/Share'
@@ -10,25 +10,38 @@ import VizmapperView from './Vizmapper'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
-import { getNdexNetwork, getNdexNetworkSet } from '../store/useNdexNetwork'
+import { getNdexNetwork } from '../store/useNdexNetwork'
 import { useTableStore } from '../store/TableStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useNetworkStore } from '../store/NetworkStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { IdType } from '../models/IdType'
-
-const testNetworkSet = '8d72ec80-1fc5-11ec-9fe4-0ac135e8bacf'
+import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
+import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
+import { AppConfigContext } from '../AppConfigContext'
+import { Workspace } from '../models/WorkspaceModel'
+import { SummaryPanel } from './SummaryPanel'
+import { MessagePanel } from './MessagePanel'
 
 const WorkSpaceEditor: React.FC = () => {
+  // Server location
+  const { ndexBaseUrl } = useContext(AppConfigContext)
   const navigate = useNavigate()
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
 
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
+
+  // Network Summaries
+  const summaries: Map<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
+    (state) => state.summaries,
+  )
+  const fetchAllSummaries = useNetworkSummaryStore((state) => state.fetchAll)
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
@@ -40,9 +53,7 @@ const WorkSpaceEditor: React.FC = () => {
   const changeTab = (event: React.SyntheticEvent, newValue: number): void => {
     setCurrentTabIndex(newValue)
   }
-  const [networkSetSummaries, setNetworkSummaries] = useState(
-    [] as Array<{ id: string; name: string }>,
-  )
+
   const addNewNetwork = useNetworkStore((state) => state.add)
 
   // Visual Style Store
@@ -53,20 +64,13 @@ const WorkSpaceEditor: React.FC = () => {
 
   const setViewModel = useViewModelStore((state) => state.setViewModel)
 
-  const loadNetworkSet = async (networkSetId: string): Promise<void> => {
-    try {
-      const summaries = await getNdexNetworkSet(networkSetId)
-      setNetworkSummaries(summaries)
-      const curId: IdType = summaries[0].id
-      setCurrentNetworkId(curId)
-    } catch (err) {
-      console.log(err)
-    }
+  const loadNetworkSummaries = async (): Promise<void> => {
+    await fetchAllSummaries(workspace.networkIds, ndexBaseUrl)
   }
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     try {
-      const res = await getNdexNetwork(networkId)
+      const res = await getNdexNetwork(networkId, ndexBaseUrl)
       const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
       addNewNetwork(network)
@@ -83,15 +87,14 @@ const WorkSpaceEditor: React.FC = () => {
     }
   }
 
+  /**
+   * Initializations
+   */
   useEffect(() => {
     const windowWidthListener = debounce(() => {
       setTableBrowserWidth(window.innerWidth)
     }, 200)
     window.addEventListener('resize', windowWidthListener)
-
-    loadNetworkSet(testNetworkSet)
-      .then(() => {})
-      .catch((err) => console.error(err))
 
     return () => {
       window.removeEventListener('resize', windowWidthListener)
@@ -99,16 +102,35 @@ const WorkSpaceEditor: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    if (currentNetworkId !== '') {
+    if (workspace.networkIds.length === 0) {
+      return
+    }
+
+    loadNetworkSummaries()
+      .then(() => {})
+      .catch((err) => console.error(err))
+  }, [workspace.networkIds])
+
+  useEffect(() => {
+    if (currentNetworkId !== '' && currentNetworkId !== undefined) {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          console.log('Network loaded')
+          console.log('Network loaded for', currentNetworkId)
         })
         .catch((err) => console.error(err))
 
-      navigate(`/workspaceIdHere/networks/${currentNetworkId}`)
+      // Set URL to current network ID
+      navigate(`/${workspace.id}/networks/${currentNetworkId}`)
     }
   }, [currentNetworkId])
+
+  useEffect(() => {
+    if (summaries.size === 0) {
+      return
+    }
+    const curId: IdType = [...summaries.keys()][0]
+    setCurrentNetworkId(curId)
+  }, [summaries])
 
   return (
     <Box sx={{ height: 'calc(100vh - 48px)' }}>
@@ -156,43 +178,21 @@ const WorkSpaceEditor: React.FC = () => {
                         width: '100%',
                       }}
                     >
-                      {networkSetSummaries.map((n) => {
-                        const ndexLink = `https://ndexbio.org/viewer/networks/${n.id}`
-                        const cxLink = `https://ndexbio.org/v3/networks/${n.id}`
-                        return (
-                          <Box
-                            sx={{
-                              backgroundColor:
-                                n.id === currentNetworkId ? 'gray' : 'white',
-                              p: 1,
-                              display: 'flex',
-                              flexDirection: 'column',
-                            }}
-                            onClick={() => setCurrentNetworkId(n.id)}
-                            key={n.id}
-                          >
-                            <Box sx={{ p: 1 }}> {n.name}</Box>
-                            <Box
-                              sx={{
-                                p: 1,
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                              }}
-                            >
-                              <a
-                                href={ndexLink}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Compare in NDEx
-                              </a>
-                              <a href={cxLink} target="_blank" rel="noreferrer">
-                                Debug cx
-                              </a>
-                            </Box>
-                          </Box>
-                        )
-                      })}
+                      {summaries.size !== 0 ? (
+                        [...summaries.values()].map((summary) => {
+                          const uuid: IdType = summary.externalId
+
+                          return (
+                            <SummaryPanel
+                              key={uuid}
+                              summary={summary}
+                              currentNetworkId={currentNetworkId}
+                            />
+                          )
+                        })
+                      ) : (
+                        <MessagePanel message="No network in workspace" />
+                      )}
                     </Box>
                   )}
                 </div>

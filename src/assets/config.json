@@ -1,5 +1,5 @@
 {
-  "ndexBaseUrl": "https://dev.ndexbio.org/v3",
+  "ndexBaseUrl": "https://dev.ndexbio.org",
   "options": {
     "debug": true
   }
