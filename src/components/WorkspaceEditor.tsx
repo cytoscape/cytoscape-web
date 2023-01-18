@@ -39,7 +39,6 @@ const WorkSpaceEditor: React.FC = () => {
   const summaries: Map<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
-  const fetchSummary = useNetworkSummaryStore((state) => state.fetch)
   const fetchAllSummaries = useNetworkSummaryStore((state) => state.fetchAll)
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
@@ -56,16 +55,7 @@ const WorkSpaceEditor: React.FC = () => {
   const setViewModel = useViewModelStore((state) => state.setViewModel)
 
   const loadNetworkSummaries = async (): Promise<void> => {
-    try {
-      await fetchAllSummaries(workspace.networkIds, ndexBaseUrl)
-      // if (newSummaries.length === 0) {
-      //   return
-      // }
-      // const curId: IdType = newSummaries[0].externalId
-      // setCurrentNetworkId(curId)
-    } catch (err) {
-      console.log(err)
-    }
+    await fetchAllSummaries(workspace.networkIds, ndexBaseUrl)
   }
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
@@ -112,32 +102,25 @@ const WorkSpaceEditor: React.FC = () => {
   }, [workspace.networkIds])
 
   useEffect(() => {
-    if (currentNetworkId !== '') {
-      const summary = summaries.get(currentNetworkId)
-      if (summary === undefined) {
-        fetchSummary(currentNetworkId, ndexBaseUrl)
-          .then((result) => {
-            console.log('fetched Summary in', result)
-          })
-          .catch((err) => {
-            console.error(err)
-          })
-      }
-
-      console.log('Summary map', summaries)
+    if (currentNetworkId !== '' && currentNetworkId !== undefined) {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          console.log('Network loaded')
+          console.log('Network loaded for', currentNetworkId)
         })
         .catch((err) => console.error(err))
 
+      // Set URL to current network ID
       navigate(`/${workspace.id}/networks/${currentNetworkId}`)
-    } else {
-      const curId: IdType = [...summaries.keys()][0]
-      // const curId: IdType = newSummaries[0].externalId
-      setCurrentNetworkId(curId)
     }
-  }, [currentNetworkId, summaries])
+  }, [currentNetworkId])
+
+  useEffect(() => {
+    if (summaries.size === 0) {
+      return
+    }
+    const curId: IdType = [...summaries.keys()][0]
+    setCurrentNetworkId(curId)
+  }, [summaries])
 
   return (
     <Box sx={{ height: 'calc(100vh - 48px)' }}>
