@@ -8,9 +8,14 @@ import {
   Badge,
   IconButton,
   Checkbox,
-  FormControlLabel,
   Tooltip,
   Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TableContainer,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 
@@ -48,6 +53,9 @@ function BypassFormContent(props: {
   const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
   const setHovered = useViewModelStore((state) => state.setHovered)
   const toggleSelected = useViewModelStore((state) => state.toggleSelected)
+  const additiveSelect = useViewModelStore((state) => state.additiveSelect)
+  const additiveUnselect = useViewModelStore((state) => state.additiveUnselect)
+
   const tables = useTableStore((state) => state.tables)
   const table = tables[currentNetworkId]
   const nodeTable = table?.nodeTable
@@ -81,14 +89,20 @@ function BypassFormContent(props: {
     hasBypass: boolean
   }> = []
 
+  let selectedElementsWithBypass = 0
   selectedElements.forEach((e) => {
+    const hasBypass = visualProperty?.bypassMap.has(e.id)
     elementsToRender.push({
       id: e.id,
-      selected: e.selected ?? false,
+      selected: e.selected,
       name: (selectedElementTable.rows.get(e.id)?.name ?? '') as string,
 
-      hasBypass: visualProperty?.bypassMap.has(e.id) ?? false,
+      hasBypass: hasBypass ?? false,
     })
+
+    if (hasBypass) {
+      selectedElementsWithBypass += 1
+    }
 
     if (bypassElementIds.has(e.id)) {
       bypassElementIds.delete(e.id)
@@ -111,76 +125,151 @@ function BypassFormContent(props: {
     </>
   )
 
+  const allSelected = selectedElements.length === elementsToRender.length
+  const someSelected = selectedElements.length > 0 && !allSelected
+  // const noneSelected = selectedElements.length === 0
+
   const nonEmptyBypassForm = (
     <>
-      <Box sx={{ height: 400, overflow: 'scroll' }}>
-        {elementsToRender.map((ele) => {
-          const { id, selected, hasBypass, name } = ele
-          const bypassValue = visualProperty.bypassMap?.get(id) ?? null
+      <TableContainer sx={{ height: 400, overflow: 'auto' }}>
+        <Table size={'small'} stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={allSelected}
+                  indeterminate={someSelected}
+                  onClick={() => {
+                    if (allSelected) {
+                      additiveUnselect(
+                        currentNetworkId,
+                        elementsToRender.map((e) => e.id),
+                      )
+                    } else {
+                      additiveSelect(
+                        currentNetworkId,
+                        elementsToRender.map((e) => e.id),
+                      )
+                    }
+                  }}
+                />
+              </TableCell>
+              <TableCell>
+                {visualProperty.group[0].toUpperCase() +
+                  visualProperty.group.slice(1).toLowerCase()}{' '}
+                Name
+              </TableCell>
+              <TableCell>Bypass</TableCell>
+              <TableCell padding={'none'}></TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody sx={{ overflow: 'scroll' }}>
+            {elementsToRender.map((ele) => {
+              const { id, selected, hasBypass, name } = ele
+              const bypassValue = visualProperty.bypassMap?.get(id) ?? null
 
-          return (
-            <Box
-              onMouseEnter={() => setHovered(props.currentNetworkId, id)}
-              onMouseLeave={() => setHovered(props.currentNetworkId, null)}
-              sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 1,
-              }}
-              key={id}
-            >
-              <FormControlLabel
-                onClick={() => toggleSelected(currentNetworkId, [id])}
-                control={<Checkbox checked={selected} />}
-                label="Selected"
-              />
-              <Box sx={{ width: 100, mr: 1 }}>{name}</Box>
-              <VisualPropertyValueForm
-                visualProperty={visualProperty}
-                currentValue={bypassValue}
-                onValueChange={(value) => {
-                  setBypass(currentNetworkId, visualProperty.name, [id], value)
-                }}
-              />
-              <IconButton
-                onClick={() => {
-                  deleteBypass(currentNetworkId, visualProperty.name, [id])
-                  setHovered(currentNetworkId, null)
-                }}
-                disabled={!hasBypass}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </Box>
-          )
-        })}
-      </Box>
+              return (
+                <TableRow
+                  onMouseEnter={() => setHovered(props.currentNetworkId, id)}
+                  onMouseLeave={() => setHovered(props.currentNetworkId, null)}
+                  key={id}
+                  hover={true}
+                  selected={selected}
+                >
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      onClick={() => toggleSelected(currentNetworkId, [id])}
+                      checked={selected}
+                    />
+                  </TableCell>
+                  <TableCell>{name}</TableCell>
+
+                  <TableCell>
+                    <VisualPropertyValueForm
+                      visualProperty={visualProperty}
+                      currentValue={bypassValue}
+                      onValueChange={(value) => {
+                        setBypass(
+                          currentNetworkId,
+                          visualProperty.name,
+                          [id],
+                          value,
+                        )
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <IconButton
+                      onClick={() => {
+                        deleteBypass(currentNetworkId, visualProperty.name, [
+                          id,
+                        ])
+                        setHovered(currentNetworkId, null)
+                      }}
+                      disabled={!hasBypass}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
       <Divider />
 
-      <Box sx={{ p: 1, m: 1, mr: 1, display: 'flex', justifyContent: 'end' }}>
-        <VisualPropertyValueForm
-          visualProperty={visualProperty}
-          currentValue={bypassValue}
-          onValueChange={(newBypassValue: VisualPropertyValueType): void =>
-            setBypassValue(newBypassValue)
-          }
-        />
-        <Button
-          disabled={!validElementsSelected}
-          onClick={() => {
-            const selectedElementIds = selectedElements.map((e) => e.id)
-            setBypass(
-              currentNetworkId,
-              visualProperty.name,
-              selectedElementIds,
-              bypassValue,
-            )
-          }}
-        >
-          Apply bypass to selected
-        </Button>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Box>
+          <Button
+            size="small"
+            color="error"
+            disabled={selectedElementsWithBypass === 0}
+            onClick={() => {
+              const selectedElementIds = selectedElements.map((e) => e.id)
+              deleteBypass(
+                currentNetworkId,
+                visualProperty.name,
+                selectedElementIds,
+              )
+            }}
+          >
+            Remove selected
+          </Button>
+        </Box>
+        <Box sx={{ m: 1, mr: 0, display: 'flex', justifyContent: 'end' }}>
+          <VisualPropertyValueForm
+            visualProperty={visualProperty}
+            currentValue={bypassValue}
+            onValueChange={(newBypassValue: VisualPropertyValueType): void =>
+              setBypassValue(newBypassValue)
+            }
+          />
+          <Button
+            sx={{ ml: 1 }}
+            size="small"
+            variant="contained"
+            disabled={!validElementsSelected}
+            onClick={() => {
+              const selectedElementIds = selectedElements.map((e) => e.id)
+              setBypass(
+                currentNetworkId,
+                visualProperty.name,
+                selectedElementIds,
+                bypassValue,
+              )
+            }}
+          >
+            Apply to selected
+          </Button>
+        </Box>
       </Box>
     </>
   )
