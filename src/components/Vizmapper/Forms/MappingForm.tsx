@@ -36,6 +36,8 @@ import {
 } from '../VisualStyleIcons'
 import { VisualPropertyValueForm } from './VisualPropertyValueForm'
 
+import { typesCanBeMapped } from '../../../models/VisualStyleModel/impl/MappingFunctionImpl'
+
 import {
   EmptyVisualPropertyViewBox,
   VisualPropertyViewBox,
@@ -207,11 +209,17 @@ function MappingFormContent(props: {
               label="Column"
               onChange={(e) => handleAttributeChange(e.target.value)}
             >
-              {columns.map((column) => (
-                <MenuItem key={column.name} value={column.name}>
-                  {column.name}
-                </MenuItem>
-              ))}
+              {columns
+                .filter((c) =>
+                  typesCanBeMapped(c.type, props.visualProperty.type),
+                )
+                .map((column) => (
+                  <MenuItem key={column.name} value={column.name}>
+                    <Tooltip title={`Data type: ${column.type}`}>
+                      <Box>{column.name}</Box>
+                    </Tooltip>
+                  </MenuItem>
+                ))}
             </Select>
           </FormControl>
           <FormControl sx={{ minWidth: '150px' }} size="small">

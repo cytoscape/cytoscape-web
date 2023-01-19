@@ -1,11 +1,13 @@
 import chroma, { Color as ChromaColor } from 'chroma-js'
 
-import { Table, ValueType } from '../../TableModel'
+import { Table, ValueType, ValueTypeName } from '../../TableModel'
+import { SingleValueType } from '../../TableModel/ValueType'
 import {
   ContinuousMappingFunction,
   DiscreteMappingFunction,
   VisualMappingFunction,
 } from '../VisualMappingFunction'
+import { VisualPropertyValueTypeString } from '../VisualPropertyValueTypeString'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 
 import { SingularElementArgument } from 'cytoscape'
@@ -232,4 +234,48 @@ export const createCyJsMappingFn: (
     default:
       return createDefaultCyJsMappingFn(mappingFn, table, defaultValue)
   }
+}
+
+const vpValueType2BaseType: Record<
+  VisualPropertyValueTypeString,
+  SingleValueType
+> = {
+  color: 'string',
+  number: 'number',
+  string: 'string',
+  boolean: 'boolean',
+  visibility: 'string',
+  font: 'string',
+  nodeShape: 'string',
+  edgeLine: 'string',
+  edgeArrowShape: 'string',
+  horizontalAlign: 'string',
+  verticalAlign: 'string',
+  nodeBorderLine: 'string',
+}
+
+const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
+  string: 'string',
+  long: 'number',
+  integer: 'number',
+  double: 'number',
+  boolean: 'boolean',
+  list_of_boolean: null,
+  list_of_long: null,
+  list_of_double: null,
+  list_of_integer: null,
+  list_of_string: null,
+}
+
+// check whether a given value type can be applied to a given visual property value type
+// e.g. number and font size is a valid mapping but number to a string property is not
+export const typesCanBeMapped = (
+  value: ValueTypeName,
+  vpValue: VisualPropertyValueTypeString,
+): boolean => {
+  const vtBaseType = valueType2BaseType[value]
+  return (
+    valueType2BaseType[value] === vpValueType2BaseType[vpValue] ||
+    (vtBaseType != null && vpValue === 'string') // any value type can be mapped to a string
+  )
 }
