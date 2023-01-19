@@ -13,35 +13,35 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 
-import { IdType } from '../../../models/IdType'
-import { Table, ValueType, AttributeName } from '../../../models/TableModel'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { useTableStore } from '../../../store/TableStore'
+import { IdType } from '../../../../models/IdType'
+import { Table, ValueType, AttributeName } from '../../../../models/TableModel'
+import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+import { useTableStore } from '../../../../store/TableStore'
 
 import {
   VisualProperty,
   VisualPropertyValueType,
-} from '../../../models/VisualStyleModel'
+} from '../../../../models/VisualStyleModel'
 import {
   // ContinuousMappingFunction,
   DiscreteMappingFunction,
   MappingFunctionType,
-} from '../../../models/VisualStyleModel/VisualMappingFunction'
+} from '../../../../models/VisualStyleModel/VisualMappingFunction'
 // import { ContinuousFunctionInterval } from '../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 
 import {
   PassthroughMappingFunctionIcon,
   DiscreteMappingFunctionIcon,
   ContinuousMappingFunctionIcon,
-} from '../VisualStyleIcons'
-import { VisualPropertyValueForm } from './VisualPropertyValueForm'
+} from '../../VisualStyleIcons'
+import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
 
-import { typesCanBeMapped } from '../../../models/VisualStyleModel/impl/MappingFunctionImpl'
+import { typesCanBeMapped } from '../../../../models/VisualStyleModel/impl/MappingFunctionImpl'
 
 import {
   EmptyVisualPropertyViewBox,
   VisualPropertyViewBox,
-} from './VisualPropertyViewBox'
+} from '../VisualPropertyViewBox'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   passthrough: <PassthroughMappingFunctionIcon />,
