@@ -8,7 +8,12 @@ import {
 import create from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { ValueType } from '../models/TableModel'
-import { DiscreteMappingFunction } from '../models/VisualStyleModel/VisualMappingFunction'
+import {
+  DiscreteMappingFunction,
+  MappingFunctionType,
+  PassthroughMappingFunction,
+  ContinuousMappingFunction,
+} from '../models/VisualStyleModel/VisualMappingFunction'
 
 /**
 //  * Visual Style State manager based on zustand
@@ -36,6 +41,12 @@ interface UpdateVisualStyleAction {
     networkId: IdType,
     vpName: VisualPropertyName,
     elementIds: IdType[],
+  ) => void
+  setMapping: (
+    networkId: IdType,
+    vpName: VisualPropertyName,
+    attributeName: string,
+    mappingType: MappingFunctionType,
   ) => void
   setDiscreteMappingValue: (
     networkId: IdType,
@@ -124,6 +135,41 @@ export const useVisualStyleStore = create(
             .mapping as DiscreteMappingFunction
           if (mapping?.vpValueMap != null) {
             mapping?.vpValueMap.delete(value)
+          }
+        })
+      },
+
+      setMapping(networkId, vpName, attributeName, mappingType) {
+        set((state) => {
+          switch (mappingType) {
+            case MappingFunctionType.Discrete: {
+              const discreteMapping: DiscreteMappingFunction = {
+                attribute: attributeName,
+                type: MappingFunctionType.Discrete,
+                vpValueMap: new Map<ValueType, VisualPropertyValueType>(),
+                defaultValue:
+                  state.visualStyles[networkId][vpName].defaultValue,
+              }
+              state.visualStyles[networkId][vpName].mapping = discreteMapping
+              break
+            }
+            case MappingFunctionType.Passthrough: {
+              const passthroughMapping: PassthroughMappingFunction = {
+                type: MappingFunctionType.Passthrough,
+                attribute: attributeName,
+              }
+              state.visualStyles[networkId][vpName].mapping = passthroughMapping
+              break
+            }
+            case MappingFunctionType.Continuous: {
+              const continuousMapping: ContinuousMappingFunction = {
+                type: MappingFunctionType.Continuous,
+                attribute: attributeName,
+                intervals: [],
+              }
+              state.visualStyles[networkId][vpName].mapping = continuousMapping
+              break
+            }
           }
         })
       },

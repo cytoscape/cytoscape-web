@@ -6,13 +6,15 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Typography,
   SxProps,
   Tooltip,
+  Divider,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 
 import { IdType } from '../../../models/IdType'
-import { Table, ValueType } from '../../../models/TableModel'
+import { Table, ValueType, AttributeName } from '../../../models/TableModel'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useTableStore } from '../../../store/TableStore'
 
@@ -21,11 +23,11 @@ import {
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
 import {
-  ContinuousMappingFunction,
+  // ContinuousMappingFunction,
   DiscreteMappingFunction,
   MappingFunctionType,
 } from '../../../models/VisualStyleModel/VisualMappingFunction'
-import { ContinuousFunctionInterval } from '../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
+// import { ContinuousFunctionInterval } from '../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 
 import {
   PassthroughMappingFunctionIcon,
@@ -45,18 +47,19 @@ const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   continuous: <ContinuousMappingFunctionIcon />,
 }
 
-function MappingFormContent(props: {
+function ContinuousMappingForm(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
-  const [attribute, setAttribute] = React.useState(
-    props.visualProperty.mapping?.attribute ?? '',
-  )
-  const [mappingType, setMappingType] = React.useState(
-    props.visualProperty.mapping?.type ?? '',
-  )
+  return <Box></Box>
+}
 
+function DiscreteMappingForm(props: {
+  currentNetworkId: IdType
+  visualProperty: VisualProperty<VisualPropertyValueType>
+}): React.ReactElement {
   const mapping = props.visualProperty.mapping
+
   const deleteDiscreteMappingValue = useVisualStyleStore(
     (state) => state.deleteDiscreteMappingValue,
   )
@@ -64,6 +67,66 @@ function MappingFormContent(props: {
   const setDiscreteMappingValue = useVisualStyleStore(
     (state) => state.setDiscreteMappingValue,
   )
+
+  return (
+    <Box>
+      <Box>Discrete Value Map</Box>
+
+      {Array.from(
+        (mapping as DiscreteMappingFunction)?.vpValueMap?.entries() ??
+          new Map(),
+      ).map(([value, vpValue]: [ValueType, VisualPropertyValueType]) => {
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
+            key={String(value)}
+          >
+            <Box sx={{ width: 100, overflowX: 'scroll', ml: 1 }}>
+              {String(value)}
+            </Box>
+            <VisualPropertyValueForm
+              currentValue={vpValue}
+              onValueChange={(newValue: VisualPropertyValueType) => {
+                setDiscreteMappingValue(
+                  props.currentNetworkId,
+                  props.visualProperty.name,
+                  value,
+                  newValue,
+                )
+              }}
+              visualProperty={props.visualProperty}
+            />
+            <CloseIcon
+              sx={{ '&:hover': { cursor: 'pointer' } }}
+              onClick={() =>
+                deleteDiscreteMappingValue(
+                  props.currentNetworkId,
+                  props.visualProperty.name,
+                  value,
+                )
+              }
+            />
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
+function MappingFormContent(props: {
+  currentNetworkId: IdType
+  visualProperty: VisualProperty<VisualPropertyValueType>
+}): React.ReactElement {
+  const [attribute, setAttribute] = React.useState<AttributeName | ''>(
+    props.visualProperty.mapping?.attribute ?? '',
+  )
+  const [mappingType, setMappingType] = React.useState<
+    MappingFunctionType | ''
+  >(props.visualProperty.mapping?.type ?? '')
 
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
@@ -73,76 +136,42 @@ function MappingFormContent(props: {
     props.visualProperty.group === 'node' ? nodeTable : edgeTable
   const columns = Array.from(currentTable.columns.values())
 
-  const mappingFnContent = {
-    [MappingFunctionType.Discrete]: (
-      <Box>
-        <Box>Discrete Value Map</Box>
+  const setMapping = useVisualStyleStore((state) => state.setMapping)
 
-        {Array.from(
-          (mapping as DiscreteMappingFunction)?.vpValueMap?.entries() ??
-            new Map(),
-        ).map(([value, vpValue]: [ValueType, VisualPropertyValueType]) => {
-          return (
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}
-              key={String(value)}
-            >
-              <Box sx={{ width: 100, overflowX: 'scroll', ml: 1 }}>
-                {String(value)}
-              </Box>
-              <VisualPropertyValueForm
-                currentValue={vpValue}
-                onValueChange={(newValue: VisualPropertyValueType) => {
-                  setDiscreteMappingValue(
-                    props.currentNetworkId,
-                    props.visualProperty.name,
-                    value,
-                    newValue,
-                  )
-                }}
-                visualProperty={props.visualProperty}
-              />
-              <CloseIcon
-                sx={{ '&:hover': { cursor: 'pointer' } }}
-                onClick={() =>
-                  deleteDiscreteMappingValue(
-                    props.currentNetworkId,
-                    props.visualProperty.name,
-                    value,
-                  )
-                }
-              />
-            </Box>
-          )
-        })}
-      </Box>
-    ),
-    [MappingFunctionType.Continuous]: (
-      <Box>
-        <Box>{JSON.stringify(mapping, null, 2)}</Box>
-        {((mapping as ContinuousMappingFunction)?.intervals ?? []).map(
-          (interval: ContinuousFunctionInterval, index: number) => {
-            return (
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                }}
-                key={index}
-              >
-                {JSON.stringify(interval, null, 2)}
-              </Box>
-            )
-          },
-        )}
-      </Box>
-    ),
+  const mappingFnContent = {
+    [MappingFunctionType.Discrete]: <DiscreteMappingForm {...props} />,
+    [MappingFunctionType.Continuous]: <ContinuousMappingForm {...props} />,
     [MappingFunctionType.Passthrough]: <Box></Box>,
+  }
+
+  const handleMappingTypeChange = (
+    nextMapping: MappingFunctionType | '',
+  ): void => {
+    if (nextMapping !== '' && attribute !== '') {
+      setMappingType(nextMapping)
+      setMapping(
+        props.currentNetworkId,
+        props.visualProperty.name,
+        attribute,
+        nextMapping,
+      )
+    } else {
+      setMappingType(nextMapping)
+    }
+  }
+
+  const handleAttributeChange = (nextAttribute: AttributeName): void => {
+    if (mappingType !== '' && nextAttribute !== '') {
+      setAttribute(nextAttribute)
+      setMapping(
+        props.currentNetworkId,
+        props.visualProperty.name,
+        nextAttribute,
+        mappingType,
+      )
+    } else {
+      setAttribute(nextAttribute)
+    }
   }
 
   return (
@@ -150,30 +179,33 @@ function MappingFormContent(props: {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
         width: '400px',
-        height: '400px',
+        height: '600px',
         minWidth: '30vw',
         minHeight: '30vh',
+        overflow: 'hidden',
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          border: '1px solid gray',
-          p: 1,
-          m: 1,
-        }}
-      >
-        <Box>
-          <FormControl>
-            <InputLabel>Column</InputLabel>
+      <Typography
+        sx={{ m: 1 }}
+        variant="h6"
+      >{`${props.visualProperty.displayName} mapping`}</Typography>
+      <Box sx={{ p: 1, m: 1 }}>
+        <Divider sx={{ mb: 1 }} />
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <FormControl sx={{ minWidth: '150px' }} size="small">
+            <InputLabel>Attribute</InputLabel>
             <Select
               defaultValue=""
-              value={attribute ?? 'None'}
+              value={attribute}
               label="Column"
-              onChange={(e) => setAttribute(e.target.value)}
+              onChange={(e) => handleAttributeChange(e.target.value)}
             >
               {columns.map((column) => (
                 <MenuItem key={column.name} value={column.name}>
@@ -182,15 +214,17 @@ function MappingFormContent(props: {
               ))}
             </Select>
           </FormControl>
-        </Box>
-        <Box>
-          <FormControl>
+          <FormControl sx={{ minWidth: '150px' }} size="small">
             <InputLabel>Mapping Type</InputLabel>
             <Select
               defaultValue=""
-              value={mappingType ?? 'None'}
-              label="Column"
-              onChange={(e) => setMappingType(e.target.value)}
+              value={mappingType}
+              label="Mapping Type"
+              onChange={(e) =>
+                handleMappingTypeChange(
+                  e.target.value as MappingFunctionType | '',
+                )
+              }
             >
               {Object.values(MappingFunctionType).map((mappingFnType) => (
                 <MenuItem key={mappingFnType} value={mappingFnType}>
@@ -201,9 +235,7 @@ function MappingFormContent(props: {
           </FormControl>
         </Box>
       </Box>
-      <Box sx={{ p: 1, m: 1, border: '1px solid gray' }}>
-        {mappingFnContent[mappingType as MappingFunctionType]}
-      </Box>
+      <Box>{mappingFnContent[mappingType as MappingFunctionType]}</Box>
     </Box>
   )
 }

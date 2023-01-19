@@ -102,7 +102,6 @@ export default function VizmapperView(props: {
     <Box
       sx={{
         borderBottom: 1,
-        // height: props.height,
         width: '100%',
       }}
     >
