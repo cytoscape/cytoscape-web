@@ -57,10 +57,14 @@ export const useWorkspaceStore = create(
     addNetworkIds: (ids: IdType | IdType[]) => {
       set((state) => {
         if (Array.isArray(ids)) {
+          // Add only new network IDs
+          const newIds: IdType[] = ids.filter(
+            (id) => !state.workspace.networkIds.includes(id),
+          )
           const newWs = {
             workspace: {
               ...state.workspace,
-              networkIds: [...state.workspace.networkIds, ...ids],
+              networkIds: [...state.workspace.networkIds, ...newIds],
             },
           }
           void updateWorkspaceDb(newWs.workspace.id, {

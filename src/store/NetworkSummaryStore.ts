@@ -73,28 +73,40 @@ export const useNetworkSummaryStore = create(
         networkIds,
       )
 
+      // "localdata" contains undefined if the list contains new network IDs
+
       const results: NdexNetworkSummary[] = []
+
       localData.forEach((summary) => {
         if (summary !== undefined) {
           results.push(summary)
         }
       })
 
+      const newIds: IdType[] = networkIds.filter(
+        (id) => !results.map((s) => s.externalId).includes(id),
+      )
+
       let newSummaries: NdexNetworkSummary[] = []
       if (results.length !== 0) {
-        newSummaries = results
+        const cached: NdexNetworkSummary[] = results
+        newSummaries = (await networkSummaryFetcher(
+          newIds,
+          url,
+        )) as NdexNetworkSummary[]
+
+        newSummaries = [...cached, ...newSummaries]
+        // Put those to DB
       } else {
         // NDEx server URL
         newSummaries = (await networkSummaryFetcher(
           networkIds,
           url,
         )) as NdexNetworkSummary[]
-
-        // Put those to DB
-        newSummaries.forEach(async (summary: NdexNetworkSummary) => {
-          await putNetworkSummaryToDb(summary)
-        })
       }
+      newSummaries.forEach(async (summary: NdexNetworkSummary) => {
+        await putNetworkSummaryToDb(summary)
+      })
 
       set((state) => {
         if (newSummaries.length === 0) {

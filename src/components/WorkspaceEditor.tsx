@@ -27,7 +27,9 @@ import { MessagePanel } from './MessagePanel'
 const WorkSpaceEditor: React.FC = () => {
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
+
   const navigate = useNavigate()
+
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -101,11 +103,14 @@ const WorkSpaceEditor: React.FC = () => {
     }
   }, [])
 
+  /**
+   * Check number of networks in the workspace
+   */
   useEffect(() => {
     if (workspace.networkIds.length === 0) {
       return
     }
-
+    // TODO: Load only diffs
     loadNetworkSummaries()
       .then(() => {})
       .catch((err) => console.error(err))

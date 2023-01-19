@@ -8,7 +8,7 @@ interface SummaryPanelProps {
   summary: NdexNetworkSummary
   currentNetworkId: IdType
 }
-
+// TODO: add delete and accordion panel
 export const SummaryPanel = (props: SummaryPanelProps): ReactElement => {
   const { summary, currentNetworkId } = props
   const { externalId } = summary

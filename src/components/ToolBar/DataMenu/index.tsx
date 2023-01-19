@@ -35,8 +35,11 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
     setAnchorEl(event.currentTarget)
   }
 
-  const handleLoad = (uuid: string): void => {
-    console.log('Got UUID: ', uuid)
+  const handleLoad = (uuidStr: string): void => {
+    console.log('Given UUID string: ', uuidStr)
+    const uuids: IdType[] = uuidStr.split(' ')
+    console.log('Got UUID List: ', uuids)
+    addNetworkIds(uuids)
     setOpenDialog(false)
   }
 
@@ -92,7 +95,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
           }}
         >
           <MenuItem onClick={handleOpenDialog}>
-            Load network from NDEx...
+            Load network(s) from NDEx...
           </MenuItem>
           <MenuItem onClick={handleLoadSamples}>
             Load sample networks from NDEx (for Demo)
