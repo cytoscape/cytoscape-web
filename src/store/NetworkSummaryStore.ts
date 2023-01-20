@@ -1,3 +1,4 @@
+import { NDEx } from '@js4cytoscape/ndex-client'
 import create from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
@@ -5,10 +6,8 @@ import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
 import {
   getNetworkSummariesFromDb,
   getNetworkSummaryFromDb,
-  putNetworkSummaryToDb,
+  putNetworkSummaryToDb
 } from './persist/db'
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
 
 interface NetworkSummaryStore {
   summaries: Map<IdType, NdexNetworkSummary>
