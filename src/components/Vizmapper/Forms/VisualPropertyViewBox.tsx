@@ -22,8 +22,8 @@ export const EmptyVisualPropertyViewBox = styled(Box)(({ theme }) => ({
   width: 40,
   backgroundColor: '#D9D9D9',
   boxShadow: theme.shadows[2],
+  cursor: 'pointer',
   '&:hover': {
-    cursor: 'pointer',
     boxShadow: theme.shadows[4],
   },
   borderRadius: '20%',
