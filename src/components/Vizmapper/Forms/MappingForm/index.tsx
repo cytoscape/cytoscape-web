@@ -125,6 +125,7 @@ function MappingFormContent(props: {
         minWidth: '30vw',
         minHeight: '30vh',
         overflow: 'hidden',
+        p: 1,
       }}
     >
       <Box
@@ -134,10 +135,7 @@ function MappingFormContent(props: {
           alignItems: 'center',
         }}
       >
-        <Typography
-          sx={{ m: 1 }}
-          variant="h6"
-        >{`${props.visualProperty.displayName} mapping`}</Typography>
+        <Typography variant="h6">{`${props.visualProperty.displayName} mapping`}</Typography>
         <Button
           disabled={props.visualProperty.mapping == null}
           size="small"
@@ -149,13 +147,14 @@ function MappingFormContent(props: {
           Remove Mapping
         </Button>
       </Box>
-      <Box sx={{ p: 1, m: 1 }}>
-        <Divider sx={{ mb: 1 }} />
+      <Box>
+        <Divider sx={{ mt: 2, mb: 2 }} />
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            mb: 2,
           }}
         >
           <FormControl

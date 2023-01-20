@@ -15,7 +15,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 
 import { IdType } from '../../../../models/IdType'
-// import { ValueType } from '../../../../models/TableModel'
+import { ValueType } from '../../../../models/TableModel'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { useTableStore } from '../../../../store/TableStore'
 
@@ -31,27 +31,37 @@ export function DiscreteMappingForm(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
-  const mapping = props.visualProperty.mapping
+  const mapping = props.visualProperty.mapping as DiscreteMappingFunction
 
+  const [selectedDiscreteMappingEntries, setSelectedDiscreteMappingEntries] =
+    React.useState(new Set())
   const deleteDiscreteMappingValue = useVisualStyleStore(
     (state) => state.deleteDiscreteMappingValue,
   )
+
+  React.useEffect(() => {
+    setSelectedDiscreteMappingEntries(new Set())
+  }, [mapping])
+
+  const [
+    currentDiscreteMappingformVPValue,
+    setCurrentDiscreteMappingformVPValue,
+  ] = React.useState<VisualPropertyValueType>(props.visualProperty.defaultValue)
 
   const setDiscreteMappingValue = useVisualStyleStore(
     (state) => state.setDiscreteMappingValue,
   )
 
-  //   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
-  //     useTableStore((state) => state.tables)
-  //   const nodeTable = tables[props.currentNetworkId]?.nodeTable
-  //   const edgeTable = tables[props.currentNetworkId]?.edgeTable
-  //   const currentTable =
-  //     props.visualProperty.group === 'node' ? nodeTable : edgeTable
   const columnValues = useTableStore((state) => state.columnValues)
+  const mappingKeys = Array.from(mapping?.vpValueMap?.keys() ?? new Set())
 
-  const discreteMappingEntries = Array.from(
-    (mapping as DiscreteMappingFunction)?.vpValueMap?.entries() ?? new Map(),
-  )
+  const toggleSelected = (key: ValueType, selected: boolean): void => {
+    const nextDiscreteMappingEntries = new Set(selectedDiscreteMappingEntries)
+    selected
+      ? nextDiscreteMappingEntries.delete(key)
+      : nextDiscreteMappingEntries.add(key)
+    setSelectedDiscreteMappingEntries(nextDiscreteMappingEntries)
+  }
 
   if (props.visualProperty.group === 'network') {
     return <Box></Box>
@@ -59,33 +69,35 @@ export function DiscreteMappingForm(props: {
 
   const values = columnValues(
     props.currentNetworkId,
-    props.visualProperty.group as 'node' | 'edge',
+    props.visualProperty.group,
     mapping?.attribute ?? '',
   )
-  console.log(values)
 
+  const elementsToRender = Array.from(
+    new Set([...mappingKeys, ...Array.from(values)]),
+  )
+
+  const allSelected =
+    elementsToRender.length === selectedDiscreteMappingEntries.size
+  const someSelected = selectedDiscreteMappingEntries.size > 0
   return (
     <Box>
-      <TableContainer sx={{ height: 400, overflow: 'auto' }}>
+      <TableContainer sx={{ height: 390, overflow: 'auto' }}>
         <Table size={'small'} stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox">
                 <Checkbox
-                  checked={false}
-                  indeterminate={false}
+                  checked={allSelected}
+                  indeterminate={someSelected && !allSelected}
                   onClick={() => {
-                    // if (allSelected) {
-                    //   additiveUnselect(
-                    //     currentNetworkId,
-                    //     elementsToRender.map((e) => e.id),
-                    //   )
-                    // } else {
-                    //   additiveSelect(
-                    //     currentNetworkId,
-                    //     elementsToRender.map((e) => e.id),
-                    //   )
-                    // }
+                    if (allSelected) {
+                      setSelectedDiscreteMappingEntries(new Set())
+                    } else {
+                      setSelectedDiscreteMappingEntries(
+                        new Set(elementsToRender),
+                      )
+                    }
                   }}
                 />
               </TableCell>
@@ -95,16 +107,20 @@ export function DiscreteMappingForm(props: {
             </TableRow>
           </TableHead>
           <TableBody sx={{ overflow: 'scroll' }}>
-            {discreteMappingEntries.map(([key, value], index) => {
+            {elementsToRender.map((key, index) => {
+              const value = mapping?.vpValueMap?.get(key) ?? null
+              const selected = selectedDiscreteMappingEntries.has(key)
               return (
                 <TableRow key={index} hover={true} selected={false}>
                   <TableCell padding="checkbox">
                     <Checkbox
-                      //   onClick={() => toggleSelected(currentNetworkId, [id])}
-                      checked={false}
+                      onClick={() => toggleSelected(key, selected)}
+                      checked={selected}
                     />
                   </TableCell>
-                  <TableCell>{key}</TableCell>
+                  <TableCell sx={{ maxWidth: 200, overflow: 'scroll' }}>
+                    {key}
+                  </TableCell>
                   <TableCell>
                     <VisualPropertyValueForm
                       visualProperty={props.visualProperty}
@@ -113,19 +129,20 @@ export function DiscreteMappingForm(props: {
                         setDiscreteMappingValue(
                           props.currentNetworkId,
                           props.visualProperty.name,
-                          key,
+                          [key],
                           newValue,
                         )
                       }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="right">
                     <IconButton
+                      disabled={value == null}
                       onClick={() => {
                         deleteDiscreteMappingValue(
                           props.currentNetworkId,
                           props.visualProperty.name,
-                          key,
+                          [key],
                         )
                       }}
                     >
@@ -146,33 +163,46 @@ export function DiscreteMappingForm(props: {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          mt: 1,
         }}
       >
         <Box>
-          <Button size="small" color="error" onClick={() => {}}>
+          <Button
+            size="small"
+            color="error"
+            disabled={selectedDiscreteMappingEntries.size === 0}
+            onClick={() =>
+              deleteDiscreteMappingValue(
+                props.currentNetworkId,
+                props.visualProperty.name,
+                Array.from(selectedDiscreteMappingEntries) as ValueType[],
+              )
+            }
+          >
             Remove selected
           </Button>
         </Box>
         <Box sx={{ m: 1, mr: 0, display: 'flex', justifyContent: 'end' }}>
           <VisualPropertyValueForm
             visualProperty={props.visualProperty}
-            currentValue={props.visualProperty.defaultValue}
-            onValueChange={() => {}}
+            currentValue={currentDiscreteMappingformVPValue}
+            onValueChange={(newValue) =>
+              setCurrentDiscreteMappingformVPValue(newValue)
+            }
           />
           <Button
             sx={{ ml: 1 }}
             size="small"
             variant="contained"
-            // disabled={!validElementsSelected}
-            // onClick={() => {
-            //   const selectedElementIds = selectedElements.map((e) => e.id)
-            //   setBypass(
-            //     currentNetworkId,
-            //     visualProperty.name,
-            //     selectedElementIds,
-            //     bypassValue,
-            //   )
-            // }}
+            disabled={selectedDiscreteMappingEntries.size === 0}
+            onClick={() => {
+              setDiscreteMappingValue(
+                props.currentNetworkId,
+                props.visualProperty.name,
+                Array.from(selectedDiscreteMappingEntries) as ValueType[],
+                currentDiscreteMappingformVPValue,
+              )
+            }}
           >
             Apply to selected
           </Button>

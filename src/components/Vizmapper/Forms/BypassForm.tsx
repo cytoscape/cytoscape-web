@@ -80,8 +80,6 @@ function BypassFormContent(props: {
   const selectedElementTable =
     visualProperty.group === 'node' ? nodeTable : edgeTable
 
-  console.log(selectedElements.length)
-
   const bypassElementIds = new Set(
     Array.from(visualProperty?.bypassMap?.keys()).map((k) => String(k)) ?? [],
   )
@@ -132,7 +130,7 @@ function BypassFormContent(props: {
 
   const nonEmptyBypassForm = (
     <>
-      <TableContainer sx={{ height: 400, overflow: 'auto' }}>
+      <TableContainer sx={{ height: 460, overflow: 'auto' }}>
         <Table size={'small'} stickyHeader>
           <TableHead>
             <TableRow>
@@ -183,7 +181,9 @@ function BypassFormContent(props: {
                       checked={selected}
                     />
                   </TableCell>
-                  <TableCell>{name}</TableCell>
+                  <TableCell sx={{ maxWidth: 200, overflow: 'scroll' }}>
+                    {name}
+                  </TableCell>
 
                   <TableCell>
                     <VisualPropertyValueForm
@@ -226,6 +226,7 @@ function BypassFormContent(props: {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          pt: 1,
         }}
       >
         <Box>
@@ -285,6 +286,8 @@ function BypassFormContent(props: {
         minWidth: '30vw',
         minHeight: '30vh',
         overflow: 'hidden',
+        pl: 1,
+        pr: 1,
       }}
       // make sure there is no hovered component when the mouse leaves the bypass form
       onMouseLeave={() => setHovered(props.currentNetworkId, null)}
@@ -293,7 +296,7 @@ function BypassFormContent(props: {
         sx={{ m: 1 }}
         variant="h6"
       >{`${visualProperty.displayName} bypasses`}</Typography>
-      <Box sx={{ p: 1, m: 1 }}>
+      <Box>
         <Divider />
         {elementsToRender.length > 0 ? nonEmptyBypassForm : emptyBypassForm}
       </Box>

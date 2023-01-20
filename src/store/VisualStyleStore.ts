@@ -51,13 +51,13 @@ interface UpdateVisualStyleAction {
   setDiscreteMappingValue: (
     networkId: IdType,
     vpName: VisualPropertyName,
-    value: ValueType,
+    values: ValueType[],
     vpValue: VisualPropertyValueType,
   ) => void
   deleteDiscreteMappingValue: (
     networkId: IdType,
     vpName: VisualPropertyName,
-    value: ValueType,
+    values: ValueType[],
   ) => void
   removeMapping: (networkId: IdType, vpName: VisualPropertyName) => void
   // setMapping: () // TODO
@@ -121,21 +121,25 @@ export const useVisualStyleStore = create(
           return state
         })
       },
-      setDiscreteMappingValue: (networkId, vpName, value, vpValue) => {
+      setDiscreteMappingValue: (networkId, vpName, values, vpValue) => {
         set((state) => {
           const mapping = state.visualStyles[networkId][vpName]
             .mapping as DiscreteMappingFunction
           if (mapping?.vpValueMap != null) {
-            mapping?.vpValueMap.set(value, vpValue)
+            values.forEach((value) => {
+              mapping?.vpValueMap.set(value, vpValue)
+            })
           }
         })
       },
-      deleteDiscreteMappingValue: (networkId, vpName, value) => {
+      deleteDiscreteMappingValue: (networkId, vpName, values) => {
         set((state) => {
           const mapping = state.visualStyles[networkId][vpName]
             .mapping as DiscreteMappingFunction
           if (mapping?.vpValueMap != null) {
-            mapping?.vpValueMap.delete(value)
+            values.forEach((value) => {
+              mapping?.vpValueMap.delete(value)
+            })
           }
         })
       },
