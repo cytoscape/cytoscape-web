@@ -103,7 +103,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           if (nodeBypassMap.has(vpName)) {
             const entry = nodeBypassMap.get(vpName) ?? new Map()
             entry.set(
-              id,
+              String(id),
               cxVPConverter.valueConverter(
                 v[cxVPName] as CXVisualPropertyValue,
               ),
@@ -135,7 +135,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           if (edgeBypassMap.has(vpName)) {
             const entry = edgeBypassMap.get(vpName) ?? new Map()
             entry.set(
-              id,
+              String(id),
               cxVPConverter.valueConverter(
                 v[cxVPName] as CXVisualPropertyValue,
               ),

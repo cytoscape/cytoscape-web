@@ -80,7 +80,11 @@ function BypassFormContent(props: {
   const selectedElementTable =
     visualProperty.group === 'node' ? nodeTable : edgeTable
 
-  const bypassElementIds = new Set(visualProperty?.bypassMap?.keys() ?? [])
+  console.log(selectedElements.length)
+
+  const bypassElementIds = new Set(
+    Array.from(visualProperty?.bypassMap?.keys()).map((k) => String(k)) ?? [],
+  )
 
   const elementsToRender: Array<{
     id: IdType
@@ -102,9 +106,6 @@ function BypassFormContent(props: {
 
     if (hasBypass) {
       selectedElementsWithBypass += 1
-    }
-
-    if (bypassElementIds.has(e.id)) {
       bypassElementIds.delete(e.id)
     }
   })
@@ -322,6 +323,7 @@ export function BypassForm(props: {
   } else {
     viewBox = (
       <Badge
+        max={10000}
         color="primary"
         badgeContent={props.visualProperty.bypassMap.size}
         invisible={props.visualProperty.bypassMap.size <= 1}
