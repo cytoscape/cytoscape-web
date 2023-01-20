@@ -8,6 +8,7 @@ export function NumberInput(props: {
   return (
     <Box>
       <TextField
+        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
         value={currentValue ?? 0}
         type="number"
         onChange={(e) => onValueChange(+e.target.value)}

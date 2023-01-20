@@ -59,6 +59,7 @@ interface UpdateVisualStyleAction {
     vpName: VisualPropertyName,
     value: ValueType,
   ) => void
+  removeMapping: (networkId: IdType, vpName: VisualPropertyName) => void
   // setMapping: () // TODO
 }
 
@@ -171,6 +172,11 @@ export const useVisualStyleStore = create(
               break
             }
           }
+        })
+      },
+      removeMapping(networkId, vpName) {
+        set((state) => {
+          state.visualStyles[networkId][vpName].mapping = null
         })
       },
     }),
