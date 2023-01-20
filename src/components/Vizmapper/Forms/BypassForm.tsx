@@ -1,41 +1,29 @@
-import * as React from 'react'
-import {
-  Box,
-  Popover,
-  Typography,
-  Button,
-  SxProps,
-  Badge,
-  IconButton,
-  Checkbox,
-  Tooltip,
-  Divider,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TableContainer,
-} from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
+import {
+  Badge, Box, Button, Checkbox, Divider, IconButton, Popover, SxProps, Table,
+  TableBody,
+  TableCell, TableContainer, TableHead,
+  TableRow, Tooltip, Typography
+} from '@mui/material'
+import * as React from 'react'
 
 import { IdType } from '../../../models/IdType'
 import {
   VisualProperty,
-  VisualPropertyValueType,
+  VisualPropertyValueType
 } from '../../../models/VisualStyleModel'
 
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useTableStore } from '../../../store/TableStore'
+import { useViewModelStore } from '../../../store/ViewModelStore'
+import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 
 import {
   VisualPropertyValueForm,
-  VisualPropertyValueRender,
+  VisualPropertyValueRender
 } from './VisualPropertyValueForm'
 import {
   EmptyVisualPropertyViewBox,
-  VisualPropertyViewBox,
+  VisualPropertyViewBox
 } from './VisualPropertyViewBox'
 
 function BypassFormContent(props: {
@@ -315,7 +303,7 @@ export function BypassForm(props: {
 
   const noBypasses = props.visualProperty.bypassMap?.size === 0
 
-  let viewBox = null
+  let viewBox;
 
   if (noBypasses) {
     viewBox = <EmptyVisualPropertyViewBox />
