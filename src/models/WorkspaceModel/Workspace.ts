@@ -5,7 +5,7 @@ export interface Workspace {
   currentNetworkId: IdType
   name: string
   networkIds: IdType[]
-  // localModificationTime: Date
+  localModificationTime: Date
   // networkLocalModificationTimes: Record<IdType, Date>
   // modificationTime: Date
   creationTime: Date // Optional?

@@ -204,6 +204,7 @@ const createWorkspace = (): Workspace => {
     name: DEF_WORKSPACE_NAME,
     networkIds: [],
     creationTime: new Date(),
+    localModificationTime: new Date(),
     currentNetworkId: '',
   }
 }
@@ -227,4 +228,10 @@ export const putNetworkSummaryToDb = async (
 ): Promise<IndexableType> => {
   // ExternalId will be used as the primary key
   return await db.summaries.put({ ...summary })
+}
+
+export const deleteNetworkSummaryFromDb = async (
+  externalId: IdType,
+): Promise<void> => {
+  await db.summaries.delete(externalId)
 }

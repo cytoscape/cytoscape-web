@@ -3,6 +3,7 @@ import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
 import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
 import {
+  deleteNetworkSummaryFromDb,
   getNetworkSummariesFromDb,
   getNetworkSummaryFromDb,
   putNetworkSummaryToDb,
@@ -11,13 +12,13 @@ import {
 import { NDEx } from '@js4cytoscape/ndex-client'
 
 interface NetworkSummaryStore {
-  summaries: Map<IdType, NdexNetworkSummary>
+  summaries: Record<IdType, NdexNetworkSummary>
 }
 
 interface NetworkSummaryActions {
   fetch: (networkId: IdType, url: string) => Promise<NdexNetworkSummary>
   fetchAll: (networkIds: IdType[], url: string) => Promise<void>
-  delete: (networkId: IdType) => void
+  remove: (networkId: IdType) => void
 }
 
 const networkSummaryFetcher = async (
@@ -44,7 +45,7 @@ const networkSummaryFetcher = async (
 
 export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore & NetworkSummaryActions>((set) => ({
-    summaries: new Map<IdType, NdexNetworkSummary>(),
+    summaries: {},
     fetch: async (networkId: IdType, url: string) => {
       const localData: NdexNetworkSummary | undefined =
         await getNetworkSummaryFromDb(networkId)
@@ -58,10 +59,9 @@ export const useNetworkSummaryStore = create(
       )) as NdexNetworkSummary
 
       set((state) => {
-        const newSummaries = new Map(state.summaries).set(networkId, newSummary)
+        // const newSummaries = new Map(state.summaries).set(networkId, newSummary)
         return {
-          ...state,
-          summaries: newSummaries,
+          summaries: { ...state.summaries, newSummary },
         }
       })
 
@@ -108,31 +108,48 @@ export const useNetworkSummaryStore = create(
         await putNetworkSummaryToDb(summary)
       })
 
+      const newSummaryRecord: Record<IdType, NdexNetworkSummary> =
+        newSummaries.reduce(
+          (summary, entry) => ({
+            ...summary,
+            [entry.externalId]: entry,
+          }),
+          {},
+        )
+
       set((state) => {
         if (newSummaries.length === 0) {
           return state
         }
 
-        const newSummaryMap = new Map(state.summaries)
-        newSummaries.forEach((summary, index) => {
-          newSummaryMap.set(summary.externalId, summary)
-        })
+        const newRecord = { ...state.summaries, ...newSummaryRecord }
+
         return {
-          ...state,
-          summaries: newSummaryMap,
+          summaries: newRecord,
         }
       })
 
       // return newSummaries
     },
-    delete: (networkId: IdType) => {
+    remove: (networkId: IdType) => {
       set((state) => {
         const { summaries } = state
-        const deleted = summaries.delete(networkId)
+        const newSummaries: Record<IdType, NdexNetworkSummary> = {}
+        Object.keys(summaries).forEach((key: IdType) => {
+          if (key !== networkId) {
+            newSummaries[key] = summaries[key]
+          }
+        })
+        deleteNetworkSummaryFromDb(networkId)
+          .then((val) => {
+            console.log('Summary deleted', networkId, val)
+          })
+          .catch((err) => {
+            console.error('', err)
+          })
 
         return {
-          ...state,
-          summaries: deleted,
+          summaries: { ...newSummaries },
         }
       })
     },
