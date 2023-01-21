@@ -14,7 +14,7 @@ import AppShell from './components/AppShell'
 // this allows immer to work with Map and Set
 import { enableMapSet } from 'immer'
 import NetworkPanel from './components/NetworkPanel'
-import { MessagePanel } from './components/MessagePanel'
+import { MessagePanel } from './components/Messages'
 enableMapSet()
 
 const WorkspaceEditor = React.lazy(() => import('./components/WorkspaceEditor'))

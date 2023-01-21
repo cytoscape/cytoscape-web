@@ -2,7 +2,7 @@ import { ReactElement, Suspense } from 'react'
 // import { useParams } from 'react-router-dom'
 import { IdType } from '../models/IdType'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
-import { MessagePanel } from './MessagePanel'
+import { MessagePanel } from './Messages'
 import NetworkRenderer from './NetworkRenderer'
 
 const NetworkPanel = (): ReactElement => {

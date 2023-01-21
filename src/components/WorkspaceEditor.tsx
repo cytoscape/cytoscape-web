@@ -203,10 +203,7 @@ const WorkSpaceEditor: React.FC = () => {
                         width: '100%',
                       }}
                     >
-                      <SummaryList
-                        summaries={summaries}
-                        currentNetworkId={currentNetworkId}
-                      />
+                      <SummaryList summaries={summaries} />
                     </Box>
                   )}
                 </div>

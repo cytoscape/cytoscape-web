@@ -1,18 +1,16 @@
 import { ReactElement } from 'react'
-import { SummaryPanel } from '.'
 import { IdType } from '../../models/IdType'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
-import { MessagePanel } from '../MessagePanel'
+import { MessagePanel } from '../Messages'
+import { NetworkPropertyPanel } from './NetworkPropertyPanel'
 
 interface SummariesProps {
   summaries: Record<IdType, NdexNetworkSummary>
-  currentNetworkId: IdType
 }
 
 const EMPTY_MAP: Record<IdType, NdexNetworkSummary> = {}
 
 export const Summaries = ({
-  currentNetworkId = '',
   summaries = EMPTY_MAP,
 }: SummariesProps): ReactElement => {
   if (Object.keys(summaries).length === 0) {
@@ -21,14 +19,8 @@ export const Summaries = ({
     return (
       <>
         {Object.values(summaries).map((summary) => {
-          const uuid: IdType = summary.externalId
-
           return (
-            <SummaryPanel
-              key={uuid}
-              summary={summary}
-              currentNetworkId={currentNetworkId}
-            />
+            <NetworkPropertyPanel key={summary.externalId} summary={summary} />
           )
         })}
       </>
