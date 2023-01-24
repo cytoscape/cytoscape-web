@@ -121,7 +121,7 @@ export function DiscreteMappingForm(props: {
                       setSelectedDiscreteMappingEntries(new Set())
                     } else {
                       setSelectedDiscreteMappingEntries(
-                        new Set(elementsToRender),
+                        new Set(elementsToRender.map((e) => e.key)),
                       )
                     }
                   }}
@@ -135,8 +135,7 @@ export function DiscreteMappingForm(props: {
           <TableBody sx={{ overflow: 'scroll' }}>
             {elementsToRender.map(({ key, inColumn }, index) => {
               const value = mapping?.vpValueMap?.get(key) ?? null
-              const selected =
-                inColumn && selectedDiscreteMappingEntries.has(key)
+              const selected = selectedDiscreteMappingEntries.has(key)
               return (
                 <TableRow key={index} hover={true} selected={false}>
                   <TableCell padding="checkbox">
