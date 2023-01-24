@@ -23,6 +23,11 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
   const addNetworkIds: (ids: IdType | IdType[]) => void = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
+
+  const deleteCurrentNetwork: () => void = useWorkspaceStore(
+    (state) => state.deleteCurrentNetwork,
+  )
+
   const initWorkspace: () => void = useWorkspaceStore((state) => state.init)
 
   const [openDialog, setOpenDialog] = useState<boolean>(false)
@@ -68,6 +73,14 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
     initWorkspace()
   }
 
+  /**
+   * Delete current network
+   */
+  const handleRemoveCurrentNetwork = (): void => {
+    setAnchorEl(null)
+    deleteCurrentNetwork()
+  }
+
   const labelId = `${label}-dropdown`
 
   return (
@@ -99,6 +112,10 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
           </MenuItem>
           <MenuItem onClick={handleLoadSamples}>
             Load sample networks from NDEx (for Demo)
+          </MenuItem>
+          <Divider />
+          <MenuItem onClick={handleRemoveCurrentNetwork}>
+            Remove current network
           </MenuItem>
           <Divider />
           <MenuItem onClick={handleClear}>Start new workspace</MenuItem>

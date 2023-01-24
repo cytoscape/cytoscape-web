@@ -21,8 +21,7 @@ import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
 import { AppConfigContext } from '../AppConfigContext'
 import { Workspace } from '../models/WorkspaceModel'
-import { SummaryPanel } from './SummaryPanel'
-import { MessagePanel } from './MessagePanel'
+import { Summaries as SummaryList } from './SummaryPanel'
 
 const WorkSpaceEditor: React.FC = () => {
   // Server location
@@ -40,10 +39,11 @@ const WorkSpaceEditor: React.FC = () => {
   )
 
   // Network Summaries
-  const summaries: Map<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
+  const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
   const fetchAllSummaries = useNetworkSummaryStore((state) => state.fetchAll)
+  const removeSummary = useNetworkSummaryStore((state) => state.remove)
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
@@ -60,7 +60,6 @@ const WorkSpaceEditor: React.FC = () => {
 
   // Visual Style Store
   const setVisualStyle = useVisualStyleStore((state) => state.set)
-
   // Table Store
   const setTables = useTableStore((state) => state.setTables)
 
@@ -107,9 +106,30 @@ const WorkSpaceEditor: React.FC = () => {
    * Check number of networks in the workspace
    */
   useEffect(() => {
-    if (workspace.networkIds.length === 0) {
+    const networkCount: number = workspace.networkIds.length
+    const summaryCount: number = Object.keys(summaries).length
+    // No action required if empty or no change
+    if (networkCount === 0) {
+      if (summaryCount !== 0) {
+        // Remove the last one
+        removeSummary(Object.keys(summaries)[0])
+      }
       return
     }
+
+    const summaryIds: IdType[] = [...Object.keys(summaries)]
+
+    // Case 1: network removed
+    if (networkCount < summaryCount) {
+      const toBeRemoved: IdType[] = summaryIds.filter((id) => {
+        return !workspace.networkIds.includes(id)
+      })
+      removeSummary(toBeRemoved[0])
+      return
+    }
+
+    // Case 2: network added
+
     // TODO: Load only diffs
     loadNetworkSummaries()
       .then(() => {})
@@ -130,10 +150,10 @@ const WorkSpaceEditor: React.FC = () => {
   }, [currentNetworkId])
 
   useEffect(() => {
-    if (summaries.size === 0) {
-      return
+    let curId: IdType = ''
+    if (Object.keys(summaries).length !== 0) {
+      curId = Object.keys(summaries)[0]
     }
-    const curId: IdType = [...summaries.keys()][0]
     setCurrentNetworkId(curId)
   }, [summaries])
 
@@ -153,7 +173,6 @@ const WorkSpaceEditor: React.FC = () => {
             <Allotment.Pane preferredSize="20%">
               <Box
                 sx={{
-                  // overflow: 'scroll',
                   height: '100%',
                 }}
               >
@@ -178,26 +197,13 @@ const WorkSpaceEditor: React.FC = () => {
                     <Box
                       sx={{
                         overflow: 'scroll',
-                        height: allotmentDimensions[0] - 48, // need to set a height to enable scroll in the network list
+                        height: allotmentDimensions[0] - 48,
+                        // need to set a height to enable scroll in the network list
                         // 48 is the height of the tool bar
                         width: '100%',
                       }}
                     >
-                      {summaries.size !== 0 ? (
-                        [...summaries.values()].map((summary) => {
-                          const uuid: IdType = summary.externalId
-
-                          return (
-                            <SummaryPanel
-                              key={uuid}
-                              summary={summary}
-                              currentNetworkId={currentNetworkId}
-                            />
-                          )
-                        })
-                      ) : (
-                        <MessagePanel message="No network in workspace" />
-                      )}
+                      <SummaryList summaries={summaries} />
                     </Box>
                   )}
                 </div>

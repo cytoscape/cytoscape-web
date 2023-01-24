@@ -14,6 +14,7 @@ interface WorkspaceActions {
   setName: (name: string) => void
   setCurrentNetworkId: (id: IdType) => void
   addNetworkIds: (ids: IdType | IdType[]) => void
+  deleteCurrentNetwork: () => void
 }
 
 const EMPTY_WORKSPACE: Workspace = {
@@ -21,6 +22,7 @@ const EMPTY_WORKSPACE: Workspace = {
   name: '',
   networkIds: [],
   creationTime: new Date(),
+  localModificationTime: new Date(),
   currentNetworkId: '',
 }
 
@@ -84,6 +86,22 @@ export const useWorkspaceStore = create(
           }).then()
           return newWs
         }
+      })
+    },
+    deleteCurrentNetwork: () => {
+      set((state) => {
+        const newWs = {
+          workspace: {
+            ...state.workspace,
+            networkIds: state.workspace.networkIds.filter(
+              (id) => id !== state.workspace.currentNetworkId,
+            ),
+          },
+        }
+        void updateWorkspaceDb(newWs.workspace.id, {
+          networkIds: newWs.workspace.networkIds,
+        }).then()
+        return newWs
       })
     },
   })),
