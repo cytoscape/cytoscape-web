@@ -3,10 +3,12 @@ import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import { NestedMenuItem } from 'mui-nested-menu'
 import { useState } from 'react'
-import { RunCommunityDetectionFormDialog, runCommunityDetectionFormDialog } from '../CommunityDetection/RunCommunityDetectionFormDialog'
+import {
+  RunCommunityDetectionFormDialog,
+  runCommunityDetectionFormDialog,
+} from '../CommunityDetection/RunCommunityDetectionFormDialog'
 
 export const AppsMenu: React.FC = () => {
-
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
@@ -14,7 +16,8 @@ export const AppsMenu: React.FC = () => {
     setAnchorEl(event.currentTarget)
   }
 
-  const [communityDetectionAlgorithms, setCommunityDetectionAlgorithms] = useState([]);
+  const [communityDetectionAlgorithms, setCommunityDetectionAlgorithms] =
+    useState([])
 
   const handleRunFunctionalEnrichment = (): void => {
     setAnchorEl(null)
@@ -32,10 +35,11 @@ export const AppsMenu: React.FC = () => {
 
   return (
     <div>
-      <Button sx={{
-        color: 'white',
-        textTransform: 'none',
-      }}
+      <Button
+        sx={{
+          color: 'white',
+          textTransform: 'none',
+        }}
         id={labelId}
         aria-controls={open ? 'basic-menu' : undefined}
         aria-haspopup="true"
@@ -44,22 +48,30 @@ export const AppsMenu: React.FC = () => {
       >
         Apps
       </Button>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-      >
-        <NestedMenuItem label='Community Detection' onClick={handleClose} parentMenuOpen={open} nonce=''>
-          <MenuItem onClick={() => {
-            setAnchorEl(null)
-            runCommunityDetectionFormDialog(true)
-          }}>Run Community Detection</MenuItem>
-          <MenuItem onClick={handleRunFunctionalEnrichment}>Run Functional Enrichment</MenuItem>
-          <MenuItem onClick={handleTallyAttributesOnHierarchy}>Tally Attributes on Hierarchy</MenuItem>
+      <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+        <NestedMenuItem
+          label="Community Detection"
+          onClick={handleClose}
+          parentMenuOpen={open}
+          nonce=""
+        >
+          <MenuItem
+            onClick={() => {
+              setAnchorEl(null)
+              runCommunityDetectionFormDialog(true)
+            }}
+          >
+            Run Community Detection
+          </MenuItem>
+          <MenuItem onClick={handleRunFunctionalEnrichment}>
+            Run Functional Enrichment
+          </MenuItem>
+          <MenuItem onClick={handleTallyAttributesOnHierarchy}>
+            Tally Attributes on Hierarchy
+          </MenuItem>
         </NestedMenuItem>
-
       </Menu>
       <RunCommunityDetectionFormDialog />
-    </div >
+    </div>
   )
 }
