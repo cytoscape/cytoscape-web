@@ -146,27 +146,23 @@ export function DiscreteMappingForm(props: {
                     />
                   </TableCell>
                   <TableCell sx={{ maxWidth: 150, overflow: 'scroll' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box>
                       {!inColumn ? (
-                        <>
-                          <WarningAmberIcon sx={{ color: '#f0ad4e', mr: 1 }} />
-                          <Tooltip
-                            title={`'${String(
-                              key,
-                            )}' is not found in the column '${
-                              mapping?.attribute ?? ''
-                            }'.  You will not be able to edit it once deleted. `}
-                          >
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                color: !inColumn ? '#f0ad4e' : 'black',
-                              }}
-                            >
-                              {key}
-                            </Typography>
-                          </Tooltip>
-                        </>
+                        <Tooltip
+                          title={`Value '${String(
+                            key,
+                          )}' is not found in the column '${
+                            mapping?.attribute ?? ''
+                          }'.  You will not be able to re-edit this entry if you delete this value from the discrete mapping. `}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <WarningAmberIcon
+                              sx={{ color: '#f0ad4e', mr: 1 }}
+                            />
+
+                            <Typography variant="body2">{key}</Typography>
+                          </Box>
+                        </Tooltip>
                       ) : (
                         <Typography variant="body2">{key}</Typography>
                       )}
