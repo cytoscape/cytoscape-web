@@ -60,11 +60,13 @@ module.exports = {
     }),
 
     // netlify requires a _redirects file in the root of the dist folder to work with react router
-    process.env.BUILD === 'netlify'
-      ? new CopyPlugin({
-          patterns: [{ from: 'netlify/_redirects', to: '.' }],
-        })
-      : null,
+    ...(process.env.BUILD === 'netlify'
+      ? [
+          new CopyPlugin({
+            patterns: [{ from: 'netlify/_redirects', to: '.' }],
+          }),
+        ]
+      : []),
   ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other
   // when source code changes, only the source code bundle will need to be updated, not the vendor code
