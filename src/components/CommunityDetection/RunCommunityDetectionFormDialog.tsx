@@ -1,8 +1,8 @@
-import { Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, InputLabel, Select, SelectChangeEvent, TextField } from '@mui/material';
+import InfoIcon from '@mui/icons-material/Info';
+import { Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, InputAdornment, InputLabel, Select, SelectChangeEvent, TextField, Tooltip } from '@mui/material';
 import * as React from 'react';
 import create from 'zustand';
 import { AlgorithmEntry } from './CommunityDetectionAlgorithmModel';
-
 
 interface RunCommunityDetectionFormDialogProps {
     open: boolean
@@ -18,24 +18,47 @@ export const runCommunityDetectionFormDialog = (open: boolean): void => {
     });
 }
 
+const formatKey = (algorithm: string, key: string): string => {
+    return 'cd.' + algorithm + '.' + key;
+}
+
 export const RunCommunityDetectionFormDialog: React.FC = () => {
     const { open } = useRunCommunityDetectionFormDialogStore();
 
     const [algorithms, setAlgorithms] = React.useState<AlgorithmEntry[]>([]);
     const [parameters, setParameters] = React.useState<React.ReactElement[]>([]);
-    const [parameterMapping, setParameterMapping] = React.useState(new Map());
+    const [parameterMapping, setParameterMapping] = React.useState(new Map<string, any>());
 
-
-    const handleTextFieldChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const handleTextFieldChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
         parameterMapping.set(event.target.id, event.target.value);
+        const regex = /^[0-9\b]+$/;
+
+        Object.values(algorithms).forEach(a => {
+            a.customParameters.filter(b => event.target.id.includes(a.name) && event.target.id.includes(b.name)).forEach(b => {
+                console.log('validationType: ' + String(b.validationType) + ', validationRegex: ' + String(b.validationRegex))
+
+                let ret = false;
+                if (b.validationType != null) {
+                    switch (b.validationType) {
+                        case 'number':
+                            ret = (regex.test(event.target.value))
+                            break;
+                        case 'value':
+                            ret = (event.target.value === "" || regex.test(event.target.value))
+                            break;
+                    }
+                }
+                const key = formatKey(a.name, b.name) + '.valid'
+                console.log('setting ' + key + ' to ' + String(ret))
+                parameterMapping.set(key, ret)
+
+            })
+        })
+
     }
 
     const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
         parameterMapping.set(event.target.id, event.target.checked);
-    }
-
-    const formatKey = (algorithm: string, key: string): string => {
-        return 'cd.' + algorithm + '.' + key;
     }
 
     const drawInputParameters = (name: string) => (): React.ReactElement[] => {
@@ -50,7 +73,17 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
                 fields.push(<Divider key={p.name + '-divider'} />)
                 switch (p.type) {
                     case 'value': {
-                        fields.push(<TextField key={p.name} id={formatKey(a.name, p.name)} label={p.displayName} onChange={handleTextFieldChange} defaultValue={p.defaultValue != null ? p.defaultValue : ''} ></TextField >)
+                        fields.push(
+                            <TextField variant='outlined' key={p.name} id={formatKey(a.name, p.name)} required error={parameterMapping.get(formatKey(a.name, p.name) + '.valid')} label={p.displayName}
+                                onChange={handleTextFieldChange}
+                                defaultValue={p.defaultValue != null ? p.defaultValue : ''}
+                                InputProps={{
+                                    endAdornment: <InputAdornment position="end">
+                                        <Tooltip title={p.description}><InfoIcon /></Tooltip>
+                                    </InputAdornment>,
+                                }
+                                } />
+                        )
                         break;
                     }
                     case 'flag': {
@@ -79,20 +112,79 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
     const onSubmit = (event: React.FormEvent): void => {
         console.log(parameterMapping);
 
-        useRunCommunityDetectionFormDialogStore.setState({ open: false });
-    }
+        const algorithm = String(parameterMapping.get('cd.algorithm'))
+        const weightColumn = String(parameterMapping.get('cd.weight-column'))
 
-    const getAlgorithms = (): void => {
-        fetch('http://cdservice.cytoscape.org/cd/communitydetection/v1/algorithms', {
+        const map = {
+            algorithm,
+            "data": {
+                "array": true,
+                "empty": true,
+                "null": true,
+                "float": true,
+                "valueNode": true,
+                "containerNode": true,
+                "missingNode": true,
+                "object": true,
+                "nodeType": "ARRAY",
+                "pojo": true,
+                "number": true,
+                "integralNumber": true,
+                "floatingPointNumber": true,
+                "short": true,
+                "int": true,
+                "long": true,
+                "double": true,
+                "bigDecimal": true,
+                "bigInteger": true,
+                "textual": true,
+                "boolean": true,
+                "binary": true
+            },
+            "customParameters": {}
+        }
+
+        parameterMapping.forEach((v, k) => {
+            const trimmedKey = k.split('cd.' + algorithm + '.')[1]
+            if (trimmedKey != null && trimmedKey !== '') {
+                // console.log('trimmedKey: ' + trimmedKey + ', value: ' + String(v))
+                map.customParameters[trimmedKey] = String(v)
+            }
+        });
+
+        console.log(JSON.stringify(map))
+
+        const requestOptions = {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             }
-        })
+        };
+
+        fetch('http://cdservice.cytoscape.org/cd/communitydetection/v1', requestOptions)
             .then((res) => res.json())
             .then((data) => {
-                // console.log(data);
-                // console.log(Object.values(data)[0]);
+                console.log(data)
+            })
+            .catch((err) => {
+                console.log(err.message);
+            });
+
+        useRunCommunityDetectionFormDialogStore.setState({ open: false });
+    }
+
+    const getAlgorithms = (): void => {
+        const requestOptions = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        };
+
+        fetch('http://cdservice.cytoscape.org/cd/communitydetection/v1/algorithms', requestOptions)
+            .then((res) => res.json())
+            .then((data) => {
                 setAlgorithms(Object.values(data)[0] as AlgorithmEntry[]);
             })
             .catch((err) => {
@@ -111,7 +203,7 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
                 <DialogContent>
                     <DialogContentText>
                     </DialogContentText>
-                    <Box autoComplete="off" noValidate component="form" sx={{ '& > :not(style)': { m: 1 }, }}>
+                    <Box autoComplete="off" component="form" sx={{ '& > :not(style)': { m: 1 }, }}>
                         <InputLabel id='algorithm-select-label'>Algorithm</InputLabel>
                         <Select native labelId='algorithm-select-label' onChange={handleAlgorithmChange}>
                             <option key=''>None</option>
@@ -122,14 +214,14 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
                             }
                         </Select>
                     </Box>
-                    <Box autoComplete="off" noValidate component="form" sx={{ '& > :not(style)': { m: 1 }, }}>
+                    <Box autoComplete="off" component="form" sx={{ '& > :not(style)': { m: 1 }, }}>
                         <InputLabel id='weight-column-select-label'>Weight Column</InputLabel>
                         <Select native labelId='weight-column-select-label' onChange={handleWeightColumnChange}>
                             <option key='none'>(none)</option>
                             <option key='scoreAverage'>Score Average</option>
                         </Select>
                     </Box>
-                    <Box autoComplete="off" noValidate component="form" sx={{ '& > :not(style)': { m: 1 }, }}>
+                    <Box autoComplete="off" component="form" sx={{ '& > :not(style)': { m: 1 }, }}>
                         {parameters}
                     </Box>
                 </DialogContent>
