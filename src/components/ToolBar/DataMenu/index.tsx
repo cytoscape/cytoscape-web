@@ -17,7 +17,7 @@ const SAMPLE_NETWORKS: string[] = [
   '4acf76b6-23e0-11ed-9208-0242c246b7fb',
   'f33836d8-23df-11ed-9208-0242c246b7fb',
   'f9ca49da-3055-11ec-94bf-525400c25d22',
-  '4de44731-7985-11ec-8589-5e2a6510d7f7',
+  '8bd2797c-3056-11ec-94bf-525400c25d22',
   'ab0eeef6-25bd-11e9-a05d-525400c25d22',
 ]
 

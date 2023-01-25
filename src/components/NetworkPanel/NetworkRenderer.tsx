@@ -6,23 +6,26 @@ import Cytoscape, {
   SingularElementArgument,
 } from 'cytoscape'
 
-import { useVisualStyleStore } from '../store/VisualStyleStore'
-import { useTableStore } from '../store/TableStore'
-import { useViewModelStore } from '../store/ViewModelStore'
-import VisualStyleFn from '../models/VisualStyleModel'
-import { Network } from '../models/NetworkModel'
+import { useVisualStyleStore } from '../../store/VisualStyleStore'
+import { useTableStore } from '../../store/TableStore'
+import { useViewModelStore } from '../../store/ViewModelStore'
+import VisualStyleFn from '../../models/VisualStyleModel'
+import { Network } from '../../models/NetworkModel'
 import { ReactElement, useEffect, useRef, useState } from 'react'
-import { NetworkView } from '../models/ViewModel'
-import { IdType } from '../models/IdType'
+import { NetworkView } from '../../models/ViewModel'
+import { IdType } from '../../models/IdType'
 interface NetworkRendererProps {
   network: Network
 }
 
-const NetworkRenderer = ({ network }: NetworkRendererProps): ReactElement => {
-  const currentNetworkId: IdType = network.id
+export const NetworkRenderer = ({
+  network,
+}: NetworkRendererProps): ReactElement => {
+  const { id } = network
 
   // Optimaization to avoid re-rendering for the same network data
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
+  // const [busy, setBusy] = useState<boolean>(false)
 
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
@@ -30,13 +33,13 @@ const NetworkRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
 
-  const networkView: NetworkView = viewModels[currentNetworkId]
+  const networkView: NetworkView = viewModels[id]
   const nodeViews = networkView?.nodeViews
   const edgeViews = networkView?.edgeViews
   const hoveredElement = networkView?.hoveredElement
 
-  const vs = visualStyles[currentNetworkId]
-  const table = tables[currentNetworkId]
+  const vs = visualStyles[id]
+  const table = tables[id]
 
   // TODO: use types from 3rd party library?
   const [cy, setCy] = useState<any>(null)
@@ -62,7 +65,7 @@ const NetworkRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       'boxselect select',
       debounce((e: EventObject) => {
         exclusiveSelect(
-          currentNetworkId,
+          id,
           cy
             .elements()
             .filter((e: SingularElementArgument) => e.selected())
@@ -75,7 +78,7 @@ const NetworkRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       // check for background click
       // on background click deselect all
       if (e.target === cy) {
-        exclusiveSelect(currentNetworkId, [])
+        exclusiveSelect(id, [])
       }
     })
     cy.fit()
@@ -145,20 +148,15 @@ const NetworkRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     }
   }
 
-  // when the currentNetworkId changes, reset the cyjs element by
+  // when the id changes, reset the cyjs element by
   // removing all elements and event listeners
   // this assumes we have a new network to render that was different from the current one
   useEffect(() => {
-    if (
-      currentNetworkId === '' ||
-      cy === null ||
-      vs === undefined ||
-      table === undefined
-    ) {
+    if (id === '' || cy === null || vs === undefined || table === undefined) {
       return
     }
-    if (lastNetworkId !== currentNetworkId) {
-      setLastNetworkId(currentNetworkId)
+    if (lastNetworkId !== id) {
+      setLastNetworkId(id)
       renderNetwork()
     }
   }, [network])
@@ -174,18 +172,15 @@ const NetworkRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     ) {
       return
     }
-    if (lastNetworkId !== currentNetworkId) {
-      setLastNetworkId(currentNetworkId)
-
-      setTimeout(() => {
-        applyStyleUpdate()
-          .then(() => {
-            console.log('* style updated')
-          })
-          .catch((error) => {
-            console.warn(error)
-          })
-      }, 1)
+    if (lastNetworkId !== id) {
+      setLastNetworkId(id)
+      applyStyleUpdate()
+        .then(() => {
+          console.log('* style updated')
+        })
+        .catch((error) => {
+          console.warn(error)
+        })
     }
   }, [vs, table, edgeViews, nodeViews])
 
@@ -214,14 +209,16 @@ const NetworkRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   }, [])
 
   return (
-    <>
-      <Box
-        sx={{ width: '100%', height: '100%', backgroundColor: '#EEE' }}
-        id="cy-container"
-        ref={cyContainer}
-      />
-    </>
+    <Box
+      sx={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+      }}
+      id="cy-container"
+      ref={cyContainer}
+    />
   )
 }
-
-export default NetworkRenderer

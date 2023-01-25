@@ -5,24 +5,25 @@ import { Box, Tabs, Tab, Typography } from '@mui/material'
 import ShareIcon from '@mui/icons-material/Share'
 import PaletteIcon from '@mui/icons-material/Palette'
 import debounce from 'lodash.debounce'
-import TableBrowser from './TableBrowser'
-import VizmapperView from './Vizmapper'
+import VizmapperView from '../Vizmapper'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
-import { getNdexNetwork } from '../store/useNdexNetwork'
-import { useTableStore } from '../store/TableStore'
-import { useVisualStyleStore } from '../store/VisualStyleStore'
-import { useNetworkStore } from '../store/NetworkStore'
-import { useViewModelStore } from '../store/ViewModelStore'
-import { useWorkspaceStore } from '../store/WorkspaceStore'
-import { IdType } from '../models/IdType'
-import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
-import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
-import { AppConfigContext } from '../AppConfigContext'
-import { Workspace } from '../models/WorkspaceModel'
-import { Summaries as SummaryList } from './SummaryPanel'
-import NetworkPanel from './NetworkPanel'
+import { getNdexNetwork } from '../../store/useNdexNetwork'
+import { useTableStore } from '../../store/TableStore'
+import { useVisualStyleStore } from '../../store/VisualStyleStore'
+import { useNetworkStore } from '../../store/NetworkStore'
+import { useViewModelStore } from '../../store/ViewModelStore'
+import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { IdType } from '../../models/IdType'
+import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
+import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
+import { AppConfigContext } from '../../AppConfigContext'
+import { Workspace } from '../../models/WorkspaceModel'
+import { Summaries as SummaryList } from '../SummaryPanel'
+
+const NetworkPanel = React.lazy(() => import('../NetworkPanel/NetworkPanel'))
+const TableBrowser = React.lazy(() => import('../TableBrowser/TableBrowser'))
 
 const WorkSpaceEditor: React.FC = () => {
   // Server location

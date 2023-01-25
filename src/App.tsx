@@ -9,14 +9,15 @@ import {
   Route,
   createRoutesFromElements,
 } from 'react-router-dom'
-import AppShell from './components/AppShell'
-
 // this allows immer to work with Map and Set
 import { enableMapSet } from 'immer'
 import { MessagePanel } from './components/Messages'
 enableMapSet()
 
-const WorkspaceEditor = React.lazy(() => import('./components/WorkspaceEditor'))
+const AppShell = React.lazy(() => import('./components/AppShell'))
+const WorkspaceEditor = React.lazy(
+  () => import('./components/Workspace/WorkspaceEditor'),
+)
 
 const theme = createTheme({
   palette: {
