@@ -13,7 +13,6 @@ import AppShell from './components/AppShell'
 
 // this allows immer to work with Map and Set
 import { enableMapSet } from 'immer'
-import NetworkPanel from './components/NetworkPanel'
 import { MessagePanel } from './components/Messages'
 enableMapSet()
 
@@ -49,7 +48,7 @@ const router = createBrowserRouter(
             <MessagePanel message={'Please add a network to the workspace'} />
           }
         />
-        <Route path="networks/:networkId" element={<NetworkPanel />} />
+        <Route path="networks/:networkId" element={<div />} />
       </Route>
     </Route>,
   ),

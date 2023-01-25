@@ -22,6 +22,7 @@ import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
 import { AppConfigContext } from '../AppConfigContext'
 import { Workspace } from '../models/WorkspaceModel'
 import { Summaries as SummaryList } from './SummaryPanel'
+import NetworkPanel from './NetworkPanel'
 
 const WorkSpaceEditor: React.FC = () => {
   // Server location
@@ -78,11 +79,11 @@ const WorkSpaceEditor: React.FC = () => {
       setVisualStyle(networkId, visualStyle)
       setTables(networkId, nodeTable, edgeTable)
       setViewModel(networkId, networkView)
-      window.n = network
-      window.nt = nodeTable
-      window.et = edgeTable
-      window.vs = visualStyle
-      window.nv = networkView
+      // window.n = network
+      // window.nt = nodeTable
+      // window.et = edgeTable
+      // window.vs = visualStyle
+      // window.nv = networkView
     } catch (err) {
       console.error(err)
     }
@@ -108,6 +109,11 @@ const WorkSpaceEditor: React.FC = () => {
   useEffect(() => {
     const networkCount: number = workspace.networkIds.length
     const summaryCount: number = Object.keys(summaries).length
+
+    if (networkCount === 0 && summaryCount === 0) {
+      return
+    }
+
     // No action required if empty or no change
     if (networkCount === 0) {
       if (summaryCount !== 0) {
@@ -226,7 +232,8 @@ const WorkSpaceEditor: React.FC = () => {
               </Box>
             </Allotment.Pane>
             <Allotment.Pane>
-              <Outlet /> {/* Network Renderer will be injected here */}
+              <Outlet />
+              <NetworkPanel />
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>
