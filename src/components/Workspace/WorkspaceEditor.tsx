@@ -4,7 +4,6 @@ import { Allotment } from 'allotment'
 import { Box, Tabs, Tab, Typography } from '@mui/material'
 import ShareIcon from '@mui/icons-material/Share'
 import PaletteIcon from '@mui/icons-material/Palette'
-import debounce from 'lodash.debounce'
 import VizmapperView from '../Vizmapper'
 
 import { Outlet, useNavigate } from 'react-router-dom'
@@ -80,11 +79,6 @@ const WorkSpaceEditor: React.FC = () => {
       setVisualStyle(networkId, visualStyle)
       setTables(networkId, nodeTable, edgeTable)
       setViewModel(networkId, networkView)
-      // window.n = network
-      // window.nt = nodeTable
-      // window.et = edgeTable
-      // window.vs = visualStyle
-      // window.nv = networkView
     } catch (err) {
       console.error(err)
     }
@@ -94,9 +88,9 @@ const WorkSpaceEditor: React.FC = () => {
    * Initializations
    */
   useEffect(() => {
-    const windowWidthListener = debounce(() => {
+    const windowWidthListener = (): void => {
       setTableBrowserWidth(window.innerWidth)
-    }, 200)
+    }
     window.addEventListener('resize', windowWidthListener)
 
     return () => {
@@ -164,16 +158,17 @@ const WorkSpaceEditor: React.FC = () => {
     setCurrentNetworkId(curId)
   }, [summaries])
 
+  // TODO: avoid hardcoding pixel values
   return (
     <Box sx={{ height: 'calc(100vh - 48px)' }}>
       <Allotment
         vertical
-        onChange={debounce((sizes: number[]) => {
+        onChange={(sizes: number[]) => {
           // sizes[0] represents the height of the top pane (network list, network renderer, vizmapper)
           // sizes[1] represents the height of the bottom pane (table browser)
           setAllotmentDimensions([sizes[0], sizes[1]])
           setTableBrowserHeight(sizes[1])
-        }, 200)}
+        }}
       >
         <Allotment.Pane>
           <Allotment>
@@ -218,15 +213,10 @@ const WorkSpaceEditor: React.FC = () => {
                   {currentTabIndex === 1 && (
                     <Box>
                       {' '}
-                      <Suspense
-                        fallback={<div>{`Loading from NDEx`}</div>}
-                        key={currentNetworkId}
-                      >
-                        <VizmapperView
-                          currentNetworkId={currentNetworkId}
-                          height={allotmentDimensions[0]}
-                        />
-                      </Suspense>
+                      <VizmapperView
+                        currentNetworkId={currentNetworkId}
+                        height={allotmentDimensions[0]}
+                      />
                     </Box>
                   )}
                 </div>

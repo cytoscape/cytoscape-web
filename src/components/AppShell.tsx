@@ -1,3 +1,4 @@
+import { Box } from '@mui/material'
 import { ReactElement, useEffect, useRef } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { Workspace } from '../models/WorkspaceModel'
@@ -39,10 +40,10 @@ const AppShell = (): ReactElement => {
   }, [workspace])
 
   return (
-    <>
+    <Box sx={{ width: '100%', height: '100%' }}>
       <ToolBar />
       <Outlet />
-    </>
+    </Box>
   )
 }
 

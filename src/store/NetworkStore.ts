@@ -90,7 +90,8 @@ export const useNetworkStore = create(
       }),
     delete: (networkId: IdType) =>
       set((state) => {
-        const newNetworkMap = new Map(state.networks).delete(networkId)
+        const newNetworkMap = new Map(state.networks)
+        newNetworkMap.delete(networkId)
         // await deleteNetworkFromDb(networkId)
         return {
           networks: newNetworkMap,

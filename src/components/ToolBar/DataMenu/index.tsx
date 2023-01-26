@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { Divider } from '@mui/material'
+import { useNetworkStore } from '../../../store/NetworkStore'
 interface DropdownMenuProps {
   label: string
   children?: React.ReactNode
@@ -25,9 +26,15 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
   const addNetworkIds: (ids: IdType | IdType[]) => void = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
+  const currentNetworkId = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
 
   const deleteCurrentNetwork: () => void = useWorkspaceStore(
     (state) => state.deleteCurrentNetwork,
+  )
+  const deleteNetwork: (id: IdType) => void = useNetworkStore(
+    (state) => state.delete,
   )
 
   const initWorkspace: () => void = useWorkspaceStore((state) => state.init)
@@ -81,6 +88,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
   const handleRemoveCurrentNetwork = (): void => {
     setAnchorEl(null)
     deleteCurrentNetwork()
+    deleteNetwork(currentNetworkId)
   }
 
   const labelId = `${label}-dropdown`

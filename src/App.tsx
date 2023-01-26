@@ -32,7 +32,17 @@ const theme = createTheme({
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path="/" element={<AppShell />} errorElement={<Error />}>
+    <Route
+      path="/"
+      element={
+        <Suspense
+          fallback={<MessagePanel message="Preparing your workspace..." />}
+        >
+          <AppShell />
+        </Suspense>
+      }
+      errorElement={<Error />}
+    >
       <Route
         path=":workspaceId"
         element={

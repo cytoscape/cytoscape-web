@@ -25,7 +25,6 @@ export const NetworkRenderer = ({
 
   // Optimaization to avoid re-rendering for the same network data
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
-  // const [busy, setBusy] = useState<boolean>(false)
 
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const tables = useTableStore((state) => state.tables)
@@ -47,8 +46,9 @@ export const NetworkRenderer = ({
 
   // Avoid duplicate initialization of Cyjs
   const isInitialized = useRef(false)
+  const isRendered = useRef(false)
 
-  const renderNetwork = (): void => {
+  const renderNetwork = async (): Promise<void> => {
     cy.removeAllListeners()
     cy.startBatch()
     cy.remove('*')
@@ -152,12 +152,18 @@ export const NetworkRenderer = ({
   // removing all elements and event listeners
   // this assumes we have a new network to render that was different from the current one
   useEffect(() => {
-    if (id === '' || cy === null || vs === undefined || table === undefined) {
+    if (id === '' || cy === null) {
       return
     }
     if (lastNetworkId !== id) {
       setLastNetworkId(id)
       renderNetwork()
+        .then(() => {
+          console.log('* network rendered')
+        })
+        .catch((error) => {
+          console.warn(error)
+        })
     }
   }, [network])
 
@@ -177,6 +183,7 @@ export const NetworkRenderer = ({
       applyStyleUpdate()
         .then(() => {
           console.log('* style updated')
+          isRendered.current = true
         })
         .catch((error) => {
           console.warn(error)
@@ -185,20 +192,20 @@ export const NetworkRenderer = ({
   }, [vs, table, edgeViews, nodeViews])
 
   // when hovered element changes, apply hover style to that element
-  useEffect(
-    debounce(() => {
-      applyHoverStyle()
-    }, 200),
-    [hoveredElement],
-  )
+  useEffect(() => {
+    if (hoveredElement === null || hoveredElement === undefined) {
+      return
+    }
+    applyHoverStyle()
+  }, [hoveredElement])
 
   /**
    * Initilizes the Cytoscape.js instance
    */
   useEffect(() => {
     if (!isInitialized.current) {
-      // This should be executed only once.
       isInitialized.current = true
+      // This should be executed only once.
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
@@ -208,12 +215,30 @@ export const NetworkRenderer = ({
     }
   }, [])
 
+  useEffect(() => {
+    if (cy != null) {
+      console.log(
+        'Cy instance available. Calling first network',
+        cy,
+        cy.elements().length,
+      )
+      renderNetwork()
+        .then(() => {
+          applyStyleUpdate()
+            .then()
+            .catch((err) => {
+              console.warn(err)
+            })
+        })
+        .catch((err) => {
+          console.warn(err)
+        })
+    }
+  }, [cy])
+
   return (
     <Box
       sx={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
         width: '100%',
         height: '100%',
       }}
