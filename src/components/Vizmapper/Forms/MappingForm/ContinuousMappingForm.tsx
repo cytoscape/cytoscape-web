@@ -9,6 +9,7 @@ import {
 } from '@mui/material'
 import _ from 'lodash'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import Delete from '@mui/icons-material/Close'
 import { scaleLinear } from 'd3-scale'
 import { color } from 'd3-color'
 import Draggable from 'react-draggable'
@@ -305,6 +306,22 @@ export function ContinuousMappingForm(props: {
                       alignItems: 'center',
                     }}
                   >
+                    <IconButton
+                      sx={{ position: 'absolute', top: -20, right: -16 }}
+                      onClick={() => {
+                        const handleIndex = handles.findIndex(
+                          (handle) => handle.id === h.id,
+                        )
+                        if (handleIndex >= 0) {
+                          const newHandles = [...handles]
+                          newHandles.splice(handleIndex, 1)
+                          setHandles(newHandles)
+                        }
+                      }}
+                    >
+                      <Delete />
+                    </IconButton>
+
                     <VisualPropertyValueForm
                       currentValue={h.vpValue ?? null}
                       visualProperty={props.visualProperty}
