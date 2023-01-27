@@ -6,6 +6,7 @@ import {
   Paper,
   TextField,
   IconButton,
+  Tooltip,
 } from '@mui/material'
 import _ from 'lodash'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
@@ -189,6 +190,8 @@ export function ContinuousMappingForm(props: {
     setHandles(newHandles)
   }, [min.value, max.value])
 
+  const handleIds = new Set(handles.map((h) => h.id))
+
   return (
     <Box>
       <Box
@@ -241,23 +244,64 @@ export function ContinuousMappingForm(props: {
           />
         </Paper>
         <Paper sx={{ display: 'flex', position: 'relative' }}>
-          {Array(NUM_GRADIENT_STEPS)
-            .fill(0)
-            .map((_, i) => {
-              const value = pixelPositionToRangePosition(i)
-              const nextColor = color(mapper(value))?.formatHex() ?? '#000000'
+          <Tooltip title="Click to add new handle" placement="top" followCursor>
+            <Box
+              sx={{
+                display: 'flex',
+                position: 'relative',
+                '&:hover': { cursor: 'copy' },
+              }}
+              onClickCapture={(e) => {
+                const gradientPositionX =
+                  e.clientX - e.currentTarget.getBoundingClientRect().x
+                let newHandleId = 0
+                while (handleIds.has(newHandleId)) {
+                  newHandleId++
+                }
+                const newHandleValue = pixelPositionToRangePosition(
+                  gradientPositionX / GRADIENT_STEP_WIDTH,
+                )
+                const newHandleVpValue =
+                  color(mapper(newHandleValue))?.formatHex() ?? '#000000'
+                const newHandlePixelPosition = {
+                  x: rangePositionToPixelPosition(newHandleValue),
+                  y: 0,
+                }
 
-              return (
-                <Box
-                  key={i}
-                  sx={{
-                    width: GRADIENT_STEP_WIDTH,
-                    height: 100,
-                    backgroundColor: nextColor,
-                  }}
-                ></Box>
-              )
-            })}
+                const newHandle = {
+                  id: newHandleId,
+                  value: newHandleValue,
+                  vpValue: newHandleVpValue,
+                  pixelPosition: newHandlePixelPosition,
+                }
+
+                const newHandles = [...handles, newHandle].sort(
+                  (a, b) => (a.value as number) - (b.value as number),
+                )
+                console.log(newHandles)
+                setHandles(newHandles)
+              }}
+            >
+              {Array(NUM_GRADIENT_STEPS)
+                .fill(0)
+                .map((_, i) => {
+                  const value = pixelPositionToRangePosition(i)
+                  const nextColor =
+                    color(mapper(value))?.formatHex() ?? '#000000'
+
+                  return (
+                    <Box
+                      key={i}
+                      sx={{
+                        width: GRADIENT_STEP_WIDTH,
+                        height: 100,
+                        backgroundColor: nextColor,
+                      }}
+                    ></Box>
+                  )
+                })}
+            </Box>
+          </Tooltip>
           {handles.map((h) => {
             return (
               <Draggable
