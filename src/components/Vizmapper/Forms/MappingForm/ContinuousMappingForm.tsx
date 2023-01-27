@@ -7,6 +7,7 @@ import {
   TextField,
   IconButton,
 } from '@mui/material'
+import _ from 'lodash'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import { scaleLinear } from 'd3-scale'
 import { color } from 'd3-color'
@@ -21,6 +22,17 @@ import { ContinuousMappingFunction } from '../../../../models/VisualStyleModel/V
 import { ContinuousFunctionInterval } from '../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 
 import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
+import { ValueType } from '../../../../models/TableModel'
+
+interface Handle {
+  id: number
+  value: ValueType
+  vpValue: VisualPropertyValueType
+}
+
+interface UiHandle extends Handle {
+  pixelPosition: { x: number; y: number }
+}
 
 // color mapping form for now
 export function ContinuousMappingForm(props: {
@@ -42,11 +54,9 @@ export function ContinuousMappingForm(props: {
     setPreviousMapping(
       (props.visualProperty?.mapping as ContinuousMappingFunction) ?? null,
     )
-  })
+  }, [])
 
-  const [intervals, setIntervals] = React.useState<
-    ContinuousFunctionInterval[]
-  >([
+  const intervals = [
     {
       max: -2.426,
       maxVPValue: '#0066CC',
@@ -75,26 +85,20 @@ export function ContinuousMappingForm(props: {
       includeMin: true,
       includeMax: false,
     },
-  ])
-
-  const mapper = scaleLinear(
-    // domain
-    [
-      intervals[0].max as number,
-      intervals[1].max as number,
-      intervals[intervals.length - 1].min as number,
-    ],
-    // range
-    [
-      intervals[0].maxVPValue as string,
-      intervals[1].maxVPValue as string,
-      intervals[intervals.length - 1].minVPValue as string,
-    ],
-  )
-
+  ] as ContinuousFunctionInterval[]
   if (intervals.length < 2) {
     return <Box>Invalid number of intervals</Box>
   }
+
+  const [min, setMin] = React.useState({
+    value: intervals[0].max,
+    vpValue: intervals[0].maxVPValue,
+  })
+
+  const [max, setMax] = React.useState({
+    value: intervals[intervals.length - 1].min,
+    vpValue: intervals[intervals.length - 1].minVPValue,
+  })
 
   const NUM_GRADIENT_STEPS = 100
   const GRADIENT_STEP_WIDTH = 4
@@ -102,10 +106,7 @@ export function ContinuousMappingForm(props: {
   // map values in the continuous mapping range to a pixel position
   const rangePositionToPixelPosition = (rangePosition: number): number => {
     const rangeToPixel = scaleLinear(
-      [
-        intervals[0].max as number,
-        intervals[intervals.length - 1].min as number,
-      ],
+      [min.value as number, max.value as number],
       [0, NUM_GRADIENT_STEPS],
     )
     const value = rangeToPixel(rangePosition) ?? 0
@@ -116,15 +117,76 @@ export function ContinuousMappingForm(props: {
   const pixelPositionToRangePosition = (pixelPosition: number): number => {
     const pixelToRange = scaleLinear(
       [0, NUM_GRADIENT_STEPS],
-      [
-        intervals[0].max as number,
-        intervals[intervals.length - 1].min as number,
-      ],
+      [min.value as number, max.value as number],
     )
     const value = pixelToRange(pixelPosition) ?? 0
 
     return value
   }
+
+  const rawHandles: Array<Pick<Handle, 'value' | 'vpValue'>> = []
+  intervals.forEach((i) => {
+    if (i.minVPValue != null && i.min != null) {
+      rawHandles.push({
+        value: i.min,
+        vpValue: i.minVPValue,
+      })
+    }
+
+    if (i.maxVPValue != null && i.max != null) {
+      rawHandles.push({
+        value: i.max,
+        vpValue: i.maxVPValue,
+      })
+    }
+  })
+
+  const uniqueHandles = _.uniqWith(rawHandles, _.isEqual)
+
+  const sortedHandles: UiHandle[] = Array.from(uniqueHandles)
+    .sort((a, b) => (a.value as number) - (b.value as number))
+    .map((h, index) => ({
+      id: index,
+      value: h.value,
+      vpValue: h.vpValue,
+      pixelPosition: {
+        x: rangePositionToPixelPosition(h.value as number),
+        y: 0,
+      },
+    }))
+
+  const [handles, setHandles] = React.useState<UiHandle[]>(sortedHandles)
+
+  const mapper = scaleLinear(
+    // domain: handle values
+    [
+      min.value as number,
+      ...handles.map((h) => h.value as number),
+      max.value as number,
+    ],
+    // range: handle colors
+    [
+      min.vpValue as string,
+      ...handles.map((h) => h.vpValue as string),
+      max.vpValue as string,
+    ],
+  )
+
+  React.useEffect(() => {
+    // update the range values of each handle to be the same pixel position as they are now in the range
+    const newHandles = handles.map((h) => {
+      const newValue = pixelPositionToRangePosition(
+        h.pixelPosition.x / GRADIENT_STEP_WIDTH,
+      )
+
+      return {
+        ...h,
+        value: newValue,
+      }
+    })
+
+    setHandles(newHandles)
+  }, [min.value, max.value])
 
   return (
     <Box>
@@ -147,13 +209,12 @@ export function ContinuousMappingForm(props: {
           elevation={2}
         >
           <VisualPropertyValueForm
-            currentValue={intervals[0].maxVPValue ?? null}
+            currentValue={min.vpValue ?? null}
             visualProperty={props.visualProperty}
             onValueChange={(newValue) => {
-              setIntervals((prev) => {
-                const newIntervals = [...prev]
-                newIntervals[0].maxVPValue = newValue
-                return newIntervals
+              setMin({
+                value: min.value,
+                vpValue: newValue,
               })
             }}
           />
@@ -167,15 +228,15 @@ export function ContinuousMappingForm(props: {
               step: 0.1,
             }}
             onChange={(e) => {
-              setIntervals((prev) => {
-                const newIntervals = [...prev]
-                newIntervals[0].max = isNaN(Number(e.target.value))
-                  ? 0
-                  : Number(e.target.value)
-                return newIntervals
-              })
+              const newMin = Number(e.target.value)
+              if (!isNaN(newMin)) {
+                setMin({
+                  value: newMin,
+                  vpValue: min.vpValue,
+                })
+              }
             }}
-            value={intervals[0].max}
+            value={min.value}
           />
         </Paper>
         <Paper sx={{ display: 'flex', position: 'relative' }}>
@@ -196,94 +257,111 @@ export function ContinuousMappingForm(props: {
                 ></Box>
               )
             })}
-          <Draggable
-            bounds="parent"
-            axis="x"
-            handle=".handle"
-            onDrag={(e, data) => {
-              const newRangePosition = pixelPositionToRangePosition(
-                data.x / GRADIENT_STEP_WIDTH,
-              )
+          {handles.map((h) => {
+            return (
+              <Draggable
+                key={h.id}
+                bounds="parent"
+                axis="x"
+                handle=".handle"
+                onDrag={(e, data) => {
+                  const newRangePosition = pixelPositionToRangePosition(
+                    data.x / GRADIENT_STEP_WIDTH,
+                  )
 
-              setIntervals((prev) => {
-                const newIntervals = [...prev]
-                newIntervals[1].max = newRangePosition
-                return newIntervals
-              })
-            }}
-            defaultPosition={{
-              x: rangePositionToPixelPosition(
-                intervals[1].max != null ? (intervals[1].max as number) : 0,
-              ),
-              y: 0,
-            }}
-          >
-            <Box
-              sx={{
-                width: 2,
-                height: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                position: 'absolute',
-                zIndex: 1,
-              }}
-            >
-              <Paper
-                sx={{
-                  p: 1,
-                  position: 'relative',
-                  top: -100,
-                  zIndex: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
+                  const handleIndex = handles.findIndex(
+                    (handle) => handle.id === h.id,
+                  )
+                  if (handleIndex >= 0) {
+                    const newHandles = [...handles]
+                    newHandles[handleIndex].value = newRangePosition
+                    newHandles.sort(
+                      (a, b) => (a.value as number) - (b.value as number),
+                    )
+                    setHandles(newHandles)
+                  }
                 }}
+                defaultPosition={h.pixelPosition}
               >
-                <VisualPropertyValueForm
-                  currentValue={intervals[1].maxVPValue ?? null}
-                  visualProperty={props.visualProperty}
-                  onValueChange={(newValue) => {
-                    setIntervals((prev) => {
-                      const newIntervals = [...prev]
-                      newIntervals[1].maxVPValue = newValue
-                      return newIntervals
-                    })
+                <Box
+                  sx={{
+                    width: 2,
+                    height: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    position: 'absolute',
+                    zIndex: 1,
                   }}
-                />
-                <TextField
-                  sx={{ width: 50, mt: 1 }}
-                  inputProps={{
-                    sx: { p: 0.5, fontSize: 14, width: 50 },
-                    inputMode: 'numeric',
-                    pattern: '[0-9]*',
-                    step: 0.1,
-                  }}
-                  onChange={(e) => {
-                    setIntervals((prev) => {
-                      const newIntervals = [...prev]
-                      newIntervals[1].max = isNaN(Number(e.target.value))
-                        ? 0
-                        : Number(e.target.value)
-                      return newIntervals
-                    })
-                  }}
-                  value={intervals[1].max as number}
-                />
-              </Paper>
-              <IconButton
-                className="handle"
-                size="large"
-                sx={{
-                  position: 'relative',
-                  top: -120,
-                  '&:hover': { cursor: 'col-resize' },
-                }}
-              >
-                <ArrowDropDownIcon sx={{ fontSize: '40px' }} />
-              </IconButton>
-            </Box>
-          </Draggable>
+                >
+                  <Paper
+                    sx={{
+                      p: 1,
+                      position: 'relative',
+                      top: -100,
+                      zIndex: 2,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <VisualPropertyValueForm
+                      currentValue={h.vpValue ?? null}
+                      visualProperty={props.visualProperty}
+                      onValueChange={(newValue) => {
+                        const handleIndex = handles.findIndex(
+                          (handle) => handle.id === h.id,
+                        )
+                        if (handleIndex >= 0) {
+                          const newHandles = [...handles]
+                          newHandles[handleIndex].vpValue = newValue
+                          setHandles(newHandles)
+                        }
+                      }}
+                    />
+                    <TextField
+                      sx={{ width: 50, mt: 1 }}
+                      inputProps={{
+                        sx: { p: 0.5, fontSize: 14, width: 50 },
+                        inputMode: 'numeric',
+                        pattern: '[0-9]*',
+                        step: 0.1,
+                      }}
+                      onChange={(e) => {
+                        const handleIndex = handles.findIndex(
+                          (handle) => handle.id === h.id,
+                        )
+                        if (handleIndex >= 0) {
+                          const newHandles = [...handles]
+                          const newVal = Number(e.target.value)
+
+                          if (!isNaN(newVal)) {
+                            newHandles[handleIndex].value = newVal
+                          }
+                          newHandles.sort(
+                            (a, b) => (a.value as number) - (b.value as number),
+                          )
+                          setHandles(newHandles)
+                        }
+                      }}
+                      value={h.value as number}
+                    />
+                  </Paper>
+                  <IconButton
+                    className="handle"
+                    size="large"
+                    sx={{
+                      position: 'relative',
+                      top: -120,
+                      '&:hover': { cursor: 'col-resize' },
+                    }}
+                  >
+                    <ArrowDropDownIcon sx={{ fontSize: '40px' }} />
+                  </IconButton>
+                </Box>
+              </Draggable>
+            )
+          })}
         </Paper>
         <Paper
           sx={{
@@ -296,13 +374,12 @@ export function ContinuousMappingForm(props: {
           elevation={2}
         >
           <VisualPropertyValueForm
-            currentValue={intervals[intervals.length - 1].minVPValue ?? null}
+            currentValue={max.vpValue ?? null}
             visualProperty={props.visualProperty}
             onValueChange={(newValue) => {
-              setIntervals((prev) => {
-                const newIntervals = [...prev]
-                newIntervals[newIntervals.length - 1].minVPValue = newValue
-                return newIntervals
+              setMax({
+                value: max.value,
+                vpValue: newValue,
               })
             }}
           />
@@ -316,17 +393,15 @@ export function ContinuousMappingForm(props: {
               step: 0.1,
             }}
             onChange={(e) => {
-              setIntervals((prev) => {
-                const newIntervals = [...prev]
-                newIntervals[newIntervals.length - 1].min = isNaN(
-                  Number(e.target.value),
-                )
-                  ? 0
-                  : Number(e.target.value)
-                return newIntervals
-              })
+              const newMax = Number(e.target.value)
+              if (!isNaN(newMax)) {
+                setMax({
+                  value: newMax,
+                  vpValue: max.vpValue,
+                })
+              }
             }}
-            value={intervals[intervals.length - 1].min}
+            value={max.value}
           />
         </Paper>
       </Box>
@@ -343,15 +418,6 @@ export function ContinuousMappingForm(props: {
           Cancel
         </Button>
         <Button>Confirm</Button>
-      </Box>
-      <Box>
-        {intervals.map((i, index) => {
-          return (
-            <Box sx={{ p: 1 }} key={index}>
-              {JSON.stringify(i, null, 2)}
-            </Box>
-          )
-        })}
       </Box>
     </Box>
   )
