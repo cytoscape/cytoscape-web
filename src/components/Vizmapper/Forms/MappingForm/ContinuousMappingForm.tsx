@@ -202,7 +202,7 @@ export function ContinuousMappingForm(props: {
           justifyContent: 'space-between',
         }}
       >
-        <Paper
+        <Box
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -210,7 +210,6 @@ export function ContinuousMappingForm(props: {
             p: 1,
             m: 1,
           }}
-          elevation={2}
         >
           <VisualPropertyValueForm
             currentValue={min.vpValue ?? null}
@@ -242,7 +241,7 @@ export function ContinuousMappingForm(props: {
             }}
             value={min.value}
           />
-        </Paper>
+        </Box>
         <Paper sx={{ display: 'flex', position: 'relative' }}>
           <Tooltip title="Click to add new handle" placement="top" followCursor>
             <Box
@@ -424,7 +423,7 @@ export function ContinuousMappingForm(props: {
             )
           })}
         </Paper>
-        <Paper
+        <Box
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -432,7 +431,6 @@ export function ContinuousMappingForm(props: {
             p: 1,
             m: 1,
           }}
-          elevation={2}
         >
           <VisualPropertyValueForm
             currentValue={max.vpValue ?? null}
@@ -464,7 +462,7 @@ export function ContinuousMappingForm(props: {
             }}
             value={max.value}
           />
-        </Paper>
+        </Box>
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -472,8 +470,6 @@ export function ContinuousMappingForm(props: {
           {props.visualProperty.mapping?.attribute}
         </Typography>
       </Box>
-      <Button>Add Handle</Button>
-
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <Button color="error" onClick={() => console.log(previousMapping)}>
           Cancel
