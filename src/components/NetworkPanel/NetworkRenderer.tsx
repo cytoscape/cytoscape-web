@@ -16,10 +16,14 @@ import { NetworkView } from '../../models/ViewModel'
 import { IdType } from '../../models/IdType'
 interface NetworkRendererProps {
   network: Network
+  setIsBusy: (isBusy: boolean) => void
+  isBusy: boolean
 }
 
 export const NetworkRenderer = ({
   network,
+  setIsBusy,
+  isBusy,
 }: NetworkRendererProps): ReactElement => {
   const { id } = network
 
@@ -184,6 +188,7 @@ export const NetworkRenderer = ({
         .then(() => {
           console.log('* style updated')
           isRendered.current = true
+          setIsBusy(false)
         })
         .catch((error) => {
           console.warn(error)

@@ -137,17 +137,23 @@ const WorkSpaceEditor: React.FC = () => {
       .catch((err) => console.error(err))
   }, [workspace.networkIds])
 
+  /**
+   * Swap the current network, can be an expensive operation
+   */
   useEffect(() => {
-    if (currentNetworkId !== '' && currentNetworkId !== undefined) {
-      loadCurrentNetworkById(currentNetworkId)
-        .then(() => {
-          console.log('Network loaded for', currentNetworkId)
-        })
-        .catch((err) => console.error(err))
-
-      // Set URL to current network ID
-      navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+    if (currentNetworkId === '' || currentNetworkId === undefined) {
+      // No need to load new network
+      return
     }
+
+    loadCurrentNetworkById(currentNetworkId)
+      .then(() => {
+        navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+        console.log('Network loaded for', currentNetworkId)
+      })
+      .catch((err) => console.error('Failed to load a network:', err))
+
+    // Set URL to current network ID
   }, [currentNetworkId])
 
   useEffect(() => {

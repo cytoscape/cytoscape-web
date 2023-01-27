@@ -2,15 +2,13 @@ import { IdType } from '../models/IdType'
 import NetworkFn, { Network } from '../models/NetworkModel'
 import create from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-// import { deleteNetworkFromDb } from './persist/db'
-// import { persist, StateStorage } from 'zustand/middleware'
-// import { db, putNetworkToDb, addTables, getNetworkFromDB } from './persist/db'
 
 /**
  * Network State manager based on zustand
  */
 interface NetworkState {
   networks: Map<IdType, Network>
+  isUpdating: boolean
 }
 
 /**
@@ -32,6 +30,7 @@ interface NetworkActions {
 export const useNetworkStore = create(
   immer<NetworkState & NetworkActions & UpdateActions>((set) => ({
     networks: new Map<IdType, Network>(),
+    isUpdating: false,
 
     addNode: (networkId: IdType, nodeId: IdType) => {
       set((state) => {
