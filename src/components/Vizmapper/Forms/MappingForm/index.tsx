@@ -120,8 +120,8 @@ function MappingFormContent(props: {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        width: '400px',
-        height: '600px',
+        width: mappingType === 'continuous' ? '600px' : '400px',
+        height: mappingType === 'continuous' ? '700px' : '600px',
         minWidth: '30vw',
         minHeight: '30vh',
         overflow: 'hidden',
