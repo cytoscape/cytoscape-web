@@ -1,5 +1,6 @@
-import chroma, { Color as ChromaColor } from 'chroma-js'
-
+import chroma from 'chroma-js'
+import { scaleLinear } from 'd3-scale'
+import { color } from 'd3-color'
 import { Table, ValueType, ValueTypeName } from '../../TableModel'
 import { SingleValueType } from '../../TableModel/ValueType'
 import {
@@ -8,7 +9,7 @@ import {
   VisualMappingFunction,
 } from '../VisualMappingFunction'
 import { VisualPropertyValueTypeString } from '../VisualPropertyValueTypeString'
-import { VisualPropertyValueType } from '../VisualPropertyValue'
+import { ColorType, VisualPropertyValueType } from '../VisualPropertyValue'
 
 import { SingularElementArgument } from 'cytoscape'
 import { IdType } from '../../IdType'
@@ -48,29 +49,30 @@ const getColumnValue = (
 
 // precondition: value is in the interval of (min/max)
 // create color scale with min/max color values and map the value to a color in that scale
-const mapColor = (
+export const mapColor = (
   min: number,
   max: number,
-  minVPValue: ChromaColor,
-  maxVPValue: ChromaColor,
+  minVPValue: ColorType,
+  maxVPValue: ColorType,
   value: number,
-): VisualPropertyValueType => {
-  const colorMapper = chroma.scale([minVPValue, maxVPValue]).domain([min, max])
+): ColorType => {
+  const colorMapper = scaleLinear([min, max], [minVPValue, maxVPValue])
 
-  return colorMapper(value).hex() as unknown as VisualPropertyValueType
+  return (color(colorMapper(value))?.formatHex() ??
+    '#ffffff') as unknown as ColorType
 }
 
 // precondition: value is in the interval of (min/max)
 // map value to a number in the interval of (styleMin/styleMax)
-const mapLinearNumber = (
+export const mapLinearNumber = (
   value: number,
   min: number,
   max: number,
   styleMin: number,
   styleMax: number,
 ): number => {
-  const t = (value - min) / (max - min)
-  return styleMin + t * (styleMax - styleMin)
+  const numberMapper = scaleLinear([min, max], [styleMin, styleMax])
+  return numberMapper(value) ?? 0
 }
 
 const createCyJsPassthroughMappingFn: CyJsMappingFunction = (
@@ -177,8 +179,8 @@ const createCyJsContinuousMappingFn: CyJsMappingFunction = (
               return mapColor(
                 min as number,
                 max as number,
-                minVPValue as unknown as ChromaColor,
-                maxVPValue as unknown as ChromaColor,
+                minVPValue as unknown as ColorType,
+                maxVPValue as unknown as ColorType,
                 value,
               )
             } else {
