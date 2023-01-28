@@ -24,7 +24,9 @@ import { ContinuousMappingFunction } from '../../../../models/VisualStyleModel/V
 import { ContinuousFunctionInterval } from '../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 
 import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
-import { ValueType } from '../../../../models/TableModel'
+import { Table, ValueType } from '../../../../models/TableModel'
+
+import { useTableStore } from '../../../../store/TableStore'
 
 interface Handle {
   id: number
@@ -36,8 +38,15 @@ interface UiHandle extends Handle {
   pixelPosition: { x: number; y: number }
 }
 
+export function ContinuousNumberMappingForm(props: {
+  currentNetworkId: IdType
+  visualProperty: VisualProperty<VisualPropertyValueType>
+}): React.ReactElement {
+  return <Box></Box>
+}
+
 // color mapping form for now
-export function ContinuousMappingForm(props: {
+export function ContinuousColorMappingForm(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
@@ -58,38 +67,50 @@ export function ContinuousMappingForm(props: {
     )
   }, [])
 
-  const intervals = [
+  let intervals: ContinuousFunctionInterval[] = m.intervals
+
+  const columnValues = useTableStore((state) => state.columnValues)
+  const values = Array.from(
+    columnValues(
+      props.currentNetworkId,
+      props.visualProperty.group as 'node' | 'edge',
+      m.attribute,
+    ),
+  ).sort((a, b) => (a as number) - (b as number))
+  const DEFAULT_COLOR_SCHEME = ['red', 'white', 'blue']
+  const DEFAULT_INTERVALS = [
     {
-      max: -2.426,
-      maxVPValue: '#0066CC',
-      includeMin: false,
-      includeMax: true,
-    },
-    {
-      min: -2.426,
-      max: 1.225471493171426e-7,
-      maxVPValue: '#FFFFFF',
-      minVPValue: '#0066CC',
+      max: values[0],
+      maxVPValue: DEFAULT_COLOR_SCHEME[0],
       includeMin: true,
       includeMax: true,
     },
     {
-      min: 1.225471493171426e-7,
-      max: 2.058,
-      maxVPValue: '#FFFF00',
-      minVPValue: '#FFFFFF',
+      min: values[0],
+      minVPValue: DEFAULT_COLOR_SCHEME[0],
+      max: values[Math.floor(values.length / 2)],
+      maxVPValue: DEFAULT_COLOR_SCHEME[1],
       includeMin: true,
       includeMax: true,
     },
     {
-      min: 2.058,
-      minVPValue: '#FFFF00',
+      min: values[Math.floor(values.length / 2)],
+      minVPValue: DEFAULT_COLOR_SCHEME[1],
+      max: values[values.length - 1],
+      maxVPValue: DEFAULT_COLOR_SCHEME[2],
       includeMin: true,
-      includeMax: false,
+      includeMax: true,
     },
-  ] as ContinuousFunctionInterval[]
+    {
+      min: values[values.length - 1],
+      minVPValue: DEFAULT_COLOR_SCHEME[2],
+      includeMin: true,
+      includeMax: true,
+    },
+  ]
+
   if (intervals.length < 2) {
-    return <Box>Invalid number of intervals</Box>
+    intervals = DEFAULT_INTERVALS
   }
 
   const [min, setMin] = React.useState({
@@ -198,7 +219,7 @@ export function ContinuousMappingForm(props: {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          marginTop: 10,
+          marginTop: 12,
           justifyContent: 'space-between',
         }}
       >
@@ -478,4 +499,44 @@ export function ContinuousMappingForm(props: {
       </Box>
     </Box>
   )
+}
+
+export function ContinuousMappingForm(props: {
+  currentNetworkId: IdType
+  visualProperty: VisualProperty<VisualPropertyValueType>
+}): React.ReactElement {
+  const m: ContinuousMappingFunction | null = props.visualProperty
+    ?.mapping as ContinuousMappingFunction
+
+  if (m == null) {
+    return <Box></Box>
+  }
+
+  const group = props.visualProperty.group
+  const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
+    useTableStore((state) => state.tables)
+  const nodeTable = tables[props.currentNetworkId]?.nodeTable
+  const edgeTable = tables[props.currentNetworkId]?.edgeTable
+  const table = group === 'node' ? nodeTable : edgeTable
+
+  const { attribute } = m
+  const attributeType = table.columns.get(attribute)?.type
+
+  if (
+    attributeType !== 'double' &&
+    attributeType !== 'integer' &&
+    attributeType !== 'long'
+  ) {
+    return (
+      <Box>{`Attribute '${attribute}' cannot have a continuous mapping function as it's type is '${
+        attributeType as string
+      }'.  Continuous mapping functions only work with integer, double and long data types. `}</Box>
+    )
+  } else {
+    if (props.visualProperty.type === 'color') {
+      return <ContinuousColorMappingForm {...props} />
+    } else {
+      return <ContinuousNumberMappingForm {...props} />
+    }
+  }
 }
