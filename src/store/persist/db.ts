@@ -6,8 +6,10 @@ import { Table } from '../../models/TableModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { Workspace } from '../../models/WorkspaceModel'
 import { v4 as uuidv4 } from 'uuid'
+import { NetworkView } from '../../models/ViewModel'
 
 const DB_NAME = 'cyweb-db'
+const DB_VERSION: number = 1
 
 /**
  * TODO: we need a schema for indexes
@@ -21,15 +23,17 @@ class CyDB extends Dexie {
   cyTables!: DxTable<any>
   cyVisualStyles!: DxTable<any>
   summaries!: DxTable<any>
+  cyNetworkViews!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
-    this.version(1).stores({
+    this.version(DB_VERSION).stores({
       workspace: 'id',
       summaries: 'externalId',
       cyNetworks: 'id',
       cyTables: 'id',
       cyVisualStyles: 'id',
+      cyNetworkViews: 'id',
     })
   }
 }
@@ -60,7 +64,7 @@ export const deleteDb = async (): Promise<void> => {
  * @param network Network object
  * @returns
  */
-export const putNetworkToDb = async (
+export const putNetworkToDbOld = async (
   id: IdType,
   network: Network,
 ): Promise<IndexableType> => {
@@ -82,7 +86,7 @@ export const putNetworkToDb = async (
  * @param id
  * @returns
  */
-export const getNetworkFromDb = async (
+export const getNetworkFromDbOld = async (
   id: IdType,
 ): Promise<Network | undefined> => {
   const cached: any = await db.cyNetworks.get({ id })
@@ -93,14 +97,21 @@ export const getNetworkFromDb = async (
   return NetworkFn.createFromCyJson(id, cached)
 }
 
-export const getVisualStyleFromDb = async (
+export const getNetworkFromDb = async (
   id: IdType,
-): Promise<VisualStyle | undefined> => {
-  const cached: any = await db.cyVisualStyles.get({ id })
-  if (cached === undefined) {
-    return cached
-  }
-  return cached.visualStyle
+): Promise<Network | undefined> => {
+  return await db.cyNetworks.get({ id })
+}
+
+export const putNetworkToDb = async (
+  network: Network,
+): Promise<void> => {
+  console.log('Updating network', network)
+  await db.transaction('rw', db.cyNetworks, async () => {
+    await db.cyNetworks.put({ ...network })
+  }).catch((err) => {
+    console.error('PUT ERROR::', err)
+  })
 }
 
 export const getTablesFromDb = async (id: IdType): Promise<any> => {
@@ -127,23 +138,16 @@ export const putTablesToDb = async (
   id: IdType,
   nodeTable: Table,
   edgeTable: Table,
-): Promise<IndexableType> => {
-  return await db.cyTables.put({
-    id,
-    nodeTable,
-    edgeTable,
+): Promise<void> => {
+  await db.transaction('rw', db.cyTables, async () => {
+    await db.cyTables.put({
+      id,
+      nodeTable,
+      edgeTable,
+    })
   })
 }
 
-export const putVisualStylesToDb = async (
-  id: IdType,
-  visualStyle: VisualStyle,
-): Promise<IndexableType> => {
-  return await db.cyVisualStyles.put({
-    id,
-    visualStyle,
-  })
-}
 
 // Workspace management
 
@@ -234,4 +238,38 @@ export const deleteNetworkSummaryFromDb = async (
   externalId: IdType,
 ): Promise<void> => {
   await db.summaries.delete(externalId)
+}
+
+// Visual Sytles
+export const getVisualStyleFromDb = async (
+  id: IdType,
+): Promise<VisualStyle | undefined> => {
+  return await db.cyVisualStyles.get({ id })
+}
+
+export const putVisualStyleToDb = async (
+  id: IdType,
+  visualStyle: VisualStyle,
+): Promise<void> => {
+  await db.transaction('rw', db.cyVisualStyles, async () => {
+  return await db.cyVisualStyles.put({
+    id,
+    visualStyle,
+  })})
+}
+
+// Network View
+export const getNetworkViewFromDb = async (
+  id: IdType,
+): Promise<NetworkView | undefined> => {
+  return await db.cyNetworkViews.get({ id })
+}
+
+export const putNetworkViewToDb = async (
+  id: IdType,
+  view: NetworkView,
+): Promise<void> => {
+  await db.transaction('rw', db.cyNetworkViews, async () => {
+    await db.cyNetworkViews.put({ ...view })
+  })
 }

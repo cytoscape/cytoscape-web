@@ -8,6 +8,7 @@ import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { Divider } from '@mui/material'
 import { useNetworkStore } from '../../../store/NetworkStore'
+import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
 interface DropdownMenuProps {
   label: string
   children?: React.ReactNode
@@ -125,8 +126,9 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
           </MenuItem>
           <Divider />
           <MenuItem onClick={handleRemoveCurrentNetwork}>
-            Remove current network
+            Remove selected network
           </MenuItem>
+          <RemoveAllNetworksMenuItem />
           <Divider />
           <MenuItem onClick={handleClear}>Start new workspace</MenuItem>
         </Menu>

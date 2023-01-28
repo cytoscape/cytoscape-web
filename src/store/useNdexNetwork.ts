@@ -12,10 +12,12 @@ import { Cx2 } from '../utils/cx/Cx2'
 import {
   putNetworkToDb,
   putTablesToDb,
-  putVisualStylesToDb,
+  putVisualStyleToDb,
   getNetworkFromDb,
   getTablesFromDb,
   getVisualStyleFromDb,
+  putNetworkViewToDb,
+  getNetworkViewFromDb,
 } from './persist/db'
 
 import { useVisualStyleStore } from './VisualStyleStore'
@@ -115,60 +117,84 @@ export const networkFetcher = async (
   )
 
   // Add network to local IndexedDB
-  putNetworkToDb(id, network)
+  putNetworkToDb(network)
   putTablesToDb(id, nodeTable, edgeTable)
-  putVisualStylesToDb(id, visualStyle)
+  putVisualStyleToDb(id, visualStyle)
 
   return { network, visualStyle, nodeTable, edgeTable }
 }
 
-export const getNdexNetwork = async (
-  ndexNetworkId: string,
-  url: string,
-): Promise<{
+interface FullNetworkData {
   network: Network
   nodeTable: Table
   edgeTable: Table
   visualStyle: VisualStyle
   networkView: NetworkView
-}> => {
-  const cache: CachedData = await getCachedData(ndexNetworkId)
+}
 
+export const getNdexNetwork = async (
+  ndexNetworkId: string,
+  url: string,
+): Promise<FullNetworkData> => {
   try {
-    const cxData: Cx2 = await ndexNetworkFetcher(ndexNetworkId, url)
+    // First, check the local cache
+    const cache: CachedData = await getCachedData(ndexNetworkId)
 
-    let visualStyle: VisualStyle
-    if (cache.visualStyle !== undefined) {
-      visualStyle = cache.visualStyle
+    // This is necessary only when data is not in the cache
+    if (
+      cache.network === undefined ||
+      cache.nodeTable === undefined ||
+      cache.edgeTable === undefined ||
+      cache.visualStyle === undefined ||
+      cache.networkView === undefined
+    ) {
+      return await createDataFromCx(ndexNetworkId, url)
     } else {
-      visualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
-      putVisualStylesToDb(ndexNetworkId, visualStyle)
+      return {
+        network: cache.network,
+        nodeTable: cache.nodeTable,
+        edgeTable: cache.edgeTable,
+        visualStyle: cache.visualStyle,
+        networkView: cache.networkView,
+      }
     }
-
-    const network: Network = NetworkFn.createNetworkFromCx(
-      ndexNetworkId,
-      cxData,
-    )
-    putNetworkToDb(ndexNetworkId, network)
-
-    const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
-      ndexNetworkId,
-      cxData,
-    )
-    putTablesToDb(ndexNetworkId, nodeTable, edgeTable)
-
-    const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
-      ndexNetworkId,
-      cxData,
-    )
-
-    // Store data to IndexedDB
-
-    return { network, nodeTable, edgeTable, visualStyle, networkView }
   } catch (error) {
     console.error('Failed to get network', error)
     throw error
   }
+}
+
+/**
+ *
+ * @param ndexNetworkId
+ * @param url
+ * @returns
+ */
+const createDataFromCx = async (
+  ndexNetworkId: string,
+  url: string,
+): Promise<FullNetworkData> => {
+  const cxData: Cx2 = await ndexNetworkFetcher(ndexNetworkId, url)
+  const network: Network = NetworkFn.createNetworkFromCx(ndexNetworkId, cxData)
+  // FIXME: This should be replaced to correct DB operation
+  await putNetworkToDb(network)
+  
+  const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
+    ndexNetworkId,
+    cxData,
+  )
+  await putTablesToDb(ndexNetworkId, nodeTable, edgeTable)
+  
+  const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
+  await putVisualStyleToDb(ndexNetworkId, visualStyle)
+  
+  const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
+    ndexNetworkId,
+    cxData,
+  )
+  await putNetworkViewToDb(ndexNetworkId, networkView)
+
+  return { network, nodeTable, edgeTable, visualStyle, networkView }
 }
 
 interface CachedData {
@@ -181,9 +207,9 @@ interface CachedData {
 
 const getCachedData = async (id: string): Promise<CachedData> => {
   const network = await getNetworkFromDb(id)
-  const visualStyle = await getVisualStyleFromDb(id)
   const tables = await getTablesFromDb(id)
-  const networkView = undefined
+  const networkView = await getNetworkViewFromDb(id)
+  const visualStyle = await getVisualStyleFromDb(id)
 
   return {
     network,
