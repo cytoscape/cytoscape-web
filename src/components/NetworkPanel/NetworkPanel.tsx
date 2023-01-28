@@ -1,4 +1,5 @@
 import { Box } from '@mui/material'
+import { grey } from '@mui/material/colors'
 import { ReactElement, useEffect, useState } from 'react'
 import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
@@ -32,14 +33,23 @@ const NetworkPanel = (): ReactElement => {
     edges: [],
   }
 
-  let height = '100%'
-  let background = 'red'
-  if (isBusy) {
-    height = '100%'
-    background = 'blue'
-  }
   return (
-    <Box sx={{ height, width: '100%', background }}>
+    <Box sx={{ height: '100%', width: '100%' }}>
+      {isBusy ? (
+        <Box
+          sx={{
+            zIndex: 200,
+            background: grey[100],
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            height: '100%',
+            width: '100%',
+          }}
+        >
+          <MessagePanel message="Preparing network data..." />
+        </Box>
+      ) : null}
       <NetworkRenderer
         network={targetNetwork}
         setIsBusy={setIsBusy}

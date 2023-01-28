@@ -230,7 +230,9 @@ export const NetworkRenderer = ({
       renderNetwork()
         .then(() => {
           applyStyleUpdate()
-            .then()
+            .then(() => {
+              setIsBusy(false)
+            })
             .catch((err) => {
               console.warn(err)
             })
