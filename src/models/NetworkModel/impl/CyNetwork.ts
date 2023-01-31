@@ -131,11 +131,36 @@ export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
   return cyNet
 }
 
+
 export const createFromCyJson = (id: IdType, cyJson: object): Network => {
   const nodeTable = TableFn.createTable(id)
   const edgeTable = TableFn.createTable(id)
   const cyNet: CyNetwork = new CyNetwork(id, nodeTable, edgeTable)
   cyNet.store.json(cyJson)
+  return cyNet
+}
+
+const addToCyStoreFromLists = (network:Network, cyNet: CyNetwork):void => {
+  cyNet.store.add(
+    network.nodes.map((node: Node) => createCyNode(node.id.toString())),
+  )
+
+  cyNet.store.add(
+    network.edges.map((edge: Edge) => createCyEdge(
+        edge.id.toString(),
+        edge.s.toString(),
+        edge.t.toString(),
+      )
+    )
+  )
+}
+
+export const plainNetwork2CyNetwork = (network: Network): Network => {
+  const { id } = network
+  const nodeTable = TableFn.createTable(id)
+  const edgeTable = TableFn.createTable(id)
+  const cyNet: CyNetwork = new CyNetwork(id, nodeTable, edgeTable)
+  addToCyStoreFromLists(network, cyNet)
   return cyNet
 }
 
