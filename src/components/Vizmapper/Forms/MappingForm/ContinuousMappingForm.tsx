@@ -8,7 +8,6 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material'
-import _ from 'lodash'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import Delete from '@mui/icons-material/Close'
 import { scaleLinear } from 'd3-scale'
@@ -21,20 +20,19 @@ import {
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
 import { ContinuousMappingFunction } from '../../../../models/VisualStyleModel/VisualMappingFunction'
-import { ContinuousFunctionInterval } from '../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 
 import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
 import { Table, ValueType } from '../../../../models/TableModel'
 
 import { useTableStore } from '../../../../store/TableStore'
+import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+import { ContinuousFunctionControlPoint } from '../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
+import { debounce } from 'lodash'
 
-interface Handle {
+interface Handle extends ContinuousFunctionControlPoint {
   id: number
   value: ValueType
   vpValue: VisualPropertyValueType
-}
-
-interface UiHandle extends Handle {
   pixelPosition: { x: number; y: number }
 }
 
@@ -56,162 +54,137 @@ export function ContinuousColorMappingForm(props: {
   if (m == null) {
     return <Box></Box>
   }
+  const { min, max, controlPoints } = m
 
-  // keep track of previous mapping
-  const [previousMapping, setPreviousMapping] =
-    React.useState<ContinuousMappingFunction | null>(null)
-
-  React.useEffect(() => {
-    setPreviousMapping(
-      (props.visualProperty?.mapping as ContinuousMappingFunction) ?? null,
-    )
-  }, [])
-
-  let intervals: ContinuousFunctionInterval[] = m.intervals
-
-  const columnValues = useTableStore((state) => state.columnValues)
-  const values = Array.from(
-    columnValues(
-      props.currentNetworkId,
-      props.visualProperty.group as 'node' | 'edge',
-      m.attribute,
-    ),
-  ).sort((a, b) => (a as number) - (b as number))
-  const DEFAULT_COLOR_SCHEME = ['red', 'white', 'blue']
-  const DEFAULT_INTERVALS = [
-    {
-      max: values[0],
-      maxVPValue: DEFAULT_COLOR_SCHEME[0],
-      includeMin: true,
-      includeMax: true,
-    },
-    {
-      min: values[0],
-      minVPValue: DEFAULT_COLOR_SCHEME[0],
-      max: values[Math.floor(values.length / 2)],
-      maxVPValue: DEFAULT_COLOR_SCHEME[1],
-      includeMin: true,
-      includeMax: true,
-    },
-    {
-      min: values[Math.floor(values.length / 2)],
-      minVPValue: DEFAULT_COLOR_SCHEME[1],
-      max: values[values.length - 1],
-      maxVPValue: DEFAULT_COLOR_SCHEME[2],
-      includeMin: true,
-      includeMax: true,
-    },
-    {
-      min: values[values.length - 1],
-      minVPValue: DEFAULT_COLOR_SCHEME[2],
-      includeMin: true,
-      includeMax: true,
-    },
-  ]
-
-  if (intervals.length < 2) {
-    intervals = DEFAULT_INTERVALS
-  }
-
-  const [min, setMin] = React.useState({
-    value: intervals[0].max,
-    vpValue: intervals[0].maxVPValue,
-  })
-
-  const [max, setMax] = React.useState({
-    value: intervals[intervals.length - 1].min,
-    vpValue: intervals[intervals.length - 1].minVPValue,
-  })
+  const [minState, setMinState] = React.useState(min)
+  const [maxState, setMaxState] = React.useState(max)
 
   const NUM_GRADIENT_STEPS = 100
   const GRADIENT_STEP_WIDTH = 4
 
+  const setContinuousMappingValues = useVisualStyleStore(
+    (state) => state.setContinuousMappingValues,
+  )
   // map values in the continuous mapping range to a pixel position
-  const rangePositionToPixelPosition = (rangePosition: number): number => {
-    const rangeToPixel = scaleLinear(
-      [min.value as number, max.value as number],
-      [0, NUM_GRADIENT_STEPS],
-    )
+  const rangePositionToPixelPosition = (
+    domain: [number, number],
+    range: [number, number],
+    stepWidth: number,
+    rangePosition: number,
+  ): number => {
+    const rangeToPixel = scaleLinear(domain, range)
     const value = rangeToPixel(rangePosition) ?? 0
 
-    return value * GRADIENT_STEP_WIDTH
+    return value * stepWidth
   }
 
-  const pixelPositionToRangePosition = (pixelPosition: number): number => {
-    const pixelToRange = scaleLinear(
-      [0, NUM_GRADIENT_STEPS],
-      [min.value as number, max.value as number],
-    )
+  const pixelPositionToRangePosition = (
+    domain: [number, number],
+    range: [number, number],
+    pixelPosition: number,
+  ): number => {
+    const pixelToRange = scaleLinear(domain, range)
     const value = pixelToRange(pixelPosition) ?? 0
 
     return value
   }
 
-  const rawHandles: Array<Pick<Handle, 'value' | 'vpValue'>> = []
-  intervals.forEach((i) => {
-    if (i.minVPValue != null && i.min != null) {
-      rawHandles.push({
-        value: i.min,
-        vpValue: i.minVPValue,
+  const [handles, setHandles] = React.useState(() => {
+    return [...controlPoints]
+      .sort((a, b) => (a.value as number) - (b.value as number))
+      .map((pt, index) => {
+        return {
+          ...pt,
+          id: index,
+          pixelPosition: {
+            x: rangePositionToPixelPosition(
+              [minState.value as number, maxState.value as number],
+              [0, NUM_GRADIENT_STEPS],
+              GRADIENT_STEP_WIDTH,
+              pt.value as number,
+            ),
+            y: 0,
+          },
+        }
       })
-    }
-
-    if (i.maxVPValue != null && i.max != null) {
-      rawHandles.push({
-        value: i.max,
-        vpValue: i.maxVPValue,
-      })
-    }
   })
 
-  const uniqueHandles = _.uniqWith(rawHandles, _.isEqual)
-
-  const sortedHandles: UiHandle[] = Array.from(uniqueHandles)
-    .sort((a, b) => (a.value as number) - (b.value as number))
-    .map((h, index) => ({
-      id: index,
-      value: h.value,
-      vpValue: h.vpValue,
-      pixelPosition: {
-        x: rangePositionToPixelPosition(h.value as number),
-        y: 0,
-      },
-    }))
-
-  const [handles, setHandles] = React.useState<UiHandle[]>(sortedHandles)
+  const handleIds = new Set(handles.map((h) => h.id))
 
   const mapper = scaleLinear(
     // domain: handle values
     [
-      min.value as number,
+      minState.value as number,
       ...handles.map((h) => h.value as number),
-      max.value as number,
+      maxState.value as number,
     ],
     // range: handle colors
     [
-      min.vpValue as string,
+      minState.vpValue as string,
       ...handles.map((h) => h.vpValue as string),
-      max.vpValue as string,
+      maxState.vpValue as string,
     ],
   )
 
+  const updateContinuousMapping = React.useMemo(
+    () =>
+      debounce(
+        (
+          min: ContinuousFunctionControlPoint,
+          max: ContinuousFunctionControlPoint,
+          handles: Handle[],
+        ) => {
+          setContinuousMappingValues(
+            props.currentNetworkId,
+            props.visualProperty.name,
+            min,
+            max,
+            handles.map((h) => {
+              return {
+                value: h.value,
+                vpValue: h.vpValue,
+              }
+            }),
+          )
+        },
+        200,
+        { trailing: true },
+      ),
+    [],
+  )
+
   React.useEffect(() => {
-    // update the range values of each handle to be the same pixel position as they are now in the range
-    const newHandles = handles.map((h) => {
-      const newValue = pixelPositionToRangePosition(
-        h.pixelPosition.x / GRADIENT_STEP_WIDTH,
-      )
+    // if the mapping attribute changegs, recompute the continuous mapping
+    // min, max and handles
+    const nextMapping = props.visualProperty
+      .mapping as ContinuousMappingFunction
+    const nextMin = nextMapping.min ?? minState
+    const nextMax = nextMapping.max ?? maxState
+    const nextControlPoints =
+      nextMapping.controlPoints ?? ([] as ContinuousFunctionControlPoint[])
 
-      return {
-        ...h,
-        value: newValue,
-      }
-    })
-
-    setHandles(newHandles)
-  }, [min.value, max.value])
-
-  const handleIds = new Set(handles.map((h) => h.id))
+    setMinState(nextMin)
+    setMaxState(nextMax)
+    setHandles(
+      [...nextControlPoints]
+        .sort((a, b) => (a.value as number) - (b.value as number))
+        .map((pt, index) => {
+          return {
+            ...pt,
+            id: index,
+            pixelPosition: {
+              x: rangePositionToPixelPosition(
+                [minState.value as number, maxState.value as number],
+                [0, NUM_GRADIENT_STEPS],
+                GRADIENT_STEP_WIDTH,
+                pt.value as number,
+              ),
+              y: 0,
+            },
+          }
+        }),
+    )
+  }, [props.visualProperty.mapping?.attribute])
 
   return (
     <Box>
@@ -233,13 +206,22 @@ export function ContinuousColorMappingForm(props: {
           }}
         >
           <VisualPropertyValueForm
-            currentValue={min.vpValue ?? null}
+            currentValue={minState.vpValue}
             visualProperty={props.visualProperty}
             onValueChange={(newValue) => {
-              setMin({
-                value: min.value,
+              setMinState({
+                ...minState,
                 vpValue: newValue,
               })
+
+              updateContinuousMapping(
+                {
+                  ...minState,
+                  vpValue: newValue,
+                },
+                maxState,
+                handles,
+              )
             }}
           />
           <Typography variant="body2">Min</Typography>
@@ -254,13 +236,35 @@ export function ContinuousColorMappingForm(props: {
             onChange={(e) => {
               const newMin = Number(e.target.value)
               if (!isNaN(newMin)) {
-                setMin({
+                setMinState({
+                  ...minState,
                   value: newMin,
-                  vpValue: min.vpValue,
                 })
+
+                const newHandles = handles.map((h) => {
+                  return {
+                    ...h,
+                    value: pixelPositionToRangePosition(
+                      [0, NUM_GRADIENT_STEPS],
+                      [newMin, maxState.value as number],
+                      h.pixelPosition.x / GRADIENT_STEP_WIDTH,
+                    ),
+                  }
+                })
+
+                setHandles(newHandles)
+
+                updateContinuousMapping(
+                  {
+                    ...minState,
+                    value: newMin,
+                  },
+                  maxState,
+                  newHandles,
+                )
               }
             }}
-            value={min.value}
+            value={minState.value}
           />
         </Box>
         <Paper sx={{ display: 'flex', position: 'relative' }}>
@@ -279,12 +283,19 @@ export function ContinuousColorMappingForm(props: {
                   newHandleId++
                 }
                 const newHandleValue = pixelPositionToRangePosition(
+                  [0, NUM_GRADIENT_STEPS],
+                  [minState.value as number, maxState.value as number],
                   gradientPositionX / GRADIENT_STEP_WIDTH,
                 )
                 const newHandleVpValue =
                   color(mapper(newHandleValue))?.formatHex() ?? '#000000'
                 const newHandlePixelPosition = {
-                  x: rangePositionToPixelPosition(newHandleValue),
+                  x: rangePositionToPixelPosition(
+                    [minState.value as number, maxState.value as number],
+                    [0, NUM_GRADIENT_STEPS],
+                    GRADIENT_STEP_WIDTH,
+                    newHandleValue,
+                  ),
                   y: 0,
                 }
 
@@ -294,18 +305,21 @@ export function ContinuousColorMappingForm(props: {
                   vpValue: newHandleVpValue,
                   pixelPosition: newHandlePixelPosition,
                 }
-
                 const newHandles = [...handles, newHandle].sort(
                   (a, b) => (a.value as number) - (b.value as number),
                 )
-                console.log(newHandles)
                 setHandles(newHandles)
+                updateContinuousMapping(min, max, newHandles)
               }}
             >
               {Array(NUM_GRADIENT_STEPS)
                 .fill(0)
                 .map((_, i) => {
-                  const value = pixelPositionToRangePosition(i)
+                  const value = pixelPositionToRangePosition(
+                    [0, NUM_GRADIENT_STEPS],
+                    [minState.value as number, maxState.value as number],
+                    i,
+                  )
                   const nextColor =
                     color(mapper(value))?.formatHex() ?? '#000000'
 
@@ -331,6 +345,8 @@ export function ContinuousColorMappingForm(props: {
                 handle=".handle"
                 onDrag={(e, data) => {
                   const newRangePosition = pixelPositionToRangePosition(
+                    [0, NUM_GRADIENT_STEPS],
+                    [minState.value as number, maxState.value as number],
                     data.x / GRADIENT_STEP_WIDTH,
                   )
 
@@ -344,9 +360,18 @@ export function ContinuousColorMappingForm(props: {
                       (a, b) => (a.value as number) - (b.value as number),
                     )
                     setHandles(newHandles)
+                    updateContinuousMapping(minState, maxState, newHandles)
                   }
                 }}
-                defaultPosition={h.pixelPosition}
+                position={{
+                  x: rangePositionToPixelPosition(
+                    [minState.value as number, maxState.value as number],
+                    [0, NUM_GRADIENT_STEPS],
+                    GRADIENT_STEP_WIDTH,
+                    h.value as number,
+                  ),
+                  y: 0,
+                }}
               >
                 <Box
                   sx={{
@@ -380,6 +405,11 @@ export function ContinuousColorMappingForm(props: {
                           const newHandles = [...handles]
                           newHandles.splice(handleIndex, 1)
                           setHandles(newHandles)
+                          updateContinuousMapping(
+                            minState,
+                            maxState,
+                            newHandles,
+                          )
                         }
                       }}
                     >
@@ -397,6 +427,11 @@ export function ContinuousColorMappingForm(props: {
                           const newHandles = [...handles]
                           newHandles[handleIndex].vpValue = newValue
                           setHandles(newHandles)
+                          updateContinuousMapping(
+                            minState,
+                            maxState,
+                            newHandles,
+                          )
                         }
                       }}
                     />
@@ -418,11 +453,29 @@ export function ContinuousColorMappingForm(props: {
 
                           if (!isNaN(newVal)) {
                             newHandles[handleIndex].value = newVal
+                            newHandles[handleIndex].pixelPosition = {
+                              x: rangePositionToPixelPosition(
+                                [
+                                  minState.value as number,
+                                  maxState.value as number,
+                                ],
+                                [0, NUM_GRADIENT_STEPS],
+                                GRADIENT_STEP_WIDTH,
+                                newVal,
+                              ),
+                              y: 0,
+                            }
+                            newHandles.sort(
+                              (a, b) =>
+                                (a.value as number) - (b.value as number),
+                            )
+                            setHandles(newHandles)
+                            updateContinuousMapping(
+                              minState,
+                              maxState,
+                              newHandles,
+                            )
                           }
-                          newHandles.sort(
-                            (a, b) => (a.value as number) - (b.value as number),
-                          )
-                          setHandles(newHandles)
                         }
                       }}
                       value={h.value as number}
@@ -454,13 +507,14 @@ export function ContinuousColorMappingForm(props: {
           }}
         >
           <VisualPropertyValueForm
-            currentValue={max.vpValue ?? null}
+            currentValue={maxState.vpValue}
             visualProperty={props.visualProperty}
             onValueChange={(newValue) => {
-              setMax({
-                value: max.value,
+              setMaxState({
+                ...maxState,
                 vpValue: newValue,
               })
+              updateContinuousMapping(minState, maxState, handles)
             }}
           />
           <Typography variant="body2">Max</Typography>
@@ -475,24 +529,36 @@ export function ContinuousColorMappingForm(props: {
             onChange={(e) => {
               const newMax = Number(e.target.value)
               if (!isNaN(newMax)) {
-                setMax({
+                setMaxState({
+                  ...maxState,
                   value: newMax,
-                  vpValue: max.vpValue,
                 })
+
+                const newHandles = handles.map((h) => {
+                  return {
+                    ...h,
+                    value: pixelPositionToRangePosition(
+                      [0, NUM_GRADIENT_STEPS],
+                      [minState.value as number, newMax],
+                      h.pixelPosition.x / GRADIENT_STEP_WIDTH,
+                    ),
+                  }
+                })
+
+                setHandles(newHandles)
+                updateContinuousMapping(minState, maxState, handles)
               }
             }}
-            value={max.value}
+            value={maxState.value}
           />
         </Box>
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <Typography variant="body1">
-          {props.visualProperty.mapping?.attribute}
-        </Typography>
+        <Typography variant="body1">{m.attribute}</Typography>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Button color="error" onClick={() => console.log(previousMapping)}>
+        <Button color="error" onClick={() => console.log('TODO')}>
           Cancel
         </Button>
         <Button>Confirm</Button>
@@ -522,6 +588,8 @@ export function ContinuousMappingForm(props: {
   const { attribute } = m
   const attributeType = table.columns.get(attribute)?.type
 
+  const { min, max, controlPoints } = m
+
   if (
     attributeType !== 'double' &&
     attributeType !== 'integer' &&
@@ -532,9 +600,18 @@ export function ContinuousMappingForm(props: {
         attributeType as string
       }'.  Continuous mapping functions only work with integer, double and long data types. `}</Box>
     )
+  }
+
+  if (controlPoints == null || min == null || max == null) {
+    return <Box>No continuous mapping exists.</Box>
   } else {
     if (props.visualProperty.type === 'color') {
-      return <ContinuousColorMappingForm {...props} />
+      return (
+        <ContinuousColorMappingForm
+          currentNetworkId={props.currentNetworkId}
+          visualProperty={props.visualProperty}
+        />
+      )
     } else {
       return <ContinuousNumberMappingForm {...props} />
     }

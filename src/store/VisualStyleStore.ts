@@ -7,13 +7,14 @@ import {
 
 import create from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { ValueType } from '../models/TableModel'
+import { ValueType, AttributeName } from '../models/TableModel'
 import {
   DiscreteMappingFunction,
   MappingFunctionType,
   PassthroughMappingFunction,
   ContinuousMappingFunction,
 } from '../models/VisualStyleModel/VisualMappingFunction'
+import { ContinuousFunctionControlPoint } from '../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 
 /**
 //  * Visual Style State manager based on zustand
@@ -42,12 +43,6 @@ interface UpdateVisualStyleAction {
     vpName: VisualPropertyName,
     elementIds: IdType[],
   ) => void
-  setMapping: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    attributeName: string,
-    mappingType: MappingFunctionType,
-  ) => void
   setDiscreteMappingValue: (
     networkId: IdType,
     vpName: VisualPropertyName,
@@ -58,6 +53,29 @@ interface UpdateVisualStyleAction {
     networkId: IdType,
     vpName: VisualPropertyName,
     values: ValueType[],
+  ) => void
+  setContinuousMappingValues: (
+    networkId: IdType,
+    vpName: VisualPropertyName,
+    min: ContinuousFunctionControlPoint,
+    max: ContinuousFunctionControlPoint,
+    controlPoints: ContinuousFunctionControlPoint[],
+  ) => void
+  createContinuousMapping: (
+    networkId: IdType,
+    vpName: VisualPropertyName,
+    attribute: AttributeName,
+    attributeValues: ValueType[],
+  ) => void
+  createDiscreteMapping: (
+    networkId: IdType,
+    vpName: VisualPropertyName,
+    attribute: AttributeName,
+  ) => void
+  createPassthroughMapping: (
+    networkId: IdType,
+    vpName: VisualPropertyName,
+    attribute: AttributeName,
   ) => void
   removeMapping: (networkId: IdType, vpName: VisualPropertyName) => void
   // setMapping: () // TODO
@@ -143,39 +161,92 @@ export const useVisualStyleStore = create(
           }
         })
       },
-
-      setMapping(networkId, vpName, attributeName, mappingType) {
+      setContinuousMappingValues: (
+        networkId,
+        vpName,
+        min,
+        max,
+        controlPoints,
+      ) => {
         set((state) => {
-          switch (mappingType) {
-            case MappingFunctionType.Discrete: {
-              const discreteMapping: DiscreteMappingFunction = {
-                attribute: attributeName,
-                type: MappingFunctionType.Discrete,
-                vpValueMap: new Map<ValueType, VisualPropertyValueType>(),
-                defaultValue:
-                  state.visualStyles[networkId][vpName].defaultValue,
-              }
-              state.visualStyles[networkId][vpName].mapping = discreteMapping
-              break
-            }
-            case MappingFunctionType.Passthrough: {
-              const passthroughMapping: PassthroughMappingFunction = {
-                type: MappingFunctionType.Passthrough,
-                attribute: attributeName,
-              }
-              state.visualStyles[networkId][vpName].mapping = passthroughMapping
-              break
-            }
-            case MappingFunctionType.Continuous: {
-              const continuousMapping: ContinuousMappingFunction = {
-                type: MappingFunctionType.Continuous,
-                attribute: attributeName,
-                intervals: [],
-              }
-              state.visualStyles[networkId][vpName].mapping = continuousMapping
-              break
-            }
+          const mapping = state.visualStyles[networkId][vpName]
+            .mapping as ContinuousMappingFunction
+          if (mapping != null) {
+            mapping.min = min
+            mapping.max = max
+            mapping.controlPoints = controlPoints
           }
+        })
+      },
+
+      createDiscreteMapping(networkId, vpName, attributeName) {
+        set((state) => {
+          const discreteMapping: DiscreteMappingFunction = {
+            attribute: attributeName,
+            type: MappingFunctionType.Discrete,
+            vpValueMap: new Map<ValueType, VisualPropertyValueType>(),
+            defaultValue: state.visualStyles[networkId][vpName].defaultValue,
+          }
+          state.visualStyles[networkId][vpName].mapping = discreteMapping
+        })
+      },
+
+      createContinuousMapping(
+        networkId,
+        vpName,
+        attributeName,
+        attributeValues,
+      ) {
+        set((state) => {
+          const DEFAULT_COLOR_SCHEME = ['red', 'white', 'blue']
+
+          // initialze continuous mapping values if they are not set
+          const min = {
+            value: attributeValues[0],
+            vpValue: DEFAULT_COLOR_SCHEME[0],
+            inclusive: true,
+          }
+
+          const max = {
+            value: attributeValues[attributeValues.length - 1],
+            vpValue: DEFAULT_COLOR_SCHEME[2],
+            inclusive: true,
+          }
+
+          const ctrlPts = [
+            {
+              value: attributeValues[0],
+              vpValue: DEFAULT_COLOR_SCHEME[0],
+            },
+            {
+              value: attributeValues[Math.floor(attributeValues.length / 2)], // TODO compute median instead of just the middle value
+              vpValue: DEFAULT_COLOR_SCHEME[1],
+            },
+            {
+              value: attributeValues[attributeValues.length - 1],
+              vpValue: DEFAULT_COLOR_SCHEME[2],
+            },
+          ]
+
+          const continuousMapping: ContinuousMappingFunction = {
+            attribute: attributeName,
+            type: MappingFunctionType.Continuous,
+            min,
+            max,
+            controlPoints: ctrlPts,
+          }
+
+          state.visualStyles[networkId][vpName].mapping = continuousMapping
+        })
+      },
+
+      createPassthroughMapping(networkId, vpName, attributeName) {
+        set((state) => {
+          const passthroughMapping: PassthroughMappingFunction = {
+            type: MappingFunctionType.Passthrough,
+            attribute: attributeName,
+          }
+          state.visualStyles[networkId][vpName].mapping = passthroughMapping
         })
       },
       removeMapping(networkId, vpName) {

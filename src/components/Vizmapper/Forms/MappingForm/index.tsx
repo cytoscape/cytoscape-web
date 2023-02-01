@@ -14,7 +14,7 @@ import {
 } from '@mui/material'
 
 import { IdType } from '../../../../models/IdType'
-import { Table, AttributeName } from '../../../../models/TableModel'
+import { AttributeName } from '../../../../models/TableModel'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { useTableStore } from '../../../../store/TableStore'
 
@@ -57,21 +57,83 @@ function MappingFormContent(props: {
     MappingFunctionType | ''
   >(props.visualProperty.mapping?.type ?? '')
 
-  const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
-    useTableStore((state) => state.tables)
+  const { columnValues, tables } = useTableStore((state) => ({
+    columnValues: state.columnValues,
+    tables: state.tables,
+  }))
+  const {
+    removeMapping,
+    createContinuousMapping,
+    createDiscreteMapping,
+    createPassthroughMapping,
+  } = useVisualStyleStore((state) => ({
+    removeMapping: state.removeMapping,
+    createContinuousMapping: state.createContinuousMapping,
+    createDiscreteMapping: state.createDiscreteMapping,
+    createPassthroughMapping: state.createPassthroughMapping,
+  }))
+
   const nodeTable = tables[props.currentNetworkId]?.nodeTable
   const edgeTable = tables[props.currentNetworkId]?.edgeTable
   const currentTable =
     props.visualProperty.group === 'node' ? nodeTable : edgeTable
   const columns = Array.from(currentTable.columns.values())
 
-  const setMapping = useVisualStyleStore((state) => state.setMapping)
-  const removeMapping = useVisualStyleStore((state) => state.removeMapping)
   const mappingFnContent = {
     [MappingFunctionType.Discrete]: <DiscreteMappingForm {...props} />,
     [MappingFunctionType.Continuous]: <ContinuousMappingForm {...props} />,
     [MappingFunctionType.Passthrough]: <Box></Box>,
     '': <Box></Box>,
+  }
+
+  const createMapping = (
+    mappingType: MappingFunctionType,
+    attribute: AttributeName,
+  ): void => {
+    switch (mappingType) {
+      case MappingFunctionType.Discrete: {
+        createDiscreteMapping(
+          props.currentNetworkId,
+          props.visualProperty.name,
+          attribute,
+        )
+        break
+      }
+      case MappingFunctionType.Continuous: {
+        const attributeDataType = currentTable.columns.get(attribute)?.type
+
+        if (
+          attributeDataType != null &&
+          (attributeDataType === 'integer' ||
+            attributeDataType === 'long' ||
+            attributeDataType === 'double')
+        ) {
+          const attributeValues = Array.from(
+            columnValues(
+              props.currentNetworkId,
+              props.visualProperty.group as 'node' | 'edge',
+              attribute,
+            ),
+          ).sort((a, b) => (a as number) - (b as number))
+
+          createContinuousMapping(
+            props.currentNetworkId,
+            props.visualProperty.name,
+            attribute,
+            attributeValues,
+          )
+        }
+        break
+      }
+      case MappingFunctionType.Passthrough: {
+        createPassthroughMapping(
+          props.currentNetworkId,
+          props.visualProperty.name,
+          attribute,
+        )
+        break
+      }
+    }
   }
 
   React.useEffect(() => {
@@ -81,40 +143,56 @@ function MappingFormContent(props: {
   const handleMappingTypeChange = (
     nextMapping: MappingFunctionType | '',
   ): void => {
-    if (nextMapping !== '' && attribute !== '') {
-      setMappingType(nextMapping)
-      setMapping(
-        props.currentNetworkId,
-        props.visualProperty.name,
-        attribute,
-        nextMapping,
-      )
+    const attributeType = currentTable.columns.get(attribute)?.type
+    if (nextMapping !== '' && attribute !== '' && attributeType != null) {
+      // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
+
+      if (
+        typesCanBeMapped(nextMapping, attributeType, props.visualProperty.type)
+      ) {
+        createMapping(nextMapping, attribute)
+        setMappingType(nextMapping)
+      } else {
+        removeMapping(props.currentNetworkId, props.visualProperty.name)
+        setMappingType('')
+      }
     } else {
       setMappingType(nextMapping)
     }
   }
 
   const handleAttributeChange = (nextAttribute: AttributeName): void => {
-    if (mappingType !== '' && nextAttribute !== '') {
-      setAttribute(nextAttribute)
-      setMapping(
-        props.currentNetworkId,
-        props.visualProperty.name,
-        nextAttribute,
-        mappingType,
-      )
+    const nextAttributeType = currentTable.columns.get(nextAttribute)?.type
+    if (
+      mappingType !== '' &&
+      nextAttribute !== '' &&
+      nextAttributeType != null
+    ) {
+      // if the user switches to a new attribute that is not compatible with the current mapping type, remove the mapping
+      if (
+        typesCanBeMapped(
+          mappingType,
+          nextAttributeType,
+          props.visualProperty.type,
+        )
+      ) {
+        createMapping(mappingType, nextAttribute)
+        setAttribute(nextAttribute)
+      } else {
+        removeMapping(props.currentNetworkId, props.visualProperty.name)
+        setAttribute('')
+      }
     } else {
       setAttribute(nextAttribute)
     }
   }
 
   const validColumns =
-    mappingType === 'passthrough'
+    mappingType !== ''
       ? columns.filter((c) =>
-          typesCanBeMapped(c.type, props.visualProperty.type),
+          typesCanBeMapped(mappingType, c.type, props.visualProperty.type),
         )
       : columns
-
   return (
     <Box
       sx={{
