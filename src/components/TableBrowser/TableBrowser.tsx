@@ -13,10 +13,10 @@ import {
   ValueType,
   ValueTypeName,
   AttributeName,
-} from '../models/TableModel'
-import { useTableStore } from '../store/TableStore'
-import { useViewModelStore } from '../store/ViewModelStore'
-import { IdType } from '../models/IdType'
+} from '../../models/TableModel'
+import { useTableStore } from '../../store/TableStore'
+import { useViewModelStore } from '../../store/ViewModelStore'
+import { IdType } from '../../models/IdType'
 
 import {
   DataEditor,
@@ -26,11 +26,11 @@ import {
   Item,
   Rectangle,
 } from '@glideapps/glide-data-grid'
-import { translateCXEdgeId } from '../models/NetworkModel/impl/CyNetwork'
+import { translateCXEdgeId } from '../../models/NetworkModel/impl/CyNetwork'
 import {
   ListOfValueType,
   SingleValueType,
-} from '../models/TableModel/ValueType'
+} from '../../models/TableModel/ValueType'
 
 interface TabPanelProps {
   children?: React.ReactNode

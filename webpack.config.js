@@ -23,7 +23,7 @@ module.exports = {
       },
       // load all other assets using webpacks default loader
       {
-        test: /\.(png|jpg|jpeg|gif|svg)$/i,
+        test: /\.(png|jpg|jpeg|gif|svg|ico)$/i,
         type: 'asset/resource',
       },
     ],
@@ -53,6 +53,7 @@ module.exports = {
     // generate html that points to the bundle with the updated hash
     new HtmlWebpackPlugin({
       template: './index.html',
+      favicon: './src/assets/favicon.ico',
     }),
     // lint all js/jsx/ts/tsx files
     new ESLintPlugin({

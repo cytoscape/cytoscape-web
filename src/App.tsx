@@ -9,15 +9,15 @@ import {
   Route,
   createRoutesFromElements,
 } from 'react-router-dom'
-import AppShell from './components/AppShell'
-
 // this allows immer to work with Map and Set
 import { enableMapSet } from 'immer'
-import NetworkPanel from './components/NetworkPanel'
 import { MessagePanel } from './components/Messages'
 enableMapSet()
 
-const WorkspaceEditor = React.lazy(() => import('./components/WorkspaceEditor'))
+const AppShell = React.lazy(() => import('./components/AppShell'))
+const WorkspaceEditor = React.lazy(
+  () => import('./components/Workspace/WorkspaceEditor'),
+)
 
 const theme = createTheme({
   palette: {
@@ -32,7 +32,17 @@ const theme = createTheme({
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path="/" element={<AppShell />} errorElement={<Error />}>
+    <Route
+      path="/"
+      element={
+        <Suspense
+          fallback={<MessagePanel message="Preparing your workspace..." />}
+        >
+          <AppShell />
+        </Suspense>
+      }
+      errorElement={<Error />}
+    >
       <Route
         path=":workspaceId"
         element={
@@ -49,7 +59,7 @@ const router = createBrowserRouter(
             <MessagePanel message={'Please add a network to the workspace'} />
           }
         />
-        <Route path="networks/:networkId" element={<NetworkPanel />} />
+        <Route path="networks/:networkId" element={<div />} />
       </Route>
     </Route>,
   ),
