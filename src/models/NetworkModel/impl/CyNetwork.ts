@@ -1,6 +1,6 @@
 import { IdType } from '../../IdType'
-import TableFn, { AttributeName, Table, ValueType } from '../../TableModel'
-import { Network, Node, Edge, NetworkAttributes } from '..'
+import { AttributeName, ValueType } from '../../TableModel'
+import { Network, Node, Edge } from '..'
 
 import { Cx2 } from '../../../utils/cx/Cx2'
 
@@ -8,9 +8,8 @@ import { Node as CxNode } from '../../../utils/cx/Cx2/CoreAspects/Node'
 import { Edge as CxEdge } from '../../../utils/cx/Cx2/CoreAspects/Edge'
 import * as cxUtil from '../../../utils/cx/cx2-util'
 
-import { Core } from 'cytoscape'
+import { Core, EdgeSingular, NodeSingular } from 'cytoscape'
 import * as cytoscape from 'cytoscape'
-import { createTablesFromCx } from '../../TableModel/impl/InMemoryTable'
 
 const GroupType = { Nodes: 'nodes', Edges: 'edges' } as const
 type GroupType = typeof GroupType[keyof typeof GroupType]
@@ -18,53 +17,35 @@ type GroupType = typeof GroupType[keyof typeof GroupType]
 /**
  * Private class implementing graph object using
  * Cytoscape.js
+ * 
+ * Simply stores graph structure only, no attributes
+ * 
  */
 class CyNetwork implements Network {
   readonly id: IdType
-
-  // Data Tables
-  private readonly _nodeTable: Table
-  private readonly _edgeTable: Table
-
-  // Network properties as a Record
-  private readonly _netAttributes: NetworkAttributes
-
-  constructor(id: IdType, nodeTable?: Table, edgeTable?: Table) {
-    this.id = id
-    this._store = createCyDataStore()
-    this._nodeTable = nodeTable ?? TableFn.createTable(id)
-    this._edgeTable = edgeTable ?? TableFn.createTable(id)
-    this._netAttributes = { id, attributes: {} }
-  }
-
+  
   // Graph storage, using Cytoscape
   // Only topology is stored here, attributes are stored in the table
   private readonly _store: Core
 
-  get nodeTable(): Table {
-    return this._nodeTable
+  constructor(id: IdType) {
+    this.id = id
+    this._store = createCyDataStore()
   }
 
-  get edgeTable(): Table {
-    return this._edgeTable
-  }
 
   get nodes(): Node[] {
-    return this._store.nodes().map((node) => ({
+    return this._store.nodes().map((node: NodeSingular) => ({
       id: node.id(),
     }))
   }
 
   get edges(): Edge[] {
-    return this._store.edges().map((edge) => ({
+    return this._store.edges().map((edge: EdgeSingular) => ({
       id: edge.id(),
       s: edge.source().id(),
       t: edge.target().id(),
     }))
-  }
-
-  get netAttributes(): NetworkAttributes {
-    return this._netAttributes
   }
 
   get store(): Core {
@@ -74,7 +55,7 @@ class CyNetwork implements Network {
 
 /**
  *
- * @returns Initialize Cytoscape
+ * @returns Initialized Cytoscape.js Core object
  */
 const createCyDataStore = (): Core =>
   cytoscape({
@@ -102,10 +83,9 @@ export const translateCXEdgeId = (id: IdType): IdType => `e${id}`
  *
  */
 export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
-  const tables: [Table, Table] = createTablesFromCx(id, cx)
 
   // Create an empty CyNetwork
-  const cyNet: CyNetwork = new CyNetwork(id, tables[0], tables[1])
+  const cyNet: CyNetwork = new CyNetwork(id)
 
   // Extract nodes and edges from CX2 object
   const cxNodes: CxNode[] = cxUtil.getNodes(cx)
@@ -131,12 +111,17 @@ export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
   return cyNet
 }
 
-
+/**
+ * Create a Cytoscape.js object from a Cyjs JSON
+ * 
+ * @param id 
+ * @param cyJson 
+ * @returns 
+ */
 export const createFromCyJson = (id: IdType, cyJson: object): Network => {
-  const nodeTable = TableFn.createTable(id)
-  const edgeTable = TableFn.createTable(id)
-  const cyNet: CyNetwork = new CyNetwork(id, nodeTable, edgeTable)
+  const cyNet: CyNetwork = new CyNetwork(id)
   cyNet.store.json(cyJson)
+
   return cyNet
 }
 
@@ -157,9 +142,7 @@ const addToCyStoreFromLists = (network:Network, cyNet: CyNetwork):void => {
 
 export const plainNetwork2CyNetwork = (network: Network): Network => {
   const { id } = network
-  const nodeTable = TableFn.createTable(id)
-  const edgeTable = TableFn.createTable(id)
-  const cyNet: CyNetwork = new CyNetwork(id, nodeTable, edgeTable)
+  const cyNet: CyNetwork = new CyNetwork(id)
   addToCyStoreFromLists(network, cyNet)
   return cyNet
 }
@@ -182,32 +165,6 @@ export const createCyJSON = (network: Network): object => {
   const cyGraph = network as CyNetwork
   const store = cyGraph.store
   return store.json()
-}
-
-export const nodes = (network: Network): Node[] => {
-  const cyGraph = network as CyNetwork
-  const store = cyGraph.store
-  return store.nodes().map((node) => ({
-    id: node.id(),
-  }))
-}
-
-export const edges = (network: Network): Edge[] => {
-  const cyGraph = network as CyNetwork
-  const store = cyGraph.store
-  return store.edges().map((edge) => ({
-    id: edge.id(),
-    s: edge.source().id(),
-    t: edge.target().id(),
-  }))
-}
-
-export const nodeTable = (network: Network): Table => {
-  return (network as CyNetwork).nodeTable
-}
-
-export const edgeTable = (network: Network): Table => {
-  return (network as CyNetwork).edgeTable
 }
 
 /**
@@ -322,7 +279,7 @@ export const addNodesWithRows = (
     | Array<[Node, Record<AttributeName, ValueType>?]>,
 ): Network => {
   const cyGraph = network as CyNetwork
-  const nodeTable = cyGraph.nodeTable
+  // const nodeTable = cyGraph.nodeTable
   const store = cyGraph.store
 
   if (!Array.isArray(nodes)) {
@@ -330,8 +287,8 @@ export const addNodesWithRows = (
     const nodeId = (nodes[0] as Node).id
     store.add(createCyNode(nodeId))
 
-    const row: Record<AttributeName, ValueType> = nodes[1]
-    TableFn.insertRow(nodeTable, [nodeId, row])
+    // const row: Record<AttributeName, ValueType> = nodes[1]
+    // TableFn.insertRow(nodeTable, [nodeId, row])
   }
 
   return network

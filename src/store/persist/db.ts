@@ -73,8 +73,8 @@ export const putNetworkToDb = async (network: Network): Promise<void> => {
 
 const cyNetwork2Network = (cyNetwork: Network): Network => {
   const { id } = cyNetwork
-  const nodes: Node[] = NetworkFn.nodes(cyNetwork)
-  const edges: Edge[] = NetworkFn.edges(cyNetwork)
+  const nodes: Node[] = cyNetwork.nodes
+  const edges: Edge[] = cyNetwork.edges
 
   return {
     id,
@@ -213,9 +213,10 @@ const createWorkspace = (): Workspace => {
     id: uuidv4(),
     name: DEF_WORKSPACE_NAME,
     networkIds: [],
+    networkModified: {},
     creationTime: new Date(),
     localModificationTime: new Date(),
-    currentNetworkId: '',
+    currentNetworkId: ''
   }
 }
 

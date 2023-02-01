@@ -8,7 +8,6 @@ import { immer } from 'zustand/middleware/immer'
  */
 interface NetworkState {
   networks: Map<IdType, Network>
-  isUpdating: boolean
 }
 
 /**
@@ -30,7 +29,6 @@ interface NetworkActions {
 export const useNetworkStore = create(
   immer<NetworkState & NetworkActions & UpdateActions>((set) => ({
     networks: new Map<IdType, Network>(),
-    isUpdating: false,
 
     addNode: (networkId: IdType, nodeId: IdType) => {
       set((state) => {

@@ -12,7 +12,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import VisualStyleFn from '../../models/VisualStyleModel'
 import { Network } from '../../models/NetworkModel'
 import { ReactElement, useEffect, useRef, useState } from 'react'
-import { NetworkView } from '../../models/ViewModel'
+import { NetworkView, NodeView } from '../../models/ViewModel'
 import { IdType } from '../../models/IdType'
 interface NetworkRendererProps {
   network: Network
@@ -27,6 +27,8 @@ export const NetworkRenderer = ({
 }: NetworkRendererProps): ReactElement => {
   const { id } = network
 
+
+
   // Optimaization to avoid re-rendering for the same network data
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
 
@@ -35,9 +37,14 @@ export const NetworkRenderer = ({
   const viewModels = useViewModelStore((state) => state.viewModels)
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+  const setNodePosition: (
+    networkId: IdType,
+    nodeId: IdType,
+    position: [number, number],
+  ) => void = useViewModelStore((state) => state.setNodePosition)
 
   const networkView: NetworkView = viewModels[id]
-  const nodeViews = networkView?.nodeViews
+  const nodeViews: Record<IdType, NodeView> = networkView?.nodeViews
   const edgeViews = networkView?.edgeViews
   const hoveredElement = networkView?.hoveredElement
 
@@ -75,6 +82,7 @@ export const NetworkRenderer = ({
             .filter((e: SingularElementArgument) => e.selected())
             .map((ele: SingularElementArgument) => ele.data('id')),
         )
+        console.log('select node', e)
       }),
       100,
     )
@@ -84,13 +92,24 @@ export const NetworkRenderer = ({
       if (e.target === cy) {
         exclusiveSelect(id, [])
       }
+      console.log('tap node', e)
     })
+
+    cy.on('dragfree', 'node', (e: EventObject): void => {
+      const targetNode = e.target
+      const nodeId: IdType = targetNode.data('id')
+      const position = targetNode.position()
+      console.log('!!!!!!!!!!!move node', id, position)
+      setNodePosition(id, nodeId, [position.x, position.y])
+      
+    })
+
     cy.fit()
     cy.endBatch()
   }
 
   const applyStyleUpdate = async (): Promise<void> => {
-    cy.removeAllListeners()
+    // cy.removeAllListeners()
     cy.startBatch()
 
     const t1 = performance.now()
