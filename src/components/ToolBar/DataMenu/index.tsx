@@ -123,6 +123,9 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
           <MenuItem onClick={handleLoadSamples}>
             Load sample networks from NDEx (for Demo)
           </MenuItem>
+          <MenuItem onClick={handleClose}>
+            Save network(s) to NDEx...
+          </MenuItem>
           <Divider />
           <MenuItem onClick={handleRemoveCurrentNetwork}>
             Remove current network
