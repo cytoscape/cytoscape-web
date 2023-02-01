@@ -15,12 +15,14 @@ interface WorkspaceActions {
   setCurrentNetworkId: (id: IdType) => void
   addNetworkIds: (ids: IdType | IdType[]) => void
   deleteCurrentNetwork: () => void
+  setNetworkModified: (networkId: IdType, isModified: boolean) => void
 }
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
   name: '',
   networkIds: [],
+  networkModified: {},
   creationTime: new Date(),
   localModificationTime: new Date(),
   currentNetworkId: '',
@@ -63,10 +65,18 @@ export const useWorkspaceStore = create(
           const newIds: IdType[] = ids.filter(
             (id) => !state.workspace.networkIds.includes(id),
           )
+          const allIds = [...state.workspace.networkIds, ...newIds]
           const newWs = {
             workspace: {
               ...state.workspace,
-              networkIds: [...state.workspace.networkIds, ...newIds],
+              networkIds: allIds,
+              networkModified: allIds.reduce(
+                (all, id) => ({
+                  ...all,
+                  [id]: false,
+                }),
+                {},
+              ),
             },
           }
           void updateWorkspaceDb(newWs.workspace.id, {
@@ -74,10 +84,18 @@ export const useWorkspaceStore = create(
           }).then()
           return newWs
         } else {
+          const allIds = [...state.workspace.networkIds, ids]
           const newWs = {
             workspace: {
               ...state.workspace,
-              networkIds: [...state.workspace.networkIds, ids],
+              networkIds: allIds,
+              networkModified: allIds.reduce(
+                (all, id) => ({
+                  ...all,
+                  [id]: false,
+                }),
+                {},
+              ),
             },
           }
 
@@ -101,6 +119,21 @@ export const useWorkspaceStore = create(
         void updateWorkspaceDb(newWs.workspace.id, {
           networkIds: newWs.workspace.networkIds,
         }).then()
+        return newWs
+      })
+    },
+    setNetworkModified: (networkId: IdType, isModified: boolean) => {
+      set((state) => {
+        const newWs = {
+          workspace: {
+            ...state.workspace,
+            networkModified: {
+              ...state.workspace.networkModified,
+              [networkId]: isModified,
+            },
+          },
+        }
+        // void updateWorkspaceDb(newWs.workspace.id, newWs).then()
         return newWs
       })
     },
