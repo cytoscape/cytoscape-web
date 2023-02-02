@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Box, Typography, Tabs, Tab, Divider } from '@mui/material'
+import { Box, Typography, Tabs, Tab, Divider, Tooltip } from '@mui/material'
 
 import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
@@ -13,6 +13,7 @@ import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { MappingForm } from './Forms/MappingForm'
 import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
+import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -35,16 +36,30 @@ function VisualPropertyView(props: {
         visualProperty={visualProperty}
         currentNetworkId={currentNetworkId}
       />
-      <MappingForm
-        sx={{ mr: 1 }}
-        currentNetworkId={currentNetworkId}
-        visualProperty={visualProperty}
-      />
-      <BypassForm
-        sx={{ mr: 1 }}
-        currentNetworkId={currentNetworkId}
-        visualProperty={visualProperty}
-      />
+      {visualProperty.group === 'network' ? (
+        <>
+          <Tooltip title={'Mapping not available for network properties'}>
+            <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />
+          </Tooltip>
+          <Tooltip title={'Bypasses not available for network properties'}>
+            <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />
+          </Tooltip>
+        </>
+      ) : (
+        <>
+          <MappingForm
+            sx={{ mr: 1 }}
+            currentNetworkId={currentNetworkId}
+            visualProperty={visualProperty}
+          />
+          <BypassForm
+            sx={{ mr: 1 }}
+            currentNetworkId={currentNetworkId}
+            visualProperty={visualProperty}
+          />
+        </>
+      )}
+
       <Typography variant="body2" sx={{ ml: 1 }}>
         {visualProperty.displayName}
       </Typography>
@@ -102,7 +117,6 @@ export default function VizmapperView(props: {
     <Box
       sx={{
         borderBottom: 1,
-        // height: props.height,
         width: '100%',
       }}
     >

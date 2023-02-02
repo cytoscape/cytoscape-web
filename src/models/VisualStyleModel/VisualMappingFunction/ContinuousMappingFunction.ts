@@ -3,17 +3,16 @@ import { ValueType } from '../../TableModel'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualMappingFunction } from '.'
 
-export interface ContinuousFunctionInterval {
-  min?: ValueType
-  max?: ValueType
-  includeMin: boolean
-  includeMax: boolean
-  minVPValue?: VisualPropertyValueType
-  maxVPValue?: VisualPropertyValueType
+export interface ContinuousFunctionControlPoint {
+  value: ValueType
+  vpValue: VisualPropertyValueType
+  inclusive?: boolean
 }
 
 export interface ContinuousMappingFunction extends VisualMappingFunction {
-  intervals: ContinuousFunctionInterval[]
+  min: ContinuousFunctionControlPoint
+  max: ContinuousFunctionControlPoint
+  controlPoints: ContinuousFunctionControlPoint[]
 }
 
 // continuous mapping fn
