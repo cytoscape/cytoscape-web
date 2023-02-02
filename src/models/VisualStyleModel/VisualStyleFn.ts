@@ -1,19 +1,27 @@
+import { Table } from 'dexie'
 import { Cx2 } from '../../utils/cx/Cx2'
-import { VisualPropertyValueType } from './VisualPropertyValue'
+import { Network } from '../NetworkModel'
+import { NetworkView } from '../ViewModel'
 import { VisualStyle } from './VisualStyle'
-import { VisualProperty } from '.'
 
 export interface VisualStyleFn {
   createVisualStyle: () => VisualStyle
   createVisualStyleFromCx: (cx: Cx2) => VisualStyle
 
-  nodeVisualProperties: (
+  applyVisualStyle: (
+    network: Network,
+    nodeTable: Table,
+    edgeTable: Table,
     visualStyle: VisualStyle,
-  ) => VisualProperty<VisualPropertyValueType>[]
-  edgeVisualProperties: (
-    visualStyle: VisualStyle,
-  ) => VisualProperty<VisualPropertyValueType>[]
-  networkVisualProperties: (
-    visualStyle: VisualStyle,
-  ) => VisualProperty<VisualPropertyValueType>[]
+  ) => NetworkView
+
+  // nodeVisualProperties: (
+  //   visualStyle: VisualStyle,
+  // ) => VisualProperty<VisualPropertyValueType>[]
+  // edgeVisualProperties: (
+  //   visualStyle: VisualStyle,
+  // ) => VisualProperty<VisualPropertyValueType>[]
+  // networkVisualProperties: (
+  //   visualStyle: VisualStyle,
+  // ) => VisualProperty<VisualPropertyValueType>[]
 }
