@@ -15,7 +15,7 @@ import {
   Select,
   SelectChangeEvent,
   TextField,
-  Tooltip,
+  Tooltip
 } from '@mui/material'
 import * as React from 'react'
 import create from 'zustand'
@@ -65,9 +65,9 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
         .forEach((b) => {
           console.log(
             'validationType: ' +
-              String(b.validationType) +
-              ', validationRegex: ' +
-              String(b.validationRegex),
+            String(b.validationType) +
+            ', validationRegex: ' +
+            String(b.validationRegex),
           )
 
           let ret = false
@@ -180,36 +180,13 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
 
     const map = {
       algorithm,
-      data: {
-        array: true,
-        empty: true,
-        null: true,
-        float: true,
-        valueNode: true,
-        containerNode: true,
-        missingNode: true,
-        object: true,
-        nodeType: 'ARRAY',
-        pojo: true,
-        number: true,
-        integralNumber: true,
-        floatingPointNumber: true,
-        short: true,
-        int: true,
-        long: true,
-        double: true,
-        bigDecimal: true,
-        bigInteger: true,
-        textual: true,
-        boolean: true,
-        binary: true,
-      },
+      data: "1\t2\n2\t3\n",
       customParameters: {},
     }
 
     parameterMapping.forEach((v, k) => {
       const trimmedKey = k.split('cd.' + algorithm + '.')[1]
-      if (trimmedKey != null && trimmedKey !== '') {
+      if (trimmedKey != null && trimmedKey !== '' && v != null && v !== '') {
         // console.log('trimmedKey: ' + trimmedKey + ', value: ' + String(v))
         map.customParameters[trimmedKey] = String(v)
       }
@@ -219,6 +196,7 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
 
     const requestOptions = {
       method: 'POST',
+      body: JSON.stringify(map),
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
