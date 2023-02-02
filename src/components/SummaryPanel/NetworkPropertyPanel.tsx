@@ -38,10 +38,14 @@ export const NetworkPropertyPanel = ({
     <Accordion
       expanded={expanded}
       onChange={handleChange}
-      onClick={() => setCurrentNetworkId(summary.externalId)}
+      onClick={() => {
+        setTimeout(() => {
+          setCurrentNetworkId(summary.externalId)
+        }, 300)
+      }}
       sx={{
         backgroundColor:
-          summary.externalId === currentNetworkId ? blueGrey[100] : 'white',
+          currentNetworkId === summary.externalId ? blueGrey[100] : 'white',
       }}
     >
       <AccordionSummary

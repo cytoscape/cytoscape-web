@@ -20,6 +20,8 @@ import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { AppConfigContext } from '../../AppConfigContext'
 import { Workspace } from '../../models/WorkspaceModel'
 import { Summaries as SummaryList } from '../SummaryPanel'
+import { putNetworkViewToDb } from '../../store/persist/db'
+import { NetworkView } from '../../models/ViewModel'
 
 const NetworkPanel = React.lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = React.lazy(() => import('../TableBrowser/TableBrowser'))
@@ -34,10 +36,22 @@ const WorkSpaceEditor: React.FC = () => {
     (state) => state.workspace.currentNetworkId,
   )
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
-
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
+  
+  const setNetworkModified: (id: IdType, isModified: boolean) => void = useWorkspaceStore(
+    (state) => state.setNetworkModified,
+  )
+  
+  useViewModelStore.subscribe((state) => state.viewModels[currentNetworkId], () => {
+    const {networkModified} = workspace
+    const isModified: boolean| undefined = networkModified[currentNetworkId]
+    if (isModified !== undefined && !isModified) {
+      setNetworkModified(currentNetworkId, true)
+    }
+  })
+
 
   // Network Summaries
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
@@ -65,6 +79,9 @@ const WorkSpaceEditor: React.FC = () => {
   const setTables = useTableStore((state) => state.setTables)
 
   const setViewModel = useViewModelStore((state) => state.setViewModel)
+  const viewModels: Record<string, NetworkView> = useViewModelStore(
+    (state) => state.viewModels,
+  )
 
   const loadNetworkSummaries = async (): Promise<void> => {
     await fetchAllSummaries(workspace.networkIds, ndexBaseUrl)
@@ -137,16 +154,39 @@ const WorkSpaceEditor: React.FC = () => {
       .catch((err) => console.error(err))
   }, [workspace.networkIds])
 
+  /**
+   * Swap the current network, can be an expensive operation
+   */
   useEffect(() => {
-    if (currentNetworkId !== '' && currentNetworkId !== undefined) {
+    if (currentNetworkId === '' || currentNetworkId === undefined) {
+      // No need to load new network
+      return
+    }
+
+    // Update the DB first
+
+    const currentNetworkView: NetworkView = viewModels[currentNetworkId]
+    if (currentNetworkView === undefined) {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
+          navigate(`/${workspace.id}/networks/${currentNetworkId}`)
           console.log('Network loaded for', currentNetworkId)
         })
-        .catch((err) => console.error(err))
-
-      // Set URL to current network ID
-      navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+        .catch((err) => console.error('Failed to load a network:', err))
+    } else {
+      putNetworkViewToDb(currentNetworkId, currentNetworkView)
+        .then(() => {
+          console.info('* Network view saved to DB')
+          loadCurrentNetworkById(currentNetworkId)
+            .then(() => {
+              navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+              console.log('Network loaded for', currentNetworkId)
+            })
+            .catch((err) => console.error('Failed to load a network:', err))
+        })
+        .catch((err) => {
+          console.error('Failed to save network view to DB:', err)
+        })
     }
   }, [currentNetworkId])
 
