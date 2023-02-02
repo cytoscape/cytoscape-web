@@ -66,6 +66,7 @@
     "lodash": "^4.17.21",
     "lodash.debounce": "^4.0.8",
     "marked": "^4.2.4",
+    "mui-nested-menu": "^3.1.0",
     "react": "^18.2.0",
     "react-color": "^2.19.3",
     "react-dom": "^18.2.0",
