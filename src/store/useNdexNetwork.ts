@@ -25,7 +25,6 @@ import { useNetworkStore } from './NetworkStore'
 import { useTableStore } from './TableStore'
 import ViewModelFn, { NetworkView } from '../models/ViewModel'
 
-// @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 
 /**

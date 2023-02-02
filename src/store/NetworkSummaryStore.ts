@@ -8,7 +8,6 @@ import {
   getNetworkSummaryFromDb,
   putNetworkSummaryToDb,
 } from './persist/db'
-// @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 
 interface NetworkSummaryStore {
