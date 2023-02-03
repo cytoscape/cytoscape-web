@@ -1,13 +1,14 @@
+import _ from 'lodash'
 import { Cx2 } from '../../../utils/cx/Cx2'
 import * as cxUtil from '../../../utils/cx/cx2-util'
 import { Network, Node, Edge } from '../../NetworkModel'
-import { Table } from '../../TableModel'
+import { Table, ValueType } from '../../TableModel'
 import { NetworkView } from '../../ViewModel'
 import {
   DiscreteMappingFunction,
   ContinuousMappingFunction,
 } from '../VisualMappingFunction'
-import { ContinuousFunctionInterval } from '../VisualMappingFunction/ContinuousMappingFunction'
+import { ContinuousFunctionControlPoint } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyName } from '../VisualPropertyName'
 
 import {
@@ -103,7 +104,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           if (nodeBypassMap.has(vpName)) {
             const entry = nodeBypassMap.get(vpName) ?? new Map()
             entry.set(
-              id,
+              String(id),
               cxVPConverter.valueConverter(
                 v[cxVPName] as CXVisualPropertyValue,
               ),
@@ -135,7 +136,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           if (edgeBypassMap.has(vpName)) {
             const entry = edgeBypassMap.get(vpName) ?? new Map()
             entry.set(
-              id,
+              String(id),
               cxVPConverter.valueConverter(
                 v[cxVPName] as CXVisualPropertyValue,
               ),
@@ -223,33 +224,78 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
               break
             }
             case 'CONTINUOUS': {
-              const m: ContinuousMappingFunction = {
-                type: 'continuous',
-                attribute: cxMapping.definition.attribute,
-                intervals: cxMapping.definition.map.map((interval) => {
-                  const convertedInterval = { ...interval }
-                  if (
-                    convertedInterval.includeMin &&
-                    convertedInterval.minVPValue != null
-                  ) {
-                    convertedInterval.minVPValue = converter.valueConverter(
-                      convertedInterval.minVPValue,
-                    )
-                  }
-
-                  if (
-                    convertedInterval.includeMax &&
-                    convertedInterval.maxVPValue != null
-                  ) {
-                    convertedInterval.maxVPValue = converter.valueConverter(
-                      convertedInterval.maxVPValue,
-                    )
-                  }
-
-                  return convertedInterval as ContinuousFunctionInterval
-                }),
+              const numMapEntries = cxMapping.definition.map.length
+              if (numMapEntries < 2) {
+                visualStyle[vpName].mapping = null
               }
-              visualStyle[vpName].mapping = m
+
+              let min = null
+              let max = null
+
+              if (
+                cxMapping.definition.map[0].max != null &&
+                cxMapping.definition.map[0].maxVPValue != null
+              ) {
+                min = {
+                  value: cxMapping.definition.map[0].max as ValueType,
+                  vpValue: converter.valueConverter(
+                    cxMapping.definition.map[0].maxVPValue,
+                  ),
+                  inclusive: cxMapping.definition.map[0].includeMax,
+                }
+              }
+
+              if (
+                cxMapping.definition.map[numMapEntries - 1].min != null &&
+                cxMapping.definition.map[numMapEntries - 1].minVPValue != null
+              ) {
+                max = {
+                  value: cxMapping.definition.map[numMapEntries - 1]
+                    .min as ValueType,
+                  vpValue: converter.valueConverter(
+                    cxMapping.definition.map[numMapEntries - 1]
+                      .minVPValue as CXVisualPropertyValue,
+                  ),
+                  inclusive:
+                    cxMapping.definition.map[numMapEntries - 1].includeMin,
+                }
+              }
+
+              const controlPoints: ContinuousFunctionControlPoint[] = []
+              cxMapping.definition.map.forEach((mapEntry) => {
+                if (mapEntry.minVPValue != null && mapEntry.min != null) {
+                  controlPoints.push({
+                    value: mapEntry.min as ValueType,
+                    vpValue: converter.valueConverter(mapEntry.minVPValue),
+                  })
+                }
+
+                if (mapEntry.maxVPValue != null && mapEntry.max != null) {
+                  controlPoints.push({
+                    value: mapEntry.max as ValueType,
+                    vpValue: converter.valueConverter(mapEntry.maxVPValue),
+                  })
+                }
+              })
+
+              const uniqueCtrlPts = _.uniqWith(controlPoints, _.isEqual)
+
+              const sortedCtrlPts = Array.from(uniqueCtrlPts).sort(
+                (a, b) => (a.value as number) - (b.value as number),
+              )
+
+              if (min != null && max != null && controlPoints.length > 0) {
+                const m: ContinuousMappingFunction = {
+                  type: 'continuous',
+                  attribute: cxMapping.definition.attribute,
+                  min,
+                  max,
+                  controlPoints: sortedCtrlPts,
+                }
+                visualStyle[vpName].mapping = m
+              } else {
+                visualStyle[vpName].mapping = null
+              }
               break
             }
             default:

@@ -48,7 +48,9 @@ function BypassFormContent(props: {
     visualProperty.defaultValue,
   )
 
-  const viewModels: Record<IdType, NetworkView> = useViewModelStore((state) => state.viewModels)
+  const viewModels: Record<IdType, NetworkView> = useViewModelStore(
+    (state) => state.viewModels,
+  )
   const networkView: NetworkView = viewModels[currentNetworkId]
 
   const setBypass = useVisualStyleStore((state) => state.setBypass)
@@ -63,7 +65,7 @@ function BypassFormContent(props: {
   const nodeTable = table?.nodeTable
   const edgeTable = table?.edgeTable
 
-  const {selectedNodes, selectedEdges} = networkView
+  const { selectedNodes, selectedEdges } = networkView
 
   const validElementsSelected =
     (selectedNodes.length > 0 && visualProperty.group === 'node') ||
@@ -78,7 +80,9 @@ function BypassFormContent(props: {
   const selectedElementTable =
     visualProperty.group === 'node' ? nodeTable : edgeTable
 
-  const bypassElementIds = new Set(visualProperty?.bypassMap?.keys() ?? [])
+  const bypassElementIds = new Set(
+    Array.from(visualProperty?.bypassMap?.keys()).map((k) => String(k)) ?? [],
+  )
 
   const elementsToRender: Array<{
     id: IdType
@@ -129,7 +133,7 @@ function BypassFormContent(props: {
 
   const nonEmptyBypassForm = (
     <>
-      <TableContainer sx={{ height: 400, overflow: 'auto' }}>
+      <TableContainer sx={{ height: 460, overflow: 'auto' }}>
         <Table size={'small'} stickyHeader>
           <TableHead>
             <TableRow>
@@ -180,7 +184,9 @@ function BypassFormContent(props: {
                       checked={selected}
                     />
                   </TableCell>
-                  <TableCell>{name}</TableCell>
+                  <TableCell sx={{ maxWidth: 200, overflow: 'scroll' }}>
+                    {name}
+                  </TableCell>
 
                   <TableCell>
                     <VisualPropertyValueForm
@@ -223,6 +229,7 @@ function BypassFormContent(props: {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          pt: 1,
         }}
       >
         <Box>
@@ -280,6 +287,8 @@ function BypassFormContent(props: {
         minWidth: '30vw',
         minHeight: '30vh',
         overflow: 'hidden',
+        pl: 1,
+        pr: 1,
       }}
       // make sure there is no hovered component when the mouse leaves the bypass form
       onMouseLeave={() => setHovered(props.currentNetworkId, null)}
@@ -288,7 +297,7 @@ function BypassFormContent(props: {
         sx={{ m: 1 }}
         variant="h6"
       >{`${visualProperty.displayName} bypasses`}</Typography>
-      <Box sx={{ p: 1, m: 1 }}>
+      <Box>
         <Divider />
         {elementsToRender.length > 0 ? nonEmptyBypassForm : emptyBypassForm}
       </Box>
@@ -318,6 +327,7 @@ export function BypassForm(props: {
   } else {
     viewBox = (
       <Badge
+        max={10000}
         color="primary"
         badgeContent={props.visualProperty.bypassMap.size}
         invisible={props.visualProperty.bypassMap.size <= 1}

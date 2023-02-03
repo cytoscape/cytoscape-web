@@ -3,6 +3,7 @@ import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import { LoadFromNdexDialog } from './LoadFromNdexDialog'
+import { SaveToNdexDialog } from './SaveToNdexDialog'
 import { useState } from 'react'
 import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
@@ -16,8 +17,17 @@ interface DropdownMenuProps {
 
 // Sample networks in dev server
 const SAMPLE_NETWORKS: string[] = [
-  '4acf76b6-23e0-11ed-9208-0242c246b7fb',
-  'f33836d8-23df-11ed-9208-0242c246b7fb',
+  '4ae2709d-3055-11ec-94bf-525400c25d22',
+  '8b3faf53-3056-11ec-94bf-525400c25d22',
+  '8b51d7c5-3056-11ec-94bf-525400c25d22',
+  '8b957078-3056-11ec-94bf-525400c25d22',
+  '8baf882a-3056-11ec-94bf-525400c25d22',
+  '8bd2797c-3056-11ec-94bf-525400c25d22',
+  'f625f9ef-3055-11ec-94bf-525400c25d22',
+  'f950ad02-3055-11ec-94bf-525400c25d22',
+  'f96b39e4-3055-11ec-94bf-525400c25d22',
+  'f99975d6-3055-11ec-94bf-525400c25d22',
+  'f9aeab88-3055-11ec-94bf-525400c25d22',
   'f9ca49da-3055-11ec-94bf-525400c25d22',
   '8bd2797c-3056-11ec-94bf-525400c25d22',
   'ab0eeef6-25bd-11e9-a05d-525400c25d22',
@@ -124,6 +134,9 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
           <MenuItem onClick={handleLoadSamples}>
             Load sample networks from NDEx (for Demo)
           </MenuItem>
+          <MenuItem onClick={handleOpenDialog}>
+            Save network to NDEx...
+          </MenuItem>
           <Divider />
           <MenuItem onClick={handleRemoveCurrentNetwork}>
             Remove selected network
@@ -134,6 +147,11 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
         </Menu>
       </div>
       <LoadFromNdexDialog
+        open={openDialog}
+        handleClose={handleCloseDialog}
+        handleLoad={handleLoad}
+      />
+      <SaveToNdexDialog
         open={openDialog}
         handleClose={handleCloseDialog}
         handleLoad={handleLoad}

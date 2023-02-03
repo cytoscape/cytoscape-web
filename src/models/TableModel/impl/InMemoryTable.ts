@@ -127,10 +127,17 @@ export const addColumn = (table: Table, columns: Column[]): Table => {
 export const columnValueSet = (
   table: Table,
   columnName: string,
+  includeNullOrUndefined = false,
 ): Set<ValueType> => {
   const values = new Set<ValueType>()
   table.rows.forEach((row) => {
-    values.add(row[columnName])
+    const value = row[columnName]
+
+    if (value != null) {
+      values.add(value)
+    } else if (includeNullOrUndefined) {
+      values.add(value)
+    }
   })
   return values
 }
