@@ -150,12 +150,12 @@ export const NetworkRenderer = ({
     cy.edges().filter((ele: SingularElementArgument) => {
       return selectedEdges.includes(ele.data('id'))
     }).select()
-
-    const t2 = performance.now()
-    console.log('CYJS applyStyleUpdate', t2 - t1)
+    
     cy.endBatch()
     
     cy.style(defaultStyle)
+    const t2 = performance.now()
+    console.log('Style applied in', t2 - t1)
   }
 
   const applyHoverStyle = (): void => {
