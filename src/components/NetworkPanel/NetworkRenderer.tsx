@@ -27,8 +27,6 @@ export const NetworkRenderer = ({
 }: NetworkRendererProps): ReactElement => {
   const { id } = network
 
-
-
   // Optimaization to avoid re-rendering for the same network data
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
 
@@ -72,36 +70,43 @@ export const NetworkRenderer = ({
     )
     cy.add(cyNodes)
     cy.add(cyEdges)
+
+    // Box selection listener
     cy.on(
       'boxselect select',
       debounce((e: EventObject) => {
-        exclusiveSelect(
-          id,
-          cy
-            .elements()
-            .filter((e: SingularElementArgument) => e.selected())
-            .map((ele: SingularElementArgument) => ele.data('id')),
-        )
-        console.log('select node', e)
+        const selectedNodes: IdType[] = []
+        const selectedEdges: IdType[] = []
+        cy.elements()
+          .filter((e: SingularElementArgument) => e.selected())
+          .forEach((ele: SingularElementArgument) => {
+            const eleId: string = ele.data('id')
+            if (ele.isNode()) {
+              selectedNodes.push(eleId)
+            } else {
+              selectedEdges.push(eleId)
+            }
+          })
+        exclusiveSelect(id, selectedNodes, selectedEdges)
       }),
       100,
     )
+
+    // single selection listener
     cy.on('tap', (e: EventObject) => {
       // check for background click
       // on background click deselect all
       if (e.target === cy) {
-        exclusiveSelect(id, [])
+        exclusiveSelect(id, [], [])
       }
-      console.log('tap node', e)
     })
 
+    // Moving nodes
     cy.on('dragfree', 'node', (e: EventObject): void => {
       const targetNode = e.target
       const nodeId: IdType = targetNode.data('id')
       const position = targetNode.position()
-      console.log('!!!!!!!!!!!move node', id, position)
       setNodePosition(id, nodeId, [position.x, position.y])
-      
     })
 
     cy.fit()
@@ -116,8 +121,8 @@ export const NetworkRenderer = ({
 
     // remove previous bypasses
     // e.g. if a node has a bypass and then the bypass was removed, we need to reset the style
-    cy.nodes().removeStyle()
-    cy.edges().removeStyle()
+    // cy.nodes().removeStyle()
+    // cy.edges().removeStyle()
     const { defaultStyle, nodeBypasses, edgeBypasses } =
       VisualStyleFn.createCyJsStyleSheetView(
         vs,
@@ -126,7 +131,6 @@ export const NetworkRenderer = ({
         table.edgeTable,
         networkView,
       )
-    cy.style(defaultStyle)
     console.log('Style Apply', performance.now() - t1)
 
     // apply bypasses
@@ -138,26 +142,20 @@ export const NetworkRenderer = ({
       cy.getElementById(edgeId).style(bypass)
     })
 
-    Object.values(nodeViews).forEach((nv) => {
-      const ele = cy.getElementById(nv.id)
-      if (nv.selected ?? false) {
-        ele.select()
-      } else {
-        ele.unselect()
-      }
-    })
-    Object.values(edgeViews).forEach((ev) => {
-      const ele = cy.getElementById(ev.id)
-      if (ev.selected ?? false) {
-        ele.select()
-      } else {
-        ele.unselect()
-      }
-    })
-
-    const t2 = performance.now()
-    console.log('CYJS applyStyleUpdate', t2 - t1)
+    // Select elements based on network view state
+    const { selectedNodes, selectedEdges } = networkView
+    cy.nodes().filter((ele: SingularElementArgument) => {
+      return selectedNodes.includes(ele.data('id'))
+    }).select()
+    cy.edges().filter((ele: SingularElementArgument) => {
+      return selectedEdges.includes(ele.data('id'))
+    }).select()
+    
     cy.endBatch()
+    
+    cy.style(defaultStyle)
+    const t2 = performance.now()
+    console.log('Style applied in', t2 - t1)
   }
 
   const applyHoverStyle = (): void => {

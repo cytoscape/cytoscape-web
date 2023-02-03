@@ -37,6 +37,7 @@ import {
   EmptyVisualPropertyViewBox,
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
+import { NetworkView } from '../../../models/ViewModel'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType
@@ -47,8 +48,11 @@ function BypassFormContent(props: {
     visualProperty.defaultValue,
   )
 
-  const viewModels = useViewModelStore((state) => state.viewModels)
-  const networkView = viewModels[currentNetworkId]
+  const viewModels: Record<IdType, NetworkView> = useViewModelStore(
+    (state) => state.viewModels,
+  )
+  const networkView: NetworkView = viewModels[currentNetworkId]
+
   const setBypass = useVisualStyleStore((state) => state.setBypass)
   const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
   const setHovered = useViewModelStore((state) => state.setHovered)
@@ -60,12 +64,8 @@ function BypassFormContent(props: {
   const table = tables[currentNetworkId]
   const nodeTable = table?.nodeTable
   const edgeTable = table?.edgeTable
-  const selectedNodes = Object.values(networkView?.nodeViews).filter(
-    (nodeView) => nodeView.selected,
-  )
-  const selectedEdges = Object.values(networkView?.edgeViews).filter(
-    (edgeView) => edgeView.selected,
-  )
+
+  const { selectedNodes, selectedEdges } = networkView
 
   const validElementsSelected =
     (selectedNodes.length > 0 && visualProperty.group === 'node') ||
@@ -74,7 +74,7 @@ function BypassFormContent(props: {
   // get union of selected elements and bypass elements
   // put all selected elements first (even if they have a bypass)
   // render all elements, if they dont have a bypass, leave it empty
-  const selectedElements =
+  const selectedElements: IdType[] =
     visualProperty.group === 'node' ? selectedNodes : selectedEdges
 
   const selectedElementTable =
@@ -92,19 +92,22 @@ function BypassFormContent(props: {
   }> = []
 
   let selectedElementsWithBypass = 0
-  selectedElements.forEach((e) => {
-    const hasBypass = visualProperty?.bypassMap.has(e.id)
+  selectedElements.forEach((id: IdType) => {
+    const hasBypass = visualProperty?.bypassMap.has(id)
     elementsToRender.push({
-      id: e.id,
-      selected: e.selected,
-      name: (selectedElementTable.rows.get(e.id)?.name ?? '') as string,
+      id,
+      selected: true,
+      name: (selectedElementTable.rows.get(id)?.name ?? '') as string,
 
       hasBypass: hasBypass ?? false,
     })
 
     if (hasBypass) {
       selectedElementsWithBypass += 1
-      bypassElementIds.delete(e.id)
+    }
+
+    if (bypassElementIds.has(id)) {
+      bypassElementIds.delete(id)
     }
   })
 
@@ -235,11 +238,10 @@ function BypassFormContent(props: {
             color="error"
             disabled={selectedElementsWithBypass === 0}
             onClick={() => {
-              const selectedElementIds = selectedElements.map((e) => e.id)
               deleteBypass(
                 currentNetworkId,
                 visualProperty.name,
-                selectedElementIds,
+                selectedElements,
               )
             }}
           >
@@ -260,11 +262,10 @@ function BypassFormContent(props: {
             variant="contained"
             disabled={!validElementsSelected}
             onClick={() => {
-              const selectedElementIds = selectedElements.map((e) => e.id)
               setBypass(
                 currentNetworkId,
                 visualProperty.name,
-                selectedElementIds,
+                selectedElements,
                 bypassValue,
               )
             }}
