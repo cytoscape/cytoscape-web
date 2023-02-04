@@ -1,4 +1,5 @@
-import { Box, Divider, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import { ReactElement, useContext } from 'react'
 import { AppConfigContext } from '../../AppConfigContext'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
@@ -9,6 +10,8 @@ interface SummaryPanelProps {
 // TODO: add delete and accordion panel
 export const SummaryPanel = ({ summary }: SummaryPanelProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
+  const theme = useTheme()
+
   const { externalId } = summary
 
   const ndexLink = `${ndexBaseUrl}/viewer/networks/${externalId}`
@@ -17,20 +20,21 @@ export const SummaryPanel = ({ summary }: SummaryPanelProps): ReactElement => {
   return (
     <Box
       sx={{
-        p: 1,
+        padding: 0,
+        margin: 0,
         display: 'flex',
         flexDirection: 'column',
       }}
       key={externalId}
     >
-      <Typography>{summary.description}</Typography>
-      <Divider />
+      <Typography color={theme.palette.text.primary} variant={'caption'}>
+        {summary.description}
+      </Typography>
       <Box
         sx={{
-          p: 1,
+          paddingTop: theme.spacing(1),
           display: 'flex',
           flexDirection: 'column',
-          // justifyContent: 'space-between',
         }}
       >
         <a href={ndexLink} target="_blank" rel="noreferrer">
