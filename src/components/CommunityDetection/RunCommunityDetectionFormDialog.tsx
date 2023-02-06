@@ -37,7 +37,7 @@ export const runCommunityDetectionFormDialog = (open: boolean): void => {
 }
 
 const formatKey = (algorithm: string, key: string): string => {
-  return 'cd.' + algorithm + '.' + key
+  return `cd.${algorithm}.${key}`
 }
 
 export const RunCommunityDetectionFormDialog: React.FC = () => {
@@ -63,12 +63,7 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
             event.target.id.includes(b.name),
         )
         .forEach((b) => {
-          console.log(
-            'validationType: ' +
-            String(b.validationType) +
-            ', validationRegex: ' +
-            String(b.validationRegex),
-          )
+          console.log(`validationType: ${String(b.validationType)}, validationRegex: ${String(b.validationRegex)}`)
 
           let ret = false
           if (b.validationType != null) {
@@ -82,8 +77,8 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
                 break
             }
           }
-          const key = formatKey(a.name, b.name) + '.valid'
-          console.log('setting ' + key + ' to ' + String(ret))
+          const key = `${formatKey(a.name, b.name)}.valid`
+          console.log(`setting ${key} to ${String(ret)}`)
           parameterMapping.set(key, ret)
         })
     })
@@ -119,7 +114,7 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
                   id={formatKey(a.name, p.name)}
                   required
                   error={parameterMapping.get(
-                    formatKey(a.name, p.name) + '.valid',
+                    `${formatKey(a.name, p.name)}.valid`,
                   )}
                   label={p.displayName}
                   onChange={handleTextFieldChange}
@@ -140,7 +135,7 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
             case 'flag': {
               fields.push(
                 <FormControlLabel
-                  key={p.name + 'control-label'}
+                  key={`${p.name}control-label`}
                   control={
                     <Checkbox
                       key={p.name}
@@ -180,7 +175,7 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
 
     const map = {
       algorithm,
-      data: "1\t2\n2\t3\n",
+      data: "1\t2\n1\t3\n2\t3\n",
       customParameters: {},
     }
 
@@ -194,13 +189,15 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
 
     console.log(JSON.stringify(map))
 
+    const headers = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    }
+
     const requestOptions = {
       method: 'POST',
       body: JSON.stringify(map),
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
+      headers,
     }
 
     fetch(
@@ -210,6 +207,41 @@ export const RunCommunityDetectionFormDialog: React.FC = () => {
       .then((res) => res.json())
       .then((data) => {
         console.log(data)
+        const jobId = String(data.id)
+
+        const intervalId = window.setInterval(function () {
+
+          const statusUrl = `http://cdservice.cytoscape.org/cd/communitydetection/v1/${jobId}/status`
+          console.log(`statusUrl: ${statusUrl}`)
+
+          fetch(statusUrl, {
+            method: 'GET',
+            headers
+          })
+            .then((res) => res.json())
+            .then((statusData) => {
+              console.log(statusData)
+              const status = statusData.status
+              // Object { id: "5a30a2f6-9eda-4167-a260-b4d7f01aecd8", status: "failed", message: "Received non zero exit code: 1 when running algorithm for task: 5a30a2f6-9eda-4167-a260-b4d7f01aecd8", progress: 100, wallTime: 2524, startTime: 1675692565411 }
+              switch (status) {
+                case 'complete':
+                case 'failed':
+                  console.log(`stopping task: ${jobId}`)
+                  clearInterval(intervalId)
+                  break;
+                case 'submitted':
+                case 'processing':
+                  // do nothing???
+                  break;
+              }
+            })
+            .catch((err) => {
+              console.log(err.message)
+            })
+
+        }, 5000)
+        console.log(`intervalId: ${intervalId}`)
+
       })
       .catch((err) => {
         console.log(err.message)
