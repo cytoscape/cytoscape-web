@@ -239,7 +239,7 @@ function MappingFormContent(props: {
             sx={{ minWidth: '150px', maxWidth: '200px' }}
             size="small"
           >
-            <InputLabel>Attribute</InputLabel>
+            <InputLabel>Column</InputLabel>
             <Select
               defaultValue=""
               value={attribute}
