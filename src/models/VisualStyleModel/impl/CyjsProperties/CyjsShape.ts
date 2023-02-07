@@ -1,3 +1,4 @@
+// Supported shaped in Cytoscape.js
 export type CyjsShape =
   | 'ellipse'
   | 'triangle'
