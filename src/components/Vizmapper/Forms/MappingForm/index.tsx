@@ -199,7 +199,7 @@ function MappingFormContent(props: {
         display: 'flex',
         flexDirection: 'column',
         width: mappingType === 'continuous' ? '600px' : '400px',
-        height: mappingType === 'continuous' ? '420px' : '600px',
+        height: '600px',
         minWidth: '30vw',
         minHeight: '30vh',
         overflow: 'hidden',

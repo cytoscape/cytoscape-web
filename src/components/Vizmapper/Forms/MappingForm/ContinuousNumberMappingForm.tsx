@@ -1,8 +1,6 @@
 import * as React from 'react'
-import * as d3 from 'd3'
 import { debounce } from 'lodash'
 import {
-  Button,
   Box,
   Typography,
   Paper,
@@ -10,6 +8,7 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material'
+import { Axis, LineSeries, XYChart } from '@visx/xychart'
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import Delete from '@mui/icons-material/Close'
@@ -46,9 +45,8 @@ export function ContinuousNumberMappingForm(props: {
   const [maxState, setMaxState] = React.useState(max)
 
   const LINE_CHART_WIDTH = 400
-  const LINE_CHART_HEIGHT = 100
-  const GRADIENT_STEP_WIDTH = 4
-  const NUM_GRADIENT_STEPS = 100
+  const LINE_CHART_HEIGHT = 200
+  const LINE_CHART_MARGIN = 42
   const LINE_CHART_ELE_ID = 'line-chart'
   const setContinuousMappingValues = useVisualStyleStore(
     (state) => state.setContinuousMappingValues,
@@ -57,13 +55,12 @@ export function ContinuousNumberMappingForm(props: {
   const rangePositionToPixelPosition = (
     domain: [number, number],
     range: [number, number],
-    stepWidth: number,
     rangePosition: number,
   ): number => {
     const rangeToPixel = scaleLinear(domain, range)
     const value = rangeToPixel(rangePosition) ?? 0
 
-    return value * stepWidth
+    return value
   }
 
   const pixelPositionToRangePosition = (
@@ -87,8 +84,7 @@ export function ContinuousNumberMappingForm(props: {
           pixelPosition: {
             x: rangePositionToPixelPosition(
               [minState.value as number, maxState.value as number],
-              [0, NUM_GRADIENT_STEPS],
-              GRADIENT_STEP_WIDTH,
+              [LINE_CHART_MARGIN, LINE_CHART_WIDTH - LINE_CHART_MARGIN],
               pt.value as number,
             ),
             y: 0,
@@ -99,9 +95,17 @@ export function ContinuousNumberMappingForm(props: {
 
   const handleIds = new Set(handles.map((h) => h.id))
 
-  const domain = handles.map((h) => h.value as number)
+  const domain = [
+    minState.value as number,
+    ...handles.map((h) => h.value as number),
+    maxState.value as number,
+  ]
 
-  const range = handles.map((h) => h.vpValue as number)
+  const range = [
+    minState.vpValue,
+    ...handles.map((h) => h.vpValue as number),
+    maxState.vpValue,
+  ]
 
   const mapper = scaleLinear(domain, range)
 
@@ -155,7 +159,6 @@ export function ContinuousNumberMappingForm(props: {
               x: rangePositionToPixelPosition(
                 [minState.value as number, maxState.value as number],
                 [0, LINE_CHART_WIDTH],
-                GRADIENT_STEP_WIDTH,
                 pt.value as number,
               ),
               y: 0,
@@ -164,14 +167,6 @@ export function ContinuousNumberMappingForm(props: {
         }),
     )
   }, [props.visualProperty.mapping?.attribute])
-
-  const scaledDomain = scaleLinear(domain, [0, LINE_CHART_WIDTH]).clamp(false)
-  const scaledRange = scaleLinear(range, [LINE_CHART_HEIGHT, 0]).clamp(false)
-
-  const linePath = d3
-    .line()
-    .x((d) => scaledDomain(d[0]))
-    .y((d) => scaledRange(d[1]))(domain.map((d, index) => [d, range[index]]))
 
   return (
     <Box>
@@ -232,9 +227,9 @@ export function ContinuousNumberMappingForm(props: {
                   return {
                     ...h,
                     value: pixelPositionToRangePosition(
-                      [0, NUM_GRADIENT_STEPS],
+                      [0, LINE_CHART_WIDTH],
                       [newMin, maxState.value as number],
-                      h.pixelPosition.x / GRADIENT_STEP_WIDTH,
+                      h.pixelPosition.x,
                     ),
                   }
                 })
@@ -254,7 +249,7 @@ export function ContinuousNumberMappingForm(props: {
             value={minState.value}
           />
         </Box>
-        <Paper sx={{ display: 'flex', position: 'relative' }}>
+        <Box sx={{ display: 'flex', position: 'relative' }}>
           <Tooltip title="Click to add new handle" placement="top" followCursor>
             <Box
               id={LINE_CHART_ELE_ID}
@@ -262,8 +257,6 @@ export function ContinuousNumberMappingForm(props: {
                 display: 'flex',
                 position: 'relative',
                 '&:hover': { cursor: 'copy' },
-                width: LINE_CHART_WIDTH,
-                height: LINE_CHART_HEIGHT,
               }}
               onClickCapture={(e) => {
                 const gradientPositionX =
@@ -273,16 +266,15 @@ export function ContinuousNumberMappingForm(props: {
                   newHandleId++
                 }
                 const newHandleValue = pixelPositionToRangePosition(
-                  [0, NUM_GRADIENT_STEPS],
+                  [0, LINE_CHART_WIDTH],
                   [minState.value as number, maxState.value as number],
-                  gradientPositionX / GRADIENT_STEP_WIDTH,
+                  gradientPositionX,
                 )
                 const newHandleVpValue = mapper(newHandleValue)
                 const newHandlePixelPosition = {
                   x: rangePositionToPixelPosition(
                     [minState.value as number, maxState.value as number],
-                    [0, NUM_GRADIENT_STEPS],
-                    GRADIENT_STEP_WIDTH,
+                    [0, LINE_CHART_WIDTH],
                     newHandleValue,
                   ),
                   y: 0,
@@ -301,36 +293,38 @@ export function ContinuousNumberMappingForm(props: {
                 updateContinuousMapping(min, max, newHandles)
               }}
             >
-              <svg viewBox={`0 0 ${LINE_CHART_WIDTH} ${LINE_CHART_HEIGHT}`}>
-                <path
-                  strokeWidth={3}
-                  fill="none"
-                  stroke={'black'}
-                  d={linePath as string | undefined}
+              <XYChart
+                width={LINE_CHART_WIDTH}
+                height={LINE_CHART_HEIGHT}
+                margin={{
+                  left: LINE_CHART_MARGIN,
+                  top: LINE_CHART_MARGIN,
+                  bottom: LINE_CHART_MARGIN,
+                  right: LINE_CHART_MARGIN,
+                }}
+                xScale={{ type: 'linear' }}
+                yScale={{ type: 'linear' }}
+              >
+                <Axis
+                  label={props.visualProperty.displayName}
+                  orientation="left"
+                  numTicks={4}
+                  tickLabelProps={() => ({ dx: -10 })}
                 />
-              </svg>
-              {/* {Array(NUM_GRADIENT_STEPS)
-                .fill(0)
-                .map((_, i) => {
-                  const value = pixelPositionToRangePosition(
-                    [0, NUM_GRADIENT_STEPS],
-                    [minState.value as number, maxState.value as number],
-                    i,
-                  )
-                  const nextColor =
-                    color(mapper(value))?.formatHex() ?? '#000000'
-
-                  return (
-                    <Box
-                      key={i}
-                      sx={{
-                        width: GRADIENT_STEP_WIDTH,
-                        height: 100,
-                        backgroundColor: nextColor,
-                      }}
-                    ></Box>
-                  )
-                })} */}
+                <Axis
+                  label={m.attribute}
+                  orientation="bottom"
+                  numTicks={20}
+                  tickLabelProps={() => ({ dy: 10 })}
+                />
+                <LineSeries
+                  stroke="#008561"
+                  dataKey="primary_line"
+                  data={domain.map((d, index) => [d, range[index]])}
+                  xAccessor={(d) => d[0]}
+                  yAccessor={(d) => d[1]}
+                />
+              </XYChart>
             </Box>
           </Tooltip>
           {handles.map((h) => {
@@ -341,9 +335,9 @@ export function ContinuousNumberMappingForm(props: {
                 handle=".handle"
                 onDrag={(e, data) => {
                   const newRangePosition = pixelPositionToRangePosition(
-                    [0, NUM_GRADIENT_STEPS],
+                    [LINE_CHART_MARGIN, LINE_CHART_WIDTH - LINE_CHART_MARGIN],
                     [minState.value as number, maxState.value as number],
-                    data.x / GRADIENT_STEP_WIDTH,
+                    data.x,
                   )
 
                   const handleIndex = handles.findIndex(
@@ -362,8 +356,7 @@ export function ContinuousNumberMappingForm(props: {
                 position={{
                   x: rangePositionToPixelPosition(
                     [minState.value as number, maxState.value as number],
-                    [0, NUM_GRADIENT_STEPS],
-                    GRADIENT_STEP_WIDTH,
+                    [LINE_CHART_MARGIN, LINE_CHART_WIDTH - LINE_CHART_MARGIN],
                     h.value as number,
                   ),
                   y: 0,
@@ -455,8 +448,7 @@ export function ContinuousNumberMappingForm(props: {
                                   minState.value as number,
                                   maxState.value as number,
                                 ],
-                                [0, NUM_GRADIENT_STEPS],
-                                GRADIENT_STEP_WIDTH,
+                                [0, LINE_CHART_WIDTH],
                                 newVal,
                               ),
                               y: 0,
@@ -492,7 +484,7 @@ export function ContinuousNumberMappingForm(props: {
               </Draggable>
             )
           })}
-        </Paper>
+        </Box>
         <Box
           sx={{
             display: 'flex',
@@ -534,9 +526,9 @@ export function ContinuousNumberMappingForm(props: {
                   return {
                     ...h,
                     value: pixelPositionToRangePosition(
-                      [0, NUM_GRADIENT_STEPS],
+                      [0, LINE_CHART_WIDTH],
                       [minState.value as number, newMax],
-                      h.pixelPosition.x / GRADIENT_STEP_WIDTH,
+                      h.pixelPosition.x,
                     ),
                   }
                 })
@@ -548,16 +540,6 @@ export function ContinuousNumberMappingForm(props: {
             value={maxState.value}
           />
         </Box>
-      </Box>
-
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <Typography variant="body1">{m.attribute}</Typography>
-      </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Button color="error" onClick={() => console.log('TODO')}>
-          Cancel
-        </Button>
-        <Button>Confirm</Button>
       </Box>
     </Box>
   )

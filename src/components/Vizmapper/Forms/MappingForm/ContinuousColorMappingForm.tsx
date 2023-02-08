@@ -56,7 +56,7 @@ export function ContinuousColorMappingForm(props: {
     (state) => state.setContinuousMappingValues,
   )
   // map values in the continuous mapping range to a pixel position
-  const rangePositionToPixelPosition = (
+  const valueToPixel = (
     domain: [number, number],
     range: [number, number],
     stepWidth: number,
@@ -68,7 +68,7 @@ export function ContinuousColorMappingForm(props: {
     return value * stepWidth
   }
 
-  const pixelPositionToRangePosition = (
+  const pixelToValue = (
     domain: [number, number],
     range: [number, number],
     pixelPosition: number,
@@ -87,7 +87,7 @@ export function ContinuousColorMappingForm(props: {
           ...pt,
           id: index,
           pixelPosition: {
-            x: rangePositionToPixelPosition(
+            x: valueToPixel(
               [minState.value as number, maxState.value as number],
               [0, NUM_GRADIENT_STEPS],
               GRADIENT_STEP_WIDTH,
@@ -163,7 +163,7 @@ export function ContinuousColorMappingForm(props: {
             ...pt,
             id: index,
             pixelPosition: {
-              x: rangePositionToPixelPosition(
+              x: valueToPixel(
                 [minState.value as number, maxState.value as number],
                 [0, NUM_GRADIENT_STEPS],
                 GRADIENT_STEP_WIDTH,
@@ -234,7 +234,7 @@ export function ContinuousColorMappingForm(props: {
                 const newHandles = handles.map((h) => {
                   return {
                     ...h,
-                    value: pixelPositionToRangePosition(
+                    value: pixelToValue(
                       [0, NUM_GRADIENT_STEPS],
                       [newMin, maxState.value as number],
                       h.pixelPosition.x / GRADIENT_STEP_WIDTH,
@@ -272,7 +272,7 @@ export function ContinuousColorMappingForm(props: {
                 while (handleIds.has(newHandleId)) {
                   newHandleId++
                 }
-                const newHandleValue = pixelPositionToRangePosition(
+                const newHandleValue = pixelToValue(
                   [0, NUM_GRADIENT_STEPS],
                   [minState.value as number, maxState.value as number],
                   gradientPositionX / GRADIENT_STEP_WIDTH,
@@ -280,7 +280,7 @@ export function ContinuousColorMappingForm(props: {
                 const newHandleVpValue =
                   color(mapper(newHandleValue))?.formatHex() ?? '#000000'
                 const newHandlePixelPosition = {
-                  x: rangePositionToPixelPosition(
+                  x: valueToPixel(
                     [minState.value as number, maxState.value as number],
                     [0, NUM_GRADIENT_STEPS],
                     GRADIENT_STEP_WIDTH,
@@ -305,7 +305,7 @@ export function ContinuousColorMappingForm(props: {
               {Array(NUM_GRADIENT_STEPS)
                 .fill(0)
                 .map((_, i) => {
-                  const value = pixelPositionToRangePosition(
+                  const value = pixelToValue(
                     [0, NUM_GRADIENT_STEPS],
                     [minState.value as number, maxState.value as number],
                     i,
@@ -334,7 +334,7 @@ export function ContinuousColorMappingForm(props: {
                 axis="x"
                 handle=".handle"
                 onDrag={(e, data) => {
-                  const newRangePosition = pixelPositionToRangePosition(
+                  const newRangePosition = pixelToValue(
                     [0, NUM_GRADIENT_STEPS],
                     [minState.value as number, maxState.value as number],
                     data.x / GRADIENT_STEP_WIDTH,
@@ -354,7 +354,7 @@ export function ContinuousColorMappingForm(props: {
                   }
                 }}
                 position={{
-                  x: rangePositionToPixelPosition(
+                  x: valueToPixel(
                     [minState.value as number, maxState.value as number],
                     [0, NUM_GRADIENT_STEPS],
                     GRADIENT_STEP_WIDTH,
@@ -444,7 +444,7 @@ export function ContinuousColorMappingForm(props: {
                           if (!isNaN(newVal)) {
                             newHandles[handleIndex].value = newVal
                             newHandles[handleIndex].pixelPosition = {
-                              x: rangePositionToPixelPosition(
+                              x: valueToPixel(
                                 [
                                   minState.value as number,
                                   maxState.value as number,
@@ -527,7 +527,7 @@ export function ContinuousColorMappingForm(props: {
                 const newHandles = handles.map((h) => {
                   return {
                     ...h,
-                    value: pixelPositionToRangePosition(
+                    value: pixelToValue(
                       [0, NUM_GRADIENT_STEPS],
                       [minState.value as number, newMax],
                       h.pixelPosition.x / GRADIENT_STEP_WIDTH,
