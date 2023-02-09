@@ -144,15 +144,19 @@ export const NetworkRenderer = ({
 
     // Select elements based on network view state
     const { selectedNodes, selectedEdges } = networkView
-    cy.nodes().filter((ele: SingularElementArgument) => {
-      return selectedNodes.includes(ele.data('id'))
-    }).select()
-    cy.edges().filter((ele: SingularElementArgument) => {
-      return selectedEdges.includes(ele.data('id'))
-    }).select()
-    
+    cy.nodes()
+      .filter((ele: SingularElementArgument) => {
+        return selectedNodes.includes(ele.data('id'))
+      })
+      .select()
+    cy.edges()
+      .filter((ele: SingularElementArgument) => {
+        return selectedEdges.includes(ele.data('id'))
+      })
+      .select()
+
     cy.endBatch()
-    
+
     cy.style(defaultStyle)
     const t2 = performance.now()
     console.log('Style applied in', t2 - t1)

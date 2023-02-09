@@ -7,6 +7,7 @@ import { NetworkView } from '../../ViewModel'
 import {
   DiscreteMappingFunction,
   ContinuousMappingFunction,
+  VisualMappingFunction,
 } from '../VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyName } from '../VisualPropertyName'
@@ -18,7 +19,7 @@ import {
   Bypass,
 } from '..'
 
-import { cyJsVisualPropertyConverter } from './cyJsVisualPropertyConverter'
+import * as CyjsConverter from './cyJsVisualPropertyConverter'
 
 import {
   CXId,
@@ -352,10 +353,11 @@ export const createCyJsStyleSheetView = (
 
   nodeVisualProperties(vs).forEach(
     (vp: VisualProperty<VisualPropertyValueType>) => {
-      const defaultValue = vp.defaultValue
-      const mapping = vp.mapping
-      const bypassMap = vp.bypassMap
-      const cyStyleName = cyJsVisualPropertyConverter[vp.name]?.cyJsVPName
+      const defaultValue: VisualPropertyValueType = vp.defaultValue
+      const mapping: VisualMappingFunction | null = vp.mapping
+      const bypassMap: Bypass<VisualPropertyValueType> = vp.bypassMap
+      const cyStyleName = CyjsConverter.getCyjsVpName(vp.name)
+      // const cyStyleName = cyJsVisualPropertyConverter[vp.name]?.cyJsVPName
 
       if (cyStyleName != null) {
         nodeStyle[cyStyleName] = defaultValue
@@ -403,7 +405,8 @@ export const createCyJsStyleSheetView = (
       const defaultValue = vp.defaultValue
       const mapping = vp.mapping
       const bypassMap = vp.bypassMap
-      const cyStyleName = cyJsVisualPropertyConverter[vp.name]?.cyJsVPName
+      const cyStyleName = CyjsConverter.getCyjsVpName(vp.name)
+      // const cyStyleName = cyJsVisualPropertyConverter[vp.name]?.cyJsVPName
 
       if (cyStyleName != null) {
         edgeStyle[cyStyleName] = defaultValue

@@ -10,6 +10,10 @@ import {
   EdgeLineType,
   EdgeArrowShapeType,
 } from '../VisualPropertyValue'
+import {
+  CyjsVisualPropertyType,
+  CyjsVisualPropertyName,
+} from './CyjsProperties/CyjsVisualPropertyName'
 
 export type CyJsPropertyName = string
 interface CyJsVisualPropertyConverter<T> {
@@ -128,7 +132,7 @@ export const booleanConverter = (
   }
 }
 
-export const cyJsVisualPropertyConverter: Record<
+export const cyJsVisualPropertyConverter2: Record<
   VisualPropertyName,
   CyJsVisualPropertyConverter<VisualPropertyValueType> | null
 > = {
@@ -172,4 +176,27 @@ export const cyJsVisualPropertyConverter: Record<
   edgeVisibility: visibilityTypeConverter('display'),
 
   networkBackgroundColor: null,
+}
+
+const { Shape, Height, Width, BackgroundColor, Label, LineColor, LineStyle } =
+  CyjsVisualPropertyName
+
+// eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+// @ts-ignore
+const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
+  nodeShape: Shape,
+  nodeHeight: Height,
+  nodeWidth: Width,
+  nodeBackgroundColor: BackgroundColor,
+  nodeLabel: Label,
+
+  edgeLineType: LineStyle,
+  edgeLineColor: LineColor,
+  edgeWidth: Width,
+}
+
+export const getCyjsVpName = (
+  vpName: VisualPropertyName,
+): CyjsVisualPropertyType => {
+  return VpName2CyjsVpName[vpName]
 }
