@@ -14,10 +14,7 @@ import {
   NodeBorderLine,
   NodeBorderLinePicker,
 } from '../VisualPropertyRender/NodeBorderLine'
-import {
-  NumberInput,
-  Number as NumberRender,
-} from '../VisualPropertyRender/Number'
+import { NumberInput, NumberRender } from '../VisualPropertyRender/Number'
 import { Font, FontPicker } from '../VisualPropertyRender/Font'
 import {
   HoritzontalAlignPicker,
