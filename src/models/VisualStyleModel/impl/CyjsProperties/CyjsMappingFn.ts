@@ -9,13 +9,16 @@ interface DirectMapperProps {
   cyjsVpName: CyjsVisualPropertyType // VP names used in Cyjs
 }
 
+/**
+ *
+ * From a given props, create an entry for the Cyjs-compatible direct mapper
+ *
+ * @param props
+ * @returns
+ */
 export const toDataMapper = (props: DirectMapperProps): CyjsDirectMapper => ({
-  selector: `${props.selector}[${props.cyjsVpName}]`,
+  selector: `${props.selector}[${props.vpName}]`,
   style: {
     [props.cyjsVpName]: `data(${props.vpName})`,
   },
 })
-
-// export const mapVpNameToCyjsVpName = (
-//   vpName: VisualPropertyName,
-// ): CyjsVisualPropertyName => {}

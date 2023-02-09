@@ -181,11 +181,14 @@ export const useVisualStyleStore = create(
 
       createDiscreteMapping(networkId, vpName, attributeName) {
         set((state) => {
+          const { defaultValue } = state.visualStyles[networkId][vpName]
+          const vpValueMap = new Map<ValueType, VisualPropertyValueType>()
+
           const discreteMapping: DiscreteMappingFunction = {
             attribute: attributeName,
             type: MappingFunctionType.Discrete,
-            vpValueMap: new Map<ValueType, VisualPropertyValueType>(),
-            defaultValue: state.visualStyles[networkId][vpName].defaultValue,
+            vpValueMap,
+            defaultValue,
           }
           state.visualStyles[networkId][vpName].mapping = discreteMapping
         })
@@ -251,7 +254,8 @@ export const useVisualStyleStore = create(
       },
       removeMapping(networkId, vpName) {
         set((state) => {
-          state.visualStyles[networkId][vpName].mapping = null
+          const vp = state.visualStyles[networkId][vpName]
+          delete vp.mapping
         })
       },
     }),

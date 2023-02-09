@@ -10,6 +10,6 @@ export interface VisualProperty<T> {
   displayName: string
   type: VisualPropertyValueTypeString
   defaultValue: T
-  mapping: VisualMappingFunction | null
+  mapping?: VisualMappingFunction
   bypassMap: Bypass<T>
 }

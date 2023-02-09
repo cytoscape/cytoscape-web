@@ -6,21 +6,21 @@ import Cytoscape, {
   SingularElementArgument,
 } from 'cytoscape'
 
-import { useVisualStyleStore } from '../../store/VisualStyleStore'
-import { useTableStore } from '../../store/TableStore'
-import { useViewModelStore } from '../../store/ViewModelStore'
-import VisualStyleFn from '../../models/VisualStyleModel'
-import { Network } from '../../models/NetworkModel'
+import { useVisualStyleStore } from '../../../store/VisualStyleStore'
+import { useTableStore } from '../../../store/TableStore'
+import { useViewModelStore } from '../../../store/ViewModelStore'
+import VisualStyleFn from '../../../models/VisualStyleModel'
+import { Network } from '../../../models/NetworkModel'
 import { ReactElement, useEffect, useRef, useState } from 'react'
-import { NetworkView, NodeView } from '../../models/ViewModel'
-import { IdType } from '../../models/IdType'
+import { NetworkView, NodeView } from '../../../models/ViewModel'
+import { IdType } from '../../../models/IdType'
 interface NetworkRendererProps {
   network: Network
   setIsBusy: (isBusy: boolean) => void
   isBusy: boolean
 }
 
-export const NetworkRenderer = ({
+export const CyjsRenderer = ({
   network,
   setIsBusy,
   isBusy,

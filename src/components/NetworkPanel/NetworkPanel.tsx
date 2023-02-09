@@ -6,7 +6,7 @@ import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { MessagePanel } from '../Messages'
-import { NetworkRenderer } from './NetworkRenderer'
+import { CyjsRenderer } from './CyjsRenderer'
 
 const NetworkPanel = (): ReactElement => {
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -50,7 +50,7 @@ const NetworkPanel = (): ReactElement => {
           <MessagePanel message="Preparing network data..." />
         </Box>
       ) : null}
-      <NetworkRenderer
+      <CyjsRenderer
         network={targetNetwork}
         setIsBusy={setIsBusy}
         isBusy={isBusy}

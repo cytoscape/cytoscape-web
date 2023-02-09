@@ -193,8 +193,15 @@ const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
   edgeLineType: LineStyle,
   edgeLineColor: LineColor,
   edgeWidth: Width,
-}
+} as const
 
+/**
+ * The mapping function from static map of visual property name
+ * to cyjs visual property name
+ *
+ * @param vpName
+ * @returns
+ */
 export const getCyjsVpName = (
   vpName: VisualPropertyName,
 ): CyjsVisualPropertyType => {

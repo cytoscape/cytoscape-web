@@ -1,10 +1,10 @@
 import { Core, EventObject, SingularElementArgument } from 'cytoscape'
-import { IdType } from '../../models/IdType'
-import { EdgeView, NetworkView, NodeView } from '../../models/ViewModel'
+import { IdType } from '../../../models/IdType'
+import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import {
   VisualPropertyName,
   VisualPropertyValueType,
-} from '../../models/VisualStyleModel'
+} from '../../../models/VisualStyleModel'
 
 export const addEventHandlers = (
   id: IdType,
@@ -30,9 +30,7 @@ export const addEventHandlers = (
 }
 
 export const createCyjsDataMapper = (networkView: NetworkView): void => {
-  const cyStyle: CyjsDirectMapper[] = [
-
-  ]
+  const cyStyle: CyjsDirectMapper[] = []
   const entry: CyjsDirectMapper = {
     selector: `node[background-color]`,
     style: {
