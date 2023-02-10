@@ -60,8 +60,8 @@ export function ContinuousNumberMappingForm(props: {
   const LINE_CHART_WIDTH = 425
   const LINE_CHART_HEIGHT = 200
   const LINE_CHART_MARGIN_LEFT = 50
-  const LINE_CHART_MARGIN_RIGHT = 0
-  const LINE_CHART_MARGIN_TOP = 0
+  const LINE_CHART_MARGIN_RIGHT = 10
+  const LINE_CHART_MARGIN_TOP = 10
   const LINE_CHART_MARGIN_BOTTOM = 50
 
   const [handles, setHandles] = React.useState(() => {
@@ -123,12 +123,20 @@ export function ContinuousNumberMappingForm(props: {
           top={0}
           left={0}
           label={props.visualProperty.displayName}
-          labelOffset={20}
+          labelProps={{
+            fontSize: 14,
+            textAnchor: 'middle',
+          }}
+          labelOffset={25}
           stroke={'#1b1a1e'}
         />
         <AxisBottom
           scale={xScale}
           top={yMax}
+          labelProps={{
+            fontSize: 14,
+            textAnchor: 'middle',
+          }}
           label={m.attribute}
           stroke={'#1b1a1e'}
         />
@@ -273,8 +281,8 @@ export function ContinuousNumberMappingForm(props: {
                     key={h.id}
                     bounds={{
                       left: LINE_CHART_MARGIN_LEFT,
-                      right: LINE_CHART_WIDTH,
-                      top: -LINE_CHART_MARGIN_TOP,
+                      right: LINE_CHART_WIDTH - LINE_CHART_MARGIN_RIGHT,
+                      top: LINE_CHART_MARGIN_TOP - 2, // -2 allows user to scroll slightly passed the top of the chart to increase the y value of the handle
                       bottom: LINE_CHART_HEIGHT - LINE_CHART_MARGIN_BOTTOM,
                     }}
                     handle=".handle"
