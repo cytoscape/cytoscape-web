@@ -46,13 +46,15 @@ export function ContinuousNumberMappingForm(props: {
 
   const [addHandleFormValue, setAddHandleFormValue] = React.useState(0)
   const [addHandleFormVpValue, setAddHandleFormVpValue] = React.useState(0)
+  const [draggedHandleId, setDraggedHandleId] = React.useState<number | null>(
+    null,
+  )
 
   const { min, max, controlPoints } = m
 
   const [minState, setMinState] = React.useState(min)
   const [maxState, setMaxState] = React.useState(max)
 
-  const ref = React.useRef<SVGPathElement>(null)
   const setContinuousMappingValues = useVisualStyleStore(
     (state) => state.setContinuousMappingValues,
   )
@@ -147,7 +149,6 @@ export function ContinuousNumberMappingForm(props: {
           y={yMapper}
         />
         <AreaClosed
-          ref={ref}
           data={data}
           fill={'url(#gradient)'}
           yScale={yScale}
@@ -194,7 +195,7 @@ export function ContinuousNumberMappingForm(props: {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginTop: 12,
+          marginTop: 8,
         }}
       >
         <Box
@@ -286,12 +287,22 @@ export function ContinuousNumberMappingForm(props: {
                       bottom: LINE_CHART_HEIGHT - LINE_CHART_MARGIN_BOTTOM,
                     }}
                     handle=".handle"
+                    onStart={(e) => {
+                      setDraggedHandleId(h.id)
+                    }}
+                    onStop={(e) => {
+                      setDraggedHandleId(null)
+                    }}
                     onDrag={(e, data) => {
-                      const newValue = xScale.invert(
-                        data.x - LINE_CHART_MARGIN_LEFT,
+                      const newValue = Number(
+                        xScale
+                          .invert(data.x - LINE_CHART_MARGIN_LEFT)
+                          .toFixed(4),
                       )
-                      const newVpValue = yScale.invert(
-                        data.y - LINE_CHART_MARGIN_TOP,
+                      const newVpValue = Number(
+                        yScale
+                          .invert(data.y - LINE_CHART_MARGIN_TOP)
+                          .toFixed(4),
                       )
 
                       const handleIndex = handles.findIndex(
@@ -322,15 +333,15 @@ export function ContinuousNumberMappingForm(props: {
                         flexDirection: 'column',
                         alignItems: 'center',
                         position: 'absolute',
-                        zIndex: 1,
+                        zIndex: draggedHandleId === h.id ? 3 : 1,
                       }}
                     >
                       <Paper
                         sx={{
-                          p: 1,
+                          p: 0.5,
                           position: 'relative',
-                          top: -105 - pixelPositionY,
-                          zIndex: 2,
+                          top: -65 - pixelPositionY,
+                          zIndex: draggedHandleId === h.id ? 3 : 1,
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -341,7 +352,7 @@ export function ContinuousNumberMappingForm(props: {
                           sx={{
                             position: 'absolute',
                             width: 2,
-                            top: 103,
+                            top: 65,
                             height: pixelPositionY,
                             backgroundColor: '#707070',
                             '&:hover': { cursor: 'move' },
@@ -368,66 +379,124 @@ export function ContinuousNumberMappingForm(props: {
                         >
                           <Close />
                         </IconButton>
-
-                        <VisualPropertyValueForm
-                          currentValue={h.vpValue ?? null}
-                          visualProperty={props.visualProperty}
-                          onValueChange={(newValue) => {
-                            const handleIndex = handles.findIndex(
-                              (handle) => handle.id === h.id,
-                            )
-                            if (handleIndex >= 0) {
-                              const newHandles = [...handles]
-                              newHandles[handleIndex].vpValue = newValue
-                              setHandles(newHandles)
-                              updateContinuousMapping(
-                                minState,
-                                maxState,
-                                newHandles,
-                              )
-                            }
-                          }}
-                        />
-                        <TextField
-                          sx={{ width: 50, mt: 1 }}
-                          inputProps={{
-                            sx: { p: 0.5, fontSize: 14, width: 50 },
-                            inputMode: 'numeric',
-                            pattern: '[0-9]*',
-                            step: 0.1,
-                          }}
-                          onChange={(e) => {
-                            const handleIndex = handles.findIndex(
-                              (handle) => handle.id === h.id,
-                            )
-                            if (handleIndex >= 0) {
-                              const newHandles = [...handles]
-                              const newVal = Number(e.target.value)
-
-                              if (!isNaN(newVal)) {
-                                newHandles[handleIndex].value = newVal
-                                newHandles.sort(
-                                  (a, b) =>
-                                    (a.value as number) - (b.value as number),
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Typography
+                              sx={{
+                                width: 60,
+                                minWidth: 60,
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap',
+                                textOverflow: 'ellipsis',
+                              }}
+                              variant="caption"
+                            >
+                              {props.visualProperty.displayName}
+                            </Typography>
+                            <TextField
+                              sx={{ width: 40, ml: 0.5 }}
+                              inputProps={{
+                                sx: {
+                                  p: 0.5,
+                                  fontSize: 12,
+                                  width: 50,
+                                  boxShadow: 1,
+                                },
+                                inputMode: 'numeric',
+                                pattern: '[0-9]*',
+                                step: 0.1,
+                              }}
+                              onChange={(e) => {
+                                const newVal = Number(
+                                  Number(e.target.value).toFixed(2),
                                 )
-                                setHandles(newHandles)
-                                updateContinuousMapping(
-                                  minState,
-                                  maxState,
-                                  newHandles,
+                                const handleIndex = handles.findIndex(
+                                  (handle) => handle.id === h.id,
                                 )
-                              }
-                            }
-                          }}
-                          value={h.value as number}
-                        />
+                                if (handleIndex >= 0) {
+                                  const newHandles = [...handles]
+                                  newHandles[handleIndex].vpValue = newVal
+                                  setHandles(newHandles)
+                                  updateContinuousMapping(
+                                    minState,
+                                    maxState,
+                                    newHandles,
+                                  )
+                                }
+                              }}
+                              value={h.vpValue as number}
+                            />
+                          </Box>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              mt: 0.25,
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                width: 60,
+                                minWidth: 60,
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap',
+                                textOverflow: 'ellipsis',
+                              }}
+                              variant="caption"
+                            >
+                              {m.attribute}
+                            </Typography>
+
+                            <TextField
+                              sx={{ width: 40, ml: 0.5 }}
+                              inputProps={{
+                                sx: {
+                                  p: 0.5,
+                                  fontSize: 12,
+                                  width: 50,
+                                  boxShadow: 1,
+                                },
+                                inputMode: 'numeric',
+                                pattern: '[0-9]*',
+                                step: 0.1,
+                              }}
+                              onChange={(e) => {
+                                const handleIndex = handles.findIndex(
+                                  (handle) => handle.id === h.id,
+                                )
+                                if (handleIndex >= 0) {
+                                  const newHandles = [...handles]
+                                  const newVal = Number(
+                                    Number(e.target.value).toFixed(2),
+                                  )
+
+                                  if (!isNaN(newVal)) {
+                                    newHandles[handleIndex].value = newVal
+                                    newHandles.sort(
+                                      (a, b) =>
+                                        (a.value as number) -
+                                        (b.value as number),
+                                    )
+                                    setHandles(newHandles)
+                                    updateContinuousMapping(
+                                      minState,
+                                      maxState,
+                                      newHandles,
+                                    )
+                                  }
+                                }
+                              }}
+                              value={h.value as number}
+                            />
+                          </Box>
+                        </Box>
                       </Paper>
                       <IconButton
                         className="handle"
                         size="large"
                         sx={{
                           position: 'relative',
-                          top: -130,
+                          top: -98,
                           '&:hover': { cursor: 'move' },
                         }}
                       >
@@ -478,13 +547,28 @@ export function ContinuousNumberMappingForm(props: {
                 })
 
                 // const newHandles = handles.map((h) => {
+                //   const pixelPosX =
+                //     xMapper([h.value as number, h.vpValue as number]) +
+                //     LINE_CHART_MARGIN_LEFT
+
+                //   const newDomain = [
+                //     minState.value as number,
+                //     ...handles.map((h) => h.value as number),
+                //     newMax,
+                //   ]
+                //   const newXScale = visXScaleLinear({
+                //     range: [0, xMax],
+                //     domain: extent(newDomain) as [number, number],
+                //   })
+
+                //   const newValue = newXScale.invert(
+                //     pixelPosX - LINE_CHART_MARGIN_LEFT,
+                //   )
+                //   console.log(newValue)
+
                 //   return {
                 //     ...h,
-                //     value: pixelPositionToRangePosition(
-                //       [0, LINE_CHART_WIDTH],
-                //       [minState.value as number, newMax],
-                //       h.pixelPosition.x,
-                //     ),
+                //     value: newValue,
                 //   }
                 // })
 
