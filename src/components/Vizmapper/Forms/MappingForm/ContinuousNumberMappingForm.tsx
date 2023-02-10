@@ -261,6 +261,13 @@ export function ContinuousNumberMappingForm(props: {
             >
               {chart}
               {handles.map((h) => {
+                const pixelPositionX =
+                  xMapper([h.value as number, h.vpValue as number]) +
+                  LINE_CHART_MARGIN_LEFT
+                const pixelPositionY =
+                  yMapper([h.value as number, h.vpValue as number]) +
+                  LINE_CHART_MARGIN_TOP
+
                 return (
                   <Draggable
                     key={h.id}
@@ -295,10 +302,8 @@ export function ContinuousNumberMappingForm(props: {
                       }
                     }}
                     position={{
-                      x:
-                        xMapper([h.value as number, h.vpValue as number]) +
-                        LINE_CHART_MARGIN_LEFT,
-                      y: yMapper([h.vpValue as number, h.vpValue as number]),
+                      x: pixelPositionX,
+                      y: pixelPositionY,
                     }}
                   >
                     <Box
@@ -316,13 +321,25 @@ export function ContinuousNumberMappingForm(props: {
                         sx={{
                           p: 1,
                           position: 'relative',
-                          top: -105,
+                          top: -105 - pixelPositionY,
                           zIndex: 2,
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
                         }}
                       >
+                        <Box
+                          className="handle"
+                          sx={{
+                            position: 'absolute',
+                            width: 2,
+                            top: 103,
+                            height: pixelPositionY,
+                            backgroundColor: '#707070',
+                            '&:hover': { cursor: 'move' },
+                          }}
+                        ></Box>
+
                         <IconButton
                           sx={{ position: 'absolute', top: -20, right: -16 }}
                           onClick={() => {
