@@ -119,6 +119,7 @@ function MappingFormContent(props: {
           createContinuousMapping(
             props.currentNetworkId,
             props.visualProperty.name,
+            props.visualProperty.type,
             attribute,
             attributeValues,
           )
