@@ -1,5 +1,6 @@
 import * as React from 'react'
 import {
+  Button,
   Box,
   Tooltip,
   IconButton,
@@ -43,6 +44,9 @@ export function ContinuousNumberMappingForm(props: {
     return <Box></Box>
   }
 
+  const [addHandleFormValue, setAddHandleFormValue] = React.useState(0)
+  const [addHandleFormVpValue, setAddHandleFormVpValue] = React.useState(0)
+
   const { min, max, controlPoints } = m
 
   const [minState, setMinState] = React.useState(min)
@@ -60,7 +64,6 @@ export function ContinuousNumberMappingForm(props: {
   const LINE_CHART_MARGIN_TOP = 0
   const LINE_CHART_MARGIN_BOTTOM = 50
 
-  const LINE_CHART_ELE_ID = 'line-chart'
   const [handles, setHandles] = React.useState(() => {
     return [...controlPoints]
       .sort((a, b) => (a.value as number) - (b.value as number))
@@ -244,13 +247,12 @@ export function ContinuousNumberMappingForm(props: {
             value={minState.value}
           />
         </Box>
-        <Box sx={{ display: 'flex', position: 'relative' }}>
+        <Paper sx={{ display: 'flex', position: 'relative' }}>
           <Tooltip
             title="Drag handles or change the handle values to edit the mapping"
             placement="bottom"
           >
             <Box
-              id={LINE_CHART_ELE_ID}
               sx={{
                 display: 'flex',
                 position: 'relative',
@@ -412,7 +414,7 @@ export function ContinuousNumberMappingForm(props: {
               })}
             </Box>
           </Tooltip>
-        </Box>
+        </Paper>
         <Box
           sx={{
             display: 'flex',
@@ -469,6 +471,85 @@ export function ContinuousNumberMappingForm(props: {
           />
         </Box>
       </Box>
+      <Paper
+        sx={{ p: 1, display: 'flex', flexDirection: 'column', width: 200 }}
+      >
+        <Typography sx={{ ml: 2 }} variant="body2">
+          Add handle
+        </Typography>
+        <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
+          <TextField
+            sx={{ width: 150 }}
+            size="small"
+            label={
+              <Typography variant="body2">{`${m.attribute} value`}</Typography>
+            }
+            variant="standard"
+            value={addHandleFormValue}
+            inputProps={{
+              sx: { p: 0.5, fontSize: 14, width: 50 },
+              inputMode: 'numeric',
+              pattern: '[0-9]*',
+              step: 0.1,
+            }}
+            onChange={(e) => {
+              const newValue = Number(e.target.value)
+              if (!isNaN(newValue)) {
+                setAddHandleFormValue(newValue)
+              }
+            }}
+          />
+          <TextField
+            sx={{ width: 150 }}
+            size="small"
+            label={
+              <Typography variant="body2">{`${props.visualProperty.displayName} value`}</Typography>
+            }
+            variant="standard"
+            value={addHandleFormVpValue}
+            inputProps={{
+              sx: { p: 0.5, fontSize: 14, width: 50 },
+              inputMode: 'numeric',
+              pattern: '[0-9]*',
+              step: 0.1,
+            }}
+            onChange={(e) => {
+              const newValue = Number(e.target.value)
+              if (!isNaN(newValue)) {
+                setAddHandleFormVpValue(newValue)
+              }
+            }}
+          />
+        </Box>
+        <Button
+          variant="contained"
+          onClick={() => {
+            let newHandleId = 0
+            const handleIds = new Set(handles.map((h) => h.id))
+            while (handleIds.has(newHandleId)) {
+              newHandleId++
+            }
+
+            const newHandle = {
+              id: newHandleId,
+              value: addHandleFormValue,
+              vpValue: addHandleFormVpValue,
+              pixelPosition: {
+                x: 0,
+                y: 0,
+              },
+            }
+            const newHandles = [...handles, newHandle].sort(
+              (a, b) => (a.value as number) - (b.value as number),
+            )
+            setHandles(newHandles)
+            updateContinuousMapping(min, max, newHandles)
+          }}
+          size="small"
+        >
+          Add Handle
+        </Button>
+      </Paper>
     </Box>
   )
 }
