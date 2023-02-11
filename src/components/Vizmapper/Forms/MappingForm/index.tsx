@@ -194,15 +194,21 @@ function MappingFormContent(props: {
           typesCanBeMapped(mappingType, c.type, props.visualProperty.type),
         )
       : columns
+
+  const mappingDimensions: Record<MappingFunctionType | '', [string, string]> =
+    {
+      [MappingFunctionType.Discrete]: ['400px', '600px'],
+      [MappingFunctionType.Continuous]: ['650px', '760px'],
+      [MappingFunctionType.Passthrough]: ['400px', '200px'],
+      '': ['400px', '200px'],
+    }
   return (
     <Box
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        width: mappingType === 'continuous' ? '600px' : '400px',
-        height: '600px',
-        minWidth: '30vw',
-        minHeight: '30vh',
+        width: mappingDimensions[mappingType][0],
+        height: mappingDimensions[mappingType][1],
         overflow: 'hidden',
         p: 1,
       }}

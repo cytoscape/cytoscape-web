@@ -28,7 +28,7 @@ import {
 } from '../../../../models/VisualStyleModel'
 import { ContinuousMappingFunction } from '../../../../models/VisualStyleModel/VisualMappingFunction'
 
-import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
+// import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { ContinuousFunctionControlPoint } from '../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { Handle } from './Handle'
@@ -59,10 +59,10 @@ export function ContinuousNumberMappingForm(props: {
     (state) => state.setContinuousMappingValues,
   )
 
-  const LINE_CHART_WIDTH = 425
-  const LINE_CHART_HEIGHT = 200
+  const LINE_CHART_WIDTH = 600
+  const LINE_CHART_HEIGHT = 300
   const LINE_CHART_MARGIN_LEFT = 50
-  const LINE_CHART_MARGIN_RIGHT = 10
+  const LINE_CHART_MARGIN_RIGHT = 50
   const LINE_CHART_MARGIN_TOP = 10
   const LINE_CHART_MARGIN_BOTTOM = 50
 
@@ -188,75 +188,52 @@ export function ContinuousNumberMappingForm(props: {
     [],
   )
 
+  React.useEffect(() => {
+    // if the mapping attribute changegs, recompute the continuous mapping
+    // min, max and handles
+    const nextMapping = props.visualProperty
+      .mapping as ContinuousMappingFunction
+    const nextMin = nextMapping.min ?? minState
+    const nextMax = nextMapping.max ?? maxState
+    const nextControlPoints =
+      nextMapping.controlPoints ?? ([] as ContinuousFunctionControlPoint[])
+
+    setMinState(nextMin)
+    setMaxState(nextMax)
+    setHandles(
+      [...nextControlPoints]
+        .sort((a, b) => (a.value as number) - (b.value as number))
+        .map((pt, index) => {
+          return {
+            ...pt,
+            id: index,
+            pixelPosition: {
+              x: 0,
+              y: 0,
+            },
+          }
+        }),
+    )
+  }, [props.visualProperty.mapping?.attribute])
+
   return (
-    <Box>
+    <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2 }}>
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          marginTop: 8,
+          justifyContent: 'center',
+          pt: 8,
+          pb: 4,
         }}
       >
-        <Box
+        <Paper
+          elevation={4}
           sx={{
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            p: 1,
-            m: 1,
+            position: 'relative',
           }}
         >
-          <VisualPropertyValueForm
-            currentValue={minState.vpValue}
-            visualProperty={props.visualProperty}
-            onValueChange={(newValue) => {
-              setMinState({
-                ...minState,
-                vpValue: newValue,
-              })
-
-              updateContinuousMapping(
-                {
-                  ...minState,
-                  vpValue: newValue,
-                },
-                maxState,
-                handles,
-              )
-            }}
-          />
-          <Typography variant="body2">Min</Typography>
-          <TextField
-            sx={{ width: 50 }}
-            inputProps={{
-              sx: { p: 0.5, fontSize: 14, width: 50 },
-              inputMode: 'numeric',
-              pattern: '[0-9]*',
-              step: 0.1,
-            }}
-            onChange={(e) => {
-              const newMin = Number(e.target.value)
-              if (!isNaN(newMin)) {
-                setMinState({
-                  ...minState,
-                  value: newMin,
-                })
-
-                updateContinuousMapping(
-                  {
-                    ...minState,
-                    value: newMin,
-                  },
-                  maxState,
-                  handles,
-                )
-              }
-            }}
-            value={minState.value}
-          />
-        </Box>
-        <Paper sx={{ display: 'flex', position: 'relative' }}>
           <Tooltip
             title="Drag handles or change the handle values to edit the mapping"
             placement="bottom"
@@ -337,6 +314,7 @@ export function ContinuousNumberMappingForm(props: {
                       }}
                     >
                       <Paper
+                        elevation={4}
                         sx={{
                           p: 0.5,
                           position: 'relative',
@@ -400,7 +378,6 @@ export function ContinuousNumberMappingForm(props: {
                                   p: 0.5,
                                   fontSize: 12,
                                   width: 50,
-                                  boxShadow: 1,
                                 },
                                 inputMode: 'numeric',
                                 pattern: '[0-9]*',
@@ -454,7 +431,6 @@ export function ContinuousNumberMappingForm(props: {
                                   p: 0.5,
                                   fontSize: 12,
                                   width: 50,
-                                  boxShadow: 1,
                                 },
                                 inputMode: 'numeric',
                                 pattern: '[0-9]*',
@@ -509,156 +485,272 @@ export function ContinuousNumberMappingForm(props: {
             </Box>
           </Tooltip>
         </Paper>
-        <Box
+      </Box>
+      <Box
+        sx={{ display: 'flex', p: 1, mt: 1, justifyContent: 'space-evenly' }}
+      >
+        <Paper
           sx={{
+            p: 1,
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            p: 1,
-            m: 1,
+            width: 180,
           }}
         >
-          <VisualPropertyValueForm
-            currentValue={maxState.vpValue}
-            visualProperty={props.visualProperty}
-            onValueChange={(newValue) => {
-              setMaxState({
-                ...maxState,
-                vpValue: newValue,
-              })
-              updateContinuousMapping(minState, maxState, handles)
-            }}
-          />
-          <Typography variant="body2">Max</Typography>
-          <TextField
-            sx={{ width: 50 }}
-            inputProps={{
-              sx: { p: 0.5, fontSize: 14, width: 50 },
-              inputMode: 'numeric',
-              pattern: '[0-9]*',
-              step: 0.1,
-            }}
-            onChange={(e) => {
-              const newMax = Number(e.target.value)
-              if (!isNaN(newMax)) {
-                setMaxState({
-                  ...maxState,
-                  value: newMax,
-                })
-
-                // const newHandles = handles.map((h) => {
-                //   const pixelPosX =
-                //     xMapper([h.value as number, h.vpValue as number]) +
-                //     LINE_CHART_MARGIN_LEFT
-
-                //   const newDomain = [
-                //     minState.value as number,
-                //     ...handles.map((h) => h.value as number),
-                //     newMax,
-                //   ]
-                //   const newXScale = visXScaleLinear({
-                //     range: [0, xMax],
-                //     domain: extent(newDomain) as [number, number],
-                //   })
-
-                //   const newValue = newXScale.invert(
-                //     pixelPosX - LINE_CHART_MARGIN_LEFT,
-                //   )
-                //   console.log(newValue)
-
-                //   return {
-                //     ...h,
-                //     value: newValue,
-                //   }
-                // })
-
-                // setHandles(newHandles)
-                updateContinuousMapping(minState, maxState, handles)
+          <Typography>Add handle</Typography>
+          <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                pt: 1,
+                pb: 1,
+              }}
+            >
+              <Typography variant="body2">{m.attribute}:</Typography>
+              <TextField
+                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                inputProps={{
+                  sx: {
+                    p: 0.5,
+                    fontSize: 12,
+                    width: 50,
+                  },
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                  step: 0.1,
+                }}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  if (!isNaN(newValue)) {
+                    setAddHandleFormValue(newValue)
+                  }
+                }}
+                value={addHandleFormValue}
+              />
+            </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                pt: 1,
+                pb: 1,
+              }}
+            >
+              <Typography variant="body2">
+                {props.visualProperty.displayName}:
+              </Typography>
+              <TextField
+                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                inputProps={{
+                  sx: {
+                    p: 0.5,
+                    fontSize: 12,
+                    width: 50,
+                  },
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                  step: 0.1,
+                }}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  if (!isNaN(newValue)) {
+                    setAddHandleFormVpValue(newValue)
+                  }
+                }}
+                value={addHandleFormVpValue}
+              />
+            </Box>
+          </Box>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              let newHandleId = 0
+              const handleIds = new Set(handles.map((h) => h.id))
+              while (handleIds.has(newHandleId)) {
+                newHandleId++
               }
+
+              const newHandle = {
+                id: newHandleId,
+                value: addHandleFormValue,
+                vpValue: addHandleFormVpValue,
+                pixelPosition: {
+                  x: 0,
+                  y: 0,
+                },
+              }
+              const newHandles = [...handles, newHandle].sort(
+                (a, b) => (a.value as number) - (b.value as number),
+              )
+              setHandles(newHandles)
+              updateContinuousMapping(min, max, newHandles)
             }}
-            value={maxState.value}
-          />
-        </Box>
+            size="small"
+          >
+            Add Handle
+          </Button>
+        </Paper>
+
+        <Paper sx={{ p: 1 }}>
+          <Typography>Mapping Settings</Typography>
+
+          <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
+            <Typography variant="body2">Domain</Typography>
+            <Box sx={{ p: 1, display: 'flex' }}>
+              <Typography variant="body1">[</Typography>
+              <TextField
+                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                inputProps={{
+                  sx: {
+                    p: 0.5,
+                    fontSize: 12,
+                    width: 50,
+                  },
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                  step: 0.1,
+                }}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  if (!isNaN(newValue)) {
+                    setMinState({
+                      ...minState,
+                      value: newValue,
+                    })
+
+                    updateContinuousMapping(minState, maxState, handles)
+                  }
+                }}
+                value={minState.value}
+              />
+              <Typography variant="body1">, </Typography>
+              <TextField
+                value={maxState.value}
+                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                inputProps={{
+                  sx: {
+                    p: 0.5,
+                    fontSize: 12,
+                    width: 50,
+                  },
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                  step: 0.1,
+                }}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  if (!isNaN(newValue)) {
+                    setMaxState({
+                      ...maxState,
+                      value: newValue,
+                    })
+
+                    // const newHandles = handles.map((h) => {
+                    //   const pixelPosX =
+                    //     xMapper([h.value as number, h.vpValue as number]) +
+                    //     LINE_CHART_MARGIN_LEFT
+
+                    //   const newDomain = [
+                    //     minState.value as number,
+                    //     ...handles.map((h) => h.value as number),
+                    //     newMax,
+                    //   ]
+                    //   const newXScale = visXScaleLinear({
+                    //     range: [0, xMax],
+                    //     domain: extent(newDomain) as [number, number],
+                    //   })
+
+                    //   const newValue = newXScale.invert(
+                    //     pixelPosX - LINE_CHART_MARGIN_LEFT,
+                    //   )
+                    //   console.log(newValue)
+
+                    //   return {
+                    //     ...h,
+                    //     value: newValue,
+                    //   }
+                    // })
+
+                    // setHandles(newHandles)
+
+                    updateContinuousMapping(minState, maxState, handles)
+                  }
+                }}
+              />
+              <Typography variant="body1">]</Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', p: 1, justifyContent: 'space-between' }}>
+            <Typography variant="body2">
+              {`${props.visualProperty.displayName} for values < domain min(${
+                minState.value as number
+              })`}
+            </Typography>
+            <TextField
+              sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+              inputProps={{
+                sx: {
+                  p: 0.5,
+                  fontSize: 12,
+                  width: 50,
+                },
+                inputMode: 'numeric',
+                pattern: '[0-9]*',
+                step: 0.1,
+              }}
+              onChange={(e) => {
+                const newValue = Number(e.target.value)
+                if (!isNaN(newValue)) {
+                  setMinState({
+                    ...minState,
+                    vpValue: newValue,
+                  })
+
+                  updateContinuousMapping(minState, maxState, handles)
+                }
+              }}
+              value={minState.vpValue}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', p: 1, justifyContent: 'space-between' }}>
+            <Typography variant="body2">
+              {`${props.visualProperty.displayName} for values > domain max(${
+                maxState.value as number
+              })`}
+            </Typography>
+
+            <TextField
+              sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+              inputProps={{
+                sx: {
+                  p: 0.5,
+                  fontSize: 12,
+                  width: 50,
+                },
+                inputMode: 'numeric',
+                pattern: '[0-9]*',
+                step: 0.1,
+              }}
+              onChange={(e) => {
+                const newValue = Number(e.target.value)
+                if (!isNaN(newValue)) {
+                  setMinState({
+                    ...maxState,
+                    vpValue: newValue,
+                  })
+
+                  updateContinuousMapping(minState, maxState, handles)
+                }
+              }}
+              value={maxState.vpValue}
+            />
+          </Box>
+        </Paper>
       </Box>
-      <Paper
-        sx={{ p: 1, display: 'flex', flexDirection: 'column', width: 200 }}
-      >
-        <Typography sx={{ ml: 2 }} variant="body2">
-          Add handle
-        </Typography>
-        <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
-          <TextField
-            sx={{ width: 150 }}
-            size="small"
-            label={
-              <Typography variant="body2">{`${m.attribute} value`}</Typography>
-            }
-            variant="standard"
-            value={addHandleFormValue}
-            inputProps={{
-              sx: { p: 0.5, fontSize: 14, width: 50 },
-              inputMode: 'numeric',
-              pattern: '[0-9]*',
-              step: 0.1,
-            }}
-            onChange={(e) => {
-              const newValue = Number(e.target.value)
-              if (!isNaN(newValue)) {
-                setAddHandleFormValue(newValue)
-              }
-            }}
-          />
-          <TextField
-            sx={{ width: 150 }}
-            size="small"
-            label={
-              <Typography variant="body2">{`${props.visualProperty.displayName} value`}</Typography>
-            }
-            variant="standard"
-            value={addHandleFormVpValue}
-            inputProps={{
-              sx: { p: 0.5, fontSize: 14, width: 50 },
-              inputMode: 'numeric',
-              pattern: '[0-9]*',
-              step: 0.1,
-            }}
-            onChange={(e) => {
-              const newValue = Number(e.target.value)
-              if (!isNaN(newValue)) {
-                setAddHandleFormVpValue(newValue)
-              }
-            }}
-          />
-        </Box>
-        <Button
-          variant="contained"
-          onClick={() => {
-            let newHandleId = 0
-            const handleIds = new Set(handles.map((h) => h.id))
-            while (handleIds.has(newHandleId)) {
-              newHandleId++
-            }
-
-            const newHandle = {
-              id: newHandleId,
-              value: addHandleFormValue,
-              vpValue: addHandleFormVpValue,
-              pixelPosition: {
-                x: 0,
-                y: 0,
-              },
-            }
-            const newHandles = [...handles, newHandle].sort(
-              (a, b) => (a.value as number) - (b.value as number),
-            )
-            setHandles(newHandles)
-            updateContinuousMapping(min, max, newHandles)
-          }}
-          size="small"
-        >
-          Add Handle
-        </Button>
-      </Paper>
-    </Box>
+    </Paper>
   )
 }

@@ -49,7 +49,7 @@ export function ContinuousColorMappingForm(props: {
   const [minState, setMinState] = React.useState(min)
   const [maxState, setMaxState] = React.useState(max)
 
-  const NUM_GRADIENT_STEPS = 100
+  const NUM_GRADIENT_STEPS = 120
   const GRADIENT_STEP_WIDTH = 4
 
   const setContinuousMappingValues = useVisualStyleStore(
