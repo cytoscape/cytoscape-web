@@ -1,10 +1,25 @@
-import { Table } from 'dexie'
 import { Cx2 } from '../../utils/cx/Cx2'
 import { Network } from '../NetworkModel'
+import { Table } from '../TableModel'
 import { NetworkView } from '../ViewModel'
 import { VisualProperty } from './VisualProperty'
 import { VisualPropertyValueType } from './VisualPropertyValue'
 import { VisualStyle } from './VisualStyle'
+
+export interface NetworkViewSources {
+  /**
+   * Network data to be used to generate view model
+   */
+  network: Network
+
+  /**
+   * Optional network view if there is an existing one
+   */
+  networkView?: NetworkView
+  nodeTable: Table
+  edgeTable: Table
+  visualStyle: VisualStyle
+}
 
 export interface VisualStyleFn {
   // Create an empty VisualStyle
@@ -17,19 +32,11 @@ export interface VisualStyleFn {
    * Compute the view model for the given network from the
    * visual style and network data tables
    *
-   * @param network
-   * @param nodeTable
-   * @param edgeTable
-   * @param visualStyle
+   * @param data All data objects required to create
    *
    * @returns NetworkView
    */
-  applyVisualStyle: (
-    network: Network,
-    nodeTable: Table,
-    edgeTable: Table,
-    visualStyle: VisualStyle,
-  ) => NetworkView
+  applyVisualStyle: (data: NetworkViewSources) => NetworkView
 
   nodeVisualProperties: (
     visualStyle: VisualStyle,

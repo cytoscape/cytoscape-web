@@ -9,11 +9,13 @@ import Cytoscape, {
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import VisualStyleFn from '../../../models/VisualStyleModel'
+import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { Network } from '../../../models/NetworkModel'
 import { ReactElement, useEffect, useRef, useState } from 'react'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
+import { VisualStyleFnImpl as Vsf } from '../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
+import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 interface NetworkRendererProps {
   network: Network
   setIsBusy: (isBusy: boolean) => void
@@ -27,10 +29,11 @@ export const CyjsRenderer = ({
 }: NetworkRendererProps): ReactElement => {
   const { id } = network
 
-  // Optimaization to avoid re-rendering for the same network data
+  // Optimization to avoid re-rendering for the same network data
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
 
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
+
   const tables = useTableStore((state) => state.tables)
   const viewModels = useViewModelStore((state) => state.viewModels)
 
@@ -46,7 +49,7 @@ export const CyjsRenderer = ({
   const edgeViews = networkView?.edgeViews
   const hoveredElement = networkView?.hoveredElement
 
-  const vs = visualStyles[id]
+  const vs: VisualStyle = visualStyles[id]
   const table = tables[id]
 
   // TODO: use types from 3rd party library?
@@ -61,12 +64,26 @@ export const CyjsRenderer = ({
     cy.removeAllListeners()
     cy.startBatch()
     cy.remove('*')
+
+    const data: NetworkViewSources = {
+      network,
+      networkView,
+      nodeTable: table.nodeTable,
+      edgeTable: table.edgeTable,
+      visualStyle: vs,
+    }
+    const updatedNetworkView: NetworkView = Vsf.applyVisualStyle(data)
+
+    console.log(updatedNetworkView)
+
+    // TODO: Need to replace this
     const { cyNodes, cyEdges } = VisualStyleFn.createCyJsStyleSheetView(
       vs,
       network,
       table.nodeTable,
       table.edgeTable,
-      networkView,
+      // networkView,
+      updatedNetworkView,
     )
     cy.add(cyNodes)
     cy.add(cyEdges)
@@ -123,24 +140,24 @@ export const CyjsRenderer = ({
     // e.g. if a node has a bypass and then the bypass was removed, we need to reset the style
     // cy.nodes().removeStyle()
     // cy.edges().removeStyle()
-    const { defaultStyle, nodeBypasses, edgeBypasses } =
-      VisualStyleFn.createCyJsStyleSheetView(
-        vs,
-        network,
-        table.nodeTable,
-        table.edgeTable,
-        networkView,
-      )
+    // const { defaultStyle, nodeBypasses, edgeBypasses } =
+    //   VisualStyleFn.createCyJsStyleSheetView(
+    //     vs,
+    //     network,
+    //     table.nodeTable,
+    //     table.edgeTable,
+    //     networkView,
+    //   )
     console.log('Style Apply', performance.now() - t1)
 
     // apply bypasses
-    Object.entries(nodeBypasses).forEach(([nodeId, bypass]) => {
-      cy.getElementById(nodeId).style(bypass)
-    })
+    // Object.entries(nodeBypasses).forEach(([nodeId, bypass]) => {
+    //   cy.getElementById(nodeId).style(bypass)
+    // })
 
-    Object.entries(edgeBypasses).forEach(([edgeId, bypass]) => {
-      cy.getElementById(edgeId).style(bypass)
-    })
+    // Object.entries(edgeBypasses).forEach(([edgeId, bypass]) => {
+    //   cy.getElementById(edgeId).style(bypass)
+    // })
 
     // Select elements based on network view state
     const { selectedNodes, selectedEdges } = networkView
@@ -157,7 +174,7 @@ export const CyjsRenderer = ({
 
     cy.endBatch()
 
-    cy.style(defaultStyle)
+    // cy.style(defaultStyle)
     const t2 = performance.now()
     console.log('Style applied in', t2 - t1)
   }

@@ -1,4 +1,4 @@
-import { Row } from '../../TableModel'
+import { IdType } from '../../IdType'
 import { VisualProperty } from '../VisualProperty'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 
@@ -9,12 +9,10 @@ import { VisualPropertyValueType } from '../VisualPropertyValue'
  * @param value
  */
 export const applyVisualProperty = (
+  id: IdType,
   vp: VisualProperty<VisualPropertyValueType>,
-  row: Row,
 ): VisualPropertyValueType => {
   const { mapping, bypassMap, defaultValue } = vp
-
-  const { id } = row
 
   // 1. If bypass is available, use it as-is
   if (bypassMap.has(id)) {

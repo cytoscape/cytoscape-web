@@ -3,12 +3,16 @@ import { Bypass } from './Bypass'
 import { VisualMappingFunction } from './VisualMappingFunction'
 import { VisualPropertyGroup } from './VisualPropertyGroup'
 import { VisualPropertyValueTypeString } from './VisualPropertyValueTypeString'
-// include both the visualpropertyvaluetype and the input value
+
+/**
+ * Visual property contains all of default value, mapping,
+ * and bypass.
+ */
 export interface VisualProperty<T> {
-  name: VisualPropertyName
-  group: VisualPropertyGroup
-  displayName: string
-  type: VisualPropertyValueTypeString
+  readonly name: VisualPropertyName
+  readonly group: VisualPropertyGroup
+  readonly displayName: string
+  readonly type: VisualPropertyValueTypeString
   defaultValue: T
   mapping?: VisualMappingFunction
   bypassMap: Bypass<T>

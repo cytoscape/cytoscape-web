@@ -1,68 +1,88 @@
-import { Table } from 'dexie'
-import { IdType } from '../../IdType'
-import { Network } from '../../NetworkModel'
-import { ValueType } from '../../TableModel'
-import { EdgeView, NetworkView, NodeView } from '../../ViewModel'
-import { DiscreteMappingFunction } from '../VisualMappingFunction'
+import { Aspect } from '../../../utils/cx/Cx2/Aspect'
+import { CxDescriptor } from '../../../utils/cx/Cx2/CxDescriptor'
+import { MetaData } from '../../../utils/cx/Cx2/MetaData'
+import { Status } from '../../../utils/cx/Cx2/Status'
+import { NetworkView } from '../../ViewModel'
+import { VisualProperty } from '../VisualProperty'
+import { VisualPropertyGroup } from '../VisualPropertyGroup'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualStyle } from '../VisualStyle'
+import { NetworkViewSources, VisualStyleFn } from '../VisualStyleFn'
+import { defaultVisualStyle } from './DefaultVisualStyle'
+import { createNewNetworkView } from './visualStyle-utils'
 
-export const applyVisualStyle = (
-  network: Network,
-  nodeTable: Table,
-  edgeTable: Table,
-  visualStyle: VisualStyle,
-): NetworkView => {
-  const { nodes, edges } = network
+const applyVisualStyle = (data: NetworkViewSources): NetworkView => {
+  const { network, visualStyle, nodeTable, edgeTable } = data
 
-  const nodeViews: Record<IdType, NodeView> = {}
-  const edgeViews: Record<IdType, EdgeView> = {}
+  const newNetworkView: NetworkView = createNewNetworkView(
+    network,
+    visualStyle,
+    nodeTable,
+    edgeTable,
+  )
 
-  nodes.forEach((node) => {
-    const { id } = node
-    const nodeView = {
-      id,
-      values: new Map(),
-      x: 0,
-      y: 0,
-    }
-    nodeViews[id] = nodeView
-  })
-
-  edges.forEach((edge) => {
-    const { id } = edge
-    const edgeView = {
-      id,
-      values: new Map(),
-    }
-    edgeViews[id] = edgeView
-  })
-
-  return {
-    id: network.id,
-    values: new Map(),
-    nodeViews,
-    edgeViews,
-    selectedNodes: [],
-    selectedEdges: [],
-  }
+  return newNetworkView
 }
 
-export const applyDiscrete = (
-  discreteMapper: DiscreteMappingFunction,
-  attributeValue: ValueType,
-): VisualPropertyValueType => {
-  const vpValue = discreteMapper.vpValueMap.get(attributeValue)
-  return vpValue !== undefined ? vpValue : discreteMapper.defaultValue
-}
-
-// Passthrough is an identity function.
-export const applyPassthrough = (
-  attributeValue: ValueType,
-): VisualPropertyValueType => attributeValue as VisualPropertyValueType
-
-// export const apply = (fn: VisualMappingFunction): VisualPropertyValueType => {
-//   if(fn.type === 'discrete') {
-//     return applyDiscrete(fn, fn.attributeValue)
+// export const createDiscreteMappingFromCx = (
+//   cxMapping: CXDiscreteMappingFunction<CXVisualPropertyValue>,
+// ): DiscreteMappingFunction => {
+//   const vpValueMap = new Map<ValueType, VisualPropertyValueType>()
+//   cxMapping.definition.map.forEach((mapEntry) => {
+//     const { v, vp } = mapEntry
+//     vpValueMap.set(v, converter.valueConverter(vp))
+//   })
+//   return {
+//     type: MappingFunctionType.Discrete,
+//     attribute: cxMapping.definition.attribute,
+//     vpValueMap,
+//     defaultValue:
 //   }
 // }
+
+const nodeVisualProperties = (
+  visualStyle: VisualStyle,
+): Array<VisualProperty<VisualPropertyValueType>> => {
+  return Object.values(visualStyle).filter(
+    (value) => value.group === VisualPropertyGroup.Node,
+  )
+}
+
+const edgeVisualProperties = (
+  visualStyle: VisualStyle,
+): Array<VisualProperty<VisualPropertyValueType>> => {
+  return Object.values(visualStyle).filter(
+    (value) => value.group === VisualPropertyGroup.Edge,
+  )
+}
+
+const networkVisualProperties = (
+  visualStyle: VisualStyle,
+): Array<VisualProperty<VisualPropertyValueType>> => {
+  return Object.values(visualStyle).filter(
+    (value) => value.group === VisualPropertyGroup.Network,
+  )
+}
+
+const createVisualStyle = (): VisualStyle => {
+  // create new copy of the default style instead of returning the same instance
+  return { ...defaultVisualStyle }
+}
+
+export const VisualStyleFnImpl: VisualStyleFn = {
+  createVisualStyle,
+  createVisualStyleFromCx: function (
+    cx:
+      | [CxDescriptor, ...Aspect[], Status]
+      | [CxDescriptor, ...Aspect[], MetaData, Status]
+      | [CxDescriptor, MetaData, ...Aspect[], Status]
+      | [CxDescriptor, MetaData, ...Aspect[], MetaData, Status],
+  ): VisualStyle {
+    throw new Error('Function not implemented.')
+  },
+
+  applyVisualStyle,
+  nodeVisualProperties,
+  edgeVisualProperties,
+  networkVisualProperties,
+}
