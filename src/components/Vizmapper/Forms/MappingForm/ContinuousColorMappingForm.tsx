@@ -8,6 +8,10 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material'
+import { scaleLinear as visXScaleLinear } from '@visx/scale'
+import { AxisBottom } from '@visx/axis'
+import { extent } from 'd3-array'
+
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import Delete from '@mui/icons-material/CancelOutlined'
 import { scaleLinear } from 'd3-scale'
@@ -56,6 +60,7 @@ export function ContinuousColorMappingForm(props: {
 
   const NUM_GRADIENT_STEPS = 144
   const GRADIENT_STEP_WIDTH = 4
+  const GRADIENT_HEIGHT = 100
 
   const setContinuousMappingValues = useVisualStyleStore(
     (state) => state.setContinuousMappingValues,
@@ -120,6 +125,16 @@ export function ContinuousColorMappingForm(props: {
       maxState.vpValue as string,
     ],
   )
+
+  const valueDomain = [
+    minState.value as number,
+    ...handles.map((h) => h.value as number),
+    maxState.value as number,
+  ]
+  const xScale = visXScaleLinear({
+    range: [0, NUM_GRADIENT_STEPS * GRADIENT_STEP_WIDTH],
+    domain: extent(valueDomain) as [number, number],
+  })
 
   const updateContinuousMapping = React.useMemo(
     () =>
@@ -199,7 +214,7 @@ export function ContinuousColorMappingForm(props: {
             alignItems: 'center',
             position: 'relative',
             userSelect: 'none',
-            pb: 2,
+            pb: 6,
           }}
           elevation={4}
         >
@@ -268,12 +283,29 @@ export function ContinuousColorMappingForm(props: {
                         key={i}
                         sx={{
                           width: GRADIENT_STEP_WIDTH,
-                          height: 100,
+                          height: GRADIENT_HEIGHT,
                           backgroundColor: nextColor,
                         }}
                       ></Box>
                     )
                   })}
+                <Box sx={{ position: 'absolute' }}>
+                  <svg
+                    width={30 + NUM_GRADIENT_STEPS * GRADIENT_STEP_WIDTH}
+                    height={100 + GRADIENT_HEIGHT}
+                  >
+                    <AxisBottom
+                      scale={xScale}
+                      top={GRADIENT_HEIGHT}
+                      labelProps={{
+                        fontSize: 14,
+                        textAnchor: 'middle',
+                      }}
+                      label={m.attribute}
+                      stroke={'#1b1a1e'}
+                    />
+                  </svg>
+                </Box>
               </Paper>
             </Tooltip>
             {handles.map((h) => {
@@ -439,9 +471,6 @@ export function ContinuousColorMappingForm(props: {
                 </Draggable>
               )
             })}
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <Typography variant="body1">{m.attribute}</Typography>
           </Box>
         </Paper>
       </Box>
