@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from '@mui/material'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
-import Delete from '@mui/icons-material/Close'
+import Delete from '@mui/icons-material/CancelOutlined'
 import { scaleLinear } from 'd3-scale'
 import { color } from 'd3-color'
 import Draggable from 'react-draggable'
@@ -49,7 +49,12 @@ export function ContinuousColorMappingForm(props: {
   const [minState, setMinState] = React.useState(min)
   const [maxState, setMaxState] = React.useState(max)
 
-  const NUM_GRADIENT_STEPS = 120
+  const [addHandleFormValue, setAddHandleFormValue] = React.useState(0)
+  const [addHandleFormVpValue, setAddHandleFormVpValue] = React.useState(
+    props.visualProperty.defaultValue,
+  )
+
+  const NUM_GRADIENT_STEPS = 144
   const GRADIENT_STEP_WIDTH = 4
 
   const setContinuousMappingValues = useVisualStyleStore(
@@ -177,288 +182,169 @@ export function ContinuousColorMappingForm(props: {
   }, [props.visualProperty.mapping?.attribute])
 
   return (
-    <Box>
+    <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2 }}>
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          marginTop: 12,
-          justifyContent: 'space-between',
+          pt: 13.5,
+          mb: 3,
+          justifyContent: 'center',
         }}
       >
-        <Box
+        <Paper
           sx={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            p: 1,
-            m: 1,
+            position: 'relative',
+            userSelect: 'none',
+            pb: 2,
           }}
+          elevation={4}
         >
-          <VisualPropertyValueForm
-            currentValue={minState.vpValue}
-            visualProperty={props.visualProperty}
-            onValueChange={(newValue) => {
-              setMinState({
-                ...minState,
-                vpValue: newValue,
-              })
-
-              updateContinuousMapping(
-                {
-                  ...minState,
-                  vpValue: newValue,
-                },
-                maxState,
-                handles,
-              )
-            }}
-          />
-          <Typography variant="body2">Min</Typography>
-          <TextField
-            sx={{ width: 50 }}
-            inputProps={{
-              sx: { p: 0.5, fontSize: 14, width: 50 },
-              inputMode: 'numeric',
-              pattern: '[0-9]*',
-              step: 0.1,
-            }}
-            onChange={(e) => {
-              const newMin = Number(e.target.value)
-              if (!isNaN(newMin)) {
-                setMinState({
-                  ...minState,
-                  value: newMin,
-                })
-
-                const newHandles = handles.map((h) => {
-                  return {
-                    ...h,
-                    value: pixelToValue(
-                      [0, NUM_GRADIENT_STEPS],
-                      [newMin, maxState.value as number],
-                      h.pixelPosition.x / GRADIENT_STEP_WIDTH,
-                    ),
-                  }
-                })
-
-                setHandles(newHandles)
-
-                updateContinuousMapping(
-                  {
-                    ...minState,
-                    value: newMin,
-                  },
-                  maxState,
-                  newHandles,
-                )
-              }
-            }}
-            value={minState.value}
-          />
-        </Box>
-        <Paper sx={{ display: 'flex', position: 'relative' }}>
-          <Tooltip title="Click to add new handle" placement="top" followCursor>
-            <Box
-              sx={{
-                display: 'flex',
-                position: 'relative',
-                '&:hover': { cursor: 'copy' },
-              }}
-              onClickCapture={(e) => {
-                const gradientPositionX =
-                  e.clientX - e.currentTarget.getBoundingClientRect().x
-                let newHandleId = 0
-                while (handleIds.has(newHandleId)) {
-                  newHandleId++
-                }
-                const newHandleValue = pixelToValue(
-                  [0, NUM_GRADIENT_STEPS],
-                  [minState.value as number, maxState.value as number],
-                  gradientPositionX / GRADIENT_STEP_WIDTH,
-                )
-                const newHandleVpValue =
-                  color(mapper(newHandleValue))?.formatHex() ?? '#000000'
-                const newHandlePixelPosition = {
-                  x: valueToPixel(
-                    [minState.value as number, maxState.value as number],
-                    [0, NUM_GRADIENT_STEPS],
-                    GRADIENT_STEP_WIDTH,
-                    newHandleValue,
-                  ),
-                  y: 0,
-                }
-
-                const newHandle = {
-                  id: newHandleId,
-                  value: newHandleValue,
-                  vpValue: newHandleVpValue,
-                  pixelPosition: newHandlePixelPosition,
-                }
-                const newHandles = [...handles, newHandle].sort(
-                  (a, b) => (a.value as number) - (b.value as number),
-                )
-                setHandles(newHandles)
-                updateContinuousMapping(min, max, newHandles)
-              }}
+          <Box sx={{ p: 1 }}>
+            <Tooltip
+              title="Click to add new handle"
+              placement="top"
+              followCursor
             >
-              {Array(NUM_GRADIENT_STEPS)
-                .fill(0)
-                .map((_, i) => {
-                  const value = pixelToValue(
-                    [0, NUM_GRADIENT_STEPS],
-                    [minState.value as number, maxState.value as number],
-                    i,
-                  )
-                  const nextColor =
-                    color(mapper(value))?.formatHex() ?? '#000000'
-
-                  return (
-                    <Box
-                      key={i}
-                      sx={{
-                        width: GRADIENT_STEP_WIDTH,
-                        height: 100,
-                        backgroundColor: nextColor,
-                      }}
-                    ></Box>
-                  )
-                })}
-            </Box>
-          </Tooltip>
-          {handles.map((h) => {
-            return (
-              <Draggable
-                key={h.id}
-                bounds="parent"
-                axis="x"
-                handle=".handle"
-                onDrag={(e, data) => {
-                  const newRangePosition = pixelToValue(
-                    [0, NUM_GRADIENT_STEPS],
-                    [minState.value as number, maxState.value as number],
-                    data.x / GRADIENT_STEP_WIDTH,
-                  )
-
-                  const handleIndex = handles.findIndex(
-                    (handle) => handle.id === h.id,
-                  )
-                  if (handleIndex >= 0) {
-                    const newHandles = [...handles]
-                    newHandles[handleIndex].value = newRangePosition
-                    newHandles.sort(
-                      (a, b) => (a.value as number) - (b.value as number),
-                    )
-                    setHandles(newHandles)
-                    updateContinuousMapping(minState, maxState, newHandles)
-                  }
+              <Paper
+                sx={{
+                  display: 'flex',
+                  position: 'relative',
+                  '&:hover': { cursor: 'copy' },
                 }}
-                position={{
-                  x: valueToPixel(
-                    [minState.value as number, maxState.value as number],
+                onClickCapture={(e) => {
+                  const gradientPositionX =
+                    e.clientX - e.currentTarget.getBoundingClientRect().x
+                  let newHandleId = 0
+                  while (handleIds.has(newHandleId)) {
+                    newHandleId++
+                  }
+                  const newHandleValue = pixelToValue(
                     [0, NUM_GRADIENT_STEPS],
-                    GRADIENT_STEP_WIDTH,
-                    h.value as number,
-                  ),
-                  y: 0,
+                    [minState.value as number, maxState.value as number],
+                    gradientPositionX / GRADIENT_STEP_WIDTH,
+                  )
+                  const newHandleVpValue =
+                    color(mapper(newHandleValue))?.formatHex() ?? '#000000'
+                  const newHandlePixelPosition = {
+                    x: valueToPixel(
+                      [minState.value as number, maxState.value as number],
+                      [0, NUM_GRADIENT_STEPS],
+                      GRADIENT_STEP_WIDTH,
+                      newHandleValue,
+                    ),
+                    y: 0,
+                  }
+
+                  const newHandle = {
+                    id: newHandleId,
+                    value: newHandleValue,
+                    vpValue: newHandleVpValue,
+                    pixelPosition: newHandlePixelPosition,
+                  }
+                  const newHandles = [...handles, newHandle].sort(
+                    (a, b) => (a.value as number) - (b.value as number),
+                  )
+                  setHandles(newHandles)
+                  updateContinuousMapping(min, max, newHandles)
                 }}
               >
-                <Box
-                  sx={{
-                    width: 2,
-                    height: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    position: 'absolute',
-                    zIndex: 1,
+                {Array(NUM_GRADIENT_STEPS)
+                  .fill(0)
+                  .map((_, i) => {
+                    const value = pixelToValue(
+                      [0, NUM_GRADIENT_STEPS],
+                      [minState.value as number, maxState.value as number],
+                      i,
+                    )
+                    const nextColor =
+                      color(mapper(value))?.formatHex() ?? '#000000'
+
+                    return (
+                      <Box
+                        key={i}
+                        sx={{
+                          width: GRADIENT_STEP_WIDTH,
+                          height: 100,
+                          backgroundColor: nextColor,
+                        }}
+                      ></Box>
+                    )
+                  })}
+              </Paper>
+            </Tooltip>
+            {handles.map((h) => {
+              return (
+                <Draggable
+                  key={h.id}
+                  bounds="parent"
+                  axis="x"
+                  handle=".handle"
+                  onDrag={(e, data) => {
+                    const newRangePosition = pixelToValue(
+                      [0, NUM_GRADIENT_STEPS],
+                      [minState.value as number, maxState.value as number],
+                      data.x / GRADIENT_STEP_WIDTH,
+                    )
+
+                    const handleIndex = handles.findIndex(
+                      (handle) => handle.id === h.id,
+                    )
+                    if (handleIndex >= 0) {
+                      const newHandles = [...handles]
+                      newHandles[handleIndex].value = newRangePosition
+                      newHandles.sort(
+                        (a, b) => (a.value as number) - (b.value as number),
+                      )
+                      setHandles(newHandles)
+                      updateContinuousMapping(minState, maxState, newHandles)
+                    }
+                  }}
+                  position={{
+                    x: valueToPixel(
+                      [minState.value as number, maxState.value as number],
+                      [0, NUM_GRADIENT_STEPS],
+                      GRADIENT_STEP_WIDTH,
+                      h.value as number,
+                    ),
+                    y: 0,
                   }}
                 >
-                  <Paper
+                  <Box
                     sx={{
-                      p: 1,
-                      position: 'relative',
-                      top: -100,
-                      zIndex: 2,
+                      width: 2,
+                      height: 1,
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
+                      position: 'absolute',
+                      zIndex: 1,
                     }}
                   >
-                    <IconButton
-                      sx={{ position: 'absolute', top: -20, right: -16 }}
-                      onClick={() => {
-                        const handleIndex = handles.findIndex(
-                          (handle) => handle.id === h.id,
-                        )
-                        if (handleIndex >= 0) {
-                          const newHandles = [...handles]
-                          newHandles.splice(handleIndex, 1)
-                          setHandles(newHandles)
-                          updateContinuousMapping(
-                            minState,
-                            maxState,
-                            newHandles,
-                          )
-                        }
+                    <Paper
+                      elevation={4}
+                      sx={{
+                        p: 0.5,
+                        position: 'relative',
+                        top: -200,
+                        zIndex: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
                       }}
                     >
-                      <Delete />
-                    </IconButton>
-
-                    <VisualPropertyValueForm
-                      currentValue={h.vpValue ?? null}
-                      visualProperty={props.visualProperty}
-                      onValueChange={(newValue) => {
-                        const handleIndex = handles.findIndex(
-                          (handle) => handle.id === h.id,
-                        )
-                        if (handleIndex >= 0) {
-                          const newHandles = [...handles]
-                          newHandles[handleIndex].vpValue = newValue
-                          setHandles(newHandles)
-                          updateContinuousMapping(
-                            minState,
-                            maxState,
-                            newHandles,
+                      <IconButton
+                        sx={{ position: 'absolute', top: -20, right: -16 }}
+                        onClick={() => {
+                          const handleIndex = handles.findIndex(
+                            (handle) => handle.id === h.id,
                           )
-                        }
-                      }}
-                    />
-                    <TextField
-                      sx={{ width: 50, mt: 1 }}
-                      inputProps={{
-                        sx: { p: 0.5, fontSize: 14, width: 50 },
-                        inputMode: 'numeric',
-                        pattern: '[0-9]*',
-                        step: 0.1,
-                      }}
-                      onChange={(e) => {
-                        const handleIndex = handles.findIndex(
-                          (handle) => handle.id === h.id,
-                        )
-                        if (handleIndex >= 0) {
-                          const newHandles = [...handles]
-                          const newVal = Number(e.target.value)
-
-                          if (!isNaN(newVal)) {
-                            newHandles[handleIndex].value = newVal
-                            newHandles[handleIndex].pixelPosition = {
-                              x: valueToPixel(
-                                [
-                                  minState.value as number,
-                                  maxState.value as number,
-                                ],
-                                [0, NUM_GRADIENT_STEPS],
-                                GRADIENT_STEP_WIDTH,
-                                newVal,
-                              ),
-                              y: 0,
-                            }
-                            newHandles.sort(
-                              (a, b) =>
-                                (a.value as number) - (b.value as number),
-                            )
+                          if (handleIndex >= 0) {
+                            const newHandles = [...handles]
+                            newHandles.splice(handleIndex, 1)
                             setHandles(newHandles)
                             updateContinuousMapping(
                               minState,
@@ -466,93 +352,361 @@ export function ContinuousColorMappingForm(props: {
                               newHandles,
                             )
                           }
-                        }
+                        }}
+                      >
+                        <Delete />
+                      </IconButton>
+
+                      <VisualPropertyValueForm
+                        currentValue={h.vpValue ?? null}
+                        visualProperty={props.visualProperty}
+                        onValueChange={(newValue) => {
+                          const handleIndex = handles.findIndex(
+                            (handle) => handle.id === h.id,
+                          )
+                          if (handleIndex >= 0) {
+                            const newHandles = [...handles]
+                            newHandles[handleIndex].vpValue = newValue
+                            setHandles(newHandles)
+                            updateContinuousMapping(
+                              minState,
+                              maxState,
+                              newHandles,
+                            )
+                          }
+                        }}
+                      />
+                      <TextField
+                        sx={{ width: 50, mt: 1 }}
+                        inputProps={{
+                          sx: { p: 0.5, fontSize: 14, width: 50 },
+                          inputMode: 'numeric',
+                          pattern: '[0-9]*',
+                          step: 0.1,
+                        }}
+                        onChange={(e) => {
+                          const handleIndex = handles.findIndex(
+                            (handle) => handle.id === h.id,
+                          )
+                          if (handleIndex >= 0) {
+                            const newHandles = [...handles]
+                            const newVal = Number(e.target.value)
+
+                            if (!isNaN(newVal)) {
+                              newHandles[handleIndex].value = newVal
+                              newHandles[handleIndex].pixelPosition = {
+                                x: valueToPixel(
+                                  [
+                                    minState.value as number,
+                                    maxState.value as number,
+                                  ],
+                                  [0, NUM_GRADIENT_STEPS],
+                                  GRADIENT_STEP_WIDTH,
+                                  newVal,
+                                ),
+                                y: 0,
+                              }
+                              newHandles.sort(
+                                (a, b) =>
+                                  (a.value as number) - (b.value as number),
+                              )
+                              setHandles(newHandles)
+                              updateContinuousMapping(
+                                minState,
+                                maxState,
+                                newHandles,
+                              )
+                            }
+                          }
+                        }}
+                        value={h.value as number}
+                      />
+                    </Paper>
+                    <IconButton
+                      className="handle"
+                      size="large"
+                      sx={{
+                        position: 'relative',
+                        top: -220,
+                        '&:hover': { cursor: 'col-resize' },
                       }}
-                      value={h.value as number}
-                    />
-                  </Paper>
-                  <IconButton
-                    className="handle"
-                    size="large"
-                    sx={{
-                      position: 'relative',
-                      top: -120,
-                      '&:hover': { cursor: 'col-resize' },
-                    }}
-                  >
-                    <ArrowDropDownIcon sx={{ fontSize: '40px' }} />
-                  </IconButton>
-                </Box>
-              </Draggable>
-            )
-          })}
+                    >
+                      <ArrowDropDownIcon
+                        sx={{ fontSize: '40px', color: '#300000', zIndex: 3 }}
+                      />
+                    </IconButton>
+                  </Box>
+                </Draggable>
+              )
+            })}
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Typography variant="body1">{m.attribute}</Typography>
+          </Box>
         </Paper>
-        <Box
+      </Box>
+
+      <Box
+        sx={{ display: 'flex', p: 1, mt: 1, justifyContent: 'space-evenly' }}
+      >
+        <Paper
           sx={{
+            p: 1,
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            p: 1,
-            m: 1,
+            width: 180,
+            backgroundColor: '#fcfffc',
+            color: '#595858',
           }}
         >
-          <VisualPropertyValueForm
-            currentValue={maxState.vpValue}
-            visualProperty={props.visualProperty}
-            onValueChange={(newValue) => {
-              setMaxState({
-                ...maxState,
-                vpValue: newValue,
-              })
-              updateContinuousMapping(minState, maxState, handles)
+          <Typography variant="body2">Add handle</Typography>
+          <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                pt: 1,
+                pb: 1,
+              }}
+            >
+              <Typography variant="body2">{m.attribute}:</Typography>
+              <TextField
+                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                inputProps={{
+                  sx: {
+                    p: 0.5,
+                    fontSize: 12,
+                    width: 50,
+                  },
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                  step: 0.1,
+                }}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  if (!isNaN(newValue)) {
+                    setAddHandleFormValue(newValue)
+                  }
+                }}
+                value={addHandleFormValue}
+              />
+            </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                pt: 1,
+                pb: 1,
+              }}
+            >
+              <Typography variant="body2">
+                {props.visualProperty.displayName}:
+              </Typography>
+              <VisualPropertyValueForm
+                currentValue={addHandleFormVpValue}
+                visualProperty={props.visualProperty}
+                onValueChange={(newValue) => {
+                  setAddHandleFormVpValue(newValue)
+                }}
+              />
+
+              {/* <TextField
+                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                inputProps={{
+                  sx: {
+                    p: 0.5,
+                    fontSize: 12,
+                    width: 50,
+                  },
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                  step: 0.1,
+                }}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  if (!isNaN(newValue)) {
+                    setAddHandleFormVpValue(newValue)
+                  }
+                }}
+                value={addHandleFormVpValue}
+              /> */}
+            </Box>
+          </Box>
+          <Button
+            variant="text"
+            onClick={() => {
+              let newHandleId = 0
+              const handleIds = new Set(handles.map((h) => h.id))
+              while (handleIds.has(newHandleId)) {
+                newHandleId++
+              }
+
+              const newHandle = {
+                id: newHandleId,
+                value: addHandleFormValue,
+                vpValue: addHandleFormVpValue,
+                pixelPosition: {
+                  x: 0,
+                  y: 0,
+                },
+              }
+              const newHandles = [...handles, newHandle].sort(
+                (a, b) => (a.value as number) - (b.value as number),
+              )
+              setHandles(newHandles)
+              updateContinuousMapping(min, max, newHandles)
             }}
-          />
-          <Typography variant="body2">Max</Typography>
-          <TextField
-            sx={{ width: 50 }}
-            inputProps={{
-              sx: { p: 0.5, fontSize: 14, width: 50 },
-              inputMode: 'numeric',
-              pattern: '[0-9]*',
-              step: 0.1,
+            size="small"
+          >
+            Add Handle
+          </Button>
+        </Paper>
+
+        <Paper sx={{ p: 1, backgroundColor: '#fcfffc', color: '#595858' }}>
+          <Typography variant="body2">Settings</Typography>
+
+          <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
+            <Typography variant="body2">Domain: </Typography>
+            <Box sx={{ p: 1, display: 'flex' }}>
+              <Typography variant="body1">[</Typography>
+              <TextField
+                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                inputProps={{
+                  sx: {
+                    p: 0.5,
+                    fontSize: 12,
+                    width: 50,
+                  },
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                  step: 0.1,
+                }}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  if (!isNaN(newValue)) {
+                    setMinState({
+                      ...minState,
+                      value: newValue,
+                    })
+
+                    updateContinuousMapping(minState, maxState, handles)
+                  }
+                }}
+                value={minState.value}
+              />
+              <Typography variant="body1">, </Typography>
+              <TextField
+                value={maxState.value}
+                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                inputProps={{
+                  sx: {
+                    p: 0.5,
+                    fontSize: 12,
+                    width: 50,
+                  },
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                  step: 0.1,
+                }}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value)
+                  if (!isNaN(newValue)) {
+                    setMaxState({
+                      ...maxState,
+                      value: newValue,
+                    })
+
+                    // const newHandles = handles.map((h) => {
+                    //   const pixelPosX =
+                    //     xMapper([h.value as number, h.vpValue as number]) +
+                    //     LINE_CHART_MARGIN_LEFT
+
+                    //   const newDomain = [
+                    //     minState.value as number,
+                    //     ...handles.map((h) => h.value as number),
+                    //     newMax,
+                    //   ]
+                    //   const newXScale = visXScaleLinear({
+                    //     range: [0, xMax],
+                    //     domain: extent(newDomain) as [number, number],
+                    //   })
+
+                    //   const newValue = newXScale.invert(
+                    //     pixelPosX - LINE_CHART_MARGIN_LEFT,
+                    //   )
+                    //   console.log(newValue)
+
+                    //   return {
+                    //     ...h,
+                    //     value: newValue,
+                    //   }
+                    // })
+
+                    // setHandles(newHandles)
+
+                    updateContinuousMapping(minState, maxState, handles)
+                  }
+                }}
+              />
+              <Typography variant="body1">]</Typography>
+            </Box>
+          </Box>
+
+          <Box
+            sx={{
+              display: 'flex',
+              p: 1,
+              justifyContent: 'space-between',
+              alignItems: 'center',
             }}
-            onChange={(e) => {
-              const newMax = Number(e.target.value)
-              if (!isNaN(newMax)) {
+          >
+            <Typography variant="body2">
+              {`${props.visualProperty.displayName} for values < domain min(${
+                minState.value as number
+              }): `}
+            </Typography>
+            <VisualPropertyValueForm
+              currentValue={minState.vpValue}
+              visualProperty={props.visualProperty}
+              onValueChange={(newValue) => {
+                setMaxState({
+                  ...minState,
+                  vpValue: newValue,
+                })
+                updateContinuousMapping(minState, maxState, handles)
+              }}
+            />
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              p: 1,
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Typography variant="body2">
+              {`${props.visualProperty.displayName} for values > domain max(${
+                maxState.value as number
+              }): `}
+            </Typography>
+
+            <VisualPropertyValueForm
+              currentValue={maxState.vpValue}
+              visualProperty={props.visualProperty}
+              onValueChange={(newValue) => {
                 setMaxState({
                   ...maxState,
-                  value: newMax,
+                  vpValue: newValue,
                 })
-
-                const newHandles = handles.map((h) => {
-                  return {
-                    ...h,
-                    value: pixelToValue(
-                      [0, NUM_GRADIENT_STEPS],
-                      [minState.value as number, newMax],
-                      h.pixelPosition.x / GRADIENT_STEP_WIDTH,
-                    ),
-                  }
-                })
-
-                setHandles(newHandles)
                 updateContinuousMapping(minState, maxState, handles)
-              }
-            }}
-            value={maxState.value}
-          />
-        </Box>
+              }}
+            />
+          </Box>
+        </Paper>
       </Box>
-
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <Typography variant="body1">{m.attribute}</Typography>
-      </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Button color="error" onClick={() => console.log('TODO')}>
-          Cancel
-        </Button>
-        <Button>Confirm</Button>
-      </Box>
-    </Box>
+    </Paper>
   )
 }

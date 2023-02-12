@@ -234,9 +234,7 @@ export function VisualPropertyValueForm(
       >
         <Box>
           {props.title != null ? (
-            <Typography sx={{ m: 1 }} variant="h6">
-              {props.title}
-            </Typography>
+            <Typography sx={{ m: 1 }}>{props.title}</Typography>
           ) : null}
 
           <Box sx={{ p: 1 }}>

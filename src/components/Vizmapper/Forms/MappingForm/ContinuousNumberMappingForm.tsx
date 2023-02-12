@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
-import Close from '@mui/icons-material/Close'
+import Close from '@mui/icons-material/CancelOutlined'
 import { debounce } from 'lodash'
 
 import { scaleLinear as visXScaleLinear } from '@visx/scale'
@@ -223,8 +223,8 @@ export function ContinuousNumberMappingForm(props: {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          pt: 8,
-          pb: 4,
+          pt: 10,
+          pb: 2,
         }}
       >
         <Paper
@@ -332,13 +332,19 @@ export function ContinuousNumberMappingForm(props: {
                             width: 2,
                             top: 65,
                             height: pixelPositionY,
-                            backgroundColor: '#707070',
-                            '&:hover': { cursor: 'move' },
+                            backgroundColor: '#03082d',
+                            '&:hover': {
+                              cursor: 'move',
+                            },
                           }}
                         ></Box>
 
                         <IconButton
-                          sx={{ position: 'absolute', top: -20, right: -16 }}
+                          sx={{
+                            position: 'absolute',
+                            top: -20,
+                            right: -16,
+                          }}
                           onClick={() => {
                             const handleIndex = handles.findIndex(
                               (handle) => handle.id === h.id,
@@ -366,6 +372,7 @@ export function ContinuousNumberMappingForm(props: {
                                 overflow: 'hidden',
                                 whiteSpace: 'nowrap',
                                 textOverflow: 'ellipsis',
+                                fontWeight: 'bold',
                               }}
                               variant="caption"
                             >
@@ -418,6 +425,7 @@ export function ContinuousNumberMappingForm(props: {
                                 overflow: 'hidden',
                                 whiteSpace: 'nowrap',
                                 textOverflow: 'ellipsis',
+                                fontWeight: 'bold',
                               }}
                               variant="caption"
                             >
@@ -472,11 +480,18 @@ export function ContinuousNumberMappingForm(props: {
                         size="large"
                         sx={{
                           position: 'relative',
-                          top: -98,
+                          top: -108,
                           '&:hover': { cursor: 'move' },
                         }}
                       >
-                        <ArrowDropDownIcon sx={{ fontSize: '40px' }} />
+                        <ArrowDropDownIcon
+                          sx={{
+                            fontSize: '60px',
+                            opacity: 1,
+                            zIndex: 3,
+                            color: '#03082d',
+                          }}
+                        />
                       </IconButton>
                     </Box>
                   </Draggable>
@@ -495,9 +510,11 @@ export function ContinuousNumberMappingForm(props: {
             display: 'flex',
             flexDirection: 'column',
             width: 180,
+            backgroundColor: '#fcfcfc',
+            color: '#595858',
           }}
         >
-          <Typography>Add handle</Typography>
+          <Typography variant="body2">Add handle</Typography>
           <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
             <Box
               sx={{
@@ -565,7 +582,7 @@ export function ContinuousNumberMappingForm(props: {
             </Box>
           </Box>
           <Button
-            variant="outlined"
+            variant="text"
             onClick={() => {
               let newHandleId = 0
               const handleIds = new Set(handles.map((h) => h.id))
@@ -594,11 +611,11 @@ export function ContinuousNumberMappingForm(props: {
           </Button>
         </Paper>
 
-        <Paper sx={{ p: 1 }}>
-          <Typography>Mapping Settings</Typography>
+        <Paper sx={{ p: 1, backgroundColor: '#fcfffc', color: '#595858' }}>
+          <Typography variant="body2">Settings</Typography>
 
           <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body2">Domain</Typography>
+            <Typography variant="body2">Domain:</Typography>
             <Box sx={{ p: 1, display: 'flex' }}>
               <Typography variant="body1">[</Typography>
               <TextField
@@ -688,7 +705,7 @@ export function ContinuousNumberMappingForm(props: {
             <Typography variant="body2">
               {`${props.visualProperty.displayName} for values < domain min(${
                 minState.value as number
-              })`}
+              }):`}
             </Typography>
             <TextField
               sx={{ width: 40, ml: 0.5, mr: 0.5 }}
@@ -720,7 +737,7 @@ export function ContinuousNumberMappingForm(props: {
             <Typography variant="body2">
               {`${props.visualProperty.displayName} for values > domain max(${
                 maxState.value as number
-              })`}
+              }): `}
             </Typography>
 
             <TextField
@@ -738,7 +755,7 @@ export function ContinuousNumberMappingForm(props: {
               onChange={(e) => {
                 const newValue = Number(e.target.value)
                 if (!isNaN(newValue)) {
-                  setMinState({
+                  setMaxState({
                     ...maxState,
                     vpValue: newValue,
                   })

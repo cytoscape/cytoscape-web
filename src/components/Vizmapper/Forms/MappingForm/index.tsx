@@ -220,7 +220,7 @@ function MappingFormContent(props: {
           alignItems: 'center',
         }}
       >
-        <Typography variant="h6">{`${props.visualProperty.displayName} mapping`}</Typography>
+        <Typography>{`${props.visualProperty.displayName} mapping`}</Typography>
         <Button
           disabled={props.visualProperty.mapping == null}
           size="small"
