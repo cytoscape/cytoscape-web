@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
-import Close from '@mui/icons-material/CancelOutlined'
+import Close from '@mui/icons-material/DisabledByDefault'
 import { debounce } from 'lodash'
 
 import { scaleLinear as visXScaleLinear } from '@visx/scale'
@@ -46,9 +46,9 @@ export function ContinuousNumberMappingForm(props: {
 
   const [addHandleFormValue, setAddHandleFormValue] = React.useState(0)
   const [addHandleFormVpValue, setAddHandleFormVpValue] = React.useState(0)
-  const [draggedHandleId, setDraggedHandleId] = React.useState<number | null>(
-    null,
-  )
+  const [lastDraggedHandle, setlastDraggedHandle] = React.useState<
+    number | null
+  >(null)
 
   const { min, max, controlPoints } = m
 
@@ -60,7 +60,7 @@ export function ContinuousNumberMappingForm(props: {
   )
 
   const LINE_CHART_WIDTH = 600
-  const LINE_CHART_HEIGHT = 300
+  const LINE_CHART_HEIGHT = 275
   const LINE_CHART_MARGIN_LEFT = 50
   const LINE_CHART_MARGIN_RIGHT = 50
   const LINE_CHART_MARGIN_TOP = 10
@@ -104,14 +104,17 @@ export function ContinuousNumberMappingForm(props: {
     ...handles.map((h) => h.vpValue as number),
     maxState.vpValue as number,
   ]
+
+  const valueDomainExtent = extent(valueDomain)
+  const vpValueDomainExtent = extent(vpValueDomain)
   const xScale = visXScaleLinear({
     range: [0, xMax],
-    domain: extent(valueDomain) as [number, number],
+    domain: valueDomainExtent as [number, number],
   })
 
   const yScale = visXScaleLinear({
     range: [yMax, 0],
-    domain: extent(vpValueDomain) as [number, number],
+    domain: vpValueDomainExtent as [number, number],
   })
 
   const xMapper = (d: [number, number]): number => xScale(xGetter(d)) ?? 0
@@ -265,10 +268,10 @@ export function ContinuousNumberMappingForm(props: {
                     }}
                     handle=".handle"
                     onStart={(e) => {
-                      setDraggedHandleId(h.id)
+                      setlastDraggedHandle(h.id)
                     }}
                     onStop={(e) => {
-                      setDraggedHandleId(null)
+                      setlastDraggedHandle(h.id)
                     }}
                     onDrag={(e, data) => {
                       const newValue = Number(
@@ -310,7 +313,7 @@ export function ContinuousNumberMappingForm(props: {
                         flexDirection: 'column',
                         alignItems: 'center',
                         position: 'absolute',
-                        zIndex: draggedHandleId === h.id ? 3 : 1,
+                        zIndex: lastDraggedHandle === h.id ? 3 : 1,
                       }}
                     >
                       <Paper
@@ -319,10 +322,11 @@ export function ContinuousNumberMappingForm(props: {
                           p: 0.5,
                           position: 'relative',
                           top: -65 - pixelPositionY,
-                          zIndex: draggedHandleId === h.id ? 3 : 1,
+                          zIndex: lastDraggedHandle === h.id ? 3 : 1,
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
+                          border: '0.5px solid #03082d',
                         }}
                       >
                         <Box
@@ -343,7 +347,7 @@ export function ContinuousNumberMappingForm(props: {
                           sx={{
                             position: 'absolute',
                             top: -20,
-                            right: -16,
+                            right: -20,
                           }}
                           onClick={() => {
                             const handleIndex = handles.findIndex(
@@ -361,7 +365,7 @@ export function ContinuousNumberMappingForm(props: {
                             }
                           }}
                         >
-                          <Close />
+                          <Close sx={{ color: '#03082d' }} />
                         </IconButton>
                         <Box>
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -456,6 +460,25 @@ export function ContinuousNumberMappingForm(props: {
 
                                   if (!isNaN(newVal)) {
                                     newHandles[handleIndex].value = newVal
+                                    if (
+                                      newHandles[handleIndex].value <
+                                      minState.value
+                                    ) {
+                                      setMinState({
+                                        ...minState,
+                                        value: newHandles[handleIndex].value,
+                                      })
+                                    } else {
+                                      if (
+                                        newHandles[handleIndex].value >
+                                        maxState.value
+                                      ) {
+                                        setMaxState({
+                                          ...maxState,
+                                          value: newHandles[handleIndex].value,
+                                        })
+                                      }
+                                    }
                                     newHandles.sort(
                                       (a, b) =>
                                         (a.value as number) -
@@ -501,16 +524,14 @@ export function ContinuousNumberMappingForm(props: {
           </Tooltip>
         </Paper>
       </Box>
-      <Box
-        sx={{ display: 'flex', p: 1, mt: 1, justifyContent: 'space-evenly' }}
-      >
+      <Box sx={{ display: 'flex', p: 1, justifyContent: 'space-evenly' }}>
         <Paper
           sx={{
             p: 1,
             display: 'flex',
             flexDirection: 'column',
             width: 180,
-            backgroundColor: '#fcfcfc',
+            backgroundColor: '#fcfffc',
             color: '#595858',
           }}
         >
@@ -599,6 +620,21 @@ export function ContinuousNumberMappingForm(props: {
                   y: 0,
                 },
               }
+
+              if (newHandle.value < minState.value) {
+                setMinState({
+                  ...minState,
+                  value: newHandle.value,
+                })
+              } else {
+                if (newHandle.value > maxState.value) {
+                  setMaxState({
+                    ...maxState,
+                    value: newHandle.value,
+                  })
+                }
+              }
+
               const newHandles = [...handles, newHandle].sort(
                 (a, b) => (a.value as number) - (b.value as number),
               )
@@ -613,91 +649,131 @@ export function ContinuousNumberMappingForm(props: {
 
         <Paper sx={{ p: 1, backgroundColor: '#fcfffc', color: '#595858' }}>
           <Typography variant="body2">Settings</Typography>
+          <Box sx={{ display: 'flex' }}>
+            <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
+              <Typography variant="body2">Domain:</Typography>
+              <Box sx={{ display: 'flex' }}>
+                <Typography variant="body1">[</Typography>
+                <TextField
+                  sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                  inputProps={{
+                    sx: {
+                      p: 0.5,
+                      fontSize: 12,
+                      width: 50,
+                    },
+                    inputMode: 'numeric',
+                    pattern: '[0-9]*',
+                    step: 0.1,
+                  }}
+                  onChange={(e) => {
+                    const newValue = Number(e.target.value)
+                    if (!isNaN(newValue)) {
+                      setMinState({
+                        ...minState,
+                        value: newValue,
+                      })
 
-          <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body2">Domain:</Typography>
-            <Box sx={{ p: 1, display: 'flex' }}>
-              <Typography variant="body1">[</Typography>
-              <TextField
-                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
-                inputProps={{
-                  sx: {
-                    p: 0.5,
-                    fontSize: 12,
-                    width: 50,
-                  },
-                  inputMode: 'numeric',
-                  pattern: '[0-9]*',
-                  step: 0.1,
-                }}
-                onChange={(e) => {
-                  const newValue = Number(e.target.value)
-                  if (!isNaN(newValue)) {
-                    setMinState({
-                      ...minState,
-                      value: newValue,
-                    })
+                      updateContinuousMapping(minState, maxState, handles)
+                    }
+                  }}
+                  value={minState.value}
+                />
+                <Typography variant="body1">, </Typography>
+                <TextField
+                  value={maxState.value}
+                  sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                  inputProps={{
+                    sx: {
+                      p: 0.5,
+                      fontSize: 12,
+                      width: 50,
+                    },
+                    inputMode: 'numeric',
+                    pattern: '[0-9]*',
+                    step: 0.1,
+                  }}
+                  onChange={(e) => {
+                    const newValue = Number(e.target.value)
+                    if (!isNaN(newValue)) {
+                      setMaxState({
+                        ...maxState,
+                        value: newValue,
+                      })
 
-                    updateContinuousMapping(minState, maxState, handles)
-                  }
-                }}
-                value={minState.value}
-              />
-              <Typography variant="body1">, </Typography>
-              <TextField
-                value={maxState.value}
-                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
-                inputProps={{
-                  sx: {
-                    p: 0.5,
-                    fontSize: 12,
-                    width: 50,
-                  },
-                  inputMode: 'numeric',
-                  pattern: '[0-9]*',
-                  step: 0.1,
-                }}
-                onChange={(e) => {
-                  const newValue = Number(e.target.value)
-                  if (!isNaN(newValue)) {
-                    setMaxState({
-                      ...maxState,
-                      value: newValue,
-                    })
+                      // const newHandles = handles.map((h) => {
+                      //   const pixelPosX =
+                      //     xMapper([h.value as number, h.vpValue as number]) +
+                      //     LINE_CHART_MARGIN_LEFT
 
-                    // const newHandles = handles.map((h) => {
-                    //   const pixelPosX =
-                    //     xMapper([h.value as number, h.vpValue as number]) +
-                    //     LINE_CHART_MARGIN_LEFT
+                      //   const newDomain = [
+                      //     minState.value as number,
+                      //     ...handles.map((h) => h.value as number),
+                      //     newMax,
+                      //   ]
+                      //   const newXScale = visXScaleLinear({
+                      //     range: [0, xMax],
+                      //     domain: extent(newDomain) as [number, number],
+                      //   })
 
-                    //   const newDomain = [
-                    //     minState.value as number,
-                    //     ...handles.map((h) => h.value as number),
-                    //     newMax,
-                    //   ]
-                    //   const newXScale = visXScaleLinear({
-                    //     range: [0, xMax],
-                    //     domain: extent(newDomain) as [number, number],
-                    //   })
+                      //   const newValue = newXScale.invert(
+                      //     pixelPosX - LINE_CHART_MARGIN_LEFT,
+                      //   )
+                      //   console.log(newValue)
 
-                    //   const newValue = newXScale.invert(
-                    //     pixelPosX - LINE_CHART_MARGIN_LEFT,
-                    //   )
-                    //   console.log(newValue)
+                      //   return {
+                      //     ...h,
+                      //     value: newValue,
+                      //   }
+                      // })
 
-                    //   return {
-                    //     ...h,
-                    //     value: newValue,
-                    //   }
-                    // })
+                      // setHandles(newHandles)
 
-                    // setHandles(newHandles)
+                      updateContinuousMapping(minState, maxState, handles)
+                    }
+                  }}
+                />
+                <Typography variant="body1">]</Typography>
+              </Box>
+            </Box>
 
-                    updateContinuousMapping(minState, maxState, handles)
-                  }
-                }}
-              />
-              <Typography variant="body1">]</Typography>
+            <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
+              <Typography variant="body2">Range:</Typography>
+              <Box sx={{ display: 'flex' }}>
+                <Typography variant="body1">[</Typography>
+                <TextField
+                  disabled
+                  sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                  inputProps={{
+                    sx: {
+                      p: 0.5,
+                      fontSize: 12,
+                      width: 50,
+                    },
+                    inputMode: 'numeric',
+                    pattern: '[0-9]*',
+                    step: 0.1,
+                  }}
+                  value={vpValueDomainExtent[0]}
+                />
+                <Typography variant="body1">, </Typography>
+                <TextField
+                  disabled
+                  value={vpValueDomainExtent[1]}
+                  sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                  inputProps={{
+                    sx: {
+                      p: 0.5,
+                      fontSize: 12,
+                      width: 50,
+                    },
+                    inputMode: 'numeric',
+                    pattern: '[0-9]*',
+                    step: 0.1,
+                  }}
+                />
+                <Typography variant="body1">]</Typography>
+              </Box>
             </Box>
           </Box>
 

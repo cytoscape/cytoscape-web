@@ -13,7 +13,8 @@ import { AxisBottom } from '@visx/axis'
 import { extent } from 'd3-array'
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
-import Delete from '@mui/icons-material/CancelOutlined'
+import Delete from '@mui/icons-material/DisabledByDefault'
+
 import { scaleLinear } from 'd3-scale'
 import { color } from 'd3-color'
 import Draggable from 'react-draggable'
@@ -361,11 +362,12 @@ export function ContinuousColorMappingForm(props: {
                       sx={{
                         p: 0.5,
                         position: 'relative',
-                        top: -200,
+                        top: -195,
                         zIndex: 2,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
+                        border: '0.5px solid #03082d',
                       }}
                     >
                       <IconButton
@@ -386,7 +388,7 @@ export function ContinuousColorMappingForm(props: {
                           }
                         }}
                       >
-                        <Delete />
+                        <Delete sx={{ color: '#03082d' }} />
                       </IconButton>
 
                       <VisualPropertyValueForm
@@ -464,7 +466,7 @@ export function ContinuousColorMappingForm(props: {
                       }}
                     >
                       <ArrowDropDownIcon
-                        sx={{ fontSize: '40px', color: '#300000', zIndex: 3 }}
+                        sx={{ fontSize: '40px', color: '#03082d', zIndex: 3 }}
                       />
                     </IconButton>
                   </Box>
@@ -540,27 +542,6 @@ export function ContinuousColorMappingForm(props: {
                   setAddHandleFormVpValue(newValue)
                 }}
               />
-
-              {/* <TextField
-                sx={{ width: 40, ml: 0.5, mr: 0.5 }}
-                inputProps={{
-                  sx: {
-                    p: 0.5,
-                    fontSize: 12,
-                    width: 50,
-                  },
-                  inputMode: 'numeric',
-                  pattern: '[0-9]*',
-                  step: 0.1,
-                }}
-                onChange={(e) => {
-                  const newValue = Number(e.target.value)
-                  if (!isNaN(newValue)) {
-                    setAddHandleFormVpValue(newValue)
-                  }
-                }}
-                value={addHandleFormVpValue}
-              /> */}
             </Box>
           </Box>
           <Button
@@ -581,6 +562,21 @@ export function ContinuousColorMappingForm(props: {
                   y: 0,
                 },
               }
+
+              if (newHandle.value < minState.value) {
+                setMinState({
+                  ...minState,
+                  value: newHandle.value,
+                })
+              } else {
+                if (newHandle.value > maxState.value) {
+                  setMaxState({
+                    ...maxState,
+                    value: newHandle.value,
+                  })
+                }
+              }
+
               const newHandles = [...handles, newHandle].sort(
                 (a, b) => (a.value as number) - (b.value as number),
               )
