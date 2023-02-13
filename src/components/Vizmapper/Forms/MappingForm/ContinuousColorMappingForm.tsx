@@ -616,6 +616,14 @@ export function ContinuousColorMappingForm(props: {
                       value: newValue,
                     })
 
+                    const newHandles = [...handles].map((h) => {
+                      return {
+                        ...h,
+                        value: Math.max(h.value as number, newValue),
+                      }
+                    })
+                    setHandles(newHandles)
+
                     updateContinuousMapping(minState, maxState, handles)
                   }
                 }}
@@ -642,6 +650,14 @@ export function ContinuousColorMappingForm(props: {
                       ...maxState,
                       value: newValue,
                     })
+
+                    const newHandles = [...handles].map((h) => {
+                      return {
+                        ...h,
+                        value: Math.min(h.value as number, newValue),
+                      }
+                    })
+                    setHandles(newHandles)
 
                     // const newHandles = handles.map((h) => {
                     //   const pixelPosX =

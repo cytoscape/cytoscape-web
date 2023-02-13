@@ -674,6 +674,14 @@ export function ContinuousNumberMappingForm(props: {
                         value: newValue,
                       })
 
+                      const newHandles = [...handles].map((h) => {
+                        return {
+                          ...h,
+                          value: Math.max(h.value as number, newValue),
+                        }
+                      })
+                      setHandles(newHandles)
+
                       updateContinuousMapping(minState, maxState, handles)
                     }
                   }}
@@ -700,6 +708,14 @@ export function ContinuousNumberMappingForm(props: {
                         ...maxState,
                         value: newValue,
                       })
+
+                      const newHandles = [...handles].map((h) => {
+                        return {
+                          ...h,
+                          value: Math.min(h.value as number, newValue),
+                        }
+                      })
+                      setHandles(newHandles)
 
                       // const newHandles = handles.map((h) => {
                       //   const pixelPosX =
@@ -742,8 +758,72 @@ export function ContinuousNumberMappingForm(props: {
               <Box sx={{ display: 'flex' }}>
                 <Typography variant="body1">[</Typography>
                 <TextField
-                  disabled
                   sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                  onChange={(e) => {
+                    const newValue = Number(e.target.value)
+                    if (!isNaN(newValue)) {
+                      const currentVpMin = vpValueDomainExtent[0] as number
+
+                      if (newValue < currentVpMin) {
+                        const values = [
+                          { vp: minState.vpValue, id: 'min' },
+                          ...handles.map((h) => ({ vp: h.vpValue, id: h.id })),
+                          { vp: maxState.vpValue, id: 'max' },
+                        ].sort((a, b) => (a.vp as number) - (b.vp as number))
+                        const lowestValueEl = values[0]
+
+                        if (lowestValueEl.id === 'min') {
+                          setMinState({
+                            ...minState,
+                            vpValue: newValue,
+                          })
+                          updateContinuousMapping(minState, maxState, handles)
+                        } else {
+                          const newHandles = handles.map((h) => {
+                            if (h.id === lowestValueEl.id) {
+                              return {
+                                ...h,
+                                vpValue: newValue,
+                              }
+                            }
+                            return h
+                          })
+                          setHandles(newHandles)
+                          updateContinuousMapping(
+                            minState,
+                            maxState,
+                            newHandles,
+                          )
+                        }
+                      } else {
+                        setMinState({
+                          ...minState,
+                          vpValue: Math.max(
+                            newValue,
+                            minState.vpValue as number,
+                          ),
+                        })
+
+                        const newHandles = [...handles].map((h) => {
+                          return {
+                            ...h,
+                            vpValue: Math.max(newValue, h.vpValue as number),
+                          }
+                        })
+
+                        setHandles(newHandles)
+
+                        setMaxState({
+                          ...maxState,
+                          vpValue: Math.max(
+                            newValue,
+                            maxState.vpValue as number,
+                          ),
+                        })
+                        updateContinuousMapping(minState, maxState, handles)
+                      }
+                    }
+                  }}
                   inputProps={{
                     sx: {
                       p: 0.5,
@@ -758,9 +838,73 @@ export function ContinuousNumberMappingForm(props: {
                 />
                 <Typography variant="body1">, </Typography>
                 <TextField
-                  disabled
                   value={vpValueDomainExtent[1]}
                   sx={{ width: 40, ml: 0.5, mr: 0.5 }}
+                  onChange={(e) => {
+                    const newValue = Number(e.target.value)
+                    if (!isNaN(newValue)) {
+                      const currentVpMax = vpValueDomainExtent[1] as number
+
+                      if (newValue > currentVpMax) {
+                        const values = [
+                          { vp: minState.vpValue, id: 'min' },
+                          ...handles.map((h) => ({ vp: h.vpValue, id: h.id })),
+                          { vp: maxState.vpValue, id: 'max' },
+                        ].sort((a, b) => (a.vp as number) - (b.vp as number))
+                        const highestValueEl = values[values.length - 1]
+
+                        if (highestValueEl.id === 'max') {
+                          setMaxState({
+                            ...maxState,
+                            vpValue: newValue,
+                          })
+                          updateContinuousMapping(minState, maxState, handles)
+                        } else {
+                          const newHandles = handles.map((h) => {
+                            if (h.id === highestValueEl.id) {
+                              return {
+                                ...h,
+                                vpValue: newValue,
+                              }
+                            }
+                            return h
+                          })
+                          setHandles(newHandles)
+                          updateContinuousMapping(
+                            minState,
+                            maxState,
+                            newHandles,
+                          )
+                        }
+                      } else {
+                        setMaxState({
+                          ...minState,
+                          vpValue: Math.min(
+                            newValue,
+                            minState.vpValue as number,
+                          ),
+                        })
+
+                        const newHandles = [...handles].map((h) => {
+                          return {
+                            ...h,
+                            vpValue: Math.min(newValue, h.vpValue as number),
+                          }
+                        })
+
+                        setHandles(newHandles)
+
+                        setMaxState({
+                          ...maxState,
+                          vpValue: Math.min(
+                            newValue,
+                            maxState.vpValue as number,
+                          ),
+                        })
+                        updateContinuousMapping(minState, maxState, handles)
+                      }
+                    }
+                  }}
                   inputProps={{
                     sx: {
                       p: 0.5,
