@@ -8,14 +8,13 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material'
-import { scaleLinear as visXScaleLinear } from '@visx/scale'
+import { scaleLinear } from '@visx/scale'
 import { AxisBottom } from '@visx/axis'
 import { extent } from 'd3-array'
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import Delete from '@mui/icons-material/DisabledByDefault'
 
-import { scaleLinear } from 'd3-scale'
 import { color } from 'd3-color'
 import Draggable from 'react-draggable'
 
@@ -25,18 +24,12 @@ import {
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
 import { ContinuousMappingFunction } from '../../../../models/VisualStyleModel/VisualMappingFunction'
-import { ValueType } from '../../../../models/TableModel'
+import { Handle } from './Handle'
 
 import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { ContinuousFunctionControlPoint } from '../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { debounce } from 'lodash'
-interface Handle extends ContinuousFunctionControlPoint {
-  id: number
-  value: ValueType
-  vpValue: VisualPropertyValueType
-  pixelPosition: { x: number; y: number }
-}
 
 // color mapping form for now
 export function ContinuousColorMappingForm(props: {
@@ -53,6 +46,16 @@ export function ContinuousColorMappingForm(props: {
 
   const [minState, setMinState] = React.useState(min)
   const [maxState, setMaxState] = React.useState(max)
+  const [handles, setHandles] = React.useState(() => {
+    return [...controlPoints]
+      .sort((a, b) => (a.value as number) - (b.value as number))
+      .map((pt, index) => {
+        return {
+          ...pt,
+          id: index,
+        }
+      })
+  })
 
   const [addHandleFormValue, setAddHandleFormValue] = React.useState(0)
   const [addHandleFormVpValue, setAddHandleFormVpValue] = React.useState(
@@ -62,69 +65,11 @@ export function ContinuousColorMappingForm(props: {
   const NUM_GRADIENT_STEPS = 144
   const GRADIENT_STEP_WIDTH = 4
   const GRADIENT_HEIGHT = 100
+  const GRADIENT_AXIS_HORIZONTAL_PADDING = 30 // needed to make sure the axis labels are not cut off
+  const GRADIENT_AXIS_VERTICAL_PADDING = 100 // needed to display the axis at the bottom of the color gradient
 
   const setContinuousMappingValues = useVisualStyleStore(
     (state) => state.setContinuousMappingValues,
-  )
-  // map values in the continuous mapping range to a pixel position
-  const valueToPixel = (
-    domain: [number, number],
-    range: [number, number],
-    stepWidth: number,
-    rangePosition: number,
-  ): number => {
-    const rangeToPixel = scaleLinear(domain, range)
-    const value = rangeToPixel(rangePosition) ?? 0
-
-    return value * stepWidth
-  }
-
-  const pixelToValue = (
-    domain: [number, number],
-    range: [number, number],
-    pixelPosition: number,
-  ): number => {
-    const pixelToRange = scaleLinear(domain, range)
-    const value = pixelToRange(pixelPosition) ?? 0
-
-    return value
-  }
-
-  const [handles, setHandles] = React.useState(() => {
-    return [...controlPoints]
-      .sort((a, b) => (a.value as number) - (b.value as number))
-      .map((pt, index) => {
-        return {
-          ...pt,
-          id: index,
-          pixelPosition: {
-            x: valueToPixel(
-              [minState.value as number, maxState.value as number],
-              [0, NUM_GRADIENT_STEPS],
-              GRADIENT_STEP_WIDTH,
-              pt.value as number,
-            ),
-            y: 0,
-          },
-        }
-      })
-  })
-
-  const handleIds = new Set(handles.map((h) => h.id))
-
-  const mapper = scaleLinear(
-    // domain: handle values
-    [
-      minState.value as number,
-      ...handles.map((h) => h.value as number),
-      maxState.value as number,
-    ],
-    // range: handle colors
-    [
-      minState.vpValue as string,
-      ...handles.map((h) => h.vpValue as string),
-      maxState.vpValue as string,
-    ],
   )
 
   const valueDomain = [
@@ -132,9 +77,23 @@ export function ContinuousColorMappingForm(props: {
     ...handles.map((h) => h.value as number),
     maxState.value as number,
   ]
-  const xScale = visXScaleLinear({
+
+  const vpValueDomain = [
+    minState.vpValue as string,
+    ...handles.map((h) => h.vpValue as string),
+    maxState.vpValue as string,
+  ]
+
+  // map values to pixels
+  const valuePixelScale = scaleLinear({
     range: [0, NUM_GRADIENT_STEPS * GRADIENT_STEP_WIDTH],
     domain: extent(valueDomain) as [number, number],
+  })
+
+  // map values to colors
+  const colorScale = scaleLinear({
+    domain: valueDomain,
+    range: vpValueDomain,
   })
 
   const updateContinuousMapping = React.useMemo(
@@ -183,15 +142,6 @@ export function ContinuousColorMappingForm(props: {
           return {
             ...pt,
             id: index,
-            pixelPosition: {
-              x: valueToPixel(
-                [minState.value as number, maxState.value as number],
-                [0, NUM_GRADIENT_STEPS],
-                GRADIENT_STEP_WIDTH,
-                pt.value as number,
-              ),
-              y: 0,
-            },
           }
         }),
     )
@@ -235,31 +185,20 @@ export function ContinuousColorMappingForm(props: {
                   const gradientPositionX =
                     e.clientX - e.currentTarget.getBoundingClientRect().x
                   let newHandleId = 0
+                  const handleIds = new Set(handles.map((h) => h.id))
                   while (handleIds.has(newHandleId)) {
                     newHandleId++
                   }
-                  const newHandleValue = pixelToValue(
-                    [0, NUM_GRADIENT_STEPS],
-                    [minState.value as number, maxState.value as number],
-                    gradientPositionX / GRADIENT_STEP_WIDTH,
-                  )
+
+                  const newHandleValue =
+                    valuePixelScale.invert(gradientPositionX)
                   const newHandleVpValue =
-                    color(mapper(newHandleValue))?.formatHex() ?? '#000000'
-                  const newHandlePixelPosition = {
-                    x: valueToPixel(
-                      [minState.value as number, maxState.value as number],
-                      [0, NUM_GRADIENT_STEPS],
-                      GRADIENT_STEP_WIDTH,
-                      newHandleValue,
-                    ),
-                    y: 0,
-                  }
+                    color(colorScale(newHandleValue))?.formatHex() ?? '#000000'
 
                   const newHandle = {
                     id: newHandleId,
                     value: newHandleValue,
                     vpValue: newHandleVpValue,
-                    pixelPosition: newHandlePixelPosition,
                   }
                   const newHandles = [...handles, newHandle].sort(
                     (a, b) => (a.value as number) - (b.value as number),
@@ -271,13 +210,11 @@ export function ContinuousColorMappingForm(props: {
                 {Array(NUM_GRADIENT_STEPS)
                   .fill(0)
                   .map((_, i) => {
-                    const value = pixelToValue(
-                      [0, NUM_GRADIENT_STEPS],
-                      [minState.value as number, maxState.value as number],
-                      i,
+                    const value = valuePixelScale.invert(
+                      i * GRADIENT_STEP_WIDTH,
                     )
-                    const nextColor =
-                      color(mapper(value))?.formatHex() ?? '#000000'
+                    const stepColor =
+                      color(colorScale(value))?.formatHex() ?? '#000000'
 
                     return (
                       <Box
@@ -285,18 +222,21 @@ export function ContinuousColorMappingForm(props: {
                         sx={{
                           width: GRADIENT_STEP_WIDTH,
                           height: GRADIENT_HEIGHT,
-                          backgroundColor: nextColor,
+                          backgroundColor: stepColor,
                         }}
                       ></Box>
                     )
                   })}
                 <Box sx={{ position: 'absolute' }}>
                   <svg
-                    width={30 + NUM_GRADIENT_STEPS * GRADIENT_STEP_WIDTH}
-                    height={100 + GRADIENT_HEIGHT}
+                    width={
+                      GRADIENT_AXIS_HORIZONTAL_PADDING +
+                      NUM_GRADIENT_STEPS * GRADIENT_STEP_WIDTH
+                    }
+                    height={GRADIENT_AXIS_VERTICAL_PADDING + GRADIENT_HEIGHT}
                   >
                     <AxisBottom
-                      scale={xScale}
+                      scale={valuePixelScale}
                       top={GRADIENT_HEIGHT}
                       labelProps={{
                         fontSize: 14,
@@ -317,18 +257,13 @@ export function ContinuousColorMappingForm(props: {
                   axis="x"
                   handle=".handle"
                   onDrag={(e, data) => {
-                    const newRangePosition = pixelToValue(
-                      [0, NUM_GRADIENT_STEPS],
-                      [minState.value as number, maxState.value as number],
-                      data.x / GRADIENT_STEP_WIDTH,
-                    )
-
+                    const newValue = valuePixelScale.invert(data.x)
                     const handleIndex = handles.findIndex(
                       (handle) => handle.id === h.id,
                     )
                     if (handleIndex >= 0) {
                       const newHandles = [...handles]
-                      newHandles[handleIndex].value = newRangePosition
+                      newHandles[handleIndex].value = newValue
                       newHandles.sort(
                         (a, b) => (a.value as number) - (b.value as number),
                       )
@@ -337,12 +272,7 @@ export function ContinuousColorMappingForm(props: {
                     }
                   }}
                   position={{
-                    x: valueToPixel(
-                      [minState.value as number, maxState.value as number],
-                      [0, NUM_GRADIENT_STEPS],
-                      GRADIENT_STEP_WIDTH,
-                      h.value as number,
-                    ),
+                    x: valuePixelScale(h.value as number),
                     y: 0,
                   }}
                 >
@@ -428,18 +358,6 @@ export function ContinuousColorMappingForm(props: {
 
                             if (!isNaN(newVal)) {
                               newHandles[handleIndex].value = newVal
-                              newHandles[handleIndex].pixelPosition = {
-                                x: valueToPixel(
-                                  [
-                                    minState.value as number,
-                                    maxState.value as number,
-                                  ],
-                                  [0, NUM_GRADIENT_STEPS],
-                                  GRADIENT_STEP_WIDTH,
-                                  newVal,
-                                ),
-                                y: 0,
-                              }
                               newHandles.sort(
                                 (a, b) =>
                                   (a.value as number) - (b.value as number),
@@ -557,10 +475,6 @@ export function ContinuousColorMappingForm(props: {
                 id: newHandleId,
                 value: addHandleFormValue,
                 vpValue: addHandleFormVpValue,
-                pixelPosition: {
-                  x: 0,
-                  y: 0,
-                },
               }
 
               if (newHandle.value < minState.value) {
@@ -661,7 +575,7 @@ export function ContinuousColorMappingForm(props: {
 
                     // const newHandles = handles.map((h) => {
                     //   const pixelPosX =
-                    //     xMapper([h.value as number, h.vpValue as number]) +
+                    //     xcolorScale([h.value as number, h.vpValue as number]) +
                     //     LINE_CHART_MARGIN_LEFT
 
                     //   const newDomain = [
@@ -669,12 +583,12 @@ export function ContinuousColorMappingForm(props: {
                     //     ...handles.map((h) => h.value as number),
                     //     newMax,
                     //   ]
-                    //   const newXScale = visXScaleLinear({
+                    //   const newvaluePixelScale = scaleLinear({
                     //     range: [0, xMax],
                     //     domain: extent(newDomain) as [number, number],
                     //   })
 
-                    //   const newValue = newXScale.invert(
+                    //   const newValue = newvaluePixelScale.invert(
                     //     pixelPosX - LINE_CHART_MARGIN_LEFT,
                     //   )
                     //   console.log(newValue)

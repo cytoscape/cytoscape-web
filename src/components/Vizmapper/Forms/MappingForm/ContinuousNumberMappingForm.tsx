@@ -73,10 +73,6 @@ export function ContinuousNumberMappingForm(props: {
         return {
           ...pt,
           id: index,
-          pixelPosition: {
-            x: 0,
-            y: 0,
-          },
         }
       })
   })
@@ -210,10 +206,6 @@ export function ContinuousNumberMappingForm(props: {
           return {
             ...pt,
             id: index,
-            pixelPosition: {
-              x: 0,
-              y: 0,
-            },
           }
         }),
     )
@@ -615,10 +607,6 @@ export function ContinuousNumberMappingForm(props: {
                 id: newHandleId,
                 value: addHandleFormValue,
                 vpValue: addHandleFormVpValue,
-                pixelPosition: {
-                  x: 0,
-                  y: 0,
-                },
               }
 
               if (newHandle.value < minState.value) {

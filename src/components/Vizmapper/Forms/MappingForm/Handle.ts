@@ -6,5 +6,4 @@ export interface Handle extends ContinuousFunctionControlPoint {
   id: number
   value: ValueType
   vpValue: VisualPropertyValueType
-  pixelPosition: { x: number; y: number }
 }
