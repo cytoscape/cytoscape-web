@@ -9,13 +9,18 @@ import Cytoscape, {
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
-import { Network } from '../../../models/NetworkModel'
+import VisualStyleFn, {
+  VisualPropertyName,
+  VisualStyle,
+} from '../../../models/VisualStyleModel'
+import { Edge, Network } from '../../../models/NetworkModel'
 import { ReactElement, useEffect, useRef, useState } from 'react'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { VisualStyleFnImpl as Vsf } from '../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
+import { ValueType } from '../../../models/TableModel'
+import { createCyjsDataMapper } from './cyjs-util'
 interface NetworkRendererProps {
   network: Network
   setIsBusy: (isBusy: boolean) => void
@@ -74,19 +79,50 @@ export const CyjsRenderer = ({
     }
     const updatedNetworkView: NetworkView = Vsf.applyVisualStyle(data)
 
-    console.log(updatedNetworkView)
-
     // TODO: Need to replace this
-    const { cyNodes, cyEdges } = VisualStyleFn.createCyJsStyleSheetView(
+    VisualStyleFn.createCyJsStyleSheetView(
       vs,
       network,
       table.nodeTable,
       table.edgeTable,
-      // networkView,
       updatedNetworkView,
     )
+
+    const { nodeViews } = updatedNetworkView
+    const cyNodes = Object.values(nodeViews).map((nv: NodeView) => {
+      const { values } = nv
+
+      const newData: Record<VisualPropertyName | IdType, ValueType> = {}
+      newData['id' as IdType] = nv.id
+      values.forEach((value: ValueType, key: VisualPropertyName) => {
+        newData[key] = value
+      })
+
+      return {
+        group: 'nodes',
+        data: newData,
+        position: {
+          x: nv.x,
+          y: nv.y,
+        },
+      }
+    })
     cy.add(cyNodes)
+    const cyEdges = network.edges.map((edge: Edge) => {
+      const cyEdge = {
+        group: 'edges',
+        data: {
+          id: edge.id,
+          source: edge.s,
+          target: edge.t,
+        },
+      }
+
+      return cyEdge
+    })
     cy.add(cyEdges)
+
+    const newStyle = createCyjsDataMapper(vs)
 
     // Box selection listener
     cy.on(
@@ -128,6 +164,8 @@ export const CyjsRenderer = ({
 
     cy.fit()
     cy.endBatch()
+
+    cy.style(newStyle).update()
   }
 
   const applyStyleUpdate = async (): Promise<void> => {

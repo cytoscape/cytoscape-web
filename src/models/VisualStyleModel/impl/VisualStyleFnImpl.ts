@@ -9,36 +9,23 @@ import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualStyle } from '../VisualStyle'
 import { NetworkViewSources, VisualStyleFn } from '../VisualStyleFn'
 import { defaultVisualStyle } from './DefaultVisualStyle'
-import { createNewNetworkView } from './visualStyle-utils'
+import { createNewNetworkView, updateNetworkView } from './visualStyle-utils'
 
 const applyVisualStyle = (data: NetworkViewSources): NetworkView => {
-  const { network, visualStyle, nodeTable, edgeTable } = data
+  const { network, visualStyle, nodeTable, edgeTable, networkView } = data
 
-  const newNetworkView: NetworkView = createNewNetworkView(
-    network,
-    visualStyle,
-    nodeTable,
-    edgeTable,
-  )
-
-  return newNetworkView
+  if (networkView !== undefined) {
+    return updateNetworkView(
+      network,
+      networkView,
+      visualStyle,
+      nodeTable,
+      edgeTable,
+    )
+  } else {
+    return createNewNetworkView(network, visualStyle, nodeTable, edgeTable)
+  }
 }
-
-// export const createDiscreteMappingFromCx = (
-//   cxMapping: CXDiscreteMappingFunction<CXVisualPropertyValue>,
-// ): DiscreteMappingFunction => {
-//   const vpValueMap = new Map<ValueType, VisualPropertyValueType>()
-//   cxMapping.definition.map.forEach((mapEntry) => {
-//     const { v, vp } = mapEntry
-//     vpValueMap.set(v, converter.valueConverter(vp))
-//   })
-//   return {
-//     type: MappingFunctionType.Discrete,
-//     attribute: cxMapping.definition.attribute,
-//     vpValueMap,
-//     defaultValue:
-//   }
-// }
 
 const nodeVisualProperties = (
   visualStyle: VisualStyle,

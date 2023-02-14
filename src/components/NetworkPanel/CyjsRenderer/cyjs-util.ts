@@ -1,10 +1,12 @@
 import { Core, EventObject, SingularElementArgument } from 'cytoscape'
 import { IdType } from '../../../models/IdType'
-import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import {
-  VisualPropertyName,
+  VisualProperty,
   VisualPropertyValueType,
+  VisualStyle,
 } from '../../../models/VisualStyleModel'
+import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
+import { nodeVisualProperties } from '../../../models/VisualStyleModel/impl/VisualStyleImpl'
 
 export const addEventHandlers = (
   id: IdType,
@@ -29,33 +31,26 @@ export const addEventHandlers = (
   })
 }
 
-export const createCyjsDataMapper = (networkView: NetworkView): void => {
+export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
+  const nodeVps: Array<VisualProperty<VisualPropertyValueType>> =
+    nodeVisualProperties(vs)
+
   const cyStyle: CyjsDirectMapper[] = []
-  const entry: CyjsDirectMapper = {
-    selector: `node[background-color]`,
-    style: {
-      'background-color': 'red',
-    },
-  }
-  cyStyle.push(entry)
-
-  const { nodeViews, edgeViews } = networkView
-  Object.keys(nodeViews).forEach((id: IdType) => {
-    const nodeView: NodeView = nodeViews[id]
-    const { values } = nodeView
-    values.forEach(
-      (value: VisualPropertyValueType, key: VisualPropertyName) => {},
-    )
+  nodeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
+    const cyjsVpName = getCyjsVpName(vp.name)
+    if (cyjsVpName !== undefined) {
+      const directMapping: CyjsDirectMapper = {
+        selector: `node[${vp.name}]`,
+        style: {
+          [cyjsVpName]: `data(${vp.name})`,
+        },
+      }
+      cyStyle.push(directMapping)
+    }
   })
 
-  Object.keys(edgeViews).forEach((id: IdType) => {
-    const edgeView: EdgeView = edgeViews[id]
-    const { values } = edgeView
-    values.forEach(
-      (value: VisualPropertyValueType, key: VisualPropertyName) => {},
-    )
-  })
   console.log(cyStyle)
+  return cyStyle
 }
 
 type SelectorType = 'node' | 'edge'

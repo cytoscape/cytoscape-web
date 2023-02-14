@@ -12,7 +12,7 @@ import { VisualProperty } from '../VisualProperty'
 import { VisualPropertyName } from '../VisualPropertyName'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualStyle } from '../VisualStyle'
-import { nodeVisualProperties } from './VisualStyleImpl'
+import { edgeVisualProperties, nodeVisualProperties } from './VisualStyleImpl'
 
 /**
  *
@@ -34,48 +34,102 @@ export const createNewNetworkView = (
     nodeVisualProperties(vs),
     nodeTable,
   ),
-  edgeViews: edgeViewBuilder(network.edges),
+  edgeViews: edgeViewBuilder(
+    network.edges,
+    edgeVisualProperties(vs),
+    edgeTable,
+  ),
   selectedNodes: [],
   selectedEdges: [],
 })
+
+export const updateNetworkView = (
+  network: Network,
+  networkView: NetworkView,
+  vs: VisualStyle,
+  nodeTable: Table,
+  edgeTable: Table,
+): NetworkView => {
+  // Extract positions from the existing network view
+  const { nodeViews } = networkView
+
+  return {
+    id: network.id,
+    values: new Map<VisualPropertyName, VisualPropertyValueType>(),
+    nodeViews: nodeViewBuilder(
+      network.nodes,
+      nodeVisualProperties(vs),
+      nodeTable,
+      nodeViews,
+    ),
+    edgeViews: edgeViewBuilder(
+      network.edges,
+      edgeVisualProperties(vs),
+      edgeTable,
+    ),
+    selectedNodes: [],
+    selectedEdges: [],
+  }
+}
 
 const nodeViewBuilder = (
   nodes: Node[],
   visualProps: Array<VisualProperty<VisualPropertyValueType>>,
   nodeTable: Table,
-): Record<IdType, NodeView> =>
-  nodes
-    .map((node: Node) => ({
+  nodeViews?: Record<IdType, NodeView>,
+): Record<IdType, NodeView> => {
+  const t1 = performance.now()
+
+  const result: Record<IdType, NodeView> = {}
+  let idx: number = nodes.length
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  while (idx--) {
+    const node = nodes[idx]
+    const nv: NodeView = {
       id: node.id,
       values: computeView(
         node.id,
         visualProps,
         nodeTable.rows.get(node.id) ?? {},
       ),
-      x: 0,
-      y: 0,
-    }))
-    .reduce(
-      (acc, nv) => ({
-        ...acc,
-        [nv.id]: nv,
-      }),
-      {},
-    )
+      x: nodeViews !== undefined ? nodeViews[node.id].x : 0,
+      y: nodeViews !== undefined ? nodeViews[node.id].y : 0,
+    }
+    result[nv.id] = nv
+  }
 
-const edgeViewBuilder = (edges: Edge[]): Record<IdType, EdgeView> =>
-  edges
-    .map((edge: Edge) => ({
+  const t2 = performance.now()
+  console.log(`##### nodeViewBuilder took ${t2 - t1} milliseconds.`)
+  return result
+}
+
+const edgeViewBuilder = (
+  edges: Edge[],
+  visualProps: Array<VisualProperty<VisualPropertyValueType>>,
+  edgeTable: Table,
+): Record<IdType, EdgeView> => {
+  const t1 = performance.now()
+
+  const result: Record<IdType, EdgeView> = {}
+  let idx: number = edges.length
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  while (idx--) {
+    const edge = edges[idx]
+    const ev: EdgeView = {
       id: edge.id,
-      values: new Map<VisualPropertyName, VisualPropertyValueType>(),
-    }))
-    .reduce(
-      (acc, ev) => ({
-        ...acc,
-        [ev.id]: ev,
-      }),
-      {},
-    )
+      values: computeView(
+        edge.id,
+        visualProps,
+        edgeTable.rows.get(edge.id) ?? {},
+      ),
+    }
+    result[ev.id] = ev
+  }
+
+  const t2 = performance.now()
+  console.log(`##### edgeViewBuilder took ${t2 - t1} milliseconds.`)
+  return result
+}
 
 /**
  *

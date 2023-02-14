@@ -13,7 +13,7 @@ export const CyjsEdgeVisualPropertyName = {
   TargetArrowOpacity: 'target-arrow-opacity',
   SourceArrowShape: 'source-arrow-shape',
   SourceArrowColor: 'source-arrow-color',
-  SourceArroewFill: 'source-arrow-fill',
+  SourceArrowFill: 'source-arrow-fill',
   SourceArrowOpacity: 'source-arrow-opacity',
 } as const
 
