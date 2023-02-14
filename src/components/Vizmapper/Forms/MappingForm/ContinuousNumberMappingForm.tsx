@@ -123,6 +123,17 @@ export function ContinuousNumberMappingForm(props: {
           scale={yScale}
           top={0}
           left={0}
+          numTicks={3}
+          tickValues={
+            [
+              vpValueDomainExtent[0],
+              ((vpValueDomainExtent[0] as number) +
+                (vpValueDomainExtent[1] as number)) /
+                2,
+              vpValueDomainExtent[1],
+              vpValueDomainExtent[1],
+            ] as number[]
+          }
           label={props.visualProperty.displayName}
           labelProps={{
             fontSize: 14,
@@ -138,6 +149,17 @@ export function ContinuousNumberMappingForm(props: {
             fontSize: 14,
             textAnchor: 'middle',
           }}
+          numTicks={3}
+          tickValues={
+            [
+              valueDomainExtent[0],
+              ((valueDomainExtent[0] as number) +
+                (valueDomainExtent[1] as number)) /
+                2,
+              valueDomainExtent[1],
+              valueDomainExtent[1],
+            ] as number[]
+          }
           label={m.attribute}
           stroke={'#1b1a1e'}
         />

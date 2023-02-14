@@ -67,7 +67,7 @@ export function ContinuousColorMappingForm(props: {
   const GRADIENT_HEIGHT = 100
   const GRADIENT_AXIS_HORIZONTAL_PADDING = 30 // needed to make sure the axis labels are not cut off
   const GRADIENT_AXIS_VERTICAL_PADDING = 100 // needed to display the axis at the bottom of the color gradient
-
+  const GRADIENT_AXIS_OFFSET_LEFT = 10 // needed to make sure the axis labels are not cut off
   const setContinuousMappingValues = useVisualStyleStore(
     (state) => state.setContinuousMappingValues,
   )
@@ -83,6 +83,8 @@ export function ContinuousColorMappingForm(props: {
     ...handles.map((h) => h.vpValue as string),
     maxState.vpValue as string,
   ]
+
+  const valueDomainExtent = extent(valueDomain)
 
   // map values to pixels
   const valuePixelScale = scaleLinear({
@@ -169,7 +171,7 @@ export function ContinuousColorMappingForm(props: {
           }}
           elevation={4}
         >
-          <Box sx={{ p: 1 }}>
+          <Box sx={{ p: 1.5 }}>
             <Tooltip
               title="Click to add new handle"
               placement="top"
@@ -227,7 +229,12 @@ export function ContinuousColorMappingForm(props: {
                       ></Box>
                     )
                   })}
-                <Box sx={{ position: 'absolute' }}>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    left: -GRADIENT_AXIS_OFFSET_LEFT,
+                  }}
+                >
                   <svg
                     width={
                       GRADIENT_AXIS_HORIZONTAL_PADDING +
@@ -237,11 +244,22 @@ export function ContinuousColorMappingForm(props: {
                   >
                     <AxisBottom
                       scale={valuePixelScale}
+                      left={GRADIENT_AXIS_OFFSET_LEFT}
                       top={GRADIENT_HEIGHT}
                       labelProps={{
                         fontSize: 14,
                         textAnchor: 'middle',
                       }}
+                      tickValues={
+                        [
+                          valueDomainExtent[0],
+                          ((valueDomainExtent[0] as number) +
+                            (valueDomainExtent[1] as number)) /
+                            2,
+                          valueDomainExtent[1],
+                        ] as number[]
+                      }
+                      numTicks={3}
                       label={m.attribute}
                       stroke={'#1b1a1e'}
                     />
