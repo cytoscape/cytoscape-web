@@ -67,7 +67,6 @@ export const VisualStyleFnImpl: VisualStyleFn = {
   ): VisualStyle {
     throw new Error('Function not implemented.')
   },
-
   applyVisualStyle,
   nodeVisualProperties,
   edgeVisualProperties,

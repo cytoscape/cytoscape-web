@@ -12,7 +12,7 @@ import {
 } from '../VisualPropertyValue'
 import {
   CyjsVisualPropertyType,
-  CyjsVisualPropertyName,
+  CyjsVisualPropertyName as CyVpName,
 } from './CyjsProperties/CyjsVisualPropertyName'
 
 export type CyJsPropertyName = string
@@ -152,9 +152,9 @@ export const cyJsVisualPropertyConverter2: Record<
   nodeLabelVerticalAlign: verticalAlignTypeConverter('text-valign'),
   nodeLabelRotation: numberConverter('text-rotation'),
   nodeLabelOpacity: numberConverter('text-opacity'),
-  nodePositionX: null,
-  nodePositionY: null,
-  nodePositionZ: null,
+  // nodePositionX: null,
+  // nodePositionY: null,
+  // nodePositionZ: null,
   nodeOpacity: numberConverter('background-opacity'),
   nodeVisibility: visibilityTypeConverter('display'),
 
@@ -170,7 +170,7 @@ export const cyJsVisualPropertyConverter2: Record<
   edgeLabelFontSize: numberConverter('font-size'),
   edgeLabelFont: fontTypeConverter('font-family'),
   edgeLabelRotation: numberConverter('text-rotation'),
-  edgeLabelAutoRotation: booleanConverter('autorotate'),
+  // edgeLabelAutoRotation: booleanConverter('autorotate'),
   edgeLabelOpacity: numberConverter('text-opacity'),
   edgeOpacity: numberConverter('line-opacity'),
   edgeVisibility: visibilityTypeConverter('display'),
@@ -178,21 +178,46 @@ export const cyJsVisualPropertyConverter2: Record<
   networkBackgroundColor: null,
 }
 
-const { Shape, Height, Width, BackgroundColor, Label, LineColor, LineStyle } =
-  CyjsVisualPropertyName
-
-// eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-// @ts-ignore
 const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
-  nodeShape: Shape,
-  nodeHeight: Height,
-  nodeWidth: Width,
-  nodeBackgroundColor: BackgroundColor,
-  nodeLabel: Label,
+  nodeShape: CyVpName.Shape,
+  nodeHeight: CyVpName.Height,
+  nodeWidth: CyVpName.Width,
+  nodeBackgroundColor: CyVpName.BackgroundColor,
+  nodeOpacity: CyVpName.Opacity,
 
-  edgeLineType: LineStyle,
-  edgeLineColor: LineColor,
-  edgeWidth: Width,
+  nodeBorderColor: CyVpName.BorderColor,
+  nodeBorderLineType: CyVpName.BorderLineType,
+  nodeBorderWidth: CyVpName.BorderWidth,
+  nodeBorderOpacity: CyVpName.BorderOpacity,
+
+  nodeLabel: CyVpName.Label,
+  nodeLabelColor: CyVpName.LabelColor,
+  nodeLabelFontSize: CyVpName.LabelFontSize,
+  nodeLabelFont: CyVpName.LabelFont,
+  nodeLabelHorizontalAlign: CyVpName.LabelHorizontalAlign,
+  nodeLabelVerticalAlign: CyVpName.LabelVerticalAlign,
+  nodeLabelRotation: CyVpName.LabelRotation,
+  nodeLabelOpacity: CyVpName.LabelOpacity,
+
+  nodeVisibility: CyVpName.Visibility,
+
+  edgeLineType: CyVpName.LineStyle,
+  edgeLineColor: CyVpName.LineColor,
+  edgeWidth: CyVpName.Width,
+  edgeTargetArrowShape: CyVpName.TargetArrowShape,
+  edgeSourceArrowShape: CyVpName.SourceArrowShape,
+  edgeTargetArrowColor: CyVpName.TargetArrowColor,
+  edgeSourceArrowColor: CyVpName.SourceArrowColor,
+  edgeLabel: CyVpName.Label,
+  edgeLabelColor: CyVpName.LabelColor,
+  edgeLabelFontSize: CyVpName.LabelFontSize,
+  edgeLabelFont: CyVpName.LabelFont,
+  edgeLabelRotation: CyVpName.LabelRotation,
+  edgeLabelOpacity: CyVpName.LabelOpacity,
+  edgeOpacity: CyVpName.LineOpacity,
+  edgeVisibility: CyVpName.Visibility,
+
+  networkBackgroundColor: CyVpName.BackgroundColor,
 } as const
 
 /**

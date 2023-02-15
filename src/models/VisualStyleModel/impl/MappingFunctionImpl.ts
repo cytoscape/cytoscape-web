@@ -189,25 +189,6 @@ export const createCyJsMappingFn: (
   }
 }
 
-// was previously needed and may be needed in the future
-// const vpValueType2BaseType: Record<
-//   VisualPropertyValueTypeString,
-//   SingleValueType
-// > = {
-//   color: 'string',
-//   number: 'number',
-//   string: 'string',
-//   boolean: 'boolean',
-//   visibility: 'string',
-//   font: 'string',
-//   nodeShape: 'string',
-//   edgeLine: 'string',
-//   edgeArrowShape: 'string',
-//   horizontalAlign: 'string',
-//   verticalAlign: 'string',
-//   nodeBorderLine: 'string',
-// }
-
 const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
   string: 'string',
   long: 'number',
@@ -239,7 +220,7 @@ export const typesCanBeMapped = (
 
   if (mappingType === 'continuous') {
     const vtIsNumber =
-      valueTypeName === 'integer' ||
+      valueTypeName === ValueTypeName.Integer ||
       valueTypeName === 'double' ||
       valueTypeName === 'long'
     const vpIsNumberOrColor =

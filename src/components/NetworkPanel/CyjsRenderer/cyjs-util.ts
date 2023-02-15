@@ -5,8 +5,12 @@ import {
   VisualPropertyValueType,
   VisualStyle,
 } from '../../../models/VisualStyleModel'
+import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
 import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
-import { nodeVisualProperties } from '../../../models/VisualStyleModel/impl/VisualStyleImpl'
+import {
+  edgeVisualProperties,
+  nodeVisualProperties,
+} from '../../../models/VisualStyleModel/impl/VisualStyleImpl'
 
 export const addEventHandlers = (
   id: IdType,
@@ -32,8 +36,8 @@ export const addEventHandlers = (
 }
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
-  const nodeVps: Array<VisualProperty<VisualPropertyValueType>> =
-    nodeVisualProperties(vs)
+  const nodeVps = nodeVisualProperties(vs)
+  const edgeVps = edgeVisualProperties(vs)
 
   const cyStyle: CyjsDirectMapper[] = []
   nodeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
@@ -48,17 +52,19 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
       cyStyle.push(directMapping)
     }
   })
+  edgeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
+    const cyjsVpName = getCyjsVpName(vp.name)
+    if (cyjsVpName !== undefined) {
+      const directMapping: CyjsDirectMapper = {
+        selector: `edge[${vp.name}]`,
+        style: {
+          [cyjsVpName]: `data(${vp.name})`,
+        },
+      }
+      cyStyle.push(directMapping)
+    }
+  })
 
   console.log(cyStyle)
   return cyStyle
-}
-
-type SelectorType = 'node' | 'edge'
-
-type Selector = `${SelectorType}[${IdType}]`
-export interface CyjsDirectMapper {
-  selector: Selector
-  style: {
-    [key: string]: VisualPropertyValueType
-  }
 }

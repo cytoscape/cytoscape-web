@@ -1,6 +1,12 @@
 import { IdType } from '../../IdType'
 import { Edge, Network, Node } from '../../NetworkModel'
-import { AttributeName, Table, ValueType } from '../../TableModel'
+import {
+  AttributeName,
+  Column,
+  Table,
+  ValueType,
+  ValueTypeName,
+} from '../../TableModel'
 import { EdgeView, NetworkView, NodeView } from '../../ViewModel'
 import {
   ContinuousMappingFunction,
@@ -13,6 +19,8 @@ import { VisualPropertyName } from '../VisualPropertyName'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualStyle } from '../VisualStyle'
 import { edgeVisualProperties, nodeVisualProperties } from './VisualStyleImpl'
+
+import * as d3Scale from 'd3-scale'
 
 /**
  *
@@ -81,6 +89,7 @@ const nodeViewBuilder = (
   const t1 = performance.now()
 
   const result: Record<IdType, NodeView> = {}
+  const columns: Map<AttributeName, Column> = nodeTable.columns
   let idx: number = nodes.length
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   while (idx--) {
@@ -91,6 +100,7 @@ const nodeViewBuilder = (
         node.id,
         visualProps,
         nodeTable.rows.get(node.id) ?? {},
+        columns,
       ),
       x: nodeViews !== undefined ? nodeViews[node.id].x : 0,
       y: nodeViews !== undefined ? nodeViews[node.id].y : 0,
@@ -111,6 +121,7 @@ const edgeViewBuilder = (
   const t1 = performance.now()
 
   const result: Record<IdType, EdgeView> = {}
+  const columns: Map<AttributeName, Column> = edgeTable.columns
   let idx: number = edges.length
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   while (idx--) {
@@ -121,6 +132,7 @@ const edgeViewBuilder = (
         edge.id,
         visualProps,
         edgeTable.rows.get(edge.id) ?? {},
+        columns,
       ),
     }
     result[ev.id] = ev
@@ -159,16 +171,39 @@ export const applyPassthroughMapping = (
  * @param attributeValue
  * @returns
  */
-export const applyContinuousMapping = (
+const applyContinuousMapping = (
   cm: ContinuousMappingFunction,
   attributeValue: ValueType,
+  columns: Map<AttributeName, Column>,
 ): VisualPropertyValueType => {
-  return false
+  const { attribute, min, max } = cm
+  // get a mapped value using D3
+
+  const column: Column | undefined = columns.get(attribute)
+  if (column === undefined) {
+    throw new Error(`Column ${attribute} not found`)
+  }
+
+  const attrType: ValueTypeName = column.type
+  if (
+    attrType === ValueTypeName.Long ||
+    attrType === ValueTypeName.Double ||
+    attrType === ValueTypeName.Integer
+  ) {
+    const mapper = d3Scale
+      .scaleLinear()
+      .domain([min.value as number, max.value as number])
+      .range([min.vpValue as number, min.vpValue as number])
+    return mapper(attributeValue as number)
+  }
+
+  return 10
 }
 
 const getMappedValue = (
   mapping: VisualMappingFunction,
   attributeValue: ValueType,
+  columns: Map<AttributeName, Column>,
 ): VisualPropertyValueType => {
   const mappingType: MappingFunctionType = mapping.type
   if (mappingType === MappingFunctionType.Passthrough) {
@@ -182,6 +217,7 @@ const getMappedValue = (
     return applyContinuousMapping(
       mapping as ContinuousMappingFunction,
       attributeValue,
+      columns,
     )
   }
 
@@ -192,6 +228,7 @@ export const computeView = (
   id: IdType,
   visualProperties: Array<VisualProperty<VisualPropertyValueType>>,
   row: Record<AttributeName, ValueType>,
+  columns: Map<AttributeName, Column>,
 ): Map<VisualPropertyName, VisualPropertyValueType> => {
   const pairs = new Map<VisualPropertyName, VisualPropertyValueType>()
 
@@ -211,6 +248,7 @@ export const computeView = (
         const computedValue: VisualPropertyValueType = getMappedValue(
           mapping,
           attributeValueAssigned,
+          columns,
         )
         pairs.set(name, computedValue)
       } else {

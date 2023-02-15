@@ -66,6 +66,7 @@ export const CyjsRenderer = ({
   const isRendered = useRef(false)
 
   const renderNetwork = async (): Promise<void> => {
+    cy.unmount()
     cy.removeAllListeners()
     cy.startBatch()
     cy.remove('*')
@@ -88,6 +89,7 @@ export const CyjsRenderer = ({
       updatedNetworkView,
     )
 
+    const t1 = performance.now()
     const { nodeViews } = updatedNetworkView
     const cyNodes = Object.values(nodeViews).map((nv: NodeView) => {
       const { values } = nv
@@ -108,6 +110,8 @@ export const CyjsRenderer = ({
       }
     })
     cy.add(cyNodes)
+
+    console.log('#Time to add nodes: ', performance.now() - t1)
     const cyEdges = network.edges.map((edge: Edge) => {
       const cyEdge = {
         group: 'edges',
@@ -122,6 +126,9 @@ export const CyjsRenderer = ({
     })
     cy.add(cyEdges)
 
+    console.log('#Time to add nodes and edges: ', performance.now() - t1)
+
+    // Generate a new Cytoscape.js styles based on given visual style
     const newStyle = createCyjsDataMapper(vs)
 
     // Box selection listener
@@ -162,17 +169,17 @@ export const CyjsRenderer = ({
       setNodePosition(id, nodeId, [position.x, position.y])
     })
 
-    cy.fit()
     cy.endBatch()
 
-    cy.style(newStyle).update()
+    cy.style(newStyle)
+    cy.mount(cyContainer.current)
+
+    cy.fit()
   }
 
   const applyStyleUpdate = async (): Promise<void> => {
     // cy.removeAllListeners()
-    cy.startBatch()
-
-    const t1 = performance.now()
+    // cy.startBatch()
 
     // remove previous bypasses
     // e.g. if a node has a bypass and then the bypass was removed, we need to reset the style
@@ -186,7 +193,6 @@ export const CyjsRenderer = ({
     //     table.edgeTable,
     //     networkView,
     //   )
-    console.log('Style Apply', performance.now() - t1)
 
     // apply bypasses
     // Object.entries(nodeBypasses).forEach(([nodeId, bypass]) => {
@@ -210,11 +216,7 @@ export const CyjsRenderer = ({
       })
       .select()
 
-    cy.endBatch()
-
-    // cy.style(defaultStyle)
-    const t2 = performance.now()
-    console.log('Style applied in', t2 - t1)
+    // cy.endBatch()
   }
 
   const applyHoverStyle = (): void => {
