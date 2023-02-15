@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { Cx2 } from '../../../utils/cx/Cx2'
 import * as cxUtil from '../../../utils/cx/cx2-util'
-import { Network, Node, Edge } from '../../NetworkModel'
+import { Network } from '../../NetworkModel'
 import { Table, ValueType } from '../../TableModel'
 import { NetworkView } from '../../ViewModel'
 import {
@@ -28,13 +28,7 @@ import {
   CXVisualPropertyValue,
 } from './cxVisualPropertyConverter'
 
-import {
-  NodeSingular,
-  Stylesheet,
-  ElementDefinition,
-  ElementGroup,
-  EdgeSingular,
-} from 'cytoscape'
+import { NodeSingular, Stylesheet, EdgeSingular } from 'cytoscape'
 import { defaultVisualStyle } from './DefaultVisualStyle'
 import { IdType } from '../../IdType'
 import { createCyJsMappingFn } from './MappingFunctionImpl'
@@ -326,8 +320,8 @@ export const createCyJsStyleSheetView = (
   networkView: NetworkView,
 ): {
   defaultStyle: Stylesheet[]
-  cyNodes: ElementDefinition[]
-  cyEdges: ElementDefinition[]
+  // cyNodes: ElementDefinition[]
+  // cyEdges: ElementDefinition[]
   nodeBypasses: Record<IdType, Partial<Record<string, VisualPropertyValueType>>>
   edgeBypasses: Record<IdType, Partial<Record<string, VisualPropertyValueType>>>
 } => {
@@ -462,39 +456,39 @@ export const createCyJsStyleSheetView = (
       },
     },
   ]
-  const cyNodes = network.nodes.map((node: Node) => {
-    const positionX = networkView.nodeViews[node.id]?.x ?? 0
-    const positionY = networkView.nodeViews[node.id]?.y ?? 0
+  // const cyNodes = network.nodes.map((node: Node) => {
+  //   const positionX = networkView.nodeViews[node.id]?.x ?? 0
+  //   const positionY = networkView.nodeViews[node.id]?.y ?? 0
 
-    return {
-      group: 'nodes' as ElementGroup,
-      data: {
-        id: node.id,
-      },
-      position: {
-        x: positionX,
-        y: positionY,
-      },
-    }
-  })
+  //   return {
+  //     group: 'nodes' as ElementGroup,
+  //     data: {
+  //       id: node.id,
+  //     },
+  //     position: {
+  //       x: positionX,
+  //       y: positionY,
+  //     },
+  //   }
+  // })
 
-  const cyEdges = network.edges.map((edge: Edge) => {
-    const cyEdge = {
-      group: 'edges' as ElementGroup,
-      data: {
-        id: edge.id,
-        source: edge.s,
-        target: edge.t,
-      },
-    }
+  // const cyEdges = network.edges.map((edge: Edge) => {
+  //   const cyEdge = {
+  //     group: 'edges' as ElementGroup,
+  //     data: {
+  //       id: edge.id,
+  //       source: edge.s,
+  //       target: edge.t,
+  //     },
+  //   }
 
-    return cyEdge
-  })
+  //   return cyEdge
+  // })
 
   return {
     defaultStyle,
-    cyNodes,
-    cyEdges,
+    // cyNodes: [],
+    // cyEdges: [],
     nodeBypasses,
     edgeBypasses,
   }

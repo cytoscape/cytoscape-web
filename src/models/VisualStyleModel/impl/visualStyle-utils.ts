@@ -176,12 +176,22 @@ const applyContinuousMapping = (
   attributeValue: ValueType,
   columns: Map<AttributeName, Column>,
 ): VisualPropertyValueType => {
-  const { attribute, min, max } = cm
+  const { attribute, min, max, controlPoints } = cm
   // get a mapped value using D3
 
   const column: Column | undefined = columns.get(attribute)
   if (column === undefined) {
     throw new Error(`Column ${attribute} not found`)
+  }
+
+  const numPoints: number = controlPoints.length
+
+  if (numPoints === 0) {
+    throw new Error(`No continuous control points defined for ${attribute}`)
+  }
+
+  if (numPoints === 1) {
+    return controlPoints[0].vpValue
   }
 
   const attrType: ValueTypeName = column.type
@@ -190,11 +200,13 @@ const applyContinuousMapping = (
     attrType === ValueTypeName.Double ||
     attrType === ValueTypeName.Integer
   ) {
-    const mapper = d3Scale
-      .scaleLinear()
-      .domain([min.value as number, max.value as number])
-      .range([min.vpValue as number, min.vpValue as number])
-    return mapper(attributeValue as number)
+    if (numPoints === 2) {
+      const mapper = d3Scale
+        .scaleLinear()
+        .domain([min.value as number, max.value as number])
+        .range([min.vpValue as number, max.vpValue as number])
+      return mapper(attributeValue as number)
+    }
   }
 
   return 10

@@ -9,7 +9,7 @@ import Cytoscape, {
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import VisualStyleFn, {
+import {
   VisualPropertyName,
   VisualStyle,
 } from '../../../models/VisualStyleModel'
@@ -79,15 +79,6 @@ export const CyjsRenderer = ({
       visualStyle: vs,
     }
     const updatedNetworkView: NetworkView = Vsf.applyVisualStyle(data)
-
-    // TODO: Need to replace this
-    VisualStyleFn.createCyJsStyleSheetView(
-      vs,
-      network,
-      table.nodeTable,
-      table.edgeTable,
-      updatedNetworkView,
-    )
 
     const t1 = performance.now()
     const { nodeViews } = updatedNetworkView
@@ -169,9 +160,9 @@ export const CyjsRenderer = ({
       setNodePosition(id, nodeId, [position.x, position.y])
     })
 
+    cy.style(newStyle)
     cy.endBatch()
 
-    cy.style(newStyle)
     cy.mount(cyContainer.current)
 
     cy.fit()
@@ -179,7 +170,7 @@ export const CyjsRenderer = ({
 
   const applyStyleUpdate = async (): Promise<void> => {
     // cy.removeAllListeners()
-    // cy.startBatch()
+    cy.startBatch()
 
     // remove previous bypasses
     // e.g. if a node has a bypass and then the bypass was removed, we need to reset the style
@@ -216,7 +207,7 @@ export const CyjsRenderer = ({
       })
       .select()
 
-    // cy.endBatch()
+    cy.endBatch()
   }
 
   const applyHoverStyle = (): void => {
@@ -260,19 +251,19 @@ export const CyjsRenderer = ({
     ) {
       return
     }
-    if (lastNetworkId !== id) {
-      setLastNetworkId(id)
-      applyStyleUpdate()
-        .then(() => {
-          console.log('* style updated')
-          isRendered.current = true
-          setIsBusy(false)
-        })
-        .catch((error) => {
-          console.warn(error)
-        })
-    }
-  }, [vs, table, edgeViews, nodeViews])
+    // if (lastNetworkId !== id) {
+    // setLastNetworkId(id)
+    applyStyleUpdate()
+      .then(() => {
+        console.log('* style updated')
+        isRendered.current = true
+        setIsBusy(false)
+      })
+      .catch((error) => {
+        console.warn(error)
+      })
+    // }
+  }, [vs, table])
 
   // when hovered element changes, apply hover style to that element
   useEffect(() => {
@@ -283,7 +274,7 @@ export const CyjsRenderer = ({
   }, [hoveredElement])
 
   /**
-   * Initilizes the Cytoscape.js instance
+   * Initializes the Cytoscape.js instance
    */
   useEffect(() => {
     if (!isInitialized.current) {
@@ -295,6 +286,12 @@ export const CyjsRenderer = ({
       })
       setCy(cy)
       console.info('* CyJS Renderer initialized:', cy)
+    }
+
+    return () => {
+      if (cy != null) {
+        cy.destroy()
+      }
     }
   }, [])
 
