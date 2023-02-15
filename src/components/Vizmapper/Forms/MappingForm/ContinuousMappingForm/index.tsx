@@ -1,16 +1,16 @@
 import * as React from 'react'
 import { Box } from '@mui/material'
 
-import { IdType } from '../../../../models/IdType'
+import { IdType } from '../../../../../models/IdType'
 import {
   VisualProperty,
   VisualPropertyValueType,
-} from '../../../../models/VisualStyleModel'
-import { ContinuousMappingFunction } from '../../../../models/VisualStyleModel/VisualMappingFunction'
+} from '../../../../../models/VisualStyleModel'
+import { ContinuousMappingFunction } from '../../../../../models/VisualStyleModel/VisualMappingFunction'
 
-import { Table } from '../../../../models/TableModel'
+import { Table } from '../../../../../models/TableModel'
 
-import { useTableStore } from '../../../../store/TableStore'
+import { useTableStore } from '../../../../../store/TableStore'
 
 import { ContinuousColorMappingForm } from './ContinuousColorMappingForm'
 import { ContinuousNumberMappingForm } from './ContinuousNumberMappingForm'

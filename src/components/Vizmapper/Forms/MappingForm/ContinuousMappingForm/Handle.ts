@@ -1,6 +1,6 @@
-import { ValueType } from '../../../../models/TableModel'
-import { ContinuousFunctionControlPoint } from '../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
-import { VisualPropertyValueType } from '../../../../models/VisualStyleModel'
+import { ValueType } from '../../../../../models/TableModel'
+import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
+import { VisualPropertyValueType } from '../../../../../models/VisualStyleModel'
 
 export interface Handle extends ContinuousFunctionControlPoint {
   id: number

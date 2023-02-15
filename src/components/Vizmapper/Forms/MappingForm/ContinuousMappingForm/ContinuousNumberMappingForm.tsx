@@ -24,16 +24,16 @@ import { extent } from 'd3-array'
 
 import Draggable from 'react-draggable'
 
-import { IdType } from '../../../../models/IdType'
+import { IdType } from '../../../../../models/IdType'
 import {
   VisualProperty,
   VisualPropertyValueType,
-} from '../../../../models/VisualStyleModel'
-import { ContinuousMappingFunction } from '../../../../models/VisualStyleModel/VisualMappingFunction'
+} from '../../../../../models/VisualStyleModel'
+import { ContinuousMappingFunction } from '../../../../../models/VisualStyleModel/VisualMappingFunction'
 
 // import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
-import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
-import { ContinuousFunctionControlPoint } from '../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
+import { useVisualStyleStore } from '../../../../../store/VisualStyleStore'
+import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { Handle, addHandle, removeHandle, editHandle } from './Handle'
 
 interface LineChartProps {

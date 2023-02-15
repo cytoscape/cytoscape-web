@@ -18,17 +18,17 @@ import Delete from '@mui/icons-material/DisabledByDefault'
 import { color } from 'd3-color'
 import Draggable from 'react-draggable'
 
-import { IdType } from '../../../../models/IdType'
+import { IdType } from '../../../../../models/IdType'
 import {
   VisualProperty,
   VisualPropertyValueType,
-} from '../../../../models/VisualStyleModel'
-import { ContinuousMappingFunction } from '../../../../models/VisualStyleModel/VisualMappingFunction'
+} from '../../../../../models/VisualStyleModel'
+import { ContinuousMappingFunction } from '../../../../../models/VisualStyleModel/VisualMappingFunction'
 import { Handle } from './Handle'
 
-import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
-import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
-import { ContinuousFunctionControlPoint } from '../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
+import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
+import { useVisualStyleStore } from '../../../../../store/VisualStyleStore'
+import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { debounce } from 'lodash'
 
 // color mapping form for now
