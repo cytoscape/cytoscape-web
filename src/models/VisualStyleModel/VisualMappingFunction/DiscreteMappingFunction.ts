@@ -5,5 +5,4 @@ import { VisualMappingFunction } from '.'
 
 export interface DiscreteMappingFunction extends VisualMappingFunction {
   vpValueMap: Map<ValueType, VisualPropertyValueType>
-  defaultValue: VisualPropertyValueType
 }

@@ -8,7 +8,7 @@ import { VisualPropertyGroup } from '../VisualPropertyGroup'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualStyle } from '../VisualStyle'
 import { NetworkViewSources, VisualStyleFn } from '../VisualStyleFn'
-import { defaultVisualStyle } from './DefaultVisualStyle'
+import { getDefaultVisualStyle } from './DefaultVisualStyle'
 import { createNewNetworkView, updateNetworkView } from './visualStyle-utils'
 
 const applyVisualStyle = (data: NetworkViewSources): NetworkView => {
@@ -53,7 +53,7 @@ const networkVisualProperties = (
 
 const createVisualStyle = (): VisualStyle => {
   // create new copy of the default style instead of returning the same instance
-  return { ...defaultVisualStyle }
+  return getDefaultVisualStyle()
 }
 
 export const VisualStyleFnImpl: VisualStyleFn = {

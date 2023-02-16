@@ -9,7 +9,7 @@ import {
   MappingFunctionType,
   VisualMappingFunction,
 } from '../VisualMappingFunction'
-import { VisualPropertyValueTypeString } from '../VisualPropertyValueTypeString'
+import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import { ColorType, VisualPropertyValueType } from '../VisualPropertyValue'
 
 import { SingularElementArgument } from 'cytoscape'
@@ -207,7 +207,7 @@ const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
 export const typesCanBeMapped = (
   mappingType: MappingFunctionType,
   valueTypeName: ValueTypeName,
-  vpValueTypeName: VisualPropertyValueTypeString,
+  vpValueTypeName: VisualPropertyValueTypeName,
 ): boolean => {
   if (mappingType === 'passthrough') {
     const vtBaseType = valueType2BaseType[valueTypeName]

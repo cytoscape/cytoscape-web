@@ -1,6 +1,6 @@
 import { VisualStyle } from '../VisualStyle'
 
-export const defaultVisualStyle: VisualStyle = {
+export const getDefaultVisualStyle = (): VisualStyle => ({
   nodeShape: {
     group: 'node',
     name: 'nodeShape',
@@ -305,4 +305,4 @@ export const defaultVisualStyle: VisualStyle = {
     defaultValue: '#FFFFFF',
     bypassMap: new Map(),
   },
-}
+})

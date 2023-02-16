@@ -22,7 +22,7 @@ export interface NetworkViewSources {
 }
 
 export interface VisualStyleFn {
-  // Create an empty VisualStyle
+  // Create the default VisualStyle
   createVisualStyle: () => VisualStyle
 
   // Create a VisualStyle from a Cx2 object

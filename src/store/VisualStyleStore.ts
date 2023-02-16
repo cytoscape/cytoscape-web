@@ -188,6 +188,7 @@ export const useVisualStyleStore = create(
             attribute: attributeName,
             type: MappingFunctionType.Discrete,
             vpValueMap,
+            visualPropertyType: '',
             defaultValue,
           }
           state.visualStyles[networkId][vpName].mapping = discreteMapping
@@ -231,12 +232,15 @@ export const useVisualStyleStore = create(
             },
           ]
 
+          const { defaultValue, type } = state.visualStyles[networkId][vpName]
           const continuousMapping: ContinuousMappingFunction = {
             attribute: attributeName,
             type: MappingFunctionType.Continuous,
             min,
             max,
             controlPoints: ctrlPts,
+            defaultValue,
+            visualPropertyType: type,
           }
 
           state.visualStyles[networkId][vpName].mapping = continuousMapping
@@ -245,9 +249,12 @@ export const useVisualStyleStore = create(
 
       createPassthroughMapping(networkId, vpName, attributeName) {
         set((state) => {
+          const { defaultValue, type } = state.visualStyles[networkId][vpName]
           const passthroughMapping: PassthroughMappingFunction = {
             type: MappingFunctionType.Passthrough,
             attribute: attributeName,
+            visualPropertyType: type,
+            defaultValue,
           }
           state.visualStyles[networkId][vpName].mapping = passthroughMapping
         })

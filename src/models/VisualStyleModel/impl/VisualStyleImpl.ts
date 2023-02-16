@@ -7,6 +7,7 @@ import { NetworkView } from '../../ViewModel'
 import {
   DiscreteMappingFunction,
   ContinuousMappingFunction,
+  PassthroughMappingFunction,
 } from '../VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyName } from '../VisualPropertyName'
@@ -29,7 +30,7 @@ import {
 } from './cxVisualPropertyConverter'
 
 import { NodeSingular, Stylesheet, EdgeSingular } from 'cytoscape'
-import { defaultVisualStyle } from './DefaultVisualStyle'
+import { getDefaultVisualStyle } from './DefaultVisualStyle'
 import { IdType } from '../../IdType'
 import { createCyJsMappingFn } from './MappingFunctionImpl'
 
@@ -52,8 +53,7 @@ export const networkVisualProperties = (
 }
 
 export const createVisualStyle = (): VisualStyle => {
-  // create new copy of the default style instead of returning the same instance
-  return JSON.parse(JSON.stringify(defaultVisualStyle))
+  return getDefaultVisualStyle()
 }
 
 // convert cx visual properties to app visual style model
@@ -191,17 +191,23 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
         const cxBypass = getBypass()
 
         if (cxDefault != null) {
-          visualStyle[vpName].defaultValue = converter.valueConverter(cxDefault)
+          const test: VisualProperty<VisualPropertyValueType> =
+            visualStyle[vpName]
+          test.defaultValue = converter.valueConverter(cxDefault)
         }
 
         if (cxMapping != null) {
           switch (cxMapping.type) {
-            case 'PASSTHROUGH':
-              visualStyle[vpName].mapping = {
+            case 'PASSTHROUGH': {
+              const m: PassthroughMappingFunction = {
                 type: 'passthrough',
+                visualPropertyType: vp.type,
                 attribute: cxMapping.definition.attribute,
+                defaultValue: vp.defaultValue,
               }
+              visualStyle[vpName].mapping = m
               break
+            }
             case 'DISCRETE': {
               const vpValueMap = new Map()
               cxMapping.definition.map.forEach((mapEntry) => {
@@ -211,8 +217,9 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
               const m: DiscreteMappingFunction = {
                 type: 'discrete',
                 attribute: cxMapping.definition.attribute,
-                defaultValue: visualStyle[vpName].defaultValue,
                 vpValueMap,
+                visualPropertyType: vp.type,
+                defaultValue: vp.defaultValue,
               }
               visualStyle[vpName].mapping = m
               break
@@ -285,6 +292,8 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                   min,
                   max,
                   controlPoints: sortedCtrlPts,
+                  visualPropertyType: vp.type,
+                  defaultValue: vp.defaultValue,
                 }
                 visualStyle[vpName].mapping = m
               } else {

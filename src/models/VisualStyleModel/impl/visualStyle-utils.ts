@@ -1,17 +1,12 @@
 import { IdType } from '../../IdType'
 import { Edge, Network, Node } from '../../NetworkModel'
-import {
-  AttributeName,
-  Column,
-  Table,
-  ValueType,
-  ValueTypeName,
-} from '../../TableModel'
+import { AttributeName, Column, Table, ValueType } from '../../TableModel'
 import { EdgeView, NetworkView, NodeView } from '../../ViewModel'
 import {
   ContinuousMappingFunction,
   DiscreteMappingFunction,
   MappingFunctionType,
+  PassthroughMappingFunction,
   VisualMappingFunction,
 } from '../VisualMappingFunction'
 import { VisualProperty } from '../VisualProperty'
@@ -20,7 +15,44 @@ import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualStyle } from '../VisualStyle'
 import { edgeVisualProperties, nodeVisualProperties } from './VisualStyleImpl'
 
-import * as d3Scale from 'd3-scale'
+// import * as d3Scale from 'd3-scale'
+// import { VisualPropertyValueTypeName } from '../../VisualStyleModel/VisualPropertyValueTypeName'
+
+import * as MapperFactory from '../VisualMappingFunction/MapperFactory'
+import { Mapper } from '../VisualMappingFunction/Mapper'
+
+// Buiold mapping functions from all visual properties
+const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
+  const mappers: Map<VisualPropertyName, Mapper> = new Map()
+  Object.keys(vs).forEach((vpName: VisualPropertyName) => {
+    const vp: VisualProperty<VisualPropertyValueType> = vs[vpName]
+    const vmf: VisualMappingFunction | undefined = vp.mapping
+    if (vmf !== undefined) {
+      let mapper: Mapper
+      const mappingType: MappingFunctionType = vmf.type
+      if (mappingType === MappingFunctionType.Discrete) {
+        mapper = MapperFactory.createDiscreteMapper(
+          vmf as DiscreteMappingFunction,
+        )
+      } else if (mappingType === MappingFunctionType.Continuous) {
+        mapper = MapperFactory.createContinuousMapper(
+          vmf as ContinuousMappingFunction,
+        )
+      } else if (mappingType === MappingFunctionType.Passthrough) {
+        mapper = MapperFactory.createPassthroughMapper(
+          vmf as PassthroughMappingFunction,
+        )
+      } else {
+        throw new Error(`Unknown mapping type for ${vpName}`)
+      }
+
+      if (mapper !== undefined) {
+        mappers.set(vpName, mapper)
+      }
+    }
+  })
+  return mappers
+}
 
 /**
  *
@@ -34,23 +66,27 @@ export const createNewNetworkView = (
   vs: VisualStyle,
   nodeTable: Table,
   edgeTable: Table,
-): NetworkView => ({
-  id: network.id,
-  values: new Map<VisualPropertyName, VisualPropertyValueType>(),
-  nodeViews: nodeViewBuilder(
-    network.nodes,
-    nodeVisualProperties(vs),
-    nodeTable,
-  ),
-  edgeViews: edgeViewBuilder(
-    network.edges,
-    edgeVisualProperties(vs),
-    edgeTable,
-  ),
-  selectedNodes: [],
-  selectedEdges: [],
-})
-
+): NetworkView => {
+  const mappers = buildMappers(vs)
+  return {
+    id: network.id,
+    values: new Map<VisualPropertyName, VisualPropertyValueType>(),
+    nodeViews: nodeViewBuilder(
+      network.nodes,
+      nodeVisualProperties(vs),
+      mappers,
+      nodeTable,
+    ),
+    edgeViews: edgeViewBuilder(
+      network.edges,
+      edgeVisualProperties(vs),
+      mappers,
+      edgeTable,
+    ),
+    selectedNodes: [],
+    selectedEdges: [],
+  }
+}
 export const updateNetworkView = (
   network: Network,
   networkView: NetworkView,
@@ -60,6 +96,8 @@ export const updateNetworkView = (
 ): NetworkView => {
   // Extract positions from the existing network view
   const { nodeViews } = networkView
+  const mappers = buildMappers(vs)
+  console.log(mappers)
 
   return {
     id: network.id,
@@ -67,12 +105,14 @@ export const updateNetworkView = (
     nodeViews: nodeViewBuilder(
       network.nodes,
       nodeVisualProperties(vs),
+      mappers,
       nodeTable,
       nodeViews,
     ),
     edgeViews: edgeViewBuilder(
       network.edges,
       edgeVisualProperties(vs),
+      mappers,
       edgeTable,
     ),
     selectedNodes: [],
@@ -83,6 +123,7 @@ export const updateNetworkView = (
 const nodeViewBuilder = (
   nodes: Node[],
   visualProps: Array<VisualProperty<VisualPropertyValueType>>,
+  mappers: Map<VisualPropertyName, Mapper>,
   nodeTable: Table,
   nodeViews?: Record<IdType, NodeView>,
 ): Record<IdType, NodeView> => {
@@ -99,6 +140,7 @@ const nodeViewBuilder = (
       values: computeView(
         node.id,
         visualProps,
+        mappers,
         nodeTable.rows.get(node.id) ?? {},
         columns,
       ),
@@ -116,6 +158,7 @@ const nodeViewBuilder = (
 const edgeViewBuilder = (
   edges: Edge[],
   visualProps: Array<VisualProperty<VisualPropertyValueType>>,
+  mappers: Map<VisualPropertyName, Mapper>,
   edgeTable: Table,
 ): Record<IdType, EdgeView> => {
   const t1 = performance.now()
@@ -131,6 +174,7 @@ const edgeViewBuilder = (
       values: computeView(
         edge.id,
         visualProps,
+        mappers,
         edgeTable.rows.get(edge.id) ?? {},
         columns,
       ),
@@ -145,6 +189,36 @@ const edgeViewBuilder = (
 
 /**
  *
+ * Create actual mapper using D3.js
+ *
+ * @param cm
+ * @param vpType
+ * @returns
+ */
+// const getContinuousMapper = (
+//   cm: ContinuousMappingFunction,
+//   vpType: VisualPropertyValueTypeName,
+// ): Mapper => {
+//   const { min, max } = cm
+
+//   // Based on the VP value, crfeate D3 mappers
+//   if (vpType === VisualPropertyValueTypeName.Number) {
+//     const mapper = d3Scale
+//       .scaleLinear()
+//       .domain([min.value as number, max.value as number])
+//       .range([min.vpValue as number, max.vpValue as number])
+//     return mapper as Mapper
+//   } else if (vpType === VisualPropertyValueTypeName.Color) {
+//     return (attributeValue: ValueType) => {
+//       return 'red'
+//     }
+//   } else {
+//     throw new Error('Unsupported VP type')
+//   }
+// }
+
+/**
+ *
  * Compute visual value from attribute value
  * by applying the discrete mapping
  *
@@ -152,8 +226,9 @@ const edgeViewBuilder = (
 export const applyDiscreteMapping = (
   dm: DiscreteMappingFunction,
   attributeValue: ValueType,
+  defaultValue: VisualPropertyValueType,
 ): VisualPropertyValueType => {
-  const { vpValueMap, defaultValue } = dm
+  const { vpValueMap } = dm
   return vpValueMap.get(attributeValue) ?? defaultValue
 }
 
@@ -171,74 +246,67 @@ export const applyPassthroughMapping = (
  * @param attributeValue
  * @returns
  */
-const applyContinuousMapping = (
-  cm: ContinuousMappingFunction,
-  attributeValue: ValueType,
-  columns: Map<AttributeName, Column>,
-): VisualPropertyValueType => {
-  const { attribute, min, max, controlPoints } = cm
-  // get a mapped value using D3
+// const applyContinuousMapping = (
+//   cm: ContinuousMappingFunction,
+//   attributeValue: ValueType,
+//   columns: Map<AttributeName, Column>,
+//   vpType: VisualPropertyValueTypeName,
+// ): VisualPropertyValueType => {
+//   const { attribute, controlPoints } = cm
+//   // get a mapped value using D3
 
-  const column: Column | undefined = columns.get(attribute)
-  if (column === undefined) {
-    throw new Error(`Column ${attribute} not found`)
-  }
+//   const column: Column | undefined = columns.get(attribute)
+//   if (column === undefined) {
+//     throw new Error(`Column ${attribute} not found`)
+//   }
 
-  const numPoints: number = controlPoints.length
+//   const numPoints: number = controlPoints.length
 
-  if (numPoints === 0) {
-    throw new Error(`No continuous control points defined for ${attribute}`)
-  }
+//   if (numPoints === 0) {
+//     throw new Error(`No continuous control points defined for ${attribute}`)
+//   }
 
-  if (numPoints === 1) {
-    return controlPoints[0].vpValue
-  }
+//   if (numPoints === 1) {
+//     return controlPoints[0].vpValue
+//   }
 
-  const attrType: ValueTypeName = column.type
-  if (
-    attrType === ValueTypeName.Long ||
-    attrType === ValueTypeName.Double ||
-    attrType === ValueTypeName.Integer
-  ) {
-    if (numPoints === 2) {
-      const mapper = d3Scale
-        .scaleLinear()
-        .domain([min.value as number, max.value as number])
-        .range([min.vpValue as number, max.vpValue as number])
-      return mapper(attributeValue as number)
-    }
-  }
+//   return getContinuousMapper(cm, vpType)(attributeValue)
+// }
 
-  return 10
-}
+// const getMappedValue = (
+//   mapping: VisualMappingFunction,
+//   attributeValue: ValueType,
+//   columns: Map<AttributeName, Column>,
+//   vpType: VisualPropertyValueTypeName,
+//   defaultValue: VisualPropertyValueType,
+//   mapper?: Mapper,
+// ): VisualPropertyValueType => {
+//   const mappingType: MappingFunctionType = mapping.type
 
-const getMappedValue = (
-  mapping: VisualMappingFunction,
-  attributeValue: ValueType,
-  columns: Map<AttributeName, Column>,
-): VisualPropertyValueType => {
-  const mappingType: MappingFunctionType = mapping.type
-  if (mappingType === MappingFunctionType.Passthrough) {
-    return applyPassthroughMapping(attributeValue)
-  } else if (mappingType === MappingFunctionType.Discrete) {
-    return applyDiscreteMapping(
-      mapping as DiscreteMappingFunction,
-      attributeValue,
-    )
-  } else if (mappingType === MappingFunctionType.Continuous) {
-    return applyContinuousMapping(
-      mapping as ContinuousMappingFunction,
-      attributeValue,
-      columns,
-    )
-  }
+//   if (mappingType === MappingFunctionType.Passthrough) {
+//     return applyPassthroughMapping(attributeValue)
+//   } else if (mappingType === MappingFunctionType.Discrete) {
+//     return applyDiscreteMapping(
+//       mapping as DiscreteMappingFunction,
+//       attributeValue,
+//       defaultValue,
+//     )
+//   } else if (mappingType === MappingFunctionType.Continuous) {
+//     return applyContinuousMapping(
+//       mapping as ContinuousMappingFunction,
+//       attributeValue,
+//       columns,
+//       vpType,
+//     )
+//   }
 
-  throw new Error(`Mapping type not supported: ${mapping.type}`)
-}
+//   throw new Error('Mapping type not supported')
+// }
 
 export const computeView = (
   id: IdType,
   visualProperties: Array<VisualProperty<VisualPropertyValueType>>,
+  mappers: Map<AttributeName, Mapper>,
   row: Record<AttributeName, ValueType>,
   columns: Map<AttributeName, Column>,
 ): Map<VisualPropertyName, VisualPropertyValueType> => {
@@ -257,10 +325,23 @@ export const computeView = (
       const attributeValueAssigned: ValueType | undefined = row[attrName]
 
       if (attributeValueAssigned !== undefined) {
-        const computedValue: VisualPropertyValueType = getMappedValue(
-          mapping,
+        // const computedValue: VisualPropertyValueType = getMappedValue(
+        //   mapping,
+        //   attributeValueAssigned,
+        //   columns,
+        //   vp.type,
+        //   vp.defaultValue,
+        //   mapper.get(vp.name),
+        // )
+        const mapper: Mapper | undefined = mappers.get(vp.name)
+        if (mapper === undefined) {
+          throw new Error(
+            `Mapping is defined, but Mapper for ${vp.name} is not found`,
+          )
+        }
+        const computedValue: VisualPropertyValueType = mapper(
           attributeValueAssigned,
-          columns,
+          vp.defaultValue,
         )
         pairs.set(name, computedValue)
       } else {
