@@ -9,18 +9,15 @@ import Cytoscape, {
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import {
-  VisualPropertyName,
-  VisualStyle,
-} from '../../../models/VisualStyleModel'
-import { Edge, Network } from '../../../models/NetworkModel'
+import { VisualStyle } from '../../../models/VisualStyleModel'
+import { Network } from '../../../models/NetworkModel'
 import { ReactElement, useEffect, useRef, useState } from 'react'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { VisualStyleFnImpl as Vsf } from '../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
-import { ValueType } from '../../../models/TableModel'
 import { createCyjsDataMapper } from './cyjs-util'
+import { addObjects } from './cyjs-factory'
 interface NetworkRendererProps {
   network: Network
   setIsBusy: (isBusy: boolean) => void
@@ -81,41 +78,8 @@ export const CyjsRenderer = ({
     const updatedNetworkView: NetworkView = Vsf.applyVisualStyle(data)
 
     const t1 = performance.now()
-    const { nodeViews } = updatedNetworkView
-    const cyNodes = Object.values(nodeViews).map((nv: NodeView) => {
-      const { values } = nv
-
-      const newData: Record<VisualPropertyName | IdType, ValueType> = {}
-      newData['id' as IdType] = nv.id
-      values.forEach((value: ValueType, key: VisualPropertyName) => {
-        newData[key] = value
-      })
-
-      return {
-        group: 'nodes',
-        data: newData,
-        position: {
-          x: nv.x,
-          y: nv.y,
-        },
-      }
-    })
-    cy.add(cyNodes)
-
-    console.log('#Time to add nodes: ', performance.now() - t1)
-    const cyEdges = network.edges.map((edge: Edge) => {
-      const cyEdge = {
-        group: 'edges',
-        data: {
-          id: edge.id,
-          source: edge.s,
-          target: edge.t,
-        },
-      }
-
-      return cyEdge
-    })
-    cy.add(cyEdges)
+    const { nodeViews, edgeViews } = updatedNetworkView
+    addObjects(cy, Object.values(nodeViews), network.edges, edgeViews)
 
     console.log('#Time to add nodes and edges: ', performance.now() - t1)
 
