@@ -14,10 +14,7 @@ import {
   NodeBorderLine,
   NodeBorderLinePicker,
 } from '../VisualPropertyRender/NodeBorderLine'
-import {
-  NumberInput,
-  Number as NumberRender,
-} from '../VisualPropertyRender/Number'
+import { NumberInput, NumberRender } from '../VisualPropertyRender/Number'
 import { Font, FontPicker } from '../VisualPropertyRender/Font'
 import {
   HoritzontalAlignPicker,
@@ -237,9 +234,7 @@ export function VisualPropertyValueForm(
       >
         <Box>
           {props.title != null ? (
-            <Typography sx={{ m: 1 }} variant="h6">
-              {props.title}
-            </Typography>
+            <Typography sx={{ m: 1 }}>{props.title}</Typography>
           ) : null}
 
           <Box sx={{ p: 1 }}>

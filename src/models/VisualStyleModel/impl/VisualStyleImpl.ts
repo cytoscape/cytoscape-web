@@ -227,6 +227,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
               const numMapEntries = cxMapping.definition.map.length
               if (numMapEntries < 2) {
                 visualStyle[vpName].mapping = null
+                break
               }
 
               let min = null
@@ -262,7 +263,11 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
               }
 
               const controlPoints: ContinuousFunctionControlPoint[] = []
-              cxMapping.definition.map.forEach((mapEntry) => {
+
+              // only iterate through the middle entries of the map
+              // i.e. exclue min and max
+              for (let i = 1; i <= numMapEntries - 2; i++) {
+                const mapEntry = cxMapping.definition.map[i]
                 if (mapEntry.minVPValue != null && mapEntry.min != null) {
                   controlPoints.push({
                     value: mapEntry.min as ValueType,
@@ -276,7 +281,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                     vpValue: converter.valueConverter(mapEntry.maxVPValue),
                   })
                 }
-              })
+              }
 
               const uniqueCtrlPts = _.uniqWith(controlPoints, _.isEqual)
 
