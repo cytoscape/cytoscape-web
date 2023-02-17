@@ -6,7 +6,6 @@ import {
   VisualPropertyValueType,
   VisualPropertyName,
 } from '../../../models/VisualStyleModel'
-import { VisualPropertyValueTypeString } from '../../../models/VisualStyleModel/VisualPropertyValueTypeString'
 
 import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
 import { Color, ColorPicker } from '../VisualPropertyRender/Color'
@@ -51,9 +50,10 @@ import {
   EmptyVisualPropertyViewBox,
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
+import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
 
 const vpType2RenderMap: Record<
-  VisualPropertyValueTypeString,
+  VisualPropertyValueTypeName,
   {
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
@@ -155,7 +155,7 @@ const vpName2RenderMap: Partial<
 
 interface VisualPropertyRenderProps {
   value: VisualPropertyValueType | null
-  vpValueType: VisualPropertyValueTypeString
+  vpValueType: VisualPropertyValueTypeName
   vpName: VisualPropertyName
 }
 

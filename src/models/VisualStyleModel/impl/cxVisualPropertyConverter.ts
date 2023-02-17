@@ -5,7 +5,7 @@ import {
   NodeBorderLineType,
   NodeShapeType,
   VisualPropertyValueType,
-  HoritzontalAlignType,
+  HorizontalAlignType,
   VerticalAlignType,
   VisibilityType,
   EdgeLineType,
@@ -136,10 +136,10 @@ export const VPNodeShapeTypeConverter = (
 
 export const VPNodeLabelHorizonalAlignTypeConverter = (
   cxVPName: string,
-): CXVisualPropertyConverter<HoritzontalAlignType> => {
+): CXVisualPropertyConverter<HorizontalAlignType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: CXLabelPositionType): HoritzontalAlignType => {
+    valueConverter: (cxVPValue: CXLabelPositionType): HorizontalAlignType => {
       return 'center' // TODO - implement real conversion
     },
   }
@@ -216,9 +216,9 @@ export const cxVisualPropertyConverter: Record<
   ),
   nodeLabelRotation: VPNumberConverter('NODE_LABEL_ROTATION'),
   nodeLabelOpacity: VPNumberConverter('NODE_LABEL_OPACITY'),
-  nodePositionX: VPNumberConverter('NODE_X_LOCATION'),
-  nodePositionY: VPNumberConverter('NODE_Y_LOCATION'),
-  nodePositionZ: VPNumberConverter('NODE_Z_LOCATION'),
+  // nodePositionX: VPNumberConverter('NODE_X_LOCATION'),
+  // nodePositionY: VPNumberConverter('NODE_Y_LOCATION'),
+  // nodePositionZ: VPNumberConverter('NODE_Z_LOCATION'),
   nodeOpacity: VPNumberConverter('NODE_BACKGROUND_OPACITY'),
   nodeVisibility: VPVisibilityTypeConverter('NODE_VISIBLITY'),
 
@@ -238,7 +238,7 @@ export const cxVisualPropertyConverter: Record<
   edgeLabelFontSize: VPNumberConverter('EDGE_LABEL_FONT_SIZE'),
   edgeLabelFont: VPFontTypeConverter('EDGE_LABEL_FONT_FACE'),
   edgeLabelRotation: VPNumberConverter('EDGE_LABEL_ROTATION'),
-  edgeLabelAutoRotation: VPBooleanConverter('EDGE_LABEL_AUTO_ROTATION'),
+  // edgeLabelAutoRotation: VPBooleanConverter('EDGE_LABEL_AUTO_ROTATION'),
   edgeLabelOpacity: VPNumberConverter('EDGE_LABEL_OPACITY'),
   edgeOpacity: VPNumberConverter('EDGE_OPACITY'),
   edgeVisibility: VPVisibilityTypeConverter('EDGE_VISIBILITY'),

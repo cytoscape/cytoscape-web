@@ -15,7 +15,7 @@ import {
   ContinuousMappingFunction,
 } from '../models/VisualStyleModel/VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
-import { VisualPropertyValueTypeString } from '../models/VisualStyleModel/VisualPropertyValueTypeString'
+import { VisualPropertyValueTypeName } from '../models/VisualStyleModel/VisualPropertyValueTypeName'
 /**
 //  * Visual Style State manager based on zustand
 //  */
@@ -64,7 +64,7 @@ interface UpdateVisualStyleAction {
   createContinuousMapping: (
     networkId: IdType,
     vpName: VisualPropertyName,
-    vpType: VisualPropertyValueTypeString,
+    vpType: VisualPropertyValueTypeName,
     attribute: AttributeName,
     attributeValues: ValueType[],
   ) => void
@@ -182,11 +182,15 @@ export const useVisualStyleStore = create(
 
       createDiscreteMapping(networkId, vpName, attributeName) {
         set((state) => {
+          const { defaultValue } = state.visualStyles[networkId][vpName]
+          const vpValueMap = new Map<ValueType, VisualPropertyValueType>()
+
           const discreteMapping: DiscreteMappingFunction = {
             attribute: attributeName,
             type: MappingFunctionType.Discrete,
-            vpValueMap: new Map<ValueType, VisualPropertyValueType>(),
-            defaultValue: state.visualStyles[networkId][vpName].defaultValue,
+            vpValueMap,
+            visualPropertyType: '',
+            defaultValue,
           }
           state.visualStyles[networkId][vpName].mapping = discreteMapping
         })
@@ -274,6 +278,7 @@ export const useVisualStyleStore = create(
             return { min, max, ctrlPts }
           }
 
+          const { defaultValue, type } = state.visualStyles[networkId][vpName]
           if (vpType === 'color') {
             const { min, max, ctrlPts } = createColorMapping()
             const continuousMapping: ContinuousMappingFunction = {
@@ -282,6 +287,8 @@ export const useVisualStyleStore = create(
               min,
               max,
               controlPoints: ctrlPts,
+              visualPropertyType: type,
+              defaultValue,
             }
             state.visualStyles[networkId][vpName].mapping = continuousMapping
           } else if (vpType === 'number') {
@@ -292,6 +299,8 @@ export const useVisualStyleStore = create(
               min,
               max,
               controlPoints: ctrlPts,
+              visualPropertyType: type,
+              defaultValue,
             }
             state.visualStyles[networkId][vpName].mapping = continuousMapping
           }
@@ -304,16 +313,20 @@ export const useVisualStyleStore = create(
 
       createPassthroughMapping(networkId, vpName, attributeName) {
         set((state) => {
+          const { defaultValue, type } = state.visualStyles[networkId][vpName]
           const passthroughMapping: PassthroughMappingFunction = {
             type: MappingFunctionType.Passthrough,
             attribute: attributeName,
+            visualPropertyType: type,
+            defaultValue,
           }
           state.visualStyles[networkId][vpName].mapping = passthroughMapping
         })
       },
       removeMapping(networkId, vpName) {
         set((state) => {
-          state.visualStyles[networkId][vpName].mapping = null
+          const vp = state.visualStyles[networkId][vpName]
+          delete vp.mapping
         })
       },
     }),

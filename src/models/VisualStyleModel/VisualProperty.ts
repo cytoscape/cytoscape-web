@@ -2,14 +2,19 @@ import { VisualPropertyName } from './VisualPropertyName'
 import { Bypass } from './Bypass'
 import { VisualMappingFunction } from './VisualMappingFunction'
 import { VisualPropertyGroup } from './VisualPropertyGroup'
-import { VisualPropertyValueTypeString } from './VisualPropertyValueTypeString'
-// include both the visualpropertyvaluetype and the input value
-export interface VisualProperty<T> {
+import { VisualPropertyValueTypeName } from './VisualPropertyValueTypeName'
+import { VisualPropertyValueType } from './VisualPropertyValue'
+
+/**
+ * Visual property contains all of default value, mapping,
+ * and bypass.
+ */
+export interface VisualProperty<T extends VisualPropertyValueType> {
   name: VisualPropertyName
   group: VisualPropertyGroup
   displayName: string
-  type: VisualPropertyValueTypeString
+  type: VisualPropertyValueTypeName
   defaultValue: T
-  mapping: VisualMappingFunction | null
+  mapping?: VisualMappingFunction
   bypassMap: Bypass<T>
 }
