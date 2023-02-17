@@ -5,7 +5,7 @@ import {
   NodeBorderLineType,
   NodeShapeType,
   VisualPropertyValueType,
-  HoritzontalAlignType,
+  HorizontalAlignType,
   VerticalAlignType,
   VisibilityType,
   EdgeLineType,
@@ -136,10 +136,10 @@ export const VPNodeShapeTypeConverter = (
 
 export const VPNodeLabelHorizonalAlignTypeConverter = (
   cxVPName: string,
-): CXVisualPropertyConverter<HoritzontalAlignType> => {
+): CXVisualPropertyConverter<HorizontalAlignType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: CXLabelPositionType): HoritzontalAlignType => {
+    valueConverter: (cxVPValue: CXLabelPositionType): HorizontalAlignType => {
       return 'center' // TODO - implement real conversion
     },
   }

@@ -136,6 +136,18 @@ export const CyjsRenderer = ({
     // cy.removeAllListeners()
     cy.startBatch()
 
+    // const data: NetworkViewSources = {
+    //   network,
+    //   networkView,
+    //   nodeTable: table.nodeTable,
+    //   edgeTable: table.edgeTable,
+    //   visualStyle: vs,
+    // }
+    // const updatedNetworkView: NetworkView = Vsf.applyVisualStyle(data)
+    // const { nodeViews, edgeViews } = updatedNetworkView
+    // addObjects(cy, Object.values(nodeViews), network.edges, edgeViews)
+    // const newStyle = createCyjsDataMapper(vs)
+
     // remove previous bypasses
     // e.g. if a node has a bypass and then the bypass was removed, we need to reset the style
     // cy.nodes().removeStyle()
@@ -171,6 +183,7 @@ export const CyjsRenderer = ({
       })
       .select()
 
+    // cy.style(newStyle).update()
     cy.endBatch()
   }
 

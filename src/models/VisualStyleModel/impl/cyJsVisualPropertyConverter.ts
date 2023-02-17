@@ -4,7 +4,7 @@ import {
   FontType,
   NodeBorderLineType,
   NodeShapeType,
-  HoritzontalAlignType,
+  HorizontalAlignType,
   VerticalAlignType,
   VisibilityType,
   EdgeLineType,
@@ -76,12 +76,12 @@ export const fontTypeConverter = (
   }
 }
 
-export const horitzontalAlignTypeConverter = (
+export const HorizontalAlignTypeConverter = (
   cyJsVPName: string,
-): CyJsVisualPropertyConverter<HoritzontalAlignType> => {
+): CyJsVisualPropertyConverter<HorizontalAlignType> => {
   return {
     cyJsVPName,
-    valueConverter: (vpValue: HoritzontalAlignType): HoritzontalAlignType =>
+    valueConverter: (vpValue: HorizontalAlignType): HorizontalAlignType =>
       vpValue,
   }
 }
@@ -148,7 +148,7 @@ export const cyJsVisualPropertyConverter2: Record<
   nodeLabelColor: colorConverter('color'),
   nodeLabelFontSize: numberConverter('font-size'),
   nodeLabelFont: fontTypeConverter('font-family'),
-  nodeLabelHorizontalAlign: horitzontalAlignTypeConverter('text-halign'),
+  nodeLabelHorizontalAlign: HorizontalAlignTypeConverter('text-halign'),
   nodeLabelVerticalAlign: verticalAlignTypeConverter('text-valign'),
   nodeLabelRotation: numberConverter('text-rotation'),
   nodeLabelOpacity: numberConverter('text-opacity'),

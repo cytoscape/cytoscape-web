@@ -3,10 +3,7 @@ import { EdgeArrowShapeType } from './EdgeArrowShapeType'
 import { EdgeLineType } from './EdgeLineType'
 import { FontType } from './FontType'
 import { NodeBorderLineType } from './NodeBorderLineType'
-import {
-  HoritzontalAlignType,
-  VerticalAlignType,
-} from './NodeLabelPositionType'
+import { HorizontalAlignType, VerticalAlignType } from './NodeLabelPositionType'
 import { NodeShapeType } from './NodeShapeType'
 import { VisibilityType } from './VisibilityType'
 
@@ -19,7 +16,7 @@ export type VisualPropertyValueType =
   | EdgeLineType
   | EdgeArrowShapeType
   | FontType
-  | HoritzontalAlignType
+  | HorizontalAlignType
   | VerticalAlignType
   | NodeBorderLineType
   | VisibilityType

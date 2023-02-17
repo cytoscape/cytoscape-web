@@ -341,7 +341,6 @@ export const computeView = (
         }
         const computedValue: VisualPropertyValueType = mapper(
           attributeValueAssigned,
-          vp.defaultValue,
         )
         pairs.set(name, computedValue)
       } else {
