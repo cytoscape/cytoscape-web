@@ -212,7 +212,7 @@ const WorkSpaceEditor: React.FC = () => {
       >
         <Allotment.Pane>
           <Allotment>
-            <Allotment.Pane preferredSize="20%">
+            <Allotment.Pane preferredSize="25%">
               <Box
                 sx={{
                   height: '100%',
@@ -243,6 +243,7 @@ const WorkSpaceEditor: React.FC = () => {
                         // need to set a height to enable scroll in the network list
                         // 48 is the height of the tool bar
                         width: '100%',
+                        padding: 0, margin: 0,
                       }}
                     >
                       <SummaryList summaries={summaries} />

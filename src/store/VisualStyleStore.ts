@@ -15,7 +15,7 @@ import {
   ContinuousMappingFunction,
 } from '../models/VisualStyleModel/VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
-
+import { VisualPropertyValueTypeName } from '../models/VisualStyleModel/VisualPropertyValueTypeName'
 /**
 //  * Visual Style State manager based on zustand
 //  */
@@ -64,6 +64,7 @@ interface UpdateVisualStyleAction {
   createContinuousMapping: (
     networkId: IdType,
     vpName: VisualPropertyName,
+    vpType: VisualPropertyValueTypeName,
     attribute: AttributeName,
     attributeValues: ValueType[],
   ) => void
@@ -181,11 +182,15 @@ export const useVisualStyleStore = create(
 
       createDiscreteMapping(networkId, vpName, attributeName) {
         set((state) => {
+          const { defaultValue } = state.visualStyles[networkId][vpName]
+          const vpValueMap = new Map<ValueType, VisualPropertyValueType>()
+
           const discreteMapping: DiscreteMappingFunction = {
             attribute: attributeName,
             type: MappingFunctionType.Discrete,
-            vpValueMap: new Map<ValueType, VisualPropertyValueType>(),
-            defaultValue: state.visualStyles[networkId][vpName].defaultValue,
+            vpValueMap,
+            visualPropertyType: '',
+            defaultValue,
           }
           state.visualStyles[networkId][vpName].mapping = discreteMapping
         })
@@ -194,64 +199,134 @@ export const useVisualStyleStore = create(
       createContinuousMapping(
         networkId,
         vpName,
+        vpType,
         attributeName,
         attributeValues,
       ) {
         set((state) => {
           const DEFAULT_COLOR_SCHEME = ['red', 'white', 'blue']
+          const DEFAULT_NUMBER_RANGE =
+            !vpName.includes('Opacity') && !vpName.includes('opacity')
+              ? [1, 100]
+              : [0, 1]
 
-          // initialze continuous mapping values if they are not set
-          const min = {
-            value: attributeValues[0],
-            vpValue: DEFAULT_COLOR_SCHEME[0],
-            inclusive: true,
-          }
+          console.log(vpName)
 
-          const max = {
-            value: attributeValues[attributeValues.length - 1],
-            vpValue: DEFAULT_COLOR_SCHEME[2],
-            inclusive: true,
-          }
-
-          const ctrlPts = [
-            {
+          const createColorMapping = (): {
+            min: ContinuousFunctionControlPoint
+            max: ContinuousFunctionControlPoint
+            ctrlPts: ContinuousFunctionControlPoint[]
+          } => {
+            const min = {
               value: attributeValues[0],
               vpValue: DEFAULT_COLOR_SCHEME[0],
-            },
-            {
-              value: attributeValues[Math.floor(attributeValues.length / 2)], // TODO compute median instead of just the middle value
-              vpValue: DEFAULT_COLOR_SCHEME[1],
-            },
-            {
+              inclusive: true,
+            }
+
+            const max = {
               value: attributeValues[attributeValues.length - 1],
               vpValue: DEFAULT_COLOR_SCHEME[2],
-            },
-          ]
+              inclusive: true,
+            }
 
-          const continuousMapping: ContinuousMappingFunction = {
-            attribute: attributeName,
-            type: MappingFunctionType.Continuous,
-            min,
-            max,
-            controlPoints: ctrlPts,
+            const ctrlPts = [
+              {
+                value: attributeValues[0],
+                vpValue: DEFAULT_COLOR_SCHEME[0],
+              },
+              {
+                value: attributeValues[Math.floor(attributeValues.length / 2)], // TODO compute median instead of just the middle value
+                vpValue: DEFAULT_COLOR_SCHEME[1],
+              },
+              {
+                value: attributeValues[attributeValues.length - 1],
+                vpValue: DEFAULT_COLOR_SCHEME[2],
+              },
+            ]
+
+            return { min, max, ctrlPts }
           }
 
-          state.visualStyles[networkId][vpName].mapping = continuousMapping
+          const createNumberMapping = (): {
+            min: ContinuousFunctionControlPoint
+            max: ContinuousFunctionControlPoint
+            ctrlPts: ContinuousFunctionControlPoint[]
+          } => {
+            const min = {
+              value: attributeValues[0],
+              vpValue: DEFAULT_NUMBER_RANGE[0],
+              inclusive: true,
+            }
+
+            const max = {
+              value: attributeValues[attributeValues.length - 1],
+              vpValue: DEFAULT_NUMBER_RANGE[1],
+              inclusive: true,
+            }
+
+            const ctrlPts = [
+              {
+                value: attributeValues[0],
+                vpValue: DEFAULT_NUMBER_RANGE[0],
+              },
+              {
+                value: attributeValues[attributeValues.length - 1],
+                vpValue: DEFAULT_NUMBER_RANGE[1],
+              },
+            ]
+
+            return { min, max, ctrlPts }
+          }
+
+          const { defaultValue, type } = state.visualStyles[networkId][vpName]
+          if (vpType === 'color') {
+            const { min, max, ctrlPts } = createColorMapping()
+            const continuousMapping: ContinuousMappingFunction = {
+              attribute: attributeName,
+              type: MappingFunctionType.Continuous,
+              min,
+              max,
+              controlPoints: ctrlPts,
+              visualPropertyType: type,
+              defaultValue,
+            }
+            state.visualStyles[networkId][vpName].mapping = continuousMapping
+          } else if (vpType === 'number') {
+            const { min, max, ctrlPts } = createNumberMapping()
+            const continuousMapping: ContinuousMappingFunction = {
+              attribute: attributeName,
+              type: MappingFunctionType.Continuous,
+              min,
+              max,
+              controlPoints: ctrlPts,
+              visualPropertyType: type,
+              defaultValue,
+            }
+            state.visualStyles[networkId][vpName].mapping = continuousMapping
+          }
+
+          console.error(
+            `Could not create continuous mapping function because vpType needs to be a color or number.  Received ${vpType}}`,
+          )
         })
       },
 
       createPassthroughMapping(networkId, vpName, attributeName) {
         set((state) => {
+          const { defaultValue, type } = state.visualStyles[networkId][vpName]
           const passthroughMapping: PassthroughMappingFunction = {
             type: MappingFunctionType.Passthrough,
             attribute: attributeName,
+            visualPropertyType: type,
+            defaultValue,
           }
           state.visualStyles[networkId][vpName].mapping = passthroughMapping
         })
       },
       removeMapping(networkId, vpName) {
         set((state) => {
-          state.visualStyles[networkId][vpName].mapping = null
+          const vp = state.visualStyles[networkId][vpName]
+          delete vp.mapping
         })
       },
     }),

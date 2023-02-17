@@ -9,7 +9,7 @@ import {
   MappingFunctionType,
   VisualMappingFunction,
 } from '../VisualMappingFunction'
-import { VisualPropertyValueTypeString } from '../VisualPropertyValueTypeString'
+import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import { ColorType, VisualPropertyValueType } from '../VisualPropertyValue'
 
 import { SingularElementArgument } from 'cytoscape'
@@ -189,25 +189,6 @@ export const createCyJsMappingFn: (
   }
 }
 
-// was previously needed and may be needed in the future
-// const vpValueType2BaseType: Record<
-//   VisualPropertyValueTypeString,
-//   SingleValueType
-// > = {
-//   color: 'string',
-//   number: 'number',
-//   string: 'string',
-//   boolean: 'boolean',
-//   visibility: 'string',
-//   font: 'string',
-//   nodeShape: 'string',
-//   edgeLine: 'string',
-//   edgeArrowShape: 'string',
-//   horizontalAlign: 'string',
-//   verticalAlign: 'string',
-//   nodeBorderLine: 'string',
-// }
-
 const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
   string: 'string',
   long: 'number',
@@ -226,7 +207,7 @@ const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
 export const typesCanBeMapped = (
   mappingType: MappingFunctionType,
   valueTypeName: ValueTypeName,
-  vpValueTypeName: VisualPropertyValueTypeString,
+  vpValueTypeName: VisualPropertyValueTypeName,
 ): boolean => {
   if (mappingType === 'passthrough') {
     const vtBaseType = valueType2BaseType[valueTypeName]
@@ -239,9 +220,9 @@ export const typesCanBeMapped = (
 
   if (mappingType === 'continuous') {
     const vtIsNumber =
-      valueTypeName === 'integer' ||
-      valueTypeName === 'double' ||
-      valueTypeName === 'long'
+      valueTypeName === ValueTypeName.Integer ||
+      valueTypeName === ValueTypeName.Double ||
+      valueTypeName === ValueTypeName.Long
     const vpIsNumberOrColor =
       vpValueTypeName === 'number' || vpValueTypeName === 'color'
 

@@ -4,12 +4,16 @@ import {
   FontType,
   NodeBorderLineType,
   NodeShapeType,
-  HoritzontalAlignType,
+  HorizontalAlignType,
   VerticalAlignType,
   VisibilityType,
   EdgeLineType,
   EdgeArrowShapeType,
 } from '../VisualPropertyValue'
+import {
+  CyjsVisualPropertyType,
+  CyjsVisualPropertyName as CyVpName,
+} from './CyjsProperties/CyjsVisualPropertyName'
 
 export type CyJsPropertyName = string
 interface CyJsVisualPropertyConverter<T> {
@@ -72,12 +76,12 @@ export const fontTypeConverter = (
   }
 }
 
-export const horitzontalAlignTypeConverter = (
+export const HorizontalAlignTypeConverter = (
   cyJsVPName: string,
-): CyJsVisualPropertyConverter<HoritzontalAlignType> => {
+): CyJsVisualPropertyConverter<HorizontalAlignType> => {
   return {
     cyJsVPName,
-    valueConverter: (vpValue: HoritzontalAlignType): HoritzontalAlignType =>
+    valueConverter: (vpValue: HorizontalAlignType): HorizontalAlignType =>
       vpValue,
   }
 }
@@ -128,7 +132,7 @@ export const booleanConverter = (
   }
 }
 
-export const cyJsVisualPropertyConverter: Record<
+export const cyJsVisualPropertyConverter2: Record<
   VisualPropertyName,
   CyJsVisualPropertyConverter<VisualPropertyValueType> | null
 > = {
@@ -144,13 +148,13 @@ export const cyJsVisualPropertyConverter: Record<
   nodeLabelColor: colorConverter('color'),
   nodeLabelFontSize: numberConverter('font-size'),
   nodeLabelFont: fontTypeConverter('font-family'),
-  nodeLabelHorizontalAlign: horitzontalAlignTypeConverter('text-halign'),
+  nodeLabelHorizontalAlign: HorizontalAlignTypeConverter('text-halign'),
   nodeLabelVerticalAlign: verticalAlignTypeConverter('text-valign'),
   nodeLabelRotation: numberConverter('text-rotation'),
   nodeLabelOpacity: numberConverter('text-opacity'),
-  nodePositionX: null,
-  nodePositionY: null,
-  nodePositionZ: null,
+  // nodePositionX: null,
+  // nodePositionY: null,
+  // nodePositionZ: null,
   nodeOpacity: numberConverter('background-opacity'),
   nodeVisibility: visibilityTypeConverter('display'),
 
@@ -166,10 +170,65 @@ export const cyJsVisualPropertyConverter: Record<
   edgeLabelFontSize: numberConverter('font-size'),
   edgeLabelFont: fontTypeConverter('font-family'),
   edgeLabelRotation: numberConverter('text-rotation'),
-  edgeLabelAutoRotation: booleanConverter('autorotate'),
+  // edgeLabelAutoRotation: booleanConverter('autorotate'),
   edgeLabelOpacity: numberConverter('text-opacity'),
   edgeOpacity: numberConverter('line-opacity'),
   edgeVisibility: visibilityTypeConverter('display'),
 
   networkBackgroundColor: null,
+}
+
+const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
+  nodeShape: CyVpName.Shape,
+  nodeHeight: CyVpName.Height,
+  nodeWidth: CyVpName.Width,
+  nodeBackgroundColor: CyVpName.BackgroundColor,
+  nodeOpacity: CyVpName.Opacity,
+
+  nodeBorderColor: CyVpName.BorderColor,
+  nodeBorderLineType: CyVpName.BorderLineType,
+  nodeBorderWidth: CyVpName.BorderWidth,
+  nodeBorderOpacity: CyVpName.BorderOpacity,
+
+  nodeLabel: CyVpName.Label,
+  nodeLabelColor: CyVpName.LabelColor,
+  nodeLabelFontSize: CyVpName.LabelFontSize,
+  nodeLabelFont: CyVpName.LabelFont,
+  nodeLabelHorizontalAlign: CyVpName.LabelHorizontalAlign,
+  nodeLabelVerticalAlign: CyVpName.LabelVerticalAlign,
+  nodeLabelRotation: CyVpName.LabelRotation,
+  nodeLabelOpacity: CyVpName.LabelOpacity,
+
+  nodeVisibility: CyVpName.Visibility,
+
+  edgeLineType: CyVpName.LineStyle,
+  edgeLineColor: CyVpName.LineColor,
+  edgeWidth: CyVpName.Width,
+  edgeTargetArrowShape: CyVpName.TargetArrowShape,
+  edgeSourceArrowShape: CyVpName.SourceArrowShape,
+  edgeTargetArrowColor: CyVpName.TargetArrowColor,
+  edgeSourceArrowColor: CyVpName.SourceArrowColor,
+  edgeLabel: CyVpName.Label,
+  edgeLabelColor: CyVpName.LabelColor,
+  edgeLabelFontSize: CyVpName.LabelFontSize,
+  edgeLabelFont: CyVpName.LabelFont,
+  edgeLabelRotation: CyVpName.LabelRotation,
+  edgeLabelOpacity: CyVpName.LabelOpacity,
+  edgeOpacity: CyVpName.LineOpacity,
+  edgeVisibility: CyVpName.Visibility,
+
+  networkBackgroundColor: CyVpName.BackgroundColor,
+} as const
+
+/**
+ * The mapping function from static map of visual property name
+ * to cyjs visual property name
+ *
+ * @param vpName
+ * @returns
+ */
+export const getCyjsVpName = (
+  vpName: VisualPropertyName,
+): CyjsVisualPropertyType => {
+  return VpName2CyjsVpName[vpName]
 }

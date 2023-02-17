@@ -1,6 +1,6 @@
 //  this is an actual string representation of the visual property value typ
 // needed by ui code to make it easier to determine what to render
-export const VisualPropertyValueTypeString = {
+export const VisualPropertyValueTypeName = {
   Color: 'color',
   NodeShape: 'nodeShape',
   EdgeLine: 'edgeLine',
@@ -15,5 +15,5 @@ export const VisualPropertyValueTypeString = {
   Boolean: 'boolean',
 }
 
-export type VisualPropertyValueTypeString =
-  typeof VisualPropertyValueTypeString[keyof typeof VisualPropertyValueTypeString]
+export type VisualPropertyValueTypeName =
+  typeof VisualPropertyValueTypeName[keyof typeof VisualPropertyValueTypeName]

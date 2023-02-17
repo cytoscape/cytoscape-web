@@ -295,7 +295,6 @@ function BypassFormContent(props: {
     >
       <Typography
         sx={{ m: 1 }}
-        variant="h6"
       >{`${visualProperty.displayName} bypasses`}</Typography>
       <Box>
         <Divider />

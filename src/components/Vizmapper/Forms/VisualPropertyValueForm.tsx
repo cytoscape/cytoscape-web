@@ -6,7 +6,6 @@ import {
   VisualPropertyValueType,
   VisualPropertyName,
 } from '../../../models/VisualStyleModel'
-import { VisualPropertyValueTypeString } from '../../../models/VisualStyleModel/VisualPropertyValueTypeString'
 
 import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
 import { Color, ColorPicker } from '../VisualPropertyRender/Color'
@@ -14,10 +13,7 @@ import {
   NodeBorderLine,
   NodeBorderLinePicker,
 } from '../VisualPropertyRender/NodeBorderLine'
-import {
-  NumberInput,
-  Number as NumberRender,
-} from '../VisualPropertyRender/Number'
+import { NumberInput, NumberRender } from '../VisualPropertyRender/Number'
 import { Font, FontPicker } from '../VisualPropertyRender/Font'
 import {
   HoritzontalAlignPicker,
@@ -54,9 +50,10 @@ import {
   EmptyVisualPropertyViewBox,
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
+import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
 
 const vpType2RenderMap: Record<
-  VisualPropertyValueTypeString,
+  VisualPropertyValueTypeName,
   {
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
@@ -158,7 +155,7 @@ const vpName2RenderMap: Partial<
 
 interface VisualPropertyRenderProps {
   value: VisualPropertyValueType | null
-  vpValueType: VisualPropertyValueTypeString
+  vpValueType: VisualPropertyValueTypeName
   vpName: VisualPropertyName
 }
 
@@ -237,9 +234,7 @@ export function VisualPropertyValueForm(
       >
         <Box>
           {props.title != null ? (
-            <Typography sx={{ m: 1 }} variant="h6">
-              {props.title}
-            </Typography>
+            <Typography sx={{ m: 1 }}>{props.title}</Typography>
           ) : null}
 
           <Box sx={{ p: 1 }}>

@@ -119,6 +119,7 @@ function MappingFormContent(props: {
           createContinuousMapping(
             props.currentNetworkId,
             props.visualProperty.name,
+            props.visualProperty.type,
             attribute,
             attributeValues,
           )
@@ -193,15 +194,21 @@ function MappingFormContent(props: {
           typesCanBeMapped(mappingType, c.type, props.visualProperty.type),
         )
       : columns
+
+  const mappingDimensions: Record<MappingFunctionType | '', [string, string]> =
+    {
+      [MappingFunctionType.Discrete]: ['400px', '600px'],
+      [MappingFunctionType.Continuous]: ['650px', 'auto'],
+      [MappingFunctionType.Passthrough]: ['400px', 'auto'],
+      '': ['400px', '200px'],
+    }
   return (
     <Box
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        width: mappingType === 'continuous' ? '600px' : '400px',
-        height: mappingType === 'continuous' ? '420px' : '600px',
-        minWidth: '30vw',
-        minHeight: '30vh',
+        width: mappingDimensions[mappingType][0],
+        height: mappingDimensions[mappingType][1],
         overflow: 'hidden',
         p: 1,
       }}
@@ -213,7 +220,7 @@ function MappingFormContent(props: {
           alignItems: 'center',
         }}
       >
-        <Typography variant="h6">{`${props.visualProperty.displayName} mapping`}</Typography>
+        <Typography>{`${props.visualProperty.displayName} mapping`}</Typography>
         <Button
           disabled={props.visualProperty.mapping == null}
           size="small"
