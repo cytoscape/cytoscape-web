@@ -3,10 +3,13 @@ import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import { LoadFromNdexDialog } from './LoadFromNdexDialog'
+import { SaveToNdexDialog } from './SaveToNdexDialog'
 import { useState } from 'react'
 import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { Divider } from '@mui/material'
+import { useNetworkStore } from '../../../store/NetworkStore'
+import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
 interface DropdownMenuProps {
   label: string
   children?: React.ReactNode
@@ -26,16 +29,23 @@ const SAMPLE_NETWORKS: string[] = [
   'f99975d6-3055-11ec-94bf-525400c25d22',
   'f9aeab88-3055-11ec-94bf-525400c25d22',
   'f9ca49da-3055-11ec-94bf-525400c25d22',
-  'f9dce77c-3055-11ec-94bf-525400c25d22',
+  '8bd2797c-3056-11ec-94bf-525400c25d22',
+  'ab0eeef6-25bd-11e9-a05d-525400c25d22',
 ]
 
 export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
   const addNetworkIds: (ids: IdType | IdType[]) => void = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
+  const currentNetworkId = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
 
   const deleteCurrentNetwork: () => void = useWorkspaceStore(
     (state) => state.deleteCurrentNetwork,
+  )
+  const deleteNetwork: (id: IdType) => void = useNetworkStore(
+    (state) => state.delete,
   )
 
   const initWorkspace: () => void = useWorkspaceStore((state) => state.init)
@@ -89,6 +99,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
   const handleRemoveCurrentNetwork = (): void => {
     setAnchorEl(null)
     deleteCurrentNetwork()
+    deleteNetwork(currentNetworkId)
   }
 
   const labelId = `${label}-dropdown`
@@ -123,15 +134,24 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
           <MenuItem onClick={handleLoadSamples}>
             Load sample networks from NDEx (for Demo)
           </MenuItem>
+          <MenuItem onClick={handleOpenDialog}>
+            Save network to NDEx...
+          </MenuItem>
           <Divider />
           <MenuItem onClick={handleRemoveCurrentNetwork}>
-            Remove current network
+            Remove selected network
           </MenuItem>
+          <RemoveAllNetworksMenuItem />
           <Divider />
           <MenuItem onClick={handleClear}>Start new workspace</MenuItem>
         </Menu>
       </div>
       <LoadFromNdexDialog
+        open={openDialog}
+        handleClose={handleCloseDialog}
+        handleLoad={handleLoad}
+      />
+      <SaveToNdexDialog
         open={openDialog}
         handleClose={handleCloseDialog}
         handleLoad={handleLoad}

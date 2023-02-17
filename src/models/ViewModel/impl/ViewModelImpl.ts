@@ -7,6 +7,8 @@ import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
 import * as cxUtil from '../../../utils/cx/cx2-util'
 import { Node as CxNode } from '../../../utils/cx/Cx2/CoreAspects/Node'
 import { Edge as CxEdge } from '../../../utils/cx/Cx2/CoreAspects/Edge'
+import { VisualPropertyValueType } from '../../VisualStyleModel'
+import { EdgeVisualPropertyName, NetworkVisualPropertyName, NodeVisualPropertyName } from '../../VisualStyleModel/VisualPropertyName'
 
 export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
   const cxNodes: CxNode[] = cxUtil.getNodes(cx)
@@ -15,12 +17,14 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
   const nodeViews: Record<IdType, NodeView> = {}
   const edgeViews: Record<IdType, EdgeView> = {}
   cxNodes.forEach((node: CxNode) => {
-    nodeViews[node.id.toString()] = {
-      id: node.id.toString(),
-      selected: false,
-      ...(node.x != null ? { x: node.x } : {}),
-      ...(node.y != null ? { y: node.y } : {}),
-      ...(node.z != null ? { z: node.z } : {}),
+    const nodeId: string = node.id.toString()
+    const values = new Map<NodeVisualPropertyName, VisualPropertyValueType>()
+    nodeViews[nodeId] = {
+      id: nodeId,
+      x: node.x ?? 0,
+      y: node.y ?? 0,
+      ...(node.z !== null && node.z !== undefined ? { z: node.z } : {}),
+      values
     }
   })
 
@@ -28,14 +32,18 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
     const translatedId = translateCXEdgeId(edge.id.toString())
     edgeViews[translatedId] = {
       id: translatedId,
-      selected: false,
+      values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>()
     }
   })
 
-  return {
+  const networkView: NetworkView = {
     id,
     nodeViews,
     edgeViews,
-    hoveredElement: null,
+    selectedNodes: [],
+    selectedEdges: [],
+    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>()
   }
+
+  return networkView
 }

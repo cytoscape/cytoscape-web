@@ -1,5 +1,6 @@
-import { IdType } from '../IdType'
-export interface EdgeView {
-  id: IdType // ID of the associated edge
-  selected: boolean
-}
+import { View } from './View'
+
+/**
+ * Marker interface to indicate that the view is an edge view
+ */
+export interface EdgeView extends View {}

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { Cx2 } from '../../../utils/cx/Cx2'
 import * as cxUtil from '../../../utils/cx/cx2-util'
-import { Network } from '../../NetworkModel'
+import { Network, Node, Edge } from '../../NetworkModel'
 import { Table, ValueType } from '../../TableModel'
 import { NetworkView } from '../../ViewModel'
 import {
@@ -469,10 +469,9 @@ export const createCyJsStyleSheetView = (
       },
     },
   ]
-  const cyNodes = network.nodes.map((node) => {
+  const cyNodes = network.nodes.map((node: Node) => {
     const positionX = networkView.nodeViews[node.id]?.x ?? 0
     const positionY = networkView.nodeViews[node.id]?.y ?? 0
-    const selected = networkView.nodeViews[node.id].selected ?? false
 
     return {
       group: 'nodes' as ElementGroup,
@@ -483,11 +482,10 @@ export const createCyJsStyleSheetView = (
         x: positionX,
         y: positionY,
       },
-      selected,
     }
   })
 
-  const cyEdges = network.edges.map((edge) => {
+  const cyEdges = network.edges.map((edge: Edge) => {
     const cyEdge = {
       group: 'edges' as ElementGroup,
       data: {
@@ -495,7 +493,6 @@ export const createCyJsStyleSheetView = (
         source: edge.s,
         target: edge.t,
       },
-      selected: networkView.edgeViews[edge.id].selected ?? false,
     }
 
     return cyEdge

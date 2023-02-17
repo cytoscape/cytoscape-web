@@ -12,16 +12,22 @@ import { Cx2 } from '../utils/cx/Cx2'
 import {
   putNetworkToDb,
   putTablesToDb,
-  putVisualStylesToDb,
+  putVisualStyleToDb,
   getNetworkFromDb,
   getTablesFromDb,
   getVisualStyleFromDb,
+  putNetworkViewToDb,
+  getNetworkViewFromDb,
 } from './persist/db'
 
 import { useVisualStyleStore } from './VisualStyleStore'
 import { useNetworkStore } from './NetworkStore'
 import { useTableStore } from './TableStore'
 import ViewModelFn, { NetworkView } from '../models/ViewModel'
+
+// @ts-expect-error-next-line
+import { NDEx } from '@js4cytoscape/ndex-client'
+
 /**
  * Custom Hook to fetch data from remote or local Cache
  * State will be shared via globaz zustand store
@@ -111,47 +117,114 @@ export const networkFetcher = async (
   )
 
   // Add network to local IndexedDB
-  putNetworkToDb(id, network)
+  putNetworkToDb(network)
   putTablesToDb(id, nodeTable, edgeTable)
-  putVisualStylesToDb(id, visualStyle)
+  putVisualStyleToDb(id, visualStyle)
 
   return { network, visualStyle, nodeTable, edgeTable }
 }
 
-export const getNdexNetwork = async (
-  ndexNetworkId: string,
-  url: string,
-): Promise<{
+interface FullNetworkData {
   network: Network
   nodeTable: Table
   edgeTable: Table
   visualStyle: VisualStyle
   networkView: NetworkView
-}> => {
+}
+
+export const getNdexNetwork = async (
+  ndexNetworkId: string,
+  url: string,
+): Promise<FullNetworkData> => {
   try {
-    const ndexUrl = `${url}/v3/networks/${ndexNetworkId}`
-    const response = await fetch(ndexUrl)
+    // First, check the local cache
+    const cache: CachedData = await getCachedData(ndexNetworkId)
 
-    const cxData: Cx2 = (await response.json()) as Cx2
-    const visualStyle: VisualStyle =
-      VisualStyleFn.createVisualStyleFromCx(cxData)
-    const network: Network = NetworkFn.createNetworkFromCx(
-      ndexNetworkId,
-      cxData,
-    )
-    const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
-      ndexNetworkId,
-      cxData,
-    )
-
-    const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
-      ndexNetworkId,
-      cxData,
-    )
-
-    return { network, nodeTable, edgeTable, visualStyle, networkView }
+    // This is necessary only when data is not in the cache
+    if (
+      cache.network === undefined ||
+      cache.nodeTable === undefined ||
+      cache.edgeTable === undefined ||
+      cache.visualStyle === undefined ||
+      cache.networkView === undefined
+    ) {
+      return await createDataFromCx(ndexNetworkId, url)
+    } else {
+      return {
+        network: cache.network,
+        nodeTable: cache.nodeTable,
+        edgeTable: cache.edgeTable,
+        visualStyle: cache.visualStyle,
+        networkView: cache.networkView,
+      }
+    }
   } catch (error) {
-    console.error(error)
+    console.error('Failed to get network', error)
     throw error
   }
+}
+
+/**
+ *
+ * @param ndexNetworkId
+ * @param url
+ * @returns
+ */
+const createDataFromCx = async (
+  ndexNetworkId: string,
+  url: string,
+): Promise<FullNetworkData> => {
+  const cxData: Cx2 = await ndexNetworkFetcher(ndexNetworkId, url)
+  const network: Network = NetworkFn.createNetworkFromCx(ndexNetworkId, cxData)
+  // FIXME: This should be replaced to correct DB operation
+  await putNetworkToDb(network)
+  
+  const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
+    ndexNetworkId,
+    cxData,
+  )
+  await putTablesToDb(ndexNetworkId, nodeTable, edgeTable)
+  
+  const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
+  await putVisualStyleToDb(ndexNetworkId, visualStyle)
+  
+  const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
+    ndexNetworkId,
+    cxData,
+  )
+  await putNetworkViewToDb(ndexNetworkId, networkView)
+
+  return { network, nodeTable, edgeTable, visualStyle, networkView }
+}
+
+interface CachedData {
+  network?: Network
+  nodeTable?: Table
+  edgeTable?: Table
+  visualStyle?: VisualStyle
+  networkView?: NetworkView
+}
+
+const getCachedData = async (id: string): Promise<CachedData> => {
+  const network = await getNetworkFromDb(id)
+  const tables = await getTablesFromDb(id)
+  const networkView = await getNetworkViewFromDb(id)
+  const visualStyle = await getVisualStyleFromDb(id)
+
+  return {
+    network,
+    visualStyle,
+    nodeTable: tables !== undefined ? tables.nodeTable : undefined,
+    edgeTable: tables !== undefined ? tables.edgeTable : undefined,
+    networkView,
+  }
+}
+
+const ndexNetworkFetcher = async (
+  ndexUuid: string,
+  url: string,
+): Promise<Cx2> => {
+  const ndexClient = new NDEx(`${url}/v2`)
+  const cx2Network: Promise<Cx2> = ndexClient.getCX2Network(ndexUuid)
+  return await cx2Network
 }
