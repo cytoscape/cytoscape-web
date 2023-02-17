@@ -3,7 +3,6 @@ import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import { LoadFromNdexDialog } from './LoadFromNdexDialog'
-import { SaveToNdexDialog } from './SaveToNdexDialog'
 import { useState } from 'react'
 import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
@@ -134,9 +133,6 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
           <MenuItem onClick={handleLoadSamples}>
             Load sample networks from NDEx (for Demo)
           </MenuItem>
-          <MenuItem onClick={handleOpenDialog}>
-            Save network to NDEx...
-          </MenuItem>
           <Divider />
           <MenuItem onClick={handleRemoveCurrentNetwork}>
             Remove selected network
@@ -147,11 +143,6 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
         </Menu>
       </div>
       <LoadFromNdexDialog
-        open={openDialog}
-        handleClose={handleCloseDialog}
-        handleLoad={handleLoad}
-      />
-      <SaveToNdexDialog
         open={openDialog}
         handleClose={handleCloseDialog}
         handleLoad={handleLoad}
