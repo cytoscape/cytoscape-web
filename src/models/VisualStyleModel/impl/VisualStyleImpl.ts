@@ -191,9 +191,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
         const cxBypass = getBypass()
 
         if (cxDefault != null) {
-          const test: VisualProperty<VisualPropertyValueType> =
-            visualStyle[vpName]
-          test.defaultValue = converter.valueConverter(cxDefault)
+          visualStyle[vpName].defaultValue = converter.valueConverter(cxDefault)
         }
 
         if (cxMapping != null) {

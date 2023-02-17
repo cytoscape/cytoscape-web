@@ -221,8 +221,8 @@ export const typesCanBeMapped = (
   if (mappingType === 'continuous') {
     const vtIsNumber =
       valueTypeName === ValueTypeName.Integer ||
-      valueTypeName === 'double' ||
-      valueTypeName === 'long'
+      valueTypeName === ValueTypeName.Double ||
+      valueTypeName === ValueTypeName.Long
     const vpIsNumberOrColor =
       vpValueTypeName === 'number' || vpValueTypeName === 'color'
 
