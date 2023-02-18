@@ -39,6 +39,8 @@ export const CyjsRenderer = ({
   // Optimization to avoid re-rendering for the same network data
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
 
+  const setViewModel = useViewModelStore((state) => state.setViewModel)
+  const setVisualStyle = useVisualStyleStore((state) => state.set)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
 
   const tables = useTableStore((state) => state.tables)
@@ -177,6 +179,9 @@ export const CyjsRenderer = ({
     if (cyStyle.length > 0) {
       cy.style(cyStyle)
     }
+
+    // Store the key-value pair in the local IndexedDB
+    setViewModel(id, updatedNetworkView)
   }
 
   const applyHoverStyle = (): void => {
@@ -220,8 +225,22 @@ export const CyjsRenderer = ({
     ) {
       return
     }
-    // if (lastNetworkId !== id) {
-    // setLastNetworkId(id)
+    applyStyleUpdate()
+      .then(() => {
+        console.log('* style updated')
+        isRendered.current = true
+        setIsBusy(false)
+        setVisualStyle(id, vs)
+      })
+      .catch((error) => {
+        console.warn(error)
+      })
+  }, [vs])
+
+  useEffect(() => {
+    if (cy === null || vs == null || table == null) {
+      return
+    }
     applyStyleUpdate()
       .then(() => {
         console.log('* style updated')
@@ -232,7 +251,7 @@ export const CyjsRenderer = ({
         console.warn(error)
       })
     // }
-  }, [vs, table])
+  }, [table])
 
   // when hovered element changes, apply hover style to that element
   useEffect(() => {
