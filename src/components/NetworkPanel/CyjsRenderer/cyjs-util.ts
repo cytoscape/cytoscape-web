@@ -1,7 +1,16 @@
-import { Core, EventObject, SingularElementArgument } from 'cytoscape'
+import {
+  Collection,
+  Core,
+  EventObject,
+  SingularElementArgument,
+} from 'cytoscape'
 import { IdType } from '../../../models/IdType'
+import { ValueType } from '../../../models/TableModel'
+import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
+import { View } from '../../../models/ViewModel/View'
 import {
   VisualProperty,
+  VisualPropertyName,
   VisualPropertyValueType,
   VisualStyle,
 } from '../../../models/VisualStyleModel'
@@ -67,4 +76,25 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
 
   console.log(cyStyle)
   return cyStyle
+}
+
+export const applyViewModel = (cy: Core, networkView: NetworkView): void => {
+  const { nodeViews, edgeViews } = networkView
+  updateCyObjects<NodeView>(nodeViews, cy.nodes())
+  updateCyObjects<EdgeView>(edgeViews, cy.edges())
+}
+
+const updateCyObjects = <T extends View>(
+  views: Record<IdType, T>,
+  cyObjects: Collection<SingularElementArgument>,
+): void => {
+  cyObjects.forEach((obj: SingularElementArgument) => {
+    const cyId = obj.data('id')
+
+    const view: View = views[cyId]
+    const { values } = view
+    values.forEach((value: ValueType, key: VisualPropertyName) => {
+      obj.data(key, value)
+    })
+  })
 }

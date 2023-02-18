@@ -16,7 +16,7 @@ import { NetworkView, NodeView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { VisualStyleFnImpl as Vsf } from '../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
-import { createCyjsDataMapper } from './cyjs-util'
+import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
 import { addObjects } from './cyjs-factory'
 interface NetworkRendererProps {
   network: Network
@@ -24,6 +24,11 @@ interface NetworkRendererProps {
   isBusy: boolean
 }
 
+/**
+ *
+ * @param param0
+ * @returns
+ */
 export const CyjsRenderer = ({
   network,
   setIsBusy,
@@ -45,6 +50,8 @@ export const CyjsRenderer = ({
     nodeId: IdType,
     position: [number, number],
   ) => void = useViewModelStore((state) => state.setNodePosition)
+
+  const [cyStyle, setCyStyle] = useState<any[]>([])
 
   const networkView: NetworkView = viewModels[id]
   const nodeViews: Record<IdType, NodeView> = networkView?.nodeViews
@@ -85,6 +92,7 @@ export const CyjsRenderer = ({
 
     // Generate a new Cytoscape.js styles based on given visual style
     const newStyle = createCyjsDataMapper(vs)
+    setCyStyle(newStyle)
 
     // Box selection listener
     cy.on(
@@ -124,54 +132,36 @@ export const CyjsRenderer = ({
       setNodePosition(id, nodeId, [position.x, position.y])
     })
 
-    cy.style(newStyle)
+    // cy.style(newStyle)
     cy.endBatch()
 
     cy.mount(cyContainer.current)
+    cy.style(newStyle)
 
     cy.fit()
   }
 
   const applyStyleUpdate = async (): Promise<void> => {
+    if (cyStyle.length === 0) {
+      return
+    }
+
     // cy.removeAllListeners()
     cy.startBatch()
 
-    // const data: NetworkViewSources = {
-    //   network,
-    //   networkView,
-    //   nodeTable: table.nodeTable,
-    //   edgeTable: table.edgeTable,
-    //   visualStyle: vs,
-    // }
-    // const updatedNetworkView: NetworkView = Vsf.applyVisualStyle(data)
-    // const { nodeViews, edgeViews } = updatedNetworkView
-    // addObjects(cy, Object.values(nodeViews), network.edges, edgeViews)
-    // const newStyle = createCyjsDataMapper(vs)
-
-    // remove previous bypasses
-    // e.g. if a node has a bypass and then the bypass was removed, we need to reset the style
-    // cy.nodes().removeStyle()
-    // cy.edges().removeStyle()
-    // const { defaultStyle, nodeBypasses, edgeBypasses } =
-    //   VisualStyleFn.createCyJsStyleSheetView(
-    //     vs,
-    //     network,
-    //     table.nodeTable,
-    //     table.edgeTable,
-    //     networkView,
-    //   )
-
-    // apply bypasses
-    // Object.entries(nodeBypasses).forEach(([nodeId, bypass]) => {
-    //   cy.getElementById(nodeId).style(bypass)
-    // })
-
-    // Object.entries(edgeBypasses).forEach(([edgeId, bypass]) => {
-    //   cy.getElementById(edgeId).style(bypass)
-    // })
+    const data: NetworkViewSources = {
+      network,
+      networkView,
+      nodeTable: table.nodeTable,
+      edgeTable: table.edgeTable,
+      visualStyle: vs,
+    }
+    const updatedNetworkView: NetworkView = Vsf.applyVisualStyle(data)
+    // Apply style from view model
+    applyViewModel(cy, updatedNetworkView)
 
     // Select elements based on network view state
-    const { selectedNodes, selectedEdges } = networkView
+    const { selectedNodes, selectedEdges } = updatedNetworkView
     cy.nodes()
       .filter((ele: SingularElementArgument) => {
         return selectedNodes.includes(ele.data('id'))
@@ -183,8 +173,10 @@ export const CyjsRenderer = ({
       })
       .select()
 
-    // cy.style(newStyle).update()
     cy.endBatch()
+    if (cyStyle.length > 0) {
+      cy.style(cyStyle)
+    }
   }
 
   const applyHoverStyle = (): void => {
