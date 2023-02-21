@@ -17,13 +17,13 @@ type GroupType = typeof GroupType[keyof typeof GroupType]
 /**
  * Private class implementing graph object using
  * Cytoscape.js
- * 
+ *
  * Simply stores graph structure only, no attributes
- * 
+ *
  */
 class CyNetwork implements Network {
   readonly id: IdType
-  
+
   // Graph storage, using Cytoscape
   // Only topology is stored here, attributes are stored in the table
   private readonly _store: Core
@@ -32,7 +32,6 @@ class CyNetwork implements Network {
     this.id = id
     this._store = createCyDataStore()
   }
-
 
   get nodes(): Node[] {
     return this._store.nodes().map((node: NodeSingular) => ({
@@ -74,6 +73,8 @@ export const createNetwork = (id: IdType): Network => new CyNetwork(id)
 // when converting cx ids to cy ids, we add a prefix to edges
 export const translateCXEdgeId = (id: IdType): IdType => `e${id}`
 
+export const translateEdgeIdToCX = (id: IdType): IdType => id.slice(1)
+
 /**
  * Create a network from a CX object
  *
@@ -83,7 +84,6 @@ export const translateCXEdgeId = (id: IdType): IdType => `e${id}`
  *
  */
 export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
-
   // Create an empty CyNetwork
   const cyNet: CyNetwork = new CyNetwork(id)
 
@@ -113,10 +113,10 @@ export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
 
 /**
  * Create a Cytoscape.js object from a Cyjs JSON
- * 
- * @param id 
- * @param cyJson 
- * @returns 
+ *
+ * @param id
+ * @param cyJson
+ * @returns
  */
 export const createFromCyJson = (id: IdType, cyJson: object): Network => {
   const cyNet: CyNetwork = new CyNetwork(id)
@@ -125,18 +125,15 @@ export const createFromCyJson = (id: IdType, cyJson: object): Network => {
   return cyNet
 }
 
-const addToCyStoreFromLists = (network:Network, cyNet: CyNetwork):void => {
+const addToCyStoreFromLists = (network: Network, cyNet: CyNetwork): void => {
   cyNet.store.add(
     network.nodes.map((node: Node) => createCyNode(node.id.toString())),
   )
 
   cyNet.store.add(
-    network.edges.map((edge: Edge) => createCyEdge(
-        edge.id.toString(),
-        edge.s.toString(),
-        edge.t.toString(),
-      )
-    )
+    network.edges.map((edge: Edge) =>
+      createCyEdge(edge.id.toString(), edge.s.toString(), edge.t.toString()),
+    ),
   )
 }
 

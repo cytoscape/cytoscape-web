@@ -1,3 +1,4 @@
+import { CxValue } from '../../../utils/cx/Cx2/CxValue'
 import { VisualPropertyName } from '../VisualPropertyName'
 import {
   ColorType,
@@ -36,7 +37,7 @@ export interface CXDiscreteMappingFunction<T> {
   definition: {
     attribute: string
     map: Array<{
-      v: number
+      v: CxValue
       vp: T
     }>
   }
