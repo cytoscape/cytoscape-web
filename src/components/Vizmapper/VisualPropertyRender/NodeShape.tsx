@@ -14,15 +14,15 @@ import {
 import React from 'react'
 
 const nodeShapeMap: Record<NodeShapeType, React.ReactElement> = {
-  ellipse: <EllipseIcon />,
-  rectangle: <RectangleIcon />,
-  'round-rectangle': <RoundRectangleIcon />,
-  triangle: <TriangleIcon />,
-  diamond: <DiamondIcon />,
-  hexagon: <HexagonIcon />,
-  octagon: <OctagonIcon />,
-  parallelogram: <ParallelogramIcon />,
-  vee: <VeeIcon />,
+  [NodeShapeType.Ellipse]: <EllipseIcon />,
+  [NodeShapeType.Rectangle]: <RectangleIcon />,
+  [NodeShapeType.RoundRectangle]: <RoundRectangleIcon />,
+  [NodeShapeType.Triangle]: <TriangleIcon />,
+  [NodeShapeType.Diamond]: <DiamondIcon />,
+  [NodeShapeType.Hexagon]: <HexagonIcon />,
+  [NodeShapeType.Octagon]: <OctagonIcon />,
+  [NodeShapeType.Parallelogram]: <ParallelogramIcon />,
+  [NodeShapeType.Vee]: <VeeIcon />,
 }
 
 export function NodeShapePicker(props: {

@@ -10,12 +10,12 @@ import {
 } from '../VisualStyleIcons'
 
 const edgeArrowShapeMap: Record<EdgeArrowShapeType, React.ReactElement> = {
-  none: <NoneArrowIcon />,
-  circle: <CircleArrowIcon />,
-  diamond: <DiamondArrowIcon />,
-  square: <SquareArrowIcon />,
-  triangle: <TriangleArrowIcon />,
-  tee: <TeeArrowIcon />,
+  [EdgeArrowShapeType.None]: <NoneArrowIcon />,
+  [EdgeArrowShapeType.Circle]: <CircleArrowIcon />,
+  [EdgeArrowShapeType.Diamond]: <DiamondArrowIcon />,
+  [EdgeArrowShapeType.Square]: <SquareArrowIcon />,
+  [EdgeArrowShapeType.Triangle]: <TriangleArrowIcon />,
+  [EdgeArrowShapeType.Tee]: <TeeArrowIcon />,
 }
 
 export function EdgeArrowShapePicker(props: {

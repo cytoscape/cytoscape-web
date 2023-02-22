@@ -68,20 +68,21 @@ const deserializeValueList = (
 ): ListOfValueType => {
   const deserializeFnMap: Record<ValueTypeName, (value: string) => ValueType> =
     {
-      list_of_string: (value: string) => value.split(', ') as ValueType,
-      list_of_long: (value: string) =>
+      [ValueTypeName.ListString]: (value: string) =>
+        value.split(', ') as ValueType,
+      [ValueTypeName.ListLong]: (value: string) =>
         value.split(', ').map((v) => +v) as ValueType,
-      list_of_integer: (value: string) =>
+      [ValueTypeName.ListInteger]: (value: string) =>
         value.split(', ').map((v) => +v) as ValueType,
-      list_of_double: (value: string) =>
+      [ValueTypeName.ListDouble]: (value: string) =>
         value.split(', ').map((v) => +v) as ValueType,
-      list_of_boolean: (value: string) =>
+      [ValueTypeName.ListBoolean]: (value: string) =>
         value.split(', ').map((v) => v === 'true') as ValueType,
-      boolean: (value: string) => value === 'true',
-      string: (value: string) => value,
-      long: (value: string) => +value,
-      integer: (value: string) => +value,
-      double: (value: string) => +value,
+      [ValueTypeName.Boolean]: (value: string) => value === 'true',
+      [ValueTypeName.String]: (value: string) => value,
+      [ValueTypeName.Long]: (value: string) => +value,
+      [ValueTypeName.Integer]: (value: string) => +value,
+      [ValueTypeName.Double]: (value: string) => +value,
     }
 
   return deserializeFnMap[type](value) as ListOfValueType
@@ -89,16 +90,16 @@ const deserializeValueList = (
 
 const getCellKind = (type: ValueTypeName): GridCellKind => {
   const valueTypeName2CellTypeMap: Record<ValueTypeName, GridCellKind> = {
-    string: GridCellKind.Text,
-    long: GridCellKind.Number,
-    integer: GridCellKind.Number,
-    double: GridCellKind.Number,
-    boolean: GridCellKind.Boolean,
-    list_of_string: GridCellKind.Text,
-    list_of_long: GridCellKind.Text,
-    list_of_integer: GridCellKind.Text,
-    list_of_double: GridCellKind.Text,
-    list_of_boolean: GridCellKind.Text,
+    [ValueTypeName.String]: GridCellKind.Text,
+    [ValueTypeName.Long]: GridCellKind.Number,
+    [ValueTypeName.Integer]: GridCellKind.Number,
+    [ValueTypeName.Double]: GridCellKind.Number,
+    [ValueTypeName.Boolean]: GridCellKind.Boolean,
+    [ValueTypeName.ListString]: GridCellKind.Text,
+    [ValueTypeName.ListLong]: GridCellKind.Text,
+    [ValueTypeName.ListInteger]: GridCellKind.Text,
+    [ValueTypeName.ListDouble]: GridCellKind.Text,
+    [ValueTypeName.ListBoolean]: GridCellKind.Text,
   }
   return valueTypeName2CellTypeMap[type] ?? GridCellKind.Text
 }
@@ -106,19 +107,11 @@ const getCellKind = (type: ValueTypeName): GridCellKind => {
 // convert list of value type to a string to display in the table
 // single value types are supported by the table by default
 const valueDisplay = (value: ValueType, type: string): SingleValueType => {
-  if (['string', 'long', 'integer', 'double', 'boolean'].includes(type)) {
+  if (isSingleType(type as ValueTypeName) && !Array.isArray(value)) {
     return value as SingleValueType
   }
 
-  if (
-    [
-      'list_of_string',
-      'list_of_long',
-      'list_of_integer',
-      'list_of_double',
-      'list_of_boolean',
-    ].includes(type)
-  ) {
+  if (isListType(type as ValueTypeName)) {
     if (Array.isArray(value)) {
       return serializeValueList(value)
     }
@@ -128,14 +121,28 @@ const valueDisplay = (value: ValueType, type: string): SingleValueType => {
   return value as SingleValueType
 }
 
+const isSingleType = (type: ValueTypeName): boolean => {
+  const singleTypes = [
+    ValueTypeName.String,
+    ValueTypeName.Integer,
+    ValueTypeName.Double,
+    ValueTypeName.Long,
+    ValueTypeName.Boolean,
+  ] as string[]
+
+  return singleTypes.includes(type)
+}
+
 const isListType = (type: ValueTypeName): boolean => {
-  return [
-    'list_of_string',
-    'list_of_long',
-    'list_of_integer',
-    'list_of_double',
-    'list_of_boolean',
-  ].includes(type)
+  const listTypes = [
+    ValueTypeName.ListString,
+    ValueTypeName.ListInteger,
+    ValueTypeName.ListDouble,
+    ValueTypeName.ListLong,
+    ValueTypeName.ListBoolean,
+  ] as string[]
+
+  return listTypes.includes(type)
 }
 
 type SortDirection = 'asc' | 'desc'
@@ -180,16 +187,16 @@ const sortFnToType: Record<
   ValueTypeName,
   (a: ValueType, b: ValueType, sortDirection: SortDirection) => number
 > = {
-  list_of_string: compareLists,
-  list_of_long: compareLists,
-  list_of_integer: compareLists,
-  list_of_double: compareLists,
-  list_of_boolean: compareLists,
-  string: compareStrings,
-  long: compareNumbers,
-  integer: compareNumbers,
-  double: compareNumbers,
-  boolean: compareBooleans,
+  [ValueTypeName.ListString]: compareLists,
+  [ValueTypeName.ListLong]: compareLists,
+  [ValueTypeName.ListInteger]: compareLists,
+  [ValueTypeName.ListDouble]: compareLists,
+  [ValueTypeName.ListBoolean]: compareLists,
+  [ValueTypeName.String]: compareStrings,
+  [ValueTypeName.Long]: compareNumbers,
+  [ValueTypeName.Integer]: compareNumbers,
+  [ValueTypeName.Double]: compareNumbers,
+  [ValueTypeName.Boolean]: compareBooleans,
 }
 
 export default function TableBrowser(props: {

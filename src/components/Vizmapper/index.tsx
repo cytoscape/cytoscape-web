@@ -14,6 +14,7 @@ import { MappingForm } from './Forms/MappingForm'
 import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
+import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -36,7 +37,7 @@ function VisualPropertyView(props: {
         visualProperty={visualProperty}
         currentNetworkId={currentNetworkId}
       />
-      {visualProperty.group === 'network' ? (
+      {visualProperty.group === VisualPropertyGroup.Network ? (
         <>
           <Tooltip title={'Mapping not available for network properties'}>
             <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />

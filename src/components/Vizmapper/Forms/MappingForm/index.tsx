@@ -14,7 +14,7 @@ import {
 } from '@mui/material'
 
 import { IdType } from '../../../../models/IdType'
-import { AttributeName } from '../../../../models/TableModel'
+import { AttributeName, ValueTypeName } from '../../../../models/TableModel'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { useTableStore } from '../../../../store/TableStore'
 
@@ -39,11 +39,12 @@ import {
 
 import { DiscreteMappingForm } from './DiscreteMappingForm'
 import { ContinuousMappingForm } from './ContinuousMappingForm'
+import { VisualPropertyGroup } from '../../../../models/VisualStyleModel/VisualPropertyGroup'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
-  passthrough: <PassthroughMappingFunctionIcon />,
-  discrete: <DiscreteMappingFunctionIcon />,
-  continuous: <ContinuousMappingFunctionIcon />,
+  [MappingFunctionType.Passthrough]: <PassthroughMappingFunctionIcon />,
+  [MappingFunctionType.Discrete]: <DiscreteMappingFunctionIcon />,
+  [MappingFunctionType.Continuous]: <ContinuousMappingFunctionIcon />,
 }
 
 function MappingFormContent(props: {
@@ -76,7 +77,9 @@ function MappingFormContent(props: {
   const nodeTable = tables[props.currentNetworkId]?.nodeTable
   const edgeTable = tables[props.currentNetworkId]?.edgeTable
   const currentTable =
-    props.visualProperty.group === 'node' ? nodeTable : edgeTable
+    props.visualProperty.group === VisualPropertyGroup.Node
+      ? nodeTable
+      : edgeTable
   const columns = Array.from(currentTable.columns.values())
 
   const mappingFnContent = {
@@ -104,9 +107,9 @@ function MappingFormContent(props: {
 
         if (
           attributeDataType != null &&
-          (attributeDataType === 'integer' ||
-            attributeDataType === 'long' ||
-            attributeDataType === 'double')
+          (attributeDataType === ValueTypeName.Integer ||
+            attributeDataType === ValueTypeName.Long ||
+            attributeDataType === ValueTypeName.Double)
         ) {
           const attributeValues = Array.from(
             columnValues(

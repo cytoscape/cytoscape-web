@@ -6,9 +6,9 @@ import {
   DashedLineIcon,
 } from '../VisualStyleIcons'
 const edgeLineMap: Record<EdgeLineType, React.ReactElement> = {
-  solid: <SolidLineIcon />,
-  dotted: <DottedLineIcon />,
-  dashed: <DashedLineIcon />,
+  [EdgeLineType.Solid]: <SolidLineIcon />,
+  [EdgeLineType.Dotted]: <DottedLineIcon />,
+  [EdgeLineType.Dashed]: <DashedLineIcon />,
 }
 export function EdgeLinePicker(props: {
   currentValue: EdgeLineType | null

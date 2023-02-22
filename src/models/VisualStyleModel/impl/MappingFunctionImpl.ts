@@ -190,16 +190,16 @@ export const createCyJsMappingFn: (
 }
 
 const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
-  string: 'string',
-  long: 'number',
-  integer: 'number',
-  double: 'number',
-  boolean: 'boolean',
-  list_of_boolean: null,
-  list_of_long: null,
-  list_of_double: null,
-  list_of_integer: null,
-  list_of_string: null,
+  [ValueTypeName.String]: 'string',
+  [ValueTypeName.Long]: 'number',
+  [ValueTypeName.Integer]: 'number',
+  [ValueTypeName.Double]: 'number',
+  [ValueTypeName.Boolean]: 'boolean',
+  [ValueTypeName.ListBoolean]: null,
+  [ValueTypeName.ListLong]: null,
+  [ValueTypeName.ListDouble]: null,
+  [ValueTypeName.ListInteger]: null,
+  [ValueTypeName.ListString]: null,
 }
 
 // check whether a given value type can be applied to a given visual property value type
@@ -209,22 +209,23 @@ export const typesCanBeMapped = (
   valueTypeName: ValueTypeName,
   vpValueTypeName: VisualPropertyValueTypeName,
 ): boolean => {
-  if (mappingType === 'passthrough') {
+  if (mappingType === MappingFunctionType.Passthrough) {
     const vtBaseType = valueType2BaseType[valueTypeName]
     const isSingleValue = vtBaseType != null
     return (
       valueTypeName === vpValueTypeName ||
-      (isSingleValue && vpValueTypeName === 'string') // any single value type can be mapped to a string
+      (isSingleValue && vpValueTypeName === VisualPropertyValueTypeName.String) // any single value type can be mapped to a string
     )
   }
 
-  if (mappingType === 'continuous') {
+  if (mappingType === MappingFunctionType.Continuous) {
     const vtIsNumber =
       valueTypeName === ValueTypeName.Integer ||
       valueTypeName === ValueTypeName.Double ||
       valueTypeName === ValueTypeName.Long
     const vpIsNumberOrColor =
-      vpValueTypeName === 'number' || vpValueTypeName === 'color'
+      vpValueTypeName === VisualPropertyValueTypeName.Number ||
+      vpValueTypeName === VisualPropertyValueTypeName.Color
 
     return vtIsNumber && vpIsNumberOrColor
   }

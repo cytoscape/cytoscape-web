@@ -283,7 +283,7 @@ export const useVisualStyleStore = create(
           }
 
           const { defaultValue, type } = state.visualStyles[networkId][vpName]
-          if (vpType === 'color') {
+          if (vpType === VisualPropertyValueTypeName.Color) {
             const { min, max, ctrlPts } = createColorMapping()
             const continuousMapping: ContinuousMappingFunction = {
               attribute: attributeName,
@@ -295,7 +295,7 @@ export const useVisualStyleStore = create(
               defaultValue,
             }
             state.visualStyles[networkId][vpName].mapping = continuousMapping
-          } else if (vpType === 'number') {
+          } else if (vpType === VisualPropertyValueTypeName.Number) {
             const { min, max, ctrlPts } = createNumberMapping()
             const continuousMapping: ContinuousMappingFunction = {
               attribute: attributeName,

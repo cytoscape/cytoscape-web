@@ -8,6 +8,7 @@ import {
   DiscreteMappingFunction,
   ContinuousMappingFunction,
   PassthroughMappingFunction,
+  MappingFunctionType,
 } from '../VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyName } from '../VisualPropertyName'
@@ -33,23 +34,30 @@ import { NodeSingular, Stylesheet, EdgeSingular } from 'cytoscape'
 import { getDefaultVisualStyle } from './DefaultVisualStyle'
 import { IdType } from '../../IdType'
 import { createCyJsMappingFn } from './MappingFunctionImpl'
+import { VisualPropertyGroup } from '../VisualPropertyGroup'
 
 export const nodeVisualProperties = (
   visualStyle: VisualStyle,
 ): Array<VisualProperty<VisualPropertyValueType>> => {
-  return Object.values(visualStyle).filter((value) => value.group === 'node')
+  return Object.values(visualStyle).filter(
+    (value) => value.group === VisualPropertyGroup.Node,
+  )
 }
 
 export const edgeVisualProperties = (
   visualStyle: VisualStyle,
 ): Array<VisualProperty<VisualPropertyValueType>> => {
-  return Object.values(visualStyle).filter((value) => value.group === 'edge')
+  return Object.values(visualStyle).filter(
+    (value) => value.group === VisualPropertyGroup.Edge,
+  )
 }
 
 export const networkVisualProperties = (
   visualStyle: VisualStyle,
 ): Array<VisualProperty<VisualPropertyValueType>> => {
-  return Object.values(visualStyle).filter((value) => value.group === 'network')
+  return Object.values(visualStyle).filter(
+    (value) => value.group === VisualPropertyGroup.Network,
+  )
 }
 
 export const createVisualStyle = (): VisualStyle => {
@@ -198,7 +206,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           switch (cxMapping.type) {
             case 'PASSTHROUGH': {
               const m: PassthroughMappingFunction = {
-                type: 'passthrough',
+                type: MappingFunctionType.Passthrough,
                 visualPropertyType: vp.type,
                 attribute: cxMapping.definition.attribute,
                 defaultValue: vp.defaultValue,
@@ -213,7 +221,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 vpValueMap.set(v, converter.valueConverter(vp))
               })
               const m: DiscreteMappingFunction = {
-                type: 'discrete',
+                type: MappingFunctionType.Discrete,
                 attribute: cxMapping.definition.attribute,
                 vpValueMap,
                 visualPropertyType: vp.type,
@@ -290,7 +298,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
 
               if (min != null && max != null && controlPoints.length > 0) {
                 const m: ContinuousMappingFunction = {
-                  type: 'continuous',
+                  type: MappingFunctionType.Continuous,
                   attribute: cxMapping.definition.attribute,
                   min,
                   max,
