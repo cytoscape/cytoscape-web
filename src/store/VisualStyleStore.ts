@@ -102,9 +102,7 @@ export const useVisualStyleStore = create(
       set: (networkId: IdType, visualStyle: VisualStyle) => {
         set((state) => {
           state.visualStyles[networkId] = visualStyle
-          void putVisualStyleToDb(networkId, visualStyle).then(() => {
-            console.log('VS saved to DB')
-          })
+          void putVisualStyleToDb(networkId, visualStyle).then(() => {})
           return state
         })
       },

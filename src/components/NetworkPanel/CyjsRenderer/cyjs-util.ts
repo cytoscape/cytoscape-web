@@ -74,7 +74,6 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     }
   })
 
-  console.log(cyStyle)
   return cyStyle
 }
 
