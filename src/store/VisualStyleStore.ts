@@ -16,6 +16,9 @@ import {
 } from '../models/VisualStyleModel/VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyValueTypeName } from '../models/VisualStyleModel/VisualPropertyValueTypeName'
+
+import { putVisualStyleToDb } from './persist/db'
+
 /**
 //  * Visual Style State manager based on zustand
 //  */
@@ -99,6 +102,7 @@ export const useVisualStyleStore = create(
       set: (networkId: IdType, visualStyle: VisualStyle) => {
         set((state) => {
           state.visualStyles[networkId] = visualStyle
+          void putVisualStyleToDb(networkId, visualStyle).then(() => {})
           return state
         })
       },

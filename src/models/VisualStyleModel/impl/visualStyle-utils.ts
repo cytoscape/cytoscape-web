@@ -14,10 +14,6 @@ import { VisualPropertyName } from '../VisualPropertyName'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualStyle } from '../VisualStyle'
 import { edgeVisualProperties, nodeVisualProperties } from './VisualStyleImpl'
-
-// import * as d3Scale from 'd3-scale'
-// import { VisualPropertyValueTypeName } from '../../VisualStyleModel/VisualPropertyValueTypeName'
-
 import * as MapperFactory from '../VisualMappingFunction/MapperFactory'
 import { Mapper } from '../VisualMappingFunction/Mapper'
 
@@ -97,7 +93,6 @@ export const updateNetworkView = (
   // Extract positions from the existing network view
   const { nodeViews } = networkView
   const mappers = buildMappers(vs)
-  console.log(mappers)
 
   return {
     id: network.id,
@@ -127,8 +122,6 @@ const nodeViewBuilder = (
   nodeTable: Table,
   nodeViews?: Record<IdType, NodeView>,
 ): Record<IdType, NodeView> => {
-  const t1 = performance.now()
-
   const result: Record<IdType, NodeView> = {}
   const columns: Map<AttributeName, Column> = nodeTable.columns
   let idx: number = nodes.length
@@ -149,9 +142,6 @@ const nodeViewBuilder = (
     }
     result[nv.id] = nv
   }
-
-  const t2 = performance.now()
-  console.log(`##### nodeViewBuilder took ${t2 - t1} milliseconds.`)
   return result
 }
 
@@ -161,8 +151,6 @@ const edgeViewBuilder = (
   mappers: Map<VisualPropertyName, Mapper>,
   edgeTable: Table,
 ): Record<IdType, EdgeView> => {
-  const t1 = performance.now()
-
   const result: Record<IdType, EdgeView> = {}
   const columns: Map<AttributeName, Column> = edgeTable.columns
   let idx: number = edges.length
@@ -181,9 +169,6 @@ const edgeViewBuilder = (
     }
     result[ev.id] = ev
   }
-
-  const t2 = performance.now()
-  console.log(`##### edgeViewBuilder took ${t2 - t1} milliseconds.`)
   return result
 }
 

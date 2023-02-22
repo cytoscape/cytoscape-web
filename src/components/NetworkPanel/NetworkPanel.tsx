@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
 import { grey } from '@mui/material/colors'
-import { ReactElement, useEffect, useState } from 'react'
+import { ReactElement } from 'react'
 import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -16,13 +16,6 @@ const NetworkPanel = (): ReactElement => {
     (state) => state.networks,
   )
 
-  const [isBusy, setIsBusy] = useState<boolean>(false)
-
-  useEffect(() => {
-    console.log('NetworkPanel: ID change useEffect', currentNetworkId)
-    setIsBusy(true)
-  }, [currentNetworkId])
-
   if (networks.size === 0) {
     return <MessagePanel message="No network selected" />
   }
@@ -35,7 +28,7 @@ const NetworkPanel = (): ReactElement => {
 
   return (
     <Box sx={{ height: '100%', width: '100%' }}>
-      {isBusy ? (
+      {targetNetwork.id === '' ? (
         <Box
           sx={{
             zIndex: 200,
@@ -50,11 +43,7 @@ const NetworkPanel = (): ReactElement => {
           <MessagePanel message="Preparing network data..." />
         </Box>
       ) : null}
-      <CyjsRenderer
-        network={targetNetwork}
-        setIsBusy={setIsBusy}
-        isBusy={isBusy}
-      />
+      <CyjsRenderer network={targetNetwork} />
     </Box>
   )
 }
