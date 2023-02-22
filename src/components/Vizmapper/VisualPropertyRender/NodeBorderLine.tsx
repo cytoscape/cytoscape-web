@@ -8,10 +8,10 @@ import {
 } from '../VisualStyleIcons'
 
 const nodeLineMap: Record<NodeBorderLineType, React.ReactElement> = {
-  solid: <SolidLineIcon />,
-  dotted: <DottedLineIcon />,
-  dashed: <DashedLineIcon />,
-  double: <DoubleLineIcon />,
+  [NodeBorderLineType.Solid]: <SolidLineIcon />,
+  [NodeBorderLineType.Dotted]: <DottedLineIcon />,
+  [NodeBorderLineType.Dashed]: <DashedLineIcon />,
+  [NodeBorderLineType.Double]: <DoubleLineIcon />,
 }
 
 export function NodeBorderLinePicker(props: {

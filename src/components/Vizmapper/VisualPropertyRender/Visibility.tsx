@@ -3,7 +3,7 @@ import { Box } from '@mui/material'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 const visibilityMap: Record<VisibilityType, React.ReactElement> = {
-  element: (
+  [VisibilityType.Element]: (
     <VisibilityIcon
       sx={{
         p: 0,
@@ -11,7 +11,7 @@ const visibilityMap: Record<VisibilityType, React.ReactElement> = {
       }}
     />
   ),
-  none: (
+  [VisibilityType.None]: (
     <VisibilityOffIcon
       sx={{
         p: 0,

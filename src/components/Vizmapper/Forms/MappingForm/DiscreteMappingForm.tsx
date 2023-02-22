@@ -29,6 +29,7 @@ import {
 import { DiscreteMappingFunction } from '../../../../models/VisualStyleModel/VisualMappingFunction'
 
 import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
+import { VisualPropertyGroup } from '../../../../models/VisualStyleModel/VisualPropertyGroup'
 
 export function DiscreteMappingForm(props: {
   currentNetworkId: IdType
@@ -68,7 +69,7 @@ export function DiscreteMappingForm(props: {
     setSelectedDiscreteMappingEntries(nextDiscreteMappingEntries)
   }
 
-  if (props.visualProperty.group === 'network') {
+  if (props.visualProperty.group === VisualPropertyGroup.Network) {
     return <Box></Box>
   }
 

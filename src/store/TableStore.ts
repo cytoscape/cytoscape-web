@@ -4,6 +4,7 @@ import { AttributeName, Table, ValueType } from '../models/TableModel'
 import create from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { columnValueSet } from '../models/TableModel/impl/InMemoryTable'
+import { VisualPropertyGroup } from '../models/VisualStyleModel/VisualPropertyGroup'
 
 /**
 //  * Table State manager based on zustand
@@ -55,7 +56,8 @@ export const useTableStore = create(
     ) => {
       set((state) => {
         const table = state.tables[networkId]
-        const tableToUpdate = tableType === 'node' ? 'nodeTable' : 'edgeTable'
+        const tableToUpdate =
+          tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
         const row = table[tableToUpdate]?.rows.get(rowId)
         if (row != null) {
           row[column] = value
@@ -70,7 +72,8 @@ export const useTableStore = create(
       const tables = get().tables
       const nodeTable = tables[networkId]?.nodeTable
       const edgeTable = tables[networkId]?.edgeTable
-      const table = tableType === 'node' ? nodeTable : edgeTable
+      const table =
+        tableType === VisualPropertyGroup.Node ? nodeTable : edgeTable
 
       return columnValueSet(table, column)
     },
@@ -83,7 +86,8 @@ export const useTableStore = create(
         const table = state.tables
         const nodeTable = table[networkId]?.nodeTable
         const edgeTable = table[networkId]?.edgeTable
-        const tableToUpdate = tableType === 'node' ? nodeTable : edgeTable
+        const tableToUpdate =
+          tableType === VisualPropertyGroup.Node ? nodeTable : edgeTable
         const columnToDuplicate = tableToUpdate?.columns.get(column)
         if (columnToDuplicate != null) {
           const newColumn = {

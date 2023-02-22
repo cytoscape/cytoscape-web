@@ -38,6 +38,7 @@ import {
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
 import { NetworkView } from '../../../models/ViewModel'
+import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType
@@ -68,17 +69,21 @@ function BypassFormContent(props: {
   const { selectedNodes, selectedEdges } = networkView
 
   const validElementsSelected =
-    (selectedNodes.length > 0 && visualProperty.group === 'node') ||
-    (selectedEdges.length > 0 && visualProperty.group === 'edge')
+    (selectedNodes.length > 0 &&
+      visualProperty.group === VisualPropertyGroup.Node) ||
+    (selectedEdges.length > 0 &&
+      visualProperty.group === VisualPropertyGroup.Edge)
 
   // get union of selected elements and bypass elements
   // put all selected elements first (even if they have a bypass)
   // render all elements, if they dont have a bypass, leave it empty
   const selectedElements: IdType[] =
-    visualProperty.group === 'node' ? selectedNodes : selectedEdges
+    visualProperty.group === VisualPropertyGroup.Node
+      ? selectedNodes
+      : selectedEdges
 
   const selectedElementTable =
-    visualProperty.group === 'node' ? nodeTable : edgeTable
+    visualProperty.group === VisualPropertyGroup.Node ? nodeTable : edgeTable
 
   const bypassElementIds = new Set(
     Array.from(visualProperty?.bypassMap?.keys()).map((k) => String(k)) ?? [],
