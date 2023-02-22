@@ -37,6 +37,7 @@ import {
 import {
   ContinuousMappingFunction,
   DiscreteMappingFunction,
+  MappingFunctionType,
   PassthroughMappingFunction,
 } from '../models/VisualStyleModel/VisualMappingFunction'
 
@@ -55,40 +56,112 @@ export const exportNetworkToCx2 = (
   // }
   //   })
 
-  const networkAttributes: any = {}
-
-  const convertAttributes = (
-    acc: { [key: AttributeName]: { d: ValueTypeName; v?: ValueType } },
+  // accumulate node/edge attributes into a object
+  const attributesAccumulator = (
+    attributes: { [key: AttributeName]: { d: ValueTypeName; v?: ValueType } },
     column: Column,
   ) => {
-    acc[column.name] = {
+    attributes[column.name] = {
       d: column.type,
     }
 
     if (column.defaultValue) {
-      acc[column.name].v = column.defaultValue
+      attributes[column.name].v = column.defaultValue
     }
 
-    return acc
+    return attributes
   }
 
-  const nodeAttributes: any = Array.from(nodeTable.columns.values()).reduce(
-    convertAttributes,
-    {},
-  )
+  const vpNameToCXName = (vpName: VisualPropertyName): string => {
+    return cxVisualPropertyConverter[vpName].cxVPName
+  }
 
-  const edgeAttributes: any = Array.from(edgeTable.columns.values()).reduce(
-    convertAttributes,
-    {},
-  )
+  // TODO flesh out CX vp types
+  type CXVPName = string
+
+  // accumulate vp defaults for each vp into an object
+  const vpDefaultsAccumulator = (
+    defaults: { [key: CXVPName]: VisualPropertyValueType },
+    vp: VisualProperty<VisualPropertyValueType>,
+  ) => {
+    const { name, defaultValue } = vp
+    const cxVPName = vpNameToCXName(name)
+    defaults[cxVPName] = defaultValue
+    return defaults
+  }
+
+  // accumulate all vp mappings into an object
+  const vpMappingsAccumulator = (
+    mappings: {
+      [key: CXVPName]: CXVisualMappingFunction<CXVisualPropertyValue>
+    },
+    vp: VisualProperty<VisualPropertyValueType>,
+  ) => {
+    const { name, mapping } = vp
+    const cxVPName = vpNameToCXName(name)
+
+    if (mapping) {
+      switch (mapping.type) {
+        case MappingFunctionType.Continuous: {
+          const convertedMapping = convertContinuousMappingToCX(
+            mapping as ContinuousMappingFunction,
+          )
+          mappings[cxVPName] = convertedMapping
+          break
+        }
+        case MappingFunctionType.Discrete: {
+          const convertedMapping = convertDiscreteMappingToCX(
+            mapping as DiscreteMappingFunction,
+          )
+          mappings[cxVPName] = convertedMapping
+          break
+        }
+        case MappingFunctionType.Passthrough: {
+          const convertedMapping = convertPassthroughMappingToCX(
+            mapping as PassthroughMappingFunction,
+          )
+          mappings[cxVPName] = convertedMapping
+          break
+        }
+      }
+    }
+    return mappings
+  }
+
+  // accumulate all vp bypasses into an object
+  const vpBypassesAccumulator = (
+    bypasses: { [key: IdType]: { [key: CXVPName]: CXVisualPropertyValue } },
+    vp: VisualProperty<VisualPropertyValueType>,
+  ) => {
+    const { name, bypassMap } = vp
+    const cxVPName = vpNameToCXName(name)
+
+    bypassMap.forEach((value, id) => {
+      if (!bypasses[id]) {
+        bypasses[id] = {}
+      }
+      bypasses[id][cxVPName] = value
+    })
+
+    return bypasses
+  }
 
   const attributeDeclarations = [
     {
-      networkAttributes,
-      nodeAttributes,
-      edgeAttributes,
+      networkAttributes: {},
+
+      nodeAttributes: Array.from(nodeTable.columns.values()).reduce(
+        attributesAccumulator,
+        {},
+      ),
+      edgeAttributes: Array.from(edgeTable.columns.values()).reduce(
+        attributesAccumulator,
+        {},
+      ),
     },
   ]
+
+  const networkAttributes: any = []
 
   const nodes = network.nodes.map((node) => {
     const nodeRow = nodeTable.rows.get(node.id)
@@ -115,98 +188,34 @@ export const exportNetworkToCx2 = (
     }
   })
 
-  const vpNameToCXName = (vpName: VisualPropertyName): string => {
-    return cxVisualPropertyConverter[vpName].cxVPName
-  }
+  const visualEditorProperties = [
+    {
+      properties: {
+        nodeSizeLocked: false,
+      },
+    },
+  ]
 
-  // TODO flesh out CX vp types
-  type CXVPName = string
-
-  const populateDefaults = (
-    acc: { [key: CXVPName]: VisualPropertyValueType },
-    vp: VisualProperty<VisualPropertyValueType>,
-  ) => {
-    const { name, defaultValue } = vp
-    const cxVPName = vpNameToCXName(name)
-    acc[cxVPName] = defaultValue
-    return acc
-  }
-
-  const networkDefaultVps = networkVisualProperties(vs).reduce(
-    populateDefaults,
-    {},
-  )
-  const edgeDefaultVps = edgeVisualProperties(vs).reduce(populateDefaults, {})
-
-  const nodeDefaultVps = nodeVisualProperties(vs).reduce(populateDefaults, {})
-
-  const populateMapping = (
-    acc: { [key: CXVPName]: CXVisualMappingFunction<CXVisualPropertyValue> },
-    vp: VisualProperty<VisualPropertyValueType>,
-  ) => {
-    const { name, mapping } = vp
-    const cxVPName = vpNameToCXName(name)
-
-    if (mapping) {
-      switch (mapping.type) {
-        case 'continuous': {
-          // TODO use the enum instead of hard coded string
-          const convertedMapping = convertContinuousMappingToCX(
-            mapping as ContinuousMappingFunction,
-          )
-          acc[cxVPName] = convertedMapping
-          break
-        }
-        case 'discrete': {
-          const convertedMapping = convertDiscreteMappingToCX(
-            mapping as DiscreteMappingFunction,
-          )
-          acc[cxVPName] = convertedMapping
-          break
-        }
-        case 'passthrough': {
-          const convertedMapping = convertPassthroughMappingToCX(
-            mapping as PassthroughMappingFunction,
-          )
-          acc[cxVPName] = convertedMapping
-          break
-        }
-      }
-    }
-    return acc
-  }
-
-  const nodeMapping = nodeVisualProperties(vs)
-    .filter((vp) => vp.mapping != null)
-    .reduce(populateMapping, {})
-
-  const edgeMapping = edgeVisualProperties(vs)
-    .filter((vp) => vp.mapping != null)
-    .reduce(populateMapping, {})
-
-  const visualProperties = {}
-
-  const populateBypasses = (
-    acc: { [key: IdType]: { [key: CXVPName]: CXVisualPropertyValue } },
-    vp: VisualProperty<VisualPropertyValueType>,
-  ) => {
-    const { name, bypassMap } = vp
-    const cxVPName = vpNameToCXName(name)
-
-    bypassMap.forEach((value, id) => {
-      if (!acc[id]) {
-        acc[id] = {}
-      }
-      acc[id][cxVPName] = value
-    })
-
-    return acc
-  }
+  const visualProperties = [
+    {
+      default: {
+        network: networkVisualProperties(vs).reduce(vpDefaultsAccumulator, {}),
+        edge: edgeVisualProperties(vs).reduce(vpDefaultsAccumulator, {}),
+        node: nodeVisualProperties(vs).reduce(vpDefaultsAccumulator, {}),
+      },
+      nodeMapping: nodeVisualProperties(vs)
+        .filter((vp) => vp.mapping != null)
+        .reduce(vpMappingsAccumulator, {}),
+      edgeMapping: edgeVisualProperties(vs)
+        .filter((vp) => vp.mapping != null)
+        .reduce(vpMappingsAccumulator, {}),
+    },
+  ]
 
   const nodeBypasses = Object.entries(
     nodeVisualProperties(vs)
       .filter((vp) => vp.bypassMap.size > 0)
-      .reduce(populateBypasses, {}),
+      .reduce(vpBypassesAccumulator, {}),
   ).map(([id, bypassObj]) => {
     return {
       id: parseInt(id),
@@ -217,7 +226,7 @@ export const exportNetworkToCx2 = (
   const edgeBypasses = Object.entries(
     edgeVisualProperties(vs)
       .filter((vp) => vp.bypassMap.size > 0)
-      .reduce(populateBypasses, {}),
+      .reduce(vpBypassesAccumulator, {}),
   ).map(([id, bypassObj]) => {
     return {
       id: parseInt(translateEdgeIdToCX(id)),
@@ -225,44 +234,43 @@ export const exportNetworkToCx2 = (
     }
   })
 
-  return [
-    {
-      CXVersion: '2.0',
-      hasFragments: false,
-    },
-    {
-      metaData: [],
-    },
-    {
-      attributeDeclarations,
-    },
-    {
-      networkAttributes: [],
-    },
-    {
-      nodes,
-    },
-    { edges },
+  const cyTableColumn: any = []
+  const cyHiddenAttributes: any = []
 
-    {
-      visualEditorProperties: [
-        {
-          properties: {
-            nodeSizeLocked: false,
-          },
-        },
-      ],
-    },
-    { cyTableColumn: [] },
-    { cyHiddenAttributes: [] },
-    { visualProperties },
-    { nodeBypasses },
-    { edgeBypasses },
-    {
-      status: {
-        error: '',
-        success: true,
-      },
-    },
+  const descriptor = {
+    CXVersion: '2.0',
+    hasFragments: false,
+  }
+
+  const aspects = [
+    { key: 'attributeDeclarations', aspect: attributeDeclarations },
+    { key: 'networkAttributes', aspect: networkAttributes },
+    { key: 'nodes', aspect: nodes },
+    { key: 'edges', aspect: edges },
+    { key: 'visualProperties', aspect: visualProperties },
+    { key: 'nodeBypasses', aspect: nodeBypasses },
+    { key: 'edgeBypasses', aspect: edgeBypasses },
+    { key: 'visualEditorProperties', aspect: visualEditorProperties },
+    { key: 'cyTableColumn', aspect: cyTableColumn },
+    { key: 'cyHiddenAttributes', aspect: cyHiddenAttributes },
+  ]
+
+  const status = {
+    error: '',
+    success: true,
+  }
+
+  const metaData = aspects.map((aspect) => {
+    return {
+      name: aspect.key,
+      elementCount: aspect.aspect.length,
+    }
+  })
+
+  return [
+    descriptor,
+    { metaData },
+    ...aspects.map((aspect) => ({ [aspect.key]: aspect.aspect })),
+    { status },
   ]
 }
