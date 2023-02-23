@@ -3,10 +3,10 @@ import { ColorType, VisualPropertyValueType } from '../VisualPropertyValue'
 import {
   ContinuousFunctionControlPoint,
   ContinuousMappingFunction,
-} from './ContinuousMappingFunction'
-import { DiscreteMappingFunction } from './DiscreteMappingFunction'
-import { Mapper } from './Mapper'
-import { PassthroughMappingFunction } from './PassthroughMappingFunction'
+} from '../VisualMappingFunction/ContinuousMappingFunction'
+import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
+import { Mapper } from '../VisualMappingFunction/Mapper'
+import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
 
 import * as d3Scale from 'd3-scale'
 // import * as d3Color from 'd3-color'

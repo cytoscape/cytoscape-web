@@ -16,7 +16,7 @@ import {
 } from '..'
 
 import * as VisualStyleFnImpl from './VisualStyleFnImpl'
-import * as MapperFactory from '../VisualMappingFunction/MapperFactory'
+import * as MapperFactory from './MapperFactory'
 
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
