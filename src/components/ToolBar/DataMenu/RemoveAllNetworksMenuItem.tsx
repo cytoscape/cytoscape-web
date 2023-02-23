@@ -1,14 +1,16 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement } from 'react'
+import { BaseMenuProps } from '../BaseMenuProps'
 
-export const RemoveAllNetworksMenuItem = (): ReactElement => {
+export const RemoveAllNetworksMenuItem = (
+  props: BaseMenuProps,
+): ReactElement => {
   const handleRemoveAllNetworks = (): void => {
-    console.info('All networks removed')
+    console.info('(Not implemented) All networks removed')
+    props.handleClose()
   }
 
   return (
-    <MenuItem onClick={handleRemoveAllNetworks}>
-      Remove all networks
-    </MenuItem>
+    <MenuItem onClick={handleRemoveAllNetworks}>Remove all networks</MenuItem>
   )
 }

@@ -22,7 +22,7 @@ import { Workspace } from '../../models/WorkspaceModel'
 import { Summaries as SummaryList } from '../SummaryPanel'
 import { putNetworkViewToDb } from '../../store/persist/db'
 import { NetworkView } from '../../models/ViewModel'
-import { useWorkspaceManager } from '../ToolBar/DataMenu/workspace-manager'
+import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
 
 const NetworkPanel = React.lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = React.lazy(() => import('../TableBrowser/TableBrowser'))
