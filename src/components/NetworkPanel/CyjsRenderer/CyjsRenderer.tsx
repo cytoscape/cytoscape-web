@@ -9,7 +9,7 @@ import Cytoscape, {
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import { VisualStyle } from '../../../models/VisualStyleModel'
+import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { Network } from '../../../models/NetworkModel'
 import {
   ReactElement,
@@ -21,7 +21,6 @@ import {
 } from 'react'
 import { NetworkView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
-import { VisualStyleFnImpl as Vsf } from '../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
 import { addObjects } from './cyjs-factory'
@@ -88,7 +87,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         edgeTable: table.edgeTable,
         visualStyle: vs,
       }
-      const updatedNetworkView: NetworkView = Vsf.applyVisualStyle(data)
+      const updatedNetworkView: NetworkView =
+        VisualStyleFn.applyVisualStyle(data)
 
       const { nodeViews, edgeViews } = updatedNetworkView
       addObjects(cy, Object.values(nodeViews), network.edges, edgeViews)
@@ -164,7 +164,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       edgeTable: table.edgeTable,
       visualStyle: vs,
     }
-    const updatedNetworkView: NetworkView = Vsf.applyVisualStyle(data)
+    const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
     // Apply style from view model
     applyViewModel(cy, updatedNetworkView)
 

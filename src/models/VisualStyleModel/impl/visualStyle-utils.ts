@@ -8,16 +8,17 @@ import {
   MappingFunctionType,
   PassthroughMappingFunction,
   VisualMappingFunction,
-} from '../VisualMappingFunction'
-import { VisualProperty } from '../VisualProperty'
-import { VisualPropertyName } from '../VisualPropertyName'
-import { VisualPropertyValueType } from '../VisualPropertyValue'
-import { VisualStyle } from '../VisualStyle'
-import { edgeVisualProperties, nodeVisualProperties } from './VisualStyleImpl'
-import * as MapperFactory from '../VisualMappingFunction/MapperFactory'
-import { Mapper } from '../VisualMappingFunction/Mapper'
+  VisualProperty,
+  VisualPropertyName,
+  VisualPropertyValueType,
+  VisualStyle,
+  Mapper,
+} from '..'
 
-// Buiold mapping functions from all visual properties
+import * as VisualStyleFnImpl from './VisualStyleFnImpl'
+import * as MapperFactory from '../VisualMappingFunction/MapperFactory'
+
+// Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
   const mappers: Map<VisualPropertyName, Mapper> = new Map()
   Object.keys(vs).forEach((vpName: VisualPropertyName) => {
@@ -69,13 +70,13 @@ export const createNewNetworkView = (
     values: new Map<VisualPropertyName, VisualPropertyValueType>(),
     nodeViews: nodeViewBuilder(
       network.nodes,
-      nodeVisualProperties(vs),
+      VisualStyleFnImpl.nodeVisualProperties(vs),
       mappers,
       nodeTable,
     ),
     edgeViews: edgeViewBuilder(
       network.edges,
-      edgeVisualProperties(vs),
+      VisualStyleFnImpl.edgeVisualProperties(vs),
       mappers,
       edgeTable,
     ),
@@ -99,14 +100,14 @@ export const updateNetworkView = (
     values: new Map<VisualPropertyName, VisualPropertyValueType>(),
     nodeViews: nodeViewBuilder(
       network.nodes,
-      nodeVisualProperties(vs),
+      VisualStyleFnImpl.nodeVisualProperties(vs),
       mappers,
       nodeTable,
       nodeViews,
     ),
     edgeViews: edgeViewBuilder(
       network.edges,
-      edgeVisualProperties(vs),
+      VisualStyleFnImpl.edgeVisualProperties(vs),
       mappers,
       edgeTable,
     ),
