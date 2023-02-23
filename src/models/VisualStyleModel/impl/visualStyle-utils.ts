@@ -305,11 +305,13 @@ export const computeView = (
       pairs.set(name, bypass)
     } else if (mapping !== undefined) {
       // Mapping is available.
-      // TODO: compute mapping
       const attrName: string = mapping.attribute
-      const attributeValueAssigned: ValueType | undefined = row[attrName]
+      const column = columns.get(attrName)
+      const attributeValue: ValueType | undefined =
+        row[attrName] ?? column?.defaultValue
+      const attributeValueAssigned: boolean = attributeValue !== undefined
 
-      if (attributeValueAssigned !== undefined) {
+      if (attributeValueAssigned) {
         // const computedValue: VisualPropertyValueType = getMappedValue(
         //   mapping,
         //   attributeValueAssigned,
@@ -324,9 +326,7 @@ export const computeView = (
             `Mapping is defined, but Mapper for ${vp.name} is not found`,
           )
         }
-        const computedValue: VisualPropertyValueType = mapper(
-          attributeValueAssigned,
-        )
+        const computedValue: VisualPropertyValueType = mapper(attributeValue)
         pairs.set(name, computedValue)
       } else {
         pairs.set(name, defaultValue)
