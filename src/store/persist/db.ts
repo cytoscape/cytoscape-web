@@ -216,7 +216,7 @@ const createWorkspace = (): Workspace => {
     networkModified: {},
     creationTime: new Date(),
     localModificationTime: new Date(),
-    currentNetworkId: ''
+    currentNetworkId: '',
   }
 }
 
@@ -279,6 +279,10 @@ export const putVisualStyleToDb = async (
   })
 }
 
+export const deleteVisualStyleFromDb = async (id: IdType): Promise<void> => {
+  await db.cyVisualStyles.delete(id)
+}
+
 // Network View
 export const getNetworkViewFromDb = async (
   id: IdType,
@@ -293,4 +297,8 @@ export const putNetworkViewToDb = async (
   await db.transaction('rw', db.cyNetworkViews, async () => {
     await db.cyNetworkViews.put({ ...view })
   })
+}
+
+export const deleteNetworkViewFromDb = async (id: IdType): Promise<void> => {
+  await db.cyNetworkViews.delete(id)
 }

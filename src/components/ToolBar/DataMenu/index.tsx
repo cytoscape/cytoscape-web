@@ -9,6 +9,7 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { Divider } from '@mui/material'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
+import { RemoveNetworkMenuItem } from './RemoveNetworkMenuItem'
 interface DropdownMenuProps {
   label: string
   children?: React.ReactNode
@@ -19,17 +20,17 @@ const SAMPLE_NETWORKS: string[] = [
   '4ae2709d-3055-11ec-94bf-525400c25d22',
   '8b3faf53-3056-11ec-94bf-525400c25d22',
   '8b51d7c5-3056-11ec-94bf-525400c25d22',
-  '8b957078-3056-11ec-94bf-525400c25d22',
-  '8baf882a-3056-11ec-94bf-525400c25d22',
-  '8bd2797c-3056-11ec-94bf-525400c25d22',
-  'f625f9ef-3055-11ec-94bf-525400c25d22',
-  'f950ad02-3055-11ec-94bf-525400c25d22',
-  'f96b39e4-3055-11ec-94bf-525400c25d22',
-  'f99975d6-3055-11ec-94bf-525400c25d22',
-  'f9aeab88-3055-11ec-94bf-525400c25d22',
-  'f9ca49da-3055-11ec-94bf-525400c25d22',
-  '8bd2797c-3056-11ec-94bf-525400c25d22',
-  'ab0eeef6-25bd-11e9-a05d-525400c25d22',
+  // '8b957078-3056-11ec-94bf-525400c25d22',
+  // '8baf882a-3056-11ec-94bf-525400c25d22',
+  // '8bd2797c-3056-11ec-94bf-525400c25d22',
+  // 'f625f9ef-3055-11ec-94bf-525400c25d22',
+  // 'f950ad02-3055-11ec-94bf-525400c25d22',
+  // 'f96b39e4-3055-11ec-94bf-525400c25d22',
+  // 'f99975d6-3055-11ec-94bf-525400c25d22',
+  // 'f9aeab88-3055-11ec-94bf-525400c25d22',
+  // 'f9ca49da-3055-11ec-94bf-525400c25d22',
+  // '8bd2797c-3056-11ec-94bf-525400c25d22',
+  // 'ab0eeef6-25bd-11e9-a05d-525400c25d22',
 ]
 
 export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
@@ -137,6 +138,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props) => {
           <MenuItem onClick={handleRemoveCurrentNetwork}>
             Remove selected network
           </MenuItem>
+          <RemoveNetworkMenuItem />
           <RemoveAllNetworksMenuItem />
           <Divider />
           <MenuItem onClick={handleClear}>Start new workspace</MenuItem>

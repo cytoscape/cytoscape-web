@@ -22,11 +22,14 @@ import { Workspace } from '../../models/WorkspaceModel'
 import { Summaries as SummaryList } from '../SummaryPanel'
 import { putNetworkViewToDb } from '../../store/persist/db'
 import { NetworkView } from '../../models/ViewModel'
+import { useWorkspaceManager } from '../ToolBar/DataMenu/workspace-manager'
 
 const NetworkPanel = React.lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = React.lazy(() => import('../TableBrowser/TableBrowser'))
 
 const WorkSpaceEditor: React.FC = () => {
+  useWorkspaceManager()
+
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
@@ -39,26 +42,27 @@ const WorkSpaceEditor: React.FC = () => {
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
-  
-  const setNetworkModified: (id: IdType, isModified: boolean) => void = useWorkspaceStore(
-    (state) => state.setNetworkModified,
-  )
-  
-  useViewModelStore.subscribe((state) => state.viewModels[currentNetworkId], () => {
-    const {networkModified} = workspace
-    const isModified: boolean| undefined = networkModified[currentNetworkId]
-    if (isModified !== undefined && !isModified) {
-      setNetworkModified(currentNetworkId, true)
-    }
-  })
 
+  const setNetworkModified: (id: IdType, isModified: boolean) => void =
+    useWorkspaceStore((state) => state.setNetworkModified)
+
+  useViewModelStore.subscribe(
+    (state) => state.viewModels[currentNetworkId],
+    () => {
+      const { networkModified } = workspace
+      const isModified: boolean | undefined = networkModified[currentNetworkId]
+      if (isModified !== undefined && !isModified) {
+        setNetworkModified(currentNetworkId, true)
+      }
+    },
+  )
 
   // Network Summaries
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
   const fetchAllSummaries = useNetworkSummaryStore((state) => state.fetchAll)
-  const removeSummary = useNetworkSummaryStore((state) => state.remove)
+  const removeSummary = useNetworkSummaryStore((state) => state.delete)
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
@@ -243,7 +247,8 @@ const WorkSpaceEditor: React.FC = () => {
                         // need to set a height to enable scroll in the network list
                         // 48 is the height of the tool bar
                         width: '100%',
-                        padding: 0, margin: 0,
+                        padding: 0,
+                        margin: 0,
                       }}
                     >
                       <SummaryList summaries={summaries} />

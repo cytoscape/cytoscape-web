@@ -18,7 +18,7 @@ interface NetworkSummaryStore {
 interface NetworkSummaryActions {
   fetch: (networkId: IdType, url: string) => Promise<NdexNetworkSummary>
   fetchAll: (networkIds: IdType[], url: string) => Promise<void>
-  remove: (networkId: IdType) => void
+  delete: (networkId: IdType) => void
 }
 
 const networkSummaryFetcher = async (
@@ -131,7 +131,7 @@ export const useNetworkSummaryStore = create(
 
       // return newSummaries
     },
-    remove: (networkId: IdType) => {
+    delete: (networkId: IdType) => {
       set((state) => {
         const { summaries } = state
         const newSummaries: Record<IdType, NdexNetworkSummary> = {}

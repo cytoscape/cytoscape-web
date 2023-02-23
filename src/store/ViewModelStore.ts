@@ -4,6 +4,7 @@ import { NetworkView, NodeView } from '../models/ViewModel'
 import create from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { subscribeWithSelector } from 'zustand/middleware'
+import { deleteNetworkViewFromDb } from './persist/db'
 
 /**
 //  * View model state manager based on zustand
@@ -35,6 +36,8 @@ interface ViewModelAction {
     eleId: IdType,
     position: [number, number],
   ) => void
+  delete: (networkId: IdType) => void
+  deleteAll: () => void
 }
 
 export const useViewModelStore = create(
@@ -121,6 +124,32 @@ export const useViewModelStore = create(
             nodeView.y = position[1]
             // Update DB
           }
+        })
+      },
+      delete(networkId) {
+        set((state) => {
+          const filtered: Record<string, NetworkView> = Object.keys(
+            state.viewModels,
+          ).reduce<Record<string, NetworkView>>((acc, key) => {
+            if (key !== networkId) {
+              acc[key] = state.viewModels[key]
+            }
+            return acc
+          }, {})
+
+          void deleteNetworkViewFromDb(networkId).then(() => {
+            console.log('Network view deleted from db')
+          })
+          return {
+            viewModels: {
+              ...filtered,
+            },
+          }
+        })
+      },
+      deleteAll() {
+        set((state) => {
+          state.viewModels = {}
         })
       },
     })),
