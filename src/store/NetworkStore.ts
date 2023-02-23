@@ -2,6 +2,7 @@ import { IdType } from '../models/IdType'
 import NetworkFn, { Network } from '../models/NetworkModel'
 import create from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import { deleteNetworkFromDb } from './persist/db'
 
 /**
  * Network State manager based on zustand
@@ -89,7 +90,9 @@ export const useNetworkStore = create(
       set((state) => {
         const newNetworkMap = new Map(state.networks)
         newNetworkMap.delete(networkId)
-        // await deleteNetworkFromDb(networkId)
+        void deleteNetworkFromDb(networkId).then(() => {
+          console.log('Network from db', networkId)
+        })
         return {
           networks: newNetworkMap,
         }

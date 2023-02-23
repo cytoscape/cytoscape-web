@@ -17,7 +17,7 @@ import {
 import { ContinuousFunctionControlPoint } from '../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyValueTypeName } from '../models/VisualStyleModel/VisualPropertyValueTypeName'
 
-import { putVisualStyleToDb } from './persist/db'
+import { deleteVisualStyleFromDb, putVisualStyleToDb } from './persist/db'
 
 /**
 //  * Visual Style State manager based on zustand
@@ -87,11 +87,8 @@ interface UpdateVisualStyleAction {
 
 interface VisualStyleAction {
   set: (networkId: IdType, visualStyle: VisualStyle) => void
-  //   reset: () => void
-
-  //   add: (network: Network) => void
-  //   delete: (networkId: IdType) => void
-  //   deleteAll: () => void
+  delete: (networkId: IdType) => void
+  deleteAll: () => void
 }
 
 export const useVisualStyleStore = create(
@@ -331,6 +328,30 @@ export const useVisualStyleStore = create(
         set((state) => {
           const vp = state.visualStyles[networkId][vpName]
           delete vp.mapping
+        })
+      },
+      delete: (networkId) => {
+        set((state) => {
+          const filtered: Record<string, VisualStyle> = Object.keys(
+            state.visualStyles,
+          ).reduce<Record<string, VisualStyle>>((acc, key) => {
+            if (key !== networkId) {
+              acc[key] = state.visualStyles[key]
+            }
+            return acc
+          }, {})
+          void deleteVisualStyleFromDb(networkId).then(() => {
+            console.log('# deleted visual style from db')
+          })
+          return {
+            ...state,
+            visualStyles: filtered,
+          }
+        })
+      },
+      deleteAll: () => {
+        set((state) => {
+          state.visualStyles = {}
         })
       },
     }),

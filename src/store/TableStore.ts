@@ -6,11 +6,17 @@ import { immer } from 'zustand/middleware/immer'
 import { columnValueSet } from '../models/TableModel/impl/InMemoryTable'
 import { VisualPropertyGroup } from '../models/VisualStyleModel/VisualPropertyGroup'
 
+/** */
+interface TableRecord {
+  nodeTable: Table
+  edgeTable: Table
+}
+
 /**
 //  * Table State manager based on zustand
 //  */
 interface TableState {
-  tables: Record<IdType, { nodeTable: Table; edgeTable: Table }>
+  tables: Record<IdType, TableRecord>
 }
 
 interface TableAction {
@@ -32,6 +38,8 @@ interface TableAction {
     tableType: 'node' | 'edge',
     column: AttributeName,
   ) => void
+  delete: (networkId: IdType) => void
+  deleteAll: () => void
 }
 
 export const useTableStore = create(
@@ -103,6 +111,24 @@ export const useTableStore = create(
             },
           )
         }
+      })
+    },
+    delete(networkId: IdType) {
+      set((state) => {
+        const filtered: Record<IdType, TableRecord> = Object.keys(
+          state.tables,
+        ).reduce((acc: Record<IdType, TableRecord>, id) => {
+          if (id !== networkId) {
+            acc[id] = state.tables[id]
+          }
+          return acc
+        }, {})
+        state.tables = filtered
+      })
+    },
+    deleteAll() {
+      set((state) => {
+        state.tables = {}
       })
     },
   })),

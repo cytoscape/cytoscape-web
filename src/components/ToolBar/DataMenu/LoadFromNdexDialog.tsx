@@ -25,10 +25,9 @@ export const LoadFromNdexDialog = (
   const { open, handleClose, handleLoad } = props
   return (
     <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Load Networks from NDEx:</DialogTitle>
+      <DialogTitle>Load Networks from NDEx: {ndexBaseUrl}</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          <h5>Remote NDEx server is set to: {ndexBaseUrl}</h5>
           Enter UUID(s), separated by spaces
         </DialogContentText>
         <TextField
