@@ -30,7 +30,7 @@ import {
 } from './cxVisualPropertyConverter'
 
 import { getDefaultVisualStyle } from './DefaultVisualStyle'
-import { createNewNetworkView, updateNetworkView } from './visualStyle-utils'
+import { createNewNetworkView, updateNetworkView } from './compute-view-util'
 
 export const applyVisualStyle = (data: NetworkViewSources): NetworkView => {
   const { network, visualStyle, nodeTable, edgeTable, networkView } = data
