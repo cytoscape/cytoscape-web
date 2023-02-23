@@ -1,10 +1,13 @@
-import * as VisualStyleFn from './impl/VisualStyleImpl'
+import * as VisualStyleFn from './impl/VisualStyleFnImpl'
 
-export { VisualStyle } from './VisualStyle'
-export { VisualProperty } from './VisualProperty'
-export { VisualPropertyName } from './VisualPropertyName'
-export { VisualPropertyValueType } from './VisualPropertyValue'
-export { VisualMappingFunction } from './VisualMappingFunction'
-export { Bypass } from './Bypass'
+export * from './VisualStyle'
+export * from './VisualPropertyGroup'
+export * from './VisualProperty'
+export * from './VisualPropertyValueTypeName'
+export * from './VisualPropertyName'
+export * from './VisualPropertyValue'
+export * from './VisualMappingFunction'
+export * from './Bypass'
+export * from './VisualStyleFn'
 
 export { VisualStyleFn as default }

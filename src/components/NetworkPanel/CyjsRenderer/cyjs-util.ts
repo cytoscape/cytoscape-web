@@ -8,7 +8,7 @@ import { IdType } from '../../../models/IdType'
 import { ValueType } from '../../../models/TableModel'
 import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import { View } from '../../../models/ViewModel/View'
-import {
+import VisualStyleFn, {
   VisualProperty,
   VisualPropertyName,
   VisualPropertyValueType,
@@ -16,10 +16,6 @@ import {
 } from '../../../models/VisualStyleModel'
 import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
 import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
-import {
-  edgeVisualProperties,
-  nodeVisualProperties,
-} from '../../../models/VisualStyleModel/impl/VisualStyleImpl'
 
 export const addEventHandlers = (
   id: IdType,
@@ -45,8 +41,8 @@ export const addEventHandlers = (
 }
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
-  const nodeVps = nodeVisualProperties(vs)
-  const edgeVps = edgeVisualProperties(vs)
+  const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
+  const edgeVps = VisualStyleFn.edgeVisualProperties(vs)
 
   const cyStyle: CyjsDirectMapper[] = []
   nodeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {

@@ -178,16 +178,16 @@ const createDataFromCx = async (
   const network: Network = NetworkFn.createNetworkFromCx(ndexNetworkId, cxData)
   // FIXME: This should be replaced to correct DB operation
   await putNetworkToDb(network)
-  
+
   const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
     ndexNetworkId,
     cxData,
   )
   await putTablesToDb(ndexNetworkId, nodeTable, edgeTable)
-  
+
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
   await putVisualStyleToDb(ndexNetworkId, visualStyle)
-  
+
   const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
     ndexNetworkId,
     cxData,
