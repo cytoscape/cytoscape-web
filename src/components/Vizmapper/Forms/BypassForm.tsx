@@ -324,7 +324,7 @@ export function BypassForm(props: {
 
   const noBypasses = props.visualProperty.bypassMap?.size === 0
 
-  let viewBox = null
+  let viewBox
 
   if (noBypasses) {
     viewBox = <EmptyVisualPropertyViewBox />

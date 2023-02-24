@@ -1,17 +1,18 @@
-import * as React from 'react'
-import AppBar from '@mui/material/AppBar'
-import Box from '@mui/material/Box'
-import Toolbar from '@mui/material/Toolbar'
-import { styled, alpha } from '@mui/material/styles'
-import InputBase from '@mui/material/InputBase'
 import SearchIcon from '@mui/icons-material/Search'
 import TuneIcon from '@mui/icons-material/Tune'
+import AppBar from '@mui/material/AppBar'
 import Avatar from '@mui/material/Avatar'
+import Box from '@mui/material/Box'
+import InputBase from '@mui/material/InputBase'
+import { alpha, styled } from '@mui/material/styles'
+import Toolbar from '@mui/material/Toolbar'
+import * as React from 'react'
 
-import { DropdownMenu } from './DropdownMenu'
 import { DataMenu } from './DataMenu'
+import { DropdownMenu } from './DropdownMenu'
 
 import logo from '../../assets/cytoscape.svg'
+import { AppsMenu } from './AppsMenu'
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -69,6 +70,7 @@ export const ToolBar: React.FC = () => {
             <DropdownMenu label="Edit" />
             <DropdownMenu label="View" />
             <DropdownMenu label="Select" />
+            <AppsMenu />
             <DropdownMenu label="Layout" />
             <DropdownMenu label="Analysis" />
             <DropdownMenu label="Help" />
