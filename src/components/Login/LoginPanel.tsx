@@ -5,45 +5,23 @@ import CardActions from '@mui/material/CardActions'
 import Avatar from '@mui/material/Avatar'
 import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
-import { red } from '@mui/material/colors'
-import FavoriteIcon from '@mui/icons-material/Favorite'
-import ShareIcon from '@mui/icons-material/Share'
+import LogoutIcon from '@mui/icons-material/Logout'
+import CloseIcon from '@mui/icons-material/Close'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
-import { ReactElement, useEffect } from 'react'
-import { useKeycloak } from '../../auth/useKeycloak'
+import { ReactElement } from 'react'
+import { Button } from '@mui/material'
+import { KeycloakTokenParsed } from 'keycloak-js'
 
 interface LoginPanelProps {
+  token?: KeycloakTokenParsed
   open: boolean
   handleClose: () => void
 }
 
 export const LoginPanel = (props: LoginPanelProps): ReactElement => {
-  const keycloakClient = useKeycloak()
+  const { token, open } = props
 
-  useEffect(() => {
-    console.log('Button is ready', keycloakClient.client)
-  }, [keycloakClient])
-
-  const handleLogin = (): void => {
-    if (keycloakClient?.client !== undefined) {
-      const { client } = keycloakClient
-
-      if (client.authenticated === true) {
-        console.log('=========== Already Authed', client.tokenParsed)
-      } else {
-        client
-          .login()
-          .then(() => {
-            console.log('=========== Login & Authed', client.tokenParsed)
-          })
-          .catch((error) => {
-            console.log('===========Error', error)
-          })
-      }
-    }
-  }
-
-  if (!props.open) {
+  if (!open) {
     return <></>
   }
 
@@ -53,39 +31,44 @@ export const LoginPanel = (props: LoginPanelProps): ReactElement => {
         zIndex: 1000,
         maxWidth: 345,
         position: 'fixed',
-        top: 10,
+        top: 40,
         right: 10,
-        backgroundColor: 'red',
       }}
     >
       <CardHeader
-        avatar={
-          <Avatar sx={{ bgcolor: red[500] }} aria-label="recipe">
-            R
-          </Avatar>
-        }
+        avatar={<Avatar aria-label="user" />}
         action={
           <IconButton aria-label="settings">
             <MoreVertIcon />
           </IconButton>
         }
-        title="Shrimp and Chorizo Paella"
-        subheader="September 14, 2016"
+        title={token?.name}
+        subheader={token?.email}
       />
       <CardContent>
         <Typography variant="body2" color="text.secondary">
-          This impressive paella is a perfect party dish and a fun meal to cook
-          together with your guests. Add 1 cup of frozen peas along with the
-          mussels, if you like.
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+          eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
+          minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+          aliquip ex ea commodo consequat.
         </Typography>
       </CardContent>
       <CardActions disableSpacing>
-        <IconButton aria-label="add to favorites" onClick={props.handleClose}>
-          <FavoriteIcon />
-        </IconButton>
-        <IconButton aria-label="share" onClick={handleLogin}>
-          <ShareIcon />
-        </IconButton>
+        <Button
+          variant="outlined"
+          startIcon={<LogoutIcon />}
+          onClick={props.handleClose}
+        >
+          Logout
+        </Button>
+        <Button
+          sx={{ marginLeft: '0.5em' }}
+          variant="outlined"
+          startIcon={<CloseIcon />}
+          onClick={props.handleClose}
+        >
+          Close
+        </Button>
       </CardActions>
     </Card>
   )
