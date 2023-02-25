@@ -6,12 +6,12 @@ import { styled, alpha } from '@mui/material/styles'
 import InputBase from '@mui/material/InputBase'
 import SearchIcon from '@mui/icons-material/Search'
 import TuneIcon from '@mui/icons-material/Tune'
-import Avatar from '@mui/material/Avatar'
 
 import { DropdownMenu } from './DropdownMenu'
 import { DataMenu } from './DataMenu'
 
 import logo from '../../assets/cytoscape.svg'
+import { LoginButton } from '../Login/LoginButton'
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -85,7 +85,7 @@ export const ToolBar: React.FC = () => {
                 inputProps={{ 'aria-label': 'search' }}
               />
             </Search>
-            <Avatar sx={{ marginLeft: 2, width: 30, height: 30 }} />
+            <LoginButton />
           </Box>
         </Toolbar>
       </AppBar>

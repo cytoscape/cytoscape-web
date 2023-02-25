@@ -6,7 +6,6 @@ const CopyPlugin = require('copy-webpack-plugin')
 
 module.exports = {
   entry: path.resolve(__dirname, './src/index.tsx'),
-  // entry: './src/index.tsx',
   devtool: 'inline-source-map',
   module: {
     rules: [
@@ -44,6 +43,7 @@ module.exports = {
     hot: true,
     static: path.resolve(__dirname, './dist'),
     historyApiFallback: true,
+    port: 5500,
   },
   plugins: [
     // generate css files from the found css files in the source
