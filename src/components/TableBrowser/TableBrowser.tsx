@@ -245,7 +245,6 @@ export default function TableBrowser(props: {
       title: `${key}-${col.type}`,
       type: col.type,
       index,
-      defaultValue: col.defaultValue,
       hasMenu: true,
     }),
   )
@@ -303,7 +302,7 @@ export default function TableBrowser(props: {
       const dataRow = rows[rowIndex]
       const column = columns[columnIndex]
       const columnKey = column.id
-      const cellValue = dataRow?.[columnKey] ?? column.defaultValue
+      const cellValue = dataRow?.[columnKey]
 
       if (dataRow == null || cellValue == null) {
         return {
