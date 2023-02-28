@@ -36,7 +36,7 @@ const networkSummaryFetcher = async (
 ): Promise<NdexNetworkSummary | NdexNetworkSummary[]> => {
   const ndexClient = new NDEx(`${url}/v2`)
 
-  if (accessToken !== undefined) {
+  if (accessToken !== undefined && accessToken !== '') {
     ndexClient.setAuthToken(accessToken)
   }
 

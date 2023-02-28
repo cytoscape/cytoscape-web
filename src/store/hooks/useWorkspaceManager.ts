@@ -45,7 +45,6 @@ export const useWorkspaceManager = (): void => {
   }
 
   useEffect(() => {
-    console.info('Workspace Manager is ready')
     return () => {
       sub() // Unsubscribe
     }

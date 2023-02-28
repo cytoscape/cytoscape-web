@@ -96,7 +96,7 @@ const WorkSpaceEditor: React.FC = () => {
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     try {
-      const res = await getNdexNetwork(networkId, ndexBaseUrl)
+      const res = await getNdexNetwork(networkId, ndexBaseUrl, accessToken)
       const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
       addNewNetwork(network)

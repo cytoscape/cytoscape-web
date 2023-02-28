@@ -35,7 +35,7 @@ export const LoginButton = (): ReactElement => {
         silentCheckSsoRedirectUri:
           window.location.origin + '/silent-check-sso.html',
       })
-      .then((authenticated) => {
+      .then((authenticated: boolean) => {
         console.info(
           'Keycloak initialized. Is authenticated?',
           authenticated,
@@ -100,7 +100,6 @@ export const LoginButton = (): ReactElement => {
 
   const tooltipTitle =
     tokenParsed.name === undefined ? 'Click to login' : tokenParsed.name
-  console.log('Current token', token)
   return (
     <>
       <Tooltip title={tooltipTitle}>
