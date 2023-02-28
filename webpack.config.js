@@ -39,13 +39,15 @@ module.exports = {
   },
   // watch the dist file for changes when using the dev server
   devServer: {
-    // static: './dist',
     hot: true,
     static: path.resolve(__dirname, './dist'),
     historyApiFallback: true,
     port: 5500,
   },
   plugins: [
+    new CopyPlugin({
+      patterns: [{ from: './silent-check-sso.html', to: '.' }],
+    }),
     // generate css files from the found css files in the source
     new MiniCssExtractPlugin({
       filename: '[name].[contenthash].css',

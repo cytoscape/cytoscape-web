@@ -16,6 +16,7 @@ interface LoginPanelProps {
   token?: KeycloakTokenParsed
   open: boolean
   handleClose: () => void
+  handleLogout: () => void
 }
 
 export const LoginPanel = (props: LoginPanelProps): ReactElement => {
@@ -57,7 +58,7 @@ export const LoginPanel = (props: LoginPanelProps): ReactElement => {
         <Button
           variant="outlined"
           startIcon={<LogoutIcon />}
-          onClick={props.handleClose}
+          onClick={props.handleLogout}
         >
           Logout
         </Button>

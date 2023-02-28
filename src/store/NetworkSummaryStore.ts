@@ -16,21 +16,40 @@ interface NetworkSummaryStore {
 }
 
 interface NetworkSummaryActions {
-  fetch: (networkId: IdType, url: string) => Promise<NdexNetworkSummary>
-  fetchAll: (networkIds: IdType[], url: string) => Promise<void>
+  fetch: (
+    networkId: IdType,
+    url: string,
+    accessToken?: string,
+  ) => Promise<NdexNetworkSummary>
+  fetchAll: (
+    networkIds: IdType[],
+    url: string,
+    accessToken?: string,
+  ) => Promise<void>
   delete: (networkId: IdType) => void
 }
 
 const networkSummaryFetcher = async (
   id: IdType | IdType[],
   url: string,
+  accessToken?: string,
 ): Promise<NdexNetworkSummary | NdexNetworkSummary[]> => {
   const ndexClient = new NDEx(`${url}/v2`)
-  if (Array.isArray(id)) {
-    const summaries: Promise<NdexNetworkSummary[]> =
-      await ndexClient.getNetworkSummariesByUUIDs(id)
 
-    return await summaries
+  if (accessToken !== undefined) {
+    ndexClient.setAuthToken(accessToken)
+  }
+
+  if (Array.isArray(id)) {
+    try {
+      const summaries: Promise<NdexNetworkSummary[]> =
+        await ndexClient.getNetworkSummariesByUUIDs(id)
+
+      return await summaries
+    } catch (error) {
+      console.error('Failed to fetch summary', error)
+      throw error
+    }
   } else {
     // Try local DB first
     const cachedSummary = await getNetworkSummaryFromDb(id)
@@ -46,7 +65,7 @@ const networkSummaryFetcher = async (
 export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore & NetworkSummaryActions>((set) => ({
     summaries: {},
-    fetch: async (networkId: IdType, url: string) => {
+    fetch: async (networkId: IdType, url: string, accessToken?: string) => {
       const localData: NdexNetworkSummary | undefined =
         await getNetworkSummaryFromDb(networkId)
       if (localData !== undefined) {
@@ -56,6 +75,7 @@ export const useNetworkSummaryStore = create(
       const newSummary = (await networkSummaryFetcher(
         networkId,
         url,
+        accessToken,
       )) as NdexNetworkSummary
 
       set((state) => {
@@ -67,7 +87,11 @@ export const useNetworkSummaryStore = create(
 
       return newSummary
     },
-    fetchAll: async (networkIds: IdType[], url: string) => {
+    fetchAll: async (
+      networkIds: IdType[],
+      url: string,
+      accessToken?: string,
+    ) => {
       // Check local database first
       const localData: NdexNetworkSummary[] = await getNetworkSummariesFromDb(
         networkIds,
@@ -93,6 +117,7 @@ export const useNetworkSummaryStore = create(
         newSummaries = (await networkSummaryFetcher(
           newIds,
           url,
+          accessToken,
         )) as NdexNetworkSummary[]
 
         newSummaries = [...cached, ...newSummaries]
@@ -102,6 +127,7 @@ export const useNetworkSummaryStore = create(
         newSummaries = (await networkSummaryFetcher(
           networkIds,
           url,
+          accessToken,
         )) as NdexNetworkSummary[]
       }
       newSummaries.forEach(async (summary: NdexNetworkSummary) => {

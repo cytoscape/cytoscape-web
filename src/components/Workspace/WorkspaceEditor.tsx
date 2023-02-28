@@ -23,6 +23,7 @@ import { Summaries as SummaryList } from '../SummaryPanel'
 import { putNetworkViewToDb } from '../../store/persist/db'
 import { NetworkView } from '../../models/ViewModel'
 import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
+import { useCredentialStore } from '../../store/CredentialStore'
 
 const NetworkPanel = React.lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = React.lazy(() => import('../TableBrowser/TableBrowser'))
@@ -34,6 +35,8 @@ const WorkSpaceEditor: React.FC = () => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
   const navigate = useNavigate()
+
+  const accessToken: string = useCredentialStore((state) => state.token)
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -88,7 +91,7 @@ const WorkSpaceEditor: React.FC = () => {
   )
 
   const loadNetworkSummaries = async (): Promise<void> => {
-    await fetchAllSummaries(workspace.networkIds, ndexBaseUrl)
+    await fetchAllSummaries(workspace.networkIds, ndexBaseUrl, accessToken)
   }
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
