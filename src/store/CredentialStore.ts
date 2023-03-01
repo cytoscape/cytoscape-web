@@ -6,7 +6,7 @@ interface CredentialStore {
   client: Keycloak
 }
 
-const REFRESH_MIN: number = 5
+const REFRESH_MIN: number = 60 * 30 // Refresh if token expires in 30 minutes
 
 interface CredentialActions {
   setClient: (client: Keycloak) => void
