@@ -4,12 +4,14 @@ import { immer } from 'zustand/middleware/immer'
 
 interface CredentialStore {
   client: Keycloak
+  initialized: boolean
 }
 
 const REFRESH_MIN: number = 60 * 30 // Refresh if token expires in 30 minutes
 
 interface CredentialActions {
   setClient: (client: Keycloak) => void
+  setInitialized: (initialized: boolean) => void
   getToken: () => Promise<string>
   getParsedToken: () => Promise<KeycloakTokenParsed>
 }
@@ -17,9 +19,15 @@ interface CredentialActions {
 export const useCredentialStore = create(
   immer<CredentialStore & CredentialActions>((set, get) => ({
     client: new Keycloak(),
+    initialized: false,
     setClient: (client: Keycloak) => {
       set((state) => {
         state.client = client
+      })
+    },
+    setInitialized: (initialized: boolean) => {
+      set((state) => {
+        state.initialized = initialized
       })
     },
     getToken: async () => {

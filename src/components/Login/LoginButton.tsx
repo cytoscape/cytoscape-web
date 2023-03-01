@@ -10,21 +10,12 @@ export const LoginButton = (): ReactElement => {
   const initializing = useRef<boolean>(false)
   const [open, setOpen] = useState<boolean>(false)
   const [enabled, setEnabled] = useState<boolean>(false)
-  // const [client, setClient] = useState<Keycloak>()
-  // const setToken = useCredentialStore((state) => state.setToken)
-  // const deleteToken = useCredentialStore((state) => state.delete)
-  // const tokenParsed: KeycloakTokenParsed = useCredentialStore(
-  //   (state) => state.tokenParsed,
-  // )
 
   const client: Keycloak = useCredentialStore((state) => state.client)
+  const setInitialized: (initialized: boolean) => void = useCredentialStore(
+    (state) => state.setInitialized,
+  )
 
-  // const getToken: () => Promise<string> = useCredentialStore(
-  //   (state) => state.getToken,
-  // )
-  // // const getParsedToken: () => KeycloakTokenParsed = useCredentialStore(
-  // //   (state) => state.getParsedToken,
-  // // )
   const setClient: (client: Keycloak) => void = useCredentialStore(
     (state) => state.setClient,
   )
@@ -57,6 +48,7 @@ export const LoginButton = (): ReactElement => {
         console.log('App is ready', client)
         setTimeout(() => {
           initializing.current = false
+          setInitialized(true) // This will trigger the rendering of the rest of the app
         }, 1000)
       })
       .catch((e) => {

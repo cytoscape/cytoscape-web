@@ -41,6 +41,10 @@ const WorkSpaceEditor: React.FC = () => {
     (state) => state.getToken,
   )
 
+  const credentialInitialized: boolean = useCredentialStore(
+    (state) => state.initialized,
+  )
+
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -129,6 +133,9 @@ const WorkSpaceEditor: React.FC = () => {
    * Check number of networks in the workspace
    */
   useEffect(() => {
+    if (!credentialInitialized) {
+      return
+    }
     const networkCount: number = workspace.networkIds.length
     const summaryCount: number = Object.keys(summaries).length
 
@@ -162,7 +169,7 @@ const WorkSpaceEditor: React.FC = () => {
     loadNetworkSummaries()
       .then(() => {})
       .catch((err) => console.error(err))
-  }, [workspace.networkIds])
+  }, [workspace.networkIds, credentialInitialized])
 
   /**
    * Swap the current network, can be an expensive operation
