@@ -65,7 +65,7 @@
     "@visx/group": "^3.0.0",
     "@visx/scale": "^3.0.0",
     "@visx/shape": "^3.0.0",
-    "allotment": "^1.17.0",
+    "allotment": "1.18.1",
     "chroma-js": "^2.4.2",
     "cytoscape": "^3.23.0",
     "d3-array": "^3.2.2",
