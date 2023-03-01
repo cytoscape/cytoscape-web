@@ -1,32 +1,46 @@
-import { KeycloakTokenParsed } from 'keycloak-js'
+import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
 import create from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 interface CredentialStore {
-  token: string
-  tokenParsed: KeycloakTokenParsed
+  client: Keycloak
 }
 
+const REFRESH_MIN: number = 5
+
 interface CredentialActions {
-  setToken: (token: string, tokenParsed: KeycloakTokenParsed) => void
-  delete: () => void
+  setClient: (client: Keycloak) => void
+  getToken: () => Promise<string>
+  getParsedToken: () => Promise<KeycloakTokenParsed>
 }
 
 export const useCredentialStore = create(
-  immer<CredentialStore & CredentialActions>((set) => ({
-    token: '',
-    tokenParsed: {},
-    setToken: (token: string, tokenParsed: KeycloakTokenParsed) => {
+  immer<CredentialStore & CredentialActions>((set, get) => ({
+    client: new Keycloak(),
+    setClient: (client: Keycloak) => {
       set((state) => {
-        state.token = token
-        state.tokenParsed = tokenParsed
+        state.client = client
       })
     },
-    delete: () => {
-      set((state) => {
-        state.token = ''
-        state.tokenParsed = {}
-      })
+    getToken: async () => {
+      const currentClient = get().client
+      const token: string | undefined = currentClient.token
+      if (token !== undefined) {
+        await currentClient.updateToken(REFRESH_MIN)
+        return currentClient.token ?? ''
+      } else {
+        return ''
+      }
+    },
+    getParsedToken: async () => {
+      const currentClient = get().client
+      const token: string | undefined = currentClient.token
+      if (token !== undefined) {
+        await currentClient.updateToken(REFRESH_MIN)
+        return currentClient.tokenParsed ?? {}
+      } else {
+        return {}
+      }
     },
   })),
 )

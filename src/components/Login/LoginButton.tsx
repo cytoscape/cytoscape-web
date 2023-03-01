@@ -5,19 +5,29 @@ import { ReactElement, useEffect, useRef, useState } from 'react'
 import { LoginPanel } from './LoginPanel'
 import * as appConfig from '../../assets/config.json'
 import { useCredentialStore } from '../../store/CredentialStore'
-import { debounce } from 'lodash'
 
 export const LoginButton = (): ReactElement => {
   const initializing = useRef<boolean>(false)
   const [open, setOpen] = useState<boolean>(false)
   const [enabled, setEnabled] = useState<boolean>(false)
-  const [client, setClient] = useState<Keycloak>()
-  const setToken = useCredentialStore((state) => state.setToken)
-  const deleteToken = useCredentialStore((state) => state.delete)
-  const tokenParsed: KeycloakTokenParsed = useCredentialStore(
-    (state) => state.tokenParsed,
+  // const [client, setClient] = useState<Keycloak>()
+  // const setToken = useCredentialStore((state) => state.setToken)
+  // const deleteToken = useCredentialStore((state) => state.delete)
+  // const tokenParsed: KeycloakTokenParsed = useCredentialStore(
+  //   (state) => state.tokenParsed,
+  // )
+
+  const client: Keycloak = useCredentialStore((state) => state.client)
+
+  // const getToken: () => Promise<string> = useCredentialStore(
+  //   (state) => state.getToken,
+  // )
+  // // const getParsedToken: () => KeycloakTokenParsed = useCredentialStore(
+  // //   (state) => state.getParsedToken,
+  // // )
+  const setClient: (client: Keycloak) => void = useCredentialStore(
+    (state) => state.setClient,
   )
-  const token: string = useCredentialStore((state) => state.token)
 
   useEffect(() => {
     if (initializing.current) {
@@ -27,7 +37,7 @@ export const LoginButton = (): ReactElement => {
     initializing.current = true
     const { keycloakConfig } = appConfig
     const keycloak = new Keycloak({ ...keycloakConfig })
-    setClient(keycloak)
+    // setClient(keycloak)
     keycloak
       .init({
         onLoad: 'check-sso',
@@ -41,11 +51,11 @@ export const LoginButton = (): ReactElement => {
           authenticated,
           client,
         )
-        if (authenticated && keycloak.tokenParsed !== undefined) {
-          setToken(keycloak.token ?? '', keycloak.tokenParsed)
-        }
+
+        setClient(keycloak)
         setEnabled(true)
-        debounce(() => {
+        console.log('App is ready', client)
+        setTimeout(() => {
           initializing.current = false
         }, 1000)
       })
@@ -54,7 +64,7 @@ export const LoginButton = (): ReactElement => {
       })
   }, [])
 
-  const handleClose = (): void => {
+  const handleClose = async (): Promise<void> => {
     if (!enabled) {
       // Button is not ready yet
       return
@@ -63,6 +73,7 @@ export const LoginButton = (): ReactElement => {
     const authenticated: boolean = client?.authenticated ?? false
 
     if (!open) {
+      const token = client?.token
       if (token !== undefined && authenticated) {
         setOpen(true)
       } else if (!authenticated) {
@@ -71,9 +82,6 @@ export const LoginButton = (): ReactElement => {
           ?.login()
           .then((result) => {
             console.log('* Login success', result)
-            const tokenParsed = client.tokenParsed ?? {}
-            const token = client.token ?? ''
-            setToken(token, tokenParsed)
           })
           .catch((error: any) => {
             console.warn('Failed to login', error)
@@ -89,35 +97,39 @@ export const LoginButton = (): ReactElement => {
       return
     }
     client
-      ?.logout()
+      ?.logout({
+        redirectUri: window.location.origin,
+      })
       .then(() => {
-        deleteToken()
+        console.log('* Logout success')
       })
       .catch((error: any) => {
         console.warn('Failed to logout', error)
       })
   }
 
+  const parsed: KeycloakTokenParsed = client.tokenParsed ?? {}
   const tooltipTitle =
-    tokenParsed.name === undefined ? 'Click to login' : tokenParsed.name
+    parsed.name === undefined ? 'Click to login' : parsed.name
   return (
     <>
       <Tooltip title={tooltipTitle}>
         <Avatar
           sx={{
-            bgcolor:
-              tokenParsed.name === undefined ? '#DDDDDD' : deepOrange[300],
+            bgcolor: parsed.name === undefined ? '#DDDDDD' : deepOrange[300],
             marginLeft: 2,
             width: '32',
             height: '32',
           }}
           onClick={handleClose}
-        />
+        >
+          {parsed.name === undefined ? null : parsed.name[0]}
+        </Avatar>
       </Tooltip>
       <LoginPanel
         open={open}
         handleClose={handleClose}
-        token={tokenParsed}
+        token={parsed}
         handleLogout={handleLogout}
       />
     </>

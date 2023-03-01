@@ -23,6 +23,7 @@ import { Summaries as SummaryList } from '../SummaryPanel'
 import { putNetworkViewToDb } from '../../store/persist/db'
 import { NetworkView } from '../../models/ViewModel'
 import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
+
 import { useCredentialStore } from '../../store/CredentialStore'
 
 const NetworkPanel = React.lazy(() => import('../NetworkPanel/NetworkPanel'))
@@ -36,7 +37,9 @@ const WorkSpaceEditor: React.FC = () => {
 
   const navigate = useNavigate()
 
-  const accessToken: string = useCredentialStore((state) => state.token)
+  const getToken: () => Promise<string> = useCredentialStore(
+    (state) => state.getToken,
+  )
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -91,21 +94,21 @@ const WorkSpaceEditor: React.FC = () => {
   )
 
   const loadNetworkSummaries = async (): Promise<void> => {
-    await fetchAllSummaries(workspace.networkIds, ndexBaseUrl, accessToken)
+    // Check token first
+    const currentToken = await getToken()
+    await fetchAllSummaries(workspace.networkIds, ndexBaseUrl, currentToken)
   }
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
-    try {
-      const res = await getNdexNetwork(networkId, ndexBaseUrl, accessToken)
-      const { network, nodeTable, edgeTable, visualStyle, networkView } = res
+    const currentToken = await getToken()
+    // No token available. Just load
+    const res = await getNdexNetwork(networkId, ndexBaseUrl, currentToken)
+    const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
-      addNewNetwork(network)
-      setVisualStyle(networkId, visualStyle)
-      setTables(networkId, nodeTable, edgeTable)
-      setViewModel(networkId, networkView)
-    } catch (err) {
-      console.error(err)
-    }
+    addNewNetwork(network)
+    setVisualStyle(networkId, visualStyle)
+    setTables(networkId, nodeTable, edgeTable)
+    setViewModel(networkId, networkView)
   }
 
   /**
