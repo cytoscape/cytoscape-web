@@ -41,7 +41,6 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     const columnDef: Column = {
       type: attrDef.d as ValueTypeName,
       name: attrName,
-      ...(attrDef.v != null ? { defaultValue: attrDef.v as ValueType } : {}),
     }
 
     if (attrDef.a != null) {
@@ -61,7 +60,6 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     const columnDef = {
       type: attrDef.d as ValueTypeName,
       name: attrName,
-      ...(attrDef.v != null ? { defaultValue: attrDef.v as ValueType } : {}),
     }
 
     if (attrDef.a != null) {
@@ -84,8 +82,8 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     Object.entries(attr).forEach(([attrName, attrValue]) => {
       const translatedAttrName =
         nodeAttributeTranslationMap[attrName] ?? attrName
-      const column = nodeTable.columns.get(translatedAttrName)
-      const defaultValue: ValueType | undefined = column?.defaultValue
+      const attrDef = attrDefs.nodes[translatedAttrName]
+      const defaultValue = attrDef?.v as ValueType
       const value: ValueType = (attrValue ?? defaultValue) as ValueType
 
       processedAttributes[translatedAttrName] = value
@@ -101,8 +99,9 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     Object.entries(attr).forEach(([attrName, attrValue]) => {
       const translatedAttrName =
         edgeAttributeTranslationMap[attrName] ?? attrName
-      const column = edgeTable.columns.get(translatedAttrName)
-      const defaultValue: ValueType | undefined = column?.defaultValue
+      const attrDef = attrDefs.edges[translatedAttrName]
+      const defaultValue = attrDef?.v as ValueType
+
       const value: ValueType = (attrValue ?? defaultValue) as ValueType
 
       processedAttributes[translatedAttrName] = value
