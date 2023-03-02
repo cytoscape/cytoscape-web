@@ -168,6 +168,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     // Apply style from view model
     applyViewModel(cy, updatedNetworkView)
 
+    // FIXME: selection is not working now and the following section should be fixed
     // Select elements based on network view state
     const { selectedNodes, selectedEdges } = updatedNetworkView
     cy.nodes()
@@ -191,6 +192,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     console.log('#Time to  apply style: ', performance.now() - t1)
   }
 
+  // TODO: fix this function for the new apply mechanism
   const applyHoverStyle = (): void => {
     if (cy != null) {
       cy.nodes().removeClass('hovered')
