@@ -1,6 +1,6 @@
 import { IdType } from '../models/IdType'
 import NetworkFn, { Network } from '../models/NetworkModel'
-import create from 'zustand'
+import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { deleteNetworkFromDb } from './persist/db'
 

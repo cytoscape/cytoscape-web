@@ -1,4 +1,4 @@
-import create from 'zustand'
+import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'

@@ -1,7 +1,7 @@
 import { IdType } from '../models/IdType'
 import { AttributeName, Table, ValueType } from '../models/TableModel'
 
-import create from 'zustand'
+import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { columnValueSet } from '../models/TableModel/impl/InMemoryTable'
 import { VisualPropertyGroup } from '../models/VisualStyleModel/VisualPropertyGroup'

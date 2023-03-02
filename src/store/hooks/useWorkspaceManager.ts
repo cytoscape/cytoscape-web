@@ -26,12 +26,11 @@ export const useWorkspaceManager = (): void => {
       const networkIds = ws
       const lastNetworkIds = lastWs
       if (networkIds.length !== 0 && lastNetworkIds.length === 0) {
-        // Clear the workspace
-        console.log('Clearing workspace')
+        // TODO: Implement clear the workspace
       } else if (networkIds.length < lastNetworkIds.length) {
-        console.log('Network removed from workspace')
         const removed = lastNetworkIds.filter((id) => !networkIds.includes(id))
         handleDeleteNetwork(removed[0])
+        console.log('Network removed from workspace', removed[0])
       }
     },
   )
@@ -45,7 +44,6 @@ export const useWorkspaceManager = (): void => {
   }
 
   useEffect(() => {
-    console.info('Workspace Manager is ready')
     return () => {
       sub() // Unsubscribe
     }

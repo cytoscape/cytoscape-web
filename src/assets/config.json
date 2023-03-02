@@ -2,5 +2,10 @@
   "ndexBaseUrl": "https://dev.ndexbio.org",
   "options": {
     "debug": true
+  },
+  "keycloakConfig": {
+    "url": "https://dev.ndexbio.org/auth2",
+    "clientId": "localtestclient",
+    "realm": "ndex"
   }
 }
