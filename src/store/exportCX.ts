@@ -10,7 +10,7 @@ import { NetworkView } from '../models/ViewModel'
 import { Network } from '../models/NetworkModel'
 
 import { IdType } from '../models/IdType'
-import {
+import VisualStyleFn, {
   VisualStyle,
   VisualPropertyName,
   VisualProperty,
@@ -23,11 +23,6 @@ import {
   cxVisualPropertyConverter,
   CXVisualPropertyValue,
 } from '../models/VisualStyleModel/impl/cxVisualPropertyConverter'
-import {
-  edgeVisualProperties,
-  networkVisualProperties,
-  nodeVisualProperties,
-} from '../models/VisualStyleModel/impl/VisualStyleImpl'
 
 import {
   convertContinuousMappingToCX,
@@ -60,12 +55,12 @@ export const exportNetworkToCx2 = (
   const attributesAccumulator = (
     attributes: { [key: AttributeName]: { d: ValueTypeName; v?: ValueType } },
     column: Column,
-  ) => {
+  ): { [key: AttributeName]: { d: ValueTypeName; v?: ValueType } } => {
     attributes[column.name] = {
       d: column.type,
     }
 
-    if (column.defaultValue) {
+    if (column.defaultValue != null) {
       attributes[column.name].v = column.defaultValue
     }
 
@@ -83,7 +78,7 @@ export const exportNetworkToCx2 = (
   const vpDefaultsAccumulator = (
     defaults: { [key: CXVPName]: VisualPropertyValueType },
     vp: VisualProperty<VisualPropertyValueType>,
-  ) => {
+  ): { [key: CXVPName]: VisualPropertyValueType } => {
     const { name, defaultValue } = vp
     const cxVPName = vpNameToCXName(name)
     defaults[cxVPName] = defaultValue
@@ -96,11 +91,11 @@ export const exportNetworkToCx2 = (
       [key: CXVPName]: CXVisualMappingFunction<CXVisualPropertyValue>
     },
     vp: VisualProperty<VisualPropertyValueType>,
-  ) => {
+  ): { [key: CXVPName]: CXVisualMappingFunction<CXVisualPropertyValue> } => {
     const { name, mapping } = vp
     const cxVPName = vpNameToCXName(name)
 
-    if (mapping) {
+    if (mapping != null) {
       switch (mapping.type) {
         case MappingFunctionType.Continuous: {
           const convertedMapping = convertContinuousMappingToCX(
@@ -132,12 +127,12 @@ export const exportNetworkToCx2 = (
   const vpBypassesAccumulator = (
     bypasses: { [key: IdType]: { [key: CXVPName]: CXVisualPropertyValue } },
     vp: VisualProperty<VisualPropertyValueType>,
-  ) => {
+  ): { [key: IdType]: { [key: CXVPName]: CXVisualPropertyValue } } => {
     const { name, bypassMap } = vp
     const cxVPName = vpNameToCXName(name)
 
     bypassMap.forEach((value, id) => {
-      if (!bypasses[id]) {
+      if (bypasses[id] == null) {
         bypasses[id] = {}
       }
       bypasses[id][cxVPName] = value
@@ -199,21 +194,30 @@ export const exportNetworkToCx2 = (
   const visualProperties = [
     {
       default: {
-        network: networkVisualProperties(vs).reduce(vpDefaultsAccumulator, {}),
-        edge: edgeVisualProperties(vs).reduce(vpDefaultsAccumulator, {}),
-        node: nodeVisualProperties(vs).reduce(vpDefaultsAccumulator, {}),
+        network: VisualStyleFn.networkVisualProperties(vs).reduce(
+          vpDefaultsAccumulator,
+          {},
+        ),
+        edge: VisualStyleFn.edgeVisualProperties(vs).reduce(
+          vpDefaultsAccumulator,
+          {},
+        ),
+        node: VisualStyleFn.nodeVisualProperties(vs).reduce(
+          vpDefaultsAccumulator,
+          {},
+        ),
       },
-      nodeMapping: nodeVisualProperties(vs)
+      nodeMapping: VisualStyleFn.nodeVisualProperties(vs)
         .filter((vp) => vp.mapping != null)
         .reduce(vpMappingsAccumulator, {}),
-      edgeMapping: edgeVisualProperties(vs)
+      edgeMapping: VisualStyleFn.edgeVisualProperties(vs)
         .filter((vp) => vp.mapping != null)
         .reduce(vpMappingsAccumulator, {}),
     },
   ]
 
   const nodeBypasses = Object.entries(
-    nodeVisualProperties(vs)
+    VisualStyleFn.nodeVisualProperties(vs)
       .filter((vp) => vp.bypassMap.size > 0)
       .reduce(vpBypassesAccumulator, {}),
   ).map(([id, bypassObj]) => {
@@ -224,7 +228,7 @@ export const exportNetworkToCx2 = (
   })
 
   const edgeBypasses = Object.entries(
-    edgeVisualProperties(vs)
+    VisualStyleFn.edgeVisualProperties(vs)
       .filter((vp) => vp.bypassMap.size > 0)
       .reduce(vpBypassesAccumulator, {}),
   ).map(([id, bypassObj]) => {
