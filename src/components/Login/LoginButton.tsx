@@ -28,7 +28,6 @@ export const LoginButton = (): ReactElement => {
     initializing.current = true
     const { keycloakConfig } = appConfig
     const keycloak = new Keycloak({ ...keycloakConfig })
-    // setClient(keycloak)
     keycloak
       .init({
         onLoad: 'check-sso',

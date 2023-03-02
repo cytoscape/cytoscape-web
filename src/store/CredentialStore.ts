@@ -1,13 +1,13 @@
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
-import create from 'zustand'
+import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 interface CredentialStore {
-  client: Keycloak
-  initialized: boolean
+  client: Keycloak // Keycloak client
+  initialized: boolean // True if Keycloak initialization is complete
 }
 
-const REFRESH_MIN: number = 60 * 30 // Refresh if token expires in 30 minutes
+const REFRESH_MIN: number = 60 // Refresh if token expires in 1 minute
 
 interface CredentialActions {
   setClient: (client: Keycloak) => void

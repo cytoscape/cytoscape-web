@@ -57,7 +57,7 @@
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
     "@glideapps/glide-data-grid": "^5.2.1",
-    "@js4cytoscape/ndex-client": "^0.4.3-alpha.0",
+    "@js4cytoscape/ndex-client": "0.4.3-alpha.0",
     "@mui/icons-material": "^5.11.0",
     "@mui/material": "^5.11.0",
     "@visx/axis": "^3.0.0",
@@ -89,6 +89,6 @@
     "react-spring": "^9.6.1",
     "swr": "^2.0.0",
     "uuid": "^9.0.0",
-    "zustand": "^4.2.0"
+    "zustand": "^4.3.5"
   }
 }

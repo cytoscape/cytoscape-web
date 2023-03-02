@@ -5,7 +5,7 @@ import {
   VisualStyle,
 } from '../models/VisualStyleModel'
 
-import create from 'zustand'
+import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { ValueType, AttributeName } from '../models/TableModel'
 import {

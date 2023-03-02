@@ -1,7 +1,7 @@
 import { IdType } from '../models/IdType'
 import { NetworkView, NodeView } from '../models/ViewModel'
 
-import create from 'zustand'
+import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { deleteNetworkViewFromDb } from './persist/db'
