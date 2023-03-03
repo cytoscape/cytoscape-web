@@ -48,27 +48,59 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   nodeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
     const cyjsVpName = getCyjsVpName(vp.name)
     if (cyjsVpName !== undefined) {
-      const directMapping: CyjsDirectMapper = {
-        selector: `node[${vp.name}]`,
-        style: {
-          [cyjsVpName]: `data(${vp.name})`,
-        },
+      if (vp.name === 'nodeSelectedPaint') {
+        const selectedNodeMapping = {
+          selector: 'node:selected',
+          style: {
+            [cyjsVpName]: `data(${vp.name})`,
+          },
+        }
+        cyStyle.push(selectedNodeMapping as CyjsDirectMapper)
+      } else {
+        const directMapping: CyjsDirectMapper = {
+          selector: `node[${vp.name}]`,
+          style: {
+            [cyjsVpName]: `data(${vp.name})`,
+          },
+        }
+        cyStyle.push(directMapping)
       }
-      cyStyle.push(directMapping)
     }
   })
   edgeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
     const cyjsVpName = getCyjsVpName(vp.name)
     if (cyjsVpName !== undefined) {
-      const directMapping: CyjsDirectMapper = {
-        selector: `edge[${vp.name}]`,
-        style: {
-          [cyjsVpName]: `data(${vp.name})`,
-        },
+      // Special case: selection is a special state in Cytoscape.js and
+      // irregular handling is required
+      if (vp.name === 'edgeSelectedPaint') {
+        const selectedNodeMapping = {
+          selector: 'edge:selected',
+          style: {
+            [cyjsVpName]: `data(${vp.name})`,
+          },
+        }
+        cyStyle.push(selectedNodeMapping as CyjsDirectMapper)
+      } else {
+        const directMapping: CyjsDirectMapper = {
+          selector: `edge[${vp.name}]`,
+          style: {
+            [cyjsVpName]: `data(${vp.name})`,
+          },
+        }
+        cyStyle.push(directMapping)
       }
-      cyStyle.push(directMapping)
     }
   })
+
+  // Extra: selected
+  // const selectedNode = {
+  //   selector: 'node:selected',
+  //   style: {
+  //     'border-width': 3,
+  //     'background-color': 'red',
+  //   },
+  // }
+  // cyStyle.push(selectedNode as CyjsDirectMapper)
 
   return cyStyle
 }

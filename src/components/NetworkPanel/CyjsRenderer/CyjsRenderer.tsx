@@ -170,17 +170,17 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
     // FIXME: selection is not working now and the following section should be fixed
     // Select elements based on network view state
-    const { selectedNodes, selectedEdges } = updatedNetworkView
-    cy.nodes()
-      .filter((ele: SingularElementArgument) => {
-        return selectedNodes.includes(ele.data('id'))
-      })
-      .select()
-    cy.edges()
-      .filter((ele: SingularElementArgument) => {
-        return selectedEdges.includes(ele.data('id'))
-      })
-      .select()
+    // const { selectedNodes, selectedEdges } = updatedNetworkView
+    // cy.nodes()
+    //   .filter((ele: SingularElementArgument) => {
+    //     return selectedNodes.includes(ele.data('id'))
+    //   })
+    //   .select()
+    // cy.edges()
+    //   .filter((ele: SingularElementArgument) => {
+    //     return selectedEdges.includes(ele.data('id'))
+    //   })
+    //   .select()
 
     cy.endBatch()
     if (cyStyle.length > 0) {
