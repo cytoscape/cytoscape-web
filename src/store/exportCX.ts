@@ -60,10 +60,6 @@ export const exportNetworkToCx2 = (
       d: column.type,
     }
 
-    if (column.defaultValue != null) {
-      attributes[column.name].v = column.defaultValue
-    }
-
     return attributes
   }
 
@@ -238,9 +234,6 @@ export const exportNetworkToCx2 = (
     }
   })
 
-  const cyTableColumn: any = []
-  const cyHiddenAttributes: any = []
-
   const descriptor = {
     CXVersion: '2.0',
     hasFragments: false,
@@ -255,8 +248,6 @@ export const exportNetworkToCx2 = (
     { key: 'nodeBypasses', aspect: nodeBypasses },
     { key: 'edgeBypasses', aspect: edgeBypasses },
     { key: 'visualEditorProperties', aspect: visualEditorProperties },
-    { key: 'cyTableColumn', aspect: cyTableColumn },
-    { key: 'cyHiddenAttributes', aspect: cyHiddenAttributes },
   ]
 
   const status = {
@@ -274,7 +265,7 @@ export const exportNetworkToCx2 = (
   return [
     descriptor,
     { metaData },
-    ...aspects.map((aspect) => ({ [aspect.key]: aspect.aspect })),
+    ...aspects.map(({ key, aspect }) => ({ [key]: aspect })),
     { status },
   ]
 }
