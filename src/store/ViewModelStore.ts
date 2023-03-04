@@ -28,7 +28,7 @@ interface ViewModelAction {
   ) => void
   additiveSelect: (networkId: IdType, ids: IdType[]) => void
   additiveUnselect: (networkId: IdType, ids: IdType[]) => void
-  setHovered: (networkId: IdType, eleToHover: IdType | null) => void
+  setHovered: (networkId: IdType, eleToHover: IdType) => void
   toggleSelected: (networkId: IdType, eles: IdType[]) => void
 
   setNodePosition: (
@@ -66,13 +66,12 @@ export const useViewModelStore = create(
           }
         })
       },
-
       setHovered: (networkId: IdType, eleToHover: IdType) => {
         set((state) => {
-          // const networkView = state.viewModels[networkId]
-          //   if (networkView != null) {
-          //     networkView.hoveredElement = eleToHover
-          //   }
+          const networkView = state.viewModels[networkId]
+          if (networkView !== undefined) {
+            networkView.hoveredElement = eleToHover
+          }
         })
       },
       toggleSelected: (networkId: IdType, eles: IdType[]) => {

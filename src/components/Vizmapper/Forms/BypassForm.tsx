@@ -178,7 +178,7 @@ function BypassFormContent(props: {
               return (
                 <TableRow
                   onMouseEnter={() => setHovered(props.currentNetworkId, id)}
-                  onMouseLeave={() => setHovered(props.currentNetworkId, null)}
+                  onMouseLeave={() => setHovered(props.currentNetworkId, '')}
                   key={id}
                   hover={true}
                   selected={selected}
@@ -213,7 +213,7 @@ function BypassFormContent(props: {
                         deleteBypass(currentNetworkId, visualProperty.name, [
                           id,
                         ])
-                        setHovered(currentNetworkId, null)
+                        setHovered(currentNetworkId, '')
                       }}
                       disabled={!hasBypass}
                     >
@@ -296,7 +296,7 @@ function BypassFormContent(props: {
         pr: 1,
       }}
       // make sure there is no hovered component when the mouse leaves the bypass form
-      onMouseLeave={() => setHovered(props.currentNetworkId, null)}
+      onMouseLeave={() => setHovered(props.currentNetworkId, '')}
     >
       <Typography
         sx={{ m: 1 }}
@@ -357,7 +357,7 @@ export function BypassForm(props: {
         anchorEl={formAnchorEl}
         onClose={() => {
           showForm(null)
-          setHovered(props.currentNetworkId, null)
+          setHovered(props.currentNetworkId, '')
         }}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >

@@ -1,9 +1,4 @@
-import {
-  Collection,
-  Core,
-  EventObject,
-  SingularElementArgument,
-} from 'cytoscape'
+import { Collection, Core, SingularElementArgument } from 'cytoscape'
 import { IdType } from '../../../models/IdType'
 import { ValueType } from '../../../models/TableModel'
 import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
@@ -16,29 +11,6 @@ import VisualStyleFn, {
 } from '../../../models/VisualStyleModel'
 import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
 import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
-
-export const addEventHandlers = (
-  id: IdType,
-  cy: Core,
-  exclusiveSelect: Function,
-): void => {
-  cy.on('boxselect select', (e: EventObject) => {
-    exclusiveSelect(
-      id,
-      cy
-        .elements()
-        .filter((e: SingularElementArgument) => e.selected())
-        .map((ele: SingularElementArgument) => ele.data('id')),
-    )
-  })
-  cy.on('tap', (e: EventObject) => {
-    // check for background click
-    // on background click deselect all
-    if (e.target === cy) {
-      exclusiveSelect(id, [])
-    }
-  })
-}
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
@@ -92,15 +64,19 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     }
   })
 
-  // Extra: selected
-  // const selectedNode = {
-  //   selector: 'node:selected',
-  //   style: {
-  //     'border-width': 3,
-  //     'background-color': 'red',
-  //   },
-  // }
-  // cyStyle.push(selectedNode as CyjsDirectMapper)
+  // Need to add special class to handle mouse hover
+  // This is not the part of current style object, and defined here
+  // TODO: Define type for this
+  const hoverMapping: any = {
+    selector: `.hover`,
+    style: {
+      'underlay-color': 'lightblue',
+      'underlay-padding': 12,
+      'underlay-opacity': 0.3,
+      'underlay-shape': 'roundrectangle',
+    },
+  }
+  cyStyle.push(hoverMapping as CyjsDirectMapper)
 
   return cyStyle
 }
