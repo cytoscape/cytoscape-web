@@ -33,3 +33,15 @@ All branches will have deploy previews automatically once changes pushed to gith
 For example, if the branch is development, the url is <https:development--incredible-meringue-aa83b1.netlify.app>
 
 It usually takes few minutes to reflect changes.
+
+## Troubleshooting
+This section lists solutions to problems you might encounter with Cytoscape web.
+
+### Debug
+Use developer tools in browser to check the error message. Then we recommend using Visual Studio Code debugger to debug.
+
+### Blank Workspace or Fail to Load Any Networks
+Possible solutions:
+- Use a new incognito window to open Cytoscape web
+- Clear browsing data include cookies
+- In developer tools, go to Application page,find IndexedDB in session storage. Click `Delete database`.
