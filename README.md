@@ -25,3 +25,11 @@ Run a command using `yarn <command>`.  Run `yarn install` before using other com
 - `lint`: lint code according to the eslint config
 - `format`: format source code according to eslint and prettier configs
 - `test`: run tests
+
+## Deploy on Netlify
+All branches will have deploy previews automatically once changes pushed to github. The url is:
+`branch name`--incredible-meringue-aa83b1.netlify.app  
+
+For example, if the branch is development, the url is <https:development--incredible-meringue-aa83b1.netlify.app>
+
+It usually takes few minutes to reflect changes.
