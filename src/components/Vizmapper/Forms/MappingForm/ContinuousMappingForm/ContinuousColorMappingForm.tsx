@@ -74,6 +74,8 @@ export function ContinuousColorMappingForm(props: {
     React.useState<HTMLButtonElement | null>(null)
   const [createHandleAnchorEl, setCreateHandleAnchorEl] =
     React.useState<HTMLButtonElement | null>(null)
+  const [createColorPickerAnchorEl, setColorPickerAnchorEl] =
+    React.useState<HTMLButtonElement | null>(null)
 
   const showMinMaxMenu = (event: React.MouseEvent<HTMLButtonElement>): void => {
     setEditMinMaxAnchorEl(event.currentTarget)
@@ -81,6 +83,14 @@ export function ContinuousColorMappingForm(props: {
 
   const hideMinMaxMenu = (): void => {
     setEditMinMaxAnchorEl(null)
+  }
+
+  const showColorPickerMenu = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    setColorPickerAnchorEl(event.currentTarget)
+  }
+
+  const hideColorPickerMenu = (): void => {
+    setColorPickerAnchorEl(null)
   }
 
   const showCreateHandleMenu = (
@@ -258,6 +268,7 @@ export function ContinuousColorMappingForm(props: {
         }}
         >
         <Button
+          onClick={showColorPickerMenu}
           variant="outlined"
           sx={{ color: '#63a5e8' }}
           size="small"
@@ -265,6 +276,19 @@ export function ContinuousColorMappingForm(props: {
         >
           Set Palette
         </Button>
+        <Popover
+          open={createColorPickerAnchorEl != null}
+          anchorEl={createColorPickerAnchorEl}
+          onClose={hideColorPickerMenu}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+        ></Popover>
         </Paper>
       <Box
         sx={{
