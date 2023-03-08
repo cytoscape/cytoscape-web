@@ -15,6 +15,7 @@ import { extent } from 'd3-array'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import Delete from '@mui/icons-material/DisabledByDefault'
 import AddCircleIcon from '@mui/icons-material/AddCircle'
+import Palette from '@mui/icons-material/Palette'
 import EditIcon from '@mui/icons-material/Edit'
 
 import { color } from 'd3-color'
@@ -242,7 +243,29 @@ export function ContinuousColorMappingForm(props: {
   }, [maxState])
 
   return (
+    
     <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2 }}>
+         <Paper
+        sx={{
+          display: 'flex',
+          p: 1,
+          m: 1,
+          ml: 3,
+          mr: 3,
+          justifyContent: 'space-evenly',
+          backgroundColor: '#fcfffc',
+          color: '#595858',
+        }}
+        >
+        <Button
+          variant="outlined"
+          sx={{ color: '#63a5e8' }}
+          size="small"
+          startIcon={<Palette />}
+        >
+          Set Palette
+        </Button>
+        </Paper>
       <Box
         sx={{
           display: 'flex',
@@ -400,7 +423,7 @@ export function ContinuousColorMappingForm(props: {
           </Box>
         </Paper>
       </Box>
-
+   
       <Paper
         sx={{
           display: 'flex',
@@ -413,6 +436,8 @@ export function ContinuousColorMappingForm(props: {
           color: '#595858',
         }}
       >
+ 
+
         <Button
           onClick={showCreateHandleMenu}
           variant="outlined"
