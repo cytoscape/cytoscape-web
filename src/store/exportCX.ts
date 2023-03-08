@@ -22,13 +22,14 @@ import {
   CXVisualMappingFunction,
   cxVisualPropertyConverter,
   CXVisualPropertyValue,
-} from '../models/VisualStyleModel/impl/cxVisualPropertyConverter'
-
-import {
   convertContinuousMappingToCX,
   convertPassthroughMappingToCX,
   convertDiscreteMappingToCX,
-} from '../models/VisualStyleModel/impl/MappingFunctionImpl'
+  vpToCX,
+} from '../models/VisualStyleModel/impl/cxVisualPropertyConverter'
+
+import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
+
 import {
   ContinuousMappingFunction,
   DiscreteMappingFunction,
@@ -39,18 +40,11 @@ import {
 export const exportNetworkToCx2 = (
   network: Network,
   vs: VisualStyle,
-  // networkSummary: NdexNetworkSummary,
+  summary: NdexNetworkSummary,
   nodeTable: Table,
   edgeTable: Table,
   networkView: NetworkView,
 ): any => {
-  //   networkSummary.properties.forEach((property) => {
-  // attributeDeclarations[0].networkAttributes[property.predicateString] = {
-  //     d: property.dataType,
-  //     v: property.value,
-  // }
-  //   })
-
   // accumulate node/edge attributes into a object
   const attributesAccumulator = (
     attributes: { [key: AttributeName]: { d: ValueTypeName; v?: ValueType } },
@@ -72,12 +66,14 @@ export const exportNetworkToCx2 = (
 
   // accumulate vp defaults for each vp into an object
   const vpDefaultsAccumulator = (
-    defaults: { [key: CXVPName]: VisualPropertyValueType },
+    defaults: { [key: CXVPName]: CXVisualPropertyValue },
     vp: VisualProperty<VisualPropertyValueType>,
-  ): { [key: CXVPName]: VisualPropertyValueType } => {
+  ): { [key: CXVPName]: CXVisualPropertyValue } => {
     const { name, defaultValue } = vp
     const cxVPName = vpNameToCXName(name)
-    defaults[cxVPName] = defaultValue
+
+    defaults[cxVPName] = vpToCX(vp.name, defaultValue)
+
     return defaults
   }
 
@@ -95,6 +91,8 @@ export const exportNetworkToCx2 = (
       switch (mapping.type) {
         case MappingFunctionType.Continuous: {
           const convertedMapping = convertContinuousMappingToCX(
+            vs,
+            vp,
             mapping as ContinuousMappingFunction,
           )
           mappings[cxVPName] = convertedMapping
@@ -102,6 +100,8 @@ export const exportNetworkToCx2 = (
         }
         case MappingFunctionType.Discrete: {
           const convertedMapping = convertDiscreteMappingToCX(
+            vs,
+            vp,
             mapping as DiscreteMappingFunction,
           )
           mappings[cxVPName] = convertedMapping
@@ -109,6 +109,8 @@ export const exportNetworkToCx2 = (
         }
         case MappingFunctionType.Passthrough: {
           const convertedMapping = convertPassthroughMappingToCX(
+            vs,
+            vp,
             mapping as PassthroughMappingFunction,
           )
           mappings[cxVPName] = convertedMapping
@@ -131,28 +133,48 @@ export const exportNetworkToCx2 = (
       if (bypasses[id] == null) {
         bypasses[id] = {}
       }
-      bypasses[id][cxVPName] = value
+      bypasses[id][cxVPName] = vpToCX(vp.name, value)
     })
 
     return bypasses
   }
 
+  const networkAttributeDeclarations: {
+    [key: string]: { d: ValueTypeName; v: ValueType }
+  } = {
+    name: { d: 'string', v: summary.name },
+    description: { d: 'string', v: summary.description },
+    version: { d: 'string', v: summary.version },
+  }
+
+  summary.properties.forEach((property) => {
+    networkAttributeDeclarations[property.predicateString] = {
+      d: property.dataType,
+      v: property.value,
+    }
+  })
+
   const attributeDeclarations = [
     {
-      networkAttributes: {},
-
-      nodeAttributes: Array.from(nodeTable.columns.values()).reduce(
+      networkAttributes: networkAttributeDeclarations,
+      nodes: Array.from(nodeTable.columns.values()).reduce(
         attributesAccumulator,
         {},
       ),
-      edgeAttributes: Array.from(edgeTable.columns.values()).reduce(
+      edges: Array.from(edgeTable.columns.values()).reduce(
         attributesAccumulator,
         {},
       ),
     },
   ]
 
-  const networkAttributes: any = []
+  const networkAttributes: any = [
+    {
+      name: summary.name,
+      description: summary.description,
+      version: summary.version,
+    },
+  ]
 
   const nodes = network.nodes.map((node) => {
     const nodeRow = nodeTable.rows.get(node.id)
@@ -250,10 +272,12 @@ export const exportNetworkToCx2 = (
     { key: 'visualEditorProperties', aspect: visualEditorProperties },
   ]
 
-  const status = {
-    error: '',
-    success: true,
-  }
+  const status = [
+    {
+      error: '',
+      success: true,
+    },
+  ]
 
   const metaData = aspects.map((aspect) => {
     return {

@@ -1,9 +1,9 @@
 import { IdType } from '../IdType'
-import { ValueTypeName } from '../TableModel'
+import { ValueTypeName, ValueType } from '../TableModel'
 
 export interface NdexNetworkProperty {
   subNetworkId: IdType | null
-  value: string
+  value: ValueType
   predicateString: string
   dataType: ValueTypeName
 }

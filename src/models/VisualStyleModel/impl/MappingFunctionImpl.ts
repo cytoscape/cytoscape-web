@@ -1,21 +1,6 @@
 import { ValueTypeName } from '../../TableModel'
 import { SingleValueType } from '../../TableModel/ValueType'
-import {
-  ContinuousMappingFunction,
-  MappingFunctionType,
-  VisualPropertyValueTypeName,
-  VisualPropertyValueType,
-  VisualProperty,
-  DiscreteMappingFunction,
-  PassthroughMappingFunction,
-} from '..'
-
-import {
-  CXContinuousMappingFunction,
-  CXDiscreteMappingFunction,
-  CXPassthroughMappingFunction,
-  CXVisualPropertyValue,
-} from './cxVisualPropertyConverter'
+import { MappingFunctionType, VisualPropertyValueTypeName } from '..'
 
 const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
   [ValueTypeName.String]: 'string',
@@ -34,12 +19,11 @@ const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
 // Until then, only return valid mappings for a given visual property
 // Continuous mappings cannot be applied to vps that are not numbers or colors
 export const validMappingsForVP = (
-  vp: VisualProperty<VisualPropertyValueType>,
+  vpType: VisualPropertyValueTypeName,
 ): MappingFunctionType[] => {
-  const { type } = vp
   if (
-    type === VisualPropertyValueTypeName.Number ||
-    type === VisualPropertyValueTypeName.Color
+    vpType === VisualPropertyValueTypeName.Number ||
+    vpType === VisualPropertyValueTypeName.Color
   ) {
     return [
       MappingFunctionType.Continuous,
@@ -80,79 +64,4 @@ export const typesCanBeMapped = (
   }
 
   return true
-}
-
-export const convertPassthroughMappingToCX = (
-  mapping: PassthroughMappingFunction,
-): CXPassthroughMappingFunction => {
-  const { attribute } = mapping
-
-  return {
-    type: 'PASSTHROUGH',
-    definition: {
-      attribute,
-    },
-  }
-}
-
-export const convertDiscreteMappingToCX = (
-  mapping: DiscreteMappingFunction,
-): CXDiscreteMappingFunction<CXVisualPropertyValue> => {
-  const { vpValueMap, attribute } = mapping
-
-  return {
-    type: 'DISCRETE',
-    definition: {
-      attribute,
-      map: Array.from(vpValueMap.entries()).map(([value, vpValue]) => ({
-        v: value,
-        vp: vpValue,
-      })),
-    },
-  }
-}
-export const convertContinuousMappingToCX = (
-  mapping: ContinuousMappingFunction,
-): CXContinuousMappingFunction<CXVisualPropertyValue> => {
-  const { min, max, controlPoints, attribute } = mapping
-
-  const intervals = []
-
-  for (let i = 0; i < controlPoints.length - 1; i++) {
-    const curr = controlPoints[i]
-    const next = controlPoints[i + 1]
-
-    if (curr != null && next != null) {
-      intervals.push({
-        min: curr.value as number,
-        max: next.value as number,
-        minVPValue: curr.vpValue,
-        maxVPValue: next.vpValue,
-        includeMin: curr.inclusive ?? true,
-        includeMax: next.inclusive ?? true,
-      })
-    }
-  }
-
-  return {
-    type: 'CONTINUOUS',
-    definition: {
-      map: [
-        {
-          max: min.value as number,
-          maxVPValue: min.vpValue,
-          includeMax: min.inclusive ?? true,
-          includeMin: true, // dummy value, not actually used here
-        },
-        ...intervals,
-        {
-          min: max.value as number,
-          minVPValue: max.vpValue,
-          includeMin: max.inclusive ?? true,
-          includeMax: true, // dummy value, not actually used here
-        },
-      ],
-      attribute,
-    },
-  }
 }
