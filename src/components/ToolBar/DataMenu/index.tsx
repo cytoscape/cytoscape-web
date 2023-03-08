@@ -5,14 +5,8 @@ import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
 import { RemoveNetworkMenuItem } from './RemoveNetworkMenuItem'
 import { LoadDemoNetworksMenuItem } from './LoadDemoNetworksMenuItem'
 import { LoadFromNdexMenuItem } from './LoadFromNdexMenuItem'
+import { SaveToNDExMenuItem } from './SaveToNDExMenuItem'
 import { useState } from 'react'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { useNetworkStore } from '../../../store/NetworkStore'
-import { useTableStore } from '../../../store/TableStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { exportNetworkToCx2 } from '../../../store/exportCX'
-import { Network } from '../../../models/NetworkModel'
 interface DropdownMenuProps {
   label: string
   children?: React.ReactNode
@@ -25,10 +19,6 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
-  const currentNetworkId = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
-
   const handleOpenDropdownMenu = (
     event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
@@ -37,30 +27,6 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
 
   const handleClose = (): void => {
     setAnchorEl(null)
-  }
-
-  // const tables = useTableStore((state) => state.tables)
-  const table = useTableStore((state) => state.tables[currentNetworkId])
-
-  const viewModels = useViewModelStore((state) => state.viewModels)
-  const visualStyles = useVisualStyleStore((state) => state.visualStyles)
-  const networks = useNetworkStore((state) => state.networks)
-
-  const handleClick = (): void => {
-    // const table = useTableStore((state) => state.tables[currentNetworkId])
-    const viewModel = viewModels[currentNetworkId]
-    const visualStyle = visualStyles[currentNetworkId]
-    const network = networks.get(currentNetworkId) as Network
-
-    console.log(
-      exportNetworkToCx2(
-        network,
-        visualStyle,
-        table.nodeTable,
-        table.edgeTable,
-        viewModel,
-      ),
-    )
   }
 
   return (
@@ -92,7 +58,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
         <RemoveNetworkMenuItem handleClose={handleClose} />
         <RemoveAllNetworksMenuItem handleClose={handleClose} />
         <Divider />
-        <Button onClick={handleClick}>Export to NDEx</Button>
+        <SaveToNDExMenuItem handleClose={handleClose} />
       </Menu>
     </div>
   )
