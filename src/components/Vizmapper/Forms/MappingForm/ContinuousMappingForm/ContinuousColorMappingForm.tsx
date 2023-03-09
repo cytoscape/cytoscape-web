@@ -17,6 +17,11 @@ import Delete from '@mui/icons-material/DisabledByDefault'
 import AddCircleIcon from '@mui/icons-material/AddCircle'
 import Palette from '@mui/icons-material/Palette'
 import EditIcon from '@mui/icons-material/Edit'
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
+import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter';
+import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight';
 
 import { color } from 'd3-color'
 import Draggable from 'react-draggable'
@@ -288,7 +293,22 @@ export function ContinuousColorMappingForm(props: {
             vertical: 'top',
             horizontal: 'center',
           }}
-        ></Popover>
+        >
+           <ToggleButtonGroup
+        exclusive
+        aria-label="text alignment"
+      >
+        <ToggleButton value="left" aria-label="left aligned">
+          <FormatAlignLeftIcon />
+        </ToggleButton>
+        <ToggleButton value="center" aria-label="centered">
+          <FormatAlignCenterIcon />
+        </ToggleButton>
+        <ToggleButton value="right" aria-label="right aligned">
+          <FormatAlignRightIcon />
+        </ToggleButton>
+      </ToggleButtonGroup>
+        </Popover>
         </Paper>
       <Box
         sx={{
