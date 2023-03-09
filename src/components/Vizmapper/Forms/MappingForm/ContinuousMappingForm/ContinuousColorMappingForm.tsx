@@ -19,9 +19,16 @@ import Palette from '@mui/icons-material/Palette'
 import EditIcon from '@mui/icons-material/Edit'
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
-import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter';
-import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight';
+import Category10 from '../../../../../assets/Category10.png'
+import Accent from '../../../../../assets/Accent.png'
+import Dark2 from '../../../../../assets/Dark2.png'
+import Paired from '../../../../../assets/Paired.png'
+import Pastel1 from '../../../../../assets/Pastel1.png'
+import Pastel2 from '../../../../../assets/Pastel2.png'
+import Set1 from '../../../../../assets/Set1.png'
+import Set2 from '../../../../../assets/Set2.png'
+import Set3 from '../../../../../assets/Set3.png'
+import Tableau10 from '../../../../../assets/Tableau10.png'
 
 import { color } from 'd3-color'
 import Draggable from 'react-draggable'
@@ -295,19 +302,72 @@ export function ContinuousColorMappingForm(props: {
           }}
         >
            <ToggleButtonGroup
-        exclusive
-        aria-label="text alignment"
+           orientation="horizontal"
+          exclusive
+          aria-label="text alignment"
       >
-        <ToggleButton value="left" aria-label="left aligned">
-          <FormatAlignLeftIcon />
+        <ToggleButton value="left1">
+        <img src={Category10} width="30" height="400"/>
         </ToggleButton>
-        <ToggleButton value="center" aria-label="centered">
-          <FormatAlignCenterIcon />
+        <ToggleButton value="left2">
+        <img src={Accent} width="30" height="400"/>
         </ToggleButton>
-        <ToggleButton value="right" aria-label="right aligned">
-          <FormatAlignRightIcon />
+        <ToggleButton value="left3">
+        <img src={Dark2} width="30" height="400"/>
+        </ToggleButton>
+        <ToggleButton value="left4">
+        <img src={Paired} width="30" height="400"/>
+        </ToggleButton>
+        <ToggleButton value="left5">
+        <img src={Pastel1} width="30" height="400"/>
+        </ToggleButton>
+        <ToggleButton value="left6">
+        <img src={Pastel2} width="30" height="400"/>
+        </ToggleButton>
+        <ToggleButton value="left7">
+        <img src={Set1} width="30" height="400"/>
+        </ToggleButton>
+        <ToggleButton value="left8">
+        <img src={Set2} width="30" height="400"/>
+        </ToggleButton>
+        <ToggleButton value="left9">
+        <img src={Set3} width="30" height="400"/>
+        </ToggleButton>
+        <ToggleButton value="left10">
+        <img src={Tableau10} width="30" height="400"/>
         </ToggleButton>
       </ToggleButtonGroup>
+      <Paper
+        sx={{
+          display: 'flex',
+          p: 1,
+          m: 1,
+          ml: 3,
+          mr: 3,
+          justifyContent: 'space-evenly',
+          backgroundColor: '#fcfffc',
+          color: '#595858',
+        }}
+      >
+      <Button
+              variant="outlined"
+              onClick={() => {
+                hideColorPickerMenu()
+              }}
+              size="small"
+            >
+             Ok
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                hideColorPickerMenu()
+              }}
+              size="small"
+            >
+             Cancel
+            </Button>
+            </Paper>
         </Popover>
         </Paper>
       <Box
