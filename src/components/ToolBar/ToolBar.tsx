@@ -2,6 +2,7 @@ import * as React from 'react'
 import AppBar from '@mui/material/AppBar'
 import Box from '@mui/material/Box'
 import Toolbar from '@mui/material/Toolbar'
+import { Tooltip } from '@mui/material'
 import { styled, alpha } from '@mui/material/styles'
 import InputBase from '@mui/material/InputBase'
 import SearchIcon from '@mui/icons-material/Search'
@@ -66,25 +67,28 @@ export const ToolBar: React.FC = () => {
           <Box sx={{ display: 'flex' }}>
             <img src={logo} />
             <DataMenu label="Data" />
-            <DropdownMenu label="Edit" />
-            <DropdownMenu label="View" />
-            <DropdownMenu label="Select" />
+            {/* <DropdownMenu label="Edit" /> */}
+            {/* <DropdownMenu label="View" /> */}
+            {/* <DropdownMenu label="Select" /> */}
             <DropdownMenu label="Layout" />
-            <DropdownMenu label="Analysis" />
+            {/* <DropdownMenu label="Analysis" /> */}
             <DropdownMenu label="Help" />
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Search>
-              <SearchControlsWrapper>
-                <SearchIcon />
-                <TuneIcon />
-              </SearchControlsWrapper>
-              <StyledInputBase
-                placeholder="Search this network"
-                inputProps={{ 'aria-label': 'search' }}
-              />
-            </Search>
+            <Tooltip title={'Not implemented yet'} followCursor>
+              <Search>
+                <SearchControlsWrapper>
+                  <SearchIcon />
+                  <TuneIcon />
+                </SearchControlsWrapper>
+                <StyledInputBase
+                  disabled={true} // TODO: implement search
+                  placeholder="Search this network"
+                  inputProps={{ 'aria-label': 'search' }}
+                />
+              </Search>
+            </Tooltip>
             <LoginButton />
           </Box>
         </Toolbar>
