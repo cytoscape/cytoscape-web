@@ -69,7 +69,9 @@ export const CopyNetworkToNDExMenuItem = (
       })
 
       console.log(
-        `Saved a copy of the current network to NDEx with new uuid ${uuid}`,
+        `Saved a copy of the current network to NDEx with new uuid ${
+          uuid as string
+        }`,
       )
     } catch (e) {
       console.log(e)
