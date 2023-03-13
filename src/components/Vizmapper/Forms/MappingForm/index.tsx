@@ -314,14 +314,9 @@ export function MappingForm(props: {
       </VisualPropertyViewBox>
     )
 
-  const mappingExists = props.visualProperty.mapping?.type != null
-
-  const tooltipText = `${props.visualProperty.displayName} Mapping${
-    mappingExists ? `: ${String(props.visualProperty.mapping?.type)}` : ''
-  }`
   return (
     <Box sx={props.sx ?? {}}>
-      <Tooltip title={tooltipText}>{viewBox}</Tooltip>
+      {viewBox}
       <Popover
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}

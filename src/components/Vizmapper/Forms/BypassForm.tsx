@@ -8,7 +8,6 @@ import {
   Badge,
   IconButton,
   Checkbox,
-  Tooltip,
   Divider,
   Table,
   TableBody,
@@ -349,9 +348,7 @@ export function BypassForm(props: {
 
   return (
     <Box sx={props.sx ?? {}}>
-      <Tooltip title={`${props.visualProperty.displayName} Bypasses`}>
-        <Box onClick={(e) => showForm(e.currentTarget)}>{viewBox}</Box>
-      </Tooltip>
+      <Box onClick={(e) => showForm(e.currentTarget)}>{viewBox}</Box>
       <Popover
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
