@@ -6,6 +6,7 @@ import { RemoveNetworkMenuItem } from './RemoveNetworkMenuItem'
 import { LoadDemoNetworksMenuItem } from './LoadDemoNetworksMenuItem'
 import { LoadFromNdexMenuItem } from './LoadFromNdexMenuItem'
 import { SaveToNDExMenuItem } from './SaveToNDExMenuItem'
+import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
 import { useState } from 'react'
 interface DropdownMenuProps {
   label: string
@@ -59,6 +60,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
         <RemoveAllNetworksMenuItem handleClose={handleClose} />
         <Divider />
         <SaveToNDExMenuItem handleClose={handleClose} />
+        <CopyNetworkToNDExMenuItem handleClose={handleClose} />
       </Menu>
     </div>
   )
