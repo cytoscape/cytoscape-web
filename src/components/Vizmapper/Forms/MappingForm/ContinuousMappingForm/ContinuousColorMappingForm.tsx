@@ -273,12 +273,12 @@ export function ContinuousColorMappingForm(props: {
           m: 1,
           ml: 3,
           mr: 3,
-          justifyContent: 'space-evenly',
+          justifyContent: 'center',
           backgroundColor: '#fcfffc',
           color: '#595858',
         }}
         >
-          Current Palette:
+          Current Palette:&ensp;
         <Button
           onClick={showColorPickerMenu}
           variant="outlined"
@@ -301,6 +301,7 @@ export function ContinuousColorMappingForm(props: {
             horizontal: 'center',
           }}
         >
+            <Typography align={'center'} sx={{ p: 1 }}>Set Palette</Typography>
            <ToggleButtonGroup
            orientation="horizontal"
           exclusive
