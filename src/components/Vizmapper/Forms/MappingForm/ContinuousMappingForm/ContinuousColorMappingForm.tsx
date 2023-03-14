@@ -307,47 +307,47 @@ export function ContinuousColorMappingForm(props: {
           exclusive
           aria-label="text alignment"
       >
-        <Tooltip title="Red-Blue">
+        <Tooltip title="Red-Blue" placement="right">
         <ToggleButton value="left1">
         <img src={RdBu} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Purple-Orange">
+        <Tooltip title="Purple-Orange" placement="right">
         <ToggleButton value="left2">
         <img src={PuOr} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Purple-Red-Green">
+        <Tooltip title="Purple-Red-Green" placement="right">
         <ToggleButton value="left3">
         <img src={PRGn} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Spectral Colors">
+        <Tooltip title="Spectral Colors" placement="right">
         <ToggleButton value="left4">
         <img src={Spectral} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Brown-Blue-Green">
+        <Tooltip title="Brown-Blue-Green" placement="right">
         <ToggleButton value="left5">
         <img src={BrBG} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Red-Yellow-Green">
+        <Tooltip title="Red-Yellow-Green" placement="right">
         <ToggleButton value="left6">
         <img src={RdYlGn} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Magenta-Yellow-Green">
+        <Tooltip title="Magenta-Yellow-Green" placement="right">
         <ToggleButton value="left7">
         <img src={PiYG} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Red-Grey">
+        <Tooltip title="Red-Grey" placement="right">
         <ToggleButton value="left8">
         <img src={RdGy} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Red-Yellow-Blue">
+        <Tooltip title="Red-Yellow-Blue" placement="right">
         <ToggleButton value="left9">
         <img src={RdYlBu} width="15" height="150"/>
         </ToggleButton>
