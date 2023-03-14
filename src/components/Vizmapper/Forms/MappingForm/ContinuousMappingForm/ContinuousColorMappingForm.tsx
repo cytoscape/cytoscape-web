@@ -267,16 +267,6 @@ export function ContinuousColorMappingForm(props: {
     updateContinuousMapping(minState, maxState, handles)
   }, [maxState])
 
-  const [view, setView] = React.useState("RdBu");
-
-  const handleToggleChange = (
-    event: React.MouseEvent<HTMLElement>,
-    nextView: string
-  ): void => {
-    setView(nextView);
-  };
-
-
   return (
     
     <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2 }}>
@@ -318,10 +308,8 @@ export function ContinuousColorMappingForm(props: {
             <Typography align={'center'} sx={{ p: 1 }}>Set Palette</Typography>
            <ToggleButtonGroup
            orientation="horizontal"
-           value={view}
           exclusive
           fullWidth={true}
-          onChange={handleToggleChange}
       >
         <Tooltip title="Red-Blue" placement="right">
         <ToggleButton value="RdBu" aria-label="RdBu">
