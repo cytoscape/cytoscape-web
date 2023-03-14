@@ -5,6 +5,7 @@ import {
   MappingFunctionType,
   VisualPropertyValueTypeName,
   VisualPropertyValueType,
+  VisualProperty,
 } from '..'
 
 import { CXContinuousMappingFunction } from './cxVisualPropertyConverter'
@@ -20,6 +21,27 @@ const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
   [ValueTypeName.ListDouble]: null,
   [ValueTypeName.ListInteger]: null,
   [ValueTypeName.ListString]: null,
+}
+
+// This function will be redundant once continuous discrete mapping ui is available
+// Until then, only return valid mappings for a given visual property
+// Continuous mappings cannot be applied to vps that are not numbers or colors
+export const validMappingsForVP = (
+  vp: VisualProperty<VisualPropertyValueType>,
+): MappingFunctionType[] => {
+  const { type } = vp
+  if (
+    type === VisualPropertyValueTypeName.Number ||
+    type === VisualPropertyValueTypeName.Color
+  ) {
+    return [
+      MappingFunctionType.Continuous,
+      MappingFunctionType.Discrete,
+      MappingFunctionType.Passthrough,
+    ]
+  }
+
+  return [MappingFunctionType.Discrete, MappingFunctionType.Passthrough]
 }
 
 // check whether a given value type can be applied to a given visual property value type

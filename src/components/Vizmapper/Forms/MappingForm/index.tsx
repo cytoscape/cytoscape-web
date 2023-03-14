@@ -30,7 +30,10 @@ import {
   ContinuousMappingFunctionIcon,
 } from '../../VisualStyleIcons'
 
-import { typesCanBeMapped } from '../../../../models/VisualStyleModel/impl/MappingFunctionImpl'
+import {
+  typesCanBeMapped,
+  validMappingsForVP,
+} from '../../../../models/VisualStyleModel/impl/MappingFunctionImpl'
 
 import {
   EmptyVisualPropertyViewBox,
@@ -51,7 +54,7 @@ function MappingFormContent(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
-  const [attribute, setAttribute] = React.useState<AttributeName | ''>(
+  const [column, setColumn] = React.useState<AttributeName | ''>(
     props.visualProperty.mapping?.attribute ?? '',
   )
   const [mappingType, setMappingType] = React.useState<
@@ -147,14 +150,14 @@ function MappingFormContent(props: {
   const handleMappingTypeChange = (
     nextMapping: MappingFunctionType | '',
   ): void => {
-    const attributeType = currentTable.columns.get(attribute)?.type
-    if (nextMapping !== '' && attribute !== '' && attributeType != null) {
+    const attributeType = currentTable.columns.get(column)?.type
+    if (nextMapping !== '' && column !== '' && attributeType != null) {
       // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
 
       if (
         typesCanBeMapped(nextMapping, attributeType, props.visualProperty.type)
       ) {
-        createMapping(nextMapping, attribute)
+        createMapping(nextMapping, column)
         setMappingType(nextMapping)
       } else {
         removeMapping(props.currentNetworkId, props.visualProperty.name)
@@ -165,7 +168,7 @@ function MappingFormContent(props: {
     }
   }
 
-  const handleAttributeChange = (nextAttribute: AttributeName): void => {
+  const handleColumnChange = (nextAttribute: AttributeName): void => {
     const nextAttributeType = currentTable.columns.get(nextAttribute)?.type
     if (
       mappingType !== '' &&
@@ -181,13 +184,13 @@ function MappingFormContent(props: {
         )
       ) {
         createMapping(mappingType, nextAttribute)
-        setAttribute(nextAttribute)
+        setColumn(nextAttribute)
       } else {
         removeMapping(props.currentNetworkId, props.visualProperty.name)
-        setAttribute('')
+        setColumn('')
       }
     } else {
-      setAttribute(nextAttribute)
+      setColumn(nextAttribute)
     }
   }
 
@@ -197,6 +200,25 @@ function MappingFormContent(props: {
           typesCanBeMapped(mappingType, c.type, props.visualProperty.type),
         )
       : columns
+  const validColumnNames = validColumns.map((c) => c.name)
+
+  const validMappings = validMappingsForVP(props.visualProperty).filter(
+    (mappingType) => {
+      if (column === '') {
+        return true
+      } else {
+        const attributeType = currentTable.columns.get(column)?.type
+        return (
+          attributeType != null &&
+          typesCanBeMapped(
+            mappingType,
+            attributeType,
+            props.visualProperty.type,
+          )
+        )
+      }
+    },
+  )
 
   const mappingDimensions: Record<MappingFunctionType | '', [string, string]> =
     {
@@ -252,17 +274,39 @@ function MappingFormContent(props: {
             <InputLabel>Column</InputLabel>
             <Select
               defaultValue=""
-              value={attribute}
+              value={column}
               label="Column"
-              onChange={(e) => handleAttributeChange(e.target.value)}
+              onChange={(e) => handleColumnChange(e.target.value)}
             >
-              {validColumns.map((column) => (
-                <MenuItem key={column.name} value={column.name}>
-                  <Tooltip title={`Data type: ${column.type}`}>
-                    <Box>{column.name}</Box>
-                  </Tooltip>
-                </MenuItem>
-              ))}
+              {columns.map((c) => {
+                const columnMenuItem = (
+                  <MenuItem
+                    disabled={!validColumnNames.includes(c.name)}
+                    key={c.name}
+                    value={c.name}
+                  >
+                    <Tooltip title={`Data type: ${c.type}`}>
+                      <Box>{c.name}</Box>
+                    </Tooltip>
+                  </MenuItem>
+                )
+
+                if (validColumnNames.includes(c.name)) {
+                  return columnMenuItem
+                } else {
+                  const invalidColumnTooltipStr = `${mappingType} mapping functions${
+                    c.name !== '' ? ` on column '${c.name}' ` : ' '
+                  }cannot be applied to property ${
+                    props.visualProperty.displayName
+                  }`
+
+                  return (
+                    <Tooltip key={c.name} title={invalidColumnTooltipStr}>
+                      <Box>{columnMenuItem}</Box>
+                    </Tooltip>
+                  )
+                }
+              })}
             </Select>
           </FormControl>
           <FormControl sx={{ minWidth: '150px' }} size="small">
@@ -277,11 +321,34 @@ function MappingFormContent(props: {
                 )
               }
             >
-              {Object.values(MappingFunctionType).map((mappingFnType) => (
-                <MenuItem key={mappingFnType} value={mappingFnType}>
-                  {mappingFnType}
-                </MenuItem>
-              ))}
+              {Object.values(MappingFunctionType).map((mappingFnType) => {
+                const mappingFnMenuItem = (
+                  <MenuItem
+                    disabled={!validMappings.includes(mappingFnType)}
+                    key={mappingFnType}
+                    value={mappingFnType}
+                  >
+                    {mappingFnType}
+                  </MenuItem>
+                )
+                if (validMappings.includes(mappingFnType)) {
+                  return mappingFnMenuItem
+                } else {
+                  const invalidMappingTooltipStr = `${mappingFnType} mapping functions${
+                    column !== '' ? ` on column '${column}' ` : ' '
+                  }cannot be applied to property ${
+                    props.visualProperty.displayName
+                  }`
+                  return (
+                    <Tooltip
+                      key={mappingFnType}
+                      title={invalidMappingTooltipStr}
+                    >
+                      <Box>{mappingFnMenuItem}</Box>
+                    </Tooltip>
+                  )
+                }
+              })}
             </Select>
           </FormControl>
         </Box>
