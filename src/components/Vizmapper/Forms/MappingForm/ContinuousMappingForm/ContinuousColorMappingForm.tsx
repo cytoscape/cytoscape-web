@@ -267,6 +267,16 @@ export function ContinuousColorMappingForm(props: {
     updateContinuousMapping(minState, maxState, handles)
   }, [maxState])
 
+  const [view, setView] = React.useState("RdBu");
+
+  const handleToggleChange = (
+    event: React.MouseEvent<HTMLElement>,
+    nextView: string
+  ): void => {
+    setView(nextView);
+  };
+
+
   return (
     
     <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2 }}>
@@ -308,52 +318,53 @@ export function ContinuousColorMappingForm(props: {
             <Typography align={'center'} sx={{ p: 1 }}>Set Palette</Typography>
            <ToggleButtonGroup
            orientation="horizontal"
+           value={view}
           exclusive
           fullWidth={true}
-          aria-label="text alignment"
+          onChange={handleToggleChange}
       >
         <Tooltip title="Red-Blue" placement="right">
-        <ToggleButton value="left1">
+        <ToggleButton value="RdBu" aria-label="RdBu">
         <img src={RdBu} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Purple-Orange" placement="right">
-        <ToggleButton value="left2">
+        <ToggleButton value="PuOr" aria-label="PuOr">
         <img src={PuOr} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Purple-Red-Green" placement="right">
-        <ToggleButton value="left3">
+        <ToggleButton value="PRGn" aria-label="PRGn">
         <img src={PRGn} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Spectral Colors" placement="right">
-        <ToggleButton value="left4">
+        <ToggleButton value="Spectral" aria-label="Spectral">
         <img src={Spectral} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Brown-Blue-Green" placement="right">
-        <ToggleButton value="left5">
+        <ToggleButton value="BrBG" aria-label="BrBG">
         <img src={BrBG} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Red-Yellow-Green" placement="right">
-        <ToggleButton value="left6">
+        <ToggleButton value="RdYlGn" aria-label="RdYlGn">
         <img src={RdYlGn} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Magenta-Yellow-Green" placement="right">
-        <ToggleButton value="left7">
+        <ToggleButton value="PiYG" aria-label="PiYG">
         <img src={PiYG} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Red-Grey" placement="right">
-        <ToggleButton value="left8">
+        <ToggleButton value="RdGy" aria-label="RdGy">
         <img src={RdGy} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Red-Yellow-Blue" placement="right">
-        <ToggleButton value="left9">
+        <ToggleButton value="RdYlBu" aria-label="RdYlBu">
         <img src={RdYlBu} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
