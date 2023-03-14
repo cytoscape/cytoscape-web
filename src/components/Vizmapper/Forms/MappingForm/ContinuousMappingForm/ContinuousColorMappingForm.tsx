@@ -19,16 +19,15 @@ import Palette from '@mui/icons-material/Palette'
 import EditIcon from '@mui/icons-material/Edit'
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Category10 from '../../../../../assets/Category10.png'
-import Accent from '../../../../../assets/Accent.png'
-import Dark2 from '../../../../../assets/Dark2.png'
-import Paired from '../../../../../assets/Paired.png'
-import Pastel1 from '../../../../../assets/Pastel1.png'
-import Pastel2 from '../../../../../assets/Pastel2.png'
-import Set1 from '../../../../../assets/Set1.png'
-import Set2 from '../../../../../assets/Set2.png'
-import Set3 from '../../../../../assets/Set3.png'
-import Tableau10 from '../../../../../assets/Tableau10.png'
+import RdBu from '../../../../../assets/RdBu.png'
+import PuOr from '../../../../../assets/PuOr.png'
+import PRGn from '../../../../../assets/PRGn.png'
+import Spectral from '../../../../../assets/Spectral.png'
+import BrBG from '../../../../../assets/BrBG.png'
+import RdYlGn from '../../../../../assets/RdYlGn.png'
+import PiYG from '../../../../../assets/PiYG.png'
+import RdGy from '../../../../../assets/RdGy.png'
+import RdYlBu from '../../../../../assets/RdYlBu.png'
 
 import { color } from 'd3-color'
 import Draggable from 'react-draggable'
@@ -279,6 +278,7 @@ export function ContinuousColorMappingForm(props: {
           color: '#595858',
         }}
         >
+          Current Palette:
         <Button
           onClick={showColorPickerMenu}
           variant="outlined"
@@ -286,7 +286,7 @@ export function ContinuousColorMappingForm(props: {
           size="small"
           startIcon={<Palette />}
         >
-          Set Palette
+          None
         </Button>
         <Popover
           open={createColorPickerAnchorEl != null}
@@ -306,36 +306,51 @@ export function ContinuousColorMappingForm(props: {
           exclusive
           aria-label="text alignment"
       >
+        <Tooltip title="Red-Blue">
         <ToggleButton value="left1">
-        <img src={Category10} width="30" height="400"/>
+        <img src={RdBu} width="15" height="150"/>
         </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Purple-Orange">
         <ToggleButton value="left2">
-        <img src={Accent} width="30" height="400"/>
+        <img src={PuOr} width="15" height="150"/>
         </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Purple-Red-Green">
         <ToggleButton value="left3">
-        <img src={Dark2} width="30" height="400"/>
+        <img src={PRGn} width="15" height="150"/>
         </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Spectral Colors">
         <ToggleButton value="left4">
-        <img src={Paired} width="30" height="400"/>
+        <img src={Spectral} width="15" height="150"/>
         </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Brown-Blue-Green">
         <ToggleButton value="left5">
-        <img src={Pastel1} width="30" height="400"/>
+        <img src={BrBG} width="15" height="150"/>
         </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Red-Yellow-Green">
         <ToggleButton value="left6">
-        <img src={Pastel2} width="30" height="400"/>
+        <img src={RdYlGn} width="15" height="150"/>
         </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Magenta-Yellow-Green">
         <ToggleButton value="left7">
-        <img src={Set1} width="30" height="400"/>
+        <img src={PiYG} width="15" height="150"/>
         </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Red-Grey">
         <ToggleButton value="left8">
-        <img src={Set2} width="30" height="400"/>
+        <img src={RdGy} width="15" height="150"/>
         </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Red-Yellow-Blue">
         <ToggleButton value="left9">
-        <img src={Set3} width="30" height="400"/>
+        <img src={RdYlBu} width="15" height="150"/>
         </ToggleButton>
-        <ToggleButton value="left10">
-        <img src={Tableau10} width="30" height="400"/>
-        </ToggleButton>
+        </Tooltip>
       </ToggleButtonGroup>
       <Paper
         sx={{
