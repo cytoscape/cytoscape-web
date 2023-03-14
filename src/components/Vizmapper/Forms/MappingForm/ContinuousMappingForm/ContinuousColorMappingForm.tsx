@@ -19,6 +19,10 @@ import Palette from '@mui/icons-material/Palette'
 import EditIcon from '@mui/icons-material/Edit'
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+
 import RdBu from '../../../../../assets/RdBu.png'
 import PuOr from '../../../../../assets/PuOr.png'
 import PRGn from '../../../../../assets/PRGn.png'
@@ -305,6 +309,7 @@ export function ContinuousColorMappingForm(props: {
            <ToggleButtonGroup
            orientation="horizontal"
           exclusive
+          fullWidth={true}
           aria-label="text alignment"
       >
         <Tooltip title="Red-Blue" placement="right">
@@ -365,7 +370,28 @@ export function ContinuousColorMappingForm(props: {
           color: '#595858',
         }}
       >
-      <Button
+    <FormGroup>
+      <FormControlLabel control={<Checkbox />} label="reverse colors" />
+    </FormGroup>
+    <FormGroup>
+      <FormControlLabel control={<Checkbox />} label="colorblind-friendly" />
+    </FormGroup>
+
+   
+            </Paper>
+            <Paper
+        sx={{
+          display: 'flex',
+          p: 1,
+          m: 1,
+          ml: 3,
+          mr: 3,
+          justifyContent: 'space-evenly',
+          backgroundColor: '#fcfffc',
+          color: '#595858',
+        }}
+      >
+           <Button
               variant="outlined"
               onClick={() => {
                 hideColorPickerMenu()
@@ -383,7 +409,8 @@ export function ContinuousColorMappingForm(props: {
             >
              Cancel
             </Button>
-            </Paper>
+                </Paper>
+
         </Popover>
         </Paper>
       <Box
