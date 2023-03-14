@@ -14,6 +14,7 @@ import { useCredentialStore } from '../../../store/CredentialStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../../store/exportCX'
 import { Network } from '../../../models/NetworkModel'
+import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
 
 export const CopyNetworkToNDExMenuItem = (
@@ -47,6 +48,12 @@ export const CopyNetworkToNDExMenuItem = (
   const client = useCredentialStore((state) => state.client)
   const authenticated: boolean = client?.authenticated ?? false
 
+  const addNetworkToWorkspace = useWorkspaceStore(
+    (state) => state.addNetworkIds,
+  )
+  const setCurrentNetworkId = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
   const saveCopyToNDEx = async (): Promise<void> => {
     const ndexClient = new NDEx(`${ndexBaseUrl}/v2`)
     const accessToken = await getToken()
@@ -67,6 +74,11 @@ export const CopyNetworkToNDExMenuItem = (
       updateSummary(currentNetworkId, {
         modificationTime: newNdexModificationTime,
       })
+
+      addNetworkToWorkspace(uuid as IdType)
+      setTimeout(() => {
+        setCurrentNetworkId(uuid as IdType)
+      }, 200)
 
       console.log(
         `Saved a copy of the current network to NDEx with new uuid ${

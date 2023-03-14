@@ -25,6 +25,7 @@ import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../../store/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
+import { IdType } from '../../../models/IdType'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -51,6 +52,13 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const network = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   ) as Network
+
+  const addNetworkToWorkspace = useWorkspaceStore(
+    (state) => state.addNetworkIds,
+  )
+  const setCurrentNetworkId = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
 
   const getToken = useCredentialStore((state) => state.getToken)
   const client = useCredentialStore((state) => state.client)
@@ -103,6 +111,11 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       updateSummary(currentNetworkId, {
         modificationTime: newNdexModificationTime,
       })
+
+      addNetworkToWorkspace(uuid as IdType)
+      setTimeout(() => {
+        setCurrentNetworkId(uuid as IdType)
+      }, 200)
 
       console.log(
         `Saved a copy of the current network to NDEx with new uuid ${
