@@ -126,13 +126,13 @@ export function ContinuousColorMappingForm(props: {
   let textPalette = 'None';
  
   const [buttonText, setButtonText] = React.useState(textPalette); 
-  const changeText = (text: string) :void => setButtonText(text);
+  const changeButtonText = (text: string) :void => setButtonText(text);
 
   const handleColorPicker = (): void => {
     setHandle(0, min.value as number, minPalette as string);
     setHandle(1, controlPoints[1].value as number, middlePalette as string);
     setHandle(2, max.value as number, maxPalette as string);
-    changeText(textPalette)
+    changeButtonText(textPalette);
     hideColorPickerMenu();
   }
 
