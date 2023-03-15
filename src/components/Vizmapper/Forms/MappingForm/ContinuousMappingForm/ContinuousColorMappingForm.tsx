@@ -306,8 +306,8 @@ export function ContinuousColorMappingForm(props: {
           }}
         >
             <Typography align={'center'} sx={{ p: 1 }}>Set Palette</Typography>
-           <ToggleButtonGroup
-           orientation="horizontal"
+        <ToggleButtonGroup
+          orientation="horizontal"
           exclusive
           fullWidth={true}
       >
