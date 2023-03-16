@@ -10,6 +10,10 @@ export const LoadFromNdexMenuItem = (props: BaseMenuProps): ReactElement => {
     (state) => state.addNetworkIds,
   )
 
+  const setCurrentNetworkId = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
+
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
   const handleCloseDialog = (): void => {
@@ -26,6 +30,16 @@ export const LoadFromNdexMenuItem = (props: BaseMenuProps): ReactElement => {
     console.log('Given UUID string: ', uuidStr)
     console.log('Got UUID List: ', uuids)
     addNetworks(uuids)
+    let nextCurrentNetworkId: IdType | undefined
+    if (Array.isArray(uuids)) {
+      nextCurrentNetworkId = uuids[0]
+    } else {
+      nextCurrentNetworkId = uuids
+    }
+
+    if (nextCurrentNetworkId !== undefined) {
+      setTimeout(() => setCurrentNetworkId(nextCurrentNetworkId as IdType), 500)
+    }
     setOpenDialog(false)
     props.handleClose()
   }
