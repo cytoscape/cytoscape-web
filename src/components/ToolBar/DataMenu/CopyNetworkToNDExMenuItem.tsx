@@ -76,9 +76,12 @@ export const CopyNetworkToNDExMenuItem = (
       })
 
       addNetworkToWorkspace(uuid as IdType)
+      // in the other places that this function is used, it seems that a setTimeout is required
+      // for it to work properly
+      // todo this should not be necessary
       setTimeout(() => {
         setCurrentNetworkId(uuid as IdType)
-      }, 200)
+      }, 500)
 
       console.log(
         `Saved a copy of the current network to NDEx with new uuid ${
