@@ -32,8 +32,6 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.summaries[currentNetworkId],
   )
 
-  const updateSummary = useNetworkSummaryStore((state) => state.update)
-
   const viewModel = useViewModelStore(
     (state) => state.viewModels[currentNetworkId],
   )
