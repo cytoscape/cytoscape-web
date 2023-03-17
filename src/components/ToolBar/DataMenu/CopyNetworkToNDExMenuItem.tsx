@@ -63,6 +63,7 @@ export const CopyNetworkToNDExMenuItem = (
       table.nodeTable,
       table.edgeTable,
       viewModel,
+      `Copy of ${summary.name}`,
     )
 
     try {

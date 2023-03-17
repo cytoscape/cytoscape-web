@@ -44,6 +44,7 @@ export const exportNetworkToCx2 = (
   nodeTable: Table,
   edgeTable: Table,
   networkView: NetworkView,
+  networkName?: string, // optional new name for the network
 ): any => {
   // accumulate node/edge attributes into a object
   const attributesAccumulator = (
@@ -142,7 +143,7 @@ export const exportNetworkToCx2 = (
   const networkAttributeDeclarations: {
     [key: string]: { d: ValueTypeName; v: ValueType }
   } = {
-    name: { d: 'string', v: summary.name },
+    name: { d: 'string', v: networkName ?? summary.name },
     description: { d: 'string', v: summary.description },
     version: { d: 'string', v: summary.version },
   }
@@ -170,7 +171,7 @@ export const exportNetworkToCx2 = (
 
   const networkAttributes: any = [
     {
-      name: summary.name,
+      name: networkName ?? summary.name,
       description: summary.description,
       version: summary.version,
     },

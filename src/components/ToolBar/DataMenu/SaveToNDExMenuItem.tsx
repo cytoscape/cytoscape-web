@@ -102,6 +102,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       table.nodeTable,
       table.edgeTable,
       viewModel,
+      `Copy of ${summary.name}`,
     )
 
     try {
