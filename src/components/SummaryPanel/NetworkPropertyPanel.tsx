@@ -1,8 +1,10 @@
 import { ReactElement, useState } from 'react'
+import parse from 'html-react-parser'
 import {
   Tooltip,
   IconButton,
   Box,
+  Chip,
   Theme,
   Typography,
   Divider,
@@ -65,6 +67,12 @@ export const NetworkPropertyPanel = ({
   const backgroundColor: string =
     currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
 
+  const descriptionContent = parse(summary.description ?? '')
+  const lastModifiedDate =
+    summary.modificationTime !== undefined
+      ? new Date(summary.modificationTime).toLocaleString()
+      : ''
+
   return (
     <>
       <Divider />
@@ -113,11 +121,36 @@ export const NetworkPropertyPanel = ({
             horizontal: 'right',
           }}
         >
-          <Paper sx={{ p: 1 }}>
-            <Typography variant={'body2'}>{summary.name}</Typography>
-            <Typography variant={'body2'}>
-              {JSON.stringify(summary, null, 2)}
+          <Paper
+            sx={{
+              p: 2,
+              width: '400px',
+              maxHeight: '600px',
+              overflowY: 'scroll',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Typography variant={'body1'}>{summary.name ?? ''}</Typography>
+              <Chip
+                size="small"
+                label={
+                  <Typography variant="caption">
+                    {summary.visibility}
+                  </Typography>
+                }
+              />
+            </Box>
+            <Divider sx={{ pt: 1 }} />
+            <Typography variant="caption">
+              Last modified at: {lastModifiedDate}
             </Typography>
+            <Typography variant={'body2'}>{descriptionContent}</Typography>
           </Paper>
         </Popover>
       </Box>
