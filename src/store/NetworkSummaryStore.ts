@@ -26,6 +26,7 @@ interface NetworkSummaryActions {
     url: string,
     accessToken?: string,
   ) => Promise<void>
+  update: (id: IdType, summary: Partial<NdexNetworkSummary>) => void
   delete: (networkId: IdType) => void
 }
 
@@ -63,7 +64,7 @@ const networkSummaryFetcher = async (
 }
 
 export const useNetworkSummaryStore = create(
-  immer<NetworkSummaryStore & NetworkSummaryActions>((set) => ({
+  immer<NetworkSummaryStore & NetworkSummaryActions>((set, get) => ({
     summaries: {},
     fetch: async (networkId: IdType, url: string, accessToken?: string) => {
       const localData: NdexNetworkSummary | undefined =
@@ -156,6 +157,19 @@ export const useNetworkSummaryStore = create(
       })
 
       // return newSummaries
+    },
+    update: (networkId: IdType, summaryUpdate: Partial<NdexNetworkSummary>) => {
+      const summary = get().summaries[networkId]
+      if (summary === undefined) {
+        return
+      }
+      set((state) => {
+        const newSummary = { ...summary, ...summaryUpdate }
+        const newSummaries = { ...state.summaries, [networkId]: newSummary }
+        return {
+          summaries: newSummaries,
+        }
+      })
     },
     delete: (networkId: IdType) => {
       set((state) => {

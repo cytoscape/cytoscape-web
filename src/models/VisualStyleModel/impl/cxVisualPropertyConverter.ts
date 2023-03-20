@@ -1,3 +1,4 @@
+import { CxValue } from '../../../utils/cx/Cx2/CxValue'
 import { VisualPropertyName } from '../VisualPropertyName'
 import {
   ColorType,
@@ -11,13 +12,23 @@ import {
   EdgeLineType,
   EdgeArrowShapeType,
 } from '../VisualPropertyValue'
+import {
+  DiscreteMappingFunction,
+  ContinuousMappingFunction,
+  PassthroughMappingFunction,
+  VisualProperty,
+  VisualStyle,
+} from '..'
 
 type CXLabelPositionValueType = 'center' | 'top' | 'bottom' | 'left' | 'right'
-interface CXLabelPositionType {
+export interface CXLabelPositionType {
   HORIZONTAL_ALIGN: CXLabelPositionValueType
   VERTICAL_ALIGN: CXLabelPositionValueType
   HORIZONTAL_ANCHOR: CXLabelPositionValueType
   VERTICAL_ANCHOR: CXLabelPositionValueType
+  MARGIN_X: number
+  MARGIN_Y: number
+  JUSTIFICATION: CXLabelPositionValueType
 }
 
 interface CXFontFaceType {
@@ -30,13 +41,14 @@ export type CXVisualPropertyValue =
   | VisualPropertyValueType
   | CXLabelPositionType
   | CXFontFaceType
+  | CXLabelPositionType
 
 export interface CXDiscreteMappingFunction<T> {
   type: 'DISCRETE'
   definition: {
     attribute: string
     map: Array<{
-      v: number
+      v: CxValue
       vp: T
     }>
   }
@@ -70,6 +82,121 @@ export type CXVisualMappingFunction<T> =
   | CXPassthroughMappingFunction
 
 export type CXId = number
+
+export const vpToCX = (
+  vpName: VisualPropertyName,
+  vpValue: VisualPropertyValueType,
+): CXVisualPropertyValue => {
+  const defaultNodeLabelPosition: CXLabelPositionType = {
+    HORIZONTAL_ALIGN: 'center',
+    HORIZONTAL_ANCHOR: 'center',
+    JUSTIFICATION: 'center',
+    MARGIN_X: 0.0,
+    MARGIN_Y: 0.0,
+    VERTICAL_ALIGN: 'center',
+    VERTICAL_ANCHOR: 'center',
+  }
+
+  const defaultFontValue: CXVisualPropertyValue = {
+    FONT_FAMILY: 'sans-serif',
+    FONT_STYLE: 'normal',
+    FONT_WEIGHT: 'normal',
+  }
+
+  if (
+    vpName === 'nodeLabelVerticalAlign' ||
+    vpName === 'nodeLabelHorizontalAlign'
+  ) {
+    return Object.assign({}, defaultNodeLabelPosition)
+  }
+
+  if (vpName === 'nodeLabelFont' || vpName === 'edgeLabelFont') {
+    return Object.assign({}, defaultFontValue, { FONT_FAMILY: vpValue })
+  }
+
+  return vpValue as CXVisualPropertyValue
+}
+
+export const convertPassthroughMappingToCX = (
+  vs: VisualStyle,
+  vp: VisualProperty<VisualPropertyValueType>,
+  mapping: PassthroughMappingFunction,
+): CXPassthroughMappingFunction => {
+  const { attribute } = mapping
+
+  return {
+    type: 'PASSTHROUGH',
+    definition: {
+      attribute,
+    },
+  }
+}
+
+export const convertDiscreteMappingToCX = (
+  vs: VisualStyle,
+  vp: VisualProperty<VisualPropertyValueType>,
+  mapping: DiscreteMappingFunction,
+): CXDiscreteMappingFunction<CXVisualPropertyValue> => {
+  const { vpValueMap, attribute } = mapping
+
+  return {
+    type: 'DISCRETE',
+    definition: {
+      attribute,
+      map: Array.from(vpValueMap.entries()).map(([value, vpValue]) => ({
+        v: value,
+        vp: vpToCX(vp.name, vpValue),
+      })),
+    },
+  }
+}
+export const convertContinuousMappingToCX = (
+  vs: VisualStyle,
+  vp: VisualProperty<VisualPropertyValueType>,
+  mapping: ContinuousMappingFunction,
+): CXContinuousMappingFunction<CXVisualPropertyValue> => {
+  const { min, max, controlPoints, attribute } = mapping
+
+  const intervals = []
+
+  for (let i = 0; i < controlPoints.length - 1; i++) {
+    const curr = controlPoints[i]
+    const next = controlPoints[i + 1]
+
+    if (curr != null && next != null) {
+      intervals.push({
+        min: curr.value as number,
+        max: next.value as number,
+        minVPValue: vpToCX(vp.name, curr.vpValue),
+        maxVPValue: vpToCX(vp.name, next.vpValue),
+        includeMin: curr.inclusive ?? true,
+        includeMax: next.inclusive ?? true,
+      })
+    }
+  }
+
+  return {
+    type: 'CONTINUOUS',
+    definition: {
+      map: [
+        {
+          max: min.value as number,
+          maxVPValue: vpToCX(vp.name, min.vpValue),
+          includeMax: min.inclusive ?? true,
+          includeMin: true, // dummy value, not actually used here
+        },
+        ...intervals,
+        {
+          min: max.value as number,
+          minVPValue: vpToCX(vp.name, max.vpValue),
+          includeMin: max.inclusive ?? true,
+          includeMax: true, // dummy value, not actually used here
+        },
+      ],
+      attribute,
+    },
+  }
+}
 
 export interface CXVisualPropertyConverter<T> {
   cxVPName: string

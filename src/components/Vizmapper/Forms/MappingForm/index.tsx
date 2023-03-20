@@ -202,7 +202,7 @@ function MappingFormContent(props: {
       : columns
   const validColumnNames = validColumns.map((c) => c.name)
 
-  const validMappings = validMappingsForVP(props.visualProperty).filter(
+  const validMappings = validMappingsForVP(props.visualProperty.type).filter(
     (mappingType) => {
       if (column === '') {
         return true
