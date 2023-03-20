@@ -169,6 +169,14 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 'element',
     bypassMap: new Map(),
   },
+  nodeSelectedPaint: {
+    group: 'node',
+    name: 'nodeSelectedPaint',
+    displayName: 'Selected Color',
+    type: 'color',
+    defaultValue: 'yellow',
+    bypassMap: new Map(),
+  },
   edgeLineColor: {
     group: 'edge',
     name: 'edgeLineColor',
@@ -295,6 +303,14 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     displayName: 'Visibility',
     type: 'visibility',
     defaultValue: 'element',
+    bypassMap: new Map(),
+  },
+  edgeSelectedPaint: {
+    group: 'edge',
+    name: 'edgeSelectedPaint',
+    displayName: 'Selected Color',
+    type: 'color',
+    defaultValue: 'red',
     bypassMap: new Map(),
   },
   networkBackgroundColor: {

@@ -134,7 +134,7 @@ export const VPNodeShapeTypeConverter = (
   }
 }
 
-export const VPNodeLabelHorizonalAlignTypeConverter = (
+export const VPNodeLabelHorizontalAlignTypeConverter = (
   cxVPName: string,
 ): CXVisualPropertyConverter<HorizontalAlignType> => {
   return {
@@ -208,7 +208,7 @@ export const cxVisualPropertyConverter: Record<
   nodeLabelColor: VPColorConverter('NODE_LABEL_COLOR'),
   nodeLabelFontSize: VPNumberConverter('NODE_LABEL_FONT_SIZE'),
   nodeLabelFont: VPFontTypeConverter('NODE_LABEL_FONT_FACE'),
-  nodeLabelHorizontalAlign: VPNodeLabelHorizonalAlignTypeConverter(
+  nodeLabelHorizontalAlign: VPNodeLabelHorizontalAlignTypeConverter(
     'NODE_LABEL_POSITION',
   ),
   nodeLabelVerticalAlign: VPNodeLabelVerticalAlignTypeConverter(
@@ -220,7 +220,8 @@ export const cxVisualPropertyConverter: Record<
   // nodePositionY: VPNumberConverter('NODE_Y_LOCATION'),
   // nodePositionZ: VPNumberConverter('NODE_Z_LOCATION'),
   nodeOpacity: VPNumberConverter('NODE_BACKGROUND_OPACITY'),
-  nodeVisibility: VPVisibilityTypeConverter('NODE_VISIBLITY'),
+  nodeVisibility: VPVisibilityTypeConverter('NODE_VISIBILITY'),
+  nodeSelectedPaint: VPColorConverter('NODE_SELECTED_PAINT'),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),
@@ -242,6 +243,7 @@ export const cxVisualPropertyConverter: Record<
   edgeLabelOpacity: VPNumberConverter('EDGE_LABEL_OPACITY'),
   edgeOpacity: VPNumberConverter('EDGE_OPACITY'),
   edgeVisibility: VPVisibilityTypeConverter('EDGE_VISIBILITY'),
+  edgeSelectedPaint: VPColorConverter('EDGE_SELECTED_PAINT'),
 
   networkBackgroundColor: VPColorConverter('NETWORK_BACKGROUND_COLOR'),
 }

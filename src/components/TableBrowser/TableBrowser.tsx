@@ -454,7 +454,7 @@ export default function TableBrowser(props: {
         <Button onClick={() => setShowSearch(!showSearch)}>
           Toggle Search
         </Button>
-        <Box onMouseLeave={() => setHovered(props.currentNetworkId, null)}>
+        <Box onMouseLeave={() => setHovered(props.currentNetworkId, '')}>
           <DataEditor
             rowMarkers={'both'}
             rowMarkerStartIndex={minNodeId}
@@ -549,7 +549,7 @@ export default function TableBrowser(props: {
           Toggle Search
         </Button>
 
-        <Box onMouseLeave={() => setHovered(props.currentNetworkId, null)}>
+        <Box onMouseLeave={() => setHovered(props.currentNetworkId, '')}>
           <DataEditor
             rowMarkers={'both'}
             rowMarkerStartIndex={minEdgeId}

@@ -28,6 +28,8 @@ interface NetworkRendererProps {
   network: Network
 }
 
+const HOVER_STATE_NAME: string = 'hover'
+
 /**
  *
  * @param param0
@@ -49,12 +51,13 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     nodeId: IdType,
     position: [number, number],
   ) => void = useViewModelStore((state) => state.setNodePosition)
+  const setHovered: (networkId: IdType, eleId: IdType) => void =
+    useViewModelStore((state) => state.setHovered)
 
   const [cyStyle, setCyStyle] = useState<any[]>([])
   const [renderedId, setRenderedId] = useState<string>('')
 
   const networkView: NetworkView = viewModels[id]
-  const hoveredElement = networkView?.hoveredElement
 
   const vs: VisualStyle = visualStyles[id]
   const table = tables[id]
@@ -97,6 +100,19 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       const newStyle = createCyjsDataMapper(vs)
       setCyStyle(newStyle)
 
+      // Restore selection state in Cyjs instance
+      const { selectedNodes, selectedEdges } = networkView
+      cy.nodes()
+        .filter((ele: SingularElementArgument) => {
+          return selectedNodes.includes(ele.data('id'))
+        })
+        .select()
+      cy.edges()
+        .filter((ele: SingularElementArgument) => {
+          return selectedEdges.includes(ele.data('id'))
+        })
+        .select()
+
       // Box selection listener
       cy.on(
         'boxselect select',
@@ -135,10 +151,20 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         setNodePosition(id, nodeId, [position.x, position.y])
       })
 
+      cy.on('mouseover', 'node, edge', (e: EventObject): void => {
+        const targetNode = e.target
+        targetNode.addClass(HOVER_STATE_NAME)
+        setHovered(id, targetNode.data('id'))
+      })
+      cy.on('mouseout', 'node, edge', (e: EventObject): void => {
+        const targetNode = e.target
+        targetNode.removeClass(HOVER_STATE_NAME)
+        setHovered(id, '')
+      })
+
       cy.endBatch()
 
       cy.style(newStyle)
-      // cy.mount(cyContainer.current)
 
       cy.fit()
       setVisualStyle(id, vs)
@@ -168,19 +194,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     // Apply style from view model
     applyViewModel(cy, updatedNetworkView)
 
-    // Select elements based on network view state
-    const { selectedNodes, selectedEdges } = updatedNetworkView
-    cy.nodes()
-      .filter((ele: SingularElementArgument) => {
-        return selectedNodes.includes(ele.data('id'))
-      })
-      .select()
-    cy.edges()
-      .filter((ele: SingularElementArgument) => {
-        return selectedEdges.includes(ele.data('id'))
-      })
-      .select()
-
     cy.endBatch()
     if (cyStyle.length > 0) {
       cy.style(cyStyle)
@@ -191,16 +204,17 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     console.log('#Time to  apply style: ', performance.now() - t1)
   }
 
-  const applyHoverStyle = (): void => {
-    if (cy != null) {
-      cy.nodes().removeClass('hovered')
-      cy.edges().removeClass('hovered')
+  // TODO: fix this function for the new apply mechanism
+  // const applyHoverStyle = (): void => {
+  //   if (cy != null) {
+  //     cy.nodes().removeClass('hovered')
+  //     cy.edges().removeClass('hovered')
 
-      if (hoveredElement != null) {
-        cy.getElementById(hoveredElement).addClass('hovered')
-      }
-    }
-  }
+  //     if (hoveredElement != null) {
+  //       cy.getElementById(hoveredElement).addClass('hovered')
+  //     }
+  //   }
+  // }
 
   // when the id changes, reset the cyjs element by
   // removing all elements and event listeners
@@ -235,13 +249,13 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     applyUpdates()
   }, [vs, table])
 
-  // when hovered element changes, apply hover style to that element
-  useEffect(() => {
-    if (hoveredElement === null || hoveredElement === undefined) {
-      return
-    }
-    applyHoverStyle()
-  }, [hoveredElement])
+  // // when hovered element changes, apply hover style to that element
+  // useEffect(() => {
+  //   if (hoveredElement === null || hoveredElement === undefined) {
+  //     return
+  //   }
+  //   applyHoverStyle()
+  // }, [hoveredElement])
 
   /**
    * Initializes the Cytoscape.js instance
@@ -255,6 +269,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         hideEdgesOnViewport: true,
       })
       setCy(cy)
+      // Now add event handlers. This is necessary only once.
+      // addEventHandlers(cy)
       console.info('Cyjs renderer is ready.')
     }
 
