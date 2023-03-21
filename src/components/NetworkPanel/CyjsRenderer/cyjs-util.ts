@@ -85,6 +85,14 @@ export const applyViewModel = (cy: Core, networkView: NetworkView): void => {
   const { nodeViews, edgeViews } = networkView
   updateCyObjects<NodeView>(nodeViews, cy.nodes())
   updateCyObjects<EdgeView>(edgeViews, cy.edges())
+
+  if (networkView.hoveredElement !== undefined) {
+    cy.elements().removeClass('hover')
+    const ele = cy.getElementById(networkView.hoveredElement)
+    if (ele !== undefined) {
+      ele.addClass('hover')
+    }
+  }
 }
 
 const updateCyObjects = <T extends View>(

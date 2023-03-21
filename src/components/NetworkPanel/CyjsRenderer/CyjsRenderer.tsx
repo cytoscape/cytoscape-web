@@ -204,18 +204,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     console.log('#Time to  apply style: ', performance.now() - t1)
   }
 
-  // TODO: fix this function for the new apply mechanism
-  // const applyHoverStyle = (): void => {
-  //   if (cy != null) {
-  //     cy.nodes().removeClass('hovered')
-  //     cy.edges().removeClass('hovered')
-
-  //     if (hoveredElement != null) {
-  //       cy.getElementById(hoveredElement).addClass('hovered')
-  //     }
-  //   }
-  // }
-
   // when the id changes, reset the cyjs element by
   // removing all elements and event listeners
   // this assumes we have a new network to render that was different from the current one
@@ -249,13 +237,10 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     applyUpdates()
   }, [vs, table])
 
-  // // when hovered element changes, apply hover style to that element
-  // useEffect(() => {
-  //   if (hoveredElement === null || hoveredElement === undefined) {
-  //     return
-  //   }
-  //   applyHoverStyle()
-  // }, [hoveredElement])
+  // when hovered element changes, apply hover style to that element
+  useEffect(() => {
+    applyStyleUpdate()
+  }, [networkView.hoveredElement])
 
   /**
    * Initializes the Cytoscape.js instance
