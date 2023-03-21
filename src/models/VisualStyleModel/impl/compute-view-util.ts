@@ -111,8 +111,8 @@ export const updateNetworkView = (
       mappers,
       edgeTable,
     ),
-    selectedNodes: [],
-    selectedEdges: [],
+    selectedNodes: networkView.selectedNodes,
+    selectedEdges: networkView.selectedEdges,
   }
 }
 
