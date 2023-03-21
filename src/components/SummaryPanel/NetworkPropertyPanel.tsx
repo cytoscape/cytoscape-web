@@ -14,6 +14,7 @@ import {
 import { blueGrey } from '@mui/material/colors'
 import { useTheme } from '@mui/material/styles'
 import EditIcon from '@mui/icons-material/Edit'
+import CircleIcon from '@mui/icons-material/Circle'
 
 import { IdType } from '../../models/IdType'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
@@ -64,6 +65,10 @@ export const NetworkPropertyPanel = ({
     (state) => state.setCurrentNetworkId,
   )
 
+  const networkModified = useWorkspaceStore(
+    (state) => state.workspace.networkModified[id],
+  )
+
   const backgroundColor: string =
     currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
 
@@ -72,6 +77,12 @@ export const NetworkPropertyPanel = ({
     summary.modificationTime !== undefined
       ? new Date(summary.modificationTime).toLocaleString()
       : ''
+
+  const networkModifiedIcon = networkModified ? (
+    <Tooltip title="Network has been modified">
+      <CircleIcon sx={{ color: theme.palette.error.main, fontSize: 10 }} />
+    </Tooltip>
+  ) : null
 
   return (
     <>
@@ -92,8 +103,12 @@ export const NetworkPropertyPanel = ({
         }}
       >
         <Box sx={{ width: '100%' }}>
-          <Typography variant={'body2'} sx={{ width: '100%' }}>
+          <Typography
+            variant={'body2'}
+            sx={{ width: '100%', display: 'flex', alignItems: 'center' }}
+          >
             {summary.name}
+            {networkModifiedIcon}
           </Typography>
           <Typography
             variant={'subtitle2'}

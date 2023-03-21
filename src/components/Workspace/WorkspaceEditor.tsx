@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Suspense, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
+// import _ from 'lodash'
 import { Box, Tabs, Tab, Typography } from '@mui/material'
 import ShareIcon from '@mui/icons-material/Share'
 import PaletteIcon from '@mui/icons-material/Palette'
@@ -53,15 +54,25 @@ const WorkSpaceEditor: React.FC = () => {
     (state) => state.setCurrentNetworkId,
   )
 
+  const viewModels: Record<string, NetworkView> = useViewModelStore(
+    (state) => state.viewModels,
+  )
+
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
 
   useViewModelStore.subscribe(
     (state) => state.viewModels[currentNetworkId],
-    () => {
+    (prev: NetworkView, next: NetworkView) => {
+      // const viewModelChanged = !_.isEqual(prev, next)
+      const viewModelChanged = prev !== undefined && next !== undefined // assume view model changed when prev and next are defined
       const { networkModified } = workspace
-      const isModified: boolean | undefined = networkModified[currentNetworkId]
-      if (isModified !== undefined && !isModified) {
+      const currentNetworkIsNotModified =
+        networkModified[currentNetworkId] === undefined ??
+        !networkModified[currentNetworkId] ??
+        false
+
+      if (viewModelChanged && currentNetworkIsNotModified) {
         setNetworkModified(currentNetworkId, true)
       }
     },
@@ -93,9 +104,6 @@ const WorkSpaceEditor: React.FC = () => {
   const setTables = useTableStore((state) => state.setTables)
 
   const setViewModel = useViewModelStore((state) => state.setViewModel)
-  const viewModels: Record<string, NetworkView> = useViewModelStore(
-    (state) => state.viewModels,
-  )
 
   const loadNetworkSummaries = async (): Promise<void> => {
     // Check token first
