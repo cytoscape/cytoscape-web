@@ -54,6 +54,7 @@
     "webpack-dev-server": "^4.11.1"
   },
   "dependencies": {
+    "@antv/g6": "^4.8.7",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
     "@glideapps/glide-data-grid": "^5.2.1",

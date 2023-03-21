@@ -44,6 +44,7 @@ const NetworkPanel = (): ReactElement => {
         </Box>
       ) : null}
       <CyjsRenderer network={targetNetwork} />
+      <div id="layout-dummy" />
     </Box>
   )
 }

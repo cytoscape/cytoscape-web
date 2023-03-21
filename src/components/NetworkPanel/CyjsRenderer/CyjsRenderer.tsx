@@ -24,6 +24,7 @@ import { IdType } from '../../../models/IdType'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
 import { addObjects } from './cyjs-factory'
+import { G6Layout } from '../../../utils/LayoutEngine/impl/G6'
 interface NetworkRendererProps {
   network: Network
 }
@@ -167,6 +168,16 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       cy.style(newStyle)
 
       cy.fit()
+
+      // Test
+      const onLayoutEnd = (positions: Map<IdType, [number, number]>): void => {
+        console.log('Layout end', positions)
+        // positions.forEach((pos, nodeId) => {
+        //   setNodePosition(id, nodeId, pos)
+        // })
+      }
+      G6Layout.apply(network.nodes, network.edges, onLayoutEnd)
+
       setVisualStyle(id, vs)
       setTimeout(() => {
         isViewCreated.current = true
