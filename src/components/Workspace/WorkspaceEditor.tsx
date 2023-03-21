@@ -68,13 +68,14 @@ const WorkSpaceEditor: React.FC = () => {
         prev !== undefined &&
         next !== undefined &&
         !_.isEqual(
-          _.omit(prev, ['hoveredElement', 'selectedNodes', 'selectedEdges']), //omit selection state and hovered element changes as valid viewModel changes
+          // omit selection state and hovered element changes as valid viewModel changes
+          _.omit(prev, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
           _.omit(next, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
         )
 
       // primitve compare fn that does not take into account the selection/hover state
       // this leads to the network having a 'modified' state even though nothing was modified
-      // const viewModelChanged = prev !== undefined && next !== undefined // assume view model changed when prev and next are defined
+      // const viewModelChanged = prev !== undefined && next !== undefined
       const { networkModified } = workspace
       const currentNetworkIsNotModified =
         networkModified[currentNetworkId] === undefined ??

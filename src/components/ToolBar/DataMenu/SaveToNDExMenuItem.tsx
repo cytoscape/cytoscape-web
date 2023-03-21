@@ -60,6 +60,10 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     (state) => state.setCurrentNetworkId,
   )
 
+  const setNetworkModified = useWorkspaceStore(
+    (state) => state.setNetworkModified,
+  )
+
   const getToken = useCredentialStore((state) => state.getToken)
   const client = useCredentialStore((state) => state.client)
   const authenticated: boolean = client?.authenticated ?? false
@@ -78,6 +82,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     )
 
     // overwrite the current network on NDEx
+    console.log(ndexClient)
     await ndexClient.updateNetworkFromRawCX2(currentNetworkId, cx)
 
     // update the network summary with the newest modification time
@@ -86,6 +91,12 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     updateSummary(currentNetworkId, {
       modificationTime: newNdexModificationTime,
     })
+
+    setNetworkModified(currentNetworkId, false)
+
+    setTimeout(() => {
+      setCurrentNetworkId(currentNetworkId)
+    }, 500)
 
     setShowConfirmDialog(false)
     props.handleClose()
