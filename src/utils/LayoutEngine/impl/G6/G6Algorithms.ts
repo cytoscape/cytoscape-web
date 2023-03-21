@@ -18,8 +18,7 @@ export const G6Algorithms: Record<string, LayoutAlgorithm> = {
     description: 'Force-directed layout with GPU acceleration',
     parameters: {
       type: 'gForce',
-      maxIteration: 500,
-      // center: [200, 200], // The center of the graph by default
+      maxIteration: 400,
       linkDistance: 1,
       nodeStrength: 1000,
       edgeStrength: 200,
@@ -41,8 +40,7 @@ export const G6Algorithms: Record<string, LayoutAlgorithm> = {
       type: 'radial',
       center: [200, 200], // The center of the graph by default
       linkDistance: 50, // The edge length
-      maxIteration: 1000,
-      focusNode: 'node11',
+      maxIteration: 500,
       unitRadius: 100,
       preventOverlap: true, // nodeSize or size in data is required for preventOverlap: true
       nodeSize: 30,

@@ -3,6 +3,7 @@ import debounce from 'lodash.debounce'
 import Cytoscape, {
   Core,
   EventObject,
+  NodeSingular,
   SingularElementArgument,
 } from 'cytoscape'
 
@@ -251,7 +252,21 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       return
     }
 
-    console.log('3CyjsRenderer: useEffect: nodeviews', networkView.nodeViews)
+    console.log('4CyjsRenderer: useEffect: nodeviews')
+    // Update position
+    const curView = viewModels[id]
+    const nodeViews = curView.nodeViews
+    cy.nodes().forEach((cyNode: NodeSingular) => {
+      const cyNodeId = cyNode.data('id')
+      cyNode.position({
+        x: nodeViews[cyNodeId].x,
+        y: nodeViews[cyNodeId].y,
+      })
+    })
+    const preset = cy.layout({
+      name: 'preset',
+    })
+    preset.run()
   }, [networkView?.nodeViews])
 
   // // when hovered element changes, apply hover style to that element
