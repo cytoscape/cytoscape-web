@@ -36,6 +36,10 @@ interface ViewModelAction {
     eleId: IdType,
     position: [number, number],
   ) => void
+  updateNodePositions: (
+    networkId: IdType,
+    positions: Map<IdType, [number, number, number?]>,
+  ) => void
   delete: (networkId: IdType) => void
   deleteAll: () => void
 }
@@ -123,6 +127,22 @@ export const useViewModelStore = create(
             nodeView.y = position[1]
             // Update DB
           }
+        })
+      },
+      updateNodePositions(networkId, positions) {
+        set((state) => {
+          const networkView = state.viewModels[networkId]
+
+          const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
+          Object.keys(nodeViews).forEach((nodeId: IdType) => {
+            const nodeView: NodeView = nodeViews[nodeId]
+            const newPosition: [number, number, number?] | undefined =
+              positions.get(nodeId)
+            if (newPosition !== undefined) {
+              nodeView.x = newPosition[0]
+              nodeView.y = newPosition[1]
+            }
+          })
         })
       },
       delete(networkId) {

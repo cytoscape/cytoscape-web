@@ -13,6 +13,7 @@ import { DataMenu } from './DataMenu'
 
 import logo from '../../assets/cytoscape.svg'
 import { LoginButton } from '../Login/LoginButton'
+import { LayoutMenu } from './LayoutMenu'
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -70,7 +71,7 @@ export const ToolBar: React.FC = () => {
             {/* <DropdownMenu label="Edit" /> */}
             {/* <DropdownMenu label="View" /> */}
             {/* <DropdownMenu label="Select" /> */}
-            <DropdownMenu label="Layout" />
+            <LayoutMenu label="Layout" />
             {/* <DropdownMenu label="Analysis" /> */}
             <DropdownMenu label="Help" />
           </Box>

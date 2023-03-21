@@ -11,20 +11,12 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { Network } from '../../../models/NetworkModel'
-import {
-  ReactElement,
-  // useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { NetworkView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
 import { addObjects } from './cyjs-factory'
-import { G6Layout } from '../../../utils/LayoutEngine/impl/G6'
 interface NetworkRendererProps {
   network: Network
 }
@@ -47,11 +39,13 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const viewModels = useViewModelStore((state) => state.viewModels)
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+
   const setNodePosition: (
     networkId: IdType,
     nodeId: IdType,
     position: [number, number],
   ) => void = useViewModelStore((state) => state.setNodePosition)
+
   const setHovered: (networkId: IdType, eleId: IdType) => void =
     useViewModelStore((state) => state.setHovered)
 
@@ -169,15 +163,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
       cy.fit()
 
-      // Test
-      const onLayoutEnd = (positions: Map<IdType, [number, number]>): void => {
-        console.log('Layout end', positions)
-        // positions.forEach((pos, nodeId) => {
-        //   setNodePosition(id, nodeId, pos)
-        // })
-      }
-      G6Layout.apply(network.nodes, network.edges, onLayoutEnd)
-
       setVisualStyle(id, vs)
       setTimeout(() => {
         isViewCreated.current = true
@@ -259,6 +244,15 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
     applyUpdates()
   }, [vs, table])
+
+  // Apply layout when node positions are changed
+  useEffect(() => {
+    if (viewModels[id] === undefined || cy === null) {
+      return
+    }
+
+    console.log('3CyjsRenderer: useEffect: nodeviews', networkView.nodeViews)
+  }, [networkView?.nodeViews])
 
   // // when hovered element changes, apply hover style to that element
   // useEffect(() => {
