@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Suspense, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
-// import _ from 'lodash'
+import _ from 'lodash'
 import { Box, Tabs, Tab, Typography } from '@mui/material'
 import ShareIcon from '@mui/icons-material/Share'
 import PaletteIcon from '@mui/icons-material/Palette'
@@ -64,8 +64,17 @@ const WorkSpaceEditor: React.FC = () => {
   useViewModelStore.subscribe(
     (state) => state.viewModels[currentNetworkId],
     (prev: NetworkView, next: NetworkView) => {
-      // const viewModelChanged = !_.isEqual(prev, next)
-      const viewModelChanged = prev !== undefined && next !== undefined // assume view model changed when prev and next are defined
+      const viewModelChanged =
+        prev !== undefined &&
+        next !== undefined &&
+        !_.isEqual(
+          _.omit(prev, ['hoveredElement', 'selectedNodes', 'selectedEdges']), //omit selection state and hovered element changes as valid viewModel changes
+          _.omit(next, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
+        )
+
+      // primitve compare fn that does not take into account the selection/hover state
+      // this leads to the network having a 'modified' state even though nothing was modified
+      // const viewModelChanged = prev !== undefined && next !== undefined // assume view model changed when prev and next are defined
       const { networkModified } = workspace
       const currentNetworkIsNotModified =
         networkModified[currentNetworkId] === undefined ??
