@@ -1,6 +1,6 @@
 import { IdType } from '../models/IdType'
 import { NetworkView, NodeView } from '../models/ViewModel'
-
+import { isEdgeId } from '../models/NetworkModel/impl/CyNetwork'
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { subscribeWithSelector } from 'zustand/middleware'
@@ -76,42 +76,71 @@ export const useViewModelStore = create(
       },
       toggleSelected: (networkId: IdType, eles: IdType[]) => {
         set((state) => {
-          eles.forEach((id) => {
-            const nodeView = state.viewModels[networkId]?.nodeViews[id]
-            const edgeView = state.viewModels[networkId]?.edgeViews[id]
-            if (nodeView != null) {
-              // nodeView.selected = !(nodeView.selected ?? false)
+          const networkView = state.viewModels[networkId]
+          const selectedNodesSet = new Set(networkView.selectedNodes)
+          const selectedEdgesSet = new Set(networkView.selectedEdges)
+
+          const nodeEles = eles.filter((id) => !isEdgeId(id))
+          const edgeEles = eles.filter((id) => isEdgeId(id))
+          nodeEles.forEach((id) => {
+            if (selectedNodesSet.has(id)) {
+              selectedNodesSet.delete(id)
             } else {
-              if (edgeView != null) {
-                // edgeView.selected = !(edgeView.selected ?? false)
-              }
+              selectedNodesSet.add(id)
             }
           })
+
+          edgeEles.forEach((id) => {
+            if (selectedEdgesSet.has(id)) {
+              selectedEdgesSet.delete(id)
+            } else {
+              selectedEdgesSet.add(id)
+            }
+          })
+
+          networkView.selectedNodes = Array.from(selectedNodesSet)
+          networkView.selectedEdges = Array.from(selectedEdgesSet)
         })
       },
 
       // select elements without unselecing anything else
       additiveSelect: (networkId: IdType, eles: IdType[]) => {
         set((state) => {
-          // const networkView = state.viewModels[networkId]
-          // set new selected elements
-          // eles.forEach((eleId) => {
-          //   const view =
-          //     networkView.nodeViews[eleId] ?? networkView.edgeViews[eleId]
-          //   view.selected = true
-          // })
+          const networkView = state.viewModels[networkId]
+          const selectedNodesSet = new Set()
+          const selectedEdgesSet = new Set()
+
+          for (let i = 0; i < eles.length; i++) {
+            const eleId = eles[i]
+            if (isEdgeId(eleId)) {
+              selectedEdgesSet.add(eleId)
+            } else {
+              selectedNodesSet.add(eleId)
+            }
+          }
+
+          networkView.selectedNodes = Array.from(selectedNodesSet) as IdType[]
+          networkView.selectedEdges = Array.from(selectedEdgesSet) as IdType[]
         })
       },
       // unselect elements without selecting anything else
       additiveUnselect: (networkId: IdType, eles: IdType[]) => {
         set((state) => {
-          // const networkView = state.viewModels[networkId]
-          // // set new selected elements
-          // eles.forEach((eleId) => {
-          //   const view =
-          //     networkView.nodeViews[eleId] ?? networkView.edgeViews[eleId]
-          //   view.selected = false
-          // })
+          const networkView = state.viewModels[networkId]
+
+          const selectedNodesSet = new Set()
+          const selectedEdgesSet = new Set()
+
+          for (let i = 0; i < eles.length; i++) {
+            const eleId = eles[i]
+            if (isEdgeId(eleId)) {
+              selectedEdgesSet.delete(eleId)
+            } else {
+              selectedNodesSet.delete(eleId)
+            }
+          }
+          networkView.selectedNodes = Array.from(selectedNodesSet) as IdType[]
+          networkView.selectedEdges = Array.from(selectedEdgesSet) as IdType[]
         })
       },
       setNodePosition(networkId, eleId, position) {
