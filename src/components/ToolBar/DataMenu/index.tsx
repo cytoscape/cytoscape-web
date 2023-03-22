@@ -7,7 +7,7 @@ import { LoadDemoNetworksMenuItem } from './LoadDemoNetworksMenuItem'
 import { LoadFromNdexMenuItem } from './LoadFromNdexMenuItem'
 import { SaveToNDExMenuItem } from './SaveToNDExMenuItem'
 import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
-import { UploadNetworkMenuItem } from './UpdateNetworkMenuItem'
+import { UploadNetworkMenuItem } from './UploadNetworkMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
 
 
