@@ -24,4 +24,13 @@ export const CyjsAlgorithms: Record<string, LayoutAlgorithm> = {
       boundingBox: { x1: 0, y1: 0, w: 1000, h: 1000 },
     },
   },
+
+  cose: {
+    name: 'cose',
+    description: 'COSE (CPU)',
+    parameters: {
+      name: 'cose',
+      boundingBox: { x1: 0, y1: 0, w: 1000, h: 1000 },
+    },
+  },
 }
