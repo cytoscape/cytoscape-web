@@ -63,7 +63,7 @@ export const DownloadNetworkMenuItem = (
     <MenuItem
       onClick={handleSaveCurrentNetworkToFile}
     >
-      Download Network to File
+      Download current network to File
     </MenuItem>
   )
     return <>{menuItem}</>
