@@ -207,13 +207,22 @@ const WorkSpaceEditor: React.FC = () => {
     }
   }, [currentNetworkId])
 
+  /**
+   * if there is no current network id set, set the first network in the workspace to the current network
+   */
   useEffect(() => {
     let curId: IdType = ''
-    if (Object.keys(summaries).length !== 0) {
-      curId = Object.keys(summaries)[0]
+    if (
+      currentNetworkId === undefined ||
+      currentNetworkId === '' ||
+      !workspace.networkIds.includes(currentNetworkId)
+    ) {
+      if (Object.keys(summaries).length !== 0) {
+        curId = Object.keys(summaries)[0]
+        setCurrentNetworkId(curId)
+      }
     }
-    setCurrentNetworkId(curId)
-  }, [summaries])
+  }, [summaries, currentNetworkId])
 
   // TODO: avoid hardcoding pixel values
   return (
