@@ -82,7 +82,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     )
 
     // overwrite the current network on NDEx
-    console.log(ndexClient)
     await ndexClient.updateNetworkFromRawCX2(currentNetworkId, cx)
 
     // update the network summary with the newest modification time
