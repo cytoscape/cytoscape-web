@@ -253,7 +253,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   // when hovered element changes, apply hover style to that element
   useEffect(() => {
     applyHoverUpdate()
-  }, [networkView.hoveredElement])
+  }, [networkView?.hoveredElement])
 
   /**
    * Initializes the Cytoscape.js instance
