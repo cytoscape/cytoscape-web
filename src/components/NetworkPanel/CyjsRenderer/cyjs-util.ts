@@ -72,7 +72,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     style: {
       'underlay-color': 'lightblue',
       'underlay-padding': 12,
-      'underlay-opacity': 0.3,
+      'underlay-opacity': 0.7,
       'underlay-shape': 'roundrectangle',
     },
   }
