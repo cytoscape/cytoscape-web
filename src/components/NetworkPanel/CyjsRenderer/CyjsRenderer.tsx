@@ -204,6 +204,19 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     console.log('#Time to  apply style: ', performance.now() - t1)
   }
 
+  const applyHoverUpdate = (): void => {
+    if (cy === null) {
+      return
+    }
+    if (networkView.hoveredElement !== undefined) {
+      cy.elements().removeClass('hover')
+      const ele = cy.getElementById(networkView.hoveredElement)
+      if (ele !== undefined) {
+        ele.addClass('hover')
+      }
+    }
+  }
+
   // when the id changes, reset the cyjs element by
   // removing all elements and event listeners
   // this assumes we have a new network to render that was different from the current one
@@ -239,7 +252,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
   // when hovered element changes, apply hover style to that element
   useEffect(() => {
-    applyStyleUpdate()
+    applyHoverUpdate()
   }, [networkView.hoveredElement])
 
   /**
