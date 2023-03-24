@@ -1,9 +1,9 @@
 import G6, { GraphData, NodeConfig, EdgeConfig, LayoutConfig } from '@antv/g6'
-import { IdType } from '../../../../models/IdType'
-import { Node, Edge } from '../../../../models/NetworkModel'
+import { IdType } from '../../../IdType'
+import { Node, Edge } from '../../../NetworkModel'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutEngine'
-import { G6Algorithms } from './G6Algorithms'
+import { G6Algorithms } from './Algorithms/G6Algorithms'
 
 const DEFAULT_ALGORITHM: LayoutAlgorithm = G6Algorithms.gForce
 
@@ -13,7 +13,13 @@ dummyContainer.style.display = 'none'
 export const G6Layout: LayoutEngine = {
   // G6 Layout
   name: 'G6',
+
+  description: 'G6 Graph Visualization Engine by AntV.',
+
+  defaultAlgorithmName: DEFAULT_ALGORITHM.name,
+
   algorithmNames: Object.keys(G6Algorithms),
+
   getAlgorithm: (name: string): LayoutAlgorithm => {
     return G6Algorithms[name] ?? DEFAULT_ALGORITHM
   },
@@ -22,15 +28,15 @@ export const G6Layout: LayoutEngine = {
     nodes: Node[],
     edges: Edge[],
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
-    name?: string,
+    algorithmName?: string,
   ): void => {
     const graph = new G6.Graph({
       container: dummyContainer,
       width: 1000,
       height: 1000,
       layout:
-        name !== undefined
-          ? (G6Algorithms[name].parameters as LayoutConfig)
+        algorithmName !== undefined
+          ? (G6Algorithms[algorithmName].parameters as LayoutConfig)
           : (DEFAULT_ALGORITHM.parameters as LayoutConfig),
     })
 

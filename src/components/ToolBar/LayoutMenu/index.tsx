@@ -2,13 +2,14 @@ import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import { Divider, MenuItem } from '@mui/material'
 import { useState } from 'react'
-import { LayoutManager } from '../../../utils/LayoutEngine/impl/LayoutManager'
-import { LayoutEngine } from '../../../utils/LayoutEngine/LayoutEngine'
+import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { Network } from '../../../models/NetworkModel'
+import { useLayoutStore } from '../../../store/LayoutStore'
+import { LayoutOptionDialog } from './LayoutOptionDialog'
 
 interface DropdownMenuProps {
   label: string
@@ -16,12 +17,19 @@ interface DropdownMenuProps {
 }
 
 export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
+  const [openDialog, setOpenDialog] = useState<boolean>(false)
+
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
   )
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
+  )
+
+  // const setLayoutOption = useLayoutStore((state) => state.setLayoutOption)
+  const layoutEngines: LayoutEngine[] = useLayoutStore(
+    (state) => state.layoutEngines,
   )
 
   const updateNodePositions: (
@@ -45,6 +53,11 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     setAnchorEl(null)
   }
 
+  const handleOpenDialog = (open: boolean): void => {
+    setAnchorEl(null)
+    setOpenDialog(open)
+  }
+
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
     // Update node positions in the view model
     updateNodePositions(currentNetworkId, positionMap)
@@ -52,7 +65,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
   const getMenuItems = (): any => {
     const menuItems: any[] = []
-    LayoutManager.layoutEngines.forEach((layoutEngine: LayoutEngine) => {
+    layoutEngines.forEach((layoutEngine: LayoutEngine) => {
       const engineName: string = layoutEngine.name
       const names: string[] = layoutEngine.algorithmNames
       names.forEach((name: string) => {
@@ -64,8 +77,9 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             if (target === undefined) {
               return
             }
-            const engine: LayoutEngine =
-              LayoutManager.getLayoutEngine(engineName)
+            const engine: LayoutEngine = layoutEngines.find(
+              (engine) => engine.name === engineName,
+            ) as LayoutEngine
             const { nodes, edges } = target
             engine.apply(nodes, edges, afterLayout, name)
           },
@@ -113,9 +127,13 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
           'aria-labelledby': label,
         }}
       >
+        <MenuItem>Apply default layout</MenuItem>
+        <Divider />
         {getMenuItems()}
         <Divider />
+        <MenuItem onClick={() => handleOpenDialog(true)}>Settings...</MenuItem>
       </Menu>
+      <LayoutOptionDialog open={openDialog} setOpen={setOpenDialog} />
     </div>
   )
 }

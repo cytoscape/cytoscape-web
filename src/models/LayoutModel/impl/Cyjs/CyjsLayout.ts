@@ -1,7 +1,7 @@
-import { Node, Edge } from '../../../../models/NetworkModel'
-import { IdType } from '../../../../models/IdType'
+import { Node, Edge } from '../../../NetworkModel'
+import { IdType } from '../../../IdType'
 import { LayoutEngine } from '../../LayoutEngine'
-import { CyjsAlgorithms } from './CyjsAlgorithms'
+import { CyjsAlgorithms } from './Algorithms/CyjsAlgorithms'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import cytoscape from 'cytoscape'
 

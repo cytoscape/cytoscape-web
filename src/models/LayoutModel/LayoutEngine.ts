@@ -1,21 +1,25 @@
-import { IdType } from '../../models/IdType'
-import { Node, Edge } from '../../models/NetworkModel'
+import { IdType } from '../IdType'
+import { Node, Edge } from '../NetworkModel'
 import { LayoutAlgorithm } from './LayoutAlgorithm'
 
 export interface LayoutEngine {
   // Name of this layout engine
-  name: string
+  readonly name: string
+
+  // Detailed description of this layout engine itself
+  readonly description?: string
 
   // Algorithm name to use by default
   defaultAlgorithmName?: string
 
   // List of available algorithm names
-  algorithmNames: string[]
+  readonly algorithmNames: string[]
 
   // Get details of the algorithm by name
   getAlgorithm: (name: string) => LayoutAlgorithm
 
   apply: (
+    // Graph topology
     nodes: Node[],
     edges: Edge[],
 
@@ -23,6 +27,6 @@ export interface LayoutEngine {
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
 
     // (Optional) Name of the algorithm to be used in apply function.
-    layoutName?: string,
+    algorithmName?: string,
   ) => void
 }
