@@ -1,42 +1,73 @@
 import { useState } from 'react'
 import {
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogContentText,
   DialogTitle,
+  Divider,
   FormControlLabel,
-  Switch,
-  TextField,
+  Grid,
+  List,
+  Paper,
+  PaperProps,
 } from '@mui/material'
+import Draggable from 'react-draggable'
+import { useLayoutStore } from '../../../store/LayoutStore'
+import { LayoutSelector } from './LayoutSelector'
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { ValueEditor } from './ValueEditor'
+import { ValueType } from '../../../models/TableModel'
+import { Property } from '../../../models/PropertyModel/Property'
+import { Network } from '../../../models/NetworkModel'
+import { IdType } from '../../../models/IdType'
+
+const DraggablePaper = (props: PaperProps): JSX.Element => {
+  return (
+    <Draggable
+      handle="#draggable-dialog-title"
+      cancel={'[class*="MuiDialogContent-root"]'}
+    >
+      <Paper {...props} />
+    </Draggable>
+  )
+}
 
 interface LayoutOptionDialogProps {
+  afterLayout: (positionMap: Map<IdType, [number, number]>) => void
+  network: Network
   open: boolean
   setOpen: (open: boolean) => void
 }
 export const LayoutOptionDialog = ({
+  network,
+  afterLayout,
   open,
   setOpen,
 }: LayoutOptionDialogProps): JSX.Element => {
-  const [name, setName] = useState<string>('test')
-  const [isEnabled, setIsEnabled] = useState(false)
-  const [number, setNumber] = useState<number>(10)
+  const preferredLayout: [string, string] = useLayoutStore(
+    (state) => state.preferredLayout,
+  )
+  const layoutEngines: LayoutEngine[] = useLayoutStore(
+    (state) => state.layoutEngines,
+  )
+
+  const defEngine = layoutEngines.find(
+    (engine) => engine.name === preferredLayout[0],
+  )
+
+  const defAlgorithm =
+    defEngine?.getAlgorithm(preferredLayout[1]) ??
+    layoutEngines[0].getAlgorithm(layoutEngines[0].algorithmNames[0])
+  const [engine, setEngine] = useState<LayoutEngine | undefined>(defEngine)
+  const [algorithm, setAlgorithm] = useState<LayoutAlgorithm>(defAlgorithm)
+
+  const setDefaultLayout: (engineName: string, algorithmName: string) => void =
+    useLayoutStore((state) => state.setPreferredLayout)
 
   const handleClose = (): void => {
     setOpen(false)
-  }
-
-  const handleNameChange = (event: any): void => {
-    setName(event.target.value)
-  }
-
-  const handleEnabledChange = (): void => {
-    setIsEnabled(!isEnabled)
-  }
-
-  const handleNumberChange = (event: any): void => {
-    setNumber(event.target.value)
   }
 
   const handleUpdate = (): void => {
@@ -44,43 +75,91 @@ export const LayoutOptionDialog = ({
     setOpen(false)
   }
 
+  const handleChange = (engineName: string, algorithmName: string): void => {
+    setDefaultLayout(engineName, algorithmName)
+
+    const newEngine = layoutEngines.find((e) => e.name === engineName)
+    if (newEngine === undefined) {
+      return
+    }
+
+    setEngine(newEngine)
+
+    const newAlgorithm: LayoutAlgorithm = newEngine.getAlgorithm(algorithmName)
+    if (newAlgorithm === undefined) {
+      return
+    }
+
+    setAlgorithm(newAlgorithm)
+  }
+
+  const handleApply = (): void => {
+    // Perform apply layout here
+
+    engine?.apply(network.nodes, network.edges, afterLayout, algorithm.name)
+  }
+
+  const { editables } = algorithm
+  let editableList: Array<Property<ValueType>> = []
+  if (editables !== undefined) {
+    editableList = editables
+  }
   return (
-    <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Edit Layout Options</DialogTitle>
-      <DialogContent>
-        <DialogContentText>
-          Modify the values and click Update to save changes.
-        </DialogContentText>
-        <TextField
-          label="Name"
-          value={name}
-          onChange={handleNameChange}
-          fullWidth
-          margin="normal"
-        />
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isEnabled}
-              onChange={handleEnabledChange}
-              color="primary"
+    <Dialog
+      maxWidth={'md'}
+      open={open}
+      onClose={handleClose}
+      PaperComponent={DraggablePaper}
+      aria-labelledby="draggable-dialog-title"
+    >
+      <DialogTitle
+        sx={{
+          padding: 1,
+        }}
+      >
+        Layout Option Editor
+      </DialogTitle>
+      <Divider />
+
+      <DialogContent sx={{ margin: 0, padding: 1, paddingTop: 0 }}>
+        <Grid container spacing={0} alignItems={'center'}>
+          <Grid md={12}>
+            <LayoutSelector
+              title={'Preferred Layout'}
+              setLayout={handleChange}
             />
-          }
-          label="Enabled"
-        />
-        <TextField
-          label="Number"
-          value={number}
-          onChange={handleNumberChange}
-          type="number"
-          fullWidth
-          margin="normal"
-        />
+          </Grid>
+          <Grid>
+            <FormControlLabel
+              control={<Checkbox defaultChecked />}
+              label="Set as default"
+            />
+          </Grid>
+        </Grid>
+
+        <List dense>
+          {editableList.map((property: Property<ValueType>) => {
+            return (
+              <ValueEditor
+                key={property.name}
+                optionName={property.name}
+                valueType={property.type}
+                value={property.value}
+                setValue={(value: ValueType) => {}}
+              />
+            )
+          })}
+        </List>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleClose} color="info">
+          Cancel
+        </Button>
         <Button onClick={handleUpdate} color="primary">
           Update
+        </Button>
+        <Button onClick={handleApply} color="secondary">
+          Apply Layout
         </Button>
       </DialogActions>
     </Dialog>

@@ -37,7 +37,8 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  const target: Network | undefined = networks.get(currentNetworkId)
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  const target: Network = networks.get(currentNetworkId) ?? ({} as Network)
 
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -133,7 +134,12 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
         <Divider />
         <MenuItem onClick={() => handleOpenDialog(true)}>Settings...</MenuItem>
       </Menu>
-      <LayoutOptionDialog open={openDialog} setOpen={setOpenDialog} />
+      <LayoutOptionDialog
+        afterLayout={afterLayout}
+        network={target}
+        open={openDialog}
+        setOpen={setOpenDialog}
+      />
     </div>
   )
 }

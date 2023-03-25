@@ -7,13 +7,19 @@ import { G6Layout } from '../models/LayoutModel/impl/G6/G6Layout'
 import { CyjsLayout } from '../models/LayoutModel/impl/Cyjs/CyjsLayout'
 import { Property } from '../models/PropertyModel/Property'
 
-const DefaultLayoutEngines: LayoutEngine[] = [G6Layout, CyjsLayout]
+const LayoutEngines: LayoutEngine[] = [G6Layout, CyjsLayout]
+
+const defEngine: LayoutEngine = G6Layout
+const defAlgorithmName: string = G6Layout.defaultAlgorithmName
+// const defaultLayoutAlgorithm: LayoutAlgorithm =
+//   G6Layout.getAlgorithm(defAlgorithmName)
 
 /**
  * Store for layout parameters
  */
 interface LayoutState {
   readonly layoutEngines: LayoutEngine[]
+  preferredLayout: [string, string]
 }
 
 interface LayoutAction {
@@ -23,11 +29,46 @@ interface LayoutAction {
     propertyName: string,
     propertyValue: T,
   ) => void
+  setPreferredLayout: (engineName: string, algorithmName: string) => void
+}
+
+const getLayout = (
+  engineName: string,
+  algorithmName: string,
+): LayoutAlgorithm | undefined => {
+  const engine: LayoutEngine | undefined = LayoutEngines.find(
+    (engine: { name: string }) => engine.name === engineName,
+  )
+
+  if (engine === undefined) {
+    return
+  }
+
+  const algorithm: LayoutAlgorithm = engine.getAlgorithm(algorithmName)
+
+  if (algorithm === undefined) {
+    return
+  }
+
+  return algorithm
 }
 
 export const useLayoutStore = create(
   immer<LayoutState & LayoutAction>((set) => ({
-    layoutEngines: DefaultLayoutEngines,
+    layoutEngines: LayoutEngines,
+    preferredLayout: [defEngine.name, defAlgorithmName],
+
+    setPreferredLayout(engineName: string, algorithmName: string) {
+      set((state) => {
+        const algorithm: LayoutAlgorithm | undefined = getLayout(
+          engineName,
+          algorithmName,
+        )
+        if (algorithm !== undefined) {
+          state.preferredLayout = [engineName, algorithmName]
+        }
+      })
+    },
 
     setLayoutOption<T extends ValueType>(
       engineName: string,
@@ -36,16 +77,10 @@ export const useLayoutStore = create(
       propertyValue: T,
     ) {
       set((state) => {
-        const engine: LayoutEngine | undefined = state.layoutEngines.find(
-          (engine: { name: string }) => engine.name === engineName,
+        const algorithm: LayoutAlgorithm | undefined = getLayout(
+          engineName,
+          algorithmName,
         )
-
-        if (engine === undefined) {
-          return
-        }
-
-        const algorithm: LayoutAlgorithm = engine.getAlgorithm(algorithmName)
-
         if (algorithm === undefined) {
           return
         }

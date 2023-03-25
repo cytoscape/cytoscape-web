@@ -9,6 +9,7 @@ export const CyjsLayout: LayoutEngine = {
   // Cytoscape.js Layout
   name: 'Cytoscape.js',
   algorithmNames: Object.keys(CyjsAlgorithms),
+  defaultAlgorithmName: 'grid',
   getAlgorithm: (name: string): LayoutAlgorithm => {
     return CyjsAlgorithms[name] ?? CyjsAlgorithms.preset
   },

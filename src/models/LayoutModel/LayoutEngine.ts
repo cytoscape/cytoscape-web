@@ -10,7 +10,7 @@ export interface LayoutEngine {
   readonly description?: string
 
   // Algorithm name to use by default
-  defaultAlgorithmName?: string
+  defaultAlgorithmName: string
 
   // List of available algorithm names
   readonly algorithmNames: string[]
