@@ -6,8 +6,9 @@ import { ValueType } from '../models/TableModel'
 import { G6Layout } from '../models/LayoutModel/impl/G6/G6Layout'
 import { CyjsLayout } from '../models/LayoutModel/impl/Cyjs/CyjsLayout'
 import { Property } from '../models/PropertyModel/Property'
+import { CosmosLayout } from '../models/LayoutModel/impl/Cosmos/CosmosLayout'
 
-const LayoutEngines: LayoutEngine[] = [G6Layout, CyjsLayout]
+const LayoutEngines: LayoutEngine[] = [G6Layout, CyjsLayout, CosmosLayout]
 
 const defEngine: LayoutEngine = G6Layout
 const defAlgorithmName: string = G6Layout.defaultAlgorithmName
