@@ -1,4 +1,4 @@
-import { IconButton } from '@mui/material'
+import { IconButton, Tooltip } from '@mui/material'
 import { ZoomOutMap } from '@mui/icons-material'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
 
@@ -17,13 +17,15 @@ export const FitButton = (): JSX.Element => {
   }
 
   return (
-    <IconButton
-      onClick={handleClick}
-      aria-label="fit"
-      size="large"
-      disableFocusRipple={true}
-    >
-      <ZoomOutMap fontSize="inherit" />
-    </IconButton>
+    <Tooltip title={`Fit network to the window`} placement="top" arrow>
+      <IconButton
+        onClick={handleClick}
+        aria-label="fit"
+        size="large"
+        disableFocusRipple={true}
+      >
+        <ZoomOutMap fontSize="inherit" />
+      </IconButton>
+    </Tooltip>
   )
 }

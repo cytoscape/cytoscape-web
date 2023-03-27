@@ -1,24 +1,25 @@
-import { Divider, Toolbar } from '@mui/material'
+import { Box, Divider } from '@mui/material'
 import { ApplyLayoutButton } from './ApplyLayoutButton'
 import { FitButton } from './FitButton'
 
 export const FloatingToolBar = (): JSX.Element => {
   return (
-    <Toolbar
+    <Box
       sx={{
-        zIndex: 900,
-        left: '1em',
-        bottom: '5em',
-        height: '4em',
-        width: '30em',
-        background: 'rgba(250, 250, 250, 0.8)',
+        display: 'flex',
+        position: 'absolute',
+        alignItems: 'center',
+        bottom: '1em',
+        right: '1em',
+        zIndex: 2000,
         borderRadius: '0.5em',
-        // border: '4px solid blue',
+        backgroundColor: 'rgba(250, 250, 250, 0.8)',
+        border: '1px solid #AAAAAA',
       }}
     >
-      <FitButton />
-      <ApplyLayoutButton />
       <Divider orientation="vertical" flexItem />
-    </Toolbar>
+      <ApplyLayoutButton />
+      <FitButton />
+    </Box>
   )
 }

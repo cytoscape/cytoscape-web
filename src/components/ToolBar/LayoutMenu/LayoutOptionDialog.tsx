@@ -67,7 +67,7 @@ export const LayoutOptionDialog = ({
     useLayoutStore((state) => state.setPreferredLayout)
 
   const handleClose = (): void => {
-    setOpen(false)
+    // setOpen(false)
   }
 
   const handleUpdate = (): void => {
@@ -153,7 +153,7 @@ export const LayoutOptionDialog = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} color="info">
-          Cancel
+          Close
         </Button>
         <Button onClick={handleUpdate} color="primary">
           Update

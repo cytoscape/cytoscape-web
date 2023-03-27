@@ -27,7 +27,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     (state) => state.workspace.currentNetworkId,
   )
 
-  let isRunning: boolean = useLayoutStore((state) => state.isRunning)
+  const setIsRunning = useLayoutStore((state) => state.setIsRunning)
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
   )
@@ -62,8 +62,8 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
     // Update node positions in the view model
     updateNodePositions(currentNetworkId, positionMap)
-    isRunning = false
-    console.log('Finished layout', isRunning)
+    setIsRunning(false)
+    console.log('Finished layout')
   }
 
   const getMenuItems = (): any => {
@@ -84,7 +84,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
               (engine) => engine.name === engineName,
             ) as LayoutEngine
             const { nodes, edges } = target
-            isRunning = true
+            setIsRunning(true)
             engine.apply(nodes, edges, afterLayout, name)
           },
         }

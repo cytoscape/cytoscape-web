@@ -20,6 +20,7 @@ import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
 import { addObjects } from './cyjs-factory'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
+import { CircularProgress, Typography } from '@mui/material'
 interface NetworkRendererProps {
   network: Network
 }
@@ -57,6 +58,9 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const [cyStyle, setCyStyle] = useState<any[]>([])
   const [renderedId, setRenderedId] = useState<string>('')
 
+  // TO avoid unnecessary re-rendering / fit
+  const [nodesMoved, setNodesMoved] = useState<boolean>(false)
+
   const networkView: NetworkView = viewModels[id]
 
   const vs: VisualStyle = visualStyles[id]
@@ -69,11 +73,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
   const [bgColor, setBgColor] = useState<string>('#FFFFFF')
   useEffect(() => {
-    if (isRunning) {
-      setBgColor('#FFFF00')
-      return
-    }
-
     if (vs?.networkBackgroundColor !== undefined) {
       setBgColor(vs.networkBackgroundColor.defaultValue as string)
     } else {
@@ -170,6 +169,9 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
       // Moving nodes
       cy.on('dragfree', 'node', (e: EventObject): void => {
+        // Enable flag to avoid unnecessary fit
+        setNodesMoved(true)
+
         const targetNode = e.target
         const nodeId: IdType = targetNode.data('id')
         const position = targetNode.position()
@@ -281,6 +283,12 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       return
     }
 
+    // This means nodes are moved by hand. Does not need to apply fit
+    if (nodesMoved) {
+      setNodesMoved(false)
+      return
+    }
+
     // Update position
     const curView = viewModels[id]
     const nodeViews = curView.nodeViews
@@ -291,19 +299,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         y: nodeViews[cyNodeId].y,
       })
     })
-    const preset = cy.layout({
-      name: 'preset',
-    })
-    preset.run()
+    cy.fit()
   }, [networkView?.nodeViews])
-
-  // // when hovered element changes, apply hover style to that element
-  // useEffect(() => {
-  //   if (hoveredElement === null || hoveredElement === undefined) {
-  //     return
-  //   }
-  //   applyHoverStyle()
-  // }, [hoveredElement])
 
   /**
    * Initializes the Cytoscape.js instance
@@ -344,15 +341,34 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   }, [cy])
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        height: '100%',
-        backgroundColor: bgColor,
-      }}
-      id="cy-container"
-      ref={cyContainer}
-    />
+    <>
+      {isRunning ? (
+        <Box
+          sx={{
+            display: 'flex',
+            position: 'absolute',
+            alignItems: 'center',
+            top: '1em',
+            left: '1em',
+            zIndex: 2000,
+          }}
+        >
+          <CircularProgress size={40} />
+          <Typography variant="h6" sx={{ marginLeft: '1em' }}>
+            Applying layout...
+          </Typography>
+        </Box>
+      ) : null}
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          backgroundColor: bgColor,
+        }}
+        id="cy-container"
+        ref={cyContainer}
+      />
+    </>
   )
 }
 

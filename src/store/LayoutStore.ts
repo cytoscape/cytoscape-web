@@ -75,7 +75,7 @@ export const useLayoutStore = create(
         }
       })
     },
-    setIsRunning(isRunning) {
+    setIsRunning(isRunning: boolean) {
       set((state) => {
         state.isRunning = isRunning
       })

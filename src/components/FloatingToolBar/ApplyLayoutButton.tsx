@@ -1,4 +1,4 @@
-import { IconButton } from '@mui/material'
+import { IconButton, Tooltip } from '@mui/material'
 import { Refresh } from '@mui/icons-material'
 import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
@@ -23,6 +23,10 @@ export const ApplyLayoutButton = (): JSX.Element => {
     (state) => state.preferredLayout,
   )
 
+  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
+    (state) => state.setIsRunning,
+  )
+
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
   )
@@ -38,10 +42,12 @@ export const ApplyLayoutButton = (): JSX.Element => {
 
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
     updateNodePositions(currentNetworkId, positionMap)
+    setIsRunning(false)
   }
 
   const handleClick = (): void => {
     if (network !== undefined && engine !== undefined) {
+      setIsRunning(true)
       engine.apply(
         network.nodes,
         network.edges,
@@ -54,13 +60,19 @@ export const ApplyLayoutButton = (): JSX.Element => {
   }
 
   return (
-    <IconButton
-      onClick={handleClick}
-      aria-label="apply-layout"
-      size="large"
-      disableFocusRipple={true}
+    <Tooltip
+      title={`Apply default layout (${defaultLayout.engineName} - ${defaultLayout.name})`}
+      placement="top"
+      arrow
     >
-      <Refresh fontSize="inherit" />
-    </IconButton>
+      <IconButton
+        onClick={handleClick}
+        aria-label="apply-layout"
+        size="large"
+        disableFocusRipple={true}
+      >
+        <Refresh fontSize="inherit" />
+      </IconButton>
+    </Tooltip>
   )
 }
