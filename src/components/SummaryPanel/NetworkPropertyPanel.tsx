@@ -51,30 +51,30 @@ export const NetworkPropertyPanel = ({
     setExpanded(!expanded)
   }
 
-
-  const backgroundColor: string = currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
+  const backgroundColor: string =
+    currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
 
   return (
     <Accordion
       expanded={expanded}
       onChange={handleChange}
       onClick={() => {
-        setTimeout(() => {
-          setCurrentNetworkId(id)
-        }, 200)
+        setCurrentNetworkId(id)
       }}
     >
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         aria-controls="network-props-content"
         id="network-props-header"
-        sx={{ backgroundColor, width: '100%'}}
+        sx={{ backgroundColor, width: '100%' }}
       >
-        <Box sx={{ width: '100%'}}>
-          <Typography variant={'body1'} sx={{ width: '100%' }}>{summary.name}</Typography>
+        <Box sx={{ width: '100%' }}>
+          <Typography variant={'body1'} sx={{ width: '100%' }}>
+            {summary.name}
+          </Typography>
           <Typography
             variant={'subtitle2'}
-            sx={{width: '100%', color: theme.palette.text.secondary}}
+            sx={{ width: '100%', color: theme.palette.text.secondary }}
           >
             {`N: ${summary.nodeCount} (${selectedNodes.length}) / 
           E: ${summary.edgeCount} (${selectedEdges.length})`}
