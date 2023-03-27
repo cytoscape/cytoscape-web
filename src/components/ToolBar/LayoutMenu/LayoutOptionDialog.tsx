@@ -62,21 +62,40 @@ export const LayoutOptionDialog = ({
   //   layoutEngines[0].getAlgorithm(layoutEngines[0].algorithmNames[0])
   const [engine, setEngine] = useState<LayoutEngine | undefined>(defEngine)
   const [algorithm, setAlgorithm] = useState<LayoutAlgorithm>(preferredLayout)
+  const [selected, setSelected] = useState<[string, string]>([
+    preferredLayout.engineName,
+    preferredLayout.name,
+  ])
+
+  // Check if the current layout is the default layout
+  const [isDefault, setIsDefault] = useState<boolean>(false)
 
   const setDefaultLayout: (engineName: string, algorithmName: string) => void =
     useLayoutStore((state) => state.setPreferredLayout)
 
   const handleClose = (): void => {
-    // setOpen(false)
+    setOpen(false)
   }
 
   const handleUpdate = (): void => {
     // Perform update logic here
-    setOpen(false)
+    // setOpen(false)
   }
 
-  const handleChange = (engineName: string, algorithmName: string): void => {
-    setDefaultLayout(engineName, algorithmName)
+  const setSelectedLayout = (
+    engineName: string,
+    algorithmName: string,
+  ): void => {
+    if (
+      engineName === preferredLayout.engineName &&
+      algorithmName === preferredLayout.name
+    ) {
+      setIsDefault(true)
+    } else {
+      setIsDefault(false)
+    }
+
+    setSelected([engineName, algorithmName])
 
     const newEngine = layoutEngines.find((e) => e.name === engineName)
     if (newEngine === undefined) {
@@ -97,6 +116,14 @@ export const LayoutOptionDialog = ({
     // Perform apply layout here
 
     engine?.apply(network.nodes, network.edges, afterLayout, algorithm.name)
+  }
+
+  const handleDefaultChanged = (event: any): void => {
+    const checked: boolean = event.target.checked
+    if (checked) {
+      setDefaultLayout(selected[0], selected[1])
+      setIsDefault(true)
+    }
   }
 
   const { editables } = algorithm
@@ -125,13 +152,20 @@ export const LayoutOptionDialog = ({
         <Grid container spacing={0} alignItems={'center'}>
           <Grid md={12}>
             <LayoutSelector
-              title={'Preferred Layout'}
-              setLayout={handleChange}
+              selectedEngine={selected[0]}
+              selectedAlgorithm={selected[1]}
+              setSelected={setSelectedLayout}
             />
           </Grid>
           <Grid>
             <FormControlLabel
-              control={<Checkbox defaultChecked />}
+              control={
+                <Checkbox
+                  checked={isDefault}
+                  disabled={isDefault}
+                  onChange={handleDefaultChanged}
+                />
+              }
               label="Set as default"
             />
           </Grid>

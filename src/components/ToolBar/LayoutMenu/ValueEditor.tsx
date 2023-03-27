@@ -46,16 +46,13 @@ export const ValueEditor = ({
             variant="standard"
             defaultValue={value}
             sx={{ maxWidth: '4em', justifyContent: 'right' }}
+            onChange={handleChange}
           />
         }
         disablePadding
       >
         <ListItemButton>
-          <ListItemText
-            id={optionName}
-            primary={optionName}
-            onChange={handleChange}
-          />
+          <ListItemText id={optionName} primary={optionName} />
         </ListItemButton>
       </ListItem>
     )
@@ -77,7 +74,7 @@ export const ValueEditor = ({
           <ListItemText
             id={optionName}
             primary={optionName}
-            onChange={handleChange}
+            // onChange={handleChange}
             sx={{ maxWidth: 'sm' }}
           />
         </ListItemButton>
@@ -93,6 +90,7 @@ export const ValueEditor = ({
             id="standard-basic"
             variant="standard"
             defaultValue={value}
+            onChange={handleChange}
           />
         }
         disablePadding
@@ -101,11 +99,7 @@ export const ValueEditor = ({
           <ListItemAvatar>
             <Avatar />
           </ListItemAvatar>
-          <ListItemText
-            id={optionName}
-            primary={optionName}
-            onChange={handleChange}
-          />
+          <ListItemText id={optionName} primary={optionName} />
         </ListItemButton>
       </ListItem>
     )

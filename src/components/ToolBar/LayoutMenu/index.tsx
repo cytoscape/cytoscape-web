@@ -131,8 +131,6 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
           'aria-labelledby': label,
         }}
       >
-        <MenuItem>Apply default layout</MenuItem>
-        <Divider />
         {getMenuItems()}
         <Divider />
         <MenuItem onClick={() => handleOpenDialog(true)}>Settings...</MenuItem>

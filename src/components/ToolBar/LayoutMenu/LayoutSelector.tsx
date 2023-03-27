@@ -1,26 +1,24 @@
-import InputLabel from '@mui/material/InputLabel'
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
-import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { ReactElement, useEffect, useState } from 'react'
 
 interface PreferredLayoutSelectorProps {
-  title: string
-  setLayout: (engineName: string, algorithmName: string) => void
+  selectedEngine: string
+  selectedAlgorithm: string
+  setSelected: (engineName: string, algorithmName: string) => void
 }
 
 const getListItem = (engine: string, algorithm: string): string =>
   `${engine}-${algorithm}`
 
 export const LayoutSelector = ({
-  title,
-  setLayout,
+  selectedEngine,
+  selectedAlgorithm,
+  setSelected,
 }: PreferredLayoutSelectorProps): ReactElement => {
-  const preferredLayout: LayoutAlgorithm = useLayoutStore(
-    (state) => state.preferredLayout,
-  )
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
   )
@@ -30,7 +28,7 @@ export const LayoutSelector = ({
 
   const handleChange = (event: SelectChangeEvent): void => {
     const [engine, algorithm] = event.target.value.split('-')
-    setLayout(engine, algorithm)
+    setSelected(engine, algorithm)
   }
 
   useEffect(() => {
@@ -45,13 +43,10 @@ export const LayoutSelector = ({
 
   return (
     <FormControl fullWidth variant="standard" sx={{ margin: 0, marginTop: 1 }}>
-      <InputLabel id="preferred-layout" variant="standard">
-        {title}
-      </InputLabel>
       <Select
-        labelId="preferred-layout"
-        id="preferred-layout-select"
-        value={getListItem(preferredLayout.engineName, preferredLayout.name)}
+        labelId="default-layout"
+        id="default-layout-select"
+        value={getListItem(selectedEngine, selectedAlgorithm)}
         label="Layout"
         onChange={handleChange}
       >
