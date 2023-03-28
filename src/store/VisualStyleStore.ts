@@ -106,10 +106,17 @@ const persist =
       async (args) => {
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
+        console.log('persist middleware updating visual style store')
+
         set(args)
         const updated = get().visualStyles[currentNetworkId]
-        console.log('updated', updated)
-        await putVisualStyleToDb(currentNetworkId, updated).then(() => {})
+        console.log('updated visual style: ', updated)
+
+        const deleted = updated === undefined
+
+        if (!deleted) {
+          await putVisualStyleToDb(currentNetworkId, updated).then(() => {})
+        }
       },
       get,
       api,
@@ -374,7 +381,7 @@ export const useVisualStyleStore = create(
             return acc
           }, {})
           void deleteVisualStyleFromDb(networkId).then(() => {
-            console.log('# deleted visual style from db')
+            console.log('Deleted visual style from db', networkId)
           })
           return {
             ...state,

@@ -163,6 +163,7 @@ export const useNetworkSummaryStore = create(
       if (summary === undefined) {
         return
       }
+      void putNetworkSummaryToDb({ ...summary, ...summaryUpdate })
       set((state) => {
         const newSummary = { ...summary, ...summaryUpdate }
         const newSummaries = { ...state.summaries, [networkId]: newSummary }
@@ -180,7 +181,7 @@ export const useNetworkSummaryStore = create(
             newSummaries[key] = summaries[key]
           }
         })
-        deleteNetworkSummaryFromDb(networkId)
+        void deleteNetworkSummaryFromDb(networkId)
           .then((val) => {
             console.log('Summary deleted', networkId, val)
           })

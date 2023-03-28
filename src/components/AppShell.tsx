@@ -1,8 +1,8 @@
 import { Box } from '@mui/material'
 import { ReactElement, useEffect, useRef } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Workspace } from '../models/WorkspaceModel'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
+import { getWorkspaceFromDb } from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
 
@@ -17,8 +17,9 @@ const AppShell = (): ReactElement => {
 
   const navigate = useNavigate()
   const location = useLocation()
-  const initWorkspace = useWorkspaceStore((state) => state.init)
-  const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
+  const setWorkspace = useWorkspaceStore((state) => state.set)
+  const workspace = useWorkspaceStore((state) => state.workspace)
+
   const { id } = workspace
 
   useEffect(() => {
@@ -26,7 +27,9 @@ const AppShell = (): ReactElement => {
       initializedRef.current = true
       // TODO: Is this the best way to check the initial state?
       if (id === '') {
-        initWorkspace()
+        void getWorkspaceFromDb().then((workspace) => {
+          setWorkspace(workspace)
+        })
       }
     }
   }, [])
