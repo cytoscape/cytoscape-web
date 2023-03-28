@@ -18,6 +18,8 @@ import { IdType } from '../../../models/IdType'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
 import { addObjects } from './cyjs-factory'
+import { useLayoutStore } from '../../../store/LayoutStore'
+import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 interface NetworkRendererProps {
   network: Network
 }
@@ -31,6 +33,8 @@ const HOVER_STATE_NAME: string = 'hover'
  */
 const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const { id } = network
+
+  const isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
   const setViewModel = useViewModelStore((state) => state.setViewModel)
   const setVisualStyle = useVisualStyleStore((state) => state.set)
@@ -56,10 +60,35 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const networkView: NetworkView = viewModels[id]
 
   const vs: VisualStyle = visualStyles[id]
+
+  // Extract background color from visual style as a special case
+  // let bgColor: string =
+  //   vs?.networkBackgroundColor !== undefined
+  //     ? (vs.networkBackgroundColor.defaultValue as string)
+  //     : '#FFFFFF'
+
+  const [bgColor, setBgColor] = useState<string>('#FFFFFF')
+  useEffect(() => {
+    if (isRunning) {
+      setBgColor('#FFFF00')
+      return
+    }
+
+    if (vs?.networkBackgroundColor !== undefined) {
+      setBgColor(vs.networkBackgroundColor.defaultValue as string)
+    } else {
+      setBgColor('#FFFFFF')
+    }
+  }, [vs, isRunning])
+
   const table = tables[id]
 
   const [cy, setCy] = useState<any>(null)
   const cyContainer = useRef(null)
+
+  const setRendererFunction = useRendererFunctionStore(
+    (state) => state.setFunction,
+  )
 
   // Avoid duplicate initialization of Cyjs
   const isInitialized = useRef(false)
@@ -252,7 +281,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       return
     }
 
-    console.log('4CyjsRenderer: useEffect: nodeviews')
     // Update position
     const curView = viewModels[id]
     const nodeViews = curView.nodeViews
@@ -287,11 +315,18 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
+        wheelSensitivity: 0.1,
       })
       setCy(cy)
       // Now add event handlers. This is necessary only once.
       // addEventHandlers(cy)
       console.info('Cyjs renderer is ready.')
+      const fitFunction = (): void => {
+        if (cy !== null) {
+          cy.fit()
+        }
+      }
+      setRendererFunction('cyjs', 'fit', fitFunction)
     }
 
     return () => {
@@ -313,6 +348,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       sx={{
         width: '100%',
         height: '100%',
+        backgroundColor: bgColor,
       }}
       id="cy-container"
       ref={cyContainer}

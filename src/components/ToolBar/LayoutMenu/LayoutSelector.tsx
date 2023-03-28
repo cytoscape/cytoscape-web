@@ -2,7 +2,7 @@ import InputLabel from '@mui/material/InputLabel'
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
-import { LayoutEngine } from '../../../models/LayoutModel'
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { ReactElement, useEffect, useState } from 'react'
 
@@ -18,7 +18,7 @@ export const LayoutSelector = ({
   title,
   setLayout,
 }: PreferredLayoutSelectorProps): ReactElement => {
-  const preferredLayout: [string, string] = useLayoutStore(
+  const preferredLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredLayout,
   )
   const layoutEngines: LayoutEngine[] = useLayoutStore(
@@ -51,7 +51,7 @@ export const LayoutSelector = ({
       <Select
         labelId="preferred-layout"
         id="preferred-layout-select"
-        value={getListItem(preferredLayout[0], preferredLayout[1])}
+        value={getListItem(preferredLayout.engineName, preferredLayout.name)}
         label="Layout"
         onChange={handleChange}
       >

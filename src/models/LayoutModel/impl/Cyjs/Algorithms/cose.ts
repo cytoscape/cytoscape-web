@@ -2,6 +2,7 @@ import { LayoutAlgorithm } from '../../..'
 
 export const cose: LayoutAlgorithm = {
   name: 'cose',
+  engineName: 'Cytoscape.js',
   description: 'COSE (CPU)',
   parameters: {
     name: 'cose',

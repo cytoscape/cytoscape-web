@@ -3,6 +3,7 @@ import { LayoutAlgorithm } from '../../../LayoutAlgorithm'
 
 export const dagre: LayoutAlgorithm = {
   name: 'dagre',
+  engineName: 'G6',
   description: 'DAGRE layout, for DAGs and trees',
   parameters: {
     type: 'dagre',

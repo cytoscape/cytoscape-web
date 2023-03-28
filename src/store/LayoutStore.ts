@@ -10,8 +10,10 @@ import { CosmosLayout } from '../models/LayoutModel/impl/Cosmos/CosmosLayout'
 
 const LayoutEngines: LayoutEngine[] = [G6Layout, CyjsLayout, CosmosLayout]
 
-const defEngine: LayoutEngine = G6Layout
-const defAlgorithmName: string = G6Layout.defaultAlgorithmName
+const defAlgorithm: LayoutAlgorithm = G6Layout.getAlgorithm('gForce')
+
+// const defEngine: LayoutEngine = G6Layout
+// const defAlgorithmName: string = G6Layout.defaultAlgorithmName
 // const defaultLayoutAlgorithm: LayoutAlgorithm =
 //   G6Layout.getAlgorithm(defAlgorithmName)
 
@@ -20,7 +22,8 @@ const defAlgorithmName: string = G6Layout.defaultAlgorithmName
  */
 interface LayoutState {
   readonly layoutEngines: LayoutEngine[]
-  preferredLayout: [string, string]
+  preferredLayout: LayoutAlgorithm
+  isRunning: boolean
 }
 
 interface LayoutAction {
@@ -31,6 +34,7 @@ interface LayoutAction {
     propertyValue: T,
   ) => void
   setPreferredLayout: (engineName: string, algorithmName: string) => void
+  setIsRunning: (isRunning: boolean) => void
 }
 
 const getLayout = (
@@ -57,7 +61,8 @@ const getLayout = (
 export const useLayoutStore = create(
   immer<LayoutState & LayoutAction>((set) => ({
     layoutEngines: LayoutEngines,
-    preferredLayout: [defEngine.name, defAlgorithmName],
+    preferredLayout: defAlgorithm,
+    isRunning: false,
 
     setPreferredLayout(engineName: string, algorithmName: string) {
       set((state) => {
@@ -66,8 +71,13 @@ export const useLayoutStore = create(
           algorithmName,
         )
         if (algorithm !== undefined) {
-          state.preferredLayout = [engineName, algorithmName]
+          state.preferredLayout = algorithm
         }
+      })
+    },
+    setIsRunning(isRunning) {
+      set((state) => {
+        state.isRunning = isRunning
       })
     },
 

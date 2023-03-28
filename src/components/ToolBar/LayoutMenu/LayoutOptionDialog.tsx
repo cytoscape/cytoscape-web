@@ -46,7 +46,7 @@ export const LayoutOptionDialog = ({
   open,
   setOpen,
 }: LayoutOptionDialogProps): JSX.Element => {
-  const preferredLayout: [string, string] = useLayoutStore(
+  const preferredLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredLayout,
   )
   const layoutEngines: LayoutEngine[] = useLayoutStore(
@@ -54,14 +54,14 @@ export const LayoutOptionDialog = ({
   )
 
   const defEngine = layoutEngines.find(
-    (engine) => engine.name === preferredLayout[0],
+    (engine) => engine.name === preferredLayout.engineName,
   )
 
-  const defAlgorithm =
-    defEngine?.getAlgorithm(preferredLayout[1]) ??
-    layoutEngines[0].getAlgorithm(layoutEngines[0].algorithmNames[0])
+  // const defAlgorithm =
+  //   defEngine?.getAlgorithm(preferredLayout[1]) ??
+  //   layoutEngines[0].getAlgorithm(layoutEngines[0].algorithmNames[0])
   const [engine, setEngine] = useState<LayoutEngine | undefined>(defEngine)
-  const [algorithm, setAlgorithm] = useState<LayoutAlgorithm>(defAlgorithm)
+  const [algorithm, setAlgorithm] = useState<LayoutAlgorithm>(preferredLayout)
 
   const setDefaultLayout: (engineName: string, algorithmName: string) => void =
     useLayoutStore((state) => state.setPreferredLayout)

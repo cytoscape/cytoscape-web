@@ -3,6 +3,7 @@ import { LayoutAlgorithm } from '../../../LayoutAlgorithm'
 
 export const radial: LayoutAlgorithm = {
   name: 'radial',
+  engineName: 'G6',
   description: 'Radial layout',
   parameters: {
     type: 'radial',

@@ -2,6 +2,7 @@ import { LayoutAlgorithm } from '../../../LayoutAlgorithm'
 
 export const cosmos: LayoutAlgorithm = {
   name: 'cosmos',
+  engineName: 'Cosmos',
   description: 'Cosmos Layout: GPU-powered force-directed layout',
   parameters: {
     linkArrows: false,

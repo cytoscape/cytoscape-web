@@ -3,6 +3,7 @@ import { LayoutAlgorithm } from '../../../LayoutAlgorithm'
 
 export const gForce: LayoutAlgorithm = {
   name: 'gForce',
+  engineName: 'G6',
   description: 'Force-directed layout with GPU acceleration',
   parameters: {
     type: 'gForce',

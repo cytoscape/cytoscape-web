@@ -5,6 +5,7 @@ import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { FloatingToolBar } from '../FloatingToolBar/FloatingToolBar'
 import { MessagePanel } from '../Messages'
 import { CyjsRenderer } from './CyjsRenderer'
 
@@ -44,6 +45,7 @@ const NetworkPanel = (): ReactElement => {
         </Box>
       ) : null}
       <CyjsRenderer network={targetNetwork} />
+      <FloatingToolBar />
     </Box>
   )
 }

@@ -51,7 +51,7 @@ export const CosmosLayout: LayoutEngine = {
 
       const scaledPosMap = new Map<IdType, [number, number]>()
       posMap.forEach((value, key) => {
-        scaledPosMap.set(key, [value[0] * 8, value[1] * 8])
+        scaledPosMap.set(key, [value[0] * 10, value[1] * 10])
       })
       afterLayout(scaledPosMap)
       console.log('COSMOS.stop() called)))))))))))))))', scaledPosMap, graph)

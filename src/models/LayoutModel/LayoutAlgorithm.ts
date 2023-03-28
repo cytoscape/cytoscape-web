@@ -4,6 +4,7 @@ import { ValueType } from '../TableModel'
 export interface LayoutAlgorithm {
   // Name of the layout algorithm
   readonly name: string
+  readonly engineName: string
 
   // Detailed description of the layout algorithm
   readonly description: string
