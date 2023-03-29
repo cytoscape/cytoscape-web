@@ -9,6 +9,7 @@ import { SaveToNDExMenuItem } from './SaveToNDExMenuItem'
 import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
 import { UploadNetworkMenuItem } from './UploadNetworkMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
+import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
 
 
 import { useState } from 'react'
@@ -65,6 +66,8 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
         <Divider />
         <SaveToNDExMenuItem handleClose={handleClose} />
         <CopyNetworkToNDExMenuItem handleClose={handleClose} />
+        <Divider />
+        <OpenNetworkInCytoscapeMenuItem handleClose={handleClose} />
         <Divider />
         <UploadNetworkMenuItem handleClose={handleClose} />
         <DownloadNetworkMenuItem handleClose={handleClose} />
