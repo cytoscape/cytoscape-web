@@ -50,8 +50,12 @@ export const OpenNetworkInCytoscapeMenuItem = (
       viewModel,
       `Copy of ${summary.name}`,
     )
-    cyndex.postCX2NetworkToCytoscape(cx);
-
+    try {
+        await cyndex.postCX2NetworkToCytoscape(cx);
+    } catch (e) {
+        console.log(e)
+        console.log("Cannot find Cytoscape!")
+    }
     props.handleClose()
   }
 
