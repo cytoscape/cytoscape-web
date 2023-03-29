@@ -10,6 +10,7 @@ import VizmapperView from '../Vizmapper'
 import { Outlet, useNavigate } from 'react-router-dom'
 
 import { getNdexNetwork } from '../../store/useNdexNetwork'
+import { getNdexNetworkSummary } from '../../store/useNdexNetworkSummary'
 import { useTableStore } from '../../store/TableStore'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -61,6 +62,8 @@ const WorkSpaceEditor: React.FC = () => {
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
 
+  // listen to view model changes
+  // assume that if the view model change, the network has been modified and set the networkModified flag to true
   useViewModelStore.subscribe(
     (state) => state.viewModels[currentNetworkId],
     (prev: NetworkView, next: NetworkView) => {
@@ -75,7 +78,6 @@ const WorkSpaceEditor: React.FC = () => {
 
       // primitve compare fn that does not take into account the selection/hover state
       // this leads to the network having a 'modified' state even though nothing was modified
-      // const viewModelChanged = prev !== undefined && next !== undefined
       const { networkModified } = workspace
       const currentNetworkIsNotModified =
         networkModified[currentNetworkId] === undefined ??
@@ -92,7 +94,7 @@ const WorkSpaceEditor: React.FC = () => {
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
-  const fetchAllSummaries = useNetworkSummaryStore((state) => state.fetchAll)
+  const setSummaries = useNetworkSummaryStore((state) => state.setMultiple)
   const removeSummary = useNetworkSummaryStore((state) => state.delete)
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
@@ -116,14 +118,18 @@ const WorkSpaceEditor: React.FC = () => {
   const setViewModel = useViewModelStore((state) => state.setViewModel)
 
   const loadNetworkSummaries = async (): Promise<void> => {
-    // Check token first
     const currentToken = await getToken()
-    await fetchAllSummaries(workspace.networkIds, ndexBaseUrl, currentToken)
+    const summaries = await getNdexNetworkSummary(
+      workspace.networkIds,
+      ndexBaseUrl,
+      currentToken,
+    )
+
+    setSummaries(summaries)
   }
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     const currentToken = await getToken()
-    // No token available. Just load
     const res = await getNdexNetwork(networkId, ndexBaseUrl, currentToken)
     const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
