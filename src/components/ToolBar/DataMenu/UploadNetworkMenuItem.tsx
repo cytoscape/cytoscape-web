@@ -1,5 +1,5 @@
 import { MenuItem } from '@mui/material'
-import { ReactElement, useState } from 'react'
+import { ReactElement } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 import { Cx2 } from '../../../utils/cx/Cx2'
 import NetworkFn, { Network } from '../../../models/NetworkModel'
@@ -8,6 +8,7 @@ import ViewModelFn, { NetworkView } from '../../../models/ViewModel'
 import { v4 as uuidv4 } from 'uuid';
 import TableFn, { Table } from '../../../models/TableModel'
 import { useTableStore } from '../../../store/TableStore'
+import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useNetworkStore } from '../../../store/NetworkStore'
@@ -23,9 +24,6 @@ import {
 export const UploadNetworkMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
-  interface JsonContent {
-    [key: string]: any;
-  }
 
   interface FullNetworkData {
     network: Network
@@ -44,6 +42,9 @@ export const UploadNetworkMenuItem = (
 
   const setTables = useTableStore((state) => state.setTables)
 
+  const addNetworkToWorkspace = useWorkspaceStore(
+    (state) => state.addNetworkIds,
+  )
   const createDataFromLocalCx2 = async (
     LocalNetworkId: string,
     cxData: Cx2,
@@ -69,7 +70,6 @@ export const UploadNetworkMenuItem = (
     return { network, nodeTable, edgeTable, visualStyle, networkView }
   }
   
-    const [jsonContent, setJsonContent] = useState<JsonContent | null>(null);
   
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
       const file = event.target.files?.[0];
@@ -78,17 +78,17 @@ export const UploadNetworkMenuItem = (
       reader.onload = async (event) => {
         try {
           const json = JSON.parse(event.target?.result as string);
-          setJsonContent(json);
           console.log(json);
           const localUuid = uuidv4();
           const res = await createDataFromLocalCx2(localUuid, json)
           console.log(res)
           const { network, nodeTable, edgeTable, visualStyle, networkView } = res
-
+          addNetworkToWorkspace(localUuid)
           addNewNetwork(network)
           setVisualStyle(localUuid, visualStyle)
           setTables(localUuid, nodeTable, edgeTable)
           setViewModel(localUuid, networkView)
+          props.handleClose()
         } catch (error) {
           console.error(error);
         }
@@ -108,6 +108,6 @@ export const UploadNetworkMenuItem = (
     />
   </MenuItem>
   )
-    return <>{menuItem}{(jsonContent != null) && <pre>{JSON.stringify(jsonContent, null, 2)}</pre>}</>
+    return <>{menuItem}</>
 
 }
