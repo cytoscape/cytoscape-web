@@ -92,10 +92,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     })
 
     setNetworkModified(currentNetworkId, false)
-
-    setTimeout(() => {
-      setCurrentNetworkId(currentNetworkId)
-    }, 500)
+    setCurrentNetworkId(currentNetworkId)
 
     setShowConfirmDialog(false)
     props.handleClose()
