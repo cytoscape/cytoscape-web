@@ -208,7 +208,6 @@ export const useVisualStyleStore = create(
             mapping.min = min
             mapping.max = max
             mapping.controlPoints = controlPoints
-            console.log('continuous mapping called')
           }
           return state
         })
