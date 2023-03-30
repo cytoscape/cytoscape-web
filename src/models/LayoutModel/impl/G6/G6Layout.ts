@@ -18,31 +18,23 @@ export const G6Layout: LayoutEngine = {
 
   defaultAlgorithmName: DEFAULT_ALGORITHM.name,
 
-  algorithmNames: Object.keys(G6Algorithms),
-
-  getAlgorithm: (name: string): LayoutAlgorithm => {
-    return G6Algorithms[name] ?? DEFAULT_ALGORITHM
-  },
+  algorithms: G6Algorithms,
 
   apply: (
     nodes: Node[],
     edges: Edge[],
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
-    algorithmName?: string,
+    algorithm: LayoutAlgorithm,
   ): void => {
     const graph = new G6.Graph({
       container: dummyContainer,
       width: 1000,
       height: 1000,
-      layout:
-        algorithmName !== undefined
-          ? (G6Algorithms[algorithmName].parameters as LayoutConfig)
-          : (DEFAULT_ALGORITHM.parameters as LayoutConfig),
+      layout: algorithm.parameters as LayoutConfig,
     })
 
     graph.data(transform(nodes, edges))
     graph.on('afterlayout', () => {
-      console.log('afterlayout----------------->', graph)
       const positions = new Map<IdType, [number, number]>()
       const g6Nodes = graph.getNodes()
       g6Nodes.forEach((g6Node) => {

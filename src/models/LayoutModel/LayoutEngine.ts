@@ -13,10 +13,7 @@ export interface LayoutEngine {
   defaultAlgorithmName: string
 
   // List of available algorithm names
-  readonly algorithmNames: string[]
-
-  // Get details of the algorithm by name
-  getAlgorithm: (name: string) => LayoutAlgorithm
+  algorithms: Record<string, LayoutAlgorithm>
 
   apply: (
     // Graph topology
@@ -26,7 +23,6 @@ export interface LayoutEngine {
     // Callback function to be called after layout
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
 
-    // (Optional) Name of the algorithm to be used in apply function.
-    algorithmName?: string,
+    algorithm: LayoutAlgorithm,
   ) => void
 }

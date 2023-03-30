@@ -18,30 +18,45 @@ export const gForce: LayoutAlgorithm = {
     onLayoutEnd: () => {
       console.log('* force layout done')
     },
+    preventOverlap: true,
     workerEnabled: true, // Whether to activate web-worker
     gpuEnabled: true,
   },
-  editables: [
-    {
+  editables: {
+    preventOverlap: {
+      name: 'preventOverlap',
+      description: 'Avoid overlapping nodes',
+      type: ValueTypeName.Boolean,
+      value: true,
+      defaultValue: true,
+    },
+    gpuEnabled: {
       name: 'gpuEnabled',
       description: 'Whether to activate GPU acceleration',
       type: ValueTypeName.Boolean,
       value: true,
       defaultValue: true,
     },
-    {
+    maxIteration: {
       name: 'maxIteration',
       description: 'Maximum number of iterations',
       type: ValueTypeName.Integer,
       value: 400,
       defaultValue: 400,
     },
-    {
-      name: 'nodeSize',
-      description: 'Size of nodes used to detect collisions',
+    linkDistance: {
+      name: 'linkDistance',
+      description: 'The edge length',
       type: ValueTypeName.Integer,
-      value: 40,
-      defaultValue: 40,
+      value: 1,
+      defaultValue: 1,
     },
-  ],
+    nodeStrength: {
+      name: 'nodeStrength',
+      description: 'The strength of node force.',
+      type: ValueTypeName.Integer,
+      value: 1000,
+      defaultValue: 1000,
+    },
+  },
 }

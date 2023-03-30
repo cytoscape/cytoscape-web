@@ -8,16 +8,14 @@ import cytoscape from 'cytoscape'
 export const CyjsLayout: LayoutEngine = {
   // Cytoscape.js Layout
   name: 'Cytoscape.js',
-  algorithmNames: Object.keys(CyjsAlgorithms),
   defaultAlgorithmName: 'grid',
-  getAlgorithm: (name: string): LayoutAlgorithm => {
-    return CyjsAlgorithms[name] ?? CyjsAlgorithms.preset
-  },
+  algorithms: CyjsAlgorithms,
+
   apply: (
     nodes: Node[],
     edges: Edge[],
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
-    name?: string,
+    algorithm: LayoutAlgorithm,
   ): void => {
     const cy = cytoscape({
       headless: true,
@@ -29,12 +27,7 @@ export const CyjsLayout: LayoutEngine = {
       },
     })
 
-    const layoutName = name ?? 'preset'
-    const layoutAlgorithm: LayoutAlgorithm =
-      CyjsAlgorithms[layoutName] ?? CyjsAlgorithms.preset
-    const cyLayout = cy.layout(
-      layoutAlgorithm.parameters as cytoscape.LayoutOptions,
-    )
+    const cyLayout = cy.layout(algorithm.parameters as cytoscape.LayoutOptions)
 
     cyLayout.on('layoutstop', () => {
       const positions = new Map<IdType, [number, number]>()
@@ -46,7 +39,6 @@ export const CyjsLayout: LayoutEngine = {
       })
 
       afterLayout(positions)
-      console.log('cyLayout.stop() called)))))))))))))))')
       cy.destroy()
     })
 

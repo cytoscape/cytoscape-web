@@ -5,15 +5,16 @@ import {
   Avatar,
   ListItemText,
   TextField,
-  Checkbox,
 } from '@mui/material'
-import { ValueType, ValueTypeName } from '../../../models/TableModel'
+import { ValueType, ValueTypeName } from '../../../../models/TableModel'
+import { BooleanEditor } from './BooleanEditor'
+import { NumberEditor } from './NumberEditor'
 
 interface ValueEditorProps {
   optionName: string
   valueType: ValueTypeName
   value: ValueType
-  setValue: (value: ValueType) => void
+  setValue: (optionName: string, value: ValueType) => void
 }
 
 export const ValueEditor = ({
@@ -25,11 +26,7 @@ export const ValueEditor = ({
   const handleChange = (event: any): void => {
     // Extract value from event
     const value = event.target.value
-    setValue(value)
-  }
-
-  const handleToggle = (value: boolean) => (): void => {
-    setValue(!value)
+    setValue(optionName, value)
   }
 
   if (
@@ -38,47 +35,20 @@ export const ValueEditor = ({
     valueType === ValueTypeName.Long
   ) {
     return (
-      <ListItem
-        key={optionName}
-        secondaryAction={
-          <TextField
-            id="standard-basic"
-            variant="standard"
-            defaultValue={value}
-            sx={{ maxWidth: '4em', justifyContent: 'right' }}
-            onChange={handleChange}
-          />
-        }
-        disablePadding
-      >
-        <ListItemButton>
-          <ListItemText id={optionName} primary={optionName} />
-        </ListItemButton>
-      </ListItem>
+      <NumberEditor
+        optionName={optionName}
+        value={value as number}
+        setValue={setValue}
+      />
     )
   } else if (valueType === ValueTypeName.Boolean) {
     // Return ListItem with Checkbox
     return (
-      <ListItem
-        key={optionName}
-        disablePadding
-        secondaryAction={
-          <Checkbox
-            edge="end"
-            onChange={handleToggle(value as boolean)}
-            checked={value as boolean}
-          />
-        }
-      >
-        <ListItemButton>
-          <ListItemText
-            id={optionName}
-            primary={optionName}
-            // onChange={handleChange}
-            sx={{ maxWidth: 'sm' }}
-          />
-        </ListItemButton>
-      </ListItem>
+      <BooleanEditor
+        optionName={optionName}
+        value={value as boolean}
+        setValue={setValue}
+      />
     )
   } else {
     // Handle as string

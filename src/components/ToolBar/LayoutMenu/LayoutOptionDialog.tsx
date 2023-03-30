@@ -17,11 +17,11 @@ import Draggable from 'react-draggable'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { LayoutSelector } from './LayoutSelector'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
-import { ValueEditor } from './ValueEditor'
 import { ValueType } from '../../../models/TableModel'
 import { Property } from '../../../models/PropertyModel/Property'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
+import { ValueEditor } from './ValueEditor/ValueEditor'
 
 const DraggablePaper = (props: PaperProps): JSX.Element => {
   return (
@@ -40,6 +40,7 @@ interface LayoutOptionDialogProps {
   open: boolean
   setOpen: (open: boolean) => void
 }
+
 export const LayoutOptionDialog = ({
   network,
   afterLayout,
@@ -49,23 +50,25 @@ export const LayoutOptionDialog = ({
   const preferredLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredLayout,
   )
-  const layoutEngines: LayoutEngine[] = useLayoutStore(
-    (state) => state.layoutEngines,
-  )
 
-  const defEngine = layoutEngines.find(
-    (engine) => engine.name === preferredLayout.engineName,
-  )
-
-  // const defAlgorithm =
-  //   defEngine?.getAlgorithm(preferredLayout[1]) ??
-  //   layoutEngines[0].getAlgorithm(layoutEngines[0].algorithmNames[0])
-  const [engine, setEngine] = useState<LayoutEngine | undefined>(defEngine)
-  const [algorithm, setAlgorithm] = useState<LayoutAlgorithm>(preferredLayout)
   const [selected, setSelected] = useState<[string, string]>([
     preferredLayout.engineName,
     preferredLayout.name,
   ])
+
+  const setSelectedAlgorithm = (
+    engineName: string,
+    algorithmName: string,
+  ): void => {
+    setSelected([engineName, algorithmName])
+  }
+
+  const layoutEngines: LayoutEngine[] = useLayoutStore(
+    (state) => state.layoutEngines,
+  )
+
+  const engine: LayoutEngine =
+    layoutEngines.find((e) => e.name === selected[0]) ?? layoutEngines[0]
 
   // Check if the current layout is the default layout
   const [isDefault, setIsDefault] = useState<boolean>(false)
@@ -73,49 +76,30 @@ export const LayoutOptionDialog = ({
   const setDefaultLayout: (engineName: string, algorithmName: string) => void =
     useLayoutStore((state) => state.setPreferredLayout)
 
-  const handleClose = (): void => {
-    setOpen(false)
-  }
-
-  const handleUpdate = (): void => {
-    // Perform update logic here
-    // setOpen(false)
-  }
-
-  const setSelectedLayout = (
+  const setLayoutOption: <T extends ValueType>(
     engineName: string,
     algorithmName: string,
-  ): void => {
-    if (
-      engineName === preferredLayout.engineName &&
-      algorithmName === preferredLayout.name
-    ) {
-      setIsDefault(true)
-    } else {
-      setIsDefault(false)
-    }
+    propertyName: string,
+    propertyValue: T,
+  ) => void = useLayoutStore((state) => state.setLayoutOption)
 
-    setSelected([engineName, algorithmName])
-
-    const newEngine = layoutEngines.find((e) => e.name === engineName)
-    if (newEngine === undefined) {
-      return
-    }
-
-    setEngine(newEngine)
-
-    const newAlgorithm: LayoutAlgorithm = newEngine.getAlgorithm(algorithmName)
-    if (newAlgorithm === undefined) {
-      return
-    }
-
-    setAlgorithm(newAlgorithm)
+  const handleClose = (): void => {
+    setOpen(false)
   }
 
   const handleApply = (): void => {
     // Perform apply layout here
 
-    engine?.apply(network.nodes, network.edges, afterLayout, algorithm.name)
+    if (engine === undefined) {
+      return
+    }
+    const algorithm: LayoutAlgorithm | undefined =
+      engine.algorithms[selected[1]]
+
+    if (algorithm === undefined) {
+      return
+    }
+    engine.apply(network.nodes, network.edges, afterLayout, algorithm)
   }
 
   const handleDefaultChanged = (event: any): void => {
@@ -126,11 +110,14 @@ export const LayoutOptionDialog = ({
     }
   }
 
-  const { editables } = algorithm
-  let editableList: Array<Property<ValueType>> = []
-  if (editables !== undefined) {
-    editableList = editables
+  const setValue = (optionName: string, value: ValueType): void => {
+    const engineName: string = selected[0]
+    const algorithmName: string = selected[1]
+    setLayoutOption(engineName, algorithmName, optionName, value)
   }
+
+  const { editables } = engine.algorithms[selected[1]]
+
   return (
     <Dialog
       maxWidth={'md'}
@@ -154,7 +141,7 @@ export const LayoutOptionDialog = ({
             <LayoutSelector
               selectedEngine={selected[0]}
               selectedAlgorithm={selected[1]}
-              setSelected={setSelectedLayout}
+              setSelected={setSelectedAlgorithm}
             />
           </Grid>
           <Grid>
@@ -172,25 +159,30 @@ export const LayoutOptionDialog = ({
         </Grid>
 
         <List dense>
-          {editableList.map((property: Property<ValueType>) => {
-            return (
-              <ValueEditor
-                key={property.name}
-                optionName={property.name}
-                valueType={property.type}
-                value={property.value}
-                setValue={(value: ValueType) => {}}
-              />
-            )
-          })}
+          {Object.keys(editables === undefined ? {} : editables).map(
+            (propName: string) => {
+              if (editables === undefined) {
+                return null
+              }
+              const property: Property<ValueType> = editables[propName]
+              return (
+                <ValueEditor
+                  key={property.name}
+                  optionName={property.name}
+                  valueType={property.type}
+                  value={property.value}
+                  setValue={(optionName: string, value: ValueType) =>
+                    setValue(optionName, value)
+                  }
+                />
+              )
+            },
+          )}
         </List>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} color="info">
           Close
-        </Button>
-        <Button onClick={handleUpdate} color="primary">
-          Update
         </Button>
         <Button onClick={handleApply} color="secondary">
           Apply Layout

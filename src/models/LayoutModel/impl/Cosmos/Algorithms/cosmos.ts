@@ -1,3 +1,4 @@
+import { ValueTypeName } from '../../../../TableModel'
 import { LayoutAlgorithm } from '../../../LayoutAlgorithm'
 
 export const cosmos: LayoutAlgorithm = {
@@ -18,6 +19,36 @@ export const cosmos: LayoutAlgorithm = {
       onClick: (node: any) => {
         console.log('Clicked node: %s', node)
       },
+    },
+  },
+  editables: {
+    linkSpring: {
+      name: 'linkSpring',
+      description: 'The spring constant of the links',
+      type: ValueTypeName.Double,
+      value: 0.1,
+      defaultValue: 0.1,
+    },
+    linkDistance: {
+      name: 'linkDistance',
+      description: 'The distance of the links',
+      type: ValueTypeName.Double,
+      value: 10,
+      defaultValue: 10,
+    },
+    repulsion: {
+      name: 'repulsion',
+      description: 'The repulsion of the nodes',
+      type: ValueTypeName.Double,
+      value: 1.0,
+      defaultValue: 1.0,
+    },
+    gravity: {
+      name: 'gravity',
+      description: 'The gravity of the nodes',
+      type: ValueTypeName.Double,
+      value: 0.3,
+      defaultValue: 0.3,
     },
   },
 }

@@ -16,17 +16,13 @@ export const CosmosLayout: LayoutEngine = {
   name: 'Cosmos',
   description: 'Cosmos Graph Visualization Engine.',
   defaultAlgorithmName: 'Cosmos',
-  algorithmNames: Object.keys(CosmosAlgorithms),
-  getAlgorithm: (name: string): LayoutAlgorithm => {
-    // There is only one algorithm for Cosmos.
-    return CosmosAlgorithms.Cosmos
-  },
+  algorithms: CosmosAlgorithms,
 
   apply: (
     nodes: Node[],
     edges: Edge[],
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
-    algorithmName?: string,
+    algorithm: LayoutAlgorithm,
   ): void => {
     const config = CosmosAlgorithms.cosmos.parameters
     const graph = new Graph(dummyContainer, config)

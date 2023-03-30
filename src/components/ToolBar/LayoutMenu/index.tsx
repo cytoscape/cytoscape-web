@@ -70,7 +70,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     const menuItems: any[] = []
     layoutEngines.forEach((layoutEngine: LayoutEngine) => {
       const engineName: string = layoutEngine.name
-      const names: string[] = layoutEngine.algorithmNames
+      const names: string[] = Object.keys(layoutEngine.algorithms)
       names.forEach((name: string) => {
         const menuItem = {
           key: `${engineName}-${name}`,
@@ -85,7 +85,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             ) as LayoutEngine
             const { nodes, edges } = target
             setIsRunning(true)
-            engine.apply(nodes, edges, afterLayout, name)
+            engine.apply(nodes, edges, afterLayout, engine.algorithms[name])
           },
         }
 

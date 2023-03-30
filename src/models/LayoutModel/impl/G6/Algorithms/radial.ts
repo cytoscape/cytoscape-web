@@ -16,27 +16,27 @@ export const radial: LayoutAlgorithm = {
     strictRadial: false,
     workerEnabled: true, // Whether to activate web-worker
   },
-  editables: [
-    {
+  editables: {
+    unitRadius: {
       name: 'unitRadius',
       description: 'The radius of the circle',
       type: ValueTypeName.Integer,
       value: 100,
       defaultValue: 100,
     },
-    {
+    maxIteration: {
       name: 'maxIteration',
       description: 'Maximum number of iterations',
       type: ValueTypeName.Integer,
       value: 500,
       defaultValue: 500,
     },
-    {
+    nodeSize: {
       name: 'nodeSize',
       description: 'Size of nodes used to detect collisions',
       type: ValueTypeName.Integer,
       value: 30,
       defaultValue: 30,
     },
-  ],
+  },
 }

@@ -14,20 +14,20 @@ export const dagre: LayoutAlgorithm = {
     controlPoints: true,
   },
 
-  editables: [
-    {
+  editables: {
+    nodesep: {
       name: 'nodesep',
       description: 'The minimum distance between nodes',
       type: ValueTypeName.Integer,
       value: 5,
       defaultValue: 5,
     },
-    {
+    ranksep: {
       name: 'ranksep',
       description: 'The minimum distance between ranks',
       type: ValueTypeName.Integer,
       value: 15,
       defaultValue: 15,
     },
-  ],
+  },
 }

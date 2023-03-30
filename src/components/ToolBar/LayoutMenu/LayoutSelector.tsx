@@ -34,7 +34,7 @@ export const LayoutSelector = ({
   useEffect(() => {
     const layouts: Array<[string, string]> = []
     layoutEngines.forEach((engine: LayoutEngine) => {
-      engine.algorithmNames.forEach((algorithmName: string) => {
+      Object.keys(engine.algorithms).forEach((algorithmName: string) => {
         layouts.push([engine.name, algorithmName])
       })
     })

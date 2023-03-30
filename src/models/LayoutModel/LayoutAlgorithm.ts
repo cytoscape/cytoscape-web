@@ -12,8 +12,8 @@ export interface LayoutAlgorithm {
   // Implementation-dependent parameters for the layout.
   // This may include callback functions.
   // This object will be directly passed to the layout engine.
-  readonly parameters: Record<string, any>
+  parameters: Record<string, any>
 
   // List of editable parameters as Property with detailed information
-  editables?: Array<Property<ValueType>>
+  editables?: Record<string, Property<ValueType>>
 }
