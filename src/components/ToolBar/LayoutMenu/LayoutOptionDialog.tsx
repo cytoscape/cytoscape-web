@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Button,
   Checkbox,
@@ -63,6 +63,10 @@ export const LayoutOptionDialog = ({
     setSelected([engineName, algorithmName])
   }
 
+  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
+    (state) => state.setIsRunning,
+  )
+
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
   )
@@ -72,6 +76,17 @@ export const LayoutOptionDialog = ({
 
   // Check if the current layout is the default layout
   const [isDefault, setIsDefault] = useState<boolean>(false)
+
+  useEffect(() => {
+    if (
+      selected[0] === preferredLayout.engineName &&
+      selected[1] === preferredLayout.name
+    ) {
+      setIsDefault(true)
+    } else {
+      setIsDefault(false)
+    }
+  }, [selected, preferredLayout])
 
   const setDefaultLayout: (engineName: string, algorithmName: string) => void =
     useLayoutStore((state) => state.setPreferredLayout)
@@ -99,6 +114,7 @@ export const LayoutOptionDialog = ({
     if (algorithm === undefined) {
       return
     }
+    setIsRunning(true)
     engine.apply(network.nodes, network.edges, afterLayout, algorithm)
   }
 
