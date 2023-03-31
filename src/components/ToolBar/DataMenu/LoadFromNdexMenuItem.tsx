@@ -38,7 +38,7 @@ export const LoadFromNdexMenuItem = (props: BaseMenuProps): ReactElement => {
     }
 
     if (nextCurrentNetworkId !== undefined) {
-      setTimeout(() => setCurrentNetworkId(nextCurrentNetworkId as IdType), 500)
+      setCurrentNetworkId(nextCurrentNetworkId)
     }
     setOpenDialog(false)
     props.handleClose()

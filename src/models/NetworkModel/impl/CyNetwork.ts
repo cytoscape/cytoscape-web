@@ -12,7 +12,7 @@ import { Core, EdgeSingular, NodeSingular } from 'cytoscape'
 import * as cytoscape from 'cytoscape'
 
 const GroupType = { Nodes: 'nodes', Edges: 'edges' } as const
-type GroupType = typeof GroupType[keyof typeof GroupType]
+type GroupType = (typeof GroupType)[keyof typeof GroupType]
 
 /**
  * Private class implementing graph object using
@@ -72,6 +72,8 @@ export const createNetwork = (id: IdType): Network => new CyNetwork(id)
 // cy.js does not allow nodes and edges to have the same ids
 // when converting cx ids to cy ids, we add a prefix to edges
 export const translateCXEdgeId = (id: IdType): IdType => `e${id}`
+
+export const isEdgeId = (id: IdType): boolean => id.startsWith('e')
 
 export const translateEdgeIdToCX = (id: IdType): IdType => id.slice(1)
 

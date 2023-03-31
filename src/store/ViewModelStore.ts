@@ -1,10 +1,11 @@
 import { IdType } from '../models/IdType'
 import { NetworkView, NodeView } from '../models/ViewModel'
-
-import { create } from 'zustand'
+import { isEdgeId } from '../models/NetworkModel/impl/CyNetwork'
+import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { subscribeWithSelector } from 'zustand/middleware'
-import { deleteNetworkViewFromDb } from './persist/db'
+import { deleteNetworkViewFromDb, putNetworkViewToDb } from './persist/db'
+import { useWorkspaceStore } from './WorkspaceStore'
 
 /**
 //  * View model state manager based on zustand
@@ -44,133 +45,187 @@ interface ViewModelAction {
   deleteAll: () => void
 }
 
+type ViewModelStore = ViewModelState & ViewModelAction
+
+const persist =
+  (config: StateCreator<ViewModelStore>) =>
+  (
+    set: StoreApi<ViewModelStore>['setState'],
+    get: StoreApi<ViewModelStore>['getState'],
+    api: StoreApi<ViewModelStore>,
+  ) =>
+    config(
+      async (args) => {
+        const currentNetworkId =
+          useWorkspaceStore.getState().workspace.currentNetworkId
+
+        console.log('persist middleware updating view model store')
+        set(args)
+        const updated = get().viewModels[currentNetworkId]
+        console.log('updated viewmodel: ', updated)
+        await putNetworkViewToDb(currentNetworkId, updated).then(() => {})
+      },
+      get,
+      api,
+    )
+
 export const useViewModelStore = create(
   subscribeWithSelector(
-    immer<ViewModelState & ViewModelAction>((set) => ({
-      viewModels: {},
+    immer<ViewModelStore>(
+      persist((set) => ({
+        viewModels: {},
 
-      setViewModel: (networkId: IdType, networkView: NetworkView) => {
-        set((state) => {
-          state.viewModels[networkId] = networkView
-        })
-      },
-      exclusiveSelect: (
-        networkId: IdType,
-        selectedNodes: IdType[],
-        selectedEdges: IdType[],
-      ) => {
-        set((state) => {
-          const networkView: NetworkView = state.viewModels[networkId]
+        setViewModel: (networkId: IdType, networkView: NetworkView) => {
+          set((state) => {
+            state.viewModels[networkId] = networkView
+            return state
+          })
+        },
+        exclusiveSelect: (
+          networkId: IdType,
+          selectedNodes: IdType[],
+          selectedEdges: IdType[],
+        ) => {
+          set((state) => {
+            state.viewModels[networkId].selectedNodes = selectedNodes
+            state.viewModels[networkId].selectedEdges = selectedEdges
 
-          return {
-            viewModels: {
-              ...state.viewModels,
-              [networkId]: { ...networkView, selectedNodes, selectedEdges },
-            },
-          }
-        })
-      },
-      setHovered: (networkId: IdType, eleToHover: IdType) => {
-        set((state) => {
-          const networkView = state.viewModels[networkId]
-          if (networkView !== undefined) {
-            networkView.hoveredElement = eleToHover
-          }
-        })
-      },
-      toggleSelected: (networkId: IdType, eles: IdType[]) => {
-        set((state) => {
-          eles.forEach((id) => {
-            const nodeView = state.viewModels[networkId]?.nodeViews[id]
-            const edgeView = state.viewModels[networkId]?.edgeViews[id]
-            if (nodeView != null) {
-              // nodeView.selected = !(nodeView.selected ?? false)
-            } else {
-              if (edgeView != null) {
-                // edgeView.selected = !(edgeView.selected ?? false)
+            return state
+          })
+        },
+        setHovered: (networkId: IdType, eleToHover: IdType) => {
+          set((state) => {
+            const networkView = state.viewModels[networkId]
+            if (networkView !== undefined) {
+              networkView.hoveredElement = eleToHover
+            }
+
+            return state
+          })
+        },
+        toggleSelected: (networkId: IdType, eles: IdType[]) => {
+          set((state) => {
+            const networkView = state.viewModels[networkId]
+            const selectedNodesSet = new Set(networkView.selectedNodes)
+            const selectedEdgesSet = new Set(networkView.selectedEdges)
+
+            const nodeEles = eles.filter((id) => !isEdgeId(id))
+            const edgeEles = eles.filter((id) => isEdgeId(id))
+            nodeEles.forEach((id) => {
+              if (selectedNodesSet.has(id)) {
+                selectedNodesSet.delete(id)
+              } else {
+                selectedNodesSet.add(id)
+              }
+            })
+
+            edgeEles.forEach((id) => {
+              if (selectedEdgesSet.has(id)) {
+                selectedEdgesSet.delete(id)
+              } else {
+                selectedEdgesSet.add(id)
+              }
+            })
+
+            networkView.selectedNodes = Array.from(selectedNodesSet)
+            networkView.selectedEdges = Array.from(selectedEdgesSet)
+
+            return state
+          })
+        },
+
+        // select elements without unselecing anything else
+        additiveSelect: (networkId: IdType, eles: IdType[]) => {
+          set((state) => {
+            const networkView = state.viewModels[networkId]
+            const selectedNodesSet = new Set()
+            const selectedEdgesSet = new Set()
+
+            for (let i = 0; i < eles.length; i++) {
+              const eleId = eles[i]
+              if (isEdgeId(eleId)) {
+                selectedEdgesSet.add(eleId)
+              } else {
+                selectedNodesSet.add(eleId)
               }
             }
+
+            networkView.selectedNodes = Array.from(selectedNodesSet) as IdType[]
+            networkView.selectedEdges = Array.from(selectedEdgesSet) as IdType[]
+
+            return state
           })
-        })
-      },
+        },
+        // unselect elements without selecting anything else
+        additiveUnselect: (networkId: IdType, eles: IdType[]) => {
+          set((state) => {
+            const networkView = state.viewModels[networkId]
 
-      // select elements without unselecing anything else
-      additiveSelect: (networkId: IdType, eles: IdType[]) => {
-        set((state) => {
-          // const networkView = state.viewModels[networkId]
-          // set new selected elements
-          // eles.forEach((eleId) => {
-          //   const view =
-          //     networkView.nodeViews[eleId] ?? networkView.edgeViews[eleId]
-          //   view.selected = true
-          // })
-        })
-      },
-      // unselect elements without selecting anything else
-      additiveUnselect: (networkId: IdType, eles: IdType[]) => {
-        set((state) => {
-          // const networkView = state.viewModels[networkId]
-          // // set new selected elements
-          // eles.forEach((eleId) => {
-          //   const view =
-          //     networkView.nodeViews[eleId] ?? networkView.edgeViews[eleId]
-          //   view.selected = false
-          // })
-        })
-      },
-      setNodePosition(networkId, eleId, position) {
-        set((state) => {
-          const networkView = state.viewModels[networkId]
-          const nodeView: NodeView = networkView.nodeViews[eleId]
-          if (nodeView !== null && nodeView !== undefined) {
-            nodeView.x = position[0]
-            nodeView.y = position[1]
-            // Update DB
-          }
-        })
-      },
-      updateNodePositions(networkId, positions) {
-        set((state) => {
-          const networkView = state.viewModels[networkId]
+            const selectedNodesSet = new Set()
+            const selectedEdgesSet = new Set()
 
-          const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
-          Object.keys(nodeViews).forEach((nodeId: IdType) => {
-            const nodeView: NodeView = nodeViews[nodeId]
-            const newPosition: [number, number, number?] | undefined =
-              positions.get(nodeId)
-            if (newPosition !== undefined) {
-              nodeView.x = newPosition[0]
-              nodeView.y = newPosition[1]
+            for (let i = 0; i < eles.length; i++) {
+              const eleId = eles[i]
+              if (isEdgeId(eleId)) {
+                selectedEdgesSet.delete(eleId)
+              } else {
+                selectedNodesSet.delete(eleId)
+              }
             }
-          })
-        })
-      },
-      delete(networkId) {
-        set((state) => {
-          const filtered: Record<string, NetworkView> = Object.keys(
-            state.viewModels,
-          ).reduce<Record<string, NetworkView>>((acc, key) => {
-            if (key !== networkId) {
-              acc[key] = state.viewModels[key]
-            }
-            return acc
-          }, {})
+            networkView.selectedNodes = Array.from(selectedNodesSet) as IdType[]
+            networkView.selectedEdges = Array.from(selectedEdgesSet) as IdType[]
 
-          void deleteNetworkViewFromDb(networkId).then(() => {
-            console.log('Network view deleted from db')
+            return state
           })
-          return {
-            viewModels: {
-              ...filtered,
-            },
-          }
-        })
-      },
-      deleteAll() {
-        set((state) => {
-          state.viewModels = {}
-        })
-      },
-    })),
+        },
+        setNodePosition(networkId, eleId, position) {
+          set((state) => {
+            const networkView = state.viewModels[networkId]
+            const nodeView: NodeView = networkView.nodeViews[eleId]
+            if (nodeView !== null && nodeView !== undefined) {
+              nodeView.x = position[0]
+              nodeView.y = position[1]
+            }
+
+            return state
+          })
+        },
+        updateNodePositions(networkId, positions) {
+          set((state) => {
+            const networkView = state.viewModels[networkId]
+
+            const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
+            Object.keys(nodeViews).forEach((nodeId: IdType) => {
+              const nodeView: NodeView = nodeViews[nodeId]
+              const newPosition: [number, number, number?] | undefined =
+                positions.get(nodeId)
+              if (newPosition !== undefined) {
+                nodeView.x = newPosition[0]
+                nodeView.y = newPosition[1]
+              }
+            })
+
+            return state
+          })
+        },
+        delete(networkId) {
+          set((state) => {
+            delete state.viewModels[networkId]
+
+            void deleteNetworkViewFromDb(networkId).then(() => {
+              console.log('Network view deleted from db')
+            })
+
+            return state
+          })
+        },
+        deleteAll() {
+          set((state) => {
+            state.viewModels = {}
+            return state
+          })
+        },
+      })),
+    ),
   ),
 )

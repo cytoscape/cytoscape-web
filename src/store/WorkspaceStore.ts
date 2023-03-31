@@ -1,16 +1,16 @@
-import { create } from 'zustand'
+import { create, StateCreator, StoreApi } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
 import { Workspace } from '../models/WorkspaceModel'
-import { getWorkspaceFromDb, updateWorkspaceDb } from './persist/db'
+import { putWorkspaceToDb } from './persist/db'
 
-interface WorkspaceStore {
+interface WorkspaceState {
   workspace: Workspace
 }
 
 interface WorkspaceActions {
-  init: () => void
+  set: (workspace: Workspace) => void
   setId: (id: IdType) => void
   setName: (name: string) => void
   setCurrentNetworkId: (id: IdType) => void
@@ -37,132 +37,99 @@ const EMPTY_WORKSPACE: Workspace = {
   currentNetworkId: '',
 }
 
+type WorkspaceStore = WorkspaceState & WorkspaceActions
+
+const persist =
+  (config: StateCreator<WorkspaceStore>) =>
+  (
+    set: StoreApi<WorkspaceStore>['setState'],
+    get: StoreApi<WorkspaceStore>['getState'],
+    api: StoreApi<WorkspaceStore>,
+  ) =>
+    config(
+      async (args) => {
+        console.log('persist middleware updating workspace store')
+        set(args)
+        const updated = get().workspace
+        console.log('updated workspace: ', updated)
+
+        const deleted = updated === undefined
+
+        if (!deleted) {
+          await putWorkspaceToDb(updated).then(() => {})
+        }
+      },
+      get,
+      api,
+    )
+
 export const useWorkspaceStore = create(
   subscribeWithSelector(
-    immer<WorkspaceStore & WorkspaceActions>((set) => ({
-      workspace: EMPTY_WORKSPACE,
-      init: async () => {
-        // This always return a workspace (existing or new)
-        const newWs: Workspace = await getWorkspaceFromDb()
-        set((state) => {
-          return { workspace: newWs }
-        })
-      },
-      setId: (id: IdType) => {
-        set((state) => {
-          return { workspace: { ...state.workspace, id } }
-        })
-      },
-      setCurrentNetworkId: (newId: IdType) => {
-        set((state) => {
-          return {
-            workspace: { ...state.workspace, currentNetworkId: newId },
-          }
-        })
-      },
+    immer<WorkspaceStore & WorkspaceActions>(
+      persist((set) => ({
+        workspace: EMPTY_WORKSPACE,
+        set: (workspace: Workspace) => {
+          set((state) => {
+            state.workspace = workspace
+            return state
+          })
+        },
+        setId: (id: IdType) => {
+          set((state) => {
+            state.workspace.id = id
+            return state
+          })
+        },
+        setCurrentNetworkId: (newId: IdType) => {
+          set((state) => {
+            state.workspace.currentNetworkId = newId
+            return state
+          })
+        },
 
-      setName: (name: string) => {
-        set((state) => {
-          return {
-            workspace: { ...state.workspace, name },
-          }
-        })
-      },
-      addNetworkIds: (ids: IdType | IdType[]) => {
-        set((state) => {
-          if (Array.isArray(ids)) {
-            // Add only new network IDs
-            const newIds: IdType[] = ids.filter(
-              (id) => !state.workspace.networkIds.includes(id),
+        setName: (name: string) => {
+          set((state) => {
+            state.workspace.name = name
+            return state
+          })
+        },
+        addNetworkIds: (ids: IdType | IdType[]) => {
+          set((state) => {
+            const idsList = Array.isArray(ids) ? ids : [ids]
+            const uniqueIds = Array.from(
+              new Set([...idsList, ...state.workspace.networkIds]),
             )
-            const allIds = [...state.workspace.networkIds, ...newIds]
-            const newWs = {
-              workspace: {
-                ...state.workspace,
-                networkIds: allIds,
-                networkModified: allIds.reduce(
-                  (all, id) => ({
-                    ...all,
-                    [id]: false,
-                  }),
-                  {},
-                ),
-              },
-            }
-            void updateWorkspaceDb(newWs.workspace.id, {
-              networkIds: newWs.workspace.networkIds,
-            }).then()
-            return newWs
-          } else {
-            const allIds = [...state.workspace.networkIds, ids]
-            const newWs = {
-              workspace: {
-                ...state.workspace,
-                networkIds: allIds,
-                networkModified: allIds.reduce(
-                  (all, id) => ({
-                    ...all,
-                    [id]: false,
-                  }),
-                  {},
-                ),
-              },
-            }
 
-            void updateWorkspaceDb(newWs.workspace.id, {
-              networkIds: newWs.workspace.networkIds,
-            }).then()
-            return newWs
-          }
-        })
-      },
-      deleteCurrentNetwork: () => {
-        set((state) => {
-          const newWs = {
-            workspace: {
-              ...state.workspace,
-              networkIds: state.workspace.networkIds.filter(
+            state.workspace.networkIds = uniqueIds
+
+            return state
+          })
+        },
+        deleteCurrentNetwork: () => {
+          set((state) => {
+            const idsWithoutCurrentNetworkId =
+              state.workspace.networkIds.filter(
                 (id) => id !== state.workspace.currentNetworkId,
-              ),
-            },
-          }
-          void updateWorkspaceDb(newWs.workspace.id, {
-            networkIds: newWs.workspace.networkIds,
-          }).then()
-          return newWs
-        })
-      },
-      deleteAllNetworks: () => {
-        set((state) => {
-          const newWs = {
-            workspace: {
-              ...state.workspace,
-              networkIds: [],
-              networkModified: {},
-            },
-          }
-          void updateWorkspaceDb(newWs.workspace.id, {
-            networkIds: [],
-          }).then()
-          return newWs
-        })
-      },
+              )
+            state.workspace.networkIds = idsWithoutCurrentNetworkId
+            return state
+          })
+        },
+        deleteAllNetworks: () => {
+          set((state) => {
+            state.workspace.networkIds = []
+            state.workspace.networkModified = {}
+            return state
+          })
+        },
 
-      setNetworkModified: (networkId: IdType, isModified: boolean) => {
-        set((state) => {
-          const newWs = {
-            workspace: {
-              ...state.workspace,
-              networkModified: {
-                ...state.workspace.networkModified,
-                [networkId]: isModified,
-              },
-            },
-          }
-          // void updateWorkspaceDb(newWs.workspace.id, newWs).then()
-          return newWs
-        })
-      },
-    })),
+        setNetworkModified: (networkId: IdType, isModified: boolean) => {
+          set((state) => {
+            state.workspace.networkModified[networkId] = isModified
+            return state
+          })
+        },
+      })),
+    ),
   ),
 )

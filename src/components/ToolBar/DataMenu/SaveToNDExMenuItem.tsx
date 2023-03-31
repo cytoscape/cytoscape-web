@@ -60,6 +60,10 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     (state) => state.setCurrentNetworkId,
   )
 
+  const setNetworkModified = useWorkspaceStore(
+    (state) => state.setNetworkModified,
+  )
+
   const getToken = useCredentialStore((state) => state.getToken)
   const client = useCredentialStore((state) => state.client)
   const authenticated: boolean = client?.authenticated ?? false
@@ -87,6 +91,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       modificationTime: newNdexModificationTime,
     })
 
+    setNetworkModified(currentNetworkId, false)
+    setCurrentNetworkId(currentNetworkId)
+
     setShowConfirmDialog(false)
     props.handleClose()
   }
@@ -108,12 +115,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     try {
       const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
       addNetworkToWorkspace(uuid as IdType)
-      // in the other places that this function is used, it seems that a setTimeout is required
-      // for it to work properly
-      // todo this should not be necessary
-      setTimeout(() => {
-        setCurrentNetworkId(uuid as IdType)
-      }, 500)
+      setCurrentNetworkId(uuid as IdType)
 
       console.log(
         `Saved a copy of the current network to NDEx with new uuid ${

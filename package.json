@@ -75,6 +75,7 @@
     "d3-scale": "^4.0.2",
     "dexie": "^3.2.2",
     "dexie-react-hooks": "^1.1.1",
+    "html-react-parser": "^3.0.12",
     "idb-keyval": "^6.2.0",
     "immer": "^9.0.16",
     "keycloak-js": "^21.0.0",
