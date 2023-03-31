@@ -208,7 +208,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     if (cy === null) {
       return
     }
-    if (networkView.hoveredElement !== undefined) {
+    if (networkView?.hoveredElement !== undefined) {
       cy.elements().removeClass('hover')
       const ele = cy.getElementById(networkView.hoveredElement)
       if (ele !== undefined) {

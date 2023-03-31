@@ -5,7 +5,7 @@ import {
   VisualStyle,
 } from '../models/VisualStyleModel'
 
-import { create } from 'zustand'
+import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { ValueType, AttributeName } from '../models/TableModel'
 import {
@@ -18,7 +18,7 @@ import { ContinuousFunctionControlPoint } from '../models/VisualStyleModel/Visua
 import { VisualPropertyValueTypeName } from '../models/VisualStyleModel/VisualPropertyValueTypeName'
 
 import { deleteVisualStyleFromDb, putVisualStyleToDb } from './persist/db'
-
+import { useWorkspaceStore } from './WorkspaceStore'
 /**
 //  * Visual Style State manager based on zustand
 //  */
@@ -91,15 +91,45 @@ interface VisualStyleAction {
   deleteAll: () => void
 }
 
+type VisualStyleStore = VisualStyleState &
+  VisualStyleAction &
+  UpdateVisualStyleAction
+
+const persist =
+  (config: StateCreator<VisualStyleStore>) =>
+  (
+    set: StoreApi<VisualStyleStore>['setState'],
+    get: StoreApi<VisualStyleStore>['getState'],
+    api: StoreApi<VisualStyleStore>,
+  ) =>
+    config(
+      async (args) => {
+        const currentNetworkId =
+          useWorkspaceStore.getState().workspace.currentNetworkId
+        console.log('persist middleware updating visual style store')
+
+        set(args)
+        const updated = get().visualStyles[currentNetworkId]
+        console.log('updated visual style: ', updated)
+
+        const deleted = updated === undefined
+
+        if (!deleted) {
+          await putVisualStyleToDb(currentNetworkId, updated).then(() => {})
+        }
+      },
+      get,
+      api,
+    )
+
 export const useVisualStyleStore = create(
-  immer<VisualStyleState & VisualStyleAction & UpdateVisualStyleAction>(
-    (set) => ({
+  immer<VisualStyleStore>(
+    persist((set) => ({
       visualStyles: {},
 
       set: (networkId: IdType, visualStyle: VisualStyle) => {
         set((state) => {
           state.visualStyles[networkId] = visualStyle
-          void putVisualStyleToDb(networkId, visualStyle).then(() => {})
           return state
         })
       },
@@ -127,7 +157,6 @@ export const useVisualStyleStore = create(
           elementIds.forEach((eleId) => {
             bypassMap.set(eleId, vpValue)
           })
-
           return state
         })
       },
@@ -150,6 +179,7 @@ export const useVisualStyleStore = create(
               mapping?.vpValueMap.set(value, vpValue)
             })
           }
+          return state
         })
       },
       deleteDiscreteMappingValue: (networkId, vpName, values) => {
@@ -161,6 +191,7 @@ export const useVisualStyleStore = create(
               mapping?.vpValueMap.delete(value)
             })
           }
+          return state
         })
       },
       setContinuousMappingValues: (
@@ -178,6 +209,7 @@ export const useVisualStyleStore = create(
             mapping.max = max
             mapping.controlPoints = controlPoints
           }
+          return state
         })
       },
 
@@ -194,6 +226,7 @@ export const useVisualStyleStore = create(
             defaultValue,
           }
           state.visualStyles[networkId][vpName].mapping = discreteMapping
+          return state
         })
       },
 
@@ -210,8 +243,6 @@ export const useVisualStyleStore = create(
             !vpName.includes('Opacity') && !vpName.includes('opacity')
               ? [1, 100]
               : [0, 1]
-
-          console.log(vpName)
 
           const createColorMapping = (): {
             min: ContinuousFunctionControlPoint
@@ -291,6 +322,11 @@ export const useVisualStyleStore = create(
               visualPropertyType: type,
               defaultValue,
             }
+            void putVisualStyleToDb(
+              networkId,
+              state.visualStyles[networkId],
+            ).then(() => {})
+
             state.visualStyles[networkId][vpName].mapping = continuousMapping
           } else if (vpType === VisualPropertyValueTypeName.Number) {
             const { min, max, ctrlPts } = createNumberMapping()
@@ -304,11 +340,12 @@ export const useVisualStyleStore = create(
               defaultValue,
             }
             state.visualStyles[networkId][vpName].mapping = continuousMapping
+          } else {
+            console.error(
+              `Could not create continuous mapping function because vpType needs to be a color or number.  Received ${vpType}}`,
+            )
           }
-
-          console.error(
-            `Could not create continuous mapping function because vpType needs to be a color or number.  Received ${vpType}}`,
-          )
+          return state
         })
       },
 
@@ -322,12 +359,14 @@ export const useVisualStyleStore = create(
             defaultValue,
           }
           state.visualStyles[networkId][vpName].mapping = passthroughMapping
+          return state
         })
       },
       removeMapping(networkId, vpName) {
         set((state) => {
           const vp = state.visualStyles[networkId][vpName]
           delete vp.mapping
+          return state
         })
       },
       delete: (networkId) => {
@@ -341,7 +380,7 @@ export const useVisualStyleStore = create(
             return acc
           }, {})
           void deleteVisualStyleFromDb(networkId).then(() => {
-            console.log('# deleted visual style from db')
+            console.log('Deleted visual style from db', networkId)
           })
           return {
             ...state,
@@ -352,8 +391,9 @@ export const useVisualStyleStore = create(
       deleteAll: () => {
         set((state) => {
           state.visualStyles = {}
+          return state
         })
       },
-    }),
+    })),
   ),
 )

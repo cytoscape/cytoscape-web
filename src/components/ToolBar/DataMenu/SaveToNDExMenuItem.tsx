@@ -60,6 +60,10 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     (state) => state.setCurrentNetworkId,
   )
 
+  const setNetworkModified = useWorkspaceStore(
+    (state) => state.setNetworkModified,
+  )
+
   const getToken = useCredentialStore((state) => state.getToken)
   const client = useCredentialStore((state) => state.client)
   const authenticated: boolean = client?.authenticated ?? false
@@ -86,6 +90,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     updateSummary(currentNetworkId, {
       modificationTime: newNdexModificationTime,
     })
+
+    setNetworkModified(currentNetworkId, false)
+    setCurrentNetworkId(currentNetworkId)
 
     setShowConfirmDialog(false)
     props.handleClose()
