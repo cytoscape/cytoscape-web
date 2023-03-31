@@ -6,6 +6,9 @@ export interface LayoutAlgorithm {
   readonly name: string
   readonly engineName: string
 
+  // (Optional) Will be disabled if the number of objects is larger than this value
+  readonly threshold?: number
+
   // Detailed description of the layout algorithm
   readonly description: string
 

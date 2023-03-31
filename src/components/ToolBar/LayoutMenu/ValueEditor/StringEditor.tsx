@@ -7,22 +7,22 @@ import {
 } from '@mui/material'
 import { ChangeEvent } from 'react'
 
-interface NumberEditorProps {
+interface StringEditorProps {
   optionName: string
-  description: string
-  value: number
-  setValue: (optionName: string, value: number) => void
+  description?: string
+  value: string
+  setValue: (optionName: string, value: string) => void
 }
 
-export const NumberEditor = ({
+export const StringEditor = ({
   optionName,
   description,
   value,
   setValue,
-}: NumberEditorProps): JSX.Element => {
+}: StringEditorProps): JSX.Element => {
   const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const newValue: any = event.target.value
-    setValue(optionName, Number.parseInt(newValue))
+    setValue(optionName, newValue as string)
   }
   return (
     <ListItem
@@ -32,8 +32,8 @@ export const NumberEditor = ({
           <TextField
             id="standard-basic"
             variant="standard"
-            defaultValue={value}
             sx={{ maxWidth: '4em', justifyContent: 'right' }}
+            defaultValue={value}
             onChange={handleChange}
           />
         </Tooltip>

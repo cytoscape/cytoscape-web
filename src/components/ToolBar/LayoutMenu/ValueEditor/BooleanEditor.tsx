@@ -1,14 +1,22 @@
-import { ListItem, Checkbox, ListItemButton, ListItemText } from '@mui/material'
+import {
+  ListItem,
+  Checkbox,
+  ListItemButton,
+  ListItemText,
+  Tooltip,
+} from '@mui/material'
 import { ChangeEvent, useState } from 'react'
 
 interface BooleanEditorProps {
   optionName: string
+  description: string
   value: boolean
   setValue: (optionName: string, value: boolean) => void
 }
 
 export const BooleanEditor = ({
   optionName,
+  description,
   value,
   setValue,
 }: BooleanEditorProps): JSX.Element => {
@@ -25,7 +33,9 @@ export const BooleanEditor = ({
       key={optionName}
       disablePadding
       secondaryAction={
-        <Checkbox edge="end" onChange={handleToggle} checked={checked} />
+        <Tooltip arrow placement={'right'} title={description} key={optionName}>
+          <Checkbox edge="end" onChange={handleToggle} checked={checked} />
+        </Tooltip>
       }
     >
       <ListItemButton>

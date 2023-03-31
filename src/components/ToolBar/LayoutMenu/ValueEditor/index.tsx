@@ -1,1 +1,1 @@
-export {} from './ValueEditor'
+export { ValueEditor } from './ValueEditor'

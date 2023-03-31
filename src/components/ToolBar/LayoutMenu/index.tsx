@@ -1,6 +1,6 @@
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
-import { Divider, MenuItem } from '@mui/material'
+import { Divider, MenuItem, Tooltip } from '@mui/material'
 import { useState } from 'react'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { useViewModelStore } from '../../../store/ViewModelStore'
@@ -72,11 +72,17 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       const engineName: string = layoutEngine.name
       const names: string[] = Object.keys(layoutEngine.algorithms)
       names.forEach((name: string) => {
+        const algorithm = layoutEngine.algorithms[name]
         const menuItem = {
           key: `${engineName}-${name}`,
           label: `${engineName}: ${name}`,
+          description: algorithm.description ?? name,
+          disabled:
+            algorithm.threshold === undefined
+              ? false
+              : target.nodes?.length + target.edges?.length >
+                algorithm.threshold,
           onClick: () => {
-            console.log('LayoutMenu: onClick: ', name)
             if (target === undefined) {
               return
             }
@@ -95,15 +101,23 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
     return menuItems.map((menuItem: any) => {
       return (
-        <MenuItem
+        <Tooltip
+          arrow
+          placement={'right'}
+          title={menuItem.description}
           key={menuItem.key}
-          onClick={() => {
-            handleClose()
-            menuItem.onClick()
-          }}
         >
-          {menuItem.label}
-        </MenuItem>
+          <MenuItem
+            key={menuItem.key}
+            disabled={menuItem.disabled}
+            onClick={() => {
+              handleClose()
+              menuItem.onClick()
+            }}
+          >
+            {menuItem.label}
+          </MenuItem>
+        </Tooltip>
       )
     })
   }

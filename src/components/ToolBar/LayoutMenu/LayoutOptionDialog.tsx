@@ -86,7 +86,22 @@ export const LayoutOptionDialog = ({
     } else {
       setIsDefault(false)
     }
-  }, [selected, preferredLayout])
+
+    const algorithm = engine.algorithms[selected[1]]
+
+    if (algorithm?.threshold !== undefined) {
+      // Disable apply button if network is too large
+      const nodeCount: number = network.nodes?.length ?? 0
+      const edgeCount: number = network.edges?.length ?? 0
+
+      const total: number = nodeCount + edgeCount
+      if (total > algorithm.threshold) {
+        setDisabled(true)
+      }
+    } else {
+      setDisabled(false)
+    }
+  }, [selected, preferredLayout, network])
 
   const setDefaultLayout: (engineName: string, algorithmName: string) => void =
     useLayoutStore((state) => state.setPreferredLayout)
@@ -101,6 +116,8 @@ export const LayoutOptionDialog = ({
   const handleClose = (): void => {
     setOpen(false)
   }
+
+  const [disabled, setDisabled] = useState<boolean>(false)
 
   const handleApply = (): void => {
     // Perform apply layout here
@@ -185,6 +202,7 @@ export const LayoutOptionDialog = ({
                 <ValueEditor
                   key={property.name}
                   optionName={property.name}
+                  description={property.description ?? property.name}
                   valueType={property.type}
                   value={property.value}
                   setValue={(optionName: string, value: ValueType) =>
@@ -200,7 +218,7 @@ export const LayoutOptionDialog = ({
         <Button onClick={handleClose} color="info">
           Close
         </Button>
-        <Button onClick={handleApply} color="secondary">
+        <Button disabled={disabled} onClick={handleApply} color="secondary">
           Apply Layout
         </Button>
       </DialogActions>

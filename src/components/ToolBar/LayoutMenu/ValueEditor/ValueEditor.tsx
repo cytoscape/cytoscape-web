@@ -1,17 +1,11 @@
-import {
-  ListItem,
-  ListItemButton,
-  ListItemAvatar,
-  Avatar,
-  ListItemText,
-  TextField,
-} from '@mui/material'
 import { ValueType, ValueTypeName } from '../../../../models/TableModel'
 import { BooleanEditor } from './BooleanEditor'
 import { NumberEditor } from './NumberEditor'
+import { StringEditor } from './StringEditor'
 
 interface ValueEditorProps {
   optionName: string
+  description: string
   valueType: ValueTypeName
   value: ValueType
   setValue: (optionName: string, value: ValueType) => void
@@ -19,16 +13,11 @@ interface ValueEditorProps {
 
 export const ValueEditor = ({
   optionName,
+  description,
   valueType,
   value,
   setValue,
 }: ValueEditorProps): JSX.Element => {
-  const handleChange = (event: any): void => {
-    // Extract value from event
-    const value = event.target.value
-    setValue(optionName, value)
-  }
-
   if (
     valueType === ValueTypeName.Integer ||
     valueType === ValueTypeName.Double ||
@@ -37,6 +26,7 @@ export const ValueEditor = ({
     return (
       <NumberEditor
         optionName={optionName}
+        description={description}
         value={value as number}
         setValue={setValue}
       />
@@ -46,32 +36,19 @@ export const ValueEditor = ({
     return (
       <BooleanEditor
         optionName={optionName}
+        description={description}
         value={value as boolean}
         setValue={setValue}
       />
     )
   } else {
-    // Handle as string
     return (
-      <ListItem
-        key={optionName}
-        secondaryAction={
-          <TextField
-            id="standard-basic"
-            variant="standard"
-            defaultValue={value}
-            onChange={handleChange}
-          />
-        }
-        disablePadding
-      >
-        <ListItemButton>
-          <ListItemAvatar>
-            <Avatar />
-          </ListItemAvatar>
-          <ListItemText id={optionName} primary={optionName} />
-        </ListItemButton>
-      </ListItem>
+      <StringEditor
+        optionName={optionName}
+        description={description}
+        value={value as string}
+        setValue={setValue}
+      />
     )
   }
 }
