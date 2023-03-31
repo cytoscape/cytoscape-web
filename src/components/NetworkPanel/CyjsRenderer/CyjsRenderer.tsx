@@ -3,6 +3,7 @@ import debounce from 'lodash.debounce'
 import Cytoscape, {
   Core,
   EventObject,
+  NodeSingular,
   SingularElementArgument,
 } from 'cytoscape'
 
@@ -11,19 +12,15 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { Network } from '../../../models/NetworkModel'
-import {
-  ReactElement,
-  // useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { NetworkView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
 import { addObjects } from './cyjs-factory'
+import { useLayoutStore } from '../../../store/LayoutStore'
+import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
+import { CircularProgress, Typography } from '@mui/material'
 interface NetworkRendererProps {
   network: Network
 }
@@ -38,6 +35,8 @@ const HOVER_STATE_NAME: string = 'hover'
 const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const { id } = network
 
+  const isRunning: boolean = useLayoutStore((state) => state.isRunning)
+
   const setViewModel = useViewModelStore((state) => state.setViewModel)
   const setVisualStyle = useVisualStyleStore((state) => state.set)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
@@ -46,24 +45,49 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const viewModels = useViewModelStore((state) => state.viewModels)
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+
   const setNodePosition: (
     networkId: IdType,
     nodeId: IdType,
     position: [number, number],
   ) => void = useViewModelStore((state) => state.setNodePosition)
+
   const setHovered: (networkId: IdType, eleId: IdType) => void =
     useViewModelStore((state) => state.setHovered)
 
   const [cyStyle, setCyStyle] = useState<any[]>([])
   const [renderedId, setRenderedId] = useState<string>('')
 
+  // TO avoid unnecessary re-rendering / fit
+  const [nodesMoved, setNodesMoved] = useState<boolean>(false)
+
   const networkView: NetworkView = viewModels[id]
 
   const vs: VisualStyle = visualStyles[id]
+
+  // Extract background color from visual style as a special case
+  // let bgColor: string =
+  //   vs?.networkBackgroundColor !== undefined
+  //     ? (vs.networkBackgroundColor.defaultValue as string)
+  //     : '#FFFFFF'
+
+  const [bgColor, setBgColor] = useState<string>('#FFFFFF')
+  useEffect(() => {
+    if (vs?.networkBackgroundColor !== undefined) {
+      setBgColor(vs.networkBackgroundColor.defaultValue as string)
+    } else {
+      setBgColor('#FFFFFF')
+    }
+  }, [vs, isRunning])
+
   const table = tables[id]
 
   const [cy, setCy] = useState<any>(null)
   const cyContainer = useRef(null)
+
+  const setRendererFunction = useRendererFunctionStore(
+    (state) => state.setFunction,
+  )
 
   // Avoid duplicate initialization of Cyjs
   const isInitialized = useRef(false)
@@ -145,6 +169,9 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
       // Moving nodes
       cy.on('dragfree', 'node', (e: EventObject): void => {
+        // Enable flag to avoid unnecessary fit
+        setNodesMoved(true)
+
         const targetNode = e.target
         const nodeId: IdType = targetNode.data('id')
         const position = targetNode.position()
@@ -167,6 +194,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       cy.style(newStyle)
 
       cy.fit()
+
       setVisualStyle(id, vs)
       setTimeout(() => {
         isViewCreated.current = true
@@ -250,6 +278,31 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     applyUpdates()
   }, [vs, table])
 
+  // Apply layout when node positions are changed
+  useEffect(() => {
+    if (viewModels[id] === undefined || cy === null) {
+      return
+    }
+
+    // This means nodes are moved by hand. Does not need to apply fit
+    if (nodesMoved) {
+      setNodesMoved(false)
+      return
+    }
+
+    // Update position
+    const curView = viewModels[id]
+    const nodeViews = curView.nodeViews
+    cy.nodes().forEach((cyNode: NodeSingular) => {
+      const cyNodeId = cyNode.data('id')
+      cyNode.position({
+        x: nodeViews[cyNodeId].x,
+        y: nodeViews[cyNodeId].y,
+      })
+    })
+    cy.fit()
+  }, [networkView?.nodeViews])
+
   // when hovered element changes, apply hover style to that element
   useEffect(() => {
     applyHoverUpdate()
@@ -265,11 +318,18 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
+        wheelSensitivity: 0.1,
       })
       setCy(cy)
       // Now add event handlers. This is necessary only once.
       // addEventHandlers(cy)
       console.info('Cyjs renderer is ready.')
+      const fitFunction = (): void => {
+        if (cy !== null) {
+          cy.fit()
+        }
+      }
+      setRendererFunction('cyjs', 'fit', fitFunction)
     }
 
     return () => {
@@ -287,14 +347,34 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   }, [cy])
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        height: '100%',
-      }}
-      id="cy-container"
-      ref={cyContainer}
-    />
+    <>
+      {isRunning ? (
+        <Box
+          sx={{
+            display: 'flex',
+            position: 'absolute',
+            alignItems: 'center',
+            top: '1em',
+            left: '1em',
+            zIndex: 2000,
+          }}
+        >
+          <CircularProgress size={40} />
+          <Typography variant="h6" sx={{ marginLeft: '1em' }}>
+            Applying layout...
+          </Typography>
+        </Box>
+      ) : null}
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          backgroundColor: bgColor,
+        }}
+        id="cy-container"
+        ref={cyContainer}
+      />
+    </>
   )
 }
 
