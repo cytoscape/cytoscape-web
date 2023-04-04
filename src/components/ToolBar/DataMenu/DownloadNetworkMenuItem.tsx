@@ -46,7 +46,7 @@ export const DownloadNetworkMenuItem = (
       viewModel,
       `Copy of ${summary.name}`,
     )
-    console.log(cx);
+    console.log(summary);
     const link = document.createElement("a");
     link.download = `${summary.name}.cx2`;
     const cxFile = new Blob([JSON.stringify(cx)], {type: 'text/plain'});

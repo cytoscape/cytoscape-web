@@ -18,6 +18,7 @@ import {
   putTablesToDb,
   putVisualStyleToDb,
   putNetworkViewToDb,
+  putNetworkSummaryToDb,
 } from '../../../store/persist/db'
 
 
@@ -32,7 +33,9 @@ export const UploadNetworkMenuItem = (
     visualStyle: VisualStyle
     networkView: NetworkView
   }
-
+  const setCurrentNetworkId = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
 
   const addNewNetwork = useNetworkStore((state) => state.add)
 
@@ -78,16 +81,47 @@ export const UploadNetworkMenuItem = (
       reader.onload = async (event) => {
         try {
           const json = JSON.parse(event.target?.result as string);
-          console.log(json);
+          const localName = json[3].networkAttributes[0].name
+          const localDescription = json[3].networkAttributes[0].description
           const localUuid = uuidv4();
+          const localNodeCount = json[1].metaData[3].elementCount
+          const localEdgeCount = json[1].metaData[2].elementCount
+          await putNetworkSummaryToDb({
+            "ownerUUID": localUuid, "name": localName,
+            isReadOnly: false,
+            subnetworkIds: [],
+            isValid: false,
+            warnings: [],
+            isShowcase: false,
+            isCertified: false,
+            indexLevel: '',
+            hasLayout: false,
+            hasSample: false,
+            cxFileSize: 0,
+            cx2FileSize: 0,
+            properties: [],
+            owner: '',
+            version: '',
+            completed: false,
+            visibility: 'PUBLIC',
+            nodeCount: localNodeCount,
+            edgeCount: localEdgeCount,
+            description: localDescription,
+            creationTime: new Date(Date.now()),
+            externalId: localUuid,
+            isDeleted: false,
+            modificationTime: new Date(Date.now())
+          })
           const res = await createDataFromLocalCx2(localUuid, json)
-          console.log(res)
           const { network, nodeTable, edgeTable, visualStyle, networkView } = res
           addNetworkToWorkspace(localUuid)
           addNewNetwork(network)
           setVisualStyle(localUuid, visualStyle)
           setTables(localUuid, nodeTable, edgeTable)
           setViewModel(localUuid, networkView)
+          setTimeout(() => {
+            setCurrentNetworkId(localUuid)
+          }, 500)
           props.handleClose()
         } catch (error) {
           console.error(error);
