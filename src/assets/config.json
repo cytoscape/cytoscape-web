@@ -1,5 +1,5 @@
 {
-  "ndexBaseUrl": "https://dev.ndexbio.org",
+  "ndexBaseUrl": "dev.ndexbio.org",
   "options": {
     "debug": true
   },
@@ -7,5 +7,7 @@
     "url": "https://dev.ndexbio.org/auth2",
     "clientId": "localtestclient",
     "realm": "ndex"
-  }
+  },
+  "maxNetworkElementsThreshold": 20000,
+  "maxNetworkFileSize": 524288000
 }

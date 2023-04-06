@@ -54,12 +54,12 @@ export const getNdexNetworkSummary = async (
 }
 
 // fetch network summaries from NDEx
-const networkSummaryFetcher = async (
+export const networkSummaryFetcher = async (
   id: IdType | IdType[],
   url: string,
   accessToken?: string,
 ): Promise<NdexNetworkSummary[]> => {
-  const ndexClient = new NDEx(`${url}/v2`)
+  const ndexClient = new NDEx(url)
 
   if (accessToken !== undefined && accessToken !== '') {
     ndexClient.setAuthToken(accessToken)

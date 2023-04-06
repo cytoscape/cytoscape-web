@@ -5,9 +5,10 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
+import { Typography } from '@mui/material'
 import { ReactElement, useState, useContext } from 'react'
 import { AppConfigContext } from '../../../AppConfigContext'
-
+import { IdType } from '../../../models/IdType'
 // An example in dev.ndexbio.org
 const EXAMPLE_UUID = '2c669bc1-f7eb-11ec-8bfe-0242c246b7fb'
 
@@ -15,6 +16,7 @@ interface LoadFromNdexDialogProps {
   open: boolean
   handleClose: () => void
   handleLoad: (uuid: string) => void
+  invalidNetworkIds: IdType[]
 }
 export const LoadFromNdexDialog = (
   props: LoadFromNdexDialogProps,
@@ -40,6 +42,11 @@ export const LoadFromNdexDialog = (
           variant="standard"
           onChange={(e) => setUuid(e.target.value)}
         />
+        {props.invalidNetworkIds.length > 0 && (
+          <Typography color="error">{`The following networks were too large to load into Cytoscape Web: ${props.invalidNetworkIds.join(
+            ', ',
+          )}`}</Typography>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
