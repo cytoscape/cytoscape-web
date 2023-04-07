@@ -1,4 +1,4 @@
-import { Box, TextField, Typography } from '@mui/material'
+import { Box, TextField, Typography, Button } from '@mui/material'
 import * as React from 'react'
 export function NumberInput(props: {
   currentValue: number | null
@@ -10,6 +10,7 @@ export function NumberInput(props: {
   React.useEffect(() => {
     setValue(String(currentValue ?? 0))
   }, [currentValue])
+
   return (
     <Box>
       <TextField
@@ -19,13 +20,34 @@ export function NumberInput(props: {
         onChange={(e) => {
           const newValue = Number(Number(e.target.value).toFixed(4))
           setValue(String(newValue))
-          if (!isNaN(newValue)) {
-            onValueChange(newValue)
-          }
         }}
       >
         <Typography variant="h6">{currentValue}</Typography>
       </TextField>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Button
+          color="error"
+          onClick={() => setValue(String(currentValue ?? 0))}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={() => {
+            const nextValue = Number(Number(value).toFixed(4))
+            if (!isNaN(nextValue)) {
+              onValueChange(nextValue)
+            }
+          }}
+        >
+          Confirm
+        </Button>
+      </Box>
     </Box>
   )
 }
