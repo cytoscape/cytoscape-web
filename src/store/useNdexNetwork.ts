@@ -122,7 +122,7 @@ const ndexNetworkFetcher = async (
   url: string,
   accessToken?: string,
 ): Promise<Cx2> => {
-  const ndexClient = new NDEx(`${url}/v2`)
+  const ndexClient = new NDEx(url)
 
   if (accessToken !== undefined && accessToken !== '') {
     ndexClient.setAuthToken(accessToken)
