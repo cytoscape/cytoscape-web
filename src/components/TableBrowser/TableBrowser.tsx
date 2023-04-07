@@ -242,7 +242,7 @@ export default function TableBrowser(props: {
   const columns = Array.from(currentTable?.columns.entries() ?? new Map()).map(
     ([key, col], index) => ({
       id: key,
-      title: `${key}-${col.type}`,
+      title: key,
       type: col.type,
       index,
       hasMenu: true,
@@ -309,7 +309,7 @@ export default function TableBrowser(props: {
           allowOverlay: true,
           readonly: false,
           kind: GridCellKind.Text,
-          displayData: 'N/A',
+          displayData: '',
           data: '',
         }
       }
@@ -347,13 +347,10 @@ export default function TableBrowser(props: {
   const onItemHovered = React.useCallback(
     (cell: Item) => {
       const rowIndex = cell[1]
-      const rowData = rows[rowIndex]
-      const cxId = rowData?.cxId
+      const isNodeTable = currentTable === nodeTable
+      const cxId: number = rowIndex + (isNodeTable ? minNodeId : minEdgeId)
       if (cxId != null) {
-        const eleId =
-          currentTable === nodeTable
-            ? rowData.cxId
-            : translateCXEdgeId(`${rowData.cxId as string}`)
+        const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
         setHovered(props.currentNetworkId, String(eleId))
       }
     },

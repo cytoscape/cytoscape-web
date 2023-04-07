@@ -50,12 +50,6 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     nodeTable.columns.set(attrName, columnDef)
   })
 
-  // for debug purposes
-  nodeTable.columns.set(cxIdKey, {
-    type: 'string',
-    name: cxIdKey,
-  })
-
   Object.entries(attrDefs.edges).forEach(([attrName, attrDef]) => {
     const columnDef = {
       type: attrDef.d as ValueTypeName,
@@ -67,11 +61,6 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     }
 
     edgeTable.columns.set(attrName, columnDef)
-  })
-
-  edgeTable.columns.set(cxIdKey, {
-    type: 'string',
-    name: cxIdKey,
   })
 
   nodeAttr.forEach((attr, nodeId) => {
