@@ -34,13 +34,14 @@ export const getNdexNetworkSummary = async (
       url,
       accessToken,
     )
-    newSummaries.forEach(async (summary: NdexNetworkSummary) => {
+    const validNewSummaries = newSummaries.filter((s) => s !== undefined)
+    validNewSummaries.forEach(async (summary: NdexNetworkSummary) => {
       await putNetworkSummaryToDb(summary)
     })
 
     const summaryResults: Record<IdType, NdexNetworkSummary> = [
-      ...cachedSummaries,
-      ...newSummaries,
+      ...cachedSummaries.filter((s) => s !== undefined),
+      ...validNewSummaries,
     ].reduce((acc: Record<IdType, NdexNetworkSummary>, s) => {
       acc[s.externalId] = s
       return acc
