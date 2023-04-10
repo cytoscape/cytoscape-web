@@ -9,6 +9,7 @@ import { Typography } from '@mui/material'
 import { ReactElement, useState, useContext } from 'react'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { IdType } from '../../../models/IdType'
+import { formatBytes } from '../../../utils/cx/byte-conversion'
 // An example in dev.ndexbio.org
 const EXAMPLE_UUID = '2c669bc1-f7eb-11ec-8bfe-0242c246b7fb'
 
@@ -22,7 +23,8 @@ export const LoadFromNdexDialog = (
   props: LoadFromNdexDialogProps,
 ): ReactElement => {
   const [uuid, setUuid] = useState<string>(EXAMPLE_UUID)
-  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const { ndexBaseUrl, maxNetworkFileSize, maxNetworkElementsThreshold } =
+    useContext(AppConfigContext)
 
   const { open, handleClose, handleLoad } = props
   return (
@@ -43,7 +45,9 @@ export const LoadFromNdexDialog = (
           onChange={(e) => setUuid(e.target.value)}
         />
         {props.invalidNetworkIds.length > 0 && (
-          <Typography color="error">{`The following networks were too large to load into Cytoscape Web: ${props.invalidNetworkIds.join(
+          <Typography color="error">{`Networks must be smaller than ${formatBytes(
+            maxNetworkFileSize,
+          )} and contain less than ${maxNetworkElementsThreshold} nodes/edges.  The following networks were too large to load into Cytoscape Web: ${props.invalidNetworkIds.join(
             ', ',
           )}`}</Typography>
         )}
