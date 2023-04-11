@@ -65,23 +65,18 @@ export const OpenNetworkInCytoscapeMenuItem = (
   }
 
 
-  const temp = false
 
   const menuItem = (
     <MenuItem
-      disabled={temp}
       onClick={handleOpenNetworkInCytoscape}
     >
       Open a copy of the current network in Cytoscape
     </MenuItem>
   )
-  if (!temp) {
-    return <>{menuItem}</>
-  } else {
+
     return (
       <Tooltip title="Download and open Cytoscape to open network">
         <Box>{menuItem}</Box>
       </Tooltip>
     )
   }
-}
