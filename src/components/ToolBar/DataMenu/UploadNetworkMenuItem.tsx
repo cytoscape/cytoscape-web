@@ -119,9 +119,7 @@ export const UploadNetworkMenuItem = (
           setVisualStyle(localUuid, visualStyle)
           setTables(localUuid, nodeTable, edgeTable)
           setViewModel(localUuid, networkView)
-          setTimeout(() => {
-            setCurrentNetworkId(localUuid)
-          }, 500)
+          setCurrentNetworkId(localUuid)
           props.handleClose()
         } catch (error) {
           console.error(error);

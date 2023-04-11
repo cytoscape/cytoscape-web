@@ -65,7 +65,6 @@ export const CopyNetworkToNDExMenuItem = (
       viewModel,
       `Copy of ${summary.name}`,
     )
-      console.log(cx);
     try {
       const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
       addNetworkToWorkspace(uuid as IdType)
