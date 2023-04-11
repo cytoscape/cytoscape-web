@@ -109,8 +109,8 @@ export const LoginButton = (): ReactElement => {
           sx={{
             bgcolor: parsed.name === undefined ? '#DDDDDD' : deepOrange[300],
             marginLeft: 2,
-            width: '32',
-            height: '32',
+            width: 28,
+            height: 28,
           }}
           onClick={handleClose}
         >

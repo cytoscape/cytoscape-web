@@ -95,8 +95,6 @@ export const NetworkPropertyPanel = ({
           alignItems: 'center',
           '&:hover': { cursor: 'pointer' },
           p: 1,
-          pt: 2,
-          pb: 2,
         }}
         onClick={() => {
           setCurrentNetworkId(id)

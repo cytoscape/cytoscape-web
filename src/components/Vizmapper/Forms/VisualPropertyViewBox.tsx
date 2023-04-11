@@ -2,8 +2,8 @@ import { Box } from '@mui/material'
 import { styled } from '@mui/material/styles'
 
 export const VisualPropertyViewBox = styled(Box)(({ theme }) => ({
-  height: 40,
-  width: 40,
+  height: 30,
+  width: 30,
   //   backgroundColor: '#F2F2F2',
   borderRadius: '20%',
   boxShadow: theme.shadows[2],
@@ -18,8 +18,8 @@ export const VisualPropertyViewBox = styled(Box)(({ theme }) => ({
 }))
 
 export const EmptyVisualPropertyViewBox = styled(Box)(({ theme }) => ({
-  height: 40,
-  width: 40,
+  height: 30,
+  width: 30,
   backgroundColor: '#D9D9D9',
   boxShadow: theme.shadows[2],
   cursor: 'pointer',
