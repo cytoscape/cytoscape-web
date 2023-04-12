@@ -47,7 +47,9 @@ export function OpacitySlider(props: {
 export function Opacity(props: { value: number }): React.ReactElement {
   return (
     <Box sx={{ p: 1 }}>
-      <Typography variant="body1">{opacityToPercent(props.value)}%</Typography>
+      <Typography sx={{ fontSize: 12 }} variant="body1">
+        {opacityToPercent(props.value)}%
+      </Typography>
     </Box>
   )
 }

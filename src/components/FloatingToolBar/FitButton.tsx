@@ -21,7 +21,7 @@ export const FitButton = (): JSX.Element => {
       <IconButton
         onClick={handleClick}
         aria-label="fit"
-        size="large"
+        size="small"
         disableFocusRipple={true}
       >
         <ZoomOutMap fontSize="inherit" />

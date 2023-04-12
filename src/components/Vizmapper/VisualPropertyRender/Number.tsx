@@ -62,7 +62,9 @@ export function NumberRender(props: { value: number }): React.ReactElement {
       : displayValue
   return (
     <Box>
-      <Typography variant="body1">{displayValue}</Typography>
+      <Typography sx={{ fontSize: 14 }} variant="body1">
+        {displayValue}
+      </Typography>
     </Box>
   )
 }
