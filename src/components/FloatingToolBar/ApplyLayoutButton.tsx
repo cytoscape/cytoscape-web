@@ -63,7 +63,7 @@ export const ApplyLayoutButton = (): JSX.Element => {
       <IconButton
         onClick={handleClick}
         aria-label="apply-layout"
-        size="large"
+        size="small"
         disableFocusRipple={true}
       >
         <Refresh fontSize="inherit" />

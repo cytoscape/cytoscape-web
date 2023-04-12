@@ -28,8 +28,7 @@ function VisualPropertyView(props: {
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
-        p: 0.5,
-        pb: 1,
+        p: 0.25,
       }}
     >
       <DefaultValueForm
@@ -145,10 +144,14 @@ export default function VizmapperView(props: {
         <Tab label={<Typography variant="caption">Edges</Typography>} />
         <Tab label={<Typography variant="caption">Network</Typography>} />
       </Tabs>
-      <Box sx={{ display: 'flex', p: 1, ml: 1 }}>
-        <Box sx={{ width: 40, textAlign: 'center', mr: 1 }}>Def.</Box>
-        <Box sx={{ width: 40, textAlign: 'center', mr: 1 }}>Map.</Box>
-        <Box sx={{ width: 40, textAlign: 'center' }}>Byp.</Box>
+      <Box sx={{ display: 'flex', p: 0.5, ml: 1 }}>
+        <Box sx={{ width: 24, textAlign: 'center', mr: 1.5, fontSize: 12 }}>
+          Def.
+        </Box>
+        <Box sx={{ width: 24, textAlign: 'center', mr: 1.5, fontSize: 12 }}>
+          Map.
+        </Box>
+        <Box sx={{ width: 24, textAlign: 'center', fontSize: 12 }}>Byp.</Box>
       </Box>
       <Divider />
       <div hidden={currentTabIndex !== 0}>
