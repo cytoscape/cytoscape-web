@@ -11,7 +11,6 @@ import { UploadNetworkMenuItem } from './UploadNetworkMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
 import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
 
-
 import { useState } from 'react'
 interface DropdownMenuProps {
   label: string
