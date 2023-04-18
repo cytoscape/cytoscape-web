@@ -60,7 +60,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   nodeBackgroundColor: {
     group: 'node',
     name: 'nodeBackgroundColor',
-    displayName: 'Background Color',
+    displayName: 'Fill Color',
     type: 'color',
     defaultValue: '#FFFFFF',
     bypassMap: new Map(),
