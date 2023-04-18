@@ -64,7 +64,6 @@ export const LoadFromNdexDialog = (
   const [successMessage, setSuccessMessage] = useState<string | undefined>(
     undefined,
   )
-  // const [showMessage, setShowMessage] = useState<boolean>(false)
   const [selectedNetworks, setSelectedNetworks] = useState<IdType[]>([])
 
   const networkListData =
@@ -159,8 +158,19 @@ export const LoadFromNdexDialog = (
     }
   }, [authenticated])
 
+  useEffect(() => {
+    setLoading(true)
+    fetchSearchResults()
+      .then(() => {
+        setLoading(false)
+      })
+      .catch((err) => {
+        setErrorMessage(err.message)
+        setLoading(false)
+      })
+  }, [])
+
   const fetchSearchResults = async (): Promise<any> => {
-    if (searchValue === '') return
     const ndexClient = new NDEx(ndexBaseUrl)
     const token = await getToken()
     ndexClient.setAuthToken(token)
@@ -352,7 +362,7 @@ export const LoadFromNdexDialog = (
             void addNDExNetworksToWorkspace(selectedNetworks)
           }}
         >
-          {`Load ${selectedNetworks.length} Network(s)`}
+          {`Open ${selectedNetworks.length} Network(s) from NDEx`}
         </Button>
       </DialogActions>
     </Dialog>

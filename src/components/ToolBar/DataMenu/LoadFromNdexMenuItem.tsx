@@ -18,7 +18,7 @@ export const LoadFromNdexMenuItem = (props: BaseMenuProps): ReactElement => {
   return (
     <>
       <MenuItem onClick={handleOpenDialog}>
-        Load network(s) from NDEx...
+        Open network(s) from NDEx...
       </MenuItem>
       <LoadFromNdexDialog open={openDialog} handleClose={handleCloseDialog} />
     </>
