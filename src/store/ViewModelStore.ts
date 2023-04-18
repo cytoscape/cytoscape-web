@@ -63,7 +63,12 @@ const persist =
         set(args)
         const updated = get().viewModels[currentNetworkId]
         console.log('updated viewmodel: ', updated)
-        await putNetworkViewToDb(currentNetworkId, updated).then(() => {})
+
+        const deleted = updated === undefined
+
+        if (!deleted) {
+          await putNetworkViewToDb(currentNetworkId, updated).then(() => {})
+        }
       },
       get,
       api,
