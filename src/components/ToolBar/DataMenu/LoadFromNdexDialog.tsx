@@ -175,7 +175,7 @@ export const LoadFromNdexDialog = (
     currentTabIndex === 0 ? searchResultNetworks : myNetworks
   const networkListContent = (
     <Box>
-      <TableContainer sx={{ width: 650, height: 460 }}>
+      <TableContainer sx={{ height: 460 }}>
         <Table size={'small'} stickyHeader>
           <TableHead>
             <TableRow>
@@ -234,6 +234,7 @@ export const LoadFromNdexDialog = (
 
               const networkEntryRow = (
                 <TableRow
+                  sx={{ cursor: 'pointer' }}
                   key={externalId}
                   hover={true}
                   selected={selected}
@@ -290,7 +291,17 @@ export const LoadFromNdexDialog = (
 
   const { open, handleClose } = props
   return (
-    <Dialog open={open} onClose={handleClose}>
+    <Dialog
+      PaperProps={{
+        sx: {
+          minHeight: 600,
+        },
+      }}
+      fullWidth={true}
+      maxWidth="md"
+      open={open}
+      onClose={handleClose}
+    >
       <DialogTitle>Load Networks from NDEx: {ndexBaseUrl}</DialogTitle>
       <DialogContent>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
