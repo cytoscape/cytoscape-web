@@ -29,6 +29,7 @@ import { formatBytes } from '../../../utils/byte-conversion'
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { networkSummaryFetcher } from '../../../store/useNdexNetworkSummary'
+import { dateFormatter } from '../../../utils/date-format'
 
 interface LoadFromNdexDialogProps {
   open: boolean
@@ -152,6 +153,7 @@ export const LoadFromNdexDialog = (
         .catch((err) => {
           setErrorMessage(err.message)
           setLoading(false)
+          throw err
         })
     } else {
       setMyNetworks([])
@@ -167,13 +169,17 @@ export const LoadFromNdexDialog = (
       .catch((err) => {
         setErrorMessage(err.message)
         setLoading(false)
+        throw err
       })
   }, [])
 
   const fetchSearchResults = async (): Promise<any> => {
     const ndexClient = new NDEx(ndexBaseUrl)
-    const token = await getToken()
-    ndexClient.setAuthToken(token)
+
+    if (authenticated) {
+      const token = await getToken()
+      ndexClient.setAuthToken(token)
+    }
     const searchResults = await ndexClient.searchNetworks(searchValue, 0, 400)
     setSearchResultNetworks(searchResults?.networks ?? [])
   }
@@ -216,6 +222,8 @@ export const LoadFromNdexDialog = (
               const networkCanBeSelected =
                 !networkAlreadyLoaded && networkIsSmallEnough
 
+              const dateDisplay = dateFormatter(modificationTime)
+
               const disabledNetworkEntryRow = (
                 <TableRow
                   sx={{
@@ -229,16 +237,12 @@ export const LoadFromNdexDialog = (
                   <TableCell padding="checkbox">
                     <Checkbox disabled={true} />
                   </TableCell>
-                  <TableCell sx={{ maxWidth: 160, overflow: 'scroll' }}>
-                    {name}
-                  </TableCell>
+                  <TableCell sx={{ maxWidth: 200 }}>{name}</TableCell>
 
                   <TableCell>{owner}</TableCell>
                   <TableCell>{nodeCount}</TableCell>
                   <TableCell>{edgeCount}</TableCell>
-                  <TableCell>
-                    {new Date(modificationTime).toLocaleString()}
-                  </TableCell>
+                  <TableCell>{dateDisplay}</TableCell>
                 </TableRow>
               )
 
@@ -256,16 +260,12 @@ export const LoadFromNdexDialog = (
                       checked={selected}
                     />
                   </TableCell>
-                  <TableCell sx={{ maxWidth: 200, overflow: 'scroll' }}>
-                    {name}
-                  </TableCell>
+                  <TableCell sx={{ maxWidth: 200 }}>{name}</TableCell>
 
                   <TableCell>{owner}</TableCell>
                   <TableCell>{nodeCount}</TableCell>
                   <TableCell>{edgeCount}</TableCell>
-                  <TableCell>
-                    {new Date(modificationTime).toLocaleString()}
-                  </TableCell>
+                  <TableCell>{dateDisplay}</TableCell>
                 </TableRow>
               )
 
@@ -312,7 +312,7 @@ export const LoadFromNdexDialog = (
       open={open}
       onClose={handleClose}
     >
-      <DialogTitle>Load Networks from NDEx: {ndexBaseUrl}</DialogTitle>
+      <DialogTitle>Open Networks from NDEx: {ndexBaseUrl}</DialogTitle>
       <DialogContent>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs

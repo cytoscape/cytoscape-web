@@ -22,7 +22,7 @@ export const LoadDemoNetworksMenuItem = (
 
   return (
     <MenuItem onClick={handleRemoveAllNetworks}>
-      (Demo) Load sample networks
+      (Demo) Open sample networks
     </MenuItem>
   )
 }
