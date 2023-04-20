@@ -224,6 +224,12 @@ export const LoadFromNdexDialog = (
 
               const dateDisplay = dateFormatter(modificationTime)
 
+              const cellSx = {
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }
+
               const disabledNetworkEntryRow = (
                 <TableRow
                   sx={{
@@ -237,12 +243,27 @@ export const LoadFromNdexDialog = (
                   <TableCell padding="checkbox">
                     <Checkbox disabled={true} />
                   </TableCell>
-                  <TableCell sx={{ maxWidth: 200 }}>{name}</TableCell>
+                  <TableCell
+                    sx={{
+                      maxWidth: 400,
+                      ...cellSx,
+                    }}
+                  >
+                    {name}
+                  </TableCell>
 
-                  <TableCell>{owner}</TableCell>
-                  <TableCell>{nodeCount}</TableCell>
-                  <TableCell>{edgeCount}</TableCell>
-                  <TableCell>{dateDisplay}</TableCell>
+                  <TableCell sx={{ maxWidth: 100, ...cellSx }}>
+                    {owner}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+                    {nodeCount}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+                    {edgeCount}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+                    {dateDisplay}
+                  </TableCell>
                 </TableRow>
               )
 
@@ -260,12 +281,27 @@ export const LoadFromNdexDialog = (
                       checked={selected}
                     />
                   </TableCell>
-                  <TableCell sx={{ maxWidth: 200 }}>{name}</TableCell>
+                  <TableCell
+                    sx={{
+                      maxWidth: 400,
+                      ...cellSx,
+                    }}
+                  >
+                    {name}
+                  </TableCell>
 
-                  <TableCell>{owner}</TableCell>
-                  <TableCell>{nodeCount}</TableCell>
-                  <TableCell>{edgeCount}</TableCell>
-                  <TableCell>{dateDisplay}</TableCell>
+                  <TableCell sx={{ maxWidth: 100, ...cellSx }}>
+                    {owner}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+                    {nodeCount}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+                    {edgeCount}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+                    {dateDisplay}
+                  </TableCell>
                 </TableRow>
               )
 
@@ -308,7 +344,7 @@ export const LoadFromNdexDialog = (
         },
       }}
       fullWidth={true}
-      maxWidth="md"
+      maxWidth="lg"
       open={open}
       onClose={handleClose}
     >
