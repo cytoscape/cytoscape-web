@@ -27,8 +27,6 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     Record<string, CxValue>
   > = cxUtil.getEdgeAttributes(cx)
 
-  const cxIdKey = 'cxId'
-
   // Columns
   const attrDec = cxUtil.getAttributeDeclarations(cx)
   const attrDefs: AttributeDeclaration = attrDec.attributeDeclarations[0]
@@ -64,8 +62,6 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   })
 
   nodeAttr.forEach((attr, nodeId) => {
-    attr[cxIdKey] = nodeId
-
     const processedAttributes: Record<AttributeName, ValueType> = {}
 
     Object.entries(attrDefs.nodes).forEach(([key, value]) => {
@@ -86,8 +82,6 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   })
 
   edgeAttr.forEach((attr, edgeId) => {
-    attr[cxIdKey] = edgeId
-
     const processedAttributes: Record<string, ValueType> = {}
     const translatedEdgeId = translateCXEdgeId(edgeId)
 
