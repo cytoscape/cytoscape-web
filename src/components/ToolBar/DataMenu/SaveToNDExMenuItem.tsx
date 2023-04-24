@@ -69,7 +69,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const authenticated: boolean = client?.authenticated ?? false
 
   const overwriteNDExNetwork = async (): Promise<void> => {
-    const ndexClient = new NDEx(`${ndexBaseUrl}/v2`)
+    const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
     const cx = exportNetworkToCx2(
@@ -99,7 +99,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const saveCopyToNDEx = async (): Promise<void> => {
-    const ndexClient = new NDEx(`${ndexBaseUrl}/v2`)
+    const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
     const cx = exportNetworkToCx2(
@@ -132,7 +132,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const handleSaveCurrentNetworkToNDEx = async (): Promise<void> => {
     const localModificationTime = summary.modificationTime
-    const ndexClient = new NDEx(`${ndexBaseUrl}/v2`)
+    const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
 

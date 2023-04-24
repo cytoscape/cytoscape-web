@@ -53,7 +53,7 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.setCurrentNetworkId,
   )
   const saveCopyToNDEx = async (): Promise<void> => {
-    const ndexClient = new NDEx(`${ndexBaseUrl}/v2`)
+    const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
     const cx = exportNetworkToCx2(
