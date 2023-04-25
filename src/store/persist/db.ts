@@ -122,7 +122,13 @@ export const putNetworkToDbOld = async (network: Network): Promise<void> => {
 }
 
 export const deleteNetworkFromDb = async (id: IdType): Promise<void> => {
-  await db.cyNetworks.delete(id)
+  await db
+    .transaction('rw', db.cyNetworks, async () => {
+      await db.cyNetworks.delete(id)
+    })
+    .catch((err) => {
+      console.error('DELETE ERROR::', err)
+    })
 }
 
 export const getTablesFromDb = async (id: IdType): Promise<any> => {
@@ -303,5 +309,7 @@ export const putNetworkViewToDb = async (
 }
 
 export const deleteNetworkViewFromDb = async (id: IdType): Promise<void> => {
-  await db.cyNetworkViews.delete(id)
+  await db.transaction('rw', db.cyNetworkViews, async () => {
+    await db.cyNetworkViews.delete(id)
+  })
 }

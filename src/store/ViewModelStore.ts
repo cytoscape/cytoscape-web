@@ -59,10 +59,10 @@ const persist =
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
 
-        console.log('persist middleware updating view model store')
+        // console.log('persist middleware updating view model store')
         set(args)
         const updated = get().viewModels[currentNetworkId]
-        console.log('updated viewmodel: ', updated)
+        // console.log('updated viewmodel: ', updated)
 
         const deleted = updated === undefined
 

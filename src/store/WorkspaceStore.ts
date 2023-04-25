@@ -112,6 +112,9 @@ export const useWorkspaceStore = create(
                 (id) => id !== state.workspace.currentNetworkId,
               )
             state.workspace.networkIds = idsWithoutCurrentNetworkId
+            if (idsWithoutCurrentNetworkId.length === 0) {
+              state.workspace.currentNetworkId = ''
+            }
             return state
           })
         },
