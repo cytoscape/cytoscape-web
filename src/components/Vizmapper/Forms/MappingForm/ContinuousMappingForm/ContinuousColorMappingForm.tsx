@@ -346,22 +346,36 @@ export function ContinuousColorMappingForm(props: {
                         zIndex: lastDraggedHandleId === h.id ? 3 : 1,
                       }}
                     >
-                      <IconButton
-                        sx={{ position: 'absolute', top: -20, right: -16 }}
+                      <Delete
                         onClick={() => {
                           deleteHandle(h.id)
                         }}
-                      >
-                        <Delete sx={{ color: '#03082d' }} />
-                      </IconButton>
-
-                      <VisualPropertyValueForm
-                        currentValue={h.vpValue ?? null}
-                        visualProperty={props.visualProperty}
-                        onValueChange={(newValue) => {
-                          setHandle(h.id, h.value as number, newValue as string)
+                        sx={{
+                          position: 'absolute',
+                          top: -10,
+                          right: -10,
+                          color: '#03082d',
+                          fontSize: 22,
+                          '&:hover': {
+                            cursor: 'pointer',
+                            color: '#3d0303',
+                          },
                         }}
                       />
+
+                      <Box sx={{ pl: 1.8, pr: 1.8 }}>
+                        <VisualPropertyValueForm
+                          currentValue={h.vpValue ?? null}
+                          visualProperty={props.visualProperty}
+                          onValueChange={(newValue) => {
+                            setHandle(
+                              h.id,
+                              h.value as number,
+                              newValue as string,
+                            )
+                          }}
+                        />
+                      </Box>
                       <TextField
                         sx={{ width: 50, mt: 1 }}
                         inputProps={{

@@ -370,14 +370,14 @@ export function MappingForm(props: {
   }
   const viewBox =
     props.visualProperty.mapping?.type == null ? (
-      <EmptyVisualPropertyViewBox onClick={(e) => showForm(e.currentTarget)}>
-        {'+'}
-      </EmptyVisualPropertyViewBox>
+      <EmptyVisualPropertyViewBox
+        onClick={(e) => showForm(e.currentTarget)}
+      ></EmptyVisualPropertyViewBox>
     ) : (
       <VisualPropertyViewBox onClick={(e) => showForm(e.currentTarget)}>
         {props.visualProperty.mapping?.type != null
           ? mappingFnIconMap[props.visualProperty.mapping?.type]
-          : '+'}{' '}
+          : ''}
       </VisualPropertyViewBox>
     )
 
