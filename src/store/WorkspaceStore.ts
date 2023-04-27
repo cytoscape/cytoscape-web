@@ -122,6 +122,7 @@ export const useWorkspaceStore = create(
           set((state) => {
             state.workspace.networkIds = []
             state.workspace.networkModified = {}
+            state.workspace.currentNetworkId = ''
             return state
           })
         },

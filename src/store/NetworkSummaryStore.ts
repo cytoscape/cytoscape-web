@@ -13,6 +13,7 @@ interface NetworkSummaryActions {
   setMultiple: (summaries: Record<IdType, NdexNetworkSummary>) => void
   update: (id: IdType, summary: Partial<NdexNetworkSummary>) => void
   delete: (networkId: IdType) => void
+  deleteAll: () => void
 }
 
 export const useNetworkSummaryStore = create(
@@ -54,6 +55,12 @@ export const useNetworkSummaryStore = create(
             console.error('', err)
           })
 
+        return state
+      })
+    },
+    deleteAll: () => {
+      set((state) => {
+        state.summaries = {}
         return state
       })
     },
