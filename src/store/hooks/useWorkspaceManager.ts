@@ -22,6 +22,9 @@ export const useWorkspaceManager = (): void => {
 
   const deleteAllNetworks = useNetworkStore((state) => state.deleteAll)
   const deleteAllSummaries = useNetworkSummaryStore((state) => state.deleteAll)
+  const deleteAllViews = useViewModelStore((state) => state.deleteAll)
+  const deleteAllVisualStyles = useVisualStyleStore((state) => state.deleteAll)
+  const deleteAllTables = useTableStore((state) => state.deleteAll)
 
   const sub = useWorkspaceStore.subscribe(
     (state) => state.workspace.networkIds,
@@ -49,9 +52,9 @@ export const useWorkspaceManager = (): void => {
   const handleDeleteAll = (): void => {
     deleteAllNetworks()
     deleteAllSummaries()
-    // deleteView(deleted)
-    // deleteVisualStyle(deleted)
-    // deleteTables(deleted)
+    deleteAllViews()
+    deleteAllVisualStyles()
+    deleteAllTables()
   }
 
   useEffect(() => {

@@ -2,7 +2,11 @@ import { IdType } from '../models/IdType'
 import NetworkFn, { Network } from '../models/NetworkModel'
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { deleteNetworkFromDb, putNetworkToDb } from './persist/db'
+import {
+  clearNetworksFromDb,
+  deleteNetworkFromDb,
+  putNetworkToDb,
+} from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 /**
  * Network State manager based on zustand
@@ -122,7 +126,18 @@ export const useNetworkStore = create(
           })
           return { ...state, networks: newNetworks }
         }),
-      deleteAll: () => set({ networks: new Map<IdType, Network>() }),
+      deleteAll: () =>
+        set((state) => {
+          clearNetworksFromDb()
+            .then(() => {
+              console.log('Deleted all networks from db')
+            })
+            .catch((err) => {
+              console.log('Error clearing all networks from db', err)
+            })
+
+          return { ...state, networks: new Map<IdType, Network>() }
+        }),
     })),
   ),
 )

@@ -4,7 +4,11 @@ import { isEdgeId } from '../models/NetworkModel/impl/CyNetwork'
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { subscribeWithSelector } from 'zustand/middleware'
-import { deleteNetworkViewFromDb, putNetworkViewToDb } from './persist/db'
+import {
+  clearNetworkViewFromDb,
+  deleteNetworkViewFromDb,
+  putNetworkViewToDb,
+} from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 /**
@@ -227,6 +231,9 @@ export const useViewModelStore = create(
         deleteAll() {
           set((state) => {
             state.viewModels = {}
+            void clearNetworkViewFromDb().then(() => {
+              console.log('Cleared views')
+            })
             return state
           })
         },
