@@ -12,10 +12,7 @@ import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
 import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
 
 import { useState } from 'react'
-interface DropdownMenuProps {
-  label: string
-  children?: React.ReactNode
-}
+import { DropdownMenuProps } from '../DropdownMenuProps'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,

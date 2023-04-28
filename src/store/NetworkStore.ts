@@ -21,7 +21,7 @@ interface NetworkState {
 interface UpdateActions {
   addNode: (networkId: IdType, nodeId: IdType) => void
   addNodes: (networkId: IdType, nodeIds: IdType[]) => void
-  deleteNode: (networkId: IdType, nodeId: IdType) => void
+  deleteNodes: (networkId: IdType, nodeIds: IdType[]) => void
   addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => void
 }
 
@@ -86,11 +86,11 @@ export const useNetworkStore = create(
         })
       },
 
-      deleteNode: (networkId: IdType, nodeId: IdType) => {
+      deleteNodes: (networkId: IdType, nodeId: IdType[]) => {
         set((state) => {
           const network = state.networks.get(networkId)
           if (network !== undefined) {
-            NetworkFn.deleteNode(network, nodeId)
+            NetworkFn.deleteNodes(network, nodeId)
           }
           return {
             networks: { ...state.networks },
@@ -130,7 +130,9 @@ export const useNetworkStore = create(
         set((state) => {
           clearNetworksFromDb()
             .then(() => {
-              console.log('Deleted all networks from db')
+              console.log(
+                '---------------------------@@@@Deleted all networks from db',
+              )
             })
             .catch((err) => {
               console.log('Error clearing all networks from db', err)

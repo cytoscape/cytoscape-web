@@ -235,9 +235,9 @@ export const addNode = (network: Network, nodeId: IdType): Network => {
   return cyNet
 }
 
-export const deleteNode = (network: Network, nodeId: IdType): Network => {
+export const deleteNodes = (network: Network, nodeIds: IdType[]): Network => {
   const cyNet: CyNetwork = network as CyNetwork
-  cyNet.store.remove(nodeId)
+  cyNet.store.remove(nodeIds.map((nodeId) => `#${nodeId}`).join(', '))
   return cyNet
 }
 
