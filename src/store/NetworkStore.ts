@@ -22,6 +22,7 @@ interface UpdateActions {
   addNode: (networkId: IdType, nodeId: IdType) => void
   addNodes: (networkId: IdType, nodeIds: IdType[]) => void
   deleteNodes: (networkId: IdType, nodeIds: IdType[]) => void
+  deleteEdges: (networkId: IdType, edgeIds: IdType[]) => void
   addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => void
 }
 
@@ -86,11 +87,22 @@ export const useNetworkStore = create(
         })
       },
 
-      deleteNodes: (networkId: IdType, nodeId: IdType[]) => {
+      deleteNodes: (networkId: IdType, nodeIds: IdType[]) => {
         set((state) => {
           const network = state.networks.get(networkId)
           if (network !== undefined) {
-            NetworkFn.deleteNodes(network, nodeId)
+            NetworkFn.deleteNodes(network, nodeIds)
+          }
+          return {
+            networks: { ...state.networks },
+          }
+        })
+      },
+      deleteEdges: (networkId: IdType, edgeIds: IdType[]) => {
+        set((state) => {
+          const network = state.networks.get(networkId)
+          if (network !== undefined) {
+            NetworkFn.deleteEdges(network, edgeIds)
           }
           return {
             networks: { ...state.networks },

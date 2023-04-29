@@ -1,6 +1,3 @@
-/**
- * This is a placehjolder file for the menu items under the Edit menu.
- */
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import { Divider } from '@mui/material'
@@ -8,6 +5,7 @@ import { Divider } from '@mui/material'
 import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
+import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
 
 export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
   const { label } = props
@@ -48,6 +46,7 @@ export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
         }}
       >
         <DeleteSelectedNodesMenuItem handleClose={handleClose} />
+        <DeleteSelectedEdgesMenuItem handleClose={handleClose} />
         <Divider />
       </Menu>
     </div>

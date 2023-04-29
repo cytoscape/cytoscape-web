@@ -259,6 +259,12 @@ export const addEdges = (network: Network, edges: Edge[]): Network => {
   return network
 }
 
+export const deleteEdges = (network: Network, edgeIds: IdType[]): Network => {
+  const cyNet: CyNetwork = network as CyNetwork
+  cyNet.store.remove(edgeIds.map((edgeId) => `#${edgeId}`).join(', '))
+  return cyNet
+}
+
 export const addNodeRow = (
   network: Network,
   newNodeId: IdType,
