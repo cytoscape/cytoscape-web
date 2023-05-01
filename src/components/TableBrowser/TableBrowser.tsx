@@ -26,7 +26,6 @@ import {
   Item,
   Rectangle,
 } from '@glideapps/glide-data-grid'
-import { translateCXEdgeId } from '../../models/NetworkModel/impl/CyNetwork'
 import {
   ListOfValueType,
   SingleValueType,
@@ -223,7 +222,8 @@ export default function TableBrowser(props: {
   const isOpen = menu !== undefined
 
   const networkId = props.currentNetworkId
-  const setHovered = useViewModelStore((state) => state.setHovered)
+  const { selectedNodes, selectedEdges } =
+    useViewModelStore((state) => state.viewModels[networkId]) ?? {}
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
@@ -249,12 +249,22 @@ export default function TableBrowser(props: {
     }),
   )
 
-  const rows = Array.from((currentTable?.rows ?? new Map()).values())
+  const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
+  const selectedElementsSet = new Set(selectedElements)
+  const rowsWithIds = Array.from(
+    (currentTable?.rows ?? new Map()).entries(),
+  ).map(([key, value]) => ({ ...value, id: key }))
+  const rows =
+    selectedElements?.length > 0
+      ? rowsWithIds.filter((r) => selectedElementsSet.has(r.id))
+      : rowsWithIds
+
   if (sort.column != null && sort.direction != null && sort.valueType != null) {
     const sortFn = sortFnToType[sort.valueType]
     rows.sort((a, b) => {
-      const aVal = a[sort.column as AttributeName]
-      const bVal = b[sort.column as AttributeName]
+      if (a == null || b == null || sort.column == null) return 0
+      const aVal = (a as Record<string, ValueType>)[sort.column]
+      const bVal = (b as Record<string, ValueType>)[sort.column]
       return sortFn(aVal, bVal, sort.direction as SortDirection)
     })
   }
@@ -302,8 +312,7 @@ export default function TableBrowser(props: {
       const dataRow = rows[rowIndex]
       const column = columns[columnIndex]
       const columnKey = column.id
-      const cellValue = dataRow?.[columnKey]
-
+      const cellValue = (dataRow as any)?.[columnKey]
       if (dataRow == null || cellValue == null) {
         return {
           allowOverlay: true,
@@ -341,17 +350,20 @@ export default function TableBrowser(props: {
         }
       }
     },
-    [props.currentNetworkId, currentTable, tables, sort],
+    [props.currentNetworkId, rows, currentTable, tables, sort],
   )
 
   const onItemHovered = React.useCallback(
     (cell: Item) => {
       const rowIndex = cell[1]
-      const isNodeTable = currentTable === nodeTable
-      const cxId: number = rowIndex + (isNodeTable ? minNodeId : minEdgeId)
+      const rowData = rows[rowIndex]
+      const cxId = rowData?.id
+
       if (cxId != null) {
-        const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
-        setHovered(props.currentNetworkId, String(eleId))
+        // TODO this operation is too expensive for large networks
+        // // const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
+        // // console.log(eleId)
+        // setHovered(props.currentNetworkId, String(cxId))
       }
     },
     [props.currentNetworkId, currentTable, tables],
@@ -360,18 +372,8 @@ export default function TableBrowser(props: {
   const onCellEdited = React.useCallback(
     (cell: Item, newValue: EditableGridCell) => {
       const [columnIndex, rowIndex] = cell
-      // const minId = currentTable === nodeTable ? minNodeId : minEdgeId
-      // const rowKey =
-      //   currentTable === nodeTable
-      //     ? +rowIndex + minId
-      //     : translateCXEdgeId(`${+rowIndex + minId}`)
-
       const rowData = rows[rowIndex]
-      const rowKey =
-        currentTable === nodeTable
-          ? +rowData.cxId
-          : translateCXEdgeId(`${rowData.cxId as string}`)
-
+      const cxId = rowData?.id
       const column = columns[columnIndex]
       const columnKey = column.id
       let data = newValue.data
@@ -387,7 +389,7 @@ export default function TableBrowser(props: {
         setCellValue(
           props.currentNetworkId,
           currentTable === nodeTable ? 'node' : 'edge',
-          `${rowKey}`,
+          `${cxId}`,
           columnKey,
           data as ValueType,
         )
@@ -451,7 +453,7 @@ export default function TableBrowser(props: {
         <Button onClick={() => setShowSearch(!showSearch)}>
           Toggle Search
         </Button>
-        <Box onMouseLeave={() => setHovered(props.currentNetworkId, '')}>
+        <Box>
           <DataEditor
             rowMarkers={'both'}
             rowMarkerStartIndex={minNodeId}
@@ -521,7 +523,6 @@ export default function TableBrowser(props: {
                 onClick={() => {
                   const col = menu?.col
                   if (col != null) {
-                    // duplicateColumn(col)
                     const column = columns[col]
                     const columnKey = column.id
                     duplicateColumn(
@@ -530,7 +531,6 @@ export default function TableBrowser(props: {
                       columnKey,
                     )
                   }
-                  // duplicateColumn()
                   setMenu(undefined)
                 }}
               >
@@ -546,7 +546,7 @@ export default function TableBrowser(props: {
           Toggle Search
         </Button>
 
-        <Box onMouseLeave={() => setHovered(props.currentNetworkId, '')}>
+        <Box>
           <DataEditor
             rowMarkers={'both'}
             rowMarkerStartIndex={minEdgeId}

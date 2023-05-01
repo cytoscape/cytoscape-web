@@ -55,7 +55,6 @@ function BypassFormContent(props: {
 
   const setBypass = useVisualStyleStore((state) => state.setBypass)
   const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
-  const setHovered = useViewModelStore((state) => state.setHovered)
   const toggleSelected = useViewModelStore((state) => state.toggleSelected)
   const additiveSelect = useViewModelStore((state) => state.additiveSelect)
   const additiveUnselect = useViewModelStore((state) => state.additiveUnselect)
@@ -175,13 +174,7 @@ function BypassFormContent(props: {
               const bypassValue = visualProperty.bypassMap?.get(id) ?? null
 
               return (
-                <TableRow
-                  onMouseEnter={() => setHovered(props.currentNetworkId, id)}
-                  onMouseLeave={() => setHovered(props.currentNetworkId, '')}
-                  key={id}
-                  hover={true}
-                  selected={selected}
-                >
+                <TableRow key={id} hover={true} selected={selected}>
                   <TableCell padding="checkbox">
                     <Checkbox
                       onClick={() => toggleSelected(currentNetworkId, [id])}
@@ -212,7 +205,6 @@ function BypassFormContent(props: {
                         deleteBypass(currentNetworkId, visualProperty.name, [
                           id,
                         ])
-                        setHovered(currentNetworkId, '')
                       }}
                       disabled={!hasBypass}
                     >
@@ -294,8 +286,6 @@ function BypassFormContent(props: {
         pl: 1,
         pr: 1,
       }}
-      // make sure there is no hovered component when the mouse leaves the bypass form
-      onMouseLeave={() => setHovered(props.currentNetworkId, '')}
     >
       <Typography
         sx={{ m: 1 }}
@@ -314,8 +304,6 @@ export function BypassForm(props: {
   sx?: SxProps
 }): React.ReactElement {
   const [formAnchorEl, setFormAnchorEl] = React.useState<Element | null>(null)
-
-  const setHovered = useViewModelStore((state) => state.setHovered)
 
   const showForm = (value: Element | null): void => {
     setFormAnchorEl(value)
@@ -354,7 +342,6 @@ export function BypassForm(props: {
         anchorEl={formAnchorEl}
         onClose={() => {
           showForm(null)
-          setHovered(props.currentNetworkId, '')
         }}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
