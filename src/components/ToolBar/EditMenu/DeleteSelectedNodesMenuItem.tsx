@@ -11,6 +11,8 @@ export const DeleteSelectedNodesMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
   const deleteSelectedNodes = useNetworkStore((state) => state.deleteNodes)
+  const deleteObjects = useViewModelStore((state) => state.deleteObjects)
+
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -27,6 +29,7 @@ export const DeleteSelectedNodesMenuItem = (
 
     props.handleClose()
     deleteSelectedNodes(currentNetworkId, selectedNodes)
+    deleteObjects(currentNetworkId, selectedNodes)
     // TODO: Propagate to views and other stores
   }
 

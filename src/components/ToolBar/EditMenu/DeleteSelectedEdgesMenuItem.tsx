@@ -11,6 +11,7 @@ export const DeleteSelectedEdgesMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
   const deleteSelectedEdges = useNetworkStore((state) => state.deleteEdges)
+  const deleteObjects = useViewModelStore((state) => state.deleteObjects)
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -27,7 +28,7 @@ export const DeleteSelectedEdgesMenuItem = (
 
     props.handleClose()
     deleteSelectedEdges(currentNetworkId, selectedEdges)
-    // TODO: Propagate to views and other stores
+    deleteObjects(currentNetworkId, selectedEdges)
   }
 
   return <MenuItem onClick={handleDeleteEdges}>Delete Selected Edges</MenuItem>
