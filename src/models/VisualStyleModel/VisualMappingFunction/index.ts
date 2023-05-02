@@ -1,6 +1,0 @@
-export * from './DiscreteMappingFunction'
-export * from './ContinuousMappingFunction'
-export * from './PassthroughMappingFunction'
-export * from './MappingFunctionType'
-export * from './VisualMappingFunction'
-export * from './Mapper'

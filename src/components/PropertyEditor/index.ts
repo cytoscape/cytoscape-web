@@ -1,1 +1,0 @@
-export { PropertyEditor } from './PropertyEditor'
