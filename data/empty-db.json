@@ -1,0 +1,52 @@
+{
+  "workspace": {
+    "name": "",
+    "uuid": "",
+    "networkSummaries": [],
+    "currentNetworkUUID": ""
+  },
+  "currentNetwork": {
+    "uuid": "",
+    "summary": {
+      "uuid": "",
+      "name": "",
+      "iconUrl": "",
+      "createdAt": "",
+      "modifiedAt": ""
+    },
+    "visualStyle": {
+      "default": {
+        "node": {},
+        "edge": {}
+      },
+      "mapping": {
+        "node": {},
+        "edge": {}
+      },
+      "bypasses": []
+    },
+    "networkView": {
+      "nodeViews": [],
+      "edgeViews": []
+    },
+    "nodeTable": {
+      "name": "node table",
+      "columns": [],
+      "rows": []
+    },
+    "edgeTable": {
+      "name": "edge table",
+      "columns": [],
+      "rows": []
+    },
+    "network": {
+      "id": "0",
+      "attributes": {
+        "key": "0",
+        "data": {}
+      },
+      "nodes": [],
+      "edges": []
+    }
+  }
+}
