@@ -122,7 +122,19 @@ export const putNetworkToDbOld = async (network: Network): Promise<void> => {
 }
 
 export const deleteNetworkFromDb = async (id: IdType): Promise<void> => {
-  await db.cyNetworks.delete(id)
+  await db
+    .transaction('rw', db.cyNetworks, async () => {
+      await db.cyNetworks.delete(id)
+    })
+    .catch((err) => {
+      console.error('DELETE ERROR::', err)
+    })
+}
+
+export const clearNetworksFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.cyNetworks, async () => {
+    await db.cyNetworks.clear()
+  })
 }
 
 export const getTablesFromDb = async (id: IdType): Promise<any> => {
@@ -156,6 +168,12 @@ export const putTablesToDb = async (
 
 export const deleteTablesFromDb = async (id: IdType): Promise<void> => {
   await db.cyTables.delete(id)
+}
+
+export const clearTablesFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.cyTables, async () => {
+    await db.cyTables.clear()
+  })
 }
 
 // Workspace management
@@ -250,6 +268,12 @@ export const deleteNetworkSummaryFromDb = async (
   await db.summaries.delete(externalId)
 }
 
+export const clearNetworkSummaryFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.summaries, async () => {
+    await db.summaries.clear()
+  })
+}
+
 // Visual Sytles
 interface VisualStyleWithId {
   id: IdType
@@ -286,6 +310,12 @@ export const deleteVisualStyleFromDb = async (id: IdType): Promise<void> => {
   await db.cyVisualStyles.delete(id)
 }
 
+export const clearVisualStyleFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.cyVisualStyles, async () => {
+    await db.cyVisualStyles.clear()
+  })
+}
+
 // Network View
 export const getNetworkViewFromDb = async (
   id: IdType,
@@ -303,5 +333,13 @@ export const putNetworkViewToDb = async (
 }
 
 export const deleteNetworkViewFromDb = async (id: IdType): Promise<void> => {
-  await db.cyNetworkViews.delete(id)
+  await db.transaction('rw', db.cyNetworkViews, async () => {
+    await db.cyNetworkViews.delete(id)
+  })
+}
+
+export const clearNetworkViewFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.cyNetworkViews, async () => {
+    await db.cyNetworkViews.clear()
+  })
 }

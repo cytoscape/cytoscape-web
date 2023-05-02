@@ -2,7 +2,11 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
 import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
-import { deleteNetworkSummaryFromDb, putNetworkSummaryToDb } from './persist/db'
+import {
+  clearNetworkSummaryFromDb,
+  deleteNetworkSummaryFromDb,
+  putNetworkSummaryToDb,
+} from './persist/db'
 
 interface NetworkSummaryStore {
   summaries: Record<IdType, NdexNetworkSummary>
@@ -13,6 +17,7 @@ interface NetworkSummaryActions {
   setMultiple: (summaries: Record<IdType, NdexNetworkSummary>) => void
   update: (id: IdType, summary: Partial<NdexNetworkSummary>) => void
   delete: (networkId: IdType) => void
+  deleteAll: () => void
 }
 
 export const useNetworkSummaryStore = create(
@@ -52,6 +57,20 @@ export const useNetworkSummaryStore = create(
           })
           .catch((err) => {
             console.error('', err)
+          })
+
+        return state
+      })
+    },
+    deleteAll: () => {
+      set((state) => {
+        state.summaries = {}
+        clearNetworkSummaryFromDb()
+          .then((val) => {
+            console.log('Summary cleared', val)
+          })
+          .catch((err) => {
+            console.error('Failed to clear Summary', err)
           })
 
         return state

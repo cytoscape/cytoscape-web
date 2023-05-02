@@ -2,7 +2,11 @@ import { IdType } from '../models/IdType'
 import NetworkFn, { Network } from '../models/NetworkModel'
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { deleteNetworkFromDb, putNetworkToDb } from './persist/db'
+import {
+  clearNetworksFromDb,
+  deleteNetworkFromDb,
+  putNetworkToDb,
+} from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 /**
  * Network State manager based on zustand
@@ -17,7 +21,8 @@ interface NetworkState {
 interface UpdateActions {
   addNode: (networkId: IdType, nodeId: IdType) => void
   addNodes: (networkId: IdType, nodeIds: IdType[]) => void
-  deleteNode: (networkId: IdType, nodeId: IdType) => void
+  deleteNodes: (networkId: IdType, nodeIds: IdType[]) => void
+  deleteEdges: (networkId: IdType, edgeIds: IdType[]) => void
   addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => void
 }
 
@@ -82,11 +87,22 @@ export const useNetworkStore = create(
         })
       },
 
-      deleteNode: (networkId: IdType, nodeId: IdType) => {
+      deleteNodes: (networkId: IdType, nodeIds: IdType[]) => {
         set((state) => {
           const network = state.networks.get(networkId)
           if (network !== undefined) {
-            NetworkFn.deleteNode(network, nodeId)
+            NetworkFn.deleteNodes(network, nodeIds)
+          }
+          return {
+            networks: { ...state.networks },
+          }
+        })
+      },
+      deleteEdges: (networkId: IdType, edgeIds: IdType[]) => {
+        set((state) => {
+          const network = state.networks.get(networkId)
+          if (network !== undefined) {
+            NetworkFn.deleteEdges(network, edgeIds)
           }
           return {
             networks: { ...state.networks },
@@ -116,12 +132,26 @@ export const useNetworkStore = create(
       delete: (networkId: IdType) =>
         set((state) => {
           state.networks.delete(networkId)
+          const newNetworks: Map<IdType, Network> = new Map(state.networks)
           void deleteNetworkFromDb(networkId).then(() => {
             console.log('Deleted network from db', networkId)
           })
-          return state
+          return { ...state, networks: newNetworks }
         }),
-      deleteAll: () => set({ networks: new Map<IdType, Network>() }),
+      deleteAll: () =>
+        set((state) => {
+          clearNetworksFromDb()
+            .then(() => {
+              console.log(
+                '---------------------------@@@@Deleted all networks from db',
+              )
+            })
+            .catch((err) => {
+              console.log('Error clearing all networks from db', err)
+            })
+
+          return { ...state, networks: new Map<IdType, Network>() }
+        }),
     })),
   ),
 )

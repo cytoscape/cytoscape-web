@@ -3,7 +3,7 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
 import { Workspace } from '../models/WorkspaceModel'
-import { putWorkspaceToDb } from './persist/db'
+import { deleteDb, putWorkspaceToDb } from './persist/db'
 
 interface WorkspaceState {
   workspace: Workspace
@@ -23,6 +23,9 @@ interface WorkspaceActions {
 
   // Remove all networks from the workspace
   deleteAllNetworks: () => void
+
+  // Remove all networks from the workspace and reset the workspace
+  resetWorkspace: () => void
 
   setNetworkModified: (networkId: IdType, isModified: boolean) => void
 }
@@ -112,6 +115,9 @@ export const useWorkspaceStore = create(
                 (id) => id !== state.workspace.currentNetworkId,
               )
             state.workspace.networkIds = idsWithoutCurrentNetworkId
+            if (idsWithoutCurrentNetworkId.length === 0) {
+              state.workspace.currentNetworkId = ''
+            }
             return state
           })
         },
@@ -119,6 +125,13 @@ export const useWorkspaceStore = create(
           set((state) => {
             state.workspace.networkIds = []
             state.workspace.networkModified = {}
+            state.workspace.currentNetworkId = ''
+            return state
+          })
+        },
+        resetWorkspace() {
+          set((state) => {
+            void deleteDb().then(() => {})
             return state
           })
         },

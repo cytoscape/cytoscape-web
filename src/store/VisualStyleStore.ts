@@ -17,7 +17,11 @@ import {
 import { ContinuousFunctionControlPoint } from '../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyValueTypeName } from '../models/VisualStyleModel/VisualPropertyValueTypeName'
 
-import { deleteVisualStyleFromDb, putVisualStyleToDb } from './persist/db'
+import {
+  clearVisualStyleFromDb,
+  deleteVisualStyleFromDb,
+  putVisualStyleToDb,
+} from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 /**
 //  * Visual Style State manager based on zustand
@@ -391,6 +395,14 @@ export const useVisualStyleStore = create(
       deleteAll: () => {
         set((state) => {
           state.visualStyles = {}
+          clearVisualStyleFromDb()
+            .then(() => {
+              console.log('Deleted all visual styles from db')
+            })
+            .catch((err) => {
+              console.error('Error clearing visual styles from db', err)
+            })
+
           return state
         })
       },

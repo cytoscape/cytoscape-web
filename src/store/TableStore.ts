@@ -6,7 +6,11 @@ import { immer } from 'zustand/middleware/immer'
 import { columnValueSet } from '../models/TableModel/impl/InMemoryTable'
 import { VisualPropertyGroup } from '../models/VisualStyleModel/VisualPropertyGroup'
 import { useWorkspaceStore } from './WorkspaceStore'
-import { deleteTablesFromDb, putTablesToDb } from './persist/db'
+import {
+  clearTablesFromDb,
+  deleteTablesFromDb,
+  putTablesToDb,
+} from './persist/db'
 /** */
 interface TableRecord {
   nodeTable: Table
@@ -170,6 +174,14 @@ export const useTableStore = create(
       deleteAll() {
         set((state) => {
           state.tables = {}
+          clearTablesFromDb()
+            .then(() => {
+              console.log('Deleted all network tables from db')
+            })
+            .catch((err) => {
+              console.error('Error clearing  all attribute tables from db', err)
+            })
+
           return state
         })
       },

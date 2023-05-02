@@ -2,6 +2,7 @@ import Box from '@mui/material/Box'
 import debounce from 'lodash.debounce'
 import Cytoscape, {
   Core,
+  EdgeSingular,
   EventObject,
   NodeSingular,
   SingularElementArgument,
@@ -293,15 +294,42 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     // Update position
     const curView = viewModels[id]
     const nodeViews = curView.nodeViews
+    const viewCount = Object.keys(nodeViews).length
+    const cyNodeCount = cy.nodes().length
     cy.nodes().forEach((cyNode: NodeSingular) => {
       const cyNodeId = cyNode.data('id')
-      cyNode.position({
-        x: nodeViews[cyNodeId].x,
-        y: nodeViews[cyNodeId].y,
-      })
+      if (nodeViews[cyNodeId] === undefined) {
+        // Need to delete this node
+        cy.remove(cyNode)
+      } else {
+        cyNode.position({
+          x: nodeViews[cyNodeId].x,
+          y: nodeViews[cyNodeId].y,
+        })
+      }
     })
-    cy.fit()
+    if (viewCount === cyNodeCount) {
+      cy.fit()
+    }
   }, [networkView?.nodeViews])
+
+  useEffect(() => {
+    if (viewModels[id] === undefined || cy === null) {
+      return
+    }
+
+    // Edge deletion
+    const curView = viewModels[id]
+    const edgeViews = curView.edgeViews
+    cy.edges().forEach((cyEdge: EdgeSingular) => {
+      const cyEdgeId = cyEdge.data('id')
+      if (edgeViews[cyEdgeId] === undefined) {
+        // Need to delete this node
+        cy.remove(cyEdge)
+      }
+    })
+    console.log('Edge views deleted-=------------')
+  }, [networkView?.edgeViews])
 
   // when hovered element changes, apply hover style to that element
   useEffect(() => {

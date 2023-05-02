@@ -20,15 +20,21 @@ export const useWorkspaceManager = (): void => {
   const deleteVisualStyle = useVisualStyleStore((state) => state.delete)
   const deleteTables = useTableStore((state) => state.delete)
 
+  const deleteAllNetworks = useNetworkStore((state) => state.deleteAll)
+  const deleteAllSummaries = useNetworkSummaryStore((state) => state.deleteAll)
+  const deleteAllViews = useViewModelStore((state) => state.deleteAll)
+  const deleteAllVisualStyles = useVisualStyleStore((state) => state.deleteAll)
+  const deleteAllTables = useTableStore((state) => state.deleteAll)
+
   const sub = useWorkspaceStore.subscribe(
     (state) => state.workspace.networkIds,
-    (ws, lastWs) => {
-      const networkIds = ws
-      const lastNetworkIds = lastWs
-      if (networkIds.length !== 0 && lastNetworkIds.length === 0) {
+    (ids, lastIds) => {
+      if (ids.length === 0 && lastIds.length !== 0) {
         // TODO: Implement clear the workspace
-      } else if (networkIds.length < lastNetworkIds.length) {
-        const removed = lastNetworkIds.filter((id) => !networkIds.includes(id))
+        console.log('========================Clear the workspace')
+        handleDeleteAll()
+      } else if (ids.length < lastIds.length) {
+        const removed = lastIds.filter((id) => !ids.includes(id))
         handleDeleteNetwork(removed[0])
         console.log('Network removed from workspace', removed[0])
       }
@@ -41,6 +47,14 @@ export const useWorkspaceManager = (): void => {
     deleteView(deleted)
     deleteVisualStyle(deleted)
     deleteTables(deleted)
+  }
+
+  const handleDeleteAll = (): void => {
+    deleteAllNetworks()
+    deleteAllSummaries()
+    deleteAllViews()
+    deleteAllVisualStyles()
+    deleteAllTables()
   }
 
   useEffect(() => {

@@ -1,10 +1,14 @@
 import { IdType } from '../models/IdType'
-import { NetworkView, NodeView } from '../models/ViewModel'
+import { EdgeView, NetworkView, NodeView } from '../models/ViewModel'
 import { isEdgeId } from '../models/NetworkModel/impl/CyNetwork'
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { subscribeWithSelector } from 'zustand/middleware'
-import { deleteNetworkViewFromDb, putNetworkViewToDb } from './persist/db'
+import {
+  clearNetworkViewFromDb,
+  deleteNetworkViewFromDb,
+  putNetworkViewToDb,
+} from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 /**
@@ -41,6 +45,9 @@ interface ViewModelAction {
     networkId: IdType,
     positions: Map<IdType, [number, number, number?]>,
   ) => void
+
+  deleteObjects: (networkId: IdType, ids: IdType[]) => void
+
   delete: (networkId: IdType) => void
   deleteAll: () => void
 }
@@ -58,16 +65,13 @@ const persist =
       async (args) => {
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
-
-        console.log('persist middleware updating view model store')
+        // console.log('persist middleware updating view model store', args)
         set(args)
         const updated = get().viewModels[currentNetworkId]
-        console.log('updated viewmodel: ', updated)
-
-        const deleted = updated === undefined
+        const deleted: boolean = updated === undefined
 
         if (!deleted) {
-          await putNetworkViewToDb(currentNetworkId, updated).then(() => {})
+          void putNetworkViewToDb(currentNetworkId, updated).then(() => {})
         }
       },
       get,
@@ -213,6 +217,24 @@ export const useViewModelStore = create(
             return state
           })
         },
+        deleteObjects(networkId, ids) {
+          set((state) => {
+            const networkView = state.viewModels[networkId]
+
+            const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
+            const edgeViews: Record<IdType, EdgeView> = networkView.edgeViews
+
+            ids.forEach((id) => {
+              if (nodeViews[id] !== undefined) {
+                delete nodeViews[id]
+              } else {
+                delete edgeViews[id]
+              }
+            })
+
+            return state
+          })
+        },
         delete(networkId) {
           set((state) => {
             delete state.viewModels[networkId]
@@ -227,6 +249,9 @@ export const useViewModelStore = create(
         deleteAll() {
           set((state) => {
             state.viewModels = {}
+            void clearNetworkViewFromDb().then(() => {
+              console.log('Cleared views')
+            })
             return state
           })
         },
