@@ -15,13 +15,5 @@
     "project": ["tsconfig.json"]
   },
   "plugins": ["react"],
-  "rules": {
-    "@typescript-eslint/no-redeclare": "off",
-    "no-prototype-builtins": "off",
-    "@typescript-eslint/no-misused-promises": "off",
-    "@typescript-eslint/promise-function-async": "off",
-    "@typescript-eslint/no-dynamic-delete": "off",
-    "react/jsx-uses-react": "off",
-    "react/react-in-jsx-scope": "off"
-  }
+  "rules": {}
 }

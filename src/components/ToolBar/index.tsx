@@ -1,1 +1,0 @@
-export { ToolBar } from './ToolBar'
