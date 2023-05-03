@@ -1,31 +1,35 @@
 import { MenuItem } from '@mui/material'
-import { ReactElement } from 'react'
+import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useNavigate } from 'react-router-dom'
+import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 
 export const ResetLocalWorkspaceMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
+  const [open, setOpen] = useState(false)
   const navigate = useNavigate()
-  // const location = useLocation()
-  // const workspace = useWorkspaceStore((state) => state.workspace)
-
-  // const { id } = workspace
-
-  // useEffect(() => {}, [id])
-
-  // const deleteAllNetworks = useWorkspaceStore(
-  //   (state) => state.deleteAllNetworks,
-  // )
   const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
 
   const handleReset = (): void => {
     props.handleClose()
     resetWorkspace()
-    console.log('!!!!!!!!!!!!!!!!navigating to the new workspace', location)
+    navigate('/')
     navigate(0)
   }
 
-  return <MenuItem onClick={handleReset}>Clear all workspace data</MenuItem>
+  return (
+    <>
+      <MenuItem onClick={() => setOpen(true)}>Clear local database</MenuItem>
+      <ConfirmationDialog
+        title="Reset Local Workspace (for developers)"
+        message="Are you sure you want to reset all workspace data? (This deletes all of the local cache)"
+        onConfirm={handleReset}
+        open={open}
+        setOpen={setOpen}
+        buttonTitle="Reset Workspace (cannot be undone)"
+      />
+    </>
+  )
 }
