@@ -26,6 +26,7 @@ import { exportNetworkToCx2 } from '../../../store/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { IdType } from '../../../models/IdType'
+import { useMessageStore } from '../../../store/useMessageStore'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -67,6 +68,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const getToken = useCredentialStore((state) => state.getToken)
   const client = useCredentialStore((state) => state.client)
   const authenticated: boolean = client?.authenticated ?? false
+  const addMessage = useMessageStore((state) => state.addMessage)
 
   const overwriteNDExNetwork = async (): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
@@ -117,13 +119,20 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       addNetworkToWorkspace(uuid as IdType)
       setCurrentNetworkId(uuid as IdType)
 
-      console.log(
-        `Saved a copy of the current network to NDEx with new uuid ${
+      addMessage({
+        message: `Saved a copy of the current network to NDEx with new uuid ${
           uuid as string
         }`,
-      )
+        duration: 3000,
+      })
     } catch (e) {
       console.log(e)
+      addMessage({
+        message: `Error: Could not save a copy of the current network to NDEx. ${
+          e.message as string
+        }`,
+        duration: 3000,
+      })
     }
 
     setShowConfirmDialog(false)
@@ -142,7 +151,23 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     if (ndexModificationTime > localModificationTime) {
       setShowConfirmDialog(true)
     } else {
-      await overwriteNDExNetwork()
+      try {
+        await overwriteNDExNetwork()
+
+        addMessage({
+          message: `Saved network to NDEx`,
+          duration: 3000,
+        })
+      } catch (e) {
+        console.log(e)
+
+        addMessage({
+          message: `Error: Could not overwrite the current network to NDEx. ${
+            e.message as string
+          }`,
+          duration: 3000,
+        })
+      }
     }
   }
 
@@ -151,7 +176,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       disabled={!authenticated}
       onClick={handleSaveCurrentNetworkToNDEx}
     >
-      Save current network to NDEx
+      Save to NDEx (overwrite)
     </MenuItem>
   )
 

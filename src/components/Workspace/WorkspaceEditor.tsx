@@ -27,6 +27,7 @@ import { NetworkView } from '../../models/ViewModel'
 import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
 
 import { useCredentialStore } from '../../store/CredentialStore'
+import { SnackbarMessageList } from '../Messages'
 
 const NetworkPanel = React.lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = React.lazy(() => import('../TableBrowser/TableBrowser'))
@@ -333,6 +334,7 @@ const WorkSpaceEditor: React.FC = () => {
           </Suspense>
         </Allotment.Pane>
       </Allotment>
+      <SnackbarMessageList />
     </Box>
   )
 }
