@@ -348,7 +348,7 @@ export const LoadFromNdexDialog = (
       open={open}
       onClose={handleClose}
     >
-      <DialogTitle>Open Networks from NDEx: {ndexBaseUrl}</DialogTitle>
+      <DialogTitle>NDEx - Network Browser</DialogTitle>
       <DialogContent>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs
@@ -387,19 +387,30 @@ export const LoadFromNdexDialog = (
         )}
         {content}
       </DialogContent>
-      <DialogActions>
-        {successMessage ?? errorMessage}
-        <Button onClick={handleClose}>Done</Button>
-        <Button
-          disabled={selectedNetworks.length === 0}
-          onClick={() => {
-            setErrorMessage(undefined)
-            setSuccessMessage(undefined)
-            void addNDExNetworksToWorkspace(selectedNetworks)
-          }}
-        >
-          {`Open ${selectedNetworks.length} Network(s) from NDEx`}
-        </Button>
+      <DialogActions
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Box sx={{ pl: 2 }}>{successMessage ?? errorMessage ?? ''}</Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Button onClick={handleClose} sx={{ mr: 7 }}>
+            Done
+          </Button>
+          <Button
+            disabled={selectedNetworks.length === 0}
+            onClick={() => {
+              setErrorMessage(undefined)
+              setSuccessMessage(undefined)
+              void addNDExNetworksToWorkspace(selectedNetworks)
+            }}
+          >
+            {`Open ${selectedNetworks.length} Network(s)`}
+          </Button>
+          {/* </Box> */}
+        </Box>
       </DialogActions>
     </Dialog>
   )

@@ -16,6 +16,7 @@ import { exportNetworkToCx2 } from '../../../store/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
+import { useMessageStore } from '../../../store/useMessageStore'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
@@ -46,6 +47,8 @@ export const CopyNetworkToNDExMenuItem = (
   const client = useCredentialStore((state) => state.client)
   const authenticated: boolean = client?.authenticated ?? false
 
+  const addMessage = useMessageStore((state) => state.addMessage)
+
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
@@ -70,13 +73,21 @@ export const CopyNetworkToNDExMenuItem = (
       addNetworkToWorkspace(uuid as IdType)
       setCurrentNetworkId(uuid as IdType)
 
-      console.log(
-        `Saved a copy of the current network to NDEx with new uuid ${
+      addMessage({
+        message: `Saved a copy of the current network to NDEx with new uuid ${
           uuid as string
         }`,
-      )
+        duration: 3000,
+      })
     } catch (e) {
       console.log(e)
+
+      addMessage({
+        message: `Error: Could not save a copy of the current network to NDEx. ${
+          e.message as string
+        }`,
+        duration: 3000,
+      })
     }
 
     props.handleClose()
@@ -91,7 +102,7 @@ export const CopyNetworkToNDExMenuItem = (
       disabled={!authenticated}
       onClick={handleSaveCurrentNetworkToNDEx}
     >
-      Save a copy of the current network to NDEx
+      Save Copy to NDEx
     </MenuItem>
   )
 
