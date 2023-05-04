@@ -19,9 +19,6 @@ import Palette from '@mui/icons-material/Palette'
 import EditIcon from '@mui/icons-material/Edit'
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import FormGroup from '@mui/material/FormGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
 
 import RdBu from '../../../../../assets/RdBu.png'
 import PuOr from '../../../../../assets/PuOr.png'
@@ -129,6 +126,14 @@ export function ContinuousColorMappingForm(props: {
   const changeButtonText = (text: string) :void => setButtonText(text);
 
   const handleColorPicker = (): void => {
+    setMinState({
+      ...minState,
+      vpValue: minPalette,
+    })
+    setMaxState({
+      ...maxState,
+      vpValue: maxPalette,
+    })
     setHandle(0, min.value as number, minPalette as string);
     setHandle(1, controlPoints[1].value as number, middlePalette as string);
     setHandle(2, max.value as number, maxPalette as string);
@@ -163,6 +168,7 @@ export function ContinuousColorMappingForm(props: {
     range: [0, NUM_GRADIENT_STEPS * GRADIENT_STEP_WIDTH],
     domain: extent(valueDomain) as [number, number],
   })
+  
 
   // map values to colors
   const colorScale = scaleLinear({
@@ -233,6 +239,7 @@ export function ContinuousColorMappingForm(props: {
     setHandles(newHandles)
     updateContinuousMapping(minState, maxState, newHandles)
   }
+
 
   const setHandle = (id: number, value: number, vpValue: string): void => {
     const newHandles = editHandle(handles, id, value, vpValue)
@@ -334,68 +341,48 @@ export function ContinuousColorMappingForm(props: {
         <img src={RdBu} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Purple-Orange" placement="right" onClick={() => {minPalette="#542788";middlePalette="#f7f7f7";maxPalette="#b35806";textPalette='Purple-Orange'}}>
-        <ToggleButton value="PuOr" aria-label="PuOr">
+        <Tooltip title="Purple-Orange" placement="right">
+        <ToggleButton value="PuOr" aria-label="PuOr"  onClick={() => {minPalette="#542788";middlePalette="#f7f7f7";maxPalette="#b35806";textPalette='Purple-Orange'}}>
         <img src={PuOr} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Purple-Red-Green" placement="right" onClick={() => {minPalette="#762a83";middlePalette="#f7f7f7";maxPalette="#1b7837";textPalette='Purple-Red-Green'}}>
-        <ToggleButton value="PRGn" aria-label="PRGn">
+        <Tooltip title="Purple-Red-Green" placement="right">
+        <ToggleButton value="PRGn" aria-label="PRGn" onClick={() => {minPalette="#762a83";middlePalette="#f7f7f7";maxPalette="#1b7837";textPalette='Purple-Red-Green'}}>
         <img src={PRGn} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Spectral Colors" placement="right" onClick={() => {minPalette="#d53e4f";middlePalette="#ffffbf";maxPalette="#3288bd";textPalette='Spectral Colors'}}>
-        <ToggleButton value="Spectral" aria-label="Spectral" >
+        <Tooltip title="Spectral Colors" placement="right">
+        <ToggleButton value="Spectral" aria-label="Spectral" onClick={() => {minPalette="#d53e4f";middlePalette="#ffffbf";maxPalette="#3288bd";textPalette='Spectral Colors'}} >
         <img src={Spectral} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Brown-Blue-Green" placement="right" onClick={() => {minPalette="#8c510a";middlePalette="#f5f5f5";maxPalette="#01665e";textPalette='Brown-Blue-Green'}}>
-        <ToggleButton value="BrBG" aria-label="BrBG">
+        <Tooltip title="Brown-Blue-Green" placement="right">
+        <ToggleButton value="BrBG" aria-label="BrBG" onClick={() => {minPalette="#8c510a";middlePalette="#f5f5f5";maxPalette="#01665e";textPalette='Brown-Blue-Green'}}>
         <img src={BrBG} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Red-Yellow-Green" placement="right" onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#1a9850";textPalette='Red-Yellow-Green'}}>
-        <ToggleButton value="RdYlGn" aria-label="RdYlGn">
+        <Tooltip title="Red-Yellow-Green" placement="right">
+        <ToggleButton value="RdYlGn" aria-label="RdYlGn" onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#1a9850";textPalette='Red-Yellow-Green'}}>
         <img src={RdYlGn} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Magenta-Yellow-Green" placement="right" onClick={() => {minPalette="#c51b7d";middlePalette="#f7f7f7";maxPalette="#4d9221";textPalette='Magenta-Yellow-Green'}}>
-        <ToggleButton value="PiYG" aria-label="PiYG">
+        <Tooltip title="Magenta-Yellow-Green" placement="right">
+        <ToggleButton value="PiYG" aria-label="PiYG" onClick={() => {minPalette="#c51b7d";middlePalette="#f7f7f7";maxPalette="#4d9221";textPalette='Magenta-Yellow-Green'}}>
         <img src={PiYG} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Red-Grey" placement="right" onClick={() => {minPalette="#b2182b";middlePalette="#ffffff";maxPalette="#4d4d4d";textPalette='Red-Grey'}}>
-        <ToggleButton value="RdGy" aria-label="RdGy">
+        <Tooltip title="Red-Grey" placement="right">
+        <ToggleButton value="RdGy" aria-label="RdGy" onClick={() => {minPalette="#b2182b";middlePalette="#ffffff";maxPalette="#4d4d4d";textPalette='Red-Grey'}}>
         <img src={RdGy} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
-        <Tooltip title="Red-Yellow-Blue" placement="right" onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#4575b4";textPalette='Red-Yellow-Blue'}}>
-        <ToggleButton value="RdYlBu" aria-label="RdYlBu">
+        <Tooltip title="Red-Yellow-Blue" placement="right">
+        <ToggleButton value="RdYlBu" aria-label="RdYlBu"  onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#4575b4";textPalette='Red-Yellow-Blue'}}>
         <img src={RdYlBu} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
       </ToggleButtonGroup>
-      <Paper
-        sx={{
-          display: 'flex',
-          p: 1,
-          m: 1,
-          ml: 3,
-          mr: 3,
-          justifyContent: 'space-evenly',
-          backgroundColor: '#fcfffc',
-          color: '#595858',
-        }}
-      >
-    <FormGroup>
-      <FormControlLabel control={<Checkbox />} label="reverse colors" />
-    </FormGroup>
-    <FormGroup>
-      <FormControlLabel control={<Checkbox />} label="colorblind-friendly" />
-    </FormGroup>
 
-   
-            </Paper>
             <Paper
         sx={{
           display: 'flex',
