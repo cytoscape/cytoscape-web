@@ -20,7 +20,7 @@ Check that Yarn is installed by running:
 
 Run a command using `yarn <command>`.  Run `yarn install` before using other commands.
 
-- `dev`: run a dev server that watches code changes, open `localhost:5500` in your web browser
+- `dev`: run a dev server that watches code changes, open `localhost:5500` in your web browser. By default this app points to [NDEx dev server] (https://dev.ndexbio.org), please create an account on the NDEx dev server with a email that links to your Google account before trying to setup your own dev environment for Cytoscape Web.
 - `build`: build the app for production
 - `lint`: lint code according to the eslint config
 - `format`: format source code according to eslint and prettier configs
