@@ -48,6 +48,10 @@ import { useVisualStyleStore } from '../../../../../store/VisualStyleStore'
 import { ColorGradient } from './ColorGradient'
 import { Handle, addHandle, editHandle, removeHandle } from './Handle'
 
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+
 // color mapping form for now
 export function ContinuousColorMappingForm(props: {
   currentNetworkId: IdType
@@ -116,6 +120,18 @@ export function ContinuousColorMappingForm(props: {
     setCreateHandleAnchorEl(null)
   }
   
+  const [isColorBlindChecked, setIsColorBlindChecked] = React.useState(false);
+
+  const handleColorBlindCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    setIsColorBlindChecked(event.target.checked);
+  };
+
+  const [isReverseColorChecked, setIsReverseColorChecked] = React.useState(false);
+
+  const handleReverseColorCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    setIsReverseColorChecked(event.target.checked);
+  };
+
 
   let minPalette = min.vpValue;
   let middlePalette = controlPoints[1].vpValue;
@@ -126,6 +142,8 @@ export function ContinuousColorMappingForm(props: {
   const changeButtonText = (text: string) :void => setButtonText(text);
 
   const handleColorPicker = (): void => {
+    if(!isReverseColorChecked){
+      console.log("unchecked");
     setMinState({
       ...minState,
       vpValue: minPalette,
@@ -139,6 +157,22 @@ export function ContinuousColorMappingForm(props: {
     setHandle(2, max.value as number, maxPalette as string);
     changeButtonText(textPalette);
     hideColorPickerMenu();
+  } else {
+    console.log("checked");
+    setMinState({
+      ...minState,
+      vpValue: maxPalette,
+    })
+    setMaxState({
+      ...maxState,
+      vpValue: minPalette,
+    })
+    setHandle(0, min.value as number, maxPalette as string);
+    setHandle(1, controlPoints[1].value as number, middlePalette as string);
+    setHandle(2, max.value as number, minPalette as string);
+    changeButtonText(textPalette);
+    hideColorPickerMenu();
+  }
   }
 
   const NUM_GRADIENT_STEPS = 140
@@ -352,7 +386,7 @@ export function ContinuousColorMappingForm(props: {
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Spectral Colors" placement="right">
-        <ToggleButton value="Spectral" aria-label="Spectral" onClick={() => {minPalette="#d53e4f";middlePalette="#ffffbf";maxPalette="#3288bd";textPalette='Spectral Colors'}} >
+        <ToggleButton disabled={isColorBlindChecked} value="Spectral" aria-label="Spectral" onClick={() => {minPalette="#d53e4f";middlePalette="#ffffbf";maxPalette="#3288bd";textPalette='Spectral Colors'}} >
         <img src={Spectral} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
@@ -362,7 +396,7 @@ export function ContinuousColorMappingForm(props: {
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Red-Yellow-Green" placement="right">
-        <ToggleButton value="RdYlGn" aria-label="RdYlGn" onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#1a9850";textPalette='Red-Yellow-Green'}}>
+        <ToggleButton disabled={isColorBlindChecked} value="RdYlGn" aria-label="RdYlGn" onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#1a9850";textPalette='Red-Yellow-Green'}}>
         <img src={RdYlGn} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
@@ -372,7 +406,7 @@ export function ContinuousColorMappingForm(props: {
         </ToggleButton>
         </Tooltip>
         <Tooltip title="Red-Grey" placement="right">
-        <ToggleButton value="RdGy" aria-label="RdGy" onClick={() => {minPalette="#b2182b";middlePalette="#ffffff";maxPalette="#4d4d4d";textPalette='Red-Grey'}}>
+        <ToggleButton disabled={isColorBlindChecked} value="RdGy" aria-label="RdGy" onClick={() => {minPalette="#b2182b";middlePalette="#ffffff";maxPalette="#4d4d4d";textPalette='Red-Grey'}}>
         <img src={RdGy} width="15" height="150"/>
         </ToggleButton>
         </Tooltip>
@@ -382,7 +416,25 @@ export function ContinuousColorMappingForm(props: {
         </ToggleButton>
         </Tooltip>
       </ToggleButtonGroup>
-
+      <Paper
+        sx={{
+          display: 'flex',
+          p: 1,
+          m: 1,
+          ml: 3,
+          mr: 3,
+          justifyContent: 'space-evenly',
+          backgroundColor: '#fcfffc',
+          color: '#595858',
+        }}
+      >
+    <FormGroup>
+      <FormControlLabel control={<Checkbox checked={isReverseColorChecked} onChange={handleReverseColorCheckboxChange}/>} label="reverse colors" />
+    </FormGroup>
+    <FormGroup>
+      <FormControlLabel control={<Checkbox checked={isColorBlindChecked} onChange={handleColorBlindCheckboxChange}/>} label="colorblind-friendly" />
+    </FormGroup>
+    </Paper>
             <Paper
         sx={{
           display: 'flex',
