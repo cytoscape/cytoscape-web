@@ -16,7 +16,7 @@ import { exportNetworkToCx2 } from '../../../store/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
-import { useMessageStore } from '../../../store/useMessageStore'
+import { useMessageStore } from '../../../store/MessageStore'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,

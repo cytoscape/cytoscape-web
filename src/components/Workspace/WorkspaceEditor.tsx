@@ -9,8 +9,8 @@ import VizmapperView from '../Vizmapper'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
-import { getNdexNetwork } from '../../store/useNdexNetwork'
-import { getNdexNetworkSummary } from '../../store/useNdexNetworkSummary'
+import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
+import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
 import { useTableStore } from '../../store/TableStore'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -120,7 +120,7 @@ const WorkSpaceEditor: React.FC = () => {
 
   const loadNetworkSummaries = async (): Promise<void> => {
     const currentToken = await getToken()
-    const summaries = await getNdexNetworkSummary(
+    const summaries = await useNdexNetworkSummary(
       workspace.networkIds,
       ndexBaseUrl,
       currentToken,
@@ -131,7 +131,7 @@ const WorkSpaceEditor: React.FC = () => {
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     const currentToken = await getToken()
-    const res = await getNdexNetwork(networkId, ndexBaseUrl, currentToken)
+    const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
     const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
     addNewNetwork(network)

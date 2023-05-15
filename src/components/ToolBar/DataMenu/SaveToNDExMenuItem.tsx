@@ -26,7 +26,7 @@ import { exportNetworkToCx2 } from '../../../store/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { IdType } from '../../../models/IdType'
-import { useMessageStore } from '../../../store/useMessageStore'
+import { useMessageStore } from '../../../store/MessageStore'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)

@@ -28,7 +28,7 @@ import { formatBytes } from '../../../utils/byte-conversion'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { networkSummaryFetcher } from '../../../store/useNdexNetworkSummary'
+import { networkSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
 import { dateFormatter } from '../../../utils/date-format'
 
 interface LoadFromNdexDialogProps {
