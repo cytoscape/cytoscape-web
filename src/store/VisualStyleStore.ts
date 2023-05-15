@@ -90,7 +90,7 @@ interface UpdateVisualStyleAction {
 }
 
 interface VisualStyleAction {
-  set: (networkId: IdType, visualStyle: VisualStyle) => void
+  add: (networkId: IdType, visualStyle: VisualStyle) => void
   delete: (networkId: IdType) => void
   deleteAll: () => void
 }
@@ -131,7 +131,7 @@ export const useVisualStyleStore = create(
     persist((set) => ({
       visualStyles: {},
 
-      set: (networkId: IdType, visualStyle: VisualStyle) => {
+      add: (networkId: IdType, visualStyle: VisualStyle) => {
         set((state) => {
           state.visualStyles[networkId] = visualStyle
           return state

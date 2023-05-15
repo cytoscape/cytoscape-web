@@ -1,5 +1,5 @@
 import { IdType } from '../models/IdType'
-import NetworkFn, { Network } from '../models/NetworkModel'
+import NetworkFn, { Edge, Network } from '../models/NetworkModel'
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import {
@@ -8,27 +8,42 @@ import {
   putNetworkToDb,
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
+
 /**
- * Network State manager based on zustand
+ * Network data store
  */
 interface NetworkState {
   networks: Map<IdType, Network>
 }
 
 /**
- * Actions to mutate network structure
+ * Actions to mutate (update) network topology
  */
 interface UpdateActions {
+  // Add node(s) to a network
   addNode: (networkId: IdType, nodeId: IdType) => void
   addNodes: (networkId: IdType, nodeIds: IdType[]) => void
+
+  // Add edge(s) to a network
+  addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => void
+  addEdges: (networkId: IdType, edges: Edge[]) => void
+
+  // Delete nodes and edges from a network
   deleteNodes: (networkId: IdType, nodeIds: IdType[]) => void
   deleteEdges: (networkId: IdType, edgeIds: IdType[]) => void
-  addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => void
 }
 
+/**
+ * Actions to add/delete networks from the store
+ */
 interface NetworkActions {
+  // Add a new network
   add: (network: Network) => void
+
+  // Delete a network
   delete: (networkId: IdType) => void
+
+  // Delete all networks from the store
   deleteAll: () => void
 }
 
@@ -43,15 +58,14 @@ const persist =
   ) =>
     config(
       async (args) => {
-        const currentNetworkId =
+        const currentNetworkId: IdType =
           useWorkspaceStore.getState().workspace.currentNetworkId
-        console.log('persist middleware updating network store')
         set(args)
         const updated = get().networks.get(currentNetworkId)
-        console.log('new network store:', updated)
         const deleted = updated === undefined
         if (!deleted) {
-          await putNetworkToDb(updated).then(() => {})
+          console.log('* DB update: network store', updated)
+          await putNetworkToDb(updated)
         }
       },
       get,
@@ -74,7 +88,6 @@ export const useNetworkStore = create(
           }
         })
       },
-
       addNodes: (networkId: IdType, nodeIds: IdType[]) => {
         set((state) => {
           const network = state.networks.get(networkId)
@@ -115,6 +128,17 @@ export const useNetworkStore = create(
           const network = state.networks.get(networkId)
           if (network !== undefined) {
             NetworkFn.addEdge(network, { id, s, t })
+          }
+          return {
+            networks: { ...state.networks },
+          }
+        })
+      },
+      addEdges: (networkId: IdType, edges: Edge[]) => {
+        set((state) => {
+          const network = state.networks.get(networkId)
+          if (network !== undefined) {
+            NetworkFn.addEdges(network, edges)
           }
           return {
             networks: { ...state.networks },

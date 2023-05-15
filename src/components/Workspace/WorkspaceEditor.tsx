@@ -95,7 +95,7 @@ const WorkSpaceEditor: React.FC = () => {
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
-  const setSummaries = useNetworkSummaryStore((state) => state.setMultiple)
+  const setSummaries = useNetworkSummaryStore((state) => state.addAll)
   const removeSummary = useNetworkSummaryStore((state) => state.delete)
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
@@ -112,11 +112,11 @@ const WorkSpaceEditor: React.FC = () => {
   const addNewNetwork = useNetworkStore((state) => state.add)
 
   // Visual Style Store
-  const setVisualStyle = useVisualStyleStore((state) => state.set)
+  const setVisualStyle = useVisualStyleStore((state) => state.add)
   // Table Store
-  const setTables = useTableStore((state) => state.setTables)
+  const setTables = useTableStore((state) => state.add)
 
-  const setViewModel = useViewModelStore((state) => state.setViewModel)
+  const setViewModel = useViewModelStore((state) => state.add)
 
   const loadNetworkSummaries = async (): Promise<void> => {
     const currentToken = await getToken()

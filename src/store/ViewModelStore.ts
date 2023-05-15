@@ -11,31 +11,25 @@ import {
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 
-/**
-//  * View model state manager based on zustand
-//  */
 interface ViewModelState {
   viewModels: Record<IdType, NetworkView>
 }
 
-// /**
-//  * Actions to mutate visual style structure
-//  */
-// interface UpdateVisualStyleAction {
-// }
-
 interface ViewModelAction {
-  setViewModel: (networkId: IdType, networkView: NetworkView) => void
+  // Add a new View Model to the store
+  add: (networkId: IdType, networkView: NetworkView) => void
+
   exclusiveSelect: (
     networkId: IdType,
     selectedNodes: IdType[],
     selectedEdges: IdType[],
   ) => void
+
+  // Change the state of a view model of graph objects
   additiveSelect: (networkId: IdType, ids: IdType[]) => void
   additiveUnselect: (networkId: IdType, ids: IdType[]) => void
   setHovered: (networkId: IdType, eleToHover: IdType) => void
   toggleSelected: (networkId: IdType, eles: IdType[]) => void
-
   setNodePosition: (
     networkId: IdType,
     eleId: IdType,
@@ -84,7 +78,7 @@ export const useViewModelStore = create(
       persist((set) => ({
         viewModels: {},
 
-        setViewModel: (networkId: IdType, networkView: NetworkView) => {
+        add: (networkId: IdType, networkView: NetworkView) => {
           set((state) => {
             state.viewModels[networkId] = networkView
             return state
