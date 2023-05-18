@@ -1,6 +1,7 @@
 import { Box, Divider } from '@mui/material'
 import { ApplyLayoutButton } from './ApplyLayoutButton'
 import { FitButton } from './FitButton'
+import { OpenInCytoscapeButton } from './OpenInCytoscapeButton'
 
 export const FloatingToolBar = (): JSX.Element => {
   return (
@@ -20,6 +21,7 @@ export const FloatingToolBar = (): JSX.Element => {
       <Divider orientation="vertical" flexItem />
       <ApplyLayoutButton />
       <FitButton />
+      <OpenInCytoscapeButton />
     </Box>
   )
 }
