@@ -2,11 +2,11 @@ import { IdType } from '../../IdType'
 import { AttributeName, ValueType } from '../../TableModel'
 import { Network, Node, Edge } from '..'
 
-import { Cx2 } from '../../../utils/cx/Cx2'
+import { Cx2 } from '../../CxModel/Cx2'
 
-import { Node as CxNode } from '../../../utils/cx/Cx2/CoreAspects/Node'
-import { Edge as CxEdge } from '../../../utils/cx/Cx2/CoreAspects/Edge'
-import * as cxUtil from '../../../utils/cx/cx2-util'
+import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
+import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
+import * as cxUtil from '../../CxModel/cx2-util'
 
 import { Core, EdgeSingular, NodeSingular } from 'cytoscape'
 import * as cytoscape from 'cytoscape'

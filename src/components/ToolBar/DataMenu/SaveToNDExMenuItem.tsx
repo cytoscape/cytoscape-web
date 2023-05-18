@@ -22,11 +22,11 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { exportNetworkToCx2 } from '../../../store/exportCX'
+import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { IdType } from '../../../models/IdType'
-import { useMessageStore } from '../../../store/useMessageStore'
+import { useMessageStore } from '../../../store/MessageStore'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)

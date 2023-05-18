@@ -25,7 +25,9 @@ interface TableState {
 }
 
 interface TableAction {
-  setTables: (networkId: IdType, nodeTable: Table, edgeTable: Table) => void
+  // Add a new table to the store
+  add: (networkId: IdType, nodeTable: Table, edgeTable: Table) => void
+
   setValue: (
     networkId: IdType,
     tableType: 'node' | 'edge',
@@ -43,6 +45,7 @@ interface TableAction {
     tableType: 'node' | 'edge',
     column: AttributeName,
   ) => void
+
   delete: (networkId: IdType) => void
   deleteAll: () => void
 }
@@ -82,7 +85,7 @@ export const useTableStore = create(
     persist((set, get) => ({
       tables: {},
 
-      setTables: (networkId: IdType, nodeTable: Table, edgeTable: Table) => {
+      add: (networkId: IdType, nodeTable: Table, edgeTable: Table) => {
         set((state) => {
           state.tables[networkId] = { nodeTable, edgeTable }
           return state

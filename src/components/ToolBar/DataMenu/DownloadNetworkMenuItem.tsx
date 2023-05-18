@@ -8,13 +8,10 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { exportNetworkToCx2 } from '../../../store/exportCX'
+import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { Network } from '../../../models/NetworkModel'
 
-export const DownloadNetworkMenuItem = (
-  props: BaseMenuProps,
-): ReactElement => {
-
+export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -35,7 +32,6 @@ export const DownloadNetworkMenuItem = (
     state.networks.get(currentNetworkId),
   ) as Network
 
-
   const saveNetworkToFile = async (): Promise<void> => {
     const cx = exportNetworkToCx2(
       network,
@@ -46,11 +42,11 @@ export const DownloadNetworkMenuItem = (
       viewModel,
       `Copy of ${summary.name}`,
     )
-    const link = document.createElement("a");
-    link.download = `${summary.name}.cx2`;
-    const cxFile = new Blob([JSON.stringify(cx)], {type: 'text/plain'});
-    link.href = URL.createObjectURL(cxFile);
-    link.click();
+    const link = document.createElement('a')
+    link.download = `${summary.name}.cx2`
+    const cxFile = new Blob([JSON.stringify(cx)], { type: 'text/plain' })
+    link.href = URL.createObjectURL(cxFile)
+    link.click()
     props.handleClose()
   }
 
@@ -59,11 +55,9 @@ export const DownloadNetworkMenuItem = (
   }
 
   const menuItem = (
-    <MenuItem
-      onClick={handleSaveCurrentNetworkToFile}
-    >
+    <MenuItem onClick={handleSaveCurrentNetworkToFile}>
       Download the current network
     </MenuItem>
   )
-    return <>{menuItem}</>
+  return <>{menuItem}</>
 }

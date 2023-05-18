@@ -1,4 +1,4 @@
-import { IdType } from '../models/IdType'
+import { IdType } from '../../models/IdType'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 
@@ -23,7 +23,7 @@ const userInfoFetcher = async (
   }
 }
 
-export const getUserInfo = async (
+export const useUserInfo = async (
   userId: IdType,
   url: string,
   accessToken?: string,

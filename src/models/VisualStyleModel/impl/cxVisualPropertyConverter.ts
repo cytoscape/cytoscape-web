@@ -1,4 +1,4 @@
-import { CxValue } from '../../../utils/cx/Cx2/CxValue'
+import { CxValue } from '../../CxModel/Cx2/CxValue'
 import { VisualPropertyName } from '../VisualPropertyName'
 import {
   ColorType,

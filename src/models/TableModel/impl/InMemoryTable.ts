@@ -1,12 +1,12 @@
 import { Column, Table } from '..'
-import { Cx2 } from '../../../utils/cx/Cx2'
-import * as cxUtil from '../../../utils/cx/cx2-util'
+import { Cx2 } from '../../CxModel/Cx2'
+import * as cxUtil from '../../CxModel/cx2-util'
 import { IdType } from '../../IdType'
 import { AttributeName } from '../AttributeName'
 import { ValueType } from '../ValueType'
 import { ValueTypeName } from '../ValueTypeName'
-import { CxValue } from '../../../utils/cx/Cx2/CxValue'
-import { AttributeDeclaration } from '../../../utils/cx/Cx2/CoreAspects/AttributeDeclarations'
+import { CxValue } from '../../CxModel/Cx2/CxValue'
+import { AttributeDeclaration } from '../../CxModel/Cx2/CoreAspects/AttributeDeclarations'
 import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
 export const createTable = (id: IdType): Table => ({
   id,

@@ -4,20 +4,20 @@ import {
   ValueType,
   ValueTypeName,
   Column,
-} from '../models/TableModel'
+} from '../../models/TableModel'
 
-import { NetworkView } from '../models/ViewModel'
-import { Network } from '../models/NetworkModel'
+import { NetworkView } from '../../models/ViewModel'
+import { Network } from '../../models/NetworkModel'
 
-import { IdType } from '../models/IdType'
+import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
   VisualStyle,
   VisualPropertyName,
   VisualProperty,
   VisualPropertyValueType,
-} from '../models/VisualStyleModel'
+} from '../../models/VisualStyleModel'
 
-import { translateEdgeIdToCX } from '../models/NetworkModel/impl/CyNetwork'
+import { translateEdgeIdToCX } from '../../models/NetworkModel/impl/CyNetwork'
 import {
   CXVisualMappingFunction,
   cxVisualPropertyConverter,
@@ -26,16 +26,16 @@ import {
   convertPassthroughMappingToCX,
   convertDiscreteMappingToCX,
   vpToCX,
-} from '../models/VisualStyleModel/impl/cxVisualPropertyConverter'
+} from '../../models/VisualStyleModel/impl/cxVisualPropertyConverter'
 
-import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
+import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 
 import {
   ContinuousMappingFunction,
   DiscreteMappingFunction,
   MappingFunctionType,
   PassthroughMappingFunction,
-} from '../models/VisualStyleModel/VisualMappingFunction'
+} from '../../models/VisualStyleModel/VisualMappingFunction'
 
 export const exportNetworkToCx2 = (
   network: Network,

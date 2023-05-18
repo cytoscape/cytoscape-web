@@ -1,4 +1,4 @@
-import { Cx2 } from '../../utils/cx/Cx2'
+import { Cx2 } from '../CxModel/Cx2'
 import { IdType } from '../IdType'
 import { Table, Column } from '.'
 

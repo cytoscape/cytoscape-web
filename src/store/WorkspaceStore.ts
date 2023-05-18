@@ -10,10 +10,13 @@ interface WorkspaceState {
 }
 
 interface WorkspaceActions {
+  // Set current workspace for this session
   set: (workspace: Workspace) => void
+
   setId: (id: IdType) => void
   setName: (name: string) => void
   setCurrentNetworkId: (id: IdType) => void
+
   addNetworkIds: (ids: IdType | IdType[]) => void
 
   // Delete functions just remove networks from the workspace, but not from the database

@@ -1,4 +1,4 @@
-import { Cx2 } from '../../utils/cx/Cx2'
+import { Cx2 } from '../CxModel/Cx2'
 import { Network } from '../NetworkModel'
 import { Table } from '../TableModel'
 import { NetworkView } from '../ViewModel'

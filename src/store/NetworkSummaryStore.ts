@@ -13,24 +13,33 @@ interface NetworkSummaryStore {
 }
 
 interface NetworkSummaryActions {
-  set: (networkId: IdType, summary: NdexNetworkSummary) => void
-  setMultiple: (summaries: Record<IdType, NdexNetworkSummary>) => void
+  // Add a network summary to the store
+  add: (networkId: IdType, summary: NdexNetworkSummary) => void
+
+  // Batch add network summaries to the store
+  addAll: (summaries: Record<IdType, NdexNetworkSummary>) => void
+
+  // Update an entry
   update: (id: IdType, summary: Partial<NdexNetworkSummary>) => void
+
+  // Delete a network summary from the store
   delete: (networkId: IdType) => void
+
+  // Delete all summaries from the store
   deleteAll: () => void
 }
 
 export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore & NetworkSummaryActions>((set, get) => ({
     summaries: {},
-    set: (networkId: IdType, summary: NdexNetworkSummary) => {
+    add: (networkId: IdType, summary: NdexNetworkSummary) => {
       set((state) => {
         state.summaries[networkId] = summary
 
         return state
       })
     },
-    setMultiple: (summaries: Record<IdType, NdexNetworkSummary>) => {
+    addAll: (summaries: Record<IdType, NdexNetworkSummary>) => {
       set((state) => {
         state.summaries = { ...state.summaries, ...summaries }
 

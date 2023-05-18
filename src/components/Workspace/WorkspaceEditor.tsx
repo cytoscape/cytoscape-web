@@ -9,8 +9,8 @@ import VizmapperView from '../Vizmapper'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
-import { getNdexNetwork } from '../../store/useNdexNetwork'
-import { getNdexNetworkSummary } from '../../store/useNdexNetworkSummary'
+import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
+import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
 import { useTableStore } from '../../store/TableStore'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -95,7 +95,7 @@ const WorkSpaceEditor: React.FC = () => {
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
-  const setSummaries = useNetworkSummaryStore((state) => state.setMultiple)
+  const setSummaries = useNetworkSummaryStore((state) => state.addAll)
   const removeSummary = useNetworkSummaryStore((state) => state.delete)
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
@@ -112,15 +112,15 @@ const WorkSpaceEditor: React.FC = () => {
   const addNewNetwork = useNetworkStore((state) => state.add)
 
   // Visual Style Store
-  const setVisualStyle = useVisualStyleStore((state) => state.set)
+  const setVisualStyle = useVisualStyleStore((state) => state.add)
   // Table Store
-  const setTables = useTableStore((state) => state.setTables)
+  const setTables = useTableStore((state) => state.add)
 
-  const setViewModel = useViewModelStore((state) => state.setViewModel)
+  const setViewModel = useViewModelStore((state) => state.add)
 
   const loadNetworkSummaries = async (): Promise<void> => {
     const currentToken = await getToken()
-    const summaries = await getNdexNetworkSummary(
+    const summaries = await useNdexNetworkSummary(
       workspace.networkIds,
       ndexBaseUrl,
       currentToken,
@@ -131,7 +131,7 @@ const WorkSpaceEditor: React.FC = () => {
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     const currentToken = await getToken()
-    const res = await getNdexNetwork(networkId, ndexBaseUrl, currentToken)
+    const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
     const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
     addNewNetwork(network)

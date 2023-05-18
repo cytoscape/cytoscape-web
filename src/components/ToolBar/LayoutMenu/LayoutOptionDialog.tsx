@@ -153,7 +153,6 @@ export const LayoutOptionDialog = ({
 
   return (
     <Dialog
-      maxWidth={'md'}
       open={open}
       onClose={handleClose}
       PaperComponent={DraggablePaper}
@@ -170,7 +169,7 @@ export const LayoutOptionDialog = ({
 
       <DialogContent sx={{ margin: 0, padding: 1, paddingTop: 0 }}>
         <Grid container spacing={0} alignItems={'center'}>
-          <Grid md={12}>
+          <Grid item md={12}>
             <LayoutSelector
               selectedEngine={selected[0]}
               selectedAlgorithm={selected[1]}

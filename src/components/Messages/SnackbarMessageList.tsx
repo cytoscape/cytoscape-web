@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Snackbar, SnackbarCloseReason } from '@mui/material'
 
-import { useMessageStore } from '../../store/useMessageStore'
+import { useMessageStore } from '../../store/MessageStore'
 
 export const SnackbarMessageList = (): React.ReactElement => {
   const [open, setOpen] = useState(false)

@@ -38,8 +38,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
   const isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
-  const setViewModel = useViewModelStore((state) => state.setViewModel)
-  const setVisualStyle = useVisualStyleStore((state) => state.set)
+  const setViewModel = useViewModelStore((state) => state.add)
+  const setVisualStyle = useVisualStyleStore((state) => state.add)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
 
   const tables = useTableStore((state) => state.tables)

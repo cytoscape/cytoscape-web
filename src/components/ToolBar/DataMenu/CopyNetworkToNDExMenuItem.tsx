@@ -12,11 +12,11 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { exportNetworkToCx2 } from '../../../store/exportCX'
+import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
-import { useMessageStore } from '../../../store/useMessageStore'
+import { useMessageStore } from '../../../store/MessageStore'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
