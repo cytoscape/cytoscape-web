@@ -1,6 +1,6 @@
 import _ from 'lodash'
-import { Cx2 } from '../../../utils/cx/Cx2'
-import * as cxUtil from '../../../utils/cx/cx2-util'
+import { Cx2 } from '../../CxModel/Cx2'
+import * as cxUtil from '../../CxModel/cx2-util'
 
 import { NetworkView } from '../../ViewModel'
 

@@ -1,7 +1,7 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
-import { Cx2 } from '../../../utils/cx/Cx2'
+import { Cx2 } from '../../../models/CxModel/Cx2'
 import NetworkFn, { Network } from '../../../models/NetworkModel'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import ViewModelFn, { NetworkView } from '../../../models/ViewModel'

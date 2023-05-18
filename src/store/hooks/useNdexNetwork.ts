@@ -1,7 +1,7 @@
 import NetworkFn, { Network } from '../../models/NetworkModel'
 import TableFn, { Table } from '../../models/TableModel'
 import VisualStyleFn, { VisualStyle } from '../../models/VisualStyleModel'
-import { Cx2 } from '../../utils/cx/Cx2'
+import { Cx2 } from '../../models/CxModel/Cx2'
 import {
   putNetworkToDb,
   putTablesToDb,

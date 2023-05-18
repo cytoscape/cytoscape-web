@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { Message } from '../models/Message'
+import { Message } from '../models/MessageModel'
 
 interface MessageState {
   messages: Message[]
