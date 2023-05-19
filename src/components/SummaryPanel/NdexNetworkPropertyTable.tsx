@@ -123,7 +123,7 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
         sx={{ height: 300, overflowY: 'scroll' }}
         component={Paper}
       >
-        <Table size="small">
+        <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
               <TableCell>Data Type</TableCell>
