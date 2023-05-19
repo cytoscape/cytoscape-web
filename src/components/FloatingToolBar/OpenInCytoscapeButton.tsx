@@ -10,51 +10,49 @@ import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
-import { exportNetworkToCx2 } from '../../store/exportCX'
+import { exportNetworkToCx2 } from '../../store/io/exportCX'
 import { Network } from '../../models/NetworkModel'
 
 export const OpenInCytoscapeButton = (): JSX.Element => {
+  const cyndex = new CyNDEx()
+  const currentNetworkId = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
 
-    const cyndex = new CyNDEx();
-    const currentNetworkId = useWorkspaceStore(
-      (state) => state.workspace.currentNetworkId,
+  const table = useTableStore((state) => state.tables[currentNetworkId])
+
+  const summary = useNetworkSummaryStore(
+    (state) => state.summaries[currentNetworkId],
+  )
+
+  const viewModel = useViewModelStore(
+    (state) => state.viewModels[currentNetworkId],
+  )
+  const visualStyle = useVisualStyleStore(
+    (state) => state.visualStyles[currentNetworkId],
+  )
+  const network = useNetworkStore((state) =>
+    state.networks.get(currentNetworkId),
+  ) as Network
+
+  const openNetworkInCytoscape = async (): Promise<void> => {
+    const cx = exportNetworkToCx2(
+      network,
+      visualStyle,
+      summary,
+      table.nodeTable,
+      table.edgeTable,
+      viewModel,
+      `Copy of ${summary.name}`,
     )
-  
-    const table = useTableStore((state) => state.tables[currentNetworkId])
-  
-    const summary = useNetworkSummaryStore(
-      (state) => state.summaries[currentNetworkId],
-    )
-  
-    const viewModel = useViewModelStore(
-      (state) => state.viewModels[currentNetworkId],
-    )
-    const visualStyle = useVisualStyleStore(
-      (state) => state.visualStyles[currentNetworkId],
-    )
-    const network = useNetworkStore((state) =>
-      state.networks.get(currentNetworkId),
-    ) as Network
-  
-  
-    const openNetworkInCytoscape = async (): Promise<void> => {
-      const cx = exportNetworkToCx2(
-        network,
-        visualStyle,
-        summary,
-        table.nodeTable,
-        table.edgeTable,
-        viewModel,
-        `Copy of ${summary.name}`,
-      )
-      try {
-          await cyndex.postCX2NetworkToCytoscape(cx);
-      } catch (e) {
-          console.log(e)
-          console.log("Cannot find Cytoscape!")
-      }
+    try {
+      await cyndex.postCX2NetworkToCytoscape(cx)
+    } catch (e) {
+      console.log(e)
+      console.log('Cannot find Cytoscape!')
     }
-    
+  }
+
   const handleClick = async (): Promise<void> => {
     await openNetworkInCytoscape()
   }
