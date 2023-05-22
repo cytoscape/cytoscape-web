@@ -214,14 +214,16 @@ export function ContinuousNumberMappingForm(props: {
   // update the min and max accordingly
   React.useEffect(() => {
     const [min, max] = extent(handles.map((h) => h.value as number))
-    if (min != null && min < minState.value) {
+    const minValue: number = minState.value as number
+    if (min != null && min < minValue) {
       setMinState({
         ...minState,
         value: min,
       })
     }
 
-    if (max != null && max > maxState.value) {
+    const maxValue: number = maxState.value as number
+    if (max != null && max > maxValue) {
       setMaxState({
         ...maxState,
         value: max,
