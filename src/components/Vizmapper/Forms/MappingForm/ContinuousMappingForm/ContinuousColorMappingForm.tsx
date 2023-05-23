@@ -82,6 +82,7 @@ export function ContinuousColorMappingForm(props: {
     setEditMinMaxAnchorEl(null)
   }
 
+  
   const showCreateHandleMenu = (
     event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
@@ -348,7 +349,8 @@ export function ContinuousColorMappingForm(props: {
                         zIndex: lastDraggedHandleId === h.id ? 3 : 1,
                       }}
                     >
-                      <Delete
+                        {handles.length >=3 && (
+                      <Delete 
                         onClick={() => {
                           deleteHandle(h.id)
                         }}
@@ -364,6 +366,7 @@ export function ContinuousColorMappingForm(props: {
                           },
                         }}
                       />
+                      )}
 
                       <Box sx={{ pl: 1.8, pr: 1.8 }}>
                         <VisualPropertyValueForm
