@@ -34,6 +34,8 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { NetworkView } from '../../models/ViewModel'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 
+import { removePTags } from '../../utils/remove-p-tags'
+
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
 }
@@ -113,7 +115,7 @@ export const NetworkPropertyPanel = ({
       Highlight,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
-    content: summary.description,
+    content: removePTags(summary.description),
   })
 
   return (
@@ -209,18 +211,9 @@ export const NetworkPropertyPanel = ({
               />
             </Box>
 
-            <TextField
-              size="small"
-              label="Description"
-              sx={{ width: '100%', mt: 2, fontSize: 12 }}
-              multiline
-              onChange={(e) => {
-                updateNetworkSummary(summary.externalId, {
-                  description: e.target.value,
-                })
-              }}
-              value={summary.description}
-            ></TextField>
+            <Typography sx={{ ml: 1.5, pt: 1 }} gutterBottom>
+              Description
+            </Typography>
             <RichTextEditor editor={editor}>
               <RichTextEditor.Toolbar sticky stickyOffset={60}>
                 <RichTextEditor.ControlsGroup>
