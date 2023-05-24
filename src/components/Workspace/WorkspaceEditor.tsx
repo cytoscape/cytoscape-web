@@ -1,11 +1,7 @@
-import * as React from 'react'
-import { Suspense, useContext, useEffect, useState } from 'react'
+import { Suspense, lazy, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
-import { Box, Tabs, Tab, Typography } from '@mui/material'
-import ShareIcon from '@mui/icons-material/Share'
-import PaletteIcon from '@mui/icons-material/Palette'
-import VizmapperView from '../Vizmapper'
+import { Box, Fab, Tooltip } from '@mui/material'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
@@ -21,19 +17,29 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { AppConfigContext } from '../../AppConfigContext'
 import { Workspace } from '../../models/WorkspaceModel'
-import { Summaries as SummaryList } from '../SummaryPanel'
 import { putNetworkViewToDb } from '../../store/persist/db'
 import { NetworkView } from '../../models/ViewModel'
 import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
 
 import { useCredentialStore } from '../../store/CredentialStore'
 import { SnackbarMessageList } from '../Messages'
+import { NetworkBrowser } from './NetworkBrowser'
 
-const NetworkPanel = React.lazy(() => import('../NetworkPanel/NetworkPanel'))
-const TableBrowser = React.lazy(() => import('../TableBrowser/TableBrowser'))
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
-const WorkSpaceEditor: React.FC = () => {
+const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
+const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
+
+/**
+ * The main workspace editor containing all except toolbar
+ *
+ */
+const WorkSpaceEditor = (): JSX.Element => {
   useWorkspaceManager()
+
+  // Open / close side panel for extra UI components
+  const [openSidePanel, setOpenSidePanel] = useState<boolean>(false)
 
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -100,23 +106,14 @@ const WorkSpaceEditor: React.FC = () => {
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
-  const [currentTabIndex, setCurrentTabIndex] = useState(0)
   const [allotmentDimensions, setAllotmentDimensions] = useState<
     [number, number]
   >([0, 0])
 
-  const changeTab = (event: React.SyntheticEvent, newValue: number): void => {
-    setCurrentTabIndex(newValue)
-  }
-
   const addNewNetwork = useNetworkStore((state) => state.add)
-
-  // Visual Style Store
-  const setVisualStyle = useVisualStyleStore((state) => state.add)
-  // Table Store
-  const setTables = useTableStore((state) => state.add)
-
-  const setViewModel = useViewModelStore((state) => state.add)
+  const addVisualStyle = useVisualStyleStore((state) => state.add)
+  const addTable = useTableStore((state) => state.add)
+  const addViewModel = useViewModelStore((state) => state.add)
 
   const loadNetworkSummaries = async (): Promise<void> => {
     const currentToken = await getToken()
@@ -135,9 +132,9 @@ const WorkSpaceEditor: React.FC = () => {
     const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
     addNewNetwork(network)
-    setVisualStyle(networkId, visualStyle)
-    setTables(networkId, nodeTable, edgeTable)
-    setViewModel(networkId, networkView)
+    addVisualStyle(networkId, visualStyle)
+    addTable(networkId, nodeTable, edgeTable)
+    addViewModel(networkId, networkView)
   }
 
   /**
@@ -250,91 +247,78 @@ const WorkSpaceEditor: React.FC = () => {
   }, [summaries, currentNetworkId])
 
   // TODO: avoid hardcoding pixel values
+
+  // Return the main component including the network panel, network view, and the table browser
   return (
-    <Box sx={{ height: 'calc(100vh - 48px)' }}>
-      <Allotment
-        vertical
-        onChange={(sizes: number[]) => {
-          // sizes[0] represents the height of the top pane (network list, network renderer, vizmapper)
-          // sizes[1] represents the height of the bottom pane (table browser)
-          setAllotmentDimensions([sizes[0], sizes[1]])
-          setTableBrowserHeight(sizes[1])
-        }}
-      >
-        <Allotment.Pane>
+    <Box
+      sx={{
+        height: 'calc(100vh - 48px)',
+      }}
+    >
+      <Allotment>
+        <Allotment
+          vertical
+          onChange={(sizes: number[]) => {
+            // sizes[0] represents the height of the top pane (network list, network renderer, vizmapper)
+            // sizes[1] represents the height of the bottom pane (table browser)
+            setAllotmentDimensions([sizes[0], sizes[1]])
+            setTableBrowserHeight(sizes[1])
+          }}
+        >
           <Allotment>
             <Allotment.Pane preferredSize="25%">
-              <Box
-                sx={{
-                  height: '100%',
-                }}
-              >
-                <Tabs
-                  sx={{ display: 'flex', alignItems: 'center', height: '40px' }}
-                  value={currentTabIndex}
-                  onChange={changeTab}
-                >
-                  <Tab
-                    icon={<ShareIcon />}
-                    iconPosition="start"
-                    label={<Typography variant="body2">WORKSPACE</Typography>}
-                  />
-                  <Tab
-                    icon={<PaletteIcon />}
-                    iconPosition="start"
-                    label={<Typography variant="body2">STYLE</Typography>}
-                  />
-                </Tabs>
-                <div hidden={currentTabIndex !== 0}>
-                  {currentTabIndex === 0 && (
-                    <Box
-                      sx={{
-                        overflow: 'scroll',
-                        height: allotmentDimensions[0] - 48,
-                        // need to set a height to enable scroll in the network list
-                        // 48 is the height of the tool bar
-                        width: '100%',
-                        padding: 0,
-                        margin: 0,
-                      }}
-                    >
-                      <SummaryList summaries={summaries} />
-                    </Box>
-                  )}
-                </div>
-                <div hidden={currentTabIndex !== 1}>
-                  {currentTabIndex === 1 && (
-                    <Box>
-                      {' '}
-                      <VizmapperView
-                        currentNetworkId={currentNetworkId}
-                        height={allotmentDimensions[0]}
-                      />
-                    </Box>
-                  )}
-                </div>
-              </Box>
+              <NetworkBrowser allotmentDimensions={allotmentDimensions} />
             </Allotment.Pane>
             <Allotment.Pane>
               <Outlet />
               <NetworkPanel />
             </Allotment.Pane>
           </Allotment>
-        </Allotment.Pane>
-        <Allotment.Pane minSize={28} preferredSize={150}>
-          <Suspense
-            fallback={<div>{`Loading from NDEx`}</div>}
-            key={currentNetworkId}
-          >
-            <TableBrowser
-              height={tableBrowserHeight}
-              width={tableBrowserWidth}
-              currentNetworkId={currentNetworkId}
-            />
-          </Suspense>
-        </Allotment.Pane>
+          <Allotment.Pane minSize={28} preferredSize={150}>
+            <Suspense
+              fallback={<div>{`Loading from NDEx`}</div>}
+              key={currentNetworkId}
+            >
+              <TableBrowser
+                height={tableBrowserHeight}
+                width={tableBrowserWidth}
+                currentNetworkId={currentNetworkId}
+              />
+            </Suspense>
+          </Allotment.Pane>
+        </Allotment>
+        {openSidePanel ? (
+          <Box sx={{ height: '100%', width: '100%', background: 'red' }}>
+            <Tooltip title="Close side">
+              <ChevronRightIcon
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: '0',
+                  color: 'white',
+                }}
+                onClick={() => setOpenSidePanel(!openSidePanel)}
+              />
+            </Tooltip>
+          </Box>
+        ) : null}
       </Allotment>
       <SnackbarMessageList />
+      {openSidePanel ? null : (
+        <Tooltip title="Open side panel">
+          <Fab
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: '55px',
+              right: '5px',
+            }}
+            onClick={() => setOpenSidePanel(!openSidePanel)}
+          >
+            <ChevronLeftIcon />
+          </Fab>
+        </Tooltip>
+      )}
     </Box>
   )
 }
