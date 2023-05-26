@@ -12,6 +12,13 @@ import { useWorkspaceStore } from '../../store/WorkspaceStore'
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
 }
+
+/**
+ *
+ * Panel for showing network list and vizmapper
+ *
+ * @returns
+ */
 export const NetworkBrowser = ({
   allotmentDimensions,
 }: NetworkBrowserProps): JSX.Element => {

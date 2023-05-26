@@ -1,7 +1,7 @@
 import { Suspense, lazy, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
-import { Box, Fab, Tooltip } from '@mui/material'
+import { Box, Paper, Tooltip } from '@mui/material'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
@@ -27,6 +27,7 @@ import { NetworkBrowser } from './NetworkBrowser'
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import { ViewerPanel } from '../../features/HierarchyViewer/components'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -288,26 +289,27 @@ const WorkSpaceEditor = (): JSX.Element => {
           </Allotment.Pane>
         </Allotment>
         {openSidePanel ? (
-          <Box sx={{ height: '100%', width: '100%', background: 'red' }}>
+          <Box sx={{ height: '100%', width: '100%' }}>
             <Tooltip title="Close side">
               <ChevronRightIcon
                 sx={{
+                  zIndex: 1000,
                   position: 'absolute',
-                  top: 0,
-                  left: '0',
-                  color: 'white',
+                  top: '5px',
+                  left: '5px',
+                  border: '1px solid #999999',
                 }}
                 onClick={() => setOpenSidePanel(!openSidePanel)}
               />
             </Tooltip>
+            <ViewerPanel />
           </Box>
         ) : null}
       </Allotment>
       <SnackbarMessageList />
       {openSidePanel ? null : (
         <Tooltip title="Open side panel">
-          <Fab
-            size="small"
+          <Paper
             sx={{
               position: 'absolute',
               top: '55px',
@@ -316,7 +318,7 @@ const WorkSpaceEditor = (): JSX.Element => {
             onClick={() => setOpenSidePanel(!openSidePanel)}
           >
             <ChevronLeftIcon />
-          </Fab>
+          </Paper>
         </Tooltip>
       )}
     </Box>
