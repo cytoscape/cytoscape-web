@@ -2,7 +2,7 @@ import { Tab, Tabs } from '@mui/material'
 import React, { SyntheticEvent } from 'react'
 
 interface SidePanelProps {
-  tabContents: React.ReactNode[]
+  tabContents: JSX.Element[]
 }
 
 export const SidePanel = ({ tabContents }: SidePanelProps): JSX.Element => {
@@ -19,14 +19,12 @@ export const SidePanel = ({ tabContents }: SidePanelProps): JSX.Element => {
       variant="scrollable"
       scrollButtons="auto"
       aria-label="scrollable auto tabs example"
+      sx={{ paddingLeft: '2em' }}
     >
+      {tabContents.map((tabContent, index) => (
+        <Tab key={index} label={tabContent.props.label} />
+      ))}
       <Tab label="Item One" />
-      <Tab label="Item Two" />
-      <Tab label="Item Three" />
-      <Tab label="Item Four" />
-      <Tab label="Item Five" />
-      <Tab label="Item Six" />
-      <Tab label="Item Seven" />
     </Tabs>
   )
 }

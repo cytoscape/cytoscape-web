@@ -1,7 +1,7 @@
 import { Suspense, lazy, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
-import { Box, Paper, Tooltip } from '@mui/material'
+import { Box, Tooltip } from '@mui/material'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
@@ -27,7 +27,9 @@ import { NetworkBrowser } from './NetworkBrowser'
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import { ViewerPanel } from '../../features/HierarchyViewer/components'
+// import { ViewerPanel } from '../../features/HierarchyViewer/components'
+import { SidePanel } from './SidePanel/SidePanel'
+import { TabPanel } from './TabPanel'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -295,30 +297,33 @@ const WorkSpaceEditor = (): JSX.Element => {
                 sx={{
                   zIndex: 1000,
                   position: 'absolute',
-                  top: '5px',
+                  top: '15px',
                   left: '5px',
                   border: '1px solid #999999',
                 }}
                 onClick={() => setOpenSidePanel(!openSidePanel)}
               />
             </Tooltip>
-            <ViewerPanel />
+            <SidePanel
+              tabContents={[
+                <TabPanel label="test" key={0} index={0} value={0} />,
+              ]}
+            />
           </Box>
         ) : null}
       </Allotment>
       <SnackbarMessageList />
       {openSidePanel ? null : (
         <Tooltip title="Open side panel">
-          <Paper
+          <ChevronLeftIcon
             sx={{
               position: 'absolute',
               top: '55px',
               right: '5px',
+              border: '1px solid #999999',
             }}
             onClick={() => setOpenSidePanel(!openSidePanel)}
-          >
-            <ChevronLeftIcon />
-          </Paper>
+          />
         </Tooltip>
       )}
     </Box>

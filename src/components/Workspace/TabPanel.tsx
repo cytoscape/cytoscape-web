@@ -1,13 +1,13 @@
 import { Box, Typography } from '@mui/material'
-import { ReactNode } from 'react'
 
 interface TabPanelProps {
   children?: React.ReactNode
   index: number
   value: number
+  label: string
 }
 
-export const TabPanel = (props: TabPanelProps): ReactNode => {
+export const TabPanel = (props: TabPanelProps): JSX.Element => {
   const { children, value, index, ...other } = props
 
   return (
@@ -19,7 +19,7 @@ export const TabPanel = (props: TabPanelProps): ReactNode => {
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 3, background: 'red' }}>
           <Typography>{children}</Typography>
         </Box>
       )}
