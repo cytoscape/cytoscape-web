@@ -2,17 +2,22 @@ import { useState } from 'react'
 import { Allotment } from 'allotment'
 import { MessagePanel } from '../../../components/Messages'
 import { Box } from '@mui/material'
+import { SubNetworkPanel } from './SubNetworkPanel'
+import { IdType } from '../../../models/IdType'
+import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 
 export const ViewerPanel = (): JSX.Element => {
   const [panes, setPanes] = useState([0, 1])
+
+  const networkId: IdType = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
 
   return (
     <Box sx={{ width: '100%', height: '100%', background: 'pink' }}>
       <Allotment vertical minSize={100}>
         <Allotment.Pane>
-          <MessagePanel
-            message={'Click a subsystem to show associated interactions'}
-          />
+          <SubNetworkPanel networkId={networkId} />
         </Allotment.Pane>
         <Allotment.Pane maxSize={1000}>
           <Allotment>

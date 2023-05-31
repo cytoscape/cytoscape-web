@@ -8,12 +8,12 @@ import { TabPanel } from './TabPanel'
  * @returns {JSX.Element[]} An array of Tab panels
  */
 
-export const getTabContents = (value: number): JSX.Element[] => {
+export const getTabContents = (selectedIndex: number): JSX.Element[] => {
   return [
-    <TabPanel label="Hierarchy Viewer" key={0} index={0} value={value}>
+    <TabPanel label="Hierarchy Viewer" key={0} index={0} value={selectedIndex}>
       <ViewerPanel />
     </TabPanel>,
-    <TabPanel label="test2" key={1} index={1} value={value}>
+    <TabPanel label="test2" key={1} index={1} value={selectedIndex}>
       <Typography variant="h5">Other new features here...</Typography>
     </TabPanel>,
   ]

@@ -1,6 +1,6 @@
 import { Box, Tab, Tabs } from '@mui/material'
-import React, { SyntheticEvent, useState } from 'react'
-import { getTabContents } from './PanelContents'
+import { SyntheticEvent, useState } from 'react'
+import { getTabContents } from './TabContents'
 
 /**
  * The collapsible side panel for extra UI components
@@ -30,9 +30,7 @@ export const SidePanel = (): JSX.Element => {
           <Tab key={index} label={tabContent.props.label} />
         ))}
       </Tabs>
-      <Box sx={{ width: '100%', height: '100%', border: 'solid 3px blue' }}>
-        {tabContents}
-      </Box>
+      <Box sx={{ width: '100%', height: '100%' }}>{tabContents}</Box>
     </>
   )
 }

@@ -10,18 +10,19 @@ interface TabPanelProps {
 export const TabPanel = (props: TabPanelProps): JSX.Element => {
   const { children, value, index, ...other } = props
 
+  if (value !== index) {
+    return <></>
+  }
   return (
-    <div
-      style={{ width: '100%', height: '100%' }}
+    <Box
       role="tabpanel"
       hidden={value !== index}
       id={`sidepanel-${index}`}
       aria-labelledby={`sidepanel-${index}`}
       {...other}
+      sx={{ width: '100%', height: '100%' }}
     >
-      {value === index && (
-        <Box sx={{ width: '100%', height: '100%' }}>{children}</Box>
-      )}
-    </div>
+      {children}
+    </Box>
   )
 }
