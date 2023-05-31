@@ -27,9 +27,7 @@ import { NetworkBrowser } from './NetworkBrowser'
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-// import { ViewerPanel } from '../../features/HierarchyViewer/components'
 import { SidePanel } from './SidePanel/SidePanel'
-import { TabPanel } from './TabPanel'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -304,11 +302,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                 onClick={() => setOpenSidePanel(!openSidePanel)}
               />
             </Tooltip>
-            <SidePanel
-              tabContents={[
-                <TabPanel label="test" key={0} index={0} value={0} />,
-              ]}
-            />
+            <SidePanel />
           </Box>
         ) : null}
       </Allotment>

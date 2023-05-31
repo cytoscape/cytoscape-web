@@ -1,7 +1,7 @@
-import { Box, Typography } from '@mui/material'
+import { Box } from '@mui/material'
 
 interface TabPanelProps {
-  children?: React.ReactNode
+  children?: JSX.Element
   index: number
   value: number
   label: string
@@ -12,16 +12,15 @@ export const TabPanel = (props: TabPanelProps): JSX.Element => {
 
   return (
     <div
+      style={{ width: '100%', height: '100%' }}
       role="tabpanel"
       hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
+      id={`sidepanel-${index}`}
+      aria-labelledby={`sidepanel-${index}`}
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3, background: 'red' }}>
-          <Typography>{children}</Typography>
-        </Box>
+        <Box sx={{ width: '100%', height: '100%' }}>{children}</Box>
       )}
     </div>
   )
