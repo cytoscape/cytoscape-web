@@ -23,7 +23,7 @@ import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
 
 import { useCredentialStore } from '../../store/CredentialStore'
 import { SnackbarMessageList } from '../Messages'
-import { NetworkBrowser } from './NetworkBrowser'
+import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -268,7 +268,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         >
           <Allotment>
             <Allotment.Pane preferredSize="25%">
-              <NetworkBrowser allotmentDimensions={allotmentDimensions} />
+              <NetworkBrowserPanel allotmentDimensions={allotmentDimensions} />
             </Allotment.Pane>
             <Allotment.Pane>
               <Outlet />

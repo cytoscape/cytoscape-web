@@ -1,13 +1,13 @@
 import { Box, Tabs, Tab, Typography } from '@mui/material'
-import VizmapperView from '../Vizmapper'
+import VizmapperView from '../../Vizmapper'
 import { useState } from 'react'
 import ShareIcon from '@mui/icons-material/Share'
 import PaletteIcon from '@mui/icons-material/Palette'
-import { Summaries as SummaryList } from '../SummaryPanel'
-import { IdType } from '../../models/IdType'
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
-import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { Summaries as SummaryList } from '../../SummaryPanel'
+import { IdType } from '../../../models/IdType'
+import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
+import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
+import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
@@ -19,7 +19,7 @@ interface NetworkBrowserProps {
  *
  * @returns
  */
-export const NetworkBrowser = ({
+export const NetworkBrowserPanel = ({
   allotmentDimensions,
 }: NetworkBrowserProps): JSX.Element => {
   const currentNetworkId: IdType = useWorkspaceStore(

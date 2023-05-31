@@ -1,4 +1,4 @@
 import WorkSpaceEditor from './WorkspaceEditor'
 
 export { WorkSpaceEditor }
-export { NetworkBrowser } from './NetworkBrowser'
+export { NetworkBrowserPanel as NetworkBrowser } from './NetworkBrowserPanel/NetworkBrowserPanel'
