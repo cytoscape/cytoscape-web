@@ -349,7 +349,7 @@ export function ContinuousColorMappingForm(props: {
                         zIndex: lastDraggedHandleId === h.id ? 3 : 1,
                       }}
                     >
-                        {handles.length >=3 && (
+                        {handles.length >=3 ? (
                       <Delete 
                         onClick={() => {
                           deleteHandle(h.id)
@@ -366,7 +366,18 @@ export function ContinuousColorMappingForm(props: {
                           },
                         }}
                       />
-                      )}
+                      ) : (
+                        <Delete
+                          sx={{
+                            position: 'absolute',
+                            top: -10,
+                            right: -10,
+                            color: 'rgba(0, 0, 0, 0.3)',
+                            fontSize: 22,
+                            pointerEvents: 'none', 
+                          }}
+                        />
+                        )}
 
                       <Box sx={{ pl: 1.8, pr: 1.8 }}>
                         <VisualPropertyValueForm
