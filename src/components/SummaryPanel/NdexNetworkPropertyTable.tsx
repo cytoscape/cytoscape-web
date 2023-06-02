@@ -13,18 +13,19 @@ import {
   Button,
   Typography,
   Paper,
+  Box,
 } from '@mui/material'
 
 import Delete from '@mui/icons-material/Delete'
 import { ValueTypeName, ValueType } from '../../models/TableModel'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import {
-  deserializeValue,
-  getDefaultValue,
-} from '../../models/TableModel/impl/ValueTypeImpl'
+import { serializedStringIsValid } from '../../models/TableModel/impl/ValueTypeImpl'
 import { NdexNetworkProperty } from '../../models/NetworkSummaryModel'
-import { ValueForm } from '../ValueType'
+
+interface NdexNetworkPropertyState extends NdexNetworkProperty {
+  valueIsValid: boolean
+}
 
 const NdexNetworkPropertyTable = (): React.ReactElement => {
   const currentNetworkId = useWorkspaceStore(
@@ -34,33 +35,45 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
     (state) => state.summaries[currentNetworkId].properties,
   )
 
+  const [localNetworkProperties, setLocalNetworkProperties] = React.useState<
+    NdexNetworkPropertyState[]
+  >(networkProperties.map((p) => ({ ...p, valueIsValid: true })))
+
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
 
   const updateNetworkPropertyType = (
     index: number,
     dataType: ValueTypeName,
   ): void => {
-    const nextProperties = [...networkProperties]
+    const nextProperties = [...localNetworkProperties]
+    //  the form treats all values as strings and the ndex server currently expects these values to be strings (June 2, 2023)
+    const defaultvalue = ''
     const nextProperty = Object.assign({}, nextProperties[index], {
       dataType,
-      value: getDefaultValue(dataType),
+      value: defaultvalue,
     })
-
     nextProperties[index] = nextProperty
+
+    setLocalNetworkProperties(nextProperties)
     updateNetworkSummary(currentNetworkId, {
-      properties: nextProperties,
+      properties: nextProperties.map(
+        ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
+      ),
     })
   }
 
   const updateNetworkPropertyName = (index: number, name: string): void => {
-    const nextProperties = [...networkProperties]
+    const nextProperties = [...localNetworkProperties]
     const nextProperty = Object.assign({}, nextProperties[index], {
       predicateString: name,
     })
 
     nextProperties[index] = nextProperty
+    setLocalNetworkProperties(nextProperties)
     updateNetworkSummary(currentNetworkId, {
-      properties: nextProperties,
+      properties: nextProperties.map(
+        ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
+      ),
     })
   }
 
@@ -68,25 +81,36 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
     index: number,
     value: ValueType,
   ): void => {
-    const nextProperties = [...networkProperties]
-    const nextValue = deserializeValue(
+    const nextProperties = [...localNetworkProperties]
+
+    const nextValueIsValid = serializedStringIsValid(
       nextProperties[index].dataType,
       value as string,
     )
+
+    // always update local state, but validate before updating global store state
+
     const nextProperty = Object.assign({}, nextProperties[index], {
-      value: nextValue,
+      value,
+      valueIsValid: nextValueIsValid,
     })
 
     nextProperties[index] = nextProperty
 
-    updateNetworkSummary(currentNetworkId, {
-      properties: nextProperties,
-    })
+    setLocalNetworkProperties(nextProperties)
+
+    if (nextValueIsValid) {
+      updateNetworkSummary(currentNetworkId, {
+        properties: nextProperties.map(
+          ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
+        ),
+      })
+    }
   }
 
   const addNetworkProperty = (): void => {
     const existingPropertyNames = new Set(
-      networkProperties.map((p) => p.predicateString),
+      localNetworkProperties.map((p) => p.predicateString),
     )
     const newPropertyName = (counter: number): string =>
       `new property ${counter}`
@@ -95,24 +119,34 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
     while (existingPropertyNames.has(newPropertyName(newPropertyCounter))) {
       newPropertyCounter++
     }
-    const defaultNewProperty: NdexNetworkProperty = {
+    const defaultNewProperty: NdexNetworkPropertyState = {
       subNetworkId: null,
       predicateString: newPropertyName(newPropertyCounter),
       dataType: ValueTypeName.String,
-      value: getDefaultValue(ValueTypeName.String),
+      value: '',
+      valueIsValid: true,
     }
 
-    const nextProperties = [...networkProperties, defaultNewProperty]
+    const nextProperties = [...localNetworkProperties, defaultNewProperty]
+
+    setLocalNetworkProperties(nextProperties)
     updateNetworkSummary(currentNetworkId, {
-      properties: nextProperties,
+      properties: nextProperties.map(
+        ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
+      ),
     })
   }
 
   const deleteNetworkProperty = (index: number): void => {
-    const nextProperties = [...networkProperties]
+    const nextProperties = [...localNetworkProperties]
     nextProperties.splice(index, 1)
+
+    setLocalNetworkProperties(nextProperties)
+
     updateNetworkSummary(currentNetworkId, {
-      properties: nextProperties,
+      properties: nextProperties.map(
+        ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
+      ),
     })
   }
 
@@ -133,7 +167,7 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {networkProperties.map((row, index) => {
+            {localNetworkProperties.map((row, index) => {
               return (
                 <TableRow key={index}>
                   <TableCell>
@@ -161,7 +195,6 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
                   <TableCell>
                     <Input
                       sx={{ fontSize: 14 }}
-                      disableUnderline
                       size="small"
                       onChange={(e) => {
                         updateNetworkPropertyName(index, e.target.value)
@@ -170,13 +203,18 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
                     ></Input>
                   </TableCell>
                   <TableCell>
-                    <ValueForm
-                      dataType={row.dataType}
-                      value={row.value}
-                      onValueChange={(value) => {
-                        updateNetworkPropertyValue(index, value)
-                      }}
-                    />
+                    <Box>
+                      <Input
+                        type="text"
+                        sx={{ fontSize: 14 }}
+                        error={!row.valueIsValid}
+                        size="small"
+                        onChange={(e) => {
+                          updateNetworkPropertyValue(index, e.target.value)
+                        }}
+                        value={`${row.value as string}`}
+                      />
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <IconButton onClick={() => deleteNetworkProperty(index)}>

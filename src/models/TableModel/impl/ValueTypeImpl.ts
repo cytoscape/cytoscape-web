@@ -7,6 +7,36 @@ export const serializeValueList = (value: ListOfValueType): string => {
   return value?.map((v) => String(v)).join(', ') ?? ''
 }
 
+export const serializedStringIsValid = (
+  valueTypeName: ValueTypeName,
+  serializedString: string,
+): boolean => {
+  if (isListType(valueTypeName)) {
+    return serializedString.split(', ').reduce((a, b) => {
+      return (
+        a &&
+        serializedStringIsValid(
+          valueTypeName.replace('list_of_', '') as ValueTypeName,
+          b,
+        )
+      )
+    }, true)
+  } else {
+    if (valueTypeName === ValueTypeName.Boolean) {
+      return serializedString === 'true' || serializedString === 'false'
+    } else if (valueTypeName === ValueTypeName.Double) {
+      return !isNaN(+serializedString)
+    } else if (valueTypeName === ValueTypeName.Long) {
+      return !isNaN(+serializedString)
+    } else if (valueTypeName === ValueTypeName.Integer) {
+      return !isNaN(+serializedString)
+    } else if (valueTypeName === ValueTypeName.String) {
+      return true
+    }
+    return false
+  }
+}
+
 export const serializeValue = (value: ValueType): string => {
   if (Array.isArray(value)) {
     return serializeValueList(value)
@@ -39,7 +69,7 @@ export const getDefaultValue = (dataType: ValueTypeName): ValueType => {
 export const deserializeValueList = (
   type: ValueTypeName,
   value: string,
-): ListOfValueType => {
+): ValueType => {
   const deserializeFnMap: Record<ValueTypeName, (value: string) => ValueType> =
     {
       [ValueTypeName.ListString]: (value: string) =>
@@ -60,7 +90,6 @@ export const deserializeValueList = (
     }
 
   const v = deserializeFnMap[type](value) as ListOfValueType
-  console.log(v)
   return v
 }
 
