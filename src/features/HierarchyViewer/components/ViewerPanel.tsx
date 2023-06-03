@@ -28,6 +28,8 @@ export const ViewerPanel = (): JSX.Element => {
   useEffect(() => {
     const summary: NdexNetworkSummary = networkSummary
 
+    const networkProps = summary.properties
+
     const metadata: HcxMetaData | undefined = getHcxProps(summary)
     console.log(
       '###currentNetworkId and summary',
