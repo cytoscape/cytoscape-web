@@ -47,7 +47,14 @@ export const ndexQueryFetcher = async (
   }
 
   // TODO: The client should be typed
-  const cx2QueryResult: Promise<Cx2> = ndexClient.interConnectQuery(uuid, query)
+  // const cx2QueryResult: Promise<Cx2> = ndexClient.interConnectQuery(uuid, query)
+  const cx2QueryResult: Promise<Cx2> = ndexClient.interConnectQuery(
+    uuid,
+    null,
+    false,
+    query,
+    true,
+  )
   const cx2: Cx2 = await cx2QueryResult
   return createNetworkViewFromCx2(cx2)
 }

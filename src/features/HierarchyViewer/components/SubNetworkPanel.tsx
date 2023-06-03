@@ -11,12 +11,17 @@ import { ndexQueryFetcher } from '../store/useQueryNetwork'
 import useSWR from 'swr'
 import { NetworkView } from '../../../models/ViewModel'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import { useTableStore } from '../../../store/TableStore'
-import { ValueType } from '../../../models/TableModel'
 import { NetworkWithView } from '../../../utils/cx-utils'
 
 interface SubNetworkPanelProps {
+  // Hierarchy network id
   networkId: IdType
+
+  // The network id of the interaction network
+  interactionNetworkId: IdType
+
+  // ID of member nodes
+  memberIds: number[]
 }
 
 /**
@@ -25,40 +30,26 @@ interface SubNetworkPanelProps {
  */
 export const SubNetworkPanel = ({
   networkId,
+  interactionNetworkId,
+  memberIds,
 }: SubNetworkPanelProps): ReactElement => {
-  const { nodeTable } = useTableStore((state) => state.tables[networkId])
-
   const networkViewModel: NetworkView = useViewModelStore(
     (state) => state.viewModels[networkId],
   )
   const selectedNodes: IdType[] =
     networkViewModel !== undefined ? networkViewModel.selectedNodes : []
+
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
-  // As a test case, we are going to use selectedNodes to query NDEx
-
-  // const getToken: () => Promise<string> = useCredentialStore(
-  //   (state) => state.getToken,
-  // )
-
-  const rows = nodeTable.rows
-  const names: ValueType[] = selectedNodes.map((nodeId) => {
-    const row = rows.get(nodeId)
-    return row !== undefined ? row.name : ''
-  })
-
   const { data, error } = useSWR<NetworkWithView>(
-    [ndexBaseUrl, networkId, names.join(' ')],
+    [ndexBaseUrl, interactionNetworkId, memberIds],
     ndexQueryFetcher,
     {
       revalidateOnFocus: false,
     },
   )
 
-  console.log('###cxData', data, error, selectedNodes, names)
-  if (selectedNodes.length === 0) {
-    return <MessagePanel message="No nodes selected" />
-  }
+  console.log('###cxData', data, error, selectedNodes, memberIds)
 
   const targetNetwork: Network = {
     id: '', // an empty network

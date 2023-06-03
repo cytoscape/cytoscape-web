@@ -1,6 +1,13 @@
 export type HcxPrefix = 'HCX::'
 const hcxPrefix: HcxPrefix = 'HCX::'
 
+export const SubsystemTag = {
+  isRoot: `${hcxPrefix}isRoot`,
+  members: `${hcxPrefix}members`,
+} as const
+
+export type SubsystemTagType = (typeof SubsystemTag)[keyof typeof SubsystemTag]
+
 export const NdexMetaTag = {
   // For curren hierarchy, the value is hierarchy_v0.1
   NdexSchema: 'NdexSchema',
