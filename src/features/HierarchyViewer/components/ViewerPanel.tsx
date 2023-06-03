@@ -6,7 +6,9 @@ import { SubNetworkPanel } from './SubNetworkPanel'
 import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { NdexHierarchy } from '../model/NdexHierarchy'
+import { HcxMetaData } from '../model/HcxMetaData'
+import { getHcxProps } from '../utils/hierarcy-util'
+import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 
 export const ViewerPanel = (): JSX.Element => {
   const [panes, setPanes] = useState([0, 1])
@@ -24,10 +26,20 @@ export const ViewerPanel = (): JSX.Element => {
   )
 
   useEffect(() => {
-    const summary: NdexHierarchy = networkSummary
+    const summary: NdexNetworkSummary = networkSummary
 
-    const {"ndexHierarchy::interactionNetworkHost"} = summary
-    console.log('###currentNetworkId', currentNetworkId, summary, isHierarchy)
+    const metadata: HcxMetaData | undefined = getHcxProps(summary)
+    console.log(
+      '###currentNetworkId and summary',
+      currentNetworkId,
+      summary,
+      isHierarchy,
+      metadata,
+    )
+
+    if (metadata !== undefined) {
+      setIsHierarchy(true)
+    }
   }, [currentNetworkId])
 
   return (
