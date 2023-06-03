@@ -2,4 +2,7 @@
 
 ## Current Features
 
-- Hierarchy Viewer
+### Hierarchy Viewer
+
+This feature is the generalized version of HiView.
+(TBD)

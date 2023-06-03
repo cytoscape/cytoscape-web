@@ -7,13 +7,13 @@ import { CyjsRenderer } from '../../../components/NetworkPanel/CyjsRenderer'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
-import { Cx2 } from '../../../models/CxModel/Cx2'
 import { ndexQueryFetcher } from '../store/useQueryNetwork'
 import useSWR from 'swr'
 import { NetworkView } from '../../../models/ViewModel'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useTableStore } from '../../../store/TableStore'
 import { ValueType } from '../../../models/TableModel'
+import { NetworkWithView } from '../../../utils/cx-utils'
 
 interface SubNetworkPanelProps {
   networkId: IdType
@@ -47,7 +47,7 @@ export const SubNetworkPanel = ({
     return row !== undefined ? row.name : ''
   })
 
-  const { data, error } = useSWR<Cx2>(
+  const { data, error } = useSWR<NetworkWithView>(
     [ndexBaseUrl, networkId, names.join(' ')],
     ndexQueryFetcher,
     {

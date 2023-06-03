@@ -1,23 +1,40 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import { MessagePanel } from '../../../components/Messages'
 import { Box } from '@mui/material'
 import { SubNetworkPanel } from './SubNetworkPanel'
 import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
+import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
+import { NdexHierarchy } from '../model/NdexHierarchy'
 
 export const ViewerPanel = (): JSX.Element => {
   const [panes, setPanes] = useState([0, 1])
 
-  const networkId: IdType = useWorkspaceStore(
+  // Check the network property and enable the UI only if it is a hierarchy
+  const [isHierarchy, setIsHierarchy] = useState<boolean>(false)
+
+  const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
 
+  // At this point, summary can be any network prop object
+  const networkSummary: any = useNetworkSummaryStore(
+    (state) => state.summaries[currentNetworkId],
+  )
+
+  useEffect(() => {
+    const summary: NdexHierarchy = networkSummary
+
+    const {"ndexHierarchy::interactionNetworkHost"} = summary
+    console.log('###currentNetworkId', currentNetworkId, summary, isHierarchy)
+  }, [currentNetworkId])
+
   return (
-    <Box sx={{ width: '100%', height: '100%', background: 'pink' }}>
+    <Box sx={{ width: '100%', height: '100%' }}>
       <Allotment vertical minSize={100}>
         <Allotment.Pane>
-          <SubNetworkPanel networkId={networkId} />
+          <SubNetworkPanel networkId={currentNetworkId} />
         </Allotment.Pane>
         <Allotment.Pane maxSize={1000}>
           <Allotment>

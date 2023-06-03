@@ -2,6 +2,10 @@
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { Cx2 } from '../../../models/CxModel/Cx2'
+import {
+  NetworkWithView,
+  createNetworkViewFromCx2,
+} from '../../../utils/cx-utils'
 
 // /**
 //  *
@@ -32,39 +36,9 @@ import { Cx2 } from '../../../models/CxModel/Cx2'
 //   }
 // }
 
-/**
- *
- * @param ndexNetworkId
- * @param url
- * @returns
- */
-// const createDataFromQueryResult = async (
-//   ndexNetworkId: string,
-//   query: string,
-//   url: string,
-//   accessToken?: string,
-// ): Promise<FullNetworkData> => {
-//   const { cxData, error } = useSWR<Cx2>(
-//     [url, ndexNetworkId, query, accessToken],
-//     ndexQueryFetcher,
-//   )
-
-//   const network: Network = NetworkFn.createNetworkFromCx(ndexNetworkId, cxData)
-//   const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
-//     ndexNetworkId,
-//     cxData,
-//   )
-//   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
-
-//   const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
-//     ndexNetworkId,
-//     cxData,
-//   )
-
-//   return { network, nodeTable, edgeTable, visualStyle, networkView }
-// }
-
-export const ndexQueryFetcher = async (params: string[]): Promise<Cx2> => {
+export const ndexQueryFetcher = async (
+  params: string[],
+): Promise<NetworkWithView> => {
   const [url, uuid, query, accessToken] = params
   const ndexClient = new NDEx(url)
 
@@ -74,6 +48,6 @@ export const ndexQueryFetcher = async (params: string[]): Promise<Cx2> => {
 
   // TODO: The client should be typed
   const cx2QueryResult: Promise<Cx2> = ndexClient.interConnectQuery(uuid, query)
-
-  return await cx2QueryResult
+  const cx2: Cx2 = await cx2QueryResult
+  return createNetworkViewFromCx2(cx2)
 }
