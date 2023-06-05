@@ -8,12 +8,7 @@ import Card from '@mui/material/Card'
 import { Button, MenuItem } from '@mui/material'
 import { useLayer } from 'react-laag'
 
-import {
-  Table,
-  ValueType,
-  ValueTypeName,
-  AttributeName,
-} from '../../models/TableModel'
+import { Table, ValueType, ValueTypeName } from '../../models/TableModel'
 import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
@@ -26,10 +21,15 @@ import {
   Item,
   Rectangle,
 } from '@glideapps/glide-data-grid'
+
 import {
-  ListOfValueType,
-  SingleValueType,
-} from '../../models/TableModel/ValueType'
+  deserializeValueList,
+  valueDisplay,
+  isListType,
+  SortDirection,
+  SortType,
+  sortFnToType,
+} from '../../models/TableModel/impl/ValueTypeImpl'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -53,40 +53,6 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
   )
 }
 
-// serialize lists of different value types into a string to display in the table
-// e.g. [1, 2, 3] -> '1, 2, 3'
-const serializeValueList = (value: ListOfValueType): string => {
-  return value?.map((v) => String(v)).join(', ') ?? ''
-}
-
-// deserialize a string into a list of value types
-// e.g. '1, 2, 3' -> [1, 2, 3]
-const deserializeValueList = (
-  type: ValueTypeName,
-  value: string,
-): ListOfValueType => {
-  const deserializeFnMap: Record<ValueTypeName, (value: string) => ValueType> =
-    {
-      [ValueTypeName.ListString]: (value: string) =>
-        value.split(', ') as ValueType,
-      [ValueTypeName.ListLong]: (value: string) =>
-        value.split(', ').map((v) => +v) as ValueType,
-      [ValueTypeName.ListInteger]: (value: string) =>
-        value.split(', ').map((v) => +v) as ValueType,
-      [ValueTypeName.ListDouble]: (value: string) =>
-        value.split(', ').map((v) => +v) as ValueType,
-      [ValueTypeName.ListBoolean]: (value: string) =>
-        value.split(', ').map((v) => v === 'true') as ValueType,
-      [ValueTypeName.Boolean]: (value: string) => value === 'true',
-      [ValueTypeName.String]: (value: string) => value,
-      [ValueTypeName.Long]: (value: string) => +value,
-      [ValueTypeName.Integer]: (value: string) => +value,
-      [ValueTypeName.Double]: (value: string) => +value,
-    }
-
-  return deserializeFnMap[type](value) as ListOfValueType
-}
-
 const getCellKind = (type: ValueTypeName): GridCellKind => {
   const valueTypeName2CellTypeMap: Record<ValueTypeName, GridCellKind> = {
     [ValueTypeName.String]: GridCellKind.Text,
@@ -101,101 +67,6 @@ const getCellKind = (type: ValueTypeName): GridCellKind => {
     [ValueTypeName.ListBoolean]: GridCellKind.Text,
   }
   return valueTypeName2CellTypeMap[type] ?? GridCellKind.Text
-}
-
-// convert list of value type to a string to display in the table
-// single value types are supported by the table by default
-const valueDisplay = (value: ValueType, type: string): SingleValueType => {
-  if (isSingleType(type as ValueTypeName) && !Array.isArray(value)) {
-    return value as SingleValueType
-  }
-
-  if (isListType(type as ValueTypeName)) {
-    if (Array.isArray(value)) {
-      return serializeValueList(value)
-    }
-    return value
-  }
-
-  return value as SingleValueType
-}
-
-const isSingleType = (type: ValueTypeName): boolean => {
-  const singleTypes = [
-    ValueTypeName.String,
-    ValueTypeName.Integer,
-    ValueTypeName.Double,
-    ValueTypeName.Long,
-    ValueTypeName.Boolean,
-  ] as string[]
-
-  return singleTypes.includes(type)
-}
-
-const isListType = (type: ValueTypeName): boolean => {
-  const listTypes = [
-    ValueTypeName.ListString,
-    ValueTypeName.ListInteger,
-    ValueTypeName.ListDouble,
-    ValueTypeName.ListLong,
-    ValueTypeName.ListBoolean,
-  ] as string[]
-
-  return listTypes.includes(type)
-}
-
-type SortDirection = 'asc' | 'desc'
-interface SortType {
-  column: AttributeName | undefined
-  direction: SortDirection | undefined
-  valueType: ValueTypeName | undefined
-}
-
-const compareStrings = (
-  a: string,
-  b: string,
-  sortDirection: SortDirection,
-): number =>
-  sortDirection === 'asc'
-    ? (a ?? '').localeCompare(b)
-    : (b ?? '').localeCompare(a)
-const compareNumbers = (
-  a: number,
-  b: number,
-  sortDirection: SortDirection,
-): number =>
-  sortDirection === 'asc'
-    ? (a ?? Infinity) - (b ?? -Infinity) // always put undefined values at the bottom of the list
-    : (b ?? Infinity) - (a ?? -Infinity)
-
-const compareBooleans = (
-  a: boolean,
-  b: boolean,
-  sortDirection: SortDirection,
-): number => compareStrings(String(a ?? ''), String(b ?? ''), sortDirection)
-
-// TODO come up with better idea of what users want when sorting cells which have list values
-const compareLists = (
-  a: ListOfValueType,
-  b: ListOfValueType,
-  sortDirection: SortDirection,
-): number =>
-  compareStrings(serializeValueList(a), serializeValueList(b), sortDirection)
-
-const sortFnToType: Record<
-  ValueTypeName,
-  (a: ValueType, b: ValueType, sortDirection: SortDirection) => number
-> = {
-  [ValueTypeName.ListString]: compareLists,
-  [ValueTypeName.ListLong]: compareLists,
-  [ValueTypeName.ListInteger]: compareLists,
-  [ValueTypeName.ListDouble]: compareLists,
-  [ValueTypeName.ListBoolean]: compareLists,
-  [ValueTypeName.String]: compareStrings,
-  [ValueTypeName.Long]: compareNumbers,
-  [ValueTypeName.Integer]: compareNumbers,
-  [ValueTypeName.Double]: compareNumbers,
-  [ValueTypeName.Boolean]: compareBooleans,
 }
 
 export default function TableBrowser(props: {
