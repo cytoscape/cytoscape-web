@@ -69,10 +69,10 @@ export const networkSummaryFetcher = async (
   const ids = Array.isArray(id) ? id : [id]
 
   try {
-    const summaries: Promise<NdexNetworkSummary[]> =
+    const summaries: NdexNetworkSummary[] =
       await ndexClient.getNetworkSummariesByUUIDs(ids)
 
-    return await summaries
+    return summaries
   } catch (error) {
     console.error('Failed to fetch summary', error)
     throw error
