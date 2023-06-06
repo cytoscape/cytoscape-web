@@ -1,7 +1,9 @@
 import { HcxMetaData } from '../model/HcxMetaData'
 import { HcxMetaTag } from '../model/HcxMetaTag'
 
-export const getHcxProps = (summaryObject: any): HcxMetaData | undefined => {
+export const getHcxProps = (
+  summaryObject: Record<string, any>,
+): HcxMetaData | undefined => {
   const keys: string[] = Object.keys(summaryObject)
 
   if (keys.length === 0) {

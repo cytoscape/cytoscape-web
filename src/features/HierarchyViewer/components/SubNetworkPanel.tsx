@@ -1,5 +1,4 @@
 import { Box } from '@mui/material'
-import { red } from '@mui/material/colors'
 import { ReactElement, useContext } from 'react'
 import { FloatingToolBar } from '../../../components/FloatingToolBar'
 import { MessagePanel } from '../../../components/Messages'
@@ -12,6 +11,7 @@ import useSWR from 'swr'
 import { NetworkView } from '../../../models/ViewModel'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { NetworkWithView } from '../../../utils/cx-utils'
+import { Query } from './ViewerPanel'
 
 interface SubNetworkPanelProps {
   // Hierarchy network id
@@ -21,7 +21,7 @@ interface SubNetworkPanelProps {
   interactionNetworkId: IdType
 
   // ID of member nodes
-  memberIds: number[]
+  query: Query
 }
 
 /**
@@ -31,7 +31,7 @@ interface SubNetworkPanelProps {
 export const SubNetworkPanel = ({
   networkId,
   interactionNetworkId,
-  memberIds,
+  query,
 }: SubNetworkPanelProps): ReactElement => {
   const networkViewModel: NetworkView = useViewModelStore(
     (state) => state.viewModels[networkId],
@@ -42,19 +42,23 @@ export const SubNetworkPanel = ({
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
   const { data, error } = useSWR<NetworkWithView>(
-    [ndexBaseUrl, interactionNetworkId, memberIds],
+    [ndexBaseUrl, interactionNetworkId, query],
     ndexQueryFetcher,
     {
       revalidateOnFocus: false,
     },
   )
 
-  console.log('###cxData', data, error, selectedNodes, memberIds)
+  console.log('###cxData', data, error, selectedNodes, query)
 
-  const targetNetwork: Network = {
+  let targetNetwork: Network = {
     id: '', // an empty network
     nodes: [],
     edges: [],
+  }
+
+  if (data !== undefined) {
+    targetNetwork = data.network
   }
 
   return (
@@ -63,7 +67,6 @@ export const SubNetworkPanel = ({
         <Box
           sx={{
             zIndex: 200,
-            background: red[100],
             position: 'absolute',
             top: 0,
             left: 0,
