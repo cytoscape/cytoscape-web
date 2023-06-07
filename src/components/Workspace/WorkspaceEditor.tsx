@@ -267,7 +267,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           }}
         >
           <Allotment>
-            <Allotment.Pane preferredSize="25%">
+            <Allotment.Pane maxSize={300} preferredSize="20vh">
               <NetworkBrowserPanel allotmentDimensions={allotmentDimensions} />
             </Allotment.Pane>
             <Allotment.Pane>

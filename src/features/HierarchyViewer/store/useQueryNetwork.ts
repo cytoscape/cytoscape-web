@@ -1,60 +1,49 @@
-// TODO: Make client TS compatible
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import {
   NetworkWithView,
-  createNetworkViewFromCx2,
+  createDataFromCx,
+  getCachedData,
 } from '../../../utils/cx-utils'
-
-// /**
-//  *
-//  * A custom hook to query network from NDEx
-//  *
-//  * @param ndexNetworkId
-//  * @param query A query string, usually a list of genes
-//  * @param url
-//  * @param accessToken
-//  * @returns
-//  */
-// export const useQueryNetwork = async (
-//   ndexNetworkId: string,
-//   query: string,
-//   url: string,
-//   accessToken?: string,
-// ): Promise<FullNetworkData> => {
-//   try {
-//     return await createDataFromQueryResult(
-//       ndexNetworkId,
-//       query,
-//       url,
-//       accessToken,
-//     )
-//   } catch (error) {
-//     console.error('Failed to run query network', error)
-//     throw error
-//   }
-// }
+import { CachedData } from '../../../utils/CachedData'
+import { getNdexClient } from '../../../utils/fetchers'
 
 export const ndexQueryFetcher = async (
   params: string[],
 ): Promise<NetworkWithView> => {
-  const [url, uuid, query, accessToken] = params
-  const ndexClient = new NDEx(url)
+  const [url, rootNetworkUuid, query, accessToken] = params
+  const ndexClient = getNdexClient(url, accessToken)
 
-  if (accessToken !== undefined && accessToken !== '') {
-    ndexClient.setAuthToken(accessToken)
+  try {
+    // First, check the local cache
+    // const cache: CachedData = await getCachedData(uuid)
+
+    // // This is necessary only when data is not in the cache
+    // if (
+    //   cache.network === undefined ||
+    //   cache.nodeTable === undefined ||
+    //   cache.edgeTable === undefined ||
+    //   cache.visualStyle === undefined ||
+    //   cache.networkView === undefined
+    // ) {
+    const cx2QueryResult: Cx2 = await ndexClient.interConnectQuery(
+      rootNetworkUuid,
+      null,
+      false,
+      query,
+      true,
+    )
+    return await createDataFromCx(uuid, cx2QueryResult)
+    // } else {
+    //   return {
+    //     network: cache.network,
+    //     nodeTable: cache.nodeTable,
+    //     edgeTable: cache.edgeTable,
+    //     visualStyle: cache.visualStyle,
+    //     networkView: cache.networkView,
+    //   }
+    // }
+  } catch (error) {
+    console.error('Failed to get network', error)
+    throw error
   }
-
-  // TODO: The client should be typed
-  // const cx2QueryResult: Promise<Cx2> = ndexClient.interConnectQuery(uuid, query)
-  const cx2QueryResult: Promise<Cx2> = ndexClient.interConnectQuery(
-    uuid,
-    null,
-    false,
-    query,
-    true,
-  )
-  const cx2: Cx2 = await cx2QueryResult
-  return createNetworkViewFromCx2(cx2)
 }

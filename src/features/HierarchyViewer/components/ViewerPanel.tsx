@@ -23,6 +23,7 @@ export interface Query {
 }
 
 export const ViewerPanel = (): JSX.Element => {
+  // Panel state
   const [panes, setPanes] = useState([0, 1])
   const [query, setQuery] = useState<Query>({ nodeIds: [] })
 
@@ -51,6 +52,7 @@ export const ViewerPanel = (): JSX.Element => {
   )
 
   useEffect(() => {
+    // Check if the current network is a hierarchy
     if (networkSummary === undefined) {
       return
     }
@@ -65,7 +67,7 @@ export const ViewerPanel = (): JSX.Element => {
     }, {})
     const metadata: HcxMetaData | undefined = getHcxProps(networkPropObj)
     console.log(
-      '###currentNetworkId and summary',
+      '### Hierarchical network detected',
       currentNetworkId,
       summary,
       isHierarchy,
@@ -79,21 +81,26 @@ export const ViewerPanel = (): JSX.Element => {
   }, [currentNetworkId])
 
   useEffect(() => {
-    console.log('Selected Nodes updated', selectedNodes)
+    console.log('!!!! Subsystem clicked', selectedNodes)
     // Pick the first selected node if multiple nodes are selected
     const selectedSubsystem: IdType = selectedNodes[0]
+    if (selectedSubsystem === undefined) {
+      return
+    }
+
+    const idString: string = selectedSubsystem.toString()
     const rows = nodeTable.rows
 
     // Pick the table row for the selected subsystem and extract member list
-    const row: Record<string, ValueType> | undefined =
-      rows.get(selectedSubsystem)
+    const row: Record<string, ValueType> | undefined = rows.get(idString)
     if (row === undefined) {
       return
     }
 
     const memberIds = row[SubsystemTag.members]
     console.log('Selected Row', row, memberIds)
-    setQuery({ nodeIds: memberIds as number[] })
+    const newQuery: Query = { nodeIds: memberIds as number[] }
+    setQuery(newQuery)
   }, [selectedNodes])
 
   if (!isHierarchy) {
@@ -109,8 +116,7 @@ export const ViewerPanel = (): JSX.Element => {
       <Allotment vertical minSize={100}>
         <Allotment.Pane>
           <SubNetworkPanel
-            networkId={currentNetworkId}
-            interactionNetworkId={metadata?.interactionNetworkUUID ?? ''}
+            rootNetworkId={metadata?.interactionNetworkUUID ?? ''}
             query={query}
           />
         </Allotment.Pane>
