@@ -117,6 +117,7 @@ export const ViewerPanel = (): JSX.Element => {
         <Allotment.Pane>
           <SubNetworkPanel
             rootNetworkId={metadata?.interactionNetworkUUID ?? ''}
+            subsystemNodeId={selectedNodes[0]}
             query={query}
           />
         </Allotment.Pane>

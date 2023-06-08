@@ -19,6 +19,9 @@ interface SubNetworkPanelProps {
   // The network id of the _*ROOT*_ interaction network
   rootNetworkId: IdType
 
+  // Selected subsystem node id
+  subsystemNodeId: IdType
+
   // ID of member nodes
   query: Query
 }
@@ -29,8 +32,18 @@ interface SubNetworkPanelProps {
  */
 export const SubNetworkPanel = ({
   rootNetworkId,
+  subsystemNodeId,
   query,
 }: SubNetworkPanelProps): ReactElement => {
+  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const { data, error, isLoading } = useSWR<NetworkWithView>(
+    [ndexBaseUrl, rootNetworkId, subsystemNodeId, query],
+    ndexQueryFetcher,
+    {
+      revalidateOnFocus: false,
+    },
+  )
+
   // A local state to keep track of the current query network id.
   // This is different from the current network id in the workspace.
   const [queryNetworkId, setQueryNetworkId] = useState<string>('')
@@ -43,32 +56,24 @@ export const SubNetworkPanel = ({
   // The query network to be rendered
   const queryNetwork: Network | undefined = networks.get(queryNetworkId)
 
-  // TODO: Need to move to the store
   const addNewNetwork = useNetworkStore((state) => state.add)
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addTable = useTableStore((state) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
 
-  const { ndexBaseUrl } = useContext(AppConfigContext)
-  const { data, error, isLoading } = useSWR<NetworkWithView>(
-    [ndexBaseUrl, rootNetworkId, query],
-    ndexQueryFetcher,
-    {
-      revalidateOnFocus: false,
-    },
-  )
-
-  useEffect(() => {
-    console.log('###isLoading', isLoading, data)
-  }, [isLoading])
-
   useEffect(() => {
     // Fetch the network data when new subsystem node is selected
-    if (data !== undefined && error === undefined) {
-      console.log('###cxData', data, error, query)
-      const { network, nodeTable, edgeTable, visualStyle, networkView } = data
-      const newUuid = network.id
+    console.log('### isLoading updated', isLoading, data)
 
+    if (isLoading) {
+      return
+    }
+
+    if (!isLoading && data !== undefined && error === undefined) {
+      const { network, nodeTable, edgeTable, visualStyle, networkView } = data
+      const newUuid: string = network.id
+
+      console.log('### cxData is ready', data, error, query)
       // Register objects to the stores.
       addNewNetwork(network)
       addVisualStyle(newUuid, visualStyle)
@@ -76,7 +81,7 @@ export const SubNetworkPanel = ({
       addViewModel(newUuid, networkView)
       setQueryNetworkId(newUuid)
     }
-  }, [query])
+  }, [isLoading])
 
   if (queryNetwork === undefined) {
     return <MessagePanel message={`Loading network ${queryNetworkId}`} />
