@@ -133,17 +133,17 @@ export function ContinuousColorMappingForm(props: {
   };
 
 
-  let minPalette = min.vpValue;
-  let middlePalette = controlPoints[1].vpValue;
-  let maxPalette = max.vpValue;
-  let textPalette = 'None';
+  const [minPalette, setMinPalette] = React.useState(min.vpValue)
+  const [middlePalette, setMiddlePalette] = React.useState(controlPoints[1].vpValue)
+  const [maxPalette, setMaxPalette] = React.useState(max.vpValue)
+  const [textPalette, setTextPalette] = React.useState('None')
+
  
   const [buttonText, setButtonText] = React.useState(textPalette); 
   const changeButtonText = (text: string) :void => setButtonText(text);
 
   const handleColorPicker = (): void => {
     if(!isReverseColorChecked){
-      console.log("unchecked");
     setMinState({
       ...minState,
       vpValue: minPalette,
@@ -158,7 +158,6 @@ export function ContinuousColorMappingForm(props: {
     changeButtonText(textPalette);
     hideColorPickerMenu();
   } else {
-    console.log("checked");
     setMinState({
       ...minState,
       vpValue: maxPalette,
@@ -384,40 +383,40 @@ export function ContinuousColorMappingForm(props: {
           exclusive
           fullWidth={true}
       >
-        <ToggleButton value="rdbu" aria-label="RdBu"  onClick={() => {minPalette="#b2182b";middlePalette="#f7f7f7";maxPalette="#2166ac";textPalette='Red-Blue'}}> 
+        <ToggleButton value="rdbu" aria-label="RdBu"  onClick={() => {setMinPalette("#b2182b");setMiddlePalette("#f7f7f7");setMaxPalette("#2166ac");setTextPalette('Red-Blue')}}> 
         <Tooltip title="Red-Blue" placement="right">
         <img src={RdBu} width="15" height="150"/>
         </Tooltip>
         </ToggleButton>
 
-        <ToggleButton value="puor" aria-label="PuOr"  onClick={() => {minPalette="#542788";middlePalette="#f7f7f7";maxPalette="#b35806";textPalette='Purple-Orange'}}>
+        <ToggleButton value="puor" aria-label="PuOr"  onClick={() => {setMinPalette("#542788");setMiddlePalette("#f7f7f7");setMaxPalette("#b35806");setTextPalette('Purple-Orange')}}>
         <Tooltip title="Purple-Orange" placement="right">
         <img src={PuOr} width="15" height="150"/>
         </Tooltip>
         </ToggleButton>
 
-        <ToggleButton value="prgn" aria-label="PRGn" onClick={() => {minPalette="#762a83";middlePalette="#f7f7f7";maxPalette="#1b7837";textPalette='Purple-Red-Green'}}>
+        <ToggleButton value="prgn" aria-label="PRGn" onClick={() => {setMinPalette("#762a83");setMiddlePalette("#f7f7f7");setMaxPalette("#1b7837");setTextPalette('Purple-Red-Green')}}>
         <Tooltip title="Purple-Red-Green" placement="right">
         <img src={PRGn} width="15" height="150"/>
         </Tooltip>
         </ToggleButton>
 
         {!isColorBlindChecked && (
-        <ToggleButton value="spectral" aria-label="Spectral" onClick={() => {minPalette="#d53e4f";middlePalette="#ffffbf";maxPalette="#3288bd";textPalette='Spectral Colors'}} >
+        <ToggleButton value="spectral" aria-label="Spectral" onClick={() => {setMinPalette("#d53e4f");setMiddlePalette("#ffffbf");setMaxPalette("#3288bd");setTextPalette('Spectral Colors')}} >
         <Tooltip title="Spectral Colors" placement="right">
         <img src={Spectral} width="15" height="150"/>
         </Tooltip>
         </ToggleButton>
         )}
 
-        <ToggleButton value="brbg" aria-label="BrBG" onClick={() => {minPalette="#8c510a";middlePalette="#f5f5f5";maxPalette="#01665e";textPalette='Brown-Blue-Green'}}>
+        <ToggleButton value="brbg" aria-label="BrBG" onClick={() => {setMinPalette("#8c510a");setMiddlePalette("#f5f5f5");setMaxPalette("#01665e");setTextPalette('Brown-Blue-Green')}}>
         <Tooltip title="Brown-Blue-Green" placement="right">
         <img src={BrBG} width="15" height="150"/>
         </Tooltip>
         </ToggleButton>
         
         {!isColorBlindChecked && (
-        <ToggleButton value="rdylgn" aria-label="RdYlGn" onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#1a9850";textPalette='Red-Yellow-Green'}}>
+        <ToggleButton value="rdylgn" aria-label="RdYlGn" onClick={() => {setMinPalette("#d73027");setMiddlePalette("#ffffbf");setMaxPalette("#1a9850");setTextPalette('Red-Yellow-Green')}}>
         <Tooltip title="Red-Yellow-Green" placement="right">
         <img src={RdYlGn} width="15" height="150"/>
         </Tooltip>
@@ -425,14 +424,14 @@ export function ContinuousColorMappingForm(props: {
         )}
 
 
-        <ToggleButton value="piyg" aria-label="PiYG" onClick={() => {minPalette="#c51b7d";middlePalette="#f7f7f7";maxPalette="#4d9221";textPalette='Magenta-Yellow-Green'}}>
+        <ToggleButton value="piyg" aria-label="PiYG" onClick={() => {setMinPalette("#c51b7d");setMiddlePalette("#f7f7f7");setMaxPalette("#4d9221");setTextPalette('Magenta-Yellow-Green')}}>
         <Tooltip title="Magenta-Yellow-Green" placement="right">
         <img src={PiYG} width="15" height="150"/>
         </Tooltip>
         </ToggleButton>
 
         {!isColorBlindChecked && (
-        <ToggleButton value="rdgy" aria-label="RdGy" onClick={() => {minPalette="#b2182b";middlePalette="#ffffff";maxPalette="#4d4d4d";textPalette='Red-Grey'}}>
+        <ToggleButton value="rdgy" aria-label="RdGy" onClick={() => {setMinPalette("#b2182b");setMiddlePalette("#ffffff");setMaxPalette("#4d4d4d");setTextPalette('Red-Grey')}}>
         <Tooltip title="Red-Grey" placement="right">
         <img src={RdGy} width="15" height="150"/>
         </Tooltip>
@@ -440,7 +439,7 @@ export function ContinuousColorMappingForm(props: {
         )}
 
 
-        <ToggleButton value="rdylbu" aria-label="RdYlBu"  onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#4575b4";textPalette='Red-Yellow-Blue'}}>
+        <ToggleButton value="rdylbu" aria-label="RdYlBu"  onClick={() => {setMinPalette("#d73027");setMiddlePalette("#ffffbf");setMaxPalette("#4575b4");setTextPalette('Red-Yellow-Blue')}}>
         <Tooltip title="Red-Yellow-Blue" placement="right">
         <img src={RdYlBu} width="15" height="150"/>
         </Tooltip>
