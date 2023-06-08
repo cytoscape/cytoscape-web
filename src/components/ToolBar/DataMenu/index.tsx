@@ -5,12 +5,15 @@ import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
 import { RemoveNetworkMenuItem } from './RemoveNetworkMenuItem'
 import { LoadDemoNetworksMenuItem } from './LoadDemoNetworksMenuItem'
 import { LoadFromNdexMenuItem } from './LoadFromNdexMenuItem'
-import { useState } from 'react'
+import { SaveToNDExMenuItem } from './SaveToNDExMenuItem'
+import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
+import { UploadNetworkMenuItem } from './UploadNetworkMenuItem'
+import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
+import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
 
-interface DropdownMenuProps {
-  label: string
-  children?: React.ReactNode
-}
+import { useState } from 'react'
+import { DropdownMenuProps } from '../DropdownMenuProps'
+import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -58,6 +61,15 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
         <RemoveNetworkMenuItem handleClose={handleClose} />
         <RemoveAllNetworksMenuItem handleClose={handleClose} />
         <Divider />
+        <ResetLocalWorkspaceMenuItem handleClose={handleClose} />
+        <Divider />
+        <SaveToNDExMenuItem handleClose={handleClose} />
+        <CopyNetworkToNDExMenuItem handleClose={handleClose} />
+        <Divider />
+        <OpenNetworkInCytoscapeMenuItem handleClose={handleClose} />
+        <Divider />
+        <UploadNetworkMenuItem handleClose={handleClose} />
+        <DownloadNetworkMenuItem handleClose={handleClose} />
       </Menu>
     </div>
   )

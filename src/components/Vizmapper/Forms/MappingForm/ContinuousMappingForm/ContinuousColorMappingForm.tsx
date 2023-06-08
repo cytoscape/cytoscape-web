@@ -108,8 +108,7 @@ export function ContinuousColorMappingForm(props: {
   const hideColorPickerMenu = (): void => {
     setColorPickerAnchorEl(null)
   }
-
-
+  
   const showCreateHandleMenu = (
     event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
@@ -296,14 +295,16 @@ export function ContinuousColorMappingForm(props: {
   // update the min and max accordingly
   React.useEffect(() => {
     const [min, max] = extent(handles.map((h) => h.value as number))
-    if (min != null && min < minState.value) {
+    const minValue: number = minState.value as number
+    if (min != null && min < minValue) {
       setMinState({
         ...minState,
         value: min,
       })
     }
 
-    if (max != null && max > maxState.value) {
+    const maxValue: number = maxState.value as number
+    if (max != null && max > maxValue) {
       setMaxState({
         ...maxState,
         value: max,
@@ -602,22 +603,49 @@ export function ContinuousColorMappingForm(props: {
                         zIndex: lastDraggedHandleId === h.id ? 3 : 1,
                       }}
                     >
-                      <IconButton
-                        sx={{ position: 'absolute', top: -20, right: -16 }}
+                        {handles.length >=3 ? (
+                      <Delete 
                         onClick={() => {
                           deleteHandle(h.id)
                         }}
-                      >
-                        <Delete sx={{ color: '#03082d' }} />
-                      </IconButton>
-
-                      <VisualPropertyValueForm
-                        currentValue={h.vpValue ?? null}
-                        visualProperty={props.visualProperty}
-                        onValueChange={(newValue) => {
-                          setHandle(h.id, h.value as number, newValue as string)
+                        sx={{
+                          position: 'absolute',
+                          top: -10,
+                          right: -10,
+                          color: '#03082d',
+                          fontSize: 22,
+                          '&:hover': {
+                            cursor: 'pointer',
+                            color: '#3d0303',
+                          },
                         }}
                       />
+                      ) : (
+                        <Delete
+                          sx={{
+                            position: 'absolute',
+                            top: -10,
+                            right: -10,
+                            color: 'rgba(0, 0, 0, 0.3)',
+                            fontSize: 22,
+                            pointerEvents: 'none', 
+                          }}
+                        />
+                        )}
+
+                      <Box sx={{ pl: 1.8, pr: 1.8 }}>
+                        <VisualPropertyValueForm
+                          currentValue={h.vpValue ?? null}
+                          visualProperty={props.visualProperty}
+                          onValueChange={(newValue) => {
+                            setHandle(
+                              h.id,
+                              h.value as number,
+                              newValue as string,
+                            )
+                          }}
+                        />
+                      </Box>
                       <TextField
                         sx={{ width: 50, mt: 1 }}
                         inputProps={{

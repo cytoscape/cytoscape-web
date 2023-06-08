@@ -8,12 +8,7 @@ import Card from '@mui/material/Card'
 import { Button, MenuItem } from '@mui/material'
 import { useLayer } from 'react-laag'
 
-import {
-  Table,
-  ValueType,
-  ValueTypeName,
-  AttributeName,
-} from '../../models/TableModel'
+import { Table, ValueType, ValueTypeName } from '../../models/TableModel'
 import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
@@ -26,11 +21,15 @@ import {
   Item,
   Rectangle,
 } from '@glideapps/glide-data-grid'
-import { translateCXEdgeId } from '../../models/NetworkModel/impl/CyNetwork'
+
 import {
-  ListOfValueType,
-  SingleValueType,
-} from '../../models/TableModel/ValueType'
+  deserializeValueList,
+  valueDisplay,
+  isListType,
+  SortDirection,
+  SortType,
+  sortFnToType,
+} from '../../models/TableModel/impl/ValueTypeImpl'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -54,40 +53,6 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
   )
 }
 
-// serialize lists of different value types into a string to display in the table
-// e.g. [1, 2, 3] -> '1, 2, 3'
-const serializeValueList = (value: ListOfValueType): string => {
-  return value?.map((v) => String(v)).join(', ') ?? ''
-}
-
-// deserialize a string into a list of value types
-// e.g. '1, 2, 3' -> [1, 2, 3]
-const deserializeValueList = (
-  type: ValueTypeName,
-  value: string,
-): ListOfValueType => {
-  const deserializeFnMap: Record<ValueTypeName, (value: string) => ValueType> =
-    {
-      [ValueTypeName.ListString]: (value: string) =>
-        value.split(', ') as ValueType,
-      [ValueTypeName.ListLong]: (value: string) =>
-        value.split(', ').map((v) => +v) as ValueType,
-      [ValueTypeName.ListInteger]: (value: string) =>
-        value.split(', ').map((v) => +v) as ValueType,
-      [ValueTypeName.ListDouble]: (value: string) =>
-        value.split(', ').map((v) => +v) as ValueType,
-      [ValueTypeName.ListBoolean]: (value: string) =>
-        value.split(', ').map((v) => v === 'true') as ValueType,
-      [ValueTypeName.Boolean]: (value: string) => value === 'true',
-      [ValueTypeName.String]: (value: string) => value,
-      [ValueTypeName.Long]: (value: string) => +value,
-      [ValueTypeName.Integer]: (value: string) => +value,
-      [ValueTypeName.Double]: (value: string) => +value,
-    }
-
-  return deserializeFnMap[type](value) as ListOfValueType
-}
-
 const getCellKind = (type: ValueTypeName): GridCellKind => {
   const valueTypeName2CellTypeMap: Record<ValueTypeName, GridCellKind> = {
     [ValueTypeName.String]: GridCellKind.Text,
@@ -102,101 +67,6 @@ const getCellKind = (type: ValueTypeName): GridCellKind => {
     [ValueTypeName.ListBoolean]: GridCellKind.Text,
   }
   return valueTypeName2CellTypeMap[type] ?? GridCellKind.Text
-}
-
-// convert list of value type to a string to display in the table
-// single value types are supported by the table by default
-const valueDisplay = (value: ValueType, type: string): SingleValueType => {
-  if (isSingleType(type as ValueTypeName) && !Array.isArray(value)) {
-    return value as SingleValueType
-  }
-
-  if (isListType(type as ValueTypeName)) {
-    if (Array.isArray(value)) {
-      return serializeValueList(value)
-    }
-    return value
-  }
-
-  return value as SingleValueType
-}
-
-const isSingleType = (type: ValueTypeName): boolean => {
-  const singleTypes = [
-    ValueTypeName.String,
-    ValueTypeName.Integer,
-    ValueTypeName.Double,
-    ValueTypeName.Long,
-    ValueTypeName.Boolean,
-  ] as string[]
-
-  return singleTypes.includes(type)
-}
-
-const isListType = (type: ValueTypeName): boolean => {
-  const listTypes = [
-    ValueTypeName.ListString,
-    ValueTypeName.ListInteger,
-    ValueTypeName.ListDouble,
-    ValueTypeName.ListLong,
-    ValueTypeName.ListBoolean,
-  ] as string[]
-
-  return listTypes.includes(type)
-}
-
-type SortDirection = 'asc' | 'desc'
-interface SortType {
-  column: AttributeName | undefined
-  direction: SortDirection | undefined
-  valueType: ValueTypeName | undefined
-}
-
-const compareStrings = (
-  a: string,
-  b: string,
-  sortDirection: SortDirection,
-): number =>
-  sortDirection === 'asc'
-    ? (a ?? '').localeCompare(b)
-    : (b ?? '').localeCompare(a)
-const compareNumbers = (
-  a: number,
-  b: number,
-  sortDirection: SortDirection,
-): number =>
-  sortDirection === 'asc'
-    ? (a ?? Infinity) - (b ?? -Infinity) // always put undefined values at the bottom of the list
-    : (b ?? Infinity) - (a ?? -Infinity)
-
-const compareBooleans = (
-  a: boolean,
-  b: boolean,
-  sortDirection: SortDirection,
-): number => compareStrings(String(a ?? ''), String(b ?? ''), sortDirection)
-
-// TODO come up with better idea of what users want when sorting cells which have list values
-const compareLists = (
-  a: ListOfValueType,
-  b: ListOfValueType,
-  sortDirection: SortDirection,
-): number =>
-  compareStrings(serializeValueList(a), serializeValueList(b), sortDirection)
-
-const sortFnToType: Record<
-  ValueTypeName,
-  (a: ValueType, b: ValueType, sortDirection: SortDirection) => number
-> = {
-  [ValueTypeName.ListString]: compareLists,
-  [ValueTypeName.ListLong]: compareLists,
-  [ValueTypeName.ListInteger]: compareLists,
-  [ValueTypeName.ListDouble]: compareLists,
-  [ValueTypeName.ListBoolean]: compareLists,
-  [ValueTypeName.String]: compareStrings,
-  [ValueTypeName.Long]: compareNumbers,
-  [ValueTypeName.Integer]: compareNumbers,
-  [ValueTypeName.Double]: compareNumbers,
-  [ValueTypeName.Boolean]: compareBooleans,
 }
 
 export default function TableBrowser(props: {
@@ -223,7 +93,8 @@ export default function TableBrowser(props: {
   const isOpen = menu !== undefined
 
   const networkId = props.currentNetworkId
-  const setHovered = useViewModelStore((state) => state.setHovered)
+  const { selectedNodes, selectedEdges } =
+    useViewModelStore((state) => state.viewModels[networkId]) ?? {}
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
@@ -242,19 +113,29 @@ export default function TableBrowser(props: {
   const columns = Array.from(currentTable?.columns.entries() ?? new Map()).map(
     ([key, col], index) => ({
       id: key,
-      title: `${key}-${col.type}`,
+      title: key,
       type: col.type,
       index,
       hasMenu: true,
     }),
   )
 
-  const rows = Array.from((currentTable?.rows ?? new Map()).values())
+  const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
+  const selectedElementsSet = new Set(selectedElements)
+  const rowsWithIds = Array.from(
+    (currentTable?.rows ?? new Map()).entries(),
+  ).map(([key, value]) => ({ ...value, id: key }))
+  const rows =
+    selectedElements?.length > 0
+      ? rowsWithIds.filter((r) => selectedElementsSet.has(r.id))
+      : rowsWithIds
+
   if (sort.column != null && sort.direction != null && sort.valueType != null) {
     const sortFn = sortFnToType[sort.valueType]
     rows.sort((a, b) => {
-      const aVal = a[sort.column as AttributeName]
-      const bVal = b[sort.column as AttributeName]
+      if (a == null || b == null || sort.column == null) return 0
+      const aVal = (a as Record<string, ValueType>)[sort.column]
+      const bVal = (b as Record<string, ValueType>)[sort.column]
       return sortFn(aVal, bVal, sort.direction as SortDirection)
     })
   }
@@ -302,14 +183,13 @@ export default function TableBrowser(props: {
       const dataRow = rows[rowIndex]
       const column = columns[columnIndex]
       const columnKey = column.id
-      const cellValue = dataRow?.[columnKey]
-
+      const cellValue = (dataRow as any)?.[columnKey]
       if (dataRow == null || cellValue == null) {
         return {
           allowOverlay: true,
           readonly: false,
           kind: GridCellKind.Text,
-          displayData: 'N/A',
+          displayData: '',
           data: '',
         }
       }
@@ -341,20 +221,20 @@ export default function TableBrowser(props: {
         }
       }
     },
-    [props.currentNetworkId, currentTable, tables, sort],
+    [props.currentNetworkId, rows, currentTable, tables, sort],
   )
 
   const onItemHovered = React.useCallback(
     (cell: Item) => {
       const rowIndex = cell[1]
       const rowData = rows[rowIndex]
-      const cxId = rowData?.cxId
+      const cxId = rowData?.id
+
       if (cxId != null) {
-        const eleId =
-          currentTable === nodeTable
-            ? rowData.cxId
-            : translateCXEdgeId(`${rowData.cxId as string}`)
-        setHovered(props.currentNetworkId, String(eleId))
+        // TODO this operation is too expensive for large networks
+        // // const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
+        // // console.log(eleId)
+        // setHovered(props.currentNetworkId, String(cxId))
       }
     },
     [props.currentNetworkId, currentTable, tables],
@@ -363,18 +243,8 @@ export default function TableBrowser(props: {
   const onCellEdited = React.useCallback(
     (cell: Item, newValue: EditableGridCell) => {
       const [columnIndex, rowIndex] = cell
-      // const minId = currentTable === nodeTable ? minNodeId : minEdgeId
-      // const rowKey =
-      //   currentTable === nodeTable
-      //     ? +rowIndex + minId
-      //     : translateCXEdgeId(`${+rowIndex + minId}`)
-
       const rowData = rows[rowIndex]
-      const rowKey =
-        currentTable === nodeTable
-          ? +rowData.cxId
-          : translateCXEdgeId(`${rowData.cxId as string}`)
-
+      const cxId = rowData?.id
       const column = columns[columnIndex]
       const columnKey = column.id
       let data = newValue.data
@@ -390,7 +260,7 @@ export default function TableBrowser(props: {
         setCellValue(
           props.currentNetworkId,
           currentTable === nodeTable ? 'node' : 'edge',
-          `${rowKey}`,
+          `${cxId}`,
           columnKey,
           data as ValueType,
         )
@@ -454,7 +324,7 @@ export default function TableBrowser(props: {
         <Button onClick={() => setShowSearch(!showSearch)}>
           Toggle Search
         </Button>
-        <Box onMouseLeave={() => setHovered(props.currentNetworkId, null)}>
+        <Box>
           <DataEditor
             rowMarkers={'both'}
             rowMarkerStartIndex={minNodeId}
@@ -524,7 +394,6 @@ export default function TableBrowser(props: {
                 onClick={() => {
                   const col = menu?.col
                   if (col != null) {
-                    // duplicateColumn(col)
                     const column = columns[col]
                     const columnKey = column.id
                     duplicateColumn(
@@ -533,7 +402,6 @@ export default function TableBrowser(props: {
                       columnKey,
                     )
                   }
-                  // duplicateColumn()
                   setMenu(undefined)
                 }}
               >
@@ -549,7 +417,7 @@ export default function TableBrowser(props: {
           Toggle Search
         </Button>
 
-        <Box onMouseLeave={() => setHovered(props.currentNetworkId, null)}>
+        <Box>
           <DataEditor
             rowMarkers={'both'}
             rowMarkerStartIndex={minEdgeId}

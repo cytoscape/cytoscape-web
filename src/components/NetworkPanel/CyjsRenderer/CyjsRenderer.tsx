@@ -2,7 +2,9 @@ import Box from '@mui/material/Box'
 import debounce from 'lodash.debounce'
 import Cytoscape, {
   Core,
+  EdgeSingular,
   EventObject,
+  NodeSingular,
   SingularElementArgument,
 } from 'cytoscape'
 
@@ -11,22 +13,20 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { Network } from '../../../models/NetworkModel'
-import {
-  ReactElement,
-  // useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { NetworkView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
 import { addObjects } from './cyjs-factory'
+import { useLayoutStore } from '../../../store/LayoutStore'
+import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
+import { CircularProgress, Typography } from '@mui/material'
 interface NetworkRendererProps {
   network: Network
 }
+
+const HOVER_STATE_NAME: string = 'hover'
 
 /**
  *
@@ -36,31 +36,59 @@ interface NetworkRendererProps {
 const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const { id } = network
 
-  const setViewModel = useViewModelStore((state) => state.setViewModel)
-  const setVisualStyle = useVisualStyleStore((state) => state.set)
+  const isRunning: boolean = useLayoutStore((state) => state.isRunning)
+
+  const setViewModel = useViewModelStore((state) => state.add)
+  const setVisualStyle = useVisualStyleStore((state) => state.add)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
 
   const tables = useTableStore((state) => state.tables)
   const viewModels = useViewModelStore((state) => state.viewModels)
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+
   const setNodePosition: (
     networkId: IdType,
     nodeId: IdType,
     position: [number, number],
   ) => void = useViewModelStore((state) => state.setNodePosition)
 
+  const setHovered: (networkId: IdType, eleId: IdType) => void =
+    useViewModelStore((state) => state.setHovered)
+
   const [cyStyle, setCyStyle] = useState<any[]>([])
   const [renderedId, setRenderedId] = useState<string>('')
 
+  // TO avoid unnecessary re-rendering / fit
+  const [nodesMoved, setNodesMoved] = useState<boolean>(false)
+
   const networkView: NetworkView = viewModels[id]
-  const hoveredElement = networkView?.hoveredElement
 
   const vs: VisualStyle = visualStyles[id]
+
+  // Extract background color from visual style as a special case
+  // let bgColor: string =
+  //   vs?.networkBackgroundColor !== undefined
+  //     ? (vs.networkBackgroundColor.defaultValue as string)
+  //     : '#FFFFFF'
+
+  const [bgColor, setBgColor] = useState<string>('#FFFFFF')
+  useEffect(() => {
+    if (vs?.networkBackgroundColor !== undefined) {
+      setBgColor(vs.networkBackgroundColor.defaultValue as string)
+    } else {
+      setBgColor('#FFFFFF')
+    }
+  }, [vs, isRunning])
+
   const table = tables[id]
 
   const [cy, setCy] = useState<any>(null)
   const cyContainer = useRef(null)
+
+  const setRendererFunction = useRendererFunctionStore(
+    (state) => state.setFunction,
+  )
 
   // Avoid duplicate initialization of Cyjs
   const isInitialized = useRef(false)
@@ -97,6 +125,19 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       const newStyle = createCyjsDataMapper(vs)
       setCyStyle(newStyle)
 
+      // Restore selection state in Cyjs instance
+      const { selectedNodes, selectedEdges } = networkView
+      cy.nodes()
+        .filter((ele: SingularElementArgument) => {
+          return selectedNodes.includes(ele.data('id'))
+        })
+        .select()
+      cy.edges()
+        .filter((ele: SingularElementArgument) => {
+          return selectedEdges.includes(ele.data('id'))
+        })
+        .select()
+
       // Box selection listener
       cy.on(
         'boxselect select',
@@ -129,18 +170,32 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
       // Moving nodes
       cy.on('dragfree', 'node', (e: EventObject): void => {
+        // Enable flag to avoid unnecessary fit
+        setNodesMoved(true)
+
         const targetNode = e.target
         const nodeId: IdType = targetNode.data('id')
         const position = targetNode.position()
         setNodePosition(id, nodeId, [position.x, position.y])
       })
 
+      cy.on('mouseover', 'node, edge', (e: EventObject): void => {
+        const targetNode = e.target
+        targetNode.addClass(HOVER_STATE_NAME)
+        setHovered(id, targetNode.data('id'))
+      })
+      cy.on('mouseout', 'node, edge', (e: EventObject): void => {
+        const targetNode = e.target
+        targetNode.removeClass(HOVER_STATE_NAME)
+        setHovered(id, '')
+      })
+
       cy.endBatch()
 
       cy.style(newStyle)
-      // cy.mount(cyContainer.current)
 
       cy.fit()
+
       setVisualStyle(id, vs)
       setTimeout(() => {
         isViewCreated.current = true
@@ -168,19 +223,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     // Apply style from view model
     applyViewModel(cy, updatedNetworkView)
 
-    // Select elements based on network view state
-    const { selectedNodes, selectedEdges } = updatedNetworkView
-    cy.nodes()
-      .filter((ele: SingularElementArgument) => {
-        return selectedNodes.includes(ele.data('id'))
-      })
-      .select()
-    cy.edges()
-      .filter((ele: SingularElementArgument) => {
-        return selectedEdges.includes(ele.data('id'))
-      })
-      .select()
-
     cy.endBatch()
     if (cyStyle.length > 0) {
       cy.style(cyStyle)
@@ -191,13 +233,15 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     console.log('#Time to  apply style: ', performance.now() - t1)
   }
 
-  const applyHoverStyle = (): void => {
-    if (cy != null) {
-      cy.nodes().removeClass('hovered')
-      cy.edges().removeClass('hovered')
-
-      if (hoveredElement != null) {
-        cy.getElementById(hoveredElement).addClass('hovered')
+  const applyHoverUpdate = (): void => {
+    if (cy === null) {
+      return
+    }
+    if (networkView?.hoveredElement !== undefined) {
+      cy.elements().removeClass('hover')
+      const ele = cy.getElementById(networkView.hoveredElement)
+      if (ele !== undefined) {
+        ele.addClass('hover')
       }
     }
   }
@@ -235,13 +279,62 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     applyUpdates()
   }, [vs, table])
 
-  // when hovered element changes, apply hover style to that element
+  // Apply layout when node positions are changed
   useEffect(() => {
-    if (hoveredElement === null || hoveredElement === undefined) {
+    if (viewModels[id] === undefined || cy === null) {
       return
     }
-    applyHoverStyle()
-  }, [hoveredElement])
+
+    // This means nodes are moved by hand. Does not need to apply fit
+    if (nodesMoved) {
+      setNodesMoved(false)
+      return
+    }
+
+    // Update position
+    const curView = viewModels[id]
+    const nodeViews = curView.nodeViews
+    const viewCount = Object.keys(nodeViews).length
+    const cyNodeCount = cy.nodes().length
+    cy.nodes().forEach((cyNode: NodeSingular) => {
+      const cyNodeId = cyNode.data('id')
+      if (nodeViews[cyNodeId] === undefined) {
+        // Need to delete this node
+        cy.remove(cyNode)
+      } else {
+        cyNode.position({
+          x: nodeViews[cyNodeId].x,
+          y: nodeViews[cyNodeId].y,
+        })
+      }
+    })
+    if (viewCount === cyNodeCount) {
+      cy.fit()
+    }
+  }, [networkView?.nodeViews])
+
+  useEffect(() => {
+    if (viewModels[id] === undefined || cy === null) {
+      return
+    }
+
+    // Edge deletion
+    const curView = viewModels[id]
+    const edgeViews = curView.edgeViews
+    cy.edges().forEach((cyEdge: EdgeSingular) => {
+      const cyEdgeId = cyEdge.data('id')
+      if (edgeViews[cyEdgeId] === undefined) {
+        // Need to delete this node
+        cy.remove(cyEdge)
+      }
+    })
+    console.log('Edge views deleted-=------------')
+  }, [networkView?.edgeViews])
+
+  // when hovered element changes, apply hover style to that element
+  useEffect(() => {
+    applyHoverUpdate()
+  }, [networkView?.hoveredElement])
 
   /**
    * Initializes the Cytoscape.js instance
@@ -253,9 +346,18 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
+        wheelSensitivity: 0.1,
       })
       setCy(cy)
+      // Now add event handlers. This is necessary only once.
+      // addEventHandlers(cy)
       console.info('Cyjs renderer is ready.')
+      const fitFunction = (): void => {
+        if (cy !== null) {
+          cy.fit()
+        }
+      }
+      setRendererFunction('cyjs', 'fit', fitFunction)
     }
 
     return () => {
@@ -273,14 +375,34 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   }, [cy])
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        height: '100%',
-      }}
-      id="cy-container"
-      ref={cyContainer}
-    />
+    <>
+      {isRunning ? (
+        <Box
+          sx={{
+            display: 'flex',
+            position: 'absolute',
+            alignItems: 'center',
+            top: '1em',
+            left: '1em',
+            zIndex: 2000,
+          }}
+        >
+          <CircularProgress size={40} />
+          <Typography variant="h6" sx={{ marginLeft: '1em' }}>
+            Applying layout...
+          </Typography>
+        </Box>
+      ) : null}
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          backgroundColor: bgColor,
+        }}
+        id="cy-container"
+        ref={cyContainer}
+      />
+    </>
   )
 }
 

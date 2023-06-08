@@ -1,10 +1,10 @@
 import { Avatar, Tooltip } from '@mui/material'
 import { deepOrange } from '@mui/material/colors'
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
-import { ReactElement, useEffect, useRef, useState } from 'react'
+import { ReactElement, useEffect, useRef, useState, useContext } from 'react'
 import { LoginPanel } from './LoginPanel'
-import * as appConfig from '../../assets/config.json'
 import { useCredentialStore } from '../../store/CredentialStore'
+import { AppConfigContext } from '../../AppConfigContext'
 
 export const LoginButton = (): ReactElement => {
   const initializing = useRef<boolean>(false)
@@ -19,6 +19,7 @@ export const LoginButton = (): ReactElement => {
   const setClient: (client: Keycloak) => void = useCredentialStore(
     (state) => state.setClient,
   )
+  const { keycloakConfig } = useContext(AppConfigContext)
 
   useEffect(() => {
     if (initializing.current) {
@@ -26,7 +27,6 @@ export const LoginButton = (): ReactElement => {
       return
     }
     initializing.current = true
-    const { keycloakConfig } = appConfig
     const keycloak = new Keycloak({ ...keycloakConfig })
     keycloak
       .init({
@@ -109,8 +109,8 @@ export const LoginButton = (): ReactElement => {
           sx={{
             bgcolor: parsed.name === undefined ? '#DDDDDD' : deepOrange[300],
             marginLeft: 2,
-            width: '32',
-            height: '32',
+            width: 28,
+            height: 28,
           }}
           onClick={handleClose}
         >

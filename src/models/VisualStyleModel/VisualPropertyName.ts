@@ -20,6 +20,7 @@ export type NodeVisualPropertyName =
   // | 'nodePositionZ'
   | 'nodeOpacity'
   | 'nodeVisibility'
+  | 'nodeSelectedPaint'
 
 export type EdgeVisualPropertyName =
   | 'edgeLineType'
@@ -38,6 +39,7 @@ export type EdgeVisualPropertyName =
   | 'edgeLabelOpacity'
   | 'edgeOpacity'
   | 'edgeVisibility'
+  | 'edgeSelectedPaint'
 
 export type NetworkVisualPropertyName = 'networkBackgroundColor'
 

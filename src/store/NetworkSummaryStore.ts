@@ -3,170 +3,64 @@ import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
 import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
 import {
+  clearNetworkSummaryFromDb,
   deleteNetworkSummaryFromDb,
-  getNetworkSummariesFromDb,
-  getNetworkSummaryFromDb,
   putNetworkSummaryToDb,
 } from './persist/db'
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
 
 interface NetworkSummaryStore {
   summaries: Record<IdType, NdexNetworkSummary>
 }
 
 interface NetworkSummaryActions {
-  fetch: (
-    networkId: IdType,
-    url: string,
-    accessToken?: string,
-  ) => Promise<NdexNetworkSummary>
-  fetchAll: (
-    networkIds: IdType[],
-    url: string,
-    accessToken?: string,
-  ) => Promise<void>
+  // Add a network summary to the store
+  add: (networkId: IdType, summary: NdexNetworkSummary) => void
+
+  // Batch add network summaries to the store
+  addAll: (summaries: Record<IdType, NdexNetworkSummary>) => void
+
+  // Update an entry
+  update: (id: IdType, summary: Partial<NdexNetworkSummary>) => void
+
+  // Delete a network summary from the store
   delete: (networkId: IdType) => void
-}
 
-const networkSummaryFetcher = async (
-  id: IdType | IdType[],
-  url: string,
-  accessToken?: string,
-): Promise<NdexNetworkSummary | NdexNetworkSummary[]> => {
-  const ndexClient = new NDEx(`${url}/v2`)
-
-  if (accessToken !== undefined && accessToken !== '') {
-    ndexClient.setAuthToken(accessToken)
-  }
-
-  if (Array.isArray(id)) {
-    try {
-      const summaries: Promise<NdexNetworkSummary[]> =
-        await ndexClient.getNetworkSummariesByUUIDs(id)
-
-      return await summaries
-    } catch (error) {
-      console.error('Failed to fetch summary', error)
-      throw error
-    }
-  } else {
-    // Try local DB first
-    const cachedSummary = await getNetworkSummaryFromDb(id)
-    if (cachedSummary !== undefined) {
-      return cachedSummary
-    }
-    const summary: Promise<NdexNetworkSummary> =
-      ndexClient.getNetworkSummary(id)
-    return await summary
-  }
+  // Delete all summaries from the store
+  deleteAll: () => void
 }
 
 export const useNetworkSummaryStore = create(
-  immer<NetworkSummaryStore & NetworkSummaryActions>((set) => ({
+  immer<NetworkSummaryStore & NetworkSummaryActions>((set, get) => ({
     summaries: {},
-    fetch: async (networkId: IdType, url: string, accessToken?: string) => {
-      const localData: NdexNetworkSummary | undefined =
-        await getNetworkSummaryFromDb(networkId)
-      if (localData !== undefined) {
-        return localData
-      }
-
-      const newSummary = (await networkSummaryFetcher(
-        networkId,
-        url,
-        accessToken,
-      )) as NdexNetworkSummary
-
+    add: (networkId: IdType, summary: NdexNetworkSummary) => {
       set((state) => {
-        // const newSummaries = new Map(state.summaries).set(networkId, newSummary)
-        return {
-          summaries: { ...state.summaries, newSummary },
-        }
-      })
+        state.summaries[networkId] = summary
 
-      return newSummary
+        return state
+      })
     },
-    fetchAll: async (
-      networkIds: IdType[],
-      url: string,
-      accessToken?: string,
-    ) => {
-      // Check local database first
-      const localData: NdexNetworkSummary[] = await getNetworkSummariesFromDb(
-        networkIds,
-      )
-
-      // "localdata" contains undefined if the list contains new network IDs
-
-      const results: NdexNetworkSummary[] = []
-
-      localData.forEach((summary) => {
-        if (summary !== undefined) {
-          results.push(summary)
-        }
-      })
-
-      const newIds: IdType[] = networkIds.filter(
-        (id) => !results.map((s) => s.externalId).includes(id),
-      )
-
-      let newSummaries: NdexNetworkSummary[] = []
-      if (results.length !== 0) {
-        const cached: NdexNetworkSummary[] = results
-        newSummaries = (await networkSummaryFetcher(
-          newIds,
-          url,
-          accessToken,
-        )) as NdexNetworkSummary[]
-
-        newSummaries = [...cached, ...newSummaries]
-        // Put those to DB
-      } else {
-        // NDEx server URL
-        newSummaries = (await networkSummaryFetcher(
-          networkIds,
-          url,
-          accessToken,
-        )) as NdexNetworkSummary[]
-      }
-      newSummaries.forEach(async (summary: NdexNetworkSummary) => {
-        await putNetworkSummaryToDb(summary)
-      })
-
-      const newSummaryRecord: Record<IdType, NdexNetworkSummary> =
-        newSummaries.reduce(
-          (summary, entry) => ({
-            ...summary,
-            [entry.externalId]: entry,
-          }),
-          {},
-        )
-
+    addAll: (summaries: Record<IdType, NdexNetworkSummary>) => {
       set((state) => {
-        if (newSummaries.length === 0) {
-          return state
-        }
+        state.summaries = { ...state.summaries, ...summaries }
 
-        const newRecord = { ...state.summaries, ...newSummaryRecord }
-
-        return {
-          summaries: newRecord,
-        }
+        return state
       })
-
-      // return newSummaries
+    },
+    update: (networkId: IdType, summaryUpdate: Partial<NdexNetworkSummary>) => {
+      const summary = get().summaries[networkId]
+      if (summary === undefined) {
+        return
+      }
+      void putNetworkSummaryToDb({ ...summary, ...summaryUpdate })
+      set((state) => {
+        state.summaries[networkId] = { ...summary, ...summaryUpdate }
+        return state
+      })
     },
     delete: (networkId: IdType) => {
       set((state) => {
-        const { summaries } = state
-        const newSummaries: Record<IdType, NdexNetworkSummary> = {}
-        Object.keys(summaries).forEach((key: IdType) => {
-          if (key !== networkId) {
-            newSummaries[key] = summaries[key]
-          }
-        })
-        deleteNetworkSummaryFromDb(networkId)
+        delete state.summaries[networkId]
+        void deleteNetworkSummaryFromDb(networkId)
           .then((val) => {
             console.log('Summary deleted', networkId, val)
           })
@@ -174,9 +68,21 @@ export const useNetworkSummaryStore = create(
             console.error('', err)
           })
 
-        return {
-          summaries: { ...newSummaries },
-        }
+        return state
+      })
+    },
+    deleteAll: () => {
+      set((state) => {
+        state.summaries = {}
+        clearNetworkSummaryFromDb()
+          .then((val) => {
+            console.log('Summary cleared', val)
+          })
+          .catch((err) => {
+            console.error('Failed to clear Summary', err)
+          })
+
+        return state
       })
     },
   })),

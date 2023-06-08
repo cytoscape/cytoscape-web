@@ -2,6 +2,7 @@ import * as React from 'react'
 import AppBar from '@mui/material/AppBar'
 import Box from '@mui/material/Box'
 import Toolbar from '@mui/material/Toolbar'
+import { Tooltip } from '@mui/material'
 import { styled, alpha } from '@mui/material/styles'
 import InputBase from '@mui/material/InputBase'
 import SearchIcon from '@mui/icons-material/Search'
@@ -12,6 +13,8 @@ import { DataMenu } from './DataMenu'
 
 import logo from '../../assets/cytoscape.svg'
 import { LoginButton } from '../Login/LoginButton'
+import { LayoutMenu } from './LayoutMenu'
+import { EditMenu } from './EditMenu'
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -66,25 +69,28 @@ export const ToolBar: React.FC = () => {
           <Box sx={{ display: 'flex' }}>
             <img src={logo} />
             <DataMenu label="Data" />
-            <DropdownMenu label="Edit" />
-            <DropdownMenu label="View" />
-            <DropdownMenu label="Select" />
-            <DropdownMenu label="Layout" />
-            <DropdownMenu label="Analysis" />
+            <EditMenu label="Edit" />
+            {/* <DropdownMenu label="View" /> */}
+            {/* <DropdownMenu label="Select" /> */}
+            <LayoutMenu label="Layout" />
+            {/* <DropdownMenu label="Analysis" /> */}
             <DropdownMenu label="Help" />
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Search>
-              <SearchControlsWrapper>
-                <SearchIcon />
-                <TuneIcon />
-              </SearchControlsWrapper>
-              <StyledInputBase
-                placeholder="Search this network"
-                inputProps={{ 'aria-label': 'search' }}
-              />
-            </Search>
+            <Tooltip title={'Not implemented yet'} followCursor>
+              <Search>
+                <SearchControlsWrapper>
+                  <SearchIcon />
+                  <TuneIcon />
+                </SearchControlsWrapper>
+                <StyledInputBase
+                  disabled={true} // TODO: implement search
+                  placeholder="Search this network"
+                  inputProps={{ 'aria-label': 'search' }}
+                />
+              </Search>
+            </Tooltip>
             <LoginButton />
           </Box>
         </Toolbar>

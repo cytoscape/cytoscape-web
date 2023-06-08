@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Suspense, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
+import _ from 'lodash'
 import { Box, Tabs, Tab, Typography } from '@mui/material'
 import ShareIcon from '@mui/icons-material/Share'
 import PaletteIcon from '@mui/icons-material/Palette'
@@ -8,7 +9,8 @@ import VizmapperView from '../Vizmapper'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
-import { getNdexNetwork } from '../../store/useNdexNetwork'
+import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
+import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
 import { useTableStore } from '../../store/TableStore'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -25,6 +27,7 @@ import { NetworkView } from '../../models/ViewModel'
 import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
 
 import { useCredentialStore } from '../../store/CredentialStore'
+import { SnackbarMessageList } from '../Messages'
 
 const NetworkPanel = React.lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = React.lazy(() => import('../TableBrowser/TableBrowser'))
@@ -53,15 +56,36 @@ const WorkSpaceEditor: React.FC = () => {
     (state) => state.setCurrentNetworkId,
   )
 
+  const viewModels: Record<string, NetworkView> = useViewModelStore(
+    (state) => state.viewModels,
+  )
+
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
 
+  // listen to view model changes
+  // assume that if the view model change, the network has been modified and set the networkModified flag to true
   useViewModelStore.subscribe(
     (state) => state.viewModels[currentNetworkId],
-    () => {
+    (prev: NetworkView, next: NetworkView) => {
+      const viewModelChanged =
+        prev !== undefined &&
+        next !== undefined &&
+        !_.isEqual(
+          // omit selection state and hovered element changes as valid viewModel changes
+          _.omit(prev, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
+          _.omit(next, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
+        )
+
+      // primitve compare fn that does not take into account the selection/hover state
+      // this leads to the network having a 'modified' state even though nothing was modified
       const { networkModified } = workspace
-      const isModified: boolean | undefined = networkModified[currentNetworkId]
-      if (isModified !== undefined && !isModified) {
+      const currentNetworkIsNotModified =
+        networkModified[currentNetworkId] === undefined ??
+        !networkModified[currentNetworkId] ??
+        false
+
+      if (viewModelChanged && currentNetworkIsNotModified) {
         setNetworkModified(currentNetworkId, true)
       }
     },
@@ -71,7 +95,7 @@ const WorkSpaceEditor: React.FC = () => {
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
-  const fetchAllSummaries = useNetworkSummaryStore((state) => state.fetchAll)
+  const setSummaries = useNetworkSummaryStore((state) => state.addAll)
   const removeSummary = useNetworkSummaryStore((state) => state.delete)
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
@@ -88,25 +112,26 @@ const WorkSpaceEditor: React.FC = () => {
   const addNewNetwork = useNetworkStore((state) => state.add)
 
   // Visual Style Store
-  const setVisualStyle = useVisualStyleStore((state) => state.set)
+  const setVisualStyle = useVisualStyleStore((state) => state.add)
   // Table Store
-  const setTables = useTableStore((state) => state.setTables)
+  const setTables = useTableStore((state) => state.add)
 
-  const setViewModel = useViewModelStore((state) => state.setViewModel)
-  const viewModels: Record<string, NetworkView> = useViewModelStore(
-    (state) => state.viewModels,
-  )
+  const setViewModel = useViewModelStore((state) => state.add)
 
   const loadNetworkSummaries = async (): Promise<void> => {
-    // Check token first
     const currentToken = await getToken()
-    await fetchAllSummaries(workspace.networkIds, ndexBaseUrl, currentToken)
+    const summaries = await useNdexNetworkSummary(
+      workspace.networkIds,
+      ndexBaseUrl,
+      currentToken,
+    )
+
+    setSummaries(summaries)
   }
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     const currentToken = await getToken()
-    // No token available. Just load
-    const res = await getNdexNetwork(networkId, ndexBaseUrl, currentToken)
+    const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
     const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
     addNewNetwork(network)
@@ -207,13 +232,22 @@ const WorkSpaceEditor: React.FC = () => {
     }
   }, [currentNetworkId])
 
+  /**
+   * if there is no current network id set, set the first network in the workspace to the current network
+   */
   useEffect(() => {
     let curId: IdType = ''
-    if (Object.keys(summaries).length !== 0) {
-      curId = Object.keys(summaries)[0]
+    if (
+      currentNetworkId === undefined ||
+      currentNetworkId === '' ||
+      !workspace.networkIds.includes(currentNetworkId)
+    ) {
+      if (Object.keys(summaries).length !== 0) {
+        curId = Object.keys(summaries)[0]
+        setCurrentNetworkId(curId)
+      }
     }
-    setCurrentNetworkId(curId)
-  }, [summaries])
+  }, [summaries, currentNetworkId])
 
   // TODO: avoid hardcoding pixel values
   return (
@@ -300,6 +334,7 @@ const WorkSpaceEditor: React.FC = () => {
           </Suspense>
         </Allotment.Pane>
       </Allotment>
+      <SnackbarMessageList />
     </Box>
   )
 }

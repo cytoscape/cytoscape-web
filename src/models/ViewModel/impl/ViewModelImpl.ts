@@ -1,14 +1,18 @@
-import { Cx2 } from '../../../utils/cx/Cx2'
+import { Cx2 } from '../../CxModel/Cx2'
 import { IdType } from '../../IdType'
 import { NetworkView } from '../NetworkView'
 import { NodeView } from '../NodeView'
 import { EdgeView } from '../EdgeView'
 import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
-import * as cxUtil from '../../../utils/cx/cx2-util'
-import { Node as CxNode } from '../../../utils/cx/Cx2/CoreAspects/Node'
-import { Edge as CxEdge } from '../../../utils/cx/Cx2/CoreAspects/Edge'
+import * as cxUtil from '../../CxModel/cx2-util'
+import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
+import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
 import { VisualPropertyValueType } from '../../VisualStyleModel'
-import { EdgeVisualPropertyName, NetworkVisualPropertyName, NodeVisualPropertyName } from '../../VisualStyleModel/VisualPropertyName'
+import {
+  EdgeVisualPropertyName,
+  NetworkVisualPropertyName,
+  NodeVisualPropertyName,
+} from '../../VisualStyleModel/VisualPropertyName'
 
 export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
   const cxNodes: CxNode[] = cxUtil.getNodes(cx)
@@ -24,7 +28,7 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
       x: node.x ?? 0,
       y: node.y ?? 0,
       ...(node.z !== null && node.z !== undefined ? { z: node.z } : {}),
-      values
+      values,
     }
   })
 
@@ -32,7 +36,7 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
     const translatedId = translateCXEdgeId(edge.id.toString())
     edgeViews[translatedId] = {
       id: translatedId,
-      values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>()
+      values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>(),
     }
   })
 
@@ -42,7 +46,7 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
     edgeViews,
     selectedNodes: [],
     selectedEdges: [],
-    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>()
+    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>(),
   }
 
   return networkView

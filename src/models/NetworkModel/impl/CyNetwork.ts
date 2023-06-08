@@ -2,28 +2,28 @@ import { IdType } from '../../IdType'
 import { AttributeName, ValueType } from '../../TableModel'
 import { Network, Node, Edge } from '..'
 
-import { Cx2 } from '../../../utils/cx/Cx2'
+import { Cx2 } from '../../CxModel/Cx2'
 
-import { Node as CxNode } from '../../../utils/cx/Cx2/CoreAspects/Node'
-import { Edge as CxEdge } from '../../../utils/cx/Cx2/CoreAspects/Edge'
-import * as cxUtil from '../../../utils/cx/cx2-util'
+import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
+import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
+import * as cxUtil from '../../CxModel/cx2-util'
 
 import { Core, EdgeSingular, NodeSingular } from 'cytoscape'
 import * as cytoscape from 'cytoscape'
 
 const GroupType = { Nodes: 'nodes', Edges: 'edges' } as const
-type GroupType = typeof GroupType[keyof typeof GroupType]
+type GroupType = (typeof GroupType)[keyof typeof GroupType]
 
 /**
  * Private class implementing graph object using
  * Cytoscape.js
- * 
+ *
  * Simply stores graph structure only, no attributes
- * 
+ *
  */
 class CyNetwork implements Network {
   readonly id: IdType
-  
+
   // Graph storage, using Cytoscape
   // Only topology is stored here, attributes are stored in the table
   private readonly _store: Core
@@ -32,7 +32,6 @@ class CyNetwork implements Network {
     this.id = id
     this._store = createCyDataStore()
   }
-
 
   get nodes(): Node[] {
     return this._store.nodes().map((node: NodeSingular) => ({
@@ -74,6 +73,10 @@ export const createNetwork = (id: IdType): Network => new CyNetwork(id)
 // when converting cx ids to cy ids, we add a prefix to edges
 export const translateCXEdgeId = (id: IdType): IdType => `e${id}`
 
+export const isEdgeId = (id: IdType): boolean => id.startsWith('e')
+
+export const translateEdgeIdToCX = (id: IdType): IdType => id.slice(1)
+
 /**
  * Create a network from a CX object
  *
@@ -83,7 +86,6 @@ export const translateCXEdgeId = (id: IdType): IdType => `e${id}`
  *
  */
 export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
-
   // Create an empty CyNetwork
   const cyNet: CyNetwork = new CyNetwork(id)
 
@@ -113,10 +115,10 @@ export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
 
 /**
  * Create a Cytoscape.js object from a Cyjs JSON
- * 
- * @param id 
- * @param cyJson 
- * @returns 
+ *
+ * @param id
+ * @param cyJson
+ * @returns
  */
 export const createFromCyJson = (id: IdType, cyJson: object): Network => {
   const cyNet: CyNetwork = new CyNetwork(id)
@@ -125,18 +127,15 @@ export const createFromCyJson = (id: IdType, cyJson: object): Network => {
   return cyNet
 }
 
-const addToCyStoreFromLists = (network:Network, cyNet: CyNetwork):void => {
+const addToCyStoreFromLists = (network: Network, cyNet: CyNetwork): void => {
   cyNet.store.add(
     network.nodes.map((node: Node) => createCyNode(node.id.toString())),
   )
 
   cyNet.store.add(
-    network.edges.map((edge: Edge) => createCyEdge(
-        edge.id.toString(),
-        edge.s.toString(),
-        edge.t.toString(),
-      )
-    )
+    network.edges.map((edge: Edge) =>
+      createCyEdge(edge.id.toString(), edge.s.toString(), edge.t.toString()),
+    ),
   )
 }
 
@@ -236,9 +235,9 @@ export const addNode = (network: Network, nodeId: IdType): Network => {
   return cyNet
 }
 
-export const deleteNode = (network: Network, nodeId: IdType): Network => {
+export const deleteNodes = (network: Network, nodeIds: IdType[]): Network => {
   const cyNet: CyNetwork = network as CyNetwork
-  cyNet.store.remove(nodeId)
+  cyNet.store.remove(nodeIds.map((nodeId) => `#${nodeId}`).join(', '))
   return cyNet
 }
 
@@ -258,6 +257,12 @@ export const addEdges = (network: Network, edges: Edge[]): Network => {
   const cyNet: CyNetwork = network as CyNetwork
   cyNet.store.add(edges.map((edge) => createCyEdge(edge.id, edge.s, edge.t)))
   return network
+}
+
+export const deleteEdges = (network: Network, edgeIds: IdType[]): Network => {
+  const cyNet: CyNetwork = network as CyNetwork
+  cyNet.store.remove(edgeIds.map((edgeId) => `#${edgeId}`).join(', '))
+  return cyNet
 }
 
 export const addNodeRow = (

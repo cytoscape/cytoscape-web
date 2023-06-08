@@ -1,7 +1,7 @@
-import NetworkFn, { Network } from '../models/NetworkModel'
-import TableFn, { Table } from '../models/TableModel'
-import VisualStyleFn, { VisualStyle } from '../models/VisualStyleModel'
-import { Cx2 } from '../utils/cx/Cx2'
+import NetworkFn, { Network } from '../../models/NetworkModel'
+import TableFn, { Table } from '../../models/TableModel'
+import VisualStyleFn, { VisualStyle } from '../../models/VisualStyleModel'
+import { Cx2 } from '../../models/CxModel/Cx2'
 import {
   putNetworkToDb,
   putTablesToDb,
@@ -11,9 +11,9 @@ import {
   getVisualStyleFromDb,
   putNetworkViewToDb,
   getNetworkViewFromDb,
-} from './persist/db'
+} from '../persist/db'
 
-import ViewModelFn, { NetworkView } from '../models/ViewModel'
+import ViewModelFn, { NetworkView } from '../../models/ViewModel'
 
 // TODO: Make client TS compatible
 // @ts-expect-error-next-line
@@ -27,7 +27,7 @@ interface FullNetworkData {
   networkView: NetworkView
 }
 
-export const getNdexNetwork = async (
+export const useNdexNetwork = async (
   ndexNetworkId: string,
   url: string,
   accessToken?: string,
@@ -122,7 +122,7 @@ const ndexNetworkFetcher = async (
   url: string,
   accessToken?: string,
 ): Promise<Cx2> => {
-  const ndexClient = new NDEx(`${url}/v2`)
+  const ndexClient = new NDEx(url)
 
   if (accessToken !== undefined && accessToken !== '') {
     ndexClient.setAuthToken(accessToken)

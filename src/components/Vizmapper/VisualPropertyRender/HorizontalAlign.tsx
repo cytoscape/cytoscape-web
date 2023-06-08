@@ -38,5 +38,9 @@ export function HoritzontalAlignPicker(props: {
 export function HorizontalAlign(props: {
   value: HorizontalAlignType
 }): React.ReactElement {
-  return <Typography variant="body1">{props.value}</Typography>
+  return (
+    <Typography variant="body1" sx={{ fontSize: 8 }}>
+      {props.value}
+    </Typography>
+  )
 }

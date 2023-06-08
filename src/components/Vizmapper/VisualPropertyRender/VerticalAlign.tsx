@@ -38,5 +38,9 @@ export function VerticalAlignPicker(props: {
 export function VerticalAlign(props: {
   value: VerticalAlignType
 }): React.ReactElement {
-  return <Typography variant="body1">{props.value}</Typography>
+  return (
+    <Typography variant="body1" sx={{ fontSize: 8 }}>
+      {props.value}
+    </Typography>
+  )
 }

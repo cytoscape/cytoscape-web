@@ -95,7 +95,7 @@ export const updateNetworkView = (
   const { nodeViews } = networkView
   const mappers = buildMappers(vs)
 
-  return {
+  const nextView: NetworkView = {
     id: network.id,
     values: new Map<VisualPropertyName, VisualPropertyValueType>(),
     nodeViews: nodeViewBuilder(
@@ -111,9 +111,15 @@ export const updateNetworkView = (
       mappers,
       edgeTable,
     ),
-    selectedNodes: [],
-    selectedEdges: [],
+    selectedNodes: networkView.selectedNodes,
+    selectedEdges: networkView.selectedEdges,
   }
+
+  if (networkView.hoveredElement !== undefined) {
+    nextView.hoveredElement = networkView.hoveredElement
+  }
+
+  return nextView
 }
 
 const nodeViewBuilder = (
