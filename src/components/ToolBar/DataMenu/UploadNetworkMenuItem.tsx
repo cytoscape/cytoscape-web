@@ -82,8 +82,20 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
     reader.onload = async (event) => {
       try {
         const json = JSON.parse(event.target?.result as string)
-        const localName = json[3].networkAttributes[0].name
-        const localDescription = json[3].networkAttributes[0].description
+        let localName: string = "";
+          for (const item of json) {
+            if ((Boolean(item.networkAttributes)) && typeof item.networkAttributes[0].name === 'string') {
+              localName = item.networkAttributes[0].name;
+              break;
+            }
+        }
+        let localDescription: string = "";
+        for (const item of json) {
+          if ((Boolean(item.networkAttributes)) && typeof item.networkAttributes[0].name === 'string') {
+            localDescription = item.networkAttributes[0].description;
+            break;
+          }
+        }
         const localUuid = uuidv4()
         const localNodeCount = json[1].metaData[3].elementCount
         const localEdgeCount = json[1].metaData[2].elementCount
