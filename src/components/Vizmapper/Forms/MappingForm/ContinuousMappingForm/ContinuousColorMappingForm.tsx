@@ -281,6 +281,18 @@ export function ContinuousColorMappingForm(props: {
     updateContinuousMapping(minState, maxState, newHandles)
   }
 
+  const [colorPalette, setColorPalette] = React.useState("");
+
+
+  const handleColorPalette = (
+    event: React.MouseEvent<HTMLElement>,
+    newColorPalette: string | null
+  ) : void => {
+    if (newColorPalette !== null) {
+      setColorPalette(newColorPalette);
+    }
+  };
+
   // when someone changes a handle, the new handle values may contain a new min/max value
   // update the min and max accordingly
   React.useEffect(() => {
@@ -366,56 +378,75 @@ export function ContinuousColorMappingForm(props: {
         >
             <Typography align={'center'} sx={{ p: 1 }}>Set Palette</Typography>
         <ToggleButtonGroup
+          value={colorPalette}
+          onChange={handleColorPalette}
           orientation="horizontal"
           exclusive
           fullWidth={true}
       >
+        <ToggleButton value="rdbu" aria-label="RdBu"  onClick={() => {minPalette="#b2182b";middlePalette="#f7f7f7";maxPalette="#2166ac";textPalette='Red-Blue'}}> 
         <Tooltip title="Red-Blue" placement="right">
-        <ToggleButton value="RdBu" aria-label="RdBu"  onClick={() => {minPalette="#b2182b";middlePalette="#f7f7f7";maxPalette="#2166ac";textPalette='Red-Blue'}}>
         <img src={RdBu} width="15" height="150"/>
-        </ToggleButton>
         </Tooltip>
+        </ToggleButton>
+
+        <ToggleButton value="puor" aria-label="PuOr"  onClick={() => {minPalette="#542788";middlePalette="#f7f7f7";maxPalette="#b35806";textPalette='Purple-Orange'}}>
         <Tooltip title="Purple-Orange" placement="right">
-        <ToggleButton value="PuOr" aria-label="PuOr"  onClick={() => {minPalette="#542788";middlePalette="#f7f7f7";maxPalette="#b35806";textPalette='Purple-Orange'}}>
         <img src={PuOr} width="15" height="150"/>
-        </ToggleButton>
         </Tooltip>
+        </ToggleButton>
+
+        <ToggleButton value="prgn" aria-label="PRGn" onClick={() => {minPalette="#762a83";middlePalette="#f7f7f7";maxPalette="#1b7837";textPalette='Purple-Red-Green'}}>
         <Tooltip title="Purple-Red-Green" placement="right">
-        <ToggleButton value="PRGn" aria-label="PRGn" onClick={() => {minPalette="#762a83";middlePalette="#f7f7f7";maxPalette="#1b7837";textPalette='Purple-Red-Green'}}>
         <img src={PRGn} width="15" height="150"/>
-        </ToggleButton>
         </Tooltip>
+        </ToggleButton>
+
+        {!isColorBlindChecked && (
+        <ToggleButton value="spectral" aria-label="Spectral" onClick={() => {minPalette="#d53e4f";middlePalette="#ffffbf";maxPalette="#3288bd";textPalette='Spectral Colors'}} >
         <Tooltip title="Spectral Colors" placement="right">
-        <ToggleButton disabled={isColorBlindChecked} value="Spectral" aria-label="Spectral" onClick={() => {minPalette="#d53e4f";middlePalette="#ffffbf";maxPalette="#3288bd";textPalette='Spectral Colors'}} >
         <img src={Spectral} width="15" height="150"/>
-        </ToggleButton>
         </Tooltip>
+        </ToggleButton>
+        )}
+
+        <ToggleButton value="brbg" aria-label="BrBG" onClick={() => {minPalette="#8c510a";middlePalette="#f5f5f5";maxPalette="#01665e";textPalette='Brown-Blue-Green'}}>
         <Tooltip title="Brown-Blue-Green" placement="right">
-        <ToggleButton value="BrBG" aria-label="BrBG" onClick={() => {minPalette="#8c510a";middlePalette="#f5f5f5";maxPalette="#01665e";textPalette='Brown-Blue-Green'}}>
         <img src={BrBG} width="15" height="150"/>
-        </ToggleButton>
         </Tooltip>
+        </ToggleButton>
+        
+        {!isColorBlindChecked && (
+        <ToggleButton value="rdylgn" aria-label="RdYlGn" onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#1a9850";textPalette='Red-Yellow-Green'}}>
         <Tooltip title="Red-Yellow-Green" placement="right">
-        <ToggleButton disabled={isColorBlindChecked} value="RdYlGn" aria-label="RdYlGn" onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#1a9850";textPalette='Red-Yellow-Green'}}>
         <img src={RdYlGn} width="15" height="150"/>
-        </ToggleButton>
         </Tooltip>
+        </ToggleButton>
+        )}
+
+
+        <ToggleButton value="piyg" aria-label="PiYG" onClick={() => {minPalette="#c51b7d";middlePalette="#f7f7f7";maxPalette="#4d9221";textPalette='Magenta-Yellow-Green'}}>
         <Tooltip title="Magenta-Yellow-Green" placement="right">
-        <ToggleButton value="PiYG" aria-label="PiYG" onClick={() => {minPalette="#c51b7d";middlePalette="#f7f7f7";maxPalette="#4d9221";textPalette='Magenta-Yellow-Green'}}>
         <img src={PiYG} width="15" height="150"/>
-        </ToggleButton>
         </Tooltip>
+        </ToggleButton>
+
+        {!isColorBlindChecked && (
+        <ToggleButton value="rdgy" aria-label="RdGy" onClick={() => {minPalette="#b2182b";middlePalette="#ffffff";maxPalette="#4d4d4d";textPalette='Red-Grey'}}>
         <Tooltip title="Red-Grey" placement="right">
-        <ToggleButton disabled={isColorBlindChecked} value="RdGy" aria-label="RdGy" onClick={() => {minPalette="#b2182b";middlePalette="#ffffff";maxPalette="#4d4d4d";textPalette='Red-Grey'}}>
         <img src={RdGy} width="15" height="150"/>
-        </ToggleButton>
         </Tooltip>
+        </ToggleButton>
+        )}
+
+
+        <ToggleButton value="rdylbu" aria-label="RdYlBu"  onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#4575b4";textPalette='Red-Yellow-Blue'}}>
         <Tooltip title="Red-Yellow-Blue" placement="right">
-        <ToggleButton value="RdYlBu" aria-label="RdYlBu"  onClick={() => {minPalette="#d73027";middlePalette="#ffffbf";maxPalette="#4575b4";textPalette='Red-Yellow-Blue'}}>
         <img src={RdYlBu} width="15" height="150"/>
-        </ToggleButton>
         </Tooltip>
+        </ToggleButton>
       </ToggleButtonGroup>
+
       <Paper
         sx={{
           display: 'flex',
