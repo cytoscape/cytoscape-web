@@ -8,7 +8,12 @@ import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 
-export const ApplyLayoutButton = (): JSX.Element => {
+interface ApplyLayoutButtonProps {
+  targetNetworkId?: IdType
+}
+export const ApplyLayoutButton = ({
+  targetNetworkId,
+}: ApplyLayoutButtonProps): JSX.Element => {
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
   )
@@ -17,7 +22,11 @@ export const ApplyLayoutButton = (): JSX.Element => {
     (state) => state.workspace.currentNetworkId,
   )
 
-  const network: Network | undefined = networks.get(currentNetworkId)
+  // Use given network id if provided,
+  // otherwise use the current network as the target
+  const networkId: IdType = targetNetworkId ?? currentNetworkId
+
+  const network: Network | undefined = networks.get(networkId)
 
   const defaultLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredLayout,
@@ -41,7 +50,7 @@ export const ApplyLayoutButton = (): JSX.Element => {
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
-    updateNodePositions(currentNetworkId, positionMap)
+    updateNodePositions(networkId, positionMap)
     setIsRunning(false)
   }
 

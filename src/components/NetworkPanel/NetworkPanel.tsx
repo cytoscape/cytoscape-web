@@ -1,5 +1,4 @@
 import { Box } from '@mui/material'
-import { grey } from '@mui/material/colors'
 import { ReactElement } from 'react'
 import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
@@ -9,7 +8,14 @@ import { FloatingToolBar } from '../FloatingToolBar/FloatingToolBar'
 import { MessagePanel } from '../Messages'
 import { CyjsRenderer } from './CyjsRenderer'
 
-const NetworkPanel = (): ReactElement => {
+interface NetworkPanelProps {
+  networkId?: IdType
+}
+
+/**
+ * Main network renderer visualizing the current network
+ */
+const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -27,23 +33,11 @@ const NetworkPanel = (): ReactElement => {
     edges: [],
   }
 
+  if (targetNetwork.id === '') {
+    return <MessagePanel message="Preparing network data..." />
+  }
   return (
     <Box sx={{ height: '100%', width: '100%' }}>
-      {targetNetwork.id === '' ? (
-        <Box
-          sx={{
-            zIndex: 200,
-            background: grey[100],
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            height: '100%',
-            width: '100%',
-          }}
-        >
-          <MessagePanel message="Preparing network data..." />
-        </Box>
-      ) : null}
       <CyjsRenderer network={targetNetwork} />
       <FloatingToolBar />
     </Box>

@@ -83,14 +83,23 @@ export const SubNetworkPanel = ({
     }
   }, [isLoading])
 
+  if (isLoading) {
+    return (
+      <MessagePanel
+        message={`Loading network: ${queryNetworkId}`}
+        showProgress={true}
+      />
+    )
+  }
+
   if (queryNetwork === undefined) {
-    return <MessagePanel message={`Loading network ${queryNetworkId}`} />
+    return <MessagePanel message={`Select a subsystem`} />
   }
 
   return (
     <Box sx={{ height: '100%', width: '100%' }}>
       <CyjsRenderer network={queryNetwork} />
-      <FloatingToolBar />
+      <FloatingToolBar targetNetworkId={queryNetworkId ?? undefined} />
     </Box>
   )
 }

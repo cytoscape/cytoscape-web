@@ -141,7 +141,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       // Box selection listener
       cy.on(
         'boxselect select',
-        debounce((e: EventObject) => {
+        debounce((event: EventObject) => {
+          console.log('Selection event: ', event.target)
           const selectedNodes: IdType[] = []
           const selectedEdges: IdType[] = []
           cy.elements()

@@ -35,7 +35,7 @@ export const ViewerPanel = (): JSX.Element => {
     (state) => state.workspace.currentNetworkId,
   )
 
-  const { nodeTable } = useTableStore((state) => state.tables[currentNetworkId])
+  const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
   // View model is required to extract the selected nodes
   const networkViewModel: NetworkView = useViewModelStore(
@@ -58,6 +58,11 @@ export const ViewerPanel = (): JSX.Element => {
     }
     const summary: NdexNetworkSummary = networkSummary
     const networkProps: NdexNetworkProperty[] = summary.properties
+    if (networkProps === undefined || networkProps.length === 0) {
+      setIsHierarchy(false)
+      setMetadata(undefined)
+      return
+    }
 
     const networkPropObj: Record<string, ValueType> = networkProps.reduce<{
       [key: string]: ValueType
@@ -77,18 +82,21 @@ export const ViewerPanel = (): JSX.Element => {
     if (metadata !== undefined) {
       setIsHierarchy(true)
       setMetadata(metadata)
+    } else {
+      setIsHierarchy(false)
+      setMetadata(undefined)
     }
   }, [currentNetworkId])
 
   useEffect(() => {
-    console.log('!!!! Subsystem clicked', selectedNodes)
     // Pick the first selected node if multiple nodes are selected
     const selectedSubsystem: IdType = selectedNodes[0]
-    if (selectedSubsystem === undefined) {
+    if (selectedSubsystem === undefined || tableRecord === undefined) {
       return
     }
 
     const idString: string = selectedSubsystem.toString()
+    const { nodeTable } = tableRecord
     const rows = nodeTable.rows
 
     // Pick the table row for the selected subsystem and extract member list
@@ -104,7 +112,7 @@ export const ViewerPanel = (): JSX.Element => {
   }, [selectedNodes])
 
   if (!isHierarchy) {
-    return <MessagePanel message="Not a hierarchy" />
+    return <MessagePanel message="This network is not a hierarchy" />
   }
 
   if (selectedNodes.length === 0) {
