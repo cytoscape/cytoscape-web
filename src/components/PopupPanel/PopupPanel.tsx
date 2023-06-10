@@ -1,68 +1,62 @@
-import {
-  Box,
-  CardContent,
-  Typography,
-  CardActions,
-  Button,
-  Card,
-} from '@mui/material'
-import { ReactElement, useEffect, useState } from 'react'
+import { Card } from '@mui/material'
+import { ReactElement } from 'react'
+import { GraphObjectPropertyPanel } from './GraphObjectPropertyPanel'
+import { useViewModelStore } from '../../store/ViewModelStore'
+import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { useTableStore } from '../../store/TableStore'
+import { Table, ValueType } from '../../models/TableModel'
 
-const card = (
-  <>
-    <CardContent>
-      <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
-        Object Prop
-      </Typography>
-      <Typography sx={{ mb: 1.5 }} color="text.secondary">
-        adjective
-      </Typography>
-      <Typography variant="body2">
-        well meaning and kindly.
-        <br />
-        {'"a benevolent smile"'}
-      </Typography>
-    </CardContent>
-    <CardActions>
-      <Button size="small">Learn More</Button>
-    </CardActions>
-  </>
-)
+interface PopupPanelProps {
+  visible: boolean
+  position: [number, number]
+  setVisible: (visible: boolean) => void
+}
 
-export const PopupPanel = (): ReactElement => {
-  const [mousePos, setMousePos] = useState<any>({})
+export const PopupPanel = ({
+  visible,
+  position: [x, y],
+  setVisible,
+}: PopupPanelProps): ReactElement => {
+  const networkId: string = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
 
-  useEffect(() => {
-    const handleMouseClick = (event: MouseEvent): void => {
-      console.log(event)
-      setMousePos({ x: event.offsetX, y: event.offsetY })
-    }
+  const tables = useTableStore((state) => state.tables)
+  const nodeTable: Table = tables[networkId]?.nodeTable
 
-    window.addEventListener('click', handleMouseClick)
+  const { selectedNodes } =
+    useViewModelStore((state) => state.viewModels[networkId]) ?? {}
 
-    return () => {
-      window.removeEventListener('click', handleMouseClick)
-    }
-  }, [])
+  if (!visible || selectedNodes === undefined || selectedNodes.length === 0) {
+    return <></>
+  } else if (selectedNodes.length > 1) {
+    // This will be displayed only when single node is selected
+    return <></>
+  }
+
+  const selectedNodeId = selectedNodes[0]
+  const { rows } = nodeTable
+  const row: Record<string, ValueType> = rows.get(selectedNodeId) ?? {}
+
   return (
-    <Box
+    <Card
+      variant="outlined"
       sx={{
-        position: 'absolute',
-        alignItems: 'center',
-        top: mousePos.y,
-        left: mousePos.x,
-        zIndex: 2000,
+        position: 'fixed',
+        top: y,
+        left: x,
         borderRadius: '0.5em',
-        backgroundColor: 'rgba(250, 0, 0, 0.8)',
-        border: '1px solid #AAAAAA',
+        maxHeight: '20vh',
+        maxWidth: '20em',
+        overflow: 'auto',
+        padding: 0,
+      }}
+      onClick={(event) => {
+        event.stopPropagation()
+        setVisible(false)
       }}
     >
-      <Card variant="outlined">
-        <Typography sx={{ fontSize: 14 }} color="text.secondary">
-          {mousePos.x}, {mousePos.y}
-        </Typography>
-        {card}
-      </Card>
-    </Box>
+      <GraphObjectPropertyPanel row={row} />
+    </Card>
   )
 }

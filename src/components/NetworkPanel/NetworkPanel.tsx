@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { ReactElement } from 'react'
+import { ReactElement, useState } from 'react'
 import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -7,6 +7,7 @@ import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { FloatingToolBar } from '../FloatingToolBar/FloatingToolBar'
 import { MessagePanel } from '../Messages'
 import { CyjsRenderer } from './CyjsRenderer'
+import { PopupPanel } from '../PopupPanel'
 
 interface NetworkPanelProps {
   networkId?: IdType
@@ -16,6 +17,8 @@ interface NetworkPanelProps {
  * Main network renderer visualizing the current network
  */
 const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
+  const [visible, setVisible] = useState<boolean>(false)
+  const [position, setPosition] = useState<[number, number]>([0, 0])
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -36,10 +39,23 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   if (targetNetwork.id === '') {
     return <MessagePanel message="Preparing network data..." />
   }
+
+  const handleClick = (e: any): void => {
+    console.log('Parent EVENT--------', e)
+    setVisible(!visible)
+    setPosition([e.clientX, e.clientY])
+  }
+
+  const renderer: JSX.Element = <CyjsRenderer network={targetNetwork} />
   return (
-    <Box sx={{ height: '100%', width: '100%' }}>
-      <CyjsRenderer network={targetNetwork} />
+    <Box sx={{ height: '100%', width: '100%' }} onClick={handleClick}>
+      {renderer}
       <FloatingToolBar />
+      <PopupPanel
+        setVisible={setVisible}
+        visible={visible}
+        position={position}
+      />
     </Box>
   )
 }

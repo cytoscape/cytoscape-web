@@ -28,7 +28,6 @@ import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { SidePanel } from './SidePanel/SidePanel'
-import { PopupPanel } from '../PopupPanel'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -274,7 +273,6 @@ const WorkSpaceEditor = (): JSX.Element => {
             <Allotment.Pane>
               <Outlet />
               <NetworkPanel />
-              <PopupPanel />
             </Allotment.Pane>
           </Allotment>
           <Allotment.Pane minSize={28} preferredSize={150}>
