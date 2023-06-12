@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "test": "jest",
+    "test": "npm run test:playwright && npm run test:unit",
+    "test:unit": "jest",
+    "test:playwright": "npx playwright test --trace on",
     "build": "webpack --mode production",
     "build:netlify": "BUILD=netlify webpack --mode production",
     "dev": "webpack serve --open --mode development",
@@ -13,6 +15,7 @@
   "devDependencies": {
     "@faker-js/faker": "^7.6.0",
     "@mui/types": "^7.2.0",
+    "@playwright/test": "^1.34.3",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@types/chroma-js": "^2.1.4",
