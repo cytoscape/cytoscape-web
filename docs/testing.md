@@ -18,4 +18,6 @@ Automated testing for user-visibile behaviour using playwright found in the `tes
 Unit tests for models and stores found in the `unittest` directory
 
 - Model tests are standard jest tests
+   - https://jestjs.io/docs/getting-started
 - Store tests use the testing library package to test the store hooks
+   - https://github.com/testing-library/react-hooks-testing-library#example
