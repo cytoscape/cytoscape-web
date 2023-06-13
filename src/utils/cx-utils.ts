@@ -1,5 +1,5 @@
 import { Cx2 } from '../models/CxModel/Cx2'
-import NetworkFn, { Network } from '../models/NetworkModel'
+import NetworkFn, { Network, NetworkAttributes } from '../models/NetworkModel'
 import TableFn, { Table } from '../models/TableModel'
 import ViewModelFn, { NetworkView } from '../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../models/VisualStyleModel'
@@ -21,6 +21,7 @@ import { CachedData } from './CachedData'
  */
 export interface NetworkWithView {
   network: Network
+  networkAttributes?: NetworkAttributes
   nodeTable: Table
   edgeTable: Table
   visualStyle: VisualStyle

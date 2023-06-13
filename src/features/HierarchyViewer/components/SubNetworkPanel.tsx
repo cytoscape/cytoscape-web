@@ -14,6 +14,9 @@ import { Query } from './ViewerPanel'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
+import { createDummySummary } from '../utils/hierarcy-util'
+import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
+import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 
 interface SubNetworkPanelProps {
   // The network id of the _*ROOT*_ interaction network
@@ -53,6 +56,9 @@ export const SubNetworkPanel = ({
     (state) => state.networks,
   )
 
+  const addSummary: (networkId: IdType, summary: NdexNetworkSummary) => void =
+    useNetworkSummaryStore((state) => state.add)
+
   // The query network to be rendered
   const queryNetwork: Network | undefined = networks.get(queryNetworkId)
 
@@ -73,7 +79,15 @@ export const SubNetworkPanel = ({
       const { network, nodeTable, edgeTable, visualStyle, networkView } = data
       const newUuid: string = network.id
 
-      console.log('### cxData is ready', data, error, query)
+      // Create Dummy summary
+      // TODO: Create actual network summary instead
+      const summary: NdexNetworkSummary = createDummySummary(
+        newUuid,
+        'Subsystem: ' + subsystemNodeId,
+        network.nodes.length,
+        network.edges.length,
+      )
+      addSummary(newUuid, summary)
       // Register objects to the stores.
       addNewNetwork(network)
       addVisualStyle(newUuid, visualStyle)

@@ -3,7 +3,10 @@ import { IdType } from '../IdType'
 export interface Workspace {
   id: IdType // UUID of the workspace. Who generates this?
   currentNetworkId: IdType // UUID of the selected network in the workspace
-  // visibleNetworks: IdType[]
+  
+  // Renderer name to associated network id
+  renderers: Record<string, IdType>
+  
   name: string // Human readable name of the workspace
   networkIds: IdType[]
   localModificationTime: Date

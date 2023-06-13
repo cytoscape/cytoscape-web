@@ -63,14 +63,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const [nodesMoved, setNodesMoved] = useState<boolean>(false)
 
   const networkView: NetworkView = viewModels[id]
-
   const vs: VisualStyle = visualStyles[id]
-
-  // Extract background color from visual style as a special case
-  // let bgColor: string =
-  //   vs?.networkBackgroundColor !== undefined
-  //     ? (vs.networkBackgroundColor.defaultValue as string)
-  //     : '#FFFFFF'
 
   const [bgColor, setBgColor] = useState<string>('#FFFFFF')
   useEffect(() => {

@@ -58,6 +58,8 @@ const WorkSpaceEditor = (): JSX.Element => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+
+  // const [primaryNetworkId, setPrimaryNetworkId] = useState<IdType>()
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
@@ -272,7 +274,7 @@ const WorkSpaceEditor = (): JSX.Element => {
             </Allotment.Pane>
             <Allotment.Pane>
               <Outlet />
-              <NetworkPanel />
+              <NetworkPanel networkId={currentNetworkId}/>
             </Allotment.Pane>
           </Allotment>
           <Allotment.Pane minSize={28} preferredSize={150}>

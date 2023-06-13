@@ -3,14 +3,13 @@ import { ReactElement, useState } from 'react'
 import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
-import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { FloatingToolBar } from '../FloatingToolBar/FloatingToolBar'
 import { MessagePanel } from '../Messages'
 import { CyjsRenderer } from './CyjsRenderer'
 import { PopupPanel } from '../PopupPanel'
 
 interface NetworkPanelProps {
-  networkId?: IdType
+  networkId: IdType
 }
 
 /**
@@ -19,9 +18,10 @@ interface NetworkPanelProps {
 const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const [visible, setVisible] = useState<boolean>(false)
   const [position, setPosition] = useState<[number, number]>([0, 0])
-  const currentNetworkId: IdType = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
+  // const currentNetworkId: IdType = useWorkspaceStore(
+  //   (state) => state.workspace.currentNetworkId,
+  // )
+
   const networks: Map<IdType, Network> = useNetworkStore(
     (state) => state.networks,
   )
@@ -30,7 +30,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
     return <MessagePanel message="No network selected" />
   }
 
-  const targetNetwork: Network = networks.get(currentNetworkId) ?? {
+  const targetNetwork: Network = networks.get(networkId) ?? {
     id: '', // an empty network
     nodes: [],
     edges: [],
@@ -41,7 +41,6 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   }
 
   const handleClick = (e: any): void => {
-    console.log('Parent EVENT--------', e)
     setVisible(!visible)
     setPosition([e.clientX, e.clientY])
   }

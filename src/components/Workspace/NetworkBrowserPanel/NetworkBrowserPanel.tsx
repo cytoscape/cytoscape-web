@@ -79,7 +79,7 @@ export const NetworkBrowserPanel = ({
           <Box>
             {' '}
             <VizmapperView
-              currentNetworkId={currentNetworkId}
+              networkId={currentNetworkId}
               height={allotmentDimensions[0]}
             />
           </Box>

@@ -1,3 +1,5 @@
+import { Visibility } from '../../../models/CxModel/NetworkSummary/Visibility'
+import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { HcxMetaTag } from '../model/HcxMetaTag'
 
@@ -22,4 +24,39 @@ export const getHcxProps = (
   }
 
   return undefined
+}
+
+export const createDummySummary = (
+  uuid: string, name: string, nodeCount: number, edgeCount: number)
+    : NdexNetworkSummary => {
+  const time: Date = new Date(Date.now())
+  const summary: NdexNetworkSummary = {
+    ownerUUID: '',
+    isReadOnly: false,
+    subnetworkIds: [],
+    isValid: true,
+    warnings: [],
+    isShowcase: false,
+    isCertified: false,
+    indexLevel: 'NONE',
+    hasLayout: true,
+    hasSample: false,
+    cxFileSize: 0,
+    cx2FileSize: 0,
+    name,
+    properties: [],
+    owner: '',
+    version: '',
+    completed: false,
+    visibility: Visibility.PRIVATE,
+    nodeCount: 0,
+    edgeCount: 0,
+    description: '',
+    creationTime: time,
+    externalId: uuid,
+    isDeleted: false,
+    modificationTime: time
+  }
+  return summary
+
 }

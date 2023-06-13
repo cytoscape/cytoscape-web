@@ -40,7 +40,12 @@ export const ndexQueryFetcher = async (
         query,
         true,
       )
-      return await createDataFromCx(subsystemId, cx2QueryResult)
+      const withView: NetworkWithView = await createDataFromCx(
+        subsystemId,
+        cx2QueryResult,
+      )
+
+      return withView
     } else {
       return {
         network: cache.network,
