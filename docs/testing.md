@@ -2,7 +2,7 @@
 
 ## Playwright
 
-Automated testing for user-visibile behaviour using playwright
+Automated testing for user-visibile behaviour using playwright found in the `test` directory
 
 1. Generate automated test cases using the playwright test generator:
    - https://playwright.dev/docs/codegen-intro
@@ -14,3 +14,8 @@ Automated testing for user-visibile behaviour using playwright
    - `npx show-report
 
 ## Unit testing
+
+Unit tests for models and stores found in the `unittest` directory
+
+- Model tests are standard jest tests
+- Store tests use the testing library package to test the store hooks
