@@ -8,6 +8,7 @@ import { IdType } from '../../../models/IdType'
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
+import { useUiStateStore } from '../../../store/UiStateStore'
 
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
@@ -22,10 +23,14 @@ interface NetworkBrowserProps {
 export const NetworkBrowserPanel = ({
   allotmentDimensions,
 }: NetworkBrowserProps): JSX.Element => {
-  const currentNetworkId: IdType = useWorkspaceStore(
+  const curId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
-  const renderers = useWorkspaceStore((state) => state.workspace.renderers)
+  const activeNetworkViewId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+
+  const targetNetworkId: IdType = activeNetworkViewId ?? curId
 
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
@@ -80,7 +85,7 @@ export const NetworkBrowserPanel = ({
           <Box>
             {' '}
             <VizmapperView
-              networkId={renderers.secondary !== undefined ? renderers.secondary : currentNetworkId}
+              networkId={targetNetworkId}
               height={allotmentDimensions[0]}
             />
           </Box>

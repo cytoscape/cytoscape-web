@@ -51,6 +51,8 @@ const EMPTY_WORKSPACE: Workspace = {
 
 type WorkspaceStore = WorkspaceState & WorkspaceActions
 
+let isUpdating = false
+
 const persist =
   (config: StateCreator<WorkspaceStore>) =>
   (
@@ -60,7 +62,11 @@ const persist =
   ) =>
     config(
       async (args) => {
-        console.log('persist middleware updating workspace store')
+        // Blocking too frequent updates
+        if (isUpdating) {
+          return
+        }
+        isUpdating = true
         set(args)
         const updated = get().workspace
         console.log('updated workspace: ', updated)
@@ -68,7 +74,10 @@ const persist =
         const deleted = updated === undefined
 
         if (!deleted) {
-          await putWorkspaceToDb(updated).then(() => {})
+          await putWorkspaceToDb(updated)
+          setTimeout(() => {
+            isUpdating = false
+          }, 5000)
         }
       },
       get,
@@ -107,7 +116,7 @@ export const useWorkspaceStore = create(
             return state
           })
         },
-        
+
         deleteRenderer: (rendererId: string) => {
           set((state) => {
             const renderers: Record<string, IdType> = state.workspace.renderers

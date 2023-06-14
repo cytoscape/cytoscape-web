@@ -18,6 +18,7 @@ import { createDummySummary } from '../utils/hierarcy-util'
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
+import { useUiStateStore } from '../../../store/UiStateStore'
 
 interface SubNetworkPanelProps {
   // The network id of the _*ROOT*_ interaction network
@@ -39,6 +40,9 @@ export const SubNetworkPanel = ({
   subsystemNodeId,
   query,
 }: SubNetworkPanelProps): ReactElement => {
+  const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
+    (state) => state.setActiveNetworkView,
+  )
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const { data, error, isLoading } = useSWR<NetworkWithView>(
     [ndexBaseUrl, rootNetworkId, subsystemNodeId, query],
@@ -70,6 +74,16 @@ export const SubNetworkPanel = ({
   const addTable = useTableStore((state) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
 
+  const handleClick = (e: any): void => {
+    if (queryNetworkId !== undefined) {
+      console.log(
+        '### Setting active network view to Second view',
+        queryNetworkId,
+      )
+      setActiveNetworkView(queryNetworkId)
+    }
+  }
+
   useEffect(() => {
     // Fetch the network data when new subsystem node is selected
     console.log('### isLoading updated', isLoading, data)
@@ -81,7 +95,7 @@ export const SubNetworkPanel = ({
     if (!isLoading && data !== undefined && error === undefined) {
       const { network, nodeTable, edgeTable, visualStyle, networkView } = data
       const newUuid: string = network.id.toString()
-      const {nodes, edges} = network
+      const { nodes, edges } = network
 
       console.log('### Adding new network', newUuid, nodes.length, edges.length)
 
@@ -120,7 +134,7 @@ export const SubNetworkPanel = ({
   }
 
   return (
-    <Box sx={{ height: '100%', width: '100%' }}>
+    <Box sx={{ height: '100%', width: '100%' }} onClick={handleClick}>
       <CyjsRenderer network={queryNetwork} />
       <FloatingToolBar targetNetworkId={queryNetworkId ?? undefined} />
     </Box>
