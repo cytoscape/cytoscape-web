@@ -25,6 +25,7 @@ export const NetworkBrowserPanel = ({
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const renderers = useWorkspaceStore((state) => state.workspace.renderers)
 
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
@@ -79,7 +80,7 @@ export const NetworkBrowserPanel = ({
           <Box>
             {' '}
             <VizmapperView
-              networkId={currentNetworkId}
+              networkId={renderers.secondary !== undefined ? renderers.secondary : currentNetworkId}
               height={allotmentDimensions[0]}
             />
           </Box>

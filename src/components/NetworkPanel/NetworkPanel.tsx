@@ -7,6 +7,7 @@ import { FloatingToolBar } from '../FloatingToolBar/FloatingToolBar'
 import { MessagePanel } from '../Messages'
 import { CyjsRenderer } from './CyjsRenderer'
 import { PopupPanel } from '../PopupPanel'
+import { useWorkspaceStore } from '../../store/WorkspaceStore'
 
 interface NetworkPanelProps {
   networkId: IdType
@@ -21,6 +22,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   // const currentNetworkId: IdType = useWorkspaceStore(
   //   (state) => state.workspace.currentNetworkId,
   // )
+  const addRenderer = useWorkspaceStore((state) => state.addRenderer)
 
   const networks: Map<IdType, Network> = useNetworkStore(
     (state) => state.networks,
@@ -46,6 +48,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   }
 
   const renderer: JSX.Element = <CyjsRenderer network={targetNetwork} />
+  addRenderer('main', networkId)
   return (
     <Box sx={{ height: '100%', width: '100%' }} onClick={handleClick}>
       {renderer}

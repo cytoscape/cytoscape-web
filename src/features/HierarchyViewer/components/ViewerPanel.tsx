@@ -18,6 +18,8 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
 
+
+export const RENDERER_TAG: string = 'secondary'
 export interface Query {
   nodeIds: number[]
 }
@@ -34,6 +36,8 @@ export const ViewerPanel = (): JSX.Element => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+
+  const deleteRenderer: (rendererId: string) => void = useWorkspaceStore((state) => state.deleteRenderer)
 
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
@@ -61,6 +65,7 @@ export const ViewerPanel = (): JSX.Element => {
     if (networkProps === undefined || networkProps.length === 0) {
       setIsHierarchy(false)
       setMetadata(undefined)
+      deleteRenderer(RENDERER_TAG)
       return
     }
 
@@ -71,13 +76,6 @@ export const ViewerPanel = (): JSX.Element => {
       return acc
     }, {})
     const metadata: HcxMetaData | undefined = getHcxProps(networkPropObj)
-    console.log(
-      '### Hierarchical network detected',
-      currentNetworkId,
-      summary,
-      isHierarchy,
-      metadata,
-    )
 
     if (metadata !== undefined) {
       setIsHierarchy(true)
@@ -85,6 +83,7 @@ export const ViewerPanel = (): JSX.Element => {
     } else {
       setIsHierarchy(false)
       setMetadata(undefined)
+      deleteRenderer(RENDERER_TAG)
     }
   }, [currentNetworkId])
 
@@ -119,8 +118,12 @@ export const ViewerPanel = (): JSX.Element => {
     return <MessagePanel message="Please select a subsystem" />
   }
 
+
+  const handleFocus = (e: any): void => {
+    console.log('### ViewerPanel focused', e)
+  }
   return (
-    <Box sx={{ width: '100%', height: '100%' }}>
+    <Box sx={{ width: '100%', height: '100%' }} onClick={handleFocus}>
       <Allotment vertical minSize={100}>
         <Allotment.Pane>
           <SubNetworkPanel

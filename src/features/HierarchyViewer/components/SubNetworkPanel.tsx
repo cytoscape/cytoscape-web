@@ -17,6 +17,7 @@ import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { createDummySummary } from '../utils/hierarcy-util'
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
+import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 
 interface SubNetworkPanelProps {
   // The network id of the _*ROOT*_ interaction network
@@ -56,6 +57,8 @@ export const SubNetworkPanel = ({
     (state) => state.networks,
   )
 
+  const addRenderer = useWorkspaceStore((state) => state.addRenderer)
+
   const addSummary: (networkId: IdType, summary: NdexNetworkSummary) => void =
     useNetworkSummaryStore((state) => state.add)
 
@@ -77,15 +80,18 @@ export const SubNetworkPanel = ({
 
     if (!isLoading && data !== undefined && error === undefined) {
       const { network, nodeTable, edgeTable, visualStyle, networkView } = data
-      const newUuid: string = network.id
+      const newUuid: string = network.id.toString()
+      const {nodes, edges} = network
+
+      console.log('### Adding new network', newUuid, nodes.length, edges.length)
 
       // Create Dummy summary
       // TODO: Create actual network summary instead
       const summary: NdexNetworkSummary = createDummySummary(
         newUuid,
         'Subsystem: ' + subsystemNodeId,
-        network.nodes.length,
-        network.edges.length,
+        nodes.length,
+        edges.length,
       )
       addSummary(newUuid, summary)
       // Register objects to the stores.
@@ -94,6 +100,9 @@ export const SubNetworkPanel = ({
       addTable(newUuid, nodeTable, edgeTable)
       addViewModel(newUuid, networkView)
       setQueryNetworkId(newUuid)
+
+      // Ad as the secondary renderer
+      addRenderer('secondary', newUuid)
     }
   }, [isLoading])
 
