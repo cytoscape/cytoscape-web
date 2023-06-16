@@ -7,7 +7,6 @@ import { FloatingToolBar } from '../FloatingToolBar/FloatingToolBar'
 import { MessagePanel } from '../Messages'
 import { CyjsRenderer } from './CyjsRenderer'
 import { PopupPanel } from '../PopupPanel'
-import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useUiStateStore } from '../../store/UiStateStore'
 
 interface NetworkPanelProps {
@@ -21,9 +20,9 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+
   const [visible, setVisible] = useState<boolean>(false)
   const [position, setPosition] = useState<[number, number]>([0, 0])
-  const addRenderer = useWorkspaceStore((state) => state.addRenderer)
 
   const networks: Map<IdType, Network> = useNetworkStore(
     (state) => state.networks,
@@ -46,19 +45,17 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const handleClick = (e: any): void => {
     setVisible(!visible)
     setPosition([e.clientX, e.clientY])
-    console.log('## Active network switched ---------', networkId)
     setActiveNetworkView(networkId)
   }
 
-  const handleFocus = (e: any): void => {}
-
   const renderer: JSX.Element = <CyjsRenderer network={targetNetwork} />
-  addRenderer('main', networkId)
   return (
     <Box
-      sx={{ height: '100%', width: '100%' }}
+      sx={{
+        height: '100%',
+        width: '100%',
+      }}
       onClick={handleClick}
-      onFocus={handleFocus}
     >
       {renderer}
       <FloatingToolBar />

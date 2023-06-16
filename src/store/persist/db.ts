@@ -234,7 +234,6 @@ const createWorkspace = (): Workspace => {
     id: uuidv4(),
     name: DEF_WORKSPACE_NAME,
     networkIds: [],
-    renderers: {},
     networkModified: {},
     creationTime: new Date(),
     localModificationTime: new Date(),

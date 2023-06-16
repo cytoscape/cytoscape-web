@@ -11,6 +11,7 @@ interface UiState {
 
 interface UiStateAction {
   setActiveNetworkView: (id: IdType) => void
+  setPanelState: (panel: Panel, state: PanelState) => void
 }
 
 type UiStateStore = UiState & UiStateAction
@@ -27,6 +28,11 @@ export const useUiStateStore = create(
     setActiveNetworkView: (id: IdType) => {
       set((state) => {
         state.ui.activeNetworkView = id
+      })
+    },
+    setPanelState: (panel: Panel, panelState: PanelState) => {
+      set((state) => {
+        state.ui.panels[panel] = panelState
       })
     },
   })),

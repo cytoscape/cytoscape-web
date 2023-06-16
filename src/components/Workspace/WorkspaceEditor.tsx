@@ -28,6 +28,10 @@ import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { SidePanel } from './SidePanel/SidePanel'
+import { useUiStateStore } from '../../store/UiStateStore'
+import { Ui } from '../../models/UiModel'
+import { PanelState } from '../../models/UiModel/PanelState'
+import { Panel } from '../../models/UiModel/Panel'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -38,9 +42,6 @@ const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
  */
 const WorkSpaceEditor = (): JSX.Element => {
   useWorkspaceManager()
-
-  // Open / close side panel for extra UI components
-  const [openSidePanel, setOpenSidePanel] = useState<boolean>(false)
 
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -59,7 +60,12 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.workspace.currentNetworkId,
   )
 
-  // const [primaryNetworkId, setPrimaryNetworkId] = useState<IdType>()
+  const ui: Ui = useUiStateStore((state) => state.ui)
+  const { panels } = ui
+
+  const setPanelState: (panel: string, state: PanelState) => void =
+    useUiStateStore((state) => state.setPanelState)
+
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
@@ -77,6 +83,9 @@ const WorkSpaceEditor = (): JSX.Element => {
   useViewModelStore.subscribe(
     (state) => state.viewModels[currentNetworkId],
     (prev: NetworkView, next: NetworkView) => {
+      if (prev === undefined || next === undefined) {
+        return
+      }
       const viewModelChanged =
         prev !== undefined &&
         next !== undefined &&
@@ -274,7 +283,7 @@ const WorkSpaceEditor = (): JSX.Element => {
             </Allotment.Pane>
             <Allotment.Pane>
               <Outlet />
-              <NetworkPanel networkId={currentNetworkId}/>
+              <NetworkPanel networkId={currentNetworkId} />
             </Allotment.Pane>
           </Allotment>
           <Allotment.Pane minSize={28} preferredSize={150}>
@@ -290,7 +299,7 @@ const WorkSpaceEditor = (): JSX.Element => {
             </Suspense>
           </Allotment.Pane>
         </Allotment>
-        {openSidePanel ? (
+        {panels.right === PanelState.OPEN ? (
           <Box sx={{ height: '100%', width: '100%' }}>
             <Tooltip title="Close side">
               <ChevronRightIcon
@@ -301,7 +310,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                   left: '5px',
                   border: '1px solid #999999',
                 }}
-                onClick={() => setOpenSidePanel(!openSidePanel)}
+                onClick={() => setPanelState(Panel.RIGHT, PanelState.CLOSED)}
               />
             </Tooltip>
             <SidePanel />
@@ -309,7 +318,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         ) : null}
       </Allotment>
       <SnackbarMessageList />
-      {openSidePanel ? null : (
+      {panels.right === PanelState.OPEN ? null : (
         <Tooltip title="Open side panel">
           <ChevronLeftIcon
             sx={{
@@ -318,7 +327,7 @@ const WorkSpaceEditor = (): JSX.Element => {
               right: '5px',
               border: '1px solid #999999',
             }}
-            onClick={() => setOpenSidePanel(!openSidePanel)}
+            onClick={() => setPanelState(Panel.RIGHT, PanelState.OPEN)}
           />
         </Tooltip>
       )}

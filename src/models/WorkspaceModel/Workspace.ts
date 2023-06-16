@@ -10,14 +10,8 @@ export interface Workspace {
   // Network IDs visible to users (networks in the workspace)
   networkIds: IdType[]
 
-  // Renderer name to associated network id
-  renderers: Record<string, IdType>
-
   localModificationTime: Date
   creationTime: Date // Optional?
   networkModified: Record<IdType, boolean> // Network is edited locally or not
   options?: any // ???
 }
-
-// The main view will be named 'primary'
-export const PRIMARY_RENDERER: string = 'primary'

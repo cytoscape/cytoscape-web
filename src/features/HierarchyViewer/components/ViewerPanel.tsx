@@ -18,7 +18,6 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
 
-
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
   nodeIds: number[]
@@ -36,8 +35,6 @@ export const ViewerPanel = (): JSX.Element => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
-
-  const deleteRenderer: (rendererId: string) => void = useWorkspaceStore((state) => state.deleteRenderer)
 
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
@@ -65,7 +62,6 @@ export const ViewerPanel = (): JSX.Element => {
     if (networkProps === undefined || networkProps.length === 0) {
       setIsHierarchy(false)
       setMetadata(undefined)
-      deleteRenderer(RENDERER_TAG)
       return
     }
 
@@ -83,7 +79,6 @@ export const ViewerPanel = (): JSX.Element => {
     } else {
       setIsHierarchy(false)
       setMetadata(undefined)
-      deleteRenderer(RENDERER_TAG)
     }
   }, [currentNetworkId])
 
@@ -117,7 +112,6 @@ export const ViewerPanel = (): JSX.Element => {
   if (selectedNodes.length === 0) {
     return <MessagePanel message="Please select a subsystem" />
   }
-
 
   const handleFocus = (e: any): void => {
     console.log('### ViewerPanel focused', e)

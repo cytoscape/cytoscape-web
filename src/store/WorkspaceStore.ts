@@ -17,11 +17,6 @@ interface WorkspaceActions {
   setName: (name: string) => void
   setCurrentNetworkId: (id: IdType) => void
 
-  // Record rendered networks in the current workspace
-  // Primary (main) view is always the first network in the list (index 0)
-  addRenderer: (rendererId: string, id: IdType) => void
-  deleteRenderer: (rendererId: string) => void
-
   addNetworkIds: (ids: IdType | IdType[]) => void
 
   // Delete functions just remove networks from the workspace, but not from the database
@@ -42,7 +37,6 @@ const EMPTY_WORKSPACE: Workspace = {
   id: '',
   name: '',
   networkIds: [],
-  renderers: {},
   networkModified: {},
   creationTime: new Date(),
   localModificationTime: new Date(),
@@ -107,25 +101,6 @@ export const useWorkspaceStore = create(
             return state
           })
         },
-
-        addRenderer: (rendererId: string, id: IdType) => {
-          set((state) => {
-            const renderers: Record<string, IdType> = state.workspace.renderers
-            renderers[rendererId] = id
-            state.workspace.renderers = renderers
-            return state
-          })
-        },
-
-        deleteRenderer: (rendererId: string) => {
-          set((state) => {
-            const renderers: Record<string, IdType> = state.workspace.renderers
-            delete renderers[rendererId]
-            state.workspace.renderers = renderers
-            return state
-          })
-        },
-
         setName: (name: string) => {
           set((state) => {
             state.workspace.name = name

@@ -17,8 +17,8 @@ import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { createDummySummary } from '../utils/hierarcy-util'
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
+import { blue } from '@mui/material/colors'
 
 interface SubNetworkPanelProps {
   // The network id of the _*ROOT*_ interaction network
@@ -43,6 +43,10 @@ export const SubNetworkPanel = ({
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const { data, error, isLoading } = useSWR<NetworkWithView>(
     [ndexBaseUrl, rootNetworkId, subsystemNodeId, query],
@@ -60,8 +64,6 @@ export const SubNetworkPanel = ({
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
   )
-
-  const addRenderer = useWorkspaceStore((state) => state.addRenderer)
 
   const addSummary: (networkId: IdType, summary: NdexNetworkSummary) => void =
     useNetworkSummaryStore((state) => state.add)
@@ -114,9 +116,6 @@ export const SubNetworkPanel = ({
       addTable(newUuid, nodeTable, edgeTable)
       addViewModel(newUuid, networkView)
       setQueryNetworkId(newUuid)
-
-      // Ad as the secondary renderer
-      addRenderer('secondary', newUuid)
     }
   }, [isLoading])
 
@@ -134,7 +133,17 @@ export const SubNetworkPanel = ({
   }
 
   return (
-    <Box sx={{ height: '100%', width: '100%' }} onClick={handleClick}>
+    <Box
+      sx={{
+        height: '100%',
+        width: '100%',
+        border:
+          queryNetworkId === activeNetworkId
+            ? `4px solid ${blue[300]}`
+            : 'none',
+      }}
+      onClick={handleClick}
+    >
       <CyjsRenderer network={queryNetwork} />
       <FloatingToolBar targetNetworkId={queryNetworkId ?? undefined} />
     </Box>
