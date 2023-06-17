@@ -22,7 +22,6 @@ export const ndexQueryFetcher = async (
   const ndexClient = getNdexClient(url, accessToken)
 
   try {
-    
     // First, check the local cache
     const cache: CachedData = await getCachedData(subsystemId)
 

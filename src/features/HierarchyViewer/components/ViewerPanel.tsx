@@ -100,7 +100,6 @@ export const ViewerPanel = (): JSX.Element => {
     }
 
     const memberIds = row[SubsystemTag.members]
-    console.log('Selected Row', row, memberIds)
     const newQuery: Query = { nodeIds: memberIds as number[] }
     setQuery(newQuery)
   }, [selectedNodes])

@@ -57,14 +57,18 @@ const persist =
   ) =>
     config(
       async (args) => {
+        const last = get()
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
-        // console.log('persist middleware updating view model store', args)
         set(args)
         const updated = get().viewModels[currentNetworkId]
         const deleted: boolean = updated === undefined
-
-        if (!deleted) {
+        const lastModel = last.viewModels[currentNetworkId]
+        if (
+          !deleted &&
+          lastModel !== undefined &&
+          lastModel.hoveredElement === updated.hoveredElement
+        ) {
           void putNetworkViewToDb(currentNetworkId, updated).then(() => {})
         }
       },

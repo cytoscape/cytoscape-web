@@ -136,6 +136,8 @@ const nodeViewBuilder = (
   while (idx--) {
     const node = nodes[idx]
     const nodeId = node.id
+    const nodeView: NodeView | undefined =
+      nodeViews !== undefined ? nodeViews[nodeId] : undefined
     const nv: NodeView = {
       id: nodeId,
       values: computeView(
@@ -145,8 +147,8 @@ const nodeViewBuilder = (
         nodeTable.rows.get(nodeId) ?? {},
         columns,
       ),
-      x: nodeViews !== undefined ? nodeViews[nodeId].x : 0,
-      y: nodeViews !== undefined ? nodeViews[nodeId].y : 0,
+      x: nodeView !== undefined ? nodeView.x : 0,
+      y: nodeView !== undefined ? nodeView.y : 0,
     }
     result[nv.id] = nv
   }

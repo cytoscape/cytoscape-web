@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { ReactElement, useContext, useEffect, useState } from 'react'
+import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
 import { FloatingToolBar } from '../../../components/FloatingToolBar'
 import { MessagePanel } from '../../../components/Messages'
 import { CyjsRenderer } from '../../../components/NetworkPanel/CyjsRenderer'
@@ -12,13 +12,16 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { NetworkWithView } from '../../../utils/cx-utils'
 import { Query } from './ViewerPanel'
 import { useNetworkStore } from '../../../store/NetworkStore'
-import { useTableStore } from '../../../store/TableStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { createDummySummary } from '../utils/hierarcy-util'
-import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { blue } from '@mui/material/colors'
+import {
+  putNetworkViewToDb,
+  putVisualStyleToDb,
+} from '../../../store/persist/db'
+import { VisualStyle } from '../../../models/VisualStyleModel'
+import { NetworkView } from '../../../models/ViewModel'
+import { useTableStore } from '../../../store/TableStore'
 
 interface SubNetworkPanelProps {
   // The network id of the _*ROOT*_ interaction network
@@ -40,12 +43,25 @@ export const SubNetworkPanel = ({
   subsystemNodeId,
   query,
 }: SubNetworkPanelProps): ReactElement => {
+  const addNewNetwork = useNetworkStore((state) => state.add)
+  const addVisualStyle = useVisualStyleStore((state) => state.add)
+  const addTable = useTableStore((state) => state.add)
+  const addViewModel = useViewModelStore((state) => state.add)
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
+
+  const viewModels: Record<string, NetworkView> = useViewModelStore(
+    (state) => state.viewModels,
+  )
+  const vs: Record<string, VisualStyle> = useVisualStyleStore(
+    (state) => state.visualStyles,
+  )
+
+  const prevQueryNetworkIdRef = useRef<string>()
 
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const { data, error, isLoading } = useSWR<NetworkWithView>(
@@ -65,56 +81,50 @@ export const SubNetworkPanel = ({
     (state) => state.networks,
   )
 
-  const addSummary: (networkId: IdType, summary: NdexNetworkSummary) => void =
-    useNetworkSummaryStore((state) => state.add)
-
   // The query network to be rendered
   const queryNetwork: Network | undefined = networks.get(queryNetworkId)
 
-  const addNewNetwork = useNetworkStore((state) => state.add)
-  const addVisualStyle = useVisualStyleStore((state) => state.add)
-  const addTable = useTableStore((state) => state.add)
-  const addViewModel = useViewModelStore((state) => state.add)
-
   const handleClick = (e: any): void => {
     if (queryNetworkId !== undefined) {
-      console.log(
-        '### Setting active network view to Second view',
-        queryNetworkId,
-      )
       setActiveNetworkView(queryNetworkId)
     }
   }
+  useEffect(() => {
+    const viewModel: NetworkView | undefined = viewModels[queryNetworkId]
+    if (viewModel === undefined) {
+      return
+    }
+    void saveLastQueryNetworkId(queryNetworkId).then(() => {
+      console.log('@@@@@@@@@@@@ Q rendering', queryNetworkId)
+      prevQueryNetworkIdRef.current = queryNetworkId
+    })
+  }, [viewModels[queryNetworkId]])
+
+  const saveLastQueryNetworkId = async (id: string): Promise<void> => {
+    // const network: Network | undefined = networks.get(id)
+    const visualStyle: VisualStyle | undefined = vs[id]
+    await putVisualStyleToDb(id, visualStyle)
+
+    const viewModel: NetworkView | undefined = viewModels[id]
+    await putNetworkViewToDb(id, viewModel)
+  }
 
   useEffect(() => {
-    // Fetch the network data when new subsystem node is selected
-    console.log('### isLoading updated', isLoading, data)
-
     if (isLoading) {
       return
     }
 
     if (!isLoading && data !== undefined && error === undefined) {
-      const { network, nodeTable, edgeTable, visualStyle, networkView } = data
+      const { network, visualStyle, nodeTable, edgeTable, networkView } = data
       const newUuid: string = network.id.toString()
-      const { nodes, edges } = network
 
-      console.log('### Adding new network', newUuid, nodes.length, edges.length)
-
-      // Create Dummy summary
-      // TODO: Create actual network summary instead
-      const summary: NdexNetworkSummary = createDummySummary(
-        newUuid,
-        'Subsystem: ' + subsystemNodeId,
-        nodes.length,
-        edges.length,
-      )
-      addSummary(newUuid, summary)
       // Register objects to the stores.
-      addNewNetwork(network)
-      addVisualStyle(newUuid, visualStyle)
-      addTable(newUuid, nodeTable, edgeTable)
-      addViewModel(newUuid, networkView)
+      if (networks.get(newUuid) === undefined) {
+        addNewNetwork(network)
+        addVisualStyle(newUuid, visualStyle)
+        addTable(newUuid, nodeTable, edgeTable)
+        addViewModel(newUuid, networkView)
+      }
       setQueryNetworkId(newUuid)
     }
   }, [isLoading])

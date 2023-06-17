@@ -11,18 +11,18 @@ interface GraphObjectPropertyPanelProps {
 export const GraphObjectPropertyPanel = ({
   row,
 }: GraphObjectPropertyPanelProps): JSX.Element => {
-  const keys: string[] = Object.keys(row)
+  // const keys: string[] = Object.keys(row)
   const name: ValueType = row.name ?? '?'
 
   return (
     <CardContent>
       <Typography variant="h6">Subsystem: {name}</Typography>
       <Typography variant="body2">
-        {keys.map((key) => (
+        {/* {keys.map((key) => (
           <div key={key}>
             {key}: {row[key]}
           </div>
-        ))}
+        ))} */}
       </Typography>
     </CardContent>
   )

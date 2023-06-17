@@ -1,7 +1,7 @@
 import { Suspense, lazy, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
-import { Box, Tooltip } from '@mui/material'
+import { Box } from '@mui/material'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
@@ -25,13 +25,11 @@ import { useCredentialStore } from '../../store/CredentialStore'
 import { SnackbarMessageList } from '../Messages'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { SidePanel } from './SidePanel/SidePanel'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { Ui } from '../../models/UiModel'
 import { PanelState } from '../../models/UiModel/PanelState'
-import { Panel } from '../../models/UiModel/Panel'
+import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -62,9 +60,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const ui: Ui = useUiStateStore((state) => state.ui)
   const { panels } = ui
-
-  const setPanelState: (panel: string, state: PanelState) => void =
-    useUiStateStore((state) => state.setPanelState)
 
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
@@ -299,38 +294,24 @@ const WorkSpaceEditor = (): JSX.Element => {
             </Suspense>
           </Allotment.Pane>
         </Allotment>
+
         {panels.right === PanelState.OPEN ? (
-          <Box sx={{ height: '100%', width: '100%' }}>
-            <Tooltip title="Close side">
-              <ChevronRightIcon
-                sx={{
-                  zIndex: 1000,
-                  position: 'absolute',
-                  top: '15px',
-                  left: '5px',
-                  border: '1px solid #999999',
-                }}
-                onClick={() => setPanelState(Panel.RIGHT, PanelState.CLOSED)}
-              />
-            </Tooltip>
+          <Box sx={{ width: '100%', height: '100%' }}>
+            <OpenRightPanelButton
+              toOpen={false}
+              title="Close panel"
+              show={panels.right === PanelState.OPEN}
+            />
             <SidePanel />
           </Box>
         ) : null}
       </Allotment>
       <SnackbarMessageList />
-      {panels.right === PanelState.OPEN ? null : (
-        <Tooltip title="Open side panel">
-          <ChevronLeftIcon
-            sx={{
-              position: 'absolute',
-              top: '55px',
-              right: '5px',
-              border: '1px solid #999999',
-            }}
-            onClick={() => setPanelState(Panel.RIGHT, PanelState.OPEN)}
-          />
-        </Tooltip>
-      )}
+      <OpenRightPanelButton
+        toOpen={true}
+        title="Open panel"
+        show={panels.right === PanelState.CLOSED}
+      />
     </Box>
   )
 }

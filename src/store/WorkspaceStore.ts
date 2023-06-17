@@ -46,7 +46,6 @@ const EMPTY_WORKSPACE: Workspace = {
 type WorkspaceStore = WorkspaceState & WorkspaceActions
 
 let isUpdating = false
-
 const persist =
   (config: StateCreator<WorkspaceStore>) =>
   (
@@ -71,7 +70,7 @@ const persist =
           await putWorkspaceToDb(updated)
           setTimeout(() => {
             isUpdating = false
-          }, 5000)
+          }, 1000)
         }
       },
       get,
