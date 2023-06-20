@@ -11,8 +11,8 @@ export const cosmos: LayoutAlgorithm = {
     nodeColor: (node: any) => node.color,
     simulation: {
       linkSpring: 0.1,
-      linkDistance: 10,
-      repulsion: 1.0,
+      linkDistance: 15,
+      repulsion: 2.0,
       gravity: 0.3,
     },
     events: {
@@ -33,15 +33,15 @@ export const cosmos: LayoutAlgorithm = {
       name: 'linkDistance',
       description: 'The distance of the links',
       type: ValueTypeName.Double,
-      value: 10,
-      defaultValue: 10,
+      value: 15,
+      defaultValue: 15,
     },
     repulsion: {
       name: 'repulsion',
       description: 'The repulsion of the nodes',
       type: ValueTypeName.Double,
-      value: 1.0,
-      defaultValue: 1.0,
+      value: 2.0,
+      defaultValue: 2.0,
     },
     gravity: {
       name: 'gravity',

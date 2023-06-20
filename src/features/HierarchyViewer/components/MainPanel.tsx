@@ -23,7 +23,7 @@ export interface Query {
   nodeIds: number[]
 }
 
-export const ViewerPanel = (): JSX.Element => {
+export const MainPanel = (): JSX.Element => {
   // Panel state
   const [panes, setPanes] = useState([0, 1])
   const [query, setQuery] = useState<Query>({ nodeIds: [] })

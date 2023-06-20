@@ -1,1 +1,1 @@
-export { ViewerPanel } from './ViewerPanel'
+export { MainPanel as ViewerPanel } from './MainPanel'

@@ -7,8 +7,6 @@ import { CosmosAlgorithms } from './Algorithms/CosmosAlgorithms'
 
 const dummyContainer: HTMLCanvasElement = document.createElement('canvas')
 dummyContainer.style.display = 'none'
-// dummyContainer.style.width = '80vw'
-// dummyContainer.style.height = '80vh'
 dummyContainer.id = 'cosmosContainer'
 
 export const CosmosLayout: LayoutEngine = {
@@ -52,6 +50,6 @@ export const CosmosLayout: LayoutEngine = {
       afterLayout(scaledPosMap)
       console.log('COSMOS.stop() called)))))))))))))))', scaledPosMap, graph)
       graph.destroy()
-    }, 3000)
+    }, 2400)
   },
 }

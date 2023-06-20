@@ -10,6 +10,7 @@ import { useNetworkStore } from '../../../store/NetworkStore'
 import { Network } from '../../../models/NetworkModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
+import { useUiStateStore } from '../../../store/UiStateStore'
 
 interface DropdownMenuProps {
   label: string
@@ -23,9 +24,15 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     (state) => state.networks,
   )
 
+  const activeNetworkView: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+
+  const targetNetworkId: IdType =
+    activeNetworkView === '' ? currentNetworkId : activeNetworkView
 
   const setIsRunning = useLayoutStore((state) => state.setIsRunning)
   const layoutEngines: LayoutEngine[] = useLayoutStore(
@@ -38,7 +45,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  const target: Network = networks.get(currentNetworkId) ?? ({} as Network)
+  const target: Network = networks.get(targetNetworkId) ?? ({} as Network)
 
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -61,7 +68,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
     // Update node positions in the view model
-    updateNodePositions(currentNetworkId, positionMap)
+    updateNodePositions(targetNetworkId, positionMap)
     setIsRunning(false)
     console.log('Finished layout')
   }

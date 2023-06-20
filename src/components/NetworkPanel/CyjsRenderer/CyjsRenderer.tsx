@@ -22,6 +22,7 @@ import { addObjects } from './cyjs-factory'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { CircularProgress, Typography } from '@mui/material'
+import { useUiStateStore } from '../../../store/UiStateStore'
 interface NetworkRendererProps {
   network: Network
 }
@@ -35,8 +36,11 @@ const HOVER_STATE_NAME: string = 'hover'
  */
 const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const { id } = network
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
 
-  const isRunning: boolean = useLayoutStore((state) => state.isRunning)
+  let isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
   const setViewModel = useViewModelStore((state) => state.add)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
@@ -55,6 +59,10 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
   const setHovered: (networkId: IdType, eleId: IdType) => void =
     useViewModelStore((state) => state.setHovered)
+
+  if (activeNetworkId !== id) {
+    isRunning = false
+  }
 
   const [cyStyle, setCyStyle] = useState<any[]>([])
   const [renderedId, setRenderedId] = useState<string>('')
