@@ -17,6 +17,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
+import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -25,7 +26,7 @@ export interface Query {
 
 export const MainPanel = (): JSX.Element => {
   // Panel state
-  const [panes, setPanes] = useState([0, 1])
+  // const [panes, setPanes] = useState([0, 1])
   const [query, setQuery] = useState<Query>({ nodeIds: [] })
 
   // Check the network property and enable the UI only if it is a hierarchy
@@ -112,11 +113,8 @@ export const MainPanel = (): JSX.Element => {
     return <MessagePanel message="Please select a subsystem" />
   }
 
-  const handleFocus = (e: any): void => {
-    console.log('### ViewerPanel focused', e)
-  }
   return (
-    <Box sx={{ width: '100%', height: '100%' }} onClick={handleFocus}>
+    <Box sx={{ width: '100%', height: '100%' }}>
       <Allotment vertical minSize={100}>
         <Allotment.Pane>
           <SubNetworkPanel
@@ -127,34 +125,12 @@ export const MainPanel = (): JSX.Element => {
         </Allotment.Pane>
         <Allotment.Pane maxSize={1000}>
           <Allotment>
-            {panes.map((pane) => (
-              <Allotment.Pane key={pane}>
-                <MessagePanel message={`Property Panel ${pane + 1}`} />
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    width: '100%',
-                    height: '100%',
-                  }}
-                >
-                  <div style={{ position: 'absolute', top: 0, right: 0 }}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPanes((panes) => {
-                          const newPanes = [...panes]
-                          newPanes.splice(pane, 1)
-                          return newPanes
-                        })
-                      }
-                    >
-                      x
-                    </button>
-                  </div>
-                </div>
-              </Allotment.Pane>
-            ))}
+            <Allotment.Pane key={0}>
+              <PropertyPanel networkId={selectedNodes[0]} />
+            </Allotment.Pane>
+            <Allotment.Pane key={1}>
+              <MessagePanel message="(TBD)" />
+            </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>
       </Allotment>

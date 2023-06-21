@@ -30,7 +30,7 @@ export const SidePanel = (): JSX.Element => {
           <Tab key={index} label={tabContent.props.label} />
         ))}
       </Tabs>
-      <Box sx={{ width: '100%', height: '100%' }}>{tabContents}</Box>
+      <Box sx={{ width: '100%', height: '90%' }}>{tabContents}</Box>
     </>
   )
 }

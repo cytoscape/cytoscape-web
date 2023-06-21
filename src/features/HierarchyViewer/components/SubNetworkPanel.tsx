@@ -95,7 +95,6 @@ export const SubNetworkPanel = ({
       return
     }
     void saveLastQueryNetworkId(queryNetworkId).then(() => {
-      console.log('@@@@@@@@@@@@ Q rendering', queryNetworkId)
       prevQueryNetworkIdRef.current = queryNetworkId
     })
   }, [viewModels[queryNetworkId]])
