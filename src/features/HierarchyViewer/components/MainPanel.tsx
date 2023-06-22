@@ -125,7 +125,7 @@ export const MainPanel = (): JSX.Element => {
         </Allotment.Pane>
         <Allotment.Pane maxSize={1000}>
           <Allotment>
-            <Allotment.Pane key={0}>
+            <Allotment.Pane preferredSize={'35%'} key={0}>
               <PropertyPanel networkId={selectedNodes[0]} />
             </Allotment.Pane>
             <Allotment.Pane key={1}>

@@ -30,6 +30,7 @@ import { useUiStateStore } from '../../store/UiStateStore'
 import { Ui } from '../../models/UiModel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
+import { ManualLayoutPanel } from '../ManualLayout'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -274,7 +275,16 @@ const WorkSpaceEditor = (): JSX.Element => {
         >
           <Allotment>
             <Allotment.Pane maxSize={300} preferredSize="20vh">
-              <NetworkBrowserPanel allotmentDimensions={allotmentDimensions} />
+              <Allotment vertical>
+                <Allotment.Pane preferredSize={400}>
+                  <NetworkBrowserPanel
+                    allotmentDimensions={allotmentDimensions}
+                  />
+                </Allotment.Pane>
+                <Allotment.Pane>
+                  <ManualLayoutPanel />
+                </Allotment.Pane>
+              </Allotment>
             </Allotment.Pane>
             <Allotment.Pane>
               <Outlet />

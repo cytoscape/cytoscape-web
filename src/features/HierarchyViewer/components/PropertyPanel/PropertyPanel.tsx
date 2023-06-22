@@ -44,23 +44,20 @@ export const PropertyPanel = ({
   const { rows } = nodeTable
   const row: Record<string, ValueType> = rows.get(selectedNodeId) ?? {}
 
+  const name: ValueType = row.name ?? selectedNodeId
+
   return (
     <Box
       sx={{
         width: '100%',
-        height: '100%',
+        height: 'calc(100% - 48px)',
         overflow: 'auto',
-        bgcolor: theme.palette.grey[100],
+        bgcolor: theme.palette.grey[50],
         padding: theme.spacing(1),
-        paddingBottom: theme.spacing(15),
-        border: '4px solid red',
       }}
     >
-      <Typography variant="h6">Node Properties</Typography>
-      <List
-        dense={true}
-        sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}
-      >
+      <Typography variant={'subtitle1'}>Selected: {name}</Typography>
+      <List dense={true} sx={{ width: '100%' }}>
         {Object.keys(row).map((key) => (
           <ListItem key={key}>
             <ListItemText primary={row[key]} secondary={key} />

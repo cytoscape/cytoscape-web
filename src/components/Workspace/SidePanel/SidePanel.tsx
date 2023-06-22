@@ -23,14 +23,13 @@ export const SidePanel = (): JSX.Element => {
         onChange={handleChange}
         variant="scrollable"
         scrollButtons="auto"
-        aria-label="scrollable auto tabs example"
         sx={{ paddingLeft: '2em' }}
       >
         {tabContents.map((tabContent, index) => (
           <Tab key={index} label={tabContent.props.label} />
         ))}
       </Tabs>
-      <Box sx={{ width: '100%', height: '90%' }}>{tabContents}</Box>
+      <Box sx={{ width: '100%', height: '100%' }}>{tabContents}</Box>
     </>
   )
 }
