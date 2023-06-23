@@ -1,4 +1,11 @@
-import { Box, IconButton, Stack, Theme, useTheme } from '@mui/material'
+import {
+  Box,
+  IconButton,
+  Stack,
+  Theme,
+  Typography,
+  useTheme,
+} from '@mui/material'
 import Slider from '@mui/material/Slider'
 import { useLayoutStore } from '../../store/LayoutStore'
 import { IdType } from '../../models/IdType'
@@ -81,18 +88,20 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     setValue(value as number)
   }
 
+  const calcScale = (value: number): number => {
+    let scale = 1.0
+    if (value < 0) {
+      scale = (10 - Math.abs(value)) / 10
+    } else {
+      scale = value + 1.0
+    }
+
+    return scale
+  }
   const handleUpdate = (event: Event, value: number | number[]): void => {
     const valueAsNumber: number = typeof value === 'number' ? value : value[0]
     setValue(valueAsNumber)
-
-    let scaled: number = valueAsNumber
-    if (valueAsNumber < 0) {
-      scaled = (10 - Math.abs(valueAsNumber)) / 10
-    } else {
-      scaled = valueAsNumber + 1.0
-    }
-    console.log(scaled, valueAsNumber)
-    applyScaling(scaled)
+    applyScaling(calcScale(valueAsNumber))
   }
 
   const applyScaling = (scalingFactor: number): void => {
@@ -128,12 +137,36 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   }
 
   const reset = (): void => {
-    // updateNodePositions(networkId, originalPositions)
+    if (networkView === undefined) {
+      return
+    }
+    // Copy current positions to the original positions
+    const positions = new Map<IdType, [number, number, number?]>()
+    const { nodeViews } = networkView
+    const nodeIds: IdType[] = Object.keys(nodeViews)
+    nodeIds.forEach((nodeId: IdType) => {
+      const nv: NodeView = nodeViews[nodeId]
+      positions.set(nodeId, [nv.x, nv.y, nv.z])
+    })
+    setOriginalPositions(positions)
+    setValue(0)
+  }
+
+  const valuetext = (value: number): string => {
+    return `x${calcScale(value)}}`
+  }
+
+  const valueLabelFormat = (value: number): string => {
+    return `x${calcScale(value).toFixed(1)}`
   }
 
   return (
-    <Box sx={{ paddingLeft: theme.spacing(2) }}>
+    <Box>
+      <Typography variant={'subtitle2'} id="scale-slider">
+        Scaling
+      </Typography>
       <Stack
+        sx={{ paddingLeft: theme.spacing(2) }}
         direction="row"
         spacing={1}
         justifyContent="center"
@@ -145,10 +178,12 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
           step={0.1}
           size="small"
           marks={marks}
+          valueLabelDisplay="auto"
+          valueLabelFormat={valueLabelFormat}
+          getAriaValueText={valuetext}
           min={-9}
           max={9}
           track={false}
-          valueLabelDisplay="off"
           onChangeCommitted={handleUpdate}
           onChange={handleChange}
         />
