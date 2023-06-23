@@ -1,3 +1,4 @@
+import { Box, Theme, useTheme } from '@mui/material'
 import Slider from '@mui/material/Slider'
 
 const marks = [
@@ -24,6 +25,8 @@ const marks = [
 ]
 
 export const Scaling = (): JSX.Element => {
+  const theme: Theme = useTheme()
+
   const handleChange = (event: Event, value: number | number[]): void => {
     const valueAsNumber: number = typeof value === 'number' ? value : value[0]
     let scaled: number = valueAsNumber
@@ -33,20 +36,25 @@ export const Scaling = (): JSX.Element => {
       scaled = valueAsNumber + 1.0
     }
     console.log(scaled, valueAsNumber)
+    applyScaling(scaled)
   }
 
+  const applyScaling = (scalingFactor: number): void => {}
+
   return (
-    <Slider
-      aria-label="Scaling marks"
-      defaultValue={0}
-      step={0.1}
-      size="small"
-      marks={marks}
-      min={-9}
-      max={9}
-      track={false}
-      valueLabelDisplay="off"
-      onChangeCommitted={handleChange}
-    />
+    <Box sx={{ padding: theme.spacing(3) }}>
+      <Slider
+        aria-label="Scaling marks"
+        defaultValue={0}
+        step={0.1}
+        size="small"
+        marks={marks}
+        min={-9}
+        max={9}
+        track={false}
+        valueLabelDisplay="off"
+        onChangeCommitted={handleChange}
+      />
+    </Box>
   )
 }
