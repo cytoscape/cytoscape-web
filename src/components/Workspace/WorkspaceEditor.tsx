@@ -30,7 +30,7 @@ import { useUiStateStore } from '../../store/UiStateStore'
 import { Ui } from '../../models/UiModel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
-import { ManualLayoutPanel } from '../ManualLayout'
+import { ManualLayoutPanel } from '../LayoutTools'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))

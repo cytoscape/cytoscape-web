@@ -15,7 +15,7 @@ export const ManualLayoutPanel = (): JSX.Element => {
 
   return (
     <Box sx={{ width: '100%', height: '100%', padding: theme.spacing(1) }}>
-      <Typography variant={'subtitle1'}>Manual Layout Tools</Typography>
+      <Typography variant={'subtitle1'}>Layout Tools</Typography>
       <Scaling networkId={currentNetworkId} />
     </Box>
   )
