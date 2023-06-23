@@ -1,5 +1,10 @@
 import { Box, Theme, useTheme } from '@mui/material'
 import Slider from '@mui/material/Slider'
+import { useLayoutStore } from '../../store/LayoutStore'
+import { IdType } from '../../models/IdType'
+import { useViewModelStore } from '../../store/ViewModelStore'
+import { useEffect, useState } from 'react'
+import { NetworkView, NodeView } from '../../models/ViewModel'
 
 const marks = [
   {
@@ -24,8 +29,35 @@ const marks = [
   },
 ]
 
-export const Scaling = (): JSX.Element => {
+interface ScalingProps {
+  networkId: IdType
+}
+
+export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   const theme: Theme = useTheme()
+
+  const [disabled, setDisabled] = useState(true)
+
+  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
+    (state) => state.setIsRunning,
+  )
+
+  const networkView: NetworkView | undefined = useViewModelStore(
+    (state) => state.viewModels[networkId],
+  )
+
+  useEffect(() => {
+    if (networkView !== undefined) {
+      setDisabled(false)
+    } else {
+      setDisabled(true)
+    }
+  }, [networkView])
+
+  const updateNodePositions: (
+    networkId: IdType,
+    positions: Map<IdType, [number, number, number?]>,
+  ) => void = useViewModelStore((state) => state.updateNodePositions)
 
   const handleChange = (event: Event, value: number | number[]): void => {
     const valueAsNumber: number = typeof value === 'number' ? value : value[0]
@@ -39,11 +71,29 @@ export const Scaling = (): JSX.Element => {
     applyScaling(scaled)
   }
 
-  const applyScaling = (scalingFactor: number): void => {}
+  const applyScaling = (scalingFactor: number): void => {
+    if (networkView === undefined) {
+      return
+    }
+
+    // Start the layout
+    setIsRunning(true)
+
+    const positions = new Map<IdType, [number, number]>()
+    const nodeIds: IdType[] = Object.keys(networkView.nodeViews)
+    nodeIds.forEach((nodeId: IdType) => {
+      const nv: NodeView = networkView.nodeViews[nodeId]
+      positions.set(nv.id, [nv.x * scalingFactor, nv.y * scalingFactor])
+    })
+    updateNodePositions(networkId, positions)
+    // Finished
+    setIsRunning(false)
+  }
 
   return (
     <Box sx={{ padding: theme.spacing(3) }}>
       <Slider
+        disabled={disabled}
         aria-label="Scaling marks"
         defaultValue={0}
         step={0.1}
