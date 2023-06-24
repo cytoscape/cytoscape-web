@@ -1,11 +1,4 @@
-import {
-  Box,
-  IconButton,
-  Stack,
-  Theme,
-  Typography,
-  useTheme,
-} from '@mui/material'
+import { Box, IconButton, Stack, Theme, useTheme } from '@mui/material'
 import Slider from '@mui/material/Slider'
 import { useLayoutStore } from '../../store/LayoutStore'
 import { IdType } from '../../models/IdType'
@@ -13,6 +6,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { useEffect, useState } from 'react'
 import { NetworkView, NodeView } from '../../models/ViewModel'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import { ScalingType, ScalingTypeSelector } from './ScalingTypeSelector'
 
 const marks = [
   {
@@ -43,6 +37,9 @@ interface ScalingProps {
 
 export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   const theme: Theme = useTheme()
+
+  // Scaling type. Default is both with and height
+  const [scalingType, setScalingType] = useState<ScalingType>('both')
 
   // Slider position. Default position is center (0)
   const [value, setValue] = useState<number>(0)
@@ -122,11 +119,14 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       return
     }
 
+    const scaleX: number = scalingType === 'height' ? 1.0 : scalingFactor
+    const scaleY: number = scalingType === 'width' ? 1.0 : scalingFactor
+
     nodeIds.forEach((nodeId: IdType) => {
       const position = originalPositions.get(nodeId) ?? [0, 0, 0]
       positions.set(nodeId, [
-        position[0] * scalingFactor,
-        position[1] * scalingFactor,
+        position[0] * scaleX,
+        position[1] * scaleY,
         position[2] ?? 0 * scalingFactor,
       ])
     })
@@ -162,9 +162,10 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
 
   return (
     <Box>
-      <Typography variant={'subtitle2'} id="scale-slider">
-        Scaling
-      </Typography>
+      <ScalingTypeSelector
+        scalingType={scalingType}
+        setScalingType={setScalingType}
+      />
       <Stack
         sx={{ paddingLeft: theme.spacing(2) }}
         direction="row"

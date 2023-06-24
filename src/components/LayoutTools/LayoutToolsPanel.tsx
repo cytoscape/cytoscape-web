@@ -1,4 +1,4 @@
-import { Box, Theme, Typography, useTheme } from '@mui/material'
+import { Box, Divider, Theme, Typography, useTheme } from '@mui/material'
 import { Scaling } from './Scaling'
 import { IdType } from '../../models/IdType'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
@@ -25,6 +25,7 @@ export const ManualLayoutPanel = (): JSX.Element => {
   return (
     <Box sx={{ width: '100%', height: '100%', padding: theme.spacing(1) }}>
       <Typography variant={'subtitle1'}>Layout Tools</Typography>
+      <Divider />
       <Scaling networkId={targetNetworkId} />
     </Box>
   )
