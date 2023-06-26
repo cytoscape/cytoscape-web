@@ -46,6 +46,8 @@ export const PropertyPanel = ({
 
   const name: ValueType = row.name ?? selectedNodeId
 
+  const keys: string[] = Object.keys(row).sort()
+
   return (
     <Box
       sx={{
@@ -56,9 +58,14 @@ export const PropertyPanel = ({
         padding: theme.spacing(1),
       }}
     >
-      <Typography variant={'subtitle1'}>Selected: {name}</Typography>
+      <Typography
+        sx={{ background: 'white', padding: theme.spacing(1) }}
+        variant={'subtitle2'}
+      >
+        {name}
+      </Typography>
       <List dense={true} sx={{ width: '100%' }}>
-        {Object.keys(row).map((key) => (
+        {keys.map((key) => (
           <ListItem key={key}>
             <ListItemText primary={row[key]} secondary={key} />
           </ListItem>

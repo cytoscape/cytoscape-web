@@ -18,6 +18,7 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
 import { PropertyPanel } from './PropertyPanel/PropertyPanel'
+import { StyleManager } from './PropertyPanel/StyleManager'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -25,8 +26,7 @@ export interface Query {
 }
 
 export const MainPanel = (): JSX.Element => {
-  // Panel state
-  // const [panes, setPanes] = useState([0, 1])
+  const [subNetworkName, setSubNetworkName] = useState<string>('')
   const [query, setQuery] = useState<Query>({ nodeIds: [] })
 
   // Check the network property and enable the UI only if it is a hierarchy
@@ -101,6 +101,8 @@ export const MainPanel = (): JSX.Element => {
     }
 
     const memberIds = row[SubsystemTag.members]
+    const name: ValueType = row.name ?? '?'
+    setSubNetworkName(name as string)
     const newQuery: Query = { nodeIds: memberIds as number[] }
     setQuery(newQuery)
   }, [selectedNodes])
@@ -118,6 +120,7 @@ export const MainPanel = (): JSX.Element => {
       <Allotment vertical minSize={100}>
         <Allotment.Pane>
           <SubNetworkPanel
+            subNetworkName={subNetworkName}
             rootNetworkId={metadata?.interactionNetworkUUID ?? ''}
             subsystemNodeId={selectedNodes[0]}
             query={query}
@@ -129,7 +132,7 @@ export const MainPanel = (): JSX.Element => {
               <PropertyPanel networkId={selectedNodes[0]} />
             </Allotment.Pane>
             <Allotment.Pane key={1}>
-              <MessagePanel message="(TBD)" />
+              <StyleManager />
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>

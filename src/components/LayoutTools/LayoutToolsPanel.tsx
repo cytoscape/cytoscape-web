@@ -27,6 +27,7 @@ export const ManualLayoutPanel = (): JSX.Element => {
       <Typography variant={'subtitle1'}>Layout Tools</Typography>
       <Divider />
       <Scaling networkId={targetNetworkId} />
+      <Divider />
     </Box>
   )
 }

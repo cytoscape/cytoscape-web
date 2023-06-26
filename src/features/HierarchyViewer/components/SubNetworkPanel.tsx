@@ -1,4 +1,4 @@
-import { Box } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
 import { FloatingToolBar } from '../../../components/FloatingToolBar'
 import { MessagePanel } from '../../../components/Messages'
@@ -24,6 +24,9 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 
 interface SubNetworkPanelProps {
+  // Name of the network visualized here
+  subNetworkName: string
+
   // The network id of the _*ROOT*_ interaction network
   rootNetworkId: IdType
 
@@ -39,6 +42,7 @@ interface SubNetworkPanelProps {
  *
  */
 export const SubNetworkPanel = ({
+  subNetworkName,
   rootNetworkId,
   subsystemNodeId,
   query,
@@ -153,6 +157,7 @@ export const SubNetworkPanel = ({
       }}
       onClick={handleClick}
     >
+      <Typography variant={'h6'}>Subsystem: {subNetworkName}</Typography>
       <CyjsRenderer network={queryNetwork} />
       <FloatingToolBar targetNetworkId={queryNetworkId ?? undefined} />
     </Box>
