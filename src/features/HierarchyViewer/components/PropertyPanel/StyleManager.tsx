@@ -19,7 +19,7 @@ export const StyleManager = (): JSX.Element => {
       <Typography variant={'subtitle1'}>Visual Styles</Typography>
       <FormGroup>
         <FormControlLabel
-          control={<Switch defaultChecked />}
+          control={<Switch disabled defaultChecked />}
           label="Use shared style"
         />
       </FormGroup>
