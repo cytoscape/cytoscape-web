@@ -8,10 +8,10 @@ export const gForce: LayoutAlgorithm = {
   parameters: {
     type: 'gForce',
     maxIteration: 400,
-    linkDistance: 1,
-    nodeStrength: 1000,
-    edgeStrength: 200,
-    nodeSize: 40,
+    linkDistance: 200,
+    nodeStrength: 650,
+    edgeStrength: 50,
+    nodeSize: 350,
     onTick: () => {
       console.log('ticking')
     },

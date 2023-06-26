@@ -11,10 +11,16 @@ import { enableMapSet } from 'immer'
 import React from 'react'
 enableMapSet()
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <AppConfigContext.Provider value={appConfig}>
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  </AppConfigContext.Provider>,
-)
+const rootElement: HTMLElement | null = document.getElementById('root')
+
+if (rootElement !== null) {
+  ReactDOM.createRoot(rootElement).render(
+    <AppConfigContext.Provider value={appConfig}>
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    </AppConfigContext.Provider>,
+  )
+} else {
+  throw new Error('Cannot initialize app: Root element not found')
+}

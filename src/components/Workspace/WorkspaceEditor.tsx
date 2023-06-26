@@ -1,11 +1,7 @@
-import * as React from 'react'
-import { Suspense, useContext, useEffect, useState } from 'react'
+import { Suspense, lazy, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
-import { Box, Tabs, Tab, Typography } from '@mui/material'
-import ShareIcon from '@mui/icons-material/Share'
-import PaletteIcon from '@mui/icons-material/Palette'
-import VizmapperView from '../Vizmapper'
+import { Box } from '@mui/material'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
@@ -21,18 +17,29 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { AppConfigContext } from '../../AppConfigContext'
 import { Workspace } from '../../models/WorkspaceModel'
-import { Summaries as SummaryList } from '../SummaryPanel'
 import { putNetworkViewToDb } from '../../store/persist/db'
 import { NetworkView } from '../../models/ViewModel'
 import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
 
 import { useCredentialStore } from '../../store/CredentialStore'
 import { SnackbarMessageList } from '../Messages'
+import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 
-const NetworkPanel = React.lazy(() => import('../NetworkPanel/NetworkPanel'))
-const TableBrowser = React.lazy(() => import('../TableBrowser/TableBrowser'))
+import { SidePanel } from './SidePanel/SidePanel'
+import { useUiStateStore } from '../../store/UiStateStore'
+import { Ui } from '../../models/UiModel'
+import { PanelState } from '../../models/UiModel/PanelState'
+import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
+import { ManualLayoutPanel } from '../LayoutTools'
 
-const WorkSpaceEditor: React.FC = () => {
+const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
+const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
+
+/**
+ * The main workspace editor containing all except toolbar
+ *
+ */
+const WorkSpaceEditor = (): JSX.Element => {
   useWorkspaceManager()
 
   // Server location
@@ -51,6 +58,10 @@ const WorkSpaceEditor: React.FC = () => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+
+  const ui: Ui = useUiStateStore((state) => state.ui)
+  const { panels } = ui
+
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
@@ -68,6 +79,9 @@ const WorkSpaceEditor: React.FC = () => {
   useViewModelStore.subscribe(
     (state) => state.viewModels[currentNetworkId],
     (prev: NetworkView, next: NetworkView) => {
+      if (prev === undefined || next === undefined) {
+        return
+      }
       const viewModelChanged =
         prev !== undefined &&
         next !== undefined &&
@@ -100,23 +114,14 @@ const WorkSpaceEditor: React.FC = () => {
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
-  const [currentTabIndex, setCurrentTabIndex] = useState(0)
   const [allotmentDimensions, setAllotmentDimensions] = useState<
     [number, number]
   >([0, 0])
 
-  const changeTab = (event: React.SyntheticEvent, newValue: number): void => {
-    setCurrentTabIndex(newValue)
-  }
-
   const addNewNetwork = useNetworkStore((state) => state.add)
-
-  // Visual Style Store
-  const setVisualStyle = useVisualStyleStore((state) => state.add)
-  // Table Store
-  const setTables = useTableStore((state) => state.add)
-
-  const setViewModel = useViewModelStore((state) => state.add)
+  const addVisualStyle = useVisualStyleStore((state) => state.add)
+  const addTable = useTableStore((state) => state.add)
+  const addViewModel = useViewModelStore((state) => state.add)
 
   const loadNetworkSummaries = async (): Promise<void> => {
     const currentToken = await getToken()
@@ -135,9 +140,9 @@ const WorkSpaceEditor: React.FC = () => {
     const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
     addNewNetwork(network)
-    setVisualStyle(networkId, visualStyle)
-    setTables(networkId, nodeTable, edgeTable)
-    setViewModel(networkId, networkView)
+    addVisualStyle(networkId, visualStyle)
+    addTable(networkId, nodeTable, edgeTable)
+    addViewModel(networkId, networkView)
   }
 
   /**
@@ -250,91 +255,73 @@ const WorkSpaceEditor: React.FC = () => {
   }, [summaries, currentNetworkId])
 
   // TODO: avoid hardcoding pixel values
+
+  // Return the main component including the network panel, network view, and the table browser
   return (
-    <Box sx={{ height: 'calc(100vh - 48px)' }}>
-      <Allotment
-        vertical
-        onChange={(sizes: number[]) => {
-          // sizes[0] represents the height of the top pane (network list, network renderer, vizmapper)
-          // sizes[1] represents the height of the bottom pane (table browser)
-          setAllotmentDimensions([sizes[0], sizes[1]])
-          setTableBrowserHeight(sizes[1])
-        }}
-      >
-        <Allotment.Pane>
+    <Box
+      sx={{
+        height: 'calc(100vh - 48px)',
+      }}
+    >
+      <Allotment>
+        <Allotment
+          vertical
+          onChange={(sizes: number[]) => {
+            // sizes[0] represents the height of the top pane (network list, network renderer, vizmapper)
+            // sizes[1] represents the height of the bottom pane (table browser)
+            setAllotmentDimensions([sizes[0], sizes[1]])
+            setTableBrowserHeight(sizes[1])
+          }}
+        >
           <Allotment>
-            <Allotment.Pane preferredSize="25%">
-              <Box
-                sx={{
-                  height: '100%',
-                }}
-              >
-                <Tabs
-                  sx={{ display: 'flex', alignItems: 'center', height: '40px' }}
-                  value={currentTabIndex}
-                  onChange={changeTab}
-                >
-                  <Tab
-                    icon={<ShareIcon />}
-                    iconPosition="start"
-                    label={<Typography variant="body2">WORKSPACE</Typography>}
+            <Allotment.Pane maxSize={400} preferredSize="20vh">
+              <Allotment vertical>
+                <Allotment.Pane preferredSize={400}>
+                  <NetworkBrowserPanel
+                    allotmentDimensions={allotmentDimensions}
                   />
-                  <Tab
-                    icon={<PaletteIcon />}
-                    iconPosition="start"
-                    label={<Typography variant="body2">STYLE</Typography>}
-                  />
-                </Tabs>
-                <div hidden={currentTabIndex !== 0}>
-                  {currentTabIndex === 0 && (
-                    <Box
-                      sx={{
-                        overflow: 'scroll',
-                        height: allotmentDimensions[0] - 48,
-                        // need to set a height to enable scroll in the network list
-                        // 48 is the height of the tool bar
-                        width: '100%',
-                        padding: 0,
-                        margin: 0,
-                      }}
-                    >
-                      <SummaryList summaries={summaries} />
-                    </Box>
-                  )}
-                </div>
-                <div hidden={currentTabIndex !== 1}>
-                  {currentTabIndex === 1 && (
-                    <Box>
-                      {' '}
-                      <VizmapperView
-                        currentNetworkId={currentNetworkId}
-                        height={allotmentDimensions[0]}
-                      />
-                    </Box>
-                  )}
-                </div>
-              </Box>
+                </Allotment.Pane>
+                <Allotment.Pane>
+                  <ManualLayoutPanel />
+                </Allotment.Pane>
+              </Allotment>
             </Allotment.Pane>
             <Allotment.Pane>
               <Outlet />
-              <NetworkPanel />
+              <NetworkPanel networkId={currentNetworkId} />
             </Allotment.Pane>
           </Allotment>
-        </Allotment.Pane>
-        <Allotment.Pane minSize={28} preferredSize={150}>
-          <Suspense
-            fallback={<div>{`Loading from NDEx`}</div>}
-            key={currentNetworkId}
-          >
-            <TableBrowser
-              height={tableBrowserHeight}
-              width={tableBrowserWidth}
-              currentNetworkId={currentNetworkId}
+          <Allotment.Pane minSize={28} preferredSize={150}>
+            <Suspense
+              fallback={<div>{`Loading from NDEx`}</div>}
+              key={currentNetworkId}
+            >
+              <TableBrowser
+                height={tableBrowserHeight}
+                width={tableBrowserWidth}
+                currentNetworkId={currentNetworkId}
+              />
+            </Suspense>
+          </Allotment.Pane>
+        </Allotment>
+
+        {panels.right === PanelState.OPEN ? (
+          <Box sx={{ width: '100%', height: '100%' }}>
+            <OpenRightPanelButton
+              toOpen={false}
+              title="Close panel"
+              show={panels.right === PanelState.OPEN}
             />
-          </Suspense>
-        </Allotment.Pane>
+            <SidePanel />
+          </Box>
+        ) : null}
       </Allotment>
       <SnackbarMessageList />
+      <OpenRightPanelButton
+        toOpen={true}
+        title="Open panel"
+        show={panels.right === PanelState.CLOSED}
+      />
     </Box>
   )
 }

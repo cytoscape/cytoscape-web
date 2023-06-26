@@ -22,6 +22,7 @@ import { addObjects } from './cyjs-factory'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { CircularProgress, Typography } from '@mui/material'
+import { useUiStateStore } from '../../../store/UiStateStore'
 interface NetworkRendererProps {
   network: Network
 }
@@ -35,8 +36,11 @@ const HOVER_STATE_NAME: string = 'hover'
  */
 const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const { id } = network
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
 
-  const isRunning: boolean = useLayoutStore((state) => state.isRunning)
+  let isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
   const setViewModel = useViewModelStore((state) => state.add)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
@@ -56,6 +60,10 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const setHovered: (networkId: IdType, eleId: IdType) => void =
     useViewModelStore((state) => state.setHovered)
 
+  if (activeNetworkId !== id) {
+    isRunning = false
+  }
+
   const [cyStyle, setCyStyle] = useState<any[]>([])
   const [renderedId, setRenderedId] = useState<string>('')
 
@@ -63,14 +71,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const [nodesMoved, setNodesMoved] = useState<boolean>(false)
 
   const networkView: NetworkView = viewModels[id]
-
   const vs: VisualStyle = visualStyles[id]
-
-  // Extract background color from visual style as a special case
-  // let bgColor: string =
-  //   vs?.networkBackgroundColor !== undefined
-  //     ? (vs.networkBackgroundColor.defaultValue as string)
-  //     : '#FFFFFF'
 
   const [bgColor, setBgColor] = useState<string>('#FFFFFF')
   useEffect(() => {
@@ -141,7 +142,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       // Box selection listener
       cy.on(
         'boxselect select',
-        debounce((e: EventObject) => {
+        debounce((event: EventObject) => {
+          console.log('Selection event: ', event.target)
           const selectedNodes: IdType[] = []
           const selectedEdges: IdType[] = []
           cy.elements()

@@ -3,7 +3,14 @@ import { ApplyLayoutButton } from './ApplyLayoutButton'
 import { FitButton } from './FitButton'
 import { OpenInCytoscapeButton } from './OpenInCytoscapeButton'
 
-export const FloatingToolBar = (): JSX.Element => {
+interface FloatingToolBarProps {
+  // All actions to be performed on the target network if provided
+  targetNetworkId?: string
+}
+
+export const FloatingToolBar = ({
+  targetNetworkId,
+}: FloatingToolBarProps): JSX.Element => {
   return (
     <Box
       sx={{
@@ -19,7 +26,7 @@ export const FloatingToolBar = (): JSX.Element => {
       }}
     >
       <Divider orientation="vertical" flexItem />
-      <ApplyLayoutButton />
+      <ApplyLayoutButton targetNetworkId={targetNetworkId} />
       <FitButton />
       <OpenInCytoscapeButton />
     </Box>

@@ -95,14 +95,22 @@ export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
 
   // Convert CX nodes to Cytoscape nodes
   cyNet.store.add(
-    cxNodes.map((node: CxNode) => createCyNode(node.id.toString())),
+    cxNodes.map((node: CxNode) => {
+      const n: any = node
+      return createCyNode(
+        node.id !== undefined ? node.id.toString() : n['@id'].toString(),
+      )
+    }),
   )
 
   // Convert CX edges to Cytoscape edges
   cyNet.store.add(
     cxEdges.map((edge: CxEdge, i: number) => {
+      const eBlob: any = edge
       const e = createCyEdge(
-        translateCXEdgeId(edge.id.toString()),
+        translateCXEdgeId(
+          edge.id !== undefined ? edge.id.toString() : eBlob['@id'].toString(),
+        ),
         edge.s.toString(),
         edge.t.toString(),
       )

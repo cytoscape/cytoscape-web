@@ -68,7 +68,7 @@ function VisualPropertyView(props: {
 }
 
 export default function VizmapperView(props: {
-  currentNetworkId: IdType
+  networkId: IdType
   height: number
 }): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
@@ -76,7 +76,7 @@ export default function VizmapperView(props: {
     (state) => state.visualStyles,
   )
 
-  const visualStyle = visualStyles[props.currentNetworkId]
+  const visualStyle = visualStyles[props.networkId]
 
   if (visualStyle == null) {
     return <div></div>
@@ -86,7 +86,7 @@ export default function VizmapperView(props: {
     return (
       <VisualPropertyView
         key={vp.name}
-        currentNetworkId={props.currentNetworkId}
+        currentNetworkId={props.networkId}
         visualProperty={vp}
       />
     )
@@ -95,7 +95,7 @@ export default function VizmapperView(props: {
     return (
       <VisualPropertyView
         key={vp.name}
-        currentNetworkId={props.currentNetworkId}
+        currentNetworkId={props.networkId}
         visualProperty={vp}
       />
     )
@@ -106,7 +106,7 @@ export default function VizmapperView(props: {
       return (
         <VisualPropertyView
           key={vp.name}
-          currentNetworkId={props.currentNetworkId}
+          currentNetworkId={props.networkId}
           visualProperty={vp}
         />
       )

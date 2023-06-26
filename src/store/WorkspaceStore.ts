@@ -54,15 +54,11 @@ const persist =
   ) =>
     config(
       async (args) => {
-        console.log('persist middleware updating workspace store')
         set(args)
         const updated = get().workspace
-        console.log('updated workspace: ', updated)
-
         const deleted = updated === undefined
-
         if (!deleted) {
-          await putWorkspaceToDb(updated).then(() => {})
+          await putWorkspaceToDb(updated)
         }
       },
       get,
@@ -92,7 +88,6 @@ export const useWorkspaceStore = create(
             return state
           })
         },
-
         setName: (name: string) => {
           set((state) => {
             state.workspace.name = name

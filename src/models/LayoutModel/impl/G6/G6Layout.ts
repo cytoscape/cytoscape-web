@@ -28,8 +28,8 @@ export const G6Layout: LayoutEngine = {
   ): void => {
     const graph = new G6.Graph({
       container: dummyContainer,
-      width: 1000,
-      height: 1000,
+      width: 4000,
+      height: 4000,
       layout: algorithm.parameters as LayoutConfig,
     })
 

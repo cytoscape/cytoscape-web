@@ -135,17 +135,20 @@ const nodeViewBuilder = (
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   while (idx--) {
     const node = nodes[idx]
+    const nodeId = node.id
+    const nodeView: NodeView | undefined =
+      nodeViews !== undefined ? nodeViews[nodeId] : undefined
     const nv: NodeView = {
-      id: node.id,
+      id: nodeId,
       values: computeView(
         node.id,
         visualProps,
         mappers,
-        nodeTable.rows.get(node.id) ?? {},
+        nodeTable.rows.get(nodeId) ?? {},
         columns,
       ),
-      x: nodeViews !== undefined ? nodeViews[node.id].x : 0,
-      y: nodeViews !== undefined ? nodeViews[node.id].y : 0,
+      x: nodeView !== undefined ? nodeView.x : 0,
+      y: nodeView !== undefined ? nodeView.y : 0,
     }
     result[nv.id] = nv
   }
