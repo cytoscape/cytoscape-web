@@ -147,3 +147,36 @@ export const insertRows = (
   idRowPairs.forEach((idRow) => table.rows.set(idRow[0], idRow[1]))
   return table
 }
+
+export const editColumnName = (
+  table: Table,
+  oldName: string,
+  newName: string,
+): Table => {
+  const column = table.columns.get(oldName)
+  if (column != null) {
+    table.columns.delete(oldName)
+    table.columns.set(newName, column)
+  }
+
+  Array.from(table.rows.values()).forEach((row) => {
+    const value = row[oldName]
+    if (value != null) {
+      delete row[oldName]
+      row[newName] = value
+    }
+  })
+  return table
+}
+
+export const deleteTableColumn = (table: Table, columnName: AttributeName): Table => {
+  const updatedColumns = new Map(table.columns)
+  updatedColumns.delete(columnName)
+
+  const updatedRows = new Map(table.rows)
+  for (const row of updatedRows.values()) {
+    delete row[columnName]
+  }
+
+  return { ...table, columns: updatedColumns, rows: updatedRows }
+}
