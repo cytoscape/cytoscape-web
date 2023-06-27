@@ -77,9 +77,9 @@ export default function TableBrowser(props: {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
   const [menu, setMenu] = React.useState<
     | {
-        col: number
-        bounds: Rectangle
-      }
+      col: number
+      bounds: Rectangle
+    }
     | undefined
   >(undefined)
   const [showSearch, setShowSearch] = React.useState(false)
@@ -330,6 +330,7 @@ export default function TableBrowser(props: {
             rowMarkerStartIndex={minNodeId}
             showSearch={showSearch}
             keybindings={{ search: true }}
+            onPaste={true}
             getCellsForSelection={true}
             onSearchClose={onSearchClose}
             onHeaderMenuClick={onHeaderMenuClick}
@@ -424,6 +425,7 @@ export default function TableBrowser(props: {
             showSearch={showSearch}
             keybindings={{ search: true }}
             getCellsForSelection={true}
+            onPaste={true}
             onSearchClose={onSearchClose}
             onHeaderMenuClick={onHeaderMenuClick}
             onHeaderClicked={onHeaderClicked}
