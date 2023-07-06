@@ -19,7 +19,8 @@ import {
   EditableGridCell,
   Item,
   Rectangle,
-  CellClickedEventArgs
+  CellClickedEventArgs,
+  DataEditorRef
 } from '@glideapps/glide-data-grid'
 
 import {
@@ -84,6 +85,10 @@ export default function TableBrowser(props: {
     }
     | undefined
   >(undefined)
+
+  const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
+  const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
+
   const [showSearch, setShowSearch] = React.useState(false)
   const onSearchClose = React.useCallback(() => setShowSearch(false), [])
   const [sort, setSort] = React.useState<SortType>({
@@ -130,6 +135,18 @@ export default function TableBrowser(props: {
     selectedElements?.length > 0
       ? rowsWithIds.filter((r) => selectedElementsSet.has(r.id))
       : rowsWithIds
+
+  React.useEffect(() => {
+    nodeDataEditorRef.current?.scrollTo(0, 0, "both", 0, 0, {
+      vAlign: 'start',
+      hAlign: 'start',
+    });
+    edgeDataEditorRef.current?.scrollTo(0, 0, "both", 0, 0, {
+      vAlign: 'start',
+      hAlign: 'start',
+    });
+
+  }, [rows])
 
   if (sort.column != null && sort.direction != null && sort.valueType != null) {
     const sortFn = sortFnToType[sort.valueType]
@@ -314,6 +331,7 @@ export default function TableBrowser(props: {
         </Button>
         <Box>
           <DataEditor
+            ref={nodeDataEditorRef}
             onCellContextMenu={onCellContextMenu}
             rowMarkers={'both'}
             rowMarkerStartIndex={minNodeId}
@@ -473,6 +491,7 @@ export default function TableBrowser(props: {
 
         <Box>
           <DataEditor
+            ref={edgeDataEditorRef}
             onCellContextMenu={onCellContextMenu}
             rowMarkers={'both'}
             rowMarkerStartIndex={minEdgeId}
