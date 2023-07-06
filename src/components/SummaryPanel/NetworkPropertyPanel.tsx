@@ -115,7 +115,7 @@ export const NetworkPropertyPanel = ({
       Highlight,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
-    content: removePTags(summary.description),
+    content: removePTags(summary.description ?? ''),
   })
 
   return (
