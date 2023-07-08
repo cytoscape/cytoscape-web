@@ -64,7 +64,10 @@ const persist =
         const updated = get().networks.get(currentNetworkId)
         const deleted = updated === undefined
         if (!deleted) {
-          console.log('* DB update: network store', updated)
+          console.log(
+            '* -----------------------DB update: network store',
+            updated,
+          )
           await putNetworkToDb(updated)
         }
       },
@@ -156,11 +159,12 @@ export const useNetworkStore = create(
       delete: (networkId: IdType) =>
         set((state) => {
           state.networks.delete(networkId)
-          const newNetworks: Map<IdType, Network> = new Map(state.networks)
+          // const newNetworks: Map<IdType, Network> = new Map(state.networks)
           void deleteNetworkFromDb(networkId).then(() => {
-            console.log('Deleted network from db', networkId)
+            console.log('## Deleted network from db', networkId)
           })
-          return { ...state, networks: newNetworks }
+          return state
+          // return { ...state, networks: newNetworks }
         }),
       deleteAll: () =>
         set((state) => {

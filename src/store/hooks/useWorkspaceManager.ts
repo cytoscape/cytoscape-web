@@ -13,6 +13,8 @@ import { useWorkspaceStore } from '../WorkspaceStore'
  *
  * Mostly for clean up tasks.
  */
+let lock = false
+
 export const useWorkspaceManager = (): void => {
   const deleteNetwork = useNetworkStore((state) => state.delete)
   const deleteSummary = useNetworkSummaryStore((state) => state.delete)
@@ -31,12 +33,24 @@ export const useWorkspaceManager = (): void => {
     (ids, lastIds) => {
       if (ids.length === 0 && lastIds.length !== 0) {
         // TODO: Implement clear the workspace
-        console.log('========================Clear the workspace')
-        handleDeleteAll()
+        if (!lock) {
+          lock = true
+          handleDeleteAll()
+          setTimeout(() => {
+            console.log('All networks removed from workspace')
+            lock = false
+          }, 1000)
+        }
       } else if (ids.length < lastIds.length) {
-        const removed = lastIds.filter((id) => !ids.includes(id))
-        handleDeleteNetwork(removed[0])
-        console.log('Network removed from workspace', removed[0])
+        if (!lock) {
+          lock = true
+          const removed = lastIds.filter((id) => !ids.includes(id))
+          handleDeleteNetwork(removed[0])
+          setTimeout(() => {
+            lock = false
+            console.log('Network removed from workspace', removed[0])
+          }, 2000)
+        }
       }
     },
   )
