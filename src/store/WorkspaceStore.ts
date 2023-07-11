@@ -51,20 +51,23 @@ const persist =
     set: StoreApi<WorkspaceStore>['setState'],
     get: StoreApi<WorkspaceStore>['getState'],
     api: StoreApi<WorkspaceStore>,
-  ) =>
-    config(
-      async (args) => {
+  ) => {
+    return config(
+      (args) => {
+        const lastWorkspace = get().workspace
         set(args)
-        const updated = get().workspace
-        const deleted = updated === undefined
-        if (!deleted) {
-          await putWorkspaceToDb(updated)
+        const newWorkspace = get().workspace
+        // const deleted = updated === undefined
+        if (lastWorkspace !== newWorkspace) {
+          void putWorkspaceToDb(newWorkspace).then(() => {
+            console.log('-------------New WS Stored in DB')
+          })
         }
       },
       get,
       api,
     )
-
+  }
 export const useWorkspaceStore = create(
   subscribeWithSelector(
     immer<WorkspaceStore & WorkspaceActions>(

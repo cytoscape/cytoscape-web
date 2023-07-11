@@ -1,6 +1,6 @@
 import { Box, Tabs, Tab, Typography } from '@mui/material'
 import VizmapperView from '../../Vizmapper'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ShareIcon from '@mui/icons-material/Share'
 import PaletteIcon from '@mui/icons-material/Palette'
 import { Summaries as SummaryList } from '../../SummaryPanel'
@@ -23,14 +23,21 @@ interface NetworkBrowserProps {
 export const NetworkBrowserPanel = ({
   allotmentDimensions,
 }: NetworkBrowserProps): JSX.Element => {
-  const curId: IdType = useWorkspaceStore(
+  const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
   const activeNetworkViewId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
 
-  const targetNetworkId: IdType = activeNetworkViewId ?? curId
+  const [targetNetworkId, setTargetNetworkId] = useState<IdType>('')
+  useEffect(() => {
+    if (activeNetworkViewId !== '' && activeNetworkViewId !== undefined) {
+      setTargetNetworkId(activeNetworkViewId)
+    } else {
+      setTargetNetworkId(currentNetworkId)
+    }
+  }, [activeNetworkViewId, currentNetworkId])
 
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
