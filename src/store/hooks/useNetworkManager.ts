@@ -16,10 +16,13 @@ export const useNetworkManager = (): void => {
   )
   const deleteObjects = useViewModelStore((state) => state.deleteObjects)
 
-  const sub = useNetworkStore.subscribe((network, lastNetwork) => {
-    console.log('---------------Network modelUpdated', network, lastNetwork)
-    handleDeleteObjects([])
-  })
+  const sub = useNetworkStore.subscribe(
+    (state) => state.networks.get(currentNetworkId),
+    (network, lastNetwork) => {
+      console.log('### Network model updated', network, lastNetwork)
+      handleDeleteObjects([])
+    },
+  )
 
   const handleDeleteObjects = (deleted: IdType[]): void => {
     deleteObjects(currentNetworkId, deleted)
