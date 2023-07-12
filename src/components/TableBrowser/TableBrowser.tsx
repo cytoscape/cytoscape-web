@@ -271,7 +271,7 @@ export default function TableBrowser(props: {
         // dont edit the value or do something else
       }
     },
-    [props.currentNetworkId, currentTable, tables, sort],
+    [props.currentNetworkId, currentTable, tables, sort, rows],
   )
 
   const onHeaderMenuClick = React.useCallback(
