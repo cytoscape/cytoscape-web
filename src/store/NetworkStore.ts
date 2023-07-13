@@ -15,6 +15,7 @@ import { useWorkspaceStore } from './WorkspaceStore'
  */
 interface NetworkState {
   networks: Map<IdType, Network>
+  lastModified: IdType
 }
 
 /**
@@ -46,6 +47,8 @@ interface NetworkActions {
 
   // Delete all networks from the store
   deleteAll: () => void
+
+  setLastModified: (networkId: IdType) => void
 }
 
 type NetworkStore = NetworkState & NetworkActions & UpdateActions
@@ -78,6 +81,14 @@ export const useNetworkStore = create(
     immer<NetworkStore>(
       persist((set) => ({
         networks: new Map<IdType, Network>(),
+        lastModified: '',
+
+        setLastModified: (networkId: IdType) => {
+          set((state) => {
+            state.lastModified = networkId
+            return state
+          })
+        },
 
         addNode: (networkId: IdType, nodeId: IdType) => {
           set((state) => {
@@ -85,9 +96,7 @@ export const useNetworkStore = create(
             if (network !== undefined) {
               NetworkFn.addNode(network, nodeId)
             }
-            return {
-              networks: { ...state.networks },
-            }
+            return state
           })
         },
         addNodes: (networkId: IdType, nodeIds: IdType[]) => {
@@ -108,6 +117,8 @@ export const useNetworkStore = create(
             if (network !== undefined) {
               NetworkFn.deleteNodes(network, nodeIds)
             }
+            state.lastModified = nodeIds.join(',')
+            console.log('### Network store: deleteNodes', state.lastModified)
             return state
           })
         },
@@ -150,19 +161,16 @@ export const useNetworkStore = create(
               network.id,
               network,
             )
-            return {
-              networks: newNetworkMap,
-            }
+            state.networks = newNetworkMap
+            return state
           }),
         delete: (networkId: IdType) =>
           set((state) => {
             state.networks.delete(networkId)
-            // const newNetworks: Map<IdType, Network> = new Map(state.networks)
             void deleteNetworkFromDb(networkId).then(() => {
               console.log('## Deleted network from db', networkId)
             })
             return state
-            // return { ...state, networks: newNetworks }
           }),
         deleteAll: () =>
           set((state) => {

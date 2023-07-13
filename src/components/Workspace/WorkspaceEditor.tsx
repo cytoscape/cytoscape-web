@@ -31,6 +31,7 @@ import { Ui } from '../../models/UiModel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { ManualLayoutPanel } from '../LayoutTools'
+import { useNetworkViewManager } from '../../store/hooks/useNetworkManager'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -41,6 +42,7 @@ const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
  */
 const WorkSpaceEditor = (): JSX.Element => {
   useWorkspaceManager()
+  useNetworkViewManager()
 
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
