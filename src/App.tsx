@@ -12,6 +12,8 @@ import {
 // this allows immer to work with Map and Set
 import { enableMapSet } from 'immer'
 import { MessagePanel } from './components/Messages'
+import appConfig from './assets/config.json'
+
 enableMapSet()
 
 const AppShell = React.lazy(() => import('./components/AppShell'))
@@ -29,6 +31,12 @@ const theme = createTheme({
     },
   },
 })
+
+const routerOpts: any = {}
+
+if (appConfig.urlBaseName !== '') {
+  routerOpts.basename = appConfig.urlBaseName
+}
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -63,6 +71,7 @@ const router = createBrowserRouter(
       </Route>
     </Route>,
   ),
+  routerOpts,
 )
 
 export const App = (): React.ReactElement => {

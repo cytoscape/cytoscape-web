@@ -14,6 +14,7 @@ export interface AppConfig {
   maxNetworkElementsThreshold: number
   maxNetworkFileSize: number
   testNetworks: IdType[]
+  urlBaseName: string
 }
 
 export const defaultAppConfig: AppConfig = {
@@ -41,6 +42,7 @@ export const defaultAppConfig: AppConfig = {
     '8bd2797c-3056-11ec-94bf-525400c25d22',
     'ab0eeef6-25bd-11e9-a05d-525400c25d22',
   ],
+  urlBaseName: '',
 }
 
 export const AppConfigContext = createContext<AppConfig>(defaultAppConfig)
