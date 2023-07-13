@@ -25,5 +25,6 @@
     "ab0eeef6-25bd-11e9-a05d-525400c25d22"
   ],
   "maxNetworkElementsThreshold": 20000,
-  "maxNetworkFileSize": 524288000
+  "maxNetworkFileSize": 524288000,
+  "urlBaseName": ""
 }
