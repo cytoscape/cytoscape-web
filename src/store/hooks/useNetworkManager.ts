@@ -3,7 +3,7 @@ import { IdType } from '../../models/IdType'
 import { useNetworkStore } from '../NetworkStore'
 // import { useViewModelStore } from '../ViewModelStore'
 // import { useWorkspaceStore } from '../WorkspaceStore'
-import { Network } from '../../models/NetworkModel'
+// import { Network } from '../../models/NetworkModel'
 
 /**
  * Based on the changes in the workspace store, this hook will
@@ -16,9 +16,9 @@ export const useNetworkViewManager = (): void => {
   // const currentNetworkId: IdType = useWorkspaceStore(
   //   (state) => state.workspace.currentNetworkId,
   // )
-  const networks: Map<IdType, Network> = useNetworkStore(
-    (state) => state.networks,
-  )
+  // const networks: Map<IdType, Network> = useNetworkStore(
+  //   (state) => state.networks,
+  // )
   const setLastModified = useNetworkStore((state) => state.setLastModified)
 
   // function to remove objects from the view model
@@ -32,7 +32,7 @@ export const useNetworkViewManager = (): void => {
 
   useEffect(() => {
     const sub = useNetworkStore.subscribe(
-      (state) => state.lastModified,
+      (state) => state,
       (state, lastState) => {
         counter++
         console.log('Calling update', counter)
@@ -40,10 +40,11 @@ export const useNetworkViewManager = (): void => {
           return
         }
 
-        const target: Network | undefined = networks.get(state)
-        if (target === undefined) {
-          return
-        }
+        // const lastModified: string = state.lastModified
+        // const target: Network | undefined = networks.get(state)
+        // if (target === undefined) {
+        //   return
+        // }
 
         console.log('### Network model updated', state)
         handleDeleteObjects([])

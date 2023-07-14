@@ -10,12 +10,16 @@ import {
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 
-/**
- * Network data store
- */
+export type EventType = 'add' | 'delete'
+export interface NetworkUpdatedEvent {
+  networkId: IdType // Last modified network ID
+  type: EventType // Type of modification, add or delete
+  payload: IdType[] // List of node/edge IDs updated
+}
+
 interface NetworkState {
   networks: Map<IdType, Network>
-  lastModified: IdType
+  lastUpdated: NetworkUpdatedEvent
 }
 
 /**
@@ -79,13 +83,13 @@ const persist =
 export const useNetworkStore = create(
   subscribeWithSelector(
     immer<NetworkStore>(
-      persist((set) => ({
+      persist((set, get) => ({
         networks: new Map<IdType, Network>(),
-        lastModified: '',
+        lastModified: {},
 
         setLastModified: (networkId: IdType) => {
           set((state) => {
-            state.lastModified = networkId
+            // state.lastModified = networkId
             return state
           })
         },
@@ -117,8 +121,6 @@ export const useNetworkStore = create(
             if (network !== undefined) {
               NetworkFn.deleteNodes(network, nodeIds)
             }
-            state.lastModified = nodeIds.join(',')
-            console.log('### Network store: deleteNodes', state.lastModified)
             return state
           })
         },
