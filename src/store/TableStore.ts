@@ -46,6 +46,8 @@ interface TableAction {
     column: AttributeName,
   ) => void
 
+  deleteRows: (networkId: IdType, rows: IdType[]) => void
+
   delete: (networkId: IdType) => void
   deleteAll: () => void
 }
@@ -156,6 +158,32 @@ export const useTableStore = create(
           return state
         })
       },
+
+      deleteRows: (networkId: IdType, rowIds: IdType[]) => {
+        set((state) => {
+          if (rowIds.length === 0) {
+            return state
+          }
+
+          const firstElement: IdType = rowIds[0]
+
+          const table = state.tables
+          const nodeTable = table[networkId]?.nodeTable
+          const edgeTable = table[networkId]?.edgeTable
+          const tableToUpdate = nodeTable.rows.has(firstElement)
+            ? nodeTable
+            : edgeTable
+
+          if (tableToUpdate !== undefined) {
+            const { rows } = tableToUpdate
+            rowIds.forEach((rowId) => {
+              rows.delete(rowId)
+            })
+          }
+          return state
+        })
+      },
+
       delete(networkId: IdType) {
         set((state) => {
           const filtered: Record<IdType, TableRecord> = Object.keys(

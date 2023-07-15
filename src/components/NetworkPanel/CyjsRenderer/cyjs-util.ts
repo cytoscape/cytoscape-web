@@ -95,9 +95,11 @@ const updateCyObjects = <T extends View>(
     const cyId = obj.data('id')
 
     const view: View = views[cyId]
-    const { values } = view
-    values.forEach((value: ValueType, key: VisualPropertyName) => {
-      obj.data(key, value)
-    })
+    if (view !== undefined) {
+      const { values } = view
+      values.forEach((value: ValueType, key: VisualPropertyName) => {
+        obj.data(key, value)
+      })
+    }
   })
 }

@@ -10,16 +10,23 @@ import {
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 
-export type EventType = 'add' | 'delete'
+export const UpdateEventType = {
+  ADD: 'ADD',
+  DELETE: 'DELETE',
+} as const
+
+type UpdateEventType = (typeof UpdateEventType)[keyof typeof UpdateEventType]
+
 export interface NetworkUpdatedEvent {
   networkId: IdType // Last modified network ID
-  type: EventType // Type of modification, add or delete
+  type: UpdateEventType // Type of modification, add or delete
   payload: IdType[] // List of node/edge IDs updated
 }
 
 interface NetworkState {
   networks: Map<IdType, Network>
-  lastUpdated: NetworkUpdatedEvent
+  // Wil be set by this store when a network topology is updated
+  lastUpdated?: NetworkUpdatedEvent
 }
 
 /**
@@ -51,8 +58,6 @@ interface NetworkActions {
 
   // Delete all networks from the store
   deleteAll: () => void
-
-  setLastModified: (networkId: IdType) => void
 }
 
 type NetworkStore = NetworkState & NetworkActions & UpdateActions
@@ -85,14 +90,7 @@ export const useNetworkStore = create(
     immer<NetworkStore>(
       persist((set, get) => ({
         networks: new Map<IdType, Network>(),
-        lastModified: {},
-
-        setLastModified: (networkId: IdType) => {
-          set((state) => {
-            // state.lastModified = networkId
-            return state
-          })
-        },
+        lastModified: undefined,
 
         addNode: (networkId: IdType, nodeId: IdType) => {
           set((state) => {
@@ -120,6 +118,12 @@ export const useNetworkStore = create(
             const network = state.networks.get(networkId)
             if (network !== undefined) {
               NetworkFn.deleteNodes(network, nodeIds)
+              const event: NetworkUpdatedEvent = {
+                networkId,
+                type: UpdateEventType.DELETE,
+                payload: nodeIds,
+              }
+              state.lastUpdated = event
             }
             return state
           })
