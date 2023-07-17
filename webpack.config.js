@@ -3,6 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const ESLintPlugin = require('eslint-webpack-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
+const config = require('./src/assets/config.json')
 
 module.exports = {
   entry: path.resolve(__dirname, './src/index.tsx'),
@@ -35,7 +36,7 @@ module.exports = {
     filename: '[name].[contenthash].js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
-    publicPath: '/',
+    publicPath: config.urlBaseName !== '' ? config.urlBaseName : '/',
   },
   // watch the dist file for changes when using the dev server
   devServer: {
@@ -65,10 +66,10 @@ module.exports = {
     // netlify requires a _redirects file in the root of the dist folder to work with react router
     ...(process.env.BUILD === 'netlify'
       ? [
-          new CopyPlugin({
-            patterns: [{ from: 'netlify/_redirects', to: '.' }],
-          }),
-        ]
+        new CopyPlugin({
+          patterns: [{ from: 'netlify/_redirects', to: '.' }],
+        }),
+      ]
       : []),
   ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other
