@@ -13,7 +13,6 @@ import { useWorkspaceStore } from '../WorkspaceStore'
  *
  * Mostly for clean up tasks.
  */
-let lock = false
 
 export const useWorkspaceManager = (): void => {
   const deleteNetwork = useNetworkStore((state) => state.delete)
@@ -27,33 +26,6 @@ export const useWorkspaceManager = (): void => {
   const deleteAllViews = useViewModelStore((state) => state.deleteAll)
   const deleteAllVisualStyles = useVisualStyleStore((state) => state.deleteAll)
   const deleteAllTables = useTableStore((state) => state.deleteAll)
-
-  const sub = useWorkspaceStore.subscribe(
-    (state) => state.workspace.networkIds,
-    (ids, lastIds) => {
-      if (ids.length === 0 && lastIds.length !== 0) {
-        // TODO: Implement clear the workspace
-        if (!lock) {
-          lock = true
-          handleDeleteAll()
-          setTimeout(() => {
-            console.log('All networks removed from workspace')
-            lock = false
-          }, 1000)
-        }
-      } else if (ids.length < lastIds.length) {
-        if (!lock) {
-          lock = true
-          const removed = lastIds.filter((id) => !ids.includes(id))
-          handleDeleteNetwork(removed[0])
-          setTimeout(() => {
-            lock = false
-            console.log('Network removed from workspace', removed[0])
-          }, 2000)
-        }
-      }
-    },
-  )
 
   const handleDeleteNetwork = (deleted: IdType): void => {
     deleteNetwork(deleted)
@@ -72,6 +44,19 @@ export const useWorkspaceManager = (): void => {
   }
 
   useEffect(() => {
+    const sub = useWorkspaceStore.subscribe(
+      (state) => state.workspace.networkIds,
+      (ids, lastIds) => {
+        if (ids.length === 0 && lastIds.length !== 0) {
+          handleDeleteAll()
+          console.log('! All networks removed from workspace')
+        } else if (ids.length < lastIds.length) {
+          const removed = lastIds.filter((id) => !ids.includes(id))
+          handleDeleteNetwork(removed[0])
+          console.log('* A network removed from workspace', removed[0])
+        }
+      },
+    )
     return () => {
       sub() // Unsubscribe
     }

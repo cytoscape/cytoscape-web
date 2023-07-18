@@ -230,6 +230,7 @@ export const useViewModelStore = create(
               }
             })
 
+            console.log('Network view objects deleted')
             return state
           })
         },

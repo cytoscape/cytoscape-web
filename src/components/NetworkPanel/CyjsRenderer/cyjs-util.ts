@@ -17,6 +17,16 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const edgeVps = VisualStyleFn.edgeVisualProperties(vs)
 
   const cyStyle: CyjsDirectMapper[] = []
+
+  // This is for showing arrows.
+  const baseEdgeStyle = {
+    selector: 'edge',
+    style: {
+      'curve-style': 'bezier',
+    },
+  }
+  cyStyle.push(baseEdgeStyle as CyjsDirectMapper)
+
   nodeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
     const cyjsVpName = getCyjsVpName(vp.name)
     if (cyjsVpName !== undefined) {
@@ -95,9 +105,11 @@ const updateCyObjects = <T extends View>(
     const cyId = obj.data('id')
 
     const view: View = views[cyId]
-    const { values } = view
-    values.forEach((value: ValueType, key: VisualPropertyName) => {
-      obj.data(key, value)
-    })
+    if (view !== undefined) {
+      const { values } = view
+      values.forEach((value: ValueType, key: VisualPropertyName) => {
+        obj.data(key, value)
+      })
+    }
   })
 }

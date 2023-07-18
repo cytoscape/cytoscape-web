@@ -24,27 +24,40 @@ interface TableState {
   tables: Record<IdType, TableRecord>
 }
 
+export const TableType = {
+  NODE: 'node',
+  EDGE: 'edge',
+} as const
+
+export type TableType = (typeof TableType)[keyof typeof TableType]
+
 interface TableAction {
   // Add a new table to the store
   add: (networkId: IdType, nodeTable: Table, edgeTable: Table) => void
 
   setValue: (
     networkId: IdType,
-    tableType: 'node' | 'edge',
+    tableType: TableType,
     row: IdType,
     column: string,
     value: ValueType,
   ) => void
   columnValues: (
     networkId: IdType,
-    tableType: 'node' | 'edge',
+    tableType: TableType,
     column: AttributeName,
   ) => Set<ValueType>
   duplicateColumn: (
     networkId: IdType,
-    tableType: 'node' | 'edge',
+    tableType: TableType,
     column: AttributeName,
   ) => void
+
+  // Delete rows from the table. Should be called (via event) when nodes/edges are deleted
+  deleteRows: (networkId: IdType, rows: IdType[]) => void
+
+  // Create new
+  addRows: (networkId: IdType, rows: IdType[]) => void
 
   delete: (networkId: IdType) => void
   deleteAll: () => void
@@ -156,6 +169,37 @@ export const useTableStore = create(
           return state
         })
       },
+
+      deleteRows: (networkId: IdType, rowIds: IdType[]) => {
+        set((state) => {
+          if (rowIds.length === 0) {
+            return state
+          }
+
+          const table = state.tables
+          const nodeTable = table[networkId]?.nodeTable
+          const edgeTable = table[networkId]?.edgeTable
+          const nodeRows = nodeTable.rows
+          const edgeRows = edgeTable.rows
+          rowIds.forEach((rowId) => {
+            if (nodeRows.has(rowId)) {
+              nodeRows.delete(rowId)
+            } else if (edgeRows.has(rowId)) {
+              edgeRows.delete(rowId)
+            }
+          })
+          return state
+        })
+      },
+      addRows: (networkId: IdType, rowIds: IdType[]) => {
+        set((state) => {
+          if (rowIds.length === 0) {
+            return state
+          }
+          return state
+        })
+      },
+
       delete(networkId: IdType) {
         set((state) => {
           const filtered: Record<IdType, TableRecord> = Object.keys(
