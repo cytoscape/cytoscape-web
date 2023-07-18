@@ -22,7 +22,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const baseEdgeStyle = {
     selector: 'edge',
     style: {
-      'curve-style': 'straight',
+      'curve-style': 'bezier',
     },
   }
   cyStyle.push(baseEdgeStyle as CyjsDirectMapper)
