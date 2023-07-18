@@ -117,11 +117,16 @@ export const useNetworkStore = create(
           set((state) => {
             const network = state.networks.get(networkId)
             if (network !== undefined) {
-              NetworkFn.deleteNodes(network, nodeIds)
+              const deletedElements = NetworkFn.deleteNodes(network, nodeIds)
+              const deletedNodes = deletedElements.nodes()
+              const deletedEdges = deletedElements.edges()
+              const deletedNodeIds = deletedNodes.map((node) => node.id())
+              const deletedEdgeIds = deletedEdges.map((edge) => edge.id())
+              const deleted = [...deletedNodeIds, ...deletedEdgeIds]
               const event: NetworkUpdatedEvent = {
                 networkId,
                 type: UpdateEventType.DELETE,
-                payload: nodeIds,
+                payload: deleted,
               }
               state.lastUpdated = event
             }

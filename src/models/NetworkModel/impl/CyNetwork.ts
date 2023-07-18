@@ -243,10 +243,15 @@ export const addNode = (network: Network, nodeId: IdType): Network => {
   return cyNet
 }
 
-export const deleteNodes = (network: Network, nodeIds: IdType[]): Network => {
+export const deleteNodes = (
+  network: Network,
+  nodeIds: IdType[],
+): cytoscape.CollectionReturnValue => {
   const cyNet: CyNetwork = network as CyNetwork
-  cyNet.store.remove(nodeIds.map((nodeId) => `#${nodeId}`).join(', '))
-  return cyNet
+  const removed = cyNet.store.remove(
+    nodeIds.map((nodeId) => `#${nodeId}`).join(', '),
+  )
+  return removed
 }
 
 export const addNodes = (network: Network, nodeIds: IdType[]): Network => {
