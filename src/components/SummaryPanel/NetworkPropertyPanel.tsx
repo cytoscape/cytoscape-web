@@ -35,6 +35,8 @@ import { NetworkView } from '../../models/ViewModel'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 
 import { removePTags } from '../../utils/remove-p-tags'
+import { useNetworkStore } from '../../store/NetworkStore'
+import { Network } from '../../models/NetworkModel'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
@@ -44,6 +46,15 @@ export const NetworkPropertyPanel = ({
   summary,
 }: NetworkPropertyPanelProps): ReactElement => {
   const theme: Theme = useTheme()
+  const networkId: IdType = summary.externalId
+  const network: Network | undefined = useNetworkStore((state) =>
+    state.networks.get(networkId),
+  )
+  let { nodeCount, edgeCount } = summary
+  if (network !== undefined) {
+    nodeCount = network.nodes.length
+    edgeCount = network.edges.length
+  }
 
   const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
     HTMLButtonElement | undefined
@@ -146,8 +157,8 @@ export const NetworkPropertyPanel = ({
             variant={'subtitle2'}
             sx={{ width: '100%', color: theme.palette.text.secondary }}
           >
-            {`N: ${summary.nodeCount} (${selectedNodes.length}) /
-          E: ${summary.edgeCount} (${selectedEdges.length})`}
+            {`N: ${nodeCount} (${selectedNodes.length}) /
+          E: ${edgeCount} (${selectedEdges.length})`}
           </Typography>
         </Box>
         <Tooltip title="Edit network properties">
