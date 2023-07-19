@@ -6,7 +6,8 @@ interface GraphObjectPropertyPanelProps {
 }
 
 /**
- * Component to display node properties
+ * Component to display properties
+ *  - Currently used only for hierarchy viewer
  */
 export const GraphObjectPropertyPanel = ({
   row,
