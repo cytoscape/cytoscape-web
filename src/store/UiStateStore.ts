@@ -12,6 +12,7 @@ interface UiState {
 interface UiStateAction {
   setActiveNetworkView: (id: IdType) => void
   setPanelState: (panel: Panel, state: PanelState) => void
+  enablePopup: (enable: boolean) => void
 }
 
 type UiStateStore = UiState & UiStateAction
@@ -24,6 +25,7 @@ export const useUiStateStore = create(
         [Panel.RIGHT]: PanelState.CLOSED,
       },
       activeNetworkView: '',
+      enablePopup: false,
     },
     setActiveNetworkView: (id: IdType) => {
       set((state) => {
@@ -33,6 +35,11 @@ export const useUiStateStore = create(
     setPanelState: (panel: Panel, panelState: PanelState) => {
       set((state) => {
         state.ui.panels[panel] = panelState
+      })
+    },
+    enablePopup: (enable: boolean) => {
+      set((state) => {
+        state.ui.enablePopup = enable
       })
     },
   })),
