@@ -13,4 +13,7 @@ export interface Ui {
   // In a multi-view mode, this is
   // the selected, active network in the UI
   activeNetworkView: IdType
+
+  // Show / hide the popup
+  enablePopup: boolean
 }

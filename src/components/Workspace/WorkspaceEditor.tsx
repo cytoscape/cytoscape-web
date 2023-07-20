@@ -33,6 +33,7 @@ import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { ManualLayoutPanel } from '../LayoutTools'
 import { useNetworkViewManager } from '../../store/hooks/useNetworkViewManager'
 import { useTableManager } from '../../store/hooks/useTableManager'
+import { useHierarchyViewerManager } from '../../features/HierarchyViewer/store/useHierarchyViewerManager'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -42,9 +43,13 @@ const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
  *
  */
 const WorkSpaceEditor = (): JSX.Element => {
+  // Subscribers to the stores
   useWorkspaceManager()
   useNetworkViewManager()
   useTableManager()
+
+  // Subscribers for optional features
+  useHierarchyViewerManager()
 
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)

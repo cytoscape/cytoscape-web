@@ -5,6 +5,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useTableStore } from '../../store/TableStore'
 import { Table, ValueType } from '../../models/TableModel'
+import { useUiStateStore } from '../../store/UiStateStore'
 
 interface PopupPanelProps {
   visible: boolean
@@ -17,6 +18,8 @@ export const PopupPanel = ({
   position: [x, y],
   setVisible,
 }: PopupPanelProps): ReactElement => {
+  const enabled: boolean = useUiStateStore((state) => state.ui.enablePopup)
+
   const networkId: string = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -27,7 +30,12 @@ export const PopupPanel = ({
   const { selectedNodes } =
     useViewModelStore((state) => state.viewModels[networkId]) ?? {}
 
-  if (!visible || selectedNodes === undefined || selectedNodes.length === 0) {
+  if (
+    !enabled ||
+    !visible ||
+    selectedNodes === undefined ||
+    selectedNodes.length === 0
+  ) {
     return <></>
   } else if (selectedNodes.length > 1) {
     // This will be displayed only when single node is selected
