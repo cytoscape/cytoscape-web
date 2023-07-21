@@ -115,6 +115,9 @@ export const useNetworkStore = create(
 
         deleteNodes: (networkId: IdType, nodeIds: IdType[]) => {
           set((state) => {
+            if (nodeIds.length === 0) {
+              return state
+            }
             const network = state.networks.get(networkId)
             if (network !== undefined) {
               const deletedElements = NetworkFn.deleteNodes(network, nodeIds)
@@ -135,6 +138,10 @@ export const useNetworkStore = create(
         },
         deleteEdges: (networkId: IdType, edgeIds: IdType[]) => {
           set((state) => {
+            if (edgeIds.length === 0) {
+              return state
+            }
+
             const network = state.networks.get(networkId)
             if (network !== undefined) {
               const deletedElements = NetworkFn.deleteEdges(network, edgeIds)

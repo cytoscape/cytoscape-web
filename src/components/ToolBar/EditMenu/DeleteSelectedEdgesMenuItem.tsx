@@ -1,5 +1,5 @@
 import { MenuItem } from '@mui/material'
-import { ReactElement } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
@@ -10,6 +10,8 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 export const DeleteSelectedEdgesMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
+  const [disabled, setDisabled] = useState<boolean>(true)
+
   const deleteSelectedEdges = useNetworkStore((state) => state.deleteEdges)
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -22,6 +24,14 @@ export const DeleteSelectedEdgesMenuItem = (
   const selectedEdges: IdType[] =
     networkViewModel !== undefined ? networkViewModel.selectedEdges : []
 
+  useEffect(() => {
+    if (selectedEdges.length > 0) {
+      setDisabled(false)
+    } else {
+      setDisabled(true)
+    }
+  }, [selectedEdges])
+
   const handleDeleteEdges = (): void => {
     // TODO: ask user to confirm deletion
 
@@ -29,5 +39,9 @@ export const DeleteSelectedEdgesMenuItem = (
     deleteSelectedEdges(currentNetworkId, selectedEdges)
   }
 
-  return <MenuItem onClick={handleDeleteEdges}>Delete Selected Edges</MenuItem>
+  return (
+    <MenuItem disabled={disabled} onClick={handleDeleteEdges}>
+      Delete Selected Edges
+    </MenuItem>
+  )
 }
