@@ -1,5 +1,5 @@
 import { MenuItem } from '@mui/material'
-import { ReactElement } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
@@ -10,6 +10,7 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 export const DeleteSelectedNodesMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
+  const [disabled, setDisabled] = useState<boolean>(true)
   const deleteSelectedNodes = useNetworkStore((state) => state.deleteNodes)
 
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -23,6 +24,14 @@ export const DeleteSelectedNodesMenuItem = (
   const selectedNodes: IdType[] =
     networkViewModel !== undefined ? networkViewModel.selectedNodes : []
 
+  useEffect(() => {
+    if (selectedNodes.length > 0) {
+      setDisabled(false)
+    } else {
+      setDisabled(true)
+    }
+  }, [selectedNodes])
+
   const handleDeleteNodes = (): void => {
     // TODO: ask user to confirm deletion
 
@@ -30,5 +39,9 @@ export const DeleteSelectedNodesMenuItem = (
     deleteSelectedNodes(currentNetworkId, selectedNodes)
   }
 
-  return <MenuItem onClick={handleDeleteNodes}>Delete Selected Nodes</MenuItem>
+  return (
+    <MenuItem disabled={disabled} onClick={handleDeleteNodes}>
+      Delete Selected Nodes
+    </MenuItem>
+  )
 }

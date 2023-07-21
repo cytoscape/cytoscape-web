@@ -34,6 +34,7 @@ import { ManualLayoutPanel } from '../LayoutTools'
 import { useNetworkViewManager } from '../../store/hooks/useNetworkViewManager'
 import { useTableManager } from '../../store/hooks/useTableManager'
 import { useHierarchyViewerManager } from '../../features/HierarchyViewer/store/useHierarchyViewerManager'
+import { useNetworkSummaryManager } from '../../store/hooks/useNetworkSummaryManager'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -120,6 +121,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   )
   const setSummaries = useNetworkSummaryStore((state) => state.addAll)
   const removeSummary = useNetworkSummaryStore((state) => state.delete)
+  useNetworkSummaryManager()
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
