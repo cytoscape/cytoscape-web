@@ -70,7 +70,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   )
 
   const ui: Ui = useUiStateStore((state) => state.ui)
-  const { panels } = ui
+  const { panels, activeNetworkView } = ui
 
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
@@ -310,7 +310,7 @@ const WorkSpaceEditor = (): JSX.Element => {
               <TableBrowser
                 height={tableBrowserHeight}
                 width={tableBrowserWidth}
-                currentNetworkId={currentNetworkId}
+                currentNetworkId={activeNetworkView ?? currentNetworkId}
               />
             </Suspense>
           </Allotment.Pane>

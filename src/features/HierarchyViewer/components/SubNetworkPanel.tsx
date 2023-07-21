@@ -14,7 +14,6 @@ import { Query } from './MainPanel'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
-import { blue } from '@mui/material/colors'
 import {
   putNetworkViewToDb,
   putVisualStyleToDb,
@@ -53,9 +52,6 @@ export const SubNetworkPanel = ({
   const addViewModel = useViewModelStore((state) => state.add)
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
-  )
-  const activeNetworkId: IdType = useUiStateStore(
-    (state) => state.ui.activeNetworkView,
   )
 
   const viewModels: Record<string, NetworkView> = useViewModelStore(
@@ -150,10 +146,6 @@ export const SubNetworkPanel = ({
       sx={{
         height: '100%',
         width: '100%',
-        border:
-          queryNetworkId === activeNetworkId
-            ? `4px solid ${blue[300]}`
-            : 'none',
       }}
       onClick={handleClick}
     >

@@ -1,4 +1,4 @@
-import { Card } from '@mui/material'
+import { Card, useTheme } from '@mui/material'
 import { ReactElement } from 'react'
 import { GraphObjectPropertyPanel } from './GraphObjectPropertyPanel'
 import { useViewModelStore } from '../../store/ViewModelStore'
@@ -18,6 +18,7 @@ export const PopupPanel = ({
   position: [x, y],
   setVisible,
 }: PopupPanelProps): ReactElement => {
+  const theme = useTheme()
   const enabled: boolean = useUiStateStore((state) => state.ui.enablePopup)
 
   const networkId: string = useWorkspaceStore(
@@ -54,10 +55,11 @@ export const PopupPanel = ({
         top: y,
         left: x,
         borderRadius: '0.5em',
-        maxHeight: '20vh',
+        maxHeight: '25vh',
         maxWidth: '20em',
         overflow: 'auto',
         padding: 0,
+        background: theme.palette.background.paper,
       }}
       onClick={(event) => {
         event.stopPropagation()
