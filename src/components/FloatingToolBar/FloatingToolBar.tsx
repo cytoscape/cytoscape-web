@@ -2,9 +2,8 @@ import { Box, Divider } from '@mui/material'
 import { ApplyLayoutButton } from './ApplyLayoutButton'
 import { FitButton } from './FitButton'
 import { OpenInCytoscapeButton } from './OpenInCytoscapeButton'
-import { Ui } from '../../models/UiModel'
+import DoneIcon from '@mui/icons-material/Done'
 import { useUiStateStore } from '../../store/UiStateStore'
-
 interface FloatingToolBarProps {
   // All actions to be performed on the target network if provided
   targetNetworkId?: string
@@ -13,8 +12,9 @@ interface FloatingToolBarProps {
 export const FloatingToolBar = ({
   targetNetworkId,
 }: FloatingToolBarProps): JSX.Element => {
-  const ui: Ui = useUiStateStore((state) => state.ui)
-  const { activeNetworkView } = ui
+  const ui = useUiStateStore((state) => state.ui)
+  const { enablePopup, activeNetworkView } = ui
+
   return (
     <Box
       sx={{
@@ -23,15 +23,15 @@ export const FloatingToolBar = ({
         alignItems: 'center',
         bottom: '1em',
         right: '1em',
-        zIndex: 2000,
+        zIndex: 3000,
         borderRadius: '0.5em',
         backgroundColor: 'rgba(250, 250, 250, 0.8)',
-        border:
-          targetNetworkId === activeNetworkView
-            ? '1px solid #FF0000'
-            : '1px solid #AAAAAA',
+        border: '1px solid #AAAAAA',
       }}
     >
+      {enablePopup && targetNetworkId === activeNetworkView ? (
+        <DoneIcon color="warning" />
+      ) : null}
       <Divider orientation="vertical" flexItem />
       <ApplyLayoutButton targetNetworkId={targetNetworkId} />
       <FitButton />

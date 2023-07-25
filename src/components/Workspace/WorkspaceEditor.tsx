@@ -292,7 +292,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                     allotmentDimensions={allotmentDimensions}
                   />
                 </Allotment.Pane>
-                <Allotment.Pane>
+                <Allotment.Pane maxSize={200}>
                   <ManualLayoutPanel />
                 </Allotment.Pane>
               </Allotment>
