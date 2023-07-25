@@ -20,7 +20,8 @@ import {
   Item,
   Rectangle,
   CellClickedEventArgs,
-  DataEditorRef
+  DataEditorRef,
+  HeaderClickedEventArgs
 } from '@glideapps/glide-data-grid'
 
 import {
@@ -86,6 +87,8 @@ export default function TableBrowser(props: {
     | undefined
   >(undefined)
 
+  // const [selectedColumnIndex, setSelectedColumnIndex] = React.useState<number | undefined>(undefined)
+
   const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
   const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
 
@@ -137,6 +140,8 @@ export default function TableBrowser(props: {
       : rowsWithIds
 
   React.useEffect(() => {
+    // scroll to the first result anytime someone changes the filtered rows
+    // e.g. when the user selects nodes in the network view, scroll to the top of the list in the table
     nodeDataEditorRef.current?.scrollTo(0, 0, "both", 0, 0, {
       vAlign: 'start',
       hAlign: 'start',
@@ -285,9 +290,9 @@ export default function TableBrowser(props: {
     [],
   )
 
-  const onHeaderClicked = React.useCallback((): void => {
-    // eslint-disable-next-line no-console
-    console.log('Header clicked')
+  const onHeaderClicked = React.useCallback((col: number, event: HeaderClickedEventArgs): void => {
+    // setSelectedColumnIndex(col)
+    // console.log(selectedColumnIndex)
   }, [])
 
   return (
@@ -333,7 +338,7 @@ export default function TableBrowser(props: {
           <DataEditor
             ref={nodeDataEditorRef}
             onCellContextMenu={onCellContextMenu}
-            rowMarkers={'both'}
+            rowMarkers={'checkbox'}
             rowMarkerStartIndex={minNodeId}
             showSearch={showSearch}
             keybindings={{ search: true }}
@@ -348,7 +353,7 @@ export default function TableBrowser(props: {
             getCellContent={getContent}
             onCellEdited={onCellEdited}
             columns={columns}
-            rows={maxNodeId - minNodeId}
+            rows={(maxNodeId - minNodeId) + 1}
           />
         </Box>
         {menu != null && menu.menuType === 'header' && <TableBrowserContextMenu bounds={menu.bounds}>
@@ -493,7 +498,7 @@ export default function TableBrowser(props: {
           <DataEditor
             ref={edgeDataEditorRef}
             onCellContextMenu={onCellContextMenu}
-            rowMarkers={'both'}
+            rowMarkers={'checkbox'}
             rowMarkerStartIndex={minEdgeId}
             showSearch={showSearch}
             keybindings={{ search: true }}
@@ -508,7 +513,7 @@ export default function TableBrowser(props: {
             getCellContent={getContent}
             onCellEdited={onCellEdited}
             columns={columns}
-            rows={maxEdgeId - minEdgeId}
+            rows={(maxEdgeId - minEdgeId) + 1}
           />
         </Box>
         {menu != null && menu.menuType === 'header' && <TableBrowserContextMenu bounds={menu.bounds}>
