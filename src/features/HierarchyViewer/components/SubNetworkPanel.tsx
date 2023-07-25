@@ -54,6 +54,10 @@ export const SubNetworkPanel = ({
     (state) => state.setActiveNetworkView,
   )
 
+  // This will be used to highlight the active network border
+  const ui = useUiStateStore((state) => state.ui)
+  const { activeNetworkView } = ui
+
   const viewModels: Record<string, NetworkView> = useViewModelStore(
     (state) => state.viewModels,
   )
@@ -89,6 +93,7 @@ export const SubNetworkPanel = ({
       setActiveNetworkView(queryNetworkId)
     }
   }
+
   useEffect(() => {
     const viewModel: NetworkView | undefined = viewModels[queryNetworkId]
     if (viewModel === undefined) {
@@ -144,12 +149,28 @@ export const SubNetworkPanel = ({
   return (
     <Box
       sx={{
+        boxSizing: 'border-box',
         height: '100%',
         width: '100%',
+        border:
+          activeNetworkView === queryNetwork.id
+            ? '3px solid orange'
+            : '3px solid transparent',
       }}
       onClick={handleClick}
     >
-      <Typography variant={'h6'}>Subsystem: {subNetworkName}</Typography>
+      <Typography
+        sx={{
+          position: 'absolute',
+          bottom: '0.5em',
+          left: '0.5em',
+          zIndex: 3000,
+          backgroundColor: 'transparent',
+        }}
+        variant={'subtitle1'}
+      >
+        Subsystem: {subNetworkName}
+      </Typography>
       <CyjsRenderer network={queryNetwork} />
       <FloatingToolBar targetNetworkId={queryNetworkId ?? undefined} />
     </Box>
