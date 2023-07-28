@@ -19,6 +19,7 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
 import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { StyleManager } from './PropertyPanel/StyleManager'
+import { StyleSelector } from './StyleSelector/StyleSelector'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -133,6 +134,7 @@ export const MainPanel = (): JSX.Element => {
             </Allotment.Pane>
             <Allotment.Pane key={1}>
               <StyleManager />
+              <StyleSelector />
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>

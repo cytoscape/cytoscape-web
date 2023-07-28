@@ -6,7 +6,7 @@ import { CyjsRenderer } from '../../../components/NetworkPanel/CyjsRenderer'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
-import { ndexQueryFetcher } from '../store/useQueryNetwork'
+import { ndexQueryFetcher } from '../store/ndexQueryFetcher'
 import useSWR from 'swr'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { NetworkWithView } from '../../../utils/cx-utils'
@@ -21,6 +21,8 @@ import {
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { useLayoutStore } from '../../../store/LayoutStore'
 
 interface SubNetworkPanelProps {
   // Name of the network visualized here
@@ -53,6 +55,28 @@ export const SubNetworkPanel = ({
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+
+  // For applying default layout
+  const defaultLayout: LayoutAlgorithm = useLayoutStore(
+    (state) => state.preferredLayout,
+  )
+
+  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
+    (state) => state.setIsRunning,
+  )
+
+  const layoutEngines: LayoutEngine[] = useLayoutStore(
+    (state) => state.layoutEngines,
+  )
+
+  const engine: LayoutEngine =
+    layoutEngines.find((engine) => engine.name === defaultLayout.engineName) ??
+    layoutEngines[0]
+
+  const updateNodePositions: (
+    networkId: IdType,
+    positions: Map<IdType, [number, number, number?]>,
+  ) => void = useViewModelStore((state) => state.updateNodePositions)
 
   // This will be used to highlight the active network border
   const ui = useUiStateStore((state) => state.ui)
@@ -128,6 +152,19 @@ export const SubNetworkPanel = ({
         addVisualStyle(newUuid, visualStyle)
         addTable(newUuid, nodeTable, edgeTable)
         addViewModel(newUuid, networkView)
+
+        // Apply default layout for the first time
+        const afterLayout = (
+          positionMap: Map<IdType, [number, number]>,
+        ): void => {
+          updateNodePositions(network.id, positionMap)
+          setIsRunning(false)
+        }
+
+        if (network !== undefined && engine !== undefined) {
+          setIsRunning(true)
+          engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
+        }
       }
       setQueryNetworkId(newUuid)
     }
