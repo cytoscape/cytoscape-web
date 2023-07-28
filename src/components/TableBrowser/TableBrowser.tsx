@@ -4,13 +4,15 @@ import Tab from '@mui/material/Tab'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
-import Card from '@mui/material/Card'
-import { Button, MenuItem } from '@mui/material'
+import { Button, ButtonGroup } from '@mui/material'
 
 import { Table, ValueType, ValueTypeName } from '../../models/TableModel'
 import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
+import { useVisualStyleStore } from '../../store/VisualStyleStore'
+
+import TableColumnForm from './TableColumnForm'
 
 import {
   DataEditor,
@@ -24,6 +26,7 @@ import {
   HeaderClickedEventArgs
 } from '@glideapps/glide-data-grid'
 
+
 import {
   deserializeValueList,
   valueDisplay,
@@ -32,12 +35,18 @@ import {
   SortType,
   sortFnToType,
 } from '../../models/TableModel/impl/ValueTypeImpl'
-import TableBrowserContextMenu from './TableBrowserContextMenu'
 
 interface TabPanelProps {
   children?: React.ReactNode
   index: number
   value: number
+}
+
+export interface TableColumn {
+  id: string,
+  title: string,
+  type: ValueTypeName,
+  index: number
 }
 
 function TabPanel(props: TabPanelProps): React.ReactElement {
@@ -78,16 +87,10 @@ export default function TableBrowser(props: {
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
-  const [menu, setMenu] = React.useState<
-    | {
-      col: number
-      bounds: Rectangle
-      menuType: 'header' | 'cell'
-    }
-    | undefined
-  >(undefined)
+  const [showColumnForm, setShowColumnForm] = React.useState(false);
+  const [columnFormError, setColumnFormError] = React.useState<string | undefined>(undefined)
 
-  // const [selectedColumnIndex, setSelectedColumnIndex] = React.useState<number | undefined>(undefined)
+  const [selectedColumnIndex, setSelectedColumnIndex] = React.useState<number | undefined>(undefined)
 
   const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
   const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
@@ -102,12 +105,17 @@ export default function TableBrowser(props: {
 
 
   const networkId = props.currentNetworkId
+  const visualStyle = useVisualStyleStore(
+    (state) => state.visualStyles[props.currentNetworkId],
+  )
+
   const { selectedNodes, selectedEdges } =
     useViewModelStore((state) => state.viewModels[networkId]) ?? {}
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
   const duplicateColumn = useTableStore((state) => state.duplicateColumn)
+  const setColumnName = useTableStore((state) => state.setColumnName)
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
   const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
@@ -120,12 +128,11 @@ export default function TableBrowser(props: {
   const maxEdgeId = edgeIds.sort((a, b) => b - a)[0]
   const minEdgeId = edgeIds.sort((a, b) => a - b)[0]
   const columns = Array.from(currentTable?.columns.entries() ?? new Map()).map(
-    ([key, col], index) => ({
-      id: key,
-      title: key,
+    ([attributeName, col], index) => ({
+      id: attributeName,
+      title: attributeName,
       type: col.type,
       index,
-      hasMenu: true,
     }),
   )
 
@@ -238,12 +245,6 @@ export default function TableBrowser(props: {
     console.log(event)
 
     event.preventDefault()
-    console.log(event.bounds)
-    setMenu({
-      bounds: event.bounds,
-      col: 0,
-      menuType: 'header',
-    })
   }, [props.currentNetworkId, currentTable, tables])
 
   const onCellEdited = React.useCallback(
@@ -281,19 +282,86 @@ export default function TableBrowser(props: {
 
   const onHeaderMenuClick = React.useCallback(
     (col: number, bounds: Rectangle): void => {
-      setMenu({
-        bounds,
-        col,
-        menuType: 'header',
-      })
     },
     [],
   )
 
   const onHeaderClicked = React.useCallback((col: number, event: HeaderClickedEventArgs): void => {
-    // setSelectedColumnIndex(col)
-    // console.log(selectedColumnIndex)
+    setSelectedColumnIndex(col)
+    console.log(selectedColumnIndex)
   }, [])
+
+  const selectedColumn = selectedColumnIndex != null ? columns?.[selectedColumnIndex] : null
+  // scan the visual properties to see if the selected column name is used in any mappings
+  const visualPropertiesDependentOnSelectedColumn = Object.values(visualStyle ?? {}).filter((vpValue) =>
+    selectedColumn?.id != null && vpValue?.mapping?.attribute === selectedColumn.id).map(vp => vp.displayName)
+  const selectedColumnToolbar = (
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
+        Toggle Search
+      </Button>
+      {
+        selectedColumn != null && (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Box sx={{ mr: 1 }}>
+                Selected Column: {selectedColumn.id}
+              </Box>
+              <ButtonGroup size="small">
+                <Button onClick={() => {
+                  if (selectedColumn != null) {
+                    const columnKey = selectedColumn.id
+                    const columnType = selectedColumn.type
+
+                    setSort({
+                      column: columnKey,
+                      direction: 'asc',
+                      valueType: columnType,
+                    })
+                  }
+                }}>Sort Asc.</Button>
+                <Button onClick={() => {
+                  if (selectedColumn != null) {
+                    const columnKey = selectedColumn.id
+                    const columnType = selectedColumn.type
+                    setSort({
+                      column: columnKey,
+                      direction: 'desc',
+                      valueType: columnType,
+                    })
+                  }
+                }}> Sort Desc.</Button>
+                <Button onClick={() => {
+                  if (selectedColumn != null) {
+                    const columnKey = selectedColumn.id
+                    duplicateColumn(
+                      props.currentNetworkId,
+                      currentTable === nodeTable ? 'node' : 'edge',
+                      columnKey,
+                    )
+                  }
+                }}>Duplicate Column</Button>
+                <Button onClick={() => setShowColumnForm(true)}>Edit Column</Button>
+              </ButtonGroup>
+            </Box>
+            <TableColumnForm error={columnFormError} dependentVisualProperties={visualPropertiesDependentOnSelectedColumn} open={showColumnForm} column={selectedColumn} onClose={() => setShowColumnForm(false)} onSubmit={(newColumnName: string) => {
+              // const nextTable = editColumnName(currentTable, selectedColumn.id, newColumnName)
+              const columnNameSet = new Set(columns?.map(c => c.id))
+              if (columnNameSet.has(newColumnName)) {
+                setColumnFormError(`${newColumnName} already exists.  Please enter a new unique column name`)
+              } else {
+                setColumnName(props.currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', selectedColumn.id, newColumnName)
+                setColumnFormError(undefined)
+                setSelectedColumnIndex(undefined)
+              }
+            }} />
+
+          </>
+
+        )
+      }
+    </Box >
+  )
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -331,9 +399,7 @@ export default function TableBrowser(props: {
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
-        <Button onClick={() => setShowSearch(!showSearch)}>
-          Toggle Search
-        </Button>
+        {selectedColumnToolbar}
         <Box>
           <DataEditor
             ref={nodeDataEditorRef}
@@ -356,143 +422,10 @@ export default function TableBrowser(props: {
             rows={(maxNodeId - minNodeId) + 1}
           />
         </Box>
-        {menu != null && menu.menuType === 'header' && <TableBrowserContextMenu bounds={menu.bounds}>
-          <Card
-            sx={{
-              backgroundColor: 'white',
-              width: 175,
-              zIndex: 100,
-            }}
-            onClick={() => setMenu(undefined)}
-          >
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  const columnType = column.type
-
-                  setSort({
-                    column: columnKey,
-                    direction: 'asc',
-                    valueType: columnType,
-                  })
-                }
-                setMenu(undefined)
-              }}
-            >
-              Sort ascending
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  const columnType = column.type
-                  setSort({
-                    column: columnKey,
-                    direction: 'desc',
-                    valueType: columnType,
-                  })
-                }
-                setMenu(undefined)
-              }}
-            >
-              Sort descending
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  duplicateColumn(
-                    props.currentNetworkId,
-                    currentTable === nodeTable ? 'node' : 'edge',
-                    columnKey,
-                  )
-                }
-                setMenu(undefined)
-              }}
-            >
-              Duplicate column
-            </MenuItem>
-          </Card>
-        </TableBrowserContextMenu>}
-        {menu != null && menu.menuType === 'cell' && <TableBrowserContextMenu bounds={menu.bounds}>
-          <Card
-            sx={{
-              backgroundColor: 'white',
-              width: 175,
-              zIndex: 100,
-            }}
-            onClick={() => setMenu(undefined)}
-          >
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  const columnType = column.type
-
-                  setSort({
-                    column: columnKey,
-                    direction: 'asc',
-                    valueType: columnType,
-                  })
-                }
-                setMenu(undefined)
-              }}
-            >
-              Sort ascending
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  const columnType = column.type
-                  setSort({
-                    column: columnKey,
-                    direction: 'desc',
-                    valueType: columnType,
-                  })
-                }
-                setMenu(undefined)
-              }}
-            >
-              Sort descending
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  duplicateColumn(
-                    props.currentNetworkId,
-                    currentTable === nodeTable ? 'node' : 'edge',
-                    columnKey,
-                  )
-                }
-                setMenu(undefined)
-              }}
-            >
-              Duplicate column
-            </MenuItem>
-          </Card>
-        </TableBrowserContextMenu>}
-
 
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
-        <Button onClick={() => setShowSearch(!showSearch)}>
-          Toggle Search
-        </Button>
+        {selectedColumnToolbar}
 
         <Box>
           <DataEditor
@@ -516,139 +449,7 @@ export default function TableBrowser(props: {
             rows={(maxEdgeId - minEdgeId) + 1}
           />
         </Box>
-        {menu != null && menu.menuType === 'header' && <TableBrowserContextMenu bounds={menu.bounds}>
-          <Card
-            sx={{
-              backgroundColor: 'white',
-              width: 175,
-              zIndex: 100,
-            }}
-            onClick={() => setMenu(undefined)}
-          >
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  const columnType = column.type
-
-                  setSort({
-                    column: columnKey,
-                    direction: 'asc',
-                    valueType: columnType,
-                  })
-                }
-                setMenu(undefined)
-              }}
-            >
-              Sort ascending
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  const columnType = column.type
-                  setSort({
-                    column: columnKey,
-                    direction: 'desc',
-                    valueType: columnType,
-                  })
-                }
-                setMenu(undefined)
-              }}
-            >
-              Sort descending
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  duplicateColumn(
-                    props.currentNetworkId,
-                    currentTable === nodeTable ? 'node' : 'edge',
-                    columnKey,
-                  )
-                }
-                setMenu(undefined)
-              }}
-            >
-              Duplicate column
-            </MenuItem>
-          </Card>
-        </TableBrowserContextMenu>}
-        {menu != null && menu.menuType === 'cell' && <TableBrowserContextMenu bounds={menu.bounds}>
-          <Card
-            sx={{
-              backgroundColor: 'white',
-              width: 175,
-              zIndex: 100,
-            }}
-            onClick={() => setMenu(undefined)}
-          >
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  const columnType = column.type
-
-                  setSort({
-                    column: columnKey,
-                    direction: 'asc',
-                    valueType: columnType,
-                  })
-                }
-                setMenu(undefined)
-              }}
-            >
-              Sort ascending
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  const columnType = column.type
-                  setSort({
-                    column: columnKey,
-                    direction: 'desc',
-                    valueType: columnType,
-                  })
-                }
-                setMenu(undefined)
-              }}
-            >
-              Sort descending
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                const col = menu?.col
-                if (col != null) {
-                  const column = columns[col]
-                  const columnKey = column.id
-                  duplicateColumn(
-                    props.currentNetworkId,
-                    currentTable === nodeTable ? 'node' : 'edge',
-                    columnKey,
-                  )
-                }
-                setMenu(undefined)
-              }}
-            >
-              Duplicate column
-            </MenuItem>
-          </Card>
-        </TableBrowserContextMenu>}
-
-
-      </TabPanel>
-    </Box>
+      </TabPanel >
+    </Box >
   )
 }

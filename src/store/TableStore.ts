@@ -35,6 +35,13 @@ interface TableAction {
   // Add a new table to the store
   add: (networkId: IdType, nodeTable: Table, edgeTable: Table) => void
 
+
+  setColumnName: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    currentColumnName: string,
+    newColumnName: string
+  ) => void
   setValue: (
     networkId: IdType,
     tableType: TableType,
@@ -67,31 +74,31 @@ type TableStore = TableState & TableAction
 
 const persist =
   (config: StateCreator<TableStore>) =>
-  (
-    set: StoreApi<TableStore>['setState'],
-    get: StoreApi<TableStore>['getState'],
-    api: StoreApi<TableStore>,
-  ) =>
-    config(
-      async (args) => {
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
-        console.log('persist middleware updating table store')
-        set(args)
-        const updated = get().tables[currentNetworkId]
-        console.log('updated table: ', updated)
-        const deleted = updated === undefined
-        if (!deleted) {
-          await putTablesToDb(
-            currentNetworkId,
-            updated.nodeTable,
-            updated.edgeTable,
-          ).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+    (
+      set: StoreApi<TableStore>['setState'],
+      get: StoreApi<TableStore>['getState'],
+      api: StoreApi<TableStore>,
+    ) =>
+      config(
+        async (args) => {
+          const currentNetworkId =
+            useWorkspaceStore.getState().workspace.currentNetworkId
+          console.log('persist middleware updating table store')
+          set(args)
+          const updated = get().tables[currentNetworkId]
+          console.log('updated table: ', updated)
+          const deleted = updated === undefined
+          if (!deleted) {
+            await putTablesToDb(
+              currentNetworkId,
+              updated.nodeTable,
+              updated.edgeTable,
+            ).then(() => { })
+          }
+        },
+        get,
+        api,
+      )
 
 export const useTableStore = create(
   immer<TableStore>(
@@ -102,6 +109,42 @@ export const useTableStore = create(
         set((state) => {
           state.tables[networkId] = { nodeTable, edgeTable }
           return state
+        })
+      },
+
+      setColumnName: (
+        networkId: IdType,
+        tableType: 'node' | 'edge',
+        currentColumnName: string,
+        newColumnName: string
+      ) => {
+        set((state) => {
+          const table = state.tables[networkId]
+          const tableToUpdate =
+            table[tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable']
+
+
+          const column = tableToUpdate.columns.get(currentColumnName)
+          if (column != null) {
+            tableToUpdate.columns.delete(currentColumnName)
+            tableToUpdate.columns.set(newColumnName, column)
+          }
+
+          const rows = tableToUpdate.rows.values()
+          Array.from(rows).forEach(row => {
+            const v = row[currentColumnName]
+            delete row[currentColumnName]
+            row[newColumnName] = v
+          })
+          // Object.entries(rows)).forEach(([key, v]) => {
+          //   const value = rows[key]
+          //   if (value != null) {
+          //     delete row[currentColumnName]
+          //     row[newColumnName] = value
+          //   }
+          // })
+          return state
+
         })
       },
 
