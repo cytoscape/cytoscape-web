@@ -45,6 +45,10 @@ export const useHierarchyViewerManager = (): void => {
       acc[prop.predicateString] = prop.value
       return acc
     }, {})
+    if(Object.keys(networkPropObj).length === 0) {
+      enablePopup(false)
+      return
+    }
     const metadata: HcxMetaData | undefined = getHcxProps(networkPropObj)
     console.log('summary updated', summary, metadata)
     if (metadata !== undefined) {
