@@ -12,7 +12,8 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 
-import TableColumnForm from './TableColumnForm'
+import { EditTableColumnForm, CreateTableColumnForm, DeleteTableColumnForm } from './TableColumnForm'
+
 
 import {
   DataEditor,
@@ -86,8 +87,15 @@ export default function TableBrowser(props: {
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
-  // const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
-  const [showColumnForm, setShowColumnForm] = React.useState(false)
+  const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
+  const [createColumnFormError, setCreateColumnFormError] = React.useState<string | undefined
+  >(undefined)
+
+  const [showDeleteColumnForm, setShowDeleteColumnForm] = React.useState(false)
+  const [deleteColumnFormError, setDeleteColumnFormError] = React.useState<string | undefined
+  >(undefined)
+
+  const [showEditColumnForm, setShowEditColumnForm] = React.useState(false)
   const [columnFormError, setColumnFormError] = React.useState<
     string | undefined
   >(undefined)
@@ -119,6 +127,9 @@ export default function TableBrowser(props: {
     useTableStore((state) => state.tables)
   const duplicateColumn = useTableStore((state) => state.duplicateColumn)
   const setColumnName = useTableStore((state) => state.setColumnName)
+  const addColumn = useTableStore((state) => state.createColumn)
+  const deleteColumn = useTableStore((state) => state.deleteColumn)
+
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
   const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
@@ -286,7 +297,7 @@ export default function TableBrowser(props: {
   )
 
   const onHeaderMenuClick = React.useCallback(
-    (col: number, bounds: Rectangle): void => {},
+    (col: number, bounds: Rectangle): void => { },
     [],
   )
 
@@ -315,9 +326,34 @@ export default function TableBrowser(props: {
       <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
         Toggle Search
       </Button>
-      {/* <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
+      <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
         Create Column
-      </Button> */}
+      </Button>
+      <CreateTableColumnForm
+        error={createColumnFormError}
+        open={showCreateColumnForm}
+        onClose={() => {
+          setShowCreateColumnForm(false)
+          setCreateColumnFormError(undefined)
+        }}
+        onSubmit={(columnName: string, dataType: ValueTypeName) => {
+          const columnNameSet = new Set(columns?.map((c) => c.id))
+          if (columnNameSet.has(columnName)) {
+            setCreateColumnFormError(
+              `${columnName} already exists.  Please enter a new unique column name`,
+            )
+          } else {
+            addColumn(
+              props.currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge',
+              columnName,
+              dataType
+            )
+            setCreateColumnFormError(undefined)
+            setShowCreateColumnForm(false)
+          }
+        }}
+      />
       {selectedColumn != null && (
         <>
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -369,23 +405,23 @@ export default function TableBrowser(props: {
               >
                 Duplicate Column
               </Button>
-              <Button onClick={() => setShowColumnForm(true)}>
+              <Button onClick={() => setShowEditColumnForm(true)}>
                 Edit Column
               </Button>
-              <Button color="error" onClick={() => {}}>
+              <Button color="error" onClick={() => setShowDeleteColumnForm(true)}>
                 Delete Column
               </Button>
             </ButtonGroup>
           </Box>
-          <TableColumnForm
+          <EditTableColumnForm
             error={columnFormError}
             dependentVisualProperties={
               visualPropertiesDependentOnSelectedColumn
             }
-            open={showColumnForm}
+            open={showEditColumnForm}
             column={selectedColumn}
             onClose={() => {
-              setShowColumnForm(false)
+              setShowEditColumnForm(false)
               setColumnFormError(undefined)
             }}
             onSubmit={(newColumnName: string) => {
@@ -404,6 +440,28 @@ export default function TableBrowser(props: {
                 setColumnFormError(undefined)
                 setSelectedColumnIndex(undefined)
               }
+            }}
+          />
+          <DeleteTableColumnForm
+            error={deleteColumnFormError}
+            dependentVisualProperties={
+              visualPropertiesDependentOnSelectedColumn
+            }
+            open={showDeleteColumnForm}
+            column={selectedColumn}
+            onClose={() => {
+              setShowDeleteColumnForm(false)
+              setDeleteColumnFormError(undefined)
+            }}
+            onSubmit={() => {
+
+              deleteColumn(
+                props.currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                selectedColumn.id,
+              )
+              setDeleteColumnFormError(undefined)
+              setSelectedColumnIndex(undefined)
             }}
           />
         </>

@@ -1,5 +1,5 @@
 import { IdType } from '../models/IdType'
-import { AttributeName, Table, ValueType } from '../models/TableModel'
+import { AttributeName, Table, ValueType, ValueTypeName } from '../models/TableModel'
 
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
@@ -36,6 +36,17 @@ interface TableAction {
   add: (networkId: IdType, nodeTable: Table, edgeTable: Table) => void
 
 
+  deleteColumn: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    columnName: string
+  ) => void
+  createColumn: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    columnName: string,
+    dataType: ValueTypeName
+  ) => void
   setColumnName: (
     networkId: IdType,
     tableType: 'node' | 'edge',
@@ -147,6 +158,58 @@ export const useTableStore = create(
 
         })
       },
+
+      deleteColumn: (
+        networkId: IdType,
+        tableType: 'node' | 'edge',
+        columnName: string
+      ) => {
+        set((state) => {
+          const table = state.tables[networkId]
+          const tableToUpdate =
+            table[tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable']
+          const column = tableToUpdate.columns.get(columnName)
+          if (column != null) {
+            tableToUpdate.columns.delete(columnName)
+          }
+
+          const rows = tableToUpdate.rows.values()
+          Array.from(rows).forEach(row => {
+
+            delete row[columnName]
+          })
+
+
+          return state
+        })
+      },
+
+
+      createColumn: (
+        networkId: IdType,
+        tableType: 'node' | 'edge',
+        columnName: string,
+        dataType: ValueTypeName
+      ) => {
+        set((state) => {
+          const table = state.tables[networkId]
+          const tableToUpdate =
+            table[tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable']
+
+          tableToUpdate.columns.set(columnName, {
+            name: columnName,
+            type: dataType
+          })
+
+          // const rows = tableToUpdate.rows.values()
+          // Array.from(rows).forEach(row => {
+          // })
+
+
+          return state
+        })
+      },
+
 
       // Note:  The only code that calls this function makes sure the
       // type of the column is the same as the type of the value
