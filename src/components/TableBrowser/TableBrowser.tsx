@@ -23,9 +23,8 @@ import {
   Rectangle,
   CellClickedEventArgs,
   DataEditorRef,
-  HeaderClickedEventArgs
+  HeaderClickedEventArgs,
 } from '@glideapps/glide-data-grid'
-
 
 import {
   deserializeValueList,
@@ -43,9 +42,9 @@ interface TabPanelProps {
 }
 
 export interface TableColumn {
-  id: string,
-  title: string,
-  type: ValueTypeName,
+  id: string
+  title: string
+  type: ValueTypeName
   index: number
 }
 
@@ -87,10 +86,15 @@ export default function TableBrowser(props: {
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
-  const [showColumnForm, setShowColumnForm] = React.useState(false);
-  const [columnFormError, setColumnFormError] = React.useState<string | undefined>(undefined)
+  // const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
+  const [showColumnForm, setShowColumnForm] = React.useState(false)
+  const [columnFormError, setColumnFormError] = React.useState<
+    string | undefined
+  >(undefined)
 
-  const [selectedColumnIndex, setSelectedColumnIndex] = React.useState<number | undefined>(undefined)
+  const [selectedColumnIndex, setSelectedColumnIndex] = React.useState<
+    number | undefined
+  >(undefined)
 
   const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
   const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
@@ -102,7 +106,6 @@ export default function TableBrowser(props: {
     direction: undefined,
     valueType: undefined,
   })
-
 
   const networkId = props.currentNetworkId
   const visualStyle = useVisualStyleStore(
@@ -149,15 +152,14 @@ export default function TableBrowser(props: {
   React.useEffect(() => {
     // scroll to the first result anytime someone changes the filtered rows
     // e.g. when the user selects nodes in the network view, scroll to the top of the list in the table
-    nodeDataEditorRef.current?.scrollTo(0, 0, "both", 0, 0, {
+    nodeDataEditorRef.current?.scrollTo(0, 0, 'both', 0, 0, {
       vAlign: 'start',
       hAlign: 'start',
-    });
-    edgeDataEditorRef.current?.scrollTo(0, 0, "both", 0, 0, {
+    })
+    edgeDataEditorRef.current?.scrollTo(0, 0, 'both', 0, 0, {
       vAlign: 'start',
       hAlign: 'start',
-    });
-
+    })
   }, [rows])
 
   if (sort.column != null && sort.direction != null && sort.valueType != null) {
@@ -169,7 +171,6 @@ export default function TableBrowser(props: {
       return sortFn(aVal, bVal, sort.direction as SortDirection)
     })
   }
-
 
   const handleChange = (
     event: React.SyntheticEvent,
@@ -241,11 +242,14 @@ export default function TableBrowser(props: {
     [props.currentNetworkId, currentTable, tables],
   )
 
-  const onCellContextMenu = React.useCallback((cell: Item, event: CellClickedEventArgs): void => {
-    console.log(event)
+  const onCellContextMenu = React.useCallback(
+    (cell: Item, event: CellClickedEventArgs): void => {
+      console.log(event)
 
-    event.preventDefault()
-  }, [props.currentNetworkId, currentTable, tables])
+      event.preventDefault()
+    },
+    [props.currentNetworkId, currentTable, tables],
+  )
 
   const onCellEdited = React.useCallback(
     (cell: Item, newValue: EditableGridCell) => {
@@ -256,7 +260,8 @@ export default function TableBrowser(props: {
       const columnKey = column.id
       let data = newValue.data
 
-      if (rowData == null || cxId == null || column == null || data == null) return
+      if (rowData == null || cxId == null || column == null || data == null)
+        return
 
       if (isListType(column.type)) {
         data = deserializeValueList(column.type, data as string)
@@ -281,34 +286,45 @@ export default function TableBrowser(props: {
   )
 
   const onHeaderMenuClick = React.useCallback(
-    (col: number, bounds: Rectangle): void => {
+    (col: number, bounds: Rectangle): void => {},
+    [],
+  )
+
+  const onHeaderClicked = React.useCallback(
+    (col: number, event: HeaderClickedEventArgs): void => {
+      setSelectedColumnIndex(col)
+      console.log(selectedColumnIndex)
     },
     [],
   )
 
-  const onHeaderClicked = React.useCallback((col: number, event: HeaderClickedEventArgs): void => {
-    setSelectedColumnIndex(col)
-    console.log(selectedColumnIndex)
-  }, [])
-
-  const selectedColumn = selectedColumnIndex != null ? columns?.[selectedColumnIndex] : null
+  const selectedColumn =
+    selectedColumnIndex != null ? columns?.[selectedColumnIndex] : null
   // scan the visual properties to see if the selected column name is used in any mappings
-  const visualPropertiesDependentOnSelectedColumn = Object.values(visualStyle ?? {}).filter((vpValue) =>
-    selectedColumn?.id != null && vpValue?.mapping?.attribute === selectedColumn.id).map(vp => vp.displayName)
+  const visualPropertiesDependentOnSelectedColumn = Object.values(
+    visualStyle ?? {},
+  )
+    .filter(
+      (vpValue) =>
+        selectedColumn?.id != null &&
+        vpValue?.mapping?.attribute === selectedColumn.id,
+    )
+    .map((vp) => vp.displayName)
   const selectedColumnToolbar = (
     <Box sx={{ display: 'flex', alignItems: 'center' }}>
       <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
         Toggle Search
       </Button>
-      {
-        selectedColumn != null && (
-          <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Box sx={{ mr: 1 }}>
-                Selected Column: {selectedColumn.id}
-              </Box>
-              <ButtonGroup size="small">
-                <Button onClick={() => {
+      {/* <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
+        Create Column
+      </Button> */}
+      {selectedColumn != null && (
+        <>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Box sx={{ mr: 1 }}>Selected Column: {selectedColumn.id}</Box>
+            <ButtonGroup size="small">
+              <Button
+                onClick={() => {
                   if (selectedColumn != null) {
                     const columnKey = selectedColumn.id
                     const columnType = selectedColumn.type
@@ -319,8 +335,12 @@ export default function TableBrowser(props: {
                       valueType: columnType,
                     })
                   }
-                }}>Sort Asc.</Button>
-                <Button onClick={() => {
+                }}
+              >
+                Sort Asc.
+              </Button>
+              <Button
+                onClick={() => {
                   if (selectedColumn != null) {
                     const columnKey = selectedColumn.id
                     const columnType = selectedColumn.type
@@ -330,8 +350,13 @@ export default function TableBrowser(props: {
                       valueType: columnType,
                     })
                   }
-                }}> Sort Desc.</Button>
-                <Button onClick={() => {
+                }}
+              >
+                {' '}
+                Sort Desc.
+              </Button>
+              <Button
+                onClick={() => {
                   if (selectedColumn != null) {
                     const columnKey = selectedColumn.id
                     duplicateColumn(
@@ -340,27 +365,50 @@ export default function TableBrowser(props: {
                       columnKey,
                     )
                   }
-                }}>Duplicate Column</Button>
-                <Button onClick={() => setShowColumnForm(true)}>Edit Column</Button>
-              </ButtonGroup>
-            </Box>
-            <TableColumnForm error={columnFormError} dependentVisualProperties={visualPropertiesDependentOnSelectedColumn} open={showColumnForm} column={selectedColumn} onClose={() => setShowColumnForm(false)} onSubmit={(newColumnName: string) => {
-              // const nextTable = editColumnName(currentTable, selectedColumn.id, newColumnName)
-              const columnNameSet = new Set(columns?.map(c => c.id))
+                }}
+              >
+                Duplicate Column
+              </Button>
+              <Button onClick={() => setShowColumnForm(true)}>
+                Edit Column
+              </Button>
+              <Button color="error" onClick={() => {}}>
+                Delete Column
+              </Button>
+            </ButtonGroup>
+          </Box>
+          <TableColumnForm
+            error={columnFormError}
+            dependentVisualProperties={
+              visualPropertiesDependentOnSelectedColumn
+            }
+            open={showColumnForm}
+            column={selectedColumn}
+            onClose={() => {
+              setShowColumnForm(false)
+              setColumnFormError(undefined)
+            }}
+            onSubmit={(newColumnName: string) => {
+              const columnNameSet = new Set(columns?.map((c) => c.id))
               if (columnNameSet.has(newColumnName)) {
-                setColumnFormError(`${newColumnName} already exists.  Please enter a new unique column name`)
+                setColumnFormError(
+                  `${newColumnName} already exists.  Please enter a new unique column name`,
+                )
               } else {
-                setColumnName(props.currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', selectedColumn.id, newColumnName)
+                setColumnName(
+                  props.currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  selectedColumn.id,
+                  newColumnName,
+                )
                 setColumnFormError(undefined)
                 setSelectedColumnIndex(undefined)
               }
-            }} />
-
-          </>
-
-        )
-      }
-    </Box >
+            }}
+          />
+        </>
+      )}
+    </Box>
   )
 
   return (
@@ -419,10 +467,9 @@ export default function TableBrowser(props: {
             getCellContent={getContent}
             onCellEdited={onCellEdited}
             columns={columns}
-            rows={(maxNodeId - minNodeId) + 1}
+            rows={maxNodeId - minNodeId + 1}
           />
         </Box>
-
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
         {selectedColumnToolbar}
@@ -446,10 +493,10 @@ export default function TableBrowser(props: {
             getCellContent={getContent}
             onCellEdited={onCellEdited}
             columns={columns}
-            rows={(maxEdgeId - minEdgeId) + 1}
+            rows={maxEdgeId - minEdgeId + 1}
           />
         </Box>
-      </TabPanel >
-    </Box >
+      </TabPanel>
+    </Box>
   )
 }
