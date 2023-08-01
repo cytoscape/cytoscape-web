@@ -41,6 +41,14 @@ interface TableAction {
     tableType: 'node' | 'edge',
     columnName: string
   ) => void
+
+  applyValueToElements: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    columnName: string,
+    value: ValueType,
+    elementIds: IdType[] | undefined
+  ) => void
   createColumn: (
     networkId: IdType,
     tableType: 'node' | 'edge',
@@ -156,6 +164,37 @@ export const useTableStore = create(
           // })
           return state
 
+        })
+      },
+
+      applyValueToElements: (
+        networkId: IdType,
+        tableType: 'node' | 'edge',
+        columnName: string,
+        value: ValueType,
+        elementIds: IdType[] | undefined
+      ) => {
+        set((state) => {
+
+          const table = state.tables[networkId]
+          const tableToUpdate =
+            table[tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable']
+
+          if (elementIds != null) {
+            elementIds.forEach(id => {
+              const row = tableToUpdate.rows.get(id)
+              if (row != null) {
+                row[columnName] = value
+
+              }
+            })
+
+          } else {
+            Array.from(tableToUpdate.rows.values()).forEach(row => {
+              row[columnName] = value
+            })
+          }
+          return state
         })
       },
 

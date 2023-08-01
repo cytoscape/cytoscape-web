@@ -21,7 +21,6 @@ import {
   GridCell,
   EditableGridCell,
   Item,
-  Rectangle,
   CellClickedEventArgs,
   DataEditorRef,
   HeaderClickedEventArgs,
@@ -81,6 +80,8 @@ const getCellKind = (type: ValueTypeName): GridCellKind => {
   return valueTypeName2CellTypeMap[type] ?? GridCellKind.Text
 }
 
+
+
 export default function TableBrowser(props: {
   currentNetworkId: IdType
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
@@ -103,6 +104,8 @@ export default function TableBrowser(props: {
   const [selectedColumnIndex, setSelectedColumnIndex] = React.useState<
     number | undefined
   >(undefined)
+
+  const [selectedCellXY, setSelectedCellXY] = React.useState<[number, number] | undefined>(undefined)
 
   const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
   const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
@@ -129,6 +132,8 @@ export default function TableBrowser(props: {
   const setColumnName = useTableStore((state) => state.setColumnName)
   const addColumn = useTableStore((state) => state.createColumn)
   const deleteColumn = useTableStore((state) => state.deleteColumn)
+  const applyValueToElemenets = useTableStore((state) => state.applyValueToElements)
+
 
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
@@ -295,18 +300,21 @@ export default function TableBrowser(props: {
     },
     [props.currentNetworkId, currentTable, tables, sort, rows],
   )
-
-  const onHeaderMenuClick = React.useCallback(
-    (col: number, bounds: Rectangle): void => { },
-    [],
-  )
-
   const onHeaderClicked = React.useCallback(
     (col: number, event: HeaderClickedEventArgs): void => {
       setSelectedColumnIndex(col)
+      setSelectedCellXY(undefined)
       console.log(selectedColumnIndex)
     },
     [],
+  )
+
+  const onCellClicked = React.useCallback(
+    (cell: Item): void => {
+      setSelectedCellXY(cell as [number, number])
+      setSelectedColumnIndex(undefined)
+    },
+    [props.currentNetworkId, rows, currentTable, tables, sort],
   )
 
   const selectedColumn =
@@ -321,153 +329,194 @@ export default function TableBrowser(props: {
         vpValue?.mapping?.attribute === selectedColumn.id,
     )
     .map((vp) => vp.displayName)
-  const selectedColumnToolbar = (
-    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-      <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
-        Toggle Search
-      </Button>
-      <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
-        Create Column
-      </Button>
-      <CreateTableColumnForm
-        error={createColumnFormError}
-        open={showCreateColumnForm}
-        onClose={() => {
-          setShowCreateColumnForm(false)
-          setCreateColumnFormError(undefined)
-        }}
-        onSubmit={(columnName: string, dataType: ValueTypeName) => {
-          const columnNameSet = new Set(columns?.map((c) => c.id))
-          if (columnNameSet.has(columnName)) {
-            setCreateColumnFormError(
-              `${columnName} already exists.  Please enter a new unique column name`,
-            )
-          } else {
-            addColumn(
-              props.currentNetworkId,
-              currentTable === nodeTable ? 'node' : 'edge',
-              columnName,
-              dataType
-            )
-            setCreateColumnFormError(undefined)
-            setShowCreateColumnForm(false)
+  const selectedColumnToolbar =
+    selectedColumn != null ? (
+      <>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, mb: 2, bgColor: '#d9d9d9' }}>
+          <Box sx={{ mr: 1 }}>Selected Column: {selectedColumn.id}</Box>
+          <ButtonGroup size="small">
+            <Button
+              onClick={() => {
+                if (selectedColumn != null) {
+                  const columnKey = selectedColumn.id
+                  const columnType = selectedColumn.type
+
+                  setSort({
+                    column: columnKey,
+                    direction: 'asc',
+                    valueType: columnType,
+                  })
+                }
+              }}
+            >
+              Sort Asc.
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedColumn != null) {
+                  const columnKey = selectedColumn.id
+                  const columnType = selectedColumn.type
+                  setSort({
+                    column: columnKey,
+                    direction: 'desc',
+                    valueType: columnType,
+                  })
+                }
+              }}
+            >
+              {' '}
+              Sort Desc.
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedColumn != null) {
+                  const columnKey = selectedColumn.id
+                  duplicateColumn(
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    columnKey,
+                  )
+                }
+              }}
+            >
+              Duplicate Column
+            </Button>
+            <Button onClick={() => setShowEditColumnForm(true)}>
+              Edit Column
+            </Button>
+            <Button color="error" onClick={() => setShowDeleteColumnForm(true)}>
+              Delete Column
+            </Button>
+          </ButtonGroup>
+        </Box>
+        <EditTableColumnForm
+          error={columnFormError}
+          dependentVisualProperties={
+            visualPropertiesDependentOnSelectedColumn
           }
-        }}
-      />
-      {selectedColumn != null && (
-        <>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Box sx={{ mr: 1 }}>Selected Column: {selectedColumn.id}</Box>
-            <ButtonGroup size="small">
-              <Button
-                onClick={() => {
-                  if (selectedColumn != null) {
-                    const columnKey = selectedColumn.id
-                    const columnType = selectedColumn.type
-
-                    setSort({
-                      column: columnKey,
-                      direction: 'asc',
-                      valueType: columnType,
-                    })
-                  }
-                }}
-              >
-                Sort Asc.
-              </Button>
-              <Button
-                onClick={() => {
-                  if (selectedColumn != null) {
-                    const columnKey = selectedColumn.id
-                    const columnType = selectedColumn.type
-                    setSort({
-                      column: columnKey,
-                      direction: 'desc',
-                      valueType: columnType,
-                    })
-                  }
-                }}
-              >
-                {' '}
-                Sort Desc.
-              </Button>
-              <Button
-                onClick={() => {
-                  if (selectedColumn != null) {
-                    const columnKey = selectedColumn.id
-                    duplicateColumn(
-                      props.currentNetworkId,
-                      currentTable === nodeTable ? 'node' : 'edge',
-                      columnKey,
-                    )
-                  }
-                }}
-              >
-                Duplicate Column
-              </Button>
-              <Button onClick={() => setShowEditColumnForm(true)}>
-                Edit Column
-              </Button>
-              <Button color="error" onClick={() => setShowDeleteColumnForm(true)}>
-                Delete Column
-              </Button>
-            </ButtonGroup>
-          </Box>
-          <EditTableColumnForm
-            error={columnFormError}
-            dependentVisualProperties={
-              visualPropertiesDependentOnSelectedColumn
-            }
-            open={showEditColumnForm}
-            column={selectedColumn}
-            onClose={() => {
-              setShowEditColumnForm(false)
-              setColumnFormError(undefined)
-            }}
-            onSubmit={(newColumnName: string) => {
-              const columnNameSet = new Set(columns?.map((c) => c.id))
-              if (columnNameSet.has(newColumnName)) {
-                setColumnFormError(
-                  `${newColumnName} already exists.  Please enter a new unique column name`,
-                )
-              } else {
-                setColumnName(
-                  props.currentNetworkId,
-                  currentTable === nodeTable ? 'node' : 'edge',
-                  selectedColumn.id,
-                  newColumnName,
-                )
-                setColumnFormError(undefined)
-                setSelectedColumnIndex(undefined)
-              }
-            }}
-          />
-          <DeleteTableColumnForm
-            error={deleteColumnFormError}
-            dependentVisualProperties={
-              visualPropertiesDependentOnSelectedColumn
-            }
-            open={showDeleteColumnForm}
-            column={selectedColumn}
-            onClose={() => {
-              setShowDeleteColumnForm(false)
-              setDeleteColumnFormError(undefined)
-            }}
-            onSubmit={() => {
-
-              deleteColumn(
+          open={showEditColumnForm}
+          column={selectedColumn}
+          onClose={() => {
+            setShowEditColumnForm(false)
+            setColumnFormError(undefined)
+          }}
+          onSubmit={(newColumnName: string) => {
+            const columnNameSet = new Set(columns?.map((c) => c.id))
+            if (columnNameSet.has(newColumnName)) {
+              setColumnFormError(
+                `${newColumnName} already exists.  Please enter a new unique column name`,
+              )
+            } else {
+              setColumnName(
                 props.currentNetworkId,
                 currentTable === nodeTable ? 'node' : 'edge',
                 selectedColumn.id,
+                newColumnName,
               )
-              setDeleteColumnFormError(undefined)
+              setColumnFormError(undefined)
               setSelectedColumnIndex(undefined)
+            }
+          }}
+        />
+        <DeleteTableColumnForm
+          error={deleteColumnFormError}
+          dependentVisualProperties={
+            visualPropertiesDependentOnSelectedColumn
+          }
+          open={showDeleteColumnForm}
+          column={selectedColumn}
+          onClose={() => {
+            setShowDeleteColumnForm(false)
+            setDeleteColumnFormError(undefined)
+          }}
+          onSubmit={() => {
+
+            deleteColumn(
+              props.currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge',
+              selectedColumn.id,
+            )
+            setDeleteColumnFormError(undefined)
+            setSelectedColumnIndex(undefined)
+          }}
+        />
+      </>
+    ) : null
+
+  const selectedCell = selectedCellXY
+  const selectedCellToolbar = selectedCell != null ? (
+    <>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, mb: 2, bgColor: '#d9d9d9' }}>
+        <Box sx={{ mr: 1 }}>Selected cell actions</Box>
+        <ButtonGroup size="small">
+          <Button
+            onClick={() => {
+              const [columnIndex, rowIndex] = selectedCell
+              const rowData = rows?.[rowIndex]
+              // const cxId = rowData?.id
+              const column = columns?.[columnIndex]
+              const columnKey = column.id
+              const cellValue = (rowData as any)?.[columnKey]
+              applyValueToElemenets(props.currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge', columnKey, cellValue, undefined)
             }}
-          />
-        </>
-      )}
-    </Box>
-  )
+          >
+            Apply value to column
+          </Button>
+          <Button onClick={() => {
+            const [columnIndex, rowIndex] = selectedCell
+            const rowData = rows?.[rowIndex]
+            // const cxId = rowData?.id
+            const column = columns?.[columnIndex]
+            const columnKey = column.id
+            const cellValue = (rowData as any)?.[columnKey]
+            applyValueToElemenets(props.currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge', columnKey, cellValue, rows.map(r => r.id))
+          }}
+          >
+            Apply value to selected nodes
+          </Button>
+        </ButtonGroup>
+      </Box>
+    </>
+  ) : null
+
+  const tableBrowserToolbar = <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
+      Search
+    </Button>
+    <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
+      Create Column
+    </Button>
+    <CreateTableColumnForm
+      error={createColumnFormError}
+      open={showCreateColumnForm}
+      onClose={() => {
+        setShowCreateColumnForm(false)
+        setCreateColumnFormError(undefined)
+      }}
+      onSubmit={(columnName: string, dataType: ValueTypeName) => {
+        const columnNameSet = new Set(columns?.map((c) => c.id))
+        if (columnNameSet.has(columnName)) {
+          setCreateColumnFormError(
+            `${columnName} already exists.  Please enter a new unique column name`,
+          )
+        } else {
+          addColumn(
+            props.currentNetworkId,
+            currentTable === nodeTable ? 'node' : 'edge',
+            columnName,
+            dataType
+          )
+          setSelectedColumnIndex(undefined)
+          setCreateColumnFormError(undefined)
+          setShowCreateColumnForm(false)
+        }
+      }}
+    />
+    {selectedColumnToolbar}
+    {selectedCellToolbar}
+  </Box>
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -505,10 +554,11 @@ export default function TableBrowser(props: {
         <KeyboardArrowUpIcon sx={{ color: 'white' }} />
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
-        {selectedColumnToolbar}
+        {tableBrowserToolbar}
         <Box>
           <DataEditor
             ref={nodeDataEditorRef}
+            onCellClicked={onCellClicked}
             onCellContextMenu={onCellContextMenu}
             rowMarkers={'checkbox'}
             rowMarkerStartIndex={minNodeId}
@@ -517,7 +567,6 @@ export default function TableBrowser(props: {
             onPaste={true}
             getCellsForSelection={true}
             onSearchClose={onSearchClose}
-            onHeaderMenuClick={onHeaderMenuClick}
             onHeaderClicked={onHeaderClicked}
             onItemHovered={(e) => onItemHovered(e.location)}
             width={props.width}
@@ -530,11 +579,11 @@ export default function TableBrowser(props: {
         </Box>
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
-        {selectedColumnToolbar}
-
+        {tableBrowserToolbar}
         <Box>
           <DataEditor
             ref={edgeDataEditorRef}
+            onCellClicked={onCellClicked}
             onCellContextMenu={onCellContextMenu}
             rowMarkers={'checkbox'}
             rowMarkerStartIndex={minEdgeId}
@@ -543,7 +592,6 @@ export default function TableBrowser(props: {
             getCellsForSelection={true}
             onPaste={true}
             onSearchClose={onSearchClose}
-            onHeaderMenuClick={onHeaderMenuClick}
             onHeaderClicked={onHeaderClicked}
             onItemHovered={(e) => onItemHovered(e.location)}
             width={props.width}
