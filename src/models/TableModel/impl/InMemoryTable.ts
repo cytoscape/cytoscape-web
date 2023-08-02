@@ -48,18 +48,21 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     nodeTable.columns.set(attrName, columnDef)
   })
 
-  Object.entries(attrDefs.edges).forEach(([attrName, attrDef]) => {
-    const columnDef = {
-      type: attrDef.d as ValueTypeName,
-      name: attrName,
-    }
+  const edgeAttrDefs = attrDefs.edges
+  if (edgeAttrDefs !== undefined) {
+    Object.entries(attrDefs.edges).forEach(([attrName, attrDef]) => {
+      const columnDef = {
+        type: attrDef.d as ValueTypeName,
+        name: attrName,
+      }
 
-    if (attrDef.a != null) {
-      edgeAttributeTranslationMap[attrDef.a] = attrName
-    }
+      if (attrDef.a != null) {
+        edgeAttributeTranslationMap[attrDef.a] = attrName
+      }
 
-    edgeTable.columns.set(attrName, columnDef)
-  })
+      edgeTable.columns.set(attrName, columnDef)
+    })
+  }
 
   nodeAttr.forEach((attr, nodeId) => {
     const processedAttributes: Record<AttributeName, ValueType> = {}
@@ -169,7 +172,10 @@ export const editColumnName = (
   return table
 }
 
-export const deleteTableColumn = (table: Table, columnName: AttributeName): Table => {
+export const deleteTableColumn = (
+  table: Table,
+  columnName: AttributeName,
+): Table => {
   const updatedColumns = new Map(table.columns)
   updatedColumns.delete(columnName)
 

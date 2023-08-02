@@ -18,8 +18,7 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
 import { PropertyPanel } from './PropertyPanel/PropertyPanel'
-import { StyleManager } from './PropertyPanel/StyleManager'
-import { StyleSelector } from './StyleSelector/StyleSelector'
+import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -127,14 +126,13 @@ export const MainPanel = (): JSX.Element => {
             query={query}
           />
         </Allotment.Pane>
-        <Allotment.Pane maxSize={1000}>
+        <Allotment.Pane preferredSize={200}>
           <Allotment>
             <Allotment.Pane preferredSize={'35%'} key={0}>
               <PropertyPanel networkId={selectedNodes[0]} />
             </Allotment.Pane>
             <Allotment.Pane key={1}>
-              <StyleManager />
-              <StyleSelector />
+              <SharedStyleManager />
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>
