@@ -6,7 +6,7 @@ export const VisualPropertyValueTypeName = {
   EdgeLine: 'edgeLine',
   EdgeArrowShape: 'edgeArrowShape',
   Font: 'font',
-  HoritzontalAlign: 'horitzontalAlign',
+  HorizontalAlign: 'HorizontalAlign',
   VerticalAlign: 'verticalAlign',
   NodeBorderLine: 'nodeBorderLine',
   Visibility: 'visibility',
