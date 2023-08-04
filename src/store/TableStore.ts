@@ -53,7 +53,8 @@ interface TableAction {
     networkId: IdType,
     tableType: 'node' | 'edge',
     columnName: string,
-    dataType: ValueTypeName
+    dataType: ValueTypeName,
+    value: ValueType
   ) => void
   setColumnName: (
     networkId: IdType,
@@ -228,7 +229,8 @@ export const useTableStore = create(
         networkId: IdType,
         tableType: 'node' | 'edge',
         columnName: string,
-        dataType: ValueTypeName
+        dataType: ValueTypeName,
+        value: ValueType
       ) => {
         set((state) => {
           const table = state.tables[networkId]
@@ -240,9 +242,10 @@ export const useTableStore = create(
             type: dataType
           })
 
-          // const rows = tableToUpdate.rows.values()
-          // Array.from(rows).forEach(row => {
-          // })
+          const rows = tableToUpdate.rows.values()
+          Array.from(rows).forEach(row => {
+            row[columnName] = value
+          })
 
 
           return state

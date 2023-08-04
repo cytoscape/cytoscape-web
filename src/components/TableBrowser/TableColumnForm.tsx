@@ -25,7 +25,7 @@ interface CreateTableColumnFormProps {
   open: boolean
   error: string | undefined
   onClose: () => void
-  onSubmit: (newColumnName: string, dataType: ValueTypeName) => void
+  onSubmit: (newColumnName: string, dataType: ValueTypeName, value: string) => void
 
 }
 export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
@@ -85,6 +85,7 @@ export function DeleteTableColumnForm(props: DeleteTableColumnFormProps): React.
 export function CreateTableColumnForm(props: CreateTableColumnFormProps): React.ReactElement {
   const [columnName, setColumnName] = React.useState('')
   const [valueTypeName, setValueTypeName] = React.useState<ValueTypeName>(ValueTypeName.String)
+  const [defaultValue, setDefaultValue] = React.useState('')
 
   return (
     <Dialog
@@ -94,14 +95,14 @@ export function CreateTableColumnForm(props: CreateTableColumnFormProps): React.
       onClose={props.onClose}
     >
       <DialogTitle>Create New Column</DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>
         <TextField size="small" sx={{ mt: 1, mb: 1 }} onChange={e => setColumnName(e.target.value)} value={columnName} label={'Column Name'} />
-        <FormControl fullWidth>
+        <FormControl>
           <InputLabel id="data-type-select">Data type</InputLabel>
           <Select
+            size="small"
             labelId="data-type-select"
             value={valueTypeName}
-            label="Age"
             onChange={(e) => setValueTypeName(e.target.value as ValueTypeName)}
           >
             {Object.values(ValueTypeName).map(v => {
@@ -109,12 +110,14 @@ export function CreateTableColumnForm(props: CreateTableColumnFormProps): React.
             })}
           </Select>
         </FormControl>
+        <TextField size="small" sx={{ mt: 1, mb: 1 }} onChange={e => setDefaultValue(e.target.value)} value={defaultValue} label={'Default value'} />
         {props.error != null ? <Alert severity="error">{`${props.error}`}</Alert>
           : null}
 
       </DialogContent>
+
       <DialogActions>
-        <Button onClick={() => props.onSubmit(columnName, valueTypeName)}>Confirm</Button>
+        <Button onClick={() => props.onSubmit(columnName, valueTypeName, defaultValue)}>Confirm</Button>
         <Button color="error" onClick={props.onClose}>Cancel</Button>
       </DialogActions>
     </Dialog>)

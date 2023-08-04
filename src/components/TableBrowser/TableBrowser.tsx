@@ -11,7 +11,6 @@ import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
-
 import { EditTableColumnForm, CreateTableColumnForm, DeleteTableColumnForm } from './TableColumnForm'
 
 
@@ -33,6 +32,8 @@ import {
   SortDirection,
   SortType,
   sortFnToType,
+  serializedStringIsValid,
+  deserializeValue
 } from '../../models/TableModel/impl/ValueTypeImpl'
 
 interface TabPanelProps {
@@ -495,22 +496,37 @@ export default function TableBrowser(props: {
         setShowCreateColumnForm(false)
         setCreateColumnFormError(undefined)
       }}
-      onSubmit={(columnName: string, dataType: ValueTypeName) => {
+      onSubmit={(columnName: string, dataType: ValueTypeName, value: string) => {
         const columnNameSet = new Set(columns?.map((c) => c.id))
-        if (columnNameSet.has(columnName)) {
+        const columnNameAlreadyExists = columnNameSet.has(columnName)
+        const valueIsValid = serializedStringIsValid(
+          dataType,
+          value,
+        )
+        if (columnNameAlreadyExists) {
           setCreateColumnFormError(
             `${columnName} already exists.  Please enter a new unique column name`,
           )
         } else {
-          addColumn(
-            props.currentNetworkId,
-            currentTable === nodeTable ? 'node' : 'edge',
-            columnName,
-            dataType
-          )
-          setSelectedColumnIndex(undefined)
-          setCreateColumnFormError(undefined)
-          setShowCreateColumnForm(false)
+          if (!valueIsValid) {
+            console.log(dataType, value)
+            setCreateColumnFormError(
+              `Default value ${value} is not a valid ${dataType}.  Please enter a valid ${dataType}`,
+            )
+
+          } else {
+            const valueType = deserializeValue(dataType, value)
+            addColumn(
+              props.currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge',
+              columnName,
+              dataType,
+              valueType
+            )
+            setSelectedColumnIndex(undefined)
+            setCreateColumnFormError(undefined)
+            setShowCreateColumnForm(false)
+          }
         }
       }}
     />
