@@ -1,7 +1,7 @@
 import { HorizontalAlignType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box, Typography } from '@mui/material'
 
-export function HoritzontalAlignPicker(props: {
+export function HorizontalAlignPicker(props: {
   currentValue: HorizontalAlignType | null
   onValueChange: (horizontalAlign: HorizontalAlignType) => void
 }): React.ReactElement {

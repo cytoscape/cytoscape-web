@@ -2,7 +2,7 @@ import { ValueTypeName } from '../../TableModel'
 import { SingleValueType } from '../../TableModel/ValueType'
 import { MappingFunctionType, VisualPropertyValueTypeName } from '..'
 
-const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
+const valueType2BaseType: Record<ValueTypeName | VisualPropertyValueTypeName, SingleValueType | null> = {
   [ValueTypeName.String]: 'string',
   [ValueTypeName.Long]: 'number',
   [ValueTypeName.Integer]: 'number',
@@ -13,6 +13,17 @@ const valueType2BaseType: Record<ValueTypeName, SingleValueType | null> = {
   [ValueTypeName.ListDouble]: null,
   [ValueTypeName.ListInteger]: null,
   [ValueTypeName.ListString]: null,
+  [VisualPropertyValueTypeName.NodeShape]: 'string',
+  [VisualPropertyValueTypeName.EdgeLine]: 'string',
+  [VisualPropertyValueTypeName.EdgeArrowShape]: 'string',
+  [VisualPropertyValueTypeName.Font]: 'string',
+  [VisualPropertyValueTypeName.HorizontalAlign]: 'string',
+  [VisualPropertyValueTypeName.VerticalAlign]: 'string',
+  [VisualPropertyValueTypeName.NodeBorderLine]: 'string',
+  [VisualPropertyValueTypeName.Visibility]: 'string',
+  [VisualPropertyValueTypeName.Number]: 'number',
+  [VisualPropertyValueTypeName.Boolean]: 'string',
+  [VisualPropertyValueTypeName.String]: 'string',
 }
 
 // This function will be redundant once continuous discrete mapping ui is available
@@ -41,13 +52,15 @@ export const typesCanBeMapped = (
   mappingType: MappingFunctionType,
   valueTypeName: ValueTypeName,
   vpValueTypeName: VisualPropertyValueTypeName,
+  columnName?: string
 ): boolean => {
   if (mappingType === MappingFunctionType.Passthrough) {
     const vtBaseType = valueType2BaseType[valueTypeName]
     const isSingleValue = vtBaseType != null
+    const typesMatch = valueTypeName === vpValueTypeName
+    const singleStringType = isSingleValue && valueType2BaseType[vpValueTypeName] === VisualPropertyValueTypeName.String /// any single value type can be mapped to a string
     return (
-      valueTypeName === vpValueTypeName ||
-      (isSingleValue && vpValueTypeName === VisualPropertyValueTypeName.String) // any single value type can be mapped to a string
+      typesMatch || singleStringType
     )
   }
 

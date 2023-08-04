@@ -8,6 +8,7 @@ import { ValueTypeName } from '../ValueTypeName'
 import { CxValue } from '../../CxModel/Cx2/CxValue'
 import { AttributeDeclaration } from '../../CxModel/Cx2/CoreAspects/AttributeDeclarations'
 import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
+import { cloneDeep } from 'lodash'
 export const createTable = (id: IdType): Table => ({
   id,
   columns: new Map<AttributeName, Column>(),
@@ -153,20 +154,21 @@ export const editColumnName = (
   oldName: string,
   newName: string,
 ): Table => {
-  const column = table.columns.get(oldName)
+  const newTable = cloneDeep(table)
+  const column = newTable.columns.get(oldName)
   if (column != null) {
-    table.columns.delete(oldName)
-    table.columns.set(newName, column)
+    newTable.columns.delete(oldName)
+    newTable.columns.set(newName, column)
   }
 
-  Array.from(table.rows.values()).forEach((row) => {
+  Array.from(newTable.rows.values()).forEach((row) => {
     const value = row[oldName]
     if (value != null) {
       delete row[oldName]
       row[newName] = value
     }
   })
-  return table
+  return newTable
 }
 
 export const deleteTableColumn = (table: Table, columnName: AttributeName): Table => {

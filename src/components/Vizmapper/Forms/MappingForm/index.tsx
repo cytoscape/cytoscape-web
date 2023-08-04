@@ -196,9 +196,9 @@ function MappingFormContent(props: {
 
   const validColumns =
     mappingType !== ''
-      ? columns.filter((c) =>
-          typesCanBeMapped(mappingType, c.type, props.visualProperty.type),
-        )
+      ? columns.filter((c) => {
+        return typesCanBeMapped(mappingType, c.type, props.visualProperty.type)
+      })
       : columns
   const validColumnNames = validColumns.map((c) => c.name)
 
@@ -221,12 +221,12 @@ function MappingFormContent(props: {
   )
 
   const mappingDimensions: Record<MappingFunctionType | '', [string, string]> =
-    {
-      [MappingFunctionType.Discrete]: ['400px', '600px'],
-      [MappingFunctionType.Continuous]: ['650px', 'auto'],
-      [MappingFunctionType.Passthrough]: ['400px', 'auto'],
-      '': ['400px', '200px'],
-    }
+  {
+    [MappingFunctionType.Discrete]: ['400px', '600px'],
+    [MappingFunctionType.Continuous]: ['650px', 'auto'],
+    [MappingFunctionType.Passthrough]: ['400px', 'auto'],
+    '': ['400px', '200px'],
+  }
   return (
     <Box
       sx={{
@@ -294,11 +294,9 @@ function MappingFormContent(props: {
                 if (validColumnNames.includes(c.name)) {
                   return columnMenuItem
                 } else {
-                  const invalidColumnTooltipStr = `${mappingType} mapping functions${
-                    c.name !== '' ? ` on column '${c.name}' ` : ' '
-                  }cannot be applied to property ${
-                    props.visualProperty.displayName
-                  }`
+                  const invalidColumnTooltipStr = `${mappingType} mapping functions${c.name !== '' ? ` on column '${c.name}' ` : ' '
+                    }cannot be applied to property ${props.visualProperty.displayName
+                    }`
 
                   return (
                     <Tooltip key={c.name} title={invalidColumnTooltipStr}>
@@ -334,11 +332,9 @@ function MappingFormContent(props: {
                 if (validMappings.includes(mappingFnType)) {
                   return mappingFnMenuItem
                 } else {
-                  const invalidMappingTooltipStr = `${mappingFnType} mapping functions${
-                    column !== '' ? ` on column '${column}' ` : ' '
-                  }cannot be applied to property ${
-                    props.visualProperty.displayName
-                  }`
+                  const invalidMappingTooltipStr = `${mappingFnType} mapping functions${column !== '' ? ` on column '${column}' ` : ' '
+                    }cannot be applied to property ${props.visualProperty.displayName
+                    }`
                   return (
                     <Tooltip
                       key={mappingFnType}

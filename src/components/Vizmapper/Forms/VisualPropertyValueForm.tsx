@@ -16,7 +16,7 @@ import {
 import { NumberInput, NumberRender } from '../VisualPropertyRender/Number'
 import { Font, FontPicker } from '../VisualPropertyRender/Font'
 import {
-  HoritzontalAlignPicker,
+  HorizontalAlignPicker,
   HorizontalAlign,
 } from '../VisualPropertyRender/HorizontalAlign'
 import {
@@ -85,7 +85,7 @@ const vpType2RenderMap: Record<
     valueRender: Font,
   },
   horizontalAlign: {
-    pickerRender: HoritzontalAlignPicker,
+    pickerRender: HorizontalAlignPicker,
     valueRender: HorizontalAlign,
   },
   verticalAlign: {
@@ -241,7 +241,7 @@ export function VisualPropertyValueForm(
             {(
               vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
               vpType2RenderMap[props.visualProperty.type].pickerRender ??
-              (() => {})
+              (() => { })
             )({
               onValueChange: (value: VisualPropertyValueType) =>
                 props.onValueChange(value),
