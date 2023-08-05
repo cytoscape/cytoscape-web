@@ -22,66 +22,65 @@ export const SharedStyleManager = ({
   networkId,
   rootNetworkId,
 }: SharedStyleManagerProps): JSX.Element => {
-  const visualStyles: Record<string, VisualStyle> = useVisualStyleSelectorStore(
+  const theme: Theme = useTheme()
+  const [enable, setEnable] = useState<boolean>(true)
+
+  const sharedStyles: Record<string, VisualStyle> = useVisualStyleSelectorStore(
     (state) => state.sharedVisualStyles,
   )
   const addSharedStyle = useVisualStyleSelectorStore((state) => state.add)
 
-  const addVisualStyle = useVisualStyleStore((state) => state.add)
   const individualStyles: Record<string, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
   )
-
-  const individualStyle: VisualStyle = individualStyles[networkId]
-
-  const theme: Theme = useTheme()
-  const [enable, setEnable] = useState<boolean>(true)
+  const addIndividualStyle = useVisualStyleStore((state) => state.add)
 
   const handleChange = (e: any): void => {
     setEnable(e.target.checked)
   }
 
+  // Initialization. Check and apply shared style
   useEffect(() => {
-    console.log('Next network---------------------', networkId)
+    if (enable) {
+      applySharedStyle()
+    }
+    return () => {
+      if (enable) {
+        // Copy the style as shared
+        const editedStyle = individualStyles[networkId]
+        if (editedStyle === undefined) {
+          return
+        }
+        addSharedStyle(rootNetworkId, editedStyle)
+      }
+    }
+  }, [])
 
-    // Apply original style if enabled
+  useEffect(() => {
     if (enable) {
       applySharedStyle()
     }
   }, [networkId])
 
-  // useEffect(() => {
-  //   console.log(
-  //     '@@@@@@@@@@@@@@@ init Apply original style',
-  //     networkId,
-  //     rootNetworkId,
-  //   )
-  //   if (enable) {
-  //     applySharedStyle()
-  //   }
-  // }, [])
-
   useEffect(() => {
-    if (individualStyle === undefined) {
-      return
-    }
-
     if (enable) {
-      console.log('Visual style edited: ', individualStyle)
-      // Update style if necessary
-
-      addSharedStyle(rootNetworkId, { ...individualStyle })
+      const editedStyle = individualStyles[networkId]
+      if (editedStyle === undefined) {
+        return
+      }
+      console.log('Visual style edited: ', editedStyle)
+      addSharedStyle(rootNetworkId, editedStyle)
     }
-  }, [individualStyle])
+  }, [individualStyles[networkId]])
 
   const applySharedStyle = (): void => {
-    const rootStyle: VisualStyle = visualStyles[rootNetworkId]
-    if (rootStyle === undefined) {
+    const sharedStyle = sharedStyles[rootNetworkId]
+    if (sharedStyle === undefined) {
       return
     }
 
-    addVisualStyle(networkId, rootStyle)
-    console.log('*******************Shared Style applied: ', rootStyle)
+    addIndividualStyle(networkId, sharedStyle)
+    console.log('*******************Shared Style applied: ', sharedStyle)
   }
 
   return (

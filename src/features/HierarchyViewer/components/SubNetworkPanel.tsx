@@ -160,8 +160,14 @@ export const SubNetworkPanel = ({
 
       // Register objects to the stores.
       if (networks.get(newUuid) === undefined) {
+        const vs: VisualStyle =
+          sharedStyles[rootNetworkId] !== undefined
+            ? sharedStyles[rootNetworkId]
+            : visualStyle
         addNewNetwork(network)
-        addVisualStyle(newUuid, visualStyle)
+
+        // Apply shared style if available
+        addVisualStyle(newUuid, vs)
         addTable(newUuid, nodeTable, edgeTable)
         addViewModel(newUuid, networkView)
 
