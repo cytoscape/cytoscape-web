@@ -4,9 +4,14 @@ import Select, { SelectChangeEvent } from '@mui/material/Select'
 import { useEffect, useState } from 'react'
 import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStore'
 import { Button, FormHelperText, Stack } from '@mui/material'
+import { useUiStateStore } from '../../../../store/UiStateStore'
 
 export const StyleSelector = (): JSX.Element => {
   const [selectedStyleName, setSelectedStyleName] = useState<string>('')
+
+  const ui = useUiStateStore((state) => state.ui)
+  const { activeNetworkView } = ui
+
   const visualStyles = useVisualStyleSelectorStore(
     (state) => state.sharedVisualStyles,
   )
@@ -21,10 +26,11 @@ export const StyleSelector = (): JSX.Element => {
     }
   }, [visualStyles])
 
-  const applyVisualStyle = (): void => {
+  useEffect(() => {
     console.log('applyVisualStyle')
+  }, [activeNetworkView])
 
-  }
+  const applyVisualStyle = (): void => {}
 
   return (
     <Stack direction="row" spacing={2}>
@@ -35,7 +41,6 @@ export const StyleSelector = (): JSX.Element => {
           value={selectedStyleName}
           onChange={handleChange}
         >
-          
           {Object.keys(visualStyles).map((id: string) => (
             <MenuItem key={id} value={id}>
               {id}
@@ -44,11 +49,15 @@ export const StyleSelector = (): JSX.Element => {
           <MenuItem value="preset1" key={'preset1'}>
             Preset 1
           </MenuItem>
-          
         </Select>
         <FormHelperText>Shared Visual Style</FormHelperText>
       </FormControl>
-      <Button variant="contained" size="small" sx={{ mt: 1 }} onClick={applyVisualStyle}>
+      <Button
+        variant="contained"
+        size="small"
+        sx={{ mt: 1 }}
+        onClick={applyVisualStyle}
+      >
         Apply
       </Button>
     </Stack>

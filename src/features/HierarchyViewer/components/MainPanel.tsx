@@ -115,13 +115,15 @@ export const MainPanel = (): JSX.Element => {
     return <MessagePanel message="Please select a subsystem" />
   }
 
+  const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
+
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       <Allotment vertical minSize={100}>
         <Allotment.Pane>
           <SubNetworkPanel
             subNetworkName={subNetworkName}
-            rootNetworkId={metadata?.interactionNetworkUUID ?? ''}
+            rootNetworkId={rootNetworkId}
             subsystemNodeId={selectedNodes[0]}
             query={query}
           />
@@ -132,7 +134,10 @@ export const MainPanel = (): JSX.Element => {
               <PropertyPanel networkId={selectedNodes[0]} />
             </Allotment.Pane>
             <Allotment.Pane key={1}>
-              <SharedStyleManager />
+              <SharedStyleManager
+                networkId={selectedNodes[0]}
+                rootNetworkId={rootNetworkId}
+              />
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>
