@@ -9,7 +9,8 @@ export const getHcxProps = (
   const keys: string[] = Object.keys(summaryObject)
 
   if (keys.length === 0) {
-    throw new Error('No summary object found')
+    // in the future, hcx will have more validation/error handling
+    return undefined
   }
 
   if (keys.includes(HcxMetaTag.interactionNetworkUUID)) {
@@ -27,8 +28,11 @@ export const getHcxProps = (
 }
 
 export const createDummySummary = (
-  uuid: string, name: string, nodeCount: number, edgeCount: number)
-    : NdexNetworkSummary => {
+  uuid: string,
+  name: string,
+  nodeCount: number,
+  edgeCount: number,
+): NdexNetworkSummary => {
   const time: Date = new Date(Date.now())
   const summary: NdexNetworkSummary = {
     ownerUUID: '',
@@ -55,8 +59,7 @@ export const createDummySummary = (
     creationTime: time,
     externalId: uuid,
     isDeleted: false,
-    modificationTime: time
+    modificationTime: time,
   }
   return summary
-
 }
