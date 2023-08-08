@@ -6,7 +6,7 @@ import {
   Theme,
   useTheme,
 } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStore'
 import { VisualStyle } from '../../../../models/VisualStyleModel'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
@@ -23,17 +23,21 @@ export const SharedStyleManager = ({
   rootNetworkId,
 }: SharedStyleManagerProps): JSX.Element => {
   const theme: Theme = useTheme()
-  const [enable, setEnable] = useState<boolean>(true)
-
-  const sharedStyles: Record<string, VisualStyle> = useVisualStyleSelectorStore(
-    (state) => state.sharedVisualStyles,
+  const enable = useVisualStyleSelectorStore((state) => state.enable)
+  const setEnable: (enable: boolean) => void = useVisualStyleSelectorStore(
+    (state) => state.enableSharedVisualStyle,
   )
-  const addSharedStyle = useVisualStyleSelectorStore((state) => state.add)
+
+  // const sharedStyles: Record<string, VisualStyle> = useVisualStyleSelectorStore(
+  //   (state) => state.sharedVisualStyles,
+  // )
+  // const addSharedStyle = useVisualStyleSelectorStore((state) => state.add)
 
   const individualStyles: Record<string, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
   )
   const addIndividualStyle = useVisualStyleStore((state) => state.add)
+  const theStyle = individualStyles[rootNetworkId]
 
   const handleChange = (e: any): void => {
     setEnable(e.target.checked)
@@ -47,11 +51,11 @@ export const SharedStyleManager = ({
     return () => {
       if (enable) {
         // Copy the style as shared
-        const editedStyle = individualStyles[networkId]
-        if (editedStyle === undefined) {
-          return
-        }
-        addSharedStyle(rootNetworkId, editedStyle)
+        // const editedStyle = individualStyles[networkId]
+        // if (editedStyle === undefined) {
+        //   return
+        // }
+        // addSharedStyle(rootNetworkId, editedStyle)
       }
     }
   }, [])
@@ -69,18 +73,18 @@ export const SharedStyleManager = ({
         return
       }
       console.log('Visual style edited: ', editedStyle)
-      addSharedStyle(rootNetworkId, editedStyle)
+      addIndividualStyle(rootNetworkId, editedStyle)
+      // addSharedStyle(rootNetworkId, { ...editedStyle })
     }
   }, [individualStyles[networkId]])
 
   const applySharedStyle = (): void => {
-    const sharedStyle = sharedStyles[rootNetworkId]
-    if (sharedStyle === undefined) {
+    // const sharedStyle = sharedStyles[rootNetworkId]
+    if (theStyle === undefined) {
       return
     }
 
-    addIndividualStyle(networkId, sharedStyle)
-    console.log('*******************Shared Style applied: ', sharedStyle)
+    addIndividualStyle(networkId, theStyle)
   }
 
   return (

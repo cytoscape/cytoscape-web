@@ -51,9 +51,9 @@ export const SubNetworkPanel = ({
 }: SubNetworkPanelProps): ReactElement => {
   // For shared style
   const addSharedVisualStyle = useVisualStyleSelectorStore((state) => state.add)
-  const sharedStyles = useVisualStyleSelectorStore(
-    (state) => state.sharedVisualStyles,
-  )
+  // const sharedStyles = useVisualStyleSelectorStore(
+  //   (state) => state.sharedVisualStyles,
+  // )
 
   const addNewNetwork = useNetworkStore((state) => state.add)
   const addVisualStyle = useVisualStyleStore((state) => state.add)
@@ -154,20 +154,26 @@ export const SubNetworkPanel = ({
       const newUuid: string = network.id.toString()
 
       // Add parent network's style to the shared style store
-      if (sharedStyles[rootNetworkId] === undefined) {
+      if (vs[rootNetworkId] === undefined) {
+        // Add the original style from the parent network
         addSharedVisualStyle(rootNetworkId, visualStyle)
+
+        // Register the original style to DB
+        addVisualStyle(rootNetworkId, visualStyle)
+        addVisualStyle(newUuid, visualStyle)
+      } else {
+        addSharedVisualStyle(rootNetworkId, vs[rootNetworkId])
+        addVisualStyle(newUuid, vs[rootNetworkId])
       }
+      // const newVs: VisualStyle =
+      //   sharedStyles[rootNetworkId] !== undefined
+      //     ? sharedStyles[rootNetworkId]
+      //     : visualStyle
 
       // Register objects to the stores.
       if (networks.get(newUuid) === undefined) {
-        const vs: VisualStyle =
-          sharedStyles[rootNetworkId] !== undefined
-            ? sharedStyles[rootNetworkId]
-            : visualStyle
+        // Register new networks to the store if not cached
         addNewNetwork(network)
-
-        // Apply shared style if available
-        addVisualStyle(newUuid, vs)
         addTable(newUuid, nodeTable, edgeTable)
         addViewModel(newUuid, networkView)
 

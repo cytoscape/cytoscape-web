@@ -5,12 +5,14 @@ import { VisualStyle } from '../../../models/VisualStyleModel'
 interface VisualStyleSelectorState {
   currentVisualStyle: string
   sharedVisualStyles: Record<string, VisualStyle>
+  enable: boolean
 }
 
 interface VisualStyleSelectorAction {
   add: (name: string, visualStyle: VisualStyle) => void
   delete: (name: string) => void
   setCurrentVisualStyle: (name: string) => void
+  enableSharedVisualStyle: (enable: boolean) => void
 }
 
 type VisualStyleSelectorStore = VisualStyleSelectorState &
@@ -24,6 +26,7 @@ export const useVisualStyleSelectorStore = create(
   immer<VisualStyleSelectorStore>((set) => ({
     sharedVisualStyles: {},
     currentVisualStyle: '',
+    enable: true,
     add: (name, visualStyle) => {
       set((state) => {
         state.sharedVisualStyles[name] = visualStyle
@@ -37,6 +40,11 @@ export const useVisualStyleSelectorStore = create(
     setCurrentVisualStyle: (name) => {
       set((state) => {
         state.currentVisualStyle = name
+      })
+    },
+    enableSharedVisualStyle: (enable) => {
+      set((state) => {
+        state.enable = enable
       })
     },
   })),
