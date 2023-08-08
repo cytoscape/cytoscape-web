@@ -6,7 +6,7 @@ import { CyjsRenderer } from '../../../components/NetworkPanel/CyjsRenderer'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
-import { ndexQueryFetcher } from '../store/useQueryNetwork'
+import { ndexQueryFetcher } from '../store/ndexQueryFetcher'
 import useSWR from 'swr'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { NetworkWithView } from '../../../utils/cx-utils'
@@ -14,7 +14,6 @@ import { Query } from './MainPanel'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
-import { blue } from '@mui/material/colors'
 import {
   putNetworkViewToDb,
   putVisualStyleToDb,
@@ -22,6 +21,8 @@ import {
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { useLayoutStore } from '../../../store/LayoutStore'
 
 interface SubNetworkPanelProps {
   // Name of the network visualized here
@@ -54,9 +55,32 @@ export const SubNetworkPanel = ({
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
-  const activeNetworkId: IdType = useUiStateStore(
-    (state) => state.ui.activeNetworkView,
+
+  // For applying default layout
+  const defaultLayout: LayoutAlgorithm = useLayoutStore(
+    (state) => state.preferredLayout,
   )
+
+  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
+    (state) => state.setIsRunning,
+  )
+
+  const layoutEngines: LayoutEngine[] = useLayoutStore(
+    (state) => state.layoutEngines,
+  )
+
+  const engine: LayoutEngine =
+    layoutEngines.find((engine) => engine.name === defaultLayout.engineName) ??
+    layoutEngines[0]
+
+  const updateNodePositions: (
+    networkId: IdType,
+    positions: Map<IdType, [number, number, number?]>,
+  ) => void = useViewModelStore((state) => state.updateNodePositions)
+
+  // This will be used to highlight the active network border
+  const ui = useUiStateStore((state) => state.ui)
+  const { activeNetworkView } = ui
 
   const viewModels: Record<string, NetworkView> = useViewModelStore(
     (state) => state.viewModels,
@@ -93,6 +117,7 @@ export const SubNetworkPanel = ({
       setActiveNetworkView(queryNetworkId)
     }
   }
+
   useEffect(() => {
     const viewModel: NetworkView | undefined = viewModels[queryNetworkId]
     if (viewModel === undefined) {
@@ -121,12 +146,33 @@ export const SubNetworkPanel = ({
       const { network, visualStyle, nodeTable, edgeTable, networkView } = data
       const newUuid: string = network.id.toString()
 
+      // Add parent network's style to the shared style store
+      if (vs[rootNetworkId] === undefined) {
+        // Register the original style to DB
+        addVisualStyle(rootNetworkId, visualStyle)
+        addVisualStyle(newUuid, visualStyle)
+      } else {
+        addVisualStyle(newUuid, vs[rootNetworkId])
+      }
       // Register objects to the stores.
       if (networks.get(newUuid) === undefined) {
+        // Register new networks to the store if not cached
         addNewNetwork(network)
-        addVisualStyle(newUuid, visualStyle)
         addTable(newUuid, nodeTable, edgeTable)
         addViewModel(newUuid, networkView)
+
+        // Apply default layout for the first time
+        const afterLayout = (
+          positionMap: Map<IdType, [number, number]>,
+        ): void => {
+          updateNodePositions(network.id, positionMap)
+          setIsRunning(false)
+        }
+
+        if (network !== undefined && engine !== undefined) {
+          setIsRunning(true)
+          engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
+        }
       }
       setQueryNetworkId(newUuid)
     }
@@ -148,16 +194,28 @@ export const SubNetworkPanel = ({
   return (
     <Box
       sx={{
+        boxSizing: 'border-box',
         height: '100%',
         width: '100%',
         border:
-          queryNetworkId === activeNetworkId
-            ? `4px solid ${blue[300]}`
-            : 'none',
+          activeNetworkView === queryNetwork.id
+            ? '3px solid orange'
+            : '3px solid transparent',
       }}
       onClick={handleClick}
     >
-      <Typography variant={'h6'}>Subsystem: {subNetworkName}</Typography>
+      <Typography
+        sx={{
+          position: 'absolute',
+          bottom: '0.5em',
+          left: '0.5em',
+          zIndex: 3000,
+          backgroundColor: 'transparent',
+        }}
+        variant={'subtitle1'}
+      >
+        Subsystem: {subNetworkName}
+      </Typography>
       <CyjsRenderer network={queryNetwork} />
       <FloatingToolBar targetNetworkId={queryNetworkId ?? undefined} />
     </Box>

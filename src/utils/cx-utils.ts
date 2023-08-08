@@ -15,6 +15,7 @@ import {
   putVisualStyleToDb,
 } from '../store/persist/db'
 import { CachedData } from './CachedData'
+import { createNetworkAttributesFromCx } from '../models/TableModel/impl/NetworkAttributesImpl'
 
 /**
  * An utility interface to hold all the data needed to build a network view
@@ -51,8 +52,19 @@ export const createNetworkViewFromCx2 = (
 
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cx2)
   const networkView: NetworkView = ViewModelFn.createViewModelFromCX(uuid, cx2)
+  const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
+    uuid,
+    cx2,
+  )
 
-  return { network, nodeTable, edgeTable, visualStyle, networkView }
+  return {
+    network,
+    nodeTable,
+    edgeTable,
+    visualStyle,
+    networkView,
+    networkAttributes,
+  }
 }
 
 export const getCachedData = async (id: string): Promise<CachedData> => {
@@ -92,5 +104,17 @@ export const createDataFromCx = async (
   )
   await putNetworkViewToDb(ndexNetworkId, networkView)
 
-  return { network, nodeTable, edgeTable, visualStyle, networkView }
+  const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
+    ndexNetworkId,
+    cxData,
+  )
+
+  return {
+    network,
+    nodeTable,
+    edgeTable,
+    visualStyle,
+    networkView,
+    networkAttributes,
+  }
 }

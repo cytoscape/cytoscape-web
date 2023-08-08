@@ -1,1 +1,1 @@
-export { ndexQueryFetcher } from './useQueryNetwork'
+export { ndexQueryFetcher } from './ndexQueryFetcher'

@@ -36,7 +36,12 @@ export const PropertyPanel = ({
       )
     }
     return <></>
+  } else if (selectedNodes.length > 1) {
+    return (
+      <MessagePanel message="(Selected objects are displayed in the table browser)" />
+    )
   }
+
 
   const { nodeTable } = tablePair
 

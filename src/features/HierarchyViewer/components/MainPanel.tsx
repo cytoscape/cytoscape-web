@@ -18,7 +18,7 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
 import { PropertyPanel } from './PropertyPanel/PropertyPanel'
-import { StyleManager } from './PropertyPanel/StyleManager'
+import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -115,24 +115,29 @@ export const MainPanel = (): JSX.Element => {
     return <MessagePanel message="Please select a subsystem" />
   }
 
+  const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
+
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       <Allotment vertical minSize={100}>
         <Allotment.Pane>
           <SubNetworkPanel
             subNetworkName={subNetworkName}
-            rootNetworkId={metadata?.interactionNetworkUUID ?? ''}
+            rootNetworkId={rootNetworkId}
             subsystemNodeId={selectedNodes[0]}
             query={query}
           />
         </Allotment.Pane>
-        <Allotment.Pane maxSize={1000}>
+        <Allotment.Pane preferredSize={200}>
           <Allotment>
             <Allotment.Pane preferredSize={'35%'} key={0}>
               <PropertyPanel networkId={selectedNodes[0]} />
             </Allotment.Pane>
             <Allotment.Pane key={1}>
-              <StyleManager />
+              <SharedStyleManager
+                networkId={selectedNodes[0]}
+                rootNetworkId={rootNetworkId}
+              />
             </Allotment.Pane>
           </Allotment>
         </Allotment.Pane>
