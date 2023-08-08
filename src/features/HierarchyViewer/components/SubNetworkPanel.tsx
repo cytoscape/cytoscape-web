@@ -23,7 +23,6 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
-import { useVisualStyleSelectorStore } from '../store/VisualStyleSelectorStore'
 
 interface SubNetworkPanelProps {
   // Name of the network visualized here
@@ -49,12 +48,6 @@ export const SubNetworkPanel = ({
   subsystemNodeId,
   query,
 }: SubNetworkPanelProps): ReactElement => {
-  // For shared style
-  const addSharedVisualStyle = useVisualStyleSelectorStore((state) => state.add)
-  // const sharedStyles = useVisualStyleSelectorStore(
-  //   (state) => state.sharedVisualStyles,
-  // )
-
   const addNewNetwork = useNetworkStore((state) => state.add)
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addTable = useTableStore((state) => state.add)
@@ -155,21 +148,12 @@ export const SubNetworkPanel = ({
 
       // Add parent network's style to the shared style store
       if (vs[rootNetworkId] === undefined) {
-        // Add the original style from the parent network
-        addSharedVisualStyle(rootNetworkId, visualStyle)
-
         // Register the original style to DB
         addVisualStyle(rootNetworkId, visualStyle)
         addVisualStyle(newUuid, visualStyle)
       } else {
-        addSharedVisualStyle(rootNetworkId, vs[rootNetworkId])
         addVisualStyle(newUuid, vs[rootNetworkId])
       }
-      // const newVs: VisualStyle =
-      //   sharedStyles[rootNetworkId] !== undefined
-      //     ? sharedStyles[rootNetworkId]
-      //     : visualStyle
-
       // Register objects to the stores.
       if (networks.get(newUuid) === undefined) {
         // Register new networks to the store if not cached

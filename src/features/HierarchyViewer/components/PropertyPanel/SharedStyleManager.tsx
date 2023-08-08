@@ -28,16 +28,11 @@ export const SharedStyleManager = ({
     (state) => state.enableSharedVisualStyle,
   )
 
-  // const sharedStyles: Record<string, VisualStyle> = useVisualStyleSelectorStore(
-  //   (state) => state.sharedVisualStyles,
-  // )
-  // const addSharedStyle = useVisualStyleSelectorStore((state) => state.add)
-
   const individualStyles: Record<string, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
   )
   const addIndividualStyle = useVisualStyleStore((state) => state.add)
-  const theStyle = individualStyles[rootNetworkId]
+  // const rootNetworkStyle: VisualStyle = individualStyles[rootNetworkId]
 
   const handleChange = (e: any): void => {
     setEnable(e.target.checked)
@@ -48,23 +43,13 @@ export const SharedStyleManager = ({
     if (enable) {
       applySharedStyle()
     }
-    return () => {
-      if (enable) {
-        // Copy the style as shared
-        // const editedStyle = individualStyles[networkId]
-        // if (editedStyle === undefined) {
-        //   return
-        // }
-        // addSharedStyle(rootNetworkId, editedStyle)
-      }
-    }
   }, [])
 
   useEffect(() => {
     if (enable) {
       applySharedStyle()
     }
-  }, [networkId])
+  }, [networkId, rootNetworkId])
 
   useEffect(() => {
     if (enable) {
@@ -72,19 +57,17 @@ export const SharedStyleManager = ({
       if (editedStyle === undefined) {
         return
       }
-      console.log('Visual style edited: ', editedStyle)
       addIndividualStyle(rootNetworkId, editedStyle)
-      // addSharedStyle(rootNetworkId, { ...editedStyle })
     }
   }, [individualStyles[networkId]])
 
   const applySharedStyle = (): void => {
-    // const sharedStyle = sharedStyles[rootNetworkId]
-    if (theStyle === undefined) {
+    const rootNetworkStyle = individualStyles[rootNetworkId]
+    if (rootNetworkStyle === undefined) {
       return
     }
-
-    addIndividualStyle(networkId, theStyle)
+    // Assign the root network style to the individual network
+    addIndividualStyle(networkId, rootNetworkStyle)
   }
 
   return (
@@ -95,6 +78,7 @@ export const SharedStyleManager = ({
           label="Use shared style"
           onChange={handleChange}
           checked={enable}
+          disabled={true}
         />
       </FormGroup>
     </Box>
