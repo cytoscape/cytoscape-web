@@ -9,6 +9,8 @@ import { ToolBar } from './ToolBar'
 /**
  *
  * Empty application shell only with a toolbar
+ * 
+*  - Actual contents will be rendered by the router
  *
  */
 const AppShell = (): ReactElement => {
@@ -54,17 +56,25 @@ const AppShell = (): ReactElement => {
       const { currentNetworkId, networkIds } = workspace
 
       if (currentNetworkId === '' || currentNetworkId === undefined) {
+        // Case 1: Current network is not available
         if (networkIds.length > 0) {
+          // Pick the first one if network is in the workspace
           navigate(`/${id}/networks/${networkIds[0]}`)
         } else {
+          // Otherwise, display empty page
           navigate(`/${id}/networks`)
         }
       } else {
+        
+        // This is the network ID in the URL, not yet set as the current network ID
         const networkId = extractNetworkId(location)
-        if (networkId === currentNetworkId) {
+        // No network ID in the URL --> redirect to the current network
+        if (networkId === '' || networkId === undefined) {
+          navigate(`/${id}/networks/${currentNetworkId}`)
+        } else if (networkId === currentNetworkId) {
           navigate(`/${id}/networks/${currentNetworkId}`)
         } else {
-          // Change the current network ID
+          // URL has different network ID
           const { networkIds } = workspace
           const idSet = new Set(networkIds)
           if (idSet.has(networkId)) {
@@ -75,6 +85,7 @@ const AppShell = (): ReactElement => {
             // Add to the workspace
             addNetworkIds(networkId)
             setCurrentNetworkId(networkId)
+            console.log('*************************** Adding new   ', networkId)
             navigate(`/${id}/networks/${networkId}`)
           }
         }
