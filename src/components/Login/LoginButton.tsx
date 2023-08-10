@@ -44,14 +44,11 @@ export const LoginButton = (): ReactElement => {
 
         setClient(keycloak)
         setEnabled(true)
-        console.log('App is ready', client)
-        setTimeout(() => {
-          initializing.current = false
-          setInitialized(true) // This will trigger the rendering of the rest of the app
-        }, 1000)
+        setInitialized(true) // This will trigger the rendering of the rest of the app
+        initializing.current = false
       })
       .catch((e) => {
-        console.warn('Failed to initialize Keycloak client:', e)
+        console.warn('! Failed to initialize Keycloak client:', e)
       })
   }, [])
 

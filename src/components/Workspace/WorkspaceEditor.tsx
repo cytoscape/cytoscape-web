@@ -170,6 +170,10 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   }, [])
 
+  useEffect(() => {
+    console.log('INIT:', credentialInitialized)
+  }, [credentialInitialized])
+
   /**
    * Check number of networks in the workspace
    */

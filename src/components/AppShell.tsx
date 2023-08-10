@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
 import { ReactElement, useEffect, useRef } from 'react'
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { getWorkspaceFromDb } from '../store/persist/db'
 
@@ -14,9 +14,7 @@ import { ToolBar } from './ToolBar'
 const AppShell = (): ReactElement => {
   // This is necessary to prevent creating a new workspace on every render
   const initializedRef = useRef(false)
-
   const navigate = useNavigate()
-  const location = useLocation()
   const setWorkspace = useWorkspaceStore((state) => state.set)
   const workspace = useWorkspaceStore((state) => state.workspace)
 
@@ -35,9 +33,7 @@ const AppShell = (): ReactElement => {
   }, [])
 
   useEffect(() => {
-    if (location.pathname === '/' && id !== '') {
-      console.log('navigating to the new network', id, location)
-
+    if (id !== '') {
       navigate(`/${id}/networks`)
     }
   }, [workspace])
