@@ -3,7 +3,7 @@ import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box } from '@mui/material'
 
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Location, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
 import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
@@ -56,6 +56,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
   const navigate = useNavigate()
+  const location: Location = useLocation()
 
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
@@ -119,9 +120,14 @@ const WorkSpaceEditor = (): JSX.Element => {
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
+
   const setSummaries = useNetworkSummaryStore((state) => state.addAll)
   const removeSummary = useNetworkSummaryStore((state) => state.delete)
   useNetworkSummaryManager()
+
+  useEffect(() => {
+    console.log('location changed@@@@@@@@@@@@@@@', location)
+  }, [location])
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
@@ -169,10 +175,6 @@ const WorkSpaceEditor = (): JSX.Element => {
       window.removeEventListener('resize', windowWidthListener)
     }
   }, [])
-
-  useEffect(() => {
-    console.log('INIT:', credentialInitialized)
-  }, [credentialInitialized])
 
   /**
    * Check number of networks in the workspace

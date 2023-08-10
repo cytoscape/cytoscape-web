@@ -12,7 +12,7 @@ export const Summaries = ({ summaries }: SummariesProps): ReactElement => {
   const summaryData = Object.values(summaries)
 
   if (summaryData.length === 0) {
-    return <MessagePanel message="Initializing..." showProgress={true} />
+    return <MessagePanel message="No network in workspace" />
   }
   return (
     <>
