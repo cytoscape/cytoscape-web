@@ -3,7 +3,7 @@ import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box } from '@mui/material'
 
-import { Location, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Location, Outlet, useLocation } from 'react-router-dom'
 
 import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
 import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
@@ -55,7 +55,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
-  const navigate = useNavigate()
+  // const navigate = useNavigate()
   const location: Location = useLocation()
 
   const getToken: () => Promise<string> = useCredentialStore(
@@ -233,7 +233,10 @@ const WorkSpaceEditor = (): JSX.Element => {
     if (currentNetworkView === undefined) {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+          // const path = location.pathname
+          // const parts = path.split('/')
+          // const currentPathId = parts[parts.length-1]
+          // navigate(`/${workspace.id}/networks/${currentNetworkId}`)
           console.log('Network loaded for', currentNetworkId)
         })
         .catch((err) => console.error('Failed to load a network:', err))
@@ -243,7 +246,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           console.info('* Network view saved to DB')
           loadCurrentNetworkById(currentNetworkId)
             .then(() => {
-              navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+              // navigate(`/${workspace.id}/networks/${currentNetworkId}`)
               console.log('Network loaded for', currentNetworkId)
             })
             .catch((err) => console.error('Failed to load a network:', err))
@@ -269,7 +272,8 @@ const WorkSpaceEditor = (): JSX.Element => {
         setCurrentNetworkId(curId)
       }
     }
-  }, [summaries, currentNetworkId])
+  }, [summaries])
+  // }, [summaries, currentNetworkId])
 
   // TODO: avoid hardcoding pixel values
 
