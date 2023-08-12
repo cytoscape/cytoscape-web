@@ -9,8 +9,8 @@ import { ToolBar } from './ToolBar'
 /**
  *
  * Empty application shell only with a toolbar
- * 
-*  - Actual contents will be rendered by the router
+ *
+ *  - Actual contents will be rendered by the router
  *
  */
 const AppShell = (): ReactElement => {
@@ -26,7 +26,7 @@ const AppShell = (): ReactElement => {
     (state) => state.setCurrentNetworkId,
   )
 
-  const { id } = workspace
+  const { id, currentNetworkId, networkIds } = workspace
 
   const extractNetworkId = (location: Location): string => {
     const path = location.pathname
@@ -50,46 +50,44 @@ const AppShell = (): ReactElement => {
     }
   }, [])
 
-  useEffect(() => {
-    if (id !== '') {
-      console.log('!workspace', workspace, location)
-      const { currentNetworkId, networkIds } = workspace
-
-      if (currentNetworkId === '' || currentNetworkId === undefined) {
-        // Case 1: Current network is not available
-        if (networkIds.length > 0) {
-          // Pick the first one if network is in the workspace
-          navigate(`/${id}/networks/${networkIds[0]}`)
-        } else {
-          // Otherwise, display empty page
-          navigate(`/${id}/networks`)
-        }
+  const handleExistingWorkspace = (): void => {
+    if (currentNetworkId === '' || currentNetworkId === undefined) {
+      // Case 1: Current network is not available
+      if (networkIds.length > 0) {
+        // Pick the first one if network is in the workspace
+        navigate(`/${id}/networks/${networkIds[0]}`)
       } else {
-        
-        // This is the network ID in the URL, not yet set as the current network ID
-        const networkId = extractNetworkId(location)
-        // No network ID in the URL --> redirect to the current network
-        if (networkId === '' || networkId === undefined) {
-          navigate(`/${id}/networks/${currentNetworkId}`)
-        } else if (networkId === currentNetworkId) {
-          navigate(`/${id}/networks/${currentNetworkId}`)
+        // Otherwise, display empty page
+        navigate(`/${id}/networks`)
+      }
+    } else {
+      // This is the network ID in the URL, not yet set as the current network ID
+      const networkId = extractNetworkId(location)
+      // No network ID in the URL --> redirect to the current network
+      if (networkId === '' || networkId === undefined) {
+        navigate(`/${id}/networks/${currentNetworkId}`)
+      } else if (networkId === currentNetworkId) {
+        navigate(`/${id}/networks/${currentNetworkId}`)
+      } else {
+        // URL has different network ID
+        const idSet = new Set(networkIds)
+        if (idSet.has(networkId)) {
+          // the ID in the URL is in the workspace
+          navigate(`/${id}/networks/${networkId}`)
         } else {
-          // URL has different network ID
-          const { networkIds } = workspace
-          const idSet = new Set(networkIds)
-          if (idSet.has(networkId)) {
-            // the ID in the URL is in the workspace
-            navigate(`/${id}/networks/${networkId}`)
-          } else {
-            // NOT Found
-            // Add to the workspace
-            addNetworkIds(networkId)
-            setCurrentNetworkId(networkId)
-            console.log('*************************** Adding new   ', networkId)
-            navigate(`/${id}/networks/${networkId}`)
-          }
+          // Add to the workspace
+          addNetworkIds(networkId)
+          setCurrentNetworkId(networkId)
+          navigate(`/${id}/networks/${networkId}`)
         }
       }
+    }
+  }
+  useEffect(() => {
+    console.log('!workspace', workspace, location)
+    if (id !== '') {
+      // (Last) Workspace ID exists in the store
+      handleExistingWorkspace()
     }
   }, [workspace])
 

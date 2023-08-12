@@ -13,6 +13,7 @@ import {
 import { enableMapSet } from 'immer'
 import { MessagePanel } from './components/Messages'
 import appConfig from './assets/config.json'
+import { ExternalNetworkLoadingPanel } from './components/ExternalLoading'
 
 enableMapSet()
 
@@ -51,6 +52,10 @@ const router = createBrowserRouter(
       }
       errorElement={<Error />}
     >
+      <Route
+        path="network/:networkId"
+        element={<ExternalNetworkLoadingPanel message={'External'} />}
+      />
       <Route
         path=":workspaceId"
         element={
