@@ -53,14 +53,10 @@ const router = createBrowserRouter(
       errorElement={<Error />}
     >
       <Route
-        path="network/:networkId"
-        element={<ExternalNetworkLoadingPanel message={'External'} />}
-      />
-      <Route
         path=":workspaceId"
         element={
           <Suspense
-            fallback={<MessagePanel message={'Loading Workspace...'} />}
+            fallback={<MessagePanel message={'Initializing Workspace...'} />}
           >
             <WorkspaceEditor />
           </Suspense>
@@ -69,6 +65,11 @@ const router = createBrowserRouter(
         <Route path="networks" element={<div />} />
         <Route path="networks/:networkId" element={<div />} />
       </Route>
+      <Route
+        // Special en
+        path="network/:networkId"
+        element={<ExternalNetworkLoadingPanel message={'External'} />}
+      />
     </Route>,
   ),
   routerOpts,

@@ -3,7 +3,7 @@ import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box } from '@mui/material'
 
-import { Location, Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 
 import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
 import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
@@ -56,7 +56,8 @@ const WorkSpaceEditor = (): JSX.Element => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
   // const navigate = useNavigate()
-  const location: Location = useLocation()
+  // const location: Location = useLocation()
+  const navigate = useNavigate()
 
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
@@ -124,10 +125,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   const setSummaries = useNetworkSummaryStore((state) => state.addAll)
   const removeSummary = useNetworkSummaryStore((state) => state.delete)
   useNetworkSummaryManager()
-
-  useEffect(() => {
-    console.log('location changed@@@@@@@@@@@@@@@', location)
-  }, [location])
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
@@ -233,11 +230,8 @@ const WorkSpaceEditor = (): JSX.Element => {
     if (currentNetworkView === undefined) {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          // const path = location.pathname
-          // const parts = path.split('/')
-          // const currentPathId = parts[parts.length-1]
-          // navigate(`/${workspace.id}/networks/${currentNetworkId}`)
           console.log('Network loaded for', currentNetworkId)
+          navigate(`/${workspace.id}/networks/${currentNetworkId}`)
         })
         .catch((err) => console.error('Failed to load a network:', err))
     } else {
@@ -246,8 +240,8 @@ const WorkSpaceEditor = (): JSX.Element => {
           console.info('* Network view saved to DB')
           loadCurrentNetworkById(currentNetworkId)
             .then(() => {
-              // navigate(`/${workspace.id}/networks/${currentNetworkId}`)
               console.log('Network loaded for', currentNetworkId)
+              navigate(`/${workspace.id}/networks/${currentNetworkId}`)
             })
             .catch((err) => console.error('Failed to load a network:', err))
         })
@@ -273,9 +267,6 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
     }
   }, [summaries])
-  // }, [summaries, currentNetworkId])
-
-  // TODO: avoid hardcoding pixel values
 
   // Return the main component including the network panel, network view, and the table browser
   return (

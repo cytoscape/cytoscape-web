@@ -5,6 +5,7 @@ import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { getWorkspaceFromDb } from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
+import { parsePathName } from '../utils/paths-util'
 
 /**
  *
@@ -27,33 +28,62 @@ const AppShell = (): ReactElement => {
   )
 
   const { id, currentNetworkId, networkIds } = workspace
+  console.log('**IDLIST', networkIds, workspace)
 
-  const extractNetworkId = (location: Location): string => {
-    const path = location.pathname
-    const parts = path.split('/')
-    if (parts.length > 3) {
-      return parts[3]
+  /**
+   * Initializing assigned workspace for this session
+   */
+  const setupWorkspace = (): void => {
+    // Check location and curren workspace ID
+    const { pathname } = location
+    if (id === '') {
+      // No workspace ID is set
+      // Check if the URL has workspace ID
+      const parsed = parsePathName(pathname)
+
+      void getWorkspaceFromDb(
+        parsed.workspaceId === '' ? undefined : parsed.workspaceId,
+      ).then((workspace) => {
+        setWorkspace(workspace)
+        initializedRef.current = true
+      })
     }
-    return ''
   }
-
+  /**
+   * Once this component is initialized, check the workspace ID
+   */
   useEffect(() => {
+    // Use this flag to prevent creating a new workspace more than once
     if (!initializedRef.current) {
-      initializedRef.current = true
-      // TODO: Is this the best way to check the initial state?
-      if (id === '') {
-        void getWorkspaceFromDb().then((workspace) => {
-          // This sets current network ID, too
-          setWorkspace(workspace)
-        })
-      }
+      setupWorkspace()
     }
   }, [])
 
-  const handleExistingWorkspace = (): void => {
+  useEffect(() => {
+    // Now workspace ID is set. route to the correct page
+    console.log('!!!!!!!!!!!! IDLIST', networkIds)
+  }, [networkIds])
+
+  useEffect(() => {
+    // navigate(`/${id}/networks/${currentNetworkId}`)
+  }, [currentNetworkId])
+
+  const redirect = (): void => {
+    if (!initializedRef.current || id === '') return
+
+    const parsed = parsePathName(location.pathname)
+
+    // At this point, workspace ID is always available
     if (currentNetworkId === '' || currentNetworkId === undefined) {
-      // Case 1: Current network is not available
-      if (networkIds.length > 0) {
+      const parsedNetworkId = parsed.networkId
+      if (parsedNetworkId !== '' && parsedNetworkId !== undefined) {
+        setTimeout(() => {
+          addNetworkIds(parsedNetworkId)
+          setCurrentNetworkId(parsedNetworkId)
+          navigate(`/${id}/networks/${parsedNetworkId}`)
+        }, 1000)
+      } else if (networkIds.length > 0) {
+        // Case 1: Current network is not available
         // Pick the first one if network is in the workspace
         navigate(`/${id}/networks/${networkIds[0]}`)
       } else {
@@ -62,8 +92,8 @@ const AppShell = (): ReactElement => {
       }
     } else {
       // This is the network ID in the URL, not yet set as the current network ID
-      const networkId = extractNetworkId(location)
       // No network ID in the URL --> redirect to the current network
+      const { networkId } = parsed
       if (networkId === '' || networkId === undefined) {
         navigate(`/${id}/networks/${currentNetworkId}`)
       } else if (networkId === currentNetworkId) {
@@ -76,20 +106,20 @@ const AppShell = (): ReactElement => {
           navigate(`/${id}/networks/${networkId}`)
         } else {
           // Add to the workspace
-          addNetworkIds(networkId)
-          setCurrentNetworkId(networkId)
-          navigate(`/${id}/networks/${networkId}`)
+          setTimeout(() => {
+            addNetworkIds(networkId)
+            setCurrentNetworkId(networkId)
+            navigate(`/${id}/networks/${networkId}`)
+          }, 1000)
         }
       }
     }
   }
+
   useEffect(() => {
-    console.log('!workspace', workspace, location)
-    if (id !== '') {
-      // (Last) Workspace ID exists in the store
-      handleExistingWorkspace()
-    }
-  }, [workspace])
+    // Now workspace ID is set. route to the correct page
+    redirect()
+  }, [id])
 
   return (
     <Box sx={{ width: '100%', height: '100%' }}>

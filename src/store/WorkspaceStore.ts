@@ -105,7 +105,6 @@ export const useWorkspaceStore = create(
             )
 
             state.workspace.networkIds = uniqueIds
-
             return state
           })
         },

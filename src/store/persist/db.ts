@@ -193,10 +193,10 @@ export const updateWorkspaceDb = async (
 
 export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
   // Check there is no workspace in the DB or not
-
   const workspaceCount: number = await db.workspace.count()
 
   if (id === undefined) {
+    // Workspace ID is not specified
     if (workspaceCount === 0) {
       // Initialize all data
       const newWs: Workspace = createWorkspace()
