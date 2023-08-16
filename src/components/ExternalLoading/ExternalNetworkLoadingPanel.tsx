@@ -16,29 +16,45 @@ export const ExternalNetworkLoadingPanel = (
   props: ExternalNetworkLoadingPanelProps,
 ): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
-  const navigation = useNavigate()
+  const navigate = useNavigate()
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
+  const { id } = workspace
+
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
   )
 
+  const addNetworkIds: (networkId: string) => void = useWorkspaceStore(
+    (state) => state.addNetworkIds,
+  )
+  const setCurrentNetworkId: (networkId: string) => void = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
+
   const location = useLocation()
-  useEffect(() => {
+  const redirect = (): void => {
     const networkId = location.pathname.split('/')[2]
     void getToken().then((token) => {
-      console.log('token', token, networkId)
       useNdexNetworkSummary(networkId, ndexBaseUrl, token)
         .then((summary) => {
-          console.log('summary', summary)
-          console.log('workspace', workspace)
-          navigation('/')
+          addNetworkIds(networkId)
+          setCurrentNetworkId(networkId)
+          navigate(`/${id}/networks/${networkId}`)
         })
         .catch((error) => {
           console.log('SUMMARY error', error)
-          navigation('/')
+          navigate('/')
         })
     })
-  }, [])
+  }
+
+  useEffect(() => {
+    console.log('workspace', workspace)
+    if (id !== undefined) {
+      redirect()
+    }
+  }, [id])
+
   return (
     <Box
       sx={{ width: '100%', height: '100%', display: 'grid', padding: '1em' }}
