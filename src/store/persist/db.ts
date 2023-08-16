@@ -41,15 +41,13 @@ class CyDB extends Dexie {
 // Initialize the DB
 let db = new CyDB(DB_NAME)
 db.open()
-  .then((dexi) => {
-    console.info('Local DB opened', dexi)
-  })
+  .then((dexi) => {})
   .catch((err) => {
     console.log(err)
   })
 
 db.on('ready', () => {
-  console.info('Local DB is ready')
+  console.info('Indexed DB is ready')
 })
 
 export const deleteDb = async (): Promise<void> => {

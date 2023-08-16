@@ -1,17 +1,20 @@
 import { Avatar, Tooltip } from '@mui/material'
 import { deepOrange } from '@mui/material/colors'
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
-import { ReactElement, useEffect, useRef, useState, useContext } from 'react'
+import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
 import { LoginPanel } from './LoginPanel'
 import { useCredentialStore } from '../../store/CredentialStore'
-import { AppConfigContext } from '../../AppConfigContext'
+import { KeycloakContext } from '../..'
+// import { AppConfigContext } from '../../AppConfigContext'
 
 export const LoginButton = (): ReactElement => {
   const initializing = useRef<boolean>(false)
   const [open, setOpen] = useState<boolean>(false)
-  const [enabled, setEnabled] = useState<boolean>(false)
+  // const [enabled, setEnabled] = useState<boolean>(false)
 
-  const client: Keycloak = useCredentialStore((state) => state.client)
+  const client: Keycloak = useContext(KeycloakContext)
+  console.log('+++++++++++++++++ KC', client)
+  // const client: Keycloak = useCredentialStore((state) => state.client)
   const setInitialized: (initialized: boolean) => void = useCredentialStore(
     (state) => state.setInitialized,
   )
@@ -19,7 +22,6 @@ export const LoginButton = (): ReactElement => {
   const setClient: (client: Keycloak) => void = useCredentialStore(
     (state) => state.setClient,
   )
-  const { keycloakConfig } = useContext(AppConfigContext)
 
   useEffect(() => {
     if (initializing.current) {
@@ -27,31 +29,31 @@ export const LoginButton = (): ReactElement => {
       return
     }
     initializing.current = true
-    const keycloak = new Keycloak({ ...keycloakConfig })
-    keycloak
-      .init({
-        onLoad: 'check-sso',
-        checkLoginIframe: false,
-        silentCheckSsoRedirectUri:
-          window.location.origin + '/silent-check-sso.html',
-      })
-      .then((authenticated: boolean) => {
-        console.info(
-          'Keycloak initialized. Is authenticated?',
-          authenticated,
-          client,
-        )
+    // const keycloak = new Keycloak({ ...keycloakConfig })
+    // keycloak
+    //   .init({
+    //     onLoad: 'check-sso',
+    //     checkLoginIframe: false,
+    //     silentCheckSsoRedirectUri:
+    //       window.location.origin + '/silent-check-sso.html',
+    //   })
+    //   .then((authenticated: boolean) => {
+    //     console.info(
+    //       'Keycloak initialized. Is authenticated?',
+    //       authenticated,
+    //       client,
+    //     )
 
-        setClient(keycloak)
-        setEnabled(true)
-        setInitialized(true) // This will trigger the rendering of the rest of the app
-        initializing.current = false
-      })
-      .catch((e) => {
-        console.warn('! Failed to initialize Keycloak client:', e)
-      })
+    setClient(client)
+    setInitialized(true) // This will trigger the rendering of the rest of the app
+    initializing.current = false
+    //   })
+    //   .catch((e) => {
+    //     console.warn('! Failed to initialize Keycloak client:', e)
+    //   })
   }, [])
 
+  const enabled = true
   const handleClose = async (): Promise<void> => {
     if (!enabled) {
       // Button is not ready yet
