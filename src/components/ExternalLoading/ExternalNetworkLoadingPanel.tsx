@@ -22,10 +22,6 @@ export const ExternalNetworkLoadingPanel = (
     (state) => state.getToken,
   )
 
-  // const addNetworks: (ids: IdType | IdType[]) => void = useWorkspaceStore(
-  //   (state) => state.addNetworkIds,
-  // )
-
   const location = useLocation()
   useEffect(() => {
     const networkId = location.pathname.split('/')[2]
@@ -41,9 +37,6 @@ export const ExternalNetworkLoadingPanel = (
           console.log('SUMMARY error', error)
           navigation('/')
         })
-
-      // const networkId = location.pathname.split('/')[2]
-      // addNetworks([networkId])
     })
   }, [])
   return (

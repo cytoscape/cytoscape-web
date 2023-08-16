@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react'
+import React, { Suspense, useContext, useEffect } from 'react'
 import CssBaseline from '@mui/material/CssBaseline'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import './index.css'
@@ -14,6 +14,8 @@ import { enableMapSet } from 'immer'
 import { MessagePanel } from './components/Messages'
 import appConfig from './assets/config.json'
 import { ExternalNetworkLoadingPanel } from './components/ExternalLoading'
+import { KeycloakContext } from '.'
+import { useCredentialStore } from './store/CredentialStore'
 
 enableMapSet()
 
@@ -76,6 +78,13 @@ const router = createBrowserRouter(
 )
 
 export const App = (): React.ReactElement => {
+  const client = useContext(KeycloakContext)
+  const setClient = useCredentialStore((state) => state.setClient)
+
+  useEffect(() => {
+    setClient(client)
+  }, [])
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

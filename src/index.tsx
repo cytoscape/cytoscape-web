@@ -24,12 +24,7 @@ keycloak
     silentCheckSsoRedirectUri:
       window.location.origin + '/silent-check-sso.html',
   })
-  .then((authenticated: boolean) => {
-    console.log('Keycloak initialized:', authenticated)
-    // setClient(keycloak)
-    // setEnabled(true)
-    // setInitialized(true) // This will trigger the rendering of the rest of the app
-    // initializing.current = false
+  .then(() => {
     if (rootElement !== null) {
       ReactDOM.createRoot(rootElement).render(
         <AppConfigContext.Provider value={appConfig}>

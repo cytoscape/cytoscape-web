@@ -1,57 +1,14 @@
 import { Avatar, Tooltip } from '@mui/material'
 import { deepOrange } from '@mui/material/colors'
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
-import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
+import { ReactElement, useContext, useState } from 'react'
 import { LoginPanel } from './LoginPanel'
-import { useCredentialStore } from '../../store/CredentialStore'
 import { KeycloakContext } from '../..'
-// import { AppConfigContext } from '../../AppConfigContext'
 
 export const LoginButton = (): ReactElement => {
-  const initializing = useRef<boolean>(false)
   const [open, setOpen] = useState<boolean>(false)
-  // const [enabled, setEnabled] = useState<boolean>(false)
 
   const client: Keycloak = useContext(KeycloakContext)
-  console.log('+++++++++++++++++ KC', client)
-  // const client: Keycloak = useCredentialStore((state) => state.client)
-  const setInitialized: (initialized: boolean) => void = useCredentialStore(
-    (state) => state.setInitialized,
-  )
-
-  const setClient: (client: Keycloak) => void = useCredentialStore(
-    (state) => state.setClient,
-  )
-
-  useEffect(() => {
-    if (initializing.current) {
-      console.log('Initialization in progress...')
-      return
-    }
-    initializing.current = true
-    // const keycloak = new Keycloak({ ...keycloakConfig })
-    // keycloak
-    //   .init({
-    //     onLoad: 'check-sso',
-    //     checkLoginIframe: false,
-    //     silentCheckSsoRedirectUri:
-    //       window.location.origin + '/silent-check-sso.html',
-    //   })
-    //   .then((authenticated: boolean) => {
-    //     console.info(
-    //       'Keycloak initialized. Is authenticated?',
-    //       authenticated,
-    //       client,
-    //     )
-
-    setClient(client)
-    setInitialized(true) // This will trigger the rendering of the rest of the app
-    initializing.current = false
-    //   })
-    //   .catch((e) => {
-    //     console.warn('! Failed to initialize Keycloak client:', e)
-    //   })
-  }, [])
 
   const enabled = true
   const handleClose = async (): Promise<void> => {

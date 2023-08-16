@@ -28,7 +28,6 @@ const AppShell = (): ReactElement => {
   )
 
   const { id, currentNetworkId, networkIds } = workspace
-  console.log('**IDLIST', networkIds, workspace)
 
   /**
    * Initializing assigned workspace for this session
@@ -45,7 +44,6 @@ const AppShell = (): ReactElement => {
         parsed.workspaceId === '' ? undefined : parsed.workspaceId,
       ).then((workspace) => {
         setWorkspace(workspace)
-        // initializedRef.current = true
       })
     }
   }
@@ -69,11 +67,9 @@ const AppShell = (): ReactElement => {
     if (currentNetworkId === '' || currentNetworkId === undefined) {
       const parsedNetworkId = parsed.networkId
       if (parsedNetworkId !== '' && parsedNetworkId !== undefined) {
-        // setTimeout(() => {
         addNetworkIds(parsedNetworkId)
         setCurrentNetworkId(parsedNetworkId)
         navigate(`/${id}/networks/${parsedNetworkId}`)
-        // }, 1000)
       } else if (networkIds.length > 0) {
         // Case 1: Current network is not available
         // Pick the first one if network is in the workspace
@@ -98,11 +94,9 @@ const AppShell = (): ReactElement => {
           navigate(`/${id}/networks/${networkId}`)
         } else {
           // Add to the workspace
-          // setTimeout(() => {
           addNetworkIds(networkId)
           setCurrentNetworkId(networkId)
           navigate(`/${id}/networks/${networkId}`)
-          // }, 1000)
         }
       }
     }
@@ -110,7 +104,9 @@ const AppShell = (): ReactElement => {
 
   useEffect(() => {
     // Now workspace ID is set. route to the correct page
-    redirect()
+    if (id !== '') {
+      redirect()
+    }
   }, [id])
 
   return (

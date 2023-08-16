@@ -54,17 +54,10 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
-
-  // const navigate = useNavigate()
-  // const location: Location = useLocation()
   const navigate = useNavigate()
 
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
-  )
-
-  const credentialInitialized: boolean = useCredentialStore(
-    (state) => state.initialized,
   )
 
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -177,9 +170,6 @@ const WorkSpaceEditor = (): JSX.Element => {
    * Check number of networks in the workspace
    */
   useEffect(() => {
-    if (!credentialInitialized) {
-      return
-    }
     const networkCount: number = workspace.networkIds.length
     const summaryCount: number = Object.keys(summaries).length
 
@@ -213,7 +203,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     loadNetworkSummaries()
       .then(() => {})
       .catch((err) => console.error(err))
-  }, [workspace.networkIds, credentialInitialized])
+  }, [workspace.networkIds])
 
   /**
    * Swap the current network, can be an expensive operation
