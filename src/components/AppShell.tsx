@@ -40,8 +40,17 @@ const AppShell = (): ReactElement => {
       // Check if the URL has workspace ID
       const parsed = parsePathName(pathname)
 
+      let targetWorkspaceId: string = parsed.workspaceId
+
+      // TODO: URL design should be consolidated as constants
+      if (targetWorkspaceId === 'network') {
+        // Special case: network import
+        targetWorkspaceId = ''
+      }
+
       void getWorkspaceFromDb(
-        parsed.workspaceId === '' ? undefined : parsed.workspaceId,
+        // parsed.workspaceId === '' ? undefined : parsed.workspaceId,
+        targetWorkspaceId === '' ? undefined : targetWorkspaceId,
       ).then((workspace) => {
         setWorkspace(workspace)
       })

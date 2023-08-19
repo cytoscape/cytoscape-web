@@ -10,7 +10,14 @@ import { getNdexClient } from '../../../utils/fetchers'
 export const ndexQueryFetcher = async (
   params: string[],
 ): Promise<NetworkWithView> => {
-  const [url, rootNetworkUuid, subsystemId, query, accessToken] = params
+  const [
+    url,
+    rootNetworkUuid,
+    subsystemId,
+    query,
+    interactionNetworkUuid,
+    accessToken,
+  ] = params
   if (
     url === undefined ||
     rootNetworkUuid === undefined ||
@@ -19,6 +26,7 @@ export const ndexQueryFetcher = async (
   ) {
     throw new Error('Missing parameters')
   }
+
   const ndexClient = getNdexClient(url, accessToken)
 
   try {
@@ -33,19 +41,26 @@ export const ndexQueryFetcher = async (
       cache.visualStyle === undefined ||
       cache.networkView === undefined
     ) {
-      const cx2QueryResult: Cx2 = await ndexClient.interConnectQuery(
-        rootNetworkUuid,
-        null,
-        false,
-        query,
-        true,
-      )
-      const withView: NetworkWithView = await createDataFromCx(
-        subsystemId,
-        cx2QueryResult,
-      )
-
-      return withView
+      // Case 1: Simply fetch network if UUID is provided as node attribute
+      if (
+        interactionNetworkUuid !== undefined &&
+        interactionNetworkUuid !== ''
+      ) {
+        const cx2Network: Cx2 = await ndexClient.getCX2Network(
+          interactionNetworkUuid,
+        )
+        return await createDataFromCx(subsystemId, cx2Network)
+      } else {
+        // Case 2: Just run the interconnect query if UUID is not provided
+        const cx2QueryResult: Cx2 = await ndexClient.interConnectQuery(
+          rootNetworkUuid,
+          null,
+          false,
+          query,
+          true,
+        )
+        return await createDataFromCx(subsystemId, cx2QueryResult)
+      }
     } else {
       return {
         network: cache.network,
