@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react'
+import { ReactElement, useState, useEffect } from 'react'
 import {
   Tooltip,
   IconButton,
@@ -35,6 +35,7 @@ import { NetworkView } from '../../models/ViewModel'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 
 import { removePTags } from '../../utils/remove-p-tags'
+import { useSearchParams } from 'react-router-dom'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
@@ -76,6 +77,24 @@ export const NetworkPropertyPanel = ({
     networkViewModel !== undefined ? networkViewModel.selectedNodes : []
   const selectedEdges: IdType[] =
     networkViewModel !== undefined ? networkViewModel.selectedEdges : []
+
+  const [search, setSearch] = useSearchParams()
+
+  useEffect(() => {
+    // Encode the selection state into the URL
+    if (networkViewModel === undefined) {
+      return
+    }
+    console.log(search)
+    if (selectedNodes !== undefined && selectedNodes.length > 0) {
+      setSearch({
+        selectednodes: selectedNodes.join(','),
+        selectededges: selectedEdges.join(','),
+      })
+    } else {
+      setSearch({})
+    }
+  }, [networkViewModel])
 
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
