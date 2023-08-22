@@ -13,6 +13,8 @@ interface UiStateAction {
   setActiveNetworkView: (id: IdType) => void
   setPanelState: (panel: Panel, state: PanelState) => void
   enablePopup: (enable: boolean) => void
+  setShowErrorDialog: (show: boolean) => void
+  setErrorMessage: (message: string) => void
 }
 
 type UiStateStore = UiState & UiStateAction
@@ -26,6 +28,8 @@ export const useUiStateStore = create(
       },
       activeNetworkView: '',
       enablePopup: false,
+      showErrorDialog: false,
+      errorMessage: '',
     },
     setActiveNetworkView: (id: IdType) => {
       set((state) => {
@@ -40,6 +44,21 @@ export const useUiStateStore = create(
     enablePopup: (enable: boolean) => {
       set((state) => {
         state.ui.enablePopup = enable
+      })
+    },
+    setShowErrorDialog: (show: boolean) => {
+      set((state) => {
+        state.ui.showErrorDialog = show
+
+        // Clear error message when the dialog is closed
+        if (!show) {
+          state.ui.errorMessage = ''
+        }
+      })
+    },
+    setErrorMessage: (message: string) => {
+      set((state) => {
+        state.ui.errorMessage = message
       })
     },
   })),

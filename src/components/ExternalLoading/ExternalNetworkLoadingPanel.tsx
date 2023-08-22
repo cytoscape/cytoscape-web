@@ -6,6 +6,7 @@ import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useCredentialStore } from '../../store/CredentialStore'
 import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
 import { AppConfigContext } from '../../AppConfigContext'
+import { useUiStateStore } from '../../store/UiStateStore'
 
 interface ExternalNetworkLoadingPanelProps {
   message: string
@@ -19,6 +20,11 @@ export const ExternalNetworkLoadingPanel = (
   const navigate = useNavigate()
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
   const { id } = workspace
+  const setShowErrorDialog = useUiStateStore(
+    (state) => state.setShowErrorDialog,
+  )
+
+  const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
 
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
@@ -43,7 +49,11 @@ export const ExternalNetworkLoadingPanel = (
         })
         .catch((error) => {
           console.log('SUMMARY error', error)
-          navigate('/')
+          const errorMessage: string = error.message
+          setErrorMessage(
+            `Failed to load the network ${networkId}: ${errorMessage}`,
+          )
+          setShowErrorDialog(true)
         })
     })
   }

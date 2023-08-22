@@ -57,7 +57,11 @@ const router = createBrowserRouter(
       <Route
         // Special endpoint for loading external networks
         path="network/:networkId"
-        element={<ExternalNetworkLoadingPanel message={'External'} />}
+        element={
+          <ExternalNetworkLoadingPanel
+            message={'Loading External Network...'}
+          />
+        }
       />
       <Route
         path=":workspaceId"

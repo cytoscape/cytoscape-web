@@ -6,6 +6,8 @@ import { getWorkspaceFromDb } from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
 import { parsePathName } from '../utils/paths-util'
+import { WarningDialog } from './ExternalLoading/WarningDialog'
+import { useUiStateStore } from '../store/UiStateStore'
 
 /**
  *
@@ -25,6 +27,12 @@ const AppShell = (): ReactElement => {
   const addNetworkIds = useWorkspaceStore((state) => state.addNetworkIds)
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
+  )
+
+  const { showErrorDialog } = useUiStateStore((state) => state.ui)
+  // const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
+  const setShowErrorDialog = useUiStateStore(
+    (state) => state.setShowErrorDialog,
   )
 
   const { id, currentNetworkId, networkIds } = workspace
@@ -122,6 +130,12 @@ const AppShell = (): ReactElement => {
     <Box sx={{ width: '100%', height: '100%' }}>
       <ToolBar />
       <Outlet />
+      <WarningDialog
+        open={showErrorDialog}
+        handleClose={() => {
+          setShowErrorDialog(false)
+        }}
+      />
     </Box>
   )
 }
