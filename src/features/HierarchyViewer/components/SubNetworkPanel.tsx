@@ -164,17 +164,24 @@ export const SubNetworkPanel = ({
         addTable(newUuid, nodeTable, edgeTable)
         addViewModel(newUuid, networkView)
 
-        // Apply default layout for the first time
-        const afterLayout = (
-          positionMap: Map<IdType, [number, number]>,
-        ): void => {
-          updateNodePositions(network.id, positionMap)
-          setIsRunning(false)
-        }
+        if (interactionNetworkId === undefined || interactionNetworkId === '') {
+          // Apply default layout for the first time
+          const afterLayout = (
+            positionMap: Map<IdType, [number, number]>,
+          ): void => {
+            updateNodePositions(network.id, positionMap)
+            setIsRunning(false)
+          }
 
-        if (network !== undefined && engine !== undefined) {
-          setIsRunning(true)
-          engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
+          if (network !== undefined && engine !== undefined) {
+            setIsRunning(true)
+            engine.apply(
+              network.nodes,
+              network.edges,
+              afterLayout,
+              defaultLayout,
+            )
+          }
         }
       }
       setQueryNetworkId(newUuid)
