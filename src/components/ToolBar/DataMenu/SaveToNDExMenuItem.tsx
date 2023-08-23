@@ -27,6 +27,7 @@ import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { IdType } from '../../../models/IdType'
 import { useMessageStore } from '../../../store/MessageStore'
+import { KeycloakContext } from '../../..'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -65,8 +66,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     (state) => state.setNetworkModified,
   )
 
+  const client = useContext(KeycloakContext)
+
   const getToken = useCredentialStore((state) => state.getToken)
-  const client = useCredentialStore((state) => state.client)
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
 

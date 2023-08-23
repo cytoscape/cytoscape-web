@@ -17,11 +17,14 @@ import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../store/MessageStore'
+import { KeycloakContext } from '../../..'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
+
+  const client = useContext(KeycloakContext)
 
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -44,7 +47,6 @@ export const CopyNetworkToNDExMenuItem = (
   ) as Network
 
   const getToken = useCredentialStore((state) => state.getToken)
-  const client = useCredentialStore((state) => state.client)
   const authenticated: boolean = client?.authenticated ?? false
 
   const addMessage = useMessageStore((state) => state.addMessage)

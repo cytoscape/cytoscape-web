@@ -28,6 +28,7 @@ export interface Query {
 export const MainPanel = (): JSX.Element => {
   const [subNetworkName, setSubNetworkName] = useState<string>('')
   const [query, setQuery] = useState<Query>({ nodeIds: [] })
+  const [interactionNetworkUuid, setInteractionNetworkId] = useState<string>('')
 
   // Check the network property and enable the UI only if it is a hierarchy
   const [isHierarchy, setIsHierarchy] = useState<boolean>(false)
@@ -101,10 +102,16 @@ export const MainPanel = (): JSX.Element => {
     }
 
     const memberIds = row[SubsystemTag.members]
+    const interactionUuid: string = row[
+      SubsystemTag.interactionNetworkUuid
+    ] as string
     const name: ValueType = row.name ?? '?'
     setSubNetworkName(name as string)
     const newQuery: Query = { nodeIds: memberIds as number[] }
-    setQuery(newQuery)
+    if (interactionUuid === undefined || interactionUuid === '') {
+      setQuery(newQuery)
+    }
+    setInteractionNetworkId(interactionUuid)
   }, [selectedNodes])
 
   if (!isHierarchy) {
@@ -115,6 +122,7 @@ export const MainPanel = (): JSX.Element => {
     return <MessagePanel message="Please select a subsystem" />
   }
 
+  const targetNode: IdType = selectedNodes[0]
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
 
   return (
@@ -124,18 +132,19 @@ export const MainPanel = (): JSX.Element => {
           <SubNetworkPanel
             subNetworkName={subNetworkName}
             rootNetworkId={rootNetworkId}
-            subsystemNodeId={selectedNodes[0]}
+            subsystemNodeId={targetNode}
             query={query}
+            interactionNetworkId={interactionNetworkUuid}
           />
         </Allotment.Pane>
         <Allotment.Pane preferredSize={200}>
           <Allotment>
             <Allotment.Pane preferredSize={'35%'} key={0}>
-              <PropertyPanel networkId={selectedNodes[0]} />
+              <PropertyPanel networkId={targetNode} />
             </Allotment.Pane>
             <Allotment.Pane key={1}>
               <SharedStyleManager
-                networkId={selectedNodes[0]}
+                networkId={targetNode}
                 rootNetworkId={rootNetworkId}
               />
             </Allotment.Pane>

@@ -36,6 +36,8 @@ interface SubNetworkPanelProps {
 
   // ID of member nodes
   query: Query
+
+  interactionNetworkId: IdType
 }
 
 /**
@@ -47,6 +49,7 @@ export const SubNetworkPanel = ({
   rootNetworkId,
   subsystemNodeId,
   query,
+  interactionNetworkId,
 }: SubNetworkPanelProps): ReactElement => {
   const addNewNetwork = useNetworkStore((state) => state.add)
   const addVisualStyle = useVisualStyleStore((state) => state.add)
@@ -93,7 +96,7 @@ export const SubNetworkPanel = ({
 
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const { data, error, isLoading } = useSWR<NetworkWithView>(
-    [ndexBaseUrl, rootNetworkId, subsystemNodeId, query],
+    [ndexBaseUrl, rootNetworkId, subsystemNodeId, query, interactionNetworkId],
     ndexQueryFetcher,
     {
       revalidateOnFocus: false,

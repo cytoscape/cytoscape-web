@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react'
+import { ReactElement, useState, useEffect } from 'react'
 import {
   Tooltip,
   IconButton,
@@ -35,10 +35,14 @@ import { NetworkView } from '../../models/ViewModel'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 
 import { removePTags } from '../../utils/remove-p-tags'
+import { useSearchParams } from 'react-router-dom'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
 }
+
+// Selection will be encoded if the selected object count is less than this number
+const MAX_SELECTED_OBJ = 300
 
 export const NetworkPropertyPanel = ({
   summary,
@@ -72,10 +76,41 @@ export const NetworkPropertyPanel = ({
   const networkViewModel: NetworkView = useViewModelStore(
     (state) => state.viewModels[id],
   )
-  const selectedNodes: IdType[] =
-    networkViewModel !== undefined ? networkViewModel.selectedNodes : []
-  const selectedEdges: IdType[] =
-    networkViewModel !== undefined ? networkViewModel.selectedEdges : []
+
+  const [selectedNodeCount, setSelectedNodeCount] = useState<number>(0)
+  const [selectedEdgeCount, setSelectedEdgeCount] = useState<number>(0)
+
+  useEffect(() => {
+    if (networkViewModel === undefined) {
+      return
+    }
+
+    setSelectedNodeCount(networkViewModel.selectedNodes.length)
+    setSelectedEdgeCount(networkViewModel.selectedEdges.length)
+  }, [networkViewModel])
+
+  const [search, setSearch] = useSearchParams()
+
+  useEffect(() => {
+    if (
+      networkViewModel === undefined ||
+      (selectedNodeCount === 0 && selectedEdgeCount === 0)
+    ) {
+      if (search !== undefined && search.size !== 0) {
+        setSearch({})
+      }
+      return
+    }
+
+    const params = {} as any
+    if (selectedNodeCount > 0 && selectedNodeCount <= MAX_SELECTED_OBJ) {
+      params.selectednodes = networkViewModel.selectedNodes.join(' ')
+    }
+    if (selectedEdgeCount > 0 && selectedEdgeCount <= MAX_SELECTED_OBJ) {
+      params.selectededges = networkViewModel.selectedEdges.join(' ')
+    }
+    setSearch(params)
+  }, [selectedNodeCount, selectedEdgeCount])
 
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
@@ -89,12 +124,6 @@ export const NetworkPropertyPanel = ({
 
   const backgroundColor: string =
     currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
-
-  // todo add this somewhere in the component tree
-  // const lastModifiedDate =
-  //   summary.modificationTime !== undefined
-  //     ? new Date(summary.modificationTime).toLocaleString()
-  //     : ''
 
   const networkModifiedIcon = networkModified ? (
     <Tooltip title="Network has been modified">
@@ -148,8 +177,8 @@ export const NetworkPropertyPanel = ({
             variant={'subtitle2'}
             sx={{ width: '100%', color: theme.palette.text.secondary }}
           >
-            {`N: ${nodeCount} (${selectedNodes.length}) /
-          E: ${edgeCount} (${selectedEdges.length})`}
+            {`N: ${nodeCount} (${selectedNodeCount}) /
+          E: ${edgeCount} (${selectedEdgeCount})`}
           </Typography>
         </Box>
         <Tooltip title="Edit network properties">

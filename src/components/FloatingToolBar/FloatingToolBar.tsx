@@ -2,6 +2,7 @@ import { Box, Divider } from '@mui/material'
 import { ApplyLayoutButton } from './ApplyLayoutButton'
 import { FitButton } from './FitButton'
 import { OpenInCytoscapeButton } from './OpenInCytoscapeButton'
+import { ShareNetworkButton } from './ShareNetworkButtton'
 interface FloatingToolBarProps {
   // All actions to be performed on the target network if provided
   targetNetworkId?: string
@@ -28,6 +29,7 @@ export const FloatingToolBar = ({
       <ApplyLayoutButton targetNetworkId={targetNetworkId} />
       <FitButton />
       <OpenInCytoscapeButton />
+      <ShareNetworkButton />
     </Box>
   )
 }

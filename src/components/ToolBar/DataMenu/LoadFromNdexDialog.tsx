@@ -30,6 +30,7 @@ import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { networkSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
 import { dateFormatter } from '../../../utils/date-format'
+import { KeycloakContext } from '../../..'
 
 interface LoadFromNdexDialogProps {
   open: boolean
@@ -41,7 +42,8 @@ export const LoadFromNdexDialog = (
   const { ndexBaseUrl, maxNetworkFileSize, maxNetworkElementsThreshold } =
     useContext(AppConfigContext)
 
-  const client = useCredentialStore((state) => state.client)
+  const client = useContext(KeycloakContext)
+
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
   const addNetworks: (ids: IdType | IdType[]) => void = useWorkspaceStore(

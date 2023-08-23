@@ -41,15 +41,13 @@ class CyDB extends Dexie {
 // Initialize the DB
 let db = new CyDB(DB_NAME)
 db.open()
-  .then((dexi) => {
-    console.info('Local DB opened', dexi)
-  })
+  .then((dexi) => {})
   .catch((err) => {
     console.log(err)
   })
 
 db.on('ready', () => {
-  console.info('Local DB is ready')
+  console.info('Indexed DB is ready')
 })
 
 export const deleteDb = async (): Promise<void> => {
@@ -193,10 +191,10 @@ export const updateWorkspaceDb = async (
 
 export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
   // Check there is no workspace in the DB or not
-
   const workspaceCount: number = await db.workspace.count()
 
-  if (id === undefined) {
+  if (id === undefined || id === '') {
+    // Workspace ID is not specified
     if (workspaceCount === 0) {
       // Initialize all data
       const newWs: Workspace = createWorkspace()
@@ -216,13 +214,23 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
     }
   }
 
+  // Workspace ID is specified
+
   const cachedWorkspace: Workspace = await db.workspace.get(id)
   if (cachedWorkspace !== undefined) {
     return cachedWorkspace
   } else {
-    const newWs: Workspace = createWorkspace()
-    await putWorkspaceToDb(newWs)
-    return newWs
+    if (workspaceCount === 0) {
+      const newWs: Workspace = createWorkspace()
+      await putWorkspaceToDb(newWs)
+      return newWs
+    } else {
+      // There is a workspace in the DB
+      const allWS: Workspace[] = await db.workspace.toArray()
+      const lastWs: Workspace = allWS[0]
+      console.info('Use the last workspace from DB', lastWs)
+      return lastWs
+    }
   }
 }
 

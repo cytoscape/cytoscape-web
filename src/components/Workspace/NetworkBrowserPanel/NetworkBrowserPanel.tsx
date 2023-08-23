@@ -31,6 +31,7 @@ export const NetworkBrowserPanel = ({
   )
 
   const [targetNetworkId, setTargetNetworkId] = useState<IdType>('')
+
   useEffect(() => {
     if (activeNetworkViewId !== '' && activeNetworkViewId !== undefined) {
       setTargetNetworkId(activeNetworkViewId)

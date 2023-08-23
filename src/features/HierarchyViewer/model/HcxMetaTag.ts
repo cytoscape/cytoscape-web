@@ -4,12 +4,15 @@ const hcxPrefix: HcxPrefix = 'HCX::'
 export const SubsystemTag = {
   isRoot: `${hcxPrefix}isRoot`,
   members: `${hcxPrefix}members`,
+
+  // This is an optional, and used to fetch the interaction network with layout
+  interactionNetworkUuid: `${hcxPrefix}interactionNetworkUUID`,
 } as const
 
 export type SubsystemTagType = (typeof SubsystemTag)[keyof typeof SubsystemTag]
 
 export const NdexMetaTag = {
-  // For curren hierarchy, the value is hierarchy_v0.1
+  // For current hierarchy, the value is hierarchy_v0.1
   NdexSchema: 'NdexSchema',
 } as const
 

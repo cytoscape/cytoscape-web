@@ -16,4 +16,9 @@ export interface Ui {
 
   // Show / hide the popup
   enablePopup: boolean
+
+  // Show / hide error dialog
+  showErrorDialog: boolean
+
+  errorMessage: string
 }

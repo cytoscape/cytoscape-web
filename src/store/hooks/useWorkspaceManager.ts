@@ -53,7 +53,7 @@ export const useWorkspaceManager = (): void => {
         } else if (ids.length < lastIds.length) {
           const removed = lastIds.filter((id) => !ids.includes(id))
           handleDeleteNetwork(removed[0])
-          console.log('* A network removed from workspace', removed[0])
+          console.log('*************************************!! A network removed from workspace', removed[0])
         }
       },
     )

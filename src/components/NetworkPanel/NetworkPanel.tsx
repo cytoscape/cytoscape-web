@@ -58,7 +58,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   }
 
   if (targetNetwork.id === '') {
-    return <MessagePanel message="Preparing network data..." />
+    return <MessagePanel message="Loading network data..." />
   }
 
   const vs: VisualStyle = visualStyles[targetNetwork.id]
