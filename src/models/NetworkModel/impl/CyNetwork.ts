@@ -315,28 +315,16 @@ export const addNodesWithRows = (
 }
 
 /**
- * Return the branch of the network rooted at the given node
+ * An utility function to get the internal graph implementation
+ *
+ * In most cases, we can handle networks as a simple collection, but
+ * in case we need to use graph-specific methods, we can use this function
+ * to access the real graph object
  *
  * @param network
- * @param nodeId
- * @returns Edge list of the children of the node
+ * @returns Cytoscape instance (for this impl)
  */
-export const getPredecessors = (network: Network, nodeId: IdType): Edge[] => {
-  const cyNet: CyNetwork = network as CyNetwork
-  const node = cyNet.store.getElementById(nodeId)
-
-  const edges: Edge[] = []
-
-  node.successors().forEach((element) => {
-    if (element.isEdge()) {
-      edges.push({
-        id: element.id(),
-        s: element.source().id(),
-        t: element.target().id(),
-      })
-    }
-  })
-  // const parents = node.predecessors().map((element) => ({ id: element.id() }))
-
-  return edges
+export const getInternalNetworkDataStore = (network: Network): any => {
+  const cyGraph = network as CyNetwork
+  return cyGraph.store
 }
