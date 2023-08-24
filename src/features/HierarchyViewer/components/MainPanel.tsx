@@ -19,6 +19,9 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
 import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
+import { createTree } from './CustomLayout/CirclePackingLayout'
+import { useNetworkStore } from '../../../store/NetworkStore'
+import { Network } from '../../../models/NetworkModel'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -36,6 +39,10 @@ export const MainPanel = (): JSX.Element => {
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
+  )
+
+  const currentNetwork: Network | undefined = useNetworkStore((state) =>
+    state.networks.get(currentNetworkId),
   )
 
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
@@ -89,6 +96,11 @@ export const MainPanel = (): JSX.Element => {
     const selectedSubsystem: IdType = selectedNodes[0]
     if (selectedSubsystem === undefined || tableRecord === undefined) {
       return
+    }
+
+    // Exract children
+    if (currentNetwork !== undefined) {
+      createTree(selectedSubsystem, currentNetwork)
     }
 
     const idString: string = selectedSubsystem.toString()

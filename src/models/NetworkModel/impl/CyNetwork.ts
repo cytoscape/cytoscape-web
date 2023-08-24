@@ -313,3 +313,30 @@ export const addNodesWithRows = (
 
   return network
 }
+
+/**
+ * Return the branch of the network rooted at the given node
+ *
+ * @param network
+ * @param nodeId
+ * @returns Edge list of the children of the node
+ */
+export const getPredecessors = (network: Network, nodeId: IdType): Edge[] => {
+  const cyNet: CyNetwork = network as CyNetwork
+  const node = cyNet.store.getElementById(nodeId)
+
+  const edges: Edge[] = []
+
+  node.successors().forEach((element) => {
+    if (element.isEdge()) {
+      edges.push({
+        id: element.id(),
+        s: element.source().id(),
+        t: element.target().id(),
+      })
+    }
+  })
+  // const parents = node.predecessors().map((element) => ({ id: element.id() }))
+
+  return edges
+}
