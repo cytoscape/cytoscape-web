@@ -349,6 +349,7 @@ export const cxVisualPropertyConverter: Record<
   nodeOpacity: VPNumberConverter('NODE_BACKGROUND_OPACITY'),
   nodeVisibility: VPVisibilityTypeConverter('NODE_VISIBILITY'),
   nodeSelectedPaint: VPColorConverter('NODE_SELECTED_PAINT'),
+  nodeMaxLabelWidth: VPNumberConverter('NODE_LABEL_MAX_WIDTH'),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),
@@ -371,6 +372,8 @@ export const cxVisualPropertyConverter: Record<
   edgeOpacity: VPNumberConverter('EDGE_OPACITY'),
   edgeVisibility: VPVisibilityTypeConverter('EDGE_VISIBILITY'),
   edgeSelectedPaint: VPColorConverter('EDGE_SELECTED_PAINT'),
+  edgeMaxLabelWidth: VPNumberConverter('EDGE_LABEL_MAX_WIDTH'),
+
 
   networkBackgroundColor: VPColorConverter('NETWORK_BACKGROUND_COLOR'),
 }

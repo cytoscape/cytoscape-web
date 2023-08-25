@@ -16,6 +16,7 @@ export const CyjsEdgeVisualPropertyName = {
   SourceArrowColor: 'source-arrow-color',
   SourceArrowFill: 'source-arrow-fill',
   SourceArrowOpacity: 'source-arrow-opacity',
+  TextMaxWidth: 'text-max-width'
 } as const
 
 export type CyjsEdgeVisualPropertyType =
@@ -41,6 +42,8 @@ export const CyjsNodeVisualPropertyName = {
   LabelVerticalAlign: 'text-valign',
   LabelRotation: 'text-rotation',
   LabelOpacity: 'text-opacity',
+  TextMaxWidth: 'text-max-width',
+
 
   Visibility: 'display',
 } as const

@@ -177,6 +177,14 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 'yellow',
     bypassMap: new Map(),
   },
+  nodeMaxLabelWidth: {
+    group: 'node',
+    name: 'nodeMaxLabelWidth',
+    displayName: 'Max Node Label Width',
+    type: 'number',
+    defaultValue: 100,
+    bypassMap: new Map(),
+  },
   edgeLineColor: {
     group: 'edge',
     name: 'edgeLineColor',
@@ -313,6 +321,15 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 'red',
     bypassMap: new Map(),
   },
+  edgeMaxLabelWidth: {
+    group: 'edge',
+    name: 'edgeMaxLabelWidth',
+    displayName: 'Max Edge Label Width',
+    type: 'number',
+    defaultValue: 100,
+    bypassMap: new Map(),
+  },
+
   networkBackgroundColor: {
     group: 'network',
     name: 'networkBackgroundColor',
