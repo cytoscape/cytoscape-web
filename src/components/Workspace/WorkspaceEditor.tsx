@@ -30,7 +30,7 @@ import { useUiStateStore } from '../../store/UiStateStore'
 import { Ui } from '../../models/UiModel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
-import { ManualLayoutPanel } from '../LayoutTools'
+import { LayoutToolsBasePanel } from '../LayoutTools'
 import { useNetworkViewManager } from '../../store/hooks/useNetworkViewManager'
 import { useTableManager } from '../../store/hooks/useTableManager'
 import { useHierarchyViewerManager } from '../../features/HierarchyViewer/store/useHierarchyViewerManager'
@@ -276,17 +276,29 @@ const WorkSpaceEditor = (): JSX.Element => {
           }}
         >
           <Allotment>
-            <Allotment.Pane maxSize={400} preferredSize="20vh">
-              <Allotment vertical>
-                <Allotment.Pane preferredSize={400}>
+            <Allotment.Pane maxSize={500}>
+              <Box
+                sx={{
+                  height: '100%',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <div
+                  style={{
+                    flexGrow: 2,
+                    boxSizing: 'border-box',
+                    overflow: 'auto',
+                  }}
+                >
                   <NetworkBrowserPanel
                     allotmentDimensions={allotmentDimensions}
                   />
-                </Allotment.Pane>
-                <Allotment.Pane maxSize={200}>
-                  <ManualLayoutPanel />
-                </Allotment.Pane>
-              </Allotment>
+                </div>
+                <LayoutToolsBasePanel />
+              </Box>
             </Allotment.Pane>
             <Allotment.Pane>
               <Outlet />
