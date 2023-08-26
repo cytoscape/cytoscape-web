@@ -35,6 +35,8 @@ import { useNetworkViewManager } from '../../store/hooks/useNetworkViewManager'
 import { useTableManager } from '../../store/hooks/useTableManager'
 import { useHierarchyViewerManager } from '../../features/HierarchyViewer/store/useHierarchyViewerManager'
 import { useNetworkSummaryManager } from '../../store/hooks/useNetworkSummaryManager'
+import { ChevronRight } from '@mui/icons-material'
+import { Panel } from '../../models/UiModel/Panel'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -65,6 +67,9 @@ const WorkSpaceEditor = (): JSX.Element => {
   )
 
   const ui: Ui = useUiStateStore((state) => state.ui)
+  const setPanelState: (panel: Panel, panelState: PanelState) => void =
+    useUiStateStore((state) => state.setPanelState)
+
   const { panels, activeNetworkView } = ui
 
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
@@ -276,29 +281,48 @@ const WorkSpaceEditor = (): JSX.Element => {
           }}
         >
           <Allotment>
-            <Allotment.Pane maxSize={500}>
-              <Box
-                sx={{
-                  height: '100%',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <div
-                  style={{
-                    flexGrow: 2,
-                    boxSizing: 'border-box',
-                    overflow: 'auto',
+            <Allotment.Pane
+              maxSize={panels.left === PanelState.OPEN ? 500 : 20}
+            >
+              {panels.left === PanelState.CLOSED ? (
+                <Box
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  <NetworkBrowserPanel
-                    allotmentDimensions={allotmentDimensions}
+                  <ChevronRight
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
                   />
-                </div>
-                <LayoutToolsBasePanel />
-              </Box>
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    height: '100%',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <div
+                    style={{
+                      flexGrow: 2,
+                      boxSizing: 'border-box',
+                      overflow: 'auto',
+                    }}
+                  >
+                    <NetworkBrowserPanel
+                      allotmentDimensions={allotmentDimensions}
+                    />
+                  </div>
+                  <LayoutToolsBasePanel />
+                </Box>
+              )}
             </Allotment.Pane>
             <Allotment.Pane>
               <Outlet />

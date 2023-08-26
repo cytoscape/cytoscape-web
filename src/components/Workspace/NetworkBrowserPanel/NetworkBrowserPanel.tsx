@@ -9,7 +9,10 @@ import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
-import { ChevronLeft } from '@mui/icons-material'
+import { ChevronLeft, ChevronRight } from '@mui/icons-material'
+import { Ui } from '../../../models/UiModel'
+import { PanelState } from '../../../models/UiModel/PanelState'
+import { Panel } from '../../../models/UiModel/Panel'
 
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
@@ -25,6 +28,16 @@ export const NetworkBrowserPanel = ({
   allotmentDimensions,
 }: NetworkBrowserProps): JSX.Element => {
   const theme: Theme = useTheme()
+  const buttonStyle = {
+    marginRight: theme.spacing(1),
+    border: '1px solid #999999',
+  }
+
+  const ui: Ui = useUiStateStore((state) => state.ui)
+  const { panels } = ui
+  const setPanelState: (panel: Panel, panelState: PanelState) => void =
+    useUiStateStore((state) => state.setPanelState)
+
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -85,9 +98,17 @@ export const NetworkBrowserPanel = ({
             label={<Typography variant="body2">STYLE</Typography>}
           />
         </Tabs>
-        <ChevronLeft
-          style={{ marginRight: theme.spacing(1), border: '1px solid #999999' }}
-        />
+        {panels.left === PanelState.OPEN ? (
+          <ChevronLeft
+            style={buttonStyle}
+            onClick={() => setPanelState(Panel.LEFT, PanelState.CLOSED)}
+          />
+        ) : (
+          <ChevronRight
+            style={buttonStyle}
+            onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
+          />
+        )}
       </Box>
       <div hidden={currentTabIndex !== 0}>
         {currentTabIndex === 0 && (
