@@ -11,8 +11,11 @@ import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
-import { EditTableColumnForm, CreateTableColumnForm, DeleteTableColumnForm } from './TableColumnForm'
-
+import {
+  EditTableColumnForm,
+  CreateTableColumnForm,
+  DeleteTableColumnForm,
+} from './TableColumnForm'
 
 import {
   DataEditor,
@@ -33,7 +36,7 @@ import {
   SortType,
   sortFnToType,
   serializedStringIsValid,
-  deserializeValue
+  deserializeValue,
 } from '../../models/TableModel/impl/ValueTypeImpl'
 
 interface TabPanelProps {
@@ -81,8 +84,6 @@ const getCellKind = (type: ValueTypeName): GridCellKind => {
   return valueTypeName2CellTypeMap[type] ?? GridCellKind.Text
 }
 
-
-
 export default function TableBrowser(props: {
   currentNetworkId: IdType
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
@@ -90,11 +91,13 @@ export default function TableBrowser(props: {
 }): React.ReactElement {
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
   const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
-  const [createColumnFormError, setCreateColumnFormError] = React.useState<string | undefined
+  const [createColumnFormError, setCreateColumnFormError] = React.useState<
+    string | undefined
   >(undefined)
 
   const [showDeleteColumnForm, setShowDeleteColumnForm] = React.useState(false)
-  const [deleteColumnFormError, setDeleteColumnFormError] = React.useState<string | undefined
+  const [deleteColumnFormError, setDeleteColumnFormError] = React.useState<
+    string | undefined
   >(undefined)
 
   const [showEditColumnForm, setShowEditColumnForm] = React.useState(false)
@@ -106,7 +109,9 @@ export default function TableBrowser(props: {
     number | undefined
   >(undefined)
 
-  const [selectedCellXY, setSelectedCellXY] = React.useState<[number, number] | undefined>(undefined)
+  const [selectedCellXY, setSelectedCellXY] = React.useState<
+    [number, number] | undefined
+  >(undefined)
 
   const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
   const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
@@ -133,8 +138,9 @@ export default function TableBrowser(props: {
   const setColumnName = useTableStore((state) => state.setColumnName)
   const addColumn = useTableStore((state) => state.createColumn)
   const deleteColumn = useTableStore((state) => state.deleteColumn)
-  const applyValueToElemenets = useTableStore((state) => state.applyValueToElements)
-
+  const applyValueToElemenets = useTableStore(
+    (state) => state.applyValueToElements,
+  )
 
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
@@ -333,7 +339,15 @@ export default function TableBrowser(props: {
   const selectedColumnToolbar =
     selectedColumn != null ? (
       <>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, mb: 2, bgColor: '#d9d9d9' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            mt: 2,
+            mb: 2,
+            bgColor: '#d9d9d9',
+          }}
+        >
           <Box sx={{ mr: 1 }}>Selected Column: {selectedColumn.id}</Box>
           <ButtonGroup size="small">
             <Button
@@ -383,7 +397,7 @@ export default function TableBrowser(props: {
               Duplicate Column
             </Button>
             <Button onClick={() => setShowEditColumnForm(true)}>
-              Edit Column
+              Rename Column
             </Button>
             <Button color="error" onClick={() => setShowDeleteColumnForm(true)}>
               Delete Column
@@ -392,9 +406,7 @@ export default function TableBrowser(props: {
         </Box>
         <EditTableColumnForm
           error={columnFormError}
-          dependentVisualProperties={
-            visualPropertiesDependentOnSelectedColumn
-          }
+          dependentVisualProperties={visualPropertiesDependentOnSelectedColumn}
           open={showEditColumnForm}
           column={selectedColumn}
           onClose={() => {
@@ -421,9 +433,7 @@ export default function TableBrowser(props: {
         />
         <DeleteTableColumnForm
           error={deleteColumnFormError}
-          dependentVisualProperties={
-            visualPropertiesDependentOnSelectedColumn
-          }
+          dependentVisualProperties={visualPropertiesDependentOnSelectedColumn}
           open={showDeleteColumnForm}
           column={selectedColumn}
           onClose={() => {
@@ -431,7 +441,6 @@ export default function TableBrowser(props: {
             setDeleteColumnFormError(undefined)
           }}
           onSubmit={() => {
-
             deleteColumn(
               props.currentNetworkId,
               currentTable === nodeTable ? 'node' : 'edge',
@@ -445,94 +454,116 @@ export default function TableBrowser(props: {
     ) : null
 
   const selectedCell = selectedCellXY
-  const selectedCellToolbar = selectedCell != null ? (
-    <>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, mb: 2, bgColor: '#d9d9d9' }}>
-        <Box sx={{ mr: 1 }}>Selected cell actions</Box>
-        <ButtonGroup size="small">
-          <Button
-            onClick={() => {
-              const [columnIndex, rowIndex] = selectedCell
-              const rowData = rows?.[rowIndex]
-              // const cxId = rowData?.id
-              const column = columns?.[columnIndex]
-              const columnKey = column.id
-              const cellValue = (rowData as any)?.[columnKey]
-              applyValueToElemenets(props.currentNetworkId,
-                currentTable === nodeTable ? 'node' : 'edge', columnKey, cellValue, undefined)
-            }}
-          >
-            Apply value to column
-          </Button>
-          <Button onClick={() => {
-            const [columnIndex, rowIndex] = selectedCell
-            const rowData = rows?.[rowIndex]
-            // const cxId = rowData?.id
-            const column = columns?.[columnIndex]
-            const columnKey = column.id
-            const cellValue = (rowData as any)?.[columnKey]
-            applyValueToElemenets(props.currentNetworkId,
-              currentTable === nodeTable ? 'node' : 'edge', columnKey, cellValue, rows.map(r => r.id))
+  const selectedCellToolbar =
+    selectedCell != null ? (
+      <>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            mt: 2,
+            mb: 2,
+            bgColor: '#d9d9d9',
           }}
-          >
-            Apply value to selected nodes
-          </Button>
-        </ButtonGroup>
-      </Box>
-    </>
-  ) : null
+        >
+          <Box sx={{ mr: 1 }}>Selected cell actions</Box>
+          <ButtonGroup size="small">
+            <Button
+              onClick={() => {
+                const [columnIndex, rowIndex] = selectedCell
+                const rowData = rows?.[rowIndex]
+                // const cxId = rowData?.id
+                const column = columns?.[columnIndex]
+                const columnKey = column.id
+                const cellValue = (rowData as any)?.[columnKey]
+                applyValueToElemenets(
+                  props.currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  columnKey,
+                  cellValue,
+                  undefined,
+                )
+              }}
+            >
+              Apply value to column
+            </Button>
+            <Button
+              onClick={() => {
+                const [columnIndex, rowIndex] = selectedCell
+                const rowData = rows?.[rowIndex]
+                // const cxId = rowData?.id
+                const column = columns?.[columnIndex]
+                const columnKey = column.id
+                const cellValue = (rowData as any)?.[columnKey]
+                applyValueToElemenets(
+                  props.currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  columnKey,
+                  cellValue,
+                  rows.map((r) => r.id),
+                )
+              }}
+            >
+              Apply value to selected nodes
+            </Button>
+          </ButtonGroup>
+        </Box>
+      </>
+    ) : null
 
-  const tableBrowserToolbar = <Box sx={{ display: 'flex', alignItems: 'center' }}>
-    <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
-      Search
-    </Button>
-    <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
-      Create Column
-    </Button>
-    <CreateTableColumnForm
-      error={createColumnFormError}
-      open={showCreateColumnForm}
-      onClose={() => {
-        setShowCreateColumnForm(false)
-        setCreateColumnFormError(undefined)
-      }}
-      onSubmit={(columnName: string, dataType: ValueTypeName, value: string) => {
-        const columnNameSet = new Set(columns?.map((c) => c.id))
-        const columnNameAlreadyExists = columnNameSet.has(columnName)
-        const valueIsValid = serializedStringIsValid(
-          dataType,
-          value,
-        )
-        if (columnNameAlreadyExists) {
-          setCreateColumnFormError(
-            `${columnName} already exists.  Please enter a new unique column name`,
-          )
-        } else {
-          if (!valueIsValid) {
-            console.log(dataType, value)
+  const tableBrowserToolbar = (
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
+        Search
+      </Button>
+      <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
+        Create Column
+      </Button>
+      <CreateTableColumnForm
+        error={createColumnFormError}
+        open={showCreateColumnForm}
+        onClose={() => {
+          setShowCreateColumnForm(false)
+          setCreateColumnFormError(undefined)
+        }}
+        onSubmit={(
+          columnName: string,
+          dataType: ValueTypeName,
+          value: string,
+        ) => {
+          const columnNameSet = new Set(columns?.map((c) => c.id))
+          const columnNameAlreadyExists = columnNameSet.has(columnName)
+          const valueIsValid = serializedStringIsValid(dataType, value)
+          if (columnNameAlreadyExists) {
             setCreateColumnFormError(
-              `Default value ${value} is not a valid ${dataType}.  Please enter a valid ${dataType}`,
+              `${columnName} already exists.  Please enter a new unique column name`,
             )
-
           } else {
-            const valueType = deserializeValue(dataType, value)
-            addColumn(
-              props.currentNetworkId,
-              currentTable === nodeTable ? 'node' : 'edge',
-              columnName,
-              dataType,
-              valueType
-            )
-            setSelectedColumnIndex(undefined)
-            setCreateColumnFormError(undefined)
-            setShowCreateColumnForm(false)
+            if (!valueIsValid) {
+              console.log(dataType, value)
+              setCreateColumnFormError(
+                `Default value ${value} is not a valid ${dataType}.  Please enter a valid ${dataType}`,
+              )
+            } else {
+              const valueType = deserializeValue(dataType, value)
+              addColumn(
+                props.currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                columnName,
+                dataType,
+                valueType,
+              )
+              setSelectedColumnIndex(undefined)
+              setCreateColumnFormError(undefined)
+              setShowCreateColumnForm(false)
+            }
           }
-        }
-      }}
-    />
-    {selectedColumnToolbar}
-    {selectedCellToolbar}
-  </Box>
+        }}
+      />
+      {selectedColumnToolbar}
+      {selectedCellToolbar}
+    </Box>
+  )
 
   return (
     <Box sx={{ width: '100%' }}>
