@@ -3,8 +3,16 @@ import { Share } from '@mui/icons-material'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useState } from 'react'
 
+/**
+ * Button to copy the sharable URL to clipboard
+ *
+ *
+ */
 export const ShareNetworkButton = (): JSX.Element => {
   const [open, setOpen] = useState(false)
+
+  // Use this as the staring point for the sharable URL
+  const wsId = useWorkspaceStore((state) => state.workspace.id)
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -15,8 +23,16 @@ export const ShareNetworkButton = (): JSX.Element => {
     }
   }
   const handleClick = (): void => {
-    const server = window.location.origin
-    void copyTextToClipboard(`${server}/network/${currentNetworkId}`).then(
+    const { location } = window
+
+    // Full URL
+    const { href } = location
+
+    // The first part of the URL should be the base URL
+    const parts: string[] = href.split(wsId)
+    const baseUrl = parts[0]
+
+    void copyTextToClipboard(`${baseUrl}network/${currentNetworkId}`).then(
       () => {
         // Notify user that the sharable URL has been copied to clipboard
         setOpen(true)
