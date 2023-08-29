@@ -9,6 +9,7 @@ export interface Ui {
   panels: {
     [Panel.LEFT]: PanelState
     [Panel.RIGHT]: PanelState
+    [Panel.BOTTOM]: PanelState
   }
   // In a multi-view mode, this is
   // the selected, active network in the UI

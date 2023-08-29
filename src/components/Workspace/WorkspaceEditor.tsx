@@ -1,7 +1,7 @@
 import { Suspense, lazy, useContext, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
-import { Box } from '@mui/material'
+import { Box, Tooltip } from '@mui/material'
 
 import { Outlet, useNavigate } from 'react-router-dom'
 
@@ -282,7 +282,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         >
           <Allotment>
             <Allotment.Pane
-              maxSize={panels.left === PanelState.OPEN ? 500 : 20}
+              maxSize={panels.left === PanelState.OPEN ? 450 : 18}
             >
               {panels.left === PanelState.CLOSED ? (
                 <Box
@@ -294,10 +294,12 @@ const WorkSpaceEditor = (): JSX.Element => {
                     justifyContent: 'center',
                   }}
                 >
-                  <ChevronRight
-                    sx={{ cursor: 'pointer' }}
-                    onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
-                  />
+                  <Tooltip title="Open network panel" arrow placement="right">
+                    <ChevronRight
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
+                    />
+                  </Tooltip>
                 </Box>
               ) : (
                 <Box
@@ -329,7 +331,11 @@ const WorkSpaceEditor = (): JSX.Element => {
               <NetworkPanel networkId={currentNetworkId} />
             </Allotment.Pane>
           </Allotment>
-          <Allotment.Pane minSize={28} preferredSize={150}>
+          <Allotment.Pane
+            minSize={28}
+            preferredSize={180}
+            maxSize={panels.bottom === PanelState.OPEN ? 450 : 18}
+          >
             <Suspense
               fallback={<div>{`Loading from NDEx`}</div>}
               key={currentNetworkId}
