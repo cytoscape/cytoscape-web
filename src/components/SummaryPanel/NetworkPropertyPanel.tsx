@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 import {
   Tooltip,
   IconButton,
@@ -42,8 +42,11 @@ export const NetworkPropertyPanel = ({
   summary,
 }: NetworkPropertyPanelProps): ReactElement => {
   const theme: Theme = useTheme()
+  const [selectedNodeCount, setSelectedNodeCount] = useState<number>(0)
+  const [selectedEdgeCount, setSelectedEdgeCount] = useState<number>(0)
 
   const { nodeCount, edgeCount } = summary
+  const id: IdType = summary.externalId
 
   const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
     HTMLButtonElement | undefined
@@ -58,9 +61,19 @@ export const NetworkPropertyPanel = ({
     (state) => state.workspace.currentNetworkId,
   )
 
-  const networkViewModel = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
-  )
+  const networkViewModel = useViewModelStore((state) => state.viewModels[id])
+
+  useEffect(() => {
+    if (networkViewModel === undefined) {
+      return
+    }
+    if (networkViewModel.selectedNodes.length !== selectedNodeCount) {
+      setSelectedNodeCount(networkViewModel.selectedNodes.length)
+    }
+    if (networkViewModel.selectedEdges.length !== selectedEdgeCount) {
+      setSelectedEdgeCount(networkViewModel.selectedEdges.length)
+    }
+  }, [networkViewModel])
 
   const showEditNetworkSummaryForm = (
     event: React.MouseEvent<HTMLButtonElement>,
@@ -69,7 +82,6 @@ export const NetworkPropertyPanel = ({
 
     setEditNetworkSummaryAnchorEl(event.currentTarget)
   }
-  const id: IdType = summary.externalId
 
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
@@ -136,8 +148,8 @@ export const NetworkPropertyPanel = ({
             variant={'subtitle2'}
             sx={{ width: '100%', color: theme.palette.text.secondary }}
           >
-            {`N: ${nodeCount} (${networkViewModel?.selectedNodes.length}) /
-          E: ${edgeCount} (${networkViewModel?.selectedEdges.length})`}
+            {`N: ${nodeCount} (${selectedNodeCount}) /
+          E: ${edgeCount} (${selectedEdgeCount})`}
           </Typography>
         </Box>
         <Tooltip title="Edit network properties">
