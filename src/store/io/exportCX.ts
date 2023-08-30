@@ -141,17 +141,16 @@ export const exportNetworkToCx2 = (
   }
 
   const networkAttributeDeclarations: {
-    [key: string]: { d: ValueTypeName; v: ValueType }
+    [key: string]: { d: ValueTypeName }
   } = {
-    name: { d: 'string', v: networkName ?? summary.name },
-    description: { d: 'string', v: summary.description },
-    version: { d: 'string', v: summary.version },
+    name: { d: 'string' },
+    description: { d: 'string' },
+    version: { d: 'string' },
   }
 
   summary.properties.forEach((property) => {
     networkAttributeDeclarations[property.predicateString] = {
       d: property.dataType,
-      v: property.value,
     }
   })
 
@@ -176,6 +175,12 @@ export const exportNetworkToCx2 = (
       version: summary.version,
     },
   ]
+
+  summary.properties.forEach((property) => {
+    networkAttributes[property.predicateString] = {
+      v: property.value,
+    }
+  })
 
   const nodes = network.nodes.map((node) => {
     const nodeRow = nodeTable.rows.get(node.id)
@@ -287,10 +292,13 @@ export const exportNetworkToCx2 = (
     }
   })
 
-  return [
+  const cx = [
     descriptor,
     { metaData },
     ...aspects.map(({ key, aspect }) => ({ [key]: aspect })),
     { status },
   ]
+
+  console.log(cx)
+  return cx
 }
