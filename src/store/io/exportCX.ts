@@ -298,7 +298,5 @@ export const exportNetworkToCx2 = (
     ...aspects.map(({ key, aspect }) => ({ [key]: aspect })),
     { status },
   ]
-
-  console.log(cx)
   return cx
 }
