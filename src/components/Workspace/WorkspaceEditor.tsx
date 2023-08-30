@@ -3,7 +3,7 @@ import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box, Tooltip } from '@mui/material'
 
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
 import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
@@ -37,6 +37,7 @@ import { useHierarchyViewerManager } from '../../features/HierarchyViewer/store/
 import { useNetworkSummaryManager } from '../../store/hooks/useNetworkSummaryManager'
 import { ChevronRight } from '@mui/icons-material'
 import { Panel } from '../../models/UiModel/Panel'
+import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -57,6 +58,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const navigate = useNavigate()
+  const [search] = useSearchParams()
 
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
@@ -157,6 +159,22 @@ const WorkSpaceEditor = (): JSX.Element => {
     addViewModel(networkId, networkView)
   }
 
+  const restorePanelStates = (): void => {
+    // Set panel states based on the Search params
+    const leftPanelState: PanelState = search.get(Panel.LEFT) as PanelState
+    const rightPanelState: PanelState = search.get(Panel.RIGHT) as PanelState
+    const bottomPanelState: PanelState = search.get(Panel.BOTTOM) as PanelState
+
+    if (leftPanelState !== undefined && leftPanelState !== null) {
+      setPanelState(Panel.LEFT, leftPanelState)
+    }
+    if (rightPanelState !== undefined && rightPanelState !== null) {
+      setPanelState(Panel.RIGHT, rightPanelState)
+    }
+    if (bottomPanelState !== undefined && bottomPanelState !== null) {
+      setPanelState(Panel.BOTTOM, bottomPanelState)
+    }
+  }
   /**
    * Initializations
    */
@@ -165,6 +183,8 @@ const WorkSpaceEditor = (): JSX.Element => {
       setTableBrowserWidth(window.innerWidth)
     }
     window.addEventListener('resize', windowWidthListener)
+
+    restorePanelStates()
 
     return () => {
       window.removeEventListener('resize', windowWidthListener)
@@ -210,6 +230,19 @@ const WorkSpaceEditor = (): JSX.Element => {
       .catch((err) => console.error(err))
   }, [workspace.networkIds])
 
+  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+  const restoreSelectionStates = (): void => {
+    const selectedNodeStr = search.get(SelectionStates.SelectedNodes)
+    const selectedEdgeStr = search.get(SelectionStates.SelectedEdges)
+
+    if (selectedNodeStr !== undefined && selectedNodeStr !== null) {
+      const selectedNodes = selectedNodeStr.split(' ')
+      if (selectedNodes.length > 0) {
+        console.log('selectedNodes', selectedNodes, selectedEdgeStr)
+        exclusiveSelect(currentNetworkId, selectedNodes, [])
+      }
+    }
+  }
   /**
    * Swap the current network, can be an expensive operation
    */
@@ -222,11 +255,19 @@ const WorkSpaceEditor = (): JSX.Element => {
     // Update the DB first
 
     const currentNetworkView: NetworkView = viewModels[currentNetworkId]
+
     if (currentNetworkView === undefined) {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
           console.log('Network loaded for', currentNetworkId)
-          navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+
+          restoreSelectionStates()
+
+          navigate(
+            `/${
+              workspace.id
+            }/networks/${currentNetworkId}${location.search.toString()}`,
+          )
         })
         .catch((err) => console.error('Failed to load a network:', err))
     } else {
@@ -236,7 +277,14 @@ const WorkSpaceEditor = (): JSX.Element => {
           loadCurrentNetworkById(currentNetworkId)
             .then(() => {
               console.log('Network loaded for', currentNetworkId)
-              navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+
+              restoreSelectionStates()
+
+              navigate(
+                `/${
+                  workspace.id
+                }/networks/${currentNetworkId}${location.search.toString()}`,
+              )
             })
             .catch((err) => console.error('Failed to load a network:', err))
         })

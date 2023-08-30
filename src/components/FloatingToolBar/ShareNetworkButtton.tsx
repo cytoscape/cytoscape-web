@@ -11,6 +11,14 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300
 
+export const SelectionStates = {
+  SelectedNodes: 'selectednodes',
+  SelectedEdges: 'selectededges',
+} as const
+
+export type SelectionState =
+  (typeof SelectionStates)[keyof typeof SelectionStates]
+
 /**
  * Button to copy the sharable URL to clipboard
  *
@@ -38,11 +46,12 @@ export const ShareNetworkButton = (): JSX.Element => {
   const selectedNodeCount: number = networkViewModel?.selectedNodes.length
   const selectedEdgeCount: number = networkViewModel?.selectedEdges.length
 
-  useEffect(() => {
-    // encode panel states as URL search params
-    console.log('Panels::', panels, search.keys())
-    setSearch({ ...search, ...panels })
-  }, [panels])
+  const getQueryString = (): string => {
+    const panelParams = new URLSearchParams(panels)
+    const panelStr = panelParams.toString()
+    const searchStr = search.toString()
+    return `${panelStr}&${searchStr}`
+  }
 
   useEffect(() => {
     console.log('Updating', networkViewModel)
@@ -54,17 +63,23 @@ export const ShareNetworkButton = (): JSX.Element => {
     const selectedNodeCount: number = networkViewModel.selectedNodes.length
     const selectedEdgeCount: number = networkViewModel.selectedEdges.length
     if (selectedNodeCount === 0 && selectedEdgeCount === 0) {
-      params.delete('selectednodes')
-      params.delete('selectededges')
+      params.delete(SelectionStates.SelectedNodes)
+      params.delete(SelectionStates.SelectedEdges)
       setSearch(params)
       return
     }
 
     if (selectedNodeCount > 0 && selectedNodeCount <= MAX_SELECTED_OBJ) {
-      params.set('selectednodes', networkViewModel.selectedNodes.join(' '))
+      params.set(
+        SelectionStates.SelectedNodes,
+        networkViewModel.selectedNodes.join(' '),
+      )
     }
     if (selectedEdgeCount > 0 && selectedEdgeCount <= MAX_SELECTED_OBJ) {
-      params.set('selectededges', networkViewModel.selectedEdges.join(' '))
+      params.set(
+        SelectionStates.SelectedEdges,
+        networkViewModel.selectedEdges.join(' '),
+      )
     }
     setSearch(params)
   }, [selectedNodeCount, selectedEdgeCount])
@@ -86,12 +101,14 @@ export const ShareNetworkButton = (): JSX.Element => {
     const parts: string[] = href.split(wsId)
     const baseUrl = parts[0]
 
-    void copyTextToClipboard(`${baseUrl}network/${currentNetworkId}`).then(
-      () => {
-        // Notify user that the sharable URL has been copied to clipboard
-        setOpen(true)
-      },
-    )
+    const query = getQueryString()
+
+    void copyTextToClipboard(
+      `${baseUrl}network/${currentNetworkId}?${query}`,
+    ).then(() => {
+      // Notify user that the sharable URL has been copied to clipboard
+      setOpen(true)
+    })
   }
 
   const handleClose = (
