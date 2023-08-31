@@ -1,4 +1,4 @@
-import { Suspense, lazy, useContext, useEffect, useState } from 'react'
+import { Suspense, lazy, useContext, useEffect, useRef, useState } from 'react'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box, Tooltip } from '@mui/material'
@@ -55,10 +55,16 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers for optional features
   useHierarchyViewerManager()
 
+  // Block multiple loading
+  const isLoadingRef = useRef<boolean>(false)
+
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const navigate = useNavigate()
   const [search] = useSearchParams()
+
+  // For restoring the selection state from URL
+  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
 
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
@@ -175,6 +181,28 @@ const WorkSpaceEditor = (): JSX.Element => {
       setPanelState(Panel.BOTTOM, bottomPanelState)
     }
   }
+
+  /**
+   * Restore the node / edge selection states from URL
+   */
+  const restoreSelectionStates = (): void => {
+    const selectedNodeStr = search.get(SelectionStates.SelectedNodes)
+    const selectedEdgeStr = search.get(SelectionStates.SelectedEdges)
+
+    let selectedNodes: IdType[] = []
+    let selectedEdges: IdType[] = []
+
+    if (selectedNodeStr !== undefined && selectedNodeStr !== null) {
+      selectedNodes = selectedNodeStr.split(' ')
+    }
+
+    if (selectedEdgeStr !== undefined && selectedEdgeStr !== null) {
+      selectedEdges = selectedEdgeStr.split(' ')
+    }
+
+    exclusiveSelect(currentNetworkId, selectedNodes, selectedEdges)
+  }
+
   /**
    * Initializations
    */
@@ -230,19 +258,6 @@ const WorkSpaceEditor = (): JSX.Element => {
       .catch((err) => console.error(err))
   }, [workspace.networkIds])
 
-  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
-  const restoreSelectionStates = (): void => {
-    const selectedNodeStr = search.get(SelectionStates.SelectedNodes)
-    const selectedEdgeStr = search.get(SelectionStates.SelectedEdges)
-
-    if (selectedNodeStr !== undefined && selectedNodeStr !== null) {
-      const selectedNodes = selectedNodeStr.split(' ')
-      if (selectedNodes.length > 0) {
-        console.log('selectedNodes', selectedNodes, selectedEdgeStr)
-        exclusiveSelect(currentNetworkId, selectedNodes, [])
-      }
-    }
-  }
   /**
    * Swap the current network, can be an expensive operation
    */
@@ -252,7 +267,11 @@ const WorkSpaceEditor = (): JSX.Element => {
       return
     }
 
-    // Update the DB first
+    if (isLoadingRef.current) {
+      return
+    }
+
+    isLoadingRef.current = true
 
     const currentNetworkView: NetworkView = viewModels[currentNetworkId]
 
@@ -270,6 +289,9 @@ const WorkSpaceEditor = (): JSX.Element => {
           )
         })
         .catch((err) => console.error('Failed to load a network:', err))
+        .finally(() => {
+          isLoadingRef.current = false
+        })
     } else {
       putNetworkViewToDb(currentNetworkId, currentNetworkView)
         .then(() => {
@@ -290,6 +312,9 @@ const WorkSpaceEditor = (): JSX.Element => {
         })
         .catch((err) => {
           console.error('Failed to save network view to DB:', err)
+        })
+        .finally(() => {
+          isLoadingRef.current = false
         })
     }
   }, [currentNetworkId])

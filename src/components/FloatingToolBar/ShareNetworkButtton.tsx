@@ -59,6 +59,10 @@ export const ShareNetworkButton = (): JSX.Element => {
       return
     }
 
+    for (const [key, value] of search.entries()) {
+      console.log(key, value)
+    }
+
     const params = new URLSearchParams(search)
     const selectedNodeCount: number = networkViewModel.selectedNodes.length
     const selectedEdgeCount: number = networkViewModel.selectedEdges.length
