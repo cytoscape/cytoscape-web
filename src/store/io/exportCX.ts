@@ -142,11 +142,7 @@ export const exportNetworkToCx2 = (
 
   const networkAttributeDeclarations: {
     [key: string]: { d: ValueTypeName }
-  } = {
-    name: { d: 'string' },
-    description: { d: 'string' },
-    version: { d: 'string' },
-  }
+  } = {}
 
   summary.properties.forEach((property) => {
     networkAttributeDeclarations[property.predicateString] = {
@@ -168,18 +164,15 @@ export const exportNetworkToCx2 = (
     },
   ]
 
-  const networkAttributes: any = [
-    {
-      name: networkName ?? summary.name,
-      description: summary.description,
-      version: summary.version,
-    },
-  ]
+  const networkAttributes: any = [{}]
+
+  if (networkName != null || summary.name != null) {
+    networkAttributeDeclarations.name = { d: 'string' }
+    networkAttributes[0].name = networkName ?? summary.name
+  }
 
   summary.properties.forEach((property) => {
-    networkAttributes[property.predicateString] = {
-      v: property.value,
-    }
+    networkAttributes[0][property.predicateString] = property.value
   })
 
   const nodes = network.nodes.map((node) => {
@@ -298,5 +291,6 @@ export const exportNetworkToCx2 = (
     ...aspects.map(({ key, aspect }) => ({ [key]: aspect })),
     { status },
   ]
+
   return cx
 }
