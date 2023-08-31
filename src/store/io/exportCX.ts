@@ -177,7 +177,7 @@ export const exportNetworkToCx2 = (
   ]
 
   summary.properties.forEach((property) => {
-    networkAttributes[property.predicateString] = {
+    networkAttributes[0][property.predicateString] = {
       v: property.value,
     }
   })
@@ -298,5 +298,7 @@ export const exportNetworkToCx2 = (
     ...aspects.map(({ key, aspect }) => ({ [key]: aspect })),
     { status },
   ]
+
+  console.log(cx)
   return cx
 }
