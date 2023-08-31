@@ -292,6 +292,5 @@ export const exportNetworkToCx2 = (
     { status },
   ]
 
-  console.log(cx)
   return cx
 }
