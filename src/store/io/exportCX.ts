@@ -37,6 +37,8 @@ import {
   PassthroughMappingFunction,
 } from '../../models/VisualStyleModel/VisualMappingFunction'
 
+import { deserializeValue } from '../../models/TableModel/impl/ValueTypeImpl'
+
 export const exportNetworkToCx2 = (
   network: Network,
   vs: VisualStyle,
@@ -172,7 +174,10 @@ export const exportNetworkToCx2 = (
   }
 
   summary.properties.forEach((property) => {
-    networkAttributes[0][property.predicateString] = property.value
+    networkAttributes[0][property.predicateString] = deserializeValue(
+      networkAttributeDeclarations[property.predicateString].d,
+      property.value as string,
+    )
   })
 
   const nodes = network.nodes.map((node) => {
