@@ -11,6 +11,8 @@ import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
+
+import { isValidUrl } from '../../utils/is-url'
 import {
   EditTableColumnForm,
   CreateTableColumnForm,
@@ -68,7 +70,7 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
   )
 }
 
-const getCellKind = (type: ValueTypeName): GridCellKind => {
+export const getCellKind = (type: ValueTypeName): GridCellKind => {
   const valueTypeName2CellTypeMap: Record<ValueTypeName, GridCellKind> = {
     [ValueTypeName.String]: GridCellKind.Text,
     [ValueTypeName.Long]: GridCellKind.Number,
@@ -183,7 +185,7 @@ export default function TableBrowser(props: {
       vAlign: 'start',
       hAlign: 'start',
     })
-  }, [rows])
+  }, [selectedElements])
 
   if (sort.column != null && sort.direction != null && sort.valueType != null) {
     const sortFn = sortFnToType[sort.valueType]
@@ -221,6 +223,7 @@ export default function TableBrowser(props: {
 
       const cellType = getCellKind(column.type)
       const processedCellValue = valueDisplay(cellValue, column.type)
+
       if (cellType === GridCellKind.Boolean) {
         return {
           allowOverlay: false,
@@ -237,6 +240,14 @@ export default function TableBrowser(props: {
           data: processedCellValue as number,
         }
       } else {
+        if (isValidUrl(String(processedCellValue))) {
+          return {
+            kind: GridCellKind.Uri,
+            allowOverlay: true,
+            readonly: false,
+            data: processedCellValue as string,
+          }
+        }
         return {
           kind: GridCellKind.Text,
           allowOverlay: true,
