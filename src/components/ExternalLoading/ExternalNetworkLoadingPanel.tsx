@@ -45,7 +45,7 @@ export const ExternalNetworkLoadingPanel = (
         .then((summary) => {
           addNetworkIds(networkId)
           setCurrentNetworkId(networkId)
-          navigate(`/${id}/networks/${networkId}`)
+          navigate(`/${id}/networks/${networkId}${location.search.toString()}`)
         })
         .catch((error) => {
           console.log('SUMMARY error', error)

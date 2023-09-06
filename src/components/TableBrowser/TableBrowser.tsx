@@ -3,7 +3,7 @@ import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
+import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material'
 import { Button, ButtonGroup } from '@mui/material'
 
 import { Table, ValueType, ValueTypeName } from '../../models/TableModel'
@@ -38,6 +38,10 @@ import {
   serializedStringIsValid,
   deserializeValue,
 } from '../../models/TableModel/impl/ValueTypeImpl'
+import { useUiStateStore } from '../../store/UiStateStore'
+import { PanelState } from '../../models/UiModel/PanelState'
+import { Panel } from '../../models/UiModel/Panel'
+import { Ui } from '../../models/UiModel'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -89,6 +93,11 @@ export default function TableBrowser(props: {
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
+  const ui: Ui = useUiStateStore((state) => state.ui)
+  const setPanelState: (panel: Panel, panelState: PanelState) => void =
+    useUiStateStore((state) => state.setPanelState)
+  const { panels } = ui
+
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
   const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
   const [createColumnFormError, setCreateColumnFormError] = React.useState<
@@ -598,7 +607,17 @@ export default function TableBrowser(props: {
           <Tab label={<Typography variant="caption">Nodes</Typography>} />
           <Tab label={<Typography variant="caption">Edges</Typography>} />
         </Tabs>
-        <KeyboardArrowUpIcon sx={{ color: 'white' }} />
+        {panels[Panel.BOTTOM] === PanelState.CLOSED ? (
+          <KeyboardArrowUp
+            sx={{ color: 'white' }}
+            onClick={() => setPanelState(Panel.BOTTOM, PanelState.OPEN)}
+          />
+        ) : (
+          <KeyboardArrowDown
+            sx={{ color: 'white' }}
+            onClick={() => setPanelState(Panel.BOTTOM, PanelState.CLOSED)}
+          />
+        )}
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
         {tableBrowserToolbar}

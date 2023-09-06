@@ -88,34 +88,42 @@ const AppShell = (): ReactElement => {
       if (parsedNetworkId !== '' && parsedNetworkId !== undefined) {
         addNetworkIds(parsedNetworkId)
         setCurrentNetworkId(parsedNetworkId)
-        navigate(`/${id}/networks/${parsedNetworkId}`)
+        navigate(
+          `/${id}/networks/${parsedNetworkId}${location.search.toString()}`,
+        )
       } else if (networkIds.length > 0) {
         // Case 1: Current network is not available
         // Pick the first one if network is in the workspace
-        navigate(`/${id}/networks/${networkIds[0]}`)
+        navigate(
+          `/${id}/networks/${networkIds[0]}${location.search.toString()}`,
+        )
       } else {
         // Otherwise, display empty page
-        navigate(`/${id}/networks`)
+        navigate(`/${id}/networks${location.search.toString()}`)
       }
     } else {
       // This is the network ID in the URL, not yet set as the current network ID
       // No network ID in the URL --> redirect to the current network
       const { networkId } = parsed
       if (networkId === '' || networkId === undefined) {
-        navigate(`/${id}/networks/${currentNetworkId}`)
+        navigate(
+          `/${id}/networks/${currentNetworkId}${location.search.toString()}`,
+        )
       } else if (networkId === currentNetworkId) {
-        navigate(`/${id}/networks/${currentNetworkId}`)
+        navigate(
+          `/${id}/networks/${currentNetworkId}${location.search.toString()}`,
+        )
       } else {
         // URL has different network ID
         const idSet = new Set(networkIds)
         if (idSet.has(networkId)) {
           // the ID in the URL is in the workspace
-          navigate(`/${id}/networks/${networkId}`)
+          navigate(`/${id}/networks/${networkId}${location.search.toString()}`)
         } else {
           // Add to the workspace
           addNetworkIds(networkId)
           setCurrentNetworkId(networkId)
-          navigate(`/${id}/networks/${networkId}`)
+          navigate(`/${id}/networks/${networkId}${location.search.toString()}`)
         }
       }
     }

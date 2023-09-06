@@ -1,9 +1,9 @@
-import { Suspense, lazy, useContext, useEffect, useState } from 'react'
+import { Suspense, lazy, useContext, useEffect, useRef, useState } from 'react'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
-import { Box } from '@mui/material'
+import { Box, Tooltip } from '@mui/material'
 
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
 import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
@@ -30,11 +30,14 @@ import { useUiStateStore } from '../../store/UiStateStore'
 import { Ui } from '../../models/UiModel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
-import { ManualLayoutPanel } from '../LayoutTools'
+import { LayoutToolsBasePanel } from '../LayoutTools'
 import { useNetworkViewManager } from '../../store/hooks/useNetworkViewManager'
 import { useTableManager } from '../../store/hooks/useTableManager'
 import { useHierarchyViewerManager } from '../../features/HierarchyViewer/store/useHierarchyViewerManager'
 import { useNetworkSummaryManager } from '../../store/hooks/useNetworkSummaryManager'
+import { ChevronRight } from '@mui/icons-material'
+import { Panel } from '../../models/UiModel/Panel'
+import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -52,9 +55,16 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers for optional features
   useHierarchyViewerManager()
 
+  // Block multiple loading
+  const isLoadingRef = useRef<boolean>(false)
+
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const navigate = useNavigate()
+  const [search] = useSearchParams()
+
+  // For restoring the selection state from URL
+  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
 
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
@@ -65,6 +75,9 @@ const WorkSpaceEditor = (): JSX.Element => {
   )
 
   const ui: Ui = useUiStateStore((state) => state.ui)
+  const setPanelState: (panel: Panel, panelState: PanelState) => void =
+    useUiStateStore((state) => state.setPanelState)
+
   const { panels, activeNetworkView } = ui
 
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
@@ -152,6 +165,44 @@ const WorkSpaceEditor = (): JSX.Element => {
     addViewModel(networkId, networkView)
   }
 
+  const restorePanelStates = (): void => {
+    // Set panel states based on the Search params
+    const leftPanelState: PanelState = search.get(Panel.LEFT) as PanelState
+    const rightPanelState: PanelState = search.get(Panel.RIGHT) as PanelState
+    const bottomPanelState: PanelState = search.get(Panel.BOTTOM) as PanelState
+
+    if (leftPanelState !== undefined && leftPanelState !== null) {
+      setPanelState(Panel.LEFT, leftPanelState)
+    }
+    if (rightPanelState !== undefined && rightPanelState !== null) {
+      setPanelState(Panel.RIGHT, rightPanelState)
+    }
+    if (bottomPanelState !== undefined && bottomPanelState !== null) {
+      setPanelState(Panel.BOTTOM, bottomPanelState)
+    }
+  }
+
+  /**
+   * Restore the node / edge selection states from URL
+   */
+  const restoreSelectionStates = (): void => {
+    const selectedNodeStr = search.get(SelectionStates.SelectedNodes)
+    const selectedEdgeStr = search.get(SelectionStates.SelectedEdges)
+
+    let selectedNodes: IdType[] = []
+    let selectedEdges: IdType[] = []
+
+    if (selectedNodeStr !== undefined && selectedNodeStr !== null) {
+      selectedNodes = selectedNodeStr.split(' ')
+    }
+
+    if (selectedEdgeStr !== undefined && selectedEdgeStr !== null) {
+      selectedEdges = selectedEdgeStr.split(' ')
+    }
+
+    exclusiveSelect(currentNetworkId, selectedNodes, selectedEdges)
+  }
+
   /**
    * Initializations
    */
@@ -160,6 +211,8 @@ const WorkSpaceEditor = (): JSX.Element => {
       setTableBrowserWidth(window.innerWidth)
     }
     window.addEventListener('resize', windowWidthListener)
+
+    restorePanelStates()
 
     return () => {
       window.removeEventListener('resize', windowWidthListener)
@@ -214,16 +267,31 @@ const WorkSpaceEditor = (): JSX.Element => {
       return
     }
 
-    // Update the DB first
+    if (isLoadingRef.current) {
+      return
+    }
+
+    isLoadingRef.current = true
 
     const currentNetworkView: NetworkView = viewModels[currentNetworkId]
+
     if (currentNetworkView === undefined) {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
           console.log('Network loaded for', currentNetworkId)
-          navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+
+          restoreSelectionStates()
+
+          navigate(
+            `/${
+              workspace.id
+            }/networks/${currentNetworkId}${location.search.toString()}`,
+          )
         })
         .catch((err) => console.error('Failed to load a network:', err))
+        .finally(() => {
+          isLoadingRef.current = false
+        })
     } else {
       putNetworkViewToDb(currentNetworkId, currentNetworkView)
         .then(() => {
@@ -231,12 +299,22 @@ const WorkSpaceEditor = (): JSX.Element => {
           loadCurrentNetworkById(currentNetworkId)
             .then(() => {
               console.log('Network loaded for', currentNetworkId)
-              navigate(`/${workspace.id}/networks/${currentNetworkId}`)
+
+              restoreSelectionStates()
+
+              navigate(
+                `/${
+                  workspace.id
+                }/networks/${currentNetworkId}${location.search.toString()}`,
+              )
             })
             .catch((err) => console.error('Failed to load a network:', err))
         })
         .catch((err) => {
           console.error('Failed to save network view to DB:', err)
+        })
+        .finally(() => {
+          isLoadingRef.current = false
         })
     }
   }, [currentNetworkId])
@@ -276,24 +354,61 @@ const WorkSpaceEditor = (): JSX.Element => {
           }}
         >
           <Allotment>
-            <Allotment.Pane maxSize={400} preferredSize="20vh">
-              <Allotment vertical>
-                <Allotment.Pane preferredSize={400}>
-                  <NetworkBrowserPanel
-                    allotmentDimensions={allotmentDimensions}
-                  />
-                </Allotment.Pane>
-                <Allotment.Pane maxSize={200}>
-                  <ManualLayoutPanel />
-                </Allotment.Pane>
-              </Allotment>
+            <Allotment.Pane
+              maxSize={panels.left === PanelState.OPEN ? 450 : 18}
+            >
+              {panels.left === PanelState.CLOSED ? (
+                <Box
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Tooltip title="Open network panel" arrow placement="right">
+                    <ChevronRight
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
+                    />
+                  </Tooltip>
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    height: '100%',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <div
+                    style={{
+                      flexGrow: 2,
+                      boxSizing: 'border-box',
+                      overflow: 'auto',
+                    }}
+                  >
+                    <NetworkBrowserPanel
+                      allotmentDimensions={allotmentDimensions}
+                    />
+                  </div>
+                  <LayoutToolsBasePanel />
+                </Box>
+              )}
             </Allotment.Pane>
             <Allotment.Pane>
               <Outlet />
               <NetworkPanel networkId={currentNetworkId} />
             </Allotment.Pane>
           </Allotment>
-          <Allotment.Pane minSize={28} preferredSize={150}>
+          <Allotment.Pane
+            minSize={28}
+            preferredSize={180}
+            maxSize={panels.bottom === PanelState.OPEN ? 450 : 18}
+          >
             <Suspense
               fallback={<div>{`Loading from NDEx`}</div>}
               key={currentNetworkId}
