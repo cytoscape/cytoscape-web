@@ -4,6 +4,8 @@ import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Radio from '@mui/material/Radio'
 import {
   TextField,
   Button,
@@ -16,18 +18,30 @@ import {
 } from '@mui/material'
 
 import { ValueTypeName } from '../../models/TableModel'
+import {
+  VisualProperty,
+  VisualPropertyValueType,
+} from '../../models/VisualStyleModel'
 
 interface TableFormProps {
   column: TableColumn
   open: boolean
   error: string | undefined
   onClose: () => void
-  onSubmit: (newColumnName: string) => void
-  dependentVisualProperties: string[]
+  onSubmit: (
+    newColumnName: string,
+    mappingUpdateType: 'rename' | 'delete' | undefined,
+  ) => void
+  dependentVisualProperties: Array<VisualProperty<VisualPropertyValueType>>
 }
 
-interface DeleteTableColumnFormProps extends TableFormProps {
-  onSubmit: () => void
+interface DeleteTableColumnFormProps {
+  column: TableColumn
+  open: boolean
+  error: string | undefined
+  onClose: () => void
+  onSubmit: (mappingUpdateType: 'delete' | undefined) => void
+  dependentVisualProperties: Array<VisualProperty<VisualPropertyValueType>>
 }
 
 interface CreateTableColumnFormProps {
@@ -42,8 +56,21 @@ interface CreateTableColumnFormProps {
 }
 export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
   const [value, setValue] = React.useState(props.column.id)
+  const [mappingSyncSetting, setMappingSyncSetting] = React.useState<
+    'rename' | 'delete' | undefined
+  >(undefined)
 
   React.useEffect(() => setValue(props.column.id), [props.column])
+  const columnHasDependentProperties =
+    props.dependentVisualProperties.length > 0
+
+  React.useEffect(
+    () =>
+      setMappingSyncSetting(
+        columnHasDependentProperties ? 'rename' : undefined,
+      ),
+    [props.dependentVisualProperties],
+  )
 
   return (
     <Dialog
@@ -61,19 +88,38 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
           value={value}
           label={'Column Name'}
         />
-        {props.dependentVisualProperties.length > 0 ? (
-          <Alert severity="warning">{`Warning, the following visual properties have mappings that are dependent on column ${
-            props.column.id
-          }.  Changes to the following visual properties may be needed: ${props.dependentVisualProperties.join(
-            ', ',
-          )}`}</Alert>
+        {columnHasDependentProperties ? (
+          <Alert severity="warning">{`The column ${props.column.id} is used in one or more visual style mappings`}</Alert>
         ) : null}
         {props.error != null ? (
           <Alert severity="error">{`${props.error}`}</Alert>
         ) : null}
+        {columnHasDependentProperties ? (
+          <>
+            <FormControlLabel
+              value="rename"
+              control={<Radio checked={mappingSyncSetting === 'rename'} />}
+              onChange={() => setMappingSyncSetting('rename')}
+              label="Update the style mapping(s)"
+            />
+            <FormControlLabel
+              value="delete"
+              control={
+                <Radio
+                  checked={mappingSyncSetting === 'delete'}
+                  onChange={() => setMappingSyncSetting('delete')}
+                />
+              }
+              label="Delete the style mapping"
+            />
+          </>
+        ) : null}
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => props.onSubmit(value)}>Confirm</Button>
+        <Button onClick={() => props.onSubmit(value, mappingSyncSetting)}>
+          Confirm
+        </Button>
+
         <Button color="error" onClick={props.onClose}>
           Cancel
         </Button>
@@ -85,6 +131,20 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
 export function DeleteTableColumnForm(
   props: DeleteTableColumnFormProps,
 ): React.ReactElement {
+  const [mappingSyncSetting, setMappingSyncSetting] = React.useState<
+    'delete' | undefined
+  >(undefined)
+
+  const columnHasDependentProperties =
+    props.dependentVisualProperties.length > 0
+
+  React.useEffect(
+    () =>
+      setMappingSyncSetting(
+        columnHasDependentProperties ? 'delete' : undefined,
+      ),
+    [props.dependentVisualProperties],
+  )
   return (
     <Dialog
       maxWidth="sm"
@@ -95,19 +155,17 @@ export function DeleteTableColumnForm(
       <DialogTitle>Delete Column</DialogTitle>
       <DialogContent>
         <Box>Are you sure you want to delete column {props.column.id}?</Box>
-        {props.dependentVisualProperties.length > 0 ? (
-          <Alert severity="warning">{`Warning, the following visual properties have mappings that are dependent on column ${
-            props.column.id
-          }.  Changes to the following visual properties may be needed: ${props.dependentVisualProperties.join(
-            ', ',
-          )}`}</Alert>
+        {columnHasDependentProperties ? (
+          <Alert severity="warning">{`The column ${props.column.id} is used in one or more visual style mappings.  The associated style mappings will be deleted with the column.`}</Alert>
         ) : null}
         {props.error != null ? (
           <Alert severity="error">{`${props.error}`}</Alert>
         ) : null}
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => props.onSubmit()}>Confirm</Button>
+        <Button onClick={() => props.onSubmit(mappingSyncSetting)}>
+          Confirm
+        </Button>
         <Button color="error" onClick={props.onClose}>
           Cancel
         </Button>

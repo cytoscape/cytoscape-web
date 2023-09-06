@@ -128,6 +128,7 @@ export default function TableBrowser(props: {
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[props.currentNetworkId],
   )
+  const setMapping = useVisualStyleStore((state) => state.setMapping)
 
   const { selectedNodes, selectedEdges } =
     useViewModelStore((state) => state.viewModels[networkId]) ?? {}
@@ -329,13 +330,11 @@ export default function TableBrowser(props: {
   // scan the visual properties to see if the selected column name is used in any mappings
   const visualPropertiesDependentOnSelectedColumn = Object.values(
     visualStyle ?? {},
+  ).filter(
+    (vpValue) =>
+      selectedColumn?.id != null &&
+      vpValue?.mapping?.attribute === selectedColumn.id,
   )
-    .filter(
-      (vpValue) =>
-        selectedColumn?.id != null &&
-        vpValue?.mapping?.attribute === selectedColumn.id,
-    )
-    .map((vp) => vp.displayName)
   const selectedColumnToolbar =
     selectedColumn != null ? (
       <>
@@ -413,7 +412,7 @@ export default function TableBrowser(props: {
             setShowEditColumnForm(false)
             setColumnFormError(undefined)
           }}
-          onSubmit={(newColumnName: string) => {
+          onSubmit={(newColumnName: string, mappingUpdateType) => {
             const columnNameSet = new Set(columns?.map((c) => c.id))
             if (columnNameSet.has(newColumnName)) {
               setColumnFormError(
@@ -426,6 +425,21 @@ export default function TableBrowser(props: {
                 selectedColumn.id,
                 newColumnName,
               )
+
+              if (mappingUpdateType === 'rename') {
+                visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
+                  if (vp.mapping != null) {
+                    setMapping(props.currentNetworkId, vp.name, {
+                      ...vp.mapping,
+                      attribute: newColumnName,
+                    })
+                  }
+                })
+              } else if (mappingUpdateType === 'delete') {
+                visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
+                  setMapping(props.currentNetworkId, vp.name, undefined)
+                })
+              }
               setColumnFormError(undefined)
               setSelectedColumnIndex(undefined)
             }
@@ -440,12 +454,17 @@ export default function TableBrowser(props: {
             setShowDeleteColumnForm(false)
             setDeleteColumnFormError(undefined)
           }}
-          onSubmit={() => {
+          onSubmit={(mappingUpdateType) => {
             deleteColumn(
               props.currentNetworkId,
               currentTable === nodeTable ? 'node' : 'edge',
               selectedColumn.id,
             )
+            if (mappingUpdateType === 'delete') {
+              visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
+                setMapping(props.currentNetworkId, vp.name, undefined)
+              })
+            }
             setDeleteColumnFormError(undefined)
             setSelectedColumnIndex(undefined)
           }}
