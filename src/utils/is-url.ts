@@ -7,5 +7,3 @@ export function isValidUrl(input: string): boolean {
     return false
   }
 }
-
-console.log('GOOGLE', isValidUrl('https://google.com'))
