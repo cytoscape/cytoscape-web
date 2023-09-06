@@ -54,7 +54,7 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.summaries[currentNetworkId],
   )
 
-  useEffect(() => {
+  const checkDataType = (): void => {
     // Check if the current network is a hierarchy
     if (networkSummary === undefined) {
       return
@@ -82,6 +82,14 @@ export const MainPanel = (): JSX.Element => {
       setIsHierarchy(false)
       setMetadata(undefined)
     }
+  }
+
+  useEffect(() => {
+    console.log('MainPanel: currentNetworkId', currentNetworkId, networkSummary)
+    checkDataType()
+  }, [networkSummary])
+  useEffect(() => {
+    checkDataType()
   }, [currentNetworkId])
 
   useEffect(() => {
