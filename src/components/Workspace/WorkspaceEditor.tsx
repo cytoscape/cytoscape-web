@@ -419,7 +419,11 @@ const WorkSpaceEditor = (): JSX.Element => {
               <TableBrowser
                 height={tableBrowserHeight}
                 width={tableBrowserWidth}
-                currentNetworkId={activeNetworkView ?? currentNetworkId}
+                currentNetworkId={
+                  activeNetworkView === undefined || activeNetworkView === ''
+                    ? currentNetworkId
+                    : activeNetworkView
+                }
               />
             </Suspense>
           </Allotment.Pane>
