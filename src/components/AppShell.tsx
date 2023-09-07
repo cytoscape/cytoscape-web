@@ -80,8 +80,6 @@ const AppShell = (): ReactElement => {
 
     const parsed = parsePathName(location.pathname)
 
-    const searchParams: URLSearchParams = new URLSearchParams(location.search)
-    console.log('searchParams', searchParams)
     // At this point, workspace ID is always available
     if (currentNetworkId === '' || currentNetworkId === undefined) {
       const parsedNetworkId = parsed.networkId

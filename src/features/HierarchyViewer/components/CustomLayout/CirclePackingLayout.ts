@@ -1,6 +1,6 @@
-import { Core, NodeSingular } from 'cytoscape'
+import { Core, NodeSingular, SingularElementReturnValue } from 'cytoscape'
 import { IdType } from '../../../../models/IdType'
-import NetworkFn, { Edge, Network } from '../../../../models/NetworkModel'
+import NetworkFn, { Network } from '../../../../models/NetworkModel'
 import { Table, ValueType } from '../../../../models/TableModel'
 import { SubsystemTag } from '../../model/HcxMetaTag'
 
@@ -18,6 +18,19 @@ const getMembers = (nodeId: IdType, table: Table): string[] => {
   return row[SubsystemTag.members] as string[]
 }
 
+const findRoot = (cyNet: Core): NodeSingular => {
+  // Get the selected node
+
+  // Find root
+  const roots = cyNet.nodes().roots()
+  if (roots.size() !== 1) {
+    throw new Error(
+      'This is not a tree / DAG. There should be only one root node',
+    )
+  }
+  return roots[0]
+}
+
 /**
  * Return the branch of the network rooted at the given node
  *
@@ -28,26 +41,18 @@ const getMembers = (nodeId: IdType, table: Table): string[] => {
 export const createTreeLayout = (
   network: Network,
   nodeId: IdType,
-  table: Table,
-): Edge[] => {
+  nodeTable: Table,
+  edgeTable: Table,
+): void => {
   // Get the internal data store. In this case, it is a cytoscape instance
   const cyNet: Core = NetworkFn.getInternalNetworkDataStore(network) as Core
 
-  // Get the selected node
-  const node = cyNet.getElementById(nodeId)
+  // const node = cyNet.getElementById(nodeId)
 
-  // Find root
-  const roots = cyNet.nodes().roots()
-  if (roots.size() !== 1) {
-    throw new Error(
-      'This is not a tree / DAG. There should be only one root node',
-    )
-  }
-
-  const root = roots[0]
+  const root = findRoot(cyNet)
   const rootNodeId: IdType = root.id()
 
-  console.log('##The RTel', root.data(), rootNodeId)
+  console.log('##The Root', root.data(), rootNodeId)
 
   // Add root node to the list
   const d3RootNode: D3TreeNode = { name: rootNodeId, parent: '' }
@@ -58,7 +63,7 @@ export const createTreeLayout = (
   nodeSet.add(rootNodeId)
 
   // Create input list for d3 stratify function
-  traverseTree(root, table, listTree, nodeSet)
+  traverseTree(root, nodeTable, edgeTable, listTree, nodeSet)
 
   console.log('##The Tree', listTree)
   const hierarchyRoot = d3Hierarchy
@@ -71,41 +76,36 @@ export const createTreeLayout = (
     })(listTree)
   console.log('##The hierarchy', hierarchyRoot)
 
-  const edges: Edge[] = []
+  // const edges: Edge[] = []
 
-  let children = node.successors()
-  // Check these are children of the given node
-  const filtered = children.filter((element) => element.id() === rootNodeId)
+  // let children = node.successors()
+  // // Check these are children of the given node
+  // const filtered = children.filter((element) => element.id() === rootNodeId)
 
-  // If there is no match, these are the children of the given node
-  if (filtered.size() !== 0) {
-    children = node.predecessors()
-  }
+  // // If there is no match, these are the children of the given node
+  // if (filtered.size() !== 0) {
+  //   children = node.predecessors()
+  // }
 
-  console.log(
-    '##Roots, s, p',
-    nodeId,
-    rootNodeId,
-    children.map((e) => e.id()),
-  )
-  children.forEach((element) => {
-    if (element.isEdge()) {
-      edges.push({
-        id: element.id(),
-        s: element.source().id(),
-        t: element.target().id(),
-      })
-    }
-  })
+  // children.forEach((element) => {
+  //   if (element.isEdge()) {
+  //     edges.push({
+  //       id: element.id(),
+  //       s: element.source().id(),
+  //       t: element.target().id(),
+  //     })
+  //   }
+  // })
 
-  // createHierarchy(edges, rootNodeId)
+  // // createHierarchy(edges, rootNodeId)
 
-  return edges
+  // return edges
 }
 
 interface D3TreeNode {
   name: string
   parent: string
+  members?: string[]
 }
 
 /**
@@ -116,7 +116,8 @@ interface D3TreeNode {
  */
 const traverseTree = (
   cyNode: NodeSingular,
-  table: Table,
+  nodeTable: Table,
+  edgeTable: Table,
   tree: D3TreeNode[],
   nodeSet: Set<string>,
 ): void => {
@@ -129,19 +130,25 @@ const traverseTree = (
     // Already exists. Need to change name
   }
 
-  outElements.forEach((ele) => {
+  outElements.forEach((ele: SingularElementReturnValue) => {
     if (ele.isNode()) {
-      // Do something with the child node
-      const members = getMembers(ele.id(), table)
-      const newNode: D3TreeNode = {
-        name: ele.id(),
-        parent: cyNode.id(),
-      }
-      tree.push(newNode)
-      console.log('C::', ele.id(), newNode, members)
+      const currentCyNode = ele as NodeSingular
+      const incomers = currentCyNode.incomers()
+      if (incomers.size() === 2) {
+        console.log('IN more than one', incomers)
+        // Do something with the child node
+        const members = getMembers(ele.id(), nodeTable)
+        const newNode: D3TreeNode = {
+          name: ele.id(),
+          parent: cyNode.id(),
+          members,
+        }
+        tree.push(newNode)
+        // console.log('C::', ele.id(), newNode, members)
 
-      // Recursively traverse the child's children
-      traverseTree(ele, table, tree, nodeSet)
+        // Recursively traverse the child's children
+        traverseTree(ele, nodeTable, edgeTable, tree, nodeSet)
+      }
     }
   })
 }

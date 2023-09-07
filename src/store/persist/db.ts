@@ -47,7 +47,7 @@ db.open()
   })
 
 db.on('ready', () => {
-  console.info('Indexed DB is ready')
+  console.log('Local DB is ready.')
 })
 
 export const deleteDb = async (): Promise<void> => {

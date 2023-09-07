@@ -19,6 +19,9 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
 import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
+import { createTreeLayout } from './CustomLayout/CirclePackingLayout'
+import { Network } from '../../../models/NetworkModel'
+import { useNetworkStore } from '../../../store/NetworkStore'
 // import { useNetworkStore } from '../../../store/NetworkStore'
 // import { Network } from '../../../models/NetworkModel'
 
@@ -40,9 +43,9 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.workspace.currentNetworkId,
   )
 
-  // const currentNetwork: Network | undefined = useNetworkStore((state) =>
-  //   state.networks.get(currentNetworkId),
-  // )
+  const currentNetwork: Network | undefined = useNetworkStore((state) =>
+    state.networks.get(currentNetworkId),
+  )
 
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
@@ -91,9 +94,9 @@ export const MainPanel = (): JSX.Element => {
   }
 
   useEffect(() => {
-    console.log('MainPanel: currentNetworkId', currentNetworkId, networkSummary)
     checkDataType()
   }, [networkSummary])
+
   useEffect(() => {
     checkDataType()
   }, [currentNetworkId])
@@ -106,13 +109,13 @@ export const MainPanel = (): JSX.Element => {
     }
 
     const idString: string = selectedSubsystem.toString()
-    const { nodeTable } = tableRecord
+    const { nodeTable, edgeTable } = tableRecord
     const rows = nodeTable.rows
 
     // Exract children
-    // if (currentNetwork !== undefined) {
-    //   createTreeLayout(currentNetwork, selectedSubsystem, nodeTable)
-    // }
+    if (currentNetwork !== undefined) {
+      createTreeLayout(currentNetwork, selectedSubsystem, nodeTable, edgeTable)
+    }
 
     // Pick the table row for the selected subsystem and extract member list
     const row: Record<string, ValueType> | undefined = rows.get(idString)
@@ -124,6 +127,7 @@ export const MainPanel = (): JSX.Element => {
     const interactionUuid: string = row[
       SubsystemTag.interactionNetworkUuid
     ] as string
+
     const name: ValueType = row.name ?? '?'
     setSubNetworkName(name as string)
     const newQuery: Query = { nodeIds: memberIds as number[] }
@@ -139,6 +143,16 @@ export const MainPanel = (): JSX.Element => {
 
   if (selectedNodes.length === 0) {
     return <MessagePanel message="Please select a subsystem" />
+  }
+
+  // Special case: neither of ID or membership is available
+  if (
+    (interactionNetworkUuid === undefined || interactionNetworkUuid === '') &&
+    (query.nodeIds === undefined || query.nodeIds.length === 0)
+  ) {
+    return (
+      <MessagePanel message="Network data is not available for the selected node" />
+    )
   }
 
   const targetNode: IdType = selectedNodes[0]
