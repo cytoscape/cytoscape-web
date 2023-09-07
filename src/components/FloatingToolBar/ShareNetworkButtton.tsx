@@ -53,23 +53,19 @@ export const ShareNetworkButton = (): JSX.Element => {
     return `${panelStr}&${searchStr}`
   }
 
-  useEffect(() => {
-    console.log('Updating', networkViewModel)
+  const setSelection = (params: URLSearchParams): void => {
     if (networkViewModel === undefined) {
       return
     }
 
-    for (const [key, value] of search.entries()) {
-      console.log(key, value)
-    }
-
-    const params = new URLSearchParams(search)
     const selectedNodeCount: number = networkViewModel.selectedNodes.length
     const selectedEdgeCount: number = networkViewModel.selectedEdges.length
     if (selectedNodeCount === 0 && selectedEdgeCount === 0) {
       params.delete(SelectionStates.SelectedNodes)
       params.delete(SelectionStates.SelectedEdges)
-      setSearch(params)
+      setTimeout(() => {
+        setSearch(params)
+      }, 200)
       return
     }
 
@@ -78,14 +74,25 @@ export const ShareNetworkButton = (): JSX.Element => {
         SelectionStates.SelectedNodes,
         networkViewModel.selectedNodes.join(' '),
       )
+    } else {
+      params.delete(SelectionStates.SelectedNodes)
     }
+
     if (selectedEdgeCount > 0 && selectedEdgeCount <= MAX_SELECTED_OBJ) {
       params.set(
         SelectionStates.SelectedEdges,
         networkViewModel.selectedEdges.join(' '),
       )
+    } else {
+      params.delete(SelectionStates.SelectedEdges)
     }
-    setSearch(params)
+    setTimeout(() => {
+      setSearch(params)
+    }, 200)
+  }
+
+  useEffect(() => {
+    setSelection(new URLSearchParams(search))
   }, [selectedNodeCount, selectedEdgeCount])
 
   const [open, setOpen] = useState(false)

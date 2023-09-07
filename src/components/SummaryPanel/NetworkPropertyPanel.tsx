@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react'
+import { ReactElement, useState } from 'react'
 import {
   Tooltip,
   IconButton,
@@ -42,10 +42,9 @@ export const NetworkPropertyPanel = ({
   summary,
 }: NetworkPropertyPanelProps): ReactElement => {
   const theme: Theme = useTheme()
-  const [selectedNodeCount, setSelectedNodeCount] = useState<number>(0)
-  const [selectedEdgeCount, setSelectedEdgeCount] = useState<number>(0)
-
   const { nodeCount, edgeCount } = summary
+
+  // Need to use ID from the summary since it is different from the currentNetworkId
   const id: IdType = summary.externalId
 
   const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
@@ -62,18 +61,6 @@ export const NetworkPropertyPanel = ({
   )
 
   const networkViewModel = useViewModelStore((state) => state.viewModels[id])
-
-  useEffect(() => {
-    if (networkViewModel === undefined) {
-      return
-    }
-    if (networkViewModel.selectedNodes.length !== selectedNodeCount) {
-      setSelectedNodeCount(networkViewModel.selectedNodes.length)
-    }
-    if (networkViewModel.selectedEdges.length !== selectedEdgeCount) {
-      setSelectedEdgeCount(networkViewModel.selectedEdges.length)
-    }
-  }, [networkViewModel])
 
   const showEditNetworkSummaryForm = (
     event: React.MouseEvent<HTMLButtonElement>,
@@ -148,8 +135,8 @@ export const NetworkPropertyPanel = ({
             variant={'subtitle2'}
             sx={{ width: '100%', color: theme.palette.text.secondary }}
           >
-            {`N: ${nodeCount} (${selectedNodeCount}) /
-          E: ${edgeCount} (${selectedEdgeCount})`}
+            {`N: ${nodeCount} (${networkViewModel?.selectedNodes.length ?? 0}) /
+          E: ${edgeCount} (${networkViewModel?.selectedEdges.length ?? 0})`}
           </Typography>
         </Box>
         <Tooltip title="Edit network properties">

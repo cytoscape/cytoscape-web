@@ -3,7 +3,12 @@ import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box, Tooltip } from '@mui/material'
 
-import { Outlet, useNavigate, useSearchParams } from 'react-router-dom'
+import {
+  Outlet,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom'
 
 import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
 import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
@@ -61,6 +66,8 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const navigate = useNavigate()
+  const location = useLocation()
+
   const [search] = useSearchParams()
 
   // For restoring the selection state from URL
@@ -88,6 +95,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   const viewModels: Record<string, NetworkView> = useViewModelStore(
     (state) => state.viewModels,
   )
+  const currentNetworkView: NetworkView = viewModels[currentNetworkId]
 
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
@@ -273,14 +281,13 @@ const WorkSpaceEditor = (): JSX.Element => {
 
     isLoadingRef.current = true
 
-    const currentNetworkView: NetworkView = viewModels[currentNetworkId]
-
     if (currentNetworkView === undefined) {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          console.log('Network loaded for', currentNetworkId)
-
-          restoreSelectionStates()
+          const path = location.pathname
+          if (path.includes(currentNetworkId)) {
+            restoreSelectionStates()
+          }
 
           navigate(
             `/${
@@ -295,13 +302,9 @@ const WorkSpaceEditor = (): JSX.Element => {
     } else {
       putNetworkViewToDb(currentNetworkId, currentNetworkView)
         .then(() => {
-          console.info('* Network view saved to DB')
           loadCurrentNetworkById(currentNetworkId)
             .then(() => {
-              console.log('Network loaded for', currentNetworkId)
-
-              restoreSelectionStates()
-
+              // restoreSelectionStates()
               navigate(
                 `/${
                   workspace.id
@@ -416,7 +419,11 @@ const WorkSpaceEditor = (): JSX.Element => {
               <TableBrowser
                 height={tableBrowserHeight}
                 width={tableBrowserWidth}
-                currentNetworkId={activeNetworkView ?? currentNetworkId}
+                currentNetworkId={
+                  activeNetworkView === undefined || activeNetworkView === ''
+                    ? currentNetworkId
+                    : activeNetworkView
+                }
               />
             </Suspense>
           </Allotment.Pane>
