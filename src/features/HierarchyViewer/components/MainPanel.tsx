@@ -130,6 +130,16 @@ export const MainPanel = (): JSX.Element => {
     return <MessagePanel message="Please select a subsystem" />
   }
 
+  // Special case: neither of ID or membership is available
+  if (
+    (interactionNetworkUuid === undefined || interactionNetworkUuid === '') &&
+    (query.nodeIds === undefined || query.nodeIds.length === 0)
+  ) {
+    return (
+      <MessagePanel message="Network data is not available for the selected node" />
+    )
+  }
+
   const targetNode: IdType = selectedNodes[0]
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
 
