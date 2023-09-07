@@ -6,6 +6,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
+import Tooltip from '@mui/material/Tooltip'
 import {
   TextField,
   Button,
@@ -112,6 +113,18 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
               }
               label="Delete the style mapping"
             />
+            <Tooltip title="Warning: You will not be able to save a network that contains invalid mappings to NDEx">
+              <FormControlLabel
+                value="delete"
+                control={
+                  <Radio
+                    checked={mappingSyncSetting === undefined}
+                    onChange={() => setMappingSyncSetting(undefined)}
+                  />
+                }
+                label="Leave the mapping as is"
+              />
+            </Tooltip>
           </>
         ) : null}
       </DialogContent>
@@ -160,6 +173,32 @@ export function DeleteTableColumnForm(
         ) : null}
         {props.error != null ? (
           <Alert severity="error">{`${props.error}`}</Alert>
+        ) : null}
+        {columnHasDependentProperties ? (
+          <>
+            <FormControlLabel
+              value="delete"
+              control={
+                <Radio
+                  checked={mappingSyncSetting === 'delete'}
+                  onChange={() => setMappingSyncSetting('delete')}
+                />
+              }
+              label="Delete the style mapping"
+            />
+            <Tooltip title="Warning: You will not be able to save a network that contains invalid mappings to NDEx">
+              <FormControlLabel
+                value="delete"
+                control={
+                  <Radio
+                    checked={mappingSyncSetting === undefined}
+                    onChange={() => setMappingSyncSetting(undefined)}
+                  />
+                }
+                label="Leave the mapping as is"
+              />
+            </Tooltip>
+          </>
         ) : null}
       </DialogContent>
       <DialogActions>
