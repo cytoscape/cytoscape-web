@@ -21,6 +21,7 @@ export type NodeVisualPropertyName =
   | 'nodeOpacity'
   | 'nodeVisibility'
   | 'nodeSelectedPaint'
+  | 'nodeMaxLabelWidth'
 
 export type EdgeVisualPropertyName =
   | 'edgeLineType'
@@ -40,6 +41,8 @@ export type EdgeVisualPropertyName =
   | 'edgeOpacity'
   | 'edgeVisibility'
   | 'edgeSelectedPaint'
+  | 'edgeMaxLabelWidth'
+
 
 export type NetworkVisualPropertyName = 'networkBackgroundColor'
 

@@ -1,1 +1,1 @@
-export { ManualLayoutPanel } from './LayoutToolsPanel'
+export { LayoutToolsBasePanel } from './LayoutToolsBasePanel'

@@ -25,6 +25,7 @@ export const useUiStateStore = create(
       panels: {
         [Panel.LEFT]: PanelState.OPEN,
         [Panel.RIGHT]: PanelState.CLOSED,
+        [Panel.BOTTOM]: PanelState.OPEN,
       },
       activeNetworkView: '',
       enablePopup: false,

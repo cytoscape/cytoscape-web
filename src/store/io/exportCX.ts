@@ -37,6 +37,8 @@ import {
   PassthroughMappingFunction,
 } from '../../models/VisualStyleModel/VisualMappingFunction'
 
+import { deserializeValue } from '../../models/TableModel/impl/ValueTypeImpl'
+
 export const exportNetworkToCx2 = (
   network: Network,
   vs: VisualStyle,
@@ -141,17 +143,12 @@ export const exportNetworkToCx2 = (
   }
 
   const networkAttributeDeclarations: {
-    [key: string]: { d: ValueTypeName; v: ValueType }
-  } = {
-    name: { d: 'string', v: networkName ?? summary.name },
-    description: { d: 'string', v: summary.description },
-    version: { d: 'string', v: summary.version },
-  }
+    [key: string]: { d: ValueTypeName }
+  } = {}
 
   summary.properties.forEach((property) => {
     networkAttributeDeclarations[property.predicateString] = {
       d: property.dataType,
-      v: property.value,
     }
   })
 
@@ -169,13 +166,19 @@ export const exportNetworkToCx2 = (
     },
   ]
 
-  const networkAttributes: any = [
-    {
-      name: networkName ?? summary.name,
-      description: summary.description,
-      version: summary.version,
-    },
-  ]
+  const networkAttributes: any = [{}]
+
+  if (networkName != null || summary.name != null) {
+    networkAttributeDeclarations.name = { d: 'string' }
+    networkAttributes[0].name = networkName ?? summary.name
+  }
+
+  summary.properties.forEach((property) => {
+    networkAttributes[0][property.predicateString] = deserializeValue(
+      networkAttributeDeclarations[property.predicateString].d,
+      property.value as string,
+    )
+  })
 
   const nodes = network.nodes.map((node) => {
     const nodeRow = nodeTable.rows.get(node.id)
@@ -287,10 +290,12 @@ export const exportNetworkToCx2 = (
     }
   })
 
-  return [
+  const cx = [
     descriptor,
     { metaData },
     ...aspects.map(({ key, aspect }) => ({ [key]: aspect })),
     { status },
   ]
+
+  return cx
 }
