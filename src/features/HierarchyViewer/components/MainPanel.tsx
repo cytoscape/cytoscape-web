@@ -112,10 +112,10 @@ export const MainPanel = (): JSX.Element => {
     const { nodeTable, edgeTable } = tableRecord
     const rows = nodeTable.rows
 
-    // Exract children
-    if (currentNetwork !== undefined) {
-      createTreeLayout(currentNetwork, selectedSubsystem, nodeTable, edgeTable)
-    }
+    // For Circle Packing: Exract children
+    // if (currentNetwork !== undefined) {
+    //   createTreeLayout(currentNetwork, selectedSubsystem, nodeTable, edgeTable)
+    // }
 
     // Pick the table row for the selected subsystem and extract member list
     const row: Record<string, ValueType> | undefined = rows.get(idString)

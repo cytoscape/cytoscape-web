@@ -135,6 +135,7 @@ const traverseTree = (
       const currentCyNode = ele as NodeSingular
       const incomers = currentCyNode.incomers()
       if (incomers.size() === 2) {
+        // This has only one parent
         console.log('IN more than one', incomers)
         // Do something with the child node
         const members = getMembers(ele.id(), nodeTable)
@@ -148,6 +149,8 @@ const traverseTree = (
 
         // Recursively traverse the child's children
         traverseTree(ele, nodeTable, edgeTable, tree, nodeSet)
+      } else {
+        // There are multiple parents
       }
     }
   })

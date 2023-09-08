@@ -1,20 +1,30 @@
 {
-  "ndexBaseUrl": "idekerlab.ndexbio.org",
+  "ndexBaseUrl": "dev.ndexbio.org",
   "options": {
     "debug": true
   },
   "keycloakConfig": {
-    "url": "https://test.ndexbio.org/auth2",
-    "clientId": "cytoscapendex",
+    "url": "https://dev.ndexbio.org/auth2",
+    "clientId": "localtestclient",
     "realm": "ndex"
   },
   "testNetworks": [
-    "7e1d61ca-21c6-11ee-b3b9-005056aecf54",
-    "ea23f41d-21c6-11ee-b3b9-005056aecf54",
-    "529fb200-21c7-11ee-b3b9-005056aecf54",
-    "c68c5c93-21c7-11ee-b3b9-005056aecf54"
+    "4ae2709d-3055-11ec-94bf-525400c25d22",
+    "8b3faf53-3056-11ec-94bf-525400c25d22",
+    "8b51d7c5-3056-11ec-94bf-525400c25d22",
+    "8b957078-3056-11ec-94bf-525400c25d22",
+    "8baf882a-3056-11ec-94bf-525400c25d22",
+    "8bd2797c-3056-11ec-94bf-525400c25d22",
+    "f625f9ef-3055-11ec-94bf-525400c25d22",
+    "f950ad02-3055-11ec-94bf-525400c25d22",
+    "f96b39e4-3055-11ec-94bf-525400c25d22",
+    "f99975d6-3055-11ec-94bf-525400c25d22",
+    "f9aeab88-3055-11ec-94bf-525400c25d22",
+    "f9ca49da-3055-11ec-94bf-525400c25d22",
+    "8bd2797c-3056-11ec-94bf-525400c25d22",
+    "ab0eeef6-25bd-11e9-a05d-525400c25d22"
   ],
   "maxNetworkElementsThreshold": 20000,
   "maxNetworkFileSize": 524288000,
-  "urlBaseName": "/cytoscape/"
+  "urlBaseName": ""
 }
