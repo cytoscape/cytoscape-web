@@ -54,7 +54,7 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.summaries[currentNetworkId],
   )
 
-  useEffect(() => {
+  const checkDataType = (): void => {
     // Check if the current network is a hierarchy
     if (networkSummary === undefined) {
       return
@@ -82,6 +82,14 @@ export const MainPanel = (): JSX.Element => {
       setIsHierarchy(false)
       setMetadata(undefined)
     }
+  }
+
+  useEffect(() => {
+    console.log('MainPanel: currentNetworkId', currentNetworkId, networkSummary)
+    checkDataType()
+  }, [networkSummary])
+  useEffect(() => {
+    checkDataType()
   }, [currentNetworkId])
 
   useEffect(() => {
@@ -120,6 +128,16 @@ export const MainPanel = (): JSX.Element => {
 
   if (selectedNodes.length === 0) {
     return <MessagePanel message="Please select a subsystem" />
+  }
+
+  // Special case: neither of ID or membership is available
+  if (
+    (interactionNetworkUuid === undefined || interactionNetworkUuid === '') &&
+    (query.nodeIds === undefined || query.nodeIds.length === 0)
+  ) {
+    return (
+      <MessagePanel message="Network data is not available for the selected node" />
+    )
   }
 
   const targetNode: IdType = selectedNodes[0]

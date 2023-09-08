@@ -1,4 +1,4 @@
-import { ReactElement, useState, useEffect } from 'react'
+import { ReactElement, useState } from 'react'
 import {
   Tooltip,
   IconButton,
@@ -29,27 +29,23 @@ import SubScript from '@tiptap/extension-subscript'
 import { IdType } from '../../models/IdType'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import { useViewModelStore } from '../../store/ViewModelStore'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
-import { NetworkView } from '../../models/ViewModel'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
-
 import { removePTags } from '../../utils/remove-p-tags'
-import { useSearchParams } from 'react-router-dom'
+import { useViewModelStore } from '../../store/ViewModelStore'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
 }
 
-// Selection will be encoded if the selected object count is less than this number
-const MAX_SELECTED_OBJ = 300
-
 export const NetworkPropertyPanel = ({
   summary,
 }: NetworkPropertyPanelProps): ReactElement => {
   const theme: Theme = useTheme()
-
   const { nodeCount, edgeCount } = summary
+
+  // Need to use ID from the summary since it is different from the currentNetworkId
+  const id: IdType = summary.externalId
 
   const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
     HTMLButtonElement | undefined
@@ -64,6 +60,8 @@ export const NetworkPropertyPanel = ({
     (state) => state.workspace.currentNetworkId,
   )
 
+  const networkViewModel = useViewModelStore((state) => state.viewModels[id])
+
   const showEditNetworkSummaryForm = (
     event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
@@ -71,46 +69,6 @@ export const NetworkPropertyPanel = ({
 
     setEditNetworkSummaryAnchorEl(event.currentTarget)
   }
-  const id: IdType = summary.externalId
-
-  const networkViewModel: NetworkView = useViewModelStore(
-    (state) => state.viewModels[id],
-  )
-
-  const [selectedNodeCount, setSelectedNodeCount] = useState<number>(0)
-  const [selectedEdgeCount, setSelectedEdgeCount] = useState<number>(0)
-
-  useEffect(() => {
-    if (networkViewModel === undefined) {
-      return
-    }
-
-    setSelectedNodeCount(networkViewModel.selectedNodes.length)
-    setSelectedEdgeCount(networkViewModel.selectedEdges.length)
-  }, [networkViewModel])
-
-  const [search, setSearch] = useSearchParams()
-
-  useEffect(() => {
-    if (
-      networkViewModel === undefined ||
-      (selectedNodeCount === 0 && selectedEdgeCount === 0)
-    ) {
-      if (search !== undefined && search.size !== 0) {
-        setSearch({})
-      }
-      return
-    }
-
-    const params = {} as any
-    if (selectedNodeCount > 0 && selectedNodeCount <= MAX_SELECTED_OBJ) {
-      params.selectednodes = networkViewModel.selectedNodes.join(' ')
-    }
-    if (selectedEdgeCount > 0 && selectedEdgeCount <= MAX_SELECTED_OBJ) {
-      params.selectededges = networkViewModel.selectedEdges.join(' ')
-    }
-    setSearch(params)
-  }, [selectedNodeCount, selectedEdgeCount])
 
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
@@ -177,8 +135,8 @@ export const NetworkPropertyPanel = ({
             variant={'subtitle2'}
             sx={{ width: '100%', color: theme.palette.text.secondary }}
           >
-            {`N: ${nodeCount} (${selectedNodeCount}) /
-          E: ${edgeCount} (${selectedEdgeCount})`}
+            {`N: ${nodeCount} (${networkViewModel?.selectedNodes.length ?? 0}) /
+          E: ${edgeCount} (${networkViewModel?.selectedEdges.length ?? 0})`}
           </Typography>
         </Box>
         <Tooltip title="Edit network properties">
