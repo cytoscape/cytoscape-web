@@ -90,7 +90,11 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
           label={'Column Name'}
         />
         {columnHasDependentProperties ? (
-          <Alert severity="warning">{`The column ${props.column.id} is used in one or more visual style mappings`}</Alert>
+          <Alert severity="warning">{`Warning, the following visual properties have mappings that are dependent on column ${
+            props.column.id
+          }. Changes to the following visual properties may be needed: ${props.dependentVisualProperties
+            .map((vp) => vp.displayName)
+            .join(', ')}`}</Alert>
         ) : null}
         {props.error != null ? (
           <Alert severity="error">{`${props.error}`}</Alert>
@@ -111,7 +115,7 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
                   onChange={() => setMappingSyncSetting('delete')}
                 />
               }
-              label="Delete the style mapping"
+              label="Delete the style mapping(s)"
             />
             <Tooltip title="Warning: You will not be able to save a network that contains invalid mappings to NDEx">
               <FormControlLabel
@@ -122,7 +126,7 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
                     onChange={() => setMappingSyncSetting(undefined)}
                   />
                 }
-                label="Leave the mapping as is"
+                label="Leave the mapping(s) as is"
               />
             </Tooltip>
           </>
@@ -169,7 +173,11 @@ export function DeleteTableColumnForm(
       <DialogContent>
         <Box>Are you sure you want to delete column {props.column.id}?</Box>
         {columnHasDependentProperties ? (
-          <Alert severity="warning">{`The column ${props.column.id} is used in one or more visual style mappings.  The associated style mappings will be deleted with the column.`}</Alert>
+          <Alert severity="warning">{`Warning, the following visual properties have mappings that are dependent on column ${
+            props.column.id
+          }. Changes to the following visual properties may be needed: ${props.dependentVisualProperties
+            .map((vp) => vp.displayName)
+            .join(', ')}`}</Alert>
         ) : null}
         {props.error != null ? (
           <Alert severity="error">{`${props.error}`}</Alert>
@@ -184,7 +192,7 @@ export function DeleteTableColumnForm(
                   onChange={() => setMappingSyncSetting('delete')}
                 />
               }
-              label="Delete the style mapping"
+              label="Delete the style mapping(s)"
             />
             <Tooltip title="Warning: You will not be able to save a network that contains invalid mappings to NDEx">
               <FormControlLabel
@@ -195,7 +203,7 @@ export function DeleteTableColumnForm(
                     onChange={() => setMappingSyncSetting(undefined)}
                   />
                 }
-                label="Leave the mapping as is"
+                label="Leave the mapping(s) as is"
               />
             </Tooltip>
           </>
