@@ -63,10 +63,10 @@ export const LoginButton = (): ReactElement => {
       <Tooltip title={tooltipTitle}>
         <Avatar
           sx={{
-            bgcolor: parsed.name === undefined ? '#DDDDDD' : deepOrange[300],
-            marginLeft: 2,
-            width: 28,
-            height: 28,
+            bgcolor: parsed.name === undefined ? '#DDDDDD' : deepOrange[400],
+            marginLeft: '0.5em',
+            width: 32,
+            height: 32,
           }}
           onClick={handleClose}
         >
