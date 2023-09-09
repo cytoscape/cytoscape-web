@@ -330,13 +330,44 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         cy.remove(cyEdge)
       }
     })
-    console.log('Edge views deleted-=------------')
   }, [networkView?.edgeViews])
 
   // when hovered element changes, apply hover style to that element
   useEffect(() => {
     applyHoverUpdate()
   }, [networkView?.hoveredElement])
+
+  useEffect(() => {
+    if (cy === null || networkView === undefined || networkView === null) {
+      return
+    }
+
+    const { selectedNodes, selectedEdges } = networkView
+    // Clear selection
+    if (selectedNodes.length === 0 && selectedEdges.length === 0) {
+      cy.elements().unselect()
+      return
+    }
+
+    if (selectedNodes.length === 0) {
+      cy.nodes().unselect()
+    } else {
+      cy.nodes()
+        .filter((ele: SingularElementArgument) => {
+          return selectedNodes.includes(ele.data('id'))
+        })
+        .select()
+    }
+    if (selectedEdges.length === 0) {
+      cy.edges().unselect()
+    } else {
+      cy.edges()
+        .filter((ele: SingularElementArgument) => {
+          return selectedEdges.includes(ele.data('id'))
+        })
+        .select()
+    }
+  }, [networkView?.selectedNodes, networkView?.selectedEdges])
 
   /**
    * Initializes the Cytoscape.js instance

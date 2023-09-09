@@ -6,6 +6,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 interface SearchControlsProps {
   searchTerm: string
   setSearchTerm: (searchTerm: string) => void
+  startSearch: () => void
+  clearSearch: () => void
 }
 
 const baseStyle = {
@@ -19,25 +21,19 @@ const baseStyle = {
 export const SearchControls = ({
   searchTerm,
   setSearchTerm,
+  startSearch,
+  clearSearch,
 }: SearchControlsProps): JSX.Element => {
-  const handleSearch = (): void => {
-    console.log('SEARCHING', searchTerm)
-  }
-
   const handleAdvanced = (): void => {
     console.log('ADVANCED SEARCH')
-  }
-
-  const handleClear = (): void => {
-    setSearchTerm('')
   }
 
   return (
     <Box sx={baseStyle}>
       {searchTerm !== '' ? (
-        <DeleteIcon sx={{ cursor: 'pointer' }} onClick={handleClear} />
+        <DeleteIcon sx={{ cursor: 'pointer' }} onClick={clearSearch} />
       ) : null}
-      <SearchIcon sx={{ cursor: 'pointer' }} onClick={handleSearch} />
+      <SearchIcon sx={{ cursor: 'pointer' }} onClick={startSearch} />
       <TuneIcon sx={{ cursor: 'pointer' }} onClick={handleAdvanced} />
     </Box>
   )
