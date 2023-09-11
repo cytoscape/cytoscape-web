@@ -1,6 +1,6 @@
 import { StyledInputBase } from './StyledInputBase'
 import { Search } from './Search'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { SearchControls } from './SearchControls'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
@@ -8,18 +8,29 @@ import { useTableStore } from '../../../store/TableStore'
 import { ValueType } from '../../../models/TableModel'
 import Fuse from 'fuse.js'
 import { useViewModelStore } from '../../../store/ViewModelStore'
+import { useFilterStore } from '../../../store/FilterStore'
 
 export const SearchBox = (): JSX.Element => {
-  const [searchTerm, setSearchTerm] = useState<string>('')
-
-  const [indexed, setIndexed] = useState<boolean>(false)
-  const [fuse, setFuse] = useState<Fuse<Record<string, ValueType>> | undefined>(
-    undefined,
-  )
-
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  // Search query stored in the global store
+  const query: string = useFilterStore((state) => state.search.query)
+  const setQuery: (query: string) => void = useFilterStore(
+    (state) => state.setQuery,
+  )
+
+  const index: Fuse<Record<string, ValueType>> = useFilterStore(
+    (state) => state.search.index[currentNetworkId],
+  )
+  const setIndex: (
+    networkId: IdType,
+    index: Fuse<Record<string, ValueType>>,
+  ) => void = useFilterStore((state) => state.setIndex)
+
+  // const [fuse, setFuse] = useState<Fuse<Record<string, ValueType>> | undefined>(
+  //   undefined,
+  // )
 
   const tables = useTableStore((state) => state.tables[currentNetworkId])
   const nodeTable = tables?.nodeTable
@@ -27,15 +38,19 @@ export const SearchBox = (): JSX.Element => {
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
 
   const clearSearch = (): void => {
-    setSearchTerm('')
+    setQuery('')
     exclusiveSelect(currentNetworkId, [], [])
   }
 
   const startSearch = (): void => {
-    if (fuse === undefined) {
+    if (index === undefined) {
       return
     }
-    const result = fuse.search(searchTerm)
+
+    // Clear
+    exclusiveSelect(currentNetworkId, [], [])
+
+    const result = index.search(query)
     const toBeSelected: string[] = []
     result.forEach((r) => {
       const objectId: string = r.item.id as string
@@ -46,11 +61,7 @@ export const SearchBox = (): JSX.Element => {
   }
 
   useEffect(() => {
-    setIndexed(false)
-  }, [currentNetworkId])
-
-  useEffect(() => {
-    if (nodeTable === undefined || indexed) {
+    if (nodeTable === undefined || index !== undefined) {
       return
     }
     try {
@@ -71,8 +82,7 @@ export const SearchBox = (): JSX.Element => {
         keys,
       }
       const fuse = new Fuse(list, options)
-      setFuse(fuse)
-      setIndexed(true)
+      setIndex(currentNetworkId, fuse)
       console.log(
         '-------------------------NODE TABLE INDEX Updated',
         nodeTable,
@@ -96,13 +106,12 @@ export const SearchBox = (): JSX.Element => {
       <StyledInputBase
         placeholder="Search current network"
         inputProps={{ 'aria-label': 'search' }}
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
       />
       <SearchControls
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
+        searchTerm={query}
         startSearch={startSearch}
         clearSearch={clearSearch}
       />
