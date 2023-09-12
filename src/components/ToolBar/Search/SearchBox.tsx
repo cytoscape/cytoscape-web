@@ -28,10 +28,6 @@ export const SearchBox = (): JSX.Element => {
     index: Fuse<Record<string, ValueType>>,
   ) => void = useFilterStore((state) => state.setIndex)
 
-  // const [fuse, setFuse] = useState<Fuse<Record<string, ValueType>> | undefined>(
-  //   undefined,
-  // )
-
   const tables = useTableStore((state) => state.tables[currentNetworkId])
   const nodeTable = tables?.nodeTable
 
@@ -91,12 +87,12 @@ export const SearchBox = (): JSX.Element => {
       console.log('Error indexing', error)
     }
   }, [nodeTable])
+
   // Execute search when enter key is pressed
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>,
   ): void => {
     if (event.key === 'Enter') {
-      console.log('Start Search')
       startSearch()
     }
   }
