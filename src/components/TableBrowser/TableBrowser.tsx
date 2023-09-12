@@ -6,7 +6,12 @@ import Box from '@mui/material/Box'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import { Button, ButtonGroup } from '@mui/material'
 
-import { Table, ValueType, ValueTypeName } from '../../models/TableModel'
+import {
+  Table,
+  ValueType,
+  ValueTypeName,
+  Column,
+} from '../../models/TableModel'
 import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
@@ -142,6 +147,7 @@ export default function TableBrowser(props: {
   const applyValueToElemenets = useTableStore(
     (state) => state.applyValueToElements,
   )
+  const moveColumn = useTableStore((state) => state.moveColumn)
 
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
@@ -154,14 +160,17 @@ export default function TableBrowser(props: {
   const minNodeId = nodeIds.sort((a, b) => a - b)[0]
   const maxEdgeId = edgeIds.sort((a, b) => b - a)[0]
   const minEdgeId = edgeIds.sort((a, b) => a - b)[0]
-  const columns = Array.from(currentTable?.columns.entries() ?? new Map()).map(
-    ([attributeName, col], index) => ({
-      id: attributeName,
-      title: attributeName,
-      type: col.type,
-      index,
-    }),
-  )
+  const modelColumns: Column[] =
+    currentTable?.columns != null ? currentTable?.columns : []
+
+  const columns = modelColumns.map((col, index) => ({
+    id: col.name,
+    title: col.name,
+    type: col.type,
+    index,
+  }))
+
+  console.log(columns)
 
   const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
   const selectedElementsSet = new Set(selectedElements)
@@ -248,6 +257,18 @@ export default function TableBrowser(props: {
       }
     },
     [props.currentNetworkId, rows, currentTable, tables, sort],
+  )
+
+  const onColMoved = React.useCallback(
+    (startIndex: number, endIndex: number): void => {
+      moveColumn(
+        networkId,
+        currentTable === nodeTable ? 'node' : 'edge',
+        startIndex,
+        endIndex,
+      )
+    },
+    [modelColumns],
   )
 
   const onItemHovered = React.useCallback(
@@ -634,7 +655,10 @@ export default function TableBrowser(props: {
             getCellsForSelection={true}
             onSearchClose={onSearchClose}
             onHeaderClicked={onHeaderClicked}
+            onColumnMoved={onColMoved}
             onItemHovered={(e) => onItemHovered(e.location)}
+            overscrollX={200}
+            overscrollY={200}
             width={props.width}
             height={props.height}
             getCellContent={getContent}
@@ -659,7 +683,10 @@ export default function TableBrowser(props: {
             onPaste={true}
             onSearchClose={onSearchClose}
             onHeaderClicked={onHeaderClicked}
+            onColumnMoved={onColMoved}
             onItemHovered={(e) => onItemHovered(e.location)}
+            overscrollX={200}
+            overscrollY={200}
             width={props.width}
             height={props.height}
             getCellContent={getContent}
