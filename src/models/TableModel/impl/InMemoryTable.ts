@@ -8,10 +8,9 @@ import { ValueTypeName } from '../ValueTypeName'
 import { CxValue } from '../../CxModel/Cx2/CxValue'
 import { AttributeDeclaration } from '../../CxModel/Cx2/CoreAspects/AttributeDeclarations'
 import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
-import { cloneDeep } from 'lodash'
 export const createTable = (id: IdType): Table => ({
   id,
-  columns: new Map<AttributeName, Column>(),
+  columns: [],
   rows: new Map<IdType, Record<AttributeName, ValueType>>(),
 })
 
@@ -46,8 +45,10 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
       nodeAttributeTranslationMap[attrDef.a] = attrName
     }
 
-    nodeTable.columns.set(attrName, columnDef)
+    nodeTable.columns.push(columnDef)
   })
+
+  nodeTable.columns.sort((a, b) => a.name.localeCompare(b.name))
 
   const edgeAttrDefs = attrDefs.edges
   if (edgeAttrDefs !== undefined) {
@@ -61,9 +62,11 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
         edgeAttributeTranslationMap[attrDef.a] = attrName
       }
 
-      edgeTable.columns.set(attrName, columnDef)
+      edgeTable.columns.push(columnDef)
     })
   }
+
+  edgeTable.columns.sort((a, b) => a.name.localeCompare(b.name))
 
   nodeAttr.forEach((attr, nodeId) => {
     const processedAttributes: Record<AttributeName, ValueType> = {}
@@ -150,41 +153,4 @@ export const insertRows = (
 ): Table => {
   idRowPairs.forEach((idRow) => table.rows.set(idRow[0], idRow[1]))
   return table
-}
-
-export const editColumnName = (
-  table: Table,
-  oldName: string,
-  newName: string,
-): Table => {
-  const newTable = cloneDeep(table)
-  const column = newTable.columns.get(oldName)
-  if (column != null) {
-    newTable.columns.delete(oldName)
-    newTable.columns.set(newName, column)
-  }
-
-  Array.from(newTable.rows.values()).forEach((row) => {
-    const value = row[oldName]
-    if (value != null) {
-      delete row[oldName]
-      row[newName] = value
-    }
-  })
-  return newTable
-}
-
-export const deleteTableColumn = (
-  table: Table,
-  columnName: AttributeName,
-): Table => {
-  const updatedColumns = new Map(table.columns)
-  updatedColumns.delete(columnName)
-
-  const updatedRows = new Map(table.rows)
-  for (const row of updatedRows.values()) {
-    delete row[columnName]
-  }
-
-  return { ...table, columns: updatedColumns, rows: updatedRows }
 }

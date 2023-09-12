@@ -106,7 +106,9 @@ function MappingFormContent(props: {
         break
       }
       case MappingFunctionType.Continuous: {
-        const attributeDataType = currentTable.columns.get(attribute)?.type
+        const attributeDataType = currentTable.columns.find(
+          (c) => c.name === attribute,
+        )?.type
 
         if (
           attributeDataType != null &&
@@ -150,7 +152,9 @@ function MappingFormContent(props: {
   const handleMappingTypeChange = (
     nextMapping: MappingFunctionType | '',
   ): void => {
-    const attributeType = currentTable.columns.get(column)?.type
+    const attributeType = currentTable.columns.find(
+      (c) => c.name === column,
+    )?.type
     if (nextMapping !== '' && column !== '' && attributeType != null) {
       // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
 
@@ -169,7 +173,10 @@ function MappingFormContent(props: {
   }
 
   const handleColumnChange = (nextAttribute: AttributeName): void => {
-    const nextAttributeType = currentTable.columns.get(nextAttribute)?.type
+    const nextAttributeType = currentTable.columns.find(
+      (c) => c.name === column,
+    )?.type
+
     if (
       mappingType !== '' &&
       nextAttribute !== '' &&
@@ -197,8 +204,12 @@ function MappingFormContent(props: {
   const validColumns =
     mappingType !== ''
       ? columns.filter((c) => {
-        return typesCanBeMapped(mappingType, c.type, props.visualProperty.type)
-      })
+          return typesCanBeMapped(
+            mappingType,
+            c.type,
+            props.visualProperty.type,
+          )
+        })
       : columns
   const validColumnNames = validColumns.map((c) => c.name)
 
@@ -207,7 +218,9 @@ function MappingFormContent(props: {
       if (column === '') {
         return true
       } else {
-        const attributeType = currentTable.columns.get(column)?.type
+        const attributeType = currentTable.columns.find(
+          (c) => c.name === column,
+        )?.type
         return (
           attributeType != null &&
           typesCanBeMapped(
@@ -221,12 +234,12 @@ function MappingFormContent(props: {
   )
 
   const mappingDimensions: Record<MappingFunctionType | '', [string, string]> =
-  {
-    [MappingFunctionType.Discrete]: ['400px', '600px'],
-    [MappingFunctionType.Continuous]: ['650px', 'auto'],
-    [MappingFunctionType.Passthrough]: ['400px', 'auto'],
-    '': ['400px', '200px'],
-  }
+    {
+      [MappingFunctionType.Discrete]: ['400px', '600px'],
+      [MappingFunctionType.Continuous]: ['650px', 'auto'],
+      [MappingFunctionType.Passthrough]: ['400px', 'auto'],
+      '': ['400px', '200px'],
+    }
   return (
     <Box
       sx={{
@@ -294,9 +307,11 @@ function MappingFormContent(props: {
                 if (validColumnNames.includes(c.name)) {
                   return columnMenuItem
                 } else {
-                  const invalidColumnTooltipStr = `${mappingType} mapping functions${c.name !== '' ? ` on column '${c.name}' ` : ' '
-                    }cannot be applied to property ${props.visualProperty.displayName
-                    }`
+                  const invalidColumnTooltipStr = `${mappingType} mapping functions${
+                    c.name !== '' ? ` on column '${c.name}' ` : ' '
+                  }cannot be applied to property ${
+                    props.visualProperty.displayName
+                  }`
 
                   return (
                     <Tooltip key={c.name} title={invalidColumnTooltipStr}>
@@ -332,9 +347,11 @@ function MappingFormContent(props: {
                 if (validMappings.includes(mappingFnType)) {
                   return mappingFnMenuItem
                 } else {
-                  const invalidMappingTooltipStr = `${mappingFnType} mapping functions${column !== '' ? ` on column '${column}' ` : ' '
-                    }cannot be applied to property ${props.visualProperty.displayName
-                    }`
+                  const invalidMappingTooltipStr = `${mappingFnType} mapping functions${
+                    column !== '' ? ` on column '${column}' ` : ' '
+                  }cannot be applied to property ${
+                    props.visualProperty.displayName
+                  }`
                   return (
                     <Tooltip
                       key={mappingFnType}

@@ -37,7 +37,7 @@ export function ContinuousMappingForm(props: {
   const table = group === VisualPropertyGroup.Node ? nodeTable : edgeTable
 
   const { attribute } = m
-  const attributeType = table.columns.get(attribute)?.type
+  const attributeType = table.columns.find((c) => c.name === attribute)?.type
 
   const { min, max, controlPoints } = m
 
