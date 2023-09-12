@@ -27,11 +27,11 @@ import {
 interface TableFormProps {
   column: TableColumn
   open: boolean
-  error: string | undefined
+  error?: string
   onClose: () => void
   onSubmit: (
     newColumnName: string,
-    mappingUpdateType: 'rename' | 'delete' | undefined,
+    mappingUpdateType?: 'rename' | 'delete',
   ) => void
   dependentVisualProperties: Array<VisualProperty<VisualPropertyValueType>>
 }
@@ -39,15 +39,15 @@ interface TableFormProps {
 interface DeleteTableColumnFormProps {
   column: TableColumn
   open: boolean
-  error: string | undefined
+  error?: string
   onClose: () => void
-  onSubmit: (mappingUpdateType: 'delete' | undefined) => void
+  onSubmit: (mappingUpdateType?: 'delete') => void
   dependentVisualProperties: Array<VisualProperty<VisualPropertyValueType>>
 }
 
 interface CreateTableColumnFormProps {
   open: boolean
-  error: string | undefined
+  error?: string
   onClose: () => void
   onSubmit: (
     newColumnName: string,
