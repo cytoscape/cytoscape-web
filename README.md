@@ -34,6 +34,13 @@ For example, if the branch is development, the url is <https:development--incred
 
 It usually takes few minutes to reflect changes.
 
+## Build for production
+
+`export NODE_ENV=production`
+
+`npm run build`
+
+
 ## Troubleshooting
 This section lists solutions to problems you might encounter with Cytoscape web.
 

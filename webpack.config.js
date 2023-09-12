@@ -3,11 +3,16 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const ESLintPlugin = require('eslint-webpack-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
+const TerserPlugin = require('terser-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
 const config = require('./src/assets/config.json')
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 module.exports = {
+  mode: isProduction ? 'production' : 'development', // Set mode to production or development
   entry: path.resolve(__dirname, './src/index.tsx'),
-  devtool: 'inline-source-map',
+  devtool: isProduction ? false :'inline-source-map',
   module: {
     rules: [
       // look for tsx files to transform into the bundle
@@ -71,10 +76,16 @@ module.exports = {
         }),
       ]
       : []),
+      ...(isProduction ? [] : [new ESLintPlugin({ extensions: ['ts', 'tsx'] })]),  
   ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other
   // when source code changes, only the source code bundle will need to be updated, not the vendor code
   optimization: {
+    minimize: isProduction, // Only minimize in production
+    minimizer: [
+      new TerserPlugin(),
+      new CssMinimizerPlugin(),
+    ],
     moduleIds: 'deterministic',
     runtimeChunk: 'single',
     splitChunks: {
