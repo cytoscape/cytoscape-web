@@ -31,6 +31,7 @@ import {
   CellClickedEventArgs,
   DataEditorRef,
   HeaderClickedEventArgs,
+  GridColumn,
 } from '@glideapps/glide-data-grid'
 
 import {
@@ -55,6 +56,7 @@ export interface TableColumn {
   title: string
   type: ValueTypeName
   index: number
+  width?: number
 }
 
 function TabPanel(props: TabPanelProps): React.ReactElement {
@@ -163,14 +165,33 @@ export default function TableBrowser(props: {
   const modelColumns: Column[] =
     currentTable?.columns != null ? currentTable?.columns : []
 
-  const columns = modelColumns.map((col, index) => ({
-    id: col.name,
-    title: col.name,
-    type: col.type,
-    index,
-  }))
+  const [columns, setColumns] = React.useState<TableColumn[]>(
+    modelColumns.map((col, index) => ({
+      id: col.name,
+      title: col.name,
+      type: col.type,
+      index,
+      width: 100,
+    })),
+  )
 
-  console.log(columns)
+  React.useEffect(() => {
+    const existingColumnWidths: any = {}
+    columns.forEach((c) => (existingColumnWidths[c.id] = c.width))
+    const newColumns = modelColumns.map((c, index) => {
+      return {
+        id: c.name,
+        title: c.name,
+        type: c.type,
+        index,
+        width: existingColumnWidths[c.name] ?? undefined,
+      }
+    })
+
+    setColumns(newColumns)
+  }, [modelColumns])
+
+  // console.log(columns)
 
   const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
   const selectedElementsSet = new Set(selectedElements)
@@ -287,10 +308,24 @@ export default function TableBrowser(props: {
     [props.currentNetworkId, currentTable, tables],
   )
 
+  const onColumnResize = React.useCallback(
+    (
+      column: GridColumn,
+      newSize: number,
+      colIndex: number,
+      newSizeWithGrow: number,
+    ): void => {
+      const col = columns[colIndex]
+      const newCol = { ...col, width: newSize }
+      const newColumns = [...columns]
+      newColumns[colIndex] = newCol
+      setColumns(newColumns)
+    },
+    [],
+  )
+
   const onCellContextMenu = React.useCallback(
     (cell: Item, event: CellClickedEventArgs): void => {
-      console.log(event)
-
       event.preventDefault()
     },
     [props.currentNetworkId, currentTable, tables],
@@ -333,7 +368,6 @@ export default function TableBrowser(props: {
     (col: number, event: HeaderClickedEventArgs): void => {
       setSelectedColumnIndex(col)
       setSelectedCellXY(undefined)
-      console.log(selectedColumnIndex)
     },
     [],
   )
@@ -580,7 +614,6 @@ export default function TableBrowser(props: {
             )
           } else {
             if (!valueIsValid) {
-              console.log(dataType, value)
               setCreateColumnFormError(
                 `Default value ${value} is not a valid ${dataType}.  Please enter a valid ${dataType}`,
               )
@@ -659,6 +692,7 @@ export default function TableBrowser(props: {
             onItemHovered={(e) => onItemHovered(e.location)}
             overscrollX={200}
             overscrollY={200}
+            onColumnResize={onColumnResize}
             width={props.width}
             height={props.height}
             getCellContent={getContent}
@@ -687,6 +721,7 @@ export default function TableBrowser(props: {
             onItemHovered={(e) => onItemHovered(e.location)}
             overscrollX={200}
             overscrollY={200}
+            onColumnResize={onColumnResize}
             width={props.width}
             height={props.height}
             getCellContent={getContent}
