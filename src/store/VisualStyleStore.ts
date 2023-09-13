@@ -68,6 +68,15 @@ interface UpdateVisualStyleAction {
     max: ContinuousFunctionControlPoint,
     controlPoints: ContinuousFunctionControlPoint[],
   ) => void
+  setMapping: (
+    networkId: IdType,
+    vpName: VisualPropertyName,
+    mapping:
+      | DiscreteMappingFunction
+      | ContinuousMappingFunction
+      | PassthroughMappingFunction
+      | undefined,
+  ) => void
   createContinuousMapping: (
     networkId: IdType,
     vpName: VisualPropertyName,
@@ -370,6 +379,13 @@ export const useVisualStyleStore = create(
         set((state) => {
           const vp = state.visualStyles[networkId][vpName]
           delete vp.mapping
+          return state
+        })
+      },
+      setMapping(networkId, vpName, mapping) {
+        set((state) => {
+          const vp = state.visualStyles[networkId][vpName]
+          vp.mapping = mapping
           return state
         })
       },
