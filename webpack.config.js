@@ -85,7 +85,22 @@ module.exports = {
   optimization: {
     minimize: isProduction, // Only minimize in production
     minimizer: [
-      new TerserPlugin(),
+      new TerserPlugin({
+        // Include your own code to apply the plugin.
+        include: /\/src/,
+
+        // Disable source maps for vendor code by excluding them
+        exclude: /\/node_modules/,
+
+        terserOptions: {
+          // your custom options for terser
+          compress: {
+            drop_console: true,
+          },
+          sourceMap: true, // Enable source map
+        },
+        extractComments: false, // remove comments from output
+      }),
       new CssMinimizerPlugin(),
     ],
     moduleIds: 'deterministic',
