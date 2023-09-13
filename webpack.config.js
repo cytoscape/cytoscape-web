@@ -5,6 +5,7 @@ const ESLintPlugin = require('eslint-webpack-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
 const TerserPlugin = require('terser-webpack-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
+const CompressionWebpackPlugin = require('compression-webpack-plugin');
 const config = require('./src/assets/config.json')
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -77,6 +78,7 @@ module.exports = {
       ]
       : []),
       ...(isProduction ? [] : [new ESLintPlugin({ extensions: ['ts', 'tsx'] })]),  
+      ...(isProduction ? [new CompressionWebpackPlugin()] : []),
   ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other
   // when source code changes, only the source code bundle will need to be updated, not the vendor code
