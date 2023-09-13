@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { Search } from '../models/FilterModel/Search'
+import { Search, SearchOptions } from '../models/FilterModel/Search'
 import { IdType } from '../models/IdType'
+import { GraphObjectType } from '../models/NetworkModel'
 
 interface FilterState<T> {
   search: Search<T>
@@ -9,8 +10,11 @@ interface FilterState<T> {
 
 interface FilterAction {
   setQuery: (query: string) => void
-  getIndex: <T>(networkId: IdType) => T
-  setIndex: <T>(networkId: string, index: T) => void
+  setIndexedColumns: (type: GraphObjectType, columns: string[]) => void
+  getIndex: <T>(networkId: IdType, type: GraphObjectType) => T
+  setIndex: <T>(networkId: string, type: GraphObjectType, index: T) => void
+  setConverter: (converter: (result: any) => IdType[]) => void
+  setOptions: (options: SearchOptions) => void
 }
 
 type FilterStore = FilterState<any> & FilterAction
@@ -19,12 +23,24 @@ export const useFilterStore = create(
   immer<FilterStore>((set) => ({
     search: {
       query: '',
-      exactMatch: true,
+      indexedColumns: {
+        node: [],
+        edge: [],
+      },
+      options: {
+        exact: true,
+        operator: 'OR',
+      },
       // Dummy function
-      toSelection: (result: any[]) => {
+      convertResults: (result: any[]) => {
         return result
       },
       index: {},
+    },
+    setConverter: (converter: (result: any) => IdType[]) => {
+      set((state) => {
+        state.search.convertResults = converter
+      })
     },
     setQuery: (query: string) => {
       set((state) => {
@@ -34,9 +50,28 @@ export const useFilterStore = create(
     getIndex: <T>(networkId: IdType) => {
       return (set as any).getState().search.index[networkId] as T
     },
-    setIndex: <T>(networkId: string, index: T) => {
+    setIndex: <T>(networkId: string, type: GraphObjectType, index: T) => {
       set((state) => {
-        state.search.index[networkId] = index
+        if (type === GraphObjectType.NODE) {
+          state.search.index[networkId].node = index
+        }
+        if (type === GraphObjectType.EDGE) {
+          state.search.index[networkId].edge = index
+        }
+      })
+    },
+    setOptions: (options: SearchOptions) => {
+      set((state) => {
+        state.search.options = options
+      })
+    },
+    setIndexedColumns(type, columns) {
+      set((state) => {
+        if (type === GraphObjectType.NODE) {
+          state.search.indexedColumns.node = columns
+        } else if (type === GraphObjectType.EDGE) {
+          state.search.indexedColumns.edge = columns
+        }
       })
     },
   })),

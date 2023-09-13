@@ -9,6 +9,8 @@ import { ValueType } from '../../../models/TableModel'
 import Fuse from 'fuse.js'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useFilterStore } from '../../../store/FilterStore'
+import { GraphObjectType } from '../../../models/NetworkModel'
+import { Indices } from '../../../models/FilterModel/Search'
 
 export const SearchBox = (): JSX.Element => {
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -16,15 +18,18 @@ export const SearchBox = (): JSX.Element => {
   )
   // Search query stored in the global store
   const query: string = useFilterStore((state) => state.search.query)
+
   const setQuery: (query: string) => void = useFilterStore(
     (state) => state.setQuery,
   )
 
-  const index: Fuse<Record<string, ValueType>> = useFilterStore(
-    (state) => state.search.index[currentNetworkId],
-  )
+  const indexRecord: Record<
+    IdType,
+    Indices<Fuse<Record<string, ValueType>>>
+  > = useFilterStore((state) => state.search.index)
   const setIndex: (
     networkId: IdType,
+    type: GraphObjectType,
     index: Fuse<Record<string, ValueType>>,
   ) => void = useFilterStore((state) => state.setIndex)
 
@@ -39,6 +44,8 @@ export const SearchBox = (): JSX.Element => {
   }
 
   const startSearch = (): void => {
+    const indices: Indices = indexRecord[currentNetworkId]
+    const index = indices[GraphObjectType.NODE]
     if (index === undefined) {
       return
     }
@@ -46,7 +53,7 @@ export const SearchBox = (): JSX.Element => {
     // Clear
     exclusiveSelect(currentNetworkId, [], [])
 
-    const result = index.search(query)
+    const result = index[currentNetworkId][GraphObjectType.NODE].search(query)
     const toBeSelected: string[] = []
     result.forEach((r) => {
       const objectId: string = r.item.id as string
@@ -57,7 +64,7 @@ export const SearchBox = (): JSX.Element => {
   }
 
   useEffect(() => {
-    if (nodeTable === undefined || index !== undefined) {
+    if (nodeTable === undefined || indexRecord !== undefined) {
       return
     }
     try {
@@ -78,7 +85,7 @@ export const SearchBox = (): JSX.Element => {
         keys,
       }
       const fuse = new Fuse(list, options)
-      setIndex(currentNetworkId, fuse)
+      setIndex(currentNetworkId, GraphObjectType.NODE, fuse)
       console.log(
         '-------------------------NODE TABLE INDEX Updated',
         nodeTable,
