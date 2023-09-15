@@ -1,6 +1,8 @@
 import Popover from '@mui/material/Popover'
 import Typography from '@mui/material/Typography'
 import { Switch } from '@mui/material'
+import { SearchTargetSelector } from './SearchTargetSelector'
+import { SearchOperatorSelector } from './SearchOperatorSelector'
 
 interface SettingsProps {
   open: boolean
@@ -27,25 +29,23 @@ export const Settings = ({
         horizontal: 'left',
       }}
     >
-      <div style={{ padding: '16px' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '1rem',
+        }}
+      >
         <Typography variant="h6" gutterBottom>
-          Settings
+          Search Settings:
         </Typography>
-        <Typography variant="subtitle1" gutterBottom>
-          Display Settings
-        </Typography>
+        <SearchOperatorSelector />
+
         <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="body1">Fuzzy Search</Typography>
           <Switch />
-          <Typography variant="body1" style={{ marginLeft: '8px' }}>
-            Option 1
-          </Typography>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Switch />
-          <Typography variant="body1" style={{ marginLeft: '8px' }}>
-            Option 2
-          </Typography>
-        </div>
+        <SearchTargetSelector />
       </div>
     </Popover>
   )

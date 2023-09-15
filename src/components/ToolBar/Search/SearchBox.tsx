@@ -44,7 +44,9 @@ export const SearchBox = (): JSX.Element => {
   }
 
   const startSearch = (): void => {
-    const indices: Indices = indexRecord[currentNetworkId]
+    // Node and edge
+    const indices: Indices<Fuse<Record<string, ValueType>>> =
+      indexRecord[currentNetworkId]
     const index = indices[GraphObjectType.NODE]
     if (index === undefined) {
       return
@@ -53,9 +55,9 @@ export const SearchBox = (): JSX.Element => {
     // Clear
     exclusiveSelect(currentNetworkId, [], [])
 
-    const result = index[currentNetworkId][GraphObjectType.NODE].search(query)
+    const result = indices[GraphObjectType.NODE].search(query)
     const toBeSelected: string[] = []
-    result.forEach((r) => {
+    result.forEach((r: any) => {
       const objectId: string = r.item.id as string
       toBeSelected.push(objectId)
     })

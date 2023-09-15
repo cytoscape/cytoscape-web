@@ -10,7 +10,11 @@ interface FilterState<T> {
 
 interface FilterAction {
   setQuery: (query: string) => void
-  setIndexedColumns: (type: GraphObjectType, columns: string[]) => void
+  setIndexedColumns: (
+    networkId: IdType,
+    type: GraphObjectType,
+    columns: string[],
+  ) => void
   getIndex: <T>(networkId: IdType, type: GraphObjectType) => T
   setIndex: <T>(networkId: string, type: GraphObjectType, index: T) => void
   setConverter: (converter: (result: any) => IdType[]) => void
@@ -23,10 +27,7 @@ export const useFilterStore = create(
   immer<FilterStore>((set) => ({
     search: {
       query: '',
-      indexedColumns: {
-        node: [],
-        edge: [],
-      },
+      indexedColumns: {},
       options: {
         exact: true,
         operator: 'OR',
@@ -65,12 +66,12 @@ export const useFilterStore = create(
         state.search.options = options
       })
     },
-    setIndexedColumns(type, columns) {
+    setIndexedColumns(networkId, type, columns) {
       set((state) => {
         if (type === GraphObjectType.NODE) {
-          state.search.indexedColumns.node = columns
+          state.search.indexedColumns[networkId].node = columns
         } else if (type === GraphObjectType.EDGE) {
-          state.search.indexedColumns.edge = columns
+          state.search.indexedColumns[networkId].edge = columns
         }
       })
     },
