@@ -1,18 +1,25 @@
 import { StyledInputBase } from './StyledInputBase'
 import { Search } from './Search'
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SearchControls } from './SearchControls'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import { useTableStore } from '../../../store/TableStore'
-import { ValueType } from '../../../models/TableModel'
+import { Table, ValueType } from '../../../models/TableModel'
 import Fuse from 'fuse.js'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useFilterStore } from '../../../store/FilterStore'
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { Indices } from '../../../models/FilterModel/Search'
+import { createFuseIndex } from './SearchUtils'
 
 export const SearchBox = (): JSX.Element => {
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+
+  const baseRef = useRef<HTMLDivElement>(null)
+  const handleOpenSettings = (): void => {
+    setAnchorEl(baseRef.current)
+  }
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -34,7 +41,8 @@ export const SearchBox = (): JSX.Element => {
   ) => void = useFilterStore((state) => state.setIndex)
 
   const tables = useTableStore((state) => state.tables[currentNetworkId])
-  const nodeTable = tables?.nodeTable
+  const nodeTable: Table = tables?.nodeTable
+  const edgeTable: Table = tables?.edgeTable
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
 
@@ -47,6 +55,7 @@ export const SearchBox = (): JSX.Element => {
     // Node and edge
     const indices: Indices<Fuse<Record<string, ValueType>>> =
       indexRecord[currentNetworkId]
+
     const index = indices[GraphObjectType.NODE]
     if (index === undefined) {
       return
@@ -55,7 +64,7 @@ export const SearchBox = (): JSX.Element => {
     // Clear
     exclusiveSelect(currentNetworkId, [], [])
 
-    const result = indices[GraphObjectType.NODE].search(query)
+    const result = index.search(query)
     const toBeSelected: string[] = []
     result.forEach((r: any) => {
       const objectId: string = r.item.id as string
@@ -66,36 +75,27 @@ export const SearchBox = (): JSX.Element => {
   }
 
   useEffect(() => {
-    if (nodeTable === undefined || indexRecord !== undefined) {
+    if (currentNetworkId === undefined || currentNetworkId === '') {
       return
     }
+
+    if (nodeTable === undefined || edgeTable === undefined) {
+      return
+    }
+
+    const currentIndex = indexRecord[currentNetworkId]
     try {
-      const list = Array<Record<string, ValueType>>()
-      nodeTable.rows.forEach((row: Record<string, ValueType>, key: string) => {
-        list.push({ id: key, ...row })
-      })
+      if (currentIndex === undefined) {
+        const nodeIndex = createFuseIndex(nodeTable)
+        setIndex(currentNetworkId, GraphObjectType.NODE, nodeIndex)
 
-      const keys: string[] = ['id']
-      nodeTable.columns.forEach((column) => keys.push(column.name))
-
-      const options = {
-        includeScore: true,
-        includeMatches: true,
-        threshold: 0.0,
-        useExtendedSearch: true,
-        ignoreLocation: true,
-        keys,
+        const edgeIndex = createFuseIndex(edgeTable)
+        setIndex(currentNetworkId, GraphObjectType.EDGE, edgeIndex)
       }
-      const fuse = new Fuse(list, options)
-      setIndex(currentNetworkId, GraphObjectType.NODE, fuse)
-      console.log(
-        '-------------------------NODE TABLE INDEX Updated',
-        nodeTable,
-      )
     } catch (error) {
       console.log('Error indexing', error)
     }
-  }, [nodeTable])
+  }, [nodeTable, edgeTable])
 
   // Execute search when enter key is pressed
   const handleKeyDown = (
@@ -107,7 +107,7 @@ export const SearchBox = (): JSX.Element => {
   }
 
   return (
-    <Search>
+    <Search ref={baseRef}>
       <StyledInputBase
         placeholder="Search current network"
         inputProps={{ 'aria-label': 'search' }}
@@ -119,6 +119,9 @@ export const SearchBox = (): JSX.Element => {
         searchTerm={query}
         startSearch={startSearch}
         clearSearch={clearSearch}
+        anchorEl={anchorEl}
+        setAnchorEl={setAnchorEl}
+        handleOpenSettings={handleOpenSettings}
       />
     </Search>
   )

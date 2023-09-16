@@ -14,11 +14,11 @@ export const SearchOperatorSelector = (): JSX.Element => {
 
   return (
     <FormControl>
-      <FormLabel id="demo-row-radio-buttons-group-label">Operator</FormLabel>
+      <FormLabel id="operator-selector-label">Operator</FormLabel>
       <RadioGroup
         row
-        aria-labelledby="demo-row-radio-buttons-group-label"
-        name="row-radio-buttons-group"
+        aria-labelledby="operator-selector-label"
+        name="operator-selector-group"
         value={value}
         onChange={handleChange}
       >

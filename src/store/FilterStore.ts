@@ -24,7 +24,7 @@ interface FilterAction {
 type FilterStore = FilterState<any> & FilterAction
 
 export const useFilterStore = create(
-  immer<FilterStore>((set) => ({
+  immer<FilterStore>((set, get) => ({
     search: {
       query: '',
       indexedColumns: {},
@@ -53,11 +53,25 @@ export const useFilterStore = create(
     },
     setIndex: <T>(networkId: string, type: GraphObjectType, index: T) => {
       set((state) => {
-        if (type === GraphObjectType.NODE) {
-          state.search.index[networkId].node = index
-        }
-        if (type === GraphObjectType.EDGE) {
-          state.search.index[networkId].edge = index
+        const indexObject = get().search.index[networkId]
+        if (indexObject === undefined) {
+          if (type === GraphObjectType.NODE) {
+            state.search.index[networkId] = {
+              node: index,
+              edge: undefined,
+            }
+          } else if (type === GraphObjectType.EDGE) {
+            state.search.index[networkId] = {
+              node: undefined,
+              edge: index,
+            }
+          }
+        } else {
+          if (type === GraphObjectType.NODE) {
+            state.search.index[networkId].node = index
+          } else if (type === GraphObjectType.EDGE) {
+            state.search.index[networkId].edge = index
+          }
         }
       })
     },

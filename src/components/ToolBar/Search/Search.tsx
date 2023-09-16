@@ -9,7 +9,7 @@ export const Search = styled('div')(({ theme }) => ({
   },
   marginLeft: 0,
   height: 32,
-  width: '25vw',
+  width: '30vw',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',

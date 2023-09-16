@@ -1,20 +1,26 @@
 import Popover from '@mui/material/Popover'
-import Typography from '@mui/material/Typography'
-import { Switch } from '@mui/material'
+import { Theme, useTheme } from '@mui/material'
 import { SearchTargetSelector } from './SearchTargetSelector'
 import { SearchOperatorSelector } from './SearchOperatorSelector'
+import { SearchButtons } from './SearchButtons'
+import Grid from '@mui/material/Unstable_Grid2'
+import { SearchModeSelector } from './SearchModeSelector'
 
 interface SettingsProps {
   open: boolean
-  anchorEl: HTMLButtonElement | null
-  setAnchorEl: (anchorEl: HTMLButtonElement | null) => void
+  anchorEl: HTMLElement | null
+  setAnchorEl: (anchorEl: HTMLElement | null) => void
+  startSearch: () => void
 }
 
 export const Settings = ({
   open,
   anchorEl,
   setAnchorEl,
+  startSearch,
 }: SettingsProps): JSX.Element => {
+  const theme: Theme = useTheme()
+
   const handleClose = (): void => {
     setAnchorEl(null)
   }
@@ -29,24 +35,31 @@ export const Settings = ({
         horizontal: 'left',
       }}
     >
-      <div
-        style={{
+      <Grid
+        container
+        spacing={0}
+        sx={{
           display: 'flex',
           flexDirection: 'column',
-          padding: '1rem',
+          padding: theme.spacing(2),
+          width: '30vw',
         }}
       >
-        <Typography variant="h6" gutterBottom>
-          Search Settings:
-        </Typography>
-        <SearchOperatorSelector />
-
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Typography variant="body1">Fuzzy Search</Typography>
-          <Switch />
-        </div>
-        <SearchTargetSelector />
-      </div>
+        <Grid container xs={12}>
+          <Grid xs={4}>
+            <SearchOperatorSelector />
+          </Grid>
+          <Grid xs={4}>
+            <SearchTargetSelector />
+          </Grid>
+          <Grid xs={4}>
+            <SearchModeSelector />
+          </Grid>
+        </Grid>
+        <Grid container xs={12}>
+          <SearchButtons handleClose={handleClose} startSearch={startSearch} />
+        </Grid>
+      </Grid>
     </Popover>
   )
 }

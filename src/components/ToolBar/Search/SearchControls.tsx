@@ -2,13 +2,15 @@ import { Box, IconButton } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import TuneIcon from '@mui/icons-material/Tune'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { useState } from 'react'
 import { Settings } from './Settings'
 
 interface SearchControlsProps {
   searchTerm: string
   startSearch: () => void
   clearSearch: () => void
+  anchorEl: HTMLElement | null
+  setAnchorEl: (anchorEl: HTMLElement | null) => void
+  handleOpenSettings: () => void
 }
 
 const baseStyle = {
@@ -23,15 +25,10 @@ export const SearchControls = ({
   searchTerm,
   startSearch,
   clearSearch,
+  anchorEl,
+  setAnchorEl,
+  handleOpenSettings,
 }: SearchControlsProps): JSX.Element => {
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null)
-
-  const handleOpenSettings = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    setAnchorEl(event.currentTarget)
-  }
-
   const open = Boolean(anchorEl)
 
   return (
@@ -48,7 +45,12 @@ export const SearchControls = ({
           <TuneIcon />
         </IconButton>
       </Box>
-      <Settings open={open} anchorEl={anchorEl} setAnchorEl={setAnchorEl} />
+      <Settings
+        open={open}
+        anchorEl={anchorEl}
+        setAnchorEl={setAnchorEl}
+        startSearch={startSearch}
+      />
     </>
   )
 }
