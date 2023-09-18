@@ -54,3 +54,16 @@ export const createFuseIndex = (
 
   return new Fuse(list, options)
 }
+
+export const filterColumns = (
+  columns: Column[],
+  type: ValueTypeName,
+): Set<string> => {
+  const filteredColumns: Set<string> = new Set()
+  columns.forEach((column: Column) => {
+    if (column.type === type) {
+      filteredColumns.add(column.name)
+    }
+  })
+  return filteredColumns
+}

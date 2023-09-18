@@ -82,10 +82,25 @@ export const useFilterStore = create(
     },
     setIndexedColumns(networkId, type, columns) {
       set((state) => {
-        if (type === GraphObjectType.NODE) {
-          state.search.indexedColumns[networkId].node = columns
-        } else if (type === GraphObjectType.EDGE) {
-          state.search.indexedColumns[networkId].edge = columns
+        const indexedColumns = get().search.indexedColumns[networkId]
+        if (indexedColumns === undefined) {
+          if (type === GraphObjectType.NODE) {
+            state.search.indexedColumns[networkId] = {
+              node: columns,
+              edge: [],
+            }
+          } else if (type === GraphObjectType.EDGE) {
+            state.search.indexedColumns[networkId] = {
+              node: [],
+              edge: columns,
+            }
+          }
+        } else {
+          if (type === GraphObjectType.NODE) {
+            state.search.indexedColumns[networkId].node = columns
+          } else if (type === GraphObjectType.EDGE) {
+            state.search.indexedColumns[networkId].edge = columns
+          }
         }
       })
     },
