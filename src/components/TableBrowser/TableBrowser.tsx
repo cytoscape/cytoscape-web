@@ -150,6 +150,7 @@ export default function TableBrowser(props: {
 
   const { selectedNodes, selectedEdges } =
     useViewModelStore((state) => state.viewModels[networkId]) ?? {}
+  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
@@ -182,7 +183,6 @@ export default function TableBrowser(props: {
       title: col.name,
       type: col.type,
       index,
-      width: 100,
     })),
   )
 
@@ -341,7 +341,7 @@ export default function TableBrowser(props: {
       newColumns[colIndex] = newCol
       setColumns(newColumns)
     },
-    [],
+    [columns],
   )
 
   const onCellContextMenu = React.useCallback(
@@ -598,7 +598,20 @@ export default function TableBrowser(props: {
                 )
               }}
             >
-              Apply value to selected nodes
+              {`Apply value to selected ${
+                currentTable === nodeTable ? 'nodes' : 'edges'
+              }`}
+            </Button>
+            <Button
+              onClick={() => {
+                const rowIndex = selectedCell[1]
+                const rowData = rows?.[rowIndex]
+                if (rowData?.id !== undefined) {
+                  exclusiveSelect(props.currentNetworkId, [rowData.id], [])
+                }
+              }}
+            >
+              {`Select ${currentTable === nodeTable ? 'nodes' : 'edges'}`}{' '}
             </Button>
           </ButtonGroup>
         </Box>
