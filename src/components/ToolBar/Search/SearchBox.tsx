@@ -20,6 +20,13 @@ import { createFuseIndex, filterColumns } from './SearchUtils'
 export const SearchBox = (): JSX.Element => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
+  const [searchTargets, setSearchTargets] = useState<
+    Record<GraphObjectType, boolean>
+  >({
+    [GraphObjectType.NODE]: true,
+    [GraphObjectType.EDGE]: false,
+  })
+
   const baseRef = useRef<HTMLDivElement>(null)
   const handleOpenSettings = (): void => {
     setAnchorEl(baseRef.current)
@@ -78,8 +85,10 @@ export const SearchBox = (): JSX.Element => {
     const edgeColumnsToBeSearched: string[] =
       indexedColumns[currentNetworkId].edge
 
-    const index = indices[GraphObjectType.NODE]
-    if (index === undefined) {
+    const nodeIndex = indices[GraphObjectType.NODE]
+    const edgeIndex = indices[GraphObjectType.EDGE]
+
+    if (nodeIndex === undefined || edgeIndex === undefined) {
       return
     }
 
@@ -98,11 +107,18 @@ export const SearchBox = (): JSX.Element => {
     }
 
     // Switch between AND or OR search operators
-    const result = index.search(modifiedQuery)
+    const result = nodeIndex.search(modifiedQuery)
+    const edgeResult = edgeIndex.search(modifiedQuery)
+
     const toBeSelected: string[] = []
+    const edgeToBeSelected: string[] = []
     result.forEach((r: any) => {
       const objectId: string = r.item.id as string
       toBeSelected.push(objectId)
+    })
+    edgeResult.forEach((r: any) => {
+      const objectId: string = r.item.id as string
+      edgeToBeSelected.push(objectId)
     })
 
     console.log(
@@ -111,7 +127,7 @@ export const SearchBox = (): JSX.Element => {
       nodeColumnsToBeSearched,
       edgeColumnsToBeSearched,
     )
-    exclusiveSelect(currentNetworkId, toBeSelected, [])
+    exclusiveSelect(currentNetworkId, toBeSelected, edgeToBeSelected)
   }
 
   useEffect(() => {
@@ -129,11 +145,11 @@ export const SearchBox = (): JSX.Element => {
     if (currentIndexedColumns === undefined) {
       const nodeColumns = filterColumns(
         Array.from(nodeTable.columns.values()),
-        ValueTypeName.String,
+        [ValueTypeName.String, ValueTypeName.ListString],
       )
       const edgeColumns = filterColumns(
         Array.from(edgeTable.columns.values()),
-        ValueTypeName.String,
+        [ValueTypeName.String, ValueTypeName.ListString],
       )
       setIndexedColumns(
         currentNetworkId,
@@ -185,6 +201,8 @@ export const SearchBox = (): JSX.Element => {
         anchorEl={anchorEl}
         setAnchorEl={setAnchorEl}
         handleOpenSettings={handleOpenSettings}
+        setSearchTargets={setSearchTargets}
+        searchTargets={searchTargets}
       />
     </Search>
   )

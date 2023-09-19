@@ -3,6 +3,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import TuneIcon from '@mui/icons-material/Tune'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { Settings } from './Settings'
+import { GraphObjectType } from '../../../models/NetworkModel'
 
 interface SearchControlsProps {
   searchTerm: string
@@ -11,6 +12,8 @@ interface SearchControlsProps {
   anchorEl: HTMLElement | null
   setAnchorEl: (anchorEl: HTMLElement | null) => void
   handleOpenSettings: () => void
+  searchTargets: Record<GraphObjectType, boolean>
+  setSearchTargets: (searchTargets: Record<GraphObjectType, boolean>) => void
 }
 
 const baseStyle = {
@@ -28,6 +31,8 @@ export const SearchControls = ({
   anchorEl,
   setAnchorEl,
   handleOpenSettings,
+  searchTargets,
+  setSearchTargets,
 }: SearchControlsProps): JSX.Element => {
   const open = Boolean(anchorEl)
 
@@ -50,6 +55,8 @@ export const SearchControls = ({
         anchorEl={anchorEl}
         setAnchorEl={setAnchorEl}
         startSearch={startSearch}
+        searchTargets={searchTargets}
+        setSearchTargets={setSearchTargets}
       />
     </>
   )

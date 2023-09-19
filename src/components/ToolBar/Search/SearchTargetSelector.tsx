@@ -3,18 +3,19 @@ import FormControl from '@mui/material/FormControl'
 import FormGroup from '@mui/material/FormGroup'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Checkbox from '@mui/material/Checkbox'
-import { useState } from 'react'
 import { GraphObjectType } from '../../../models/NetworkModel'
 
-export const SearchTargetSelector = (): JSX.Element => {
-  const [state, setState] = useState({
-    [GraphObjectType.NODE]: true,
-    [GraphObjectType.EDGE]: false,
-  })
-
+interface SearchTargetSelectorProps {
+  searchTargets: Record<GraphObjectType, boolean>
+  setSearchTargets: (searchTargets: Record<GraphObjectType, boolean>) => void
+}
+export const SearchTargetSelector = ({
+  searchTargets,
+  setSearchTargets,
+}: SearchTargetSelectorProps): JSX.Element => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    setState({
-      ...state,
+    setSearchTargets({
+      ...searchTargets,
       [event.target.name]: event.target.checked,
     })
   }
@@ -26,7 +27,7 @@ export const SearchTargetSelector = (): JSX.Element => {
         <FormControlLabel
           control={
             <Checkbox
-              checked={state[GraphObjectType.NODE]}
+              checked={searchTargets[GraphObjectType.NODE]}
               onChange={handleChange}
               name={GraphObjectType.NODE}
             />
@@ -36,7 +37,7 @@ export const SearchTargetSelector = (): JSX.Element => {
         <FormControlLabel
           control={
             <Checkbox
-              checked={state[GraphObjectType.EDGE]}
+              checked={searchTargets[GraphObjectType.EDGE]}
               onChange={handleChange}
               name={GraphObjectType.EDGE}
             />
