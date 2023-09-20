@@ -5,6 +5,7 @@ import {
   ValueType,
   ValueTypeName,
 } from '../../../models/TableModel'
+import { Operator } from '../../../models/FilterModel/Search'
 
 /**
  * Generates a Fuse index from a data table
@@ -68,4 +69,33 @@ export const filterColumns = (
     })
   })
   return filteredColumns
+}
+
+export const runSearch = (
+  index: Fuse<Record<string, ValueType>>,
+  query: string,
+  operator: Operator,
+  exact?: boolean,
+): string[] => {
+  console.log('Running search', index, query)
+
+  let modifiedQuery: string = query
+  if (operator === 'AND') {
+    // AND search
+    modifiedQuery = query.replace(/\s+/g, ' AND ')
+  } else {
+    // OR search
+    modifiedQuery = query.replace(/\s+/g, '|')
+  }
+
+  // Switch between AND or OR search operators
+  const result = index.search(modifiedQuery)
+
+  const toBeSelected: string[] = []
+  result.forEach((r: any) => {
+    const objectId: string = r.item.id as string
+    toBeSelected.push(objectId)
+  })
+
+  return toBeSelected
 }

@@ -15,7 +15,7 @@ import {
   Indices,
   Operator,
 } from '../../../models/FilterModel/Search'
-import { createFuseIndex, filterColumns } from './SearchUtils'
+import { createFuseIndex, filterColumns, runSearch } from './SearchUtils'
 
 export const SearchBox = (): JSX.Element => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
@@ -42,6 +42,7 @@ export const SearchBox = (): JSX.Element => {
   )
 
   const searchOptions = useFilterStore((state) => state.search.options)
+  const { exact } = searchOptions
 
   const indexRecord: Record<
     IdType,
@@ -80,11 +81,6 @@ export const SearchBox = (): JSX.Element => {
     const indices: Indices<Fuse<Record<string, ValueType>>> =
       indexRecord[currentNetworkId]
 
-    const nodeColumnsToBeSearched: string[] =
-      indexedColumns[currentNetworkId].node
-    const edgeColumnsToBeSearched: string[] =
-      indexedColumns[currentNetworkId].edge
-
     const nodeIndex = indices[GraphObjectType.NODE]
     const edgeIndex = indices[GraphObjectType.EDGE]
 
@@ -96,41 +92,20 @@ export const SearchBox = (): JSX.Element => {
     exclusiveSelect(currentNetworkId, [], [])
 
     const operator: Operator = searchOptions.operator
+    let nodesToBeSelected: IdType[] = []
+    let edgesToBeSelected: IdType[] = []
 
-    let modifiedQuery: string = query
-    if (operator === 'AND') {
-      // AND search
-      modifiedQuery = query.replace(/ /g, ',')
-    } else {
-      // OR search
-      modifiedQuery = query.replace(/ /g, '|')
+    if (searchTargets[GraphObjectType.NODE]) {
+      nodesToBeSelected = runSearch(nodeIndex, query, operator)
+    }
+    if (searchTargets[GraphObjectType.EDGE]) {
+      edgesToBeSelected = runSearch(edgeIndex, query, operator)
     }
 
-    // Switch between AND or OR search operators
-    const result = nodeIndex.search(modifiedQuery)
-    const edgeResult = edgeIndex.search(modifiedQuery)
-
-    const toBeSelected: string[] = []
-    const edgeToBeSelected: string[] = []
-    result.forEach((r: any) => {
-      const objectId: string = r.item.id as string
-      toBeSelected.push(objectId)
-    })
-    edgeResult.forEach((r: any) => {
-      const objectId: string = r.item.id as string
-      edgeToBeSelected.push(objectId)
-    })
-
-    console.log(
-      'SEARCH res',
-      result,
-      nodeColumnsToBeSearched,
-      edgeColumnsToBeSearched,
-    )
-    exclusiveSelect(currentNetworkId, toBeSelected, edgeToBeSelected)
+    exclusiveSelect(currentNetworkId, nodesToBeSelected, edgesToBeSelected)
   }
 
-  useEffect(() => {
+  const reIndex = (forceUpdate: boolean): void => {
     if (currentNetworkId === undefined || currentNetworkId === '') {
       return
     }
@@ -142,7 +117,7 @@ export const SearchBox = (): JSX.Element => {
     const currentIndex = indexRecord[currentNetworkId]
     const currentIndexedColumns = indexedColumns[currentNetworkId]
 
-    if (currentIndexedColumns === undefined) {
+    if (currentIndexedColumns === undefined || forceUpdate) {
       const nodeColumns = filterColumns(
         Array.from(nodeTable.columns.values()),
         [ValueTypeName.String, ValueTypeName.ListString],
@@ -174,7 +149,14 @@ export const SearchBox = (): JSX.Element => {
     } catch (error) {
       console.log('Error indexing', error)
     }
+  }
+  useEffect(() => {
+    reIndex(false)
   }, [nodeTable, edgeTable])
+
+  useEffect(() => {
+    reIndex(true)
+  }, [exact])
 
   // Execute search when enter key is pressed
   const handleKeyDown = (
