@@ -6,7 +6,12 @@ import Box from '@mui/material/Box'
 import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material'
 import { Button, ButtonGroup } from '@mui/material'
 
-import { Table, ValueType, ValueTypeName } from '../../models/TableModel'
+import {
+  Table,
+  ValueType,
+  ValueTypeName,
+  Column,
+} from '../../models/TableModel'
 import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
@@ -28,6 +33,7 @@ import {
   CellClickedEventArgs,
   DataEditorRef,
   HeaderClickedEventArgs,
+  GridColumn,
 } from '@glideapps/glide-data-grid'
 
 import {
@@ -56,6 +62,7 @@ export interface TableColumn {
   title: string
   type: ValueTypeName
   index: number
+  width?: number
 }
 
 function TabPanel(props: TabPanelProps): React.ReactElement {
@@ -143,6 +150,7 @@ export default function TableBrowser(props: {
 
   const { selectedNodes, selectedEdges } =
     useViewModelStore((state) => state.viewModels[networkId]) ?? {}
+  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
@@ -153,6 +161,7 @@ export default function TableBrowser(props: {
   const applyValueToElemenets = useTableStore(
     (state) => state.applyValueToElements,
   )
+  const moveColumn = useTableStore((state) => state.moveColumn)
 
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
@@ -165,14 +174,35 @@ export default function TableBrowser(props: {
   const minNodeId = nodeIds.sort((a, b) => a - b)[0]
   const maxEdgeId = edgeIds.sort((a, b) => b - a)[0]
   const minEdgeId = edgeIds.sort((a, b) => a - b)[0]
-  const columns = Array.from(currentTable?.columns.entries() ?? new Map()).map(
-    ([attributeName, col], index) => ({
-      id: attributeName,
-      title: attributeName,
+  const modelColumns: Column[] =
+    currentTable?.columns != null ? currentTable?.columns : []
+
+  const [columns, setColumns] = React.useState<TableColumn[]>(
+    modelColumns.map((col, index) => ({
+      id: col.name,
+      title: col.name,
       type: col.type,
       index,
-    }),
+    })),
   )
+
+  React.useEffect(() => {
+    const existingColumnWidths: any = {}
+    columns.forEach((c) => (existingColumnWidths[c.id] = c.width))
+    const newColumns = modelColumns.map((c, index) => {
+      return {
+        id: c.name,
+        title: c.name,
+        type: c.type,
+        index,
+        width: existingColumnWidths[c.name] ?? undefined,
+      }
+    })
+
+    setColumns(newColumns)
+  }, [modelColumns])
+
+  // console.log(columns)
 
   const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
   const selectedElementsSet = new Set(selectedElements)
@@ -270,6 +300,18 @@ export default function TableBrowser(props: {
     [props.currentNetworkId, rows, currentTable, tables, sort],
   )
 
+  const onColMoved = React.useCallback(
+    (startIndex: number, endIndex: number): void => {
+      moveColumn(
+        networkId,
+        currentTable === nodeTable ? 'node' : 'edge',
+        startIndex,
+        endIndex,
+      )
+    },
+    [modelColumns],
+  )
+
   const onItemHovered = React.useCallback(
     (cell: Item) => {
       const rowIndex = cell[1]
@@ -286,10 +328,24 @@ export default function TableBrowser(props: {
     [props.currentNetworkId, currentTable, tables],
   )
 
+  const onColumnResize = React.useCallback(
+    (
+      column: GridColumn,
+      newSize: number,
+      colIndex: number,
+      newSizeWithGrow: number,
+    ): void => {
+      const col = columns[colIndex]
+      const newCol = { ...col, width: newSize }
+      const newColumns = [...columns]
+      newColumns[colIndex] = newCol
+      setColumns(newColumns)
+    },
+    [columns],
+  )
+
   const onCellContextMenu = React.useCallback(
     (cell: Item, event: CellClickedEventArgs): void => {
-      console.log(event)
-
       event.preventDefault()
     },
     [props.currentNetworkId, currentTable, tables],
@@ -332,7 +388,6 @@ export default function TableBrowser(props: {
     (col: number, event: HeaderClickedEventArgs): void => {
       setSelectedColumnIndex(col)
       setSelectedCellXY(undefined)
-      console.log(selectedColumnIndex)
     },
     [],
   )
@@ -543,7 +598,20 @@ export default function TableBrowser(props: {
                 )
               }}
             >
-              Apply value to selected nodes
+              {`Apply value to selected ${
+                currentTable === nodeTable ? 'nodes' : 'edges'
+              }`}
+            </Button>
+            <Button
+              onClick={() => {
+                const rowIndex = selectedCell[1]
+                const rowData = rows?.[rowIndex]
+                if (rowData?.id !== undefined) {
+                  exclusiveSelect(props.currentNetworkId, [rowData.id], [])
+                }
+              }}
+            >
+              {`Select ${currentTable === nodeTable ? 'nodes' : 'edges'}`}{' '}
             </Button>
           </ButtonGroup>
         </Box>
@@ -579,7 +647,6 @@ export default function TableBrowser(props: {
             )
           } else {
             if (!valueIsValid) {
-              console.log(dataType, value)
               setCreateColumnFormError(
                 `Default value ${value} is not a valid ${dataType}.  Please enter a valid ${dataType}`,
               )
@@ -664,7 +731,11 @@ export default function TableBrowser(props: {
             getCellsForSelection={true}
             onSearchClose={onSearchClose}
             onHeaderClicked={onHeaderClicked}
+            onColumnMoved={onColMoved}
             onItemHovered={(e) => onItemHovered(e.location)}
+            overscrollX={200}
+            overscrollY={200}
+            onColumnResize={onColumnResize}
             width={props.width}
             height={props.height}
             getCellContent={getContent}
@@ -689,7 +760,11 @@ export default function TableBrowser(props: {
             onPaste={true}
             onSearchClose={onSearchClose}
             onHeaderClicked={onHeaderClicked}
+            onColumnMoved={onColMoved}
             onItemHovered={(e) => onItemHovered(e.location)}
+            overscrollX={200}
+            overscrollY={200}
+            onColumnResize={onColumnResize}
             width={props.width}
             height={props.height}
             getCellContent={getContent}

@@ -130,7 +130,7 @@ const nodeViewBuilder = (
   nodeViews?: Record<IdType, NodeView>,
 ): Record<IdType, NodeView> => {
   const result: Record<IdType, NodeView> = {}
-  const columns: Map<AttributeName, Column> = nodeTable.columns
+  const columns: Column[] = nodeTable.columns
   let idx: number = nodes.length
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   while (idx--) {
@@ -162,7 +162,7 @@ const edgeViewBuilder = (
   edgeTable: Table,
 ): Record<IdType, EdgeView> => {
   const result: Record<IdType, EdgeView> = {}
-  const columns: Map<AttributeName, Column> = edgeTable.columns
+  const columns: Column[] = edgeTable.columns
   let idx: number = edges.length
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   while (idx--) {
@@ -187,7 +187,7 @@ const computeView = (
   visualProperties: Array<VisualProperty<VisualPropertyValueType>>,
   mappers: Map<AttributeName, Mapper>,
   row: Record<AttributeName, ValueType>,
-  columns: Map<AttributeName, Column>,
+  columns: Column[],
 ): Map<VisualPropertyName, VisualPropertyValueType> => {
   const pairs = new Map<VisualPropertyName, VisualPropertyValueType>()
 
