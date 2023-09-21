@@ -6,6 +6,7 @@ import {
   ValueTypeName,
 } from '../../../models/TableModel'
 import { Operator } from '../../../models/FilterModel/Search'
+import _ from 'lodash'
 
 /**
  * Generates a Fuse index from a data table
@@ -77,25 +78,36 @@ export const runSearch = (
   operator: Operator,
   exact?: boolean,
 ): string[] => {
-  console.log('Running search', index, query)
+  let modifiedQuery: any = query
+  let toBeSelected: string[] = []
 
-  let modifiedQuery: string = query
   if (operator === 'AND') {
     // AND search
-    modifiedQuery = query.replace(/\s+/g, ' AND ')
+    // TODO: For and operations, space-separated words
+    // return correct result, but is this always correct?
+    const tokens: string[] = query.split(/\s+/g)
+    const results: string[][] = []
+    tokens.forEach((token: string) => {
+      const res = index.search(token)
+      const ids: string[] = []
+      res.forEach((r: any) => {
+        const objectId: string = r.item.id as string
+        ids.push(objectId)
+      })
+      results.push(ids)
+    })
+    toBeSelected = _.intersection(...results)
   } else {
     // OR search
     modifiedQuery = query.replace(/\s+/g, '|')
+    // Switch between AND or OR search operators
+    const result = index.search(modifiedQuery)
+
+    result.forEach((r: any) => {
+      const objectId: string = r.item.id as string
+      toBeSelected.push(objectId)
+    })
   }
-
-  // Switch between AND or OR search operators
-  const result = index.search(modifiedQuery)
-
-  const toBeSelected: string[] = []
-  result.forEach((r: any) => {
-    const objectId: string = r.item.id as string
-    toBeSelected.push(objectId)
-  })
 
   return toBeSelected
 }
