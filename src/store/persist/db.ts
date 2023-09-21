@@ -7,6 +7,7 @@ import { VisualStyle } from '../../models/VisualStyleModel'
 import { Workspace } from '../../models/WorkspaceModel'
 import { v4 as uuidv4 } from 'uuid'
 import { NetworkView } from '../../models/ViewModel'
+import { Ui } from '../../models/UiModel'
 
 const DB_NAME = 'cyweb-db'
 const DB_VERSION: number = 1
@@ -24,6 +25,7 @@ class CyDB extends Dexie {
   cyVisualStyles!: DxTable<any>
   summaries!: DxTable<any>
   cyNetworkViews!: DxTable<any>
+  uiState!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
@@ -34,6 +36,7 @@ class CyDB extends Dexie {
       cyTables: 'id',
       cyVisualStyles: 'id',
       cyNetworkViews: 'id',
+      uiState: 'id',
     })
   }
 }
@@ -349,5 +352,31 @@ export const deleteNetworkViewFromDb = async (id: IdType): Promise<void> => {
 export const clearNetworkViewFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
     await db.cyNetworkViews.clear()
+  })
+}
+
+// UI State
+export const DEFAULT_UI_STATE_ID = 'uistate'
+export const getUiStateFromDb = async (): Promise<Ui | undefined> => {
+  const uiState = await db.uiState.get({ id: DEFAULT_UI_STATE_ID })
+  console.log(uiState, 'ui')
+  if (uiState !== undefined) {
+    return uiState
+  } else {
+    return undefined
+  }
+}
+
+export const putUiStateToDb = async (uiState: Ui): Promise<void> => {
+  console.log(uiState, 'saving ui state')
+
+  await db.transaction('rw', db.uiState, async () => {
+    await db.uiState.put({ id: DEFAULT_UI_STATE_ID, ...uiState })
+  })
+}
+
+export const deleteUiStateFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.uiState, async () => {
+    await db.uiState.delete(DEFAULT_UI_STATE_ID)
   })
 }

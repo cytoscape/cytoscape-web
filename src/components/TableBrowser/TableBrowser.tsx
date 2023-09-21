@@ -103,11 +103,22 @@ export default function TableBrowser(props: {
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
   const ui: Ui = useUiStateStore((state) => state.ui)
+  // console.log(ui.tableUi.activeTabIndex)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
   const { panels } = ui
+  const setUi = useUiStateStore((state) => state.setUi)
 
-  const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
+  const currentTabIndex = ui.tableUi.activeTabIndex
+
+  const setCurrentTabIndex = (index: number): void => {
+    const nextTableUi = { ...ui.tableUi, activeTabIndex: index }
+
+    const nextUi = { ...ui, tableUi: nextTableUi }
+    setUi(nextUi)
+  }
+
+  // const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
   const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
   const [createColumnFormError, setCreateColumnFormError] = React.useState<
     string | undefined
@@ -186,23 +197,21 @@ export default function TableBrowser(props: {
     })),
   )
 
-  React.useEffect(() => {
-    const existingColumnWidths: any = {}
-    columns.forEach((c) => (existingColumnWidths[c.id] = c.width))
-    const newColumns = modelColumns.map((c, index) => {
-      return {
-        id: c.name,
-        title: c.name,
-        type: c.type,
-        index,
-        width: existingColumnWidths[c.name] ?? undefined,
-      }
-    })
+  // React.useEffect(() => {
+  //   const existingColumnWidths: any = {}
+  //   columns.forEach((c) => (existingColumnWidths[c.id] = c.width))
+  //   const newColumns = modelColumns.map((c, index) => {
+  //     return {
+  //       id: c.name,
+  //       title: c.name,
+  //       type: c.type,
+  //       index,
+  //       width: existingColumnWidths[c.name] ?? undefined,
+  //     }
+  //   })
 
-    setColumns(newColumns)
-  }, [modelColumns])
-
-  // console.log(columns)
+  //   setColumns(newColumns)
+  // }, [modelColumns])
 
   const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
   const selectedElementsSet = new Set(selectedElements)
@@ -297,7 +306,7 @@ export default function TableBrowser(props: {
         }
       }
     },
-    [props.currentNetworkId, rows, currentTable, tables, sort],
+    [props.currentNetworkId, rows, currentTable, tables, sort, currentTabIndex],
   )
 
   const onColMoved = React.useCallback(
@@ -321,7 +330,6 @@ export default function TableBrowser(props: {
       if (cxId != null) {
         // TODO this operation is too expensive for large networks
         // // const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
-        // // console.log(eleId)
         // setHovered(props.currentNetworkId, String(cxId))
       }
     },
