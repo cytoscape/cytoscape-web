@@ -22,7 +22,7 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { AppConfigContext } from '../../AppConfigContext'
 import { Workspace } from '../../models/WorkspaceModel'
-import { putNetworkViewToDb } from '../../store/persist/db'
+import { putNetworkViewToDb, getUiStateFromDb } from '../../store/persist/db'
 import { NetworkView } from '../../models/ViewModel'
 import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
 
@@ -31,7 +31,7 @@ import { SnackbarMessageList } from '../Messages'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 
 import { SidePanel } from './SidePanel/SidePanel'
-import { useUiStateStore } from '../../store/UiStateStore'
+import { DEFAULT_UI_STATE, useUiStateStore } from '../../store/UiStateStore'
 import { Ui } from '../../models/UiModel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
@@ -43,7 +43,6 @@ import { useNetworkSummaryManager } from '../../store/hooks/useNetworkSummaryMan
 import { ChevronRight } from '@mui/icons-material'
 import { Panel } from '../../models/UiModel/Panel'
 import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
-
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
 
@@ -84,6 +83,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   const ui: Ui = useUiStateStore((state) => state.ui)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
+  const setUi = useUiStateStore((state) => state.setUi)
 
   const { panels, activeNetworkView } = ui
 
@@ -211,6 +211,19 @@ const WorkSpaceEditor = (): JSX.Element => {
     exclusiveSelect(currentNetworkId, selectedNodes, selectedEdges)
   }
 
+  const loadUiState = (): void => {
+    // console.log('loading ui state')
+    void getUiStateFromDb().then((uiState) => {
+      if (uiState !== undefined) {
+        setUi(uiState)
+        // console.log('loaded ui from db', uiState)
+      } else {
+        // console.log('setting default')
+        setUi(DEFAULT_UI_STATE)
+      }
+    })
+  }
+
   /**
    * Initializations
    */
@@ -221,6 +234,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     window.addEventListener('resize', windowWidthListener)
 
     restorePanelStates()
+    loadUiState()
 
     return () => {
       window.removeEventListener('resize', windowWidthListener)
