@@ -1,6 +1,7 @@
 import { IdType } from '../IdType'
 import { Panel } from './Panel'
 import { PanelState } from './PanelState'
+import { TableUIState } from './TableUi'
 
 /**
  * User interface states shared as a global value
@@ -22,4 +23,6 @@ export interface Ui {
   showErrorDialog: boolean
 
   errorMessage: string
+
+  tableUi: TableUIState
 }
