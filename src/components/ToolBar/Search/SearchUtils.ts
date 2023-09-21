@@ -88,14 +88,20 @@ export const runSearch = (
     const tokens: string[] = query.split(/\s+/g)
     const results: string[][] = []
     tokens.forEach((token: string) => {
-      const res = index.search(token)
-      const ids: string[] = []
-      res.forEach((r: any) => {
-        const objectId: string = r.item.id as string
-        ids.push(objectId)
-      })
-      results.push(ids)
+      if (token !== '') {
+        // First, run search for each token
+        const res = index.search(token)
+        const ids: string[] = []
+        res.forEach((r: any) => {
+          const objectId: string = r.item.id as string
+          ids.push(objectId)
+        })
+        // And add up the results
+        results.push(ids)
+      }
     })
+
+    // Find the intersection of all results (means AND)
     toBeSelected = _.intersection(...results)
   } else {
     // OR search
