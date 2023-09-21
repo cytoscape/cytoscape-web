@@ -66,6 +66,12 @@ interface TableAction {
     currentColumnName: string,
     newColumnName: string,
   ) => void
+  moveColumn: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    columnIndex: number,
+    newColumnIndex: number,
+  ) => void
   setValue: (
     networkId: IdType,
     tableType: TableType,
@@ -136,6 +142,37 @@ export const useTableStore = create(
         })
       },
 
+      moveColumn: (
+        networkId: IdType,
+        tableType: 'node' | 'edge',
+        columnIndex: number,
+        newColumnIndex: number,
+      ) => {
+        set((state) => {
+          const table = state.tables[networkId]
+          const tableTypeKey =
+            tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+          const tableToUpdate = table?.[tableTypeKey]
+
+          if (tableToUpdate != null) {
+            const column = tableToUpdate.columns[columnIndex]
+            tableToUpdate.columns.splice(columnIndex, 1)
+            tableToUpdate.columns.splice(newColumnIndex, 0, column)
+
+            const rows = tableToUpdate.rows.values()
+            Array.from(rows).forEach((row) => {
+              const v = row[column.name]
+              delete row[column.name]
+              row[column.name] = v
+            })
+
+            state.tables[networkId][tableTypeKey] = tableToUpdate
+          }
+
+          return state
+        })
+      },
+
       setColumnName: (
         networkId: IdType,
         tableType: 'node' | 'edge',
@@ -148,11 +185,13 @@ export const useTableStore = create(
             tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
           const tableToUpdate = table[tableTypeKey]
 
-          const column = tableToUpdate.columns.get(currentColumnName)
-          if (column != null) {
+          const columnIndex = tableToUpdate.columns.findIndex(
+            (c) => c.name === currentColumnName,
+          )
+          if (columnIndex !== -1) {
+            const column = tableToUpdate.columns[columnIndex]
             const newColumn = { ...column, name: newColumnName }
-            tableToUpdate.columns.delete(currentColumnName)
-            tableToUpdate.columns.set(newColumnName, newColumn)
+            tableToUpdate.columns[columnIndex] = newColumn
           }
 
           const rows = tableToUpdate.rows.values()
@@ -215,9 +254,12 @@ export const useTableStore = create(
             table[
               tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
-          const column = tableToUpdate.columns.get(columnName)
-          if (column != null) {
-            tableToUpdate.columns.delete(columnName)
+
+          const columnIndex = tableToUpdate.columns.findIndex(
+            (c) => c.name === columnName,
+          )
+          if (columnIndex !== -1) {
+            tableToUpdate.columns.splice(columnIndex)
           }
 
           const rows = tableToUpdate.rows.values()
@@ -243,7 +285,7 @@ export const useTableStore = create(
               tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
 
-          tableToUpdate.columns.set(columnName, {
+          tableToUpdate.columns.unshift({
             name: columnName,
             type: dataType,
           })
@@ -294,7 +336,7 @@ export const useTableStore = create(
       duplicateColumn(
         networkId: IdType,
         tableType: 'node' | 'edge',
-        column: AttributeName,
+        columnName: AttributeName,
       ) {
         set((state) => {
           const table = state.tables
@@ -302,17 +344,20 @@ export const useTableStore = create(
           const edgeTable = table[networkId]?.edgeTable
           const tableToUpdate =
             tableType === VisualPropertyGroup.Node ? nodeTable : edgeTable
-          const columnToDuplicate = tableToUpdate?.columns.get(column)
-          if (columnToDuplicate != null) {
+          const columnIndex = tableToUpdate.columns.findIndex(
+            (c) => c.name === columnName,
+          )
+          if (columnIndex !== -1) {
+            const columnToDuplicate = tableToUpdate.columns[columnIndex]
             const newColumn = {
               ...columnToDuplicate,
               name: `${columnToDuplicate.name}_copy_${Date.now()}`,
             }
-            tableToUpdate?.columns.set(newColumn.name, newColumn)
+            tableToUpdate?.columns.unshift(newColumn)
 
             Array.from((tableToUpdate?.rows ?? new Map()).entries()).forEach(
               ([nodeId, nodeAttr]) => {
-                nodeAttr[newColumn.name] = nodeAttr[column]
+                nodeAttr[newColumn.name] = nodeAttr[columnName]
                 tableToUpdate.rows.set(nodeId, nodeAttr)
               },
             )
