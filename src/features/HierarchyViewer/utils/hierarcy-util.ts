@@ -1,5 +1,6 @@
 import { Visibility } from '../../../models/CxModel/NetworkSummary/Visibility'
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
+import { ValueType } from '../../../models/TableModel'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { HcxMetaTag } from '../model/HcxMetaTag'
 
@@ -62,4 +63,24 @@ export const createDummySummary = (
     modificationTime: time,
   }
   return summary
+}
+
+export const isHCX = (summary: NdexNetworkSummary): boolean => {
+  if (summary === undefined) {
+    return false
+  }
+
+  if (summary.properties === undefined || summary.properties.length === 0) {
+    return false
+  }
+
+  const networkPropObj: Record<string, ValueType> = summary.properties.reduce<{
+    [key: string]: ValueType
+  }>((acc, prop) => {
+    acc[prop.predicateString] = prop.value
+    return acc
+  }, {})
+  const metadata: HcxMetaData | undefined = getHcxProps(networkPropObj)
+
+  return metadata !== undefined
 }
