@@ -9,6 +9,7 @@ export { Network } from './Network'
 export { Edge } from './Edge'
 export { Node } from './Node'
 export { GraphObject } from './GraphObject'
+export { GraphObjectType } from './GraphObjectType'
 export { NetworkAttributes } from '../TableModel/NetworkAttributes'
 
 export { NetworkFn as default }
