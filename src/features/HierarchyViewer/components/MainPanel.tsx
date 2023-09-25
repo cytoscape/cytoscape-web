@@ -22,8 +22,7 @@ import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
 import { createTreeLayout } from './CustomLayout/CirclePackingLayout'
 import { Network } from '../../../models/NetworkModel'
 import { useNetworkStore } from '../../../store/NetworkStore'
-// import { useNetworkStore } from '../../../store/NetworkStore'
-// import { Network } from '../../../models/NetworkModel'
+import { CirclePackingPanel } from './CustomLayout/CirclePackingPanel'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -114,7 +113,7 @@ export const MainPanel = (): JSX.Element => {
 
     // For Circle Packing: build circle packing layout
     if (currentNetwork !== undefined) {
-      createTreeLayout(currentNetwork, selectedSubsystem, nodeTable, edgeTable)
+      createTreeLayout(currentNetwork, nodeTable, edgeTable)
     }
 
     // Pick the table row for the selected subsystem and extract member list
@@ -170,9 +169,16 @@ export const MainPanel = (): JSX.Element => {
             interactionNetworkId={interactionNetworkUuid}
           />
         </Allotment.Pane>
-        <Allotment.Pane preferredSize={200}>
+        <Allotment.Pane preferredSize={400}>
           <Allotment>
             <Allotment.Pane preferredSize={'35%'} key={0}>
+              <CirclePackingPanel
+                width={300}
+                height={300}
+                network={currentNetwork}
+                nodeTable={tableRecord?.nodeTable}
+                edgeTable={tableRecord?.edgeTable}
+              />
               <PropertyPanel networkId={targetNode} />
             </Allotment.Pane>
             <Allotment.Pane key={1}>

@@ -50,10 +50,9 @@ interface D3TreeNode {
  */
 export const createTreeLayout = (
   network: Network,
-  nodeId: IdType,
   nodeTable: Table,
   edgeTable: Table,
-): void => {
+): HierarchyNode<D3TreeNode> => {
   // Get the internal data store. In this case, it is a cytoscape instance
   const cyNet: Core = NetworkFn.getInternalNetworkDataStore(network) as Core
 
@@ -114,6 +113,7 @@ export const createTreeLayout = (
   const nodeSet: Set<string> = new Set<string>()
   traverse(hierarchyRoot, nodeSet)
   console.log('##The node set', nodeSet.size)
+  return hierarchyRoot
 }
 
 const traverse = (
