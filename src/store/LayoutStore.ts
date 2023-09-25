@@ -10,6 +10,7 @@ import { Property } from '../models/PropertyModel/Property'
 
 const LayoutEngines: LayoutEngine[] = [G6Layout, CyjsLayout, CosmosLayout]
 const defAlgorithm: LayoutAlgorithm = G6Layout.algorithms.gForce
+const defHierarchicalAlgorithm: LayoutAlgorithm = G6Layout.algorithms.dagre
 
 /**
  * Store for layout parameters
@@ -17,6 +18,7 @@ const defAlgorithm: LayoutAlgorithm = G6Layout.algorithms.gForce
 interface LayoutState {
   layoutEngines: LayoutEngine[]
   preferredLayout: LayoutAlgorithm
+  preferredHierarchicalLayout: LayoutAlgorithm
   isRunning: boolean
 }
 
@@ -56,6 +58,7 @@ export const useLayoutStore = create(
   immer<LayoutState & LayoutAction>((set) => ({
     layoutEngines: LayoutEngines,
     preferredLayout: defAlgorithm,
+    preferredHierarchicalLayout: defHierarchicalAlgorithm,
     isRunning: false,
 
     setPreferredLayout(engineName: string, algorithmName: string) {
