@@ -43,6 +43,9 @@ import { useNetworkSummaryManager } from '../../store/hooks/useNetworkSummaryMan
 import { ChevronRight } from '@mui/icons-material'
 import { Panel } from '../../models/UiModel/Panel'
 import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
+import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
+import { useLayoutStore } from '../../store/LayoutStore'
+import { isHCX } from '../../features/HierarchyViewer/utils/hierarcy-util'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -146,10 +149,28 @@ const WorkSpaceEditor = (): JSX.Element => {
     [number, number]
   >([0, 0])
 
+  const layoutEngines: LayoutEngine[] = useLayoutStore(
+    (state) => state.layoutEngines,
+  )
+
+  const defaultLayout: LayoutAlgorithm = useLayoutStore(
+    (state) => state.preferredLayout,
+  )
+
+  const defaultHierarchyLayout: LayoutAlgorithm = useLayoutStore(
+    (state) => state.preferredHierarchicalLayout,
+  )
+
+  const updateSummary = useNetworkSummaryStore((state) => state.update)
+
   const addNewNetwork = useNetworkStore((state) => state.add)
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addTable = useTableStore((state) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
+  const updateNodePositions: (
+    networkId: IdType,
+    positions: Map<IdType, [number, number, number?]>,
+  ) => void = useViewModelStore((state) => state.updateNodePositions)
 
   const loadNetworkSummaries = async (): Promise<void> => {
     const currentToken = await getToken()
@@ -164,6 +185,13 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     const currentToken = await getToken()
+
+    const summaryMap = await useNdexNetworkSummary(
+      [networkId],
+      ndexBaseUrl,
+      currentToken,
+    )
+    const summary = summaryMap[networkId]
     const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
     const { network, nodeTable, edgeTable, visualStyle, networkView } = res
 
@@ -171,6 +199,26 @@ const WorkSpaceEditor = (): JSX.Element => {
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
     addViewModel(networkId, networkView)
+
+    if (!summary.hasLayout) {
+      const layoutEngineName = isHCX(summary)
+        ? defaultHierarchyLayout.name
+        : defaultLayout.name
+      const engine: LayoutEngine =
+        layoutEngines.find((engine) => engine.name === layoutEngineName) ??
+        layoutEngines[0]
+
+      const nextSummary = { ...summary, hasLayout: true }
+
+      const afterLayout = (
+        positionMap: Map<IdType, [number, number]>,
+      ): void => {
+        updateNodePositions(networkId, positionMap)
+        updateSummary(networkId, nextSummary)
+      }
+
+      engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
+    }
   }
 
   const restorePanelStates = (): void => {
