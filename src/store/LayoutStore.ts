@@ -10,8 +10,7 @@ import { Property } from '../models/PropertyModel/Property'
 
 const LayoutEngines: LayoutEngine[] = [G6Layout, CyjsLayout, CosmosLayout]
 const defAlgorithm: LayoutAlgorithm = G6Layout.algorithms.gForce
-const defHierarchicalAlgorithm: LayoutAlgorithm =
-  G6Layout.algorithms.hierarchical
+const defHierarchicalAlgorithm: LayoutAlgorithm = G6Layout.algorithms.dagre
 
 /**
  * Store for layout parameters
