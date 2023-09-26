@@ -261,7 +261,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   }
 
   const loadUiState = (): void => {
-    // console.log('loading ui state')
     void getUiStateFromDb().then((uiState) => {
       if (uiState !== undefined) {
         setUi(uiState)
