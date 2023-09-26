@@ -1,20 +1,14 @@
-import {
-  create,
-  // StateCreator,
-  //  StoreApi
-} from 'zustand'
+import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
 import { Ui } from '../models/UiModel'
 import { PanelState } from '../models/UiModel/PanelState'
 import { Panel } from '../models/UiModel/Panel'
 
-// import { putUiStateToDb } from './persist/db'
 import { TableUIState } from '../models/UiModel/TableUi'
 import { putUiStateToDb } from './persist/db'
 
 import { TableType } from './TableStore'
-// import { AttributeName } from '../models/TableModel'
 interface UiState {
   ui: Ui
 }
@@ -88,9 +82,6 @@ export const useUiStateStore = create(
     ui: DEFAULT_UI_STATE,
     setUi: (ui: Ui) => {
       set((state) => {
-        // console.log('setting ui', ui)
-        // console.log('TABLE')
-        // console.log(get(), state)
         state.ui = ui
         void putUiStateToDb(ui)
         return state

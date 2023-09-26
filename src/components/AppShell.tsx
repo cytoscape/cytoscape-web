@@ -2,18 +2,12 @@ import { Box } from '@mui/material'
 import { ReactElement, useEffect, useRef } from 'react'
 import { Location, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
-import {
-  // getUiStateFromDb,
-  getWorkspaceFromDb,
-} from '../store/persist/db'
+import { getUiStateFromDb, getWorkspaceFromDb } from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
 import { parsePathName } from '../utils/paths-util'
 import { WarningDialog } from './ExternalLoading/WarningDialog'
-import {
-  // DEFAULT_UI_STATE,
-  useUiStateStore,
-} from '../store/UiStateStore'
+import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
 
 /**
  *
@@ -28,13 +22,14 @@ const AppShell = (): ReactElement => {
   const navigate = useNavigate()
   const setWorkspace = useWorkspaceStore((state) => state.set)
   const workspace = useWorkspaceStore((state) => state.workspace)
-  // const setUi = useUiStateStore((state) => state.setUi)
   const location: Location = useLocation()
 
   const addNetworkIds = useWorkspaceStore((state) => state.addNetworkIds)
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
+
+  const setUi = useUiStateStore((state) => state.setUi)
 
   const { showErrorDialog } = useUiStateStore((state) => state.ui)
   // const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
@@ -72,19 +67,15 @@ const AppShell = (): ReactElement => {
     }
   }
 
-  // const loadUiState = (): void => {
-  //   console.log('loading ui state')
-  //   void getUiStateFromDb().then((uiState) => {
-  //     if (uiState !== undefined) {
-  //       setUi(uiState)
-  //       console.log('loaded ui from db', uiState)
-  //     } else {
-  //       console.log('setting default')
-  //       setUi(DEFAULT_UI_STATE)
-  //     }
-  //   })
-  // }
-  // console.log(loadUiState)
+  const loadUiState = (): void => {
+    void getUiStateFromDb().then((uiState) => {
+      if (uiState !== undefined) {
+        setUi(uiState)
+      } else {
+        setUi(DEFAULT_UI_STATE)
+      }
+    })
+  }
   /**
    * Once this component is initialized, check the workspace ID
    */
@@ -93,7 +84,7 @@ const AppShell = (): ReactElement => {
     if (!initializedRef.current) {
       initializedRef.current = true
       setupWorkspace()
-      // loadUiState()
+      loadUiState()
     }
   }, [])
 

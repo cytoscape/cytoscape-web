@@ -103,7 +103,6 @@ export default function TableBrowser(props: {
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
   const ui: Ui = useUiStateStore((state) => state.ui)
-  // console.log(ui.tableUi.activeTabIndex)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
   const { panels } = ui
@@ -118,7 +117,6 @@ export default function TableBrowser(props: {
 
   const setColumnWidth = useUiStateStore((state) => state.setColumnWidth)
 
-  // const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
   const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
   const [createColumnFormError, setCreateColumnFormError] = React.useState<
     string | undefined
