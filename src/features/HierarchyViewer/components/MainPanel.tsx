@@ -17,7 +17,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
-import { PropertyPanel } from './PropertyPanel/PropertyPanel'
+// import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
 import { createTreeLayout } from './CustomLayout/CirclePackingLayout'
 import { Network } from '../../../models/NetworkModel'
@@ -169,17 +169,17 @@ export const MainPanel = (): JSX.Element => {
             interactionNetworkId={interactionNetworkUuid}
           />
         </Allotment.Pane>
-        <Allotment.Pane preferredSize={400}>
+        <Allotment.Pane preferredSize={1000}>
           <Allotment>
-            <Allotment.Pane preferredSize={'35%'} key={0}>
+            <Allotment.Pane preferredSize={'85%'} key={0}>
               <CirclePackingPanel
-                width={300}
-                height={300}
+                width={1000}
+                height={1000}
                 network={currentNetwork}
                 nodeTable={tableRecord?.nodeTable}
                 edgeTable={tableRecord?.edgeTable}
               />
-              <PropertyPanel networkId={targetNode} />
+              {/* <PropertyPanel networkId={targetNode} /> */}
             </Allotment.Pane>
             <Allotment.Pane key={1}>
               <SharedStyleManager

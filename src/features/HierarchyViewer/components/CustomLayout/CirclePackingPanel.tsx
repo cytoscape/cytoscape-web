@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react'
 import { colorScale } from './CirclePackingUtils'
 import { Network } from '../../../../models/NetworkModel'
 import { Table } from '../../../../models/TableModel'
-import { createTreeLayout } from './CirclePackingLayout'
+import { D3TreeNode, createTreeLayout } from './CirclePackingLayout'
 
 interface CirclePackingPanelProps {
   width: number
@@ -42,7 +42,7 @@ export const CirclePackingPanel = ({
   if (network === undefined) {
     return <></>
   }
-  const rootNode: d3Hierarchy.HierarchyNode<any> = createTreeLayout(
+  const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> = createTreeLayout(
     network,
     nodeTable,
     edgeTable,
@@ -56,18 +56,15 @@ export const CirclePackingPanel = ({
   useEffect(() => {
     if (ref.current === null) return
 
-    const root = d3Hierarchy
-      .hierarchy(rootNode)
-      .sum((d) => (d.value !== undefined ? d.value : 0))
     const pack = d3Hierarchy.pack().size([width, height]).padding(3)
 
-    pack(root)
+    pack(rootNode)
 
     const svg = d3Selection.select(ref.current)
 
     svg
       .selectAll('circle')
-      .data(root.descendants())
+      .data(rootNode.descendants())
       .join('circle')
       .attr('cx', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.x)
       .attr('cy', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.y)
@@ -76,7 +73,7 @@ export const CirclePackingPanel = ({
   }, [rootNode, width, height])
 
   return (
-    <Box sx={{ width: '100%', height: '20em', border: '2px solid red' }}>
+    <Box sx={{ width: '100%', height: '100%', border: '2px solid red' }}>
       <svg ref={ref} width={width} height={height} />
     </Box>
   )

@@ -7,8 +7,6 @@ import { SubsystemTag } from '../../model/HcxMetaTag'
 import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
 
-let counter: Set<string> = new Set<string>()
-
 const getMembers = (nodeId: IdType, table: Table): string[] => {
   if (nodeId === undefined) {
     throw new Error('Node id is undefined')
@@ -34,10 +32,11 @@ const findRoot = (cyNet: Core): NodeSingular => {
   return roots[0]
 }
 
-interface D3TreeNode {
+export interface D3TreeNode {
   id: string
-  parent: string
-  members?: string[]
+  parentId: string
+  value: number
+  members: string[]
   children?: D3TreeNode[]
 }
 
@@ -63,51 +62,47 @@ export const createTreeLayout = (
 
   // original count
   const nodeCount: number = cyNet.nodes().size()
-  const edgeCount: number = cyNet.edges().size()
 
   // Dag2tree
 
   // Add root node to the list
+  const rootMembers = getMembers(rootNodeId, nodeTable)
   const d3RootNode: D3TreeNode = {
     id: rootNodeId,
-    parent: '',
+    parentId: '',
+    members: rootMembers,
+    value: rootMembers.length,
   }
 
   // List representation of the tree
   const listTree: D3TreeNode[] = [d3RootNode]
   // Edge Ids
   const toBeRemoved: Set<EdgeSingular> = new Set()
-  const treeList: D3TreeNode[] = []
   const visited: Set<string> = new Set()
-  dag2tree(cyNet, root, toBeRemoved, treeList, visited)
-  console.log('##The toBeRemoved', toBeRemoved.size)
-  console.log('##TreeList', treeList)
+  dag2tree(cyNet, root, toBeRemoved, visited)
 
-  const testSet = new Set<string>()
-  treeList.forEach((element) => {
-    testSet.add(element.id)
-    testSet.add(element.parent)
-  })
-  console.log('##TestSet SIZE', testSet.size)
+  // const testSet = new Set<string>()
+  // treeList.forEach((element) => {
+  //   testSet.add(element.id)
+  //   testSet.add(element.parent)
+  // })
 
   // Create input list for d3 stratify function
-  counter = new Set<string>()
-  counter.add(rootNodeId)
+  // counter = new Set<string>()
+  // counter.add(rootNodeId)
   traverseTree(root, nodeTable, edgeTable, listTree, toBeRemoved)
 
-  // const edgeList = toTree(cyNet, toBeRemoved, nodeTable)
-  console.log('##The Tree list', listTree, nodeCount, edgeCount)
+  const hierarchyRoot: HierarchyNode<D3TreeNode> =
+    d3Hierarchy.stratify<D3TreeNode>()(listTree)
 
-  const hierarchyRoot: HierarchyNode<D3TreeNode> = d3Hierarchy
-    .stratify<D3TreeNode>()
-    .parentId((d) => d.parent)(listTree)
+  hierarchyRoot.sum((d: D3TreeNode) => d.value)
 
-  console.log(
-    '##The hierarchy',
-    hierarchyRoot,
-    hierarchyRoot.descendants().length,
-    counter.size,
-  )
+  const treeNodeCount: number = hierarchyRoot.descendants().length
+  console.log('##The hierarchy', hierarchyRoot, treeNodeCount)
+
+  if (nodeCount !== treeNodeCount) {
+    throw new Error('Node count mismatch. Some nodes are not in the tree!!')
+  }
 
   // Test hierarchy
   const nodeSet: Set<string> = new Set<string>()
@@ -138,7 +133,6 @@ const dag2tree = (
   cyNet: Core,
   parent: NodeSingular,
   toBeRemoved: Set<EdgeSingular>,
-  treeList: D3TreeNode[],
   visited: Set<string>,
 ): void => {
   const parentId: string = parent.id()
@@ -153,19 +147,13 @@ const dag2tree = (
   const childNodes = children.nodes()
 
   childNodes.forEach((child) => {
-    counter.add(child.id())
-
     // From parent to child
     const incomers = child.incomers()
     const incomingEdges = incomers.edges()
     if (incomingEdges.size() === 1) {
       // There is only one edge from parent. No need to do remove the edge
-      treeList.push({
-        id: child.id(),
-        parent: parentId,
-      })
       incomingEdges[0].data('treeEdge', true)
-      dag2tree(cyNet, child, toBeRemoved, treeList, visited)
+      dag2tree(cyNet, child, toBeRemoved, visited)
     } else {
       // There are multiple parents
       let targetChild: NodeSingular | undefined
@@ -181,11 +169,7 @@ const dag2tree = (
       })
 
       if (targetChild !== undefined) {
-        // treeList.push({
-        //   id: targetChild.id(),
-        //   parent: parentId,
-        // })
-        dag2tree(cyNet, targetChild, toBeRemoved, treeList, visited)
+        dag2tree(cyNet, targetChild, toBeRemoved, visited)
       } else {
         throw new Error('Target child is null')
       }
@@ -215,12 +199,12 @@ const traverseTree = (
     const childNode = edge.target()
 
     if (edge.data('treeEdge') as boolean) {
-      counter.add(childNode.id())
       const members = getMembers(childNode.id(), nodeTable)
       const newNode: D3TreeNode = {
         id: childNode.id(),
-        parent: parent.id(),
+        parentId: parent.id(),
         members,
+        value: members.length,
       }
       tree.push(newNode)
       // Recursively traverse the child's children
