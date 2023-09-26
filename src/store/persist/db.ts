@@ -359,7 +359,6 @@ export const clearNetworkViewFromDb = async (): Promise<void> => {
 export const DEFAULT_UI_STATE_ID = 'uistate'
 export const getUiStateFromDb = async (): Promise<Ui | undefined> => {
   const uiState = await db.uiState.get({ id: DEFAULT_UI_STATE_ID })
-  console.log(uiState, 'ui')
   if (uiState !== undefined) {
     return uiState
   } else {

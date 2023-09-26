@@ -11,6 +11,6 @@ export interface ColumnUIState {
  * User interface states shared as a global value
  */
 export interface TableUIState {
-  columnUiState: Record<IdType, Map<AttributeName, ColumnUIState>>
+  columnUiState: Record<string, ColumnUIState>
   activeTabIndex: number
 }
