@@ -100,15 +100,37 @@ export const createTreeLayout = (
   const treeNodeCount: number = hierarchyRoot.descendants().length
   console.log('##The hierarchy', hierarchyRoot, treeNodeCount)
 
-  if (nodeCount !== treeNodeCount) {
+  if (nodeCount > treeNodeCount) {
     throw new Error('Node count mismatch. Some nodes are not in the tree!!')
   }
 
   // Test hierarchy
   const nodeSet: Set<string> = new Set<string>()
   traverse(hierarchyRoot, nodeSet)
-  console.log('##The node set', nodeSet.size)
+
+  // Now add members to the tree
+  addMembersToTreeNode(hierarchyRoot)
   return hierarchyRoot
+}
+
+/**
+ * From leaf nodes, add members to the tree nodes
+ */
+const addMembersToTreeNode = (root: HierarchyNode<D3TreeNode>): void => {
+  root.leaves().forEach((leaf: HierarchyNode<D3TreeNode>) => {
+    // const members: string[] = leaf.data.members
+    // members.forEach((member: string) => {
+    //   // Create a tree node for the member
+    //   const newNode: D3TreeNode = {
+    //     id: member,
+    //     parentId: leaf.data.parentId,
+    //     members: [member],
+    //     value: 1,
+    //   }
+    //   // Add the new node to the tree
+    //   console.log('##Adding new node', newNode)
+    // })
+  })
 }
 
 const traverse = (
@@ -193,9 +215,22 @@ const traverseTree = (
 ): void => {
   const outElements = parent.outgoers()
   const childEdges = outElements.edges()
+  if (childEdges.size() === 0) {
+    // No egdes. This is a leaf node
+    const members = getMembers(parent.id(), nodeTable)
+    members.forEach((member: string) => {
+      const newNode: D3TreeNode = {
+        id: member,
+        parentId: parent.id(),
+        members: [member],
+        value: 1,
+      }
+      tree.push(newNode)
+    })
+    return
+  }
 
   childEdges.forEach((edge: EdgeSingular) => {
-    // const edgeId: string = edge.id()
     const childNode = edge.target()
 
     if (edge.data('treeEdge') as boolean) {
