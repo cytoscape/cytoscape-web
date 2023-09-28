@@ -1,23 +1,12 @@
 import { Core, EdgeSingular, NodeSingular } from 'cytoscape'
 import { IdType } from '../../../../models/IdType'
 import NetworkFn, { Network } from '../../../../models/NetworkModel'
-import { Table, ValueType } from '../../../../models/TableModel'
-import { SubsystemTag } from '../../model/HcxMetaTag'
+import { Table } from '../../../../models/TableModel'
 
 import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
-
-const getMembers = (nodeId: IdType, table: Table): string[] => {
-  if (nodeId === undefined) {
-    throw new Error('Node id is undefined')
-  }
-
-  const row: Record<string, ValueType> | undefined = table.rows.get(nodeId)
-  if (row === undefined) {
-    throw new Error(`Row ${nodeId} not found`)
-  }
-  return row[SubsystemTag.members] as string[]
-}
+import { getMembers } from './DataBuilderUtil'
+import _ from 'lodash'
 
 const findRoot = (cyNet: Core): NodeSingular => {
   // Get the selected node
@@ -81,16 +70,15 @@ export const createTreeLayout = (
   const visited: Set<string> = new Set()
   dag2tree(cyNet, root, toBeRemoved, visited)
 
-  // const testSet = new Set<string>()
-  // treeList.forEach((element) => {
-  //   testSet.add(element.id)
-  //   testSet.add(element.parent)
-  // })
+  // Record the leaf nodes for post processing
+  const leafSet = new Set<NodeSingular>()
+  traverseTree(root, nodeTable, edgeTable, listTree, toBeRemoved, leafSet)
 
-  // Create input list for d3 stratify function
-  // counter = new Set<string>()
-  // counter.add(rootNodeId)
-  traverseTree(root, nodeTable, edgeTable, listTree, toBeRemoved)
+  console.log('##Leaf', leafSet)
+  leafSet.forEach((leaf: NodeSingular) => {
+    addMissingMembers(rootNodeId, leaf, nodeTable, listTree)
+  })
+  // Add missing genes
 
   const hierarchyRoot: HierarchyNode<D3TreeNode> =
     d3Hierarchy.stratify<D3TreeNode>()(listTree)
@@ -109,29 +97,142 @@ export const createTreeLayout = (
   traverse(hierarchyRoot, nodeSet)
 
   // Now add members to the tree
-  addMembersToTreeNode(hierarchyRoot)
+  // const leaves: Array<HierarchyNode<D3TreeNode>> = hierarchyRoot.leaves()
+  // const visitedNodes: Set<string> = new Set()
+  // leaves.forEach((leaf) => {
+  //   addMembersToTreeNode(leaf, visitedNodes)
+  // })
   return hierarchyRoot
 }
 
-/**
- * From leaf nodes, add members to the tree nodes
- */
-const addMembersToTreeNode = (root: HierarchyNode<D3TreeNode>): void => {
-  root.leaves().forEach((leaf: HierarchyNode<D3TreeNode>) => {
-    // const members: string[] = leaf.data.members
-    // members.forEach((member: string) => {
-    //   // Create a tree node for the member
-    //   const newNode: D3TreeNode = {
-    //     id: member,
-    //     parentId: leaf.data.parentId,
-    //     members: [member],
-    //     value: 1,
-    //   }
-    //   // Add the new node to the tree
-    //   console.log('##Adding new node', newNode)
-    // })
+const addMissingMembers = (
+  rootNodeId: string,
+  currentNode: NodeSingular,
+  nodeTable: Table,
+  listTree: D3TreeNode[],
+): void => {
+  // Case 1: Reached to the root node
+  if (currentNode.id() === rootNodeId) {
+    return
+  }
+
+  const incomers = currentNode.incomers()
+  // const inNodes = incomers.nodes()
+  const inEdges = incomers.edges()
+
+  let parent: NodeSingular
+  if (inEdges.size() !== 1) {
+    const treeEdges = inEdges.filter(
+      (edge: EdgeSingular) => edge.data('treeEdge') === true,
+    )
+
+    if (treeEdges.size() !== 1) {
+      throw new Error('There should be only one parent')
+    } else {
+      const parentEdge = treeEdges[0]
+      parent = parentEdge.source()
+    }
+  } else {
+    parent = inEdges[0].source()
+  }
+  // First, obtain the children.
+  const children = currentNode.outgoers().nodes()
+  // Still on leaf. Go to the parent
+  if (children.size() === 0) {
+    return addMissingMembers(rootNodeId, parent, nodeTable, listTree)
+  }
+
+  // const childIds = children.map((child) => child.id())
+  const members = getMembers(currentNode.id(), nodeTable)
+  const descendants = getAllChildren(currentNode, nodeTable)
+  const diff = _.difference(members, Array.from(descendants))
+
+  console.log('Members and children', members.length, descendants.size)
+  console.log('DIFF', diff)
+  diff.forEach((memberId: string) => {
+    const newNode: D3TreeNode = {
+      id: memberId,
+      parentId: currentNode.id(),
+      members: [memberId],
+      value: 1,
+    }
+    listTree.push(newNode)
   })
+  // const newNode: D3TreeNode = {
+  //   id: leaf.id(),
+  //   parentId: leaf.id(),
+  //   members,
+  //   value: members.length,
+  // }
+  // listTree.push(newNode)
 }
+const getAllChildren = (root: NodeSingular, nodeTable: Table): Set<string> => {
+  // const children: NodeSingular[] = []
+  const members = new Set<string>()
+  const visited: Set<string> = new Set()
+
+  const dfs = (node: NodeSingular): void => {
+    visited.add(node.id())
+    node
+      .outgoers()
+      .nodes()
+      .forEach((child: NodeSingular) => {
+        if (!visited.has(child.id())) {
+          const nodeId = child.id()
+          const childMembers = getMembers(nodeId, nodeTable)
+          childMembers.forEach((member) => {
+            members.add(member)
+          })
+          // children.push(child)
+          dfs(child)
+        }
+      })
+  }
+
+  dfs(root)
+
+  return members
+}
+
+/**
+ * Scan from the leaf node to the root and add missing members to the tree
+ */
+// const addMembersToTreeNode = (
+//   leaf: HierarchyNode<D3TreeNode>,
+//   visited: Set<IdType>,
+// ): void => {
+//   const leafId: IdType = leaf.data.id
+//   if (visited.has(leafId)) {
+//     return
+//   }
+//   visited.add(leafId)
+
+//   const children: Array<HierarchyNode<D3TreeNode>> | undefined = leaf.children
+//   if (children === undefined || children.length === 0) {
+//     if (leaf.parent === null || leaf.parent === undefined) {
+//       return
+//     }
+
+//     return addMembersToTreeNode(leaf.parent, visited)
+//   }
+
+//   const childIds = children.map((child) => child.data.id)
+//   const childIdSet = new Set<string>(childIds)
+
+//   const memberSet = new Set<string>(leaf.data.members)
+//   memberSet.forEach((memberId: string) => {
+//     if (!childIdSet.has(memberId)) {
+//       const newNode: D3TreeNode = {
+//         id: memberId,
+//         parentId: leafId,
+//         members: [memberId],
+//         value: 1,
+//       }
+//       const newChildNode = d3Hierarchy.hierarchy<D3TreeNode>(newNode)
+//       leaf.children = [newChildNode]
+//     }
+//   })
+// }
 
 const traverse = (
   root: HierarchyNode<D3TreeNode>,
@@ -207,21 +308,24 @@ const dag2tree = (
  * @param tree
  */
 const traverseTree = (
-  parent: NodeSingular,
+  currentNode: NodeSingular,
   nodeTable: Table,
   edgeTable: Table,
   tree: D3TreeNode[],
   edgesToBeRemoved: Set<EdgeSingular>,
+  leafSet: Set<NodeSingular>,
 ): void => {
-  const outElements = parent.outgoers()
+  const currentNodeId: string = currentNode.id()
+  const outElements = currentNode.outgoers()
   const childEdges = outElements.edges()
   if (childEdges.size() === 0) {
-    // No egdes. This is a leaf node
-    const members = getMembers(parent.id(), nodeTable)
+    // No edges. This is a leaf node
+    leafSet.add(currentNode)
+    const members = getMembers(currentNodeId, nodeTable)
     members.forEach((member: string) => {
       const newNode: D3TreeNode = {
         id: member,
-        parentId: parent.id(),
+        parentId: currentNodeId,
         members: [member],
         value: 1,
       }
@@ -237,13 +341,20 @@ const traverseTree = (
       const members = getMembers(childNode.id(), nodeTable)
       const newNode: D3TreeNode = {
         id: childNode.id(),
-        parentId: parent.id(),
+        parentId: currentNodeId,
         members,
         value: members.length,
       }
       tree.push(newNode)
       // Recursively traverse the child's children
-      traverseTree(childNode, nodeTable, edgeTable, tree, edgesToBeRemoved)
+      traverseTree(
+        childNode,
+        nodeTable,
+        edgeTable,
+        tree,
+        edgesToBeRemoved,
+        leafSet,
+      )
     }
   })
 }
