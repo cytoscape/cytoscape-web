@@ -27,6 +27,7 @@ export interface D3TreeNode {
   value: number
   members: string[]
   children?: D3TreeNode[]
+  isDuplicate?: boolean
 }
 
 /**
@@ -72,18 +73,34 @@ export const createTreeLayout = (
 
   // Record the leaf nodes for post processing
   const leafSet = new Set<NodeSingular>()
-  traverseTree(root, nodeTable, edgeTable, listTree, toBeRemoved, leafSet)
+  createEdgeList(root, nodeTable, edgeTable, listTree, toBeRemoved, leafSet)
 
   console.log('##Leaf', leafSet)
   leafSet.forEach((leaf: NodeSingular) => {
     addMissingMembers(rootNodeId, leaf, nodeTable, listTree)
   })
-  // Add missing genes
+
+  console.log('##Removed', toBeRemoved)
 
   const hierarchyRoot: HierarchyNode<D3TreeNode> =
     d3Hierarchy.stratify<D3TreeNode>()(listTree)
 
   hierarchyRoot.sum((d: D3TreeNode) => d.value)
+
+  // Reconnect the tree
+  const edgeMap: Map<string, Set<string>> = new Map()
+  toBeRemoved.forEach((edge: EdgeSingular) => {
+    const sourceId = edge.source().id()
+    const targetId = edge.target().id()
+    let edgeSet = edgeMap.get(sourceId)
+    if (edgeSet === undefined) {
+      edgeSet = new Set()
+    }
+    edgeSet.add(targetId)
+    edgeMap.set(sourceId, edgeSet)
+  })
+
+  reconnect(hierarchyRoot, edgeMap)
 
   const treeNodeCount: number = hierarchyRoot.descendants().length
   console.log('##The hierarchy', hierarchyRoot, treeNodeCount)
@@ -103,6 +120,59 @@ export const createTreeLayout = (
   //   addMembersToTreeNode(leaf, visitedNodes)
   // })
   return hierarchyRoot
+}
+
+const findNodeById = (
+  node: HierarchyNode<D3TreeNode>,
+  id: string,
+): HierarchyNode<D3TreeNode> | null => {
+  if (node.data.id === id) {
+    return node
+  }
+
+  const children = node.children
+  if (children !== undefined) {
+    for (const child of children) {
+      const foundNode = findNodeById(child, id)
+      if (foundNode !== null) {
+        return foundNode
+      }
+    }
+  }
+
+  return null
+}
+
+const reconnect = (
+  node: HierarchyNode<D3TreeNode>,
+  edgeMap: Map<string, Set<string>>,
+): void => {
+  const children = node.children
+  if (children === undefined || children.length === 0) {
+    return
+  }
+
+  // const toBeAdded: Array<HierarchyNode<D3TreeNode>> = []
+  if (edgeMap.has(node.data.id)) {
+    const childIds = edgeMap.get(node.data.id)
+    console.log('##Multiple parents', childIds)
+
+    childIds?.forEach((childId) => {
+      const child = findNodeById(node, childId)
+      if (child !== null) {
+        console.log('##Found child', child)
+        // const newChild = _.cloneDeep(child)
+
+        // toBeAdded.push(newChild)
+      }
+    })
+  }
+
+  children.forEach((child) => {
+    reconnect(child, edgeMap)
+  })
+  // const newChildren = children.concat(toBeAdded)
+  // node.children = [...newChildren]
 }
 
 const addMissingMembers = (
@@ -194,46 +264,6 @@ const getAllChildren = (root: NodeSingular, nodeTable: Table): Set<string> => {
   return members
 }
 
-/**
- * Scan from the leaf node to the root and add missing members to the tree
- */
-// const addMembersToTreeNode = (
-//   leaf: HierarchyNode<D3TreeNode>,
-//   visited: Set<IdType>,
-// ): void => {
-//   const leafId: IdType = leaf.data.id
-//   if (visited.has(leafId)) {
-//     return
-//   }
-//   visited.add(leafId)
-
-//   const children: Array<HierarchyNode<D3TreeNode>> | undefined = leaf.children
-//   if (children === undefined || children.length === 0) {
-//     if (leaf.parent === null || leaf.parent === undefined) {
-//       return
-//     }
-
-//     return addMembersToTreeNode(leaf.parent, visited)
-//   }
-
-//   const childIds = children.map((child) => child.data.id)
-//   const childIdSet = new Set<string>(childIds)
-
-//   const memberSet = new Set<string>(leaf.data.members)
-//   memberSet.forEach((memberId: string) => {
-//     if (!childIdSet.has(memberId)) {
-//       const newNode: D3TreeNode = {
-//         id: memberId,
-//         parentId: leafId,
-//         members: [memberId],
-//         value: 1,
-//       }
-//       const newChildNode = d3Hierarchy.hierarchy<D3TreeNode>(newNode)
-//       leaf.children = [newChildNode]
-//     }
-//   })
-// }
-
 const traverse = (
   root: HierarchyNode<D3TreeNode>,
   nodeSet: Set<string>,
@@ -282,9 +312,8 @@ const dag2tree = (
       let targetChild: NodeSingular | undefined
       incomingEdges.forEach((edge) => {
         if (edge.source().id() !== parentId) {
-          // toBeRemoved.add(edge)
+          toBeRemoved.add(edge)
           edge.data('treeEdge', false)
-          // cyNet.remove(edge)
         } else {
           targetChild = edge.target()
           edge.data('treeEdge', true)
@@ -307,7 +336,7 @@ const dag2tree = (
  * @param table
  * @param tree
  */
-const traverseTree = (
+const createEdgeList = (
   currentNode: NodeSingular,
   nodeTable: Table,
   edgeTable: Table,
@@ -347,7 +376,7 @@ const traverseTree = (
       }
       tree.push(newNode)
       // Recursively traverse the child's children
-      traverseTree(
+      createEdgeList(
         childNode,
         nodeTable,
         edgeTable,
@@ -355,6 +384,26 @@ const traverseTree = (
         edgesToBeRemoved,
         leafSet,
       )
+    } else {
+      // Add extra route
+      const members = getMembers(childNode.id(), nodeTable)
+      const newNode: D3TreeNode = {
+        id: `${childNode.id()}-${Math.random()}`,
+        parentId: currentNodeId,
+        members: [],
+        isDuplicate: true,
+        value: members.length,
+      }
+      tree.push(newNode)
+      // Recursively traverse the child's children
+      // createEdgeList(
+      //   childNode,
+      //   nodeTable,
+      //   edgeTable,
+      //   tree,
+      //   edgesToBeRemoved,
+      //   leafSet,
+      // )
     }
   })
 }

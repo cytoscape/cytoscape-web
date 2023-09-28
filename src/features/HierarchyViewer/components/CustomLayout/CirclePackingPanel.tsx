@@ -61,6 +61,7 @@ export const CirclePackingPanel = ({
 
     const svg = d3Selection.select(ref.current)
 
+    let counter = 0
     svg
       .selectAll('circle')
       .data(rootNode.descendants())
@@ -68,7 +69,16 @@ export const CirclePackingPanel = ({
       .attr('cx', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.x)
       .attr('cy', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.y)
       .attr('r', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.r)
-      .attr('fill', (d) => colorScale(d.depth))
+      .attr('stroke', 'black')
+      .attr('fill', (d) => {
+        if (d.data.isDuplicate === true) {
+          counter++
+          return 'red'
+        } else {
+          return colorScale(d.depth)
+        }
+      })
+    console.log('counter', counter)
   }, [])
 
   return (
