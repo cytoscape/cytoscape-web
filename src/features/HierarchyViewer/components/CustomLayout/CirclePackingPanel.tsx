@@ -62,14 +62,17 @@ export const CirclePackingPanel = ({
     const svg = d3Selection.select(ref.current)
 
     let counter = 0
-    svg
+    const node = svg
       .selectAll('circle')
       .data(rootNode.descendants())
       .join('circle')
+
+    node
       .attr('cx', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.x)
       .attr('cy', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.y)
       .attr('r', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.r)
-      .attr('stroke', 'black')
+      .attr('stroke', '#555555')
+      .attr('stroke-width', 0.5)
       .attr('fill', (d) => {
         if (d.data.isDuplicate === true) {
           counter++
@@ -78,6 +81,17 @@ export const CirclePackingPanel = ({
           return colorScale(d.depth)
         }
       })
+
+    const text = node.append('text')
+
+    // Add a tspan for each CamelCase-separated word.
+    text
+      .selectAll()
+      .data((d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => d.data.id)
+      .join('tspan')
+      .attr('x', 0)
+      .attr('y', (d, i, nodes) => `${i - nodes.length / 2 + 0.35}em`)
+      .text((d: string) => d)
     console.log('counter', counter)
   }, [])
 
