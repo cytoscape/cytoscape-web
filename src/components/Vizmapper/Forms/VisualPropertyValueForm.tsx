@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Box, Popover, Typography, Tooltip } from '@mui/material'
+import { Box, Popover, Typography, Tooltip, Tabs, Tab } from '@mui/material'
+
 
 import {
   VisualProperty,
@@ -8,7 +9,7 @@ import {
 } from '../../../models/VisualStyleModel'
 
 import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
-import { Color, ColorPicker } from '../VisualPropertyRender/Color'
+import { Color, ColorPicker, ColorPicker2 } from '../VisualPropertyRender/Color'
 import {
   NodeBorderLine,
   NodeBorderLinePicker,
@@ -114,6 +115,69 @@ const vpType2RenderMap: Record<
   },
 }
 
+const vpType2RenderMap2: Record<
+  VisualPropertyValueTypeName,
+  {
+    pickerRender: (props: {
+      currentValue: VisualPropertyValueType | null
+      onValueChange: (newValue: VisualPropertyValueType) => void
+    }) => React.ReactElement
+    valueRender: (props: {
+      value: VisualPropertyValueType
+    }) => React.ReactElement
+  }
+> = {
+  nodeShape: {
+    pickerRender: NodeShapePicker,
+    valueRender: NodeShape,
+  },
+  color: {
+    pickerRender: ColorPicker2,
+    valueRender: Color,
+  },
+  nodeBorderLine: {
+    pickerRender: NodeBorderLinePicker,
+    valueRender: NodeBorderLine,
+  },
+  number: {
+    pickerRender: NumberInput,
+    valueRender: NumberRender,
+  },
+  font: {
+    pickerRender: FontPicker,
+    valueRender: Font,
+  },
+  horizontalAlign: {
+    pickerRender: HorizontalAlignPicker,
+    valueRender: HorizontalAlign,
+  },
+  verticalAlign: {
+    pickerRender: VerticalAlignPicker,
+    valueRender: VerticalAlign,
+  },
+  visibility: {
+    pickerRender: VisibilityPicker,
+    valueRender: Visibility,
+  },
+  edgeArrowShape: {
+    pickerRender: EdgeArrowShapePicker,
+    valueRender: EdgeArrowShape,
+  },
+  edgeLine: {
+    pickerRender: EdgeLinePicker,
+    valueRender: EdgeLine,
+  },
+  string: {
+    pickerRender: StringInput,
+    valueRender: StringRender,
+  },
+  boolean: {
+    pickerRender: BooleanSwitch,
+    valueRender: BooleanRender,
+  },
+}
+
+
 // in some cases, we have specialized value renders
 // e.g. opacity needs to be rendered as 0% -> 100% instead of 0.0 to 1.0
 // another example is label rotation which will be rendered in angles
@@ -202,6 +266,7 @@ export function VisualPropertyValueForm(
   props: VisualPropertyValueFormProps,
 ): React.ReactElement {
   const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
+  const [activeTab, setActiveTab] = React.useState(0);
 
   const showValuePicker = (value: Element | null): void => {
     setValuePicker(value)
@@ -233,11 +298,19 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box>
+        <Tabs
+             value={activeTab}
+             onChange={(event, newValue) => setActiveTab(newValue)}
+             aria-label="Tab panel"
+        >
+          <Tab label="Color Picker" />
+          <Tab label="Swatches" />
+        </Tabs>
           {props.title != null ? (
             <Typography sx={{ m: 1 }}>{props.title}</Typography>
           ) : null}
-
-          <Box sx={{ p: 1 }}>
+        {activeTab === 0 && (
+          <Box sx={{ p: 2 }}>
             {(
               vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
               vpType2RenderMap[props.visualProperty.type].pickerRender ??
@@ -248,6 +321,21 @@ export function VisualPropertyValueForm(
               currentValue: props.currentValue,
             })}
           </Box>
+                  )}
+          {activeTab === 1 && (
+                    <Box sx={{ p: 2 }}>
+                    {(
+                      vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+                      vpType2RenderMap2[props.visualProperty.type].pickerRender ??
+                      (() => { })
+                    )({
+                      onValueChange: (value: VisualPropertyValueType) =>
+                        props.onValueChange(value),
+                      currentValue: props.currentValue,
+                    })}
+                  </Box>
+        )}
+
         </Box>
       </Popover>
     </Box>
