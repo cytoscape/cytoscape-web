@@ -6,7 +6,6 @@ import { Table } from '../../../../models/TableModel'
 import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
 import { getMembers } from './DataBuilderUtil'
-import _ from 'lodash'
 
 const findRoot = (cyNet: Core): NodeSingular => {
   // Get the selected node
@@ -28,11 +27,11 @@ export interface D3TreeNode {
   // Parent's ID
   parentId: string
   value: number
+  name: string
   members: string[]
   children?: D3TreeNode[]
   isDuplicate?: boolean
   originalId?: string
-  name?: string
 }
 
 /**
@@ -45,7 +44,6 @@ export interface D3TreeNode {
 export const createTreeLayout = (
   network: Network,
   nodeTable: Table,
-  edgeTable: Table,
 ): HierarchyNode<D3TreeNode> => {
   // Get the internal data store. In this case, it is a cytoscape instance
   const cyNet: Core = NetworkFn.getInternalNetworkDataStore(network) as Core
@@ -64,6 +62,7 @@ export const createTreeLayout = (
   const rootMembers = getMembers(rootNodeId, nodeTable)
   const d3RootNode: D3TreeNode = {
     id: rootNodeId,
+    name: nodeTable.rows.get(rootNodeId)?.CD_CommunityName as string,
     parentId: '',
     members: rootMembers,
     value: rootMembers.length,
@@ -75,17 +74,19 @@ export const createTreeLayout = (
   const multipleParents: Set<EdgeSingular> = new Set()
   const visited: Set<string> = new Set()
 
-  // Mark the duplicate edges
+  // Mark the duplicate edges and make it a tree
   dag2tree(cyNet, root, multipleParents, visited)
 
   // Record the leaf nodes for post processing
   const leafSet = new Set<NodeSingular>()
+
+  // Create a list of edges with duplicates
   createEdgeList(root, nodeTable, listTree, multipleParents, leafSet, false)
 
   console.log('##Leaf', leafSet)
-  leafSet.forEach((leaf: NodeSingular) => {
-    addMissingMembers(rootNodeId, leaf, nodeTable, listTree)
-  })
+  // leafSet.forEach((leaf: NodeSingular) => {
+  //   addMissingMembers(rootNodeId, leaf, nodeTable, listTree)
+  // })
 
   console.log('##Multiple Parents', multipleParents)
 
@@ -173,94 +174,95 @@ export const createTreeLayout = (
 //   // node.children = [...newChildren]
 // }
 
-const addMissingMembers = (
-  rootNodeId: string,
-  currentNode: NodeSingular,
-  nodeTable: Table,
-  listTree: D3TreeNode[],
-): void => {
-  // Case 1: Reached to the root node
-  if (currentNode.id() === rootNodeId) {
-    return
-  }
+// const addMissingMembers = (
+//   rootNodeId: string,
+//   currentNode: NodeSingular,
+//   nodeTable: Table,
+//   listTree: D3TreeNode[],
+// ): void => {
+//   // Case 1: Reached to the root node
+//   if (currentNode.id() === rootNodeId) {
+//     return
+//   }
 
-  const incomers = currentNode.incomers()
-  // const inNodes = incomers.nodes()
-  const inEdges = incomers.edges()
+//   const incomers = currentNode.incomers()
+//   // const inNodes = incomers.nodes()
+//   const inEdges = incomers.edges()
 
-  let parent: NodeSingular
-  if (inEdges.size() !== 1) {
-    const treeEdges = inEdges.filter(
-      (edge: EdgeSingular) => edge.data('treeEdge') === true,
-    )
+//   let parent: NodeSingular
+//   if (inEdges.size() !== 1) {
+//     const treeEdges = inEdges.filter(
+//       (edge: EdgeSingular) => edge.data('treeEdge') === true,
+//     )
 
-    if (treeEdges.size() !== 1) {
-      throw new Error('There should be only one parent')
-    } else {
-      const parentEdge = treeEdges[0]
-      parent = parentEdge.source()
-    }
-  } else {
-    parent = inEdges[0].source()
-  }
-  // First, obtain the children.
-  const children = currentNode.outgoers().nodes()
-  // Still on leaf. Go to the parent
-  if (children.size() === 0) {
-    return addMissingMembers(rootNodeId, parent, nodeTable, listTree)
-  }
+//     if (treeEdges.size() !== 1) {
+//       throw new Error('There should be only one parent')
+//     } else {
+//       const parentEdge = treeEdges[0]
+//       parent = parentEdge.source()
+//     }
+//   } else {
+//     parent = inEdges[0].source()
+//   }
+//   // First, obtain the children.
+//   const children = currentNode.outgoers().nodes()
+//   // Still on leaf. Go to the parent
+//   if (children.size() === 0) {
+//     return addMissingMembers(rootNodeId, parent, nodeTable, listTree)
+//   }
 
-  // const childIds = children.map((child) => child.id())
-  const members = getMembers(currentNode.id(), nodeTable)
-  const descendants = getAllChildren(currentNode, nodeTable)
-  const diff = _.difference(members, Array.from(descendants))
+//   // const childIds = children.map((child) => child.id())
+//   const members = getMembers(currentNode.id(), nodeTable)
+//   const descendants = getAllChildren(currentNode, nodeTable)
+//   const diff = _.difference(members, Array.from(descendants))
 
-  // console.log('Members and children', members.length, descendants.size)
-  // console.log('DIFF', diff)
-  diff.forEach((memberId: string) => {
-    const newNode: D3TreeNode = {
-      id: memberId,
-      parentId: currentNode.id(),
-      members: [memberId],
-      value: 1,
-    }
-    listTree.push(newNode)
-  })
-  // const newNode: D3TreeNode = {
-  //   id: leaf.id(),
-  //   parentId: leaf.id(),
-  //   members,
-  //   value: members.length,
-  // }
-  // listTree.push(newNode)
-}
-const getAllChildren = (root: NodeSingular, nodeTable: Table): Set<string> => {
-  // const children: NodeSingular[] = []
-  const members = new Set<string>()
-  const visited: Set<string> = new Set()
+//   // console.log('Members and children', members.length, descendants.size)
+//   // console.log('DIFF', diff)
+//   diff.forEach((memberId: string) => {
+//     const newNode: D3TreeNode = {
+//       id: memberId,
+//       name: nodeTable.rows.get(rootNodeId)?.name as string,
+//       parentId: currentNode.id(),
+//       members: [memberId],
+//       value: 1,
+//     }
+//     listTree.push(newNode)
+//   })
+//   // const newNode: D3TreeNode = {
+//   //   id: leaf.id(),
+//   //   parentId: leaf.id(),
+//   //   members,
+//   //   value: members.length,
+//   // }
+//   // listTree.push(newNode)
+// }
+// const getAllChildren = (root: NodeSingular, nodeTable: Table): Set<string> => {
+//   // const children: NodeSingular[] = []
+//   const members = new Set<string>()
+//   const visited: Set<string> = new Set()
 
-  const dfs = (node: NodeSingular): void => {
-    visited.add(node.id())
-    node
-      .outgoers()
-      .nodes()
-      .forEach((child: NodeSingular) => {
-        if (!visited.has(child.id())) {
-          const nodeId = child.id()
-          const childMembers = getMembers(nodeId, nodeTable)
-          childMembers.forEach((member) => {
-            members.add(member)
-          })
-          // children.push(child)
-          dfs(child)
-        }
-      })
-  }
+//   const dfs = (node: NodeSingular): void => {
+//     visited.add(node.id())
+//     node
+//       .outgoers()
+//       .nodes()
+//       .forEach((child: NodeSingular) => {
+//         if (!visited.has(child.id())) {
+//           const nodeId = child.id()
+//           const childMembers = getMembers(nodeId, nodeTable)
+//           childMembers.forEach((member) => {
+//             members.add(member)
+//           })
+//           // children.push(child)
+//           dfs(child)
+//         }
+//       })
+//   }
 
-  dfs(root)
+//   dfs(root)
 
-  return members
-}
+//   return members
+// }
 
 /**
  *
@@ -335,19 +337,20 @@ const createEdgeList = (
   if (childEdges.size() === 0) {
     // No edges. This is a leaf node
     leafSet.add(currentNode)
-    const members = getMembers(currentNodeId, nodeTable)
-    members.forEach((member: string) => {
-      const newId = duplicateBranch ? `${member}-${Math.random()}` : member
-      const newNode: D3TreeNode = {
-        id: newId,
-        // id: member,
-        parentId: currentNodeId,
-        members: [newId],
-        value: 1,
-        isDuplicate: duplicateBranch,
-      }
-      tree.push(newNode)
-    })
+    // const members = getMembers(currentNodeId, nodeTable)
+    // members.forEach((member: string) => {
+    //   const newId = duplicateBranch ? `${member}-${Math.random()}` : member
+    //   const newNode: D3TreeNode = {
+    //     id: newId,
+    //     // id: member,
+    //     name: nodeTable.rows.get(member)?.name as string,
+    //     parentId: currentNodeId,
+    //     members: [newId],
+    //     value: 1,
+    //     isDuplicate: duplicateBranch,
+    //   }
+    //   tree.push(newNode)
+    // })
     return
   }
 
@@ -357,12 +360,13 @@ const createEdgeList = (
 
     if (edge.data('treeEdge') as boolean) {
       const newId = duplicateBranch
-        ? `${childNode.id()}-${Math.random()}`
+        ? `${childNode.id()}-${parentNode.id()}`
         : childNode.id()
       const members = getMembers(childNode.id(), nodeTable)
       const newNode: D3TreeNode = {
         // id: childNode.id(),
         id: newId,
+        name: nodeTable.rows.get(childNode.id())?.CD_CommunityName as string,
         parentId: currentNodeId,
         members,
         value: members.length,
@@ -382,23 +386,25 @@ const createEdgeList = (
       // Add extra route
       // Not a tree edge. Need to duplicate the entire branch
       const members = getMembers(childNode.id(), nodeTable)
-      const newId = `${childNode.id()}-${parentNode.id()}}`
+      const newId = `${childNode.id()}-${parentNode.id()}`
       const newNode: D3TreeNode = {
         id: newId,
+        name: nodeTable.rows.get(childNode.id())?.CD_CommunityName as string,
+
         parentId: parentNode.id(),
         members,
         isDuplicate: true,
         value: members.length,
       }
       tree.push(newNode)
-      createEdgeList(
-        childNode,
-        nodeTable,
-        tree,
-        edgesToBeRemoved,
-        leafSet,
-        true,
-      )
+      // createEdgeList(
+      //   childNode,
+      //   nodeTable,
+      //   tree,
+      //   edgesToBeRemoved,
+      //   leafSet,
+      //   true,
+      // )
     }
   })
 }

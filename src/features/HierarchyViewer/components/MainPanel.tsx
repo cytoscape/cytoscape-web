@@ -19,7 +19,7 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
 // import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
-import { createTreeLayout } from './CustomLayout/CirclePackingLayout'
+// import { createTreeLayout } from './CustomLayout/CirclePackingLayout'
 import { Network } from '../../../models/NetworkModel'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { CirclePackingPanel } from './CustomLayout/CirclePackingPanel'
@@ -108,13 +108,13 @@ export const MainPanel = (): JSX.Element => {
     }
 
     const idString: string = selectedSubsystem.toString()
-    const { nodeTable, edgeTable } = tableRecord
+    const { nodeTable } = tableRecord
     const rows = nodeTable.rows
 
     // For Circle Packing: build circle packing layout
-    if (currentNetwork !== undefined) {
-      createTreeLayout(currentNetwork, nodeTable, edgeTable)
-    }
+    // if (currentNetwork !== undefined) {
+    //   createTreeLayout(currentNetwork, nodeTable)
+    // }
 
     // Pick the table row for the selected subsystem and extract member list
     const row: Record<string, ValueType> | undefined = rows.get(idString)
@@ -177,7 +177,7 @@ export const MainPanel = (): JSX.Element => {
                 height={1000}
                 network={currentNetwork}
                 nodeTable={tableRecord?.nodeTable}
-                edgeTable={tableRecord?.edgeTable}
+                selected={targetNode}
               />
               {/* <PropertyPanel networkId={targetNode} /> */}
             </Allotment.Pane>
