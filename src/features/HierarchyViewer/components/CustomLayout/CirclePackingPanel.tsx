@@ -5,9 +5,10 @@ import * as d3Zoom from 'd3-zoom'
 import { useEffect, useRef } from 'react'
 import { Network } from '../../../../models/NetworkModel'
 import { Table } from '../../../../models/TableModel'
-import { D3TreeNode, createTreeLayout } from './CirclePackingLayout'
+import { createTreeLayout } from './CirclePackingLayout'
 import { getColorMapper } from './CirclePackingUtils'
 import { IdType } from '../../../../models/IdType'
+import { D3TreeNode } from './D3TreeNode'
 
 interface CirclePackingPanelProps {
   width: number
@@ -79,10 +80,12 @@ export const CirclePackingPanel = ({
       .attr('cy', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.y)
       .attr('r', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.r)
       .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        (d.data.id as string).startsWith(selected ?? '') ? 'red' : '#777777',
+        d.data.id === selected || d.data.originalId === selected
+          ? 'red'
+          : '#777777',
       )
       .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        (d.data.id as string).startsWith(selected ?? '') ? 5 : 0.5,
+        d.data.id === selected || d.data.originalId === selected ? 5 : 0.5,
       )
       .attr('fill', (d) => {
         return colorScale(d.data.value)
@@ -91,24 +94,19 @@ export const CirclePackingPanel = ({
     wrapper
       .append('g')
       .selectAll('text')
-      .data(
-        rootNode
-          .descendants()
-          .filter(
-            (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-              d.height === 0 || d.height === 1,
-          ),
-      )
+      .data(rootNode.descendants())
       .join('text')
 
       .text((d: d3Hierarchy.HierarchyCircularNode<any>) => d.data.name)
       .attr('font-size', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        (d.data.id as string).startsWith(selected ?? '') ? '1em' : '0.05em',
+        d.data.id === selected || d.data.originalId === selected
+          ? '3em'
+          : `${3 / d.depth}em`,
       )
       .attr('text-anchor', 'middle')
       .attr('x', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.x)
       .attr('y', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.y)
-      .attr('dy', '0.55em')
+      .attr('dy', `${1 + Math.random()}em`)
 
     // Initialized
     initRef.current = true

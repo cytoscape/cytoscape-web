@@ -1,38 +1,17 @@
 import { Core, EdgeSingular, NodeSingular } from 'cytoscape'
 import { IdType } from '../../../../models/IdType'
 import NetworkFn, { Network } from '../../../../models/NetworkModel'
-import { Table } from '../../../../models/TableModel'
+import { Table, ValueType } from '../../../../models/TableModel'
 
 import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
-import { getMembers } from './DataBuilderUtil'
-
-const findRoot = (cyNet: Core): NodeSingular => {
-  // Get the selected node
-
-  // Find root
-  const roots = cyNet.nodes().roots()
-  if (roots.size() !== 1) {
-    throw new Error(
-      'This is not a tree / DAG. There should be only one root node',
-    )
-  }
-  return roots[0]
-}
-
-export interface D3TreeNode {
-  // ID of the tree node
-  id: string
-
-  // Parent's ID
-  parentId: string
-  value: number
-  name: string
-  members: string[]
-  children?: D3TreeNode[]
-  isDuplicate?: boolean
-  originalId?: string
-}
+import {
+  cyNetDag2tree,
+  cyNetDag2tree2,
+  findRoot,
+  getMembers,
+} from './DataBuilderUtil'
+import { D3TreeNode } from './D3TreeNode'
 
 /**
  * Return the branch of the network rooted at the given node
@@ -62,7 +41,7 @@ export const createTreeLayout = (
   const rootMembers = getMembers(rootNodeId, nodeTable)
   const d3RootNode: D3TreeNode = {
     id: rootNodeId,
-    name: nodeTable.rows.get(rootNodeId)?.CD_CommunityName as string,
+    name: 'Root node',
     parentId: '',
     members: rootMembers,
     value: rootMembers.length,
@@ -81,7 +60,13 @@ export const createTreeLayout = (
   const leafSet = new Set<NodeSingular>()
 
   // Create a list of edges with duplicates
-  createEdgeList(root, nodeTable, listTree, multipleParents, leafSet, false)
+
+  // parent -> child pair
+  const duplicatedNodes = new Set<[NodeSingular, NodeSingular]>()
+  createEdgeList(root, nodeTable, listTree, leafSet, false, duplicatedNodes)
+  // duplicatedNodes.forEach((node: NodeSingular) => {
+  //   createEdgeList(node, nodeTable, listTree, leafSet, true, duplicatedNodes)
+  // })
 
   console.log('##Leaf', leafSet)
   // leafSet.forEach((leaf: NodeSingular) => {
@@ -118,7 +103,82 @@ export const createTreeLayout = (
     throw new Error('Node count mismatch. Some nodes are not in the tree!!')
   }
 
-  return hierarchyRoot
+  // Test
+  const visitedCy: { [key: string]: number } = {}
+  // Initialize the tree elements
+  const treeElements: any[] = []
+  cyNetDag2tree(rootNodeId, cyNet, visitedCy, treeElements)
+
+  console.log(treeElements)
+
+  const treeElements2 = treeElements2D3Tree(rootNodeId, treeElements, nodeTable)
+  console.log(treeElements2)
+
+  const tree3: any[] = []
+  const visited3: { [key: string]: number } = {}
+
+  cyNetDag2tree2(root, null, cyNet, nodeTable, visited3, tree3)
+  const hierarchyRoot3: HierarchyNode<D3TreeNode> =
+    d3Hierarchy.stratify<D3TreeNode>()(tree3)
+
+  hierarchyRoot3.sum((d: D3TreeNode) => d.value)
+  console.log(hierarchyRoot3)
+
+  // const hierarchyRoot2: HierarchyNode<D3TreeNode> =
+  //   d3Hierarchy.stratify<D3TreeNode>()(treeElements2)
+
+  // hierarchyRoot2.sum((d: D3TreeNode) => d.value)
+
+  return hierarchyRoot3
+}
+
+const treeElements2D3Tree = (
+  rootId: string,
+  treeElements: any[],
+  nodeTable: Table,
+): D3TreeNode[] => {
+  const idSet = new Set<string>()
+  // Transform the tree elements to stratify input
+  const treeList: D3TreeNode[] = []
+  treeElements.forEach((element) => {
+    if (element.data.id === rootId) {
+      // This is the root node.
+      idSet.add(element.data.id)
+      const members = getMembers(element.data.id, nodeTable)
+      treeList.push({
+        id: element.data.id,
+        name: (nodeTable.rows.get(rootId)?.name as string) ?? 'Root node',
+        members,
+        value: members.length,
+        parentId: '',
+      })
+    } else if (element.data.source !== undefined) {
+      // This is an edge
+      const members = getMembers(element.data.target, nodeTable)
+      idSet.add(element.data.target)
+      treeList.push({
+        id: element.data.target,
+        name: nodeTable.rows.get(element.data.target)?.name as string,
+        parentId: element.data.source,
+        members,
+        value: members.length,
+      })
+      // } else if (element.data.parent !== undefined) {
+      //   // It's a node
+      //   idSet.add(element.data.id)
+      //   treeList.push({
+      //     id: element.data.id,
+      //     originalId: element.data.originalId,
+      //     name: nodeTable.rows.get(element.data.originalId)?.name as string,
+      //     members: getMembers(element.data.originalId, nodeTable),
+      //     value: getMembers(element.data.originalId, nodeTable).length,
+      //     parentId:
+      //       element.data.parent !== undefined ? element.data.parent : null,
+      //   })
+    }
+  })
+
+  return treeList
 }
 
 // const findNodeById = (
@@ -327,11 +387,12 @@ const createEdgeList = (
   currentNode: NodeSingular,
   nodeTable: Table,
   tree: D3TreeNode[],
-  edgesToBeRemoved: Set<EdgeSingular>,
   leafSet: Set<NodeSingular>,
   duplicateBranch: boolean,
+  duplicatedNodes: Set<[NodeSingular, NodeSingular]>,
 ): void => {
   const currentNodeId: string = currentNode.id()
+
   const outElements = currentNode.outgoers()
   const childEdges = outElements.edges()
   if (childEdges.size() === 0) {
@@ -366,11 +427,11 @@ const createEdgeList = (
       const newNode: D3TreeNode = {
         // id: childNode.id(),
         id: newId,
-        name: nodeTable.rows.get(childNode.id())?.CD_CommunityName as string,
+        originalId: duplicateBranch ? childNode.id() : undefined,
+        name: nodeTable.rows.get(childNode.id())?.name as string,
         parentId: currentNodeId,
         members,
         value: members.length,
-        isDuplicate: duplicateBranch,
       }
       tree.push(newNode)
       // Recursively traverse the child's children
@@ -378,33 +439,156 @@ const createEdgeList = (
         childNode,
         nodeTable,
         tree,
-        edgesToBeRemoved,
         leafSet,
         duplicateBranch,
+        duplicatedNodes,
       )
     } else {
-      // Add extra route
-      // Not a tree edge. Need to duplicate the entire branch
-      const members = getMembers(childNode.id(), nodeTable)
-      const newId = `${childNode.id()}-${parentNode.id()}`
-      const newNode: D3TreeNode = {
-        id: newId,
-        name: nodeTable.rows.get(childNode.id())?.CD_CommunityName as string,
-
-        parentId: parentNode.id(),
-        members,
-        isDuplicate: true,
-        value: members.length,
+      // Duplicate branch found.
+      // Add the branch's root node
+      const newDuplicatedNode: D3TreeNode = getBranchRoot(
+        parentNode,
+        childNode,
+        nodeTable,
+      )
+      tree.push(newDuplicatedNode)
+      // // Record the duplicated node
+      duplicatedNodes.add([parentNode, childNode])
+      const grandChildren = childNode.outgoers().nodes()
+      if (grandChildren.size() === 0) {
+        // This is a leaf node
+      } else {
+        // Recursively traverse the children
+        grandChildren.forEach((grandChild: NodeSingular) => {
+          // Add duplicate route
+          addDuplicateBranch(grandChild, newDuplicatedNode.id, nodeTable, tree)
+        })
       }
-      tree.push(newNode)
-      // createEdgeList(
-      //   childNode,
-      //   nodeTable,
-      //   tree,
-      //   edgesToBeRemoved,
-      //   leafSet,
-      //   true,
-      // )
     }
   })
 }
+
+const getBranchRoot = (
+  parentNode: NodeSingular,
+  childNode: NodeSingular,
+  nodeTable: Table,
+): D3TreeNode => {
+  // Node ID used in the original DAG
+  const originalNodeId: string = childNode.id()
+  const parentNodeId: string = parentNode.id()
+  // Members in the original node
+  const members: string[] = getMembers(originalNodeId, nodeTable)
+  // Name of the node
+  const row: Record<string, ValueType> | undefined =
+    nodeTable.rows.get(originalNodeId)
+  if (row === undefined) {
+    throw new Error(`Row ${originalNodeId} not found`)
+  }
+  // Modified ID for the duplicate node
+  const newId = `${originalNodeId}-${parentNodeId}`
+  // Name of the node
+  const name: string = (row.name ?? newId) as string
+  const newName: string = `${name} (duplicated)`
+  return {
+    id: newId,
+    originalId: originalNodeId,
+    name: newName,
+    parentId: parentNodeId,
+    members,
+    value: members.length,
+  }
+}
+
+const addDuplicateBranch = (
+  node: NodeSingular,
+  parentNodeId: string,
+  nodeTable: Table,
+  tree: D3TreeNode[],
+): void => {
+  // Node ID used in the original DAG
+  const originalNodeId: string = node.id()
+
+  // Members in the original node
+  const members: string[] = getMembers(originalNodeId, nodeTable)
+
+  // Name of the node
+  const row: Record<string, ValueType> | undefined =
+    nodeTable.rows.get(originalNodeId)
+
+  if (row === undefined) {
+    throw new Error(`Row ${originalNodeId} not found`)
+  }
+
+  // Modified ID for the duplicate node
+  const newId = `${originalNodeId}-${Math.random()}`
+
+  // Name of the node
+  const name: string = (row.name ?? newId) as string
+  const newName: string = `${name} (duplicated)`
+  const newNode: D3TreeNode = {
+    id: newId,
+    originalId: originalNodeId,
+    name: newName,
+    parentId: parentNodeId,
+    members,
+    value: members.length,
+  }
+  tree.push(newNode)
+
+  // Get the children of the node
+  const childEdges = node.outgoers().edges()
+  if (childEdges.size() === 0) {
+    // This is a leaf node
+  }
+
+  // childEdges.forEach((edge: EdgeSingular) => {
+  //   const childNode = edge.target()
+  //   addDuplicateBranch(childNode, newId, nodeTable, tree)
+  // })
+}
+
+// const transformDagToTree = (
+//   node: string,
+//   cyNet: Core,
+//   visited: Record<string, number>,
+//   treeElements: any[],
+// ): void => {
+//   // Initialize visited count for node
+//   visited[node] = visited[node] === undefined ? 1 : visited[node] + 1
+
+//   // Create a new node identifier based on visited count
+//   const newNode = visited[node] > 1 ? `${node}_${visited[node]}` : node
+
+//   console.log('##Node', node, newNode, visited[node])
+//   // If there's a parent, add the new node to the parent's list of children
+//   if (visited[node] === 1) {
+//     treeElements.push({ data: { id: newNode } })
+//   } else {
+//     treeElements.push({ data: { id: newNode, parent: node } })
+//   }
+
+//   // Recur for all children of the current node in the DAG
+//   const children = cyNet
+//     .edges(`[source = "${node}"]`)
+//     .map((edge: any) => edge.target().id())
+//   for (const child of children) {
+//     if (visited[node] > 1) {
+//       treeElements.push({
+//         data: {
+//           id: `${newNode} -> ${child as string}`,
+//           source: newNode,
+//           target: child,
+//         },
+//       })
+//     } else {
+//       treeElements.push({
+//         data: {
+//           id: `${node} -> ${child as string}`,
+//           source: node,
+//           target: child,
+//         },
+//       })
+//     }
+//     transformDagToTree(child, cyNet, visited, treeElements)
+//   }
+// }
