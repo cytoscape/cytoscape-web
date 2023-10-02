@@ -116,8 +116,8 @@ const WorkSpaceEditor = (): JSX.Element => {
         next !== undefined &&
         !_.isEqual(
           // omit selection state and hovered element changes as valid viewModel changes
-          _.omit(prev, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
-          _.omit(next, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
+          _.omit(prev, ['selectedNodes', 'selectedEdges']),
+          _.omit(next, ['selectedNodes', 'selectedEdges']),
         )
 
       // primitve compare fn that does not take into account the selection/hover state

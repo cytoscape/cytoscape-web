@@ -157,8 +157,13 @@ export default function TableBrowser(props: {
   )
   const setMapping = useVisualStyleStore((state) => state.setMapping)
 
-  const { selectedNodes, selectedEdges } =
-    useViewModelStore((state) => state.viewModels[networkId]) ?? {}
+  const selectedNodes = useViewModelStore(
+    (state) => state.viewModels[networkId]?.selectedNodes ?? [],
+  )
+  const selectedEdges = useViewModelStore(
+    (state) => state.viewModels[networkId]?.selectedEdges ?? [],
+  )
+
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
@@ -738,7 +743,7 @@ export default function TableBrowser(props: {
             onItemHovered={(e) => onItemHovered(e.location)}
             overscrollX={200}
             overscrollY={200}
-            onColumnResize={onColumnResize}
+            onColumnResizeEnd={onColumnResize}
             width={props.width}
             height={props.height}
             getCellContent={getContent}
@@ -767,7 +772,7 @@ export default function TableBrowser(props: {
             onItemHovered={(e) => onItemHovered(e.location)}
             overscrollX={200}
             overscrollY={200}
-            onColumnResize={onColumnResize}
+            onColumnResizeEnd={onColumnResize}
             width={props.width}
             height={props.height}
             getCellContent={getContent}
