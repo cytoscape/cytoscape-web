@@ -16,7 +16,8 @@ export const CyjsEdgeVisualPropertyName = {
   SourceArrowColor: 'source-arrow-color',
   SourceArrowFill: 'source-arrow-fill',
   SourceArrowOpacity: 'source-arrow-opacity',
-  TextMaxWidth: 'text-max-width'
+  TextMaxWidth: 'text-max-width',
+  EdgeZOrder: 'z-index',
 } as const
 
 export type CyjsEdgeVisualPropertyType =
@@ -44,7 +45,7 @@ export const CyjsNodeVisualPropertyName = {
   LabelOpacity: 'text-opacity',
   TextMaxWidth: 'text-max-width',
 
-
+  NodeZOrder: 'z-index',
   Visibility: 'display',
 } as const
 
@@ -90,6 +91,7 @@ export type CyjsNodeVisualPropertyTypes =
   | 'border-position-y'
   | 'border-width-relative-to'
   | 'border-height-relative-to'
+  | 'z-index'
 
 export const CyjsVisualPropertyName = {
   ...CyjsNodeVisualPropertyName,
