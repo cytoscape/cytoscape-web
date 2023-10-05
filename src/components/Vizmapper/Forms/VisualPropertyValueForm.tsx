@@ -487,7 +487,7 @@ export function VisualPropertyValueForm(
              onChange={(event, newValue) => setActiveTab(newValue)}
              aria-label="Tab panel"
         >
-          <Tab  label="ColorBrewer Sequential" />
+          <Tab label="ColorBrewer Sequential" />
           <Tab label="ColorBrewer Diverging" />
           <Tab label="Viridis Sequential" />
           <Tab label="Swatches" />
@@ -497,7 +497,7 @@ export function VisualPropertyValueForm(
             <Typography sx={{ m: 1 }}>{props.title}</Typography>
           ) : null}
         {activeTab === 0 && (
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
             {(
               vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
               vpType2RenderMapSequential[props.visualProperty.type].pickerRender ??
@@ -510,7 +510,8 @@ export function VisualPropertyValueForm(
           </Box>
                   )}
           {activeTab === 1 && (
-                    <Box sx={{ p: 2 }}>
+                    <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}
+>
                     {(
                       vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                       vpType2RenderMapDiverging[props.visualProperty.type].pickerRender ??
@@ -524,7 +525,7 @@ export function VisualPropertyValueForm(
         )}
 
         {activeTab === 2 && (
-                    <Box sx={{ p: 2 }}>
+                    <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
                     {(
                       vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                       vpType2RenderMapViridis[props.visualProperty.type].pickerRender ??
@@ -538,7 +539,7 @@ export function VisualPropertyValueForm(
         )}
 
         {activeTab === 3 && (
-                    <Box sx={{ p: 2 }}>
+                    <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center"}}>
                     {(
                       vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                       vpType2RenderMap2[props.visualProperty.type].pickerRender ??
@@ -552,7 +553,7 @@ export function VisualPropertyValueForm(
         )}
 
         {activeTab === 4 && (
-                    <Box sx={{ p: 2 }}>
+                    <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center"}}>
                     {(
                       vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                       vpType2RenderMap[props.visualProperty.type].pickerRender ??
