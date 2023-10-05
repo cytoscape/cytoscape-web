@@ -140,7 +140,7 @@ export function ColorPickerSequential(props: {
   return (
     <Box>
       <SwatchesPicker
-        width={930}
+        width={1000}
         colors={customColors}
         color={localColorValue}
         onChange={(color: any) => {
@@ -182,7 +182,7 @@ export function ColorPickerDiverging(props: {
   return (
     <Box>
       <SwatchesPicker
-        width={580}
+        width={600}
         colors={customColors}
         color={localColorValue}
         onChange={(color: any) => {
