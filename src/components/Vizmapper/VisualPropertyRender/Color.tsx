@@ -30,7 +30,7 @@ export function ColorPicker(props: {
   )
 }
 
-export function ColorPickerGithub(props: {
+export function ColorPickerCompact(props: {
   currentValue: ColorType | null
   onValueChange: (color: ColorType) => void
 }): React.ReactElement {

@@ -9,7 +9,7 @@ import {
 } from '../../../models/VisualStyleModel'
 
 import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
-import { Color, ColorPicker, ColorPickerGithub, ColorPickerViridis, ColorPickerSequential, ColorPickerDiverging} from '../VisualPropertyRender/Color'
+import { Color, ColorPicker, ColorPickerCompact, ColorPickerViridis, ColorPickerSequential, ColorPickerDiverging} from '../VisualPropertyRender/Color'
 import {
   NodeBorderLine,
   NodeBorderLinePicker,
@@ -132,7 +132,7 @@ const vpType2RenderMap2: Record<
     valueRender: NodeShape,
   },
   color: {
-    pickerRender: ColorPickerGithub,
+    pickerRender: ColorPickerCompact,
     valueRender: Color,
   },
   nodeBorderLine: {
@@ -487,7 +487,7 @@ export function VisualPropertyValueForm(
              onChange={(event, newValue) => setActiveTab(newValue)}
              aria-label="Tab panel"
         >
-          <Tab label="ColorBrewer Sequential" />
+          <Tab  label="ColorBrewer Sequential" />
           <Tab label="ColorBrewer Diverging" />
           <Tab label="Viridis Sequential" />
           <Tab label="Swatches" />
