@@ -50,6 +50,7 @@ import { serializeColumnUIKey, useUiStateStore } from '../../store/UiStateStore'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { Panel } from '../../models/UiModel/Panel'
 import { Ui } from '../../models/UiModel'
+import NetworkInfoPanel from './NetworkInfoPanel'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -703,7 +704,7 @@ export default function TableBrowser(props: {
             '& button': {
               minHeight: 30,
               height: 30,
-              width: 300,
+              width: 200,
             },
             height: 30,
             minHeight: 30,
@@ -711,6 +712,7 @@ export default function TableBrowser(props: {
         >
           <Tab label={<Typography variant="caption">Nodes</Typography>} />
           <Tab label={<Typography variant="caption">Edges</Typography>} />
+          <Tab label={<Typography variant="caption">Network</Typography>} />
         </Tabs>
         {panels[Panel.BOTTOM] === PanelState.CLOSED ? (
           <KeyboardArrowUp
@@ -781,6 +783,9 @@ export default function TableBrowser(props: {
             rows={maxEdgeId - minEdgeId + 1}
           />
         </Box>
+      </TabPanel>
+      <TabPanel value={currentTabIndex} index={2}>
+        <NetworkInfoPanel />
       </TabPanel>
     </Box>
   )
