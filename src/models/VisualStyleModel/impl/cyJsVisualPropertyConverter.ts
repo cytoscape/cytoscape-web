@@ -27,6 +27,7 @@ const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
   nodeLabelOpacity: CyVpName.LabelOpacity,
 
   nodeVisibility: CyVpName.Visibility,
+  nodeZOrder: CyVpName.NodeZOrder,
 
   nodeSelectedPaint: CyVpName.BackgroundColor,
 
@@ -51,6 +52,7 @@ const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
   edgeSelectedPaint: CyVpName.LineColor,
   edgeMaxLabelWidth: CyVpName.TextMaxWidth,
 
+  edgeZOrder: CyVpName.EdgeZOrder,
 
   networkBackgroundColor: CyVpName.BackgroundColor,
 } as const

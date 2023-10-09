@@ -116,8 +116,8 @@ const WorkSpaceEditor = (): JSX.Element => {
         next !== undefined &&
         !_.isEqual(
           // omit selection state and hovered element changes as valid viewModel changes
-          _.omit(prev, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
-          _.omit(next, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
+          _.omit(prev, ['selectedNodes', 'selectedEdges']),
+          _.omit(next, ['selectedNodes', 'selectedEdges']),
         )
 
       // primitve compare fn that does not take into account the selection/hover state
@@ -143,7 +143,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   const removeSummary = useNetworkSummaryStore((state) => state.delete)
   useNetworkSummaryManager()
 
-  const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
+  const [tableBrowserHeight, setTableBrowserHeight] = useState(200)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
   const [allotmentDimensions, setAllotmentDimensions] = useState<
     [number, number]
@@ -217,7 +217,12 @@ const WorkSpaceEditor = (): JSX.Element => {
         updateSummary(networkId, nextSummary)
       }
 
-      engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
+      engine.apply(
+        network.nodes,
+        network.edges,
+        afterLayout,
+        engine.algorithms[layoutEngineName],
+      )
     }
   }
 
@@ -457,7 +462,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           </Allotment>
           <Allotment.Pane
             minSize={28}
-            preferredSize={180}
+            preferredSize={tableBrowserHeight}
             maxSize={panels.bottom === PanelState.OPEN ? 450 : 18}
           >
             <Suspense

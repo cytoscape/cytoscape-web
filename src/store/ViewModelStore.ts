@@ -28,7 +28,6 @@ interface ViewModelAction {
   // Change the state of a view model of graph objects
   additiveSelect: (networkId: IdType, ids: IdType[]) => void
   additiveUnselect: (networkId: IdType, ids: IdType[]) => void
-  setHovered: (networkId: IdType, eleToHover: IdType) => void
   toggleSelected: (networkId: IdType, eles: IdType[]) => void
   setNodePosition: (
     networkId: IdType,
@@ -64,11 +63,7 @@ const persist =
         const updated = get().viewModels[currentNetworkId]
         const deleted: boolean = updated === undefined
         const lastModel = last.viewModels[currentNetworkId]
-        if (
-          !deleted &&
-          lastModel !== undefined &&
-          lastModel.hoveredElement === updated.hoveredElement
-        ) {
+        if (!deleted && lastModel !== undefined) {
           void putNetworkViewToDb(currentNetworkId, updated).then(() => {})
         }
       },
@@ -96,16 +91,6 @@ export const useViewModelStore = create(
           set((state) => {
             state.viewModels[networkId].selectedNodes = selectedNodes
             state.viewModels[networkId].selectedEdges = selectedEdges
-
-            return state
-          })
-        },
-        setHovered: (networkId: IdType, eleToHover: IdType) => {
-          set((state) => {
-            const networkView = state.viewModels[networkId]
-            if (networkView !== undefined) {
-              networkView.hoveredElement = eleToHover
-            }
 
             return state
           })

@@ -1,11 +1,18 @@
 import { Box, TextField, Typography, Button } from '@mui/material'
 import * as React from 'react'
+import { serializedStringIsValid } from '../../../models/TableModel/impl/ValueTypeImpl'
+import { ValueTypeName } from '../../../models/TableModel'
 export function NumberInput(props: {
   currentValue: number | null
   onValueChange: (value: number) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const [value, setValue] = React.useState(String(currentValue ?? 0))
+  const strValueIsValid = (value: string): boolean => {
+    return serializedStringIsValid(ValueTypeName.Integer, value) || serializedStringIsValid(ValueTypeName.Double, value) || serializedStringIsValid(ValueTypeName.Long, value)
+
+  }
+  const [isValid, setValueIsValid] = React.useState(strValueIsValid(value))
 
   React.useEffect(() => {
     setValue(String(currentValue ?? 0))
@@ -14,15 +21,14 @@ export function NumberInput(props: {
   return (
     <Box>
       <TextField
-        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-        value={Number(value).toFixed(0)}
-        type="number"
+        value={value}
+        error={!isValid}
         onChange={(e) => {
-          const newValue = Number(Number(e.target.value).toFixed(4))
-          setValue(String(newValue))
+          setValue(e.target.value)
+          setValueIsValid(strValueIsValid(e.target.value))
         }}
       >
-        <Typography variant="h6">{currentValue}</Typography>
+        <Typography variant="h6">{value}</Typography>
       </TextField>
       <Box
         sx={{
@@ -38,6 +44,7 @@ export function NumberInput(props: {
           Cancel
         </Button>
         <Button
+          disabled={!isValid}
           onClick={() => {
             const nextValue = Number(Number(value).toFixed(4))
             if (!isNaN(nextValue)) {
