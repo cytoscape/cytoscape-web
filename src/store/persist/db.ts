@@ -367,8 +367,6 @@ export const getUiStateFromDb = async (): Promise<Ui | undefined> => {
 }
 
 export const putUiStateToDb = async (uiState: Ui): Promise<void> => {
-  console.log(uiState, 'saving ui state')
-
   await db.transaction('rw', db.uiState, async () => {
     await db.uiState.put({ id: DEFAULT_UI_STATE_ID, ...uiState })
   })

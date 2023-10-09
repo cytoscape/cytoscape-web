@@ -146,7 +146,6 @@ const AppShell = (): ReactElement => {
     // Now workspace ID is set. route to the correct page
     if (id !== '') {
       redirect()
-      // loadUiState()
     }
   }, [id])
 
