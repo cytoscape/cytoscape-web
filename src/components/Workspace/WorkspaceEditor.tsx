@@ -163,6 +163,9 @@ const WorkSpaceEditor = (): JSX.Element => {
   const defaultHierarchyLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredHierarchicalLayout,
   )
+  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
+    (state) => state.setIsRunning,
+  )
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
@@ -213,11 +216,13 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       const nextSummary = { ...summary, hasLayout: true }
 
+      setIsRunning(true)
       const afterLayout = (
         positionMap: Map<IdType, [number, number]>,
       ): void => {
         updateNodePositions(networkId, positionMap)
         updateSummary(networkId, nextSummary)
+        setIsRunning(false)
       }
 
       engine.apply(
