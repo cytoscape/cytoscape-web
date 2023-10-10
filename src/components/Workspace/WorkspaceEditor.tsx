@@ -489,6 +489,7 @@ const WorkSpaceEditor = (): JSX.Element => {
               key={currentNetworkId}
             >
               <TableBrowser
+                setHeight={setTableBrowserHeight}
                 height={tableBrowserHeight}
                 width={tableBrowserWidth}
                 currentNetworkId={
