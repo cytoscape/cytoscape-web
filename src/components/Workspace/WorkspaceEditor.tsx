@@ -88,6 +88,9 @@ const WorkSpaceEditor = (): JSX.Element => {
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
+  const setActiveTableBrowserIndex = useUiStateStore(
+    (state) => state.setActiveTableBrowserIndex,
+  )
   const { panels, activeNetworkView } = ui
 
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
@@ -243,6 +246,14 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   }
 
+  const restoreTableBrowserTabState = (): void => {
+    const tableBrowserTab = search.get('activeTableBrowserTab')
+
+    if (tableBrowserTab != null) {
+      setActiveTableBrowserIndex(Number(tableBrowserTab))
+    }
+  }
+
   /**
    * Restore the node / edge selection states from URL
    */
@@ -274,6 +285,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     window.addEventListener('resize', windowWidthListener)
 
     restorePanelStates()
+    restoreTableBrowserTabState()
 
     return () => {
       window.removeEventListener('resize', windowWidthListener)
@@ -340,6 +352,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           const path = location.pathname
           if (path.includes(currentNetworkId)) {
             restoreSelectionStates()
+            restoreTableBrowserTabState()
           }
 
           navigate(
@@ -358,6 +371,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           loadCurrentNetworkById(currentNetworkId)
             .then(() => {
               // restoreSelectionStates()
+              restoreTableBrowserTabState()
               navigate(
                 `/${
                   workspace.id

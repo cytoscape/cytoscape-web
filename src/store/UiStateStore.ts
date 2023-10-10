@@ -26,15 +26,16 @@ interface UiStateAction {
     columnId: string,
     width: number,
   ) => void
+  setActiveTableBrowserIndex: (index: number) => void
 }
 
 type UiStateStore = UiState & UiStateAction
 
 export const DEFAULT_UI_STATE = {
   panels: {
-    [Panel.LEFT]: PanelState.CLOSED,
+    [Panel.LEFT]: PanelState.OPEN,
     [Panel.RIGHT]: PanelState.CLOSED,
-    [Panel.BOTTOM]: PanelState.CLOSED,
+    [Panel.BOTTOM]: PanelState.OPEN,
   },
   activeNetworkView: '',
   enablePopup: false,
@@ -119,6 +120,12 @@ export const useUiStateStore = create(
     setErrorMessage: (message: string) => {
       set((state) => {
         state.ui.errorMessage = message
+        return state
+      })
+    },
+    setActiveTableBrowserIndex: (index: number) => {
+      set((state) => {
+        state.ui.tableUi.activeTabIndex = index
         return state
       })
     },
