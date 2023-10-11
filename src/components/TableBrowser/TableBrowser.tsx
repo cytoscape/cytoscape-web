@@ -100,6 +100,7 @@ export const getCellKind = (type: ValueTypeName): GridCellKind => {
 
 export default function TableBrowser(props: {
   currentNetworkId: IdType
+  setHeight: (height: number) => void
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
@@ -717,12 +718,18 @@ export default function TableBrowser(props: {
         {panels[Panel.BOTTOM] === PanelState.CLOSED ? (
           <KeyboardArrowUp
             sx={{ color: 'white' }}
-            onClick={() => setPanelState(Panel.BOTTOM, PanelState.OPEN)}
+            onClick={() => {
+              setPanelState(Panel.BOTTOM, PanelState.OPEN)
+              props.setHeight(200)
+            }}
           />
         ) : (
           <KeyboardArrowDown
             sx={{ color: 'white' }}
-            onClick={() => setPanelState(Panel.BOTTOM, PanelState.CLOSED)}
+            onClick={() => {
+              setPanelState(Panel.BOTTOM, PanelState.CLOSED)
+              props.setHeight(0)
+            }}
           />
         )}
       </Box>
