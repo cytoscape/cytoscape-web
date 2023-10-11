@@ -290,30 +290,10 @@ export default function TableBrowser(props: {
       } else {
         if (isValidUrl(String(processedCellValue))) {
           return {
-            kind: GridCellKind.Custom,
-            cursor: 'pointer',
-
+            kind: GridCellKind.Uri,
             allowOverlay: true,
             readonly: false,
-            // copyData: processedCellValue as string,
-            copyData: '4',
-            data: {
-              kind: 'links-cell',
-              underlineOffset: 6,
-              links: [
-                {
-                  title: processedCellValue as string,
-                  onClick: () =>
-                    window
-                      .open(processedCellValue as string, '_blank')
-                      ?.focus(),
-                },
-              ],
-              // ]
-              title: processedCellValue as string,
-              // color: 'blue',
-              // textDecoration: 'underline',
-            },
+            data: processedCellValue as string,
           }
         }
         return {
