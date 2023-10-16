@@ -792,7 +792,7 @@ export default function TableBrowser(props: {
         </Box>
       </TabPanel>
       <TabPanel value={currentTabIndex} index={2}>
-        <NetworkInfoPanel />
+        <NetworkInfoPanel height={props.height} />
       </TabPanel>
     </Box>
   )
