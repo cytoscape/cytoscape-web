@@ -49,22 +49,6 @@ export function NetworkPropertyTable(): React.ReactElement {
     </TableContainer>
   )
 }
-
-// const PairDisplay = (props: {
-//   first: string
-//   second: any
-// }): React.ReactElement => {
-//   console.log(props.first)
-//   return (
-//     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-//       <Typography variant="subtitle1" sx={{ mr: 1 }}>
-//         {props.first}:
-//       </Typography>
-//       <Typography variant="body2">{props.second}</Typography>
-//     </Box>
-//   )
-// }
-
 export default function NetworkInfoPanel(props: {
   height: number
 }): React.ReactElement {
@@ -74,8 +58,6 @@ export default function NetworkInfoPanel(props: {
   const networkInfo = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
-
-  console.log(networkInfo)
 
   const reference = networkInfo?.properties.find(
     (p) => p.predicateString === 'Reference',
