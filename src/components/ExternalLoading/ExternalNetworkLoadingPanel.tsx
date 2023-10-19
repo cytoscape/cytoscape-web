@@ -1,4 +1,4 @@
-import { ReactElement, useContext, useEffect } from 'react'
+import { useState, ReactElement, useContext, useEffect } from 'react'
 import { Box, LinearProgress } from '@mui/material'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Workspace } from '../../models/WorkspaceModel'
@@ -19,7 +19,7 @@ export const ExternalNetworkLoadingPanel = (
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const navigate = useNavigate()
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
-  const { id } = workspace
+  const { id, networkIds } = workspace
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
   )
@@ -33,6 +33,8 @@ export const ExternalNetworkLoadingPanel = (
   const addNetworkIds: (networkId: string) => void = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
+
+  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
   const setCurrentNetworkId: (networkId: string) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
@@ -43,6 +45,13 @@ export const ExternalNetworkLoadingPanel = (
     void getToken().then((token) => {
       useNdexNetworkSummary(networkId, ndexBaseUrl, token)
         .then((summary) => {
+          const idSet = new Set(networkIds)
+
+          if (idSet.has(networkId)) {
+            deleteNetwork(networkId)
+          }
+
+          // Add to the workspace
           addNetworkIds(networkId)
           setCurrentNetworkId(networkId)
           navigate(`/${id}/networks/${networkId}${location.search.toString()}`)
