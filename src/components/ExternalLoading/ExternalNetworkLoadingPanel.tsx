@@ -1,4 +1,4 @@
-import { useState, ReactElement, useContext, useEffect } from 'react'
+import { ReactElement, useContext, useEffect } from 'react'
 import { Box, LinearProgress } from '@mui/material'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Workspace } from '../../models/WorkspaceModel'
