@@ -19,7 +19,7 @@ export const ExternalNetworkLoadingPanel = (
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const navigate = useNavigate()
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
-  const { id, networkIds } = workspace
+  const { id } = workspace
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
   )
@@ -34,7 +34,6 @@ export const ExternalNetworkLoadingPanel = (
     (state) => state.addNetworkIds,
   )
 
-  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
   const setCurrentNetworkId: (networkId: string) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
@@ -45,12 +44,6 @@ export const ExternalNetworkLoadingPanel = (
     void getToken().then((token) => {
       useNdexNetworkSummary(networkId, ndexBaseUrl, token)
         .then((summary) => {
-          const idSet = new Set(networkIds)
-
-          if (idSet.has(networkId)) {
-            deleteNetwork(networkId)
-          }
-
           // Add to the workspace
           addNetworkIds(networkId)
           setCurrentNetworkId(networkId)
