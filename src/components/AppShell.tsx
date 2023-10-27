@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { ReactElement, useEffect, useRef } from 'react'
+import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
 import { Location, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { getUiStateFromDb, getWorkspaceFromDb } from '../store/persist/db'
@@ -8,6 +8,14 @@ import { ToolBar } from './ToolBar'
 import { parsePathName } from '../utils/paths-util'
 import { WarningDialog } from './ExternalLoading/WarningDialog'
 import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
+import { AppConfigContext } from '../AppConfigContext'
+import {
+  useNdexNetworkSummary,
+  networkSummaryFetcher,
+} from '../store/hooks/useNdexNetworkSummary'
+import { useCredentialStore } from '../store/CredentialStore'
+
+import { UpdateNetworkDialog } from './UpdateNetworkDialog'
 
 /**
  *
@@ -18,37 +26,43 @@ import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
  */
 const AppShell = (): ReactElement => {
   // This is necessary to prevent creating a new workspace on every render
+  const [showDialog, setShowDialog] = useState(false)
+
   const initializedRef = useRef(false)
   const navigate = useNavigate()
   const setWorkspace = useWorkspaceStore((state) => state.set)
   const workspace = useWorkspaceStore((state) => state.workspace)
   const location: Location = useLocation()
-
   const addNetworkIds = useWorkspaceStore((state) => state.addNetworkIds)
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
+  const getToken: () => Promise<string> = useCredentialStore(
+    (state) => state.getToken,
+  )
+  const { ndexBaseUrl } = useContext(AppConfigContext)
+
+  const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
 
   const setUi = useUiStateStore((state) => state.setUi)
 
   const { showErrorDialog } = useUiStateStore((state) => state.ui)
-  // const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
   )
 
   const { id, currentNetworkId, networkIds } = workspace
 
+  const parsed = parsePathName(location.pathname)
+
   /**
    * Initializing assigned workspace for this session
    */
   const setupWorkspace = (): void => {
     // Check location and curren workspace ID
-    const { pathname } = location
     if (id === '') {
       // No workspace ID is set
       // Check if the URL has workspace ID
-      const parsed = parsePathName(pathname)
 
       let targetWorkspaceId: string = parsed.workspaceId
 
@@ -88,7 +102,7 @@ const AppShell = (): ReactElement => {
     }
   }, [])
 
-  const redirect = (): void => {
+  const redirect = async (): Promise<void> => {
     if (!initializedRef.current || id === '') return
 
     const parsed = parsePathName(location.pathname)
@@ -122,21 +136,43 @@ const AppShell = (): ReactElement => {
         navigate(
           `/${id}/networks/${currentNetworkId}${location.search.toString()}`,
         )
-      } else if (networkId === currentNetworkId) {
-        navigate(
-          `/${id}/networks/${currentNetworkId}${location.search.toString()}`,
-        )
       } else {
-        // URL has different network ID
-        const idSet = new Set(networkIds)
-        if (idSet.has(networkId)) {
-          // the ID in the URL is in the workspace
-          navigate(`/${id}/networks/${networkId}${location.search.toString()}`)
-        } else {
-          // Add to the workspace
-          addNetworkIds(networkId)
-          setCurrentNetworkId(networkId)
-          navigate(`/${id}/networks/${networkId}${location.search.toString()}`)
+        // the user is trying to load a network that is already in the workspace
+        // check that if they have an outdated version of the network by comparing modification times
+        // of the local copy and the ndex summary
+        try {
+          const token = await getToken()
+          const summaryMap = await useNdexNetworkSummary(
+            networkId,
+            ndexBaseUrl,
+            token,
+          )
+          const networkSummary = summaryMap[networkId]
+          const ndexSummaries = await networkSummaryFetcher(
+            networkId,
+            ndexBaseUrl,
+            token,
+          )
+          const ndexSummary = ndexSummaries?.[0]
+          const localNetworkOutdated =
+            networkSummary?.modificationTime !== undefined &&
+            ndexSummary?.modificationTime !== undefined &&
+            networkSummary?.modificationTime < ndexSummary?.modificationTime
+          if (localNetworkOutdated) {
+            setShowDialog(true)
+          } else {
+            setCurrentNetworkId(networkId)
+            navigate(
+              `/${id}/networks/${networkId}${location.search.toString()}`,
+            )
+          }
+        } catch (error) {
+          console.log('SUMMARY error', error)
+          const errorMessage: string = error.message
+          setErrorMessage(
+            `Failed to load the network ${networkId}: ${errorMessage}`,
+          )
+          setShowErrorDialog(true)
         }
       }
     }
@@ -146,6 +182,10 @@ const AppShell = (): ReactElement => {
     // Now workspace ID is set. route to the correct page
     if (id !== '') {
       redirect()
+        .then(() => {})
+        .catch((e) => {
+          console.log(e)
+        })
     }
   }, [id])
 
@@ -153,6 +193,10 @@ const AppShell = (): ReactElement => {
     <Box sx={{ width: '100%', height: '100%' }}>
       <ToolBar />
       <Outlet />
+      <UpdateNetworkDialog
+        open={showDialog}
+        onClose={() => setShowDialog(false)}
+      />
       <WarningDialog
         open={showErrorDialog}
         handleClose={() => {
