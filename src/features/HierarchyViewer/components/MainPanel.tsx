@@ -148,6 +148,7 @@ export const MainPanel = (): JSX.Element => {
       <Allotment vertical minSize={100}>
         <Allotment.Pane>
           <SubNetworkPanel
+            hierarchyId={currentNetworkId}
             subNetworkName={subNetworkName}
             rootNetworkId={rootNetworkId}
             subsystemNodeId={targetNode}

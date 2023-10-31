@@ -11,6 +11,7 @@ export const ndexQueryFetcher = async (
   params: string[],
 ): Promise<NetworkWithView> => {
   const [
+    hierarchyId,
     url,
     rootNetworkUuid,
     subsystemId,
@@ -19,6 +20,7 @@ export const ndexQueryFetcher = async (
     accessToken,
   ] = params
   if (
+    hierarchyId === undefined ||
     url === undefined ||
     rootNetworkUuid === undefined ||
     subsystemId === undefined ||
@@ -28,7 +30,7 @@ export const ndexQueryFetcher = async (
   }
 
   // Use Hierarchy ID and selected node ID as the new network ID
-  const interactionNetworkId: string = `${rootNetworkUuid}_${subsystemId}`
+  const interactionNetworkId: string = `${hierarchyId}_${subsystemId}`
 
   const ndexClient = getNdexClient(url, accessToken)
 
