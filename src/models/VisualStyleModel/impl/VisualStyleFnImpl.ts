@@ -4,7 +4,7 @@ import * as cxUtil from '../../CxModel/cx2-util'
 
 import { NetworkView } from '../../ViewModel'
 
-import { ValueType } from '../../TableModel'
+import { ValueType, ValueTypeName } from '../../TableModel'
 
 import {
   VisualStyle,
@@ -216,9 +216,11 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
         }
 
         if (cxMapping != null) {
+          console.log(cxMapping)
           switch (cxMapping.type) {
             case 'PASSTHROUGH': {
               const m: PassthroughMappingFunction = {
+                attributeType: cxMapping.definition.type as ValueTypeName,
                 type: MappingFunctionType.Passthrough,
                 visualPropertyType: vp.type,
                 attribute: cxMapping.definition.attribute,
@@ -234,6 +236,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 vpValueMap.set(v, converter.valueConverter(vp))
               })
               const m: DiscreteMappingFunction = {
+                attributeType: cxMapping.definition.type as ValueTypeName,
                 type: MappingFunctionType.Discrete,
                 attribute: cxMapping.definition.attribute,
                 vpValueMap,
@@ -312,6 +315,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
               if (min != null && max != null && controlPoints.length > 0) {
                 const m: ContinuousMappingFunction = {
                   type: MappingFunctionType.Continuous,
+                  attributeType: cxMapping.definition.type as ValueTypeName,
                   attribute: cxMapping.definition.attribute,
                   min,
                   max,

@@ -47,6 +47,7 @@ export interface CXDiscreteMappingFunction<T> {
   type: 'DISCRETE'
   definition: {
     attribute: string
+    type: string
     map: Array<{
       v: CxValue
       vp: T
@@ -57,6 +58,7 @@ export interface CXDiscreteMappingFunction<T> {
 export interface CXPassthroughMappingFunction {
   type: 'PASSTHROUGH'
   definition: {
+    type: string
     attribute: string
   }
 }
@@ -64,6 +66,7 @@ export interface CXPassthroughMappingFunction {
 export interface CXContinuousMappingFunction<T> {
   type: 'CONTINUOUS'
   definition: {
+    type: string
     attribute: string
     map: Array<{
       max?: number
@@ -122,12 +125,13 @@ export const convertPassthroughMappingToCX = (
   vp: VisualProperty<VisualPropertyValueType>,
   mapping: PassthroughMappingFunction,
 ): CXPassthroughMappingFunction => {
-  const { attribute } = mapping
+  const { attribute, attributeType } = mapping
 
   return {
     type: 'PASSTHROUGH',
     definition: {
       attribute,
+      type: attributeType,
     },
   }
 }
@@ -137,12 +141,13 @@ export const convertDiscreteMappingToCX = (
   vp: VisualProperty<VisualPropertyValueType>,
   mapping: DiscreteMappingFunction,
 ): CXDiscreteMappingFunction<CXVisualPropertyValue> => {
-  const { vpValueMap, attribute } = mapping
+  const { vpValueMap, attribute, attributeType } = mapping
 
   return {
     type: 'DISCRETE',
     definition: {
       attribute,
+      type: attributeType,
       map: Array.from(vpValueMap.entries()).map(([value, vpValue]) => ({
         v: value,
         vp: vpToCX(vp.name, vpValue),
@@ -155,7 +160,7 @@ export const convertContinuousMappingToCX = (
   vp: VisualProperty<VisualPropertyValueType>,
   mapping: ContinuousMappingFunction,
 ): CXContinuousMappingFunction<CXVisualPropertyValue> => {
-  const { min, max, controlPoints, attribute } = mapping
+  const { min, max, controlPoints, attribute, attributeType } = mapping
 
   const intervals = []
 
@@ -175,9 +180,12 @@ export const convertContinuousMappingToCX = (
     }
   }
 
+  console.log('converting mapping', mapping)
+
   return {
     type: 'CONTINUOUS',
     definition: {
+      type: attributeType,
       map: [
         {
           max: min.value as number,
@@ -375,7 +383,6 @@ export const cxVisualPropertyConverter: Record<
   edgeSelectedPaint: VPColorConverter('EDGE_SELECTED_PAINT'),
   edgeMaxLabelWidth: VPNumberConverter('EDGE_LABEL_MAX_WIDTH'),
   edgeZOrder: VPNumberConverter('EDGE_Z_LOCATION'),
-
 
   networkBackgroundColor: VPColorConverter('NETWORK_BACKGROUND_COLOR'),
 }

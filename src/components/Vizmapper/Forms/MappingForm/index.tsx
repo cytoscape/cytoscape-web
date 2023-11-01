@@ -95,6 +95,7 @@ function MappingFormContent(props: {
   const createMapping = (
     mappingType: MappingFunctionType,
     attribute: AttributeName,
+    attributeType: ValueTypeName,
   ): void => {
     switch (mappingType) {
       case MappingFunctionType.Discrete: {
@@ -102,6 +103,7 @@ function MappingFormContent(props: {
           props.currentNetworkId,
           props.visualProperty.name,
           attribute,
+          attributeType,
         )
         break
       }
@@ -130,6 +132,7 @@ function MappingFormContent(props: {
             props.visualProperty.type,
             attribute,
             attributeValues,
+            attributeType,
           )
         }
         break
@@ -139,6 +142,7 @@ function MappingFormContent(props: {
           props.currentNetworkId,
           props.visualProperty.name,
           attribute,
+          attributeType,
         )
         break
       }
@@ -152,16 +156,15 @@ function MappingFormContent(props: {
   const handleMappingTypeChange = (
     nextMapping: MappingFunctionType | '',
   ): void => {
-    const attributeType = currentTable.columns.find(
-      (c) => c.name === column,
-    )?.type
+    const attributeType = currentTable.columns.find((c) => c.name === column)
+      ?.type
     if (nextMapping !== '' && column !== '' && attributeType != null) {
       // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
 
       if (
         typesCanBeMapped(nextMapping, attributeType, props.visualProperty.type)
       ) {
-        createMapping(nextMapping, column)
+        createMapping(nextMapping, column, attributeType)
         setMappingType(nextMapping)
       } else {
         removeMapping(props.currentNetworkId, props.visualProperty.name)
@@ -190,7 +193,7 @@ function MappingFormContent(props: {
           props.visualProperty.type,
         )
       ) {
-        createMapping(mappingType, nextAttribute)
+        createMapping(mappingType, nextAttribute, nextAttributeType)
         setColumn(nextAttribute)
       } else {
         removeMapping(props.currentNetworkId, props.visualProperty.name)

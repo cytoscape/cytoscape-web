@@ -7,7 +7,7 @@ import {
 
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { ValueType, AttributeName } from '../models/TableModel'
+import { ValueType, AttributeName, ValueTypeName } from '../models/TableModel'
 import {
   DiscreteMappingFunction,
   MappingFunctionType,
@@ -83,16 +83,19 @@ interface UpdateVisualStyleAction {
     vpType: VisualPropertyValueTypeName,
     attribute: AttributeName,
     attributeValues: ValueType[],
+    attributeType: ValueTypeName,
   ) => void
   createDiscreteMapping: (
     networkId: IdType,
     vpName: VisualPropertyName,
     attribute: AttributeName,
+    attributeType: ValueTypeName,
   ) => void
   createPassthroughMapping: (
     networkId: IdType,
     vpName: VisualPropertyName,
     attribute: AttributeName,
+    attributeType: ValueTypeName,
   ) => void
   removeMapping: (networkId: IdType, vpName: VisualPropertyName) => void
   // setMapping: () // TODO
@@ -226,13 +229,14 @@ export const useVisualStyleStore = create(
         })
       },
 
-      createDiscreteMapping(networkId, vpName, attributeName) {
+      createDiscreteMapping(networkId, vpName, attributeName, attributeType) {
         set((state) => {
           const { defaultValue } = state.visualStyles[networkId][vpName]
           const vpValueMap = new Map<ValueType, VisualPropertyValueType>()
 
           const discreteMapping: DiscreteMappingFunction = {
             attribute: attributeName,
+            attributeType,
             type: MappingFunctionType.Discrete,
             vpValueMap,
             visualPropertyType: '',
@@ -249,6 +253,7 @@ export const useVisualStyleStore = create(
         vpType,
         attributeName,
         attributeValues,
+        attributeType,
       ) {
         set((state) => {
           const DEFAULT_COLOR_SCHEME = ['red', 'white', 'blue']
@@ -334,6 +339,7 @@ export const useVisualStyleStore = create(
               controlPoints: ctrlPts,
               visualPropertyType: type,
               defaultValue,
+              attributeType,
             }
             void putVisualStyleToDb(
               networkId,
@@ -351,6 +357,7 @@ export const useVisualStyleStore = create(
               controlPoints: ctrlPts,
               visualPropertyType: type,
               defaultValue,
+              attributeType,
             }
             state.visualStyles[networkId][vpName].mapping = continuousMapping
           } else {
@@ -362,12 +369,18 @@ export const useVisualStyleStore = create(
         })
       },
 
-      createPassthroughMapping(networkId, vpName, attributeName) {
+      createPassthroughMapping(
+        networkId,
+        vpName,
+        attributeName,
+        attributeType,
+      ) {
         set((state) => {
           const { defaultValue, type } = state.visualStyles[networkId][vpName]
           const passthroughMapping: PassthroughMappingFunction = {
             type: MappingFunctionType.Passthrough,
             attribute: attributeName,
+            attributeType,
             visualPropertyType: type,
             defaultValue,
           }
