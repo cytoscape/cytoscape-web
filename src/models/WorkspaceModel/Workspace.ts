@@ -12,6 +12,6 @@ export interface Workspace {
 
   localModificationTime: Date
   creationTime: Date // Optional?
-  networkModified: Record<IdType, boolean> // Network is edited locally or not
+  networkModified: Record<IdType, boolean | undefined> // Network is edited locally or not
   options?: any // ???
 }

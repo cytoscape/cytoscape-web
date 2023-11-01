@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
-import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
 import { Location, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { getUiStateFromDb, getWorkspaceFromDb } from '../store/persist/db'
 
@@ -16,6 +16,7 @@ import {
 import { useCredentialStore } from '../store/CredentialStore'
 
 import { UpdateNetworkDialog } from './UpdateNetworkDialog'
+import { waitSeconds } from '../utils/wait-seconds'
 
 /**
  *
@@ -51,7 +52,12 @@ const AppShell = (): ReactElement => {
     (state) => state.setShowErrorDialog,
   )
 
-  const { id, currentNetworkId, networkIds } = workspace
+  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
+  const deleteNetworkModifiedStatus = useWorkspaceStore(
+    (state) => state.deleteNetworkModifiedStatus,
+  )
+
+  const { id, currentNetworkId, networkIds, networkModified } = workspace
 
   const parsed = parsePathName(location.pathname)
 
@@ -158,8 +164,28 @@ const AppShell = (): ReactElement => {
             networkSummary?.modificationTime !== undefined &&
             ndexSummary?.modificationTime !== undefined &&
             networkSummary?.modificationTime < ndexSummary?.modificationTime
+
+          const localNetworkModified = networkModified[networkId] ?? false
           if (localNetworkOutdated) {
-            setShowDialog(true)
+            if (localNetworkModified) {
+              // local network and ndex network have been modified
+              // ask the user what they want to do
+              setShowDialog(true)
+            } else {
+              // the local network has not been modified but it has been modified on NDEx
+              // update the network silently
+              deleteNetwork(networkId)
+              await waitSeconds(2)
+              addNetworkIds(networkId)
+              await waitSeconds(2)
+              setCurrentNetworkId(networkId)
+              await waitSeconds(2)
+              deleteNetworkModifiedStatus(networkId)
+
+              navigate(
+                `/${id}/networks/${networkId}${location.search.toString()}`,
+              )
+            }
           } else {
             setCurrentNetworkId(networkId)
             navigate(
