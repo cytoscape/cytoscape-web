@@ -13,7 +13,13 @@ import { ValueType } from '../../../models/TableModel'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { getHcxProps } from '../utils/hierarcy-util'
 import _ from 'lodash'
-import { getAllNetworkKeys } from '../../../store/persist/db'
+import {
+  deleteNetworkFromDb,
+  deleteNetworkViewFromDb,
+  deleteTablesFromDb,
+  deleteVisualStyleFromDb,
+  getAllNetworkKeys,
+} from '../../../store/persist/db'
 
 /**
  *  Switch the panel state based on the network meta data
@@ -28,20 +34,35 @@ export const useHierarchyViewerManager = (): void => {
   )
 
   useEffect(() => {
+    const deleteChildren = async (parentId: IdType): Promise<void> => {
+      const keys = await getAllNetworkKeys()
+
+      for (let i = 0; i < keys.length; i++) {
+        const key: IdType = keys[i]
+        if (key.startsWith(parentId)) {
+          await deleteNetworkFromDb(key)
+          await deleteNetworkViewFromDb(key)
+          await deleteVisualStyleFromDb(key)
+          await deleteTablesFromDb(key)
+        }
+      }
+    }
+
+    if (lastIds.length === 0 && networkIds.length === 0) {
+      return
+    }
+
     // Check the diff
-    const diff2 = _.difference(lastIds, networkIds)
+    const diff = _.difference(lastIds, networkIds)
     setLastIds(networkIds)
 
-    void getAllNetworkKeys().then((keys) => {
-      console.log(
-        '3!!!!!!!!!!!!!!!!!!MainPanel: old, new, diff',
-        lastIds,
-        networkIds,
-        diff2,
-      )
-      setTimeout(() => {
-        console.log('keys', keys)
-      }, 2000)
+    if (diff.length < 1) {
+      return
+    }
+
+    const removed = diff[0]
+    void deleteChildren(removed).catch((error) => {
+      console.error('## Error deleting interaction networks:', error)
     })
   }, [networkIds])
 
