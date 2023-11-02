@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import {
   NdexNetworkProperty,
@@ -12,11 +12,39 @@ import { Panel } from '../../../models/UiModel/Panel'
 import { ValueType } from '../../../models/TableModel'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { getHcxProps } from '../utils/hierarcy-util'
+import _ from 'lodash'
+import { getAllNetworkKeys } from '../../../store/persist/db'
 
 /**
  *  Switch the panel state based on the network meta data
  */
 export const useHierarchyViewerManager = (): void => {
+  // Keep track of last network list and check the diff
+  const [lastIds, setLastIds] = useState<IdType[]>([])
+
+  // For watching deletion of networks in the workspace
+  const networkIds: IdType[] = useWorkspaceStore(
+    (state) => state.workspace.networkIds,
+  )
+
+  useEffect(() => {
+    // Check the diff
+    const diff2 = _.difference(lastIds, networkIds)
+    setLastIds(networkIds)
+
+    void getAllNetworkKeys().then((keys) => {
+      console.log(
+        '3!!!!!!!!!!!!!!!!!!MainPanel: old, new, diff',
+        lastIds,
+        networkIds,
+        diff2,
+      )
+      setTimeout(() => {
+        console.log('keys', keys)
+      }, 2000)
+    })
+  }, [networkIds])
+
   const uiState = useUiStateStore((state) => state.ui)
   const setPanelState = useUiStateStore((state) => state.setPanelState)
 
@@ -45,7 +73,7 @@ export const useHierarchyViewerManager = (): void => {
       acc[prop.predicateString] = prop.value
       return acc
     }, {})
-    if(Object.keys(networkPropObj).length === 0) {
+    if (Object.keys(networkPropObj).length === 0) {
       enablePopup(false)
       return
     }
