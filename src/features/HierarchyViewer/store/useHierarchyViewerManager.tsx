@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import {
   NdexNetworkProperty,
@@ -12,11 +12,60 @@ import { Panel } from '../../../models/UiModel/Panel'
 import { ValueType } from '../../../models/TableModel'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { getHcxProps } from '../utils/hierarcy-util'
+import _ from 'lodash'
+import {
+  deleteNetworkFromDb,
+  deleteNetworkViewFromDb,
+  deleteTablesFromDb,
+  deleteVisualStyleFromDb,
+  getAllNetworkKeys,
+} from '../../../store/persist/db'
 
 /**
  *  Switch the panel state based on the network meta data
  */
 export const useHierarchyViewerManager = (): void => {
+  // Keep track of last network list and check the diff
+  const [lastIds, setLastIds] = useState<IdType[]>([])
+
+  // For watching deletion of networks in the workspace
+  const networkIds: IdType[] = useWorkspaceStore(
+    (state) => state.workspace.networkIds,
+  )
+
+  useEffect(() => {
+    const deleteChildren = async (parentId: IdType): Promise<void> => {
+      const keys = await getAllNetworkKeys()
+
+      for (let i = 0; i < keys.length; i++) {
+        const key: IdType = keys[i]
+        if (key.startsWith(parentId)) {
+          await deleteNetworkFromDb(key)
+          await deleteNetworkViewFromDb(key)
+          await deleteVisualStyleFromDb(key)
+          await deleteTablesFromDb(key)
+        }
+      }
+    }
+
+    if (lastIds.length === 0 && networkIds.length === 0) {
+      return
+    }
+
+    // Check the diff
+    const diff = _.difference(lastIds, networkIds)
+    setLastIds(networkIds)
+
+    if (diff.length < 1) {
+      return
+    }
+
+    const removed = diff[0]
+    void deleteChildren(removed).catch((error) => {
+      console.error('## Error deleting interaction networks:', error)
+    })
+  }, [networkIds])
+
   const uiState = useUiStateStore((state) => state.ui)
   const setPanelState = useUiStateStore((state) => state.setPanelState)
 
@@ -45,7 +94,7 @@ export const useHierarchyViewerManager = (): void => {
       acc[prop.predicateString] = prop.value
       return acc
     }, {})
-    if(Object.keys(networkPropObj).length === 0) {
+    if (Object.keys(networkPropObj).length === 0) {
       enablePopup(false)
       return
     }

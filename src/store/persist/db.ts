@@ -57,7 +57,9 @@ export const deleteDb = async (): Promise<void> => {
   await Dexie.delete(DB_NAME)
   db = new CyDB(DB_NAME)
 }
-
+export const getAllNetworkKeys = async (): Promise<IdType[]> => {
+  return (await db.cyNetworks.toCollection().primaryKeys()) as IdType[]
+}
 /**
  *
  * Persist network to indexedDB
