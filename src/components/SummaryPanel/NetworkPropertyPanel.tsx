@@ -76,9 +76,8 @@ export const NetworkPropertyPanel = ({
 
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
 
-  const networkModified = useWorkspaceStore(
-    (state) => state.workspace.networkModified[id],
-  )
+  const networkModified =
+    useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
 
   const backgroundColor: string =
     currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
