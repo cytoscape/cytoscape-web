@@ -88,6 +88,9 @@ const WorkSpaceEditor = (): JSX.Element => {
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
+  const setActiveTableBrowserIndex = useUiStateStore(
+    (state) => state.setActiveTableBrowserIndex,
+  )
   const { panels, activeNetworkView } = ui
 
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
@@ -116,8 +119,8 @@ const WorkSpaceEditor = (): JSX.Element => {
         next !== undefined &&
         !_.isEqual(
           // omit selection state and hovered element changes as valid viewModel changes
-          _.omit(prev, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
-          _.omit(next, ['hoveredElement', 'selectedNodes', 'selectedEdges']),
+          _.omit(prev, ['selectedNodes', 'selectedEdges']),
+          _.omit(next, ['selectedNodes', 'selectedEdges']),
         )
 
       // primitve compare fn that does not take into account the selection/hover state
@@ -143,7 +146,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   const removeSummary = useNetworkSummaryStore((state) => state.delete)
   useNetworkSummaryManager()
 
-  const [tableBrowserHeight, setTableBrowserHeight] = useState(0)
+  const [tableBrowserHeight, setTableBrowserHeight] = useState(200)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
   const [allotmentDimensions, setAllotmentDimensions] = useState<
     [number, number]
@@ -159,6 +162,9 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const defaultHierarchyLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredHierarchicalLayout,
+  )
+  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
+    (state) => state.setIsRunning,
   )
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
@@ -210,14 +216,21 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       const nextSummary = { ...summary, hasLayout: true }
 
+      setIsRunning(true)
       const afterLayout = (
         positionMap: Map<IdType, [number, number]>,
       ): void => {
         updateNodePositions(networkId, positionMap)
         updateSummary(networkId, nextSummary)
+        setIsRunning(false)
       }
 
-      engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
+      engine.apply(
+        network.nodes,
+        network.edges,
+        afterLayout,
+        engine.algorithms[layoutEngineName],
+      )
     }
   }
 
@@ -235,6 +248,14 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
     if (bottomPanelState !== undefined && bottomPanelState !== null) {
       setPanelState(Panel.BOTTOM, bottomPanelState)
+    }
+  }
+
+  const restoreTableBrowserTabState = (): void => {
+    const tableBrowserTab = search.get('activeTableBrowserTab')
+
+    if (tableBrowserTab != null) {
+      setActiveTableBrowserIndex(Number(tableBrowserTab))
     }
   }
 
@@ -269,6 +290,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     window.addEventListener('resize', windowWidthListener)
 
     restorePanelStates()
+    restoreTableBrowserTabState()
 
     return () => {
       window.removeEventListener('resize', windowWidthListener)
@@ -335,6 +357,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           const path = location.pathname
           if (path.includes(currentNetworkId)) {
             restoreSelectionStates()
+            restoreTableBrowserTabState()
           }
 
           navigate(
@@ -353,6 +376,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           loadCurrentNetworkById(currentNetworkId)
             .then(() => {
               // restoreSelectionStates()
+              restoreTableBrowserTabState()
               navigate(
                 `/${
                   workspace.id
@@ -457,7 +481,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           </Allotment>
           <Allotment.Pane
             minSize={28}
-            preferredSize={180}
+            preferredSize={tableBrowserHeight}
             maxSize={panels.bottom === PanelState.OPEN ? 450 : 18}
           >
             <Suspense
@@ -465,6 +489,7 @@ const WorkSpaceEditor = (): JSX.Element => {
               key={currentNetworkId}
             >
               <TableBrowser
+                setHeight={setTableBrowserHeight}
                 height={tableBrowserHeight}
                 width={tableBrowserWidth}
                 currentNetworkId={

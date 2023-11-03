@@ -25,6 +25,9 @@ import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 
 interface SubNetworkPanelProps {
+  // Hierarchy ID
+  hierarchyId: IdType
+
   // Name of the network visualized here
   subNetworkName: string
 
@@ -45,6 +48,7 @@ interface SubNetworkPanelProps {
  *
  */
 export const SubNetworkPanel = ({
+  hierarchyId,
   subNetworkName,
   rootNetworkId,
   subsystemNodeId,
@@ -96,7 +100,14 @@ export const SubNetworkPanel = ({
 
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const { data, error, isLoading } = useSWR<NetworkWithView>(
-    [ndexBaseUrl, rootNetworkId, subsystemNodeId, query, interactionNetworkId],
+    [
+      hierarchyId,
+      ndexBaseUrl,
+      rootNetworkId,
+      subsystemNodeId,
+      query,
+      interactionNetworkId,
+    ],
     ndexQueryFetcher,
     {
       revalidateOnFocus: false,

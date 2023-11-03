@@ -185,6 +185,14 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 100,
     bypassMap: new Map(),
   },
+  nodeZOrder: {
+    group: 'node',
+    name: 'nodeZOrder',
+    displayName: 'Z Order',
+    type: 'number',
+    defaultValue: 0,
+    bypassMap: new Map(),
+  },
   edgeLineColor: {
     group: 'edge',
     name: 'edgeLineColor',
@@ -329,6 +337,15 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 100,
     bypassMap: new Map(),
   },
+  edgeZOrder: {
+    group: 'edge',
+    name: 'nodeZOrder',
+    displayName: 'Z Order',
+    type: 'number',
+    defaultValue: 0,
+    bypassMap: new Map(),
+  },
+
 
   networkBackgroundColor: {
     group: 'network',
@@ -338,4 +355,5 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: '#FFFFFF',
     bypassMap: new Map(),
   },
+
 })

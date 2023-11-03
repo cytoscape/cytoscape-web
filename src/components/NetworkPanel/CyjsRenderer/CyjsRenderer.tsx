@@ -27,14 +27,15 @@ interface NetworkRendererProps {
   network: Network
 }
 
-const HOVER_STATE_NAME: string = 'hover'
-
 /**
  *
  * @param param0
  * @returns
  */
 const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
+  const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
+    undefined,
+  )
   const { id } = network
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
@@ -56,9 +57,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     nodeId: IdType,
     position: [number, number],
   ) => void = useViewModelStore((state) => state.setNodePosition)
-
-  const setHovered: (networkId: IdType, eleId: IdType) => void =
-    useViewModelStore((state) => state.setHovered)
 
   if (activeNetworkId !== id) {
     isRunning = false
@@ -183,13 +181,10 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
       cy.on('mouseover', 'node, edge', (e: EventObject): void => {
         const targetNode = e.target
-        targetNode.addClass(HOVER_STATE_NAME)
-        setHovered(id, targetNode.data('id'))
+        setHoveredElement(targetNode.data('id'))
       })
       cy.on('mouseout', 'node, edge', (e: EventObject): void => {
-        const targetNode = e.target
-        targetNode.removeClass(HOVER_STATE_NAME)
-        setHovered(id, '')
+        setHoveredElement(undefined)
       })
 
       cy.endBatch()
@@ -239,9 +234,9 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     if (cy === null) {
       return
     }
-    if (networkView?.hoveredElement !== undefined) {
+    if (hoveredElement !== undefined) {
       cy.elements().removeClass('hover')
-      const ele = cy.getElementById(networkView.hoveredElement)
+      const ele = cy.getElementById(hoveredElement)
       if (ele !== undefined) {
         ele.addClass('hover')
       }
@@ -335,7 +330,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   // when hovered element changes, apply hover style to that element
   useEffect(() => {
     applyHoverUpdate()
-  }, [networkView?.hoveredElement])
+  }, [hoveredElement])
 
   useEffect(() => {
     if (cy === null || networkView === undefined || networkView === null) {

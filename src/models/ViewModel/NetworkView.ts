@@ -4,9 +4,9 @@ import { NodeView } from './NodeView'
 import { View } from './View'
 
 /**
- * The Network View object containing all the 
+ * The Network View object containing all the
  * information needed to render the network
- * 
+ *
  * It can also store the dynamic view state like selection, hover, etc.
  */
 export interface NetworkView extends View {
@@ -16,7 +16,4 @@ export interface NetworkView extends View {
   // Keep the selected objects in the view
   selectedNodes: IdType[]
   selectedEdges: IdType[]
-
-  // keep the current hovered element id as state, only one element can be hovered at a time
-  hoveredElement?: IdType
 }

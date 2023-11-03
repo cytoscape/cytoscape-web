@@ -46,10 +46,11 @@ import {
   serializedStringIsValid,
   deserializeValue,
 } from '../../models/TableModel/impl/ValueTypeImpl'
-import { useUiStateStore } from '../../store/UiStateStore'
+import { serializeColumnUIKey, useUiStateStore } from '../../store/UiStateStore'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { Panel } from '../../models/UiModel/Panel'
 import { Ui } from '../../models/UiModel'
+import NetworkInfoPanel from './NetworkInfoPanel'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -99,6 +100,7 @@ export const getCellKind = (type: ValueTypeName): GridCellKind => {
 
 export default function TableBrowser(props: {
   currentNetworkId: IdType
+  setHeight: (height: number) => void
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
@@ -106,8 +108,17 @@ export default function TableBrowser(props: {
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
   const { panels } = ui
+  const setUi = useUiStateStore((state) => state.setUi)
 
-  const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
+  const setCurrentTabIndex = (index: number): void => {
+    const nextTableUi = { ...ui.tableUi, activeTabIndex: index }
+
+    const nextUi = { ...ui, tableUi: nextTableUi }
+    setUi(nextUi)
+  }
+
+  const setColumnWidth = useUiStateStore((state) => state.setColumnWidth)
+
   const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
   const [createColumnFormError, setCreateColumnFormError] = React.useState<
     string | undefined
@@ -148,8 +159,13 @@ export default function TableBrowser(props: {
   )
   const setMapping = useVisualStyleStore((state) => state.setMapping)
 
-  const { selectedNodes, selectedEdges } =
-    useViewModelStore((state) => state.viewModels[networkId]) ?? {}
+  const selectedNodes = useViewModelStore(
+    (state) => state.viewModels[networkId]?.selectedNodes ?? [],
+  )
+  const selectedEdges = useViewModelStore(
+    (state) => state.viewModels[networkId]?.selectedEdges ?? [],
+  )
+
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
@@ -162,6 +178,7 @@ export default function TableBrowser(props: {
     (state) => state.applyValueToElements,
   )
   const moveColumn = useTableStore((state) => state.moveColumn)
+  const currentTabIndex = ui.tableUi.activeTabIndex
 
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
@@ -177,32 +194,23 @@ export default function TableBrowser(props: {
   const modelColumns: Column[] =
     currentTable?.columns != null ? currentTable?.columns : []
 
-  const [columns, setColumns] = React.useState<TableColumn[]>(
-    modelColumns.map((col, index) => ({
+  const columnWidths = ui.tableUi.columnUiState
+
+  const columns = modelColumns.map((col, index) => {
+    const tableTypeStr = currentTable === nodeTable ? 'node' : 'edge'
+    const columnWidthKey = serializeColumnUIKey(
+      networkId,
+      tableTypeStr,
+      col.name,
+    )
+    return {
       id: col.name,
       title: col.name,
       type: col.type,
       index,
-    })),
-  )
-
-  React.useEffect(() => {
-    const existingColumnWidths: any = {}
-    columns.forEach((c) => (existingColumnWidths[c.id] = c.width))
-    const newColumns = modelColumns.map((c, index) => {
-      return {
-        id: c.name,
-        title: c.name,
-        type: c.type,
-        index,
-        width: existingColumnWidths[c.name] ?? undefined,
-      }
-    })
-
-    setColumns(newColumns)
-  }, [modelColumns])
-
-  // console.log(columns)
+      width: columnWidths?.[columnWidthKey]?.width,
+    }
+  })
 
   const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
   const selectedElementsSet = new Set(selectedElements)
@@ -297,7 +305,7 @@ export default function TableBrowser(props: {
         }
       }
     },
-    [props.currentNetworkId, rows, currentTable, tables, sort],
+    [props.currentNetworkId, rows, currentTable, tables, sort, currentTabIndex],
   )
 
   const onColMoved = React.useCallback(
@@ -321,7 +329,6 @@ export default function TableBrowser(props: {
       if (cxId != null) {
         // TODO this operation is too expensive for large networks
         // // const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
-        // // console.log(eleId)
         // setHovered(props.currentNetworkId, String(cxId))
       }
     },
@@ -335,13 +342,16 @@ export default function TableBrowser(props: {
       colIndex: number,
       newSizeWithGrow: number,
     ): void => {
-      const col = columns[colIndex]
-      const newCol = { ...col, width: newSize }
-      const newColumns = [...columns]
-      newColumns[colIndex] = newCol
-      setColumns(newColumns)
+      if (column?.id !== undefined) {
+        setColumnWidth(
+          networkId,
+          currentTable === nodeTable ? 'node' : 'edge',
+          column.id,
+          newSize,
+        )
+      }
     },
-    [columns],
+    [columns, columnWidths],
   )
 
   const onCellContextMenu = React.useCallback(
@@ -695,7 +705,7 @@ export default function TableBrowser(props: {
             '& button': {
               minHeight: 30,
               height: 30,
-              width: 300,
+              width: 200,
             },
             height: 30,
             minHeight: 30,
@@ -703,16 +713,23 @@ export default function TableBrowser(props: {
         >
           <Tab label={<Typography variant="caption">Nodes</Typography>} />
           <Tab label={<Typography variant="caption">Edges</Typography>} />
+          <Tab label={<Typography variant="caption">Network</Typography>} />
         </Tabs>
         {panels[Panel.BOTTOM] === PanelState.CLOSED ? (
           <KeyboardArrowUp
             sx={{ color: 'white' }}
-            onClick={() => setPanelState(Panel.BOTTOM, PanelState.OPEN)}
+            onClick={() => {
+              setPanelState(Panel.BOTTOM, PanelState.OPEN)
+              props.setHeight(200)
+            }}
           />
         ) : (
           <KeyboardArrowDown
             sx={{ color: 'white' }}
-            onClick={() => setPanelState(Panel.BOTTOM, PanelState.CLOSED)}
+            onClick={() => {
+              setPanelState(Panel.BOTTOM, PanelState.CLOSED)
+              props.setHeight(0)
+            }}
           />
         )}
       </Box>
@@ -735,7 +752,7 @@ export default function TableBrowser(props: {
             onItemHovered={(e) => onItemHovered(e.location)}
             overscrollX={200}
             overscrollY={200}
-            onColumnResize={onColumnResize}
+            onColumnResizeEnd={onColumnResize}
             width={props.width}
             height={props.height}
             getCellContent={getContent}
@@ -764,7 +781,7 @@ export default function TableBrowser(props: {
             onItemHovered={(e) => onItemHovered(e.location)}
             overscrollX={200}
             overscrollY={200}
-            onColumnResize={onColumnResize}
+            onColumnResizeEnd={onColumnResize}
             width={props.width}
             height={props.height}
             getCellContent={getContent}
@@ -773,6 +790,9 @@ export default function TableBrowser(props: {
             rows={maxEdgeId - minEdgeId + 1}
           />
         </Box>
+      </TabPanel>
+      <TabPanel value={currentTabIndex} index={2}>
+        <NetworkInfoPanel height={props.height} />
       </TabPanel>
     </Box>
   )

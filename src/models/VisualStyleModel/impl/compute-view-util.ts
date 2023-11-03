@@ -115,10 +115,6 @@ export const updateNetworkView = (
     selectedEdges: networkView.selectedEdges,
   }
 
-  if (networkView.hoveredElement !== undefined) {
-    nextView.hoveredElement = networkView.hoveredElement
-  }
-
   return nextView
 }
 

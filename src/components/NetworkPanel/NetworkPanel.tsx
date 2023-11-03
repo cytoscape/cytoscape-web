@@ -6,7 +6,7 @@ import { useNetworkStore } from '../../store/NetworkStore'
 import { FloatingToolBar } from '../FloatingToolBar/FloatingToolBar'
 import { MessagePanel } from '../Messages'
 import { CyjsRenderer } from './CyjsRenderer'
-import { PopupPanel } from '../PopupPanel'
+// import { PopupPanel } from '../PopupPanel'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
@@ -40,8 +40,8 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
 
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
 
-  const [visible, setVisible] = useState<boolean>(false)
-  const [position, setPosition] = useState<[number, number]>([0, 0])
+  // const [visible, setVisible] = useState<boolean>(false)
+  // const [position, setPosition] = useState<[number, number]>([0, 0])
 
   const networks: Map<IdType, Network> = useNetworkStore(
     (state) => state.networks,
@@ -64,8 +64,8 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const vs: VisualStyle = visualStyles[targetNetwork.id]
 
   const handleClick = (e: any): void => {
-    setVisible(!visible)
-    setPosition([e.clientX, e.clientY])
+    // setVisible(!visible)
+    // setPosition([e.clientX, e.clientY])
     setActiveNetworkView(networkId)
   }
 
@@ -84,11 +84,11 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
     >
       {renderer}
       <FloatingToolBar />
-      <PopupPanel
+      {/* <PopupPanel
         setVisible={setVisible}
         visible={visible}
         position={position}
-      />
+      /> */}
     </Box>
   )
 }

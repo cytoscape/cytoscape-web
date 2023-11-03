@@ -48,9 +48,14 @@ export const ShareNetworkButton = (): JSX.Element => {
 
   const getQueryString = (): string => {
     const panelParams = new URLSearchParams(panels)
-    const panelStr = panelParams.toString()
-    const searchStr = search.toString()
-    return `${panelStr}&${searchStr}`
+    const panelObj = Object.fromEntries(panelParams.entries())
+    const searchObj = {
+      ...Object.fromEntries(search.entries()),
+      ...panelObj,
+      activeTableBrowserTab: `${ui.tableUi.activeTabIndex}`,
+    }
+    const searchStr = new URLSearchParams(searchObj).toString()
+    return searchStr
   }
 
   const setSelection = (params: URLSearchParams): void => {
