@@ -12,6 +12,8 @@ import { SubsystemTag } from '../../model/HcxMetaTag'
 /**
  * Get the member list of the given node
  *
+ * - First, search members, then memberName
+ *
  * @param nodeId
  * @param table
  * @returns
@@ -25,7 +27,16 @@ export const getMembers = (nodeId: IdType, table: Table): string[] => {
   if (row === undefined) {
     throw new Error(`Row ${nodeId} not found`)
   }
-  return row[SubsystemTag.members] as string[]
+
+  if (row[SubsystemTag.members] === undefined) {
+    const memberName: string[] = row[SubsystemTag.memberName] as string[]
+    if (memberName === undefined) {
+      throw new Error(`Member list not found for ${nodeId}`)
+    }
+    return memberName
+  } else {
+    return row[SubsystemTag.members] as string[]
+  }
 }
 
 export const findRoot = (cyNet: Core): NodeSingular => {
@@ -132,6 +143,21 @@ export const cyNetDag2tree2 = (
   })
 
   const children: NodeCollection = node.outgoers().nodes()
+
+  if (children.size() === 0) {
+    console.log('##Leaf', node.data())
+    // Add all members to the new node as new leaf nodes
+    getMembers(nodeId, nodeTable).forEach((member: string) => {
+      treeElements.push({
+        id: `${newNodeId}-${member}`,
+        originalId: member,
+        parentId: newNodeId,
+        name: member,
+        value: 1,
+        members: [],
+      })
+    })
+  }
 
   children.forEach((child: NodeSingular) => {
     cyNetDag2tree2(child, newNodeId, cyNet, nodeTable, visited, treeElements)

@@ -98,10 +98,13 @@ export const CirclePackingPanel = ({
       .join('text')
 
       .text((d: d3Hierarchy.HierarchyCircularNode<any>) => d.data.name)
-      .attr('font-size', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        d.data.id === selected || d.data.originalId === selected
-          ? '3em'
-          : `${2 / d.depth}em`,
+      .attr(
+        'font-size',
+        (d: d3Hierarchy.HierarchyCircularNode<any>) =>
+          d.data.id === selected || d.data.originalId === selected
+            ? '3em'
+            : `0.1em`,
+        // : `${2 / d.depth}em`,
       )
       .attr('text-anchor', 'middle')
       .attr('x', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.x)

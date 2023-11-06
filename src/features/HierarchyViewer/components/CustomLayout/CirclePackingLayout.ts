@@ -132,6 +132,55 @@ export const createTreeLayout = (
   return hierarchyRoot3
 }
 
+// const addMembersAsChildrenToAll = (
+//   node: HierarchyNode<D3TreeNode>,
+//   nodeTable: Table,
+// ): void => {
+//   const id: string = node.data.id
+
+//   const children: Array<HierarchyNode<D3TreeNode>> | undefined = node.children
+
+//   if (children === undefined || children.length === 0) {
+//     // This is a leaf node. Add all members as children
+
+//     // Get the members of the current node
+//     // This is a list of IDs or names
+//     const members = getMembers(id, nodeTable)
+
+//     members.forEach((member: string) => {
+//       // Check if the member is already a child of the current node
+//       const isAlreadyChild = childIds.includes(member)
+
+//       if (!isAlreadyChild) {
+//         const childNode = {
+//           id: member,
+//           name: nodeTable.rows.get(member)?.name as string,
+//           members: [],
+//           value: 1,
+//           parentId: id,
+//         }
+//         // node.children.push(childNode)
+//       }
+//     })
+//     return
+//   }
+
+//   // For each child node, call this function recursively
+//   children.forEach((child) => {
+//     addMembersAsChildrenToAll(child, nodeTable)
+//   })
+
+//   // Get the members of the current node
+//   if (id === undefined) {
+//     throw new Error('Node ID is undefined')
+//   }
+
+//   // Extract the IDs of the current node's children
+//   const childIds = node.children.map((child) => child.id)
+
+//   // For each member, create a new node and add it as a child if it doesn't already exist
+// }
+
 const treeElements2D3Tree = (
   rootId: string,
   treeElements: any[],
