@@ -117,7 +117,9 @@ export const createTreeLayout = (
   const tree3: any[] = []
   const visited3: { [key: string]: number } = {}
 
-  cyNetDag2tree2(root, null, cyNet, nodeTable, visited3, tree3)
+  const allMembers = new Set<string>()
+  cyNetDag2tree2(root, null, cyNet, nodeTable, visited3, tree3, allMembers)
+
   const hierarchyRoot3: HierarchyNode<D3TreeNode> =
     d3Hierarchy.stratify<D3TreeNode>()(tree3)
 

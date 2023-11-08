@@ -120,6 +120,7 @@ export const cyNetDag2tree2 = (
   nodeTable: Table,
   visited: Record<string, number>,
   treeElements: any[],
+  members: Set<string>,
 ): void => {
   // CUrrent node ID
   const nodeId = node.id()
@@ -130,8 +131,6 @@ export const cyNetDag2tree2 = (
   // Create a new node ID based on visited count (use the same ID for the first visit)
   const newNodeId =
     visited[nodeId] > 1 ? `${nodeId}-${visited[nodeId]}` : nodeId
-
-  console.log('##Node3', nodeId, newNodeId, visited[nodeId])
 
   treeElements.push({
     id: newNodeId,
@@ -145,9 +144,14 @@ export const cyNetDag2tree2 = (
   const children: NodeCollection = node.outgoers().nodes()
 
   if (children.size() === 0) {
-    console.log('##Leaf', node.data())
+    console.log('## This is a Leaf node. adding genes', node.data())
     // Add all members to the new node as new leaf nodes
     getMembers(nodeId, nodeTable).forEach((member: string) => {
+      if (members.has(member)) {
+        console.log('##Duplicate member', member)
+      } else {
+        members.add(member)
+      }
       treeElements.push({
         id: `${newNodeId}-${member}`,
         originalId: member,
@@ -157,9 +161,47 @@ export const cyNetDag2tree2 = (
         members: [],
       })
     })
+  } else {
+    // Add all members NOT in the children of this node
+    const childMembers = new Set<string>()
+    children.forEach((child: NodeSingular) => {
+      const currentMembers = getMembers(child.id(), nodeTable)
+      currentMembers.forEach((member: string) => {
+        childMembers.add(member)
+      })
+    })
+    const nodeMembers: Set<string> = new Set(getMembers(nodeId, nodeTable))
+    console.log(
+      'Child members & node mem',
+      Array.from(childMembers).sort(),
+      Array.from(nodeMembers).sort(),
+    )
+
+    nodeMembers.forEach((member: string) => {
+      members.add(member)
+      if (!childMembers.has(member)) {
+        console.log('## Adding DIFF member', member)
+        treeElements.push({
+          id: `${newNodeId}-${member}`,
+          originalId: member,
+          parentId: newNodeId,
+          name: member,
+          value: 1,
+          members: [],
+        })
+      }
+    })
   }
 
   children.forEach((child: NodeSingular) => {
-    cyNetDag2tree2(child, newNodeId, cyNet, nodeTable, visited, treeElements)
+    cyNetDag2tree2(
+      child,
+      newNodeId,
+      cyNet,
+      nodeTable,
+      visited,
+      treeElements,
+      members,
+    )
   })
 }
