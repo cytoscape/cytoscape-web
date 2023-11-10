@@ -1,13 +1,8 @@
-import {
-  Core,
-  EdgeCollection,
-  EdgeSingular,
-  NodeCollection,
-  NodeSingular,
-} from 'cytoscape'
+import { Core, NodeCollection, NodeSingular } from 'cytoscape'
 import { IdType } from '../../../../models/IdType'
 import { Table, ValueType } from '../../../../models/TableModel'
 import { SubsystemTag } from '../../model/HcxMetaTag'
+import { D3TreeNode } from './D3TreeNode'
 
 /**
  * Get the member list of the given node
@@ -52,67 +47,6 @@ export const findRoot = (cyNet: Core): NodeSingular => {
   return roots[0]
 }
 
-/**
- * Transform the given DAG to a tree
- *
- * @param nodeId The root node ID of the DAG
- * @param cyNet The DAG as a Cytoscape network
- * @param visited A map of visited nodes
- * @param treeElements The tree converted from the DAG
- *
- */
-export const cyNetDag2tree = (
-  nodeId: string,
-  cyNet: Core,
-  visited: Record<string, number>,
-  treeElements: any[],
-): void => {
-  // Initialize visited count for node (initial value is 1. Add 1 for each visit)
-  visited[nodeId] = visited[nodeId] === undefined ? 1 : visited[nodeId] + 1
-
-  // Create a new node ID based on visited count (use the same ID for the first visit)
-  const newNodeId =
-    visited[nodeId] > 1 ? `${nodeId}-${visited[nodeId]}` : nodeId
-
-  console.log('##Node2', nodeId, newNodeId, visited[nodeId])
-
-  // If the node has been visited more than once, record the original node ID
-  if (visited[nodeId] === 1) {
-    treeElements.push({ data: { id: newNodeId } })
-  } else {
-    treeElements.push({ data: { id: newNodeId, originalId: nodeId } })
-  }
-
-  // Recur for all children of the current node in the DAG
-  const connectingEdges: EdgeCollection = cyNet.edges(`[source = "${nodeId}"]`)
-
-  // Child node IDs
-  const children: string[] = connectingEdges.map((edge: EdgeSingular) =>
-    edge.target().id(),
-  )
-
-  for (const child of children) {
-    if (visited[nodeId] > 1) {
-      treeElements.push({
-        data: {
-          id: `${newNodeId} -> ${child}`,
-          source: newNodeId,
-          target: child,
-        },
-      })
-    } else {
-      treeElements.push({
-        data: {
-          id: `${nodeId} -> ${child}`,
-          source: nodeId,
-          target: child,
-        },
-      })
-    }
-    cyNetDag2tree(child, cyNet, visited, treeElements)
-  }
-}
-
 export const cyNetDag2tree2 = (
   node: NodeSingular,
   parentId: string | null,
@@ -132,14 +66,16 @@ export const cyNetDag2tree2 = (
   const newNodeId =
     visited[nodeId] > 1 ? `${nodeId}-${visited[nodeId]}` : nodeId
 
-  treeElements.push({
+  const newNode: D3TreeNode = {
     id: newNodeId,
     originalId: visited[nodeId] > 1 ? nodeId : undefined,
-    parentId: parent === null ? '' : parentId,
+    parentId: parentId === null ? '' : parentId,
     name: nodeTable.rows.get(nodeId)?.name as string,
-    value: getMembers(nodeId, nodeTable).length,
+    size: getMembers(nodeId, nodeTable).length,
+    // size: 1,
     members: getMembers(nodeId, nodeTable),
-  })
+  }
+  treeElements.push(newNode)
 
   const children: NodeCollection = node.outgoers().nodes()
 
@@ -157,7 +93,7 @@ export const cyNetDag2tree2 = (
         originalId: member,
         parentId: newNodeId,
         name: member,
-        value: 1,
+        size: 1,
         members: [],
       })
     })
@@ -180,13 +116,12 @@ export const cyNetDag2tree2 = (
     nodeMembers.forEach((member: string) => {
       members.add(member)
       if (!childMembers.has(member)) {
-        console.log('## Adding DIFF member', member)
         treeElements.push({
           id: `${newNodeId}-${member}`,
           originalId: member,
           parentId: newNodeId,
           name: member,
-          value: 1,
+          size: 1,
           members: [],
         })
       }

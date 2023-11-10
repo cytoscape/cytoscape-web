@@ -174,8 +174,8 @@ export const MainPanel = (): JSX.Element => {
           <Allotment>
             <Allotment.Pane preferredSize={'85%'} key={0}>
               <CirclePackingPanel
-                width={1000}
-                height={1000}
+                width={1600}
+                height={1600}
                 network={currentNetwork}
                 nodeTable={tableRecord?.nodeTable}
                 selected={targetNode}

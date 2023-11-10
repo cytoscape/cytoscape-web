@@ -18,14 +18,6 @@ interface CirclePackingPanelProps {
   selected?: IdType // Selected subsystem
 }
 
-// interface CirclePackingNode {
-//   name: string
-//   children?: CirclePackingNode[]
-//   value?: number
-//   x: number
-//   y: number
-//   r: number
-// }
 /**
  * Simple circle packing layout
  *
@@ -60,7 +52,7 @@ export const CirclePackingPanel = ({
     )
     console.log('rootNode', rootNode)
 
-    const pack = d3Hierarchy.pack().size([width, height]).padding(3)
+    const pack = d3Hierarchy.pack().size([width, height]).padding(0)
     pack(rootNode)
 
     const colorScale = getColorMapper([0, 1000])
@@ -82,13 +74,13 @@ export const CirclePackingPanel = ({
       .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
         d.data.id === selected || d.data.originalId === selected
           ? 'red'
-          : '#777777',
+          : '#666',
       )
       .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        d.data.id === selected || d.data.originalId === selected ? 5 : 0.5,
+        d.data.id === selected || d.data.originalId === selected ? 5 : 0.1,
       )
       .attr('fill', (d) => {
-        return colorScale(d.data.value)
+        return colorScale(d.depth * 100)
       })
 
     wrapper
@@ -102,14 +94,14 @@ export const CirclePackingPanel = ({
         'font-size',
         (d: d3Hierarchy.HierarchyCircularNode<any>) =>
           d.data.id === selected || d.data.originalId === selected
-            ? '3em'
-            : `0.1em`,
+            ? '0em'
+            : `0.05em`,
         // : `${2 / d.depth}em`,
       )
       .attr('text-anchor', 'middle')
       .attr('x', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.x)
       .attr('y', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.y)
-      .attr('dy', `${1 + Math.random()}em`)
+    // .attr('dy', `${1 + Math.random()}em`)
 
     // Initialized
     initRef.current = true

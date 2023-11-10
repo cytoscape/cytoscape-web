@@ -7,6 +7,6 @@ export const getColorMapper = (
   return d3Scale
     .scaleLinear<string>()
     .domain(domain)
-    .range(['white', 'rgba(0,0,200,0.1)'])
+    .range(['white', 'rgba(0,155,250,0.1)'])
     .interpolate(d3Interpolate.interpolateRgb)
 }
