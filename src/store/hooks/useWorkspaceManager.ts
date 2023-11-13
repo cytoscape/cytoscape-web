@@ -26,6 +26,12 @@ export const useWorkspaceManager = (): void => {
   const deleteAllViews = useViewModelStore((state) => state.deleteAll)
   const deleteAllVisualStyles = useVisualStyleStore((state) => state.deleteAll)
   const deleteAllTables = useTableStore((state) => state.deleteAll)
+  const deleteNetworkModifiedStatus = useWorkspaceStore(
+    (state) => state.deleteNetworkModifiedStatus,
+  )
+  const deleteAllNetworkModifiedStatuses = useWorkspaceStore(
+    (state) => state.deleteAllNetworkModifiedStatuses,
+  )
 
   const handleDeleteNetwork = (deleted: IdType): void => {
     deleteNetwork(deleted)
@@ -33,6 +39,7 @@ export const useWorkspaceManager = (): void => {
     deleteView(deleted)
     deleteVisualStyle(deleted)
     deleteTables(deleted)
+    deleteNetworkModifiedStatus(deleted)
   }
 
   const handleDeleteAll = (): void => {
@@ -41,6 +48,7 @@ export const useWorkspaceManager = (): void => {
     deleteAllViews()
     deleteAllVisualStyles()
     deleteAllTables()
+    deleteAllNetworkModifiedStatuses()
   }
 
   useEffect(() => {
@@ -53,7 +61,10 @@ export const useWorkspaceManager = (): void => {
         } else if (ids.length < lastIds.length) {
           const removed = lastIds.filter((id) => !ids.includes(id))
           handleDeleteNetwork(removed[0])
-          console.log('*************************************!! A network removed from workspace', removed[0])
+          console.log(
+            '*************************************!! A network removed from workspace',
+            removed[0],
+          )
         }
       },
     )

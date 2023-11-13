@@ -24,13 +24,21 @@ interface WorkspaceActions {
   // Remove current network from workspace
   deleteCurrentNetwork: () => void
 
+  deleteNetwork: (id: IdType) => void
+
   // Remove all networks from the workspace
   deleteAllNetworks: () => void
 
   // Remove all networks from the workspace and reset the workspace
   resetWorkspace: () => void
 
+  // Change modified flag for a network
   setNetworkModified: (networkId: IdType, isModified: boolean) => void
+
+  // Remove networkId modified status
+  deleteNetworkModifiedStatus: (networkId: IdType) => void
+
+  deleteAllNetworkModifiedStatuses: () => void
 }
 
 const EMPTY_WORKSPACE: Workspace = {
@@ -127,6 +135,17 @@ export const useWorkspaceStore = create(
             return state
           })
         },
+        deleteNetwork: (id: IdType) => {
+          set((state) => {
+            const idsWithoutCurrentNetworkId =
+              state.workspace.networkIds.filter((i) => i !== id)
+            state.workspace.networkIds = idsWithoutCurrentNetworkId
+            if (idsWithoutCurrentNetworkId.length === 0) {
+              state.workspace.currentNetworkId = ''
+            }
+            return state
+          })
+        },
         resetWorkspace() {
           set((state) => {
             void deleteDb().then(() => {})
@@ -137,6 +156,20 @@ export const useWorkspaceStore = create(
         setNetworkModified: (networkId: IdType, isModified: boolean) => {
           set((state) => {
             state.workspace.networkModified[networkId] = isModified
+            return state
+          })
+        },
+
+        deleteNetworkModifiedStatus: (networkId: IdType) => {
+          set((state) => {
+            delete state.workspace.networkModified[networkId]
+            return state
+          })
+        },
+
+        deleteAllNetworkModifiedStatuses: () => {
+          set((state) => {
+            state.workspace.networkModified = {}
             return state
           })
         },
