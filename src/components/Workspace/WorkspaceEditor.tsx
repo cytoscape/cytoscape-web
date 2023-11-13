@@ -127,8 +127,8 @@ const WorkSpaceEditor = (): JSX.Element => {
       // this leads to the network having a 'modified' state even though nothing was modified
       const { networkModified } = workspace
       const currentNetworkIsNotModified =
-        networkModified[currentNetworkId] === undefined ??
-        !networkModified[currentNetworkId] ??
+        (networkModified[currentNetworkId] === undefined &&
+          !(networkModified[currentNetworkId] ?? false)) ??
         false
 
       if (viewModelChanged && currentNetworkIsNotModified) {

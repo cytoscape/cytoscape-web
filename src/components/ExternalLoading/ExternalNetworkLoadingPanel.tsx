@@ -33,6 +33,7 @@ export const ExternalNetworkLoadingPanel = (
   const addNetworkIds: (networkId: string) => void = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
+
   const setCurrentNetworkId: (networkId: string) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
@@ -43,6 +44,7 @@ export const ExternalNetworkLoadingPanel = (
     void getToken().then((token) => {
       useNdexNetworkSummary(networkId, ndexBaseUrl, token)
         .then((summary) => {
+          // Add to the workspace
           addNetworkIds(networkId)
           setCurrentNetworkId(networkId)
           navigate(`/${id}/networks/${networkId}${location.search.toString()}`)
