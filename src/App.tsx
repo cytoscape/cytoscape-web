@@ -13,7 +13,6 @@ import {
 import { enableMapSet } from 'immer'
 import { MessagePanel } from './components/Messages'
 import appConfig from './assets/config.json'
-import { ExternalNetworkLoadingPanel } from './components/ExternalLoading'
 import { KeycloakContext } from '.'
 import { useCredentialStore } from './store/CredentialStore'
 
@@ -54,15 +53,6 @@ const router = createBrowserRouter(
       }
       errorElement={<Error />}
     >
-      <Route
-        // Special endpoint for loading external networks
-        path="network/:networkId"
-        element={
-          <ExternalNetworkLoadingPanel
-            message={'Loading External Network...'}
-          />
-        }
-      />
       <Route
         path=":workspaceId"
         element={
