@@ -120,7 +120,8 @@ export const ShareNetworkButton = (): JSX.Element => {
     const query = getQueryString()
 
     void copyTextToClipboard(
-      `${baseUrl}network/${currentNetworkId}?${query}`,
+      // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
+      `${baseUrl}0/networks/${currentNetworkId}?${query}`,
     ).then(() => {
       // Notify user that the sharable URL has been copied to clipboard
       setOpen(true)
