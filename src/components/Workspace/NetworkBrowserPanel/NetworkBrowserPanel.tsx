@@ -13,6 +13,8 @@ import { ChevronLeft, ChevronRight } from '@mui/icons-material'
 import { Ui } from '../../../models/UiModel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 import { Panel } from '../../../models/UiModel/Panel'
+import { isHCX } from '../../../features/HierarchyViewer/utils/hierarcy-util'
+import { LLMQueryResultPanel } from '../../../features/LLMQuery/components'
 
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
@@ -58,11 +60,20 @@ export const NetworkBrowserPanel = ({
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
-  const [currentTabIndex, setCurrentTabIndex] = useState<number>(0)
+
+  const currentTabIndex = useUiStateStore(
+    (state) => state.ui.networkBrowserPanelUi.activeTabIndex,
+  )
+  const setCurrentTabIndex = useUiStateStore(
+    (state) => state.setActiveNetworkBrowserPanelIndex,
+  )
 
   const changeTab = (event: React.SyntheticEvent, newValue: number): void => {
     setCurrentTabIndex(newValue)
   }
+  const summary = summaries[currentNetworkId]
+
+  const showLLMQueryPanel = isHCX(summary)
 
   return (
     <Box
@@ -97,6 +108,13 @@ export const NetworkBrowserPanel = ({
             iconPosition="start"
             label={<Typography variant="body2">STYLE</Typography>}
           />
+          {showLLMQueryPanel && (
+            <Tab
+              icon={<PaletteIcon />}
+              iconPosition="start"
+              label={<Typography variant="body2">LLM QUERY</Typography>}
+            />
+          )}
         </Tabs>
         {panels.left === PanelState.OPEN ? (
           <ChevronLeft
@@ -136,6 +154,13 @@ export const NetworkBrowserPanel = ({
               networkId={targetNetworkId}
               height={allotmentDimensions[0]}
             />
+          </Box>
+        )}
+      </div>
+      <div hidden={currentTabIndex !== 2}>
+        {currentTabIndex === 2 && (
+          <Box>
+            <LLMQueryResultPanel />
           </Box>
         )}
       </div>

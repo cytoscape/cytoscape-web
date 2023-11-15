@@ -1,8 +1,9 @@
 import { IdType } from '../IdType'
+
 import { Panel } from './Panel'
 import { PanelState } from './PanelState'
 import { TableUIState } from './TableUi'
-
+import { NetworkBrowserPanelUIState } from './NetworkBrowserPanelState'
 /**
  * User interface states shared as a global value
  */
@@ -25,4 +26,5 @@ export interface Ui {
   errorMessage: string
 
   tableUi: TableUIState
+  networkBrowserPanelUi: NetworkBrowserPanelUIState
 }

@@ -27,6 +27,7 @@ interface UiStateAction {
     width: number,
   ) => void
   setActiveTableBrowserIndex: (index: number) => void
+  setActiveNetworkBrowserPanelIndex: (index: number) => void
 }
 
 type UiStateStore = UiState & UiStateAction
@@ -43,6 +44,9 @@ export const DEFAULT_UI_STATE = {
   errorMessage: '',
   tableUi: {
     columnUiState: {},
+    activeTabIndex: 0,
+  },
+  networkBrowserPanelUi: {
     activeTabIndex: 0,
   },
 }
@@ -126,6 +130,12 @@ export const useUiStateStore = create(
     setActiveTableBrowserIndex: (index: number) => {
       set((state) => {
         state.ui.tableUi.activeTabIndex = index
+        return state
+      })
+    },
+    setActiveNetworkBrowserPanelIndex: (index: number) => {
+      set((state) => {
+        state.ui.networkBrowserPanelUi.activeTabIndex = index
         return state
       })
     },

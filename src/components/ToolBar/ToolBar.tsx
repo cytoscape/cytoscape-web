@@ -10,6 +10,7 @@ import { LoginButton } from '../Login/LoginButton'
 import { LayoutMenu } from './LayoutMenu'
 import { EditMenu } from './EditMenu'
 import { SearchBox } from './Search'
+import { AnalysisMenu } from './AnalysisMenu'
 
 export const ToolBar = (): JSX.Element => {
   return (
@@ -25,6 +26,7 @@ export const ToolBar = (): JSX.Element => {
             <EditMenu label="Edit" />
             <LayoutMenu label="Layout" />
             <DropdownMenu label="Help" />
+            <AnalysisMenu label="Analysis" />
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
