@@ -82,6 +82,12 @@ export const CirclePackingPanel = ({
       .attr('fill', (d) => {
         return colorScale(d.depth * 100)
       })
+      .on('mouseover', function () {
+        d3Selection.select(this).attr('stroke', 'red').attr('stroke-width', 5)
+      })
+      .on('mouseout', function () {
+        d3Selection.select(this).attr('stroke', '#666').attr('stroke-width', 0.1)
+      })
 
     wrapper
       .append('g')
