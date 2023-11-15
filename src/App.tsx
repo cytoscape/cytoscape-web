@@ -8,6 +8,7 @@ import {
   RouterProvider,
   Route,
   createRoutesFromElements,
+  useNavigate,
 } from 'react-router-dom'
 // this allows immer to work with Map and Set
 import { enableMapSet } from 'immer'
@@ -40,6 +41,25 @@ if (appConfig.urlBaseName !== '') {
   routerOpts.basename = appConfig.urlBaseName
 }
 
+const RedirectPanel = (): JSX.Element => {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigate('/')
+    }, 2000)
+
+    // Clean up the timer when the component is unmounted
+    return () => clearTimeout(timer)
+  }, [])
+
+  return (
+    <div>
+      <h6>Invalid URL was given. Redirecting to the application root...</h6>
+    </div>
+  )
+}
+
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route
@@ -65,6 +85,7 @@ const router = createBrowserRouter(
       >
         <Route path="networks" element={<div />} />
         <Route path="networks/:networkId" element={<div />} />
+        <Route path="*" element={<RedirectPanel />} />
       </Route>
     </Route>,
   ),
