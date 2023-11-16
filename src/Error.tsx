@@ -28,6 +28,7 @@ export const Error = (): ReactElement => {
   const handleClose = (): void => {
     setOpen(false)
   }
+  
   let status = 'Unknown'
   if (isRouteErrorResponse(error)) {
     const { statusText } = error
@@ -56,13 +57,13 @@ export const Error = (): ReactElement => {
       </Grid>
       <Grid item xs={12}>
         <Typography variant="body1">
-          By clicking this button, it will reset your local workspace and
+          If this persists, you can reset your local workspace cache and
           restart the app.
         </Typography>
       </Grid>
       <Grid item xs={12}>
         <Button variant="outlined" color={'warning'} onClick={handleClickOpen}>
-          Reset
+          Reset and Reload Cytoscape
         </Button>
         <ConfirmationDialog
           title="Reset Local Workspace Cache"
