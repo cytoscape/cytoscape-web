@@ -15,6 +15,7 @@ import { MessagePanel } from './components/Messages'
 import appConfig from './assets/config.json'
 import { KeycloakContext } from '.'
 import { useCredentialStore } from './store/CredentialStore'
+import { RedirectPanel } from './RedirectPanel'
 
 enableMapSet()
 
@@ -65,6 +66,7 @@ const router = createBrowserRouter(
       >
         <Route path="networks" element={<div />} />
         <Route path="networks/:networkId" element={<div />} />
+        <Route path="*" element={<RedirectPanel />} />
       </Route>
     </Route>,
   ),
