@@ -43,6 +43,8 @@ if (appConfig.urlBaseName !== '') {
 
 const router = createBrowserRouter(
   createRoutesFromElements(
+    <>
+    <Route path="/error" element={<Error />} />
     <Route
       path="/"
       element={
@@ -68,7 +70,8 @@ const router = createBrowserRouter(
         <Route path="networks/:networkId" element={<div />} />
         <Route path="*" element={<RedirectPanel />} />
       </Route>
-    </Route>,
+    </Route>
+    </>,
   ),
   routerOpts,
 )
