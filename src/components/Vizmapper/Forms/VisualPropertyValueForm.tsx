@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Box, Popover, Typography, Tooltip } from '@mui/material'
+import { Box, Popover, Typography, Tooltip, Tabs, Tab } from '@mui/material'
+
 
 import {
   VisualProperty,
@@ -8,7 +9,7 @@ import {
 } from '../../../models/VisualStyleModel'
 
 import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
-import { Color, ColorPicker } from '../VisualPropertyRender/Color'
+import { Color, ColorPicker, ColorPickerCompact, ColorPickerViridis, ColorPickerSequential, ColorPickerDiverging } from '../VisualPropertyRender/Color'
 import {
   NodeBorderLine,
   NodeBorderLinePicker,
@@ -70,6 +71,253 @@ const vpType2RenderMap: Record<
   },
   color: {
     pickerRender: ColorPicker,
+    valueRender: Color,
+  },
+  nodeBorderLine: {
+    pickerRender: NodeBorderLinePicker,
+    valueRender: NodeBorderLine,
+  },
+  number: {
+    pickerRender: NumberInput,
+    valueRender: NumberRender,
+  },
+  font: {
+    pickerRender: FontPicker,
+    valueRender: Font,
+  },
+  horizontalAlign: {
+    pickerRender: HorizontalAlignPicker,
+    valueRender: HorizontalAlign,
+  },
+  verticalAlign: {
+    pickerRender: VerticalAlignPicker,
+    valueRender: VerticalAlign,
+  },
+  visibility: {
+    pickerRender: VisibilityPicker,
+    valueRender: Visibility,
+  },
+  edgeArrowShape: {
+    pickerRender: EdgeArrowShapePicker,
+    valueRender: EdgeArrowShape,
+  },
+  edgeLine: {
+    pickerRender: EdgeLinePicker,
+    valueRender: EdgeLine,
+  },
+  string: {
+    pickerRender: StringInput,
+    valueRender: StringRender,
+  },
+  boolean: {
+    pickerRender: BooleanSwitch,
+    valueRender: BooleanRender,
+  },
+}
+
+const vpType2RenderMap2: Record<
+  VisualPropertyValueTypeName,
+  {
+    pickerRender: (props: {
+      currentValue: VisualPropertyValueType | null
+      onValueChange: (newValue: VisualPropertyValueType) => void
+    }) => React.ReactElement
+    valueRender: (props: {
+      value: VisualPropertyValueType
+    }) => React.ReactElement
+  }
+> = {
+  nodeShape: {
+    pickerRender: NodeShapePicker,
+    valueRender: NodeShape,
+  },
+  color: {
+    pickerRender: ColorPickerCompact,
+    valueRender: Color,
+  },
+  nodeBorderLine: {
+    pickerRender: NodeBorderLinePicker,
+    valueRender: NodeBorderLine,
+  },
+  number: {
+    pickerRender: NumberInput,
+    valueRender: NumberRender,
+  },
+  font: {
+    pickerRender: FontPicker,
+    valueRender: Font,
+  },
+  horizontalAlign: {
+    pickerRender: HorizontalAlignPicker,
+    valueRender: HorizontalAlign,
+  },
+  verticalAlign: {
+    pickerRender: VerticalAlignPicker,
+    valueRender: VerticalAlign,
+  },
+  visibility: {
+    pickerRender: VisibilityPicker,
+    valueRender: Visibility,
+  },
+  edgeArrowShape: {
+    pickerRender: EdgeArrowShapePicker,
+    valueRender: EdgeArrowShape,
+  },
+  edgeLine: {
+    pickerRender: EdgeLinePicker,
+    valueRender: EdgeLine,
+  },
+  string: {
+    pickerRender: StringInput,
+    valueRender: StringRender,
+  },
+  boolean: {
+    pickerRender: BooleanSwitch,
+    valueRender: BooleanRender,
+  },
+}
+const vpType2RenderMapViridis: Record<
+  VisualPropertyValueTypeName,
+  {
+    pickerRender: (props: {
+      currentValue: VisualPropertyValueType | null
+      onValueChange: (newValue: VisualPropertyValueType) => void
+    }) => React.ReactElement
+    valueRender: (props: {
+      value: VisualPropertyValueType
+    }) => React.ReactElement
+  }
+> = {
+  nodeShape: {
+    pickerRender: NodeShapePicker,
+    valueRender: NodeShape,
+  },
+  color: {
+    pickerRender: ColorPickerViridis,
+    valueRender: Color,
+  },
+  nodeBorderLine: {
+    pickerRender: NodeBorderLinePicker,
+    valueRender: NodeBorderLine,
+  },
+  number: {
+    pickerRender: NumberInput,
+    valueRender: NumberRender,
+  },
+  font: {
+    pickerRender: FontPicker,
+    valueRender: Font,
+  },
+  horizontalAlign: {
+    pickerRender: HorizontalAlignPicker,
+    valueRender: HorizontalAlign,
+  },
+  verticalAlign: {
+    pickerRender: VerticalAlignPicker,
+    valueRender: VerticalAlign,
+  },
+  visibility: {
+    pickerRender: VisibilityPicker,
+    valueRender: Visibility,
+  },
+  edgeArrowShape: {
+    pickerRender: EdgeArrowShapePicker,
+    valueRender: EdgeArrowShape,
+  },
+  edgeLine: {
+    pickerRender: EdgeLinePicker,
+    valueRender: EdgeLine,
+  },
+  string: {
+    pickerRender: StringInput,
+    valueRender: StringRender,
+  },
+  boolean: {
+    pickerRender: BooleanSwitch,
+    valueRender: BooleanRender,
+  },
+}
+
+const vpType2RenderMapSequential: Record<
+  VisualPropertyValueTypeName,
+  {
+    pickerRender: (props: {
+      currentValue: VisualPropertyValueType | null
+      onValueChange: (newValue: VisualPropertyValueType) => void
+    }) => React.ReactElement
+    valueRender: (props: {
+      value: VisualPropertyValueType
+    }) => React.ReactElement
+  }
+> = {
+  nodeShape: {
+    pickerRender: NodeShapePicker,
+    valueRender: NodeShape,
+  },
+  color: {
+    pickerRender: ColorPickerSequential,
+    valueRender: Color,
+  },
+  nodeBorderLine: {
+    pickerRender: NodeBorderLinePicker,
+    valueRender: NodeBorderLine,
+  },
+  number: {
+    pickerRender: NumberInput,
+    valueRender: NumberRender,
+  },
+  font: {
+    pickerRender: FontPicker,
+    valueRender: Font,
+  },
+  horizontalAlign: {
+    pickerRender: HorizontalAlignPicker,
+    valueRender: HorizontalAlign,
+  },
+  verticalAlign: {
+    pickerRender: VerticalAlignPicker,
+    valueRender: VerticalAlign,
+  },
+  visibility: {
+    pickerRender: VisibilityPicker,
+    valueRender: Visibility,
+  },
+  edgeArrowShape: {
+    pickerRender: EdgeArrowShapePicker,
+    valueRender: EdgeArrowShape,
+  },
+  edgeLine: {
+    pickerRender: EdgeLinePicker,
+    valueRender: EdgeLine,
+  },
+  string: {
+    pickerRender: StringInput,
+    valueRender: StringRender,
+  },
+  boolean: {
+    pickerRender: BooleanSwitch,
+    valueRender: BooleanRender,
+  },
+}
+
+const vpType2RenderMapDiverging: Record<
+  VisualPropertyValueTypeName,
+  {
+    pickerRender: (props: {
+      currentValue: VisualPropertyValueType | null
+      onValueChange: (newValue: VisualPropertyValueType) => void
+    }) => React.ReactElement
+    valueRender: (props: {
+      value: VisualPropertyValueType
+    }) => React.ReactElement
+  }
+> = {
+  nodeShape: {
+    pickerRender: NodeShapePicker,
+    valueRender: NodeShape,
+  },
+  color: {
+    pickerRender: ColorPickerDiverging,
     valueRender: Color,
   },
   nodeBorderLine: {
@@ -202,6 +450,7 @@ export function VisualPropertyValueForm(
   props: VisualPropertyValueFormProps,
 ): React.ReactElement {
   const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
+  const [activeTab, setActiveTab] = React.useState(0);
 
   const showValuePicker = (value: Element | null): void => {
     setValuePicker(value)
@@ -233,21 +482,90 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box>
+          <Tabs
+            value={activeTab}
+            onChange={(event, newValue) => setActiveTab(newValue)}
+            aria-label="Tab panel"
+          >
+            <Tab label="ColorBrewer Sequential" />
+            <Tab label="ColorBrewer Diverging" />
+            <Tab label="Viridis Sequential" />
+            <Tab label="Swatches" />
+            <Tab label="Color Picker" />
+          </Tabs>
           {props.title != null ? (
             <Typography sx={{ m: 1 }}>{props.title}</Typography>
           ) : null}
+          {activeTab === 0 && (
+            <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              {(
+                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+                vpType2RenderMapSequential[props.visualProperty.type].pickerRender ??
+                (() => { })
+              )({
+                onValueChange: (value: VisualPropertyValueType) =>
+                  props.onValueChange(value),
+                currentValue: props.currentValue,
+              })}
+            </Box>
+          )}
+          {activeTab === 1 && (
+            <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}
+            >
+              {(
+                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+                vpType2RenderMapDiverging[props.visualProperty.type].pickerRender ??
+                (() => { })
+              )({
+                onValueChange: (value: VisualPropertyValueType) =>
+                  props.onValueChange(value),
+                currentValue: props.currentValue,
+              })}
+            </Box>
+          )}
 
-          <Box sx={{ p: 1 }}>
-            {(
-              vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
-              vpType2RenderMap[props.visualProperty.type].pickerRender ??
-              (() => { })
-            )({
-              onValueChange: (value: VisualPropertyValueType) =>
-                props.onValueChange(value),
-              currentValue: props.currentValue,
-            })}
-          </Box>
+          {activeTab === 2 && (
+            <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              {(
+                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+                vpType2RenderMapViridis[props.visualProperty.type].pickerRender ??
+                (() => { })
+              )({
+                onValueChange: (value: VisualPropertyValueType) =>
+                  props.onValueChange(value),
+                currentValue: props.currentValue,
+              })}
+            </Box>
+          )}
+
+          {activeTab === 3 && (
+            <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              {(
+                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+                vpType2RenderMap2[props.visualProperty.type].pickerRender ??
+                (() => { })
+              )({
+                onValueChange: (value: VisualPropertyValueType) =>
+                  props.onValueChange(value),
+                currentValue: props.currentValue,
+              })}
+            </Box>
+          )}
+
+          {activeTab === 4 && (
+            <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              {(
+                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+                vpType2RenderMap[props.visualProperty.type].pickerRender ??
+                (() => { })
+              )({
+                onValueChange: (value: VisualPropertyValueType) =>
+                  props.onValueChange(value),
+                currentValue: props.currentValue,
+              })}
+            </Box>
+          )}
+
         </Box>
       </Popover>
     </Box>
