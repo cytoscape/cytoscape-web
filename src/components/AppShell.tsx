@@ -187,6 +187,7 @@ const AppShell = (): ReactElement => {
               )
             }
           } else {
+            addNetworkIds(networkId)
             setCurrentNetworkId(networkId)
             navigate(
               `/${id}/networks/${networkId}${location.search.toString()}`,
