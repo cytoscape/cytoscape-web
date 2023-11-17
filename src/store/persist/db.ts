@@ -8,9 +8,9 @@ import { Workspace } from '../../models/WorkspaceModel'
 import { v4 as uuidv4 } from 'uuid'
 import { NetworkView } from '../../models/ViewModel'
 import { Ui } from '../../models/UiModel'
+import { applyMigrations } from './migrations'
 
 const DB_NAME = 'cyweb-db'
-const DB_VERSION: number = 1
 
 /**
  * TODO: we need a schema for indexes
@@ -29,7 +29,7 @@ class CyDB extends Dexie {
 
   constructor(dbName: string) {
     super(dbName)
-    this.version(DB_VERSION).stores({
+    this.version(1).stores({
       workspace: 'id',
       summaries: 'externalId',
       cyNetworks: 'id',
@@ -38,6 +38,8 @@ class CyDB extends Dexie {
       cyNetworkViews: 'id',
       uiState: 'id',
     })
+
+    applyMigrations(this).catch((err) => console.log(err))
   }
 }
 
