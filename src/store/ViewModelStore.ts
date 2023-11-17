@@ -12,12 +12,17 @@ import {
 import { useWorkspaceStore } from './WorkspaceStore'
 
 interface ViewModelState {
-  viewModels: Record<IdType, NetworkView>
+  viewModels: Record<IdType, NetworkView[]>
 }
 
 interface ViewModelAction {
-  // Add a new View Model to the store
+  // Add a new Network View Model to the store
   add: (networkId: IdType, networkView: NetworkView) => void
+
+  getViewModel: (
+    networkId: IdType,
+    viewModelId?: IdType,
+  ) => NetworkView | undefined
 
   exclusiveSelect: (
     networkId: IdType,
@@ -60,9 +65,12 @@ const persist =
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
         set(args)
-        const updated = get().viewModels[currentNetworkId]
+        // const updated: NetworkView = get().viewModels[currentNetworkId]
+        const updated: NetworkView[] | undefined =
+          get().viewModels[currentNetworkId]
         const deleted: boolean = updated === undefined
-        const lastModel = last.viewModels[currentNetworkId]
+        const lastModel: NetworkView[] | undefined =
+          last.viewModels[currentNetworkId]
         if (!deleted && lastModel !== undefined) {
           void putNetworkViewToDb(currentNetworkId, updated).then(() => {})
         }
@@ -74,54 +82,90 @@ const persist =
 export const useViewModelStore = create(
   subscribeWithSelector(
     immer<ViewModelStore>(
-      persist((set) => ({
+      persist((set, get) => ({
         viewModels: {},
 
         add: (networkId: IdType, networkView: NetworkView) => {
           set((state) => {
-            state.viewModels[networkId] = networkView
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList !== undefined) {
+              viewList.push(networkView)
+            } else {
+              state.viewModels[networkId] = [networkView]
+            }
             return state
           })
         },
+
+        getViewModel: (
+          networkId: IdType,
+          viewModelId?: IdType,
+        ): NetworkView | undefined => {
+          const viewList: NetworkView[] | undefined =
+            useViewModelStore.getState().viewModels[networkId]
+          if (viewList === undefined) {
+            return undefined
+          }
+          if (viewModelId === undefined) {
+            return viewList[0]
+          }
+          return viewList.find((view) => view.id === viewModelId)
+        },
+
         exclusiveSelect: (
           networkId: IdType,
           selectedNodes: IdType[],
           selectedEdges: IdType[],
         ) => {
           set((state) => {
-            state.viewModels[networkId].selectedNodes = selectedNodes
-            state.viewModels[networkId].selectedEdges = selectedEdges
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((view: NetworkView) => {
+              view.selectedNodes = selectedNodes
+              view.selectedEdges = selectedEdges
+            })
 
             return state
           })
         },
         toggleSelected: (networkId: IdType, eles: IdType[]) => {
           set((state) => {
-            const networkView = state.viewModels[networkId]
-            const selectedNodesSet = new Set(networkView.selectedNodes)
-            const selectedEdgesSet = new Set(networkView.selectedEdges)
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
 
-            const nodeEles = eles.filter((id) => !isEdgeId(id))
-            const edgeEles = eles.filter((id) => isEdgeId(id))
-            nodeEles.forEach((id) => {
-              if (selectedNodesSet.has(id)) {
-                selectedNodesSet.delete(id)
-              } else {
-                selectedNodesSet.add(id)
-              }
+            viewList.forEach((networkView: NetworkView) => {
+              const selectedNodesSet = new Set(networkView.selectedNodes)
+              const selectedEdgesSet = new Set(networkView.selectedEdges)
+
+              const nodeEles = eles.filter((id) => !isEdgeId(id))
+              const edgeEles = eles.filter((id) => isEdgeId(id))
+              nodeEles.forEach((id) => {
+                if (selectedNodesSet.has(id)) {
+                  selectedNodesSet.delete(id)
+                } else {
+                  selectedNodesSet.add(id)
+                }
+              })
+
+              edgeEles.forEach((id) => {
+                if (selectedEdgesSet.has(id)) {
+                  selectedEdgesSet.delete(id)
+                } else {
+                  selectedEdgesSet.add(id)
+                }
+              })
+
+              networkView.selectedNodes = Array.from(selectedNodesSet)
+              networkView.selectedEdges = Array.from(selectedEdgesSet)
             })
-
-            edgeEles.forEach((id) => {
-              if (selectedEdgesSet.has(id)) {
-                selectedEdgesSet.delete(id)
-              } else {
-                selectedEdgesSet.add(id)
-              }
-            })
-
-            networkView.selectedNodes = Array.from(selectedNodesSet)
-            networkView.selectedEdges = Array.from(selectedEdgesSet)
-
             return state
           })
         },
@@ -129,72 +173,103 @@ export const useViewModelStore = create(
         // select elements without unselecing anything else
         additiveSelect: (networkId: IdType, eles: IdType[]) => {
           set((state) => {
-            const networkView = state.viewModels[networkId]
-            const selectedNodesSet = new Set()
-            const selectedEdgesSet = new Set()
-
-            for (let i = 0; i < eles.length; i++) {
-              const eleId = eles[i]
-              if (isEdgeId(eleId)) {
-                selectedEdgesSet.add(eleId)
-              } else {
-                selectedNodesSet.add(eleId)
-              }
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
             }
 
-            networkView.selectedNodes = Array.from(selectedNodesSet) as IdType[]
-            networkView.selectedEdges = Array.from(selectedEdgesSet) as IdType[]
+            viewList.forEach((networkView: NetworkView) => {
+              const selectedNodesSet = new Set()
+              const selectedEdgesSet = new Set()
 
+              for (let i = 0; i < eles.length; i++) {
+                const eleId = eles[i]
+                if (isEdgeId(eleId)) {
+                  selectedEdgesSet.add(eleId)
+                } else {
+                  selectedNodesSet.add(eleId)
+                }
+              }
+
+              networkView.selectedNodes = Array.from(
+                selectedNodesSet,
+              ) as IdType[]
+              networkView.selectedEdges = Array.from(
+                selectedEdgesSet,
+              ) as IdType[]
+            })
             return state
           })
         },
         // unselect elements without selecting anything else
         additiveUnselect: (networkId: IdType, eles: IdType[]) => {
           set((state) => {
-            const networkView = state.viewModels[networkId]
-
-            const selectedNodesSet = new Set()
-            const selectedEdgesSet = new Set()
-
-            for (let i = 0; i < eles.length; i++) {
-              const eleId = eles[i]
-              if (isEdgeId(eleId)) {
-                selectedEdgesSet.delete(eleId)
-              } else {
-                selectedNodesSet.delete(eleId)
-              }
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
             }
-            networkView.selectedNodes = Array.from(selectedNodesSet) as IdType[]
-            networkView.selectedEdges = Array.from(selectedEdgesSet) as IdType[]
 
+            viewList.forEach((networkView: NetworkView) => {
+              const selectedNodesSet = new Set()
+              const selectedEdgesSet = new Set()
+
+              for (let i = 0; i < eles.length; i++) {
+                const eleId = eles[i]
+                if (isEdgeId(eleId)) {
+                  selectedEdgesSet.delete(eleId)
+                } else {
+                  selectedNodesSet.delete(eleId)
+                }
+              }
+              networkView.selectedNodes = Array.from(
+                selectedNodesSet,
+              ) as IdType[]
+              networkView.selectedEdges = Array.from(
+                selectedEdgesSet,
+              ) as IdType[]
+            })
             return state
           })
         },
         setNodePosition(networkId, eleId, position) {
           set((state) => {
-            const networkView = state.viewModels[networkId]
-            const nodeView: NodeView = networkView.nodeViews[eleId]
-            if (nodeView !== null && nodeView !== undefined) {
-              nodeView.x = position[0]
-              nodeView.y = position[1]
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
             }
 
+            viewList.forEach((networkView: NetworkView) => {
+              const nodeView: NodeView = networkView.nodeViews[eleId]
+              if (nodeView !== null && nodeView !== undefined) {
+                nodeView.x = position[0]
+                nodeView.y = position[1]
+              }
+            })
             return state
           })
         },
         updateNodePositions(networkId, positions) {
           set((state) => {
-            const networkView = state.viewModels[networkId]
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
 
-            const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
-            Object.keys(nodeViews).forEach((nodeId: IdType) => {
-              const nodeView: NodeView = nodeViews[nodeId]
-              const newPosition: [number, number, number?] | undefined =
-                positions.get(nodeId)
-              if (newPosition !== undefined) {
-                nodeView.x = newPosition[0]
-                nodeView.y = newPosition[1]
-              }
+            viewList.forEach((networkView: NetworkView) => {
+              const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
+              Object.keys(nodeViews).forEach((nodeId: IdType) => {
+                const nodeView: NodeView = nodeViews[nodeId]
+                const newPosition: [number, number, number?] | undefined =
+                  positions.get(nodeId)
+                if (newPosition !== undefined) {
+                  nodeView.x = newPosition[0]
+                  nodeView.y = newPosition[1]
+                }
+              })
             })
 
             return state
@@ -202,20 +277,24 @@ export const useViewModelStore = create(
         },
         deleteObjects(networkId, ids) {
           set((state) => {
-            const networkView = state.viewModels[networkId]
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
 
-            const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
-            const edgeViews: Record<IdType, EdgeView> = networkView.edgeViews
+            viewList.forEach((networkView: NetworkView) => {
+              const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
+              const edgeViews: Record<IdType, EdgeView> = networkView.edgeViews
 
-            ids.forEach((id) => {
-              if (nodeViews[id] !== undefined) {
-                delete nodeViews[id]
-              } else {
-                delete edgeViews[id]
-              }
+              ids.forEach((id) => {
+                if (nodeViews[id] !== undefined) {
+                  delete nodeViews[id]
+                } else {
+                  delete edgeViews[id]
+                }
+              })
             })
-
-            console.log('Network view objects deleted')
             return state
           })
         },

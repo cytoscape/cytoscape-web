@@ -2,7 +2,6 @@ import { renderHook, act } from '@testing-library/react'
 import { useViewModelStore } from '../../src/store/ViewModelStore'
 import { NetworkView } from '../../src/models/ViewModel'
 import { IdType } from '../../src/models/IdType'
-import { waitSeconds } from '../../src/utils/wait-seconds'
 
 describe('useViewModelStore', () => {
   let mockNetworkView: NetworkView
@@ -42,27 +41,29 @@ describe('useViewModelStore', () => {
     act(() => {
       result.current.add(mockId, mockNetworkView)
     })
-    expect(result.current.viewModels[mockId]).toEqual(mockNetworkView)
-    await waitSeconds(0.5)
+
+    const viewList: NetworkView[] = result.current.viewModels[mockId]
+    expect(viewList.length).toEqual(1)
+    const firstView = viewList[0]
+    expect(firstView).toEqual(mockNetworkView)
   })
 
-  it('should update selected nodes and edges', () => {
+  it('should update selected nodes and edges', async () => {
     const { result } = renderHook(() => useViewModelStore())
     const selectedNodes = ['node1', 'node2']
     const selectedEdges = ['edge1', 'edge2']
     act(() => {
       result.current.exclusiveSelect(mockId, selectedNodes, selectedEdges)
     })
-    expect(result.current.viewModels[mockId].selectedNodes.length).toEqual(
+    expect(result.current.viewModels[mockId][0].selectedNodes.length).toEqual(
       2,
     )
-    expect(result.current.viewModels[mockId].selectedNodes).toEqual(
+    expect(result.current.viewModels[mockId][0].selectedNodes).toEqual(
       selectedNodes,
     )
-    expect(result.current.viewModels[mockId].selectedEdges).toEqual(
+    expect(result.current.viewModels[mockId][0].selectedEdges).toEqual(
       selectedEdges,
     )
   })
 
-  // Add more tests for other actions here
 })

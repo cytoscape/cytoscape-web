@@ -50,7 +50,7 @@ db.open()
   })
 
 db.on('ready', () => {
-  console.info('Indexed DB is ready')
+  // console.info('Indexed DB is ready')
 })
 
 export const deleteDb = async (): Promise<void> => {
@@ -338,10 +338,11 @@ export const getNetworkViewFromDb = async (
 
 export const putNetworkViewToDb = async (
   id: IdType,
-  view: NetworkView,
+  views: NetworkView[],
 ): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
-    await db.cyNetworkViews.put({ ...view })
+    await db.cyNetworkViews.put({id, ...views} )
+    // await db.cyNetworkViews.put({ ...views })
   })
 }
 
