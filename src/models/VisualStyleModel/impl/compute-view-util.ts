@@ -134,6 +134,11 @@ const nodeViewBuilder = (
     const nodeId = node.id
     const nodeView: NodeView | undefined =
       nodeViews !== undefined ? nodeViews[nodeId] : undefined
+    
+    if (nodeView === undefined) {
+      console.log('@@nodeView is undefined')
+    }
+
     const nv: NodeView = {
       id: nodeId,
       values: computeView(
