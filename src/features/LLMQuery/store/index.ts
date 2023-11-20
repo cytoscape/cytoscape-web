@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { LLMModel, models } from '../model/LLMModel'
-import { openAIAPIKey } from '../../../assets/config.json'
+import config from '../../../assets/config.json'
 
 interface LLMQueryState {
   loading: boolean
@@ -29,7 +29,7 @@ export const useLLMQueryStore = create(
     loading: false,
     geneQuery: '',
     LLMResult: '',
-    LLMApiKey: openAIAPIKey,
+    LLMApiKey: config.openAIAPIKey,
     LLMModel: models[0],
     setLoading: (loading: boolean) => {
       set((state) => {

@@ -24,7 +24,10 @@ import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
-import { SubsystemTag } from '../../HierarchyViewer/model/HcxMetaTag'
+import {
+  HcxMetaTag,
+  SubsystemTag,
+} from '../../HierarchyViewer/model/HcxMetaTag'
 import {
   deserializeValueList,
   serializeValueList,
@@ -33,6 +36,8 @@ import {
 import { ValueTypeName } from '../../../models/TableModel'
 import { LLMModel, models } from '../model/LLMModel'
 import { useMessageStore } from '../../../store/MessageStore'
+import { translateMemberIds } from '../api/translateMemberIds'
+import { useCredentialStore } from '../../../store/CredentialStore'
 
 export const MEMBER_NAMES_KEY = ''
 
@@ -60,6 +65,10 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   )
   const setPanelState = useUiStateStore((state) => state.setPanelState)
 
+  const currentNetworkProperties = useNetworkSummaryStore(
+    (state) => state.summaries[currentNetworkId].properties,
+  )
+
   const selectedNodes =
     useViewModelStore(
       (state) => state.viewModels[activeNetworkId]?.selectedNodes,
@@ -69,19 +78,44 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     (state) => state.tables[activeNetworkId]?.nodeTable,
   )
   const addMessage = useMessageStore((state) => state.addMessage)
+  const getToken = useCredentialStore((state) => state.getToken)
 
-  const getGeneNames = (): string[] => {
+  const getGeneNames = async (): Promise<string[]> => {
     const currentNetworkIsActive = currentNetworkId === activeNetworkId
     if (table !== undefined) {
       if (currentNetworkIsActive) {
-        const geneNames = selectedNodes.map((node) => {
+        const geneNames: string[] = []
+        selectedNodes.forEach(async (node) => {
           const row = table.rows.get(node)
+          const members = row?.[SubsystemTag.members]
+          const memberNames = row?.[SubsystemTag.memberNames]
+
+          const parentInteractionNetworkId = currentNetworkProperties.find(
+            (p) => p.predicateString === HcxMetaTag.interactionNetworkUUID,
+          )?.value
+
+          if (members !== undefined) {
+            const token = await getToken()
+            const names = await translateMemberIds({
+              networkUUID: parentInteractionNetworkId as string,
+              ids: members as string[],
+              accessToken: token,
+            })
+
+            names.forEach((n) => geneNames.push(n))
+            geneNames.push(...names)
+          } else {
+            if (memberNames !== undefined) {
+              geneNames.push(...(memberNames as string[]))
+            }
+          }
+
           return deserializeValueList(
             ValueTypeName.ListString,
             (row?.[SubsystemTag.memberNames] as string) ?? '',
           )
         })
-        return Array.from(new Set(geneNames)) as string[]
+        return Array.from(new Set(geneNames))
       } else {
         const geneNames = selectedNodes.map((node) => {
           const row = table.rows.get(node)
@@ -99,7 +133,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     setLoading(true)
     setPanelState('left', 'open')
     setActiveNetworkBrowserPanelIndex(2)
-    const geneNames = getGeneNames()
+    const geneNames = await getGeneNames()
     setGeneQuery(serializeValueList(geneNames))
 
     addMessage({
