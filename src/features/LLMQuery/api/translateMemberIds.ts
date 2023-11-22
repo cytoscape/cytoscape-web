@@ -1,6 +1,7 @@
 import config from '../../../assets/config.json'
 import { IdType } from '../../../models/IdType'
-import { getNdexClient } from '../../../utils/fetchers'
+// @ts-expect-error-next-line
+import { NDEx } from '@js4cytoscape/ndex-client'
 
 export const translateMemberIds = async ({
   networkUUID,
@@ -12,15 +13,18 @@ export const translateMemberIds = async ({
   accessToken: string
 }): Promise<string[]> => {
   const { ndexBaseUrl } = config
-  const ndexClient = getNdexClient(ndexBaseUrl, accessToken)
+  const ndexClient = new NDEx(ndexBaseUrl)
 
-  const geneNames = await ndexClient.getAttributesOfSelectedNodes(
+  const geneNameMap = await ndexClient.getAttributesOfSelectedNodes(
     networkUUID,
     {
       ids,
       attributeNames: ['name'],
     },
-    accessToken,
+  )
+
+  const geneNames = Object.values(geneNameMap).map(
+    (o: { name: string }) => o.name,
   )
 
   return geneNames
