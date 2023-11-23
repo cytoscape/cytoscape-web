@@ -21,19 +21,16 @@ export interface CyEdge {
   }
 }
 
-const getCyNodes = (nodeViews: NodeView[]): CyNode[] =>
+const createCyNodes = (nodeViews: NodeView[]): CyNode[] =>
   nodeViews.map((nv: NodeView) => {
-    const { values } = nv
-
-    const newData: Record<VisualPropertyName | IdType, ValueType> = {}
-    newData['id' as IdType] = nv.id
-    values.forEach((value: ValueType, key: VisualPropertyName) => {
-      newData[key] = value
-    })
+    const data: Record<VisualPropertyName | IdType, ValueType> = {
+      id: nv.id,
+      ...Object.fromEntries(nv.values.entries()),
+    }
 
     return {
       group: 'nodes',
-      data: newData,
+      data,
       position: {
         x: nv.x,
         y: nv.y,
@@ -41,7 +38,7 @@ const getCyNodes = (nodeViews: NodeView[]): CyNode[] =>
     }
   })
 
-const getCyEdges = (
+const createCyEdges = (
   edges: Edge[],
   edgeViews: Record<IdType, EdgeView>,
 ): CyEdge[] =>
@@ -68,6 +65,6 @@ export const addObjects = (
   edges: Edge[],
   edgeViews: Record<IdType, EdgeView>,
 ): void => {
-  cy.add(getCyNodes(nodeViews))
-  cy.add(getCyEdges(edges, edgeViews))
+  cy.add(createCyNodes(nodeViews))
+  cy.add(createCyEdges(edges, edgeViews))
 }
