@@ -48,7 +48,13 @@ module.exports = {
   devServer: {
     hot: true,
     static: path.resolve(__dirname, './dist'),
-    historyApiFallback: true,
+    // historyApiFallback: true,
+    historyApiFallback: {
+    rewrites: [
+      { from: /^\/$/, to: '/index.html' }, // default index route
+      { from: /./, to: '/index.html' }, // all other routes
+    ],
+  },
     port: 5500,
   },
   plugins: [
