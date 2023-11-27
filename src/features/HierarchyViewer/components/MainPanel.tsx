@@ -85,7 +85,6 @@ export const MainPanel = (): JSX.Element => {
   }
 
   useEffect(() => {
-    console.log('MainPanel: currentNetworkId', currentNetworkId, networkSummary)
     checkDataType()
   }, [networkSummary])
   useEffect(() => {
@@ -140,6 +139,7 @@ export const MainPanel = (): JSX.Element => {
     )
   }
 
+  // This is the ID of the selected subsystem in the hierarchy
   const targetNode: IdType = selectedNodes[0]
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
 

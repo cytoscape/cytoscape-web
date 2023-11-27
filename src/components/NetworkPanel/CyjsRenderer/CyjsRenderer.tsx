@@ -379,7 +379,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       setCy(cy)
       // Now add event handlers. This is necessary only once.
       // addEventHandlers(cy)
-      console.info('Cyjs renderer is ready.')
       const fitFunction = (): void => {
         if (cy !== null) {
           cy.fit()
@@ -398,7 +397,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   useEffect(() => {
     if (cy !== null) {
       renderNetwork()
-      console.info('First network rendered.')
     }
   }, [cy])
 

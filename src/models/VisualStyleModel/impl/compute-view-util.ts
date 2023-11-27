@@ -134,6 +134,11 @@ const nodeViewBuilder = (
     const nodeId = node.id
     const nodeView: NodeView | undefined =
       nodeViews !== undefined ? nodeViews[nodeId] : undefined
+    
+    if (nodeView === undefined) {
+      console.log('@@nodeView is undefined')
+    }
+
     const nv: NodeView = {
       id: nodeId,
       values: computeView(
@@ -200,14 +205,6 @@ const computeView = (
       const attributeValueAssigned: ValueType | undefined = row[attrName]
 
       if (attributeValueAssigned !== undefined) {
-        // const computedValue: VisualPropertyValueType = getMappedValue(
-        //   mapping,
-        //   attributeValueAssigned,
-        //   columns,
-        //   vp.type,
-        //   vp.defaultValue,
-        //   mapper.get(vp.name),
-        // )
         const mapper: Mapper | undefined = mappers.get(vp.name)
         if (mapper === undefined) {
           throw new Error(

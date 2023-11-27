@@ -119,12 +119,9 @@ const persist =
       async (args) => {
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
-        console.log('persist middleware updating visual style store')
 
         set(args)
         const updated = get().visualStyles[currentNetworkId]
-        console.log('updated visual style: ', updated)
-
         const deleted = updated === undefined
 
         if (!deleted) {
