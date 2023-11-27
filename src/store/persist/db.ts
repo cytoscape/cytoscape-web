@@ -39,7 +39,9 @@ class CyDB extends Dexie {
       uiState: 'id',
     })
 
-    applyMigrations(this).catch((err) => console.log(err))
+    applyMigrations(this).catch((err) => {
+      throw err
+    })
   }
 }
 
