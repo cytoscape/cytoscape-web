@@ -2,11 +2,7 @@ import { MenuItem, Tooltip, Box } from '@mui/material'
 import { ReactElement } from 'react'
 import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
 import { IdType } from '../../../models/IdType'
-import { ValueTypeName } from '../../../models/TableModel'
-import {
-  deserializeValueList,
-  serializeValueList,
-} from '../../../models/TableModel/impl/ValueTypeImpl'
+import { serializeValueList } from '../../../models/TableModel/impl/ValueTypeImpl'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useMessageStore } from '../../../store/MessageStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
@@ -65,6 +61,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   const getGeneNames = async (): Promise<string[]> => {
     const currentNetworkIsActive = currentNetworkId === activeNetworkId
     if (table !== undefined) {
+      // if the current network is the hierarchy i.e. hcx network, then we need to get the gene names from the members/membernames of the selected nodes
       if (currentNetworkIsActive) {
         const geneNames: string[] = []
         selectedNodes.forEach(async (node) => {
@@ -91,14 +88,10 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
               geneNames.push(...(memberNames as string[]))
             }
           }
-
-          return deserializeValueList(
-            ValueTypeName.ListString,
-            (row?.[SubsystemTag.memberNames] as string) ?? '',
-          )
         })
         return Array.from(new Set(geneNames))
       } else {
+        // if the current network is the subsystem network, we need to get the names of the selected nodes
         const geneNames = selectedNodes.map((node) => {
           const row = table.rows.get(node)
           return row?.name ?? ''
