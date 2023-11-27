@@ -2,7 +2,11 @@ import { Box } from '@mui/material'
 import { Location, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
-import { getUiStateFromDb, getWorkspaceFromDb } from '../store/persist/db'
+import {
+  getUiStateFromDb,
+  getWorkspaceFromDb,
+  initializeDb,
+} from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
 import { parsePathName } from '../utils/paths-util'
@@ -103,6 +107,9 @@ const AppShell = (): ReactElement => {
     // Use this flag to prevent creating a new workspace more than once
     if (!initializedRef.current) {
       initializedRef.current = true
+      initializeDb().catch((e) => {
+        throw e
+      })
       setupWorkspace()
       loadUiState()
     }

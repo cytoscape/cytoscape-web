@@ -8,9 +8,9 @@ import { Workspace } from '../../models/WorkspaceModel'
 import { v4 as uuidv4 } from 'uuid'
 import { NetworkView } from '../../models/ViewModel'
 import { Ui } from '../../models/UiModel'
+import { applyMigrations } from './migrations'
 
 const DB_NAME = 'cyweb-db'
-const DB_VERSION: number = 1
 
 /**
  * TODO: we need a schema for indexes
@@ -29,7 +29,7 @@ class CyDB extends Dexie {
 
   constructor(dbName: string) {
     super(dbName)
-    this.version(DB_VERSION).stores({
+    this.version(1).stores({
       workspace: 'id',
       summaries: 'externalId',
       cyNetworks: 'id',
@@ -43,19 +43,29 @@ class CyDB extends Dexie {
 
 // Initialize the DB
 let db = new CyDB(DB_NAME)
-db.open()
-  .then((dexi) => {})
-  .catch((err) => {
-    console.log(err)
-  })
 
-db.on('ready', () => {
-  console.info('Indexed DB is ready')
-})
+export const initializeDb = async (): Promise<void> => {
+  applyMigrations(db).catch((err) => {
+    throw err
+  })
+  db.open()
+    .then((dexi) => {})
+    .catch((err) => {
+      console.log(err)
+    })
+
+  db.on('ready', () => {
+    console.info('Indexed DB is ready')
+  })
+}
 
 export const deleteDb = async (): Promise<void> => {
   await Dexie.delete(DB_NAME)
   db = new CyDB(DB_NAME)
+
+  applyMigrations(db).catch((err) => {
+    throw err
+  })
 }
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {
   return (await db.cyNetworks.toCollection().primaryKeys()) as IdType[]
