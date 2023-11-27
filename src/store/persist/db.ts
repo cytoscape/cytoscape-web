@@ -38,28 +38,34 @@ class CyDB extends Dexie {
       cyNetworkViews: 'id',
       uiState: 'id',
     })
-
-    applyMigrations(this).catch((err) => {
-      throw err
-    })
   }
 }
 
 // Initialize the DB
 let db = new CyDB(DB_NAME)
-db.open()
-  .then((dexi) => {})
-  .catch((err) => {
-    console.log(err)
-  })
 
-db.on('ready', () => {
-  console.info('Indexed DB is ready')
-})
+export const initializeDb = async (): Promise<void> => {
+  applyMigrations(db).catch((err) => {
+    throw err
+  })
+  db.open()
+    .then((dexi) => {})
+    .catch((err) => {
+      console.log(err)
+    })
+
+  db.on('ready', () => {
+    console.info('Indexed DB is ready')
+  })
+}
 
 export const deleteDb = async (): Promise<void> => {
   await Dexie.delete(DB_NAME)
   db = new CyDB(DB_NAME)
+
+  applyMigrations(db).catch((err) => {
+    throw err
+  })
 }
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {
   return (await db.cyNetworks.toCollection().primaryKeys()) as IdType[]
