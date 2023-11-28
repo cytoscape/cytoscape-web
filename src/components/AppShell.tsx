@@ -1,8 +1,18 @@
 import { Box } from '@mui/material'
-import { Location, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import {
+  Location,
+  Outlet,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom'
 import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
-import { getUiStateFromDb, getWorkspaceFromDb } from '../store/persist/db'
+import {
+  getUiStateFromDb,
+  getWorkspaceFromDb,
+  initializeDb,
+} from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
 import { parsePathName } from '../utils/paths-util'
@@ -17,6 +27,8 @@ import { useCredentialStore } from '../store/CredentialStore'
 
 import { UpdateNetworkDialog } from './UpdateNetworkDialog'
 import { waitSeconds } from '../utils/wait-seconds'
+import { PanelState } from '../models/UiModel/PanelState'
+import { Panel } from '../models/UiModel/Panel'
 
 /**
  *
@@ -28,6 +40,7 @@ import { waitSeconds } from '../utils/wait-seconds'
 const AppShell = (): ReactElement => {
   // This is necessary to prevent creating a new workspace on every render
   const [showDialog, setShowDialog] = useState(false)
+  const [search] = useSearchParams()
 
   const initializedRef = useRef(false)
   const navigate = useNavigate()
@@ -60,7 +73,12 @@ const AppShell = (): ReactElement => {
   const { id, currentNetworkId, networkIds, networkModified } = workspace
 
   const parsed = parsePathName(location.pathname)
+  const setPanelState: (panel: Panel, panelState: PanelState) => void =
+    useUiStateStore((state) => state.setPanelState)
 
+  const setActiveTableBrowserIndex = useUiStateStore(
+    (state) => state.setActiveTableBrowserIndex,
+  )
   /**
    * Initializing assigned workspace for this session
    */
@@ -87,8 +105,8 @@ const AppShell = (): ReactElement => {
     }
   }
 
-  const loadUiState = (): void => {
-    void getUiStateFromDb().then((uiState) => {
+  const loadUiState = (): Promise<void> => {
+    return getUiStateFromDb().then((uiState) => {
       if (uiState !== undefined) {
         setUi(uiState)
       } else {
@@ -96,6 +114,32 @@ const AppShell = (): ReactElement => {
       }
     })
   }
+
+  const restorePanelStates = (): void => {
+    // Set panel states based on the Search params
+    const leftPanelState: PanelState = search.get(Panel.LEFT) as PanelState
+    const rightPanelState: PanelState = search.get(Panel.RIGHT) as PanelState
+    const bottomPanelState: PanelState = search.get(Panel.BOTTOM) as PanelState
+
+    if (leftPanelState !== undefined && leftPanelState !== null) {
+      setPanelState(Panel.LEFT, leftPanelState)
+    }
+    if (rightPanelState !== undefined && rightPanelState !== null) {
+      setPanelState(Panel.RIGHT, rightPanelState)
+    }
+    if (bottomPanelState !== undefined && bottomPanelState !== null) {
+      setPanelState(Panel.BOTTOM, bottomPanelState)
+    }
+  }
+
+  const restoreTableBrowserTabState = (): void => {
+    const tableBrowserTab = search.get('activeTableBrowserTab')
+
+    if (tableBrowserTab != null) {
+      setActiveTableBrowserIndex(Number(tableBrowserTab))
+    }
+  }
+
   /**
    * Once this component is initialized, check the workspace ID
    */
@@ -103,8 +147,18 @@ const AppShell = (): ReactElement => {
     // Use this flag to prevent creating a new workspace more than once
     if (!initializedRef.current) {
       initializedRef.current = true
+      initializeDb().catch((e) => {
+        throw e
+      })
       setupWorkspace()
       loadUiState()
+        .then(() => {
+          restorePanelStates()
+          restoreTableBrowserTabState()
+        })
+        .catch((e) => {
+          throw e
+        })
     }
   }, [])
 
