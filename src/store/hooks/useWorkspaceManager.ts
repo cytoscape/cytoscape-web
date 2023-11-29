@@ -6,6 +6,7 @@ import { useTableStore } from '../TableStore'
 import { useViewModelStore } from '../ViewModelStore'
 import { useVisualStyleStore } from '../VisualStyleStore'
 import { useWorkspaceStore } from '../WorkspaceStore'
+import { useUiStateStore } from '../UiStateStore'
 
 /**
  * Based on the changes in the workspace store, this hook will
@@ -33,6 +34,13 @@ export const useWorkspaceManager = (): void => {
     (state) => state.deleteAllNetworkModifiedStatuses,
   )
 
+  const setActiveNetworkView = useUiStateStore(
+    (state) => state.setActiveNetworkView,
+  )
+  const activeNetworkView = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+
   const handleDeleteNetwork = (deleted: IdType): void => {
     deleteNetwork(deleted)
     deleteSummary(deleted)
@@ -40,6 +48,10 @@ export const useWorkspaceManager = (): void => {
     deleteVisualStyle(deleted)
     deleteTables(deleted)
     deleteNetworkModifiedStatus(deleted)
+
+    if (activeNetworkView === deleted) {
+      setActiveNetworkView('')
+    }
   }
 
   const handleDeleteAll = (): void => {
@@ -49,6 +61,7 @@ export const useWorkspaceManager = (): void => {
     deleteAllVisualStyles()
     deleteAllTables()
     deleteAllNetworkModifiedStatuses()
+    setActiveNetworkView('')
   }
 
   useEffect(() => {
