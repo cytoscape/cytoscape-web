@@ -14,10 +14,6 @@ import {
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
-import { IdType } from '../../../models/IdType'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { isHCX } from '../../HierarchyViewer/utils/hierarcy-util'
 import { LLMModel, models } from '../model/LLMModel'
 import { useLLMQueryStore } from '../store'
 
@@ -31,15 +27,8 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
   const [showDialog, setShowDialog] = useState(false)
   const [localLLMModel, setLocalLLMModel] = useState<LLMModel>(LLMModel)
   const [localLLMApiKey, setLocalLLMApiKey] = useState<string>(LLMApiKey)
-  const currentNetworkId: IdType = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
 
-  const summary = useNetworkSummaryStore(
-    (state) => state.summaries[currentNetworkId],
-  )
-
-  const disabled = !isHCX(summary) || loading
+  const disabled = loading
 
   const menuItem = (
     <MenuItem disabled={disabled} onClick={() => setShowDialog(true)}>
@@ -106,9 +95,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
       </>
     )
   } else {
-    const tooltipTitle = loading
-      ? 'Generating response...'
-      : 'LLM query is only available for HCX networks'
+    const tooltipTitle = 'Generating response...'
     return (
       <Tooltip title={tooltipTitle}>
         <Box>{menuItem}</Box>

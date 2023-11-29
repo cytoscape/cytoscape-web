@@ -43,9 +43,10 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   )
   const setPanelState = useUiStateStore((state) => state.setPanelState)
 
-  const currentNetworkProperties = useNetworkSummaryStore(
-    (state) => state.summaries[currentNetworkId].properties,
-  )
+  const currentNetworkProperties =
+    useNetworkSummaryStore(
+      (state) => state.summaries[currentNetworkId]?.properties,
+    ) ?? []
 
   const selectedNodes =
     useViewModelStore(
@@ -103,7 +104,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     return []
   }
 
-  const disabled = !isHCX(summary) || loading
+  const disabled = !isHCX(summary) || loading || LLMApiKey === ''
   const runLLMQuery = async (): Promise<void> => {
     setLoading(true)
     setPanelState('left', 'open')
@@ -113,7 +114,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
 
     addMessage({
       message: `Running LLM query...`,
-      duration: 2000,
+      duration: 6000,
     })
 
     try {
@@ -128,7 +129,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     } catch (e) {
       addMessage({
         message: `Error querying LLM model: ${e.message as string}`,
-        duration: 3000,
+        duration: 10000,
       })
 
       setLLMResult('')
@@ -148,6 +149,8 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   } else {
     const tooltipTitle = loading
       ? 'Generating response...'
+      : LLMApiKey === ''
+      ? 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
       : 'LLM query is only available for HCX networks'
     return (
       <Tooltip title={tooltipTitle}>

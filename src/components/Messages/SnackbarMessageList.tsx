@@ -29,7 +29,7 @@ export const SnackbarMessageList = (): React.ReactElement => {
     <Snackbar
       open={open}
       onClose={handleSnackbarClose}
-      autoHideDuration={messages[currentMessageIndex]?.duration}
+      autoHideDuration={messages[currentMessageIndex]?.duration ?? 5000}
       message={messages[currentMessageIndex]?.message}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
     />

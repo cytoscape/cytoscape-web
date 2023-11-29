@@ -97,7 +97,7 @@ export const LLMQueryResultPanel = (): ReactElement => {
     try {
       addMessage({
         message: `Running LLM query...`,
-        duration: 2000,
+        duration: 6000,
       })
       const LLMResponse = await analyzeSubsystemGeneSet(
         geneNames,
@@ -110,13 +110,40 @@ export const LLMQueryResultPanel = (): ReactElement => {
     } catch (e) {
       addMessage({
         message: `Error querying LLM model: ${e.message as string}`,
-        duration: 3000,
+        duration: 10000,
       })
 
       setLLMResult('')
     }
     setLoading(false)
   }
+
+  const disabled = loading || LLMApiKey === ''
+
+  const regenerateResponseButton = disabled ? (
+    <Tooltip
+      title={
+        loading
+          ? 'Loading LLM Response'
+          : 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
+      }
+    >
+      <Box>
+        <Button size="small" disabled={disabled} variant="outlined">
+          Regenerate response
+        </Button>
+      </Box>
+    </Tooltip>
+  ) : (
+    <Button
+      size="small"
+      disabled={loading}
+      variant="outlined"
+      onClick={runLLMQuery}
+    >
+      Regenerate response
+    </Button>
+  )
 
   return (
     <Box sx={{ p: 1 }}>
@@ -138,21 +165,17 @@ export const LLMQueryResultPanel = (): ReactElement => {
             alignItems: 'center',
           }}
         >
-          <Button
-            size="small"
-            disabled={loading}
-            variant="outlined"
-            onClick={runLLMQuery}
-          >
-            Regenerate response
-          </Button>
+          {regenerateResponseButton}
           <Box>{`Model: ${LLMModel}`}</Box>
         </Box>
       </Box>
       <Box>
         {loading ? (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <CircularProgress size="small" sx={{ mr: 1 }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: 5 }}>
+            <CircularProgress
+              size="small"
+              sx={{ mr: 1, height: 25, width: 25 }}
+            />
             <Box>Loading LLM Query Result...</Box>
           </Box>
         ) : LLMResult !== '' ? (
