@@ -62,13 +62,15 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
             })}
           </Select>
         </FormControl>
-        <TextField
-          size="small"
-          value={localLLMApiKey}
-          fullWidth
-          label="OpenAI API Key"
-          onChange={(e) => setLocalLLMApiKey(e.target.value)}
-        ></TextField>
+        <Tooltip title="You need to add an API key generated in your PAID account">
+          <TextField
+            size="small"
+            value={localLLMApiKey}
+            fullWidth
+            label="OpenAI API Key"
+            onChange={(e) => setLocalLLMApiKey(e.target.value)}
+          ></TextField>
+        </Tooltip>
       </DialogContent>
       <DialogActions>
         <Button
