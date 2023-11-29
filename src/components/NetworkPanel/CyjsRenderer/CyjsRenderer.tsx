@@ -25,6 +25,10 @@ import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
 interface NetworkRendererProps {
   network: Network
+
+  // Whether this network panel is focused or not
+  focusChanged?: boolean
+  setFocusChanged?: (focus: boolean) => void
 }
 
 /**
@@ -32,7 +36,7 @@ interface NetworkRendererProps {
  * @param param0
  * @returns
  */
-const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
+const CyjsRenderer = ({ network, focusChanged, setFocusChanged }: NetworkRendererProps): ReactElement => {
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
   )
@@ -163,6 +167,11 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       cy.on('tap', (e: EventObject) => {
         // check for background click
         // on background click deselect all
+        if(focusChanged !== undefined && focusChanged) {
+        setFocusChanged?.(false)
+          return
+        }
+
         if (e.target === cy) {
           exclusiveSelect(id, [], [])
         }
