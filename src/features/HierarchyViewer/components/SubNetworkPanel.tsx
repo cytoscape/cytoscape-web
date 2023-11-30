@@ -127,10 +127,7 @@ export const SubNetworkPanel = ({
   const queryNetwork: Network | undefined = networks.get(queryNetworkId)
 
   const handleClick = (e: any): void => {
-    // if (queryNetworkId !== undefined && queryNetworkId !== '' && queryNetworkId !== activeNetworkView) {
     setActiveNetworkView(queryNetworkId)
-    console.log('###### SUB Panel click: ', activeNetworkView, queryNetworkId)
-    // }
   }
 
   useEffect(() => {

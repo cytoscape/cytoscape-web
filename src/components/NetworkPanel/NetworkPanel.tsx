@@ -61,17 +61,11 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const vs: VisualStyle = visualStyles[targetNetwork.id]
 
   const handleClick = (e: any): void => {
-
-    console.log('###### Panel click: ', activeNetworkView, targetNetwork.id)
-      setActiveNetworkView(targetNetwork.id)
+    setActiveNetworkView(targetNetwork.id)
   }
 
   const bgColor = vs?.networkBackgroundColor?.defaultValue as string
-  const renderer: JSX.Element = (
-    <CyjsRenderer
-      network={targetNetwork}
-    />
-  )
+  const renderer: JSX.Element = <CyjsRenderer network={targetNetwork} />
   return (
     <Box
       sx={{
