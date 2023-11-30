@@ -25,18 +25,14 @@ import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
 interface NetworkRendererProps {
   network: Network
-
-  // Whether this network panel is focused or not
-  focusChanged?: boolean
-  setFocusChanged?: (focus: boolean) => void
 }
+
 
 /**
  *
- * @param param0
  * @returns
  */
-const CyjsRenderer = ({ network, focusChanged, setFocusChanged }: NetworkRendererProps): ReactElement => {
+const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
   )
@@ -44,6 +40,12 @@ const CyjsRenderer = ({ network, focusChanged, setFocusChanged }: NetworkRendere
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
+  const activeNetworkIdRef = useRef(activeNetworkId)
+
+  useEffect(() => {
+    activeNetworkIdRef.current = activeNetworkId
+  }, [activeNetworkId])
+
 
   let isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
@@ -83,6 +85,7 @@ const CyjsRenderer = ({ network, focusChanged, setFocusChanged }: NetworkRendere
       setBgColor('#FFFFFF')
     }
   }, [vs, isRunning])
+
 
   const table = tables[id]
 
@@ -167,15 +170,35 @@ const CyjsRenderer = ({ network, focusChanged, setFocusChanged }: NetworkRendere
       cy.on('tap', (e: EventObject) => {
         // check for background click
         // on background click deselect all
-        if(focusChanged !== undefined && focusChanged) {
-        setFocusChanged?.(false)
+        const activeId: string = activeNetworkIdRef.current
+        // cy.autounselectify(false)
+        if (
+          activeId !== undefined &&
+          activeId !== '' &&
+          id !== '' &&
+          id !== activeId
+        ) {
+          console.log('@Background click (switch)  =', id, activeId)
+          if (cy.autounselectify() === false) {
+            cy.autounselectify(true)
+          }
           return
         }
 
         if (e.target === cy) {
           exclusiveSelect(id, [], [])
         }
+        cy.autounselectify(false)
       })
+
+      // cy.on('mouseup', (e: EventObject) => {
+      //   setTimeout(() => {
+      //     blocker = false
+      //     cy.autounselectify(false)
+          
+      //   }, 100);
+      // })
+
 
       // Moving nodes
       cy.on('dragfree', 'node', (e: EventObject): void => {
@@ -207,7 +230,7 @@ const CyjsRenderer = ({ network, focusChanged, setFocusChanged }: NetworkRendere
         isViewCreated.current = true
       }, 1000)
     },
-    [network, cy],
+    [network, cy, activeNetworkId],
   )
 
   const applyStyleUpdate = (): void => {

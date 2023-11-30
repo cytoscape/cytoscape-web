@@ -20,7 +20,6 @@ interface NetworkPanelProps {
  */
 const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const [isActive, setIsActive] = useState<boolean>(false)
-  const [focusChanged, setFocusChanged] = useState<boolean>(false)
 
   const ui = useUiStateStore((state) => state.ui)
   const { activeNetworkView, enablePopup } = ui
@@ -62,16 +61,15 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const vs: VisualStyle = visualStyles[targetNetwork.id]
 
   const handleClick = (e: any): void => {
-    setFocusChanged(true)
-    setActiveNetworkView(networkId)
+
+    console.log('###### Panel click: ', activeNetworkView, targetNetwork.id)
+      setActiveNetworkView(targetNetwork.id)
   }
 
   const bgColor = vs?.networkBackgroundColor?.defaultValue as string
   const renderer: JSX.Element = (
     <CyjsRenderer
       network={targetNetwork}
-      focusChanged={focusChanged}
-      setFocusChanged={setFocusChanged}
     />
   )
   return (
