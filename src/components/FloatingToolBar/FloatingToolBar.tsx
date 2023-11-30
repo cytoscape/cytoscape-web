@@ -19,7 +19,7 @@ export const FloatingToolBar = ({
         alignItems: 'center',
         bottom: '1em',
         right: '1em',
-        zIndex: 3000,
+        zIndex: 1,
         borderRadius: '0.5em',
         backgroundColor: 'rgba(250, 250, 250, 0.8)',
         border: '1px solid #AAAAAA',
