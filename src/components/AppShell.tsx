@@ -69,7 +69,9 @@ const AppShell = (): ReactElement => {
   const deleteNetworkModifiedStatus = useWorkspaceStore(
     (state) => state.deleteNetworkModifiedStatus,
   )
+  const client = useCredentialStore((state) => state.client)
 
+  const authenticated = client?.authenticated ?? false
   const { id, currentNetworkId, networkIds, networkModified } = workspace
 
   const parsed = parsePathName(location.pathname)
@@ -221,8 +223,8 @@ const AppShell = (): ReactElement => {
 
           const localNetworkModified = networkModified[networkId] ?? false
           if (localNetworkOutdated) {
-            if (localNetworkModified) {
-              // local network and ndex network have been modified
+            if (localNetworkModified && authenticated) {
+              // local network and ndex network have been modified and the user is authenticated
               // ask the user what they want to do
               setShowDialog(true)
             } else {
