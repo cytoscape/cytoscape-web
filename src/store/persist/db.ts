@@ -38,6 +38,8 @@ class CyDB extends Dexie {
       cyNetworkViews: 'id',
       uiState: 'id',
     })
+
+    applyMigrations(this).catch((err) => console.log(err))
   }
 }
 

@@ -15,6 +15,7 @@ export interface AppConfig {
   maxNetworkFileSize: number
   testNetworks: IdType[]
   urlBaseName: string
+  openAIAPIKey: string
 }
 
 export const defaultAppConfig: AppConfig = {
@@ -43,6 +44,7 @@ export const defaultAppConfig: AppConfig = {
     'ab0eeef6-25bd-11e9-a05d-525400c25d22',
   ],
   urlBaseName: '',
+  openAIAPIKey: '',
 }
 
 export const AppConfigContext = createContext<AppConfig>(defaultAppConfig)

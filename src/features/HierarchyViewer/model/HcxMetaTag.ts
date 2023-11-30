@@ -4,6 +4,7 @@ const hcxPrefix: HcxPrefix = 'HCX::'
 export const SubsystemTag = {
   isRoot: `${hcxPrefix}isRoot`,
   members: `${hcxPrefix}members`,
+  memberNames: `${hcxPrefix}memberNames`,
 
   // This is an optional, and used to fetch the interaction network with layout
   interactionNetworkUuid: `${hcxPrefix}interactionNetworkUUID`,
