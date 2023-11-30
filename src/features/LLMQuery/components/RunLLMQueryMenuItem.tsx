@@ -116,6 +116,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
       message: `Running LLM query...`,
       duration: 6000,
     })
+    props.handleClose()
 
     try {
       const LLMResponse = await analyzeSubsystemGeneSet(
@@ -135,8 +136,6 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
       setLLMResult('')
     }
     setLoading(false)
-
-    props.handleClose()
   }
 
   const menuItem = (
