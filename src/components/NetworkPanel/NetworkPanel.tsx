@@ -61,7 +61,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const vs: VisualStyle = visualStyles[targetNetwork.id]
 
   const handleClick = (e: any): void => {
-    setActiveNetworkView(networkId)
+    setActiveNetworkView(targetNetwork.id)
   }
 
   const bgColor = vs?.networkBackgroundColor?.defaultValue as string

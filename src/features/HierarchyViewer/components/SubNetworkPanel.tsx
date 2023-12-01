@@ -127,9 +127,7 @@ export const SubNetworkPanel = ({
   const queryNetwork: Network | undefined = networks.get(queryNetworkId)
 
   const handleClick = (e: any): void => {
-    if (queryNetworkId !== undefined) {
-      setActiveNetworkView(queryNetworkId)
-    }
+    setActiveNetworkView(queryNetworkId)
   }
 
   useEffect(() => {
@@ -167,7 +165,6 @@ export const SubNetworkPanel = ({
     }
     const { network, visualStyle, nodeTable, edgeTable, networkView } = data
     const newUuid: string = network.id.toString()
-    
 
     // Add parent network's style to the shared style store
     if (vs[rootNetworkId] === undefined) {
@@ -204,17 +201,17 @@ export const SubNetworkPanel = ({
   }
 
   useEffect(() => {
-    if(data === undefined ) {
+    if (data === undefined) {
       return
     }
 
     const { network } = data
     const newUuid: string = network.id.toString()
 
-    if(queryNetworkId === newUuid) {
+    if (queryNetworkId === newUuid) {
       return
     }
-    
+
     updateNetworkView()
   }, [data])
 
