@@ -46,11 +46,6 @@ class CyDB extends Dexie {
 // Initialize the DB
 let db = new CyDB(DB_NAME)
 
-<<<<<<< HEAD
-db.on('ready', () => {
-  // console.info('Indexed DB is ready')
-})
-=======
 export const initializeDb = async (): Promise<void> => {
   applyMigrations(db).catch((err) => {
     throw err
@@ -65,7 +60,6 @@ export const initializeDb = async (): Promise<void> => {
     console.info('Indexed DB is ready')
   })
 }
->>>>>>> development
 
 export const deleteDb = async (): Promise<void> => {
   await Dexie.delete(DB_NAME)
