@@ -754,7 +754,7 @@ export default function TableBrowser(props: {
             overscrollY={200}
             onColumnResizeEnd={onColumnResize}
             width={props.width}
-            height={props.height}
+            height={props.height - 85}
             getCellContent={getContent}
             onCellEdited={onCellEdited}
             columns={columns}
@@ -783,7 +783,7 @@ export default function TableBrowser(props: {
             overscrollY={200}
             onColumnResizeEnd={onColumnResize}
             width={props.width}
-            height={props.height}
+            height={props.height - 85}
             getCellContent={getContent}
             onCellEdited={onCellEdited}
             columns={columns}

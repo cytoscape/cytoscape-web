@@ -55,9 +55,7 @@ export const UpdateNetworkDialog = (props: {
       <DialogTitle>Networks out of sync</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          {`There is a newer version of the network '${
-            summary?.name ?? ''
-          }' with changes on NDEx.  Would you like to update your network with the latest version?`}
+          {`The network: ${summary?.name} in your local cache is outdated.  Would you like to update it from NDEx?`}
         </DialogContentText>
       </DialogContent>
       <DialogActions>

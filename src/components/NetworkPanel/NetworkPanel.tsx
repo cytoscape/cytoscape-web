@@ -40,9 +40,6 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
 
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
 
-  // const [visible, setVisible] = useState<boolean>(false)
-  // const [position, setPosition] = useState<[number, number]>([0, 0])
-
   const networks: Map<IdType, Network> = useNetworkStore(
     (state) => state.networks,
   )
@@ -64,9 +61,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const vs: VisualStyle = visualStyles[targetNetwork.id]
 
   const handleClick = (e: any): void => {
-    // setVisible(!visible)
-    // setPosition([e.clientX, e.clientY])
-    setActiveNetworkView(networkId)
+    setActiveNetworkView(targetNetwork.id)
   }
 
   const bgColor = vs?.networkBackgroundColor?.defaultValue as string
@@ -84,11 +79,6 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
     >
       {renderer}
       <FloatingToolBar />
-      {/* <PopupPanel
-        setVisible={setVisible}
-        visible={visible}
-        position={position}
-      /> */}
     </Box>
   )
 }

@@ -234,23 +234,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   }
 
-  const restorePanelStates = (): void => {
-    // Set panel states based on the Search params
-    const leftPanelState: PanelState = search.get(Panel.LEFT) as PanelState
-    const rightPanelState: PanelState = search.get(Panel.RIGHT) as PanelState
-    const bottomPanelState: PanelState = search.get(Panel.BOTTOM) as PanelState
-
-    if (leftPanelState !== undefined && leftPanelState !== null) {
-      setPanelState(Panel.LEFT, leftPanelState)
-    }
-    if (rightPanelState !== undefined && rightPanelState !== null) {
-      setPanelState(Panel.RIGHT, rightPanelState)
-    }
-    if (bottomPanelState !== undefined && bottomPanelState !== null) {
-      setPanelState(Panel.BOTTOM, bottomPanelState)
-    }
-  }
-
   const restoreTableBrowserTabState = (): void => {
     const tableBrowserTab = search.get('activeTableBrowserTab')
 
@@ -288,9 +271,6 @@ const WorkSpaceEditor = (): JSX.Element => {
       setTableBrowserWidth(window.innerWidth)
     }
     window.addEventListener('resize', windowWidthListener)
-
-    restorePanelStates()
-    restoreTableBrowserTabState()
 
     return () => {
       window.removeEventListener('resize', windowWidthListener)

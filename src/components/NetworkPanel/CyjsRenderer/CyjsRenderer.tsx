@@ -27,9 +27,9 @@ interface NetworkRendererProps {
   network: Network
 }
 
+
 /**
  *
- * @param param0
  * @returns
  */
 const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
@@ -40,6 +40,12 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
+  const activeNetworkIdRef = useRef(activeNetworkId)
+
+  useEffect(() => {
+    activeNetworkIdRef.current = activeNetworkId
+  }, [activeNetworkId])
+
 
   let isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
@@ -79,6 +85,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       setBgColor('#FFFFFF')
     }
   }, [vs, isRunning])
+
 
   const table = tables[id]
 
@@ -161,11 +168,28 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
       // single selection listener
       cy.on('tap', (e: EventObject) => {
-        // check for background click
-        // on background click deselect all
+
+        // Check for background click
+
+        // This is necessary to access the latest value from closure
+        const activeId: string = activeNetworkIdRef.current
+        
+        if (
+          activeId !== undefined &&
+          activeId !== '' &&
+          id !== '' &&
+          id !== activeId
+        ) {
+          if (cy.autounselectify() === false) {
+            cy.autounselectify(true)
+          }
+          return
+        }
+
         if (e.target === cy) {
           exclusiveSelect(id, [], [])
         }
+        cy.autounselectify(false)
       })
 
       // Moving nodes
@@ -198,7 +222,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         isViewCreated.current = true
       }, 1000)
     },
-    [network, cy],
+    [network, cy, activeNetworkId],
   )
 
   const applyStyleUpdate = (): void => {
@@ -379,7 +403,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       setCy(cy)
       // Now add event handlers. This is necessary only once.
       // addEventHandlers(cy)
-      console.info('Cyjs renderer is ready.')
       const fitFunction = (): void => {
         if (cy !== null) {
           cy.fit()
@@ -398,7 +421,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   useEffect(() => {
     if (cy !== null) {
       renderNetwork()
-      console.info('First network rendered.')
     }
   }, [cy])
 

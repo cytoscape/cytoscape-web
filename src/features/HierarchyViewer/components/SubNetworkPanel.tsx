@@ -127,9 +127,7 @@ export const SubNetworkPanel = ({
   const queryNetwork: Network | undefined = networks.get(queryNetworkId)
 
   const handleClick = (e: any): void => {
-    if (queryNetworkId !== undefined) {
-      setActiveNetworkView(queryNetworkId)
-    }
+    setActiveNetworkView(queryNetworkId)
   }
 
   useEffect(() => {
@@ -157,47 +155,65 @@ export const SubNetworkPanel = ({
     }
 
     if (!isLoading && data !== undefined && error === undefined) {
-      const { network, visualStyle, nodeTable, edgeTable, networkView } = data
-      const newUuid: string = network.id.toString()
-
-      // Add parent network's style to the shared style store
-      if (vs[rootNetworkId] === undefined) {
-        // Register the original style to DB
-        addVisualStyle(rootNetworkId, visualStyle)
-        addVisualStyle(newUuid, visualStyle)
-      } else {
-        addVisualStyle(newUuid, vs[rootNetworkId])
-      }
-      // Register objects to the stores.
-      if (networks.get(newUuid) === undefined) {
-        // Register new networks to the store if not cached
-        addNewNetwork(network)
-        addTable(newUuid, nodeTable, edgeTable)
-        addViewModel(newUuid, networkView)
-
-        if (interactionNetworkId === undefined || interactionNetworkId === '') {
-          // Apply default layout for the first time
-          const afterLayout = (
-            positionMap: Map<IdType, [number, number]>,
-          ): void => {
-            updateNodePositions(network.id, positionMap)
-            setIsRunning(false)
-          }
-
-          if (network !== undefined && engine !== undefined) {
-            setIsRunning(true)
-            engine.apply(
-              network.nodes,
-              network.edges,
-              afterLayout,
-              defaultLayout,
-            )
-          }
-        }
-      }
-      setQueryNetworkId(newUuid)
+      updateNetworkView()
     }
   }, [isLoading])
+
+  const updateNetworkView = (): string => {
+    if (data === undefined) {
+      return ''
+    }
+    const { network, visualStyle, nodeTable, edgeTable, networkView } = data
+    const newUuid: string = network.id.toString()
+
+    // Add parent network's style to the shared style store
+    if (vs[rootNetworkId] === undefined) {
+      // Register the original style to DB
+      addVisualStyle(rootNetworkId, visualStyle)
+      addVisualStyle(newUuid, visualStyle)
+    } else {
+      addVisualStyle(newUuid, vs[rootNetworkId])
+    }
+    // Register objects to the stores.
+    if (networks.get(newUuid) === undefined) {
+      // Register new networks to the store if not cached
+      addNewNetwork(network)
+      addTable(newUuid, nodeTable, edgeTable)
+      addViewModel(newUuid, networkView)
+
+      if (interactionNetworkId === undefined || interactionNetworkId === '') {
+        // Apply default layout for the first time
+        const afterLayout = (
+          positionMap: Map<IdType, [number, number]>,
+        ): void => {
+          updateNodePositions(network.id, positionMap)
+          setIsRunning(false)
+        }
+
+        if (network !== undefined && engine !== undefined) {
+          setIsRunning(true)
+          engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
+        }
+      }
+    }
+    setQueryNetworkId(newUuid)
+    return newUuid
+  }
+
+  useEffect(() => {
+    if (data === undefined) {
+      return
+    }
+
+    const { network } = data
+    const newUuid: string = network.id.toString()
+
+    if (queryNetworkId === newUuid) {
+      return
+    }
+
+    updateNetworkView()
+  }, [data])
 
   if (isLoading) {
     return (
