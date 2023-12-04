@@ -120,7 +120,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
 
     try {
       const LLMResponse = await analyzeSubsystemGeneSet(
-        geneNames,
+        geneNames.join(', '),
         LLMApiKey,
         LLMModel,
         false,

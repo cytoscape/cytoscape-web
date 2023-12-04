@@ -4,7 +4,7 @@ import testGPTResponse from '../model/gpt-4-0613-response.json'
 import { LLMModel } from '../model/LLMModel'
 
 export const analyzeSubsystemGeneSet = async (
-  geneList: string[],
+  argumentString: string,
   apiKey: string,
   model: LLMModel,
   mock = false,
@@ -14,9 +14,7 @@ export const analyzeSubsystemGeneSet = async (
     dangerouslyAllowBrowser: true,
   })
 
-  const geneListString = geneList.sort().join(', ')
-
-  const message = defaultTemplate(geneListString)
+  const message = defaultTemplate(argumentString)
 
   if (mock) {
     return testGPTResponse.choices[0].message.content

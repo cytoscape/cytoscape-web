@@ -21,6 +21,7 @@ export const translateMemberIds = async ({
       ids,
       attributeNames: ['name'],
     },
+    accessToken,
   )
 
   const geneNames = Object.values(geneNameMap).map(
