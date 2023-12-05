@@ -1,4 +1,11 @@
 # Use this for the test server
+
+// If you need to use test server, use this config and update 
+// the following line in src/index.tsx:
+//
+// window.location.origin + '/cytoscape/silent-check-sso.html',
+//
+
 {
   "ndexBaseUrl": "idekerlab.ndexbio.org",
   "options": {
