@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export const RedirectPanel = (): JSX.Element => {
+  console.log('RED panel!!')
   const navigate = useNavigate()
   const [showError, setShowError] = useState<boolean>(true)
 
