@@ -23,6 +23,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
+import { useCredentialStore } from '../../../store/CredentialStore'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -98,6 +99,13 @@ export const SubNetworkPanel = ({
 
   const prevQueryNetworkIdRef = useRef<string>()
 
+  const getToken = useCredentialStore((state) => state.getToken)
+
+  const fetcher = async (args: string[]): Promise<any> => {
+    const token = await getToken()
+    return await ndexQueryFetcher([...args, token])
+  }
+
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const { data, error, isLoading } = useSWR<NetworkWithView>(
     [
@@ -108,7 +116,7 @@ export const SubNetworkPanel = ({
       query,
       interactionNetworkId,
     ],
-    ndexQueryFetcher,
+    fetcher,
     {
       revalidateOnFocus: false,
     },
@@ -167,7 +175,6 @@ export const SubNetworkPanel = ({
     }
     const { network, visualStyle, nodeTable, edgeTable, networkView } = data
     const newUuid: string = network.id.toString()
-    
 
     // Add parent network's style to the shared style store
     if (vs[rootNetworkId] === undefined) {
@@ -204,17 +211,17 @@ export const SubNetworkPanel = ({
   }
 
   useEffect(() => {
-    if(data === undefined ) {
+    if (data === undefined) {
       return
     }
 
     const { network } = data
     const newUuid: string = network.id.toString()
 
-    if(queryNetworkId === newUuid) {
+    if (queryNetworkId === newUuid) {
       return
     }
-    
+
     updateNetworkView()
   }, [data])
 
