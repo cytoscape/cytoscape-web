@@ -57,6 +57,8 @@ const AppShell = (): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
   const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
+  const errorMessage = useUiStateStore((state) => state.ui.errorMessage)
+  console.log('AppShell rendering: ERR = ', errorMessage)
 
   const setUi = useUiStateStore((state) => state.setUi)
 
