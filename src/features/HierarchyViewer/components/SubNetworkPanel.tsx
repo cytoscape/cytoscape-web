@@ -167,13 +167,17 @@ export const SubNetworkPanel = ({
     const newUuid: string = network.id.toString()
 
     // Add parent network's style to the shared style store
-    if (vs[rootNetworkId] === undefined) {
+    if (vs[rootNetworkId] === undefined && visualStyle !== undefined) {
       // Register the original style to DB
       addVisualStyle(rootNetworkId, visualStyle)
       addVisualStyle(newUuid, visualStyle)
-    } else {
+    } else if (visualStyle === undefined) {
       addVisualStyle(newUuid, vs[rootNetworkId])
+    } else {
+      // Just use the given style as-is
+      addVisualStyle(newUuid, visualStyle)
     }
+
     // Register objects to the stores.
     if (networks.get(newUuid) === undefined) {
       // Register new networks to the store if not cached
