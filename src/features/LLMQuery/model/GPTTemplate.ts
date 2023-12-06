@@ -1,6 +1,4 @@
-export const defaultTemplate = (
-  geneList: string,
-): string => `Write a critical analysis of the biological processes performed by this system of interacting proteins.  Base your analysis on prior knowledge available in your training data.
+const rawText = `Write a critical analysis of the biological processes performed by this system of interacting proteins.  Base your analysis on prior knowledge available in your training data.
 
 Then, based on your analysis, propose a brief and detailed name for the most prominent biological process performed by the system. Put your chosen name at the top of the analysis as 'Process: <name>’.
 
@@ -30,5 +28,11 @@ Process: Pancreatic development and glucose homeostasis
 
 To summarize, the genes in this set are involved in the specification, differentiation, growth and functionality of the pancreas, with a particular emphasis on the pancreatic beta-cell. Particularly, the architecture of the pancreatic islet ensures proper glucose sensing and homeostasis via a number of different hormones and receptors that can elicit both synergistic and antagonistic effects in the pancreas itself and other peripheral tissues.
 
-Here is the system of interacting proteins:  
-${geneList}`
+Here is the system of interacting proteins:  `
+
+export const defaultTemplate = {
+  rawText,
+  templateFn: (geneList: string): string => {
+    return `${rawText}  ${geneList}`
+  },
+}

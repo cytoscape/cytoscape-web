@@ -32,6 +32,7 @@ export const LLMQueryResultPanel = (): ReactElement => {
   )
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
+  const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
   const setLLMResult = useLLMQueryStore((state) => state.setLLMResult)
   const addMessage = useMessageStore((state) => state.addMessage)
 
@@ -44,8 +45,9 @@ export const LLMQueryResultPanel = (): ReactElement => {
         message: `Running LLM query...`,
         duration: 6000,
       })
+      const message = LLMTemplate.fn(localQueryValue)
       const LLMResponse = await analyzeSubsystemGeneSet(
-        localQueryValue,
+        message,
         LLMApiKey,
         LLMModel,
         false,

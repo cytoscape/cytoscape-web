@@ -11,22 +11,33 @@ import {
   Button,
   Tooltip,
   Box,
+  ButtonGroup,
+  IconButton,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
 import { LLMModel, models } from '../model/LLMModel'
 import { useLLMQueryStore } from '../store'
+import { LLMTemplate, templates } from '../model/LLMTemplate'
+import { ContentCopy, Preview } from '@mui/icons-material'
+import { useMessageStore } from '../../../store/MessageStore'
 
 export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false)
+  const addMessage = useMessageStore((state) => state.addMessage)
   const loading = useLLMQueryStore((state) => state.loading)
   const setLLMModel = useLLMQueryStore((state) => state.setLLMModel)
   const setLLMApiKey = useLLMQueryStore((state) => state.setLLMApiKey)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
+  const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
+  const setLLMTemplate = useLLMQueryStore((state) => state.setLLMTemplate)
 
   const [showDialog, setShowDialog] = useState(false)
   const [localLLMModel, setLocalLLMModel] = useState<LLMModel>(LLMModel)
   const [localLLMApiKey, setLocalLLMApiKey] = useState<string>(LLMApiKey)
+  const [localLLMTemplate, setLocalLLMTemplate] =
+    useState<LLMTemplate>(LLMTemplate)
 
   const disabled = loading
 
@@ -35,6 +46,21 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
       LLM Query Options
     </MenuItem>
   )
+
+  const copyTextToClipboard = async (text: string): Promise<void> => {
+    if ('clipboard' in navigator) {
+      return await navigator.clipboard.writeText(text)
+    }
+  }
+
+  const handleCopyTemplateClick = (): void => {
+    void copyTextToClipboard(localLLMTemplate.rawText).then(() => {
+      addMessage({
+        message: `LLM template copied to clipboard`,
+        duration: 6000,
+      })
+    })
+  }
 
   const dialog = (
     <Dialog
@@ -71,6 +97,64 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
             onChange={(e) => setLocalLLMApiKey(e.target.value)}
           ></TextField>
         </Tooltip>
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+          <FormControl fullWidth>
+            <InputLabel>Template</InputLabel>
+            <Select
+              size="small"
+              value={localLLMTemplate.name}
+              label="Template"
+              onChange={(e) => {
+                const nextTemplate = templates.find(
+                  (t) => t.name === e.target.value,
+                )
+                if (nextTemplate !== undefined) {
+                  setLocalLLMTemplate(nextTemplate)
+                }
+              }}
+            >
+              {templates.map((t) => {
+                return (
+                  <MenuItem key={t.name} value={t.name}>
+                    {t.name}
+                  </MenuItem>
+                )
+              })}
+            </Select>
+          </FormControl>
+          <ButtonGroup size="small" variant="contained" sx={{ ml: 1 }}>
+            <Tooltip title="Preview selected template">
+              <IconButton
+                sx={{
+                  color: showTemplatePreview ? 'primary.main' : 'inherit',
+                }}
+                aria-label="preview"
+                onClick={() => {
+                  setShowTemplatePreview(!showTemplatePreview)
+                }}
+              >
+                <Preview />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Copy selected template text">
+              <IconButton aria-label="copy" onClick={handleCopyTemplateClick}>
+                <ContentCopy />
+              </IconButton>
+            </Tooltip>
+          </ButtonGroup>
+        </Box>
+        <Box
+          sx={{
+            mt: 2,
+            maxHeight: 300,
+            overflowY: 'scroll',
+            p: 2,
+            whiteSpace: 'pre-line',
+          }}
+        >
+          {(showTemplatePreview && localLLMTemplate?.rawText) ?? ''}
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button
@@ -78,6 +162,8 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
             setShowDialog(false)
             setLLMModel(localLLMModel)
             setLLMApiKey(localLLMApiKey)
+            setLLMTemplate(localLLMTemplate)
+            props.handleClose()
           }}
         >
           Confirm
