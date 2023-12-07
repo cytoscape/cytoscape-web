@@ -1,3 +1,4 @@
+import { Typography } from '@mui/material'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
@@ -6,16 +7,21 @@ import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
 
 interface WarningDialogProps {
-  errorMessage: string
+  title?: string
+  subtitle?: string
+  message: string
   open: boolean
   handleClose: () => void
 }
 
 export const WarningDialog = ({
-  errorMessage,
+  title,
+  subtitle,
+  message,
   open,
   handleClose,
 }: WarningDialogProps): JSX.Element => {
+  const dialogTitle = title === undefined ? 'Info:' : title
   return (
     <Dialog
       open={open}
@@ -23,10 +29,13 @@ export const WarningDialog = ({
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title">{'Error:'}</DialogTitle>
+      <DialogTitle id="alert-dialog-title">{dialogTitle}</DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">
-          {errorMessage}
+          {subtitle === undefined ? null : (
+            <Typography variant="subtitle2">{subtitle}</Typography>
+          )}
+          {message}
         </DialogContentText>
       </DialogContent>
       <DialogActions>

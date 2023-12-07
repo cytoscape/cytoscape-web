@@ -4,14 +4,15 @@ import { useUiStateStore } from './store/UiStateStore'
 
 export const RedirectPanel = (): JSX.Element => {
   const location = useLocation()
-  console.log('---------------RED panel!!', location)
 
   // Use global UI state
   const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
 
   useEffect(() => {
-    console.log('----ER RED panel!!', location)
-    setErrorMessage('Wrong URL:' + location.pathname)
+    setErrorMessage(
+      `Invalid URL was given (${location.pathname}). 
+      The app was initialized with the default URL.`,
+    )
   }, [])
 
   return (

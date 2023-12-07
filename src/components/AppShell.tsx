@@ -65,7 +65,7 @@ const AppShell = (): ReactElement => {
 
   useEffect(() => {
     if (errorMessageInStore !== undefined && errorMessageInStore !== '') {
-      setInitializationError('Warning: ' + errorMessageInStore)
+      setInitializationError(errorMessageInStore)
       setShowErrorDialog(true)
       setErrorMessage('')
     }
@@ -294,7 +294,9 @@ const AppShell = (): ReactElement => {
         onClose={() => setShowDialog(false)}
       />
       <WarningDialog
-        errorMessage={initializationError}
+        title="Info:"
+        subtitle='Problems during initialization'
+        message={initializationError}
         open={initializationError !== ''}
         handleClose={() => {
           setShowErrorDialog(false)
