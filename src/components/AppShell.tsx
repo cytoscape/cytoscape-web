@@ -38,8 +38,11 @@ import { Panel } from '../models/UiModel/Panel'
  *
  */
 const AppShell = (): ReactElement => {
+
+  const [initializationError, setInitializationError] = useState<string>('')
+
   // This is necessary to prevent creating a new workspace on every render
-  const [showDialog, setShowDialog] = useState(false)
+  const [showDialog, setShowDialog] = useState<boolean>(false)
   const [search] = useSearchParams()
 
   const initializedRef = useRef(false)
@@ -57,12 +60,20 @@ const AppShell = (): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
   const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
-  const errorMessage = useUiStateStore((state) => state.ui.errorMessage)
-  console.log('AppShell rendering: ERR = ', errorMessage)
+  const errorMessageInStore = useUiStateStore((state) => state.ui.errorMessage)
+  console.log('AppShell rendering: ERR = ', errorMessageInStore)
+
+  useEffect(() => {
+    if (errorMessageInStore !== undefined && errorMessageInStore !== '') {
+      setInitializationError('Warning: ' + errorMessageInStore)
+      setShowErrorDialog(true)
+      setErrorMessage('')
+    }
+  }, [errorMessageInStore])
 
   const setUi = useUiStateStore((state) => state.setUi)
 
-  const { showErrorDialog } = useUiStateStore((state) => state.ui)
+  // const { showErrorDialog } = useUiStateStore((state) => state.ui)
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
   )
@@ -283,9 +294,11 @@ const AppShell = (): ReactElement => {
         onClose={() => setShowDialog(false)}
       />
       <WarningDialog
-        open={showErrorDialog}
+        errorMessage={initializationError}
+        open={initializationError !== ''}
         handleClose={() => {
           setShowErrorDialog(false)
+          setInitializationError('')
         }}
       />
     </Box>
