@@ -1,10 +1,9 @@
 import OpenAI from 'openai'
-import { defaultTemplate } from '../model/GPTTemplate'
 import testGPTResponse from '../model/gpt-4-0613-response.json'
 import { LLMModel } from '../model/LLMModel'
 
 export const analyzeSubsystemGeneSet = async (
-  geneList: string[],
+  message: string,
   apiKey: string,
   model: LLMModel,
   mock = false,
@@ -13,10 +12,6 @@ export const analyzeSubsystemGeneSet = async (
     apiKey,
     dangerouslyAllowBrowser: true,
   })
-
-  const geneListString = geneList.sort().join(', ')
-
-  const message = defaultTemplate(geneListString)
 
   if (mock) {
     return testGPTResponse.choices[0].message.content

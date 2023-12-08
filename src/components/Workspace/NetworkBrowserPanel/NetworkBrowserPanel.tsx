@@ -15,6 +15,7 @@ import { PanelState } from '../../../models/UiModel/PanelState'
 import { Panel } from '../../../models/UiModel/Panel'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarcy-util'
 import { LLMQueryResultPanel } from '../../../features/LLMQuery/components'
+import llmLogo from '../../../assets/openai.svg'
 
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
@@ -110,7 +111,14 @@ export const NetworkBrowserPanel = ({
           />
           {showLLMQueryPanel && (
             <Tab
-              icon={<PaletteIcon />}
+              icon={
+                <img
+                  height="25"
+                  width="25"
+                  style={{ fill: 'gray' }}
+                  src={llmLogo}
+                />
+              }
               iconPosition="start"
               label={<Typography variant="body2">LLM QUERY</Typography>}
             />

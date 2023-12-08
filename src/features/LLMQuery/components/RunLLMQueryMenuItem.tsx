@@ -37,6 +37,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   const setGeneQuery = useLLMQueryStore((state) => state.setGeneQuery)
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
+  const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
 
   const setActiveNetworkBrowserPanelIndex = useUiStateStore(
     (state) => state.setActiveNetworkBrowserPanelIndex,
@@ -119,8 +120,9 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     props.handleClose()
 
     try {
+      const message = LLMTemplate.fn(geneNames.join(', '))
       const LLMResponse = await analyzeSubsystemGeneSet(
-        geneNames,
+        message,
         LLMApiKey,
         LLMModel,
         false,
