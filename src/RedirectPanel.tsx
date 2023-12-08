@@ -10,8 +10,9 @@ export const RedirectPanel = (): JSX.Element => {
 
   useEffect(() => {
     setErrorMessage(
-      `Invalid URL was given (${location.pathname}). 
-      The app was initialized with the default URL.`,
+      `An invalid URL was entered (${location.pathname}). 
+      Please double-check the URL you entered and try again. 
+      Your workspace has now been initialized with the last cache.`,
     )
   }, [])
 
