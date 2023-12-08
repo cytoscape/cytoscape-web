@@ -66,7 +66,9 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
       // if the current network is the hierarchy i.e. hcx network, then we need to get the gene names from the members/membernames of the selected nodes
       if (currentNetworkIsActive) {
         const geneNames: string[] = []
-        selectedNodes.forEach(async (node) => {
+
+        for (let i = 0; i < selectedNodes.length; i++) {
+          const node = selectedNodes[i]
           const row = table.rows.get(node)
           const members = row?.[SubsystemTag.members]
           const memberNames = row?.[SubsystemTag.memberNames]
@@ -83,14 +85,14 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
               accessToken: token,
             })
 
-            names.forEach((n) => geneNames.push(n))
             geneNames.push(...names)
           } else {
             if (memberNames !== undefined) {
               geneNames.push(...(memberNames as string[]))
             }
           }
-        })
+        }
+
         return Array.from(new Set(geneNames))
       } else {
         // if the current network is the subsystem network, we need to get the names of the selected nodes
@@ -110,7 +112,24 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     setLoading(true)
     setPanelState('left', 'open')
     setActiveNetworkBrowserPanelIndex(2)
-    const geneNames = await getGeneNames()
+
+    let geneNames: string[] = []
+    try {
+      geneNames = await getGeneNames()
+    } catch (e) {
+      addMessage({
+        message: `Failed to get gene symbols for the selected subsystem nodes from NDEx server.  The visibility of the network in the ${
+          HcxMetaTag.interactionNetworkUUID
+        } attribute is most likely private. Error message: ${
+          e.message as string
+        }`,
+        duration: 8000,
+      })
+      setLoading(false)
+      setLLMResult('')
+      return
+    }
+
     setGeneQuery(serializeValueList(geneNames))
 
     addMessage({

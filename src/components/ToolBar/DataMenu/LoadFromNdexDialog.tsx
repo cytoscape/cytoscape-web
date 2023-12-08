@@ -22,6 +22,7 @@ import {
   TableRow,
   TableCell,
   Checkbox,
+  CircularProgress,
 } from '@mui/material'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { formatBytes } from '../../../utils/byte-conversion'
@@ -39,9 +40,18 @@ interface LoadFromNdexDialogProps {
 }
 
 export const NetworkSeachField = (props: {
-  onClick: (searchValue: string) => Promise<void>
+  startSearch: (searchValue: string) => Promise<void>
 }): ReactElement => {
   const [searchValue, setSearchValue] = useState<string>('')
+
+  // Execute search when enter key is pressed
+  const handleKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ): void => {
+    if (event.key === 'Enter') {
+      void props.startSearch(searchValue)
+    }
+  }
   return (
     <Box
       sx={{
@@ -59,8 +69,9 @@ export const NetworkSeachField = (props: {
         variant="standard"
         onChange={(e) => setSearchValue(e.target.value)}
         value={searchValue}
+        onKeyDown={handleKeyDown}
       />
-      <IconButton onClick={() => props.onClick(searchValue)}>
+      <IconButton onClick={() => props.startSearch(searchValue)}>
         <Search />
       </IconButton>
     </Box>
@@ -207,6 +218,7 @@ export const LoadFromNdexDialog = (
   }, [])
 
   const fetchSearchResults = async (searchValue: string): Promise<void> => {
+    setLoading(true)
     const ndexClient = new NDEx(ndexBaseUrl)
 
     if (authenticated) {
@@ -215,6 +227,7 @@ export const LoadFromNdexDialog = (
     }
     const searchResults = await ndexClient.searchNetworks(searchValue, 0, 400)
     setSearchResultNetworks(searchResults?.networks ?? [])
+    setLoading(false)
   }
 
   const errorMessageContent = <Typography>{errorMessage}</Typography>
@@ -396,8 +409,9 @@ export const LoadFromNdexDialog = (
           </Tabs>
         </Box>
         {currentTabIndex === 0 && (
-          <NetworkSeachField onClick={fetchSearchResults} />
+          <NetworkSeachField startSearch={fetchSearchResults} />
         )}
+        {loading ? <CircularProgress /> : null}
         {content}
       </DialogContent>
       <DialogActions
