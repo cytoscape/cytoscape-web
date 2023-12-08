@@ -1,22 +1,20 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
+import { useUiStateStore } from './store/UiStateStore'
 
 export const RedirectPanel = (): JSX.Element => {
-  const navigate = useNavigate()
-  const [showError, setShowError] = useState<boolean>(true)
+  const location = useLocation()
+
+  // Use global UI state
+  const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowError(false)
-    }, 2000)
-
-    // Clean up the timer when the component is unmounted
-    return () => clearTimeout(timer)
+    setErrorMessage(
+      `An invalid URL was entered (${location.pathname}). 
+      Please double-check the URL you entered and try again. 
+      Your workspace has now been initialized with the last cache.`,
+    )
   }, [])
-
-  if (!showError) {
-    navigate('/')
-  }
 
   return (
     <div>
