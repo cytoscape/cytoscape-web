@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { LLMModel, models } from '../model/LLMModel'
 import config from '../../../assets/config.json'
+import { LLMTemplate, templates } from '../model/LLMTemplate'
 
 interface LLMQueryState {
   loading: boolean
@@ -9,6 +10,7 @@ interface LLMQueryState {
   LLMResult: string
   LLMApiKey: string
   LLMModel: LLMModel
+  LLMTemplate: LLMTemplate
 }
 
 interface LLMQueryAction {
@@ -17,6 +19,7 @@ interface LLMQueryAction {
   setLLMResult: (LLMResult: string) => void
   setLLMApiKey: (LLMApiKey: string) => void
   setLLMModel: (LLMModel: LLMModel) => void
+  setLLMTemplate: (LLMTemplate: LLMTemplate) => void
 }
 
 type LLMQueryStore = LLMQueryState & LLMQueryAction
@@ -31,6 +34,7 @@ export const useLLMQueryStore = create(
     LLMResult: '',
     LLMApiKey: config.openAIAPIKey,
     LLMModel: models[0],
+    LLMTemplate: templates[0],
     setLoading: (loading: boolean) => {
       set((state) => {
         state.loading = loading
@@ -54,6 +58,11 @@ export const useLLMQueryStore = create(
     setLLMModel: (LLMModel) => {
       set((state) => {
         state.LLMModel = LLMModel
+      })
+    },
+    setLLMTemplate: (LLMTemplate) => {
+      set((state) => {
+        state.LLMTemplate = LLMTemplate
       })
     },
   })),

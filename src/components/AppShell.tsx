@@ -29,6 +29,7 @@ import { UpdateNetworkDialog } from './UpdateNetworkDialog'
 import { waitSeconds } from '../utils/wait-seconds'
 import { PanelState } from '../models/UiModel/PanelState'
 import { Panel } from '../models/UiModel/Panel'
+import { Workspace } from '../models/WorkspaceModel'
 
 /**
  *
@@ -38,8 +39,11 @@ import { Panel } from '../models/UiModel/Panel'
  *
  */
 const AppShell = (): ReactElement => {
+
+  const [initializationError, setInitializationError] = useState<string>('')
+
   // This is necessary to prevent creating a new workspace on every render
-  const [showDialog, setShowDialog] = useState(false)
+  const [showDialog, setShowDialog] = useState<boolean>(false)
   const [search] = useSearchParams()
 
   const initializedRef = useRef(false)
@@ -57,10 +61,20 @@ const AppShell = (): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
   const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
+  const errorMessageInStore = useUiStateStore((state) => state.ui.errorMessage)
+  console.log('AppShell rendering: ERR = ', workspace.id)
+
+  useEffect(() => {
+    if (errorMessageInStore !== undefined && errorMessageInStore !== '') {
+      setInitializationError(errorMessageInStore)
+      setShowErrorDialog(true)
+      setErrorMessage('')
+    }
+  }, [errorMessageInStore])
 
   const setUi = useUiStateStore((state) => state.setUi)
 
-  const { showErrorDialog } = useUiStateStore((state) => state.ui)
+  // const { showErrorDialog } = useUiStateStore((state) => state.ui)
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
   )
@@ -99,9 +113,15 @@ const AppShell = (): ReactElement => {
       }
 
       void getWorkspaceFromDb(
-        // parsed.workspaceId === '' ? undefined : parsed.workspaceId,
         targetWorkspaceId === '' ? undefined : targetWorkspaceId,
-      ).then((workspace) => {
+      ).then((workspace: Workspace) => {
+        // Add error message if the new workspace ID is not same as the one in URL
+        if (targetWorkspaceId !== workspace.id) {
+          setErrorMessage(
+            `An invalid workspace ID was entered (${targetWorkspaceId}). 
+            Your workspace has now been initialized with the last cache.`,
+          )
+        }
         setWorkspace(workspace)
       })
     }
@@ -169,8 +189,6 @@ const AppShell = (): ReactElement => {
 
     const parsed = parsePathName(location.pathname)
 
-    const searchParams: URLSearchParams = new URLSearchParams(location.search)
-    console.log('searchParams', searchParams)
     // At this point, workspace ID is always available
     if (currentNetworkId === '' || currentNetworkId === undefined) {
       const parsedNetworkId = parsed.networkId
@@ -250,10 +268,11 @@ const AppShell = (): ReactElement => {
             )
           }
         } catch (error) {
-          console.log('SUMMARY error', error)
           const errorMessage: string = error.message
           setErrorMessage(
-            `Failed to load the network ${networkId}: ${errorMessage}`,
+            `Failed to load the network (${networkId}) entered in the URL (${errorMessage}). 
+            Please double-check the network ID you entered. 
+            Your workspace has now been initialized with the last cache.`,
           )
           setShowErrorDialog(true)
         }
@@ -281,9 +300,13 @@ const AppShell = (): ReactElement => {
         onClose={() => setShowDialog(false)}
       />
       <WarningDialog
-        open={showErrorDialog}
+        title="Initialization Error"
+        subtitle='Problems during initialization:'
+        message={initializationError}
+        open={initializationError !== ''}
         handleClose={() => {
           setShowErrorDialog(false)
+          setInitializationError('')
         }}
       />
     </Box>

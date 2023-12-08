@@ -23,6 +23,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
+import { useCredentialStore } from '../../../store/CredentialStore'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -98,6 +99,13 @@ export const SubNetworkPanel = ({
 
   const prevQueryNetworkIdRef = useRef<string>()
 
+  const getToken = useCredentialStore((state) => state.getToken)
+
+  const fetcher = async (args: string[]): Promise<any> => {
+    const token = await getToken()
+    return await ndexQueryFetcher([...args, token])
+  }
+
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const { data, error, isLoading } = useSWR<NetworkWithView>(
     [
@@ -108,7 +116,7 @@ export const SubNetworkPanel = ({
       query,
       interactionNetworkId,
     ],
-    ndexQueryFetcher,
+    fetcher,
     {
       revalidateOnFocus: false,
     },
@@ -167,13 +175,17 @@ export const SubNetworkPanel = ({
     const newUuid: string = network.id.toString()
 
     // Add parent network's style to the shared style store
-    if (vs[rootNetworkId] === undefined) {
+    if (vs[rootNetworkId] === undefined && visualStyle !== undefined) {
       // Register the original style to DB
       addVisualStyle(rootNetworkId, visualStyle)
       addVisualStyle(newUuid, visualStyle)
-    } else {
+    } else if (visualStyle === undefined) {
       addVisualStyle(newUuid, vs[rootNetworkId])
+    } else {
+      // Just use the given style as-is
+      addVisualStyle(newUuid, visualStyle)
     }
+
     // Register objects to the stores.
     if (networks.get(newUuid) === undefined) {
       // Register new networks to the store if not cached

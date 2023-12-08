@@ -22,6 +22,7 @@ import {
   TableRow,
   TableCell,
   Checkbox,
+  CircularProgress,
 } from '@mui/material'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { formatBytes } from '../../../utils/byte-conversion'
@@ -31,11 +32,52 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { networkSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
 import { dateFormatter } from '../../../utils/date-format'
 import { KeycloakContext } from '../../..'
+import { useMessageStore } from '../../../store/MessageStore'
 
 interface LoadFromNdexDialogProps {
   open: boolean
   handleClose: () => void
 }
+
+export const NetworkSeachField = (props: {
+  startSearch: (searchValue: string) => Promise<void>
+}): ReactElement => {
+  const [searchValue, setSearchValue] = useState<string>('')
+
+  // Execute search when enter key is pressed
+  const handleKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ): void => {
+    if (event.key === 'Enter') {
+      void props.startSearch(searchValue)
+    }
+  }
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'end',
+      }}
+    >
+      <TextField
+        autoFocus
+        margin="dense"
+        label="Search NDEx"
+        type="text"
+        fullWidth
+        variant="standard"
+        onChange={(e) => setSearchValue(e.target.value)}
+        value={searchValue}
+        onKeyDown={handleKeyDown}
+      />
+      <IconButton onClick={() => props.startSearch(searchValue)}>
+        <Search />
+      </IconButton>
+    </Box>
+  )
+}
+
 export const LoadFromNdexDialog = (
   props: LoadFromNdexDialogProps,
 ): ReactElement => {
@@ -44,6 +86,7 @@ export const LoadFromNdexDialog = (
 
   const client = useContext(KeycloakContext)
 
+  const addMessage = useMessageStore((state) => state.addMessage)
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
   const addNetworks: (ids: IdType | IdType[]) => void = useWorkspaceStore(
@@ -54,7 +97,6 @@ export const LoadFromNdexDialog = (
   )
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
 
-  const [searchValue, setSearchValue] = useState<string>('')
   const [currentTabIndex, setCurrentTabIndex] = useState<number>(
     authenticated ? 1 : 0,
   )
@@ -164,7 +206,7 @@ export const LoadFromNdexDialog = (
 
   useEffect(() => {
     setLoading(true)
-    fetchSearchResults()
+    fetchSearchResults('')
       .then(() => {
         setLoading(false)
       })
@@ -175,7 +217,8 @@ export const LoadFromNdexDialog = (
       })
   }, [])
 
-  const fetchSearchResults = async (): Promise<any> => {
+  const fetchSearchResults = async (searchValue: string): Promise<void> => {
+    setLoading(true)
     const ndexClient = new NDEx(ndexBaseUrl)
 
     if (authenticated) {
@@ -184,6 +227,7 @@ export const LoadFromNdexDialog = (
     }
     const searchResults = await ndexClient.searchNetworks(searchValue, 0, 400)
     setSearchResultNetworks(searchResults?.networks ?? [])
+    setLoading(false)
   }
 
   const errorMessageContent = <Typography>{errorMessage}</Typography>
@@ -365,28 +409,9 @@ export const LoadFromNdexDialog = (
           </Tabs>
         </Box>
         {currentTabIndex === 0 && (
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'end',
-            }}
-          >
-            <TextField
-              autoFocus
-              margin="dense"
-              label="Search NDEx"
-              type="text"
-              fullWidth
-              variant="standard"
-              onChange={(e) => setSearchValue(e.target.value)}
-              value={searchValue}
-            />
-            <IconButton onClick={() => fetchSearchResults()}>
-              <Search />
-            </IconButton>
-          </Box>
+          <NetworkSeachField startSearch={fetchSearchResults} />
         )}
+        {loading ? <CircularProgress /> : null}
         {content}
       </DialogContent>
       <DialogActions
@@ -398,15 +423,20 @@ export const LoadFromNdexDialog = (
       >
         <Box sx={{ pl: 2 }}>{successMessage ?? errorMessage ?? ''}</Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Button onClick={handleClose} sx={{ mr: 7 }}>
-            Done
+          <Button color="error" onClick={handleClose} sx={{ mr: 7 }}>
+            Cancel
           </Button>
           <Button
             disabled={selectedNetworks.length === 0}
             onClick={() => {
               setErrorMessage(undefined)
               setSuccessMessage(undefined)
+              addMessage({
+                message: `Loading ${selectedNetworks.length} network(s) from NDEx`,
+                duration: 3000,
+              })
               void addNDExNetworksToWorkspace(selectedNetworks)
+              handleClose()
             }}
           >
             {`Open ${selectedNetworks.length} Network(s)`}
