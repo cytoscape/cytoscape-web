@@ -41,8 +41,8 @@ export const MainPanel = (): JSX.Element => {
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
   // View model is required to extract the selected nodes
-  const networkViewModel: NetworkView = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const networkViewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(currentNetworkId),
   )
 
   // Selected nodes in the hierarchy

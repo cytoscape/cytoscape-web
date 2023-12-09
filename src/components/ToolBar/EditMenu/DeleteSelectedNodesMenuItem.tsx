@@ -17,12 +17,12 @@ export const DeleteSelectedNodesMenuItem = (
     (state) => state.workspace.currentNetworkId,
   )
 
-  const networkViewModel: NetworkView = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const viewModel = useViewModelStore(
+    (state) => state.getViewModel(currentNetworkId),
   )
 
   const selectedNodes: IdType[] =
-    networkViewModel !== undefined ? networkViewModel.selectedNodes : []
+    viewModel !== undefined ? viewModel.selectedNodes : []
 
   useEffect(() => {
     if (selectedNodes.length > 0) {
