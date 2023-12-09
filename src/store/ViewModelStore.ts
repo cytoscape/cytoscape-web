@@ -5,9 +5,9 @@ import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { subscribeWithSelector } from 'zustand/middleware'
 import {
-  clearNetworkViewFromDb,
-  deleteNetworkViewFromDb,
-  putNetworkViewToDb,
+  clearNetworkViewsFromDb,
+  deleteNetworkViewsFromDb,
+  putNetworkViewsToDb,
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 
@@ -19,6 +19,7 @@ interface ViewModelAction {
   // Add a new Network View Model to the store
   add: (networkId: IdType, networkView: NetworkView) => void
 
+  // Utility function to get the primary (first) view model of a network if no ID is given
   getViewModel: (
     networkId: IdType,
     viewModelId?: IdType,
@@ -72,7 +73,7 @@ const persist =
         const lastModel: NetworkView[] | undefined =
           last.viewModels[currentNetworkId]
         if (!deleted && lastModel !== undefined) {
-          void putNetworkViewToDb(currentNetworkId, updated).then(() => {})
+          void putNetworkViewsToDb(currentNetworkId, updated).then(() => {})
         }
       },
       get,
@@ -108,6 +109,7 @@ export const useViewModelStore = create(
             return undefined
           }
           if (viewModelId === undefined) {
+            // return the first view model if no ID is given
             return viewList[0]
           }
           return viewList.find((view) => view.id === viewModelId)
@@ -302,7 +304,7 @@ export const useViewModelStore = create(
           set((state) => {
             delete state.viewModels[networkId]
 
-            void deleteNetworkViewFromDb(networkId).then(() => {
+            void deleteNetworkViewsFromDb(networkId).then(() => {
               console.log('Network view deleted from db')
             })
 
@@ -312,7 +314,7 @@ export const useViewModelStore = create(
         deleteAll() {
           set((state) => {
             state.viewModels = {}
-            void clearNetworkViewFromDb().then(() => {
+            void clearNetworkViewsFromDb().then(() => {
               console.log('Cleared views')
             })
             return state

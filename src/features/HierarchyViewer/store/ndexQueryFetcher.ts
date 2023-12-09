@@ -45,7 +45,7 @@ export const ndexQueryFetcher = async (
       cache.nodeTable === undefined ||
       cache.edgeTable === undefined ||
       cache.visualStyle === undefined ||
-      cache.networkView === undefined
+      cache.networkViews === undefined
     ) {
       // Case 1: Simply fetch network if UUID is provided as node attribute
       if (
@@ -73,7 +73,7 @@ export const ndexQueryFetcher = async (
         nodeTable: cache.nodeTable,
         edgeTable: cache.edgeTable,
         visualStyle: cache.visualStyle,
-        networkView: cache.networkView,
+        networkViews: cache.networkViews,
       }
     }
   } catch (error) {

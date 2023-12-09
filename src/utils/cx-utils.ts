@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid'
 import {
   getNetworkFromDb,
   getTablesFromDb,
-  getNetworkViewFromDb,
+  getNetworkViewsFromDb,
   getVisualStyleFromDb,
   putNetworkToDb,
   putNetworkViewToDb,
@@ -26,7 +26,7 @@ export interface NetworkWithView {
   nodeTable: Table
   edgeTable: Table
   visualStyle: VisualStyle
-  networkView: NetworkView
+  networkViews: NetworkView[]
 }
 
 /**
@@ -62,7 +62,7 @@ export const createNetworkViewFromCx2 = (
     nodeTable,
     edgeTable,
     visualStyle,
-    networkView,
+    networkViews: [networkView],
     networkAttributes,
   }
 }
@@ -70,7 +70,7 @@ export const createNetworkViewFromCx2 = (
 export const getCachedData = async (id: string): Promise<CachedData> => {
   const network = await getNetworkFromDb(id)
   const tables = await getTablesFromDb(id)
-  const networkView = await getNetworkViewFromDb(id)
+  const networkViews:NetworkView[] | undefined = await getNetworkViewsFromDb(id)
   const visualStyle = await getVisualStyleFromDb(id)
 
   return {
@@ -78,7 +78,7 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
     visualStyle,
     nodeTable: tables !== undefined ? tables.nodeTable : undefined,
     edgeTable: tables !== undefined ? tables.edgeTable : undefined,
-    networkView,
+    networkViews: networkViews,
   }
 }
 
@@ -114,7 +114,7 @@ export const createDataFromCx = async (
     nodeTable,
     edgeTable,
     visualStyle,
-    networkView,
+    networkViews: [networkView],
     networkAttributes,
   }
 }
