@@ -7,7 +7,7 @@ import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { HcxMetaData } from '../model/HcxMetaData'
-import { getHcxProps } from '../utils/hierarcy-util'
+import { getHcxProps } from '../utils/hierarchy-util'
 import {
   NdexNetworkProperty,
   NdexNetworkSummary,

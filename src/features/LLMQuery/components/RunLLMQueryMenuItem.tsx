@@ -14,7 +14,7 @@ import {
   SubsystemTag,
   HcxMetaTag,
 } from '../../HierarchyViewer/model/HcxMetaTag'
-import { isHCX } from '../../HierarchyViewer/utils/hierarcy-util'
+import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { translateMemberIds } from '../api/translateMemberIds'
 import { useLLMQueryStore } from '../store'

@@ -370,12 +370,13 @@ export const putNetworkViewToDb = async (
   view: NetworkView,
 ): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
-    const views: NetworkView[] | undefined = await db.cyNetworkViews.get({ id })
-    if (views !== undefined) {
-      views.push(view)
+    const networkViews = await db.cyNetworkViews.get({ id })
+    if (networkViews !== undefined) {
+      const viewList: NetworkView[] = networkViews.views
+      viewList.push(view)
       await db.cyNetworkViews.put({
         id,
-        views,
+        views: viewList,
       })
     } else {
       await db.cyNetworkViews.put({ id, views: [view] })

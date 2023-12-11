@@ -78,7 +78,7 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
     visualStyle,
     nodeTable: tables !== undefined ? tables.nodeTable : undefined,
     edgeTable: tables !== undefined ? tables.edgeTable : undefined,
-    networkViews: networkViews,
+    networkViews: networkViews !== undefined ? networkViews : [],
   }
 }
 

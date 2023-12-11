@@ -127,11 +127,14 @@ export const useViewModelStore = create(
               return state
             }
 
+            const newViewList: NetworkView[] = []
             viewList.forEach((view: NetworkView) => {
-              view.selectedNodes = selectedNodes
-              view.selectedEdges = selectedEdges
+              const newView = { ...view}
+              newView.selectedNodes = selectedNodes
+              newView.selectedEdges = selectedEdges
+              newViewList.push(newView)
             })
-
+            state.viewModels[networkId] = newViewList
             return state
           })
         },

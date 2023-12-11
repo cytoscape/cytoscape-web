@@ -90,9 +90,8 @@ export const SubNetworkPanel = ({
   const ui = useUiStateStore((state) => state.ui)
   const { activeNetworkView } = ui
 
-  const viewModels: Record<string, NetworkView> = useViewModelStore(
-    (state) => state.viewModels,
-  )
+  const getViewModel: (id: IdType) => NetworkView | undefined = useViewModelStore((state) => state.getViewModel)
+
   const vs: Record<string, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
   )
@@ -139,22 +138,25 @@ export const SubNetworkPanel = ({
   }
 
   useEffect(() => {
-    const viewModel: NetworkView | undefined = viewModels[queryNetworkId]
+    const viewModel: NetworkView | undefined = getViewModel(queryNetworkId)
     if (viewModel === undefined) {
       return
     }
     void saveLastQueryNetworkId(queryNetworkId).then(() => {
       prevQueryNetworkIdRef.current = queryNetworkId
     })
-  }, [viewModels[queryNetworkId]])
+  }, [queryNetworkId])
+  // }, [viewModels[queryNetworkId]])
 
   const saveLastQueryNetworkId = async (id: string): Promise<void> => {
     // const network: Network | undefined = networks.get(id)
     const visualStyle: VisualStyle | undefined = vs[id]
     await putVisualStyleToDb(id, visualStyle)
 
-    const viewModel: NetworkView | undefined = viewModels[id]
-    await putNetworkViewToDb(id, viewModel)
+    const viewModel: NetworkView | undefined = getViewModel(id)
+    if(viewModel !== undefined) {
+      await putNetworkViewToDb(id, viewModel)
+    }
   }
 
   useEffect(() => {
@@ -171,7 +173,7 @@ export const SubNetworkPanel = ({
     if (data === undefined) {
       return ''
     }
-    const { network, visualStyle, nodeTable, edgeTable, networkView } = data
+    const { network, visualStyle, nodeTable, edgeTable, networkViews } = data
     const newUuid: string = network.id.toString()
 
     // Add parent network's style to the shared style store
@@ -191,7 +193,7 @@ export const SubNetworkPanel = ({
       // Register new networks to the store if not cached
       addNewNetwork(network)
       addTable(newUuid, nodeTable, edgeTable)
-      addViewModel(newUuid, networkView)
+      addViewModel(newUuid, networkViews[0])
 
       if (interactionNetworkId === undefined || interactionNetworkId === '') {
         // Apply default layout for the first time

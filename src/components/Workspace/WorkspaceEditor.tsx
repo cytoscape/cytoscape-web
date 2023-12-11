@@ -45,8 +45,7 @@ import { Panel } from '../../models/UiModel/Panel'
 import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
 import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
-import { isHCX } from '../../features/HierarchyViewer/utils/hierarcy-util'
-import { NetworkWithView } from '../../utils/cx-utils'
+import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -124,7 +123,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           _.omit(next, ['selectedNodes', 'selectedEdges']),
         )
 
-      // primitve compare fn that does not take into account the selection/hover state
+      // primitive compare fn that does not take into account the selection/hover state
       // this leads to the network having a 'modified' state even though nothing was modified
       const { networkModified } = workspace
       const currentNetworkIsNotModified =
@@ -205,7 +204,8 @@ const WorkSpaceEditor = (): JSX.Element => {
     addNewNetwork(network)
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
-    addViewModel(networkId, networkViews !== undefined ? networkViews : [])
+    addViewModel(networkId, networkViews[0])
+    // addViewModel(networkId, networkViews !== undefined ? networkViews : [])
 
     if (!summary.hasLayout) {
       const layoutEngineName = isHCX(summary)
