@@ -40,7 +40,6 @@ export const ndexQueryFetcher = async (
   try {
     // First, check the local cache
     const cache: CachedData = await getCachedData(interactionNetworkId)
-    // const cache: CachedData = await getCachedData(subsystemId)
 
     // This is necessary only when data is not in the cache
     if (
@@ -50,13 +49,26 @@ export const ndexQueryFetcher = async (
       cache.visualStyle === undefined ||
       cache.networkView === undefined
     ) {
-      return await fetchFromRemote(
+      const result = await fetchFromRemote(
         interactionNetworkId,
         interactionNetworkUuid,
         rootNetworkUuid,
         query,
         ndexClient,
       )
+
+      const isValid = isValidNetworkAndView(result.network, result.networkView)
+      if (isValid) {
+        return result
+      } else {
+        return await fetchFromRemote(
+          interactionNetworkId,
+          interactionNetworkUuid,
+          rootNetworkUuid,
+          query,
+          ndexClient,
+        )
+      }
     } else {
       const isValid = isValidNetworkAndView(cache.network, cache.networkView)
 
