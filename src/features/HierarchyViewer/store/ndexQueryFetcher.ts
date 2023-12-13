@@ -10,6 +10,8 @@ import { NetworkView } from '../../../models/ViewModel'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 
+const MAX_RETRY_COUNT: number = 5
+
 export const ndexQueryFetcher = async (
   params: string[],
 ): Promise<NetworkWithView> => {
@@ -49,7 +51,7 @@ export const ndexQueryFetcher = async (
       cache.visualStyle === undefined ||
       cache.networkView === undefined
     ) {
-      const result = await fetchFromRemote(
+      let result = await fetchFromRemote(
         interactionNetworkId,
         interactionNetworkUuid,
         rootNetworkUuid,
@@ -57,29 +59,52 @@ export const ndexQueryFetcher = async (
         ndexClient,
       )
 
-      const isValid = isValidNetworkAndView(result.network, result.networkView)
-      if (isValid) {
-        return result
-      } else {
-        return await fetchFromRemote(
-          interactionNetworkId,
-          interactionNetworkUuid,
-          rootNetworkUuid,
-          query,
-          ndexClient,
-        )
+      let isValidData: boolean = false
+      let retryCount: number = 0
+      while (!isValidData && retryCount < MAX_RETRY_COUNT) {
+        isValidData = isValidNetworkAndView(result.network, result.networkView)
+        if (isValidData) {
+          return result
+        } else {
+          result = await fetchFromRemote(
+            interactionNetworkId,
+            interactionNetworkUuid,
+            rootNetworkUuid,
+            query,
+            ndexClient,
+          )
+        }
+        retryCount++
       }
+
+      // If we still cannot get valid data, throw an error. This might be an network issue.
+      throw new Error('Failed to get CX data from NDEx')
     } else {
       const isValid = isValidNetworkAndView(cache.network, cache.networkView)
 
+      // Cache is corrupted. Fetch from remote
       if (!isValid) {
-        return await fetchFromRemote(
-          interactionNetworkId,
-          interactionNetworkUuid,
-          rootNetworkUuid,
-          query,
-          ndexClient,
-        )
+        let retryCount: number = 0
+        while (retryCount < MAX_RETRY_COUNT) {
+          const resultFromRemote = await fetchFromRemote(
+            interactionNetworkId,
+            interactionNetworkUuid,
+            rootNetworkUuid,
+            query,
+            ndexClient,
+          )
+          if (
+            isValidNetworkAndView(
+              resultFromRemote.network,
+              resultFromRemote.networkView,
+            )
+          ) {
+            return resultFromRemote
+          }
+          retryCount++
+        }
+        // If we still cannot get valid data, throw an error. This might be an network issue.
+        throw new Error('Failed to get CX data from NDEx')
       } else {
         return {
           network: cache.network,
