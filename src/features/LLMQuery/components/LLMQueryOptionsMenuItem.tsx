@@ -29,13 +29,12 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
   const setLLMModel = useLLMQueryStore((state) => state.setLLMModel)
   const setLLMApiKey = useLLMQueryStore((state) => state.setLLMApiKey)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
-  const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
   const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
   const setLLMTemplate = useLLMQueryStore((state) => state.setLLMTemplate)
 
   const [showDialog, setShowDialog] = useState(false)
   const [localLLMModel, setLocalLLMModel] = useState<LLMModel>(LLMModel)
-  const [localLLMApiKey, setLocalLLMApiKey] = useState<string>(LLMApiKey)
+  const [localLLMApiKey, setLocalLLMApiKey] = useState<string>('')
   const [localLLMTemplate, setLocalLLMTemplate] =
     useState<LLMTemplate>(LLMTemplate)
 
