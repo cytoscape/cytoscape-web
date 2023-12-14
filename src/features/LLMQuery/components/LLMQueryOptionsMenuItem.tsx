@@ -160,8 +160,10 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
           onClick={() => {
             setShowDialog(false)
             setLLMModel(localLLMModel)
-            setLLMApiKey(localLLMApiKey)
             setLLMTemplate(localLLMTemplate)
+            if (localLLMApiKey !== '') {
+              setLLMApiKey(localLLMApiKey)
+            }
             props.handleClose()
           }}
         >
