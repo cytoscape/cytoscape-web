@@ -2,6 +2,9 @@ import { renderHook, act } from '@testing-library/react'
 import { useViewModelStore } from '../../src/store/ViewModelStore'
 import { NetworkView } from '../../src/models/ViewModel'
 import { IdType } from '../../src/models/IdType'
+import { enableMapSet } from 'immer'
+
+enableMapSet()
 
 describe('useViewModelStore', () => {
   let mockNetworkView: NetworkView
@@ -65,5 +68,37 @@ describe('useViewModelStore', () => {
       selectedEdges,
     )
   })
+
+  it('should update selected nodes additively', async () => {
+    const { result } = renderHook(() => useViewModelStore())
+    const additionalNodes = ['node3', 'node4']
+    act(() => {
+      result.current.additiveSelect(mockId, additionalNodes)
+    })
+    expect(result.current.viewModels[mockId][0].selectedNodes.length).toEqual(4)
+    expect(result.current.viewModels[mockId][0].selectedNodes).toEqual(['node1', 'node2', 'node3', 'node4'])
+  })
+  
+  it('should unselect nodes additively', async () => {
+    const { result } = renderHook(() => useViewModelStore())
+    const unselectNodes = ['node1', 'node2']
+    act(() => {
+      result.current.additiveUnselect(mockId, unselectNodes)
+    })
+    expect(result.current.viewModels[mockId][0].selectedNodes.length).toEqual(2)
+    expect(result.current.viewModels[mockId][0].selectedNodes).toEqual(['node3', 'node4'])
+  })
+  
+  it('should toggle selected nodes', async () => {
+    const { result } = renderHook(() => useViewModelStore())
+    const toggleNodes = ['node3', 'node5']
+    act(() => {
+      result.current.toggleSelected(mockId, toggleNodes)
+    })
+    expect(result.current.viewModels[mockId][0].selectedNodes.length).toEqual(2)
+    expect(result.current.viewModels[mockId][0].selectedNodes).toEqual(['node4', 'node5'])
+  })
+  
+  // Add more tests for other functions in useViewModelStore
 
 })
