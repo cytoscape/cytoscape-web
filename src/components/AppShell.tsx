@@ -62,7 +62,6 @@ const AppShell = (): ReactElement => {
 
   const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
   const errorMessageInStore = useUiStateStore((state) => state.ui.errorMessage)
-  console.log('AppShell rendering: ERR = ', workspace.id)
 
   useEffect(() => {
     if (errorMessageInStore !== undefined && errorMessageInStore !== '') {
@@ -116,7 +115,7 @@ const AppShell = (): ReactElement => {
         targetWorkspaceId === '' ? undefined : targetWorkspaceId,
       ).then((workspace: Workspace) => {
         // Add error message if the new workspace ID is not same as the one in URL
-        if (targetWorkspaceId !== workspace.id) {
+        if (targetWorkspaceId !== workspace.id && targetWorkspaceId !== '') {
           setErrorMessage(
             `An invalid workspace ID was entered (${targetWorkspaceId}). 
             Your workspace has now been initialized with the last cache.`,
