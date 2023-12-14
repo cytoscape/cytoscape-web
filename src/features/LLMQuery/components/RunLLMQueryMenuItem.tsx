@@ -131,6 +131,16 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
       return
     }
 
+    if (geneNames.length === 0) {
+      addMessage({
+        message: `No gene symbols found for the selected subsystem nodes.  Make sure the ${SubsystemTag.members} or ${SubsystemTag.memberNames} column is defined for the selected nodes.`,
+        duration: 8000,
+      })
+      setLoading(false)
+      setLLMResult('')
+      return
+    }
+
     setGeneQuery(serializeValueList(geneNames))
 
     addMessage({

@@ -40,6 +40,16 @@ export const LLMQueryResultPanel = (): ReactElement => {
     setLoading(true)
     setPanelState('left', 'open')
     setActiveNetworkBrowserPanelIndex(2)
+
+    if (localQueryValue === '') {
+      addMessage({
+        message: `Unable to send query to the LLM model.  The query string is empty.`,
+        duration: 8000,
+      })
+      setLLMResult('')
+      setLoading(false)
+      return
+    }
     try {
       addMessage({
         message: `Running LLM query...`,
@@ -65,7 +75,7 @@ export const LLMQueryResultPanel = (): ReactElement => {
     setLoading(false)
   }
 
-  const disabled = loading || LLMApiKey === ''
+  const disabled = loading || LLMApiKey === '' || localQueryValue === ''
 
   const regenerateResponseButton = disabled ? (
     <Tooltip
