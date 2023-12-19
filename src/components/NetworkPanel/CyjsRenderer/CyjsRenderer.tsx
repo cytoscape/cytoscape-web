@@ -27,34 +27,34 @@ interface NetworkRendererProps {
   network: Network
 }
 
-/**
- * Compare network and network view and check both has same ID set for nodes
- * 
- * @param network 
- * @param networkView 
- */
-const validateData = (network: Network, networkView: NetworkView): void => {
-  const { nodeViews, edgeViews } = networkView
-  const nodeIds = Object.keys(nodeViews)
-  const edgeIds = Object.keys(edgeViews)
-  const networkNodeIds = network.nodes.map((n) => n.id)
-  const networkEdgeIds = network.edges.map((e) => e.id)
-  const nodeDiff = nodeIds.filter((n) => !networkNodeIds.includes(n))
-  const edgeDiff = edgeIds.filter((e) => !networkEdgeIds.includes(e))
-  if (nodeDiff.length > 0) {
-    console.warn(
-      'Network view has nodes that are not present in the network: ',
-      nodeDiff,
-    )
-  }
-  if (edgeDiff.length > 0) {
-    console.warn(
-      'Network view has edges that are not present in the network: ',
-      edgeDiff,
-    )
-  }
+// /**
+//  * Compare network and network view and check both has same ID set for nodes
+//  * 
+//  * @param network 
+//  * @param networkView 
+//  */
+// const validateData = (network: Network, networkView: NetworkView): void => {
+//   const { nodeViews, edgeViews } = networkView
+//   const nodeIds = Object.keys(nodeViews)
+//   const edgeIds = Object.keys(edgeViews)
+//   const networkNodeIds = network.nodes.map((n) => n.id)
+//   const networkEdgeIds = network.edges.map((e) => e.id)
+//   const nodeDiff = nodeIds.filter((n) => !networkNodeIds.includes(n))
+//   const edgeDiff = edgeIds.filter((e) => !networkEdgeIds.includes(e))
+//   if (nodeDiff.length > 0) {
+//     console.warn(
+//       'Network view has nodes that are not present in the network: ',
+//       nodeDiff,
+//     )
+//   }
+//   if (edgeDiff.length > 0) {
+//     console.warn(
+//       'Network view has edges that are not present in the network: ',
+//       edgeDiff,
+//     )
+//   }
 
-}
+// }
 
 /**
  *
@@ -106,11 +106,11 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const vs: VisualStyle = visualStyles[id]
 
   // Validate data
-  useEffect(() => {
-    if (networkView !== undefined && network !== undefined) {
-      validateData(network, networkView)
-    }
-  }, [network, networkView])
+  // useEffect(() => {
+  //   if (networkView !== undefined && network !== undefined) {
+  //     validateData(network, networkView)
+  //   }
+  // }, [network, networkView])
 
   const [bgColor, setBgColor] = useState<string>('#FFFFFF')
   useEffect(() => {

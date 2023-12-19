@@ -242,8 +242,15 @@ export const useViewModelStore = create(
             viewList.forEach((networkView: NetworkView) => {
               const nodeView: NodeView = networkView.nodeViews[eleId]
               if (nodeView !== null && nodeView !== undefined) {
-                nodeView.x = position[0]
-                nodeView.y = position[1]
+                const newNodeView = {
+                  ...nodeView,
+                  x: position[0],
+                  y: position[1],
+                }
+                networkView.nodeViews[eleId] = newNodeView
+
+                // nodeView.x = position[0]
+                // nodeView.y = position[1]
               }
             })
             return state
