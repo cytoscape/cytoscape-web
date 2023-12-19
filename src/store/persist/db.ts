@@ -356,7 +356,8 @@ export const clearVisualStyleFromDb = async (): Promise<void> => {
 export const getNetworkViewsFromDb = async (
   id: IdType,
 ): Promise<NetworkView[] | undefined> => {
-  return await db.cyNetworkViews.get({ id })
+  const entry = await db.cyNetworkViews.get({ id })
+  return entry?.views
 }
 
 /**

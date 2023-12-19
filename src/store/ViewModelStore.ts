@@ -88,6 +88,9 @@ export const useViewModelStore = create(
 
         add: (networkId: IdType, networkView: NetworkView) => {
           set((state) => {
+            if(networkView === undefined) {
+              throw new Error('Cannot add view model: networkView is undefined')
+            }
             const viewList: NetworkView[] | undefined =
               state.viewModels[networkId]
             if (viewList !== undefined) {
