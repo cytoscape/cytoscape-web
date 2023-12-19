@@ -129,7 +129,7 @@ export const useViewModelStore = create(
 
             const newViewList: NetworkView[] = []
             viewList.forEach((view: NetworkView) => {
-              const newView = { ...view}
+              const newView = { ...view }
               newView.selectedNodes = selectedNodes
               newView.selectedEdges = selectedEdges
               newViewList.push(newView)
@@ -185,8 +185,8 @@ export const useViewModelStore = create(
             }
 
             viewList.forEach((networkView: NetworkView) => {
-              const selectedNodesSet = new Set()
-              const selectedEdgesSet = new Set()
+              const selectedNodesSet = new Set(networkView.selectedNodes)
+              const selectedEdgesSet = new Set(networkView.selectedEdges)
 
               for (let i = 0; i < eles.length; i++) {
                 const eleId = eles[i]
@@ -197,16 +197,13 @@ export const useViewModelStore = create(
                 }
               }
 
-              networkView.selectedNodes = Array.from(
-                selectedNodesSet,
-              ) as IdType[]
-              networkView.selectedEdges = Array.from(
-                selectedEdgesSet,
-              ) as IdType[]
+              networkView.selectedNodes = Array.from(selectedNodesSet)
+              networkView.selectedEdges = Array.from(selectedEdgesSet)
             })
             return state
           })
         },
+
         // unselect elements without selecting anything else
         additiveUnselect: (networkId: IdType, eles: IdType[]) => {
           set((state) => {
@@ -217,8 +214,8 @@ export const useViewModelStore = create(
             }
 
             viewList.forEach((networkView: NetworkView) => {
-              const selectedNodesSet = new Set()
-              const selectedEdgesSet = new Set()
+              const selectedNodesSet = new Set(networkView.selectedNodes)
+              const selectedEdgesSet = new Set(networkView.selectedEdges)
 
               for (let i = 0; i < eles.length; i++) {
                 const eleId = eles[i]
@@ -228,12 +225,8 @@ export const useViewModelStore = create(
                   selectedNodesSet.delete(eleId)
                 }
               }
-              networkView.selectedNodes = Array.from(
-                selectedNodesSet,
-              ) as IdType[]
-              networkView.selectedEdges = Array.from(
-                selectedEdgesSet,
-              ) as IdType[]
+              networkView.selectedNodes = Array.from(selectedNodesSet)
+              networkView.selectedEdges = Array.from(selectedEdgesSet)
             })
             return state
           })
@@ -304,22 +297,16 @@ export const useViewModelStore = create(
           })
         },
         delete(networkId) {
+          void deleteNetworkViewsFromDb(networkId).then(() => {})
           set((state) => {
             delete state.viewModels[networkId]
-
-            void deleteNetworkViewsFromDb(networkId).then(() => {
-              console.log('Network view deleted from db')
-            })
-
             return state
           })
         },
         deleteAll() {
+          void clearNetworkViewsFromDb().then(() => {})
           set((state) => {
             state.viewModels = {}
-            void clearNetworkViewsFromDb().then(() => {
-              console.log('Cleared views')
-            })
             return state
           })
         },
