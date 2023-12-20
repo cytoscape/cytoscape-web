@@ -10,6 +10,13 @@ import {
   Paper,
   Popover,
   TextField,
+  Dialog,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
+  DialogActions,
+  ButtonGroup,
 } from '@mui/material'
 import { debounce } from 'lodash'
 import { blueGrey } from '@mui/material/colors'
@@ -33,6 +40,13 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 import { removePTags } from '../../utils/remove-p-tags'
 import { useViewModelStore } from '../../store/ViewModelStore'
+import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
+import { PublishedWithChanges, WarningAmberOutlined } from '@mui/icons-material'
+import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
+import { validateHcx } from '../../features/HierarchyViewer/model/impl/hcxValidators'
+import { useTableStore } from '../../store/TableStore'
+import { useMessageStore } from '../../store/MessageStore'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
@@ -50,6 +64,40 @@ export const NetworkPropertyPanel = ({
   const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
     HTMLButtonElement | undefined
   >(undefined)
+
+  const table = useTableStore((state) => state.tables[id])
+  const nodeTable = table?.nodeTable
+
+  const [showValidationResults, setShowValidationResults] =
+    useState<boolean>(false)
+
+  const setValidationResult = useHcxValidatorStore(
+    (state) => state.setValidationResult,
+  )
+  const addMessage = useMessageStore((state) => state.addMessage)
+  const [showValidationSuccess, setShowValidationSuccess] =
+    useState<boolean>(false)
+
+  const revalidateHcx = (): void => {
+    const version =
+      summary.properties.find(
+        (p) => p.predicateString === HcxMetaTag.ndexSchema,
+      )?.value ?? ''
+    const validationRes = validateHcx(version as string, summary, nodeTable)
+
+    if (!validationRes.isValid) {
+      addMessage({
+        message: `This network is not a valid HCX network.  Some features may not work properly.`,
+        duration: 10000,
+      })
+    } else {
+      setShowValidationSuccess(true)
+      setTimeout(() => {
+        setShowValidationSuccess(false)
+      }, 4000)
+    }
+    setValidationResult(id, validationRes)
+  }
 
   const hideEditNetworkSummaryForm = (event: any): void => {
     event.stopPropagation()
@@ -87,6 +135,11 @@ export const NetworkPropertyPanel = ({
       <CircleIcon sx={{ color: theme.palette.error.main, fontSize: 10 }} />
     </Tooltip>
   ) : null
+
+  const validationResults = useHcxValidatorStore(
+    (state) => state.validationResults,
+  )
+  const validationResult = validationResults?.[id]
 
   const editor = useEditor({
     onUpdate: debounce(({ editor }) => {
@@ -130,13 +183,49 @@ export const NetworkPropertyPanel = ({
             {summary.name}
             {networkModifiedIcon}
           </Typography>
-          <Typography
-            variant={'subtitle2'}
-            sx={{ width: '100%', color: theme.palette.text.secondary }}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
           >
-            {`N: ${nodeCount} (${networkViewModel?.selectedNodes.length ?? 0}) /
+            <Typography
+              variant={'subtitle2'}
+              sx={{ width: '100%', color: theme.palette.text.secondary }}
+            >
+              {`N: ${nodeCount} (${
+                networkViewModel?.selectedNodes.length ?? 0
+              }) /
           E: ${edgeCount} (${networkViewModel?.selectedEdges.length ?? 0})`}
-          </Typography>
+            </Typography>
+
+            {validationResult !== undefined && !validationResult.isValid ? (
+              <ButtonGroup size="small" variant="outlined">
+                <Tooltip title="This HCX network is not valid.  Click to learn how you can fix it.">
+                  <IconButton onClick={() => setShowValidationResults(true)}>
+                    <WarningAmberOutlined
+                      sx={{ width: 22, height: 22 }}
+                      color="error"
+                    />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Revalidate HCX network">
+                  <IconButton onClick={() => revalidateHcx()}>
+                    <PublishedWithChanges sx={{ width: 22, height: 22 }} />
+                  </IconButton>
+                </Tooltip>
+              </ButtonGroup>
+            ) : null}
+            {showValidationSuccess ? (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <CheckCircleOutlineIcon color="success" sx={{ mr: 1 }} />
+                <Typography variant="caption">
+                  Network successfully validated
+                </Typography>
+              </Box>
+            ) : null}
+          </Box>
         </Box>
         <Tooltip title="Edit network properties">
           <IconButton
@@ -150,6 +239,31 @@ export const NetworkPropertyPanel = ({
             <EditIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Tooltip>
+        <Dialog open={showValidationResults}>
+          <DialogTitle>Invalid HCX Network</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              {`This network is flagged as a hierarchical network(HCX), but it does not pass all conditions required to be considered valid.  The following problems were found in your HCX network. Please
+              review the HCX specification for version '${
+                validationResult?.version as string
+              }' for more details.`}
+              <ul>
+                {validationResult?.warnings.map((w, i) => (
+                  <li key={i}>
+                    <Typography color="warning" key={i}>
+                      {w}
+                    </Typography>
+                  </li>
+                ))}
+              </ul>
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowValidationResults(false)}>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
         <Popover
           open={editNetworkSummaryAnchorEl !== undefined}
           anchorEl={editNetworkSummaryAnchorEl}

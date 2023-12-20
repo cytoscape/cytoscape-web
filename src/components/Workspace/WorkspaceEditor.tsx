@@ -46,6 +46,10 @@ import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
 import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarcy-util'
+import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
+import { validateHcx } from '../../features/HierarchyViewer/model/impl/hcxValidators'
+import { useMessageStore } from '../../store/MessageStore'
+import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -96,6 +100,10 @@ const WorkSpaceEditor = (): JSX.Element => {
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
+  )
+
+  const setValidationResult = useHcxValidatorStore(
+    (state) => state.setValidationResult,
   )
 
   const viewModels: Record<string, NetworkView> = useViewModelStore(
@@ -167,6 +175,8 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.setIsRunning,
   )
 
+  const addMessage = useMessageStore((state) => state.addMessage)
+
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
   const addNewNetwork = useNetworkStore((state) => state.add)
@@ -205,6 +215,22 @@ const WorkSpaceEditor = (): JSX.Element => {
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
     addViewModel(networkId, networkView)
+
+    if (isHCX(summary)) {
+      const version =
+        summary.properties.find(
+          (p) => p.predicateString === HcxMetaTag.ndexSchema,
+        )?.value ?? ''
+      const validationRes = validateHcx(version as string, summary, nodeTable)
+
+      if (!validationRes.isValid) {
+        addMessage({
+          message: `This network is not a valid HCX network.  Some features may not work properly.`,
+          duration: 8000,
+        })
+      }
+      setValidationResult(networkId, validationRes)
+    }
 
     if (!summary.hasLayout) {
       const layoutEngineName = isHCX(summary)
