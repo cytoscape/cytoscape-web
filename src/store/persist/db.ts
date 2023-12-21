@@ -341,29 +341,93 @@ export const clearVisualStyleFromDb = async (): Promise<void> => {
   })
 }
 
-// Network View
-export const getNetworkViewFromDb = async (
+//
+// Functions for Network Views
+//
+// Now the multiple views are supported
+//
+
+/**
+ * Get all network views for the given network ID
+ * @param id Network ID
+ * @returns NetworkView[] | undefined
+ * 
+ **/
+export const getNetworkViewsFromDb = async (
   id: IdType,
-): Promise<NetworkView | undefined> => {
-  return await db.cyNetworkViews.get({ id })
+): Promise<NetworkView[] | undefined> => {
+  const entry = await db.cyNetworkViews.get({ id })
+  return entry?.views
 }
 
+/**
+ * Add a new network view to the DB
+ * 
+ * @param id Network model ID
+ * @param view Network View to be added
+ */
 export const putNetworkViewToDb = async (
   id: IdType,
   view: NetworkView,
 ): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
-    await db.cyNetworkViews.put({ ...view })
+    const networkViews = await db.cyNetworkViews.get({ id })
+    if (networkViews !== undefined) {
+      const viewList: NetworkView[] = networkViews.views
+      viewList.push(view)
+      await db.cyNetworkViews.put({
+        id,
+        views: viewList,
+      })
+    } else {
+      await db.cyNetworkViews.put({ id, views: [view] })
+    }
+    // await db.cyNetworkViews.put({ ...views })
   })
 }
 
-export const deleteNetworkViewFromDb = async (id: IdType): Promise<void> => {
+/**
+ * 
+ * Update multiple network views to the DB at once
+ * 
+ * @param id Network model ID
+ * @param views Network Views to be updated
+ */
+export const putNetworkViewsToDb = async (
+  id: IdType,
+  views: NetworkView[],
+): Promise<void> => {
+  await db.transaction('rw', db.cyNetworkViews, async () => {
+    await db.cyNetworkViews.put({ id, views })
+  })
+}
+
+/**
+ * Delete a network view from the DB
+ * 
+ * @param id Network model ID
+ * @param viewId Network View ID to be deleted
+ */
+export const deleteNetworkViewFromDb = async (id: IdType, viewId: IdType): Promise<void> => {
+  await db.transaction('rw', db.cyNetworkViews, async () => {
+    // TODO: delete only one view
+    // await db.cyNetworkViews.delete(id)
+  })
+}
+
+/**
+ * Delete all network views from the DB for the given network ID
+ */
+export const deleteNetworkViewsFromDb = async (id: IdType): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
     await db.cyNetworkViews.delete(id)
   })
 }
 
-export const clearNetworkViewFromDb = async (): Promise<void> => {
+/**
+ * Delete all network views from the DB for the given network ID
+ */
+export const clearNetworkViewsFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
     await db.cyNetworkViews.clear()
   })

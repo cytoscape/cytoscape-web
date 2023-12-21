@@ -13,7 +13,7 @@ import { ChevronLeft, ChevronRight } from '@mui/icons-material'
 import { Ui } from '../../../models/UiModel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 import { Panel } from '../../../models/UiModel/Panel'
-import { isHCX } from '../../../features/HierarchyViewer/utils/hierarcy-util'
+import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
 import { LLMQueryResultPanel } from '../../../features/LLMQuery/components'
 import llmLogo from '../../../assets/openai.svg'
 

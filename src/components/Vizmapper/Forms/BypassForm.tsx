@@ -48,10 +48,10 @@ function BypassFormContent(props: {
     visualProperty.defaultValue,
   )
 
-  const viewModels: Record<IdType, NetworkView> = useViewModelStore(
-    (state) => state.viewModels,
+  const getViewModel = useViewModelStore(
+    (state) => state.getViewModel,
   )
-  const networkView: NetworkView = viewModels[currentNetworkId]
+  const networkView: NetworkView | undefined = getViewModel(currentNetworkId)
 
   const setBypass = useVisualStyleStore((state) => state.setBypass)
   const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
@@ -64,7 +64,8 @@ function BypassFormContent(props: {
   const nodeTable = table?.nodeTable
   const edgeTable = table?.edgeTable
 
-  const { selectedNodes, selectedEdges } = networkView
+  const selectedNodes = networkView?.selectedNodes ?? []
+  const selectedEdges = networkView?.selectedEdges ?? []
 
   const validElementsSelected =
     (selectedNodes.length > 0 &&
@@ -74,7 +75,7 @@ function BypassFormContent(props: {
 
   // get union of selected elements and bypass elements
   // put all selected elements first (even if they have a bypass)
-  // render all elements, if they dont have a bypass, leave it empty
+  // render all elements, if they don't have a bypass, leave it empty
   const selectedElements: IdType[] =
     visualProperty.group === VisualPropertyGroup.Node
       ? selectedNodes

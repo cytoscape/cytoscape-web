@@ -60,7 +60,7 @@ export const NetworkPropertyPanel = ({
     (state) => state.workspace.currentNetworkId,
   )
 
-  const networkViewModel = useViewModelStore((state) => state.viewModels[id])
+  const networkViewModel = useViewModelStore((state) => state.getViewModel(id))
 
   const showEditNetworkSummaryForm = (
     event: React.MouseEvent<HTMLButtonElement>,

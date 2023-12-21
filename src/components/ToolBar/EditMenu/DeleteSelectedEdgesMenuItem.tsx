@@ -17,12 +17,12 @@ export const DeleteSelectedEdgesMenuItem = (
     (state) => state.workspace.currentNetworkId,
   )
 
-  const networkViewModel: NetworkView = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const viewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(currentNetworkId),
   )
 
   const selectedEdges: IdType[] =
-    networkViewModel !== undefined ? networkViewModel.selectedEdges : []
+    viewModel !== undefined ? viewModel.selectedEdges : []
 
   useEffect(() => {
     if (selectedEdges.length > 0) {

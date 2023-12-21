@@ -10,6 +10,7 @@ import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { Network } from '../../../models/NetworkModel'
+import { NetworkView } from '../../../models/ViewModel'
 
 export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
@@ -22,8 +23,8 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
     (state) => state.summaries[currentNetworkId],
   )
 
-  const viewModel = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const viewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -33,6 +34,9 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   ) as Network
 
   const saveNetworkToFile = async (): Promise<void> => {
+    if (viewModel === undefined) {
+      throw new Error('Could not find the current network view model.')
+    }
     const cx = exportNetworkToCx2(
       network,
       visualStyle,

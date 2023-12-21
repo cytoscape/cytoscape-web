@@ -49,7 +49,7 @@ export const ndexQueryFetcher = async (
       cache.nodeTable === undefined ||
       cache.edgeTable === undefined ||
       cache.visualStyle === undefined ||
-      cache.networkView === undefined
+      cache.networkViews === undefined
     ) {
       let result = await fetchFromRemote(
         interactionNetworkId,
@@ -62,7 +62,7 @@ export const ndexQueryFetcher = async (
       let isValidData: boolean = false
       let retryCount: number = 0
       while (!isValidData && retryCount < MAX_RETRY_COUNT) {
-        isValidData = isValidNetworkAndView(result.network, result.networkView)
+        isValidData = isValidNetworkAndViews(result.network, result.networkViews)
         if (isValidData) {
           return result
         } else {
@@ -80,7 +80,7 @@ export const ndexQueryFetcher = async (
       // If we still cannot get valid data, throw an error. This might be an network issue.
       throw new Error('Failed to get CX data from NDEx')
     } else {
-      const isValid = isValidNetworkAndView(cache.network, cache.networkView)
+      const isValid = isValidNetworkAndViews(cache.network, cache.networkViews)
 
       // Cache is corrupted. Fetch from remote
       if (!isValid) {
@@ -94,9 +94,9 @@ export const ndexQueryFetcher = async (
             ndexClient,
           )
           if (
-            isValidNetworkAndView(
+            isValidNetworkAndViews(
               resultFromRemote.network,
-              resultFromRemote.networkView,
+              resultFromRemote.networkViews,
             )
           ) {
             return resultFromRemote
@@ -111,7 +111,7 @@ export const ndexQueryFetcher = async (
           nodeTable: cache.nodeTable,
           edgeTable: cache.edgeTable,
           visualStyle: cache.visualStyle,
-          networkView: cache.networkView,
+          networkViews: cache.networkViews,
         }
       }
     }
@@ -147,42 +147,54 @@ const fetchFromRemote = async (
   }
 }
 
-const isEqual = (set1: Set<any>, set2: Set<any>): boolean => {
-  if (set1.size !== set2.size) {
-    return false
-  }
-  for (const item of set1) {
-    if (!set2.has(item)) {
-      return false
-    }
-  }
-  return true
-}
-
 /**
- * Return true if network and network view are consistent
+ *
+ * Return true if network and all of network views are consistent
  *
  * @param network
  * @param networkView
  * @returns
  */
-const isValidNetworkAndView = (
+const isValidNetworkAndViews = (
   network: Network,
-  networkView: NetworkView,
+  networkViews: NetworkView[],
 ): boolean => {
-  const nodeIdSet: Set<IdType> = new Set(network.nodes.map((node) => node.id))
-  const nodeViewIdSet: Set<IdType> = new Set(Object.keys(networkView.nodeViews))
-  const edgeIdSet: Set<IdType> = new Set(network.edges.map((edge) => edge.id))
-  const edgeViewIdSet: Set<IdType> = new Set(Object.keys(networkView.edgeViews))
-
-  if (!isEqual(nodeIdSet, nodeViewIdSet)) {
-    console.error('Network and network view are not consistent')
+  if(networkViews === undefined || networkViews.length === 0) {
     return false
   }
-  if (!isEqual(edgeIdSet, edgeViewIdSet)) {
-    console.error('Network and network view are not consistent')
-    return false
-  }
+  
+  const nodeIdSet = new Set(network.nodes.map((node) => node.id))
+  const edgeIdSet = new Set(network.edges.map((edge) => edge.id))
+  
+  networkViews.forEach((networkView: NetworkView) => {
+    const {nodeViews, edgeViews} = networkView
+    
+    const nodeViewIdSet = new Set(Object.keys(nodeViews))
+    const edgeViewIdSet = new Set(Object.keys(edgeViews))
 
+    if (!validate(nodeIdSet, nodeViewIdSet, edgeIdSet, edgeViewIdSet)) {
+      return false
+    }
+  })
   return true
+}
+
+const validate = (
+  nodeIdSet: Set<any>,
+  nodeViewIdSet: Set<any>,
+  edgeIdSet: Set<any>,
+  edgeViewIdSet: Set<any>,
+): boolean => {
+  if (
+    nodeIdSet.size !== nodeViewIdSet.size ||
+    edgeIdSet.size !== edgeViewIdSet.size
+  ) {
+    console.warn('Network and network view are not consistent')
+    return false
+  }
+
+  return (
+    [...nodeIdSet].every((id) => nodeViewIdSet.has(id)) &&
+    [...edgeIdSet].every((id) => edgeViewIdSet.has(id))
+  )
 }

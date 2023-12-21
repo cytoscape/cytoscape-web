@@ -11,11 +11,11 @@ import { PanelState } from '../../../models/UiModel/PanelState'
 import { Panel } from '../../../models/UiModel/Panel'
 import { ValueType } from '../../../models/TableModel'
 import { HcxMetaData } from '../model/HcxMetaData'
-import { getHcxProps } from '../utils/hierarcy-util'
+import { getHcxProps } from '../utils/hierarchy-util'
 import _ from 'lodash'
 import {
   deleteNetworkFromDb,
-  deleteNetworkViewFromDb,
+  deleteNetworkViewsFromDb,
   deleteTablesFromDb,
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
@@ -53,7 +53,7 @@ export const useHierarchyViewerManager = (): void => {
 
         if (key.startsWith(parentId)) {
           await deleteNetworkFromDb(key)
-          await deleteNetworkViewFromDb(key)
+          await deleteNetworkViewsFromDb(key)
           await deleteVisualStyleFromDb(key)
           await deleteTablesFromDb(key)
         }

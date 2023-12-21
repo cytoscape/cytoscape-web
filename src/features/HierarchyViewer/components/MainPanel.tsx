@@ -7,7 +7,7 @@ import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { HcxMetaData } from '../model/HcxMetaData'
-import { getHcxProps } from '../utils/hierarcy-util'
+import { getHcxProps } from '../utils/hierarchy-util'
 import {
   NdexNetworkProperty,
   NdexNetworkSummary,
@@ -41,8 +41,8 @@ export const MainPanel = (): JSX.Element => {
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
   // View model is required to extract the selected nodes
-  const networkViewModel: NetworkView = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const networkViewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(currentNetworkId),
   )
 
   // Selected nodes in the hierarchy

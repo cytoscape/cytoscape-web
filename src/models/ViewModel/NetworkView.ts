@@ -16,4 +16,7 @@ export interface NetworkView extends View {
   // Keep the selected objects in the view
   selectedNodes: IdType[]
   selectedEdges: IdType[]
+
+  // Visualization type (e.g., node-link diagram, circle packing, etc.)
+  type?: string
 }

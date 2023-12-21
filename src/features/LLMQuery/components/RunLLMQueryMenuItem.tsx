@@ -14,10 +14,11 @@ import {
   SubsystemTag,
   HcxMetaTag,
 } from '../../HierarchyViewer/model/HcxMetaTag'
-import { isHCX } from '../../HierarchyViewer/utils/hierarcy-util'
+import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { translateMemberIds } from '../api/translateMemberIds'
 import { useLLMQueryStore } from '../store'
+import { NetworkView } from '../../../models/ViewModel'
 
 export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   const activeNetworkId: IdType = useUiStateStore(
@@ -49,10 +50,10 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
       (state) => state.summaries[currentNetworkId]?.properties,
     ) ?? []
 
-  const selectedNodes =
-    useViewModelStore(
-      (state) => state.viewModels[activeNetworkId]?.selectedNodes,
-    ) ?? []
+  const viewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(currentNetworkId),
+  )
+  const selectedNodes = viewModel?.selectedNodes ?? []
 
   const table = useTableStore(
     (state) => state.tables[activeNetworkId]?.nodeTable,
