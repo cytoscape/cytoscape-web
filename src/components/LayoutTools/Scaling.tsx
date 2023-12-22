@@ -111,10 +111,10 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
 
     // Scale relative to the original positions
     const positions = new Map<IdType, [number, number, number?]>()
-    const nodeIds: IdType[] =
-      originalPositions === undefined
-        ? []
-        : ([...originalPositions?.keys()] as IdType[])
+    let nodeIds: IdType[] = []
+    if(originalPositions !== undefined) {
+      nodeIds = [...originalPositions.keys()]
+    }
     if (nodeIds.length === 0) {
       return
     }
