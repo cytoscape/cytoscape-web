@@ -11,11 +11,11 @@ import { PanelState } from '../../../models/UiModel/PanelState'
 import { Panel } from '../../../models/UiModel/Panel'
 import { ValueType } from '../../../models/TableModel'
 import { HcxMetaData } from '../model/HcxMetaData'
-import { getHcxProps } from '../utils/hierarcy-util'
+import { getHcxProps } from '../utils/hierarchy-util'
 import _ from 'lodash'
 import {
   deleteNetworkFromDb,
-  deleteNetworkViewFromDb,
+  deleteNetworkViewsFromDb,
   deleteTablesFromDb,
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
@@ -33,15 +33,27 @@ export const useHierarchyViewerManager = (): void => {
     (state) => state.workspace.networkIds,
   )
 
+  const setActiveNetworkView = useUiStateStore(
+    (state) => state.setActiveNetworkView,
+  )
+  const activeNetworkView = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+
   useEffect(() => {
     const deleteChildren = async (parentId: IdType): Promise<void> => {
       const keys = await getAllNetworkKeys()
 
       for (let i = 0; i < keys.length; i++) {
         const key: IdType = keys[i]
+
+        if (key === activeNetworkView) {
+          setActiveNetworkView('')
+        }
+
         if (key.startsWith(parentId)) {
           await deleteNetworkFromDb(key)
-          await deleteNetworkViewFromDb(key)
+          await deleteNetworkViewsFromDb(key)
           await deleteVisualStyleFromDb(key)
           await deleteTablesFromDb(key)
         }
@@ -61,6 +73,7 @@ export const useHierarchyViewerManager = (): void => {
     }
 
     const removed = diff[0]
+
     void deleteChildren(removed).catch((error) => {
       console.error('## Error deleting interaction networks:', error)
     })

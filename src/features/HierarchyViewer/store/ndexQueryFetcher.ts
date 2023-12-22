@@ -6,6 +6,11 @@ import {
 } from '../../../utils/cx-utils'
 import { CachedData } from '../../../utils/CachedData'
 import { getNdexClient } from '../../../utils/fetchers'
+import { NetworkView } from '../../../models/ViewModel'
+import { Network } from '../../../models/NetworkModel'
+import { IdType } from '../../../models/IdType'
+
+const MAX_RETRY_COUNT: number = 5
 
 export const ndexQueryFetcher = async (
   params: string[],
@@ -37,7 +42,6 @@ export const ndexQueryFetcher = async (
   try {
     // First, check the local cache
     const cache: CachedData = await getCachedData(interactionNetworkId)
-    // const cache: CachedData = await getCachedData(subsystemId)
 
     // This is necessary only when data is not in the cache
     if (
@@ -45,39 +49,152 @@ export const ndexQueryFetcher = async (
       cache.nodeTable === undefined ||
       cache.edgeTable === undefined ||
       cache.visualStyle === undefined ||
-      cache.networkView === undefined
+      cache.networkViews === undefined
     ) {
-      // Case 1: Simply fetch network if UUID is provided as node attribute
-      if (
-        interactionNetworkUuid !== undefined &&
-        interactionNetworkUuid !== ''
-      ) {
-        const cx2Network: Cx2 = await ndexClient.getCX2Network(
-          interactionNetworkUuid,
-        )
-        return await createDataFromCx(interactionNetworkId, cx2Network)
-      } else {
-        // Case 2: Just run the interconnect query if UUID is not provided
-        const cx2QueryResult: Cx2 = await ndexClient.interConnectQuery(
-          rootNetworkUuid,
-          null,
-          false,
-          query,
-          true,
-        )
-        return await createDataFromCx(interactionNetworkId, cx2QueryResult)
+      let result = await fetchFromRemote(
+        interactionNetworkId,
+        interactionNetworkUuid,
+        rootNetworkUuid,
+        query,
+        ndexClient,
+      )
+
+      let isValidData: boolean = false
+      let retryCount: number = 0
+      while (!isValidData && retryCount < MAX_RETRY_COUNT) {
+        isValidData = isValidNetworkAndViews(result.network, result.networkViews)
+        if (isValidData) {
+          return result
+        } else {
+          result = await fetchFromRemote(
+            interactionNetworkId,
+            interactionNetworkUuid,
+            rootNetworkUuid,
+            query,
+            ndexClient,
+          )
+        }
+        retryCount++
       }
+
+      // If we still cannot get valid data, throw an error. This might be an network issue.
+      throw new Error('Failed to get CX data from NDEx')
     } else {
-      return {
-        network: cache.network,
-        nodeTable: cache.nodeTable,
-        edgeTable: cache.edgeTable,
-        visualStyle: cache.visualStyle,
-        networkView: cache.networkView,
+      const isValid = isValidNetworkAndViews(cache.network, cache.networkViews)
+
+      // Cache is corrupted. Fetch from remote
+      if (!isValid) {
+        let retryCount: number = 0
+        while (retryCount < MAX_RETRY_COUNT) {
+          const resultFromRemote = await fetchFromRemote(
+            interactionNetworkId,
+            interactionNetworkUuid,
+            rootNetworkUuid,
+            query,
+            ndexClient,
+          )
+          if (
+            isValidNetworkAndViews(
+              resultFromRemote.network,
+              resultFromRemote.networkViews,
+            )
+          ) {
+            return resultFromRemote
+          }
+          retryCount++
+        }
+        // If we still cannot get valid data, throw an error. This might be an network issue.
+        throw new Error('Failed to get CX data from NDEx')
+      } else {
+        return {
+          network: cache.network,
+          nodeTable: cache.nodeTable,
+          edgeTable: cache.edgeTable,
+          visualStyle: cache.visualStyle,
+          networkViews: cache.networkViews,
+        }
       }
     }
   } catch (error) {
     console.error('Failed to get network', error)
     throw error
   }
+}
+
+const fetchFromRemote = async (
+  interactionNetworkId: IdType,
+  interactionNetworkUuid: IdType,
+  rootNetworkUuid: IdType,
+  query: string,
+  ndexClient: any,
+): Promise<NetworkWithView> => {
+  // Case 1: Simply fetch network if UUID is provided as node attribute
+  if (interactionNetworkUuid !== undefined && interactionNetworkUuid !== '') {
+    const cx2Network: Cx2 = await ndexClient.getCX2Network(
+      interactionNetworkUuid,
+    )
+    return await createDataFromCx(interactionNetworkId, cx2Network)
+  } else {
+    // Case 2: Just run the interconnect query if UUID is not provided
+    const cx2QueryResult: Cx2 = await ndexClient.interConnectQuery(
+      rootNetworkUuid,
+      null,
+      false,
+      query,
+      true,
+    )
+    return await createDataFromCx(interactionNetworkId, cx2QueryResult)
+  }
+}
+
+/**
+ *
+ * Return true if network and all of network views are consistent
+ *
+ * @param network
+ * @param networkView
+ * @returns
+ */
+const isValidNetworkAndViews = (
+  network: Network,
+  networkViews: NetworkView[],
+): boolean => {
+  if(networkViews === undefined || networkViews.length === 0) {
+    return false
+  }
+  
+  const nodeIdSet = new Set(network.nodes.map((node) => node.id))
+  const edgeIdSet = new Set(network.edges.map((edge) => edge.id))
+  
+  networkViews.forEach((networkView: NetworkView) => {
+    const {nodeViews, edgeViews} = networkView
+    
+    const nodeViewIdSet = new Set(Object.keys(nodeViews))
+    const edgeViewIdSet = new Set(Object.keys(edgeViews))
+
+    if (!validate(nodeIdSet, nodeViewIdSet, edgeIdSet, edgeViewIdSet)) {
+      return false
+    }
+  })
+  return true
+}
+
+const validate = (
+  nodeIdSet: Set<any>,
+  nodeViewIdSet: Set<any>,
+  edgeIdSet: Set<any>,
+  edgeViewIdSet: Set<any>,
+): boolean => {
+  if (
+    nodeIdSet.size !== nodeViewIdSet.size ||
+    edgeIdSet.size !== edgeViewIdSet.size
+  ) {
+    console.warn('Network and network view are not consistent')
+    return false
+  }
+
+  return (
+    [...nodeIdSet].every((id) => nodeViewIdSet.has(id)) &&
+    [...edgeIdSet].every((id) => edgeViewIdSet.has(id))
+  )
 }

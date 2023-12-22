@@ -6,6 +6,7 @@ export const SubsystemTag = {
 
   // ID list of the subsystem members
   members: `${hcxPrefix}members`,
+  memberNames: `${hcxPrefix}memberNames`,
 
   // Human readable names of the subsystem members
   memberName: `${hcxPrefix}memberName`,

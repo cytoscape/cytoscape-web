@@ -8,5 +8,5 @@ export interface CachedData {
   nodeTable?: Table
   edgeTable?: Table
   visualStyle?: VisualStyle
-  networkView?: NetworkView
+  networkViews?: NetworkView[]
 }

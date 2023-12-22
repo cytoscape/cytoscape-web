@@ -18,6 +18,7 @@ import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../..'
+import { NetworkView } from '../../../models/ViewModel'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
@@ -36,8 +37,8 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.summaries[currentNetworkId],
   )
 
-  const viewModel = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const viewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -58,6 +59,10 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.setCurrentNetworkId,
   )
   const saveCopyToNDEx = async (): Promise<void> => {
+    if (viewModel === undefined) {
+      throw new Error('Could not find the current network view model.')
+    }
+    
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)

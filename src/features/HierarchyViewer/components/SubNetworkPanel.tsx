@@ -23,6 +23,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
+import { useCredentialStore } from '../../../store/CredentialStore'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -89,14 +90,20 @@ export const SubNetworkPanel = ({
   const ui = useUiStateStore((state) => state.ui)
   const { activeNetworkView } = ui
 
-  const viewModels: Record<string, NetworkView> = useViewModelStore(
-    (state) => state.viewModels,
-  )
+  const getViewModel: (id: IdType) => NetworkView | undefined = useViewModelStore((state) => state.getViewModel)
+
   const vs: Record<string, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
   )
 
   const prevQueryNetworkIdRef = useRef<string>()
+
+  const getToken = useCredentialStore((state) => state.getToken)
+
+  const fetcher = async (args: string[]): Promise<any> => {
+    const token = await getToken()
+    return await ndexQueryFetcher([...args, token])
+  }
 
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const { data, error, isLoading } = useSWR<NetworkWithView>(
@@ -108,7 +115,7 @@ export const SubNetworkPanel = ({
       query,
       interactionNetworkId,
     ],
-    ndexQueryFetcher,
+    fetcher,
     {
       revalidateOnFocus: false,
     },
@@ -127,28 +134,29 @@ export const SubNetworkPanel = ({
   const queryNetwork: Network | undefined = networks.get(queryNetworkId)
 
   const handleClick = (e: any): void => {
-    if (queryNetworkId !== undefined) {
-      setActiveNetworkView(queryNetworkId)
-    }
+    setActiveNetworkView(queryNetworkId)
   }
 
   useEffect(() => {
-    const viewModel: NetworkView | undefined = viewModels[queryNetworkId]
+    const viewModel: NetworkView | undefined = getViewModel(queryNetworkId)
     if (viewModel === undefined) {
       return
     }
     void saveLastQueryNetworkId(queryNetworkId).then(() => {
       prevQueryNetworkIdRef.current = queryNetworkId
     })
-  }, [viewModels[queryNetworkId]])
+  }, [queryNetworkId])
+  // }, [viewModels[queryNetworkId]])
 
   const saveLastQueryNetworkId = async (id: string): Promise<void> => {
     // const network: Network | undefined = networks.get(id)
     const visualStyle: VisualStyle | undefined = vs[id]
     await putVisualStyleToDb(id, visualStyle)
 
-    const viewModel: NetworkView | undefined = viewModels[id]
-    await putNetworkViewToDb(id, viewModel)
+    const viewModel: NetworkView | undefined = getViewModel(id)
+    if(viewModel !== undefined) {
+      await putNetworkViewToDb(id, viewModel)
+    }
   }
 
   useEffect(() => {
@@ -165,24 +173,27 @@ export const SubNetworkPanel = ({
     if (data === undefined) {
       return ''
     }
-    const { network, visualStyle, nodeTable, edgeTable, networkView } = data
+    const { network, visualStyle, nodeTable, edgeTable, networkViews } = data
     const newUuid: string = network.id.toString()
-    
 
     // Add parent network's style to the shared style store
-    if (vs[rootNetworkId] === undefined) {
+    if (vs[rootNetworkId] === undefined && visualStyle !== undefined) {
       // Register the original style to DB
       addVisualStyle(rootNetworkId, visualStyle)
       addVisualStyle(newUuid, visualStyle)
-    } else {
+    } else if (visualStyle === undefined) {
       addVisualStyle(newUuid, vs[rootNetworkId])
+    } else {
+      // Just use the given style as-is
+      addVisualStyle(newUuid, visualStyle)
     }
+
     // Register objects to the stores.
     if (networks.get(newUuid) === undefined) {
       // Register new networks to the store if not cached
       addNewNetwork(network)
       addTable(newUuid, nodeTable, edgeTable)
-      addViewModel(newUuid, networkView)
+      addViewModel(newUuid, networkViews[0])
 
       if (interactionNetworkId === undefined || interactionNetworkId === '') {
         // Apply default layout for the first time
@@ -204,17 +215,17 @@ export const SubNetworkPanel = ({
   }
 
   useEffect(() => {
-    if(data === undefined ) {
+    if (data === undefined) {
       return
     }
 
     const { network } = data
     const newUuid: string = network.id.toString()
 
-    if(queryNetworkId === newUuid) {
+    if (queryNetworkId === newUuid) {
       return
     }
-    
+
     updateNetworkView()
   }, [data])
 

@@ -27,9 +27,37 @@ interface NetworkRendererProps {
   network: Network
 }
 
+// /**
+//  * Compare network and network view and check both has same ID set for nodes
+//  * 
+//  * @param network 
+//  * @param networkView 
+//  */
+// const validateData = (network: Network, networkView: NetworkView): void => {
+//   const { nodeViews, edgeViews } = networkView
+//   const nodeIds = Object.keys(nodeViews)
+//   const edgeIds = Object.keys(edgeViews)
+//   const networkNodeIds = network.nodes.map((n) => n.id)
+//   const networkEdgeIds = network.edges.map((e) => e.id)
+//   const nodeDiff = nodeIds.filter((n) => !networkNodeIds.includes(n))
+//   const edgeDiff = edgeIds.filter((e) => !networkEdgeIds.includes(e))
+//   if (nodeDiff.length > 0) {
+//     console.warn(
+//       'Network view has nodes that are not present in the network: ',
+//       nodeDiff,
+//     )
+//   }
+//   if (edgeDiff.length > 0) {
+//     console.warn(
+//       'Network view has edges that are not present in the network: ',
+//       edgeDiff,
+//     )
+//   }
+
+// }
+
 /**
  *
- * @param param0
  * @returns
  */
 const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
@@ -40,6 +68,12 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
+  const activeNetworkIdRef = useRef(activeNetworkId)
+
+  useEffect(() => {
+    activeNetworkIdRef.current = activeNetworkId
+  }, [activeNetworkId])
+
 
   let isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
@@ -48,7 +82,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
 
   const tables = useTableStore((state) => state.tables)
-  const viewModels = useViewModelStore((state) => state.viewModels)
+  const getViewModel: (id: IdType) => NetworkView | undefined = useViewModelStore((state) => state.getViewModel)
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
 
@@ -68,8 +102,15 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   // TO avoid unnecessary re-rendering / fit
   const [nodesMoved, setNodesMoved] = useState<boolean>(false)
 
-  const networkView: NetworkView = viewModels[id]
+  const networkView: NetworkView | undefined = getViewModel(id)
   const vs: VisualStyle = visualStyles[id]
+
+  // Validate data
+  // useEffect(() => {
+  //   if (networkView !== undefined && network !== undefined) {
+  //     validateData(network, networkView)
+  //   }
+  // }, [network, networkView])
 
   const [bgColor, setBgColor] = useState<string>('#FFFFFF')
   useEffect(() => {
@@ -79,6 +120,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       setBgColor('#FFFFFF')
     }
   }, [vs, isRunning])
+
 
   const table = tables[id]
 
@@ -114,6 +156,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         edgeTable: table.edgeTable,
         visualStyle: vs,
       }
+      
       const updatedNetworkView: NetworkView =
         VisualStyleFn.applyVisualStyle(data)
 
@@ -125,7 +168,9 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       setCyStyle(newStyle)
 
       // Restore selection state in Cyjs instance
-      const { selectedNodes, selectedEdges } = networkView
+      const selectedNodes = networkView?.selectedNodes ?? []
+      const selectedEdges = networkView?.selectedEdges ?? []
+
       cy.nodes()
         .filter((ele: SingularElementArgument) => {
           return selectedNodes.includes(ele.data('id'))
@@ -161,11 +206,28 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
       // single selection listener
       cy.on('tap', (e: EventObject) => {
-        // check for background click
-        // on background click deselect all
+
+        // Check for background click
+
+        // This is necessary to access the latest value from closure
+        const activeId: string = activeNetworkIdRef.current
+        
+        if (
+          activeId !== undefined &&
+          activeId !== '' &&
+          id !== '' &&
+          id !== activeId
+        ) {
+          if (cy.autounselectify() === false) {
+            cy.autounselectify(true)
+          }
+          return
+        }
+
         if (e.target === cy) {
           exclusiveSelect(id, [], [])
         }
+        cy.autounselectify(false)
       })
 
       // Moving nodes
@@ -198,7 +260,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         isViewCreated.current = true
       }, 1000)
     },
-    [network, cy],
+    [network, cy, activeNetworkId],
   )
 
   const applyStyleUpdate = (): void => {
@@ -278,7 +340,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
   // Apply layout when node positions are changed
   useEffect(() => {
-    if (viewModels[id] === undefined || cy === null) {
+    const viewModel = getViewModel(id)
+    if (viewModel === undefined || cy === null) {
       return
     }
 
@@ -289,8 +352,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     }
 
     // Update position
-    const curView = viewModels[id]
-    const nodeViews = curView.nodeViews
+    const { nodeViews } = viewModel
     const viewCount = Object.keys(nodeViews).length
     const cyNodeCount = cy.nodes().length
     cy.nodes().forEach((cyNode: NodeSingular) => {
@@ -311,13 +373,13 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   }, [networkView?.nodeViews])
 
   useEffect(() => {
-    if (viewModels[id] === undefined || cy === null) {
+    const viewModel = getViewModel(id)
+    if (viewModel === undefined || cy === null) {
       return
     }
 
     // Edge deletion
-    const curView = viewModels[id]
-    const edgeViews = curView.edgeViews
+    const { edgeViews } = viewModel
     cy.edges().forEach((cyEdge: EdgeSingular) => {
       const cyEdgeId = cyEdge.data('id')
       if (edgeViews[cyEdgeId] === undefined) {

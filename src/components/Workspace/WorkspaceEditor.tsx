@@ -45,7 +45,7 @@ import { Panel } from '../../models/UiModel/Panel'
 import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
 import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
-import { isHCX } from '../../features/HierarchyViewer/utils/hierarcy-util'
+import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -98,10 +98,10 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.setCurrentNetworkId,
   )
 
-  const viewModels: Record<string, NetworkView> = useViewModelStore(
+  const allViewModels: Record<string, NetworkView[]> = useViewModelStore(
     (state) => state.viewModels,
   )
-  const currentNetworkView: NetworkView = viewModels[currentNetworkId]
+  const currentNetworkView: NetworkView | undefined = allViewModels[currentNetworkId]?.[0]
 
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
@@ -109,7 +109,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   // listen to view model changes
   // assume that if the view model change, the network has been modified and set the networkModified flag to true
   useViewModelStore.subscribe(
-    (state) => state.viewModels[currentNetworkId],
+    (state) => state.getViewModel(currentNetworkId),
     (prev: NetworkView, next: NetworkView) => {
       if (prev === undefined || next === undefined) {
         return
@@ -123,7 +123,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           _.omit(next, ['selectedNodes', 'selectedEdges']),
         )
 
-      // primitve compare fn that does not take into account the selection/hover state
+      // primitive compare fn that does not take into account the selection/hover state
       // this leads to the network having a 'modified' state even though nothing was modified
       const { networkModified } = workspace
       const currentNetworkIsNotModified =
@@ -199,12 +199,13 @@ const WorkSpaceEditor = (): JSX.Element => {
     )
     const summary = summaryMap[networkId]
     const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
-    const { network, nodeTable, edgeTable, visualStyle, networkView } = res
+    const { network, nodeTable, edgeTable, visualStyle, networkViews } = res
 
     addNewNetwork(network)
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
-    addViewModel(networkId, networkView)
+    addViewModel(networkId, networkViews[0])
+    // addViewModel(networkId, networkViews !== undefined ? networkViews : [])
 
     if (!summary.hasLayout) {
       const layoutEngineName = isHCX(summary)
