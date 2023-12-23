@@ -1,15 +1,16 @@
-import { Box } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
-import { FloatingToolBar } from '../FloatingToolBar/FloatingToolBar'
 import { MessagePanel } from '../Messages'
 import { CyjsRenderer } from './CyjsRenderer'
-// import { PopupPanel } from '../PopupPanel'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
+import { useViewModelStore } from '../../store/ViewModelStore'
+import { NetworkView } from '../../models/ViewModel'
+import { NetworkTab } from './NetworkTab'
+import { NetworkTabs } from './NetworkTabs'
 
 interface NetworkPanelProps {
   networkId: IdType
@@ -23,6 +24,8 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
 
   const ui = useUiStateStore((state) => state.ui)
   const { activeNetworkView, enablePopup } = ui
+
+
 
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
@@ -44,6 +47,10 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
     (state) => state.networks,
   )
 
+  const networkViews: Record<string, NetworkView[]> = useViewModelStore(
+    (state) => state.viewModels
+  )
+
   if (networks.size === 0) {
     return <MessagePanel message="No network selected" />
   }
@@ -58,29 +65,25 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
     return <MessagePanel message="Loading network data..." />
   }
 
+  const targetId = targetNetwork.id
+  // Check network has multiple views or single
+  const views: NetworkView[] = networkViews[targetId]
   const vs: VisualStyle = visualStyles[targetNetwork.id]
 
-  const handleClick = (e: any): void => {
+  const handleClick = (): void => {
     setActiveNetworkView(targetNetwork.id)
   }
 
   const bgColor = vs?.networkBackgroundColor?.defaultValue as string
   const renderer: JSX.Element = <CyjsRenderer network={targetNetwork} />
-  return (
-    <Box
-      sx={{
-        boxSizing: 'border-box',
-        height: '100%',
-        width: '100%',
-        backgroundColor: bgColor !== undefined ? bgColor : '#FFFFFF',
-        border: isActive ? '3px solid orange' : '3px solid transparent',
-      }}
-      onClick={handleClick}
-    >
-      {renderer}
-      <FloatingToolBar />
-    </Box>
-  )
+
+  // Show tabs only when multiple views are available
+  if(views.length === 1) {
+    return <NetworkTab renderer={renderer} bgColor={bgColor} isActive={isActive} handleClick={handleClick} />
+  } else {
+    return (<NetworkTabs />)
+  }
+  
 }
 
 export default NetworkPanel
