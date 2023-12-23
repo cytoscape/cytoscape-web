@@ -351,7 +351,7 @@ export const clearVisualStyleFromDb = async (): Promise<void> => {
  * Get all network views for the given network ID
  * @param id Network ID
  * @returns NetworkView[] | undefined
- * 
+ *
  **/
 export const getNetworkViewsFromDb = async (
   id: IdType,
@@ -362,7 +362,7 @@ export const getNetworkViewsFromDb = async (
 
 /**
  * Add a new network view to the DB
- * 
+ *
  * @param id Network model ID
  * @param view Network View to be added
  */
@@ -371,10 +371,31 @@ export const putNetworkViewToDb = async (
   view: NetworkView,
 ): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
+    if(view === undefined) {
+      console.warn('Network View model is undefined')
+      return
+    }
+
     const networkViews = await db.cyNetworkViews.get({ id })
     if (networkViews !== undefined) {
       const viewList: NetworkView[] = networkViews.views
-      viewList.push(view)
+      // Add only if the view does not exist
+      // const found = viewList.find((v) => v.id + '-' + v.type === view.id + '-' + view.type)
+
+      let found = false
+      viewList.forEach((v: NetworkView, idx: number) => {
+        const type1: string = v.type ?? 'default'
+        const type2: string = view.type ?? 'default'
+        const key1 = v.id + '-' + type1
+        const key2 = view.id + '-' + type2
+        if (key1 === key2) {
+          viewList[idx] = view
+          found = true
+        }
+      })
+      if (!found) {
+        viewList.push(view)
+      }
       await db.cyNetworkViews.put({
         id,
         views: viewList,
@@ -382,14 +403,13 @@ export const putNetworkViewToDb = async (
     } else {
       await db.cyNetworkViews.put({ id, views: [view] })
     }
-    // await db.cyNetworkViews.put({ ...views })
   })
 }
 
 /**
- * 
+ *
  * Update multiple network views to the DB at once
- * 
+ *
  * @param id Network model ID
  * @param views Network Views to be updated
  */
@@ -404,11 +424,14 @@ export const putNetworkViewsToDb = async (
 
 /**
  * Delete a network view from the DB
- * 
+ *
  * @param id Network model ID
  * @param viewId Network View ID to be deleted
  */
-export const deleteNetworkViewFromDb = async (id: IdType, viewId: IdType): Promise<void> => {
+export const deleteNetworkViewFromDb = async (
+  id: IdType,
+  viewId: IdType,
+): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
     // TODO: delete only one view
     // await db.cyNetworkViews.delete(id)
