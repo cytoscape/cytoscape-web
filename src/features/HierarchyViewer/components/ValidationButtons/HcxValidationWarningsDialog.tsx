@@ -25,7 +25,7 @@ export const HcxValidationWarningsDialog = (
       <DialogTitle>Invalid HCX Network</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          {`This network is marked as an hierarchical network (HCX), and doesn't fully meet the HCX specification, hierarchical viewer functionality may be affected.`}
+          {`This network is marked as an hierarchical network (HCX), but it does not fully meet the HCX specification. Some Hierarchical viewer features may not work.`}
         </DialogContentText>
         <DialogContentText>
           {`Review HCX specification version '${
