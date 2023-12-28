@@ -28,6 +28,7 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { IdType } from '../../../models/IdType'
 import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../..'
+import { HcxValidationButtonGroup } from '../../../features/HierarchyViewer/components/ValidationButtons/HcxValidationErrorButtonGroup'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -174,12 +175,22 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const menuItem = (
-    <MenuItem
-      disabled={!authenticated}
-      onClick={handleSaveCurrentNetworkToNDEx}
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}
     >
-      Save to NDEx (overwrite)
-    </MenuItem>
+      <MenuItem
+        sx={{ flexBasis: '100%', flexGrow: 3 }}
+        disabled={!authenticated}
+        onClick={handleSaveCurrentNetworkToNDEx}
+      >
+        Save to NDEx (overwrite)
+      </MenuItem>
+      <HcxValidationButtonGroup id={currentNetworkId} />
+    </Box>
   )
 
   const dialog = (

@@ -18,6 +18,7 @@ import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../..'
+import { HcxValidationButtonGroup } from '../../../features/HierarchyViewer/components/ValidationButtons/HcxValidationErrorButtonGroup'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
@@ -100,12 +101,22 @@ export const CopyNetworkToNDExMenuItem = (
   }
 
   const menuItem = (
-    <MenuItem
-      disabled={!authenticated}
-      onClick={handleSaveCurrentNetworkToNDEx}
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}
     >
-      Save Copy to NDEx
-    </MenuItem>
+      <MenuItem
+        sx={{ flexBasis: '100%', flexGrow: 3 }}
+        disabled={!authenticated}
+        onClick={handleSaveCurrentNetworkToNDEx}
+      >
+        Save Copy to NDEx
+      </MenuItem>
+      <HcxValidationButtonGroup id={currentNetworkId} />
+    </Box>
   )
 
   if (authenticated) {

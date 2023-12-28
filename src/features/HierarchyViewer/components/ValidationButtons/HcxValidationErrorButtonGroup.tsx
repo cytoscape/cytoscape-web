@@ -3,13 +3,7 @@ import { useHcxValidatorStore } from '../../store/HcxValidatorStore'
 import { IdType } from '../../../../models/IdType'
 import {
   Box,
-  Button,
   ButtonGroup,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   IconButton,
   Tooltip,
   Typography,
@@ -22,6 +16,7 @@ import { HcxMetaTag } from '../../model/HcxMetaTag'
 import { validateHcx } from '../../model/impl/hcxValidators'
 import { useTableStore } from '../../../../store/TableStore'
 import { useMessageStore } from '../../../../store/MessageStore'
+import { HcxValidationWarningsDialog } from './HcxValidationWarningsDialog'
 
 export interface HcxValidationButtonGroupProps {
   id: IdType
@@ -73,10 +68,6 @@ export const HcxValidationButtonGroup = (
     return <Box></Box>
   }
 
-  if (validationResult.isValid) {
-    return <Box></Box>
-  }
-
   return (
     <Box>
       {showValidationSuccess ? (
@@ -104,29 +95,11 @@ export const HcxValidationButtonGroup = (
           </Tooltip>
         </ButtonGroup>
       ) : null}
-      <Dialog open={showValidationResults}>
-        <DialogTitle>Invalid HCX Network</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {`This network is flagged as a hierarchical network(HCX), but it does not pass all conditions required to be considered valid.  The following problems were found in your HCX network. Please
-              review the HCX specification for version '${
-                validationResult?.version as string
-              }' for more details.`}
-            <ul>
-              {validationResult?.warnings.map((w, i) => (
-                <li key={i}>
-                  <Typography color="warning" key={i}>
-                    {w}
-                  </Typography>
-                </li>
-              ))}
-            </ul>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowValidationResults(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+      <HcxValidationWarningsDialog
+        open={showValidationResults}
+        onClose={() => setShowValidationResults(false)}
+        validationResult={validationResult}
+      />
     </Box>
   )
 }
