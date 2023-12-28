@@ -9,13 +9,13 @@ enableMapSet()
 describe('useViewModelStore', () => {
   let mockNetworkView: NetworkView
   let mockNetworkView2: NetworkView
+  let mockNetworkView3: NetworkView
   let networkModelId: IdType
 
   beforeEach(() => {
-    networkModelId = 'networkModelId'
+    networkModelId = 'networkModelId1'
     mockNetworkView = {
       id: networkModelId,
-      type: `${networkModelId}-nodeLink`,
       values: new Map(),
       nodeViews: {
         node1: { id: 'node1', x: 0, y: 0, values: new Map() },
@@ -45,7 +45,7 @@ describe('useViewModelStore', () => {
 
     mockNetworkView2 = {
       id: networkModelId,
-      type: `${networkModelId}-circlePacking`,
+      type: 'circlePacking',
       values: new Map(),
       nodeViews: {
         node6: { id: 'node6', x: 500, y: 501, values: new Map() },
@@ -53,6 +53,23 @@ describe('useViewModelStore', () => {
         node8: { id: 'node8', x: 700, y: 701, values: new Map() },
         node9: { id: 'node9', x: 800, y: 801, values: new Map() },
         node10: { id: 'node10', x: 900, y: 901, values: new Map() },
+      },
+      edgeViews: {
+        edge3: { id: 'edge3', values: new Map() },
+        edge4: { id: 'edge4', values: new Map() },
+      },
+      selectedNodes: [],
+      selectedEdges: [],
+    }
+    
+    mockNetworkView3 = {
+      id: networkModelId,
+      type: 'nodeLink',
+      values: new Map(),
+      nodeViews: {
+        node6: { id: 'node6', x: 500, y: 501, values: new Map() },
+        node7: { id: 'node7', x: 600, y: 601, values: new Map() },
+        node8: { id: 'node8', x: 700, y: 701, values: new Map() },
       },
       edgeViews: {
         edge3: { id: 'edge3', values: new Map() },
@@ -88,17 +105,24 @@ describe('useViewModelStore', () => {
     act(() => {
       result.current.add(networkModelId, mockNetworkView)
       result.current.add(networkModelId, mockNetworkView2)
+      result.current.add(networkModelId, mockNetworkView3)
       primaryView = result.current.getViewModel(networkModelId)
     })
 
     const viewList: NetworkView[] = result.current.viewModels[networkModelId]
-    expect(viewList.length).toEqual(2)
+    expect(viewList.length).toEqual(3)
     const firstView = viewList[0]
     expect(firstView).toEqual(primaryView)
     expect(primaryView).toEqual(mockNetworkView)
+    expect(primaryView?.viewId).toEqual(`${networkModelId}-nodeLink-1`)
 
     const secondView = viewList[1]
     expect(secondView).toEqual(mockNetworkView2)
+    expect(secondView?.viewId).toEqual(`${networkModelId}-circlePacking-1`)
+    
+    const lastView = viewList[2]
+    expect(lastView).toEqual(mockNetworkView3)
+    expect(lastView?.viewId).toEqual(`${networkModelId}-nodeLink-2`)
   })
 
   it('should update selected nodes and edges', async () => {

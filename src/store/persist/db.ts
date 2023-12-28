@@ -380,14 +380,11 @@ export const putNetworkViewToDb = async (
     if (networkViews !== undefined) {
       const viewList: NetworkView[] = networkViews.views
       // Add only if the view does not exist
-      // const found = viewList.find((v) => v.id + '-' + v.type === view.id + '-' + view.type)
 
       let found = false
       viewList.forEach((v: NetworkView, idx: number) => {
-        const type1: string = v.type ?? 'default'
-        const type2: string = view.type ?? 'default'
-        const key1 = v.id + '-' + type1
-        const key2 = view.id + '-' + type2
+        const key1 = v.viewId
+        const key2 = view.viewId
         if (key1 === key2) {
           viewList[idx] = view
           found = true
