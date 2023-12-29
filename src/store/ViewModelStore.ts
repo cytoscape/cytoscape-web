@@ -21,7 +21,7 @@ const DEF_VIEW_TYPE = 'nodeLink'
  * @param views
  * @returns
  */
-const getNetworkViewId = (
+export const getNetworkViewId = (
   newView: NetworkView,
   views: NetworkView[],
 ): IdType => {

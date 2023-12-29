@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { NetworkView } from '../../models/ViewModel'
 import { Ui } from '../../models/UiModel'
 import { applyMigrations } from './migrations'
+import { getNetworkViewId } from '../ViewModelStore'
 
 const DB_NAME = 'cyweb-db'
 
@@ -391,6 +392,9 @@ export const putNetworkViewToDb = async (
         }
       })
       if (!found) {
+        if(view.viewId === undefined) {
+          view.viewId = getNetworkViewId(view, viewList)
+        }
         viewList.push(view)
       }
       await db.cyNetworkViews.put({
@@ -398,6 +402,10 @@ export const putNetworkViewToDb = async (
         views: viewList,
       })
     } else {
+      if(view.viewId === undefined) {
+        // Add ID if not given
+        view.viewId = getNetworkViewId(view, [])
+      }
       await db.cyNetworkViews.put({ id, views: [view] })
     }
   })
