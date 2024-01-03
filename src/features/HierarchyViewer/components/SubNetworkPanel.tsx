@@ -120,6 +120,9 @@ export const SubNetworkPanel = ({
       revalidateOnFocus: false,
     },
   )
+  if(error !== undefined) {
+    console.error('Failed to get network via SWR', error)
+  }
 
   // A local state to keep track of the current query network id.
   // This is different from the current network id in the workspace.
@@ -146,7 +149,6 @@ export const SubNetworkPanel = ({
       prevQueryNetworkIdRef.current = queryNetworkId
     })
   }, [queryNetworkId])
-  // }, [viewModels[queryNetworkId]])
 
   const saveLastQueryNetworkId = async (id: string): Promise<void> => {
     // const network: Network | undefined = networks.get(id)
@@ -159,15 +161,15 @@ export const SubNetworkPanel = ({
     }
   }
 
-  useEffect(() => {
-    if (isLoading) {
-      return
-    }
+  // useEffect(() => {
+  //   if (isLoading) {
+  //     return
+  //   }
 
-    if (!isLoading && data !== undefined && error === undefined) {
-      updateNetworkView()
-    }
-  }, [isLoading])
+  //   if (!isLoading && data !== undefined && error === undefined) {
+  //     updateNetworkView()
+  //   }
+  // }, [isLoading])
 
   const updateNetworkView = (): string => {
     if (data === undefined) {

@@ -11,6 +11,37 @@ import {
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 
+// Default view type (a node-link diagram)
+const DEF_VIEW_TYPE = 'nodeLink'
+
+/**
+ * Create a new view ID for a network view.
+ *
+ * @param newView
+ * @param views
+ * @returns
+ */
+export const getNetworkViewId = (
+  newView: NetworkView,
+  views: NetworkView[],
+): IdType => {
+  let { id, type } = newView
+  if (type === undefined) {
+    type = DEF_VIEW_TYPE
+  }
+  const prefix = `${id}-${type}`
+  const existingIds: string[] = []
+
+  views.forEach((view: NetworkView) => {
+    const viewId: string = view.viewId ?? ''
+    if (viewId.startsWith(prefix)) {
+      existingIds.push(viewId)
+    }
+  })
+
+  return `${id}-${type}-${existingIds.length + 1}`
+}
+
 interface ViewModelState {
   /**
    * A map of network ID to a list of network view models.
@@ -168,7 +199,6 @@ const persist =
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
         set(args)
-        // const updated: NetworkView = get().viewModels[currentNetworkId]
         const updated: NetworkView[] | undefined =
           get().viewModels[currentNetworkId]
         const deleted: boolean = updated === undefined
@@ -190,9 +220,38 @@ export const useViewModelStore = create(
 
         add: (networkId: IdType, networkView: NetworkView) => {
           set((state) => {
+            // Should be a defined object
             if (networkView === undefined) {
               throw new Error('Cannot add view model: networkView is undefined')
+            } else {
+              // Validate the view model
+              // const viewModelId: string = networkView.id
+              const viewId: string = networkView.viewId ?? ''
+              let viewModelType: string = networkView.type ?? ''
+              if (viewModelType === '') {
+                networkView.type = DEF_VIEW_TYPE
+                viewModelType = DEF_VIEW_TYPE
+              }
+
+              if (viewId === '') {
+                networkView.viewId = getNetworkViewId(
+                  networkView,
+                  state.viewModels[networkId] ?? [],
+                )
+              }
+              
+              // Check if the view model already exists
+              const existingViewModel: NetworkView | undefined =
+                state.viewModels[networkId]?.find(
+                  (viewModel) =>
+                    viewModel.viewId === networkView.viewId,
+                )
+              if (existingViewModel !== undefined) {
+                // Do not add if it already exists
+                return state
+              }
             }
+
             const viewList: NetworkView[] | undefined =
               state.viewModels[networkId]
             if (viewList !== undefined) {
