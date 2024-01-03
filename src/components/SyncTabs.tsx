@@ -26,22 +26,14 @@ export const SyncTabsAction = (): ReactElement => {
   useEffect(() => {
     const onVisibilityChange = (): void => {
       if (document.hidden) {
-        void getTimestampFromDb().then((timestamp) => {
-          let ts = timestamp
-          if (ts === undefined) {
-            ts = Date.now()
-            void putTimestampToDb(ts)
-          }
-          console.log(ts)
-          setLocalTimestamp(ts)
-        })
-        console.log('hidden')
+        // get timestamp when the tab was hidden
+        setLocalTimestamp(Date.now())
       } else {
-        console.log('not hidden')
-
+        // the tab is now active, get the timestamp from db
+        // if the db timestamp is newer than the local timestamp, show the dialog
+        // as it means the user has made changes in another tab
         void getTimestampFromDb().then((timestamp) => {
-          console.log(timestamp, localTimestamp)
-          if (timestamp !== localTimestamp) {
+          if ((timestamp ?? Date.now()) > localTimestamp) {
             setShowDialog(true)
           }
         })
@@ -58,15 +50,23 @@ export const SyncTabsAction = (): ReactElement => {
     const db = await getDb()
     db.on('changes', (changes) => {
       changes.forEach((change) => {
+        // ignore changes to the timestamp table
+        if(change.table === 'timestamp') {
+          return
+        }
         switch (change.type) {
           case 1: // CREATED
-            console.log('change created: ' + JSON.stringify(change.obj))
+            // console.log('change created: ' + JSON.stringify(change.obj))
             updateTimeStamp()
             break
           case 2: // UPDATED
+          // console.log('change updated: ' + JSON.stringify(change.obj))
+
             updateTimeStamp()
             break
           case 3: // DELETED
+          // console.log('change deleted: ' + JSON.stringify(change))
+
             updateTimeStamp()
             break
         }
