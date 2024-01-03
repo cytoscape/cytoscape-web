@@ -28,11 +28,15 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { IdType } from '../../../models/IdType'
 import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../..'
-import { HcxValidationButtonGroup } from '../../../features/HierarchyViewer/components/ValidationButtons/HcxValidationErrorButtonGroup'
+import { HcxValidationButtonGroup } from '../../../features/HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
+import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
+import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
+  const [showHcxValidationDialog, setShowHcxValidationDialog] =
+    useState<boolean>(false)
 
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -65,6 +69,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const setNetworkModified = useWorkspaceStore(
     (state) => state.setNetworkModified,
+  )
+  const validationResults = useHcxValidatorStore(
+    (state) => state.validationResults,
   )
 
   const client = useContext(KeycloakContext)
@@ -142,6 +149,16 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     props.handleClose()
   }
 
+  const handleClick = async (): Promise<void> => {
+    const validationResult = validationResults?.[currentNetworkId]
+
+    if (validationResult !== undefined && !validationResult.isValid) {
+      setShowHcxValidationDialog(true)
+    } else {
+      await handleSaveCurrentNetworkToNDEx()
+    }
+  }
+
   const handleSaveCurrentNetworkToNDEx = async (): Promise<void> => {
     const localModificationTime = summary.modificationTime
     const ndexClient = new NDEx(ndexBaseUrl)
@@ -185,7 +202,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       <MenuItem
         sx={{ flexBasis: '100%', flexGrow: 3 }}
         disabled={!authenticated}
-        onClick={handleSaveCurrentNetworkToNDEx}
+        onClick={handleClick}
       >
         Save to NDEx (overwrite)
       </MenuItem>
@@ -223,6 +240,12 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       <>
         {menuItem}
         {dialog}
+        <HcxValidationSaveDialog
+          open={showHcxValidationDialog}
+          onClose={() => setShowHcxValidationDialog(false)}
+          onSubmit={() => handleSaveCurrentNetworkToNDEx()}
+          validationResult={validationResults?.[currentNetworkId]}
+        />
       </>
     )
   } else {

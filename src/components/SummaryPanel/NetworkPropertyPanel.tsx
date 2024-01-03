@@ -18,7 +18,7 @@ import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 
 import { NetworkPropertyEditor } from './NdexNetworkPropertyEditor'
-import { HcxValidationButtonGroup } from '../../features/HierarchyViewer/components/ValidationButtons/HcxValidationErrorButtonGroup'
+import { HcxValidationButtonGroup } from '../../features/HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
