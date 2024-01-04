@@ -106,9 +106,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.setValidationResult,
   )
 
-  const allViewModels: Record<string, NetworkView[]> = useViewModelStore
-    (state) => state.viewModels,
-  )
+  const allViewModels: Record<string, NetworkView[]> = useViewModelStore((state) => state.viewModels)
   const currentNetworkView: NetworkView | undefined = allViewModels[currentNetworkId]?.[0]
 
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
