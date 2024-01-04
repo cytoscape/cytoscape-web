@@ -14,6 +14,7 @@ import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem
 import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
+import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -65,6 +66,8 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
         <Divider />
         <SaveToNDExMenuItem handleClose={handleClose} />
         <CopyNetworkToNDExMenuItem handleClose={handleClose} />
+        <Divider />
+        <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />
         <Divider />
         <OpenNetworkInCytoscapeMenuItem handleClose={handleClose} />
         <Divider />

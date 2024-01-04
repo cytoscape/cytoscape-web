@@ -104,7 +104,7 @@ export const CopyNetworkToNDExMenuItem = (
       disabled={!authenticated}
       onClick={handleSaveCurrentNetworkToNDEx}
     >
-      Save Copy to NDEx
+      Save copy of the current network to NDEx
     </MenuItem>
   )
 

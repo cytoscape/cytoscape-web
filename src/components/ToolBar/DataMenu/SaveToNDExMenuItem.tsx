@@ -178,7 +178,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       disabled={!authenticated}
       onClick={handleSaveCurrentNetworkToNDEx}
     >
-      Save to NDEx (overwrite)
+      Save the current network to NDEx (overwrite)
     </MenuItem>
   )
 
