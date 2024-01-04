@@ -26,7 +26,7 @@ export const OpenInCytoscapeButton = (): JSX.Element => {
   )
 
   const viewModel = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+    (state) => state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -36,6 +36,9 @@ export const OpenInCytoscapeButton = (): JSX.Element => {
   ) as Network
 
   const openNetworkInCytoscape = async (): Promise<void> => {
+    if(viewModel === undefined) {
+      throw new Error('Could not find the current network view model.')
+    }
     const cx = exportNetworkToCx2(
       network,
       visualStyle,

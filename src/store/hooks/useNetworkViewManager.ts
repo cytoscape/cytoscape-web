@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { IdType } from '../../models/IdType'
 import { UpdateEventType, useNetworkStore } from '../NetworkStore'
 import { useViewModelStore } from '../ViewModelStore'
+import { NetworkView } from '../../models/ViewModel'
 
 /**
  * Based on the changes in the workspace store, this hook will
@@ -10,7 +11,7 @@ import { useViewModelStore } from '../ViewModelStore'
  * Mostly for clean up tasks.
  */
 export const useNetworkViewManager = (): void => {
-  const networkViewModels = useViewModelStore((state) => state.viewModels)
+  const getViewModel: (id: IdType) => NetworkView | undefined = useViewModelStore((state) => state.getViewModel)
   const lastUpdated = useNetworkStore((state) => state.lastUpdated)
 
   const deleteViewObjects: (networkId: IdType, ids: IdType[]) => void =
@@ -27,8 +28,8 @@ export const useNetworkViewManager = (): void => {
     if (type === UpdateEventType.DELETE) {
       const deletedIds = new Set<IdType>(payload)
 
-      const networkViewModel = networkViewModels[networkId]
-
+      const networkViewModel = getViewModel(networkId)
+      
       const selectedNodes: IdType[] =
         networkViewModel !== undefined ? networkViewModel.selectedNodes : []
       const selectedEdges: IdType[] =

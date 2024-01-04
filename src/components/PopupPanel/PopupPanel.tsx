@@ -6,6 +6,8 @@ import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useTableStore } from '../../store/TableStore'
 import { Table, ValueType } from '../../models/TableModel'
 import { useUiStateStore } from '../../store/UiStateStore'
+import { Network } from '../../models/NetworkModel'
+import { NetworkView } from '../../models/ViewModel'
 
 interface PopupPanelProps {
   visible: boolean
@@ -28,8 +30,10 @@ export const PopupPanel = ({
   const tables = useTableStore((state) => state.tables)
   const nodeTable: Table = tables[networkId]?.nodeTable
 
-  const { selectedNodes } =
-    useViewModelStore((state) => state.viewModels[networkId]) ?? {}
+  const viewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(networkId),
+  )
+  const { selectedNodes } = viewModel ?? {}
 
   if (
     !enabled ||

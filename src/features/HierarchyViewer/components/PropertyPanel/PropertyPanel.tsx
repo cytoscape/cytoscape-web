@@ -11,6 +11,7 @@ import { ValueType } from '../../../../models/TableModel'
 import { useTableStore } from '../../../../store/TableStore'
 import { useViewModelStore } from '../../../../store/ViewModelStore'
 import { MessagePanel } from '../../../../components/Messages'
+import { NetworkView } from '../../../../models/ViewModel'
 
 interface PropertyPanelProps {
   networkId: string
@@ -23,8 +24,10 @@ export const PropertyPanel = ({
   const tables = useTableStore((state) => state.tables)
   const tablePair = tables[networkId]
 
-  const { selectedNodes, selectedEdges } =
-    useViewModelStore((state) => state.viewModels[networkId]) ?? {}
+  const viewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(networkId),
+  )
+  const { selectedNodes, selectedEdges } = viewModel ?? {}
 
   if (tablePair === undefined) {
     return <></>

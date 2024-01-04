@@ -51,6 +51,7 @@ import { PanelState } from '../../models/UiModel/PanelState'
 import { Panel } from '../../models/UiModel/Panel'
 import { Ui } from '../../models/UiModel'
 import NetworkInfoPanel from './NetworkInfoPanel'
+import { NetworkView } from '../../models/ViewModel'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -159,11 +160,14 @@ export default function TableBrowser(props: {
   )
   const setMapping = useVisualStyleStore((state) => state.setMapping)
 
+  const viewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(networkId),
+  )
   const selectedNodes = useViewModelStore(
-    (state) => state.viewModels[networkId]?.selectedNodes ?? [],
+    (state) => viewModel?.selectedNodes ?? [],
   )
   const selectedEdges = useViewModelStore(
-    (state) => state.viewModels[networkId]?.selectedEdges ?? [],
+    (state) => viewModel?.selectedEdges ?? [],
   )
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)

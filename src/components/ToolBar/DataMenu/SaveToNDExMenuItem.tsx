@@ -30,6 +30,8 @@ import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../..'
 import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
 import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
+import { NetworkView } from '../../../models/ViewModel'
+
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -49,8 +51,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
-  const viewModel = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const viewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -80,6 +82,10 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const addMessage = useMessageStore((state) => state.addMessage)
 
   const overwriteNDExNetwork = async (): Promise<void> => {
+    if(viewModel === undefined) {
+      throw new Error('Could not find the current network view model.')
+    }
+
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
@@ -110,6 +116,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const saveCopyToNDEx = async (): Promise<void> => {
+    if(viewModel === undefined) {
+      throw new Error('Could not find the current network view model.')
+    }
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)

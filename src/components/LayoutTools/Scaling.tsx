@@ -54,7 +54,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   )
 
   const networkView: NetworkView | undefined = useViewModelStore(
-    (state) => state.viewModels[networkId],
+    (state) => state.getViewModel(networkId),
   )
 
   useEffect(() => {

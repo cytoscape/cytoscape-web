@@ -39,12 +39,13 @@ export const ShareNetworkButton = (): JSX.Element => {
   const { panels } = ui
 
   // This will be used to watch the selection state
-  const networkViewModel: NetworkView = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const networkViewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(currentNetworkId),
   )
 
-  const selectedNodeCount: number = networkViewModel?.selectedNodes.length
-  const selectedEdgeCount: number = networkViewModel?.selectedEdges.length
+  const { selectedNodes, selectedEdges } = networkViewModel ?? {}
+  const selectedNodeCount: number = selectedNodes?.length ?? 0
+  const selectedEdgeCount: number = selectedEdges?.length ?? 0
 
   const getQueryString = (): string => {
     const panelParams = new URLSearchParams(panels)

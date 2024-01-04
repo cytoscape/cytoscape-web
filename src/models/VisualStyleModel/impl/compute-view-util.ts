@@ -95,6 +95,12 @@ export const updateNetworkView = (
   const { nodeViews } = networkView
   const mappers = buildMappers(vs)
 
+  const nodeViewCount = Object.keys(nodeViews).length
+  const nodeCount = network.nodes.length
+  if( nodeViewCount !== nodeCount ) {
+    console.error('## nodeViews.length !== network.nodes.length', nodeCount, nodeViewCount)
+  }
+
   const nextView: NetworkView = {
     id: network.id,
     values: new Map<VisualPropertyName, VisualPropertyValueType>(),
@@ -128,6 +134,9 @@ const nodeViewBuilder = (
   const result: Record<IdType, NodeView> = {}
   const columns: Column[] = nodeTable.columns
   let idx: number = nodes.length
+  if (idx !== nodes.length) {
+    console.error('# of nodes does not match to the # of node views:', idx, nodeViews)
+  }
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   while (idx--) {
     const node = nodes[idx]
@@ -136,7 +145,7 @@ const nodeViewBuilder = (
       nodeViews !== undefined ? nodeViews[nodeId] : undefined
     
     if (nodeView === undefined) {
-      console.log('@@nodeView is undefined')
+      console.error('@@nodeView is undefined. This might break the view.')
     }
 
     const nv: NodeView = {
