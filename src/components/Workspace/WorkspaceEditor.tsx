@@ -45,7 +45,7 @@ import { Panel } from '../../models/UiModel/Panel'
 import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
 import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
-import { isHCX } from '../../features/HierarchyViewer/utils/hierarcy-util'
+import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
 import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
 import { validateHcx } from '../../features/HierarchyViewer/model/impl/hcxValidators'
 import { useMessageStore } from '../../store/MessageStore'
@@ -106,8 +106,11 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.setValidationResult,
   )
 
-  const allViewModels: Record<string, NetworkView[]> = useViewModelStore((state) => state.viewModels)
-  const currentNetworkView: NetworkView | undefined = allViewModels[currentNetworkId]?.[0]
+  const allViewModels: Record<string, NetworkView[]> = useViewModelStore(
+    (state) => state.viewModels,
+  )
+  const currentNetworkView: NetworkView | undefined =
+    allViewModels[currentNetworkId]?.[0]
 
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
