@@ -49,10 +49,10 @@ export const HcxValidationSaveDialog = (
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => onSubmit()}>Confirm</Button>
         <Button color="error" onClick={() => onClose()}>
           Cancel
         </Button>
+        <Button onClick={() => onSubmit()}>Save To NDEx</Button>
       </DialogActions>
     </Dialog>
   )

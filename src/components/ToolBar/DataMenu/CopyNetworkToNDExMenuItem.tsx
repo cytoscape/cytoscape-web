@@ -18,7 +18,6 @@ import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../..'
-import { HcxValidationButtonGroup } from '../../../features/HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
 import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
 import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 
@@ -133,7 +132,6 @@ export const CopyNetworkToNDExMenuItem = (
       >
         Save Copy to NDEx
       </MenuItem>
-      <HcxValidationButtonGroup id={currentNetworkId} />
     </Box>
   )
 

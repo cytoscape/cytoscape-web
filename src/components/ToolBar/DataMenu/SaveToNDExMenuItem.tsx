@@ -28,7 +28,6 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { IdType } from '../../../models/IdType'
 import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../..'
-import { HcxValidationButtonGroup } from '../../../features/HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
 import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
 import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 
@@ -206,7 +205,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       >
         Save to NDEx (overwrite)
       </MenuItem>
-      <HcxValidationButtonGroup id={currentNetworkId} />
     </Box>
   )
 
