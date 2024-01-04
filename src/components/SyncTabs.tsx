@@ -51,7 +51,7 @@ export const SyncTabsAction = (): ReactElement => {
     db.on('changes', (changes) => {
       changes.forEach((change) => {
         // ignore changes to the timestamp table
-        if(change.table === 'timestamp') {
+        if (change.table === 'timestamp') {
           return
         }
         switch (change.type) {
@@ -60,12 +60,12 @@ export const SyncTabsAction = (): ReactElement => {
             updateTimeStamp()
             break
           case 2: // UPDATED
-          // console.log('change updated: ' + JSON.stringify(change.obj))
+            // console.log('change updated: ' + JSON.stringify(change.obj))
 
             updateTimeStamp()
             break
           case 3: // DELETED
-          // console.log('change deleted: ' + JSON.stringify(change))
+            // console.log('change deleted: ' + JSON.stringify(change))
 
             updateTimeStamp()
             break
