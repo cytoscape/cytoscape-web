@@ -1,20 +1,25 @@
 import { Box } from '@mui/material'
-import { ReactElement } from 'react'
+import { ComponentType, ReactElement } from 'react'
 import { FloatingToolBar } from '../FloatingToolBar'
+import { Network } from '../../models/NetworkModel'
+import { Renderer } from '../../models/RendererModel/Renderer'
 
 interface NetworkTabProps {
-  renderer: JSX.Element
+  network: Network
+  renderer: Renderer
   isActive: boolean
   bgColor?: string
   handleClick?: () => void
 }
 
 export const NetworkTab = ({
+  network,
   renderer,
   bgColor,
   handleClick,
   isActive,
 }: NetworkTabProps): ReactElement => {
+
   return (
     <Box
       sx={{
@@ -26,7 +31,7 @@ export const NetworkTab = ({
       }}
       onClick={handleClick}
     >
-      {renderer}
+      {renderer.getComponent(network)}
       <FloatingToolBar />
     </Box>
   )

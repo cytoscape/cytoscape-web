@@ -12,7 +12,9 @@ export interface CirclePackingView extends NetworkView {
 
   // Visualization type (e.g., node-link diagram, circle packing, etc.)
   type?: string
+  viewId?: string
   */
 
+  // Data storage for the D3 hierarchy model
   hierarchy: HierarchyNode<any>
 }

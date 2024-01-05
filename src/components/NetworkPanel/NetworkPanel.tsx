@@ -11,6 +11,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { NetworkView } from '../../models/ViewModel'
 import { NetworkTab } from './NetworkTab'
 import { NetworkTabs } from './NetworkTabs'
+import { Renderer } from '../../models/RendererModel/Renderer'
 
 interface NetworkPanelProps {
   networkId: IdType
@@ -24,8 +25,6 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
 
   const ui = useUiStateStore((state) => state.ui)
   const { activeNetworkView, enablePopup } = ui
-
-
 
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
@@ -48,7 +47,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   )
 
   const networkViews: Record<string, NetworkView[]> = useViewModelStore(
-    (state) => state.viewModels
+    (state) => state.viewModels,
   )
 
   if (networks.size === 0) {
@@ -75,15 +74,27 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   }
 
   const bgColor = vs?.networkBackgroundColor?.defaultValue as string
-  const renderer: JSX.Element = <CyjsRenderer network={targetNetwork} />
+  const renderer: Renderer = {
+    id: 'cyjs',
+    name: 'Cytoscape.js Renderer',
+    description: 'Node-link diagram renderer based on Cytoscape.js',
+    getComponent: (network: Network) => <CyjsRenderer network={network} />,
+  }
 
   // Show tabs only when multiple views are available
-  if(views.length === 1) {
-    return <NetworkTab renderer={renderer} bgColor={bgColor} isActive={isActive} handleClick={handleClick} />
+  if (views.length === 1) {
+    return (
+      <NetworkTab
+        network={targetNetwork}
+        renderer={renderer}
+        bgColor={bgColor}
+        isActive={isActive}
+        handleClick={handleClick}
+      />
+    )
   } else {
-    return (<NetworkTabs />)
+    return <NetworkTabs />
   }
-  
 }
 
 export default NetworkPanel

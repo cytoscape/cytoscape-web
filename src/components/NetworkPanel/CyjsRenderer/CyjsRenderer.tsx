@@ -24,7 +24,7 @@ import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
 interface NetworkRendererProps {
-  network: Network
+  network?: Network
 }
 
 // /**
@@ -64,6 +64,10 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
   )
+  if(network === undefined) {
+    return <></>
+  }
+  
   const { id } = network
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
