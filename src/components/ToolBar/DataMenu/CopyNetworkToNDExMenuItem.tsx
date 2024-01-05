@@ -1,5 +1,5 @@
 import { MenuItem, Box, Tooltip } from '@mui/material'
-import { ReactElement, useContext } from 'react'
+import { ReactElement, useContext, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 // @ts-expect-error-next-line
@@ -18,12 +18,20 @@ import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../..'
+import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
+import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { NetworkView } from '../../../models/ViewModel'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
+  const [showHcxValidationDialog, setShowHcxValidationDialog] =
+    useState<boolean>(false)
+
+  const validationResults = useHcxValidatorStore(
+    (state) => state.validationResults,
+  )
 
   const client = useContext(KeycloakContext)
 
@@ -104,17 +112,46 @@ export const CopyNetworkToNDExMenuItem = (
     await saveCopyToNDEx()
   }
 
+  const handleClick = async (): Promise<void> => {
+    const validationResult = validationResults?.[currentNetworkId]
+
+    if (validationResult !== undefined && !validationResult.isValid) {
+      setShowHcxValidationDialog(true)
+    } else {
+      await handleSaveCurrentNetworkToNDEx()
+    }
+  }
+
   const menuItem = (
-    <MenuItem
-      disabled={!authenticated}
-      onClick={handleSaveCurrentNetworkToNDEx}
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}
     >
-      Save Copy to NDEx
-    </MenuItem>
+      <MenuItem
+        sx={{ flexBasis: '100%', flexGrow: 3 }}
+        disabled={!authenticated}
+        onClick={handleClick}
+      >
+        Save Copy to NDEx
+      </MenuItem>
+    </Box>
   )
 
   if (authenticated) {
-    return <>{menuItem}</>
+    return (
+      <>
+        {menuItem}
+        <HcxValidationSaveDialog
+          open={showHcxValidationDialog}
+          onClose={() => setShowHcxValidationDialog(false)}
+          onSubmit={() => handleSaveCurrentNetworkToNDEx()}
+          validationResult={validationResults?.[currentNetworkId]}
+        />
+      </>
+    )
   } else {
     return (
       <Tooltip title="Login to save a copy of the current network to NDEx">
