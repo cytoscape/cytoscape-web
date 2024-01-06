@@ -19,7 +19,6 @@ export const RemoveAllNetworksMenuItem = (
   )
 
   const handleDeleteAllNetworks = (): void => {
-    console.info('All networks removed')
     props.handleClose()
     deleteAllNetworks()
 
@@ -32,11 +31,11 @@ export const RemoveAllNetworksMenuItem = (
       <MenuItem onClick={() => setOpen(true)}>Remove all networks</MenuItem>
       <ConfirmationDialog
         title="Remove All Networks"
-        message="Are you sure you want to remeve all networks from this worksppace?"
+        message="Do you really want to delete all networks from this workspace?"
         onConfirm={handleDeleteAllNetworks}
         open={open}
         setOpen={setOpen}
-        buttonTitle="Confirm (cannot be undone)"
+        buttonTitle="Yes (cannot be undone)"
       />
     </>
   )
