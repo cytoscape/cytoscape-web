@@ -92,8 +92,8 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const bgColor = vs?.networkBackgroundColor?.defaultValue as string
 
   // Show tabs only when multiple views are available
-  if (views.length === 0) {
-    // Use default renderer if there is only one view
+  if (views.length === 1) {
+    // Use default renderer without tab if there is only one view
     return (
       <NetworkTab
         network={targetNetwork}
