@@ -23,6 +23,9 @@ import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
 import { Network } from '../../../models/NetworkModel'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { CirclePackingPanel } from './CustomLayout/CirclePackingPanel'
+import { Renderer } from '../../../models/RendererModel/Renderer'
+import { useRendererStore } from '../../../store/RendererStore'
+import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -49,8 +52,8 @@ export const MainPanel = (): JSX.Element => {
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
   // View model is required to extract the selected nodes
-  const networkViewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const networkViewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
 
   // Selected nodes in the hierarchy
@@ -61,6 +64,8 @@ export const MainPanel = (): JSX.Element => {
   const networkSummary: any = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
+  const addRenderer = useRendererStore((state) => state.add)
+  const renderers = useRendererStore((state) => state.renderers)
 
   const checkDataType = (): void => {
     // Check if the current network is a hierarchy
@@ -158,6 +163,25 @@ export const MainPanel = (): JSX.Element => {
   const targetNode: IdType = selectedNodes[0]
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
 
+  const CirclePackingRenderer: Renderer = {
+    id: 'circlePacking',
+    name: 'Circle Packing Renderer',
+    description: 'Circle Packing Renderer',
+    getComponent: (networkData: Network) => (
+      <CirclePackingPanel
+        width={1600}
+        height={1600}
+        network={currentNetwork}
+        nodeTable={tableRecord?.nodeTable}
+        selected={targetNode}
+      />
+    ),
+  }
+
+  if(renderers.circlePacking === undefined) {
+    addRenderer(CirclePackingRenderer)
+  }
+
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       <Allotment vertical minSize={100}>
@@ -173,15 +197,8 @@ export const MainPanel = (): JSX.Element => {
         </Allotment.Pane>
         <Allotment.Pane preferredSize={1000}>
           <Allotment>
-            <Allotment.Pane preferredSize={'85%'} key={0}>
-              <CirclePackingPanel
-                width={1600}
-                height={1600}
-                network={currentNetwork}
-                nodeTable={tableRecord?.nodeTable}
-                selected={targetNode}
-              />
-              {/* <PropertyPanel networkId={targetNode} /> */}
+            <Allotment.Pane preferredSize={'15%'} key={0}>
+              <PropertyPanel networkId={targetNode} />
             </Allotment.Pane>
             <Allotment.Pane key={1}>
               <SharedStyleManager

@@ -12,6 +12,7 @@ import { NetworkView } from '../../models/ViewModel'
 import { NetworkTab } from './NetworkTab'
 import { NetworkTabs } from './NetworkTabs'
 import { Renderer } from '../../models/RendererModel/Renderer'
+import { useRendererStore } from '../../store/RendererStore'
 
 interface NetworkPanelProps {
   networkId: IdType
@@ -29,6 +30,21 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+
+  const renderers: Record<string, Renderer> = useRendererStore(
+    (state) => state.renderers,
+  )
+
+  const defaultRendererName: string = useRendererStore(
+    (state) => state.defaultRendererName,
+  )
+
+  useEffect(() => {
+    if (networkId !== undefined) {
+      console.log('network changed##', networkId)
+    }
+  }, [networkId])
+
   useEffect(() => {
     if (
       (networkId === activeNetworkView || activeNetworkView === '') &&
@@ -74,26 +90,30 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   }
 
   const bgColor = vs?.networkBackgroundColor?.defaultValue as string
-  const renderer: Renderer = {
-    id: 'cyjs',
-    name: 'Cytoscape.js Renderer',
-    description: 'Node-link diagram renderer based on Cytoscape.js',
-    getComponent: (network: Network) => <CyjsRenderer network={network} />,
-  }
 
   // Show tabs only when multiple views are available
-  if (views.length === 1) {
+  if (views.length === 0) {
+    // Use default renderer if there is only one view
     return (
       <NetworkTab
         network={targetNetwork}
-        renderer={renderer}
+        renderer={renderers[defaultRendererName]}
         bgColor={bgColor}
         isActive={isActive}
         handleClick={handleClick}
       />
     )
   } else {
-    return <NetworkTabs />
+    return (
+      <NetworkTabs
+        network={targetNetwork}
+        views={views}
+        renderers={renderers}
+        isActive={isActive}
+        bgColor={bgColor}
+        handleClick={handleClick}
+      />
+    )
   }
 }
 

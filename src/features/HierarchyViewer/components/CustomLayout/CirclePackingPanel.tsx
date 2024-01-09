@@ -9,6 +9,7 @@ import { createTreeLayout } from './CirclePackingLayout'
 import { getColorMapper } from './CirclePackingUtils'
 import { IdType } from '../../../../models/IdType'
 import { D3TreeNode } from './D3TreeNode'
+import { Renderer } from '../../../../models/RendererModel/Renderer'
 
 interface CirclePackingPanelProps {
   width: number
@@ -17,6 +18,7 @@ interface CirclePackingPanelProps {
   nodeTable: Table
   selected?: IdType // Selected subsystem
 }
+
 
 /**
  * Circle Packing renderer as a variant of the network viewer
