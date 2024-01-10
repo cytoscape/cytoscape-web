@@ -15,6 +15,7 @@ import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
+import { OpenWorkspaceFromNDExMenuItem } from './OpenWorkspaceFromNDEx'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -56,6 +57,9 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
           'aria-labelledby': label,
         }}
       >
+        <OpenWorkspaceFromNDExMenuItem handleClose={handleClose} />
+        <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />
+        <Divider />
         <LoadFromNdexMenuItem handleClose={handleClose} />
         <LoadDemoNetworksMenuItem handleClose={handleClose} />
         <Divider />
@@ -66,8 +70,6 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
         <Divider />
         <SaveToNDExMenuItem handleClose={handleClose} />
         <CopyNetworkToNDExMenuItem handleClose={handleClose} />
-        <Divider />
-        <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />
         <Divider />
         <OpenNetworkInCytoscapeMenuItem handleClose={handleClose} />
         <Divider />
