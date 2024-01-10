@@ -1,12 +1,3 @@
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-} from '@mui/material'
-// import Dexie from 'dexie'
 import { ReactElement, useEffect, useState } from 'react'
 import {
   getDb,
@@ -14,15 +5,21 @@ import {
   putTimestampToDb,
 } from '../store/persist/db'
 import debounce from 'lodash.debounce'
+import { useWorkspaceStore } from '../store/WorkspaceStore'
+import { useNavigate } from 'react-router-dom'
 
-const updateTimeStamp = debounce(() => {
+const markForPageReload = debounce(() => {
   void putTimestampToDb(Date.now())
 }, 300)
 
 export const SyncTabsAction = (): ReactElement => {
-  const [showDialog, setShowDialog] = useState(false)
   const [localTimestamp, setLocalTimestamp] = useState(0)
+  const [reloadToRootPage, setReloadToRootPage] = useState(false)
+  const currentNetworkId = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
 
+  const navigate = useNavigate()
   useEffect(() => {
     const onVisibilityChange = (): void => {
       if (document.hidden) {
@@ -34,7 +31,10 @@ export const SyncTabsAction = (): ReactElement => {
         // as it means the user has made changes in another tab
         void getTimestampFromDb().then((timestamp) => {
           if ((timestamp ?? Date.now()) > localTimestamp) {
-            setShowDialog(true)
+            if (reloadToRootPage) {
+              navigate('/')
+            }
+            window.location.reload()
           }
         })
       }
@@ -56,18 +56,23 @@ export const SyncTabsAction = (): ReactElement => {
         }
         switch (change.type) {
           case 1: // CREATED
-            // console.log('change created: ' + JSON.stringify(change.obj))
-            updateTimeStamp()
+            // console.log('change created:', change)
+            markForPageReload()
             break
           case 2: // UPDATED
-            // console.log('change updated: ' + JSON.stringify(change.obj))
-
-            updateTimeStamp()
+            // console.log('change updated:', change)
+            markForPageReload()
             break
           case 3: // DELETED
-            // console.log('change deleted: ' + JSON.stringify(change))
+            // console.log('change deleted:', change)
+            markForPageReload()
 
-            updateTimeStamp()
+            // the current network has been deleted from another tab,
+            // instead of reloading the current url e.g. /workspace/networks/<currentNetworkId>
+            // reload to the root url e.g. / and let the routing logic handle which route to navigate to
+            if (change.oldObj?.id === currentNetworkId) {
+              setReloadToRootPage(true)
+            }
             break
         }
       })
@@ -80,22 +85,5 @@ export const SyncTabsAction = (): ReactElement => {
       .catch((e) => console.log(e))
   }, [])
 
-  return (
-    <>
-      <Dialog open={showDialog}>
-        <DialogTitle>Cytoscape Web tabs out of sync</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Changes have been made in another tab in Cytoscape Web. Reload the
-            page to sync the changes.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => window.location.reload()}>
-            Reload Cytoscape Web
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
-  )
+  return <></>
 }
