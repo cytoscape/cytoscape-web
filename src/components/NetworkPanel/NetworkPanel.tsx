@@ -3,7 +3,6 @@ import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { MessagePanel } from '../Messages'
-import { CyjsRenderer } from './CyjsRenderer'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
@@ -19,7 +18,10 @@ interface NetworkPanelProps {
 }
 
 /**
- * Main network renderer visualizing the current network
+ * Component to display the network visualizations for the current network data
+ * 
+ * @param networkId - the ID of the network model to display
+ * 
  */
 const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const [isActive, setIsActive] = useState<boolean>(false)
@@ -81,6 +83,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   }
 
   const targetId = targetNetwork.id
+  
   // Check network has multiple views or single
   const views: NetworkView[] = networkViews[targetId]
   const vs: VisualStyle = visualStyles[targetNetwork.id]

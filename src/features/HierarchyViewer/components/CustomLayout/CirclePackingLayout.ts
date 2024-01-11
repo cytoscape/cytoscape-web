@@ -8,7 +8,6 @@ import { cyNetDag2tree2, findRoot } from './DataBuilderUtil'
 import { D3TreeNode } from './D3TreeNode'
 import { NetworkView } from '../../../../models/ViewModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
-import { getNetworkViewId } from '../../../../store/ViewModelStore'
 import { VisualStyle } from '../../../../models/VisualStyleModel'
 
 /**
@@ -55,18 +54,22 @@ export const createTreeLayout = (
   return hierarchyRootNode
 }
 
+
+export const CirclePackingType = 'circlePacking'
+
 export const createNetworkView = (
   network: Network,
   vs: VisualStyle,
   view: NetworkView[],
+  primaryView: NetworkView,
   root: HierarchyNode<D3TreeNode>,
 ): CirclePackingView => {
   const cpView: CirclePackingView = {
     id: network.id,
     type: 'circlePacking',
     viewId: 'test',
-    selectedNodes: [],
-    selectedEdges: [],
+    selectedNodes: primaryView.selectedNodes,
+    selectedEdges: primaryView.selectedEdges,
     nodeViews: {},
     edgeViews: {},
     values: new Map(),
