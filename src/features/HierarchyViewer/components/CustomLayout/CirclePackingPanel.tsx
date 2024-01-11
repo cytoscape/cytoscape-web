@@ -31,14 +31,14 @@ export const CirclePackingPanel = ({
   const refParent = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
 
-  // useEffect(() => {
-  //   if (refParent.current) {
-  //     setDimensions({
-  //       width: refParent.current.offsetWidth,
-  //       height: refParent.current.offsetHeight,
-  //     })
-  //   }
-  // }, [])
+  useEffect(() => {
+    if (network === undefined) return
+
+    const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> = createTreeLayout(
+      network,
+      nodeTable,
+    )
+  }, [network])
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
@@ -151,10 +151,7 @@ export const CirclePackingPanel = ({
   }, [network, dimensions])
 
   return (
-    <Box
-      ref={refParent}
-      sx={{ width: '100%', height: '100%', border: '4px solid teal' }}
-    >
+    <Box ref={refParent} sx={{ width: '100%', height: '100%' }}>
       {network !== undefined ? (
         <svg ref={ref} width={dimensions.width} height={dimensions.height} />
       ) : null}

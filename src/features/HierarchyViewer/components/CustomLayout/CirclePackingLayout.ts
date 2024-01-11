@@ -6,6 +6,10 @@ import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
 import { cyNetDag2tree2, findRoot } from './DataBuilderUtil'
 import { D3TreeNode } from './D3TreeNode'
+import { NetworkView } from '../../../../models/ViewModel'
+import { CirclePackingView } from '../../model/CirclePackingView'
+import { getNetworkViewId } from '../../../../store/ViewModelStore'
+import { VisualStyle } from '../../../../models/VisualStyleModel'
 
 /**
  * Return the branch of the network rooted at the given node
@@ -51,21 +55,25 @@ export const createTreeLayout = (
   return hierarchyRootNode
 }
 
-// function countAllChildren(node: HierarchyNode<D3TreeNode>): number {
-//   // Count the direct children of the node
-//   const children: Array<HierarchyNode<D3TreeNode>> | undefined = node.children
-//   let size = 0
-//   if (children === undefined) {
-//     node.data.value = 1
-//     return 1
-//   }
+export const createNetworkView = (
+  network: Network,
+  vs: VisualStyle,
+  view: NetworkView[],
+  root: HierarchyNode<D3TreeNode>,
+): CirclePackingView => {
+  const cpView: CirclePackingView = {
+    id: network.id,
+    type: 'circlePacking',
+    viewId: 'test',
+    selectedNodes: [],
+    selectedEdges: [],
+    nodeViews: {},
+    edgeViews: {},
+    values: new Map(),
+    hierarchy: root,
+  }
 
-//   // For each child, recursively count its children
-//   children.forEach((child) => {
-//     count += countAllChildren(child)
-//   })
-
-//   // Return the total count of children
-//   node.data.value = count
-//   return count
-// }
+  // add views to the CP view
+  
+  return cpView
+}
