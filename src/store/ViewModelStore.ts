@@ -45,7 +45,7 @@ interface ViewModelAction {
   deleteAll: () => void
 }
 
-type ViewModelStore = ViewModelState & ViewModelAction
+export type ViewModelStore = ViewModelState & ViewModelAction
 
 const persist =
   (config: StateCreator<ViewModelStore>) =>

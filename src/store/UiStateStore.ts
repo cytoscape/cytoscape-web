@@ -30,7 +30,7 @@ interface UiStateAction {
   setActiveNetworkBrowserPanelIndex: (index: number) => void
 }
 
-type UiStateStore = UiState & UiStateAction
+export type UiStateStore = UiState & UiStateAction
 
 export const DEFAULT_UI_STATE = {
   panels: {

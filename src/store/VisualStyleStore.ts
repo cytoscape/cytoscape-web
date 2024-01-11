@@ -104,7 +104,7 @@ interface VisualStyleAction {
   deleteAll: () => void
 }
 
-type VisualStyleStore = VisualStyleState &
+export type VisualStyleStore = VisualStyleState &
   VisualStyleAction &
   UpdateVisualStyleAction
 

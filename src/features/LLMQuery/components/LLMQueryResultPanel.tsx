@@ -6,12 +6,21 @@ import {
   CircularProgress,
 } from '@mui/material'
 import { ReactElement, useState, useEffect } from 'react'
-import { useMessageStore } from '../../../store/MessageStore'
-import { useUiStateStore } from '../../../store/UiStateStore'
+// import { useMessageStore } from '../../../store/MessageStore'
+// import { useUiStateStore } from '../../../store/UiStateStore'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
 
-export const LLMQueryResultPanel = (): ReactElement => {
+import { PluginArgs } from '../../../store/plugins/PluginArgs'
+
+export interface LLMQueryResultPanelProps {
+  pluginArgs: PluginArgs
+}
+
+export const LLMQueryResultPanel = (
+  props: LLMQueryResultPanelProps,
+): ReactElement => {
+  const { useUiStateStore, useMessageStore } = props.pluginArgs
   const geneQuery = useLLMQueryStore((state) => state.geneQuery)
   const [localQueryValue, setLocalQueryValue] = useState(geneQuery)
   const loading = useLLMQueryStore((state) => state.loading)
@@ -26,15 +35,15 @@ export const LLMQueryResultPanel = (): ReactElement => {
   }
 
   const setLoading = useLLMQueryStore((state) => state.setLoading)
-  const setPanelState = useUiStateStore((state) => state.setPanelState)
+  const setPanelState = useUiStateStore((state: any) => state.setPanelState)
   const setActiveNetworkBrowserPanelIndex = useUiStateStore(
-    (state) => state.setActiveNetworkBrowserPanelIndex,
+    (state: any) => state.setActiveNetworkBrowserPanelIndex,
   )
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
   const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
   const setLLMResult = useLLMQueryStore((state) => state.setLLMResult)
-  const addMessage = useMessageStore((state) => state.addMessage)
+  const addMessage = useMessageStore((state: any) => state.addMessage)
 
   const runLLMQuery = async (): Promise<void> => {
     setLoading(true)

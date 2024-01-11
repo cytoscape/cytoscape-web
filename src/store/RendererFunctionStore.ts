@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-interface RendererFunctionStore {
+interface RendererFunctionState {
   rendererFunctions: Map<string, Map<string, Function>>
 }
 
@@ -18,8 +18,11 @@ interface RendererFunctionActions {
   ) => Function | undefined
 }
 
+export type RendererFunctionStore = RendererFunctionState &
+  RendererFunctionActions
+
 export const useRendererFunctionStore = create(
-  immer<RendererFunctionStore & RendererFunctionActions>((set, get) => ({
+  immer<RendererFunctionStore>((set, get) => ({
     rendererFunctions: new Map<string, Map<string, Function>>(),
 
     setFunction: (

@@ -4,7 +4,7 @@ import { immer } from 'zustand/middleware/immer'
 
 const REFRESH_MIN: number = 60 // Refresh if token expires in 1 minute
 
-interface CredentialStore {
+interface CredentialState {
   client: Keycloak
 }
 interface CredentialActions {
@@ -13,8 +13,10 @@ interface CredentialActions {
   getParsedToken: () => Promise<KeycloakTokenParsed>
 }
 
+export type CredentialStore = CredentialState & CredentialActions
+
 export const useCredentialStore = create(
-  immer<CredentialStore & CredentialActions>((set, get) => ({
+  immer<CredentialStore>((set, get) => ({
     client: new Keycloak(),
     setClient: (client: Keycloak) => {
       set((state) => {

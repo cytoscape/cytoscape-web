@@ -7,6 +7,7 @@ import {
   LLMQueryOptionsMenuItem,
   RunLLMQueryMenuItem,
 } from '../../../features/LLMQuery/components'
+import { pluginArgs } from '../../../store/plugins/PluginArgs'
 
 export const AnalysisMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -48,7 +49,10 @@ export const AnalysisMenu: React.FC<DropdownMenuProps> = (
           'aria-labelledby': label,
         }}
       >
-        <RunLLMQueryMenuItem handleClose={handleClose} />
+        <RunLLMQueryMenuItem
+          handleClose={handleClose}
+          pluginArgs={pluginArgs}
+        />
         <LLMQueryOptionsMenuItem handleClose={handleClose} />
       </Menu>
     </div>

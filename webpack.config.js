@@ -3,17 +3,17 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const ESLintPlugin = require('eslint-webpack-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
-const TerserPlugin = require('terser-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin')
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
-const CompressionWebpackPlugin = require('compression-webpack-plugin');
+const CompressionWebpackPlugin = require('compression-webpack-plugin')
 const config = require('./src/assets/config.json')
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === 'production'
 
 module.exports = {
   mode: isProduction ? 'production' : 'development', // Set mode to production or development
   entry: path.resolve(__dirname, './src/index.tsx'),
-  devtool: isProduction ? false :'inline-source-map',
+  devtool: isProduction ? false : 'inline-source-map',
   module: {
     rules: [
       // look for tsx files to transform into the bundle
@@ -50,11 +50,11 @@ module.exports = {
     static: path.resolve(__dirname, './dist'),
     // historyApiFallback: true,
     historyApiFallback: {
-    rewrites: [
-      { from: /^\/$/, to: '/index.html' }, // default index route
-      { from: /./, to: '/index.html' }, // all other routes
-    ],
-  },
+      rewrites: [
+        { from: /^\/$/, to: '/index.html' }, // default index route
+        { from: /./, to: '/index.html' }, // all other routes
+      ],
+    },
     port: 5500,
   },
   plugins: [
@@ -74,17 +74,20 @@ module.exports = {
     new ESLintPlugin({
       extensions: ['ts', 'tsx'],
     }),
+    new CopyPlugin({
+      patterns: [{ from: './TestComponent.tsx', to: '.' }],
+    }),
 
     // netlify requires a _redirects file in the root of the dist folder to work with react router
     ...(process.env.BUILD === 'netlify'
       ? [
-        new CopyPlugin({
-          patterns: [{ from: 'netlify/_redirects', to: '.' }],
-        }),
-      ]
+          new CopyPlugin({
+            patterns: [{ from: 'netlify/_redirects', to: '.' }],
+          }),
+        ]
       : []),
-      ...(isProduction ? [] : [new ESLintPlugin({ extensions: ['ts', 'tsx'] })]),  
-      ...(isProduction ? [new CompressionWebpackPlugin()] : []),
+    ...(isProduction ? [] : [new ESLintPlugin({ extensions: ['ts', 'tsx'] })]),
+    ...(isProduction ? [new CompressionWebpackPlugin()] : []),
   ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other
   // when source code changes, only the source code bundle will need to be updated, not the vendor code

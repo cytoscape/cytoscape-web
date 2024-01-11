@@ -54,8 +54,10 @@ const getLayout = (
   return algorithm
 }
 
+export type LayoutStore = LayoutState & LayoutAction
+
 export const useLayoutStore = create(
-  immer<LayoutState & LayoutAction>((set) => ({
+  immer<LayoutStore>((set) => ({
     layoutEngines: LayoutEngines,
     preferredLayout: defAlgorithm,
     preferredHierarchicalLayout: defHierarchicalAlgorithm,

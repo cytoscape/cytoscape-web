@@ -17,6 +17,8 @@ import { isHCX } from '../../../features/HierarchyViewer/utils/hierarcy-util'
 import { LLMQueryResultPanel } from '../../../features/LLMQuery/components'
 import llmLogo from '../../../assets/openai.svg'
 
+import { pluginArgs } from '../../../store/plugins/PluginArgs'
+
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
 }
@@ -168,7 +170,7 @@ export const NetworkBrowserPanel = ({
       <div hidden={currentTabIndex !== 2}>
         {currentTabIndex === 2 && (
           <Box>
-            <LLMQueryResultPanel />
+            <LLMQueryResultPanel pluginArgs={pluginArgs} />
           </Box>
         )}
       </div>

@@ -10,7 +10,7 @@ interface MessageAction {
   addMessage: (message: Message) => void
 }
 
-type MessageStore = MessageState & MessageAction
+export type MessageStore = MessageState & MessageAction
 
 export const useMessageStore = create(
   immer<MessageStore>((set) => ({

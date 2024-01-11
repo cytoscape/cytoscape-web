@@ -60,7 +60,7 @@ interface NetworkActions {
   deleteAll: () => void
 }
 
-type NetworkStore = NetworkState & NetworkActions & UpdateActions
+export type NetworkStore = NetworkState & NetworkActions & UpdateActions
 
 const persist =
   (config: StateCreator<NetworkStore>) =>

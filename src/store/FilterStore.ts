@@ -21,7 +21,7 @@ interface FilterAction {
   setOptions: (options: SearchOptions) => void
 }
 
-type FilterStore = FilterState<any> & FilterAction
+export type FilterStore = FilterState<any> & FilterAction
 
 export const useFilterStore = create(
   immer<FilterStore>((set, get) => ({

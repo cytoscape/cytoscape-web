@@ -1,15 +1,7 @@
 import { MenuItem, Tooltip, Box } from '@mui/material'
 import { ReactElement } from 'react'
-import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
 import { IdType } from '../../../models/IdType'
 import { serializeValueList } from '../../../models/TableModel/impl/ValueTypeImpl'
-import { useCredentialStore } from '../../../store/CredentialStore'
-import { useMessageStore } from '../../../store/MessageStore'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { useTableStore } from '../../../store/TableStore'
-import { useUiStateStore } from '../../../store/UiStateStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import {
   SubsystemTag,
   HcxMetaTag,
@@ -18,8 +10,22 @@ import { isHCX } from '../../HierarchyViewer/utils/hierarcy-util'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { translateMemberIds } from '../api/translateMemberIds'
 import { useLLMQueryStore } from '../store'
+import { PluginArgs } from '../../../store/plugins/PluginArgs'
 
-export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
+export const RunLLMQueryMenuItem = (props: {
+  handleClose: () => void
+  pluginArgs: PluginArgs
+}): ReactElement => {
+  const { pluginArgs } = props
+  const {
+    useUiStateStore,
+    useMessageStore,
+    useWorkspaceStore,
+    useNetworkSummaryStore,
+    useCredentialStore,
+    useViewModelStore,
+    useTableStore,
+  } = pluginArgs
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
@@ -170,8 +176,8 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     const tooltipTitle = loading
       ? 'Generating response...'
       : LLMApiKey === ''
-      ? 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
-      : 'LLM query is only available for HCX networks'
+        ? 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
+        : 'LLM query is only available for HCX networks'
     return (
       <Tooltip title={tooltipTitle}>
         <Box>{menuItem}</Box>

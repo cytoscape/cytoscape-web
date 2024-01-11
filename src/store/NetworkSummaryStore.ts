@@ -8,7 +8,7 @@ import {
   putNetworkSummaryToDb,
 } from './persist/db'
 
-interface NetworkSummaryStore {
+interface NetworkSummaryState {
   summaries: Record<IdType, NdexNetworkSummary>
 }
 
@@ -29,8 +29,10 @@ interface NetworkSummaryActions {
   deleteAll: () => void
 }
 
+export type NetworkSummaryStore = NetworkSummaryState & NetworkSummaryActions
+
 export const useNetworkSummaryStore = create(
-  immer<NetworkSummaryStore & NetworkSummaryActions>((set, get) => ({
+  immer<NetworkSummaryStore>((set, get) => ({
     summaries: {},
     add: (networkId: IdType, summary: NdexNetworkSummary) => {
       set((state) => {

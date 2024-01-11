@@ -100,7 +100,7 @@ interface TableAction {
   deleteAll: () => void
 }
 
-type TableStore = TableState & TableAction
+export type TableStore = TableState & TableAction
 
 const persist =
   (config: StateCreator<TableStore>) =>
