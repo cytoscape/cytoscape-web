@@ -1,10 +1,38 @@
+
+/**
+ * Service information
+ * The value returned from the top-level service endpoint
+ * e.g. http://cd.ndexbio.org/cd/communitydetection/v1
+ * 
+ * This entry will be used to create the root menu items for the service apps
+ * 
+ */
 export interface Services {
-  algorithms: {
-    [key: string]: Service
-  }
+  /**
+   * List of available algorithms to be applied to a network / nodes / edges
+   */
+  algorithms: Algorithm[] 
+
+  name?: string
+  description?: string
+  inputDataFormat?: string
+  outputDataFormat?: string
 }
 
-export interface Service {
+
+/** 
+ * Service information with status (active / error)
+ * 
+ * This entry will be used to create the root menu items for the service apps
+ * 
+ */
+export interface ServiceStatus {
+  url: string // Unique identifier of the service
+  services?: Services
+  error?: string
+}
+
+export interface Algorithm {
   // Name of algorithm
   name: string;
   

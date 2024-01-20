@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AppDefinition, AppType } from './AppDefinition'
 import {
   ListItemIcon,
@@ -8,16 +8,18 @@ import {
   MenuItem,
 } from '@mui/material'
 import { DropdownMenuProps } from '../DropdownMenuProps'
+import { useServiceMetadata } from './useServiceMetadata'
+import { ServiceStatus } from './ServiceAppMetadata'
 
 export const EXAMPLE_CONFIG: AppDefinition[] = [
   // Add your AppDefinition objects here
   {
     type: AppType.Service,
-    url: 'https://example.com',
+    url: 'http://cd.ndexbio.org/cd/communitydetection/v1',
   },
   {
     type: AppType.Service,
-    url: 'https://google.com',
+    url: 'http://cdservice.cytoscape.org/cd/communitydetection/v1/algorithms',
   },
 ]
 
@@ -35,6 +37,31 @@ export const AppMenu = ({ label }: DropdownMenuProps): JSX.Element => {
   const handleCloseDropdownMenu = (): void => {
     setAnchorEl(null)
   }
+
+  const [serviceStatus, setServiceStatus] = useState<ServiceStatus[]>([])
+
+  useEffect(() => {
+    const fetchServices = async (): Promise<void> => {
+      const result = await useServiceMetadata(EXAMPLE_CONFIG)
+      setServiceStatus(result)
+      console.log('#### Setting Available Service List', result)
+    }
+
+    fetchServices()
+      .then((res) => {
+        console.log('### Got #Available Service List', res)
+      })
+      .catch((error) => {
+        console.warn('Error', error)
+      })
+      .finally(() => {
+        console.log('Finally OK')
+      })
+  }, [])
+
+  useEffect(() => {
+    console.log('*** Service Status UPDATE', serviceStatus)
+  }, [serviceStatus])
 
   return (
     <>
