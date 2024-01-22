@@ -13,28 +13,20 @@ const markForPageReload = debounce(() => {
 
 export const SyncTabsAction = (): ReactElement => {
   const [localTimestamp, setLocalTimestamp] = useState(0)
-  // const [reloadToRootPage, setReloadToRootPage] = useState(false)
 
   const navigate = useNavigate()
   useEffect(() => {
     const onVisibilityChange = (): void => {
       if (document.hidden) {
-        // get timestamp when the tab was hidden
         setLocalTimestamp(Date.now())
       } else {
-        // the tab is now active, get the timestamp from db
-        // if the db timestamp is newer than the local timestamp, show the dialog
-        // as it means the user has made changes in another tab
         void getTimestampFromDb().then((timestamp) => {
           if ((timestamp ?? Date.now()) > localTimestamp) {
-            // console.log(reloadToRootPage)
-            // if (reloadToRootPage) {
+            // navigate to /networks/ and reload the page
+            // navigate to /networks/ because the user may have deleted the current network
+            // and navigating to /networks/<deleted_network_id> will re-add the network to the workspace
             navigate('..', { relative: 'path' })
             window.location.reload()
-            // window.location.href = '/'
-            // } else {
-            // window.location.reload()
-            // }
           }
         })
       }
@@ -56,23 +48,13 @@ export const SyncTabsAction = (): ReactElement => {
         }
         switch (change.type) {
           case 1: // CREATED
-            // console.log('change created:', change)
             markForPageReload()
             break
           case 2: // UPDATED
-            // console.log('change updated:', change)
             markForPageReload()
             break
           case 3: // DELETED
-            // console.log('change deleted:', change)
             markForPageReload()
-
-            // the current network has been deleted from another tab,
-            // instead of reloading the current url e.g. /workspace/networks/<currentNetworkId>
-            // reload to the root url e.g. / and let the routing logic handle which route to navigate to
-            // if (change.oldObj?.id === currentNetworkId) {
-            //   setReloadToRootPage(true)
-            // }
             break
         }
       })
