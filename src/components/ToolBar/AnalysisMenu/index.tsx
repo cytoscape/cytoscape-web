@@ -8,6 +8,8 @@ import {
   RunLLMQueryMenuItem,
 } from '../../../features/LLMQuery/components'
 
+import { CDAPSOptionsMenuItem } from '../../../features/ServiceApps/components'
+
 export const AnalysisMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
 ) => {
@@ -50,6 +52,7 @@ export const AnalysisMenu: React.FC<DropdownMenuProps> = (
       >
         <RunLLMQueryMenuItem handleClose={handleClose} />
         <LLMQueryOptionsMenuItem handleClose={handleClose} />
+        <CDAPSOptionsMenuItem handleClose={handleClose} />
       </Menu>
     </div>
   )
