@@ -5,7 +5,6 @@ import {
   putTimestampToDb,
 } from '../store/persist/db'
 import debounce from 'lodash.debounce'
-import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { useNavigate } from 'react-router-dom'
 
 const markForPageReload = debounce(() => {
@@ -14,10 +13,7 @@ const markForPageReload = debounce(() => {
 
 export const SyncTabsAction = (): ReactElement => {
   const [localTimestamp, setLocalTimestamp] = useState(0)
-  const [reloadToRootPage, setReloadToRootPage] = useState(false)
-  const currentNetworkId = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
+  // const [reloadToRootPage, setReloadToRootPage] = useState(false)
 
   const navigate = useNavigate()
   useEffect(() => {
@@ -31,10 +27,14 @@ export const SyncTabsAction = (): ReactElement => {
         // as it means the user has made changes in another tab
         void getTimestampFromDb().then((timestamp) => {
           if ((timestamp ?? Date.now()) > localTimestamp) {
-            if (reloadToRootPage) {
-              navigate('/')
-            }
+            // console.log(reloadToRootPage)
+            // if (reloadToRootPage) {
+            navigate('..', { relative: 'path' })
             window.location.reload()
+            // window.location.href = '/'
+            // } else {
+            // window.location.reload()
+            // }
           }
         })
       }
@@ -70,9 +70,9 @@ export const SyncTabsAction = (): ReactElement => {
             // the current network has been deleted from another tab,
             // instead of reloading the current url e.g. /workspace/networks/<currentNetworkId>
             // reload to the root url e.g. / and let the routing logic handle which route to navigate to
-            if (change.oldObj?.id === currentNetworkId) {
-              setReloadToRootPage(true)
-            }
+            // if (change.oldObj?.id === currentNetworkId) {
+            //   setReloadToRootPage(true)
+            // }
             break
         }
       })
