@@ -53,9 +53,9 @@ export const SelectedData = {
 
 // Type definitions to enable IDE's auto-completion for the static values
 
-type AppType = (typeof AppType)[keyof typeof AppType]
-type AppAction = (typeof AppAction)[keyof typeof AppAction]
-type SelectedData = (typeof SelectedData)[keyof typeof SelectedData]
+export type AppType = (typeof AppType)[keyof typeof AppType]
+export type AppAction = (typeof AppAction)[keyof typeof AppAction]
+export type SelectedData = (typeof SelectedData)[keyof typeof SelectedData]
 
 /**
  * The definition of an app to be registered to the main menu bar

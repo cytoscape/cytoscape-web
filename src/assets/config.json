@@ -24,6 +24,12 @@
     "8bd2797c-3056-11ec-94bf-525400c25d22",
     "ab0eeef6-25bd-11e9-a05d-525400c25d22"
   ],
+  "defaultApps": [
+    {
+      "type": "AppType.Service",
+      "url": "http://cd.ndexbio.org/cd/communitydetection/v1"
+    }
+  ],
   "maxNetworkElementsThreshold": 20000,
   "maxNetworkFileSize": 524288000,
   "urlBaseName": "",

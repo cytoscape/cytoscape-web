@@ -1,6 +1,7 @@
 import { createContext } from 'react'
 
 import { IdType } from './models/IdType'
+import { AppDefinition } from './components/ToolBar/AppMenu/AppDefinition'
 
 export interface KeycloakConfig {
   url: string
@@ -16,6 +17,7 @@ export interface AppConfig {
   testNetworks: IdType[]
   urlBaseName: string
   openAIAPIKey: string
+  defaultApps: AppDefinition[]
 }
 
 export const defaultAppConfig: AppConfig = {
@@ -45,6 +47,7 @@ export const defaultAppConfig: AppConfig = {
   ],
   urlBaseName: '',
   openAIAPIKey: '',
+  defaultApps: []
 }
 
 export const AppConfigContext = createContext<AppConfig>(defaultAppConfig)

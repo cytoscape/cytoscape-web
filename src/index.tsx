@@ -3,7 +3,7 @@ import './index.css'
 import './split-pane.css'
 import './data-grid.css'
 import appConfig from './assets/config.json'
-import { AppConfigContext } from './AppConfigContext'
+import { AppConfig, AppConfigContext } from './AppConfigContext'
 import { App } from './App'
 
 // this allows immer to work with Map and Set
@@ -15,7 +15,9 @@ enableMapSet()
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
 const rootElement: HTMLElement | null = document.getElementById('root')
+const config = appConfig as AppConfig
 const { keycloakConfig } = appConfig
+
 const keycloak = new Keycloak(keycloakConfig)
 keycloak
   .init({
@@ -27,7 +29,7 @@ keycloak
   .then(() => {
     if (rootElement !== null) {
       ReactDOM.createRoot(rootElement).render(
-        <AppConfigContext.Provider value={appConfig}>
+        <AppConfigContext.Provider value={config}>
           <React.StrictMode>
             <KeycloakContext.Provider value={keycloak}>
               <App />

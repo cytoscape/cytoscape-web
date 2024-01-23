@@ -1,32 +1,25 @@
-import { useEffect, useState } from 'react'
-import { AppDefinition, AppType } from './AppDefinition'
-import {
-  ListItemIcon,
-  ListItemText,
-  Button,
-  Menu,
-  MenuItem,
-} from '@mui/material'
+import { useContext, useEffect, useState } from 'react'
+import { ListItemText, Button, Menu, MenuItem } from '@mui/material'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { useServiceMetadata } from './useServiceMetadata'
 import { ServiceStatus } from './ServiceAppMetadata'
-
-export const EXAMPLE_CONFIG: AppDefinition[] = [
-  // Add your AppDefinition objects here
-  {
-    type: AppType.Service,
-    url: 'http://cd.ndexbio.org/cd/communitydetection/v1',
-  },
-  {
-    type: AppType.Service,
-    url: 'http://cdservice.cytoscape.org/cd/communitydetection/v1/algorithms',
-  },
-]
+import { AppConfigContext } from '../../../AppConfigContext'
 
 export const AppMenu = ({ label }: DropdownMenuProps): JSX.Element => {
+  const { defaultApps } = useContext(AppConfigContext)
+
   // For open the main menu with the Button
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
+  const [openSubMenu, setOpenSubMenu] = useState<number | null>(null)
+
+  const handleOpenSubMenu = (index: number): void => {
+    setOpenSubMenu(index)
+  }
+
+  const handleCloseSubMenu = (): void => {
+    setOpenSubMenu(null)
+  }
 
   const handleOpenDropdownMenu = (
     event: React.MouseEvent<HTMLButtonElement>,
@@ -36,32 +29,27 @@ export const AppMenu = ({ label }: DropdownMenuProps): JSX.Element => {
 
   const handleCloseDropdownMenu = (): void => {
     setAnchorEl(null)
+    setOpenSubMenu(null)
   }
 
   const [serviceStatus, setServiceStatus] = useState<ServiceStatus[]>([])
 
   useEffect(() => {
     const fetchServices = async (): Promise<void> => {
-      const result = await useServiceMetadata(EXAMPLE_CONFIG)
+      const result = await useServiceMetadata(defaultApps)
       setServiceStatus(result)
       console.log('#### Setting Available Service List', result)
     }
 
     fetchServices()
       .then((res) => {
-        console.log('### Got #Available Service List', res)
+        console.log('### Got #Available Service List')
       })
       .catch((error) => {
-        console.warn('Error', error)
+        console.warn('Error creating menu', error)
       })
-      .finally(() => {
-        console.log('Finally OK')
-      })
+      .finally(() => {})
   }, [])
-
-  useEffect(() => {
-    console.log('*** Service Status UPDATE', serviceStatus)
-  }, [serviceStatus])
 
   return (
     <>
@@ -86,11 +74,38 @@ export const AppMenu = ({ label }: DropdownMenuProps): JSX.Element => {
         keepMounted
         onClose={handleCloseDropdownMenu}
         onMouseLeave={handleCloseDropdownMenu}
+        aria-haspopup="true"
+        onClick={(event) => event.stopPropagation()}
       >
-        {EXAMPLE_CONFIG.map((app, index) => (
-          <MenuItem key={index} onClick={handleCloseDropdownMenu}>
-            <ListItemIcon>{/* Add your icon here */}</ListItemIcon>
-            <ListItemText primary={app.url} />
+        {serviceStatus.map((status: ServiceStatus, index: number) => (
+          <MenuItem
+            key={index}
+            onMouseEnter={() => handleOpenSubMenu(index)}
+            onMouseLeave={handleCloseSubMenu}
+            onClick={handleCloseDropdownMenu}
+          >
+            <ListItemText primary={status.services?.name} />
+            {openSubMenu === index && (
+              <Menu
+                id={`submenu-${index}`}
+                anchorEl={anchorEl}
+                open={openSubMenu === index}
+                keepMounted
+                onClose={handleCloseDropdownMenu}
+                onMouseLeave={handleCloseDropdownMenu}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left',
+                }}
+              >
+                {status.services?.algorithms?.map((alg, index) => (
+                  <MenuItem key={index} onClick={handleCloseDropdownMenu}>
+                    {alg.displayName}
+                  </MenuItem>
+                ))}
+              </Menu>
+            )}
           </MenuItem>
         ))}
       </Menu>
