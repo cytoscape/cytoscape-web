@@ -57,15 +57,12 @@ export const createTreeLayout = (
 
 export const CirclePackingType = 'circlePacking'
 
-export const createNetworkView = (
-  network: Network,
-  vs: VisualStyle,
-  view: NetworkView[],
+export const createCirclePackingView = (
   primaryView: NetworkView,
   root: HierarchyNode<D3TreeNode>,
 ): CirclePackingView => {
   const cpView: CirclePackingView = {
-    id: network.id,
+    id: primaryView.id,
     type: 'circlePacking',
     viewId: 'test',
     selectedNodes: primaryView.selectedNodes,

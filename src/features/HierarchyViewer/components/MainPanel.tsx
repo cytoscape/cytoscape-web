@@ -65,6 +65,7 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.summaries[currentNetworkId],
   )
   const addRenderer = useRendererStore((state) => state.add)
+  const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
 
   const checkDataType = (): void => {
@@ -94,6 +95,9 @@ export const MainPanel = (): JSX.Element => {
     } else {
       setIsHierarchy(false)
       setMetadata(undefined)
+      if(renderers.circlePacking !== undefined) {
+        deleteRenderer(renderers.circlePacking.id)
+      }
     }
   }
 
@@ -142,6 +146,7 @@ export const MainPanel = (): JSX.Element => {
   }, [selectedNodes])
 
   if (!isHierarchy) {
+    
     return <MessagePanel message="This network is not a hierarchy" />
   }
 

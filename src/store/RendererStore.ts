@@ -17,7 +17,7 @@ interface RendererState {
 
 interface RendererAction {
   add: (renderer: Renderer) => void
-  delete: (rendererName: string) => void
+  delete: (rendererId: string) => void
 }
 
 export const useRendererStore = create(
@@ -31,9 +31,9 @@ export const useRendererStore = create(
         state.renderers[renderer.id] = renderer
       })
     },
-    delete: (rendererName: string) => {
+    delete: (rendererId: string) => {
       set((state) => {
-        delete state.renderers[rendererName]
+        delete state.renderers[rendererId]
       })
     },
   })),

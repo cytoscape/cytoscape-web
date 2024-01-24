@@ -80,11 +80,11 @@ export const cyNetDag2tree2 = (
   const children: NodeCollection = node.outgoers().nodes()
 
   if (children.size() === 0) {
-    console.log('## This is a Leaf node. adding genes', node.data())
+    // console.log('## This is a Leaf node. adding genes', node.data())
     // Add all members to the new node as new leaf nodes
     getMembers(nodeId, nodeTable).forEach((member: string) => {
       if (members.has(member)) {
-        console.log('##Duplicate member', member)
+        // console.log('##Duplicate member', member)
       } else {
         members.add(member)
       }
@@ -107,11 +107,11 @@ export const cyNetDag2tree2 = (
       })
     })
     const nodeMembers: Set<string> = new Set(getMembers(nodeId, nodeTable))
-    console.log(
-      'Child members & node mem',
-      Array.from(childMembers).sort(),
-      Array.from(nodeMembers).sort(),
-    )
+    // console.log(
+    //   'Child members & node mem',
+    //   Array.from(childMembers).sort(),
+    //   Array.from(nodeMembers).sort(),
+    // )
 
     nodeMembers.forEach((member: string) => {
       members.add(member)

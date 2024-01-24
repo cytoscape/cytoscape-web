@@ -5,10 +5,15 @@ import * as d3Zoom from 'd3-zoom'
 import { useEffect, useRef, useState } from 'react'
 import { Network } from '../../../../models/NetworkModel'
 import { Table } from '../../../../models/TableModel'
-import { createTreeLayout } from './CirclePackingLayout'
+import {
+  createCirclePackingView,
+  createTreeLayout,
+} from './CirclePackingLayout'
 import { getColorMapper } from './CirclePackingUtils'
 import { IdType } from '../../../../models/IdType'
 import { D3TreeNode } from './D3TreeNode'
+import { useViewModelStore } from '../../../../store/ViewModelStore'
+import { NetworkView } from '../../../../models/ViewModel'
 
 interface CirclePackingPanelProps {
   network?: Network
@@ -31,6 +36,8 @@ export const CirclePackingPanel = ({
   const refParent = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
 
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
+
   useEffect(() => {
     if (network === undefined) return
 
@@ -38,6 +45,14 @@ export const CirclePackingPanel = ({
       network,
       nodeTable,
     )
+    const primaryView = getViewModel(network.id)
+    if (primaryView === undefined) return
+
+    const newViewModel = createCirclePackingView(
+      primaryView,
+      rootNode,
+    )
+    console.log('CP:::', newViewModel)
   }, [network])
 
   useEffect(() => {

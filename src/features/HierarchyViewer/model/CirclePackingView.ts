@@ -15,6 +15,6 @@ export interface CirclePackingView extends NetworkView {
   viewId?: string
   */
 
-  // Data storage for the D3 hierarchy model
+  // Extra sata storage for the D3 hierarchy model
   hierarchy: HierarchyNode<any>
 }
