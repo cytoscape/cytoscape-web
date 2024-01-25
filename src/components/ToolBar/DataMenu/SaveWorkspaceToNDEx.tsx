@@ -1,69 +1,99 @@
-import { MenuItem, Box, Tooltip } from '@mui/material'
-import { ReactElement, useContext } from 'react'
-import { BaseMenuProps } from '../BaseMenuProps'
-
+import React, { useState, useContext } from 'react';
+import { MenuItem, Box, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
+import { BaseMenuProps } from '../BaseMenuProps';
 // @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
+import { NDEx } from '@js4cytoscape/ndex-client';
+import { useCredentialStore } from '../../../store/CredentialStore';
+import { AppConfigContext } from '../../../AppConfigContext';
+import { useMessageStore } from '../../../store/MessageStore';
+import { KeycloakContext } from '../../..';
+import { getWorkspaceFromDb } from '../../../store/persist/db';
 
-import { useCredentialStore } from '../../../store/CredentialStore'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { useMessageStore } from '../../../store/MessageStore'
-import { KeycloakContext } from '../../..'
+export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactElement => {
+  const { ndexBaseUrl } = useContext(AppConfigContext);
+  const client = useContext(KeycloakContext);
+  const getToken = useCredentialStore((state) => state.getToken);
+  const authenticated: boolean = client?.authenticated ?? false;
+  const addMessage = useMessageStore((state) => state.addMessage);
 
-import {
-  getWorkspaceFromDb
-} from '../../../store/persist/db'
-import { Workspace } from '../../../models/WorkspaceModel'
+  const [workspaceName, setWorkspaceName] = useState<string>('');
+  const [openDialog, setOpenDialog] = useState<boolean>(false);
 
+  const handleOpenDialog = (): void => {
+    setOpenDialog(true);
+  };
+  
+  const handleCloseDialog = (): void => {
+    setOpenDialog(false);
+  };
 
-export const SaveWorkspaceToNDExMenuItem = (
-  props: BaseMenuProps,
-): ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
-
-  const client = useContext(KeycloakContext)
-
-  const getToken = useCredentialStore((state) => state.getToken)
-  const authenticated: boolean = client?.authenticated ?? false
-
-  const addMessage = useMessageStore((state) => state.addMessage)
-
+  const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    setWorkspaceName(event.target.value);
+  };
 
   const saveCopyToNDEx = async (): Promise<void> => {
-    const ndexClient = new NDEx(ndexBaseUrl)
-    const accessToken = await getToken()
-    ndexClient.setAuthToken(accessToken)
-
-    try {
-      
-        void getWorkspaceFromDb().then(async (workspace: Workspace) => {
-        console.log(workspace)
-        const { workspaceid } = await ndexClient.createCyWebWorkspace(workspace)
-
-      addMessage({
-        message: `Saved a copy of the current network to NDEx with new uuid ${
-          workspaceid as string
-        }`,
-        duration: 3000,
-      })
-    })
-    } catch (e) {
-      console.log(e)
-
-      addMessage({
-        message: `Error: Could not save a copy of the current network to NDEx. ${
-          e.message as string
-        }`,
-        duration: 3000,
-      })
+    if (workspaceName.trim().length === 0) {
+      alert("Please enter a workspace name");
+      return;
     }
 
-    props.handleClose()
-  }
+    const ndexClient = new NDEx(ndexBaseUrl);
+    const accessToken = await getToken();
+    ndexClient.setAuthToken(accessToken);
+
+    try {
+      const workspace = await getWorkspaceFromDb();
+      const response = await ndexClient.createCyWebWorkspace({
+        name: workspaceName,
+        options: { currentNetwork: workspace.currentNetworkId },
+        networkIDs: workspace.networkIds
+      });
+      const { uuid, modificationTime } = response;
+      console.log(uuid)
+      console.log(modificationTime)
+
+      addMessage({
+        message: `Saved workspace to NDEx.`,
+        duration: 3000,
+      });
+    } catch (e) {
+      console.error(e);
+      addMessage({
+        message: `Error: Could not save workspace to NDEx. ${e.message as string}`,
+        duration: 3000,
+      });
+    }
+
+    handleCloseDialog();
+    props.handleClose();
+  };
 
   const handleSaveCurrentNetworkToNDEx = async (): Promise<void> => {
-    await saveCopyToNDEx()
-  }
+    handleOpenDialog();
+  };
+
+  const dialog = (
+    <Dialog open={openDialog} onClose={handleCloseDialog}>
+      <DialogTitle>Save Workspace to NDEx</DialogTitle>
+      <DialogContent>
+        <TextField
+          autoFocus
+          margin="dense"
+          id="name"
+          label="Workspace Name"
+          type="text"
+          fullWidth
+          variant="standard"
+          value={workspaceName}
+          onChange={handleNameChange}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleCloseDialog}>Cancel</Button>
+        <Button onClick={saveCopyToNDEx}>Save</Button>
+      </DialogActions>
+    </Dialog>
+  );
 
   const menuItem = (
     <MenuItem
@@ -72,15 +102,16 @@ export const SaveWorkspaceToNDExMenuItem = (
     >
       Save workspace to NDEx (overwrite)
     </MenuItem>
-  )
+  );
 
-  if (authenticated) {
-    return <>{menuItem}</>
-  } else {
-    return (
-      <Tooltip title="Login to save a copy of the current network to NDEx">
-        <Box>{menuItem}</Box>
-      </Tooltip>
-    )
-  }
-}
+  return (
+    <>
+      {authenticated ? menuItem : (
+        <Tooltip title="Login to save a copy of the current network to NDEx">
+          <Box>{menuItem}</Box>
+        </Tooltip>
+      )}
+      {dialog}
+    </>
+  );
+};

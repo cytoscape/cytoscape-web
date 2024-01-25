@@ -15,7 +15,7 @@ import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
-import { OpenWorkspaceFromNDExMenuItem } from './OpenWorkspaceFromNDEx'
+import { LoadWorkspaceFromNDExMenuItem } from './LoadWorkspaceFromNDExMenuItem'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -57,7 +57,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
           'aria-labelledby': label,
         }}
       >
-        <OpenWorkspaceFromNDExMenuItem handleClose={handleClose} />
+        <LoadWorkspaceFromNDExMenuItem handleClose={handleClose} />
         <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />
         <Divider />
         <LoadFromNdexMenuItem handleClose={handleClose} />
