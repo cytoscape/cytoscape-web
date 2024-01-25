@@ -2,10 +2,12 @@ import { ReactElement, useEffect, useState } from 'react'
 import {
   getDb,
   getTimestampFromDb,
+  getWorkspaceFromDb,
   putTimestampToDb,
 } from '../store/persist/db'
 import debounce from 'lodash.debounce'
 import { useNavigate } from 'react-router-dom'
+import { parsePathName } from '../utils/paths-util'
 
 const markForPageReload = debounce(() => {
   void putTimestampToDb(Date.now())
@@ -20,13 +22,20 @@ export const SyncTabsAction = (): ReactElement => {
       if (document.hidden) {
         setLocalTimestamp(Date.now())
       } else {
-        void getTimestampFromDb().then((timestamp) => {
+        void getTimestampFromDb().then(async (timestamp) => {
+          const parsed = parsePathName(location.pathname)
+          const { networkId, workspaceId } = parsed
+
+          const workspace = await getWorkspaceFromDb(workspaceId)
+
           if ((timestamp ?? Date.now()) > localTimestamp) {
-            // navigate to /networks/ and reload the page
-            // navigate to /networks/ because the user may have deleted the current network
-            // and navigating to /networks/<deleted_network_id> will re-add the network to the workspace
-            navigate('..', { relative: 'path' })
-            window.location.reload()
+            // if the network at the current url was deleted, navigate to /networks/ and reload the page
+            if (!workspace.networkIds.includes(networkId)) {
+              navigate('..', { relative: 'path' })
+              window.location.reload()
+            } else {
+              window.location.reload()
+            }
           }
         })
       }
