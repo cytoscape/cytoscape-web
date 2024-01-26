@@ -42,12 +42,6 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   )
 
   useEffect(() => {
-    if (networkId !== undefined) {
-      console.log('network changed##', networkId)
-    }
-  }, [networkId])
-
-  useEffect(() => {
     if (
       (networkId === activeNetworkView || activeNetworkView === '') &&
       enablePopup
@@ -95,7 +89,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const bgColor = vs?.networkBackgroundColor?.defaultValue as string
 
   // Show tabs only when multiple views are available
-  if (views.length === 0) {
+  if (Object.keys(renderers).length === 1) {
     // Use default renderer without tab if there is only one view
     return (
       <NetworkTab
