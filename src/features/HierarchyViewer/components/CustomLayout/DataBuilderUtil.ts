@@ -24,11 +24,11 @@ export const getMembers = (nodeId: IdType, table: Table): string[] => {
   }
 
   if (row[SubsystemTag.members] === undefined) {
-    const memberName: string[] = row[SubsystemTag.memberName] as string[]
-    if (memberName === undefined) {
+    const memberNames: string[] = row[SubsystemTag.memberNames] as string[]
+    if (memberNames === undefined) {
       throw new Error(`Member list not found for ${nodeId}`)
     }
-    return memberName
+    return memberNames
   } else {
     return row[SubsystemTag.members] as string[]
   }

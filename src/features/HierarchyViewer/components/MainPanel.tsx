@@ -174,9 +174,8 @@ export const MainPanel = (): JSX.Element => {
     description: 'Circle Packing Renderer',
     getComponent: (networkData: Network) => (
       <CirclePackingPanel
-        network={currentNetwork}
+        network={networkData}
         nodeTable={tableRecord?.nodeTable}
-        selected={targetNode}
       />
     ),
   }
