@@ -9,4 +9,5 @@ export interface D3TreeNode {
   name: string // Name of the node to be used as label
   size: number // Numeric value of the node to be used for circle size
   members: string[] // members assigned to this node
+  selected?: boolean // Whether this node is selected
 }

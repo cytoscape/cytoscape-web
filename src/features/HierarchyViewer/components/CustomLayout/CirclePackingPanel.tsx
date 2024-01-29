@@ -24,6 +24,16 @@ interface CirclePackingPanelProps {
   // selected?: IdType // Selected subsystem
 }
 
+const CpDefaults = {
+  borderColor: '#666',
+  borderWidth: 0.05,
+  selectedBorderColor: 'orange',
+} as const
+
+const CP_WRAPPER_CLASS = 'circle-packing-wrapper'
+
+// type CpDefaultsType = typeof CpDefaults[keyof typeof CpDefaults]
+
 /**
  * Circle Packing renderer as a variant of the network viewer
  *
@@ -102,7 +112,7 @@ export const CirclePackingPanel = ({
    */
   useEffect(() => {
     if (network === undefined) return
-    const primaryView = getViewModel(network.id)
+    const primaryView = getViewModel(networkId)
     if (primaryView === undefined) return
 
     const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> = createTreeLayout(
@@ -118,27 +128,23 @@ export const CirclePackingPanel = ({
   }, [network])
 
   useEffect(() => {
-    
     const handleZoom = (e: any): void => {
       d3Selection.select('svg g').attr('transform', e.transform)
     }
-    
+
     if (
       ref.current === null ||
       initRef.current ||
       network === undefined ||
       dimensions.width === 0 ||
       dimensions.height === 0
-    ) return
+    )
+      return
 
-    if(circlePackingView === undefined) return
+    if (circlePackingView === undefined) return
 
-    // const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> = createTreeLayout(
-    //   network,
-    //   nodeTable,
-    // )
-
-    const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> = circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
+    const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
+      circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
     const pack = d3Hierarchy
       .pack()
       .size([dimensions.width, dimensions.width])
@@ -148,12 +154,14 @@ export const CirclePackingPanel = ({
     const colorScale = getColorMapper([0, 1000])
     // Pick the base tag
     const svg = d3Selection.select(ref.current)
-    const wrapper = svg.append('g').attr('class', 'circle-packing-wrapper')
-    const zoom = d3Zoom.zoom().scaleExtent([0.1, 20]).on('zoom', handleZoom)
+    const wrapper = svg.append('g').attr('class', CP_WRAPPER_CLASS)
+    const zoom = d3Zoom.zoom().scaleExtent([0.1, 40]).on('zoom', handleZoom)
 
-    svg.call(zoom)
+    svg.call(zoom).on('dblclick.zoom', () => {
+      svg.call(zoom, d3Zoom.zoomIdentity)
+    })
 
-    let timeoutId: any = null
+    let count = 0
     wrapper
       .append('g')
       .selectAll('circle')
@@ -163,43 +171,30 @@ export const CirclePackingPanel = ({
       .attr('cy', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.y)
       .attr('r', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.r)
       .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        getViewModel(network.id)?.selectedNodes.includes(d.data.id)
-          ? 'orange'
-          : '#666',
+        selected === d.data.id ? 'orange' : '#666',
       )
-      .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        d.data.id === selected || d.data.originalId === selected ? 1 : 0.04,
-      )
+      .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<any>) => {
+        return d.data.id === selected || d.data.originalId === selected
+          ? 1
+          : CpDefaults.borderWidth
+      })
       .attr('fill', (d) => {
-        return colorScale(d.depth * 100)
+        return colorScale(d.depth * 200)
       })
       .on('mouseenter', function (e, d) {
-        if (timeoutId !== null) {
-          clearTimeout(timeoutId)
-        }
-
-        // d3Selection.select(this).attr('stroke', 'red').attr('stroke-width', 1)
-        timeoutId = setTimeout(() => {
-          if (tooltipOpen === false) {
-            setTooltipContent(`Tooltip content for ${d.data.name}`)
-            setTooltipPosition({ x: e.clientX, y: e.clientY })
-            setTooltipOpen(true)
-          }
-        }, 1000)
+        count += 1
+        setHoveredEnter(e.target)
+        console.log('Mouse enter', d.data.name, count)
       })
-      .on('mouseout', function () {
-        if (timeoutId !== null) {
-          clearTimeout(timeoutId)
-        }
+      .on('mouseout', function (e, d) {
+        setHoveredOut(e.target)
+        console.log('Mouse ------------->', d.data.name, count)
         d3Selection
-          .select(this)
-          // .attr('stroke', '#666')
-          .attr('stroke-width', 0.1)
-
-        setTooltipOpen(false)
+          .select(e.target)
+          .attr('stroke', CpDefaults.borderColor)
+          .attr('stroke-width', CpDefaults.borderWidth)
       })
       .on('click', function (e, d) {
-        console.log('click', e, d)
         if (d.height !== 0) {
           if (d.data.originalId !== undefined) {
             exclusiveSelect(network.id, [d.data.originalId], [])
@@ -209,7 +204,7 @@ export const CirclePackingPanel = ({
         }
       })
       .on('mousemove', function (e) {
-        setTooltipPosition({ x: e.clientX, y: e.clientY })
+        setTooltipPosition({ x: e.clientX + 20, y: e.clientY + 20 })
       })
 
     wrapper
@@ -217,15 +212,15 @@ export const CirclePackingPanel = ({
       .selectAll('text')
       .data(rootNode.descendants())
       .join('text')
-
-      .text((d: d3Hierarchy.HierarchyCircularNode<any>) => d.data.name)
+      .text((d: d3Hierarchy.HierarchyCircularNode<any>) => {
+        const row = nodeTable.rows.get(d.data.id)
+        if (row === undefined) return d.data.name
+        const label = row['FINAL ANSWER ROUND 1']
+        return label === undefined ? d.data.name : label
+      })
+      // .text((d: d3Hierarchy.HierarchyCircularNode<any>) => d.data.name)
       .attr('font-size', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        // d.data.id === selected || d.data.originalId === selected
-        d.height === 0
-          ? '0em'
-          : // : `0.05em`,
-            // : 1,
-            `${0.1 / d.depth}em`,
+        d.depth === 0 ? 0 : `${0.1 / d.depth}em`,
       )
       .attr('text-anchor', 'middle')
       .attr('x', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.x)
@@ -235,13 +230,51 @@ export const CirclePackingPanel = ({
     initRef.current = true
   }, [circlePackingView, dimensions])
 
+  const [hoveredEnter, setHoveredEnter] = useState<any>(null)
+  const [hoveredOut, setHoveredOut] = useState<any>(null)
+  useEffect(() => {
+    d3Selection
+      .select(hoveredEnter)
+      .attr('stroke', 'red')
+      .attr('stroke-width', 1)
+
+    setTooltipContent(`Tooltip content for ${hoveredEnter?.__data__.data.name}`)
+    // setTooltipPosition({ x: e.clientX, y: e.clientY })
+    setTooltipOpen(true)
+    const timeoutId = setTimeout(() => {
+      setTooltipOpen(false)
+    }, 3000)
+
+    // Clear the timeout when the component unmounts
+    return () => {
+      clearTimeout(timeoutId)
+    }
+  }, [hoveredEnter])
+
+  useEffect(() => {
+    d3Selection
+      .select(hoveredOut)
+      .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
+        selected === d.data.id ? 'orange' : CpDefaults.borderColor,
+      )
+      .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
+        selected === d.data.id ? 1 : CpDefaults.borderWidth,
+      )
+  }, [hoveredOut])
+
   useEffect(() => {
     // Update the stroke color of the circles based on whether their node is selected
     d3Selection
       .select('.circle-packing-wrapper')
       .selectAll('circle')
       .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        circlePackingView?.selectedNodes.includes(d.data.id) ? 'orange' : '#666',
+        selected === d.data.id
+          ? // circlePackingView?.selectedNodes.includes(d.data.id)
+            'orange'
+          : '#666',
+      )
+      .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
+        selected === d.data.id ? 1 : CpDefaults.borderWidth,
       )
   }, [circlePackingView?.selectedNodes])
 
