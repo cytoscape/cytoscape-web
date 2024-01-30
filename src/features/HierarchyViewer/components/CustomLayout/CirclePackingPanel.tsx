@@ -202,12 +202,6 @@ export const CirclePackingPanel = ({
             } else {
               return 'none'
             }
-
-            // return showObjects(d, maxDepth)
-
-            // return currentZoomLevel > labelThreshold && isLeaf
-            //   ? 'inline'
-            //   : 'none'
           },
         )
     }
@@ -260,15 +254,42 @@ export const CirclePackingPanel = ({
       .selectAll('text')
       .data(rootNode.descendants())
       .join('text')
-      .text((d: d3Hierarchy.HierarchyCircularNode<any>) => {
+      .each(function (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) {
         const row = nodeTable.rows.get(d.data.id)
-        if (row === undefined) return d.data.name
-        const label = row['FINAL ANSWER ROUND 1']
-        return label === undefined ? d.data.name : label
+        let label = d.data.name
+        if (row !== undefined) {
+          label = row['FINAL ANSWER ROUND 1'] as string
+        }
+
+        if (label === undefined) {
+          label = d.data.name
+        }
+
+        // Split the label into words
+        const words = label.split(' ')
+
+        const fontSize = getFontSize(d)
+        // Calculate the total height of the text
+        const textHeight: number = words.length * fontSize
+        // Create a tspan for each word
+        words.forEach((word: string, lineNumber: number) => {
+          d3Selection
+            .select(this)
+            .append('tspan')
+            .text(word)
+            .attr('x', d.x)
+            .attr(
+              'y',
+              d.y + (lineNumber * fontSize * 1.2) - textHeight / 2 + fontSize / 2,
+            ) // Adjust the y position based on the line number
+        })
+        // if (row === undefined) return d.data.name
+        // const label = row['FINAL ANSWER ROUND 1']
+        // return label === undefined ? d.data.name : label
       })
-      .attr('font-size', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        `${d.r/90}em`,
-        // `${1 / d.depth}em`,
+      .attr(
+        'font-size',
+        (d: d3Hierarchy.HierarchyCircularNode<any>) => `${d.r / 70}em`,
       )
       .attr('text-anchor', 'middle')
       .attr('x', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.x)
@@ -281,6 +302,10 @@ export const CirclePackingPanel = ({
     // Initialized
     initRef.current = true
   }, [circlePackingView, dimensions])
+
+  const getFontSize = (d: d3Hierarchy.HierarchyCircularNode<any>): number => {
+    return (d.r / 90) * 16
+  }
 
   const [hoveredEnter, setHoveredEnter] = useState<D3TreeNode>()
   useEffect(() => {
