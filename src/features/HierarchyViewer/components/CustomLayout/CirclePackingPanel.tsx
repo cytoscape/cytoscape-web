@@ -17,6 +17,9 @@ import { useViewModelStore } from '../../../../store/ViewModelStore'
 import { NetworkView } from '../../../../models/ViewModel'
 import { IdType } from '../../../../models/IdType'
 import { CirclePackingView } from '../../model/CirclePackingView'
+import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+import { VisualStyle } from '../../../../models/VisualStyleModel'
+import { applyVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 
 interface CirclePackingPanelProps {
   network: Network
@@ -58,6 +61,15 @@ export const CirclePackingPanel = ({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
 
   const networkId: IdType = network.id
+
+  // Use visual style store for getting the visual style
+  const visualStyles: Record<string, VisualStyle> = useVisualStyleStore(
+    (state) => state.visualStyles,
+  )
+
+  const visualStyle: VisualStyle = visualStyles[networkId]
+  // applyVisualStyle(network)
+  console.log('VisualStyle:', visualStyle)
 
   // For adding newly created Circle Packing view model
   const addViewModel = useViewModelStore((state) => state.add)
@@ -280,7 +292,7 @@ export const CirclePackingPanel = ({
             .attr('x', d.x)
             .attr(
               'y',
-              d.y + (lineNumber * fontSize * 1.2) - textHeight / 2 + fontSize / 2,
+              d.y + lineNumber * fontSize * 1.2 - textHeight / 2 + fontSize / 2,
             ) // Adjust the y position based on the line number
         })
         // if (row === undefined) return d.data.name
