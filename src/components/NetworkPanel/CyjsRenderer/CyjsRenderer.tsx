@@ -405,7 +405,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
-        // wheelSensitivity: 0.1,
+        wheelSensitivity: 0.1,
       })
       setCy(cy)
       // Now add event handlers. This is necessary only once.
