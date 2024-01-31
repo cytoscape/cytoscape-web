@@ -24,6 +24,7 @@ import { useTableStore } from '../../../store/TableStore'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
+import { useSubNetworkStore } from '../store/SubNetworkStore'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -63,6 +64,10 @@ export const SubNetworkPanel = ({
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+
+  // Selected nodes in the sub network
+  const selectedNodes: IdType[] = useSubNetworkStore((state) => state.selectedNodes)
+
 
   // For applying default layout
   const defaultLayout: LayoutAlgorithm = useLayoutStore(
@@ -230,6 +235,18 @@ export const SubNetworkPanel = ({
 
     updateNetworkView()
   }, [data])
+
+  useEffect(() => {
+    if (selectedNodes === undefined || selectedNodes.length === 0) {
+      // Clerar the selected nodes
+
+      return
+    } else {
+      // Transfer the original selection to the subnet
+      console.log('Subnetwork Selection updated', selectedNodes)
+    }
+
+  }, [selectedNodes])
 
   if (isLoading) {
     return (

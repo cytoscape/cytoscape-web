@@ -20,6 +20,7 @@ import { CirclePackingView } from '../../model/CirclePackingView'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { VisualPropertyValueType, VisualStyle } from '../../../../models/VisualStyleModel'
 import { applyVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
+import { useSubNetworkStore } from '../../store/SubNetworkStore'
 
 interface CirclePackingPanelProps {
   network: Network
@@ -92,6 +93,9 @@ export const CirclePackingPanel = ({
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false)
   const [tooltipContent, setTooltipContent] = useState<string>('')
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+
+  // For selecting nodes in the subnetwork view
+  const setSelectedNodes = useSubNetworkStore((state) => state.setSelectedNodes)
 
   /**
    * Setup listener for resizing the SVG element
@@ -263,6 +267,17 @@ export const CirclePackingPanel = ({
           } else {
             exclusiveSelect(network.id, [d.data.id], [])
           }
+        } else {
+          // This is a leaf node
+          console.log('Leaf click. Select direct parent', d)
+          
+          // Set always one node by clicking on the leaf node
+          setSelectedNodes([d.data.id])
+          if (d.parent?.data.originalId !== undefined) {
+            exclusiveSelect(network.id, [d.parent?.data.originalId], [])
+          } else {
+            exclusiveSelect(network.id, [d.parent?.data.id || ''], [])
+          }
         }
       })
       .on('mousemove', function (e) {
@@ -276,7 +291,8 @@ export const CirclePackingPanel = ({
       .join('text')
       .each(function (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) {
 
-        let label: VisualPropertyValueType = ''
+        // Add the label on top of the circle
+        let label: VisualPropertyValueType = d.data.name
         const nodeViews = circlePackingView?.nodeViews
         if(nodeViews !== undefined) { 
           const nv: NodeView = nodeViews[d.data.id]
@@ -284,15 +300,6 @@ export const CirclePackingPanel = ({
             label = nv.values.get('nodeLabel') as VisualPropertyValueType
           }
         }
-        // const row = nodeTable.rows.get(d.data.id)
-        // let label = d.data.name
-        // if (row !== undefined) {
-        //   label = row['FINAL ANSWER ROUND 1'] as string
-        // }
-
-        // if (label === undefined) {
-        //   label = d.data.name
-        // }
 
         // Split the label into words
         const words = label.toString().split(' ')
@@ -312,9 +319,6 @@ export const CirclePackingPanel = ({
               d.y + lineNumber * fontSize * 1.2 - textHeight / 2 + fontSize / 2,
             ) // Adjust the y position based on the line number
         })
-        // if (row === undefined) return d.data.name
-        // const label = row['FINAL ANSWER ROUND 1']
-        // return label === undefined ? d.data.name : label
       })
       .attr(
         'font-size',
