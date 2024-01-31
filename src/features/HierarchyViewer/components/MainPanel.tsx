@@ -21,7 +21,6 @@ import { SubsystemTag } from '../model/HcxMetaTag'
 import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
 // import { createTreeLayout } from './CustomLayout/CirclePackingLayout'
 import { Network } from '../../../models/NetworkModel'
-import { useNetworkStore } from '../../../store/NetworkStore'
 import { CirclePackingPanel } from './CustomLayout/CirclePackingPanel'
 import { Renderer } from '../../../models/RendererModel/Renderer'
 import { useRendererStore } from '../../../store/RendererStore'
@@ -43,10 +42,6 @@ export const MainPanel = (): JSX.Element => {
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
-  )
-
-  const currentNetwork: Network | undefined = useNetworkStore((state) =>
-    state.networks.get(currentNetworkId),
   )
 
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
@@ -117,13 +112,8 @@ export const MainPanel = (): JSX.Element => {
     }
 
     const idString: string = selectedSubsystem.toString()
-    const { nodeTable } = tableRecord
+    const { nodeTable, edgeTable } = tableRecord
     const rows = nodeTable.rows
-
-    // For Circle Packing: build circle packing layout
-    // if (currentNetwork !== undefined) {
-    //   createTreeLayout(currentNetwork, nodeTable)
-    // }
 
     // Pick the table row for the selected subsystem and extract member list
     const row: Record<string, ValueType> | undefined = rows.get(idString)
@@ -176,6 +166,7 @@ export const MainPanel = (): JSX.Element => {
       <CirclePackingPanel
         network={networkData}
         nodeTable={tableRecord?.nodeTable}
+        edgeTable={tableRecord?.edgeTable}
       />
     ),
   }
