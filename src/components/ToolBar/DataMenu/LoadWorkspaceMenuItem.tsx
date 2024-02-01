@@ -1,9 +1,9 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
-import { LoadWorkspaceFromNDExDialog } from './LoadWorkspaceFromNDExDialog'
+import { LoadWorkspaceDialog } from './LoadWorkspaceDialog'
 
-export const LoadWorkspaceFromNDExMenuItem = (props: BaseMenuProps): ReactElement => {
+export const LoadWorkspaceMenuItem = (props: BaseMenuProps): ReactElement => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
   const handleCloseDialog = (): void => {
@@ -20,7 +20,7 @@ export const LoadWorkspaceFromNDExMenuItem = (props: BaseMenuProps): ReactElemen
       <MenuItem onClick={handleOpenDialog}>
         Open workspace(s) from NDEx...
       </MenuItem>
-      <LoadWorkspaceFromNDExDialog open={openDialog} handleClose={handleCloseDialog} />
+      <LoadWorkspaceDialog open={openDialog} handleClose={handleCloseDialog} />
     </>
   )
 }

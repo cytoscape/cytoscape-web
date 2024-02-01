@@ -51,6 +51,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
       const { uuid, modificationTime } = response;
       console.log(uuid)
       console.log(modificationTime)
+      
 
       addMessage({
         message: `Saved workspace to NDEx.`,
