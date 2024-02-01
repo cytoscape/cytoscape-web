@@ -4,7 +4,6 @@ import * as d3Selection from 'd3-selection'
 import * as d3Zoom from 'd3-zoom'
 import { useEffect, useRef, useState } from 'react'
 import { Network } from '../../../../models/NetworkModel'
-import { Table } from '../../../../models/TableModel'
 import {
   CirclePackingType,
   createCirclePackingView,
@@ -18,7 +17,10 @@ import { NetworkView, NodeView } from '../../../../models/ViewModel'
 import { IdType } from '../../../../models/IdType'
 import { CirclePackingView } from '../../model/CirclePackingView'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
-import { VisualPropertyValueType, VisualStyle } from '../../../../models/VisualStyleModel'
+import {
+  VisualPropertyValueType,
+  VisualStyle,
+} from '../../../../models/VisualStyleModel'
 import { applyVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 import { useSubNetworkStore } from '../../store/SubNetworkStore'
 import { useTableStore } from '../../../../store/TableStore'
@@ -59,9 +61,12 @@ export const CirclePackingPanel = ({
   // Dimensions of the parent element
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
 
+  // For keeping track of the selected leaf node which does not exist in the original network
+  const [selectedLeaf, setSelectedLeaf] = useState<string>('')
+
   const networkId: IdType = network.id
   const tables = useTableStore((state) => state.tables)
-  const {nodeTable, edgeTable} = tables[networkId] ?? {}
+  const { nodeTable, edgeTable } = tables[networkId] ?? {}
 
   // Use visual style store for getting the visual style
   const visualStyles: Record<string, VisualStyle> = useVisualStyleStore(
@@ -268,13 +273,16 @@ export const CirclePackingPanel = ({
         } else {
           // This is a leaf node
           console.log('Leaf click. Select direct parent', d)
-          
+
           // Set always one node by clicking on the leaf node
           setSelectedNodes([d.data.name])
 
           // Select the parent node instead
-          const {parent} = d
-          if(parent === null || parent === undefined) return
+          const { parent } = d
+          if (parent === null || parent === undefined) return
+
+          const selectedChild = d.data.originalId ?? d.data.id
+          setSelectedLeaf(selectedChild)
 
           if (parent.data.originalId !== undefined) {
             exclusiveSelect(network.id, [parent.data.originalId], [])
@@ -293,13 +301,12 @@ export const CirclePackingPanel = ({
       .data(rootNode.descendants())
       .join('text')
       .each(function (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) {
-
         // Add the label on top of the circle
         let label: VisualPropertyValueType = d.data.name
         const nodeViews = circlePackingView?.nodeViews
-        if(nodeViews !== undefined) { 
+        if (nodeViews !== undefined) {
           const nv: NodeView = nodeViews[d.data.id]
-          if(nv !== undefined) {
+          if (nv !== undefined) {
             label = nv.values.get('nodeLabel') as VisualPropertyValueType
           }
         }
@@ -321,6 +328,7 @@ export const CirclePackingPanel = ({
               'y',
               d.y + lineNumber * fontSize * 1.2 - textHeight / 2 + fontSize / 2,
             ) // Adjust the y position based on the line number
+            .style('user-select', 'none')
         })
       })
       .attr(
@@ -363,11 +371,15 @@ export const CirclePackingPanel = ({
     d3Selection
       .select('.circle-packing-wrapper')
       .selectAll('circle')
-      .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) =>
-        d.data.id === selected
-          ? CpDefaults.selectedBorderColor
-          : CpDefaults.borderColor,
-      )
+      .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
+        if (d.data.id === selected) {
+          return CpDefaults.selectedBorderColor
+        } else if (d.data.id === selectedLeaf) {
+          return CpDefaults.hoverBorderColor
+        } else {
+          return CpDefaults.borderColor
+        }
+      })
       .attr(
         'stroke-width',
         (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) =>
