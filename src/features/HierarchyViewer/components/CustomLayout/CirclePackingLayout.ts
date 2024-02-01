@@ -8,7 +8,6 @@ import { cyNetDag2tree2, findRoot } from './DataBuilderUtil'
 import { D3TreeNode } from './D3TreeNode'
 import { NetworkView } from '../../../../models/ViewModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
-import { VisualStyle } from '../../../../models/VisualStyleModel'
 
 /**
  * Return the branch of the network rooted at the given node

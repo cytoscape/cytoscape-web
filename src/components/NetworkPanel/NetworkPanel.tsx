@@ -12,6 +12,7 @@ import { NetworkTab } from './NetworkTab'
 import { NetworkTabs } from './NetworkTabs'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { useRendererStore } from '../../store/RendererStore'
+import { use } from 'cytoscape'
 
 interface NetworkPanelProps {
   networkId: IdType

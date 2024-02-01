@@ -17,9 +17,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
-// import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
-// import { createTreeLayout } from './CustomLayout/CirclePackingLayout'
 import { Network } from '../../../models/NetworkModel'
 import { CirclePackingPanel } from './CustomLayout/CirclePackingPanel'
 import { Renderer } from '../../../models/RendererModel/Renderer'
@@ -63,6 +61,16 @@ export const MainPanel = (): JSX.Element => {
   const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
 
+  const CirclePackingRenderer: Renderer = {
+    id: 'circlePacking',
+    name: 'Circle Packing Renderer',
+    description: 'Circle Packing Renderer',
+    getComponent: (networkData: Network) => (
+      <CirclePackingPanel network={networkData} />
+    ),
+  }
+
+
   const checkDataType = (): void => {
     // Check if the current network is a hierarchy
     if (networkSummary === undefined) {
@@ -87,10 +95,13 @@ export const MainPanel = (): JSX.Element => {
     if (metadata !== undefined) {
       setIsHierarchy(true)
       setMetadata(metadata)
+      if (renderers.circlePacking === undefined) {
+        addRenderer(CirclePackingRenderer)
+      }
     } else {
       setIsHierarchy(false)
       setMetadata(undefined)
-      if(renderers.circlePacking !== undefined) {
+      if (renderers.circlePacking !== undefined) {
         deleteRenderer(renderers.circlePacking.id)
       }
     }
@@ -112,7 +123,7 @@ export const MainPanel = (): JSX.Element => {
     }
 
     const idString: string = selectedSubsystem.toString()
-    const { nodeTable, edgeTable } = tableRecord
+    const { nodeTable } = tableRecord
     const rows = nodeTable.rows
 
     // Pick the table row for the selected subsystem and extract member list
@@ -136,10 +147,12 @@ export const MainPanel = (): JSX.Element => {
   }, [selectedNodes])
 
   if (!isHierarchy) {
-    
     return <MessagePanel message="This network is not a hierarchy" />
   }
-
+  
+  // if (isHierarchy && renderers.circlePacking === undefined) {
+  //   addRenderer(CirclePackingRenderer)
+  // }
   if (selectedNodes.length === 0) {
     return <MessagePanel message="Please select a subsystem" />
   }
@@ -157,23 +170,6 @@ export const MainPanel = (): JSX.Element => {
   // This is the ID of the selected subsystem in the hierarchy
   const targetNode: IdType = selectedNodes[0]
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
-
-  const CirclePackingRenderer: Renderer = {
-    id: 'circlePacking',
-    name: 'Circle Packing Renderer',
-    description: 'Circle Packing Renderer',
-    getComponent: (networkData: Network) => (
-      <CirclePackingPanel
-        network={networkData}
-        nodeTable={tableRecord?.nodeTable}
-        edgeTable={tableRecord?.edgeTable}
-      />
-    ),
-  }
-
-  if(renderers.circlePacking === undefined) {
-    addRenderer(CirclePackingRenderer)
-  }
 
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
