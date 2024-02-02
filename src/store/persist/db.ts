@@ -1,4 +1,6 @@
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
+import 'dexie-observable'
+
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Node, Edge, Network } from '../../models/NetworkModel'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
@@ -27,6 +29,7 @@ class CyDB extends Dexie {
   summaries!: DxTable<any>
   cyNetworkViews!: DxTable<any>
   uiState!: DxTable<any>
+  timestamp!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
@@ -38,6 +41,7 @@ class CyDB extends Dexie {
       cyVisualStyles: 'id',
       cyNetworkViews: 'id',
       uiState: 'id',
+      timestamp: 'id',
     })
 
     applyMigrations(this).catch((err) => console.log(err))
@@ -60,6 +64,10 @@ export const initializeDb = async (): Promise<void> => {
   db.on('ready', () => {
     console.info('Indexed DB is ready')
   })
+}
+
+export const getDb = async (): Promise<CyDB> => {
+  return await Promise.resolve(db)
 }
 
 export const deleteDb = async (): Promise<void> => {
@@ -481,5 +489,21 @@ export const putUiStateToDb = async (uiState: Ui): Promise<void> => {
 export const deleteUiStateFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.uiState, async () => {
     await db.uiState.delete(DEFAULT_UI_STATE_ID)
+  })
+}
+
+export const DEFAULT_TIMESTAMP_ID = 'timestamp'
+export const getTimestampFromDb = async (): Promise<number | undefined> => {
+  const ts = await db.timestamp.get({ id: DEFAULT_TIMESTAMP_ID })
+  if (ts !== undefined) {
+    return ts.timestamp
+  } else {
+    return undefined
+  }
+}
+
+export const putTimestampToDb = async (ts: number): Promise<void> => {
+  await db.transaction('rw', db.timestamp, async () => {
+    await db.timestamp.put({ id: DEFAULT_TIMESTAMP_ID, timestamp: ts })
   })
 }

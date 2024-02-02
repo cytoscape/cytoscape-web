@@ -21,6 +21,8 @@ export const migrations: DexieMigration[] = [
 ]
 
 export const applyMigrations = async (db: Dexie): Promise<void> => {
+  // needed for dexie observables to add it's tables
+  db.version(2).stores({})
   migrations.forEach(async (migration) => {
     await db.version(migration.version).upgrade(migration.upgradeFn)
   })
