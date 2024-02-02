@@ -24,15 +24,22 @@ import {
 import { applyVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 import { useSubNetworkStore } from '../../store/SubNetworkStore'
 import { useTableStore } from '../../../../store/TableStore'
+import { to } from 'react-spring'
 
 interface CirclePackingPanelProps {
   network: Network
 }
 
+/**
+ * Default styling values
+ *
+ * TODO: store these in the Visual Style model
+ *
+ */
 const CpDefaults = {
   borderColor: '#666',
   selectedBorderColor: 'orange',
-  hoverBorderColor: 'teal',
+  leafBorderColor: 'red',
   borderWidth: 0.05,
   borderWidthHover: 0.5,
 } as const
@@ -192,16 +199,7 @@ export const CirclePackingPanel = ({
       }
     }
 
-    /**
-     * Control labels
-     * @param e
-     */
-    const handleZoom = (e: any): void => {
-      d3Selection.select('svg g').attr('transform', e.transform)
-
-      const currentZoomLevel = e.transform.k
-      const maxDepth = Math.ceil(currentZoomLevel)
-
+    const updateForZoom = (maxDepth: number): void => {
       d3Selection
         .selectAll('circle')
         .style('display', (d: d3Hierarchy.HierarchyNode<D3TreeNode>): string =>
@@ -218,9 +216,6 @@ export const CirclePackingPanel = ({
             // 2. If leaf node, hide the label if the zoom level is below the threshold
             // 3. If non-leaf node, show the label based on the expansion level
             const isLeaf: boolean = d.height === 0
-            // if (isLeaf) {
-            //   return 'none'
-            // }
 
             if (d.depth !== 0 && d.depth === maxDepth) {
               return 'inline'
@@ -232,11 +227,24 @@ export const CirclePackingPanel = ({
           },
         )
     }
-    const zoom = d3Zoom.zoom().scaleExtent([0.1, 40]).on('zoom', handleZoom)
+    /**
+     * Control labels
+     * @param e
+     */
+    const handleZoom = (e: any): void => {
+      const selectedArea = d3Selection.select('svg g')
+      selectedArea.attr('transform', e.transform)
 
-    svg.call(zoom).on('dblclick.zoom', () => {
-      svg.call(zoom, d3Zoom.zoomIdentity)
-    })
+      const currentZoomLevel = e.transform.k
+      console.log(
+        'RUNNING------------ZZoom level',
+        e.transform,
+        selectedArea.attr('transform'),
+      )
+      const maxDepth = Math.ceil(currentZoomLevel)
+      updateForZoom(maxDepth)
+    }
+    const zoom = d3Zoom.zoom().scaleExtent([0.1, 40]).on('zoom', handleZoom)
 
     wrapper
       .append('g')
@@ -247,7 +255,9 @@ export const CirclePackingPanel = ({
       .attr('cy', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.y)
       .attr('r', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.r)
       .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        selected === d.data.id ? 'orange' : '#666',
+        selected === d.data.id
+          ? CpDefaults.selectedBorderColor
+          : CpDefaults.borderColor,
       )
       .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<any>) => {
         return d.data.id === selected || d.data.originalId === selected
@@ -345,8 +355,27 @@ export const CirclePackingPanel = ({
       })
 
     // Initialized
+    svg.call(zoom)
+    // .on('dblclick.zoom', () => {
+    //   svg.call(zoom, d3Zoom.zoomIdentity)
+    // })
     initRef.current = true
+    updateForZoom(1)
+    toCenter(wrapper)
+    console.log('Initialized')
   }, [circlePackingView, dimensions])
+
+  const toCenter = (svg: any): void => {
+    const centerX = dimensions.width / 2
+    const centerY = dimensions.height / 2
+    // Get the radius of the circle
+    const radius = svg.select('circle').attr('r')
+
+    const adjustedX = centerX - radius
+    const adjustedY = centerY - radius
+
+    svg.attr('transform', `translate(${adjustedX}, ${adjustedY})`)
+  }
 
   const getFontSize = (d: d3Hierarchy.HierarchyCircularNode<any>): number => {
     return (d.r / 90) * 16
@@ -374,8 +403,8 @@ export const CirclePackingPanel = ({
       .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
         if (d.data.id === selected) {
           return CpDefaults.selectedBorderColor
-        } else if (d.data.id === selectedLeaf) {
-          return CpDefaults.hoverBorderColor
+        } else if (d.data.name === selectedLeaf) {
+          return CpDefaults.leafBorderColor
         } else {
           return CpDefaults.borderColor
         }
@@ -383,11 +412,14 @@ export const CirclePackingPanel = ({
       .attr(
         'stroke-width',
         (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) =>
-          d.data.id === selected
+          d.data.id === selected ||
+          d.data.id === selectedLeaf ||
+          d.data.name === selectedLeaf
             ? CpDefaults.borderWidthHover
             : CpDefaults.borderWidth,
       )
-  }, [circlePackingView?.selectedNodes])
+    console.log('Selected LF updated', selectedLeaf)
+  }, [circlePackingView?.selectedNodes, selectedLeaf])
 
   return (
     <Box ref={refParent} sx={{ width: '100%', height: '100%' }}>
