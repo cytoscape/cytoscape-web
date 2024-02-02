@@ -33,6 +33,8 @@ export const HcxMetaTag = {
 
   // Number of files to represent the hierarchy: e.g. 2 (hierarchy and interaction)
   modelFileCount: `${hcxPrefix}modelFileCount`,
+
+  ndexSchema: `ndexSchema`,
 } as const
 
 export type HcxMetaTagType = (typeof HcxMetaTag)[keyof typeof HcxMetaTag]

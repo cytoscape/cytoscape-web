@@ -30,6 +30,10 @@ import { waitSeconds } from '../utils/wait-seconds'
 import { PanelState } from '../models/UiModel/PanelState'
 import { Panel } from '../models/UiModel/Panel'
 import { Workspace } from '../models/WorkspaceModel'
+import { SyncTabsAction } from './SyncTabs'
+
+// This is a valid workspace ID for sharing
+const DUMMY_WS_ID = '0'
 
 /**
  *
@@ -39,7 +43,6 @@ import { Workspace } from '../models/WorkspaceModel'
  *
  */
 const AppShell = (): ReactElement => {
-
   const [initializationError, setInitializationError] = useState<string>('')
 
   // This is necessary to prevent creating a new workspace on every render
@@ -115,7 +118,11 @@ const AppShell = (): ReactElement => {
         targetWorkspaceId === '' ? undefined : targetWorkspaceId,
       ).then((workspace: Workspace) => {
         // Add error message if the new workspace ID is not same as the one in URL
-        if (targetWorkspaceId !== workspace.id && targetWorkspaceId !== '') {
+        if (
+          targetWorkspaceId !== workspace.id &&
+          targetWorkspaceId !== '' &&
+          targetWorkspaceId !== DUMMY_WS_ID
+        ) {
           setErrorMessage(
             `An invalid workspace ID was entered (${targetWorkspaceId}). 
             Your workspace has now been initialized with the last cache.`,
@@ -300,7 +307,7 @@ const AppShell = (): ReactElement => {
       />
       <WarningDialog
         title="Initialization Error"
-        subtitle='Problems during initialization:'
+        subtitle="Problems during initialization:"
         message={initializationError}
         open={initializationError !== ''}
         handleClose={() => {
@@ -308,6 +315,7 @@ const AppShell = (): ReactElement => {
           setInitializationError('')
         }}
       />
+      <SyncTabsAction />
     </Box>
   )
 }

@@ -1,0 +1,1 @@
+export type HcxVersion = string

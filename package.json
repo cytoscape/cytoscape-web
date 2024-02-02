@@ -98,7 +98,7 @@
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
     "dexie": "^3.2.4",
-    "dexie-react-hooks": "^1.1.1",
+    "dexie-observable": "^4.0.1-beta.13",
     "fuse.js": "^6.6.2",
     "html-react-parser": "^3.0.12",
     "idb-keyval": "^6.2.0",
