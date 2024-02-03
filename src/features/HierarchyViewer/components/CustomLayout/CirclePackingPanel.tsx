@@ -381,7 +381,15 @@ export const CirclePackingPanel = ({
 
   const [hoveredEnter, setHoveredEnter] = useState<D3TreeNode>()
   useEffect(() => {
-    const label: string = getLabel(hoveredEnter?.name ?? '')
+    if (hoveredEnter === undefined) {
+      setTooltipOpen(false)
+      return
+    }
+
+    let label: string = getLabel(hoveredEnter.id)
+    if(label === '') {
+      label = hoveredEnter.name
+    }
     setTooltipContent(label)
     setTooltipOpen(true)
     const timeoutId = setTimeout(() => {
@@ -427,6 +435,7 @@ export const CirclePackingPanel = ({
       ) : null}
       <Tooltip
         open={tooltipOpen}
+        // title={"TEST"}
         title={tooltipContent}
         style={{
           position: 'fixed',
