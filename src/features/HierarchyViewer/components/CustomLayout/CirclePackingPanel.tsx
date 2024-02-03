@@ -39,7 +39,7 @@ const CpDefaults = {
   selectedBorderColor: 'orange',
   leafBorderColor: 'red',
   borderWidth: 0.05,
-  borderWidthHover: 0.5,
+  borderWidthHover: 0.3,
 } as const
 
 const CP_WRAPPER_CLASS = 'circle-packing-wrapper'
@@ -104,7 +104,7 @@ export const CirclePackingPanel = ({
   const [tooltipContent, setTooltipContent] = useState<string>('')
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
 
-  // For selecting nodes in the subnetwork view
+  // For selecting nodes in the sub network view
   const setSelectedNodes = useSubNetworkStore((state) => state.setSelectedNodes)
 
   /**
@@ -157,17 +157,11 @@ export const CirclePackingPanel = ({
       updatedView,
       rootNode,
     )
-    // addViewModel(network.id, cpViewModel)
     addViewModel(network.id, cpViewModel)
-    console.log('VisualStyle and updated view', visualStyle, cpViewModel)
-  }, [network])
+  }, [network, visualStyle])
 
-  useEffect(() => {
-    
-  }, [visualStyle])
-  
   const getLabel = (nodeId: string): string => {
-    let label: VisualPropertyValueType = nodeId
+    let label: VisualPropertyValueType = ''
     const nodeViews = circlePackingView?.nodeViews
     if (nodeViews !== undefined) {
       const nv: NodeView = nodeViews[nodeId]
@@ -178,82 +172,81 @@ export const CirclePackingPanel = ({
     return label.toString()
   }
 
-  useEffect(() => {
-    if (
-      ref.current === null ||
-      initRef.current ||
-      network === undefined ||
-      dimensions.width === 0 ||
-      dimensions.height === 0
-    )
-      return
+  const showObjects = (
+    d: d3Hierarchy.HierarchyNode<D3TreeNode>,
+    maxDepth: number,
+  ): string => {
+    if (d.depth === 0 || d.depth <= maxDepth) {
+      return 'inline'
+    } else {
+      return 'none'
+    }
+  }
 
-    if (circlePackingView === undefined) return
+  const colorScale = getColorMapper([0, 1000])
 
-    const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
-      circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
+  const updateForZoom = (maxDepth: number): void => {
+    d3Selection
+      .selectAll('circle')
+      .style('display', (d: d3Hierarchy.HierarchyNode<D3TreeNode>): string =>
+        showObjects(d, maxDepth),
+      )
+
+    d3Selection
+      .selectAll('text')
+      .style('display', (d: d3Hierarchy.HierarchyNode<D3TreeNode>): string => {
+        // Zooming logic:
+        // 1. If the node is the root node, always hide the label
+        // 2. If leaf node, hide the label if the zoom level is below the threshold
+        // 3. If non-leaf node, show the label based on the expansion level
+        const isLeaf: boolean = d.height === 0
+
+        if (d.depth !== 0 && d.depth === maxDepth) {
+          return 'inline'
+        } else if (isLeaf && d.depth < maxDepth) {
+          return 'inline'
+        } else {
+          return 'none'
+        }
+      })
+  }
+
+  const handleZoom = (e: any): void => {
+    const selectedArea = d3Selection.select('svg g')
+    selectedArea.attr('transform', e.transform)
+    const currentZoomLevel = e.transform.k
+    const maxDepth = Math.ceil(currentZoomLevel)
+    updateForZoom(maxDepth)
+  }
+
+  const toCenter = (svg: any): void => {
+    const centerX = dimensions.width / 2
+    const centerY = dimensions.height / 2
+    // Get the radius of the circle
+    const radius = svg.select('circle').attr('r')
+
+    const adjustedX = centerX - radius
+    const adjustedY = centerY - radius
+
+    svg.attr('transform', `translate(${adjustedX}, ${adjustedY})`)
+  }
+
+  const getFontSize = (d: d3Hierarchy.HierarchyCircularNode<any>): number => {
+    return (d.r / 80) * 20
+  }
+
+  const draw = (rootNode: d3Hierarchy.HierarchyNode<D3TreeNode>): void => {
+    // const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
+    //   circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
     const pack = d3Hierarchy
       .pack()
       .size([dimensions.width, dimensions.width])
       .padding(0)
     pack(rootNode)
 
-    const colorScale = getColorMapper([0, 1000])
     // Pick the base tag
-    const svg = d3Selection.select(ref.current)
+    const svg: any = d3Selection.select(ref.current)
     const wrapper = svg.append('g').attr('class', CP_WRAPPER_CLASS)
-
-    const showObjects = (
-      d: d3Hierarchy.HierarchyNode<D3TreeNode>,
-      maxDepth: number,
-    ): string => {
-      if (d.depth === 0 || d.depth <= maxDepth) {
-        return 'inline'
-      } else {
-        return 'none'
-      }
-    }
-
-    const updateForZoom = (maxDepth: number): void => {
-      d3Selection
-        .selectAll('circle')
-        .style('display', (d: d3Hierarchy.HierarchyNode<D3TreeNode>): string =>
-          showObjects(d, maxDepth),
-        )
-
-      d3Selection
-        .selectAll('text')
-        .style(
-          'display',
-          (d: d3Hierarchy.HierarchyNode<D3TreeNode>): string => {
-            // Zooming logic:
-            // 1. If the node is the root node, always hide the label
-            // 2. If leaf node, hide the label if the zoom level is below the threshold
-            // 3. If non-leaf node, show the label based on the expansion level
-            const isLeaf: boolean = d.height === 0
-
-            if (d.depth !== 0 && d.depth === maxDepth) {
-              return 'inline'
-            } else if (isLeaf && d.depth < maxDepth) {
-              return 'inline'
-            } else {
-              return 'none'
-            }
-          },
-        )
-    }
-    /**
-     * Control labels
-     * @param e
-     */
-    const handleZoom = (e: any): void => {
-      const selectedArea = d3Selection.select('svg g')
-      selectedArea.attr('transform', e.transform)
-      const currentZoomLevel = e.transform.k
-      const maxDepth = Math.ceil(currentZoomLevel)
-      updateForZoom(maxDepth)
-    }
-    const zoom = d3Zoom.zoom().scaleExtent([0.1, 40]).on('zoom', handleZoom)
 
     wrapper
       .append('g')
@@ -273,16 +266,16 @@ export const CirclePackingPanel = ({
           ? CpDefaults.borderWidthHover
           : CpDefaults.borderWidth
       })
-      .attr('fill', (d) => {
+      .attr('fill', (d: d3Hierarchy.HierarchyNode<D3TreeNode>) => {
         return colorScale(d.depth * 200)
       })
       .on(
         'mouseenter',
-        function (e, d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) {
+        function (e: any, d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) {
           setHoveredEnter(d.data)
         },
       )
-      .on('click', function (e, d) {
+      .on('click', function (e: any, d: d3Hierarchy.HierarchyNode<D3TreeNode>) {
         if (d.height !== 0) {
           if (d.data.originalId !== undefined) {
             exclusiveSelect(network.id, [d.data.originalId], [])
@@ -309,7 +302,7 @@ export const CirclePackingPanel = ({
           }
         }
       })
-      .on('mousemove', function (e) {
+      .on('mousemove', function (e: any) {
         setTooltipPosition({ x: e.clientX + 20, y: e.clientY + 20 })
       })
 
@@ -320,7 +313,10 @@ export const CirclePackingPanel = ({
       .join('text')
       .each(function (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) {
         // Add the label on top of the circle
-        const label: string = getLabel(d.data.id)
+        let label: string = getLabel(d.data.id)
+        if(label === '') {
+          label = d.data.name
+        }
 
         // Split the label into words
         const words = label.split(' ')
@@ -356,32 +352,36 @@ export const CirclePackingPanel = ({
       })
 
     // Initialized
+
+    // Now this should work
+    const zoom = d3Zoom.zoom().scaleExtent([0.1, 40]).on('zoom', handleZoom)
     svg.call(zoom)
     updateForZoom(1)
     toCenter(wrapper)
+  }
+
+  useEffect(() => {
+    if (
+      ref.current === null ||
+      initRef.current ||
+      network === undefined ||
+      dimensions.width === 0 ||
+      dimensions.height === 0
+    )
+      return
+
+    if (circlePackingView === undefined) return
+
+    const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
+      circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
+    draw(rootNode)
     console.log('Initialized')
     initRef.current = true
   }, [circlePackingView, dimensions])
 
-  const toCenter = (svg: any): void => {
-    const centerX = dimensions.width / 2
-    const centerY = dimensions.height / 2
-    // Get the radius of the circle
-    const radius = svg.select('circle').attr('r')
-
-    const adjustedX = centerX - radius
-    const adjustedY = centerY - radius
-
-    svg.attr('transform', `translate(${adjustedX}, ${adjustedY})`)
-  }
-
-  const getFontSize = (d: d3Hierarchy.HierarchyCircularNode<any>): number => {
-    return (d.r / 90) * 16
-  }
-
   const [hoveredEnter, setHoveredEnter] = useState<D3TreeNode>()
   useEffect(() => {
-    const label: string = getLabel(hoveredEnter?.id ?? hoveredEnter?.name ?? '')
+    const label: string = getLabel(hoveredEnter?.name ?? '')
     setTooltipContent(label)
     setTooltipOpen(true)
     const timeoutId = setTimeout(() => {

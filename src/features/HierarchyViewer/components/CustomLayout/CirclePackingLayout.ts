@@ -71,7 +71,7 @@ export const createCirclePackingView = (
   const cpView: CirclePackingView = {
     ...primaryView,
     type: CirclePackingType,
-    viewId: 'test',
+    viewId: `${primaryView.id}-${CirclePackingType}-1`, // TODO: make this auto-generated
     hierarchy: root,
   }
 

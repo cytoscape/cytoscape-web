@@ -23,6 +23,8 @@ import { CirclePackingPanel } from './CustomLayout/CirclePackingPanel'
 import { Renderer } from '../../../models/RendererModel/Renderer'
 import { useRendererStore } from '../../../store/RendererStore'
 import { PropertyPanel } from './PropertyPanel/PropertyPanel'
+import { VisualStyle } from '../../../models/VisualStyleModel'
+import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -41,6 +43,11 @@ export const MainPanel = (): JSX.Element => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+
+  const visualStyles: Record<string, VisualStyle> = useVisualStyleStore(
+    (state) => state.visualStyles,
+  )
+
 
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
@@ -137,8 +144,18 @@ export const MainPanel = (): JSX.Element => {
       SubsystemTag.interactionNetworkUuid
     ] as string
 
-    const name: ValueType = row.name ?? '?'
-    setSubNetworkName(name as string)
+    const visualStyle: VisualStyle = visualStyles[currentNetworkId]
+    const nodeLabelMappingAttr: string | undefined = visualStyle.nodeLabel.mapping?.attribute
+
+    let nameVal = row['name']
+    if(nodeLabelMappingAttr !== undefined) {
+      const mappedVal = row[nodeLabelMappingAttr]
+      if(mappedVal !== undefined) {
+        nameVal = mappedVal
+      }
+    }
+    // const name: ValueType = nodeLabelMappingAttr !== undefined ? row.nodeLabelMappingAttr : row.name
+    setSubNetworkName(nameVal.toString())
     const newQuery: Query = { nodeIds: memberIds as number[] }
     if (interactionUuid === undefined || interactionUuid === '') {
       setQuery(newQuery)
