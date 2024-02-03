@@ -431,7 +431,11 @@ export const putNetworkViewsToDb = async (
   views: NetworkView[],
 ): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
-    await db.cyNetworkViews.put({ id, views })
+    try {
+      await db.cyNetworkViews.put({ id, views })
+    } catch (err) {
+      console.warn('Error storing network views', err)
+    }
   })
 }
 

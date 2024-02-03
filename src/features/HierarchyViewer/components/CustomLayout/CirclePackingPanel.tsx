@@ -10,7 +10,6 @@ import {
   createTreeLayout,
 } from './CirclePackingLayout'
 import { getColorMapper } from './CirclePackingUtils'
-// import { IdType } from '../../../../models/IdType'
 import { D3TreeNode } from './D3TreeNode'
 import { useViewModelStore } from '../../../../store/ViewModelStore'
 import { NetworkView, NodeView } from '../../../../models/ViewModel'
@@ -24,7 +23,6 @@ import {
 import { applyVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 import { useSubNetworkStore } from '../../store/SubNetworkStore'
 import { useTableStore } from '../../../../store/TableStore'
-import { to } from 'react-spring'
 
 interface CirclePackingPanelProps {
   network: Network
@@ -79,6 +77,8 @@ export const CirclePackingPanel = ({
   const visualStyles: Record<string, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
   )
+
+  const visualStyle: VisualStyle = visualStyles[networkId]
 
   // For adding newly created Circle Packing view model
   const addViewModel = useViewModelStore((state) => state.add)
@@ -146,7 +146,6 @@ export const CirclePackingPanel = ({
       nodeTable,
     )
 
-    const visualStyle: VisualStyle = visualStyles[networkId]
     const updatedView = applyVisualStyle({
       network: network,
       visualStyle: visualStyle,
@@ -162,6 +161,22 @@ export const CirclePackingPanel = ({
     addViewModel(network.id, cpViewModel)
     console.log('VisualStyle and updated view', visualStyle, cpViewModel)
   }, [network])
+
+  useEffect(() => {
+    
+  }, [visualStyle])
+  
+  const getLabel = (nodeId: string): string => {
+    let label: VisualPropertyValueType = nodeId
+    const nodeViews = circlePackingView?.nodeViews
+    if (nodeViews !== undefined) {
+      const nv: NodeView = nodeViews[nodeId]
+      if (nv !== undefined) {
+        label = nv.values.get('nodeLabel') as VisualPropertyValueType
+      }
+    }
+    return label.toString()
+  }
 
   useEffect(() => {
     if (
@@ -234,13 +249,7 @@ export const CirclePackingPanel = ({
     const handleZoom = (e: any): void => {
       const selectedArea = d3Selection.select('svg g')
       selectedArea.attr('transform', e.transform)
-
       const currentZoomLevel = e.transform.k
-      console.log(
-        'RUNNING------------ZZoom level',
-        e.transform,
-        selectedArea.attr('transform'),
-      )
       const maxDepth = Math.ceil(currentZoomLevel)
       updateForZoom(maxDepth)
     }
@@ -282,7 +291,6 @@ export const CirclePackingPanel = ({
           }
         } else {
           // This is a leaf node
-          console.log('Leaf click. Select direct parent', d)
 
           // Set always one node by clicking on the leaf node
           setSelectedNodes([d.data.name])
@@ -312,17 +320,10 @@ export const CirclePackingPanel = ({
       .join('text')
       .each(function (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) {
         // Add the label on top of the circle
-        let label: VisualPropertyValueType = d.data.name
-        const nodeViews = circlePackingView?.nodeViews
-        if (nodeViews !== undefined) {
-          const nv: NodeView = nodeViews[d.data.id]
-          if (nv !== undefined) {
-            label = nv.values.get('nodeLabel') as VisualPropertyValueType
-          }
-        }
+        const label: string = getLabel(d.data.id)
 
         // Split the label into words
-        const words = label.toString().split(' ')
+        const words = label.split(' ')
 
         const fontSize = getFontSize(d)
         // Calculate the total height of the text
@@ -356,13 +357,10 @@ export const CirclePackingPanel = ({
 
     // Initialized
     svg.call(zoom)
-    // .on('dblclick.zoom', () => {
-    //   svg.call(zoom, d3Zoom.zoomIdentity)
-    // })
-    initRef.current = true
     updateForZoom(1)
     toCenter(wrapper)
     console.log('Initialized')
+    initRef.current = true
   }, [circlePackingView, dimensions])
 
   const toCenter = (svg: any): void => {
@@ -383,7 +381,8 @@ export const CirclePackingPanel = ({
 
   const [hoveredEnter, setHoveredEnter] = useState<D3TreeNode>()
   useEffect(() => {
-    setTooltipContent(`${hoveredEnter?.name}`)
+    const label: string = getLabel(hoveredEnter?.id ?? hoveredEnter?.name ?? '')
+    setTooltipContent(label)
     setTooltipOpen(true)
     const timeoutId = setTimeout(() => {
       setTooltipOpen(false)
