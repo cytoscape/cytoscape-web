@@ -8,7 +8,7 @@ import { Renderer } from "../models/RendererModel/Renderer";
  */
 export const DefaultRenderer: Renderer = {
   id: 'cyjs',
-  name: 'Cytoscape.js Renderer',
+  name: 'Network View',
   description: 'Node-link diagram renderer based on Cytoscape.js',
   getComponent: (networkData: Network) => (
     <CyjsRenderer network={networkData} />

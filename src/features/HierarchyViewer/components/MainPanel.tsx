@@ -70,7 +70,7 @@ export const MainPanel = (): JSX.Element => {
 
   const CirclePackingRenderer: Renderer = {
     id: 'circlePacking',
-    name: 'Circle Packing Renderer',
+    name: 'Cell View',
     description: 'Circle Packing Renderer',
     getComponent: (networkData: Network) => (
       <CirclePackingPanel network={networkData} />

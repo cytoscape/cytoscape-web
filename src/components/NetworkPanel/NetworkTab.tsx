@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { ComponentType, ReactElement } from 'react'
+import { ReactElement } from 'react'
 import { FloatingToolBar } from '../FloatingToolBar'
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
