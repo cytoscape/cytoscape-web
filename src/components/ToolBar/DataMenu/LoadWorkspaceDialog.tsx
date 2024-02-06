@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React, { ReactElement, useState, useEffect, useContext } from 'react';
-import { Dialog, DialogTitle, DialogContent, Table, TableHead, TableRow, TableCell, TableBody, DialogActions, Button, Box, Checkbox } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, Table, TableHead, TableRow, TableCell, TableBody, DialogActions, Button, Box, Checkbox } from '@mui/material';
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client';
 import { AppConfigContext } from '../../../AppConfigContext';
@@ -20,6 +20,17 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
   const dateFormatter = (timestamp: string | number | Date): string => {
     return new Date(timestamp).toLocaleString();
   };
+
+  const [openDialog, setOpenDialog] = useState(false);
+
+  const handleDeleteWorkspaceClick = (): void  => {
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = (): void  => {
+    setOpenDialog(false); //
+  };
+
 
   useEffect(() => {
     const fetchMyWorkspaces = async (): Promise<any> => {
@@ -52,6 +63,24 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
     }
     handleClose();
   };
+
+  const handleConfirmDelete = async (): Promise<void> => {
+    if (selectedWorkspaceId !== null) {
+      const selectedWorkspace = myWorkspaces.find(workspace => workspace.workspaceId === selectedWorkspaceId);
+      if (selectedWorkspace) {
+        const ndexClient = new NDEx(ndexBaseUrl);
+        const token = await getToken();
+        ndexClient.setAuthToken(token);
+        await ndexClient.deleteCyWebWorkspace(selectedWorkspace.workspaceId)
+      } else {
+        alert('Selected workspace not found');
+      }
+    } else {
+      alert('No workspace selected');
+    }
+    handleClose();
+    setOpenDialog(false); 
+  };
   
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="lg">
@@ -62,7 +91,6 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
             <TableRow>
               <TableCell>Select</TableCell>
               <TableCell>Name</TableCell>
-              <TableCell>Workspace ID</TableCell>
               <TableCell>Number of Networks</TableCell>
               <TableCell>Creation Time</TableCell>
               <TableCell>Modification Time</TableCell>
@@ -78,7 +106,6 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
                   />
                 </TableCell>
                 <TableCell>{workspace.name}</TableCell>
-                <TableCell>{workspace.workspaceId}</TableCell>
                 <TableCell>{(workspace.networkIDs) ? workspace.networkIDs.length : 0}</TableCell>
                 <TableCell>{dateFormatter(workspace.creationTime)}</TableCell>
                 <TableCell>{dateFormatter(workspace.modificationTime)}</TableCell>
@@ -93,14 +120,32 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
           alignItems: 'center',
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
-          <Button color="error" onClick={handleClose} sx={{ mr: 2 }}>
-            Cancel
-          </Button>
-          <Button onClick={handleOpenWorkspace} disabled={selectedWorkspaceId == null}>
-            Open Workspace
-          </Button>
-        </Box>
+ <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+  <Button color="error" onClick={handleDeleteWorkspaceClick} disabled={selectedWorkspaceId == null}>
+    Delete Workspace
+  </Button>
+  <Box sx={{ display: 'flex' }}>
+    <Button color="error" onClick={handleClose} sx={{ mr: 2 }}>
+      Cancel
+    </Button>
+    <Button onClick={handleOpenWorkspace} disabled={selectedWorkspaceId == null}>
+      Open Workspace
+    </Button>
+  </Box>
+  <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Delete Workspace</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this workspace? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button color="error" onClick={handleConfirmDelete}>Delete</Button>
+        </DialogActions>
+      </Dialog>
+</Box>
+
       </DialogActions>
     </Dialog>
   );

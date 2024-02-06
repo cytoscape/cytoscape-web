@@ -18,7 +18,7 @@ export const LoadWorkspaceMenuItem = (props: BaseMenuProps): ReactElement => {
   return (
     <>
       <MenuItem onClick={handleOpenDialog}>
-        Open workspace(s) from NDEx...
+        Open workspace from NDEx...
       </MenuItem>
       <LoadWorkspaceDialog open={openDialog} handleClose={handleCloseDialog} />
     </>
