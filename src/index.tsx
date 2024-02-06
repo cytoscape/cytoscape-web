@@ -22,7 +22,7 @@ keycloak
     onLoad: 'check-sso',
     checkLoginIframe: false,
     silentCheckSsoRedirectUri:
-      window.location.origin + '/silent-check-sso.html',
+      window.location.origin + '/cytoscape/silent-check-sso.html',
   })
   .then(() => {
     if (rootElement !== null) {

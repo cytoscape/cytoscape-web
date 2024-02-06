@@ -17,8 +17,14 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
-import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
+import { Network } from '../../../models/NetworkModel'
+import { CirclePackingPanel } from './CustomLayout/CirclePackingPanel'
+import { Renderer } from '../../../models/RendererModel/Renderer'
+import { useRendererStore } from '../../../store/RendererStore'
+import { PropertyPanel } from './PropertyPanel/PropertyPanel'
+import { VisualStyle } from '../../../models/VisualStyleModel'
+import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -38,11 +44,16 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.workspace.currentNetworkId,
   )
 
+  const visualStyles: Record<string, VisualStyle> = useVisualStyleStore(
+    (state) => state.visualStyles,
+  )
+
+
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
   // View model is required to extract the selected nodes
-  const networkViewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const networkViewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
 
   // Selected nodes in the hierarchy
@@ -53,6 +64,19 @@ export const MainPanel = (): JSX.Element => {
   const networkSummary: any = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
+  const addRenderer = useRendererStore((state) => state.add)
+  const deleteRenderer = useRendererStore((state) => state.delete)
+  const renderers = useRendererStore((state) => state.renderers)
+
+  const CirclePackingRenderer: Renderer = {
+    id: 'circlePacking',
+    name: 'Cell View',
+    description: 'Circle Packing Renderer',
+    getComponent: (networkData: Network) => (
+      <CirclePackingPanel network={networkData} />
+    ),
+  }
+
 
   const checkDataType = (): void => {
     // Check if the current network is a hierarchy
@@ -78,15 +102,22 @@ export const MainPanel = (): JSX.Element => {
     if (metadata !== undefined) {
       setIsHierarchy(true)
       setMetadata(metadata)
+      if (renderers.circlePacking === undefined) {
+        addRenderer(CirclePackingRenderer)
+      }
     } else {
       setIsHierarchy(false)
       setMetadata(undefined)
+      if (renderers.circlePacking !== undefined) {
+        deleteRenderer(renderers.circlePacking.id)
+      }
     }
   }
 
   useEffect(() => {
     checkDataType()
   }, [networkSummary])
+
   useEffect(() => {
     checkDataType()
   }, [currentNetworkId])
@@ -112,8 +143,19 @@ export const MainPanel = (): JSX.Element => {
     const interactionUuid: string = row[
       SubsystemTag.interactionNetworkUuid
     ] as string
-    const name: ValueType = row.name ?? '?'
-    setSubNetworkName(name as string)
+
+    const visualStyle: VisualStyle = visualStyles[currentNetworkId]
+    const nodeLabelMappingAttr: string | undefined = visualStyle.nodeLabel.mapping?.attribute
+
+    let nameVal = row['name']
+    if(nodeLabelMappingAttr !== undefined) {
+      const mappedVal = row[nodeLabelMappingAttr]
+      if(mappedVal !== undefined) {
+        nameVal = mappedVal
+      }
+    }
+    // const name: ValueType = nodeLabelMappingAttr !== undefined ? row.nodeLabelMappingAttr : row.name
+    setSubNetworkName(nameVal.toString())
     const newQuery: Query = { nodeIds: memberIds as number[] }
     if (interactionUuid === undefined || interactionUuid === '') {
       setQuery(newQuery)
@@ -124,7 +166,10 @@ export const MainPanel = (): JSX.Element => {
   if (!isHierarchy) {
     return <MessagePanel message="This network is not a hierarchy" />
   }
-
+  
+  // if (isHierarchy && renderers.circlePacking === undefined) {
+  //   addRenderer(CirclePackingRenderer)
+  // }
   if (selectedNodes.length === 0) {
     return <MessagePanel message="Please select a subsystem" />
   }
@@ -156,9 +201,9 @@ export const MainPanel = (): JSX.Element => {
             interactionNetworkId={interactionNetworkUuid}
           />
         </Allotment.Pane>
-        <Allotment.Pane preferredSize={200}>
+        <Allotment.Pane preferredSize={100}>
           <Allotment>
-            <Allotment.Pane preferredSize={'35%'} key={0}>
+            <Allotment.Pane preferredSize={'15%'} key={0}>
               <PropertyPanel networkId={targetNode} />
             </Allotment.Pane>
             <Allotment.Pane key={1}>

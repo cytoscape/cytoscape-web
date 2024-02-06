@@ -24,6 +24,7 @@ import { useTableStore } from '../../../store/TableStore'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
+import { useSubNetworkStore } from '../store/SubNetworkStore'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -56,6 +57,10 @@ export const SubNetworkPanel = ({
   query,
   interactionNetworkId,
 }: SubNetworkPanelProps): ReactElement => {
+  // A local state to keep track of the current query network id.
+  // This is different from the current network id in the workspace.
+  const [queryNetworkId, setQueryNetworkId] = useState<string>('')
+
   const addNewNetwork = useNetworkStore((state) => state.add)
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addTable = useTableStore((state) => state.add)
@@ -63,6 +68,62 @@ export const SubNetworkPanel = ({
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+
+  // For converting node names to node ids
+  const tables = useTableStore((state) => state.tables)
+
+  // Selected nodes in the sub network
+  const selectedNodes: IdType[] = useSubNetworkStore(
+    (state) => state.selectedNodes,
+  )
+
+  const getViewModel: (id: IdType) => NetworkView | undefined =
+    useViewModelStore((state) => state.getViewModel)
+  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+
+  /**
+   * Selection based on the leaf node selection in the circle packing packing view
+   */
+  useEffect(() => {
+    if (queryNetworkId === undefined || queryNetworkId === '') {
+      return
+    }
+    const tableRecord = tables[queryNetworkId]
+    if (tableRecord === undefined) {
+      return
+    }
+
+    const { nodeTable } = tableRecord
+
+    const viewModel: NetworkView | undefined = getViewModel(queryNetworkId)
+    if (viewModel !== undefined) {
+      const { rows } = nodeTable
+      const nodeIds = [...rows.keys()]
+
+      const toBeSelected: IdType[] = []
+
+      //find matched nodes by name
+      selectedNodes.forEach((nodeName: string) => {
+        // Find the row index of the node with the given name
+        nodeIds.forEach((nodeId: IdType) => {
+          const row = rows.get(nodeId)
+          if (row === undefined) {
+            return
+          }
+          if (row.name === nodeName) {
+            toBeSelected.push(nodeId)
+          }
+        })
+      })
+      console.log(
+        '!Subnetwork Selection delay updated',
+        selectedNodes,
+        toBeSelected,
+      )
+
+      exclusiveSelect(queryNetworkId, toBeSelected, [])
+    }
+  }, [selectedNodes])
 
   // For applying default layout
   const defaultLayout: LayoutAlgorithm = useLayoutStore(
@@ -89,8 +150,6 @@ export const SubNetworkPanel = ({
   // This will be used to highlight the active network border
   const ui = useUiStateStore((state) => state.ui)
   const { activeNetworkView } = ui
-
-  const getViewModel: (id: IdType) => NetworkView | undefined = useViewModelStore((state) => state.getViewModel)
 
   const vs: Record<string, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
@@ -120,13 +179,9 @@ export const SubNetworkPanel = ({
       revalidateOnFocus: false,
     },
   )
-  if(error !== undefined) {
+  if (error !== undefined) {
     console.error('Failed to get network via SWR', error)
   }
-
-  // A local state to keep track of the current query network id.
-  // This is different from the current network id in the workspace.
-  const [queryNetworkId, setQueryNetworkId] = useState<string>('')
 
   // All networks in the main store
   const networks: Map<string, Network> = useNetworkStore(
@@ -156,20 +211,10 @@ export const SubNetworkPanel = ({
     await putVisualStyleToDb(id, visualStyle)
 
     const viewModel: NetworkView | undefined = getViewModel(id)
-    if(viewModel !== undefined) {
+    if (viewModel !== undefined) {
       await putNetworkViewToDb(id, viewModel)
     }
   }
-
-  // useEffect(() => {
-  //   if (isLoading) {
-  //     return
-  //   }
-
-  //   if (!isLoading && data !== undefined && error === undefined) {
-  //     updateNetworkView()
-  //   }
-  // }, [isLoading])
 
   const updateNetworkView = (): string => {
     if (data === undefined) {
@@ -230,6 +275,17 @@ export const SubNetworkPanel = ({
 
     updateNetworkView()
   }, [data])
+
+  useEffect(() => {
+    if (selectedNodes === undefined || selectedNodes.length === 0) {
+      // Clerar the selected nodes
+
+      return
+    } else {
+      // Transfer the original selection to the subnet
+      console.log('Subnetwork Selection updated', selectedNodes)
+    }
+  }, [selectedNodes])
 
   if (isLoading) {
     return (

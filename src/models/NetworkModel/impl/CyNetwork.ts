@@ -313,3 +313,18 @@ export const addNodesWithRows = (
 
   return network
 }
+
+/**
+ * An utility function to get the internal graph implementation
+ *
+ * In most cases, we can handle networks as a simple collection, but
+ * in case we need to use graph-specific methods, we can use this function
+ * to access the real graph object
+ *
+ * @param network
+ * @returns Cytoscape instance (for this impl)
+ */
+export const getInternalNetworkDataStore = (network: Network): any => {
+  const cyGraph = network as CyNetwork
+  return cyGraph.store
+}

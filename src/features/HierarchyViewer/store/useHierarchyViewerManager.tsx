@@ -112,7 +112,6 @@ export const useHierarchyViewerManager = (): void => {
       return
     }
     const metadata: HcxMetaData | undefined = getHcxProps(networkPropObj)
-    console.log('summary updated', summary, metadata)
     if (metadata !== undefined) {
       // Enable popup = this is a HCX
       enablePopup(true)

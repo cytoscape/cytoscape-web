@@ -25,7 +25,8 @@ export const getNetworkViewId = (
   newView: NetworkView,
   views: NetworkView[],
 ): IdType => {
-  let { id, type } = newView
+  let { type } = newView
+  const { id } = newView
   if (type === undefined) {
     type = DEF_VIEW_TYPE
   }
