@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React, { ReactElement, useState, useEffect, useContext } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogContentText, Table, TableHead, TableRow, TableCell, TableBody, DialogActions, Button, Box, Checkbox } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, Table, TableHead, TableRow, TableCell, TableBody, DialogActions, Button, Box, Checkbox, Typography } from '@mui/material';
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client';
 import { AppConfigContext } from '../../../AppConfigContext';
@@ -31,6 +31,9 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
     setOpenDialog(false); //
   };
 
+  const setCurrentNetworkId = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
 
   useEffect(() => {
     const fetchMyWorkspaces = async (): Promise<any> => {
@@ -55,6 +58,7 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
       const selectedWorkspace = myWorkspaces.find(workspace => workspace.workspaceId === selectedWorkspaceId);
       if (selectedWorkspace) {
         addNetworks(selectedWorkspace.networkIDs)
+        setCurrentNetworkId(selectedWorkspace.options.currentNetwork)
       } else {
         alert('Selected workspace not found');
       }
@@ -84,36 +88,42 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
   
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="lg">
-      <DialogTitle>My Workspaces</DialogTitle>
-      <DialogContent>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Select</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Number of Networks</TableCell>
-              <TableCell>Creation Time</TableCell>
-              <TableCell>Modification Time</TableCell>
+     <DialogTitle>My Workspaces</DialogTitle>
+  <DialogContent>
+    {myWorkspaces.length === 0 ? (
+      <Typography variant="subtitle1" align="center" sx={{ mt: 2 }}>
+        No workspaces available. Please create a new workspace.
+      </Typography>
+    ) : (
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Select</TableCell>
+            <TableCell>Name</TableCell>
+            <TableCell>Number of Networks</TableCell>
+            <TableCell>Creation Time</TableCell>
+            <TableCell>Modification Time</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {myWorkspaces.map((workspace) => (
+            <TableRow key={workspace.workspaceId}>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={selectedWorkspaceId === workspace.workspaceId}
+                  onChange={() => handleRowSelect(workspace.workspaceId)}
+                />
+              </TableCell>
+              <TableCell>{workspace.name}</TableCell>
+              <TableCell>{(workspace.networkIDs) ? workspace.networkIDs.length : 0}</TableCell>
+              <TableCell>{dateFormatter(workspace.creationTime)}</TableCell>
+              <TableCell>{dateFormatter(workspace.modificationTime)}</TableCell>
             </TableRow>
-          </TableHead>
-          <TableBody>
-            {myWorkspaces.map((workspace) => (
-              <TableRow key={workspace.workspaceId}>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedWorkspaceId === workspace.workspaceId}
-                    onChange={() => handleRowSelect(workspace.workspaceId)}
-                  />
-                </TableCell>
-                <TableCell>{workspace.name}</TableCell>
-                <TableCell>{(workspace.networkIDs) ? workspace.networkIDs.length : 0}</TableCell>
-                <TableCell>{dateFormatter(workspace.creationTime)}</TableCell>
-                <TableCell>{dateFormatter(workspace.modificationTime)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </DialogContent>
+          ))}
+        </TableBody>
+      </Table>
+    )}
+  </DialogContent>
       <DialogActions
         sx={{
           display: 'flex',
