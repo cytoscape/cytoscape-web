@@ -314,12 +314,12 @@ export const CirclePackingPanel = ({
       .each(function (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) {
         // Add the label on top of the circle
         let label: string = getLabel(d.data.id)
-        if(label === '') {
+        if (label === '') {
           label = d.data.name
         }
 
         // Split the label into words
-        const words = label.split(' ')
+        const words = label?.split(' ') ?? []
 
         const fontSize = getFontSize(d)
         // Calculate the total height of the text
@@ -387,7 +387,7 @@ export const CirclePackingPanel = ({
     }
 
     let label: string = getLabel(hoveredEnter.id)
-    if(label === '') {
+    if (label === '') {
       label = hoveredEnter.name
     }
     setTooltipContent(label)
