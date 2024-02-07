@@ -169,6 +169,10 @@ export const CirclePackingPanel = ({
         label = nv.values.get('nodeLabel') as VisualPropertyValueType
       }
     }
+
+    if (label === undefined) {
+      return ''
+    }
     return label.toString()
   }
 
@@ -319,7 +323,7 @@ export const CirclePackingPanel = ({
         }
 
         // Split the label into words
-        const words = label?.split(' ') ?? []
+        const words = label === undefined ? [] : label.split(' ') ?? []
 
         const fontSize = getFontSize(d)
         // Calculate the total height of the text
