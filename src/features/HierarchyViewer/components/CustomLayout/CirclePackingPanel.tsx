@@ -319,7 +319,7 @@ export const CirclePackingPanel = ({
         // Add the label on top of the circle
         let label: string = getLabel(d.data.id)
         if (label === '') {
-          label = d.data.name
+          label = `${d.data.name}`
         }
 
         // Split the label into words
