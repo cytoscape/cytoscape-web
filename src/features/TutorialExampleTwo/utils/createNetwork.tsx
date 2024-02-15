@@ -8,7 +8,6 @@ import ViewModelFn, { NetworkView } from '../../../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { AttributeName } from '../../../models/TableModel/AttributeName'
 import { ValueType } from '../../../models/TableModel/ValueType'
-import { ValueTypeName } from '../../../models/TableModel/ValueTypeName'
 import { getCachedData } from '../../../utils/cx-utils'
 import { v4 as uuidv4 } from 'uuid'
 import { Attribute } from '../../../models/CxModel/Cx2/CoreAspects/Attribute'
@@ -20,18 +19,7 @@ import {
     putNetworkSummaryToDb,
     getNetworkSummaryFromDb
 } from '../../../store/persist/db'
-
-const DEFAULT_EDGE_ATTRIBUTE = "Edge Table Attribute Name";
-const DEFAULT_NODE_ATTRIBUTE = "Node Table Attribute Name";
-const DEFAULT_EDGE_TABLE_COLUMN: Column = {
-    name: DEFAULT_EDGE_ATTRIBUTE,
-    type: ValueTypeName.String
-};
-const DEFAULT_NODE_TABLE_COLUMN: Column = {
-    name: DEFAULT_NODE_ATTRIBUTE,
-    type: ValueTypeName.String
-};
-
+export const DEFAULT_ATTRIBUTE = "name";
 /**
  * An utility interface to hold all the data needed to build a network view
  */
@@ -47,6 +35,8 @@ export interface NetworkModel {
 // Function to create an emyty network
 export const createEmptyNetworkWithView= async (
     id?: string,
+    nodeAttrLst:Column[]=[],
+    edgeAttrLst:Column[]=[]
   ): Promise<NetworkModel> => {
     // check if id already exists
     const newNetworkNodeCount = 0;
@@ -56,8 +46,8 @@ export const createEmptyNetworkWithView= async (
 
     const uuid: string = id !== undefined ? id : uuidv4()
     const network: Network = NetworkFn.createNetwork(uuid)
-    const nodeTable:Table = TableFn.createTable(uuid, [DEFAULT_NODE_TABLE_COLUMN]);
-    const edgeTable:Table = TableFn.createTable(uuid, [DEFAULT_EDGE_TABLE_COLUMN]);
+    const nodeTable:Table = TableFn.createTable(uuid, nodeAttrLst);
+    const edgeTable:Table = TableFn.createTable(uuid, edgeAttrLst);
   
     const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle();// default
     const networkView: NetworkView = ViewModelFn.createEmptyViewModel(uuid)
@@ -157,8 +147,15 @@ export const addNodeToNetwork = async ({
             id: Number(newNodeId), v, x, y, z
         }
         const newNetwork = NetworkFn.addNode(network, newNodeId);
-        const nodeAttr:Record<AttributeName, ValueType> = {[DEFAULT_NODE_ATTRIBUTE]:'test node value'};
-        const newNodeTable = TableFn.insertRow(nodeTable,[newNodeId, nodeAttr]);
+        let nodeAttrLst:Array<Record<AttributeName, ValueType>>;
+        if (v!==undefined){
+            nodeAttrLst = Object.entries(v).map(([key, value]): Record<AttributeName, ValueType> => {
+                return { [key]: value as ValueType }; 
+            });
+        }else{
+            nodeAttrLst = [{[DEFAULT_ATTRIBUTE]: 'node' + newNodeId}];
+        }
+        const newNodeTable = TableFn.insertRows(nodeTable,nodeAttrLst.map(att=>[newNodeId,att]));
         const newNetworkView = ViewModelFn.addNodeViewToModel(networkViews[0],newNode);
         await putNetworkToDb(newNetwork);
         await putNetworkSummaryToDb({
@@ -189,7 +186,8 @@ export const addEdgeToNetwork = async (
     networkId: string,
     sourceNodeId: string,
     targetNodeId: string,
-    edgeId?: number
+    edgeId?: number,
+    edgeAttrLst?:Array<Record<AttributeName, ValueType>>
   ): Promise<[NetworkModel,string] | undefined> => {
     const {network, nodeTable, edgeTable, visualStyle, networkViews} = await getCachedData(networkId);
     const networkSummary = await getNetworkSummaryFromDb(networkId);
@@ -231,8 +229,10 @@ export const addEdgeToNetwork = async (
             t: Number(targetNodeId)
         }
         const newNetwork = NetworkFn.addEdge(network, newEdge);
-        const edgeAttr:Record<AttributeName, ValueType> = {[DEFAULT_EDGE_ATTRIBUTE]:'test edge value'};
-        const newEdgeTable = TableFn.insertRow(edgeTable,[newEdgeId, edgeAttr]);
+        if (edgeAttrLst === undefined){
+            edgeAttrLst = [{[DEFAULT_ATTRIBUTE]:newEdgeId}];
+        }
+        const newEdgeTable = TableFn.insertRows(edgeTable,edgeAttrLst.map(att=>[newEdgeId,att]));
         const newNetworkView = ViewModelFn.addEdgeViewToModel(networkViews[0], newCxEdge);
         await putNetworkToDb(newNetwork);
         await putNetworkSummaryToDb({
