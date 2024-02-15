@@ -10,7 +10,7 @@ export const ExampleOneMenuItem = ({ handleClose }: BaseMenuProps ): ReactElemen
 
     return (
     <MenuItem onClick={handleClick}>
-      Example 1
+      Sample Menu Item
     </MenuItem>
   );
 };

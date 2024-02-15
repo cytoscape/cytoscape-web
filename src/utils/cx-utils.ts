@@ -33,6 +33,8 @@ export interface NetworkWithView {
  * @param id
  * @returns
  */
+
+// The following function seems not being used anywhere else.
 export const createNetworkViewFromCx2 = (
   cx2: Cx2,
   id?: string,
