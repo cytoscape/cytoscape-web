@@ -20,7 +20,13 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
   const dateFormatter = (timestamp: string | number | Date): string => {
     return new Date(timestamp).toLocaleString();
   };
+  const deleteAllNetworks = useWorkspaceStore(
+    (state) => state.deleteAllNetworks,
+  )
 
+  const handleDeleteAllNetworks = (): void => {
+    deleteAllNetworks()
+  }
   const [openDialog, setOpenDialog] = useState(false);
 
   const handleDeleteWorkspaceClick = (): void  => {
@@ -53,10 +59,11 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
     setSelectedWorkspaceId(workspaceId);
   };
 
-  const handleOpenWorkspace = (): void => {
+  const handleOpenWorkspace = async (): Promise<void> => {
     if (selectedWorkspaceId !== null) {
       const selectedWorkspace = myWorkspaces.find(workspace => workspace.workspaceId === selectedWorkspaceId);
       if (selectedWorkspace) {
+        handleDeleteAllNetworks()
         addNetworks(selectedWorkspace.networkIDs)
         setCurrentNetworkId(selectedWorkspace.options.currentNetwork)
       } else {
