@@ -1,10 +1,14 @@
 import NetworkFn, { Network, NetworkAttributes, Edge } from '../../../models/NetworkModel'
+import { translateCXEdgeId , 
+        translateEdgeIdToCX } from '../../../models/NetworkModel/impl/CyNetwork'
 import { Node as CxNode } from '../../../models/CxModel/Cx2/CoreAspects/Node'
-import TableFn, { Table } from '../../../models/TableModel'
+import { Edge as CxEdge } from '../../../models/CxModel/Cx2/CoreAspects/Edge'
+import TableFn, { Column,Table } from '../../../models/TableModel'
 import ViewModelFn, { NetworkView } from '../../../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { AttributeName } from '../../../models/TableModel/AttributeName'
 import { ValueType } from '../../../models/TableModel/ValueType'
+import { ValueTypeName } from '../../../models/TableModel/ValueTypeName'
 import { getCachedData } from '../../../utils/cx-utils'
 import { v4 as uuidv4 } from 'uuid'
 import { Attribute } from '../../../models/CxModel/Cx2/CoreAspects/Attribute'
@@ -14,9 +18,19 @@ import {
     putVisualStyleToDb,
     putNetworkViewToDb,
     putNetworkSummaryToDb,
-    getNetworkFromDb,
     getNetworkSummaryFromDb
 } from '../../../store/persist/db'
+
+const DEFAULT_EDGE_ATTRIBUTE = "Edge Table Attribute Name";
+const DEFAULT_NODE_ATTRIBUTE = "Node Table Attribute Name";
+const DEFAULT_EDGE_TABLE_COLUMN: Column = {
+    name: DEFAULT_EDGE_ATTRIBUTE,
+    type: ValueTypeName.String
+};
+const DEFAULT_NODE_TABLE_COLUMN: Column = {
+    name: DEFAULT_NODE_ATTRIBUTE,
+    type: ValueTypeName.String
+};
 
 /**
  * An utility interface to hold all the data needed to build a network view
@@ -37,13 +51,13 @@ export const createEmptyNetworkWithView= async (
     // check if id already exists
     const newNetworkNodeCount = 0;
     const newNetworkEdgeCount = 0;
-    const newNetworkName = "New Network"
+    const newNetworkName = "Sample Network"
     const newNetworkDescription = "This is a demo of creating a 2-node-1-edge network."
 
     const uuid: string = id !== undefined ? id : uuidv4()
     const network: Network = NetworkFn.createNetwork(uuid)
-    const nodeTable:Table = TableFn.createTable(uuid);
-    const edgeTable:Table = TableFn.createTable(uuid);
+    const nodeTable:Table = TableFn.createTable(uuid, [DEFAULT_NODE_TABLE_COLUMN]);
+    const edgeTable:Table = TableFn.createTable(uuid, [DEFAULT_EDGE_TABLE_COLUMN]);
   
     const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle();// default
     const networkView: NetworkView = ViewModelFn.createEmptyViewModel(uuid)
@@ -133,8 +147,8 @@ export const addNodeToNetwork = async ({
             }
             newNodeId = nodeIdStr;
         }else if(networkSummary.maxNodeId!== undefined){
-            newNodeId = (networkSummary.maxNodeId as number + 1).toString();
-            maxNodeId = networkSummary.maxNodeId as number + 1
+            newNodeId = (networkSummary.maxNodeId + 1).toString();
+            maxNodeId = networkSummary.maxNodeId + 1
         }else{
             console.log('Failed to add a node to the network! Cannot assign a proper NodeId.')
             return;
@@ -143,7 +157,7 @@ export const addNodeToNetwork = async ({
             id: Number(newNodeId), v, x, y, z
         }
         const newNetwork = NetworkFn.addNode(network, newNodeId);
-        const nodeAttr:Record<AttributeName, ValueType> = {'test AttributeName':'test ValueType'};
+        const nodeAttr:Record<AttributeName, ValueType> = {[DEFAULT_NODE_ATTRIBUTE]:'test node value'};
         const newNodeTable = TableFn.insertRow(nodeTable,[newNodeId, nodeAttr]);
         const newNetworkView = ViewModelFn.addNodeViewToModel(networkViews[0],newNode);
         await putNetworkToDb(newNetwork);
@@ -176,41 +190,50 @@ export const addEdgeToNetwork = async (
     sourceNodeId: string,
     targetNodeId: string,
     edgeId?: number
-  ): Promise<string | undefined> => {
-    const network = await getNetworkFromDb(networkId);
+  ): Promise<[NetworkModel,string] | undefined> => {
+    const {network, nodeTable, edgeTable, visualStyle, networkViews} = await getCachedData(networkId);
     const networkSummary = await getNetworkSummaryFromDb(networkId);
-    if (network !== undefined && networkSummary!== undefined){
+    if (network !== undefined && networkSummary!== undefined && nodeTable!== undefined
+        && edgeTable!== undefined && networkViews!== undefined && visualStyle!== undefined
+        && isUInt(Number(sourceNodeId)) && isUInt(Number(targetNodeId))){
         let newEdgeId: string;
         let maxEdgeId: number = 0;
         if (edgeId !== undefined && isUInt(edgeId)){
-            const edgeIdStr = 'e'+ edgeId.toString();
+            const edgeIdStr = translateCXEdgeId(edgeId.toString());
             maxEdgeId = edgeId;
             for (const existEdge of network.edges){
                 if(existEdge.id === edgeIdStr){
                     console.log('Failed to add an edge to the network! The edgeID has been used.')
                     return 
                 } 
-                const existEdgeId = Number(existEdge.id.slice(1))
+                const existEdgeId = Number(translateEdgeIdToCX(existEdge.id.slice(1)))
                 if (isUInt(existEdgeId) && existEdgeId > maxEdgeId) {
                     maxEdgeId = existEdgeId
                 }
             }
             newEdgeId = edgeIdStr;
         }else if(networkSummary.maxEdgeId!== undefined){
-            newEdgeId = 'e' + (networkSummary.maxEdgeId as number + 1).toString();
-            maxEdgeId = networkSummary.maxEdgeId as number + 1
+            newEdgeId = translateCXEdgeId((networkSummary.maxEdgeId + 1).toString());
+            maxEdgeId = networkSummary.maxEdgeId + 1
         }else{
             console.log('Failed to add an Edge to the network! Cannot assign a proper edgeId.')
             return;
         }
-        // const newEdgeId: number = edgeId ? edgeId : 'e' + (networkSummary.maxEdgeId + 1).toString();
+        
         const newEdge: Edge  = {
             id:newEdgeId, 
             s:sourceNodeId,
             t:targetNodeId
         };
+        const newCxEdge: CxEdge = {
+            id: Number(translateEdgeIdToCX(newEdgeId)),
+            s: Number(sourceNodeId),
+            t: Number(targetNodeId)
+        }
         const newNetwork = NetworkFn.addEdge(network, newEdge);
-        
+        const edgeAttr:Record<AttributeName, ValueType> = {[DEFAULT_EDGE_ATTRIBUTE]:'test edge value'};
+        const newEdgeTable = TableFn.insertRow(edgeTable,[newEdgeId, edgeAttr]);
+        const newNetworkView = ViewModelFn.addEdgeViewToModel(networkViews[0], newCxEdge);
         await putNetworkToDb(newNetwork);
         await putNetworkSummaryToDb({
             ...networkSummary,
@@ -218,7 +241,17 @@ export const addEdgeToNetwork = async (
             maxEdgeId,
             modificationTime: new Date(Date.now())
         })
-        return newEdgeId;
+        await putTablesToDb(networkId, nodeTable, newEdgeTable);
+        await putNetworkViewToDb(networkId, newNetworkView)
+        return [{
+            network:newNetwork,
+            nodeTable,
+            edgeTable:newEdgeTable,
+            visualStyle,
+            networkViews: [newNetworkView],        
+            },
+            newEdgeId
+        ];
     }
     console.log('Failed to add an edge to the network! The network does not exist.');
 }

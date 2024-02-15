@@ -8,9 +8,10 @@ import { ValueTypeName } from '../ValueTypeName'
 import { CxValue } from '../../CxModel/Cx2/CxValue'
 import { AttributeDeclaration } from '../../CxModel/Cx2/CoreAspects/AttributeDeclarations'
 import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
-export const createTable = (id: IdType): Table => ({
+export const createTable = (id: IdType, colNames:Column[]=[]): Table => (
+  {
   id,
-  columns: [],
+  columns: [...colNames],
   rows: new Map<IdType, Record<AttributeName, ValueType>>(),
 })
 

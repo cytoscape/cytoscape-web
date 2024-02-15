@@ -131,3 +131,15 @@ export const addNodeViewToModel = (networkView: NetworkView, node: CxNode): Netw
 
   return networkView;
 }
+
+export const addEdgeViewToModel = (networkView: NetworkView, edge: CxEdge): NetworkView => {
+  const translatedId = translateCXEdgeId(edge.id.toString());
+  const edgeView: EdgeView = {
+    id: translatedId, 
+    values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>(), 
+  };
+
+  networkView.edgeViews[translatedId] = edgeView;
+
+  return networkView;
+}
