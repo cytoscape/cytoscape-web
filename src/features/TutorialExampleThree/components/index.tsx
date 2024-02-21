@@ -10,7 +10,7 @@ export const ExampleThreeMenuItem = ({ handleClose }: BaseMenuProps ): ReactElem
 
     return (
     <MenuItem onClick={handleClick}>
-      Generate Subnetwork from Selection
+      Extract Subnetwork
     </MenuItem>
   );
 };

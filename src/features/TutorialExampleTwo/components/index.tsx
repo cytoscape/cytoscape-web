@@ -5,7 +5,7 @@ import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps';
 import { createEmptyNetworkWithView,
           addNodeToNetwork, 
           addEdgeToNetwork,
-          DEFAULT_ATTRIBUTE } from '../utils/createNetwork';
+          DEFAULT_ATTRIBUTE } from '../utils/networkModelOperations';
 import { useTableStore } from '../../../store/TableStore'
 import { Column } from '../../../models/TableModel'
 import { useNetworkStore } from '../../../store/NetworkStore';
@@ -13,7 +13,8 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore';
 import { useViewModelStore } from '../../../store/ViewModelStore';
 import { useVisualStyleStore } from '../../../store/VisualStyleStore';
 import { ValueTypeName } from '../../../models/TableModel/ValueTypeName';
-
+import { getNetworkViewsFromDb } from '../../../store/persist/db';
+import { NetworkView } from '../../../models/ViewModel'
 const DEMO_EDGE_TABLE_COLUMN: Column = {
   name: DEFAULT_ATTRIBUTE,
   type: ValueTypeName.String
@@ -38,36 +39,31 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps ): ReactElemen
     const handleClick = async (): Promise<void> => {
         try{
           const newNetworkUuid = uuidv4();          
-          await createEmptyNetworkWithView(newNetworkUuid,[DEMO_NODE_TABLE_COLUMN],[DEMO_EDGE_TABLE_COLUMN]);
-          const addNodeOneRes = await addNodeToNetwork({networkId:newNetworkUuid,nodeId:1,x:0,y:1});
-          const addNodeTwoRes = await addNodeToNetwork({networkId:newNetworkUuid,nodeId:2,x:1,y:0});
-          // Ensure addNodeResult is not undefined before destructuring
-          if (addNodeOneRes !== undefined && addNodeTwoRes !== undefined) {
-            const [,nodeOneId] = addNodeOneRes;
-            const [,nodeTwoId] = addNodeTwoRes;
-            const addEdgeRes = await addEdgeToNetwork(newNetworkUuid,nodeOneId,nodeTwoId);
-            if (addEdgeRes!==undefined){
-              const [newNetworkModel] = addEdgeRes;
+          const newNetworkWithView = await createEmptyNetworkWithView(newNetworkUuid,[DEMO_NODE_TABLE_COLUMN],[DEMO_EDGE_TABLE_COLUMN]);
+          const nodeOneId = await addNodeToNetwork({networkId:newNetworkUuid,nodeId:1,x:0,y:1});
+          const nodeTwoId = await addNodeToNetwork({networkId:newNetworkUuid,nodeId:2,x:1,y:0});
+          // Ensure nodeIDs are not undefined before adding edge
+          if (nodeOneId !== undefined && nodeTwoId !== undefined) {
+            await addEdgeToNetwork(newNetworkUuid,nodeOneId,nodeTwoId);
+            const networkViews:NetworkView[]|undefined = await getNetworkViewsFromDb(newNetworkUuid)
+            if (networkViews!==undefined){
               addNetworkToWorkspace(newNetworkUuid);
-              addNewNetwork(newNetworkModel.network);
-              setVisualStyle(newNetworkUuid, newNetworkModel.visualStyle);
-              setTables(newNetworkUuid, newNetworkModel.nodeTable, newNetworkModel.edgeTable);
-              setViewModel(newNetworkUuid, newNetworkModel.networkViews[0]);
-              setCurrentNetworkId(newNetworkUuid);
-              handleClose();              
+              addNewNetwork(newNetworkWithView.network);
+              setVisualStyle(newNetworkUuid, newNetworkWithView.visualStyle);
+              setTables(newNetworkUuid, newNetworkWithView.nodeTable, newNetworkWithView.edgeTable);
+              setViewModel(newNetworkUuid, networkViews[0]);
+              setCurrentNetworkId(newNetworkUuid);               
             }
-
+          handleClose();  
           }
-        } catch (error) {
+        }catch (error) {
           console.error(error)
         }
     };
 
-    
-
     return (
     <MenuItem onClick={handleClick}>
-      Create a Sample Network
+      Create Sample Network
     </MenuItem>
   );
 };
