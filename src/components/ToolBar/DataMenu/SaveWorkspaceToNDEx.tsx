@@ -8,6 +8,14 @@ import { AppConfigContext } from '../../../AppConfigContext';
 import { useMessageStore } from '../../../store/MessageStore';
 import { KeycloakContext } from '../../..';
 import { getWorkspaceFromDb } from '../../../store/persist/db';
+import { useWorkspaceStore } from '../../../store/WorkspaceStore';
+import { exportNetworkToCx2 } from '../../../store/io/exportCX';
+import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
+import { useVisualStyleStore } from '../../../store/VisualStyleStore';
+import { useNetworkStore } from '../../../store/NetworkStore';
+import { useTableStore } from '../../../store/TableStore';
+import { useViewModelStore } from '../../../store/ViewModelStore';
+import { Network } from '../../../models/NetworkModel'
 
 export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext);
@@ -18,6 +26,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
 
   const [workspaceName, setWorkspaceName] = useState<string>('');
   const [openDialog, setOpenDialog] = useState<boolean>(false);
+  const updateSummary = useNetworkSummaryStore((state) => state.update)
 
   const handleOpenDialog = (): void => {
     setOpenDialog(true);
@@ -26,9 +35,57 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
   const handleCloseDialog = (): void => {
     setOpenDialog(false);
   };
+  const allNetworkId = useWorkspaceStore(
+    (state) => state.workspace.networkIds,
+  )
 
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setWorkspaceName(event.target.value);
+  };
+
+  const saveNetworkToNDEx = async (networkId:string): Promise<void> => {
+    const ndexClient = new NDEx(ndexBaseUrl)
+    const accessToken = await getToken()
+    const network = useNetworkStore.getState().networks.get(networkId) as Network;
+
+    // Fetch visual style
+    const visualStyle = useVisualStyleStore.getState().visualStyles[networkId];
+  
+    // Fetch network summary
+    const summary = useNetworkSummaryStore.getState().summaries[networkId];
+  
+    // Fetch tables
+    const nodeTable = useTableStore.getState().tables[networkId].nodeTable;
+    const edgeTable = useTableStore.getState().tables[networkId].edgeTable;
+  
+    // Fetch view model
+    const viewModel = useViewModelStore.getState().viewModels[networkId];
+    ndexClient.setAuthToken(accessToken)
+    const cx = exportNetworkToCx2(
+      network,
+      visualStyle,
+      summary,
+      nodeTable,
+      edgeTable,
+      viewModel,
+    )
+
+    // overwrite the current network on NDEx
+    await ndexClient.updateNetworkFromRawCX2(networkId, cx)
+
+    // update the network summary with the newest modification time
+    const ndexSummary = await ndexClient.getNetworkSummary(networkId)
+    const newNdexModificationTime = ndexSummary.modificationTime
+    updateSummary(networkId, {
+      modificationTime: newNdexModificationTime,
+    })
+  }
+
+
+  const saveAllNetworks =  async (): Promise<void> => {
+    for (const networkId of allNetworkId) {
+      await saveNetworkToNDEx(networkId);
+    }
   };
 
   const saveCopyToNDEx = async (): Promise<void> => {
@@ -36,7 +93,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
       alert("Please enter a workspace name");
       return;
     }
-
+    await saveAllNetworks()
     const ndexClient = new NDEx(ndexBaseUrl);
     const accessToken = await getToken();
     ndexClient.setAuthToken(accessToken);

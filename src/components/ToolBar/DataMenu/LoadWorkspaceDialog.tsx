@@ -37,9 +37,6 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
     setOpenDialog(false); //
   };
 
-  const setCurrentNetworkId = useWorkspaceStore(
-    (state) => state.setCurrentNetworkId,
-  )
 
   useEffect(() => {
     const fetchMyWorkspaces = async (): Promise<any> => {
@@ -65,7 +62,6 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
       if (selectedWorkspace) {
         handleDeleteAllNetworks()
         addNetworks(selectedWorkspace.networkIDs)
-        setCurrentNetworkId(selectedWorkspace.options.currentNetwork)
       } else {
         alert('Selected workspace not found');
       }
