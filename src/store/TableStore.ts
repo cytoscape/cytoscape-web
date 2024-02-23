@@ -94,7 +94,8 @@ interface TableAction {
   deleteRows: (networkId: IdType, rows: IdType[]) => void
 
   // Create new
-  addRows: (networkId: IdType, rows: IdType[]) => void
+  addRow: (networkId: IdType, tableType: TableType, row: [IdType, Record<AttributeName, ValueType>]) => void
+  addRows: (networkId: IdType, tableType: TableType, rows: Array<[IdType, Record<AttributeName, ValueType>]>) => void
 
   delete: (networkId: IdType) => void
   deleteAll: () => void
@@ -397,12 +398,30 @@ export const useTableStore = create(
           return state
         })
       },
-      addRows: (networkId: IdType, rowIds: IdType[]) => {
+      addRow: (networkId: IdType, tableType: TableType, row:[IdType, Record<AttributeName, ValueType>])=>{
         set((state) => {
-          if (rowIds.length === 0) {
-            return state
+          const table = state.tables[networkId]
+          const tableToUpdate =
+            table[
+              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            ]
+          if (tableToUpdate!==undefined){
+            tableToUpdate.rows.set(row[0], row[1]);
           }
-          return state
+          return state; 
+        })        
+      },
+      addRows: (networkId: IdType, tableType: TableType, rows:Array<[IdType, Record<AttributeName, ValueType>]>) => {
+        set((state) => {
+          const table = state.tables[networkId]
+          const tableToUpdate =
+            table[
+              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            ]
+          if (tableToUpdate!==undefined){
+            rows.forEach((row) => tableToUpdate.rows.set(row[0], row[1]))
+          }
+          return state; 
         })
       },
 

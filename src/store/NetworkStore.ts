@@ -96,20 +96,44 @@ export const useNetworkStore = create(
         addNode: (networkId: IdType, nodeId: IdType) => {
           set((state) => {
             const network = state.networks.get(networkId)
-            if (network !== undefined) {
+            if (network === undefined) {
+              console.log(`Network with ID ${networkId} not found.`);
+              return state;
+            }else{
+              if(network.nodes.some(node => node.id === nodeId)) {
+                console.log('Failed to add a node to the network! The nodeID has been used.')
+                return state
+              }
               NetworkFn.addNode(network, nodeId)
+              return {
+                networks: { ...state.networks },
+              }
             }
-            return state
           })
         },
         addNodes: (networkId: IdType, nodeIds: IdType[]) => {
           set((state) => {
             const network = state.networks.get(networkId)
-            if (network !== undefined) {
-              NetworkFn.addNodes(network, nodeIds)
-            }
-            return {
-              networks: { ...state.networks },
+            if (network === undefined) {
+              console.log(`Network with ID ${networkId} not found.`);
+              return state;
+            }else{
+                const uniqueNodeIds = new Set(nodeIds);
+                if (uniqueNodeIds.size !== nodeIds.length){
+                  console.log('Failed to add nodes to the network! NodeId must be unique.')
+                  return state;
+                }
+                for(const nodeId of nodeIds){
+                  if (network.nodes.some(node => node.id === nodeId)){
+                    console.log(`Failed to add nodes to the network! Node ID ${nodeId} has been used.`)
+                    return state;
+                  }
+                }
+                NetworkFn.addNodes(network, nodeIds)
+              
+              return {
+                networks: { ...state.networks },
+              }
             }
           })
         },
@@ -162,23 +186,74 @@ export const useNetworkStore = create(
 
         addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => {
           set((state) => {
-            const network = state.networks.get(networkId)
-            if (network !== undefined) {
-              NetworkFn.addEdge(network, { id, s, t })
-            }
-            return {
-              networks: { ...state.networks },
+            const network = state.networks.get(networkId);
+            if (network === undefined) {
+              console.log(`Network with ID ${networkId} not found.`);
+              return state;
+            }else{
+              // Check if the edge ID starts with 'e'
+              if (id[0]!=='e'){
+                console.log(`Failed to add an edge: Edge ID ${id} must start with 'e'.`);
+                return state;
+              }
+              // Check if the edge ID is already used
+              if (network.edges.some(edge => edge.id === id)) {
+                console.log(`Failed to add an edge: Edge ID ${id} is already used.`);
+                return state;
+              }
+              // Check if both source and target nodes exist
+              const sourceExists = network.nodes.some(node => node.id === s);
+              const targetExists = network.nodes.some(node => node.id === t);
+              if (!sourceExists || !targetExists) {
+                console.log(`Failed to add an edge: ${!sourceExists ? `Source node ${s}` : `Target node ${t}`} does not exist.`);
+                return state;
+              }
+              // add the edge
+              NetworkFn.addEdge(network, { id, s, t });
+          
+              return {
+                networks: { ...state.networks },
+              }
             }
           })
         },
         addEdges: (networkId: IdType, edges: Edge[]) => {
           set((state) => {
             const network = state.networks.get(networkId)
-            if (network !== undefined) {
+            if (network === undefined) {
+              console.log(`Network with ID ${networkId} not found.`);
+              return state;
+            }else{
+              // check if all the edgeIds are unique
+              const uniqueEdgeIds = new Set(edges.map(edge=>edge.id));
+              if (uniqueEdgeIds.size !== edges.length){
+                console.log('Failed to add edges to the network! EdgeId must be unique.')
+                return state;
+              }
+              for(const newEdge of edges){ 
+                // Check if the edge ID starts with 'e'
+                if (newEdge.id[0]!=='e'){
+                  console.log(`Failed to add an edge: Edge ID ${newEdge.id} must start with 'e'.`);
+                  return state;
+                }
+                // Check if the edge ID is already used
+                if (network.edges.some(edge => edge.id === newEdge.id)) {
+                  console.log(`Failed to add an edge: Edge ID ${newEdge.id} is already used.`);
+                  return state;
+                }
+                // Check if both source and target nodes exist
+                const sourceExists = network.nodes.some(node => node.id === newEdge.s);
+                const targetExists = network.nodes.some(node => node.id === newEdge.t);
+                if (!sourceExists || !targetExists) {
+                  console.log(`Failed to add an edge: ${!sourceExists ? `Source node ${newEdge.s}` : `Target node ${newEdge.t}`} does not exist.`);
+                  return state;
+                }
+              }
+              // add the edge
               NetworkFn.addEdges(network, edges)
-            }
-            return {
-              networks: { ...state.networks },
+              return {
+                networks: { ...state.networks },
+              }
             }
           })
         },
