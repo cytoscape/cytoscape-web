@@ -44,7 +44,7 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
   const addNodesToNetwork = useNetworkStore((state) => state.addNodes)
   const addEdgeToNetwork = useNetworkStore((state) => state.addEdge)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
-  // const setViewModel = useViewModelStore((state) => state.add)
+  const setViewModel = useViewModelStore((state) => state.add)
   const setTables = useTableStore((state) => state.add)
   const addRowsToTable = useTableStore((state) => state.addRows)
   const addRowToTable = useTableStore((state) => state.addRow)
@@ -90,7 +90,7 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
       addNewNetwork(newNetworkWithView.network);
       setVisualStyle(newNetworkUuid, newNetworkWithView.visualStyle);
       setTables(newNetworkUuid, newNetworkWithView.nodeTable, newNetworkWithView.edgeTable);
-      // setViewModel(newNetworkUuid, newNetworkWithView.networkViews[0]);
+      setViewModel(newNetworkUuid, newNetworkWithView.networkViews[0]);
       setTimeout(() => setCurrentNetworkId(newNetworkUuid), 3000)
 
       // add 2 nodes and 1 edge to network
