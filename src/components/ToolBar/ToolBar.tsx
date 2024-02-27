@@ -11,6 +11,7 @@ import { LayoutMenu } from './LayoutMenu'
 import { EditMenu } from './EditMenu'
 import { SearchBox } from './Search'
 import { AnalysisMenu } from './AnalysisMenu'
+import { createMenu } from './DynamicMenuFactory'
 
 export const ToolBar = (): JSX.Element => {
   return (
@@ -27,6 +28,7 @@ export const ToolBar = (): JSX.Element => {
             <LayoutMenu label="Layout" />
             <DropdownMenu label="Help" />
             <AnalysisMenu label="Analysis" />
+            {createMenu('Apps', false, [])}
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
