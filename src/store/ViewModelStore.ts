@@ -185,6 +185,20 @@ interface ViewModelAction {
   deleteAll: () => void
 }
 
+interface UpdateActions {
+  // Add node(s) to a network
+  addNodeView: (networkId: IdType, nodeView: NodeView) => void
+  addNodeViews: (networkId: IdType, nodeIds: NodeView[]) => void
+
+  // Add edge(s) to a network
+  addEdgeView: (networkId: IdType, nodeView: EdgeView) => void
+  addEdgeViews: (networkId: IdType, edges: EdgeView[]) => void
+
+  // Delete nodes and edges from a network
+  deleteNodeViews: (networkId: IdType, nodeIds: IdType[]) => void
+  deleteEdgeViews: (networkId: IdType, edgeIds: IdType[]) => void
+}
+
 type ViewModelStore = ViewModelState & ViewModelAction
 
 const persist =
@@ -240,12 +254,11 @@ export const useViewModelStore = create(
                   state.viewModels[networkId] ?? [],
                 )
               }
-              
+
               // Check if the view model already exists
               const existingViewModel: NetworkView | undefined =
                 state.viewModels[networkId]?.find(
-                  (viewModel) =>
-                    viewModel.viewId === networkView.viewId,
+                  (viewModel) => viewModel.viewId === networkView.viewId,
                 )
               if (existingViewModel !== undefined) {
                 // Do not add if it already exists
