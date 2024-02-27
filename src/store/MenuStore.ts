@@ -1,14 +1,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import { MenuItem } from '../models/MenuModel'
 
-interface Menu {
-  id: number
-  parent: string
-  name: string
-  weight: number
-}
-
-const defaultMenus: Menu[] = []
+const defaultMenus: MenuItem[] = []
 
 interface MenuState {
   menues: Menu[]
