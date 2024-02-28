@@ -186,11 +186,11 @@ interface ViewModelAction {
 }
 
 interface UpdateActions {
-  // Add node(s) to a network
+  // Add node view (s) to a network
   addNodeView: (networkId: IdType, nodeView: NodeView) => void
   addNodeViews: (networkId: IdType, nodeIds: NodeView[]) => void
 
-  // Add edge(s) to a network
+  // Add edge view(s) to a network
   addEdgeView: (networkId: IdType, nodeView: EdgeView) => void
   addEdgeViews: (networkId: IdType, edges: EdgeView[]) => void
 
@@ -199,7 +199,7 @@ interface UpdateActions {
   deleteEdgeViews: (networkId: IdType, edgeIds: IdType[]) => void
 }
 
-type ViewModelStore = ViewModelState & ViewModelAction
+type ViewModelStore = ViewModelState & ViewModelAction & UpdateActions
 
 const persist =
   (config: StateCreator<ViewModelStore>) =>
@@ -489,6 +489,103 @@ export const useViewModelStore = create(
           void clearNetworkViewsFromDb().then(() => {})
           set((state) => {
             state.viewModels = {}
+            return state
+          })
+        },
+
+        // Update actions for individual nodes and edges to a network
+
+        addNodeView(networkId, nodeView) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((networkView: NetworkView) => {
+              networkView.nodeViews[nodeView.id] = nodeView
+            })
+            return state
+          })
+        },
+        addNodeViews(networkId, nodeViews) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((networkView: NetworkView) => {
+              nodeViews.forEach((nodeView) => {
+                networkView.nodeViews[nodeView.id] = nodeView
+              })
+            })
+            return state
+          })
+        },
+        addEdgeView(networkId, edgeView) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((networkView: NetworkView) => {
+              networkView.edgeViews[edgeView.id] = edgeView
+            })
+            return state
+          })
+        },
+        addEdgeViews(networkId, edgeViews) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((networkView: NetworkView) => {
+              edgeViews.forEach((edgeView) => {
+                networkView.edgeViews[edgeView.id] = edgeView
+              })
+            })
+            return state
+          })
+        },
+        deleteNodeViews(networkId: string, nodeIds: IdType[]) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            // Delete the specified nodes from all view models
+            viewList.forEach((networkView: NetworkView) => {
+              const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
+              nodeIds.forEach((id) => {
+                delete nodeViews[id]
+              })
+            })
+            return state
+          })
+        },
+        deleteEdgeViews(networkId, edgeIds) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((networkView: NetworkView) => {
+              edgeIds.forEach((edgeId) => {
+                delete networkView.edgeViews[edgeId]
+              })
+            })
             return state
           })
         },
