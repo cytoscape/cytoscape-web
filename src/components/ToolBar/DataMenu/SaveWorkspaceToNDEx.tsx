@@ -16,6 +16,7 @@ import { useNetworkStore } from '../../../store/NetworkStore';
 import { useTableStore } from '../../../store/TableStore';
 import { useViewModelStore } from '../../../store/ViewModelStore';
 import { Network } from '../../../models/NetworkModel'
+import { IdType } from '../../../models/IdType'
 
 export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext);
@@ -43,23 +44,20 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
     setWorkspaceName(event.target.value);
   };
 
+  const addNetworkToWorkspace = useWorkspaceStore(
+    (state) => state.addNetworkIds,
+  )
+
   const saveNetworkToNDEx = async (networkId:string): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     const network = useNetworkStore.getState().networks.get(networkId) as Network;
-
-    // Fetch visual style
     const visualStyle = useVisualStyleStore.getState().visualStyles[networkId];
-  
-    // Fetch network summary
     const summary = useNetworkSummaryStore.getState().summaries[networkId];
-  
-    // Fetch tables
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable;
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable;
-  
-    // Fetch view model
     const viewModel = useViewModelStore.getState().viewModels[networkId];
+
     ndexClient.setAuthToken(accessToken)
     const cx = exportNetworkToCx2(
       network,
@@ -70,10 +68,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
       viewModel,
     )
 
-    // overwrite the current network on NDEx
     await ndexClient.updateNetworkFromRawCX2(networkId, cx)
-
-    // update the network summary with the newest modification time
     const ndexSummary = await ndexClient.getNetworkSummary(networkId)
     const newNdexModificationTime = ndexSummary.modificationTime
     updateSummary(networkId, {
@@ -81,14 +76,58 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
     })
   }
 
+  const saveCopyToNDEx = async  (networkId:string): Promise<void> => {
+    const ndexClient = new NDEx(ndexBaseUrl)
+    const accessToken = await getToken()
+    ndexClient.setAuthToken(accessToken)
+    const network = useNetworkStore.getState().networks.get(networkId) as Network;
+    const visualStyle = useVisualStyleStore.getState().visualStyles[networkId];
+    const summary = useNetworkSummaryStore.getState().summaries[networkId];
+    const nodeTable = useTableStore.getState().tables[networkId].nodeTable;
+    const edgeTable = useTableStore.getState().tables[networkId].edgeTable;
+    const viewModel = useViewModelStore.getState().viewModels[networkId];
+    const cx = exportNetworkToCx2(
+      network,
+      visualStyle,
+      summary,
+      nodeTable,
+      edgeTable,
+      viewModel,
+      `Copy of ${summary.name}`,
+    )
+
+    try {
+      const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
+      addNetworkToWorkspace(uuid as IdType)
+
+      addMessage({
+        message: `Saved a copy of the current network to NDEx with new uuid ${
+          uuid as string
+        }`,
+        duration: 3000,
+      })
+    } catch (e) {
+      console.log(e)
+      addMessage({
+        message: `Error: Could not save a copy of the current network to NDEx. ${
+          e.message as string
+        }`,
+        duration: 3000,
+      })
+    }
+  }
 
   const saveAllNetworks =  async (): Promise<void> => {
     for (const networkId of allNetworkId) {
+      try {
       await saveNetworkToNDEx(networkId);
+      } catch (e) {
+        await saveCopyToNDEx(networkId)
+      }
     }
   };
 
-  const saveCopyToNDEx = async (): Promise<void> => {
+  const saveWorkspaceToNDEx = async (): Promise<void> => {
     if (workspaceName.trim().length === 0) {
       alert("Please enter a workspace name");
       return;
@@ -148,7 +187,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
       </DialogContent>
       <DialogActions>
         <Button onClick={handleCloseDialog}>Cancel</Button>
-        <Button onClick={saveCopyToNDEx}>Save</Button>
+        <Button onClick={saveWorkspaceToNDEx}>Save</Button>
       </DialogActions>
     </Dialog>
   );
