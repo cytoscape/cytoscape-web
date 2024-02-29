@@ -67,6 +67,9 @@ interface ViewModelAction {
    */
   add: (networkId: IdType, networkView: NetworkView) => void
 
+  // TODO: Do we need a factory method to create a new view model?
+  // create: (networkId: IdType) => NetworkView
+
   /**
    * Utility function to get the primary (first in the list) network view model
    * of a network if no ID is given
@@ -185,7 +188,21 @@ interface ViewModelAction {
   deleteAll: () => void
 }
 
-type ViewModelStore = ViewModelState & ViewModelAction
+interface UpdateActions {
+  // Add node view (s) to a network
+  addNodeView: (networkId: IdType, nodeView: NodeView) => void
+  addNodeViews: (networkId: IdType, nodeIds: NodeView[]) => void
+
+  // Add edge view(s) to a network
+  addEdgeView: (networkId: IdType, nodeView: EdgeView) => void
+  addEdgeViews: (networkId: IdType, edges: EdgeView[]) => void
+
+  // Delete nodes and edges from a network
+  deleteNodeViews: (networkId: IdType, nodeIds: IdType[]) => void
+  deleteEdgeViews: (networkId: IdType, edgeIds: IdType[]) => void
+}
+
+type ViewModelStore = ViewModelState & ViewModelAction & UpdateActions
 
 const persist =
   (config: StateCreator<ViewModelStore>) =>
@@ -240,12 +257,11 @@ export const useViewModelStore = create(
                   state.viewModels[networkId] ?? [],
                 )
               }
-              
+
               // Check if the view model already exists
               const existingViewModel: NetworkView | undefined =
                 state.viewModels[networkId]?.find(
-                  (viewModel) =>
-                    viewModel.viewId === networkView.viewId,
+                  (viewModel) => viewModel.viewId === networkView.viewId,
                 )
               if (existingViewModel !== undefined) {
                 // Do not add if it already exists
@@ -476,6 +492,109 @@ export const useViewModelStore = create(
           void clearNetworkViewsFromDb().then(() => {})
           set((state) => {
             state.viewModels = {}
+            return state
+          })
+        },
+
+        // Update actions for individual nodes and edges to a network
+
+        addNodeView(networkId: IdType, nodeView: NodeView) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((networkView: NetworkView) => {
+              networkView.nodeViews[nodeView.id] = nodeView
+            })
+            return state
+          })
+        },
+
+        addNodeViews(networkId: IdType, nodeViews: NodeView[]) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((networkView: NetworkView) => {
+              nodeViews.forEach((nodeView) => {
+                networkView.nodeViews[nodeView.id] = nodeView
+              })
+            })
+            return state
+          })
+        },
+
+        addEdgeView(networkId, edgeView) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((networkView: NetworkView) => {
+              networkView.edgeViews[edgeView.id] = edgeView
+            })
+            return state
+          })
+        },
+
+        addEdgeViews(networkId, edgeViews) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((networkView: NetworkView) => {
+              edgeViews.forEach((edgeView) => {
+                networkView.edgeViews[edgeView.id] = edgeView
+              })
+            })
+            return state
+          })
+        },
+
+        // Deletion
+        deleteNodeViews(networkId: string, nodeIds: IdType[]) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            // Delete the specified nodes from all view models
+            viewList.forEach((networkView: NetworkView) => {
+              const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
+              nodeIds.forEach((id) => {
+                delete nodeViews[id]
+              })
+            })
+            return state
+          })
+        },
+        deleteEdgeViews(networkId, edgeIds) {
+          set((state) => {
+            const viewList: NetworkView[] | undefined =
+              state.viewModels[networkId]
+            if (viewList === undefined) {
+              return state
+            }
+
+            viewList.forEach((networkView: NetworkView) => {
+              const edgeViews: Record<IdType, EdgeView> = networkView.edgeViews
+              edgeIds.forEach((edgeId) => {
+                delete edgeViews[edgeId]
+              })
+            })
             return state
           })
         },
