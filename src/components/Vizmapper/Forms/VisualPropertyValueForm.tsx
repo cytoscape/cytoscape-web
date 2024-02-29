@@ -482,17 +482,23 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box>
-          <Tabs
-            value={activeTab}
-            onChange={(event, newValue) => setActiveTab(newValue)}
-            aria-label="Tab panel"
-          >
-            <Tab label="ColorBrewer Sequential" />
-            <Tab label="ColorBrewer Diverging" />
-            <Tab label="Viridis Sequential" />
-            <Tab label="Swatches" />
-            <Tab label="Color Picker" />
-          </Tabs>
+         {
+            props.title && props.title.includes("Color") ? (
+              <>
+                <Tabs
+                  value={activeTab}
+                  onChange={(event, newValue) => setActiveTab(newValue)}
+                  aria-label="Tab panel"
+                >
+                  <Tab label="ColorBrewer Sequential" />
+                  <Tab label="ColorBrewer Diverging" />
+                  <Tab label="Viridis Sequential" />
+                  <Tab label="Swatches" />
+                  <Tab label="Color Picker" />
+                </Tabs>
+              </>
+            ) : null
+          }
           {props.title != null ? (
             <Typography sx={{ m: 1 }}>{props.title}</Typography>
           ) : null}
