@@ -67,6 +67,9 @@ interface ViewModelAction {
    */
   add: (networkId: IdType, networkView: NetworkView) => void
 
+  // TODO: Do we need a factory method to create a new view model?
+  // create: (networkId: IdType) => NetworkView
+
   /**
    * Utility function to get the primary (first in the list) network view model
    * of a network if no ID is given
@@ -495,7 +498,7 @@ export const useViewModelStore = create(
 
         // Update actions for individual nodes and edges to a network
 
-        addNodeView(networkId, nodeView) {
+        addNodeView(networkId: IdType, nodeView: NodeView) {
           set((state) => {
             const viewList: NetworkView[] | undefined =
               state.viewModels[networkId]
@@ -509,7 +512,8 @@ export const useViewModelStore = create(
             return state
           })
         },
-        addNodeViews(networkId, nodeViews) {
+
+        addNodeViews(networkId: IdType, nodeViews: NodeView[]) {
           set((state) => {
             const viewList: NetworkView[] | undefined =
               state.viewModels[networkId]
@@ -525,6 +529,7 @@ export const useViewModelStore = create(
             return state
           })
         },
+
         addEdgeView(networkId, edgeView) {
           set((state) => {
             const viewList: NetworkView[] | undefined =
@@ -539,6 +544,7 @@ export const useViewModelStore = create(
             return state
           })
         },
+
         addEdgeViews(networkId, edgeViews) {
           set((state) => {
             const viewList: NetworkView[] | undefined =
@@ -555,6 +561,8 @@ export const useViewModelStore = create(
             return state
           })
         },
+
+        // Deletion
         deleteNodeViews(networkId: string, nodeIds: IdType[]) {
           set((state) => {
             const viewList: NetworkView[] | undefined =
@@ -582,8 +590,9 @@ export const useViewModelStore = create(
             }
 
             viewList.forEach((networkView: NetworkView) => {
+              const edgeViews: Record<IdType, EdgeView> = networkView.edgeViews
               edgeIds.forEach((edgeId) => {
-                delete networkView.edgeViews[edgeId]
+                delete edgeViews[edgeId]
               })
             })
             return state

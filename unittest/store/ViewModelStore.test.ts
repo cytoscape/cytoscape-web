@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react'
 import { useViewModelStore } from '../../src/store/ViewModelStore'
-import { NetworkView } from '../../src/models/ViewModel'
+import { NetworkView, NodeView } from '../../src/models/ViewModel'
 import { IdType } from '../../src/models/IdType'
 import { enableMapSet } from 'immer'
 
@@ -61,7 +61,7 @@ describe('useViewModelStore', () => {
       selectedNodes: [],
       selectedEdges: [],
     }
-    
+
     mockNetworkView3 = {
       id: networkModelId,
       type: 'nodeLink',
@@ -119,7 +119,7 @@ describe('useViewModelStore', () => {
     const secondView = viewList[1]
     expect(secondView).toEqual(mockNetworkView2)
     expect(secondView?.viewId).toEqual(`${networkModelId}-circlePacking-1`)
-    
+
     const lastView = viewList[2]
     expect(lastView).toEqual(mockNetworkView3)
     expect(lastView?.viewId).toEqual(`${networkModelId}-nodeLink-2`)
@@ -277,5 +277,100 @@ describe('useViewModelStore', () => {
     })
 
     expect(result.current.viewModels).toEqual({})
+  })
+
+  // Updates
+  it('should add a node view', () => {
+    const newNodeView: NodeView = {
+      id: 'newNodeView',
+      x: 0,
+      y: 0,
+      values: new Map(),
+    }
+    const { result } = renderHook(() => useViewModelStore())
+
+    let primaryView: NetworkView | undefined
+
+    act(() => {
+      result.current.add(networkModelId, mockNetworkView)
+      result.current.addNodeView(networkModelId, newNodeView)
+      primaryView = result.current.getViewModel(networkModelId)
+    })
+    expect(primaryView?.nodeViews.newNodeView.id).toEqual('newNodeView')
+  })
+
+  it('should add new node views', async () => {
+    const { result } = renderHook(() => useViewModelStore())
+
+    const newNodeViews: NodeView[] = [
+      { id: 'newNodeView1', x: 0, y: 0, values: new Map() },
+      { id: 'newNodeView2', x: 0, y: 0, values: new Map() },
+    ]
+
+    act(() => {
+      result.current.add(networkModelId, mockNetworkView)
+      result.current.addNodeViews(networkModelId, newNodeViews)
+    })
+
+    expect(
+      result.current.getViewModel(networkModelId)?.nodeViews.newNodeView1,
+    ).toEqual(newNodeViews[0])
+    expect(
+      result.current.getViewModel(networkModelId)?.nodeViews.newNodeView2,
+    ).toEqual(newNodeViews[1])
+  })
+
+  it('should add an edge view', async () => {
+    const { result } = renderHook(() => useViewModelStore())
+
+    const newEdgeView = { id: 'newEdgeView', values: new Map() }
+
+    act(() => {
+      result.current.add(networkModelId, mockNetworkView)
+      result.current.addEdgeView(networkModelId, newEdgeView)
+    })
+
+    expect(
+      result.current.getViewModel(networkModelId)?.edgeViews.newEdgeView,
+    ).toEqual(newEdgeView)
+  })
+
+  it('should add new edge views', async () => {
+    const { result } = renderHook(() => useViewModelStore())
+
+    const newEdgeViews = [
+      { id: 'newEdgeView1', values: new Map() },
+      { id: 'newEdgeView2', values: new Map() },
+    ]
+
+    act(() => {
+      result.current.add(networkModelId, mockNetworkView)
+      result.current.addEdgeViews(networkModelId, newEdgeViews)
+    })
+
+    expect(
+      result.current.getViewModel(networkModelId)?.edgeViews.newEdgeView1,
+    ).toEqual(newEdgeViews[0])
+    expect(
+      result.current.getViewModel(networkModelId)?.edgeViews.newEdgeView2,
+    ).toEqual(newEdgeViews[1])
+  })
+
+  it('should delete node views', async () => {
+    const { result } = renderHook(() => useViewModelStore())
+
+    act(() => {
+      result.current.deleteNodeViews(networkModelId, ['node1', 'node2'])
+    })
+
+    expect(
+      result.current.getViewModel(networkModelId)?.nodeViews.node1,
+    ).toBeUndefined()
+    expect(
+      result.current.getViewModel(networkModelId)?.nodeViews.node2,
+    ).toBeUndefined()
+    expect(
+      result.current.getViewModel(networkModelId)?.nodeViews.node3,
+    ).toBeDefined()
   })
 })
