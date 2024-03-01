@@ -3,6 +3,7 @@ import { useViewModelStore } from '../../src/store/ViewModelStore'
 import { NetworkView, NodeView } from '../../src/models/ViewModel'
 import { IdType } from '../../src/models/IdType'
 import { enableMapSet } from 'immer'
+import { Network } from '../../src/models/NetworkModel'
 
 enableMapSet()
 
@@ -11,9 +12,26 @@ describe('useViewModelStore', () => {
   let mockNetworkView2: NetworkView
   let mockNetworkView3: NetworkView
   let networkModelId: IdType
+  let dummyNetworkModel: Network
 
   beforeEach(() => {
     networkModelId = 'networkModelId1'
+    dummyNetworkModel = {
+      id: 'dummyNetworkModel',
+      nodes: [
+        { id: 'node1' },
+        { id: 'node2' },
+        { id: 'node3' },
+        { id: 'node4' },
+        { id: 'node5' },
+      ],
+      edges: [
+        { id: 'edge1', s: 'node1', t: 'node2' },
+        { id: 'edge2', s: 'node1', t: 'node3' },
+        { id: 'edge3', s: 'node2', t: 'node3' },
+      ],
+    }
+
     mockNetworkView = {
       id: networkModelId,
       values: new Map(),
@@ -372,5 +390,19 @@ describe('useViewModelStore', () => {
     expect(
       result.current.getViewModel(networkModelId)?.nodeViews.node3,
     ).toBeDefined()
+  })
+
+  it('should create a new network view', async () => {
+    const { result } = renderHook(() => useViewModelStore())
+
+    act(() => {
+      result.current.create(dummyNetworkModel)
+    })
+    const viewList = result.current.viewModels[dummyNetworkModel.id]
+
+    expect(viewList).toBeDefined()
+    expect(viewList?.length).toEqual(1)
+    const view = viewList?.[0]
+    expect(view?.type).toEqual('nodeLink')
   })
 })

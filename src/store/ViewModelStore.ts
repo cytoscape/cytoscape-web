@@ -10,6 +10,7 @@ import {
   putNetworkViewsToDb,
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
+import { Edge, Network, Node } from '../models/NetworkModel'
 
 // Default view type (a node-link diagram)
 const DEF_VIEW_TYPE = 'nodeLink'
@@ -58,6 +59,15 @@ interface ViewModelState {
 
 interface ViewModelAction {
   /**
+   * Create a base view model for the given network ID.
+   * Node and edge views will be generated from the network model.
+   * The new view model will be registered as the primary view model.
+   *
+   * @param networkId Create a new Network View Model for the given network ID.
+   */
+  create: (network: Network) => void
+
+  /**
    * Add a new Network View Model to the store.
    * If the network ID already exists, the new view model will be added to the end of the list.
    * If the network ID does not exist, a new list will be created with the new view model.
@@ -66,9 +76,6 @@ interface ViewModelAction {
    * @param networkView The network view model to be added at the end of the list
    */
   add: (networkId: IdType, networkView: NetworkView) => void
-
-  // TODO: Do we need a factory method to create a new view model?
-  // create: (networkId: IdType) => NetworkView
 
   /**
    * Utility function to get the primary (first in the list) network view model
@@ -235,6 +242,48 @@ export const useViewModelStore = create(
     immer<ViewModelStore>(
       persist((set, get) => ({
         viewModels: {},
+
+        create: (network: Network): void => {
+          set((state) => {
+            // Create node and edge views from the network model
+            const nodeViews: Record<IdType, NodeView> = {}
+            const edgeViews: Record<IdType, EdgeView> = {}
+            network.nodes.forEach((node: Node) => {
+              nodeViews[node.id] = {
+                id: node.id,
+                x: 0,
+                y: 0,
+                values: new Map(),
+              }
+            })
+            network.edges.forEach((edge: Edge) => {
+              edgeViews[edge.id] = {
+                id: edge.id,
+                values: new Map(),
+              }
+            })
+            const networkView: NetworkView = {
+              id: network.id,
+              viewId: '',
+              type: DEF_VIEW_TYPE,
+              selectedNodes: [],
+              selectedEdges: [],
+              nodeViews,
+              edgeViews,
+              values: new Map(),
+            }
+
+            const existingViews: NetworkView[] | undefined =
+              state.viewModels[network.id]
+            if (existingViews !== undefined) {
+              existingViews.push(networkView)
+              state.viewModels[network.id] = existingViews
+            } else {
+              state.viewModels[network.id] = [networkView]
+            }
+            return state
+          })
+        },
 
         add: (networkId: IdType, networkView: NetworkView) => {
           set((state) => {
