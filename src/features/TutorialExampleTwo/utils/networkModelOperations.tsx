@@ -9,7 +9,9 @@ import { AttributeName } from '../../../models/TableModel/AttributeName'
 import { ValueType } from '../../../models/TableModel/ValueType'
 import { getCachedData } from '../../../utils/cx-utils'
 import { v4 as uuidv4 } from 'uuid'
+import { EdgeView, NodeView } from '../../../models/ViewModel'
 import { Attribute } from '../../../models/CxModel/Cx2/CoreAspects/Attribute'
+import { VisualPropertyValueType } from '../../../models/VisualStyleModel'
 import {
   putNetworkToDb,
   putTablesToDb,
@@ -18,6 +20,12 @@ import {
   putNetworkSummaryToDb,
   getNetworkSummaryFromDb
 } from '../../../store/persist/db'
+
+import {
+  EdgeVisualPropertyName,
+  NetworkVisualPropertyName,
+  NodeVisualPropertyName,
+} from '../../../models/VisualStyleModel/VisualPropertyName'
 export const DEFAULT_ATTRIBUTE = "name";
 
 /**
@@ -98,6 +106,25 @@ export const createEmptyNetworkWithView = async (
     networkViews: [networkView],
     networkAttributes,
   }
+}
+
+export const createNodeView = ({ nodeId, v, x, y, z }: {
+  nodeId: string, v?: Attribute, x?: number, y?: number, z?: number
+}): NodeView => {
+  const nodeView: NodeView = {
+    id: nodeId,
+    x: x ?? 0,
+    y: y ?? 0,
+    values: new Map<NodeVisualPropertyName, VisualPropertyValueType>(),
+  };
+  return nodeView
+}
+export const createEdgeView = (edgeId: string): EdgeView => {
+  const edgeView: EdgeView = {
+    id: edgeId,
+    values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>(),
+  };
+  return edgeView
 }
 
 // Function to add a Node in an exsisting network

@@ -2,12 +2,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { ReactElement } from 'react';
 import { MenuItem } from '@mui/material';
 import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps';
-import {
-  createEmptyNetworkWithView,
-  // addNodeToNetwork, 
-  // addEdgeToNetwork,
-  DEFAULT_ATTRIBUTE
-} from '../utils/networkModelOperations';
 import { useTableStore } from '../../../store/TableStore'
 import { Column } from '../../../models/TableModel'
 import { IdType } from '../../../models/IdType'
@@ -21,9 +15,12 @@ import { ValueTypeName } from '../../../models/TableModel/ValueTypeName';
 import { AttributeName } from '../../../models/TableModel/AttributeName';
 import { ValueType } from '../../../models/TableModel/ValueType';
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup';
+import {
+  createEmptyNetworkWithView, DEFAULT_ATTRIBUTE,
+  createNodeView, createEdgeView
+} from '../utils/networkModelOperations';
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
-// import { getNetworkViewsFromDb } from '../../../store/persist/db';
-// import { NetworkView } from '../../../models/ViewModel'
+
 const DEMO_EDGE_TABLE_COLUMN: Column = {
   name: DEFAULT_ATTRIBUTE,
   type: ValueTypeName.String
@@ -43,6 +40,8 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
   const addNewNetwork = useNetworkStore((state) => state.add)
   const addNodesToNetwork = useNetworkStore((state) => state.addNodes)
   const addEdgeToNetwork = useNetworkStore((state) => state.addEdge)
+  const addNodeViews = useViewModelStore((state) => state.addNodeViews)
+  const addEdgeView = useViewModelStore((state) => state.addEdgeView)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const setViewModel = useViewModelStore((state) => state.add)
   const setTables = useTableStore((state) => state.add)
@@ -91,7 +90,7 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
       setVisualStyle(newNetworkUuid, newNetworkWithView.visualStyle);
       setTables(newNetworkUuid, newNetworkWithView.nodeTable, newNetworkWithView.edgeTable);
       setViewModel(newNetworkUuid, newNetworkWithView.networkViews[0]);
-      setTimeout(() => setCurrentNetworkId(newNetworkUuid), 3000)
+      setCurrentNetworkId(newNetworkUuid)
 
       // add 2 nodes and 1 edge to network
       addNodesToNetwork(newNetworkUuid, [nodeOneId, nodeTwoId])
@@ -110,6 +109,13 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
         = [edgeId, { [DEFAULT_ATTRIBUTE]: edgeId }];
       addRowsToTable(newNetworkUuid, NODE_TYPE, nodeAttr)
       addRowToTable(newNetworkUuid, EDGE_TYPE, edgeAttr)
+
+      // add nodeView and edgeView
+      const nodeViewOne = createNodeView({ nodeId: nodeOneId, x: 1, y: 0 })
+      const nodeViewTwo = createNodeView({ nodeId: nodeTwoId, x: 1, y: 0 })
+      const edgeView = createEdgeView(edgeId)
+      addNodeViews(newNetworkUuid, [nodeViewOne, nodeViewTwo])
+      addEdgeView(newNetworkUuid, edgeView)
 
       // update network summary
       updateSummary(newNetworkUuid, {
