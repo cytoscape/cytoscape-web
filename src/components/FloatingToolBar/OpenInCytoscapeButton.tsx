@@ -1,5 +1,6 @@
-import { IconButton, Tooltip } from '@mui/material'
+import { Button, IconButton, Snackbar, Tooltip } from '@mui/material'
 import { OpenInNew } from '@mui/icons-material'
+import CloseIcon from '@mui/icons-material/Close'
 
 // @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
@@ -12,8 +13,27 @@ import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../store/io/exportCX'
 import { Network } from '../../models/NetworkModel'
+import { useState } from 'react'
 
 export const OpenInCytoscapeButton = (): JSX.Element => {
+  const [open, setOpen] = useState<boolean>(false)
+  const [message, setMessage] = useState<string>('')
+
+  const handleMessageOpen = (newMessage: string): void => {
+    setMessage(newMessage)
+    setOpen(true)
+  }
+
+  const handleMessageClose = (
+    event: React.SyntheticEvent | Event,
+    reason?: string,
+  ) => {
+    if (reason === 'clickaway') {
+      return
+    }
+    setOpen(false)
+  }
+
   const cyndex = new CyNDEx()
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -25,8 +45,8 @@ export const OpenInCytoscapeButton = (): JSX.Element => {
     (state) => state.summaries[currentNetworkId],
   )
 
-  const viewModel = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const viewModel = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -36,7 +56,7 @@ export const OpenInCytoscapeButton = (): JSX.Element => {
   ) as Network
 
   const openNetworkInCytoscape = async (): Promise<void> => {
-    if(viewModel === undefined) {
+    if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
     }
     const cx = exportNetworkToCx2(
@@ -50,9 +70,10 @@ export const OpenInCytoscapeButton = (): JSX.Element => {
     )
     try {
       await cyndex.postCX2NetworkToCytoscape(cx)
+      handleMessageOpen('Post successful!')
     } catch (e) {
-      console.log(e)
-      console.log('Cannot find Cytoscape!')
+      console.warn('Could not open the network in Cytoscape Desktop!', e)
+      handleMessageOpen('Failed!')
     }
   }
 
@@ -61,15 +82,37 @@ export const OpenInCytoscapeButton = (): JSX.Element => {
   }
 
   return (
-    <Tooltip title={`Open this network in Cytoscape`} placement="top" arrow>
-      <IconButton
-        onClick={handleClick}
-        aria-label="fit"
-        size="small"
-        disableFocusRipple={true}
-      >
-        <OpenInNew fontSize="inherit" />
-      </IconButton>
-    </Tooltip>
+    <>
+      <Tooltip title={`Open this network in Cytoscape`} placement="top" arrow>
+        <IconButton
+          onClick={handleClick}
+          aria-label="fit"
+          size="small"
+          disableFocusRipple={true}
+        >
+          <OpenInNew fontSize="inherit" />
+        </IconButton>
+      </Tooltip>
+      <Snackbar
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        open={open}
+        autoHideDuration={6000}
+        onClose={handleMessageClose}
+        message={message}
+        action={
+          <IconButton
+            size="small"
+            aria-label="close"
+            color="inherit"
+            onClick={handleMessageClose}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        }
+      />
+    </>
   )
 }
