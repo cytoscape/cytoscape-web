@@ -48,6 +48,7 @@ export const NetworkSeachField = (props: {
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>,
   ): void => {
+    event.stopPropagation()
     if (event.key === 'Enter') {
       void props.startSearch(searchValue)
     }
@@ -376,10 +377,10 @@ export const LoadFromNdexDialog = (
     (errorMessage ?? '') !== ''
       ? errorMessageContent
       : loading
-      ? loadingContent
-      : networkListData.length === 0
-      ? emptyListMessageContent
-      : networkListContent
+        ? loadingContent
+        : networkListData.length === 0
+          ? emptyListMessageContent
+          : networkListContent
 
   const { open, handleClose } = props
   return (
