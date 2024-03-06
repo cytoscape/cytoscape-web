@@ -57,10 +57,6 @@ class CyNetwork implements Network {
  * @returns Initialized Cytoscape.js Core object
  */
 const createCyDataStore = (): Core => {
-  window.cytoscape = cytoscape
-  
-  console.log("INITTED CYTOSCAPE")
-
   return cytoscape({
     headless: true,
     styleEnabled: false,
