@@ -15,9 +15,14 @@ import { exportNetworkToCx2 } from '../../store/io/exportCX'
 import { Network } from '../../models/NetworkModel'
 import { useEffect, useState } from 'react'
 import { useUiStateStore } from '../../store/UiStateStore'
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 
-export const OpenInCytoscapeButton = (): JSX.Element => {
+interface OpenInCytoscapeButtonProps {
+  networkLabel?: string
+}
+
+export const OpenInCytoscapeButton = ({
+  networkLabel,
+}: OpenInCytoscapeButtonProps): JSX.Element => {
   const [open, setOpen] = useState<boolean>(false)
   const [message, setMessage] = useState<string>('')
 
@@ -82,25 +87,23 @@ export const OpenInCytoscapeButton = (): JSX.Element => {
     let targetSummary: any = summary
     if (summary === undefined) {
       targetSummary = {
-        name: 'Interaction Network',
+        name: networkLabel ?? 'Interaction Network',
         properties: [],
         externalId: '',
         isReadOnly: false,
         isShowcase: false,
         owner: '',
-        // Add the remaining properties here
       }
     }
 
     const cx = exportNetworkToCx2(
       network,
       visualStyle,
-      // summary,
       targetSummary,
       table.nodeTable,
       table.edgeTable,
       viewModel,
-      `Copy of ${summary?.name}`,
+      targetSummary.name,
     )
     try {
       handleMessageOpen('Sending this network to Cytoscape Desktop...')

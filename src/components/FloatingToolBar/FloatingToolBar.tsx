@@ -6,10 +6,14 @@ import { ShareNetworkButton } from './ShareNetworkButtton'
 interface FloatingToolBarProps {
   // All actions to be performed on the target network if provided
   targetNetworkId?: string
+
+  // Label for the network to be used if the network has no summary
+  networkLabel?: string
 }
 
 export const FloatingToolBar = ({
   targetNetworkId,
+  networkLabel,
 }: FloatingToolBarProps): JSX.Element => {
   return (
     <Box
@@ -28,7 +32,7 @@ export const FloatingToolBar = ({
       <Divider orientation="vertical" flexItem />
       <ApplyLayoutButton targetNetworkId={targetNetworkId} />
       <FitButton />
-      <OpenInCytoscapeButton />
+      <OpenInCytoscapeButton networkLabel={networkLabel} />
       <ShareNetworkButton />
     </Box>
   )
