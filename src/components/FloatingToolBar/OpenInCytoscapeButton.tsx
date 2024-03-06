@@ -1,4 +1,4 @@
-import { Button, IconButton, Snackbar, Tooltip } from '@mui/material'
+import { IconButton, Snackbar, Tooltip } from '@mui/material'
 import { OpenInNew } from '@mui/icons-material'
 import CloseIcon from '@mui/icons-material/Close'
 
@@ -13,11 +13,18 @@ import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../store/io/exportCX'
 import { Network } from '../../models/NetworkModel'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useUiStateStore } from '../../store/UiStateStore'
+import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 
 export const OpenInCytoscapeButton = (): JSX.Element => {
   const [open, setOpen] = useState<boolean>(false)
   const [message, setMessage] = useState<string>('')
+
+  const ui = useUiStateStore((state) => state.ui)
+  const { activeNetworkView } = ui
+
+  const [targetNetworkId, setTargetNetworkId] = useState<string>('')
 
   const handleMessageOpen = (newMessage: string): void => {
     setMessage(newMessage)
@@ -39,41 +46,69 @@ export const OpenInCytoscapeButton = (): JSX.Element => {
     (state) => state.workspace.currentNetworkId,
   )
 
-  const table = useTableStore((state) => state.tables[currentNetworkId])
+  useEffect(() => {
+    if (
+      activeNetworkView !== undefined &&
+      activeNetworkView !== null &&
+      activeNetworkView !== ''
+    ) {
+      setTargetNetworkId(activeNetworkView)
+    } else {
+      setTargetNetworkId(currentNetworkId)
+    }
+  }, [currentNetworkId, activeNetworkView])
+
+  const table = useTableStore((state) => state.tables[targetNetworkId])
 
   const summary = useNetworkSummaryStore(
-    (state) => state.summaries[currentNetworkId],
+    (state) => state.summaries[targetNetworkId],
   )
 
   const viewModel = useViewModelStore((state) =>
-    state.getViewModel(currentNetworkId),
+    state.getViewModel(targetNetworkId),
   )
   const visualStyle = useVisualStyleStore(
-    (state) => state.visualStyles[currentNetworkId],
+    (state) => state.visualStyles[targetNetworkId],
   )
   const network = useNetworkStore((state) =>
-    state.networks.get(currentNetworkId),
+    state.networks.get(targetNetworkId),
   ) as Network
 
   const openNetworkInCytoscape = async (): Promise<void> => {
     if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
     }
+
+    let targetSummary: any = summary
+    if (summary === undefined) {
+      targetSummary = {
+        name: 'Interaction Network',
+        properties: [],
+        externalId: '',
+        isReadOnly: false,
+        isShowcase: false,
+        owner: '',
+        // Add the remaining properties here
+      }
+    }
+
     const cx = exportNetworkToCx2(
       network,
       visualStyle,
-      summary,
+      // summary,
+      targetSummary,
       table.nodeTable,
       table.edgeTable,
       viewModel,
-      `Copy of ${summary.name}`,
+      `Copy of ${summary?.name}`,
     )
     try {
+      handleMessageOpen('Sending this network to Cytoscape Desktop...')
       await cyndex.postCX2NetworkToCytoscape(cx)
-      handleMessageOpen('Post successful!')
+      handleMessageOpen('Network opened in Cytoscape Desktop')
     } catch (e) {
       console.warn('Could not open the network in Cytoscape Desktop!', e)
-      handleMessageOpen('Failed!')
+      handleMessageOpen('Failed to open network in Cytoscape Desktop!')
     }
   }
 
@@ -99,7 +134,7 @@ export const OpenInCytoscapeButton = (): JSX.Element => {
           horizontal: 'left',
         }}
         open={open}
-        autoHideDuration={6000}
+        autoHideDuration={3000}
         onClose={handleMessageClose}
         message={message}
         action={
