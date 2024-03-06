@@ -82,7 +82,7 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
   const handleClick = async (): Promise<void> => {
     try {
       // create a new network        
-      const newNetworkWithView = await createEmptyNetworkWithView(newNetworkUuid, [DEMO_NODE_TABLE_COLUMN], [DEMO_EDGE_TABLE_COLUMN]);
+      const newNetworkWithView = await createEmptyNetworkWithView([DEMO_NODE_TABLE_COLUMN], [DEMO_EDGE_TABLE_COLUMN], newNetworkUuid);
 
       // add new network to stores        
       addNetworkToWorkspace(newNetworkUuid);

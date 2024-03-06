@@ -29,6 +29,4 @@ export interface NdexNetworkSummary {
   externalId: string
   isDeleted: boolean
   modificationTime: Date,
-  maxNodeId?: number,
-  maxEdgeId?: number
 }
