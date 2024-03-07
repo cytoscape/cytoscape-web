@@ -9,7 +9,7 @@ import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
 import * as cxUtil from '../../CxModel/cx2-util'
 
 import { Core, EdgeSingular, NodeSingular } from 'cytoscape'
-import * as cytoscape from 'cytoscape'
+import cytoscape from 'cytoscape'
 
 const GroupType = { Nodes: 'nodes', Edges: 'edges' } as const
 type GroupType = (typeof GroupType)[keyof typeof GroupType]
@@ -56,11 +56,12 @@ class CyNetwork implements Network {
  *
  * @returns Initialized Cytoscape.js Core object
  */
-const createCyDataStore = (): Core =>
-  cytoscape({
+const createCyDataStore = (): Core => {
+  return cytoscape({
     headless: true,
     styleEnabled: false,
   })
+}
 
 /**
  *

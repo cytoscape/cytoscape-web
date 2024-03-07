@@ -21,7 +21,7 @@ export const VirdisCustomColors = [
 export const SequentialCustomColors = [
     ['#f7fdf6', '#e5f7e3', '#c5eec5', '#9ae1a1', '#60cf7c', '#00b962', '#009a49', '#006836'],
     ['#f7fdf1', '#e0f6de', '#caefca', '#a2e4bb', '#69d6cb', '#0bbfdb', '#009ac9', '#0065ac'],
-    ['#fff8fc', '#f1e5f3', '#d6d7ea', '#aac6e1', '#aac6e1', '#009eca', '#009096', '#00735a'],
+    ['#fff8fc', '#f1e5f3', '#d6d7ea', '#aac6e1', '#aac6e2', '#009eca', '#009096', '#00735a'],
     ['#fff8f4', '#ffe2e1', '#ffc8c6', '#ffa2bd', '#ff62ac', '#f700a4', '#ca008c', '#940085'],
     ['#fff8ee', '#ffeacc', '#ffd7a3', '#ffbf89', '#ff8f5c', '#ff614a', '#f10011', '#b40000'],
     ['#f7fdfd', '#e1eff6', '#c2d9ea', '#a1c5e1', '#95a1cf', '#9e73bd', '#9f41aa', '#860079'],
@@ -36,7 +36,7 @@ export const SequentialCustomColors = [
     ['#ffffff', '#f2f2f2', '#dedede', '#c5c5c5', '#a0a0a0', '#7e7e7e', '#5c5c5c', '#2a2a2a'],
     ['#f7fdfd', '#e5f7fa', '#cbf0e9', '#91e0cf', '#47cdad', '#00bb7e', '#009a49', '#006623'],
     ['#ffffdb', '#ecfab5', '#c5eeb9', '#6fd7c2', '#00c3cd', '#009fca', '#006bb5', '#003293'],
-    ['#fff8fc', '#f0eaf4', '#d6d7ea', '#aac6e1', '#6fb5d7', '#009eca', '#007ebc', '#005a89'],
+    ['#fff8fc', '#f0eaf4', '#d6d7ea', '#aac6e3', '#6fb5d7', '#009eca', '#007ebc', '#005a89'],
   ]
 
 
