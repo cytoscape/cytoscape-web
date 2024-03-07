@@ -7,9 +7,7 @@ import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { ndexQueryFetcher } from '../store/ndexQueryFetcher'
-import useSWR from 'swr'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import { NetworkWithView } from '../../../utils/cx-utils'
 import { Query } from './MainPanel'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
@@ -25,6 +23,8 @@ import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
+
+import { useQuery } from '@tanstack/react-query'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -158,15 +158,10 @@ export const SubNetworkPanel = ({
   const prevQueryNetworkIdRef = useRef<string>()
 
   const getToken = useCredentialStore((state) => state.getToken)
-
-  const fetcher = async (args: string[]): Promise<any> => {
-    const token = await getToken()
-    return await ndexQueryFetcher([...args, token])
-  }
-
   const { ndexBaseUrl } = useContext(AppConfigContext)
-  const { data, error, isLoading } = useSWR<NetworkWithView>(
-    [
+
+  const result = useQuery({
+    queryKey: [
       hierarchyId,
       ndexBaseUrl,
       rootNetworkId,
@@ -174,13 +169,18 @@ export const SubNetworkPanel = ({
       query,
       interactionNetworkId,
     ],
-    fetcher,
-    {
-      revalidateOnFocus: false,
+    queryFn: async ({ queryKey }) => {
+      const token = await getToken()
+      const keys = queryKey as string[]
+      const data = await ndexQueryFetcher([...keys, token])
+      return data
     },
-  )
-  if (error !== undefined) {
-    console.error('Failed to get network via SWR', error)
+    refetchOnReconnect: 'always',
+  })
+  const { data, error, isFetching } = result
+
+  if (error !== undefined && error !== null) {
+    console.error('Failed to get network', error)
   }
 
   // All networks in the main store
@@ -221,6 +221,16 @@ export const SubNetworkPanel = ({
       return ''
     }
     const { network, visualStyle, nodeTable, edgeTable, networkViews } = data
+
+    const { nodes } = network
+    const nodeCount = nodes.length
+    const nodeViews = networkViews[0].nodeViews
+    const nodeViewCount = Object.keys(nodeViews).length
+    if (nodeCount !== nodeViewCount) {
+      console.error('Node count mismatch', nodeCount, nodeViewCount)
+      return ''
+    }
+
     const newUuid: string = network.id.toString()
 
     // Add parent network's style to the shared style store
@@ -240,7 +250,10 @@ export const SubNetworkPanel = ({
       // Register new networks to the store if not cached
       addNewNetwork(network)
       addTable(newUuid, nodeTable, edgeTable)
-      addViewModel(newUuid, networkViews[0])
+      const primaryViewModel: NetworkView | undefined = getViewModel(newUuid)
+      if (primaryViewModel === undefined) {
+        addViewModel(newUuid, networkViews[0])
+      }
 
       if (interactionNetworkId === undefined || interactionNetworkId === '') {
         // Apply default layout for the first time
@@ -287,7 +300,7 @@ export const SubNetworkPanel = ({
     }
   }, [selectedNodes])
 
-  if (isLoading) {
+  if (isFetching) {
     return (
       <MessagePanel
         message={`Loading network: ${queryNetworkId}`}

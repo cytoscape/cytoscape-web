@@ -10,7 +10,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 
-const MAX_RETRY_COUNT: number = 5
+const MAX_RETRY_COUNT: number = 500
 
 export const ndexQueryFetcher = async (
   params: string[],
@@ -40,81 +40,35 @@ export const ndexQueryFetcher = async (
   const ndexClient = getNdexClient(url, accessToken)
 
   try {
-    // First, check the local cache
-    const cache: CachedData = await getCachedData(interactionNetworkId)
+    // always refresh the data from the server
+    let result = await fetchFromRemote(
+      interactionNetworkId,
+      interactionNetworkUuid,
+      rootNetworkUuid,
+      query,
+      ndexClient,
+    )
 
-    // This is necessary only when data is not in the cache
-    if (
-      cache.network === undefined ||
-      cache.nodeTable === undefined ||
-      cache.edgeTable === undefined ||
-      cache.visualStyle === undefined ||
-      cache.networkViews === undefined
-    ) {
-      let result = await fetchFromRemote(
-        interactionNetworkId,
-        interactionNetworkUuid,
-        rootNetworkUuid,
-        query,
-        ndexClient,
-      )
-
-      let isValidData: boolean = false
-      let retryCount: number = 0
-      while (!isValidData && retryCount < MAX_RETRY_COUNT) {
-        isValidData = isValidNetworkAndViews(result.network, result.networkViews)
-        if (isValidData) {
-          return result
-        } else {
-          result = await fetchFromRemote(
-            interactionNetworkId,
-            interactionNetworkUuid,
-            rootNetworkUuid,
-            query,
-            ndexClient,
-          )
-        }
-        retryCount++
-      }
-
-      // If we still cannot get valid data, throw an error. This might be an network issue.
-      throw new Error('Failed to get CX data from NDEx')
-    } else {
-      const isValid = isValidNetworkAndViews(cache.network, cache.networkViews)
-
-      // Cache is corrupted. Fetch from remote
-      if (!isValid) {
-        let retryCount: number = 0
-        while (retryCount < MAX_RETRY_COUNT) {
-          const resultFromRemote = await fetchFromRemote(
-            interactionNetworkId,
-            interactionNetworkUuid,
-            rootNetworkUuid,
-            query,
-            ndexClient,
-          )
-          if (
-            isValidNetworkAndViews(
-              resultFromRemote.network,
-              resultFromRemote.networkViews,
-            )
-          ) {
-            return resultFromRemote
-          }
-          retryCount++
-        }
-        // If we still cannot get valid data, throw an error. This might be an network issue.
-        throw new Error('Failed to get CX data from NDEx')
+    let isValidData: boolean = false
+    let retryCount: number = 0
+    while (!isValidData && retryCount < MAX_RETRY_COUNT) {
+      isValidData = isValidNetworkAndViews(result.network, result.networkViews)
+      if (isValidData) {
+        return result
       } else {
-        return {
-          network: cache.network,
-          nodeTable: cache.nodeTable,
-          edgeTable: cache.edgeTable,
-          visualStyle: cache.visualStyle,
-          networkViews: cache.networkViews,
-        }
+        result = await fetchFromRemote(
+          interactionNetworkId,
+          interactionNetworkUuid,
+          rootNetworkUuid,
+          query,
+          ndexClient,
+        )
       }
+      retryCount++
     }
+
+    // If we still cannot get valid data, throw an error. This might be an network issue.
+    throw new Error('Failed to get CX data from NDEx')
   } catch (error) {
     console.error('Failed to get network', error)
     throw error
@@ -159,16 +113,16 @@ const isValidNetworkAndViews = (
   network: Network,
   networkViews: NetworkView[],
 ): boolean => {
-  if(networkViews === undefined || networkViews.length === 0) {
+  if (networkViews === undefined || networkViews.length === 0) {
     return false
   }
-  
+
   const nodeIdSet = new Set(network.nodes.map((node) => node.id))
   const edgeIdSet = new Set(network.edges.map((edge) => edge.id))
-  
+
   networkViews.forEach((networkView: NetworkView) => {
-    const {nodeViews, edgeViews} = networkView
-    
+    const { nodeViews, edgeViews } = networkView
+
     const nodeViewIdSet = new Set(Object.keys(nodeViews))
     const edgeViewIdSet = new Set(Object.keys(edgeViews))
 

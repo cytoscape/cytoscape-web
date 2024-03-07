@@ -25,11 +25,14 @@ import { useRendererStore } from '../../../store/RendererStore'
 import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
   nodeIds: number[]
 }
+
+const queryClient = new QueryClient()
 
 export const MainPanel = (): JSX.Element => {
   const [subNetworkName, setSubNetworkName] = useState<string>('')
@@ -47,7 +50,6 @@ export const MainPanel = (): JSX.Element => {
   const visualStyles: Record<string, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
   )
-
 
   const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
@@ -76,7 +78,6 @@ export const MainPanel = (): JSX.Element => {
       <CirclePackingPanel network={networkData} />
     ),
   }
-
 
   const checkDataType = (): void => {
     // Check if the current network is a hierarchy
@@ -145,12 +146,13 @@ export const MainPanel = (): JSX.Element => {
     ] as string
 
     const visualStyle: VisualStyle = visualStyles[currentNetworkId]
-    const nodeLabelMappingAttr: string | undefined = visualStyle.nodeLabel.mapping?.attribute
+    const nodeLabelMappingAttr: string | undefined =
+      visualStyle.nodeLabel.mapping?.attribute
 
     let nameVal = row['name']
-    if(nodeLabelMappingAttr !== undefined) {
+    if (nodeLabelMappingAttr !== undefined) {
       const mappedVal = row[nodeLabelMappingAttr]
-      if(mappedVal !== undefined) {
+      if (mappedVal !== undefined) {
         nameVal = mappedVal
       }
     }
@@ -166,7 +168,7 @@ export const MainPanel = (): JSX.Element => {
   if (!isHierarchy) {
     return <MessagePanel message="This network is not a hierarchy" />
   }
-  
+
   // if (isHierarchy && renderers.circlePacking === undefined) {
   //   addRenderer(CirclePackingRenderer)
   // }
@@ -189,32 +191,34 @@ export const MainPanel = (): JSX.Element => {
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
 
   return (
-    <Box sx={{ width: '100%', height: '100%' }}>
-      <Allotment vertical minSize={100}>
-        <Allotment.Pane>
-          <SubNetworkPanel
-            hierarchyId={currentNetworkId}
-            subNetworkName={subNetworkName}
-            rootNetworkId={rootNetworkId}
-            subsystemNodeId={targetNode}
-            query={query}
-            interactionNetworkId={interactionNetworkUuid}
-          />
-        </Allotment.Pane>
-        <Allotment.Pane preferredSize={100}>
-          <Allotment>
-            <Allotment.Pane preferredSize={'15%'} key={0}>
-              <PropertyPanel networkId={targetNode} />
-            </Allotment.Pane>
-            <Allotment.Pane key={1}>
-              <SharedStyleManager
-                networkId={targetNode}
-                rootNetworkId={rootNetworkId}
-              />
-            </Allotment.Pane>
-          </Allotment>
-        </Allotment.Pane>
-      </Allotment>
-    </Box>
+    <QueryClientProvider client={queryClient}>
+      <Box sx={{ width: '100%', height: '100%' }}>
+        <Allotment vertical minSize={100}>
+          <Allotment.Pane>
+            <SubNetworkPanel
+              hierarchyId={currentNetworkId}
+              subNetworkName={subNetworkName}
+              rootNetworkId={rootNetworkId}
+              subsystemNodeId={targetNode}
+              query={query}
+              interactionNetworkId={interactionNetworkUuid}
+            />
+          </Allotment.Pane>
+          <Allotment.Pane preferredSize={100}>
+            <Allotment>
+              <Allotment.Pane preferredSize={'15%'} key={0}>
+                <PropertyPanel networkId={targetNode} />
+              </Allotment.Pane>
+              <Allotment.Pane key={1}>
+                <SharedStyleManager
+                  networkId={targetNode}
+                  rootNetworkId={rootNetworkId}
+                />
+              </Allotment.Pane>
+            </Allotment>
+          </Allotment.Pane>
+        </Allotment>
+      </Box>
+    </QueryClientProvider>
   )
 }
