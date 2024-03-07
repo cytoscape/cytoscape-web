@@ -23,6 +23,7 @@ import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
+import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 
 import { useQuery } from '@tanstack/react-query'
 
@@ -60,6 +61,9 @@ export const SubNetworkPanel = ({
   // A local state to keep track of the current query network id.
   // This is different from the current network id in the workspace.
   const [queryNetworkId, setQueryNetworkId] = useState<string>('')
+
+  // Label of a new network to be created in the Desktop if the network does not have a summary
+  const [networkLabel, setNetworkLabel] = useState<string>('')
 
   const addNewNetwork = useNetworkStore((state) => state.add)
   const addVisualStyle = useVisualStyleStore((state) => state.add)
@@ -220,7 +224,15 @@ export const SubNetworkPanel = ({
     if (data === undefined) {
       return ''
     }
-    const { network, visualStyle, nodeTable, edgeTable, networkViews } = data
+    
+    const {
+      network,
+      visualStyle,
+      nodeTable,
+      edgeTable,
+      networkViews,
+      networkAttributes,
+    } = data
 
     const { nodes } = network
     const nodeCount = nodes.length
@@ -230,8 +242,21 @@ export const SubNetworkPanel = ({
       console.error('Node count mismatch', nodeCount, nodeViewCount)
       return ''
     }
-
     const newUuid: string = network.id.toString()
+
+    const minimalSummary: any = {
+      name: networkAttributes?.attributes.name ?? 'Interaction Network',
+      properties: [],
+      externalId: '',
+      isReadOnly: false,
+      isShowcase: false,
+      owner: '',
+    }
+
+    setNetworkLabel(
+      (networkAttributes?.attributes.name as string) ??
+        'Interaction Network: ' + newUuid,
+    )
 
     // Add parent network's style to the shared style store
     if (vs[rootNetworkId] === undefined && visualStyle !== undefined) {
@@ -339,7 +364,10 @@ export const SubNetworkPanel = ({
         Subsystem: {subNetworkName}
       </Typography>
       <CyjsRenderer network={queryNetwork} />
-      <FloatingToolBar targetNetworkId={queryNetworkId ?? undefined} />
+      <FloatingToolBar
+        targetNetworkId={queryNetworkId ?? undefined}
+        networkLabel={networkLabel}
+      />
     </Box>
   )
 }
