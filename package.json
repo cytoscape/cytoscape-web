@@ -90,7 +90,7 @@
     "@visx/shape": "^3.0.0",
     "allotment": "1.18.1",
     "chroma-js": "^2.4.2",
-    "cytoscape": "^3.26.0",
+    "cytoscape": "^3.28.1",
     "d3-array": "^3.2.4",
     "d3-color": "^3.1.0",
     "d3-hierarchy": "^3.1.2",

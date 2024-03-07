@@ -15,14 +15,14 @@ enableMapSet()
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
 const rootElement: HTMLElement | null = document.getElementById('root')
-const { keycloakConfig } = appConfig
+const { keycloakConfig, urlBaseName } = appConfig
 const keycloak = new Keycloak(keycloakConfig)
 keycloak
   .init({
     onLoad: 'check-sso',
     checkLoginIframe: false,
     silentCheckSsoRedirectUri:
-      window.location.origin + '/cytoscape/silent-check-sso.html',
+      window.location.origin + urlBaseName + 'silent-check-sso.html',
   })
   .then(() => {
     if (rootElement !== null) {
