@@ -178,7 +178,7 @@ export const SubNetworkPanel = ({
   })
   const { data, error, isFetching } = result
 
-  if (error !== undefined) {
+  if (error !== undefined && error !== null) {
     console.error('Failed to get network', error)
   }
 
