@@ -175,6 +175,7 @@ export const SubNetworkPanel = ({
       const data = await ndexQueryFetcher([...keys, token])
       return data
     },
+    refetchOnReconnect: 'always',
   })
   const { data, error, isFetching } = result
 
@@ -220,6 +221,16 @@ export const SubNetworkPanel = ({
       return ''
     }
     const { network, visualStyle, nodeTable, edgeTable, networkViews } = data
+
+    const { nodes } = network
+    const nodeCount = nodes.length
+    const nodeViews = networkViews[0].nodeViews
+    const nodeViewCount = Object.keys(nodeViews).length
+    if (nodeCount !== nodeViewCount) {
+      console.error('Node count mismatch', nodeCount, nodeViewCount)
+      return ''
+    }
+
     const newUuid: string = network.id.toString()
 
     // Add parent network's style to the shared style store
@@ -239,7 +250,10 @@ export const SubNetworkPanel = ({
       // Register new networks to the store if not cached
       addNewNetwork(network)
       addTable(newUuid, nodeTable, edgeTable)
-      addViewModel(newUuid, networkViews[0])
+      const primaryViewModel: NetworkView | undefined = getViewModel(newUuid)
+      if (primaryViewModel === undefined) {
+        addViewModel(newUuid, networkViews[0])
+      }
 
       if (interactionNetworkId === undefined || interactionNetworkId === '') {
         // Apply default layout for the first time
