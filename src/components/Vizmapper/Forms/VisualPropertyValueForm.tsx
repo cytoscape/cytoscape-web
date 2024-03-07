@@ -455,7 +455,6 @@ export function VisualPropertyValueForm(
   const showValuePicker = (value: Element | null): void => {
     setValuePicker(value)
   }
-
   if (
     vpType2RenderMap[props.visualProperty.type] == null &&
     vpName2RenderMap[props.visualProperty.name] == null
@@ -482,8 +481,8 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box>
-         {
-            props.title && props.title.includes("Color") ? (
+          {
+            props.visualProperty && props.visualProperty.displayName.includes("Color") ? (
               <>
                 <Tabs
                   value={activeTab}
@@ -499,11 +498,15 @@ export function VisualPropertyValueForm(
               </>
             ) : null
           }
-          {props.title != null ? (
-            <Typography sx={{ m: 1 }}>{props.title}</Typography>
-          ) : null}
           {activeTab === 0 && (
-            <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <Box sx={{
+              margin: "auto", display: "flex", justifyContent: "center", alignItems: "center", overflow: 'auto',
+              '&::-webkit-scrollbar': {
+                display: 'none',
+              },
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}>
               {(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMapSequential[props.visualProperty.type].pickerRender ??
@@ -516,7 +519,15 @@ export function VisualPropertyValueForm(
             </Box>
           )}
           {activeTab === 1 && (
-            <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}
+            <Box sx={{
+              margin: "auto", display: "flex", justifyContent: "center", alignItems: "center",
+              overflow: 'auto',
+              '&::-webkit-scrollbar': {
+                display: 'none',
+              },
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
             >
               {(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
@@ -531,44 +542,68 @@ export function VisualPropertyValueForm(
           )}
 
           {activeTab === 2 && (
-            <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
-              {(
-                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
-                vpType2RenderMapViridis[props.visualProperty.type].pickerRender ??
-                (() => { })
-              )({
-                onValueChange: (value: VisualPropertyValueType) =>
-                  props.onValueChange(value),
-                currentValue: props.currentValue,
-              })}
+            <Box sx={{
+              margin: "auto", display: "flex", justifyContent: "center", alignItems: "center",
+              overflow: 'auto',
+              '&::-webkit-scrollbar': {
+                display: 'none',
+              },
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+            >              {(
+              vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+              vpType2RenderMapViridis[props.visualProperty.type].pickerRender ??
+              (() => { })
+            )({
+              onValueChange: (value: VisualPropertyValueType) =>
+                props.onValueChange(value),
+              currentValue: props.currentValue,
+            })}
             </Box>
           )}
 
           {activeTab === 3 && (
-            <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
-              {(
-                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
-                vpType2RenderMap2[props.visualProperty.type].pickerRender ??
-                (() => { })
-              )({
-                onValueChange: (value: VisualPropertyValueType) =>
-                  props.onValueChange(value),
-                currentValue: props.currentValue,
-              })}
+            <Box sx={{
+              margin: "auto", display: "flex", justifyContent: "center", alignItems: "center",
+              overflow: 'auto',
+              '&::-webkit-scrollbar': {
+                display: 'none',
+              },
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+            >              {(
+              vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+              vpType2RenderMap2[props.visualProperty.type].pickerRender ??
+              (() => { })
+            )({
+              onValueChange: (value: VisualPropertyValueType) =>
+                props.onValueChange(value),
+              currentValue: props.currentValue,
+            })}
             </Box>
           )}
 
           {activeTab === 4 && (
-            <Box sx={{ margin: "auto", display: "flex", justifyContent: "center", alignItems: "center" }}>
-              {(
-                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
-                vpType2RenderMap[props.visualProperty.type].pickerRender ??
-                (() => { })
-              )({
-                onValueChange: (value: VisualPropertyValueType) =>
-                  props.onValueChange(value),
-                currentValue: props.currentValue,
-              })}
+            <Box sx={{
+              margin: "auto", display: "flex", justifyContent: "center", alignItems: "center",
+              overflow: 'auto',
+              '&::-webkit-scrollbar': {
+                display: 'none',
+              },
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+            >              {(
+              vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+              vpType2RenderMap[props.visualProperty.type].pickerRender ??
+              (() => { })
+            )({
+              onValueChange: (value: VisualPropertyValueType) =>
+                props.onValueChange(value),
+              currentValue: props.currentValue,
+            })}
             </Box>
           )}
 
