@@ -5,7 +5,6 @@ import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps';
 import { useWorkspaceStore } from '../../../store/WorkspaceStore';
 import { useViewModelStore } from '../../../store/ViewModelStore';
 import { useNetworkStore } from '../../../store/NetworkStore';
-import { useLayoutStore } from '../../../store/LayoutStore';
 import { useTableStore } from '../../../store/TableStore';
 import { useVisualStyleStore } from '../../../store/VisualStyleStore';
 import { NetworkView } from '../../../models/ViewModel'
@@ -52,7 +51,8 @@ export const TutorialMenuItemThree = ({ handleClose }: BaseMenuProps): ReactElem
       selectedEdgeCount < MAX_SELECTED_OBJ) {
       const newNetworkId = uuidv4()
       const newNetworkWithView = await extractSubnetworkFromSelection(
-        selectedNodes, selectedEdges, currNodes, currEdges, nodeTable, edgeTable, nodeViewModel, edgeViewModel, visualStyle, newNetworkId)
+        selectedNodes, selectedEdges, currNodes, currEdges, nodeTable,
+        edgeTable, nodeViewModel, edgeViewModel, visualStyle, newNetworkId)
 
       // add new network to stores        
       addNetworkToWorkspace(newNetworkId);
