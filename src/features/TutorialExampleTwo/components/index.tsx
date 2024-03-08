@@ -1,27 +1,28 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ReactElement } from 'react';
 import { MenuItem } from '@mui/material';
-import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps';
-import { useTableStore } from '../../../store/TableStore'
-import { Column } from '../../../models/TableModel'
 import { IdType } from '../../../models/IdType'
-import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { Column } from '../../../models/TableModel'
+import { useTableStore } from '../../../store/TableStore'
+import { useLayoutStore } from '../../../store/LayoutStore';
 import { useNetworkStore } from '../../../store/NetworkStore';
+import { ValueType } from '../../../models/TableModel/ValueType';
+import { putNetworkSummaryToDb } from '../../../store/persist/db';
 import { useWorkspaceStore } from '../../../store/WorkspaceStore';
 import { useViewModelStore } from '../../../store/ViewModelStore';
-import { useLayoutStore } from '../../../store/LayoutStore';
 import { useVisualStyleStore } from '../../../store/VisualStyleStore';
 import { ValueTypeName } from '../../../models/TableModel/ValueTypeName';
 import { AttributeName } from '../../../models/TableModel/AttributeName';
-import { ValueType } from '../../../models/TableModel/ValueType';
-import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup';
+import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps';
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 import {
   createEmptyNetworkWithView, DEFAULT_ATTRIBUTE,
   createNodeView, createEdgeView
 } from '../utils/networkModelOperations';
-import { putNetworkSummaryToDb } from '../../../store/persist/db'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
+import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup';
 
+// Define default columns for demo edge and node tables
 const DEMO_EDGE_TABLE_COLUMN: Column = {
   name: DEFAULT_ATTRIBUTE,
   type: ValueTypeName.String
@@ -31,16 +32,29 @@ const DEMO_NODE_TABLE_COLUMN: Column = {
   type: ValueTypeName.String
 };
 
-export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement => {
+/**
+ * TutorialMenuItemTwo component:
+ * This component creates an example network with two nodes and one edge.
+ *
+ * Props:
+ * - handleClose: A function from the parent component that will be called to close the menu.
+ */
+
+export const TutorialMenuItemTwo = ({ handleClose }: BaseMenuProps): ReactElement => {
+  // Define constants and hooks for network and node IDs
   const nodeOneId = '1';
   const nodeTwoId = '2';
   const edgeId = 'e1';
   const NODE_TYPE = VisualPropertyGroup.Node
   const EDGE_TYPE = VisualPropertyGroup.Edge
   const newNetworkUuid = uuidv4();
-  const addNewNetwork = useNetworkStore((state) => state.add)
-  const addNodesToNetwork = useNetworkStore((state) => state.addNodes)
-  const addEdgeToNetwork = useNetworkStore((state) => state.addEdge)
+
+  // Use custom hooks for state management across different stores
+  const { addNewNetwork, addNodesToNetwork, addEdgeToNetwork } = useNetworkStore((state) => ({
+    addNewNetwork: state.add,
+    addNodesToNetwork: state.addNodes,
+    addEdgeToNetwork: state.addEdge,
+  }));
   const addNodeViews = useViewModelStore((state) => state.addNodeViews)
   const addEdgeView = useViewModelStore((state) => state.addEdgeView)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
@@ -56,7 +70,7 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
     (state) => state.setCurrentNetworkId,
   )
 
-  // Layout setting
+  // Layout setting using the layout store
   const defaultLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredLayout,
   )
@@ -70,7 +84,7 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
     layoutEngines.find((engine) => engine.name === defaultLayout.engineName) ??
     layoutEngines[0]
 
-  const updateNodePositions: (
+  const updateNodePositions: ( // Function to update node positions after layout is applied
     networkId: IdType,
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
@@ -81,13 +95,19 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
   }
 
   const handleClick = async (): Promise<void> => {
+    /**
+     * handleClick function:
+     * This function is called when the menu item is clicked.
+     * It firstly creates an empty networkWithView, 
+     * then it adds two nodes and one edge to the network and applies the defualt layout.
+     * Finally, it updates network views, tables, and the summary.
+     */
     try {
-      // create a new network        
+      // Create a new network with specified node and edge attributes      
       const [newNetworkWithView, newNetworkSummary] = await createEmptyNetworkWithView([DEMO_NODE_TABLE_COLUMN],
-        [DEMO_EDGE_TABLE_COLUMN],
-        newNetworkUuid);
+        [DEMO_EDGE_TABLE_COLUMN], newNetworkUuid);
 
-      // add new network to stores        
+      // Add the new network to the application state using various stores     
       addNetworkToWorkspace(newNetworkUuid);
       addNewNetwork(newNetworkWithView.network);
       setVisualStyle(newNetworkUuid, newNetworkWithView.visualStyle);
@@ -95,16 +115,16 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
       setViewModel(newNetworkUuid, newNetworkWithView.networkViews[0]);
       setCurrentNetworkId(newNetworkUuid)
 
-      // add 2 nodes and 1 edge to network
+      // Add nodes and an edge to the network
       addNodesToNetwork(newNetworkUuid, [nodeOneId, nodeTwoId])
       addEdgeToNetwork(newNetworkUuid, edgeId, nodeOneId, nodeTwoId)
 
-      // layout 
+      // Apply layout to the network
       setIsRunning(true)
       engine.apply(newNetworkWithView.network.nodes,
         newNetworkWithView.network.edges, afterLayout, defaultLayout)
 
-      // update the tables
+      // Update tables with node and edge attributes
       const nodeAttr: Array<[IdType, Record<AttributeName, ValueType>]>
         = [[nodeOneId, { [DEFAULT_ATTRIBUTE]: NODE_TYPE + nodeOneId }],
         [nodeTwoId, { [DEFAULT_ATTRIBUTE]: NODE_TYPE + nodeTwoId }]];
@@ -113,29 +133,27 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
       addRowsToTable(newNetworkUuid, NODE_TYPE, nodeAttr)
       addRowToTable(newNetworkUuid, EDGE_TYPE, edgeAttr)
 
-      // add nodeView and edgeView
+      // Add views for nodes and the edge
       const nodeViewOne = createNodeView({ nodeId: nodeOneId, x: 1, y: 0 })
       const nodeViewTwo = createNodeView({ nodeId: nodeTwoId, x: 1, y: 0 })
       const edgeView = createEdgeView(edgeId)
       addNodeViews(newNetworkUuid, [nodeViewOne, nodeViewTwo])
       addEdgeView(newNetworkUuid, edgeView)
 
-      // update network summary
-      updateSummary(newNetworkUuid, {
-        nodeCount: newNetworkWithView.network.nodes.length,
-        edgeCount: newNetworkWithView.network.edges.length,
-        modificationTime: new Date(Date.now())
-      })
+      // Update network summary and persist to the database
       await putNetworkSummaryToDb({
         ...newNetworkSummary,
         nodeCount: 2, edgeCount: 1, hasLayout: true, modificationTime: new Date(Date.now()),
       })
+
+      // Close the menu item after operations are complete
       handleClose();
     } catch (error) {
       console.error(error)
     }
   };
 
+  // Render a MenuItem that triggers network creation on click
   return (
     <MenuItem onClick={handleClick}>
       Create Example Network

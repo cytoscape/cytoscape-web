@@ -28,5 +28,5 @@ export interface NdexNetworkSummary {
   creationTime: Date
   externalId: string
   isDeleted: boolean
-  modificationTime: Date,
+  modificationTime: Date
 }

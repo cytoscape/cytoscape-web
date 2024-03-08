@@ -14,7 +14,7 @@ import { extractSubnetworkFromSelection } from '../utils/extractNetwork'
 import { Network } from '../../../models/NetworkModel';
 const MAX_SELECTED_OBJ = 300
 
-export const ExampleThreeMenuItem = ({ handleClose }: BaseMenuProps): ReactElement => {
+export const TutorialMenuItemThree = ({ handleClose }: BaseMenuProps): ReactElement => {
   const addNewNetwork = useNetworkStore((state) => state.add)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const setViewModel = useViewModelStore((state) => state.add)
