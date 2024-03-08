@@ -19,6 +19,7 @@ import {
   createEmptyNetworkWithView, DEFAULT_ATTRIBUTE,
   createNodeView, createEdgeView
 } from '../utils/networkModelOperations';
+import { putNetworkSummaryToDb } from '../../../store/persist/db'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 
 const DEMO_EDGE_TABLE_COLUMN: Column = {
@@ -82,7 +83,9 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
   const handleClick = async (): Promise<void> => {
     try {
       // create a new network        
-      const newNetworkWithView = await createEmptyNetworkWithView([DEMO_NODE_TABLE_COLUMN], [DEMO_EDGE_TABLE_COLUMN], newNetworkUuid);
+      const [newNetworkWithView, newNetworkSummary] = await createEmptyNetworkWithView([DEMO_NODE_TABLE_COLUMN],
+        [DEMO_EDGE_TABLE_COLUMN],
+        newNetworkUuid);
 
       // add new network to stores        
       addNetworkToWorkspace(newNetworkUuid);
@@ -122,6 +125,10 @@ export const ExampleTwoMenuItem = ({ handleClose }: BaseMenuProps): ReactElement
         nodeCount: newNetworkWithView.network.nodes.length,
         edgeCount: newNetworkWithView.network.edges.length,
         modificationTime: new Date(Date.now())
+      })
+      await putNetworkSummaryToDb({
+        ...newNetworkSummary,
+        nodeCount: 2, edgeCount: 1, hasLayout: true, modificationTime: new Date(Date.now()),
       })
       handleClose();
     } catch (error) {

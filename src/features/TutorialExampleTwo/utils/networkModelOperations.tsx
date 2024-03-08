@@ -18,6 +18,8 @@ import {
   EdgeVisualPropertyName,
   NodeVisualPropertyName,
 } from '../../../models/VisualStyleModel/VisualPropertyName'
+import { Visibility } from '../../../models/CxModel/NetworkSummary/Visibility'
+import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 
 export const DEFAULT_ATTRIBUTE = "name";
 
@@ -28,10 +30,8 @@ export const createEmptyNetworkWithView = async (
   id?: string,
   networkName?: string,
   networkDescription?: string,
-): Promise<NetworkWithView> => {
+): Promise<[NetworkWithView, NdexNetworkSummary]> => {
   // Todo: check if id already exists
-  const newNetworkNodeCount = 0;
-  const newNetworkEdgeCount = 0;
   const newNetworkName = networkName ?? "Example Network"
   const newNetworkDescription = networkDescription ?? "This is a demo of creating a 2-node-1-edge network."
 
@@ -46,8 +46,7 @@ export const createEmptyNetworkWithView = async (
     id: uuid,
     attributes: {},
   }
-  // save to Database
-  await putNetworkSummaryToDb({
+  const networkSummary = {
     ownerUUID: uuid,
     name: newNetworkName,
     isReadOnly: false,
@@ -65,29 +64,33 @@ export const createEmptyNetworkWithView = async (
     owner: '',
     version: '',
     completed: false,
-    visibility: 'PUBLIC',
-    nodeCount: newNetworkNodeCount,
-    edgeCount: newNetworkEdgeCount,
+    visibility: 'PUBLIC' as Visibility,
+    nodeCount: 0,
+    edgeCount: 0,
     description: newNetworkDescription,
     creationTime: new Date(Date.now()),
     externalId: uuid,
     isDeleted: false,
     modificationTime: new Date(Date.now()),
-  })
+  }
+
+  // save to Database
+  await putNetworkSummaryToDb(networkSummary)
   await putNetworkToDb(network);
   await putTablesToDb(uuid, nodeTable, edgeTable);
   await putVisualStyleToDb(uuid, visualStyle)
   await putNetworkViewToDb(uuid, networkView)
 
-  return {
+  return [{
     network,
     nodeTable,
     edgeTable,
     visualStyle,
     networkViews: [networkView],
     networkAttributes,
-  }
+  }, networkSummary];
 }
+
 
 export const createNodeView = ({ nodeId, v, x, y, z }: {
   nodeId: string, v?: Attribute, x?: number, y?: number, z?: number

@@ -43,7 +43,7 @@ export const extractSubnetworkFromSelection = async (
     const newNetworkDescription = networkDescription ?? "This is a extracted network from selected nodes and edges."
 
     const newNetwork: Network = NetworkFn.createNetwork(newNetworkId)
-    const newVisualStyle: VisualStyle = JSON.parse(JSON.stringify(visualStyle)) || VisualStyleFn.createVisualStyle();
+    const newVisualStyle: VisualStyle = deepClone(visualStyle) || VisualStyleFn.createVisualStyle();
     const newNetworkView: NetworkView = ViewModelFn.createEmptyViewModel(newNetworkId)
 
     // initialize tables
@@ -51,9 +51,6 @@ export const extractSubnetworkFromSelection = async (
     const newEdgeTable: Table = TableFn.createTable(newNetworkId, edgeTable?.columns)
     const nodeRowsToAdd: Array<[IdType, Record<AttributeName, ValueType>]> = [];
     const edgeRowsToAdd: Array<[IdType, Record<AttributeName, ValueType>]> = [];
-
-    // add nodes and edges to network
-    selectedNodes?.forEach(nodeId => { })
 
     // initialize nodeView and edgeView that waits to be added to networkViewModel
     const nodeViewsToAdd: NodeView[] = []
@@ -81,12 +78,16 @@ export const extractSubnetworkFromSelection = async (
         console.warn('Some selected nodes/edges were not found in nodeViewModel/edgeViewModel and were not added to the new network viewModel:')
     }
 
-    //
+    // add nodes and edges to network
     const nodesToAdd: string[] = currNodes?.filter(node => selectedNodes?.includes(node.id)).map(node => node.id) || []
     if (nodesToAdd.length !== (selectedNodes?.length || 0)) {
         console.warn('SeletedNodes contains nodes that are not included in the current network.')
     }
     const edgesToAdd: Edge[] = currEdges?.filter(edge => selectedEdges?.includes(edge.id)) || []
+    if (edgesToAdd.length !== (selectedEdges?.length || 0)) {
+        console.warn('SeletedNodes contains nodes that are not included in the current network.')
+    }
+
     NetworkFn.addNodes(newNetwork, nodesToAdd)
     NetworkFn.addEdges(newNetwork, edgesToAdd)
 
@@ -153,4 +154,38 @@ export const extractSubnetworkFromSelection = async (
         networkViews: [newNetworkView],
         networkAttributes,
     }
+}
+
+function deepClone<T>(obj: T): T {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+
+    if (obj instanceof Map) {
+        // Create a new Map by iterating over the original one and cloning the keys and values
+        return new Map(Array.from(obj.entries()).map(([key, value]) => [key, deepClone(value)])) as unknown as T;
+    }
+
+    if (obj instanceof Function) {
+        // Clone the function
+        return ((...args: any[]) => (obj as Function)(...args)) as unknown as T;
+    }
+
+    if (obj instanceof Array) {
+        // Clone the array
+        return obj.map((item) => deepClone(item)) as unknown as T;
+    }
+
+    if (obj instanceof Object) {
+        // Clone the object
+        const cloneO = {} as T;
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                (cloneO as any)[key] = deepClone((obj as any)[key]);
+            }
+        }
+        return cloneO;
+    }
+
+    throw new Error('Unable to copy object!');
 }
