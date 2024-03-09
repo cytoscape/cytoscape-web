@@ -15,11 +15,10 @@ import { ValueTypeName } from '../../../models/TableModel/ValueTypeName';
 import { AttributeName } from '../../../models/TableModel/AttributeName';
 import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps';
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 import {
   createEmptyNetworkWithView, DEFAULT_ATTRIBUTE,
   createNodeView, createEdgeView
-} from '../utils/networkModelOperations';
+} from '../utils/createNewNetwork';
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup';
 
 // Define default columns for demo edge and node tables
@@ -62,7 +61,6 @@ export const TutorialMenuItemTwo = ({ handleClose }: BaseMenuProps): ReactElemen
   const setTables = useTableStore((state) => state.add)
   const addRowsToTable = useTableStore((state) => state.addRows)
   const addRowToTable = useTableStore((state) => state.addRow)
-  const updateSummary = useNetworkSummaryStore((state) => state.update)
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
@@ -107,7 +105,7 @@ export const TutorialMenuItemTwo = ({ handleClose }: BaseMenuProps): ReactElemen
       const [newNetworkWithView, newNetworkSummary] = await createEmptyNetworkWithView([DEMO_NODE_TABLE_COLUMN],
         [DEMO_EDGE_TABLE_COLUMN], newNetworkUuid);
 
-      // Add the new network to the application state using various stores     
+      // Update state stores with the new network and its components   
       addNetworkToWorkspace(newNetworkUuid);
       addNewNetwork(newNetworkWithView.network);
       setVisualStyle(newNetworkUuid, newNetworkWithView.visualStyle);

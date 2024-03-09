@@ -30,7 +30,7 @@ export const DEFAULT_ATTRIBUTE = "name";
  * Props:
  * - nodeAttrLst: Attributes list of the node table
  * - edgeAttrLst: Attributes list of the edge table
- * - id: uuid of the new network <optional>
+ * - id: The uuid of the new network <optional>
  * - networkName: Name of the new network  <optional>
  * - networkDescription: Description of the new network <optional>
  * 
@@ -54,7 +54,8 @@ export const createEmptyNetworkWithView = async (
   networkName?: string,
   networkDescription?: string,
 ): Promise<[NetworkWithView, NdexNetworkSummary]> => {
-  // Default network details if not specified
+  // Todo: Check if id already exists
+  // Generate network id and default its details if not specified
   const uuid: string = id !== undefined ? id : uuidv4()
   const newNetworkName = networkName ?? "Example Network"
   const newNetworkDescription = networkDescription ?? "This is a demo of creating a 2-node-1-edge network."

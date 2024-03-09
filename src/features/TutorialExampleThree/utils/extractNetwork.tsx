@@ -1,17 +1,3 @@
-import NetworkFn, { Network, NetworkAttributes, Node, Edge } from '../../../models/NetworkModel'
-import {
-    translateCXEdgeId,
-    translateEdgeIdToCX
-} from '../../../models/NetworkModel/impl/CyNetwork'
-import { IdType } from '../../../models/IdType'
-import TableFn, { Column, Table } from '../../../models/TableModel'
-import ViewModelFn, { NodeView, EdgeView, NetworkView } from '../../../models/ViewModel'
-import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
-import { AttributeName } from '../../../models/TableModel/AttributeName'
-import { ValueType } from '../../../models/TableModel/ValueType'
-import { NetworkWithView, getCachedData } from '../../../utils/cx-utils'
-import { v4 as uuidv4 } from 'uuid'
-import { Attribute } from '../../../models/CxModel/Cx2/CoreAspects/Attribute'
 import {
     putNetworkToDb,
     putTablesToDb,
@@ -19,6 +5,45 @@ import {
     putNetworkViewToDb,
     putNetworkSummaryToDb,
 } from '../../../store/persist/db'
+import { v4 as uuidv4 } from 'uuid'
+import { IdType } from '../../../models/IdType'
+import { NetworkWithView } from '../../../utils/cx-utils'
+import TableFn, { Table } from '../../../models/TableModel'
+import { ValueType } from '../../../models/TableModel/ValueType'
+import { AttributeName } from '../../../models/TableModel/AttributeName'
+import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
+import ViewModelFn, { NodeView, EdgeView, NetworkView } from '../../../models/ViewModel'
+import NetworkFn, { Network, NetworkAttributes, Node, Edge } from '../../../models/NetworkModel'
+
+/**
+ * extractSubnetworkFromSelection function:
+ * This function extracts a subnetwork based on selected nodes and edges
+ *
+ * Props:
+ * - selectedNodes: 
+ * - selectedEdges: Attributes list of the edge table
+ * - currNodes: A list of node objects in the current network
+ * - currEdges: A list of edge objects in the current network
+ * - nodeTable: The node table of the current network
+ * - edgeTable: The edge table of the current network
+ * - nodeViewModel: A map of nodeViews in the current network
+ * - edgeViewModel: A map of edgeViews in the current network
+ * - visualStyle: The visual style of the current network
+ * - networkId: The uuid of the new network <optional>
+ * - networkName: Name of the new network  <optional>
+ * - networkDescription: Description of the new network <optional>
+ * 
+ * Returns:
+ * - NetworkWithView: A collection of important properties in a network:
+ *     ____________________________________________________________________________________________________________
+ *    |      Network       | The Network topology                                                                  |
+ *    | Network attributes | The Network attributes                                                                |
+ *    |     Node table     | A 2-D array where each column represents an attribute and each row represents a node  |
+ *    |     Edge table     | A 2-D array where each column represents an attribute and each row represents an edge |                    
+ *    |    Visual style    | A map of visual property names to visual properties                                   |
+ *    |    Network views   | The key-value pair storing what should be displayed in the actual visualizations      |
+ *    |____________________________________________________________________________________________________________|
+ */
 
 export const extractSubnetworkFromSelection = async (
     selectedNodes: string[] | undefined,
@@ -35,27 +60,31 @@ export const extractSubnetworkFromSelection = async (
     networkDescription?: string,
 ): Promise<NetworkWithView> => {
 
-    // Todo:check if id already exists
-
+    // Todo: Check if id already exists
+    // Generate network id and default its details if not specified
     const newNetworkId = networkId || uuidv4()
-
     const newNetworkName = networkName ?? "Extracted Network"
     const newNetworkDescription = networkDescription ?? "This is a extracted network from selected nodes and edges."
-
+    const networkAttributes: NetworkAttributes = {
+        id: newNetworkId,
+        attributes: {},
+    }
+    // Initialize the new network and its visual style
     const newNetwork: Network = NetworkFn.createNetwork(newNetworkId)
     const newVisualStyle: VisualStyle = deepClone(visualStyle) || VisualStyleFn.createVisualStyle();
     const newNetworkView: NetworkView = ViewModelFn.createEmptyViewModel(newNetworkId)
 
-    // initialize tables
+    // Initialize tables for the new network
     const newNodeTable: Table = TableFn.createTable(newNetworkId, nodeTable?.columns)
     const newEdgeTable: Table = TableFn.createTable(newNetworkId, edgeTable?.columns)
+
+    // Prepare containers for node and edge data to be added to the new network
     const nodeRowsToAdd: Array<[IdType, Record<AttributeName, ValueType>]> = [];
     const edgeRowsToAdd: Array<[IdType, Record<AttributeName, ValueType>]> = [];
-
-    // initialize nodeView and edgeView that waits to be added to networkViewModel
     const nodeViewsToAdd: NodeView[] = []
     const edgeViewsToAdd: EdgeView[] = []
 
+    // Process selected nodes and edges to prepare for inclusion in the new network
     selectedNodes?.forEach(nodeId => {
         if (nodeViewModel && nodeViewModel.hasOwnProperty(nodeId)) {
             nodeViewsToAdd.push({ ...nodeViewModel[nodeId] }); // Clone the node view
@@ -73,47 +102,48 @@ export const extractSubnetworkFromSelection = async (
         }
     });
     // check whether all the selected nodes/edges exist in nodeViewModel/edgeViewModel
-    if (nodeViewsToAdd.length !== (selectedNodes?.length || 0) ||
-        edgeViewsToAdd.length !== (selectedEdges?.length || 0)) {
-        console.warn('Some selected nodes/edges were not found in nodeViewModel/edgeViewModel and were not added to the new network viewModel:')
-    }
 
-    // add nodes and edges to network
+
+    // Add nodes and edges to the new network
     const nodesToAdd: string[] = currNodes?.filter(node => selectedNodes?.includes(node.id)).map(node => node.id) || []
-    if (nodesToAdd.length !== (selectedNodes?.length || 0)) {
-        console.warn('SeletedNodes contains nodes that are not included in the current network.')
-    }
     const edgesToAdd: Edge[] = currEdges?.filter(edge => selectedEdges?.includes(edge.id)) || []
-    if (edgesToAdd.length !== (selectedEdges?.length || 0)) {
-        console.warn('SeletedNodes contains nodes that are not included in the current network.')
-    }
-
     NetworkFn.addNodes(newNetwork, nodesToAdd)
     NetworkFn.addEdges(newNetwork, edgesToAdd)
 
-    // add nodeViews and edgeViews to networkView
+    // Incorporate views and table rows into the new network
     ViewModelFn.addNodeViewsToModel(newNetworkView, nodeViewsToAdd)
     ViewModelFn.addEdgeViewsToModel(newNetworkView, edgeViewsToAdd)
-
-    // insert nodes and edges to tables
     TableFn.insertRows(newNodeTable, nodeRowsToAdd);
     TableFn.insertRows(newEdgeTable, edgeRowsToAdd);
 
-    // check whether all the selected nodes/edges exist in nodeTable/edgeTable
-    const missingNodeIds = selectedNodes?.filter(nodeId => !newNodeTable.rows.has(nodeId)) || [];
-    const missingEdgeIds = selectedEdges?.filter(edgeId => !newEdgeTable.rows.has(edgeId)) || [];
-    if (missingNodeIds.length > 0 || missingEdgeIds.length > 0) {
-        console.warn("The following node/edge IDs were not found in the original node table and were not added to the new node table: \n Node ID:",
-            missingNodeIds, '\n Edge ID:', missingEdgeIds);
+    // Consolidate checks for missing nodes and edges in the network, node/edge tables, and view models.
+    const missingNodeIdsInNetwork = selectedNodes?.filter(nodeId => !currNodes?.find(node => node.id === nodeId)) || [];
+    const missingEdgeIdsInNetwork = selectedEdges?.filter(edgeId => !currEdges?.find(edge => edge.id === edgeId)) || [];
+    const missingNodeIdsInView = selectedNodes?.filter(nodeId => !nodeViewModel?.hasOwnProperty(nodeId)) || [];
+    const missingEdgeIdsInView = selectedEdges?.filter(edgeId => !edgeViewModel?.hasOwnProperty(edgeId)) || [];
+    const missingNodeIdsInTable = selectedNodes?.filter(nodeId => !newNodeTable.rows.has(nodeId)) || [];
+    const missingEdgeIdsInTable = selectedEdges?.filter(edgeId => !newEdgeTable.rows.has(edgeId)) || [];
+
+    // Generate warnings based on missing elements, if any.
+    if (missingNodeIdsInNetwork.length > 0) {
+        console.warn(`Selected nodes missing in the current network: ${missingNodeIdsInNetwork.join(', ')}`);
+    }
+    if (missingEdgeIdsInNetwork.length > 0) {
+        console.warn(`Selected edges missing in the current network: ${missingEdgeIdsInNetwork.join(', ')}`);
+    }
+    if (missingNodeIdsInView.length > 0) {
+        console.warn(`Selected nodes not found in nodeViewModel: ${missingNodeIdsInView.join(', ')}`);
+    }
+    if (missingEdgeIdsInView.length > 0) {
+        console.warn(`Selected edges not found in edgeViewModel: ${missingEdgeIdsInView.join(', ')}`);
+    }
+    if (missingNodeIdsInTable.length > 0 || missingEdgeIdsInTable.length > 0) {
+        console.warn(`Node/Edge IDs not found in the original tables and were not added to the new tables:\n` +
+            `Missing Node IDs: ${missingNodeIdsInTable.join(', ')}\n` +
+            `Missing Edge IDs: ${missingEdgeIdsInTable.join(', ')}`);
     }
 
-    // network attribute
-    const networkAttributes: NetworkAttributes = {
-        id: newNetworkId,
-        attributes: {},
-    }
-
-    // save to Database
+    // Persist the newly created network and its components to the database
     await putNetworkSummaryToDb({
         ownerUUID: newNetworkId,
         name: newNetworkName,
@@ -156,6 +186,7 @@ export const extractSubnetworkFromSelection = async (
     }
 }
 
+// Utility function for deep cloning objects that may contain arrays, maps, and functions
 function deepClone<T>(obj: T): T {
     if (obj === null || typeof obj !== 'object') {
         return obj;
@@ -163,7 +194,8 @@ function deepClone<T>(obj: T): T {
 
     if (obj instanceof Map) {
         // Create a new Map by iterating over the original one and cloning the keys and values
-        return new Map(Array.from(obj.entries()).map(([key, value]) => [key, deepClone(value)])) as unknown as T;
+        return new Map(Array.from(obj.entries()).map(([key, value]) =>
+            [key, deepClone(value)])) as unknown as T;
     }
 
     if (obj instanceof Function) {
