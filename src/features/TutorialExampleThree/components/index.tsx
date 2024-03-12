@@ -92,9 +92,18 @@ export const TutorialMenuItemThree = ({ handleClose }: BaseMenuProps): ReactElem
   };
 
   // Render a MenuItem that triggers subnetwork extraction on click
-  return (
-    <MenuItem onClick={handleClick}>
-      Extract Subnetwork
-    </MenuItem>
-  );
+  if (selectedNodeCount > 0) {
+    return (
+      <MenuItem onClick={handleClick}>
+        Extract Subnetwork
+      </MenuItem>
+    );
+  }
+  else {
+    return (
+      <MenuItem disabled>
+        Extract Subnetwork
+      </MenuItem>
+    );
+  }
 };
