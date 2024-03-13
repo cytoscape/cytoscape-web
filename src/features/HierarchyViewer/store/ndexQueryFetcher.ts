@@ -1,16 +1,11 @@
 import { Cx2 } from '../../../models/CxModel/Cx2'
-import {
-  NetworkWithView,
-  createDataFromCx,
-  getCachedData,
-} from '../../../utils/cx-utils'
-import { CachedData } from '../../../utils/CachedData'
+import { NetworkWithView, createDataFromCx } from '../../../utils/cx-utils'
 import { getNdexClient } from '../../../utils/fetchers'
 import { NetworkView } from '../../../models/ViewModel'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 
-const MAX_RETRY_COUNT: number = 500
+const MAX_RETRY_COUNT: number = 5
 
 export const ndexQueryFetcher = async (
   params: string[],

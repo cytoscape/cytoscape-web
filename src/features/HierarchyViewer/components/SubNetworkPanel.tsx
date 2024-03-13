@@ -23,7 +23,6 @@ import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
-import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 
 import { useQuery } from '@tanstack/react-query'
 
@@ -224,7 +223,7 @@ export const SubNetworkPanel = ({
     if (data === undefined) {
       return ''
     }
-    
+
     const {
       network,
       visualStyle,
