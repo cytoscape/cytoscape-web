@@ -43,7 +43,6 @@ export const useNdexNetworkSummary = async (
     
         // Update the database with the modified summary
         await putNetworkSummaryToDb(summary);
-        console.log(summary);
       
     });
     const summaryResults: Record<IdType, NdexNetworkSummary> = [

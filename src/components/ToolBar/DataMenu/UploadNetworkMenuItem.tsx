@@ -97,7 +97,6 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
           }
         }
         let localProperties = json.find((element: { networkAttributes: string }) => element.networkAttributes).networkAttributes;
-        console.log(localProperties)
 
         const localUuid = uuidv4()
         const localNodeCount = json[1].metaData[2].elementCount
