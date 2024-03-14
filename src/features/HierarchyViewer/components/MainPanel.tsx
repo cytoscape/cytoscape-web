@@ -26,6 +26,7 @@ import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import FilterPanel from './FilterPanel/FilterPanel'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -210,10 +211,7 @@ export const MainPanel = (): JSX.Element => {
                 <PropertyPanel networkId={targetNode} />
               </Allotment.Pane>
               <Allotment.Pane key={1}>
-                <SharedStyleManager
-                  networkId={targetNode}
-                  rootNetworkId={rootNetworkId}
-                />
+                <FilterPanel />
               </Allotment.Pane>
             </Allotment>
           </Allotment.Pane>

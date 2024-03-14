@@ -4,13 +4,24 @@ import { ValueType } from '../TableModel'
 import { VisualMappingFunction } from '../VisualStyleModel'
 import { DiscreteFilter, NumericFilter } from './Filter'
 
+/**
+ *
+ */
 export const FilterWidgetType = {
   CHECKBOX: 'checkbox',
+  RADIOBUTTON: 'radiobutton',
   SLIDER: 'slider',
 } as const
 
 export type FilterWidgetType =
   (typeof FilterWidgetType)[keyof typeof FilterWidgetType]
+
+export const SelectionMode = {
+  SINGLE: 'single',
+  MULTIPLE: 'multiple',
+} as const
+
+export type SelectionMode = (typeof SelectionMode)[keyof typeof SelectionMode]
 
 /**
  * Interface for the filter user interface
@@ -19,10 +30,10 @@ export interface FilterUi {
   filter: DiscreteFilter<ValueType> | NumericFilter
 
   // Human-readable label for the filter
-  label?: string
+  label: string
 
   // More detailed description of the filter. Will be displayed in a tooltip
-  description?: string
+  description: string
 
   // Type of the widget. Can be either "checkbox" or "slider"
   widgetType: FilterWidgetType
@@ -37,4 +48,9 @@ export interface FilterUi {
   // the range is a DiscreteRange. If the widget type is "slider", then the
   // range is a NumberRange.
   readonly range: NumberRange | DiscreteRange<ValueType>
+
+  readonly selectionMode?: SelectionMode
+
+  // TBD - Convert this UI object into CX aspect
+  toCx: () => any
 }
