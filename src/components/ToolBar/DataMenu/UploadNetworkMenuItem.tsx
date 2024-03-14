@@ -83,11 +83,11 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
       try {
         const json = JSON.parse(event.target?.result as string)
         let localName: string = "";
-          for (const item of json) {
-            if ((Boolean(item.networkAttributes)) && typeof item.networkAttributes[0].name === 'string') {
-              localName = item.networkAttributes[0].name;
-              break;
-            }
+        for (const item of json) {
+          if ((Boolean(item.networkAttributes)) && typeof item.networkAttributes[0].name === 'string') {
+            localName = item.networkAttributes[0].name;
+            break;
+          }
         }
         let localDescription: string = "";
         for (const item of json) {
@@ -96,6 +96,9 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
             break;
           }
         }
+        let localProperties = json.find((element: { networkAttributes: string }) => element.networkAttributes).networkAttributes;
+        console.log(localProperties)
+
         const localUuid = uuidv4()
         const localNodeCount = json[1].metaData[2].elementCount
         const localEdgeCount = json[1].metaData[3].elementCount
@@ -113,7 +116,7 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
           hasSample: false,
           cxFileSize: 0,
           cx2FileSize: 0,
-          properties: [],
+          properties: localProperties,
           owner: '',
           version: '',
           completed: false,

@@ -25,6 +25,7 @@ export function NetworkPropertyTable(): React.ReactElement {
     (state) => state.summaries[currentNetworkId],
   )
   const properties = networkInfo?.properties ?? []
+
   return (
     <TableContainer component={Paper} sx={{ height: 200, overflow: 'scroll' }}>
       <Table sx={{ minWidth: 650 }} size="small" aria-label="simple table">
@@ -58,6 +59,7 @@ export default function NetworkInfoPanel(props: {
   const networkInfo = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
+  const properties = networkInfo?.properties ?? []
 
   const reference = networkInfo?.properties.find(
     (p) => p.predicateString === 'Reference',
@@ -110,6 +112,21 @@ export default function NetworkInfoPanel(props: {
           </Typography>
           <Typography variant="body2">
             {parse(networkInfo?.description ?? '')}
+          </Typography>
+          <Typography
+            sx={{ fontSize: 14, fontWeight: 'bold' }}
+            variant="subtitle1"
+          >
+            Properties:
+          </Typography>
+          <Typography variant="body2" component="div">
+            {properties.map((prop, index) => (
+              <div key={index}>
+                {Object.entries(prop).map(([key, value], idx) => (
+                  <div key={idx}>{`${key}: ${value}`}</div>
+                ))}
+              </div>
+            ))}
           </Typography>
           <Typography
             sx={{ fontSize: 14, fontWeight: 'bold' }}
