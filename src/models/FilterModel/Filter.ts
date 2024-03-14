@@ -21,12 +21,12 @@ export interface NumericFilter extends FilterBase {
   apply: (range: NumberRange, table: Table) => IdType[]
 }
 
-export const createNodeDiscreteFilter = <T>(
-  table: Table,
+export const createDiscreteFilter = <T>(
+  target: GraphObjectType,
   attribute: string,
 ): DiscreteFilter<T> => {
   return {
-    target: GraphObjectType.NODE,
+    target,
     attribute,
     apply: (range: DiscreteRange<T>, table: Table): IdType[] => {
       const rangeSet = new Set<T>(range.values)
@@ -34,6 +34,27 @@ export const createNodeDiscreteFilter = <T>(
       const result: IdType[] = []
       rows.forEach((row: Record<string, ValueType>) => {
         if (rangeSet.has(row[attribute] as T)) {
+          result.push(row.id as IdType)
+        }
+      })
+      return result
+    },
+  }
+}
+
+export const createNumericFilter = (
+  target: GraphObjectType,
+  attribute: string,
+): NumericFilter => {
+  return {
+    target,
+    attribute,
+    apply: (range: NumberRange, table: Table): IdType[] => {
+      const { rows } = table
+      const result: IdType[] = []
+      rows.forEach((row: Record<string, ValueType>) => {
+        const value = row[attribute] as number
+        if (value >= range.min && value <= range.max) {
           result.push(row.id as IdType)
         }
       })
