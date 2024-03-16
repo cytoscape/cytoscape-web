@@ -3,10 +3,15 @@ import { FilterUi } from '../../../../models/FilterModel/FilterUi'
 import { Table } from '../../../../models/TableModel'
 import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import { useState } from 'react'
+import { useTableStore } from '../../../../store/TableStore'
+import { useWorkspaceManager } from '../../../../store/hooks/useWorkspaceManager'
+import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
+import { IdType } from '../../../../models/IdType'
+import { useUiStateStore } from '../../../../store/UiStateStore'
+import { GraphObjectType } from '../../../../models/NetworkModel'
 
 interface CheckboxFilterProps {
   filterUi: FilterUi
-  table: Table
 }
 
 /**
@@ -16,10 +21,29 @@ interface CheckboxFilterProps {
  */
 export const CheckboxFilter = ({
   filterUi,
-  table,
 }: CheckboxFilterProps): JSX.Element => {
   const { widgetType, filter, description } = filterUi
   const { target } = filter
+
+  // Find the target network
+  const currentNetworkId: IdType = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+
+  // Use the active network if it exists, otherwise use the current network for filtering
+  const targetNetworkId: IdType = activeNetworkId || currentNetworkId
+
+  // Get target table from the store
+  const tablePair = useTableStore((state) => state.tables[targetNetworkId])
+
+  // This is the tab e to be filtered
+  const table: Table =
+    target === GraphObjectType.NODE
+      ? tablePair?.nodeTable
+      : tablePair?.edgeTable
 
   const [checkedOptions, setCheckedOptions] = useState<string[]>([])
 
