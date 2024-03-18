@@ -15,8 +15,10 @@ import {
   DiscreteFilter,
   createDiscreteFilter,
 } from '../../../../models/FilterModel/Filter'
+import { Box } from '@mui/material'
 
 export const FilterPanel = () => {
+  const [enableFilter, setEnableFilter] = useState<boolean>(false)
   // Find the target network
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -27,6 +29,17 @@ export const FilterPanel = () => {
 
   // Use the active network if it exists, otherwise use the current network for filtering
   const targetNetworkId: IdType = activeNetworkId || currentNetworkId
+
+  // Enable the filter only when the target network is a temp network
+  useEffect(() => {
+    if (targetNetworkId === undefined || targetNetworkId === '') return
+
+    if (targetNetworkId.includes('_')) {
+      setEnableFilter(true)
+    } else {
+      setEnableFilter(false)
+    }
+  }, [targetNetworkId])
 
   // Get target table from the store
   const tablePair = useTableStore((state) => state.tables[targetNetworkId])
@@ -58,24 +71,29 @@ export const FilterPanel = () => {
   }, [selectedValue])
 
   return (
-    <Grid container spacing={1}>
-      <Grid item xs={12} sm={6} md={4}>
-        <h5>Selected: {selectedValue}</h5>
-        <AttributeSelector
-          nodeTable={tablePair.nodeTable}
-          edgeTable={tablePair.edgeTable}
-          defaultValue={selectedValue}
-          selectedType={selectedObjectType}
-          setSelectedValue={setSelectedValue}
-          setSelectedType={setSelectedObjectType}
-        />
-        {filterProps === undefined ? (
-          <div />
-        ) : (
-          <CheckboxFilter filterUi={filterProps} />
-        )}
+    <Box
+      position="relative"
+      sx={{ backgroundColor: enableFilter ? 'red' : 'blue' }}
+    >
+      <Grid container spacing={1}>
+        <Grid item xs={12} sm={6} md={4}>
+          <h5>Selected: {selectedValue}</h5>
+          <AttributeSelector
+            nodeTable={tablePair.nodeTable}
+            edgeTable={tablePair.edgeTable}
+            defaultValue={selectedValue}
+            selectedType={selectedObjectType}
+            setSelectedValue={setSelectedValue}
+            setSelectedType={setSelectedObjectType}
+          />
+          {filterProps === undefined ? (
+            <div />
+          ) : (
+            <CheckboxFilter filterUi={filterProps} />
+          )}
+        </Grid>
       </Grid>
-    </Grid>
+    </Box>
   )
 }
 

@@ -25,6 +25,7 @@ export const CheckboxFilter = ({
   const { widgetType, filter, description } = filterUi
   const { target } = filter
 
+
   // Find the target network
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -66,11 +67,11 @@ export const CheckboxFilter = ({
    * @param checked
    */
   const handleToggleAll = (checked: boolean): void => {
-    // if (checked) {
-    //   setCheckedOptions(options.map((option) => option.value))
-    // } else {
-    //   setCheckedOptions([])
-    // }
+    if (checked) {
+      // setCheckedOptions(options.map((option) => option.value))
+    } else {
+      setCheckedOptions([])
+    }
   }
 
   const isAllSelected = false
