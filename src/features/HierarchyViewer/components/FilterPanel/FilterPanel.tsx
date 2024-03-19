@@ -7,9 +7,9 @@ import { useUiStateStore } from '../../../../store/UiStateStore'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 import CheckboxFilter from './CheckboxFilter'
 import {
-  FilterUi,
+  FilterUiProps,
   FilterWidgetType,
-} from '../../../../models/FilterModel/FilterUi'
+} from '../../../../models/FilterModel/FilterUiProps'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import {
   DiscreteFilter,
@@ -47,7 +47,7 @@ export const FilterPanel = () => {
   const [selectedObjectType, setSelectedObjectType] = useState<GraphObjectType>(
     GraphObjectType.NODE,
   )
-  const [filterProps, setFilterProps] = useState<FilterUi>()
+  const [filterProps, setFilterProps] = useState<FilterUiProps>()
 
   useEffect(() => {
     const discreteFilter: DiscreteFilter<string> = createDiscreteFilter<string>(
@@ -55,13 +55,19 @@ export const FilterPanel = () => {
       selectedValue,
     )
 
+    const table =
+      selectedObjectType === GraphObjectType.NODE
+        ? tablePair.nodeTable
+        : tablePair.edgeTable
+
     // Build the filter UI
-    const filterUi: FilterUi = {
+    const filterUi: FilterUiProps = {
       widgetType: FilterWidgetType.CHECKBOX,
       description: 'Filter by name',
       filter: discreteFilter,
       label: 'Interaction edge filter',
       range: { values: [] },
+      table,
       toCx: function () {
         throw new Error('Function not implemented.')
       },
@@ -71,29 +77,50 @@ export const FilterPanel = () => {
   }, [selectedValue])
 
   return (
-    <Box
-      position="relative"
-      sx={{ backgroundColor: enableFilter ? 'red' : 'blue' }}
+    <Grid
+      container
+      direction="column"
+      justifyContent="flex-start"
+      alignItems="stretch"
+      spacing={0}
+      sx={{
+        height: 500,
+        boxSizing: 'border-box',
+      }}
     >
-      <Grid container spacing={1}>
-        <Grid item xs={12} sm={6} md={4}>
-          <h5>Selected: {selectedValue}</h5>
-          <AttributeSelector
-            nodeTable={tablePair.nodeTable}
-            edgeTable={tablePair.edgeTable}
-            defaultValue={selectedValue}
-            selectedType={selectedObjectType}
-            setSelectedValue={setSelectedValue}
-            setSelectedType={setSelectedObjectType}
-          />
-          {filterProps === undefined ? (
-            <div />
-          ) : (
-            <CheckboxFilter filterUi={filterProps} />
-          )}
-        </Grid>
+      <Grid item sx={{ height: '5em', border: '13px solid red' }}>
+        <AttributeSelector
+          nodeTable={tablePair.nodeTable}
+          edgeTable={tablePair.edgeTable}
+          defaultValue={selectedValue}
+          selectedType={selectedObjectType}
+          setSelectedValue={setSelectedValue}
+          setSelectedType={setSelectedObjectType}
+        />
       </Grid>
-    </Box>
+      <Grid
+        item
+        sx={{
+          flexGrow: 1,
+          boxSizing: 'border-box',
+          border: '13px solid blue',
+        }}
+      >
+        {/* {filterProps !== undefined ? (
+          <div
+            style={{
+              width: '100%',
+              height: '80%',
+
+              overflow: 'auto',
+            }}
+          />
+        ) : (
+          <div />
+          // <CheckboxFilter filterUi={filterProps} enableFilter={enableFilter} />
+        )} */}
+      </Grid>
+    </Grid>
   )
 }
 

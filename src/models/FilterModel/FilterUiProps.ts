@@ -1,6 +1,6 @@
 import { DiscreteRange } from '../PropertyModel/DiscreteRange'
 import { NumberRange } from '../PropertyModel/NumberRange'
-import { ValueType } from '../TableModel'
+import { Table, ValueType } from '../TableModel'
 import { VisualMappingFunction } from '../VisualStyleModel'
 import { DiscreteFilter, NumericFilter } from './Filter'
 
@@ -26,7 +26,7 @@ export type SelectionMode = (typeof SelectionMode)[keyof typeof SelectionMode]
 /**
  * Interface for the filter user interface
  */
-export interface FilterUi {
+export interface FilterUiProps {
   filter: DiscreteFilter<ValueType> | NumericFilter
 
   // Human-readable label for the filter
@@ -50,6 +50,9 @@ export interface FilterUi {
   readonly range: NumberRange | DiscreteRange<ValueType>
 
   readonly selectionMode?: SelectionMode
+
+  // Table data to be filtered
+  table: Table
 
   // TBD - Convert this UI object into CX aspect
   toCx: () => any

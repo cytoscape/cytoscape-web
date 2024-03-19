@@ -1,17 +1,17 @@
 import Tooltip from '@mui/material/Tooltip'
-import { FilterUi } from '../../../../models/FilterModel/FilterUi'
-import { Table } from '../../../../models/TableModel'
+import { FilterUiProps } from '../../../../models/FilterModel/FilterUiProps'
+import { Table, ValueType } from '../../../../models/TableModel'
 import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTableStore } from '../../../../store/TableStore'
-import { useWorkspaceManager } from '../../../../store/hooks/useWorkspaceManager'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 import { IdType } from '../../../../models/IdType'
 import { useUiStateStore } from '../../../../store/UiStateStore'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 
 interface CheckboxFilterProps {
-  filterUi: FilterUi
+  filterUi: FilterUiProps
+  enableFilter: boolean
 }
 
 /**
@@ -21,32 +21,31 @@ interface CheckboxFilterProps {
  */
 export const CheckboxFilter = ({
   filterUi,
+  enableFilter,
 }: CheckboxFilterProps): JSX.Element => {
-  const { widgetType, filter, description } = filterUi
-  const { target } = filter
-
-
-  // Find the target network
-  const currentNetworkId: IdType = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
-  const activeNetworkId: IdType = useUiStateStore(
-    (state) => state.ui.activeNetworkView,
-  )
-
-  // Use the active network if it exists, otherwise use the current network for filtering
-  const targetNetworkId: IdType = activeNetworkId || currentNetworkId
-
-  // Get target table from the store
-  const tablePair = useTableStore((state) => state.tables[targetNetworkId])
-
-  // This is the tab e to be filtered
-  const table: Table =
-    target === GraphObjectType.NODE
-      ? tablePair?.nodeTable
-      : tablePair?.edgeTable
+  const { widgetType, filter, description, table } = filterUi
+  const { target, attribute } = filter
 
   const [checkedOptions, setCheckedOptions] = useState<string[]>([])
+
+  const [options, setOptions] = useState<{ label: string; value: string }[]>([])
+
+  useEffect(() => {
+    const { rows } = table
+
+    if (Object.keys(rows).length === 0) return
+
+    const valueSet = new Set<string>()
+    rows.forEach((row: Record<IdType, ValueType>) => {
+      valueSet.add(row[attribute] as string)
+    })
+
+    const newOptions = Array.from(valueSet).map((value) => ({
+      label: value,
+      value,
+    }))
+    setOptions(newOptions)
+  }, [table, attribute])
 
   const handleToggle = (value: string) => {
     const currentIndex = checkedOptions.indexOf(value)
@@ -68,14 +67,14 @@ export const CheckboxFilter = ({
    */
   const handleToggleAll = (checked: boolean): void => {
     if (checked) {
-      // setCheckedOptions(options.map((option) => option.value))
+      setCheckedOptions(options.map((option) => option.value))
     } else {
       setCheckedOptions([])
     }
   }
 
-  const isAllSelected = false
-  // options.length > 0 && checkedOptions.length === options.length
+  const isAllSelected =
+    options.length > 0 && checkedOptions.length === options.length
 
   return (
     <FormGroup>
@@ -83,26 +82,28 @@ export const CheckboxFilter = ({
         <FormControlLabel
           control={
             <Checkbox
+              disabled={!enableFilter}
               checked={isAllSelected}
               indeterminate={checkedOptions.length > 0 && !isAllSelected}
               onChange={(e) => handleToggleAll(e.target.checked)}
             />
           }
-          label={isAllSelected ? 'Unselect All' : 'Select All'}
+          label={isAllSelected ? 'Clear selection' : 'Select all'}
         />
       </Tooltip>
-      {/* {options.map((option) => (
+      {options.map((option) => (
         <FormControlLabel
           key={option.value}
           control={
             <Checkbox
+              disabled={!enableFilter}
               checked={checkedOptions.includes(option.value)}
               onChange={() => handleToggle(option.value)}
             />
           }
           label={option.label}
         />
-      ))} */}
+      ))}
     </FormGroup>
   )
 }

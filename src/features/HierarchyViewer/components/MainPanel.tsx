@@ -205,7 +205,7 @@ export const MainPanel = (): JSX.Element => {
               interactionNetworkId={interactionNetworkUuid}
             />
           </Allotment.Pane>
-          <Allotment.Pane preferredSize={100}>
+          <Allotment.Pane preferredSize={500}>
             <Allotment>
               <Allotment.Pane preferredSize={'15%'} key={0}>
                 <PropertyPanel networkId={targetNode} />
