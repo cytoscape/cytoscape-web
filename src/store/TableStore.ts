@@ -17,7 +17,7 @@ import {
   putTablesToDb,
 } from './persist/db'
 /** */
-interface TableRecord {
+export interface TableRecord {
   nodeTable: Table
   edgeTable: Table
 }
@@ -106,29 +106,29 @@ type TableStore = TableState & TableAction
 
 const persist =
   (config: StateCreator<TableStore>) =>
-  (
-    set: StoreApi<TableStore>['setState'],
-    get: StoreApi<TableStore>['getState'],
-    api: StoreApi<TableStore>,
-  ) =>
-    config(
-      async (args) => {
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
-        set(args)
-        const updated = get().tables[currentNetworkId]
-        const deleted = updated === undefined
-        if (!deleted) {
-          await putTablesToDb(
-            currentNetworkId,
-            updated.nodeTable,
-            updated.edgeTable,
-          ).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+    (
+      set: StoreApi<TableStore>['setState'],
+      get: StoreApi<TableStore>['getState'],
+      api: StoreApi<TableStore>,
+    ) =>
+      config(
+        async (args) => {
+          const currentNetworkId =
+            useWorkspaceStore.getState().workspace.currentNetworkId
+          set(args)
+          const updated = get().tables[currentNetworkId]
+          const deleted = updated === undefined
+          if (!deleted) {
+            await putTablesToDb(
+              currentNetworkId,
+              updated.nodeTable,
+              updated.edgeTable,
+            ).then(() => { })
+          }
+        },
+        get,
+        api,
+      )
 
 export const useTableStore = create(
   immer<TableStore>(
@@ -235,7 +235,7 @@ export const useTableStore = create(
           const table = state.tables[networkId]
           const tableToUpdate =
             table[
-              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
 
           if (elementIds != null) {
@@ -263,7 +263,7 @@ export const useTableStore = create(
           const table = state.tables[networkId]
           const tableToUpdate =
             table[
-              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
 
           const columnIndex = tableToUpdate.columns.findIndex(
@@ -293,7 +293,7 @@ export const useTableStore = create(
           const table = state.tables[networkId]
           const tableToUpdate =
             table[
-              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
 
           tableToUpdate.columns.unshift({
