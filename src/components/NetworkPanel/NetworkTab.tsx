@@ -19,7 +19,6 @@ export const NetworkTab = ({
   handleClick,
   isActive,
 }: NetworkTabProps): ReactElement => {
-
   return (
     <Box
       sx={{
@@ -28,6 +27,8 @@ export const NetworkTab = ({
         width: '100%',
         backgroundColor: bgColor !== undefined ? bgColor : '#FFFFFF',
         border: isActive ? '3px solid orange' : '3px solid transparent',
+        // Adjust the hidden bottom border to be 4px
+        borderBottom: isActive ? '4px solid orange' : '4px solid transparent',
       }}
       onClick={handleClick}
     >

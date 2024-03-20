@@ -73,17 +73,17 @@ const Dropdown = ({
             justifyContent: 'flex-start',
           }}
         >
-          <FormLabel>Filter for: </FormLabel>
+          <FormLabel sx={{ paddingRight: '0.5em' }}>Filter for:</FormLabel>
           <RadioGroup row value={selectedType} onChange={handleTypeChange}>
             <FormControlLabel
               value={GraphObjectType.NODE}
               control={<Radio />}
-              label={GraphObjectType.NODE}
+              label={'Nodes'}
             />
             <FormControlLabel
               value={GraphObjectType.EDGE}
               control={<Radio />}
-              label={GraphObjectType.EDGE}
+              label={'Edges'}
             />
           </RadioGroup>
         </FormControl>
