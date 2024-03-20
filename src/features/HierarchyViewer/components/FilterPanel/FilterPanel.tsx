@@ -15,7 +15,7 @@ import {
   DiscreteFilter,
   createDiscreteFilter,
 } from '../../../../models/FilterModel/Filter'
-import { Box } from '@mui/material'
+import { Box, Container } from '@mui/material'
 
 export const FilterPanel = () => {
   const [enableFilter, setEnableFilter] = useState<boolean>(false)
@@ -77,19 +77,20 @@ export const FilterPanel = () => {
   }, [selectedValue])
 
   return (
-    <Grid
-      container
-      direction="column"
-      justifyContent="flex-start"
-      alignItems="stretch"
-      spacing={0}
+    <Container
+      disableGutters={true}
       sx={{
-        height: 500,
+        width: '100%',
+        height: '100%',
         boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '0.5em',
       }}
     >
-      <Grid item sx={{ height: '5em', border: '13px solid red' }}>
+      <Grid item sx={{ flex: 1 }}>
         <AttributeSelector
+          enableFilter={enableFilter}
           nodeTable={tablePair.nodeTable}
           edgeTable={tablePair.edgeTable}
           defaultValue={selectedValue}
@@ -103,24 +104,27 @@ export const FilterPanel = () => {
         sx={{
           flexGrow: 1,
           boxSizing: 'border-box',
-          border: '13px solid blue',
+          width: '100%',
+          height: '100%',
+          overflow: 'auto',
         }}
       >
-        {/* {filterProps !== undefined ? (
-          <div
+        {filterProps === undefined ? null : (
+          <Box
             style={{
               width: '100%',
-              height: '80%',
-
+              height: '100%',
               overflow: 'auto',
             }}
-          />
-        ) : (
-          <div />
-          // <CheckboxFilter filterUi={filterProps} enableFilter={enableFilter} />
-        )} */}
+          >
+            <CheckboxFilter
+              filterUi={filterProps}
+              enableFilter={enableFilter}
+            />
+          </Box>
+        )}
       </Grid>
-    </Grid>
+    </Container>
   )
 }
 

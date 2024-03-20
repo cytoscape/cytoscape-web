@@ -5,13 +5,17 @@ import {
   FormControlLabel,
   Radio,
   RadioGroup,
+  FormControl,
+  FormLabel,
+  Container,
+  Box,
 } from '@mui/material'
 import { Column, Table } from '../../../../models/TableModel'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { GraphObjectType } from '../../../../models/NetworkModel'
-import { set } from 'lodash'
 
 interface AttributeSelectorProps {
+  enableFilter: boolean
   nodeTable: Table
   edgeTable: Table
   defaultValue: string
@@ -21,6 +25,7 @@ interface AttributeSelectorProps {
 }
 
 const Dropdown = ({
+  enableFilter,
   nodeTable,
   edgeTable,
   defaultValue,
@@ -49,27 +54,55 @@ const Dropdown = ({
   }
 
   return (
-    <div>
-      <RadioGroup row value={selectedType} onChange={handleTypeChange}>
-        <FormControlLabel
-          value={GraphObjectType.NODE}
-          control={<Radio />}
-          label={GraphObjectType.NODE}
-        />
-        <FormControlLabel
-          value={GraphObjectType.EDGE}
-          control={<Radio />}
-          label={GraphObjectType.EDGE}
-        />
-      </RadioGroup>
-      <Select value={defaultValue || options[0]} onChange={handleChange}>
-        {options.map((option) => (
-          <MenuItem key={option} value={option}>
-            {option}
-          </MenuItem>
-        ))}
-      </Select>
-    </div>
+    <Container
+      disableGutters={true}
+      sx={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+      }}
+    >
+      <Box sx={{ width: '100%' }}>
+        <FormControl
+          disabled={!enableFilter}
+          sx={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+          }}
+        >
+          <FormLabel>Filter for: </FormLabel>
+          <RadioGroup row value={selectedType} onChange={handleTypeChange}>
+            <FormControlLabel
+              value={GraphObjectType.NODE}
+              control={<Radio />}
+              label={GraphObjectType.NODE}
+            />
+            <FormControlLabel
+              value={GraphObjectType.EDGE}
+              control={<Radio />}
+              label={GraphObjectType.EDGE}
+            />
+          </RadioGroup>
+        </FormControl>
+      </Box>
+      <Box sx={{ width: '100%' }}>
+        <Select
+          disabled={!enableFilter}
+          value={defaultValue || options[0]}
+          onChange={handleChange}
+          sx={{ flexGrow: 1, width: '100%' }}
+        >
+          {options.map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
+          ))}
+        </Select>
+      </Box>
+    </Container>
   )
 }
 
