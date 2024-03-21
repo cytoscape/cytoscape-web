@@ -221,3 +221,17 @@ export const joinRowsToTable = (
 
   return newTable
 }
+
+export const submitDisabled = (
+  columns: ColumnAppendState[],
+  selectedTable: Table,
+) => {
+  const keyCol = columns.find((c) => c.meaning === ColumnAppendType.Key)
+  const rowValuesAreValid = columns
+    .filter((c) => c.meaning !== ColumnAppendType.NotImported)
+    .every((c) => c.invalidValues.length === 0)
+  const networkHasKeyColumns =
+    validNetworkKeyColumns(selectedTable?.columns).length > 0
+
+  return !(rowValuesAreValid && keyCol !== undefined && networkHasKeyColumns)
+}

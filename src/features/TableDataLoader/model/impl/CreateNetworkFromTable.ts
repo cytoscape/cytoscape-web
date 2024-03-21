@@ -135,6 +135,7 @@ export const selectAllColumns = (
     ...c,
     dataType: DEFAULT_COLUMN_DATA_TYPE,
     meaning: DEFAULT_COLUMN_MEANING,
+    invalidValues: [],
   }))
 }
 
@@ -145,6 +146,7 @@ export const unselectAllColumns = (
     ...c,
     dataType: DEFAULT_COLUMN_DATA_TYPE,
     meaning: ColumnAssignmentType.NotImported,
+    invalidValues: [],
   }))
 }
 
@@ -290,4 +292,22 @@ export function createNetworkFromTableData(
     edgeTable,
     network,
   }
+}
+
+export const submitDisabled = (columns: ColumnAssignmentState[]) => {
+  const tgtNodeCol = columns.find(
+    (c) => c.meaning === ColumnAssignmentType.TargetNode,
+  )
+  const srcNodeCol = columns.find(
+    (c) => c.meaning === ColumnAssignmentType.SourceNode,
+  )
+
+  const rowValuesAreValid = columns
+    .filter((c) => c.meaning !== ColumnAssignmentType.NotImported)
+    .every((c) => c.invalidValues.length === 0)
+
+  return !(
+    rowValuesAreValid &&
+    (tgtNodeCol !== undefined || srcNodeCol !== undefined)
+  )
 }
