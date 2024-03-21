@@ -69,6 +69,14 @@ export default function NetworkInfoPanel(props: {
     return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
   };
 
+  const hasReferenceProperties = properties.some((prop) =>
+  Object.keys(prop).some((key) => key.startsWith('reference'))
+  );
+
+  const hasRightsProperties = properties.some((prop) =>
+  Object.keys(prop).some((key) => key.startsWith('rights'))
+  );
+
   return (
     <Box sx={{ height: props.height - 50, overflow: 'scroll', pl: 1, pr: 1 }}>
       <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
@@ -117,6 +125,44 @@ export default function NetworkInfoPanel(props: {
           <Typography variant="body2">
             {parse(networkInfo?.description ?? '')}
           </Typography>
+          {hasRightsProperties && (
+          <Typography
+            sx={{ fontSize: 14, fontWeight: 'bold' }}
+            variant="subtitle1"
+          >
+            Rights:
+          </Typography>
+          )}
+          <Typography variant="body2">
+            {properties.map((prop, index) => (
+              <div key={index}>
+                {Object.entries(prop)
+                  .filter(([key, _]) => key.startsWith('rights') || key.startsWith('rightsholder'))
+                  .map(([key, value], idx) => (
+                    <div key={idx}>{`${key}: ${parse(value)}`}</div>
+                  ))}
+              </div>
+            ))}
+          </Typography>
+          {hasReferenceProperties && (
+          <Typography
+            sx={{ fontSize: 14, fontWeight: 'bold' }}
+            variant="subtitle1"
+          >
+            Reference:
+          </Typography>
+          )}
+          <Typography variant="body2">
+            {properties.map((prop, index) => (
+              <div key={index}>
+                {Object.entries(prop)
+                  .filter(([key, _]) => key.startsWith('reference'))
+                  .map(([_, value], idx) => (
+                    <div key={idx}>{parse(value)}</div>
+                  ))}
+              </div>
+            ))}
+          </Typography>
           <Typography
             sx={{ fontSize: 14, fontWeight: 'bold' }}
             variant="subtitle1"
@@ -150,41 +196,7 @@ export default function NetworkInfoPanel(props: {
                   })}
               </div>
             ))}
-          </Typography>
-          <Typography
-            sx={{ fontSize: 14, fontWeight: 'bold' }}
-            variant="subtitle1"
-          >
-            Reference:
-          </Typography>
-          <Typography variant="body2">
-            {properties.map((prop, index) => (
-              <div key={index}>
-                {Object.entries(prop)
-                  .filter(([key, _]) => key.startsWith('reference'))
-                  .map(([_, value], idx) => (
-                    <div key={idx}>{parse(value)}</div>
-                  ))}
-              </div>
-            ))}
-          </Typography>
-          <Typography
-            sx={{ fontSize: 14, fontWeight: 'bold' }}
-            variant="subtitle1"
-          >
-            Rights:
-          </Typography>
-          <Typography variant="body2">
-            {properties.map((prop, index) => (
-              <div key={index}>
-                {Object.entries(prop)
-                  .filter(([key, _]) => key.startsWith('rights') || key.startsWith('rightsholder'))
-                  .map(([key, value], idx) => (
-                    <div key={idx}>{`${key}: ${parse(value)}`}</div>
-                  ))}
-              </div>
-            ))}
-          </Typography>
+          </Typography>   
         </Box>
       </Box>
     </Box>
