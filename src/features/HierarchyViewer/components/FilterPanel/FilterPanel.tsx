@@ -147,6 +147,7 @@ export const FilterPanel = () => {
             }}
           >
             <CheckboxFilter
+              targetNetworkId={targetNetworkId}
               filterUi={filterProps}
               enableFilter={enableFilter}
             />

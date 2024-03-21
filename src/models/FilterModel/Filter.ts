@@ -29,11 +29,19 @@ export const createDiscreteFilter = <T>(
     attribute,
     apply: (range: DiscreteRange<T>, table: Table): IdType[] => {
       const rangeSet = new Set<T>(range.values)
+
+      if (rangeSet.size === 0) return []
+
       const { rows } = table
+      const ids = [...rows.keys()]
       const result: IdType[] = []
-      rows.forEach((row: Record<string, ValueType>) => {
-        if (rangeSet.has(row[attribute] as T)) {
-          result.push(row.id as IdType)
+
+      ids.forEach((id: string) => {
+        const row = rows.get(id)
+        const value = row?.[attribute]
+
+        if (value !== undefined && rangeSet.has(value as T)) {
+          result.push(id)
         }
       })
       return result

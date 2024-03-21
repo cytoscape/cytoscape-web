@@ -1,15 +1,18 @@
 import Tooltip from '@mui/material/Tooltip'
 import { FilterUiProps } from '../../../../models/FilterModel/FilterUiProps'
-import { Table, ValueType } from '../../../../models/TableModel'
+import { ValueType } from '../../../../models/TableModel'
 import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import { useEffect, useState } from 'react'
-import { useTableStore } from '../../../../store/TableStore'
-import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 import { IdType } from '../../../../models/IdType'
-import { useUiStateStore } from '../../../../store/UiStateStore'
+import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
+import { DiscreteFilter } from '../../../../models/FilterModel/Filter'
+import { useViewModelStore } from '../../../../store/ViewModelStore'
+import { filterProps } from '@mantine/core'
 import { GraphObjectType } from '../../../../models/NetworkModel'
+import { NetworkView } from '../../../../models/ViewModel'
 
 interface CheckboxFilterProps {
+  targetNetworkId: IdType
   filterUi: FilterUiProps
   enableFilter: boolean
 }
@@ -20,15 +23,19 @@ interface CheckboxFilterProps {
  *
  */
 export const CheckboxFilter = ({
+  targetNetworkId,
   filterUi,
   enableFilter,
 }: CheckboxFilterProps): JSX.Element => {
-  const { widgetType, filter, description, table } = filterUi
-  const { target, attribute } = filter
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
+  const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
+  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+  const { filter, description, table } = filterUi
+  const { attribute } = filter
 
   const [checkedOptions, setCheckedOptions] = useState<string[]>([])
 
-  const [options, setOptions] = useState<{ label: string; value: string }[]>([])
+  const [options, setOptions] = useState<string[]>([])
 
   useEffect(() => {
     const { rows } = table
@@ -40,10 +47,8 @@ export const CheckboxFilter = ({
       valueSet.add(row[attribute] as string)
     })
 
-    const newOptions = Array.from(valueSet).map((value) => ({
-      label: value,
-      value,
-    }))
+    // Convert set to array and sort
+    const newOptions = Array.from(valueSet).sort()
     setOptions(newOptions)
   }, [table, attribute])
 
@@ -60,6 +65,44 @@ export const CheckboxFilter = ({
     setCheckedOptions(newChecked)
   }
 
+  useEffect(() => {
+    let filtered: IdType[] = []
+    const discreteFilter = filter as DiscreteFilter<ValueType>
+    let discreteRange: DiscreteRange<ValueType> = {
+      values: [],
+    }
+    // Apply filter
+    if (checkedOptions.length === 0) {
+      // Clear filter
+
+      discreteRange = {
+        values: [],
+      }
+    } else {
+      discreteRange = {
+        values: checkedOptions,
+      }
+    }
+    filtered = discreteFilter.apply(discreteRange, table)
+    console.log('Filtered: ', filtered)
+    if (filtered.length === 0) {
+      if (
+        viewModel !== undefined &&
+        (viewModel.selectedNodes.length > 0 ||
+          viewModel.selectedEdges.length > 0)
+      ) {
+        exclusiveSelect(targetNetworkId, [''], [])
+      }
+      return
+    }
+
+    if (filter.target === GraphObjectType.NODE) {
+      exclusiveSelect(targetNetworkId, filtered, [])
+    } else {
+      exclusiveSelect(targetNetworkId, [], filtered)
+    }
+  }, [checkedOptions])
+
   /**
    * Select / unselect all options
    *
@@ -67,7 +110,7 @@ export const CheckboxFilter = ({
    */
   const handleToggleAll = (checked: boolean): void => {
     if (checked) {
-      setCheckedOptions(options.map((option) => option.value))
+      setCheckedOptions(options)
     } else {
       setCheckedOptions([])
     }
@@ -94,17 +137,17 @@ export const CheckboxFilter = ({
           }
           label={isAllSelected ? 'Clear selection' : 'Select all'}
         />
-        {options.map((option) => (
+        {options.map((option: string) => (
           <FormControlLabel
-            key={option.value}
+            key={option}
             control={
               <Checkbox
                 disabled={!enableFilter}
-                checked={checkedOptions.includes(option.value)}
-                onChange={() => handleToggle(option.value)}
+                checked={checkedOptions.includes(option)}
+                onChange={() => handleToggle(option)}
               />
             }
-            label={option.label}
+            label={option}
           />
         ))}
       </FormGroup>
