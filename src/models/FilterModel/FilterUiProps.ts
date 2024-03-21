@@ -23,6 +23,13 @@ export const SelectionMode = {
 
 export type SelectionMode = (typeof SelectionMode)[keyof typeof SelectionMode]
 
+export const FilteringMode = {
+  SELECTION: 'selection',
+  SHOW_HIDE: 'show_hide',
+} as const
+
+export type FilteringMode = (typeof FilteringMode)[keyof typeof FilteringMode]
+
 /**
  * Interface for the filter user interface
  */
@@ -37,6 +44,11 @@ export interface FilterUiProps {
 
   // Type of the widget. Can be either "checkbox" or "slider"
   widgetType: FilterWidgetType
+
+  // How to display the filtered results. Can be either "selection" or "show_hide"
+  // If "selection", then the filter will select those objects. If
+  // "show_hide", then the filter will show the selected items only.
+  mode: FilteringMode
 
   // Visual mapping function that the filter is linked to. This is used to
   // determine the visual representation of the filter. For example, if the

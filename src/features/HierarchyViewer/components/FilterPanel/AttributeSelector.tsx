@@ -24,7 +24,7 @@ interface AttributeSelectorProps {
   setSelectedType: (value: GraphObjectType) => void
 }
 
-const Dropdown = ({
+export const AttributeSelector = ({
   enableFilter,
   nodeTable,
   edgeTable,
@@ -61,9 +61,10 @@ const Dropdown = ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-start',
+        paddingBottom: '0.5em',
       }}
     >
-      <Box sx={{ width: '100%' }}>
+      <Box sx={{ flex: 1 }}>
         <FormControl
           disabled={!enableFilter}
           sx={{
@@ -71,6 +72,7 @@ const Dropdown = ({
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'flex-start',
+            minWidth: '17em',
           }}
         >
           <FormLabel sx={{ paddingRight: '0.5em' }}>Filter for:</FormLabel>
@@ -93,6 +95,7 @@ const Dropdown = ({
           disabled={!enableFilter}
           value={defaultValue || options[0]}
           onChange={handleChange}
+          size="small"
           sx={{ flexGrow: 1, width: '100%' }}
         >
           {options.map((option) => (
@@ -105,5 +108,3 @@ const Dropdown = ({
     </Container>
   )
 }
-
-export default Dropdown

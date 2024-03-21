@@ -1,5 +1,4 @@
 import Grid from '@mui/material/Grid'
-import AttributeSelector from './AttributeSelector'
 import { useEffect, useState } from 'react'
 import { IdType } from '../../../../models/IdType'
 import { useTableStore } from '../../../../store/TableStore'
@@ -9,6 +8,7 @@ import CheckboxFilter from './CheckboxFilter'
 import {
   FilterUiProps,
   FilterWidgetType,
+  FilteringMode,
 } from '../../../../models/FilterModel/FilterUiProps'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import {
@@ -16,9 +16,14 @@ import {
   createDiscreteFilter,
 } from '../../../../models/FilterModel/Filter'
 import { Box, Container } from '@mui/material'
+import { AttributeSelector } from './AttributeSelector'
+import { Mode } from '@mui/icons-material'
+import { ModeSelector } from './ModeSelector'
 
 export const FilterPanel = () => {
+  // Enable filter only when the target network has a specific type
   const [enableFilter, setEnableFilter] = useState<boolean>(false)
+
   // Find the target network
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -43,16 +48,32 @@ export const FilterPanel = () => {
 
   // Get target table from the store
   const tablePair = useTableStore((state) => state.tables[targetNetworkId])
-  const [selectedValue, setSelectedValue] = useState<string>('')
+
+  const [nodeAttrName, setNodeAttrName] = useState<string>('')
+  const [edgeAttrName, setEdgeAttrName] = useState<string>('')
+
   const [selectedObjectType, setSelectedObjectType] = useState<GraphObjectType>(
     GraphObjectType.NODE,
   )
+
+  // Visualization mode for the filtered results
+  const [filteringMode, setFilteringMode] = useState<FilteringMode>(
+    FilteringMode.SELECTION,
+  )
+
   const [filterProps, setFilterProps] = useState<FilterUiProps>()
+
+  const targetAttrName: string =
+    selectedObjectType === GraphObjectType.NODE ? nodeAttrName : edgeAttrName
+  const setFunction =
+    selectedObjectType === GraphObjectType.NODE
+      ? setNodeAttrName
+      : setEdgeAttrName
 
   useEffect(() => {
     const discreteFilter: DiscreteFilter<string> = createDiscreteFilter<string>(
       selectedObjectType,
-      selectedValue,
+      targetAttrName,
     )
 
     const table =
@@ -67,6 +88,7 @@ export const FilterPanel = () => {
       filter: discreteFilter,
       label: 'Interaction edge filter',
       range: { values: [] },
+      mode: FilteringMode.SELECTION,
       table,
       toCx: function () {
         throw new Error('Function not implemented.')
@@ -74,7 +96,7 @@ export const FilterPanel = () => {
     }
 
     setFilterProps(filterUi)
-  }, [selectedValue])
+  }, [nodeAttrName, edgeAttrName, selectedObjectType])
 
   return (
     <Container
@@ -93,10 +115,17 @@ export const FilterPanel = () => {
           enableFilter={enableFilter}
           nodeTable={tablePair.nodeTable}
           edgeTable={tablePair.edgeTable}
-          defaultValue={selectedValue}
+          defaultValue={targetAttrName}
           selectedType={selectedObjectType}
-          setSelectedValue={setSelectedValue}
+          setSelectedValue={setFunction}
           setSelectedType={setSelectedObjectType}
+        />
+      </Grid>
+      <Grid item sx={{ flex: 1 }}>
+        <ModeSelector
+          enableFilter={enableFilter}
+          selectedMode={filteringMode}
+          setSelectedMode={setFilteringMode}
         />
       </Grid>
       <Grid

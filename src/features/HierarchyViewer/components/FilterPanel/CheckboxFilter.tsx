@@ -77,9 +77,13 @@ export const CheckboxFilter = ({
     options.length > 0 && checkedOptions.length === options.length
 
   return (
-    <FormGroup>
-      <Tooltip title={description}>
+    <Tooltip title={description}>
+      <FormGroup>
         <FormControlLabel
+          sx={{
+            borderTop: '1px solid #A0A0A0',
+            borderBottom: '1px solid #A0A0A0',
+          }}
           control={
             <Checkbox
               disabled={!enableFilter}
@@ -90,21 +94,21 @@ export const CheckboxFilter = ({
           }
           label={isAllSelected ? 'Clear selection' : 'Select all'}
         />
-      </Tooltip>
-      {options.map((option) => (
-        <FormControlLabel
-          key={option.value}
-          control={
-            <Checkbox
-              disabled={!enableFilter}
-              checked={checkedOptions.includes(option.value)}
-              onChange={() => handleToggle(option.value)}
-            />
-          }
-          label={option.label}
-        />
-      ))}
-    </FormGroup>
+        {options.map((option) => (
+          <FormControlLabel
+            key={option.value}
+            control={
+              <Checkbox
+                disabled={!enableFilter}
+                checked={checkedOptions.includes(option.value)}
+                onChange={() => handleToggle(option.value)}
+              />
+            }
+            label={option.label}
+          />
+        ))}
+      </FormGroup>
+    </Tooltip>
   )
 }
 
