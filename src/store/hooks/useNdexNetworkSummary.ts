@@ -1,6 +1,6 @@
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
-import { NdexNetworkProperty, NdexNetworkSummary } from '../../models/NetworkSummaryModel'
+import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { IdType } from '../../models/IdType'
 import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from '../persist/db'
 
@@ -34,17 +34,11 @@ export const useNdexNetworkSummary = async (
       url,
       accessToken,
     )
-    const validNewSummaries = newSummaries.filter((s) => s !== undefined);
+    const validNewSummaries = newSummaries.filter((s) => s !== undefined)
     validNewSummaries.forEach(async (summary: NdexNetworkSummary) => {
-        // Transform the properties array
-        summary.properties = summary.properties.map(({ predicateString, value }) => ({
-          [predicateString]: value
-        })) as unknown as NdexNetworkProperty[];
-    
-        // Update the database with the modified summary
-        await putNetworkSummaryToDb(summary);
-      
-    });
+      // Update the database with the modified summary
+      await putNetworkSummaryToDb(summary)
+    })
     const summaryResults: Record<IdType, NdexNetworkSummary> = [
       ...cachedSummaries.filter((s) => s !== undefined),
       ...validNewSummaries,
