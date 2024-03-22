@@ -6,7 +6,11 @@ import NetworkFn, { Network } from '../../../models/NetworkModel'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import ViewModelFn, { NetworkView } from '../../../models/ViewModel'
 import { v4 as uuidv4 } from 'uuid'
-import TableFn, { Table } from '../../../models/TableModel'
+import TableFn, {
+  Table,
+  ValueType,
+  ValueTypeName,
+} from '../../../models/TableModel'
 import { useTableStore } from '../../../store/TableStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 
@@ -20,6 +24,11 @@ import {
   putNetworkViewToDb,
   putNetworkSummaryToDb,
 } from '../../../store/persist/db'
+import { NdexNetworkProperty } from '../../../models/NetworkSummaryModel'
+import {
+  getAttributeDeclarations,
+  getNetworkAttributes,
+} from '../../../models/CxModel/cx2-util'
 
 export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   interface FullNetworkData {
@@ -82,20 +91,43 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
     reader.onload = async (event) => {
       try {
         const json = JSON.parse(event.target?.result as string)
-        let localName: string = "";
-          for (const item of json) {
-            if ((Boolean(item.networkAttributes)) && typeof item.networkAttributes[0].name === 'string') {
-              localName = item.networkAttributes[0].name;
-              break;
-            }
-        }
-        let localDescription: string = "";
+        let localName: string = ''
         for (const item of json) {
-          if ((Boolean(item.networkAttributes)) && typeof item.networkAttributes[0].name === 'string') {
-            localDescription = item.networkAttributes[0].description;
-            break;
+          if (
+            Boolean(item.networkAttributes) &&
+            typeof item.networkAttributes[0].name === 'string'
+          ) {
+            localName = item.networkAttributes[0].name
+            break
           }
         }
+        let localDescription: string = ''
+        for (const item of json) {
+          if (
+            Boolean(item.networkAttributes) &&
+            typeof item.networkAttributes[0].name === 'string'
+          ) {
+            localDescription = item.networkAttributes[0].description
+            break
+          }
+        }
+        const networkAttributeDeclarations =
+          getAttributeDeclarations(json).attributeDeclarations[0]
+            .networkAttributes
+        const networkAttributes = getNetworkAttributes(json)[0]
+
+        const localProperties: NdexNetworkProperty[] = Object.entries(
+          networkAttributes,
+        ).map(([key, value]) => {
+          return {
+            predicateString: key,
+            value: value as ValueType,
+            dataType:
+              networkAttributeDeclarations[key].d ?? ValueTypeName.String,
+            subNetworkId: null,
+          }
+        })
+
         const localUuid = uuidv4()
         const localNodeCount = json[1].metaData[2].elementCount
         const localEdgeCount = json[1].metaData[3].elementCount
@@ -113,7 +145,7 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
           hasSample: false,
           cxFileSize: 0,
           cx2FileSize: 0,
-          properties: [],
+          properties: localProperties,
           owner: '',
           version: '',
           completed: false,

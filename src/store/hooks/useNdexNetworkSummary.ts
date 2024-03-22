@@ -38,7 +38,6 @@ export const useNdexNetworkSummary = async (
     validNewSummaries.forEach(async (summary: NdexNetworkSummary) => {
       await putNetworkSummaryToDb(summary)
     })
-
     const summaryResults: Record<IdType, NdexNetworkSummary> = [
       ...cachedSummaries.filter((s) => s !== undefined),
       ...validNewSummaries,
