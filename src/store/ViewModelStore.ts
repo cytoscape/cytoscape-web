@@ -7,6 +7,7 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import {
   clearNetworkViewsFromDb,
   deleteNetworkViewsFromDb,
+  putNetworkViewToDb,
   putNetworkViewsToDb,
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
@@ -276,6 +277,11 @@ export const useViewModelStore = create(
             } else {
               state.viewModels[networkId] = [networkView]
             }
+
+            // Register to the database
+            void putNetworkViewToDb(networkId, networkView).then(() => {
+              // console.info('Network view model added to the DB.', networkId)
+            })
             return state
           })
         },
