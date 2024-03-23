@@ -23,19 +23,18 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     selector: 'edge',
     style: {
       'curve-style': 'bezier',
-      'text-wrap': 'wrap'
+      'text-wrap': 'wrap',
     },
   }
 
   const baseNodeStyle = {
     selector: 'node',
     style: {
-      'text-wrap': 'wrap'
+      'text-wrap': 'wrap',
     },
   }
   cyStyle.push(baseEdgeStyle as CyjsDirectMapper)
   cyStyle.push(baseNodeStyle as CyjsDirectMapper)
-
 
   nodeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
     const cyjsVpName = getCyjsVpName(vp.name)

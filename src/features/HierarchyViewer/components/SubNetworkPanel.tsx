@@ -267,10 +267,7 @@ export const SubNetworkPanel = ({
     const newNetworkId: string = network.id
     addNewNetwork(network)
     addTable(newNetworkId, nodeTable, edgeTable)
-    // const primaryViewModel: NetworkView | undefined = getViewModel(newNetworkId)
-    // if (primaryViewModel === undefined) {
     addViewModel(newNetworkId, networkView)
-    // }
 
     if (interactionNetworkId === undefined || interactionNetworkId === '') {
       // Apply default layout for the first time

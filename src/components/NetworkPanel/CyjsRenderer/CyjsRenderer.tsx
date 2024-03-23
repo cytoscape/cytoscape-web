@@ -25,13 +25,17 @@ import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
 interface NetworkRendererProps {
   network?: Network
+  selectionMode?: boolean
 }
 
 /**
  *
  * @returns
  */
-const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
+const CyjsRenderer = ({
+  network,
+  selectionMode,
+}: NetworkRendererProps): ReactElement => {
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
   )
@@ -240,7 +244,13 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         isViewCreated.current = true
       }, 1000)
     },
-    [network, cy, activeNetworkId],
+    [
+      network,
+      cy,
+      activeNetworkId,
+      networkView?.selectedNodes,
+      networkView?.selectedEdges,
+    ],
   )
 
   const applyStyleUpdate = (): void => {
@@ -399,13 +409,16 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     if (selectedEdges.length === 0) {
       cy.edges().unselect()
     } else {
-      cy.edges()
+      cy.edges().hide()
+
+      const newSelectedEdges = cy
+        .edges()
         .filter((ele: SingularElementArgument) => {
           return selectedEdges.includes(ele.data('id'))
         })
-        .select()
+      // newSelectedEdges.select()
+      newSelectedEdges.show()
     }
-    // cy.on('select unselect boxend', selectionHandler)
   }, [networkView?.selectedNodes, networkView?.selectedEdges])
 
   /**
