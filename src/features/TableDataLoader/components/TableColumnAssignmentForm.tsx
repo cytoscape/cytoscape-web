@@ -12,64 +12,72 @@ import {
   Alert,
   Switch,
   NumberInput,
-} from '@mantine/core';
+} from '@mantine/core'
 
-import { useTableDataLoaderStore } from '../store';
-import Papa from 'papaparse';
+import Papa from 'papaparse'
 
-import 'primereact/resources/themes/md-light-indigo/theme.css';
-import { DataTable, DataTableValue } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { useEffect, useState } from 'react';
+import 'primereact/resources/themes/md-light-indigo/theme.css'
+import { DataTable, DataTableValue } from 'primereact/datatable'
+import { Column } from 'primereact/column'
+import { useEffect, useState } from 'react'
+
+import { ValueTypeForm, ValueTypeNameRender } from './ValueTypeNameForm'
 import {
-  ColumnAssignmentState,
-  ColumnAssignmentType,
-  DelimiterType,
-  TableDataLoaderStep,
-  ValueTypeName2Label,
-  selectAllColumns,
-  unselectAllColumns,
-  updateColumnAssignment,
-  updateColumnType,
-  validColumnAssignmentTypes,
+  ColumnAssignmentTypeForm,
+  ColumnAssignmentTypeRender,
+} from './ColumnMeaningForm'
+import {
+  IconAlertCircle,
+  IconInfoCircle,
+  IconSettings,
+} from '@tabler/icons-react'
+import { ValueTypeName } from '../../../models/TableModel'
+import { ColumnAssignmentState } from '../model/ColumnAssignmentState'
+import { ColumnAssignmentType } from '../model/ColumnAssignmentType'
+import { DelimiterType } from '../model/DelimiterType'
+import {
   validValueTypes,
-  validateColumnValues,
-} from '../models/TableDataLoaderModels';
-import { ValueTypeName } from '../models/CyWebModels';
-import { ValueTypeForm, ValueTypeNameRender } from './ValueTypeNameForm';
-import { ColumnAssignmentTypeForm, ColumnAssignmentTypeRender } from './ColumnMeaningForm';
-import { IconAlertCircle, IconInfoCircle, IconSettings } from '@tabler/icons-react';
-
-import { createNetworkFromTableData } from '../models/TableDataLoaderModels';
+  updateColumnAssignment,
+  validColumnAssignmentTypes,
+  updateColumnType,
+  createNetworkFromTableData,
+  unselectAllColumns,
+  selectAllColumns,
+  valueTypeName2Label,
+} from '../model/impl/CreateNetworkFromTable'
+import { validateColumnValues } from '../model/impl/ParseValues'
+import {
+  CreateNetworkFromTableStep,
+  useCreateNetworkFromTableStore,
+} from '../store/createNetworkFromTableStore'
 
 export function TableColumnAssignmentForm() {
-  const text = useTableDataLoaderStore((state) => state.rawText);
-  const setTables = useTableDataLoaderStore((state) => state.setTables);
-  const goToStep = useTableDataLoaderStore((state) => state.goToStep);
+  const text = useCreateNetworkFromTableStore((state) => state.rawText)
+  const goToStep = useCreateNetworkFromTableStore((state) => state.goToStep)
 
-  const [validColumnTypes, setValidColumnAssignmentTypes] = useState<ColumnAssignmentType[]>(
-    Object.values(ColumnAssignmentType)
-  );
-  const [validValueTypeNames, setValidValueTypeNames] = useState<ValueTypeName[]>(
-    Object.values(ValueTypeName)
-  );
+  const [validColumnTypes, setValidColumnAssignmentTypes] = useState<
+    ColumnAssignmentType[]
+  >(Object.values(ColumnAssignmentType))
+  const [validValueTypeNames, setValidValueTypeNames] = useState<
+    ValueTypeName[]
+  >(Object.values(ValueTypeName))
 
-  const [skipNLines, setSkipNLines] = useState(0);
-  const [useFirstRowAsColumns, setUseFirstRowAsColumns] = useState(true);
+  const [skipNLines, setSkipNLines] = useState(0)
+  const [useFirstRowAsColumns, setUseFirstRowAsColumns] = useState(true)
 
-  const [rows, setRows] = useState<DataTableValue[]>([]);
-  const [columns, setColumns] = useState<ColumnAssignmentState[]>([]);
+  const [rows, setRows] = useState<DataTableValue[]>([])
+  const [columns, setColumns] = useState<ColumnAssignmentState[]>([])
 
   useEffect(() => {
-    const result = Papa.parse(text, { header: useFirstRowAsColumns });
-    const rows = result.data.slice(skipNLines + (useFirstRowAsColumns ? 0 : 1));
+    const result = Papa.parse(text, { header: useFirstRowAsColumns })
+    const rows = result.data.slice(skipNLines + (useFirstRowAsColumns ? 0 : 1))
 
     // setRows(result.data as DataTableValue[]);
     // const headers = result.meta.fields ?? Object.keys(result.data[0] as { [s: string]: string });
-    let headers: string[];
+    let headers: string[]
     if (useFirstRowAsColumns) {
-      headers = result.meta.fields as string[];
-      setRows(rows as DataTableValue[]);
+      headers = result.meta.fields as string[]
+      setRows(rows as DataTableValue[])
       const nextColumns = headers.map((c, i) => {
         return {
           ...{
@@ -79,94 +87,110 @@ export function TableColumnAssignmentForm() {
           },
           ...(columns[i] ?? {}),
           name: headers[i],
-        };
-      });
+        }
+      })
 
-      setColumns(nextColumns);
+      setColumns(nextColumns)
     } else {
       headers = Object.keys(result.data[0] as { [s: string]: string }).map(
-        (h, i) => `Column ${i + 1}`
-      );
+        (h, i) => `Column ${i + 1}`,
+      )
       const nextColumns = headers.map((c, i) => {
         return {
           ...(columns[i] ?? {}),
           name: headers[i],
-        };
-      });
+        }
+      })
 
-      setColumns(nextColumns);
-      const nextRows = (rows as string[][]).map((r: string[]): DataTableValue => {
-        const rowData: Record<string, string> = {};
-        headers.forEach((h: string, j: number) => {
-          rowData[h] = r[j];
-        });
-        return rowData as DataTableValue;
-      });
+      setColumns(nextColumns)
+      const nextRows = (rows as string[][]).map(
+        (r: string[]): DataTableValue => {
+          const rowData: Record<string, string> = {}
+          headers.forEach((h: string, j: number) => {
+            rowData[h] = r[j]
+          })
+          return rowData as DataTableValue
+        },
+      )
 
-      setRows(nextRows);
+      setRows(nextRows)
     }
-  }, [skipNLines, useFirstRowAsColumns]);
+  }, [skipNLines, useFirstRowAsColumns])
 
-  const onColumnAssignmentTypeChange = (index: number, value: ColumnAssignmentType) => {
-    const nextValidVtns = validValueTypes(value);
-    setValidValueTypeNames(nextValidVtns);
-    const nextColumns = updateColumnAssignment(value, index, columns);
+  const onColumnAssignmentTypeChange = (
+    index: number,
+    value: ColumnAssignmentType,
+  ) => {
+    const nextValidVtns = validValueTypes(value)
+    setValidValueTypeNames(nextValidVtns)
+    const nextColumns = updateColumnAssignment(value, index, columns)
 
-    setColumns(nextColumns);
-  };
+    setColumns(nextColumns)
+  }
 
-  const onValueTypeChange = (index: number, value: ValueTypeName, delimiter?: DelimiterType) => {
-    const nextValidCats = validColumnAssignmentTypes(value);
-    setValidColumnAssignmentTypes(nextValidCats);
-    const nextColumns = updateColumnType(value, index, columns, delimiter);
+  const onValueTypeChange = (
+    index: number,
+    value: ValueTypeName,
+    delimiter?: DelimiterType,
+  ) => {
+    const nextValidCats = validColumnAssignmentTypes(value)
+    setValidColumnAssignmentTypes(nextValidCats)
+    const nextColumns = updateColumnType(value, index, columns, delimiter)
 
-    nextColumns[index].invalidValues = validateColumnValues(nextColumns[index], rows);
+    nextColumns[index].invalidValues = validateColumnValues(
+      nextColumns[index],
+      rows,
+    )
 
-    setColumns(nextColumns);
-  };
+    setColumns(nextColumns)
+  }
 
   const handleConfirm = () => {
-    const { nodeTable, edgeTable } = createNetworkFromTableData(rows, columns);
+    const res = createNetworkFromTableData(rows, columns)
 
-    setTables(nodeTable, edgeTable);
-    goToStep(TableDataLoaderStep.TableViewer);
-  };
+    // setTables(nodeTable, edgeTable)
+    // goToStep(TableDataLoaderStep.TableViewer)
+  }
 
   const handleSelectNoneClick = () => {
-    const newColumns = unselectAllColumns(columns);
+    const newColumns = unselectAllColumns(columns)
 
-    setColumns(newColumns);
-  };
+    setColumns(newColumns)
+  }
 
   const handleSelectAllClick = () => {
-    const newColumns = selectAllColumns(columns);
+    const newColumns = selectAllColumns(columns)
 
-    setColumns(newColumns);
-  };
+    setColumns(newColumns)
+  }
 
   const handleCancel = () => {
-    goToStep(TableDataLoaderStep.FileUpload);
-  };
+    goToStep(CreateNetworkFromTableStep.FileUpload)
+  }
 
   const handleColumnClick = (column: ColumnAssignmentState) => {
-    const { meaning, dataType } = column;
-    setValidColumnAssignmentTypes(validColumnAssignmentTypes(dataType));
-    setValidValueTypeNames(validValueTypes(meaning));
-  };
+    const { meaning, dataType } = column
+    setValidColumnAssignmentTypes(validColumnAssignmentTypes(dataType))
+    setValidValueTypeNames(validValueTypes(meaning))
+  }
 
-  const tgtNodeCol = columns.find((c) => c.meaning === ColumnAssignmentType.TargetNode);
-  const srcNodeCol = columns.find((c) => c.meaning === ColumnAssignmentType.SourceNode);
+  const tgtNodeCol = columns.find(
+    (c) => c.meaning === ColumnAssignmentType.TargetNode,
+  )
+  const srcNodeCol = columns.find(
+    (c) => c.meaning === ColumnAssignmentType.SourceNode,
+  )
 
   const rowValuesAreValid = columns
     .filter((c) => c.meaning !== ColumnAssignmentType.NotImported)
-    .every((c) => c.invalidValues.length === 0);
+    .every((c) => c.invalidValues.length === 0)
 
   const submitDisabled = !(
     rowValuesAreValid &&
     (tgtNodeCol !== undefined || srcNodeCol !== undefined)
-  );
+  )
 
-  console.log(rows, columns);
+  console.log(rows, columns)
 
   return (
     <>
@@ -180,7 +204,9 @@ export function TableColumnAssignmentForm() {
         <Button
           size="compact-xs"
           variant="default"
-          disabled={columns.every((c) => c.meaning !== ColumnAssignmentType.NotImported)}
+          disabled={columns.every(
+            (c) => c.meaning !== ColumnAssignmentType.NotImported,
+          )}
           onClick={() => handleSelectAllClick()}
         >
           Select All
@@ -189,7 +215,9 @@ export function TableColumnAssignmentForm() {
         <Button
           size="compact-xs"
           variant="default"
-          disabled={columns.every((c) => c.meaning === ColumnAssignmentType.NotImported)}
+          disabled={columns.every(
+            (c) => c.meaning === ColumnAssignmentType.NotImported,
+          )}
           onClick={() => handleSelectNoneClick()}
         >
           Select None
@@ -214,13 +242,14 @@ export function TableColumnAssignmentForm() {
               key={h.name}
               field={h.name}
               body={(value, opts) => {
-                const { rowIndex } = opts;
-                const valueIsInvalid = columns[i].invalidValues.includes(rowIndex);
+                const { rowIndex } = opts
+                const valueIsInvalid =
+                  columns[i].invalidValues.includes(rowIndex)
                 return (
                   <Text size="xs" c={valueIsInvalid ? 'red' : '#a39c9c'}>
                     {value[h.name]}
                   </Text>
-                );
+                )
               }}
               header={
                 <Popover position="bottom" withArrow arrowSize={20} shadow="md">
@@ -232,7 +261,7 @@ export function TableColumnAssignmentForm() {
                         </Text>
                         {h.invalidValues.length > 1 ? (
                           <Tooltip
-                            label={`Column '${h.name}' has ${h.invalidValues.length} values that cannot be parsed as type ${ValueTypeName2Label[h.dataType]}`}
+                            label={`Column '${h.name}' has ${h.invalidValues.length} values that cannot be parsed as type ${valueTypeName2Label[h.dataType]}`}
                           >
                             <IconAlertCircle size={20} color="red" />
                           </Tooltip>
@@ -254,7 +283,9 @@ export function TableColumnAssignmentForm() {
                         <Space h="xs" />
                         <ColumnAssignmentTypeForm
                           value={h.meaning}
-                          onChange={(value) => onColumnAssignmentTypeChange(i, value)}
+                          onChange={(value) =>
+                            onColumnAssignmentTypeChange(i, value)
+                          }
                           validValues={validColumnTypes}
                         />
                       </Box>
@@ -265,7 +296,9 @@ export function TableColumnAssignmentForm() {
                         <ValueTypeForm
                           value={h.dataType}
                           delimiter={h.delimiter}
-                          onChange={(value, delimiter) => onValueTypeChange(i, value, delimiter)}
+                          onChange={(value, delimiter) =>
+                            onValueTypeChange(i, value, delimiter)
+                          }
                           validValues={validValueTypeNames}
                         />
                       </Box>
@@ -274,7 +307,7 @@ export function TableColumnAssignmentForm() {
                 </Popover>
               }
             ></Column>
-          );
+          )
         })}
       </DataTable>
       <Space h="lg" />
@@ -302,7 +335,9 @@ export function TableColumnAssignmentForm() {
             <Switch
               label="Use first row as column names"
               checked={useFirstRowAsColumns}
-              onChange={(event) => setUseFirstRowAsColumns(event.currentTarget.checked)}
+              onChange={(event) =>
+                setUseFirstRowAsColumns(event.currentTarget.checked)
+              }
             />
             <NumberInput
               min={0}
@@ -328,5 +363,5 @@ export function TableColumnAssignmentForm() {
         </Group>
       </Group>
     </>
-  );
+  )
 }

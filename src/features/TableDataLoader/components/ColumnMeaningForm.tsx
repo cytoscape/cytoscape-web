@@ -1,24 +1,43 @@
-import { Button, Tooltip } from '@mantine/core';
-import { ColumnAssignmentType, columnAssingmentType2Label } from '../models/TableDataLoaderModels';
-import { IconBan, IconCircle, IconFileText, IconPlayerPlay, IconTarget } from '@tabler/icons-react';
+import { Button, Tooltip } from '@mantine/core'
+import {
+  IconBan,
+  IconCircle,
+  IconFileText,
+  IconPlayerPlay,
+  IconTarget,
+} from '@tabler/icons-react'
+import { ColumnAssignmentType } from '../model/ColumnAssignmentType'
+import { columnAssingmentType2Label } from '../model/impl/CreateNetworkFromTable'
 
 export interface ColumnMeaningFormProps {
-  value: ColumnAssignmentType;
-  onChange: (nextValue: ColumnAssignmentType) => void;
-  validValues: ColumnAssignmentType[];
+  value: ColumnAssignmentType
+  onChange: (nextValue: ColumnAssignmentType) => void
+  validValues: ColumnAssignmentType[]
 }
 
 export const columnMeaningIconMap = {
-  [ColumnAssignmentType.EdgeAttribute]: <IconFileText height={20} width={30} color="purple" />,
-  [ColumnAssignmentType.SourceNode]: <IconCircle height={20} width={30} color="green" />,
+  [ColumnAssignmentType.EdgeAttribute]: (
+    <IconFileText height={20} width={30} color="purple" />
+  ),
+  [ColumnAssignmentType.SourceNode]: (
+    <IconCircle height={20} width={30} color="green" />
+  ),
   [ColumnAssignmentType.TargetNode]: <IconTarget size={20} color="orange" />,
-  [ColumnAssignmentType.TargetNodeAttribute]: <IconFileText size={20} color="orange" />,
-  [ColumnAssignmentType.SourceNodeAttribute]: <IconFileText size={20} color="green" />,
-  [ColumnAssignmentType.InteractionType]: <IconPlayerPlay size={20} color="green" />,
+  [ColumnAssignmentType.TargetNodeAttribute]: (
+    <IconFileText size={20} color="orange" />
+  ),
+  [ColumnAssignmentType.SourceNodeAttribute]: (
+    <IconFileText size={20} color="green" />
+  ),
+  [ColumnAssignmentType.InteractionType]: (
+    <IconPlayerPlay size={20} color="green" />
+  ),
   [ColumnAssignmentType.NotImported]: <IconBan size={20} color="gray" />,
-};
+}
 
-export function ColumnAssignmentTypeRenderCompact(props: { value: ColumnAssignmentType }) {
+export function ColumnAssignmentTypeRenderCompact(props: {
+  value: ColumnAssignmentType
+}) {
   return (
     <Tooltip label={columnAssingmentType2Label[props.value]}>
       <Button
@@ -28,11 +47,11 @@ export function ColumnAssignmentTypeRenderCompact(props: { value: ColumnAssignme
         variant="default"
       ></Button>
     </Tooltip>
-  );
+  )
 }
 
 export function ColumnAssignmentTypeForm(props: ColumnMeaningFormProps) {
-  const { value, onChange, validValues } = props;
+  const { value, onChange, validValues } = props
 
   return (
     <Button.Group>
@@ -50,13 +69,15 @@ export function ColumnAssignmentTypeForm(props: ColumnMeaningFormProps) {
               variant="default"
             ></Button>
           </Tooltip>
-        );
+        )
       })}
     </Button.Group>
-  );
+  )
 }
 
-export function ColumnAssignmentTypeRender(props: { value: ColumnAssignmentType }) {
+export function ColumnAssignmentTypeRender(props: {
+  value: ColumnAssignmentType
+}) {
   return (
     <Button
       justify="flex-start"
@@ -66,5 +87,5 @@ export function ColumnAssignmentTypeRender(props: { value: ColumnAssignmentType 
     >
       {columnAssingmentType2Label[props.value]}
     </Button>
-  );
+  )
 }

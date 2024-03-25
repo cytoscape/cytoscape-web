@@ -1,20 +1,11 @@
-import {
-  Box,
-  Tooltip,
-  TextField,
-  Button,
-  CircularProgress,
-  MenuItem,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-} from '@mui/material'
+import '@mantine/core/styles.css'
+import '@mantine/notifications/styles.css'
+import '@mantine/dropzone/styles.css'
+import { MenuItem, Dialog } from '@mui/material'
 import { ReactElement, useState, useEffect } from 'react'
 
 import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
-import { ColumnAppendForm } from './ColumnAppendTypeForm'
-import { ColumnAppendType } from '../model/ColumnAppendType'
+import { TableDataLoader } from './TableDataLoader'
 
 export const CreateNetworkFromTableFileMenuItem = (
   props: BaseMenuProps,
@@ -28,15 +19,7 @@ export const CreateNetworkFromTableFileMenuItem = (
       open={showDialog}
       onClose={props.handleClose}
     >
-      <DialogTitle>LLM Query Options</DialogTitle>
-      <DialogContent sx={{ p: 1 }}>
-        <ColumnAppendForm
-          value={ColumnAppendType.Key}
-          onChange={() => {}}
-          validValues={Object.values(ColumnAppendType)}
-        />
-      </DialogContent>
-      <DialogActions></DialogActions>
+      <TableDataLoader />
     </Dialog>
   )
 

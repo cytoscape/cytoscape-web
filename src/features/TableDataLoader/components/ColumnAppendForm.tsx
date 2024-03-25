@@ -1,12 +1,17 @@
-import { Button, Tooltip } from '@mantine/core';
-import { ColumnAppendType, columnAppendType2Label } from '../models/AppendTableToNetwork';
-import { IconBan, IconFileText, IconKey } from '@tabler/icons-react';
+import { Button, Tooltip } from '@mantine/core'
+import { IconBan, IconFileText, IconKey } from '@tabler/icons-react'
+import { ColumnAppendType } from '../model/ColumnAppendType'
+import { columnAppendType2Label } from '../model/impl/JoinTableToNetwork'
 
 export const columnAppendIconMap = {
-  [ColumnAppendType.Key]: <IconKey height={20} width={30} color="rgba(41, 2, 2, 1)" />,
-  [ColumnAppendType.Attribute]: <IconFileText height={20} width={30} color="rgba(41, 2, 2, 1)" />,
+  [ColumnAppendType.Key]: (
+    <IconKey height={20} width={30} color="rgba(41, 2, 2, 1)" />
+  ),
+  [ColumnAppendType.Attribute]: (
+    <IconFileText height={20} width={30} color="rgba(41, 2, 2, 1)" />
+  ),
   [ColumnAppendType.NotImported]: <IconBan size={20} color="gray" />,
-};
+}
 
 export function ColumnAppendTypeRender(props: { value: ColumnAppendType }) {
   return (
@@ -18,17 +23,17 @@ export function ColumnAppendTypeRender(props: { value: ColumnAppendType }) {
     >
       {columnAppendType2Label[props.value]}
     </Button>
-  );
+  )
 }
 
 export interface ColumnAppendFormProps {
-  value: ColumnAppendType;
-  onChange: (nextValue: ColumnAppendType) => void;
-  validValues: ColumnAppendType[];
+  value: ColumnAppendType
+  onChange: (nextValue: ColumnAppendType) => void
+  validValues: ColumnAppendType[]
 }
 
 export function ColumnAppendForm(props: ColumnAppendFormProps) {
-  const { value, onChange, validValues } = props;
+  const { value, onChange, validValues } = props
 
   return (
     <Button.Group>
@@ -46,8 +51,8 @@ export function ColumnAppendForm(props: ColumnAppendFormProps) {
               variant="default"
             ></Button>
           </Tooltip>
-        );
+        )
       })}
     </Button.Group>
-  );
+  )
 }
