@@ -16,19 +16,25 @@ export const FilterWidgetType = {
 export type FilterWidgetType =
   (typeof FilterWidgetType)[keyof typeof FilterWidgetType]
 
-export const SelectionMode = {
+export const SelectionType = {
   SINGLE: 'single',
   MULTIPLE: 'multiple',
 } as const
 
-export type SelectionMode = (typeof SelectionMode)[keyof typeof SelectionMode]
+export type SelectionType = (typeof SelectionType)[keyof typeof SelectionType]
 
-export const FilteringMode = {
-  SELECTION: 'selection',
+/**
+ * How to visualize the filtered results.
+ *
+ * If "select", then the filter will select those objects. If
+ * "show_hide", then the filter will show the selected items only.
+ */
+export const DisplayMode = {
+  SELECT: 'select',
   SHOW_HIDE: 'show_hide',
 } as const
 
-export type FilteringMode = (typeof FilteringMode)[keyof typeof FilteringMode]
+export type DisplayMode = (typeof DisplayMode)[keyof typeof DisplayMode]
 
 /**
  * Interface for the filter user interface
@@ -42,13 +48,16 @@ export interface FilterUiProps {
   // More detailed description of the filter. Will be displayed in a tooltip
   description: string
 
-  // Type of the widget. Can be either "checkbox" or "slider"
+  // (For descrete values only) Type of selection. Can be either "single" or "multiple"
+  selectionType?: SelectionType
+
+  // Type of the widget. Can be either "checkbox", "radiobutton", or "slider"
   widgetType: FilterWidgetType
 
   // How to display the filtered results. Can be either "selection" or "show_hide"
-  // If "selection", then the filter will select those objects. If
+  // If "select", then the filter will select those objects. If
   // "show_hide", then the filter will show the selected items only.
-  mode: FilteringMode
+  displayMode: DisplayMode
 
   // Visual mapping function that the filter is linked to. This is used to
   // determine the visual representation of the filter. For example, if the

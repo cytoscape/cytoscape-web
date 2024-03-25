@@ -6,9 +6,9 @@ import { useUiStateStore } from '../../../../store/UiStateStore'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 import CheckboxFilter from './CheckboxFilter'
 import {
+  DisplayMode,
   FilterUiProps,
   FilterWidgetType,
-  FilteringMode,
 } from '../../../../models/FilterModel/FilterUiProps'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import {
@@ -17,10 +17,13 @@ import {
 } from '../../../../models/FilterModel/Filter'
 import { Box, Container } from '@mui/material'
 import { AttributeSelector } from './AttributeSelector'
-import { Mode } from '@mui/icons-material'
 import { ModeSelector } from './ModeSelector'
 
-export const FilterPanel = () => {
+interface FilterPanelProps {
+  showAdvancedOptions?: boolean
+}
+
+export const FilterPanel = ({ showAdvancedOptions }: FilterPanelProps) => {
   // Enable filter only when the target network has a specific type
   const [enableFilter, setEnableFilter] = useState<boolean>(false)
 
@@ -57,8 +60,8 @@ export const FilterPanel = () => {
   )
 
   // Visualization mode for the filtered results
-  const [filteringMode, setFilteringMode] = useState<FilteringMode>(
-    FilteringMode.SELECTION,
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(
+    DisplayMode.SELECT,
   )
 
   const [filterProps, setFilterProps] = useState<FilterUiProps>()
@@ -88,7 +91,7 @@ export const FilterPanel = () => {
       filter: discreteFilter,
       label: 'Interaction edge filter',
       range: { values: [] },
-      mode: FilteringMode.SELECTION,
+      displayMode: DisplayMode.SELECT,
       table,
       toCx: function () {
         throw new Error('Function not implemented.')
@@ -124,8 +127,8 @@ export const FilterPanel = () => {
       <Grid item sx={{ flex: 1 }}>
         <ModeSelector
           enableFilter={enableFilter}
-          selectedMode={filteringMode}
-          setSelectedMode={setFilteringMode}
+          displayMode={displayMode}
+          setDisplayMode={setDisplayMode}
         />
       </Grid>
       <Grid

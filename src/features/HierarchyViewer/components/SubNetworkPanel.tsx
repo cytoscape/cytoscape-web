@@ -23,6 +23,7 @@ import { useSubNetworkStore } from '../store/SubNetworkStore'
 
 import { useQuery } from '@tanstack/react-query'
 import { Table } from '../../../models/TableModel'
+import { DisplayMode } from '../../../models/FilterModel/FilterUiProps'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -357,7 +358,10 @@ export const SubNetworkPanel = ({
       >
         Subsystem: {subNetworkName}
       </Typography>
-      <CyjsRenderer network={queryNetwork} />
+      <CyjsRenderer
+        network={queryNetwork}
+        displayMode={DisplayMode.SHOW_HIDE}
+      />
       <FloatingToolBar
         targetNetworkId={queryNetworkId ?? undefined}
         networkLabel={networkLabel}

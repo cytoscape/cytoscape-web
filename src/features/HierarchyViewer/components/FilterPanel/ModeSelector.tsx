@@ -7,21 +7,21 @@ import {
   Container,
   Box,
 } from '@mui/material'
-import { FilteringMode } from '../../../../models/FilterModel/FilterUiProps'
+import { DisplayMode } from '../../../../models/FilterModel/FilterUiProps'
 
 interface AttributeSelectorProps {
   enableFilter: boolean
-  selectedMode: FilteringMode
-  setSelectedMode: (mode: FilteringMode) => void
+  displayMode: DisplayMode
+  setDisplayMode: (mode: DisplayMode) => void
 }
 
 export const ModeSelector = ({
   enableFilter,
-  selectedMode,
-  setSelectedMode,
+  displayMode,
+  setDisplayMode,
 }: AttributeSelectorProps) => {
   const handleModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedMode((event.target as HTMLInputElement).value as FilteringMode)
+    setDisplayMode((event.target as HTMLInputElement).value as DisplayMode)
   }
 
   return (
@@ -46,14 +46,14 @@ export const ModeSelector = ({
           }}
         >
           <FormLabel sx={{ paddingRight: '0.5em' }}>Filter Mode:</FormLabel>
-          <RadioGroup row value={selectedMode} onChange={handleModeChange}>
+          <RadioGroup row value={displayMode} onChange={handleModeChange}>
             <FormControlLabel
-              value={FilteringMode.SELECTION}
+              value={DisplayMode.SELECT}
               control={<Radio />}
               label={'Selection'}
             />
             <FormControlLabel
-              value={FilteringMode.SHOW_HIDE}
+                value={DisplayMode.SHOW_HIDE}
               control={<Radio />}
               label={'Show / Hide'}
             />
