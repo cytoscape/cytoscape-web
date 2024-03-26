@@ -15,15 +15,26 @@ import {
   DiscreteFilter,
   createDiscreteFilter,
 } from '../../../../models/FilterModel/Filter'
-import { Box, Container } from '@mui/material'
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  Container,
+  Typography,
+} from '@mui/material'
 import { AttributeSelector } from './AttributeSelector'
 import { ModeSelector } from './ModeSelector'
+
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 
 interface FilterPanelProps {
   showAdvancedOptions?: boolean
 }
 
-export const FilterPanel = ({ showAdvancedOptions }: FilterPanelProps) => {
+export const FilterPanel = ({
+  showAdvancedOptions = true,
+}: FilterPanelProps) => {
   // Enable filter only when the target network has a specific type
   const [enableFilter, setEnableFilter] = useState<boolean>(false)
 
@@ -114,22 +125,41 @@ export const FilterPanel = ({ showAdvancedOptions }: FilterPanelProps) => {
       }}
     >
       <Grid item sx={{ flex: 1 }}>
-        <AttributeSelector
-          enableFilter={enableFilter}
-          nodeTable={tablePair.nodeTable}
-          edgeTable={tablePair.edgeTable}
-          defaultValue={targetAttrName}
-          selectedType={selectedObjectType}
-          setSelectedValue={setFunction}
-          setSelectedType={setSelectedObjectType}
-        />
-      </Grid>
-      <Grid item sx={{ flex: 1 }}>
-        <ModeSelector
-          enableFilter={enableFilter}
-          displayMode={displayMode}
-          setDisplayMode={setDisplayMode}
-        />
+        <Accordion
+          sx={{
+            boxShadow: 'none',
+            padding: 0,
+            margin: 0,
+          }}
+        >
+          <AccordionSummary
+            expandIcon={<ArrowDropDownIcon />}
+            aria-controls="panel2-content"
+            id="panel2-header"
+          >
+            <Typography>Advanced Options:</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Grid item sx={{ flex: 1 }}>
+              <AttributeSelector
+                enableFilter={enableFilter}
+                nodeTable={tablePair.nodeTable}
+                edgeTable={tablePair.edgeTable}
+                defaultValue={targetAttrName}
+                selectedType={selectedObjectType}
+                setSelectedValue={setFunction}
+                setSelectedType={setSelectedObjectType}
+              />
+            </Grid>
+            <Grid item sx={{ flex: 1 }}>
+              <ModeSelector
+                enableFilter={enableFilter}
+                displayMode={displayMode}
+                setDisplayMode={setDisplayMode}
+              />
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
       </Grid>
       <Grid
         item
