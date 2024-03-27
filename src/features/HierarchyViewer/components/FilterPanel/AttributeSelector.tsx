@@ -10,15 +10,15 @@ import {
   Container,
   Box,
 } from '@mui/material'
-import { Column, Table } from '../../../../models/TableModel'
-import { useEffect } from 'react'
+import { Column, Table, ValueTypeName } from '../../../../models/TableModel'
+import { useEffect, useState } from 'react'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 
 interface AttributeSelectorProps {
   enableFilter: boolean
   nodeTable: Table
   edgeTable: Table
-  defaultValue: string
+  selectedValue: string
   selectedType: GraphObjectType
   setSelectedValue: (value: string) => void
   setSelectedType: (value: GraphObjectType) => void
@@ -28,21 +28,39 @@ export const AttributeSelector = ({
   enableFilter,
   nodeTable,
   edgeTable,
-  defaultValue,
+  selectedValue,
   selectedType,
   setSelectedValue,
   setSelectedType,
 }: AttributeSelectorProps) => {
+  const [enableAttributeNameSelector, setEnableAttributeNameSelector] =
+    useState<boolean>(false)
+
   const targetTable =
     selectedType === GraphObjectType.NODE ? nodeTable : edgeTable
-  const options: string[] = targetTable.columns.map(
-    (column: Column) => column.name,
-  )
+
+  // Filter options by type. For string
+  const options: string[] = []
+  targetTable.columns.forEach((column: Column) => {
+    const { name, type } = column
+    if (type === ValueTypeName.Boolean || type === ValueTypeName.String) {
+      options.push(name)
+    }
+  })
 
   useEffect(() => {
-    const selected: string = defaultValue === '' ? options[0] : defaultValue
-    setSelectedValue(selected)
-  }, [options, defaultValue])
+    if (options.length === 0) {
+      setEnableAttributeNameSelector(false)
+    } else {
+      setEnableAttributeNameSelector(true)
+      if (selectedValue === '' || !options.includes(selectedValue)) {
+        // Select the first option if the selected value is not in the options
+        setSelectedValue(options[0])
+      } else {
+        setSelectedValue(selectedValue)
+      }
+    }
+  }, [options, selectedValue])
 
   const handleChange = (event: SelectChangeEvent<string>) => {
     // Update the type of the event parameter
@@ -92,8 +110,8 @@ export const AttributeSelector = ({
       </Box>
       <Box sx={{ width: '100%' }}>
         <Select
-          disabled={!enableFilter}
-          value={defaultValue || options[0]}
+          disabled={!enableFilter && !enableAttributeNameSelector}
+          value={selectedValue}
           onChange={handleChange}
           size="small"
           sx={{ flexGrow: 1, width: '100%' }}

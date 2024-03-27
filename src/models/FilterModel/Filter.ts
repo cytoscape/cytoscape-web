@@ -7,18 +7,15 @@ import { AttributeName, Table, ValueType } from '../TableModel'
 /**
  * Base filter interface to be implemented by all filters
  */
-interface FilterBase {
+
+export interface Filter<R> {
   target: GraphObjectType
   attribute: AttributeName
+  apply: (range: R, table: Table) => IdType[]
 }
 
-export interface DiscreteFilter<T> extends FilterBase {
-  apply: (range: DiscreteRange<T>, table: Table) => IdType[]
-}
-
-export interface NumericFilter extends FilterBase {
-  apply: (range: NumberRange, table: Table) => IdType[]
-}
+export type DiscreteFilter<T> = Filter<DiscreteRange<T>>
+export type NumericFilter = Filter<NumberRange>
 
 export const createDiscreteFilter = <T>(
   target: GraphObjectType,

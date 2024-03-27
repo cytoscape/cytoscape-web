@@ -4,6 +4,10 @@ import { Search, SearchOptions } from '../models/FilterModel/Search'
 import { IdType } from '../models/IdType'
 import { GraphObjectType } from '../models/NetworkModel'
 
+/**
+ * The store for both search and filter.
+ *
+ */
 interface FilterState<T> {
   search: Search<T>
 }

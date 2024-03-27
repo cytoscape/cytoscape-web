@@ -1,19 +1,21 @@
 import Tooltip from '@mui/material/Tooltip'
-import { FilterUiProps } from '../../../../models/FilterModel/FilterUiProps'
-import { ValueType } from '../../../../models/TableModel'
+import { FilterSettings } from '../../../../models/FilterModel/FilterUiProps'
+import { Table, ValueType } from '../../../../models/TableModel'
 import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { IdType } from '../../../../models/IdType'
 import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
-import { DiscreteFilter } from '../../../../models/FilterModel/Filter'
+import { DiscreteFilter, Filter } from '../../../../models/FilterModel/Filter'
 import { useViewModelStore } from '../../../../store/ViewModelStore'
-import { filterProps } from '@mantine/core'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import { NetworkView } from '../../../../models/ViewModel'
 
 interface CheckboxFilterProps {
+  // The network to be filtered
   targetNetworkId: IdType
-  filterUi: FilterUiProps
+
+  filterSettings: FilterSettings<ValueType>
+  table: Table
   enableFilter: boolean
 }
 
@@ -24,13 +26,14 @@ interface CheckboxFilterProps {
  */
 export const CheckboxFilter = ({
   targetNetworkId,
-  filterUi,
+  filterSettings,
+  table,
   enableFilter,
 }: CheckboxFilterProps): JSX.Element => {
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
-  const { filter, description, table } = filterUi
+  const { description, filter } = filterSettings
   const { attribute } = filter
 
   const [checkedOptions, setCheckedOptions] = useState<string[]>([])

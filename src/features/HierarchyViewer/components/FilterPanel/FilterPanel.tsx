@@ -7,7 +7,7 @@ import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 import CheckboxFilter from './CheckboxFilter'
 import {
   DisplayMode,
-  FilterUiProps,
+  FilterSettings,
   FilterWidgetType,
 } from '../../../../models/FilterModel/FilterUiProps'
 import { GraphObjectType } from '../../../../models/NetworkModel'
@@ -27,6 +27,7 @@ import { AttributeSelector } from './AttributeSelector'
 import { ModeSelector } from './ModeSelector'
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import { ValueType } from '../../../../models/TableModel'
 
 interface FilterPanelProps {
   showAdvancedOptions?: boolean
@@ -75,7 +76,7 @@ export const FilterPanel = ({
     DisplayMode.SELECT,
   )
 
-  const [filterProps, setFilterProps] = useState<FilterUiProps>()
+  const [filterProps, setFilterProps] = useState<FilterSettings<ValueType>>()
 
   const targetAttrName: string =
     selectedObjectType === GraphObjectType.NODE ? nodeAttrName : edgeAttrName
@@ -90,28 +91,26 @@ export const FilterPanel = ({
       targetAttrName,
     )
 
-    const table =
-      selectedObjectType === GraphObjectType.NODE
-        ? tablePair.nodeTable
-        : tablePair.edgeTable
-
-    // Build the filter UI
-    const filterUi: FilterUiProps = {
+    // Build the filter UI settings
+    const filterSettings: FilterSettings<ValueType> = {
       widgetType: FilterWidgetType.CHECKBOX,
-      description: 'Filter by name',
+      description: 'Filter nodes / edges by selected values',
       filter: discreteFilter,
       label: 'Interaction edge filter',
       range: { values: [] },
       displayMode: DisplayMode.SELECT,
-      table,
       toCx: function () {
         throw new Error('Function not implemented.')
       },
     }
 
-    setFilterProps(filterUi)
+    setFilterProps(filterSettings)
   }, [nodeAttrName, edgeAttrName, selectedObjectType])
 
+  const table =
+    selectedObjectType === GraphObjectType.NODE
+      ? tablePair.nodeTable
+      : tablePair.edgeTable
   return (
     <Container
       disableGutters={true}
@@ -145,7 +144,7 @@ export const FilterPanel = ({
                 enableFilter={enableFilter}
                 nodeTable={tablePair.nodeTable}
                 edgeTable={tablePair.edgeTable}
-                defaultValue={targetAttrName}
+                selectedValue={targetAttrName}
                 selectedType={selectedObjectType}
                 setSelectedValue={setFunction}
                 setSelectedType={setSelectedObjectType}
@@ -181,7 +180,8 @@ export const FilterPanel = ({
           >
             <CheckboxFilter
               targetNetworkId={targetNetworkId}
-              filterUi={filterProps}
+              table={table}
+              filterSettings={filterProps}
               enableFilter={enableFilter}
             />
           </Box>

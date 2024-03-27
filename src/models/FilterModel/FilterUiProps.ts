@@ -1,8 +1,8 @@
 import { DiscreteRange } from '../PropertyModel/DiscreteRange'
 import { NumberRange } from '../PropertyModel/NumberRange'
-import { Table, ValueType } from '../TableModel'
+import { ValueType } from '../TableModel'
 import { VisualMappingFunction } from '../VisualStyleModel'
-import { DiscreteFilter, NumericFilter } from './Filter'
+import { Filter } from './Filter'
 
 /**
  *
@@ -39,8 +39,8 @@ export type DisplayMode = (typeof DisplayMode)[keyof typeof DisplayMode]
 /**
  * Interface for the filter user interface
  */
-export interface FilterUiProps {
-  filter: DiscreteFilter<ValueType> | NumericFilter
+export interface FilterSettings<T extends ValueType> {
+  filter: Filter<NumberRange | DiscreteRange<T>>
 
   // Human-readable label for the filter
   label: string
@@ -52,7 +52,7 @@ export interface FilterUiProps {
   selectionType?: SelectionType
 
   // Type of the widget. Can be either "checkbox", "radiobutton", or "slider"
-  widgetType: FilterWidgetType
+  readonly widgetType: FilterWidgetType
 
   // How to display the filtered results. Can be either "selection" or "show_hide"
   // If "select", then the filter will select those objects. If
@@ -68,12 +68,9 @@ export interface FilterUiProps {
   // Range of the values for the filter. If the widget type is "checkbox", then
   // the range is a DiscreteRange. If the widget type is "slider", then the
   // range is a NumberRange.
-  readonly range: NumberRange | DiscreteRange<ValueType>
+  range: NumberRange | DiscreteRange<T>
 
   readonly selectionMode?: SelectionMode
-
-  // Table data to be filtered
-  table: Table
 
   // TBD - Convert this UI object into CX aspect
   toCx: () => any
