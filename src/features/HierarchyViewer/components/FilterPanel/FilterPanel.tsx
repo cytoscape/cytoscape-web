@@ -26,16 +26,23 @@ import {
 import { AttributeSelector } from './AttributeSelector'
 import { ModeSelector } from './ModeSelector'
 
+import SettingsIcon from '@mui/icons-material/Settings'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import { ValueType } from '../../../../models/TableModel'
+import { useSearchParams } from 'react-router-dom'
+import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+import {
+  DiscreteMappingFunction,
+  VisualMappingFunction,
+  VisualStyle,
+} from '../../../../models/VisualStyleModel'
 
-interface FilterPanelProps {
-  showAdvancedOptions?: boolean
-}
+export const FilterPanel = () => {
+  const [showOptions, setShowOptions] = useState<boolean>(false)
 
-export const FilterPanel = ({
-  showAdvancedOptions = true,
-}: FilterPanelProps) => {
+  // URL search parameters
+  const [searchParams, setSearchParams] = useSearchParams()
+
   // Enable filter only when the target network has a specific type
   const [enableFilter, setEnableFilter] = useState<boolean>(false)
 
@@ -49,6 +56,10 @@ export const FilterPanel = ({
 
   // Use the active network if it exists, otherwise use the current network for filtering
   const targetNetworkId: IdType = activeNetworkId || currentNetworkId
+
+  // Pick style for color coding
+  const styles = useVisualStyleStore((state) => state.visualStyles)
+  const vs: VisualStyle = styles[activeNetworkId]
 
   // Enable the filter only when the target network is a temp network
   useEffect(() => {
@@ -85,11 +96,41 @@ export const FilterPanel = ({
       ? setNodeAttrName
       : setEdgeAttrName
 
+  const getMapping = (
+    style: VisualStyle,
+    key: string,
+  ): VisualMappingFunction | undefined => {
+    if (style === undefined) return
+
+    // Set the default target attribute name
+    if (selectedObjectType === GraphObjectType.EDGE) {
+      const edgeColor = style.edgeLineColor
+      if (edgeColor !== undefined) {
+        const { mapping } = edgeColor
+        if (mapping !== undefined) {
+          console.log('Mapping:', mapping)
+          return mapping
+        }
+      }
+    }
+  }
+
   useEffect(() => {
     const discreteFilter: DiscreteFilter<string> = createDiscreteFilter<string>(
       selectedObjectType,
       targetAttrName,
     )
+
+    const visualMapping = getMapping(vs, targetAttrName)
+    if (visualMapping !== undefined) {
+      console.log('Visual mapping:', visualMapping)
+      if (
+        visualMapping.type === 'discrete' &&
+        visualMapping.attribute === targetAttrName
+      ) {
+        const { vpValueMap } = visualMapping as DiscreteMappingFunction
+      }
+    }
 
     // Build the filter UI settings
     const filterSettings: FilterSettings<ValueType> = {
@@ -99,13 +140,19 @@ export const FilterPanel = ({
       label: 'Interaction edge filter',
       range: { values: [] },
       displayMode: DisplayMode.SELECT,
+      visualMapping,
       toCx: function () {
         throw new Error('Function not implemented.')
       },
     }
 
     setFilterProps(filterSettings)
-  }, [nodeAttrName, edgeAttrName, selectedObjectType])
+
+    // Encode the filter settings into the URL
+    searchParams.set('filterFor', selectedObjectType)
+    searchParams.set('filterBy', targetAttrName)
+    setSearchParams(searchParams)
+  }, [targetAttrName, selectedObjectType, vs])
 
   const table =
     selectedObjectType === GraphObjectType.NODE
@@ -125,18 +172,21 @@ export const FilterPanel = ({
     >
       <Grid item sx={{ flex: 1 }}>
         <Accordion
+          disableGutters={true}
           sx={{
             boxShadow: 'none',
             padding: 0,
             margin: 0,
           }}
+          expanded={showOptions}
+          onChange={() => setShowOptions(!showOptions)}
         >
           <AccordionSummary
-            expandIcon={<ArrowDropDownIcon />}
-            aria-controls="panel2-content"
-            id="panel2-header"
+            expandIcon={showOptions ? <ArrowDropDownIcon /> : <SettingsIcon />}
+            aria-controls="filter-option-panel"
+            id="filter-option-header"
           >
-            <Typography>Advanced Options:</Typography>
+            <Typography>Filter:</Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Grid item sx={{ flex: 1 }}>

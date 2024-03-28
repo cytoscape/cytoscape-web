@@ -9,6 +9,11 @@ import { DiscreteFilter, Filter } from '../../../../models/FilterModel/Filter'
 import { useViewModelStore } from '../../../../store/ViewModelStore'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import { NetworkView } from '../../../../models/ViewModel'
+import {
+  DiscreteMappingFunction,
+  VisualPropertyName,
+  VisualPropertyValueType,
+} from '../../../../models/VisualStyleModel'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -122,6 +127,12 @@ export const CheckboxFilter = ({
   const isAllSelected =
     options.length > 0 && checkedOptions.length === options.length
 
+  const { visualMapping } = filterSettings
+  const mapping = visualMapping as DiscreteMappingFunction
+  let colorMap = new Map<ValueType, VisualPropertyValueType>()
+  if (mapping !== undefined) {
+    colorMap = mapping.vpValueMap
+  }
   return (
     <Tooltip title={description}>
       <FormGroup>
@@ -140,19 +151,28 @@ export const CheckboxFilter = ({
           }
           label={isAllSelected ? 'Clear selection' : 'Select all'}
         />
-        {options.map((option: string) => (
-          <FormControlLabel
-            key={option}
-            control={
-              <Checkbox
-                disabled={!enableFilter}
-                checked={checkedOptions.includes(option)}
-                onChange={() => handleToggle(option)}
-              />
-            }
-            label={option}
-          />
-        ))}
+        {options.map((option: string) => {
+          const color: string = (colorMap.get(option) as string) || 'red'
+          return (
+            <FormControlLabel
+              key={option}
+              control={
+                <Checkbox
+                  disabled={!enableFilter}
+                  sx={{
+                    color,
+                    '&.Mui-checked': {
+                      color,
+                    },
+                  }}
+                  checked={checkedOptions.includes(option)}
+                  onChange={() => handleToggle(option)}
+                />
+              }
+              label={option}
+            />
+          )
+        })}
       </FormGroup>
     </Tooltip>
   )
