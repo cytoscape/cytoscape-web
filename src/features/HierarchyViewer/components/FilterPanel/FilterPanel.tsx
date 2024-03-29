@@ -4,7 +4,6 @@ import { IdType } from '../../../../models/IdType'
 import { useTableStore } from '../../../../store/TableStore'
 import { useUiStateStore } from '../../../../store/UiStateStore'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
-import CheckboxFilter from './CheckboxFilter'
 import {
   DisplayMode,
   FilterSettings,
@@ -32,10 +31,13 @@ import { ValueType } from '../../../../models/TableModel'
 import { useSearchParams } from 'react-router-dom'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import {
-  DiscreteMappingFunction,
   VisualMappingFunction,
+  VisualProperty,
+  VisualPropertyValueType,
   VisualStyle,
 } from '../../../../models/VisualStyleModel'
+import { CompatibleVisualProperties } from './CompatibleVisualMappings'
+import { CheckboxFilter } from './CheckboxFilter'
 
 export const FilterPanel = () => {
   const [showOptions, setShowOptions] = useState<boolean>(false)
@@ -98,21 +100,24 @@ export const FilterPanel = () => {
 
   const getMapping = (
     style: VisualStyle,
-    key: string,
+    attrName: string,
   ): VisualMappingFunction | undefined => {
     if (style === undefined) return
 
-    // Set the default target attribute name
-    if (selectedObjectType === GraphObjectType.EDGE) {
-      const edgeColor = style.edgeLineColor
-      if (edgeColor !== undefined) {
-        const { mapping } = edgeColor
+    let matchedMapping: VisualMappingFunction | undefined
+    Object.values(CompatibleVisualProperties).forEach((propName: string) => {
+      const vp: VisualProperty<VisualPropertyValueType> =
+        style[propName as keyof VisualStyle]
+      if (vp !== undefined) {
+        const { mapping } = vp
         if (mapping !== undefined) {
-          console.log('Mapping:', mapping)
-          return mapping
+          if (mapping.attribute === attrName) {
+            matchedMapping = mapping
+          }
         }
       }
-    }
+    })
+    return matchedMapping
   }
 
   useEffect(() => {
@@ -122,15 +127,6 @@ export const FilterPanel = () => {
     )
 
     const visualMapping = getMapping(vs, targetAttrName)
-    if (visualMapping !== undefined) {
-      console.log('Visual mapping:', visualMapping)
-      if (
-        visualMapping.type === 'discrete' &&
-        visualMapping.attribute === targetAttrName
-      ) {
-        const { vpValueMap } = visualMapping as DiscreteMappingFunction
-      }
-    }
 
     // Build the filter UI settings
     const filterSettings: FilterSettings<ValueType> = {

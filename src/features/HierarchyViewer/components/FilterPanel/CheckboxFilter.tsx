@@ -11,7 +11,6 @@ import { GraphObjectType } from '../../../../models/NetworkModel'
 import { NetworkView } from '../../../../models/ViewModel'
 import {
   DiscreteMappingFunction,
-  VisualPropertyName,
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
 
@@ -128,10 +127,12 @@ export const CheckboxFilter = ({
     options.length > 0 && checkedOptions.length === options.length
 
   const { visualMapping } = filterSettings
-  const mapping = visualMapping as DiscreteMappingFunction
   let colorMap = new Map<ValueType, VisualPropertyValueType>()
-  if (mapping !== undefined) {
-    colorMap = mapping.vpValueMap
+  if (visualMapping !== undefined) {
+    const mapping = visualMapping as DiscreteMappingFunction
+    if (mapping !== undefined) {
+      colorMap = mapping.vpValueMap
+    }
   }
   return (
     <Tooltip title={description}>
@@ -152,19 +153,24 @@ export const CheckboxFilter = ({
           label={isAllSelected ? 'Clear selection' : 'Select all'}
         />
         {options.map((option: string) => {
-          const color: string = (colorMap.get(option) as string) || 'red'
+          const color: string = colorMap.get(option) as string
+
+          let checkboxStyle = {}
+          if (color !== undefined) {
+            checkboxStyle = {
+              color,
+              '&.Mui-checked': {
+                color,
+              },
+            }
+          }
           return (
             <FormControlLabel
               key={option}
               control={
                 <Checkbox
                   disabled={!enableFilter}
-                  sx={{
-                    color,
-                    '&.Mui-checked': {
-                      color,
-                    },
-                  }}
+                  sx={checkboxStyle}
                   checked={checkedOptions.includes(option)}
                   onChange={() => handleToggle(option)}
                 />
@@ -177,5 +183,3 @@ export const CheckboxFilter = ({
     </Tooltip>
   )
 }
-
-export default CheckboxFilter
