@@ -6,6 +6,7 @@ import { ReactElement, useState, useEffect } from 'react'
 
 import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
 import { TableDataLoader } from './TableDataLoader'
+import { useDisclosure } from '@mantine/hooks'
 
 export const CreateNetworkFromTableFileMenuItem = (
   props: BaseMenuProps,
@@ -14,12 +15,12 @@ export const CreateNetworkFromTableFileMenuItem = (
 
   const content = (
     <Dialog
-      maxWidth="sm"
+      maxWidth="lg"
       fullWidth={true}
       open={showDialog}
       onClose={props.handleClose}
     >
-      <TableDataLoader />
+      <TableDataLoader {...props} />
     </Dialog>
   )
 

@@ -50,8 +50,21 @@ import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../store/createNetworkFromTableStore'
+import {
+  putNetworkSummaryToDb,
+  putNetworkToDb,
+  putTablesToDb,
+  putVisualStyleToDb,
+  putNetworkViewToDb,
+} from '../../../store/persist/db'
+import { useNetworkStore } from '../../../store/NetworkStore'
+import { useTableStore } from '../../../store/TableStore'
+import { useViewModelStore } from '../../../store/ViewModelStore'
+import { useVisualStyleStore } from '../../../store/VisualStyleStore'
+import { useWorkspaceStore } from '../../../store/WorkspaceStore'
+import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
 
-export function TableColumnAssignmentForm() {
+export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
   const goToStep = useCreateNetworkFromTableStore((state) => state.goToStep)
 
@@ -67,6 +80,22 @@ export function TableColumnAssignmentForm() {
 
   const [rows, setRows] = useState<DataTableValue[]>([])
   const [columns, setColumns] = useState<ColumnAssignmentState[]>([])
+
+  const setCurrentNetworkId = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
+
+  const addNewNetwork = useNetworkStore((state) => state.add)
+
+  const setVisualStyle = useVisualStyleStore((state) => state.add)
+
+  const setViewModel = useViewModelStore((state) => state.add)
+
+  const setTables = useTableStore((state) => state.add)
+
+  const addNetworkToWorkspace = useWorkspaceStore(
+    (state) => state.addNetworkIds,
+  )
 
   useEffect(() => {
     const result = Papa.parse(text, { header: useFirstRowAsColumns })
@@ -145,8 +174,27 @@ export function TableColumnAssignmentForm() {
     setColumns(nextColumns)
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const res = createNetworkFromTableData(rows, columns)
+
+    const { network, nodeTable, edgeTable, visualStyle, summary, networkView } =
+      res
+    const newNetworkId = network.id
+    // console.log('RES', res)
+
+    await putNetworkSummaryToDb(summary)
+    await putNetworkToDb(network)
+    await putTablesToDb(newNetworkId, nodeTable, edgeTable)
+    await putVisualStyleToDb(newNetworkId, visualStyle)
+    await putNetworkViewToDb(newNetworkId, networkView)
+
+    addNetworkToWorkspace(newNetworkId)
+    addNewNetwork(network)
+    setVisualStyle(newNetworkId, visualStyle)
+    setTables(newNetworkId, nodeTable, edgeTable)
+    setViewModel(newNetworkId, networkView)
+    setCurrentNetworkId(newNetworkId)
+    props.handleClose()
 
     // setTables(nodeTable, edgeTable)
     // goToStep(TableDataLoaderStep.TableViewer)
@@ -252,7 +300,13 @@ export function TableColumnAssignmentForm() {
                 )
               }}
               header={
-                <Popover position="bottom" withArrow arrowSize={20} shadow="md">
+                <Popover
+                  zIndex={999999}
+                  position="bottom"
+                  withArrow
+                  arrowSize={20}
+                  shadow="md"
+                >
                   <Popover.Target>
                     <Box style={{ minWidth: 200 }}>
                       <Group>

@@ -7,6 +7,13 @@ import { ColumnAssignmentType } from '../ColumnAssignmentType'
 import { DelimiterType } from '../DelimiterType'
 import { parseValue } from './ParseValues'
 import { Network } from '../../../../models/NetworkModel'
+import {
+  MappingFunctionType,
+  VisualPropertyValueTypeName,
+  VisualStyle,
+} from '../../../../models/VisualStyleModel'
+import { createVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
+import { createViewModelFromNetwork } from '../../../../models/ViewModel/impl/ViewModelImpl'
 
 export const DEFAULT_COLUMN_MEANING = ColumnAssignmentType.EdgeAttribute
 export const DEFAULT_COLUMN_DATA_TYPE = ValueTypeName.String
@@ -185,22 +192,27 @@ export function createNetworkFromTableData(
     ...tgtNodeAttrCols,
   ]
   const edgeTableColumns = edgeAttrCols.concat(interactionTypeCol ?? [])
+
+  const networkId = uuid ?? uuidv4()
+
   const edgeTable: Table = {
-    id: 'edgeTable',
+    id: `${networkId}-edges`,
     columns: edgeTableColumns.map((c) => ({ name: c.name, type: c.dataType })),
     rows: new Map(),
   }
   const nodeTable: Table = {
-    id: 'nodeTable',
+    id: `${networkId}-nodes`,
     columns: nodeTableColumns.map((c) => ({ name: c.name, type: c.dataType })),
     rows: new Map(),
   }
 
   const network: Network = {
-    id: uuid ?? uuidv4(),
+    id: networkId,
     edges: [],
     nodes: [],
   }
+
+  const visualStyle: VisualStyle = createVisualStyle()
 
   let nodeIdIndex = 0
   let edgeIdIndex = 0
@@ -286,11 +298,52 @@ export function createNetworkFromTableData(
     }
   })
 
+  const summary = {
+    ownerUUID: networkId,
+    name: 'test',
+    isReadOnly: false,
+    subnetworkIds: [],
+    isValid: false,
+    warnings: [],
+    isShowcase: false,
+    isCertified: false,
+    indexLevel: '',
+    hasLayout: false,
+    hasSample: false,
+    cxFileSize: 0,
+    cx2FileSize: 0,
+    properties: [],
+    owner: '',
+    version: '',
+    completed: false,
+    visibility: 'PUBLIC',
+    nodeCount: network.nodes.length,
+    edgeCount: network.edges.length,
+    description: 'test',
+    creationTime: new Date(Date.now()),
+    externalId: networkId,
+    isDeleted: false,
+    modificationTime: new Date(Date.now()),
+  }
+
+  const networkView = createViewModelFromNetwork(networkId, network)
+
+  visualStyle.nodeLabel.mapping = {
+    type: MappingFunctionType.Passthrough,
+    attribute: 'name',
+    visualPropertyType: VisualPropertyValueTypeName.String,
+    defaultValue: '',
+  }
+
+  console.log('RES', rows, rows.length)
+
   return {
-    summary: { type: 'localfile', name: 'localfile' },
+    summary,
     nodeTable,
     edgeTable,
     network,
+    visualStyle,
+    networkView,
   }
 }
 

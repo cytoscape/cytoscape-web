@@ -18,8 +18,9 @@ import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../store/createNetworkFromTableStore'
+import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
 
-export function TableUpload() {
+export function TableUpload(props: BaseMenuProps) {
   const setFile = useCreateNetworkFromTableStore((state) => state.setFile)
   const goToStep = useCreateNetworkFromTableStore((state) => state.goToStep)
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
