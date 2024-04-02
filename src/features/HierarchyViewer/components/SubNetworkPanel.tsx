@@ -22,8 +22,11 @@ import { useCredentialStore } from '../../../store/CredentialStore'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 
 import { useQuery } from '@tanstack/react-query'
-import { Table } from '../../../models/TableModel'
-import { DisplayMode } from '../../../models/FilterModel/FilterUiProps'
+import { Table, ValueType } from '../../../models/TableModel'
+import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+import { useFilterStore } from '../../../store/FilterStore'
+import { DEFAULT_FILTER_NAME } from './FilterPanel/FilterPanel'
+import { FilterConfig } from '../../../models/FilterModel/FilterConfig'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -56,6 +59,14 @@ export const SubNetworkPanel = ({
   query,
   interactionNetworkId,
 }: SubNetworkPanelProps): ReactElement => {
+  const filterConfigs = useFilterStore((state) => state.filterConfigs)
+
+  const filterConfig: FilterConfig<ValueType> | undefined =
+    filterConfigs[DEFAULT_FILTER_NAME]
+
+  const displayMode: DisplayMode =
+    filterConfig?.displayMode ?? DisplayMode.SELECT
+
   // All networks in the main store
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
@@ -358,10 +369,7 @@ export const SubNetworkPanel = ({
       >
         Subsystem: {subNetworkName}
       </Typography>
-      <CyjsRenderer
-        network={queryNetwork}
-        displayMode={DisplayMode.SHOW_HIDE}
-      />
+      <CyjsRenderer network={queryNetwork} displayMode={displayMode} />
       <FloatingToolBar
         targetNetworkId={queryNetworkId ?? undefined}
         networkLabel={networkLabel}

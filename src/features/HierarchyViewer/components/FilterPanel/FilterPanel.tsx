@@ -4,11 +4,7 @@ import { IdType } from '../../../../models/IdType'
 import { useTableStore } from '../../../../store/TableStore'
 import { useUiStateStore } from '../../../../store/UiStateStore'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
-import {
-  DisplayMode,
-  FilterSettings,
-  FilterWidgetType,
-} from '../../../../models/FilterModel/FilterUiProps'
+import { FilterConfig } from '../../../../models/FilterModel/FilterConfig'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import {
   DiscreteFilter,
@@ -38,8 +34,21 @@ import {
 } from '../../../../models/VisualStyleModel'
 import { CompatibleVisualProperties } from './CompatibleVisualMappings'
 import { CheckboxFilter } from './CheckboxFilter'
+import { FilterWidgetType } from '../../../../models/FilterModel/FilterWidgetType'
+import { DisplayMode } from '../../../../models/FilterModel/DisplayMode'
+import { useFilterStore } from '../../../../store/FilterStore'
+
+export const DEFAULT_FILTER_NAME = 'checkboxFilter'
+
+// TODO: Import from CX
+const DEFAULT_EDGE_ATTR_NAME = 'interaction'
 
 export const FilterPanel = () => {
+  const filterConfigs = useFilterStore((state) => state.filterConfigs)
+  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
+  const updateFilterConfig = useFilterStore((state) => state.updateFilterConfig)
+
+  // Show or hide the advanced options
   const [showOptions, setShowOptions] = useState<boolean>(false)
 
   // URL search parameters
@@ -78,18 +87,18 @@ export const FilterPanel = () => {
   const tablePair = useTableStore((state) => state.tables[targetNetworkId])
 
   const [nodeAttrName, setNodeAttrName] = useState<string>('')
-  const [edgeAttrName, setEdgeAttrName] = useState<string>('')
+  const [edgeAttrName, setEdgeAttrName] = useState<string>(
+    DEFAULT_EDGE_ATTR_NAME,
+  )
 
   const [selectedObjectType, setSelectedObjectType] = useState<GraphObjectType>(
-    GraphObjectType.NODE,
+    GraphObjectType.EDGE,
   )
 
   // Visualization mode for the filtered results
   const [displayMode, setDisplayMode] = useState<DisplayMode>(
-    DisplayMode.SELECT,
+    DisplayMode.SHOW_HIDE,
   )
-
-  const [filterProps, setFilterProps] = useState<FilterSettings<ValueType>>()
 
   const targetAttrName: string =
     selectedObjectType === GraphObjectType.NODE ? nodeAttrName : edgeAttrName
@@ -129,31 +138,36 @@ export const FilterPanel = () => {
     const visualMapping = getMapping(vs, targetAttrName)
 
     // Build the filter UI settings
-    const filterSettings: FilterSettings<ValueType> = {
+    const filterConfig: FilterConfig<ValueType> = {
       widgetType: FilterWidgetType.CHECKBOX,
       description: 'Filter nodes / edges by selected values',
       filter: discreteFilter,
       label: 'Interaction edge filter',
       range: { values: [] },
-      displayMode: DisplayMode.SELECT,
+      displayMode,
       visualMapping,
       toCx: function () {
         throw new Error('Function not implemented.')
       },
     }
 
-    setFilterProps(filterSettings)
+    if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
+      addFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
+    } else {
+      updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
+    }
 
     // Encode the filter settings into the URL
     searchParams.set('filterFor', selectedObjectType)
     searchParams.set('filterBy', targetAttrName)
     setSearchParams(searchParams)
-  }, [targetAttrName, selectedObjectType, vs])
+  }, [targetAttrName, selectedObjectType, vs, displayMode])
 
   const table =
     selectedObjectType === GraphObjectType.NODE
       ? tablePair.nodeTable
       : tablePair.edgeTable
+
   return (
     <Container
       disableGutters={true}
@@ -216,7 +230,7 @@ export const FilterPanel = () => {
           overflow: 'auto',
         }}
       >
-        {filterProps === undefined ? null : (
+        {filterConfigs[DEFAULT_FILTER_NAME] === undefined ? null : (
           <Box
             style={{
               width: '100%',
@@ -227,7 +241,7 @@ export const FilterPanel = () => {
             <CheckboxFilter
               targetNetworkId={targetNetworkId}
               table={table}
-              filterSettings={filterProps}
+              filterSettings={filterConfigs[DEFAULT_FILTER_NAME]}
               enableFilter={enableFilter}
             />
           </Box>

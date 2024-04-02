@@ -2,44 +2,15 @@ import { DiscreteRange } from '../PropertyModel/DiscreteRange'
 import { NumberRange } from '../PropertyModel/NumberRange'
 import { ValueType } from '../TableModel'
 import { VisualMappingFunction } from '../VisualStyleModel'
+import { DisplayMode } from './DisplayMode'
 import { Filter } from './Filter'
-
-/**
- *
- */
-export const FilterWidgetType = {
-  CHECKBOX: 'checkbox',
-  RADIOBUTTON: 'radiobutton',
-  SLIDER: 'slider',
-} as const
-
-export type FilterWidgetType =
-  (typeof FilterWidgetType)[keyof typeof FilterWidgetType]
-
-export const SelectionType = {
-  SINGLE: 'single',
-  MULTIPLE: 'multiple',
-} as const
-
-export type SelectionType = (typeof SelectionType)[keyof typeof SelectionType]
-
-/**
- * How to visualize the filtered results.
- *
- * If "select", then the filter will select those objects. If
- * "show_hide", then the filter will show the selected items only.
- */
-export const DisplayMode = {
-  SELECT: 'select',
-  SHOW_HIDE: 'show_hide',
-} as const
-
-export type DisplayMode = (typeof DisplayMode)[keyof typeof DisplayMode]
+import { FilterWidgetType } from './FilterWidgetType'
+import { SelectionType } from './SelectionType'
 
 /**
  * Interface for the filter user interface
  */
-export interface FilterSettings<T extends ValueType> {
+export interface FilterConfig<T extends ValueType> {
   filter: Filter<NumberRange | DiscreteRange<T>>
 
   // Human-readable label for the filter
@@ -48,7 +19,7 @@ export interface FilterSettings<T extends ValueType> {
   // More detailed description of the filter. Will be displayed in a tooltip
   description: string
 
-  // (For descrete values only) Type of selection. Can be either "single" or "multiple"
+  // (For discrete values only) Type of selection. Can be either "single" or "multiple"
   selectionType?: SelectionType
 
   // Type of the widget. Can be either "checkbox", "radiobutton", or "slider"

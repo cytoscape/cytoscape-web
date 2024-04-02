@@ -7,7 +7,7 @@ import {
   Container,
   Box,
 } from '@mui/material'
-import { DisplayMode } from '../../../../models/FilterModel/FilterUiProps'
+import { DisplayMode } from '../../../../models/FilterModel/DisplayMode'
 
 interface AttributeSelectorProps {
   enableFilter: boolean
@@ -53,7 +53,7 @@ export const ModeSelector = ({
               label={'Selection'}
             />
             <FormControlLabel
-                value={DisplayMode.SHOW_HIDE}
+              value={DisplayMode.SHOW_HIDE}
               control={<Radio />}
               label={'Show / Hide'}
             />

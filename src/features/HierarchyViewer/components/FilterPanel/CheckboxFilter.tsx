@@ -1,5 +1,5 @@
 import Tooltip from '@mui/material/Tooltip'
-import { FilterSettings } from '../../../../models/FilterModel/FilterUiProps'
+import { FilterConfig } from '../../../../models/FilterModel/FilterConfig'
 import { Table, ValueType } from '../../../../models/TableModel'
 import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import { useEffect, useState } from 'react'
@@ -18,7 +18,7 @@ interface CheckboxFilterProps {
   // The network to be filtered
   targetNetworkId: IdType
 
-  filterSettings: FilterSettings<ValueType>
+  filterSettings: FilterConfig<ValueType>
   table: Table
   enableFilter: boolean
 }

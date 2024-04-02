@@ -23,7 +23,8 @@ import { useLayoutStore } from '../../../store/LayoutStore'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
-import { DisplayMode } from '../../../models/FilterModel/FilterUiProps'
+import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+
 interface NetworkRendererProps {
   network?: Network
 

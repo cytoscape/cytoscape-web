@@ -3,6 +3,8 @@ import { immer } from 'zustand/middleware/immer'
 import { Search, SearchOptions } from '../models/FilterModel/Search'
 import { IdType } from '../models/IdType'
 import { GraphObjectType } from '../models/NetworkModel'
+import { FilterConfig } from '../models/FilterModel/FilterConfig'
+import { ValueType } from '../models/TableModel'
 
 /**
  * The store for both search and filter.
@@ -10,6 +12,7 @@ import { GraphObjectType } from '../models/NetworkModel'
  */
 interface FilterState<T> {
   search: Search<T>
+  filterConfigs: Record<string, FilterConfig<ValueType>>
 }
 
 interface FilterAction {
@@ -23,12 +26,18 @@ interface FilterAction {
   setIndex: <T>(networkId: string, type: GraphObjectType, index: T) => void
   setConverter: (converter: (result: any) => IdType[]) => void
   setOptions: (options: SearchOptions) => void
+
+  // Manage filter configurations
+  addFilterConfig: (name: string, filterConfig: FilterConfig<ValueType>) => void
+  deleteFilterConfig: (name: string) => void
+  updateFilterConfig: (name: string, filter: FilterConfig<ValueType>) => void
 }
 
 type FilterStore = FilterState<any> & FilterAction
 
 export const useFilterStore = create(
   immer<FilterStore>((set, get) => ({
+    filterConfigs: {},
     search: {
       query: '',
       indexedColumns: {},
@@ -106,6 +115,26 @@ export const useFilterStore = create(
             state.search.indexedColumns[networkId].edge = columns
           }
         }
+      })
+    },
+    addFilterConfig: (name: string, filter: FilterConfig<ValueType>) => {
+      set((state) => {
+        const existingConfig = state.filterConfigs[name]
+        if (existingConfig !== undefined) {
+          console.warn(`Filter config with name ${name} already exists`)
+          return
+        }
+        state.filterConfigs[name] = filter
+      })
+    },
+    deleteFilterConfig: (name: string) => {
+      set((state) => {
+        delete state.filterConfigs[name]
+      })
+    },
+    updateFilterConfig: (name: string, filter: FilterConfig<ValueType>) => {
+      set((state) => {
+        state.filterConfigs[name] = filter
       })
     },
   })),
