@@ -11,6 +11,9 @@ import { SelectionType } from './SelectionType'
  * Interface for the filter user interface
  */
 export interface FilterConfig<T extends ValueType> {
+  // Name of this filter. e.g. "checkboxFilter"
+  name: string
+
   filter: Filter<NumberRange | DiscreteRange<T>>
 
   // Human-readable label for the filter

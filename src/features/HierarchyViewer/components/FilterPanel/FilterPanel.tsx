@@ -139,6 +139,7 @@ export const FilterPanel = () => {
 
     // Build the filter UI settings
     const filterConfig: FilterConfig<ValueType> = {
+      name: DEFAULT_FILTER_NAME,
       widgetType: FilterWidgetType.CHECKBOX,
       description: 'Filter nodes / edges by selected values',
       filter: discreteFilter,
@@ -152,7 +153,7 @@ export const FilterPanel = () => {
     }
 
     if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
-      addFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
+      addFilterConfig(filterConfig)
     } else {
       updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
     }
@@ -241,7 +242,7 @@ export const FilterPanel = () => {
             <CheckboxFilter
               targetNetworkId={targetNetworkId}
               table={table}
-              filterSettings={filterConfigs[DEFAULT_FILTER_NAME]}
+              filterConfig={filterConfigs[DEFAULT_FILTER_NAME]}
               enableFilter={enableFilter}
             />
           </Box>

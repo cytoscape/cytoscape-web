@@ -13,12 +13,14 @@ import {
   DiscreteMappingFunction,
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
+import { useFilterStore } from '../../../../store/FilterStore'
+import { update } from 'lodash'
 
 interface CheckboxFilterProps {
   // The network to be filtered
   targetNetworkId: IdType
 
-  filterSettings: FilterConfig<ValueType>
+  filterConfig: FilterConfig<ValueType>
   table: Table
   enableFilter: boolean
 }
@@ -30,17 +32,18 @@ interface CheckboxFilterProps {
  */
 export const CheckboxFilter = ({
   targetNetworkId,
-  filterSettings,
+  filterConfig,
   table,
   enableFilter,
 }: CheckboxFilterProps): JSX.Element => {
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
-  const { description, filter } = filterSettings
+  const { description, filter } = filterConfig
   const { attribute } = filter
+  const updateRange = useFilterStore((state) => state.updateRange)
 
-  const [checkedOptions, setCheckedOptions] = useState<string[]>([])
+  const [checkedOptions, setCheckedOptions] = useState<ValueType[]>([])
 
   const [options, setOptions] = useState<string[]>([])
 
@@ -60,8 +63,10 @@ export const CheckboxFilter = ({
   }, [table, attribute])
 
   const handleToggle = (value: string) => {
-    const currentIndex = checkedOptions.indexOf(value)
-    const newChecked = [...checkedOptions]
+    const discreteRange = filterConfig.range as DiscreteRange<ValueType>
+    const currentSelection = discreteRange.values
+    const currentIndex = currentSelection.indexOf(value)
+    const newChecked = [...currentSelection]
 
     if (currentIndex === -1) {
       newChecked.push(value)
@@ -70,6 +75,9 @@ export const CheckboxFilter = ({
     }
 
     setCheckedOptions(newChecked)
+    updateRange(filterConfig.name, {
+      values: newChecked,
+    })
   }
 
   useEffect(() => {
@@ -91,7 +99,6 @@ export const CheckboxFilter = ({
       }
     }
     filtered = discreteFilter.apply(discreteRange, table)
-    console.log('Filtered: ', filtered)
     if (filtered.length === 0) {
       if (
         viewModel !== undefined &&
@@ -126,7 +133,7 @@ export const CheckboxFilter = ({
   const isAllSelected =
     options.length > 0 && checkedOptions.length === options.length
 
-  const { visualMapping } = filterSettings
+  const { visualMapping } = filterConfig
   let colorMap = new Map<ValueType, VisualPropertyValueType>()
   if (visualMapping !== undefined) {
     const mapping = visualMapping as DiscreteMappingFunction

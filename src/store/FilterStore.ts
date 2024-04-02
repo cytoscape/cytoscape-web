@@ -5,6 +5,8 @@ import { IdType } from '../models/IdType'
 import { GraphObjectType } from '../models/NetworkModel'
 import { FilterConfig } from '../models/FilterModel/FilterConfig'
 import { ValueType } from '../models/TableModel'
+import { NumberRange } from '../models/PropertyModel/NumberRange'
+import { DiscreteRange } from '../models/PropertyModel/DiscreteRange'
 
 /**
  * The store for both search and filter.
@@ -28,9 +30,14 @@ interface FilterAction {
   setOptions: (options: SearchOptions) => void
 
   // Manage filter configurations
-  addFilterConfig: (name: string, filterConfig: FilterConfig<ValueType>) => void
+  addFilterConfig: (filterConfig: FilterConfig<ValueType>) => void
   deleteFilterConfig: (name: string) => void
   updateFilterConfig: (name: string, filter: FilterConfig<ValueType>) => void
+
+  updateRange: (
+    name: string,
+    range: NumberRange | DiscreteRange<ValueType>,
+  ) => void
 }
 
 type FilterStore = FilterState<any> & FilterAction
@@ -117,14 +124,15 @@ export const useFilterStore = create(
         }
       })
     },
-    addFilterConfig: (name: string, filter: FilterConfig<ValueType>) => {
+    addFilterConfig: (filter: FilterConfig<ValueType>) => {
       set((state) => {
-        const existingConfig = state.filterConfigs[name]
+        const newName = filter.name
+        const existingConfig = state.filterConfigs[newName]
         if (existingConfig !== undefined) {
           console.warn(`Filter config with name ${name} already exists`)
           return
         }
-        state.filterConfigs[name] = filter
+        state.filterConfigs[newName] = filter
       })
     },
     deleteFilterConfig: (name: string) => {
@@ -135,6 +143,14 @@ export const useFilterStore = create(
     updateFilterConfig: (name: string, filter: FilterConfig<ValueType>) => {
       set((state) => {
         state.filterConfigs[name] = filter
+      })
+    },
+    updateRange: (
+      name: string,
+      range: NumberRange | DiscreteRange<ValueType>,
+    ) => {
+      set((state) => {
+        state.filterConfigs[name].range = range
       })
     },
   })),
