@@ -8,12 +8,13 @@ import { FilterWidgetType } from './FilterWidgetType'
 import { SelectionType } from './SelectionType'
 
 /**
- * Interface for the filter user interface
+ * Interface for storing the filter congifuration for building the filter UI
  */
 export interface FilterConfig<T extends ValueType> {
   // Name of this filter. e.g. "checkboxFilter"
   name: string
 
+  // Actual filter object that will be used to filter the data
   filter: Filter<NumberRange | DiscreteRange<T>>
 
   // Human-readable label for the filter
@@ -44,8 +45,6 @@ export interface FilterConfig<T extends ValueType> {
   // range is a NumberRange.
   range: NumberRange | DiscreteRange<T>
 
-  readonly selectionMode?: SelectionMode
-
-  // TBD - Convert this UI object into CX aspect
+  // TBD - Convert this config object into a CX aspect
   toCx: () => any
 }

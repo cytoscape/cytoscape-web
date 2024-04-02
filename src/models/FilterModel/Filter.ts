@@ -7,7 +7,6 @@ import { AttributeName, Table, ValueType } from '../TableModel'
 /**
  * Base filter interface to be implemented by all filters
  */
-
 export interface Filter<R> {
   target: GraphObjectType
   attribute: AttributeName

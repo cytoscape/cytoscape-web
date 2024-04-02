@@ -14,7 +14,7 @@ import {
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
 import { useFilterStore } from '../../../../store/FilterStore'
-import { update } from 'lodash'
+import { use } from 'cytoscape'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -47,40 +47,8 @@ export const CheckboxFilter = ({
 
   const [options, setOptions] = useState<string[]>([])
 
-  useEffect(() => {
-    const { rows } = table
-
-    if (Object.keys(rows).length === 0) return
-
-    const valueSet = new Set<string>()
-    rows.forEach((row: Record<IdType, ValueType>) => {
-      valueSet.add(row[attribute] as string)
-    })
-
-    // Convert set to array and sort
-    const newOptions = Array.from(valueSet).sort()
-    setOptions(newOptions)
-  }, [table, attribute])
-
-  const handleToggle = (value: string) => {
-    const discreteRange = filterConfig.range as DiscreteRange<ValueType>
-    const currentSelection = discreteRange.values
-    const currentIndex = currentSelection.indexOf(value)
-    const newChecked = [...currentSelection]
-
-    if (currentIndex === -1) {
-      newChecked.push(value)
-    } else {
-      newChecked.splice(currentIndex, 1)
-    }
-
-    setCheckedOptions(newChecked)
-    updateRange(filterConfig.name, {
-      values: newChecked,
-    })
-  }
-
-  useEffect(() => {
+  // Apply the filter to the table
+  const applyFilter = () => {
     let filtered: IdType[] = []
     const discreteFilter = filter as DiscreteFilter<ValueType>
     let discreteRange: DiscreteRange<ValueType> = {
@@ -115,7 +83,45 @@ export const CheckboxFilter = ({
     } else {
       exclusiveSelect(targetNetworkId, [], filtered)
     }
-  }, [checkedOptions])
+  }
+
+  useEffect(() => {
+    //Apply the filter from the existing filter store
+    applyFilter()
+  }, [targetNetworkId, checkedOptions])
+
+  useEffect(() => {
+    const { rows } = table
+
+    if (Object.keys(rows).length === 0) return
+
+    const valueSet = new Set<string>()
+    rows.forEach((row: Record<IdType, ValueType>) => {
+      valueSet.add(row[attribute] as string)
+    })
+
+    // Convert set to array and sort
+    const newOptions = Array.from(valueSet).sort()
+    setOptions(newOptions)
+  }, [table, attribute])
+
+  const handleToggle = (value: string) => {
+    const discreteRange = filterConfig.range as DiscreteRange<ValueType>
+    const currentSelection = discreteRange.values
+    const currentIndex = currentSelection.indexOf(value)
+    const newChecked = [...currentSelection]
+
+    if (currentIndex === -1) {
+      newChecked.push(value)
+    } else {
+      newChecked.splice(currentIndex, 1)
+    }
+
+    setCheckedOptions(newChecked)
+    updateRange(filterConfig.name, {
+      values: newChecked,
+    })
+  }
 
   /**
    * Select / unselect all options
