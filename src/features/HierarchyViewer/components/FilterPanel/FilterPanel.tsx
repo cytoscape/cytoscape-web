@@ -43,6 +43,11 @@ export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 // TODO: Import from CX
 const DEFAULT_EDGE_ATTR_NAME = 'interaction'
 
+// TODO: document this
+const isInteractionNetwork = (networkId: IdType): boolean => {
+  return networkId.includes('_')
+}
+
 export const FilterPanel = () => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
@@ -55,7 +60,10 @@ export const FilterPanel = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   // Enable filter only when the target network has a specific type
-  const [enableFilter, setEnableFilter] = useState<boolean>(false)
+  // const [enableFilter, setEnableFilter] = useState<boolean>(false)
+
+  // Pick style for color coding
+  const styles = useVisualStyleStore((state) => state.visualStyles)
 
   // Find the target network
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -68,20 +76,9 @@ export const FilterPanel = () => {
   // Use the active network if it exists, otherwise use the current network for filtering
   const targetNetworkId: IdType = activeNetworkId || currentNetworkId
 
-  // Pick style for color coding
-  const styles = useVisualStyleStore((state) => state.visualStyles)
+  const shouldApplyFilter: boolean = isInteractionNetwork(targetNetworkId)
+
   const vs: VisualStyle = styles[activeNetworkId]
-
-  // Enable the filter only when the target network is a temp network
-  useEffect(() => {
-    if (targetNetworkId === undefined || targetNetworkId === '') return
-
-    if (targetNetworkId.includes('_')) {
-      setEnableFilter(true)
-    } else {
-      setEnableFilter(false)
-    }
-  }, [targetNetworkId])
 
   // Get target table from the store
   const tablePair = useTableStore((state) => state.tables[targetNetworkId])
@@ -100,12 +97,29 @@ export const FilterPanel = () => {
     DisplayMode.SHOW_HIDE,
   )
 
+  // Enable the filter only when the target network is a temp network
+  // useEffect(() => {
+  //   if (targetNetworkId === undefined || targetNetworkId === '') return
+
+  //   if (targetNetworkId.includes('_')) {
+  //     setEnableFilter(true)
+  //   } else {
+  //     setEnableFilter(false)
+  //   }
+  // }, [targetNetworkId])
+
   const targetAttrName: string =
     selectedObjectType === GraphObjectType.NODE ? nodeAttrName : edgeAttrName
+
   const setFunction =
     selectedObjectType === GraphObjectType.NODE
       ? setNodeAttrName
       : setEdgeAttrName
+
+  const table =
+    selectedObjectType === GraphObjectType.NODE
+      ? tablePair.nodeTable
+      : tablePair.edgeTable
 
   const getMapping = (
     style: VisualStyle,
@@ -130,6 +144,17 @@ export const FilterPanel = () => {
   }
 
   useEffect(() => {
+    if (!shouldApplyFilter) return
+
+    // Create a filter for the selected attribute if it does not exist
+
+    const currentConfig: FilterConfig<ValueType> =
+      filterConfigs[DEFAULT_FILTER_NAME]
+
+    if (currentConfig !== undefined) {
+      return
+    }
+
     const discreteFilter: DiscreteFilter<string> = createDiscreteFilter<string>(
       selectedObjectType,
       targetAttrName,
@@ -154,20 +179,14 @@ export const FilterPanel = () => {
 
     if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
       addFilterConfig(filterConfig)
+      // Encode the filter settings into the URL
+      searchParams.set('filterFor', selectedObjectType)
+      searchParams.set('filterBy', targetAttrName)
+      setSearchParams(searchParams)
     } else {
-      updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
+      // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
     }
-
-    // Encode the filter settings into the URL
-    searchParams.set('filterFor', selectedObjectType)
-    searchParams.set('filterBy', targetAttrName)
-    setSearchParams(searchParams)
   }, [targetAttrName, selectedObjectType, vs, displayMode])
-
-  const table =
-    selectedObjectType === GraphObjectType.NODE
-      ? tablePair.nodeTable
-      : tablePair.edgeTable
 
   return (
     <Container
@@ -202,7 +221,7 @@ export const FilterPanel = () => {
           <AccordionDetails>
             <Grid item sx={{ flex: 1 }}>
               <AttributeSelector
-                enableFilter={enableFilter}
+                enableFilter={true}
                 nodeTable={tablePair.nodeTable}
                 edgeTable={tablePair.edgeTable}
                 selectedValue={targetAttrName}
@@ -213,7 +232,7 @@ export const FilterPanel = () => {
             </Grid>
             <Grid item sx={{ flex: 1 }}>
               <ModeSelector
-                enableFilter={enableFilter}
+                enableFilter={true}
                 displayMode={displayMode}
                 setDisplayMode={setDisplayMode}
               />
@@ -243,7 +262,7 @@ export const FilterPanel = () => {
               targetNetworkId={targetNetworkId}
               table={table}
               filterConfig={filterConfigs[DEFAULT_FILTER_NAME]}
-              enableFilter={enableFilter}
+              enableFilter={true}
             />
           </Box>
         )}

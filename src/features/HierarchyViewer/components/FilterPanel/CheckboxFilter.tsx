@@ -5,7 +5,7 @@ import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { IdType } from '../../../../models/IdType'
 import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
-import { DiscreteFilter, Filter } from '../../../../models/FilterModel/Filter'
+import { DiscreteFilter } from '../../../../models/FilterModel/Filter'
 import { useViewModelStore } from '../../../../store/ViewModelStore'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import { NetworkView } from '../../../../models/ViewModel'
@@ -14,7 +14,6 @@ import {
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
 import { useFilterStore } from '../../../../store/FilterStore'
-import { use } from 'cytoscape'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -43,29 +42,32 @@ export const CheckboxFilter = ({
   const { attribute } = filter
   const updateRange = useFilterStore((state) => state.updateRange)
 
-  const [checkedOptions, setCheckedOptions] = useState<ValueType[]>([])
+  // const [checkedOptions, setCheckedOptions] = useState<ValueType[]>([])
 
-  const [options, setOptions] = useState<string[]>([])
+  // const [options, setOptions] = useState<string[]>([])
+  const [allOptions, setAllOptions] = useState<string[]>([])
+
+  // Check if all options are selected
+  const currentSelectedOptions = filterConfig.range as DiscreteRange<ValueType>
 
   // Apply the filter to the table
   const applyFilter = () => {
     let filtered: IdType[] = []
     const discreteFilter = filter as DiscreteFilter<ValueType>
-    let discreteRange: DiscreteRange<ValueType> = {
-      values: [],
-    }
-    // Apply filter
-    if (checkedOptions.length === 0) {
-      // Clear filter
-
-      discreteRange = {
-        values: [],
-      }
-    } else {
-      discreteRange = {
-        values: checkedOptions,
-      }
-    }
+    // Current range stored in the config
+    const discreteRange: DiscreteRange<ValueType> =
+      filterConfig.range as DiscreteRange<ValueType>
+    // // Apply filter
+    // if (discreteRange.values.length === 0) {
+    //   // Nothing selected
+    //   discreteRange = {
+    //     values: [],
+    //   }
+    // } else {
+    //   discreteRange = {
+    //     values: checkedOptions,
+    //   }
+    // }
     filtered = discreteFilter.apply(discreteRange, table)
     if (filtered.length === 0) {
       if (
@@ -86,11 +88,6 @@ export const CheckboxFilter = ({
   }
 
   useEffect(() => {
-    //Apply the filter from the existing filter store
-    applyFilter()
-  }, [targetNetworkId, checkedOptions])
-
-  useEffect(() => {
     const { rows } = table
 
     if (Object.keys(rows).length === 0) return
@@ -102,9 +99,14 @@ export const CheckboxFilter = ({
 
     // Convert set to array and sort
     const newOptions = Array.from(valueSet).sort()
-    setOptions(newOptions)
+    setAllOptions(newOptions)
   }, [table, attribute])
 
+  /**
+   * Pick the options that are selected and update the filter range
+   *
+   * @param value
+   */
   const handleToggle = (value: string) => {
     const discreteRange = filterConfig.range as DiscreteRange<ValueType>
     const currentSelection = discreteRange.values
@@ -117,7 +119,7 @@ export const CheckboxFilter = ({
       newChecked.splice(currentIndex, 1)
     }
 
-    setCheckedOptions(newChecked)
+    // setCheckedOptions(newChecked)
     updateRange(filterConfig.name, {
       values: newChecked,
     })
@@ -130,14 +132,29 @@ export const CheckboxFilter = ({
    */
   const handleToggleAll = (checked: boolean): void => {
     if (checked) {
-      setCheckedOptions(options)
+      // setCheckedOptions(options)
+      updateRange(filterConfig.name, {
+        values: allOptions,
+      })
     } else {
-      setCheckedOptions([])
+      // setCheckedOptions([])
+      updateRange(filterConfig.name, {
+        values: [],
+      })
     }
   }
 
-  const isAllSelected =
-    options.length > 0 && checkedOptions.length === options.length
+  /**
+   * update the filter range when the target network changes
+   */
+  useEffect(() => {
+    //Apply the filter from the existing filter store
+    applyFilter()
+  }, [targetNetworkId, currentSelectedOptions.values])
+
+  const isAllSelected: boolean =
+    allOptions.length > 0 &&
+    currentSelectedOptions.values.length === allOptions.length
 
   const { visualMapping } = filterConfig
   let colorMap = new Map<ValueType, VisualPropertyValueType>()
@@ -159,13 +176,15 @@ export const CheckboxFilter = ({
             <Checkbox
               disabled={!enableFilter}
               checked={isAllSelected}
-              indeterminate={checkedOptions.length > 0 && !isAllSelected}
+              indeterminate={
+                currentSelectedOptions.values.length > 0 && !isAllSelected
+              }
               onChange={(e) => handleToggleAll(e.target.checked)}
             />
           }
           label={isAllSelected ? 'Clear selection' : 'Select all'}
         />
-        {options.map((option: string) => {
+        {allOptions.map((option: string) => {
           const color: string = colorMap.get(option) as string
 
           let checkboxStyle = {}
@@ -184,7 +203,7 @@ export const CheckboxFilter = ({
                 <Checkbox
                   disabled={!enableFilter}
                   sx={checkboxStyle}
-                  checked={checkedOptions.includes(option)}
+                  checked={currentSelectedOptions.values.includes(option)}
                   onChange={() => handleToggle(option)}
                 />
               }
