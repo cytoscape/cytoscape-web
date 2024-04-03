@@ -15,7 +15,7 @@ export const CreateNetworkFromTableFileMenuItem = (
 
   const content = (
     <Dialog
-      maxWidth="lg"
+      maxWidth="xl"
       fullWidth={true}
       open={showDialog}
       onClose={props.handleClose}

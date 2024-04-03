@@ -21,7 +21,7 @@ import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
 import { AppConfigContext } from '../AppConfigContext'
 import {
   useNdexNetworkSummary,
-  networkSummaryFetcher,
+  ndexSummaryFetcher,
 } from '../store/hooks/useNdexNetworkSummary'
 import { useCredentialStore } from '../store/CredentialStore'
 
@@ -234,7 +234,7 @@ const AppShell = (): ReactElement => {
             token,
           )
           const networkSummary = summaryMap[networkId]
-          const ndexSummaries = await networkSummaryFetcher(
+          const ndexSummaries = await ndexSummaryFetcher(
             networkId,
             ndexBaseUrl,
             token,

@@ -29,7 +29,7 @@ import { formatBytes } from '../../../utils/byte-conversion'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { networkSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
+import { ndexSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
 import { dateFormatter } from '../../../utils/date-format'
 import { KeycloakContext } from '../../..'
 import { useMessageStore } from '../../../store/MessageStore'
@@ -142,11 +142,7 @@ export const LoadFromNdexDialog = (
   ): Promise<void> => {
     try {
       const token = await getToken()
-      const summaries = await networkSummaryFetcher(
-        networkIds,
-        ndexBaseUrl,
-        token,
-      )
+      const summaries = await ndexSummaryFetcher(networkIds, ndexBaseUrl, token)
 
       const invalidNetworkIds: IdType[] = []
       const validNetworkIds: IdType[] = []

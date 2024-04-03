@@ -67,6 +67,7 @@ import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
   const goToStep = useCreateNetworkFromTableStore((state) => state.goToStep)
+  const reset = useCreateNetworkFromTableStore((state) => state.reset)
 
   const [validColumnTypes, setValidColumnAssignmentTypes] = useState<
     ColumnAssignmentType[]
@@ -180,7 +181,6 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     const { network, nodeTable, edgeTable, visualStyle, summary, networkView } =
       res
     const newNetworkId = network.id
-    // console.log('RES', res)
 
     await putNetworkSummaryToDb(summary)
     await putNetworkToDb(network)
@@ -194,6 +194,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     setTables(newNetworkId, nodeTable, edgeTable)
     setViewModel(newNetworkId, networkView)
     setCurrentNetworkId(newNetworkId)
+    reset()
     props.handleClose()
 
     // setTables(nodeTable, edgeTable)

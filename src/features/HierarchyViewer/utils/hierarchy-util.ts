@@ -36,6 +36,7 @@ export const createDummySummary = (
 ): NdexNetworkSummary => {
   const time: Date = new Date(Date.now())
   const summary: NdexNetworkSummary = {
+    isNdex: false,
     ownerUUID: '',
     isReadOnly: false,
     subnetworkIds: [],

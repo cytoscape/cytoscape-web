@@ -45,8 +45,8 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.summaries[currentNetworkId],
   )
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -70,7 +70,7 @@ export const CopyNetworkToNDExMenuItem = (
     if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
     }
-    
+
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
@@ -81,7 +81,7 @@ export const CopyNetworkToNDExMenuItem = (
       table.nodeTable,
       table.edgeTable,
       viewModel,
-      `Copy of ${summary.name}`,
+      summary.isNdex ? `Copy of ${summary.name}` : summary.name,
     )
     try {
       const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
@@ -135,7 +135,7 @@ export const CopyNetworkToNDExMenuItem = (
         disabled={!authenticated}
         onClick={handleClick}
       >
-        Save Copy to NDEx
+        {summary?.isNdex ? `Save Copy to NDEx` : `Save to NDEx`}
       </MenuItem>
     </Box>
   )

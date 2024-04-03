@@ -14,6 +14,9 @@ import {
 } from '../../../../models/VisualStyleModel'
 import { createVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 import { createViewModelFromNetwork } from '../../../../models/ViewModel/impl/ViewModelImpl'
+import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel'
+import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
+import { NetworkView } from '../../../../models/ViewModel'
 
 export const DEFAULT_COLUMN_MEANING = ColumnAssignmentType.EdgeAttribute
 export const DEFAULT_COLUMN_DATA_TYPE = ValueTypeName.String
@@ -161,7 +164,14 @@ export function createNetworkFromTableData(
   rows: DataTableValue[],
   columns: ColumnAssignmentState[],
   uuid?: string,
-): any {
+): {
+  summary: NdexNetworkSummary
+  nodeTable: Table
+  edgeTable: Table
+  network: Network
+  visualStyle: VisualStyle
+  networkView: NetworkView
+} {
   const tgtNodeCol = columns.find(
     (c) => c.meaning === ColumnAssignmentType.TargetNode,
   )
@@ -299,6 +309,7 @@ export function createNetworkFromTableData(
   })
 
   const summary = {
+    isNdex: false,
     ownerUUID: networkId,
     name: 'test',
     isReadOnly: false,
@@ -316,7 +327,7 @@ export function createNetworkFromTableData(
     owner: '',
     version: '',
     completed: false,
-    visibility: 'PUBLIC',
+    visibility: 'PUBLIC' as Visibility,
     nodeCount: network.nodes.length,
     edgeCount: network.edges.length,
     description: 'test',
