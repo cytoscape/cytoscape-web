@@ -215,6 +215,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, currentNet
                     </Table>
                 </TableContainer>
 
+                <Typography variant="h6" style={{ margin: '20px 0' }}>
+                    How to merge columns:
+                </Typography>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <Button onClick={() => setView(view === 'node' ? 'edge' : 'node')}>
                         Switch to {view === 'node' ? 'Edge' : 'Node'} Table
