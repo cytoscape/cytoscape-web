@@ -18,6 +18,8 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
   )
   const setId = useWorkspaceStore((state) => state.setId)
 
+  const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
+  
   const dateFormatter = (timestamp: string | number | Date): string => {
     return new Date(timestamp).toLocaleString();
   };
@@ -62,6 +64,7 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
       const selectedWorkspace = myWorkspaces.find(workspace => workspace.workspaceId === selectedWorkspaceId);
       if (selectedWorkspace) {
         handleDeleteAllNetworks()
+        resetWorkspace()
         setId(selectedWorkspaceId)
         addNetworks(selectedWorkspace.networkIDs)
       } else {
