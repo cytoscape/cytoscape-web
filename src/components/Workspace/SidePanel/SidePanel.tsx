@@ -1,4 +1,4 @@
-import { Box, Tab, Tabs } from '@mui/material'
+import { Box, Container, Tab, Tabs } from '@mui/material'
 import { SyntheticEvent, useState } from 'react'
 import { getTabContents } from './TabContents'
 
@@ -17,19 +17,37 @@ export const SidePanel = (): JSX.Element => {
   const tabContents = getTabContents(value)
 
   return (
-    <>
+    <Container
+      disableGutters={true}
+      sx={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        margin: 0,
+        padding: 0,
+      }}
+    >
       <Tabs
         value={value}
         onChange={handleChange}
         variant="scrollable"
         scrollButtons="auto"
-        sx={{ paddingLeft: '2em' }}
+        sx={{ margin: 0, paddingLeft: '2em' }}
       >
         {tabContents.map((tabContent, index) => (
           <Tab key={index} label={tabContent.props.label} />
         ))}
       </Tabs>
-      <Box sx={{ width: '100%', height: '100%' }}>{tabContents}</Box>
-    </>
+      <Box
+        sx={{
+          width: '100%',
+          flexGrow: 1,
+        }}
+      >
+        {tabContents}
+      </Box>
+    </Container>
   )
 }

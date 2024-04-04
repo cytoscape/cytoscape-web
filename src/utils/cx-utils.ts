@@ -10,7 +10,6 @@ import {
   getNetworkViewsFromDb,
   getVisualStyleFromDb,
   putNetworkToDb,
-  putNetworkViewToDb,
   putTablesToDb,
   putVisualStyleToDb,
 } from '../store/persist/db'
@@ -70,7 +69,8 @@ export const createNetworkViewFromCx2 = (
 export const getCachedData = async (id: string): Promise<CachedData> => {
   const network = await getNetworkFromDb(id)
   const tables = await getTablesFromDb(id)
-  const networkViews:NetworkView[] | undefined = await getNetworkViewsFromDb(id)
+  const networkViews: NetworkView[] | undefined =
+    await getNetworkViewsFromDb(id)
   const visualStyle = await getVisualStyleFromDb(id)
 
   return {
@@ -102,7 +102,6 @@ export const createDataFromCx = async (
     ndexNetworkId,
     cxData,
   )
-  await putNetworkViewToDb(ndexNetworkId, networkView)
 
   const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
     ndexNetworkId,

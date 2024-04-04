@@ -17,7 +17,6 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { SubsystemTag } from '../model/HcxMetaTag'
-import { SharedStyleManager } from './PropertyPanel/SharedStyleManager'
 import { Network } from '../../../models/NetworkModel'
 import { CirclePackingPanel } from './CustomLayout/CirclePackingPanel'
 import { Renderer } from '../../../models/RendererModel/Renderer'
@@ -26,6 +25,7 @@ import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import FilterPanel from './FilterPanel/FilterPanel'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -35,6 +35,11 @@ export interface Query {
 const queryClient = new QueryClient()
 
 export const MainPanel = (): JSX.Element => {
+  const [bottomHeight, setBottomHeight] = useState<number>(500)
+
+  const handleResize = (newSize: number[]) => {
+    setBottomHeight(newSize[1])
+  }
   const [subNetworkName, setSubNetworkName] = useState<string>('')
   const [query, setQuery] = useState<Query>({ nodeIds: [] })
   const [interactionNetworkUuid, setInteractionNetworkId] = useState<string>('')
@@ -192,9 +197,15 @@ export const MainPanel = (): JSX.Element => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Box sx={{ width: '100%', height: '100%' }}>
-        <Allotment vertical minSize={100}>
-          <Allotment.Pane>
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
+        <Allotment vertical minSize={100} onChange={handleResize}>
+          <Allotment.Pane preferredSize={'65%'}>
             <SubNetworkPanel
               hierarchyId={currentNetworkId}
               subNetworkName={subNetworkName}
@@ -204,16 +215,13 @@ export const MainPanel = (): JSX.Element => {
               interactionNetworkId={interactionNetworkUuid}
             />
           </Allotment.Pane>
-          <Allotment.Pane preferredSize={100}>
+          <Allotment.Pane>
             <Allotment>
               <Allotment.Pane preferredSize={'15%'} key={0}>
                 <PropertyPanel networkId={targetNode} />
               </Allotment.Pane>
               <Allotment.Pane key={1}>
-                <SharedStyleManager
-                  networkId={targetNode}
-                  rootNetworkId={rootNetworkId}
-                />
+                <FilterPanel />
               </Allotment.Pane>
             </Allotment>
           </Allotment.Pane>

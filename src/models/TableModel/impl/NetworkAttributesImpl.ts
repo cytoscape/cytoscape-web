@@ -17,7 +17,6 @@ export const createNetworkAttributesFromCx = (
   const cxNetworkAttributes: NetworkAttributeValue[] =
     cxUtil.getNetworkAttributes(cx)
   cxNetworkAttributes.forEach((attr: NetworkAttributeValue) => {
-    console.log(attr)
     const newAttributes = { ...networkAttributes.attributes, ...attr }
     networkAttributes.attributes = newAttributes as Record<string, ValueType>
   })
