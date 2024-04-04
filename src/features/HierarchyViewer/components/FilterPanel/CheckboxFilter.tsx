@@ -17,6 +17,8 @@ import {
   FilterConfig,
   getBasicFilter,
 } from '../../../../models/FilterModel'
+import { useSearchParams } from 'react-router-dom'
+import { FilterUrlParams } from './FilterUrlParams'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -38,6 +40,9 @@ export const CheckboxFilter = ({
   table,
   enableFilter,
 }: CheckboxFilterProps): JSX.Element => {
+  // Updating URL by range
+  const [searchParams, setSearchParams] = useSearchParams()
+
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
@@ -118,6 +123,12 @@ export const CheckboxFilter = ({
     updateRange(filterConfig.name, {
       values: newChecked,
     })
+
+    // Update URL (only when the selection is not empty)
+    if (newChecked.length !== 0) {
+      searchParams.set(FilterUrlParams.FILTER_RANGE, newChecked.join(',') || '')
+      setSearchParams(searchParams)
+    }
   }
 
   /**

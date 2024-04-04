@@ -34,6 +34,7 @@ import {
   FilterConfig,
   FilterWidgetType,
 } from '../../../../models/FilterModel'
+import { FilterUrlParams } from './FilterUrlParams'
 
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 
@@ -48,16 +49,12 @@ const isInteractionNetwork = (networkId: IdType): boolean => {
 export const FilterPanel = () => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
-  const updateFilterConfig = useFilterStore((state) => state.updateFilterConfig)
 
   // Show or hide the advanced options
   const [showOptions, setShowOptions] = useState<boolean>(false)
 
   // URL search parameters
   const [searchParams, setSearchParams] = useSearchParams()
-
-  // Enable filter only when the target network has a specific type
-  // const [enableFilter, setEnableFilter] = useState<boolean>(false)
 
   // Pick style for color coding
   const styles = useVisualStyleStore((state) => state.visualStyles)
@@ -93,17 +90,6 @@ export const FilterPanel = () => {
   const [displayMode, setDisplayMode] = useState<DisplayMode>(
     DisplayMode.SHOW_HIDE,
   )
-
-  // Enable the filter only when the target network is a temp network
-  // useEffect(() => {
-  //   if (targetNetworkId === undefined || targetNetworkId === '') return
-
-  //   if (targetNetworkId.includes('_')) {
-  //     setEnableFilter(true)
-  //   } else {
-  //     setEnableFilter(false)
-  //   }
-  // }, [targetNetworkId])
 
   const targetAttrName: string =
     selectedObjectType === GraphObjectType.NODE ? nodeAttrName : edgeAttrName
@@ -169,8 +155,8 @@ export const FilterPanel = () => {
     if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
       addFilterConfig(filterConfig)
       // Encode the filter settings into the URL
-      searchParams.set('filterFor', selectedObjectType)
-      searchParams.set('filterBy', targetAttrName)
+      searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
+      searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
       setSearchParams(searchParams)
     } else {
       // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
