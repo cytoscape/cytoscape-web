@@ -29,7 +29,11 @@ import {
 import { CompatibleVisualProperties } from './CompatibleVisualMappings'
 import { CheckboxFilter } from './CheckboxFilter'
 import { useFilterStore } from '../../../../store/FilterStore'
-import { DisplayMode, FilterConfig, FilterWidgetType } from '../../../../models/FilterModel'
+import {
+  DisplayMode,
+  FilterConfig,
+  FilterWidgetType,
+} from '../../../../models/FilterModel'
 
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 
@@ -172,6 +176,8 @@ export const FilterPanel = () => {
       // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
     }
   }, [targetAttrName, selectedObjectType, vs, displayMode])
+
+  if (!shouldApplyFilter) return null
 
   return (
     <Container

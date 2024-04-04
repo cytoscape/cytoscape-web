@@ -164,7 +164,8 @@ export const useFilterStore = create(
     ) => {
       set((state) => {
         state.filterConfigs[name].range = range
-        putFilterToDb(state.filterConfigs[name])
+        const newFilter = get().filterConfigs[name]
+        putFilterToDb(newFilter)
           .then(() => {
             console.log('Range updated in db: ', name)
           })
