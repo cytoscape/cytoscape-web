@@ -4,12 +4,7 @@ import { IdType } from '../../../../models/IdType'
 import { useTableStore } from '../../../../store/TableStore'
 import { useUiStateStore } from '../../../../store/UiStateStore'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
-import { FilterConfig } from '../../../../models/FilterModel/FilterConfig'
 import { GraphObjectType } from '../../../../models/NetworkModel'
-import {
-  DiscreteFilter,
-  createDiscreteFilter,
-} from '../../../../models/FilterModel/Filter'
 import {
   Accordion,
   AccordionDetails,
@@ -23,7 +18,6 @@ import { ModeSelector } from './ModeSelector'
 
 import SettingsIcon from '@mui/icons-material/Settings'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
-import { ValueType } from '../../../../models/TableModel'
 import { useSearchParams } from 'react-router-dom'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import {
@@ -34,9 +28,8 @@ import {
 } from '../../../../models/VisualStyleModel'
 import { CompatibleVisualProperties } from './CompatibleVisualMappings'
 import { CheckboxFilter } from './CheckboxFilter'
-import { FilterWidgetType } from '../../../../models/FilterModel/FilterWidgetType'
-import { DisplayMode } from '../../../../models/FilterModel/DisplayMode'
 import { useFilterStore } from '../../../../store/FilterStore'
+import { DisplayMode, FilterConfig, FilterWidgetType } from '../../../../models/FilterModel'
 
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 
@@ -148,33 +141,25 @@ export const FilterPanel = () => {
 
     // Create a filter for the selected attribute if it does not exist
 
-    const currentConfig: FilterConfig<ValueType> =
-      filterConfigs[DEFAULT_FILTER_NAME]
+    const currentConfig: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
 
     if (currentConfig !== undefined) {
       return
     }
 
-    const discreteFilter: DiscreteFilter<string> = createDiscreteFilter<string>(
-      selectedObjectType,
-      targetAttrName,
-    )
-
     const visualMapping = getMapping(vs, targetAttrName)
 
     // Build the filter UI settings
-    const filterConfig: FilterConfig<ValueType> = {
+    const filterConfig: FilterConfig = {
       name: DEFAULT_FILTER_NAME,
+      attributeName: targetAttrName,
+      target: selectedObjectType,
       widgetType: FilterWidgetType.CHECKBOX,
       description: 'Filter nodes / edges by selected values',
-      filter: discreteFilter,
       label: 'Interaction edge filter',
       range: { values: [] },
       displayMode,
       visualMapping,
-      toCx: function () {
-        throw new Error('Function not implemented.')
-      },
     }
 
     if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {

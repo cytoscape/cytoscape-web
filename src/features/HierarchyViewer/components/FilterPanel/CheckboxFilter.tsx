@@ -1,11 +1,9 @@
 import Tooltip from '@mui/material/Tooltip'
-import { FilterConfig } from '../../../../models/FilterModel/FilterConfig'
 import { Table, ValueType } from '../../../../models/TableModel'
 import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { IdType } from '../../../../models/IdType'
 import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
-import { DiscreteFilter } from '../../../../models/FilterModel/Filter'
 import { useViewModelStore } from '../../../../store/ViewModelStore'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import { NetworkView } from '../../../../models/ViewModel'
@@ -14,12 +12,17 @@ import {
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
 import { useFilterStore } from '../../../../store/FilterStore'
+import {
+  Filter,
+  FilterConfig,
+  getBasicFilter,
+} from '../../../../models/FilterModel'
 
 interface CheckboxFilterProps {
   // The network to be filtered
   targetNetworkId: IdType
 
-  filterConfig: FilterConfig<ValueType>
+  filterConfig: FilterConfig
   table: Table
   enableFilter: boolean
 }
@@ -38,8 +41,7 @@ export const CheckboxFilter = ({
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
-  const { description, filter } = filterConfig
-  const { attribute } = filter
+  const { description, attributeName } = filterConfig
   const updateRange = useFilterStore((state) => state.updateRange)
 
   // const [checkedOptions, setCheckedOptions] = useState<ValueType[]>([])
@@ -53,22 +55,15 @@ export const CheckboxFilter = ({
   // Apply the filter to the table
   const applyFilter = () => {
     let filtered: IdType[] = []
-    const discreteFilter = filter as DiscreteFilter<ValueType>
     // Current range stored in the config
     const discreteRange: DiscreteRange<ValueType> =
       filterConfig.range as DiscreteRange<ValueType>
-    // // Apply filter
-    // if (discreteRange.values.length === 0) {
-    //   // Nothing selected
-    //   discreteRange = {
-    //     values: [],
-    //   }
-    // } else {
-    //   discreteRange = {
-    //     values: checkedOptions,
-    //   }
-    // }
-    filtered = discreteFilter.apply(discreteRange, table)
+    const basicFilter: Filter = getBasicFilter()
+    filtered = basicFilter.applyDiscreteFilter(
+      discreteRange,
+      table,
+      attributeName,
+    )
     if (filtered.length === 0) {
       if (
         viewModel !== undefined &&
@@ -80,7 +75,7 @@ export const CheckboxFilter = ({
       return
     }
 
-    if (filter.target === GraphObjectType.NODE) {
+    if (filterConfig.target === GraphObjectType.NODE) {
       exclusiveSelect(targetNetworkId, filtered, [])
     } else {
       exclusiveSelect(targetNetworkId, [], filtered)
@@ -94,13 +89,13 @@ export const CheckboxFilter = ({
 
     const valueSet = new Set<string>()
     rows.forEach((row: Record<IdType, ValueType>) => {
-      valueSet.add(row[attribute] as string)
+      valueSet.add(row[attributeName] as string)
     })
 
     // Convert set to array and sort
     const newOptions = Array.from(valueSet).sort()
     setAllOptions(newOptions)
-  }, [table, attribute])
+  }, [table, attributeName])
 
   /**
    * Pick the options that are selected and update the filter range

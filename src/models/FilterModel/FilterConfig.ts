@@ -1,21 +1,25 @@
+import { GraphObjectType } from '../NetworkModel'
 import { DiscreteRange } from '../PropertyModel/DiscreteRange'
 import { NumberRange } from '../PropertyModel/NumberRange'
-import { ValueType } from '../TableModel'
+import { AttributeName, ValueType } from '../TableModel'
 import { VisualMappingFunction } from '../VisualStyleModel'
 import { DisplayMode } from './DisplayMode'
-import { Filter } from './Filter'
 import { FilterWidgetType } from './FilterWidgetType'
 import { SelectionType } from './SelectionType'
 
 /**
- * Interface for storing the filter congifuration for building the filter UI
+ * Interface for storing the filter congifuration for building the filter UI.
+ * This configuration will be passed to the Filter function to apply the filter.
  */
-export interface FilterConfig<T extends ValueType> {
+export interface FilterConfig {
   // Name of this filter. e.g. "checkboxFilter"
-  name: string
+  readonly name: string
 
-  // Actual filter object that will be used to filter the data
-  filter: Filter<NumberRange | DiscreteRange<T>>
+  // Target object to be filtered. Node or edge.
+  target: GraphObjectType
+
+  // Attribute (column) name to be filtered
+  attributeName: AttributeName
 
   // Human-readable label for the filter
   label: string
@@ -43,8 +47,5 @@ export interface FilterConfig<T extends ValueType> {
   // Range of the values for the filter. If the widget type is "checkbox", then
   // the range is a DiscreteRange. If the widget type is "slider", then the
   // range is a NumberRange.
-  range: NumberRange | DiscreteRange<T>
-
-  // TBD - Convert this config object into a CX aspect
-  toCx: () => any
+  range: NumberRange | DiscreteRange<ValueType>
 }

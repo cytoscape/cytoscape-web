@@ -12,6 +12,7 @@ import { NetworkView } from '../../models/ViewModel'
 import { Ui } from '../../models/UiModel'
 import { applyMigrations } from './migrations'
 import { getNetworkViewId } from '../ViewModelStore'
+import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 
 const DB_NAME = 'cyweb-db'
 
@@ -30,6 +31,7 @@ class CyDB extends Dexie {
   cyNetworkViews!: DxTable<any>
   uiState!: DxTable<any>
   timestamp!: DxTable<any>
+  filters!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
@@ -42,6 +44,7 @@ class CyDB extends Dexie {
       cyNetworkViews: 'id',
       uiState: 'id',
       timestamp: 'id',
+      filters: 'id',
     })
 
     applyMigrations(this).catch((err) => console.log(err))
@@ -380,7 +383,7 @@ export const putNetworkViewToDb = async (
   view: NetworkView,
 ): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
-    if(view === undefined) {
+    if (view === undefined) {
       console.warn('Network View model is undefined')
       return
     }
@@ -400,7 +403,7 @@ export const putNetworkViewToDb = async (
         }
       })
       if (!found) {
-        if(view.viewId === undefined) {
+        if (view.viewId === undefined) {
           view.viewId = getNetworkViewId(view, viewList)
         }
         viewList.push(view)
@@ -410,7 +413,7 @@ export const putNetworkViewToDb = async (
         views: viewList,
       })
     } else {
-      if(view.viewId === undefined) {
+      if (view.viewId === undefined) {
         // Add ID if not given
         view.viewId = getNetworkViewId(view, [])
       }
@@ -509,5 +512,36 @@ export const getTimestampFromDb = async (): Promise<number | undefined> => {
 export const putTimestampToDb = async (ts: number): Promise<void> => {
   await db.transaction('rw', db.timestamp, async () => {
     await db.timestamp.put({ id: DEFAULT_TIMESTAMP_ID, timestamp: ts })
+  })
+}
+
+/**
+ * Store filter settings to the DB
+ *
+ * @param filterConfig
+ */
+export const putFilterToDb = async (
+  filterConfig: FilterConfig,
+): Promise<void> => {
+  await db.transaction('rw', db.filters, async () => {
+    await db.filters.put({ id: filterConfig.name, ...filterConfig })
+  })
+}
+
+/**
+ * Get filter settings from the DB
+ */
+export const getFilterFromDb = async (
+  filterName: string,
+): Promise<FilterConfig | undefined> => {
+  return await db.filters.get({ id: filterName })
+}
+
+/**
+ * Delete filter settings from the DB
+ */
+export const deleteFilterFromDb = async (filterName: string): Promise<void> => {
+  await db.transaction('rw', db.filters, async () => {
+    await db.filters.delete(filterName)
   })
 }

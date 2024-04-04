@@ -22,11 +22,11 @@ import { useCredentialStore } from '../../../store/CredentialStore'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 
 import { useQuery } from '@tanstack/react-query'
-import { Table, ValueType } from '../../../models/TableModel'
+import { Table } from '../../../models/TableModel'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { useFilterStore } from '../../../store/FilterStore'
 import { DEFAULT_FILTER_NAME } from './FilterPanel/FilterPanel'
-import { FilterConfig } from '../../../models/FilterModel/FilterConfig'
+import { FilterConfig } from '../../../models/FilterModel'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -61,7 +61,7 @@ export const SubNetworkPanel = ({
 }: SubNetworkPanelProps): ReactElement => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
 
-  const filterConfig: FilterConfig<ValueType> | undefined =
+  const filterConfig: FilterConfig | undefined =
     filterConfigs[DEFAULT_FILTER_NAME]
 
   const displayMode: DisplayMode =

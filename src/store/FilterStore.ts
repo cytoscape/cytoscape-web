@@ -3,10 +3,11 @@ import { immer } from 'zustand/middleware/immer'
 import { Search, SearchOptions } from '../models/FilterModel/Search'
 import { IdType } from '../models/IdType'
 import { GraphObjectType } from '../models/NetworkModel'
-import { FilterConfig } from '../models/FilterModel/FilterConfig'
 import { ValueType } from '../models/TableModel'
 import { NumberRange } from '../models/PropertyModel/NumberRange'
 import { DiscreteRange } from '../models/PropertyModel/DiscreteRange'
+import { deleteFilterFromDb, putFilterToDb } from './persist/db'
+import { FilterConfig } from '../models/FilterModel'
 
 /**
  * The store for both search and filter.
@@ -14,7 +15,7 @@ import { DiscreteRange } from '../models/PropertyModel/DiscreteRange'
  */
 interface FilterState<T> {
   search: Search<T>
-  filterConfigs: Record<string, FilterConfig<ValueType>>
+  filterConfigs: Record<string, FilterConfig>
 }
 
 interface FilterAction {
@@ -30,9 +31,9 @@ interface FilterAction {
   setOptions: (options: SearchOptions) => void
 
   // Manage filter configurations
-  addFilterConfig: (filterConfig: FilterConfig<ValueType>) => void
+  addFilterConfig: (filterConfig: FilterConfig) => void
   deleteFilterConfig: (name: string) => void
-  updateFilterConfig: (name: string, filter: FilterConfig<ValueType>) => void
+  updateFilterConfig: (name: string, filter: FilterConfig) => void
 
   updateRange: (
     name: string,
@@ -124,25 +125,37 @@ export const useFilterStore = create(
         }
       })
     },
-    addFilterConfig: (filter: FilterConfig<ValueType>) => {
+    addFilterConfig: (filter: FilterConfig) => {
       set((state) => {
         const newName = filter.name
         const existingConfig = state.filterConfigs[newName]
         if (existingConfig !== undefined) {
-          console.warn(`Filter config with name ${name} already exists`)
+          console.warn(`Filter config with name ${newName} already exists`)
           return
         }
         state.filterConfigs[newName] = filter
+        putFilterToDb(filter)
+          .then(() => {
+            console.log('New filter saved to db: ', filter.name)
+          })
+          .catch((e) => {
+            console.error(
+              `Failed to store the new filter to db: ${filter.name}`,
+              e,
+            )
+          })
       })
     },
     deleteFilterConfig: (name: string) => {
       set((state) => {
         delete state.filterConfigs[name]
+        deleteFilterFromDb(name)
       })
     },
-    updateFilterConfig: (name: string, filter: FilterConfig<ValueType>) => {
+    updateFilterConfig: (name: string, filter: FilterConfig) => {
       set((state) => {
         state.filterConfigs[name] = filter
+        putFilterToDb(filter)
       })
     },
     updateRange: (
@@ -151,6 +164,13 @@ export const useFilterStore = create(
     ) => {
       set((state) => {
         state.filterConfigs[name].range = range
+        putFilterToDb(state.filterConfigs[name])
+          .then(() => {
+            console.log('Range updated in db: ', name)
+          })
+          .catch((e) => {
+            console.error(`Failed to update range in db: ${name}`, e)
+          })
       })
     },
   })),
