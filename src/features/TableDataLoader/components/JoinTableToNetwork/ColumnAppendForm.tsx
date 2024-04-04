@@ -1,7 +1,7 @@
 import { Button, Tooltip } from '@mantine/core'
 import { IconBan, IconFileText, IconKey } from '@tabler/icons-react'
-import { ColumnAppendType } from '../model/ColumnAppendType'
-import { columnAppendType2Label } from '../model/impl/JoinTableToNetwork'
+import { ColumnAppendType } from '../../model/ColumnAppendType'
+import { columnAppendType2Label } from '../../model/impl/JoinTableToNetwork'
 
 export const columnAppendIconMap = {
   [ColumnAppendType.Key]: (

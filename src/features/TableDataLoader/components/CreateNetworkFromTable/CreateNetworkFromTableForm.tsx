@@ -13,10 +13,10 @@ import { PrimeReactProvider } from 'primereact/api'
 import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
-} from '../store/createNetworkFromTableStore'
-import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
+} from '../../store/createNetworkFromTableStore'
+import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
 
-export function TableDataLoader(props: BaseMenuProps) {
+export function CreateNetworkFromTableForm(props: BaseMenuProps) {
   const step = useCreateNetworkFromTableStore((state) => state.step)
 
   const stepContentMap = {

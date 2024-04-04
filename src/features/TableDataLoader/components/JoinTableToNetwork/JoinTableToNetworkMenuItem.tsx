@@ -4,11 +4,10 @@ import '@mantine/dropzone/styles.css'
 import { MenuItem, Dialog } from '@mui/material'
 import { ReactElement, useState, useEffect } from 'react'
 
-import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
-import { TableDataLoader } from './TableDataLoader'
-import { useDisclosure } from '@mantine/hooks'
+import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
+import { JoinTableToNetworkForm } from './JoinTableToNetworkForm'
 
-export const CreateNetworkFromTableFileMenuItem = (
+export const JoinTableToNetworkMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
   const [showDialog, setShowDialog] = useState(false)
@@ -20,14 +19,14 @@ export const CreateNetworkFromTableFileMenuItem = (
       open={showDialog}
       onClose={props.handleClose}
     >
-      <TableDataLoader {...props} />
+      <JoinTableToNetworkForm {...props} />
     </Dialog>
   )
 
   return (
     <>
       <MenuItem onClick={() => setShowDialog(true)}>
-        Upload network from table file
+        Join table to network
       </MenuItem>
       {content}
     </>

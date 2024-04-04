@@ -90,6 +90,8 @@ interface TableAction {
     column: AttributeName,
   ) => void
 
+  setTable: (networkId: IdType, tableType: TableType, table: Table) => void
+
   // Delete rows from the table. Should be called (via event) when nodes/edges are deleted
   deleteRows: (networkId: IdType, rows: IdType[]) => void
 
@@ -367,6 +369,16 @@ export const useTableStore = create(
         })
       },
 
+      setTable: (networkId: IdType, tableType: TableType, table: Table) => {
+        set((state) => {
+          if (tableType === TableType.NODE) {
+            state.tables[networkId].nodeTable = table
+          } else {
+            state.tables[networkId].edgeTable = table
+          }
+          return state
+        })
+      },
       deleteRows: (networkId: IdType, rowIds: IdType[]) => {
         set((state) => {
           if (rowIds.length === 0) {

@@ -21,7 +21,7 @@ import { DataTable, DataTableValue } from 'primereact/datatable'
 import { Column } from 'primereact/column'
 import { useEffect, useState } from 'react'
 
-import { ValueTypeForm, ValueTypeNameRender } from './ValueTypeNameForm'
+import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
 import {
   ColumnAssignmentTypeForm,
   ColumnAssignmentTypeRender,
@@ -31,10 +31,10 @@ import {
   IconInfoCircle,
   IconSettings,
 } from '@tabler/icons-react'
-import { ValueTypeName } from '../../../models/TableModel'
-import { ColumnAssignmentState } from '../model/ColumnAssignmentState'
-import { ColumnAssignmentType } from '../model/ColumnAssignmentType'
-import { DelimiterType } from '../model/DelimiterType'
+import { ValueTypeName } from '../../../../models/TableModel'
+import { ColumnAssignmentState } from '../../model/ColumnAssignmentState'
+import { ColumnAssignmentType } from '../../model/ColumnAssignmentType'
+import { DelimiterType } from '../../model/DelimiterType'
 import {
   validValueTypes,
   updateColumnAssignment,
@@ -44,25 +44,25 @@ import {
   unselectAllColumns,
   selectAllColumns,
   valueTypeName2Label,
-} from '../model/impl/CreateNetworkFromTable'
-import { validateColumnValues } from '../model/impl/ParseValues'
+} from '../../model/impl/CreateNetworkFromTable'
+import { validateColumnValues } from '../../model/impl/ParseValues'
 import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
-} from '../store/createNetworkFromTableStore'
+} from '../../store/createNetworkFromTableStore'
 import {
   putNetworkSummaryToDb,
   putNetworkToDb,
   putTablesToDb,
   putVisualStyleToDb,
   putNetworkViewToDb,
-} from '../../../store/persist/db'
-import { useNetworkStore } from '../../../store/NetworkStore'
-import { useTableStore } from '../../../store/TableStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
+} from '../../../../store/persist/db'
+import { useNetworkStore } from '../../../../store/NetworkStore'
+import { useTableStore } from '../../../../store/TableStore'
+import { useViewModelStore } from '../../../../store/ViewModelStore'
+import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
+import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
 
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)

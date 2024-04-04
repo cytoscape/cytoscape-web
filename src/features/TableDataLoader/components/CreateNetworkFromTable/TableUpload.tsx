@@ -17,8 +17,8 @@ import { modals } from '@mantine/modals'
 import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
-} from '../store/createNetworkFromTableStore'
-import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
+} from '../../store/createNetworkFromTableStore'
+import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
 
 export function TableUpload(props: BaseMenuProps) {
   const setFile = useCreateNetworkFromTableStore((state) => state.setFile)

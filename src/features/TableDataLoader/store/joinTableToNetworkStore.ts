@@ -34,6 +34,7 @@ interface JoinTableToNetworkAction {
   goToStep: (nextStep: JoinTableToNetworkStep) => void
   setFile: (f: File) => void
   setRawText: (s: string) => void
+  reset: () => void
 }
 
 type JoinTableToNetworkStore = JoinTableToNetworkState &
@@ -59,6 +60,13 @@ export const useJoinTableToNetworkStore = create(
       set((state) => {
         state.rawText = s
       })
+    },
+    reset: () => {
+      set(() => ({
+        loading: false,
+        step: JoinTableToNetworkStep.FileUpload,
+        rawText: '',
+      }))
     },
   })),
 )
