@@ -1,4 +1,4 @@
-import { Box, Tab, Tabs } from '@mui/material'
+import { Box, Container, Tab, Tabs } from '@mui/material'
 import { useState } from 'react'
 import { NetworkView } from '../../models/ViewModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
@@ -29,11 +29,15 @@ export const NetworkTabs = ({
 
   const rendererList = Object.values(renderers)
   return (
-    <Box
+    <Container
+      disableGutters={true}
       sx={{
         width: '100%',
         height: '100%',
         bgcolor: 'background.paper',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       <Tabs value={selected} onChange={handleChange}>
@@ -42,19 +46,21 @@ export const NetworkTabs = ({
         })}
       </Tabs>
 
-      {rendererList.map((renderer: Renderer, index: number) => {
-        return (
-          index === selected && (
-            <NetworkTab
-              network={network}
-              renderer={renderer}
-              isActive={isActive}
-              bgColor={bgColor}
-              handleClick={handleClick}
-            />
+      <Box sx={{ flexGrow: 1, width: '100%' }}>
+        {rendererList.map((renderer: Renderer, index: number) => {
+          return (
+            index === selected && (
+              <NetworkTab
+                network={network}
+                renderer={renderer}
+                isActive={isActive}
+                bgColor={bgColor}
+                handleClick={handleClick}
+              />
+            )
           )
-        )
-      })}
-    </Box>
+        })}
+      </Box>
+    </Container>
   )
 }

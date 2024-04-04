@@ -7,6 +7,7 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import {
   clearNetworkViewsFromDb,
   deleteNetworkViewsFromDb,
+  putNetworkViewToDb,
   putNetworkViewsToDb,
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
@@ -275,6 +276,14 @@ export const useViewModelStore = create(
               viewList.push(networkView)
             } else {
               state.viewModels[networkId] = [networkView]
+            }
+
+            const viewType = networkView.type
+            if (viewType !== 'circlePacking') {
+              // Store only default view type (node-link diagram) only.
+              void putNetworkViewToDb(networkId, networkView).then(() => {
+                // console.info('Network view model added to the DB.', networkId)
+              })
             }
             return state
           })

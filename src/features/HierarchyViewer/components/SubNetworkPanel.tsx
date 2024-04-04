@@ -12,10 +12,7 @@ import { Query } from './MainPanel'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
-import {
-  putNetworkViewToDb,
-  putVisualStyleToDb,
-} from '../../../store/persist/db'
+import { putVisualStyleToDb } from '../../../store/persist/db'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
@@ -23,9 +20,13 @@ import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
-import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 
 import { useQuery } from '@tanstack/react-query'
+import { Table } from '../../../models/TableModel'
+import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+import { useFilterStore } from '../../../store/FilterStore'
+import { DEFAULT_FILTER_NAME } from './FilterPanel/FilterPanel'
+import { FilterConfig } from '../../../models/FilterModel'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -58,6 +59,19 @@ export const SubNetworkPanel = ({
   query,
   interactionNetworkId,
 }: SubNetworkPanelProps): ReactElement => {
+  const filterConfigs = useFilterStore((state) => state.filterConfigs)
+
+  const filterConfig: FilterConfig | undefined =
+    filterConfigs[DEFAULT_FILTER_NAME]
+
+  const displayMode: DisplayMode =
+    filterConfig?.displayMode ?? DisplayMode.SELECT
+
+  // All networks in the main store
+  const networks: Map<string, Network> = useNetworkStore(
+    (state) => state.networks,
+  )
+
   // A local state to keep track of the current query network id.
   // This is different from the current network id in the workspace.
   const [queryNetworkId, setQueryNetworkId] = useState<string>('')
@@ -69,6 +83,7 @@ export const SubNetworkPanel = ({
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addTable = useTableStore((state) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
+  const viewModels = useViewModelStore((state) => state.viewModels)
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
@@ -164,6 +179,7 @@ export const SubNetworkPanel = ({
   const getToken = useCredentialStore((state) => state.getToken)
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
+  const t0 = performance.now()
   const result = useQuery({
     queryKey: [
       hierarchyId,
@@ -183,14 +199,10 @@ export const SubNetworkPanel = ({
   })
   const { data, error, isFetching } = result
 
+  // console.log('Fetch time = ', performance.now() - t0)
   if (error !== undefined && error !== null) {
     console.error('Failed to get network', error)
   }
-
-  // All networks in the main store
-  const networks: Map<string, Network> = useNetworkStore(
-    (state) => state.networks,
-  )
 
   // The query network to be rendered
   const queryNetwork: Network | undefined = networks.get(queryNetworkId)
@@ -216,7 +228,7 @@ export const SubNetworkPanel = ({
 
     const viewModel: NetworkView | undefined = getViewModel(id)
     if (viewModel !== undefined) {
-      await putNetworkViewToDb(id, viewModel)
+      // await putNetworkViewToDb(id, viewModel)
     }
   }
 
@@ -224,15 +236,8 @@ export const SubNetworkPanel = ({
     if (data === undefined) {
       return ''
     }
-    
-    const {
-      network,
-      visualStyle,
-      nodeTable,
-      edgeTable,
-      networkViews,
-      networkAttributes,
-    } = data
+
+    const { network, visualStyle, networkViews, networkAttributes } = data
 
     const { nodes } = network
     const nodeCount = nodes.length
@@ -243,15 +248,6 @@ export const SubNetworkPanel = ({
       return ''
     }
     const newUuid: string = network.id.toString()
-
-    const minimalSummary: any = {
-      name: networkAttributes?.attributes.name ?? 'Interaction Network',
-      properties: [],
-      externalId: '',
-      isReadOnly: false,
-      isShowcase: false,
-      owner: '',
-    }
 
     setNetworkLabel(
       (networkAttributes?.attributes.name as string) ??
@@ -271,32 +267,36 @@ export const SubNetworkPanel = ({
     }
 
     // Register objects to the stores.
-    if (networks.get(newUuid) === undefined) {
-      // Register new networks to the store if not cached
-      addNewNetwork(network)
-      addTable(newUuid, nodeTable, edgeTable)
-      const primaryViewModel: NetworkView | undefined = getViewModel(newUuid)
-      if (primaryViewModel === undefined) {
-        addViewModel(newUuid, networkViews[0])
-      }
-
-      if (interactionNetworkId === undefined || interactionNetworkId === '') {
-        // Apply default layout for the first time
-        const afterLayout = (
-          positionMap: Map<IdType, [number, number]>,
-        ): void => {
-          updateNodePositions(network.id, positionMap)
-          setIsRunning(false)
-        }
-
-        if (network !== undefined && engine !== undefined) {
-          setIsRunning(true)
-          engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
-        }
-      }
-    }
     setQueryNetworkId(newUuid)
     return newUuid
+  }
+
+  const registerNetwork = (
+    network: Network,
+    networkView: NetworkView,
+    nodeTable: Table,
+    edgeTable: Table,
+  ): void => {
+    // Register new networks to the store if not cached
+    const newNetworkId: string = network.id
+    addNewNetwork(network)
+    addTable(newNetworkId, nodeTable, edgeTable)
+    addViewModel(newNetworkId, networkView)
+
+    if (interactionNetworkId === undefined || interactionNetworkId === '') {
+      // Apply default layout for the first time
+      const afterLayout = (
+        positionMap: Map<IdType, [number, number]>,
+      ): void => {
+        updateNodePositions(network.id, positionMap)
+        setIsRunning(false)
+      }
+
+      if (network !== undefined && engine !== undefined) {
+        setIsRunning(true)
+        engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
+      }
+    }
   }
 
   useEffect(() => {
@@ -305,7 +305,17 @@ export const SubNetworkPanel = ({
     }
 
     const { network } = data
+    // Check if the network is already in the store
     const newUuid: string = network.id.toString()
+    const queryNetwork: Network | undefined = networks.get(newUuid)
+    if (queryNetwork === undefined) {
+      registerNetwork(
+        network,
+        data.networkViews[0],
+        data.nodeTable,
+        data.edgeTable,
+      )
+    }
 
     if (queryNetworkId === newUuid) {
       return
@@ -314,22 +324,20 @@ export const SubNetworkPanel = ({
     updateNetworkView()
   }, [data])
 
-  useEffect(() => {
-    if (selectedNodes === undefined || selectedNodes.length === 0) {
-      // Clerar the selected nodes
-
-      return
-    } else {
-      // Transfer the original selection to the subnet
-      console.log('Subnetwork Selection updated', selectedNodes)
-    }
-  }, [selectedNodes])
-
   if (isFetching) {
     return (
       <MessagePanel
         message={`Loading network: ${queryNetworkId}`}
         showProgress={true}
+      />
+    )
+  }
+
+  if (error !== undefined && error !== null) {
+    return (
+      <MessagePanel
+        message={`! Error Loading network: (${error.message})`}
+        showProgress={false}
       />
     )
   }
@@ -363,7 +371,7 @@ export const SubNetworkPanel = ({
       >
         Subsystem: {subNetworkName}
       </Typography>
-      <CyjsRenderer network={queryNetwork} />
+      <CyjsRenderer network={queryNetwork} displayMode={displayMode} />
       <FloatingToolBar
         targetNetworkId={queryNetworkId ?? undefined}
         networkLabel={networkLabel}

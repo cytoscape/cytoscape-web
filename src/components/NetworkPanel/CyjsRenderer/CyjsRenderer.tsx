@@ -23,15 +23,29 @@ import { useLayoutStore } from '../../../store/LayoutStore'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
+import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+
 interface NetworkRendererProps {
   network?: Network
+
+  /**
+   * How to display the selections.
+   *
+   * If "select", then the selected objects will be highlighted.
+   * If "show_hide", then the selected objects will be shown and
+   * the others will be hidden.
+   */
+  displayMode?: DisplayMode
 }
 
 /**
  *
  * @returns
  */
-const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
+const CyjsRenderer = ({
+  network,
+  displayMode = DisplayMode.SELECT,
+}: NetworkRendererProps): ReactElement => {
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
   )
@@ -240,7 +254,13 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         isViewCreated.current = true
       }, 1000)
     },
-    [network, cy, activeNetworkId],
+    [
+      network,
+      cy,
+      activeNetworkId,
+      networkView?.selectedNodes,
+      networkView?.selectedEdges,
+    ],
   )
 
   const applyStyleUpdate = (): void => {
@@ -387,6 +407,9 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     }
 
     if (selectedNodes.length === 0) {
+      if (displayMode === DisplayMode.SHOW_HIDE) {
+        cy.nodes().show()
+      }
       cy.nodes().unselect()
     } else {
       cy.nodes()
@@ -398,14 +421,30 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     }
     if (selectedEdges.length === 0) {
       cy.edges().unselect()
+      if (displayMode === DisplayMode.SHOW_HIDE) {
+        cy.edges().hide()
+      } else {
+        cy.edges().show()
+      }
     } else {
-      cy.edges()
+      if (displayMode === DisplayMode.SHOW_HIDE) {
+        cy.edges().hide()
+      } else {
+        cy.edges().show()
+      }
+
+      const newSelectedEdges = cy
+        .edges()
         .filter((ele: SingularElementArgument) => {
           return selectedEdges.includes(ele.data('id'))
         })
-        .select()
+
+      if (displayMode === DisplayMode.SHOW_HIDE) {
+        newSelectedEdges.show()
+      } else {
+        newSelectedEdges.select()
+      }
     }
-    // cy.on('select unselect boxend', selectionHandler)
   }, [networkView?.selectedNodes, networkView?.selectedEdges])
 
   /**
