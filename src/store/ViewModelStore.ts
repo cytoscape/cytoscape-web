@@ -278,10 +278,13 @@ export const useViewModelStore = create(
               state.viewModels[networkId] = [networkView]
             }
 
-            // Register to the database
-            void putNetworkViewToDb(networkId, networkView).then(() => {
-              // console.info('Network view model added to the DB.', networkId)
-            })
+            const viewType = networkView.type
+            if (viewType !== 'circlePacking') {
+              // Store only default view type (node-link diagram) only.
+              void putNetworkViewToDb(networkId, networkView).then(() => {
+                // console.info('Network view model added to the DB.', networkId)
+              })
+            }
             return state
           })
         },

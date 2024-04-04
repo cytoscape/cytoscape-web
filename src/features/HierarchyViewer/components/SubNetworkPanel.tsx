@@ -179,6 +179,7 @@ export const SubNetworkPanel = ({
   const getToken = useCredentialStore((state) => state.getToken)
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
+  const t0 = performance.now()
   const result = useQuery({
     queryKey: [
       hierarchyId,
@@ -194,10 +195,11 @@ export const SubNetworkPanel = ({
       const data = await ndexQueryFetcher([...keys, token])
       return data
     },
-    // refetchOnReconnect: 'always',
+    refetchOnReconnect: 'always',
   })
   const { data, error, isFetching } = result
 
+  // console.log('Fetch time = ', performance.now() - t0)
   if (error !== undefined && error !== null) {
     console.error('Failed to get network', error)
   }

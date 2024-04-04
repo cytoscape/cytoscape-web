@@ -5,7 +5,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 
-const MAX_RETRY_COUNT: number = 5
+const MAX_RETRY_COUNT: number = 1
 
 export const ndexQueryFetcher = async (
   params: string[],
