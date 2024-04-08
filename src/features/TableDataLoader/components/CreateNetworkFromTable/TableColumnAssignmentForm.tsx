@@ -196,9 +196,6 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     setCurrentNetworkId(newNetworkId)
     reset()
     props.handleClose()
-
-    // setTables(nodeTable, edgeTable)
-    // goToStep(TableDataLoaderStep.TableViewer)
   }
 
   const handleSelectNoneClick = () => {

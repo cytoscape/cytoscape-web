@@ -75,9 +75,8 @@ export const createViewModelFromNetwork = (
   })
 
   edges.forEach((edge: Edge) => {
-    const translatedId = translateCXEdgeId(edge.id.toString())
-    edgeViews[translatedId] = {
-      id: translatedId,
+    edgeViews[edge.id] = {
+      id: edge.id,
       values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>(),
     }
   })

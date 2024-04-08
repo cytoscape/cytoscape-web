@@ -346,8 +346,6 @@ export function createNetworkFromTableData(
     defaultValue: '',
   }
 
-  console.log('RES', rows, rows.length)
-
   return {
     summary,
     nodeTable,
