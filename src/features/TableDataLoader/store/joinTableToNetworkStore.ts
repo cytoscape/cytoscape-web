@@ -23,6 +23,7 @@ export const defaultJoinTableToNetworkOptions: JoinTableToNetworkOptions = {
 }
 
 interface JoinTableToNetworkState {
+  show: boolean
   loading: boolean
   step: JoinTableToNetworkStep
   file?: File
@@ -31,6 +32,7 @@ interface JoinTableToNetworkState {
 }
 
 interface JoinTableToNetworkAction {
+  setShow: (show: boolean) => void
   goToStep: (nextStep: JoinTableToNetworkStep) => void
   setFile: (f: File) => void
   setRawText: (s: string) => void
@@ -42,10 +44,16 @@ type JoinTableToNetworkStore = JoinTableToNetworkState &
 
 export const useJoinTableToNetworkStore = create(
   immer<JoinTableToNetworkStore>((set) => ({
+    show: false,
     loading: false,
     step: JoinTableToNetworkStep.FileUpload,
     options: defaultJoinTableToNetworkOptions,
     rawText: '',
+    setShow: (show: boolean) => {
+      set((state) => {
+        state.show = show
+      })
+    },
     setFile: (f: File) => {
       set((state) => {
         state.file = f
