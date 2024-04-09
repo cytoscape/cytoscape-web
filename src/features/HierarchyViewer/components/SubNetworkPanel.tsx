@@ -199,7 +199,6 @@ export const SubNetworkPanel = ({
   })
   const { data, error, isFetching } = result
 
-  // console.log('Fetch time = ', performance.now() - t0)
   if (error !== undefined && error !== null) {
     console.error('Failed to get network', error)
   }
@@ -225,11 +224,6 @@ export const SubNetworkPanel = ({
     // const network: Network | undefined = networks.get(id)
     const visualStyle: VisualStyle | undefined = vs[id]
     await putVisualStyleToDb(id, visualStyle)
-
-    const viewModel: NetworkView | undefined = getViewModel(id)
-    if (viewModel !== undefined) {
-      // await putNetworkViewToDb(id, viewModel)
-    }
   }
 
   const updateNetworkView = (): string => {

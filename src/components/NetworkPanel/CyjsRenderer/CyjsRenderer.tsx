@@ -191,9 +191,8 @@ const CyjsRenderer = ({
 
       // single selection listener
       cy.on('tap', (e: EventObject) => {
-        console.log('handling TAP event: ', e)
+        // console.log('handling TAP event: ', e)
         // Check for background click
-
         // This is necessary to access the latest value from closure
         const activeId: string = activeNetworkIdRef.current
 
@@ -457,7 +456,7 @@ const CyjsRenderer = ({
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
-        wheelSensitivity: 0.1,
+        // wheelSensitivity: 0.1,
       })
       setCy(cy)
       // Now add event handlers. This is necessary only once.

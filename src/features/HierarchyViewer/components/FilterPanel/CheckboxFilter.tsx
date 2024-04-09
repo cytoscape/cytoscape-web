@@ -128,6 +128,9 @@ export const CheckboxFilter = ({
     if (newChecked.length !== 0) {
       searchParams.set(FilterUrlParams.FILTER_RANGE, newChecked.join(',') || '')
       setSearchParams(searchParams)
+    } else {
+      searchParams.delete(FilterUrlParams.FILTER_RANGE)
+      setSearchParams(searchParams)
     }
   }
 
