@@ -50,11 +50,17 @@ import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
 import { valueTypeName2Label } from '../../model/impl/CreateNetworkFromTable'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 import { useTableStore } from '../../../../store/TableStore'
+import { useUiStateStore } from '../../../../store/UiStateStore'
 
 export function TableColumnAppendForm(props: BaseMenuProps) {
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+
+  const activeTableIndex = useUiStateStore(
+    (state) => state.ui.tableUi.activeTabIndex,
+  )
+
   const table = useTableStore((state) => state.tables[currentNetworkId])
   const setTable = useTableStore((state) => state.setTable)
   const nodeTable = table?.nodeTable
@@ -63,7 +69,9 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
   const rawText = useJoinTableToNetworkStore((state) => state.rawText)
   const reset = useJoinTableToNetworkStore((state) => state.reset)
 
-  const [tableToAppend, setTableToAppend] = useState<'node' | 'edge'>('node')
+  const [tableToAppend, setTableToAppend] = useState<'node' | 'edge'>(
+    activeTableIndex === 0 || activeTableIndex === 2 ? 'node' : 'edge',
+  )
   const [caseSensitiveKeyValues, setCaseSensitiveKeyValues] = useState(true)
   const [networkKeyColumn, setNetworkKeyColumn] = useState<
     CyWebColumn | undefined
