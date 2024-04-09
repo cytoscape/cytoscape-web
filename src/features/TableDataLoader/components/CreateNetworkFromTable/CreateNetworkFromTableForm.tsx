@@ -33,11 +33,9 @@ export function CreateNetworkFromTableForm(props: BaseMenuProps) {
   return (
     <PrimeReactProvider>
       <MantineProvider>
-        <Container p="md" bg="#D6D6D6">
-          <Paper p="md" shadow="md">
-            {content}
-          </Paper>
-        </Container>
+        <Paper p="md" shadow="md" mih={600} miw={1000}>
+          {content}
+        </Paper>
       </MantineProvider>
     </PrimeReactProvider>
   )

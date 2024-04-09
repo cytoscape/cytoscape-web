@@ -240,12 +240,6 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
 
   return (
     <>
-      <Center>
-        <Title c="gray" order={4}>
-          Edit Column Definitions
-        </Title>
-      </Center>
-      <Space h="lg" />
       <Group justify="flex-end">
         <Button
           size="compact-xs"

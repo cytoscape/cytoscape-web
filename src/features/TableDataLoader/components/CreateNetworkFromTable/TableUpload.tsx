@@ -74,12 +74,6 @@ export function TableUpload(props: BaseMenuProps) {
 
   return (
     <>
-      <Center>
-        <Title c="gray" order={4}>
-          Upload Tabular Data File
-        </Title>
-      </Center>
-      <Space h="lg" />
       <Dropzone
         onDrop={(files: any) => {
           onFileDrop(files[0])

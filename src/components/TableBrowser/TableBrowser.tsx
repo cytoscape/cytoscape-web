@@ -53,7 +53,6 @@ import { Ui } from '../../models/UiModel'
 import NetworkInfoPanel from './NetworkInfoPanel'
 import { NetworkView } from '../../models/ViewModel'
 import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
-import { JoinTableToNetworkForm } from '../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -647,7 +646,6 @@ export default function TableBrowser(props: {
       <Button sx={{ mr: 1 }} onClick={() => showTableJoinForm(true)}>
         Join table to network
       </Button>
-      <JoinTableToNetworkForm handleClose={() => showTableJoinForm(false)} />
       <CreateTableColumnForm
         error={createColumnFormError}
         open={showCreateColumnForm}

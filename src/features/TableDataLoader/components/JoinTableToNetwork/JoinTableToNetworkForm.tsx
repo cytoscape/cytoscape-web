@@ -33,13 +33,23 @@ export function JoinTableToNetworkForm(props: BaseMenuProps) {
   }
 
   const content = stepContentMap[step]
+  const title =
+    step === JoinTableToNetworkStep.FileUpload
+      ? 'Upload Tabular Data File'
+      : 'Edit Column Definitions'
 
   return (
     <MantineProvider>
       <PrimeReactProvider>
         <ModalsProvider>
           <Modal
-            xOffset={-500}
+            title={
+              <Center>
+                <Title c="gray" order={4}>
+                  {title}
+                </Title>
+              </Center>
+            }
             size="auto"
             withinPortal={false}
             opened={show}
@@ -48,11 +58,9 @@ export function JoinTableToNetworkForm(props: BaseMenuProps) {
               setShow(false)
             }}
           >
-            <Container p="md" bg="#D6D6D6">
-              <Paper p="md" shadow="md" mih={1000} miw={1000}>
-                {content}
-              </Paper>
-            </Container>
+            <Paper p="md" shadow="md" mih={1000} miw={1000}>
+              {content}
+            </Paper>
           </Modal>
         </ModalsProvider>
       </PrimeReactProvider>
