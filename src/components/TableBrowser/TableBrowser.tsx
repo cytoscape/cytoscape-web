@@ -643,7 +643,11 @@ export default function TableBrowser(props: {
       <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
         Create Column
       </Button>
-      <Button sx={{ mr: 1 }} onClick={() => showTableJoinForm(true)}>
+      <Button
+        disabled={tables[props.currentNetworkId] === undefined}
+        sx={{ mr: 1 }}
+        onClick={() => showTableJoinForm(true)}
+      >
         Join table to network
       </Button>
       <CreateTableColumnForm
