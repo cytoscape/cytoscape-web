@@ -22,7 +22,7 @@ export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
         (state) => state.summaries,
     )
     const networkTables: Record<IdType, TableRecord> = useTableStore((state) => state.tables);
-    console.log(networkTables)
+
     // Information about the current network
     const currentNetwork: { ownerUUID: IdType; name: string, nodeColumns: Column[], edgeColumns: Column[] } = {
         ownerUUID: currentNetworkId as IdType,
