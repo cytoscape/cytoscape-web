@@ -50,6 +50,10 @@ import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
 import { validateHcx } from '../../features/HierarchyViewer/model/impl/hcxValidators'
 import { useMessageStore } from '../../store/MessageStore'
 import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
+import { CreateNetworkFromTableForm } from '../../features/TableDataLoader/components/CreateNetworkFromTable/CreateNetworkFromTableForm'
+import { JoinTableToNetworkForm } from '../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
+import { useCreateNetworkFromTableStore } from '../../features/TableDataLoader/store/createNetworkFromTableStore'
+import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -66,6 +70,11 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   // Subscribers for optional features
   useHierarchyViewerManager()
+
+  const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
+  const showCreateNetworkFromTableForm = useCreateNetworkFromTableStore(
+    (state) => state.setShow,
+  )
 
   // Block multiple loading
   const isLoadingRef = useRef<boolean>(false)
@@ -505,6 +514,12 @@ const WorkSpaceEditor = (): JSX.Element => {
                     ? currentNetworkId
                     : activeNetworkView
                 }
+              />
+              <JoinTableToNetworkForm
+                handleClose={() => showTableJoinForm(false)}
+              />
+              <CreateNetworkFromTableForm
+                handleClose={() => showCreateNetworkFromTableForm(false)}
               />
             </Suspense>
           </Allotment.Pane>

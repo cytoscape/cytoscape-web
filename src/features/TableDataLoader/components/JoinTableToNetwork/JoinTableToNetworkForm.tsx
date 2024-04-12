@@ -7,6 +7,9 @@ import {
   MantineProvider,
   Modal,
   RemoveScroll,
+  Tooltip,
+  ActionIcon,
+  Group,
 } from '@mantine/core'
 
 import { TableUpload } from '../JoinTableToNetwork/TableUpload'
@@ -19,11 +22,14 @@ import {
 import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
 import { TableColumnAppendForm } from './TableColumnAppendForm'
 import { ModalsProvider } from '@mantine/modals'
+import { useState } from 'react'
+import { IconWindowMinimize, IconWindowMaximize } from '@tabler/icons-react'
 
 export function JoinTableToNetworkForm(props: BaseMenuProps) {
   const step = useJoinTableToNetworkStore((state) => state.step)
   const show = useJoinTableToNetworkStore((state) => state.show)
   const setShow = useJoinTableToNetworkStore((state) => state.setShow)
+  const [fullScreen, setFullScreen] = useState(false)
 
   const stepContentMap = {
     [JoinTableToNetworkStep.FileUpload]: <TableUpload {...props}></TableUpload>,
@@ -43,12 +49,42 @@ export function JoinTableToNetworkForm(props: BaseMenuProps) {
       <PrimeReactProvider>
         <ModalsProvider>
           <Modal
+            zIndex={999999}
+            centered
+            fullScreen={fullScreen}
             title={
-              <Center>
+              <Group justify="space-between">
                 <Title c="gray" order={4}>
                   {title}
                 </Title>
-              </Center>
+                {fullScreen ? (
+                  <Tooltip
+                    zIndex={9999999}
+                    position="bottom"
+                    label="Exit Fullscreen"
+                  >
+                    <ActionIcon
+                      variant="default"
+                      onClick={() => setFullScreen(false)}
+                    >
+                      <IconWindowMinimize />
+                    </ActionIcon>
+                  </Tooltip>
+                ) : (
+                  <Tooltip
+                    zIndex={9999999}
+                    position="bottom"
+                    label="Fullscreen"
+                  >
+                    <ActionIcon
+                      variant="default"
+                      onClick={() => setFullScreen(true)}
+                    >
+                      <IconWindowMaximize />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </Group>
             }
             size="auto"
             withinPortal={false}

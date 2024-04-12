@@ -31,8 +31,6 @@ import { PanelState } from '../models/UiModel/PanelState'
 import { Panel } from '../models/UiModel/Panel'
 import { Workspace } from '../models/WorkspaceModel'
 import { SyncTabsAction } from './SyncTabs'
-import { JoinTableToNetworkForm } from '../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
-import { useJoinTableToNetworkStore } from '../features/TableDataLoader/store/joinTableToNetworkStore'
 
 // This is a valid workspace ID for sharing
 const DUMMY_WS_ID = '0'
@@ -77,9 +75,6 @@ const AppShell = (): ReactElement => {
   }, [errorMessageInStore])
 
   const setUi = useUiStateStore((state) => state.setUi)
-
-  const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
-
   // const { showErrorDialog } = useUiStateStore((state) => state.ui)
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
@@ -320,7 +315,6 @@ const AppShell = (): ReactElement => {
         }}
       />
       <SyncTabsAction />
-      <JoinTableToNetworkForm handleClose={() => showTableJoinForm(false)} />
     </Box>
   )
 }

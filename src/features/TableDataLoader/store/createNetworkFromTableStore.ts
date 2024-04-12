@@ -23,6 +23,7 @@ export const defaultTableDataLoaderOpts: CreateNetworkFromTableOptions = {
 }
 
 interface CreateNetworkFromTableState {
+  show: boolean
   loading: boolean
   step: CreateNetworkFromTableStep
   file?: File
@@ -31,6 +32,7 @@ interface CreateNetworkFromTableState {
 }
 
 interface CreateNetworkFromTableAction {
+  setShow: (show: boolean) => void
   goToStep: (nextStep: CreateNetworkFromTableStep) => void
   setFile: (f: File) => void
   setRawText: (s: string) => void
@@ -42,10 +44,16 @@ type CreateNetworkFromTableStore = CreateNetworkFromTableState &
 
 export const useCreateNetworkFromTableStore = create(
   immer<CreateNetworkFromTableStore>((set) => ({
+    show: false,
     loading: false,
     step: CreateNetworkFromTableStep.FileUpload,
     options: defaultTableDataLoaderOpts,
     rawText: '',
+    setShow: (show: boolean) => {
+      set((state) => {
+        state.show = show
+      })
+    },
     setFile: (f: File) => {
       set((state) => {
         state.file = f
