@@ -1,3 +1,32 @@
+                    // Handle dropdown change
+    const handleNetworksTBMerged = async (event: SelectChangeEvent<IdType[]>): Promise<void> => {
+        let { target: { value } } = event;
+        let selectedValues: string[] = [];
+        if (typeof value === 'string') {
+            selectedValues = value.split(',');
+        } else {
+            selectedValues = value;
+        }
+
+        // Update the state 
+        setNetworksTBMerged(selectedValues);
+        const newMatchingColsTBMerged = Object.keys(matchingColsTBMerged)
+            .filter(key => selectedValues.includes(key))
+            .reduce<Record<IdType, string>>((newObj, key) => {
+                newObj[key] = matchingColsTBMerged[key];
+                return newObj;
+            }, {});
+        setMatchingColsTBMerged(newMatchingColsTBMerged);
+
+        // Check and load networks if necessary
+        for (const v of selectedValues) {
+            if (!networkTables.hasOwnProperty(v)) {
+                await loadNetworkById(v);
+            }
+        }
+        return
+    };
+                
                 <FormControl fullWidth margin="normal">
                     <InputLabel id="merge-type-label">Type of Merge</InputLabel>
                     <Select
@@ -149,3 +178,34 @@
                         }
                     </Table>
                 </TableContainer>
+
+
+                <FormControl fullWidth margin="normal">
+                    <InputLabel id="networks-to-merge-label">Choose the Networks to be Merged</InputLabel>
+                    <Select
+                        labelId="networks-to-merge-label"
+                        id="networks-to-merge-select"
+                        multiple
+                        value={networksTBMerged}
+                        onChange={handleNetworksTBMerged}
+                        input={<OutlinedInput id="select-multiple-chip" label="Choose the Networks to be Merged" />}
+                        renderValue={(selected) => (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                {selected.map((id) => (
+                                    <Chip
+                                        key={id}
+                                        label={availableNetworks[id].name}
+                                        onClick={(event) => event.stopPropagation()}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    >
+                        {Object.keys(availableNetworks).map((externalId) => (
+                            <MenuItem key={externalId} value={externalId}>
+                                {availableNetworks[externalId].name}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
