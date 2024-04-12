@@ -1,3 +1,6 @@
+/**
+  * Filter states encoded in the URL
+ */
 export const FilterUrlParams = {
   FILTER_FOR: 'filterFor',
   FILTER_BY: 'filterBy',

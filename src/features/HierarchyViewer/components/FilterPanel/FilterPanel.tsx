@@ -34,7 +34,7 @@ import {
   FilterConfig,
   FilterWidgetType,
 } from '../../../../models/FilterModel'
-import { FilterUrlParams } from './FilterUrlParams'
+import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
 
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 

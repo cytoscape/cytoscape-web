@@ -292,6 +292,20 @@ const WorkSpaceEditor = (): JSX.Element => {
   }
 
   /**
+   * Restore filter states from URL
+   */
+  const restoreFilterStates = (): void => {
+    const filterStr = search.get('filter')
+    if (filterStr !== undefined && filterStr !== null) {
+      // const filters = filterStr.split(' ')
+      // filters.forEach((filter) => {
+      //   const [filterName, filterValue] = filter.split('=')
+      //   applyFilter(filterName, filterValue)
+      // })
+    }
+  }
+
+  /**
    * Initializations
    */
   useEffect(() => {

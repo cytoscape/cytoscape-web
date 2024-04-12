@@ -18,7 +18,7 @@ import {
   getBasicFilter,
 } from '../../../../models/FilterModel'
 import { useSearchParams } from 'react-router-dom'
-import { FilterUrlParams } from './FilterUrlParams'
+import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -125,15 +125,19 @@ export const CheckboxFilter = ({
     })
 
     // Update URL (only when the selection is not empty)
-    if (newChecked.length !== 0) {
-      searchParams.set(FilterUrlParams.FILTER_RANGE, newChecked.join(',') || '')
+    updateUrl(newChecked)
+  }
+
+  const updateUrl = (checked: ValueType[]): void => {
+    if (checked.length !== 0) {
+      searchParams.set(FilterUrlParams.FILTER_RANGE, checked.join(',') || '')
       setSearchParams(searchParams)
     } else {
+      // Remove the entire parameter if the selection is empty
       searchParams.delete(FilterUrlParams.FILTER_RANGE)
       setSearchParams(searchParams)
     }
   }
-
   /**
    * Select / unselect all options
    *
@@ -151,6 +155,8 @@ export const CheckboxFilter = ({
         values: [],
       })
     }
+
+    updateUrl(checked ? allOptions : [])
   }
 
   /**
