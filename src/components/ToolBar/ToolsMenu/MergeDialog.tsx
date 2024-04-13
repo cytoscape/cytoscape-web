@@ -20,7 +20,7 @@ import Paper from '@mui/material/Paper';
 import { MergeType } from '../../../models/MergeModel/impl/MergeType';
 import { Column } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
-import { Box, Chip, List, ListItem, ListItemText, ListSubheader, OutlinedInput, Typography } from '@mui/material';
+import { Box, Chip, List, ListItem, ListItemText, ListSubheader, OutlinedInput, TextField, Typography } from '@mui/material';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../store/CredentialStore';
@@ -53,9 +53,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, currentNet
     const [view, setView] = useState('node');
     const { ndexBaseUrl } = useContext(AppConfigContext);
     const [mergeType, setMergeOption] = useState(MergeType.union);
-    const [matchingCurCol, setMatchingCurCol] = useState('');
-    const [matchingColsToMerge, setMatchingColsToMerge] = useState<Record<IdType, string>>({});
-    const [matchingTable, setMatchingTable] = useState(() =>
+    const [matchingMatchingCols, setMatchingMatchingCols] = useState<Record<IdType, string>>({
+        [currentNetwork.ownerUUID]: '',
+    });
+    const [matchingTable, setMatchingTable] = useState(
         currentNetwork.nodeColumns.map((col, index) => ({
             id: index,
             [currentNetwork.ownerUUID]: col.name,
@@ -126,12 +127,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, currentNet
     const addViewModel = useViewModelStore((state) => state.add)
     const networkTables: Record<IdType, TableRecord> = useTableStore((state) => state.tables);
 
-    const handleSetCurCol = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setMatchingCurCol(event.target.value as string);
-    };
-    const handleSetColsToMerge = (networkId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-        setMatchingColsToMerge({
-            ...matchingColsToMerge,
+    const handleSetMatchingCols = (networkId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        setMatchingMatchingCols({
+            ...matchingMatchingCols,
             [networkId]: event.target.value as string
         });
     };
@@ -197,11 +195,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, currentNet
         setMatchingTable(newMatchingTable);
     }, [selectedNetworks, currentNetwork, availableNetworks]);
 
-    const handleSetMachingTable = () => {
-
-    }
-
-
     const handleMergeTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setMergeOption(event.target.value as string);
     };
@@ -223,46 +216,58 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, currentNet
         return pairs.findIndex(pair => pair[1] === uuid);
     };
 
-    // Define a dropdown template for network columns
-    const networkColumnTemplate = (rowData: { [x: string]: any; }, column: { field: string | number; }) => {
-        const networkOptions = availableNetworks[column.field]?.nodeColumns.map(nc => ({ label: nc.name, value: nc.name })) || [];
+    // Dropdown template for network columns
+    const networkColumnTemplate = (rowData: { [x: string]: any; }, field: string) => {
+        const emptyOption = { label: 'None', value: '' };
+        const networkOptions = field === currentNetwork.ownerUUID ?
+            [...currentNetwork.nodeColumns.map(nc => ({ label: nc.name, value: nc.name })), emptyOption] :
+            [...availableNetworks[field]?.nodeColumns.map(nc => ({ label: nc.name, value: nc.name })), emptyOption];
+
         return (
-            <Dropdown
-                value={rowData[column.field]}
-                options={networkOptions}
-                onChange={(e) => onDropdownChange(e, rowData, column.field)}
-                placeholder={rowData[column.field]}
-            />
+            <Select
+                value={rowData[field]}
+                onChange={(e) => onDropdownChange(e, rowData, field)}
+                displayEmpty
+                input={<OutlinedInput />}
+                MenuProps={{ style: { maxHeight: 300 } }}
+            >
+                {networkOptions.map(option => (
+                    <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                    </MenuItem>
+                ))}
+            </Select>
         );
     };
 
-    // Define an editable cell template for the 'Merged Network' column
+    // Editable cell template for the 'Merged Network' column
     const mergedNetworkTemplate = (rowData: { [x: string]: any; }) => {
         const [isFocused, setIsFocused] = useState(false);
         return (
-            <InputText
+            <TextField
                 type="text"
                 value={rowData.mergedNetwork}
                 style={{
-                    border: isFocused ? '2px solid #007ad9' : '0 solid transparent',
+                    border: '0 solid transparent',
                     outline: 'none'
                 }}
                 onChange={(e) => onMergedNetworkChange(e, rowData)}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
+                variant="outlined"
+                fullWidth
             />
         );
     };
-
-    // Handler for dropdown changes
-    const onDropdownChange = (e: DropdownChangeEvent, rowData: { [x: string]: any; }, field: string | number) => {
+    // Handler for 'Dropdown' changes
+    const onDropdownChange = (e: SelectChangeEvent<any>, rowData: { [x: string]: any; }, field: string) => {
         setMatchingTable(prevTable => prevTable.map(row =>
-            row.id === rowData.id ? { ...row, [e.target.name]: e.value } : row
+            row.id === rowData.id ? { ...row, [field]: e.target.value } : row
         ));
     };
 
     // Handler for 'Merged Network' changes
-    const onMergedNetworkChange = (e: React.ChangeEvent<HTMLInputElement>, rowData: { [x: string]: any; }) => {
+    const onMergedNetworkChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, rowData: { [x: string]: any; }) => {
         setMatchingTable(prevTable => prevTable.map(row =>
             row.id === rowData.id ? { ...row, mergedNetwork: e.target.value } : row
         ));
@@ -364,8 +369,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, currentNet
                             <TableRow>
                                 <TableCell key={currentNetwork.ownerUUID}>
                                     <Select
-                                        value={matchingCurCol}
-                                        onChange={handleSetCurCol}
+                                        value={matchingMatchingCols[currentNetwork.ownerUUID] || ''}
+                                        onChange={handleSetMatchingCols(currentNetwork.ownerUUID)}
                                     >
                                         {currentNetwork.nodeColumns.map((column) => (
                                             <MenuItem key={column.name} value={column.name}>
@@ -377,8 +382,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, currentNet
                                 {selectedNetworks.map(net => (
                                     <TableCell key={net[1]}>
                                         <Select
-                                            value={matchingColsToMerge[net[1]] || ''}
-                                            onChange={handleSetColsToMerge(net[1])}
+                                            value={matchingMatchingCols[net[1]] || ''}
+                                            onChange={handleSetMatchingCols(net[1])}
                                         >
                                             {availableNetworks[net[1]]?.nodeColumns.map((column) => (
                                                 <MenuItem key={column.name} value={column.name}>
@@ -397,38 +402,37 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, currentNet
                     How to merge columns:
                 </Typography>
 
-                {/* <div className="card">
-                    <DataTable value={matchingTable} tableStyle={{ minWidth: '50rem' }}>
-                        <PrimeColumn field={currentNetwork.ownerUUID} header={currentNetwork.name}></PrimeColumn>
-                        {
-                            selectedNetworks.length <= 0
-                                ? <PrimeColumn header='Network to Merge' />
-                                : selectedNetworks.map(net => {
-                                    const network = availableNetworks[net[1]];
-                                    return (
-                                        <PrimeColumn key={net[1]} field={net[1]} header={network?.name ?? 'Error'} />
-                                    )
-                                })
-                        }
-                        <PrimeColumn field="mergedNetwork" header="Merged Network"></PrimeColumn>
-                        <PrimeColumn field="type" header="Column Type"></PrimeColumn>
-
-                    </DataTable>
-                </div> */}
                 <div className="card">
-                    <DataTable value={matchingTable} tableStyle={{ minWidth: '50rem' }}>
-                        <PrimeColumn field={currentNetwork.ownerUUID} header={currentNetwork.name} body={networkColumnTemplate}></PrimeColumn>
-                        {
-                            selectedNetworks.map(net => {
-                                const network = availableNetworks[net[1]];
-                                return (
-                                    <PrimeColumn key={net[1]} field={net[1]} header={network?.name ?? 'Error'} body={networkColumnTemplate} />
-                                );
-                            })
-                        }
-                        <PrimeColumn field="mergedNetwork" header="Merged Network" body={(rowData) => mergedNetworkTemplate(rowData)}></PrimeColumn>
-                        <PrimeColumn field="type" header="Column Type" body={(rowData) => rowData.type} />
-                    </DataTable>
+                    <TableContainer component={Paper}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>{currentNetwork.name}</TableCell>
+                                    {selectedNetworks.map(net => (
+                                        <TableCell key={net[1]}>{availableNetworks[net[1]]?.name ?? 'Error'}</TableCell>
+                                    ))}
+                                    <TableCell>Merged Network</TableCell>
+                                    <TableCell>Column Type</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {matchingTable.map((row, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell key={currentNetwork.ownerUUID}>
+                                            {networkColumnTemplate(row, currentNetwork.ownerUUID)}
+                                        </TableCell>
+                                        {selectedNetworks.map(net => (
+                                            <TableCell key={net[1]}>
+                                                {networkColumnTemplate(row, net[1])}
+                                            </TableCell>
+                                        ))}
+                                        <TableCell>{mergedNetworkTemplate(row)}</TableCell>
+                                        <TableCell>{row.type}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <Button onClick={() => setView(view === 'node' ? 'edge' : 'node')}>
