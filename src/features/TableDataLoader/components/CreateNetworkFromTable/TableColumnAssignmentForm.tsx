@@ -239,7 +239,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   console.log(rows, columns)
 
   return (
-    <>
+    <Box style={{ zIndex: 2001 }}>
       <Group justify="flex-end">
         <Button
           size="compact-xs"
@@ -293,7 +293,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
               }}
               header={
                 <Popover
-                  zIndex={999999}
+                  zIndex={2001}
                   position="bottom"
                   withArrow
                   arrowSize={20}
@@ -307,6 +307,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
                         </Text>
                         {h.invalidValues.length > 1 ? (
                           <Tooltip
+                            zIndex={2001}
                             label={`Column '${h.name}' has ${h.invalidValues.length} values that cannot be parsed as type ${valueTypeName2Label[h.dataType]}`}
                           >
                             <IconAlertCircle size={20} color="red" />
@@ -371,7 +372,14 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
         </Alert>
       ) : null}
       <Group justify="space-between">
-        <Popover width={300} position="right" withArrow shadow="lg">
+        <Popover
+          withinPortal={false}
+          zIndex={2001}
+          width={300}
+          position="right"
+          withArrow
+          shadow="lg"
+        >
           <Popover.Target>
             <Button variant="default" leftSection={<IconSettings />}>
               Advanced Settings
@@ -399,6 +407,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
             Cancel
           </Button>
           <Tooltip
+            zIndex={2001}
             disabled={!submitDisabled}
             label="All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
           >
@@ -408,6 +417,6 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           </Tooltip>
         </Group>
       </Group>
-    </>
+    </Box>
   )
 }

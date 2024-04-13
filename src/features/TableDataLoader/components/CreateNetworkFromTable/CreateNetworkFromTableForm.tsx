@@ -47,7 +47,7 @@ export function CreateNetworkFromTableForm(props: BaseMenuProps) {
         <ModalsProvider>
           <div>
             <Modal
-              zIndex={999999}
+              zIndex={2000}
               centered
               fullScreen={fullScreen}
               title={
@@ -57,7 +57,7 @@ export function CreateNetworkFromTableForm(props: BaseMenuProps) {
                   </Title>
                   {fullScreen ? (
                     <Tooltip
-                      zIndex={9999999}
+                      zIndex={2000}
                       position="bottom"
                       label="Exit Fullscreen"
                     >
@@ -69,11 +69,7 @@ export function CreateNetworkFromTableForm(props: BaseMenuProps) {
                       </ActionIcon>
                     </Tooltip>
                   ) : (
-                    <Tooltip
-                      zIndex={9999999}
-                      position="bottom"
-                      label="Fullscreen"
-                    >
+                    <Tooltip zIndex={2000} position="bottom" label="Fullscreen">
                       <ActionIcon
                         variant="default"
                         onClick={() => setFullScreen(true)}

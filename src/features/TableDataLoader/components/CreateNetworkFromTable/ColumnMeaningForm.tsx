@@ -57,7 +57,7 @@ export function ColumnAssignmentTypeForm(props: ColumnMeaningFormProps) {
     <Button.Group>
       {Object.values(ColumnAssignmentType).map((v) => {
         return (
-          <Tooltip key={v} label={columnAssingmentType2Label[v]}>
+          <Tooltip zIndex={2001} key={v} label={columnAssingmentType2Label[v]}>
             <Button
               style={{ opacity: !validValues.includes(v) ? 0.2 : 1 }}
               disabled={!validValues.includes(v)}

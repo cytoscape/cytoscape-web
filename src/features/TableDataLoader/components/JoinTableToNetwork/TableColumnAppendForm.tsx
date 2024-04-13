@@ -240,7 +240,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
   )
 
   return (
-    <Box>
+    <Box style={{ zIndex: 2001 }}>
       <Group>
         <Text>Import data as</Text>
         <SegmentedControl
@@ -264,6 +264,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
       <Group>
         <Text>Network Key Column</Text>
         <Select
+          comboboxProps={{ zIndex: 2002, withinPortal: false }}
           allowDeselect={false}
           data={validNetworkKeyColumns(selectedTable?.columns).map(
             (c) => c.name,
@@ -340,7 +341,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
               }}
               header={
                 <Popover
-                  zIndex={9999}
+                  zIndex={2001}
                   position="bottom"
                   withArrow
                   arrowSize={20}
@@ -435,7 +436,14 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
       ) : null}
 
       <Group justify="space-between">
-        <Popover width={300} position="right" withArrow shadow="lg">
+        <Popover
+          zIndex={2001}
+          withinPortal={false}
+          width={300}
+          position="right"
+          withArrow
+          shadow="lg"
+        >
           <Popover.Target>
             <Button variant="default" leftSection={<IconSettings />}>
               Advanced Settings
