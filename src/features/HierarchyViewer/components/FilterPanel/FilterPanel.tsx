@@ -10,7 +10,9 @@ import {
   AccordionDetails,
   AccordionSummary,
   Box,
+  Checkbox,
   Container,
+  Switch,
   Typography,
 } from '@mui/material'
 import { AttributeSelector } from './AttributeSelector'
@@ -49,6 +51,8 @@ const isInteractionNetwork = (networkId: IdType): boolean => {
 export const FilterPanel = () => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
+
+  const [isFilterEnabled, setIsFilterEnabled] = useState<boolean>(false)
 
   // Show or hide the advanced options
   const [showOptions, setShowOptions] = useState<boolean>(false)
