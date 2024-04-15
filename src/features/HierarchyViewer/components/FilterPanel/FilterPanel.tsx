@@ -10,7 +10,6 @@ import {
   AccordionDetails,
   AccordionSummary,
   Box,
-  Checkbox,
   Container,
   Switch,
   Typography,
@@ -56,6 +55,8 @@ export const FilterPanel = () => {
 
   // Show or hide the advanced options
   const [showOptions, setShowOptions] = useState<boolean>(false)
+  // const [expanded, setExpanded] = useState(false)
+  const [switchClicked, setSwitchClicked] = useState(false)
 
   // URL search parameters
   const [searchParams, setSearchParams] = useSearchParams()
@@ -190,14 +191,53 @@ export const FilterPanel = () => {
             margin: 0,
           }}
           expanded={showOptions}
-          onChange={() => setShowOptions(!showOptions)}
+          onChange={(event, isExpanded) => {
+            if (!isFilterEnabled) {
+              event.stopPropagation()
+              setSwitchClicked(false)
+            } else {
+              setShowOptions(isExpanded)
+            }
+          }}
         >
           <AccordionSummary
-            expandIcon={showOptions ? <ArrowDropDownIcon /> : <SettingsIcon />}
+            expandIcon={
+              showOptions ? (
+                <ArrowDropDownIcon />
+              ) : (
+                <SettingsIcon
+                  color={isFilterEnabled ? 'inherit' : 'disabled'}
+                />
+              )
+            }
             aria-controls="filter-option-panel"
             id="filter-option-header"
+            sx={{ margin: 0, padding: 0 }}
           >
-            <Typography>Filter:</Typography>
+            <Grid
+              item
+              sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                margin: 0,
+              }}
+            >
+              <Typography>Filter:</Typography>
+              <Switch
+                checked={isFilterEnabled}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setSwitchClicked(true)
+                }}
+                onChange={(event) => {
+                  event.stopPropagation()
+                  setIsFilterEnabled(!isFilterEnabled)
+                }}
+              />
+            </Grid>
           </AccordionSummary>
           <AccordionDetails>
             <Grid item sx={{ flex: 1 }}>
