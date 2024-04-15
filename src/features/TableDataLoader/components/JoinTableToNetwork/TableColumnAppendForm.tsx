@@ -242,7 +242,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
   return (
     <Box style={{ zIndex: 2001 }}>
       <Group>
-        <Text>Import data as</Text>
+        <Text w={200}>Import data as</Text>
         <SegmentedControl
           value={tableToAppend}
           onChange={(e) => setTableToAppend(e as 'node' | 'edge')}
@@ -253,16 +253,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
         />
       </Group>
       <Group>
-        <Text>Case sensitive key values</Text>
-        <Checkbox
-          checked={caseSensitiveKeyValues}
-          onChange={(event) =>
-            setCaseSensitiveKeyValues(event.currentTarget.checked)
-          }
-        />
-      </Group>
-      <Group>
-        <Text>Network Key Column</Text>
+        <Text w={200}>Key Column for Network</Text>
         <Select
           comboboxProps={{ zIndex: 2002, withinPortal: false }}
           allowDeselect={false}
@@ -276,6 +267,15 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
             )
           }
         ></Select>
+      </Group>
+      <Group>
+        <Text w={200}>Case sensitive key values</Text>
+        <Checkbox
+          checked={caseSensitiveKeyValues}
+          onChange={(event) =>
+            setCaseSensitiveKeyValues(event.currentTarget.checked)
+          }
+        />
       </Group>
       <Group justify="flex-end">
         <Button
@@ -341,7 +341,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
               }}
               header={
                 <Popover
-                  zIndex={2001}
+                  zIndex={999999}
                   position="bottom"
                   withArrow
                   arrowSize={20}
