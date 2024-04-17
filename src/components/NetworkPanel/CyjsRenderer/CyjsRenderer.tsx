@@ -420,11 +420,12 @@ const CyjsRenderer = ({
     }
     if (selectedEdges.length === 0) {
       cy.edges().unselect()
-      if (displayMode === DisplayMode.SHOW_HIDE) {
-        cy.edges().hide()
-      } else {
-        cy.edges().show()
-      }
+      cy.edges().show()
+      // if (displayMode === DisplayMode.SHOW_HIDE) {
+      //   cy.edges().hide()
+      // } else {
+      //   cy.edges().show()
+      // }
     } else {
       if (displayMode === DisplayMode.SHOW_HIDE) {
         cy.edges().hide()

@@ -19,11 +19,11 @@ import {
 } from '../../../../models/FilterModel'
 import { useSearchParams } from 'react-router-dom'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
+import { useTheme } from '@mui/material/styles'
 
 interface CheckboxFilterProps {
   // The network to be filtered
   targetNetworkId: IdType
-
   filterConfig: FilterConfig
   table: Table
   enableFilter: boolean
@@ -40,6 +40,9 @@ export const CheckboxFilter = ({
   table,
   enableFilter,
 }: CheckboxFilterProps): JSX.Element => {
+  const theme = useTheme()
+  const disabledColor = theme.palette.action.disabled
+
   // Updating URL by range
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -49,9 +52,6 @@ export const CheckboxFilter = ({
   const { description, attributeName } = filterConfig
   const updateRange = useFilterStore((state) => state.updateRange)
 
-  // const [checkedOptions, setCheckedOptions] = useState<ValueType[]>([])
-
-  // const [options, setOptions] = useState<string[]>([])
   const [allOptions, setAllOptions] = useState<string[]>([])
 
   // Check if all options are selected
@@ -164,8 +164,13 @@ export const CheckboxFilter = ({
    */
   useEffect(() => {
     //Apply the filter from the existing filter store
-    applyFilter()
-  }, [targetNetworkId, currentSelectedOptions.values])
+    if (enableFilter) {
+      applyFilter()
+    } else {
+      // Select all nodes / edges
+      exclusiveSelect(targetNetworkId, [''], [])
+    }
+  }, [enableFilter, targetNetworkId, currentSelectedOptions.values])
 
   const isAllSelected: boolean =
     allOptions.length > 0 &&
@@ -205,9 +210,12 @@ export const CheckboxFilter = ({
           let checkboxStyle = {}
           if (color !== undefined) {
             checkboxStyle = {
-              color,
+              color: !enableFilter ? disabledColor : color,
               '&.Mui-checked': {
-                color,
+                color: !enableFilter ? disabledColor : color,
+              },
+              '&.Mui-disabled': {
+                color: disabledColor,
               },
             }
           }

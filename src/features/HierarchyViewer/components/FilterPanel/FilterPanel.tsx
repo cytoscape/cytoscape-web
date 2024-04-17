@@ -283,7 +283,7 @@ export const FilterPanel = () => {
               targetNetworkId={targetNetworkId}
               table={table}
               filterConfig={filterConfigs[DEFAULT_FILTER_NAME]}
-              enableFilter={true}
+              enableFilter={isFilterEnabled}
             />
           </Box>
         )}
