@@ -19,8 +19,14 @@ import {
   VisualProperty,
   VisualStyle,
 } from '..'
+import { cxNodeLabelPositionConverter } from './cxNodeLabelPositionConverter'
 
-type CXLabelPositionValueType = 'center' | 'top' | 'bottom' | 'left' | 'right'
+export type CXLabelPositionValueType =
+  | 'center'
+  | 'top'
+  | 'bottom'
+  | 'left'
+  | 'right'
 export interface CXLabelPositionType {
   HORIZONTAL_ALIGN: CXLabelPositionValueType
   VERTICAL_ALIGN: CXLabelPositionValueType
@@ -267,7 +273,7 @@ export const VPNodeLabelHorizontalAlignTypeConverter = (
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXLabelPositionType): HorizontalAlignType => {
-      return 'center' // TODO - implement real conversion
+      return cxNodeLabelPositionConverter(cxVPValue).horizontalAlign
     },
   }
 }
@@ -277,7 +283,7 @@ export const VPNodeLabelVerticalAlignTypeConverter = (
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXLabelPositionType): VerticalAlignType => {
-      return 'center' // TODO - implement real conversion
+      return cxNodeLabelPositionConverter(cxVPValue).verticalAlign
     },
   }
 }
@@ -375,7 +381,6 @@ export const cxVisualPropertyConverter: Record<
   edgeSelectedPaint: VPColorConverter('EDGE_SELECTED_PAINT'),
   edgeMaxLabelWidth: VPNumberConverter('EDGE_LABEL_MAX_WIDTH'),
   edgeZOrder: VPNumberConverter('EDGE_Z_LOCATION'),
-
 
   networkBackgroundColor: VPColorConverter('NETWORK_BACKGROUND_COLOR'),
 }
