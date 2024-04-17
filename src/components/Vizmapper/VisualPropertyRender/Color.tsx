@@ -7,8 +7,8 @@ import {
   CompactCustomColors,
   VirdisCustomColors,
   SequentialCustomColors,
-  DivergingCustomColors
-} from '../../../models/ColorModel/impl/CustomColor'
+  DivergingCustomColors,
+} from '../../../models/VisualStyleModel/impl/CustomColor'
 
 export function ColorPicker(props: {
   currentValue: ColorType | null
@@ -48,7 +48,6 @@ export function ColorPickerCompact(props: {
   const [localColorValue, setLocalColorValue] = React.useState<ColorType>(
     currentValue ?? `#ffffff`,
   )
-
 
   return (
     <Box>
@@ -104,7 +103,6 @@ export function ColorPickerSequential(props: {
     currentValue ?? `#ffffff`,
   )
 
-
   return (
     <Box>
       <SwatchesPicker
@@ -132,7 +130,6 @@ export function ColorPickerDiverging(props: {
   const [localColorValue, setLocalColorValue] = React.useState<ColorType>(
     currentValue ?? `#ffffff`,
   )
-
 
   return (
     <Box>
