@@ -11,7 +11,7 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { exportNetworkToCx2 } from '../../../store/io/exportCX'
+import { exportNetworkToCx2 } from '../../../models/CxModel/impl/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 
@@ -29,8 +29,8 @@ export const OpenNetworkInCytoscapeMenuItem = (
     (state) => state.summaries[currentNetworkId],
   )
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -40,7 +40,7 @@ export const OpenNetworkInCytoscapeMenuItem = (
   ) as Network
 
   const openNetworkInCytoscape = async (): Promise<void> => {
-    if(viewModel === undefined) {
+    if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
     }
     const cx = exportNetworkToCx2(

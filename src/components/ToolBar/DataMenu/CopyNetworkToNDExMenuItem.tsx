@@ -12,7 +12,7 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { exportNetworkToCx2 } from '../../../store/io/exportCX'
+import { exportNetworkToCx2 } from '../../../models/CxModel/impl/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
@@ -45,8 +45,8 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.summaries[currentNetworkId],
   )
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -70,7 +70,7 @@ export const CopyNetworkToNDExMenuItem = (
     if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
     }
-    
+
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
