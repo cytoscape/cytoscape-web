@@ -16,6 +16,9 @@ import appConfig from './assets/config.json'
 import { KeycloakContext } from '.'
 import { useCredentialStore } from './store/CredentialStore'
 import { RedirectPanel } from './RedirectPanel'
+import 'primereact/resources/primereact.min.css';
+import 'primereact/resources/themes/saga-blue/theme.css';
+import 'primeicons/primeicons.css';
 
 enableMapSet()
 

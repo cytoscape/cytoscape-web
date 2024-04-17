@@ -1,0 +1,14 @@
+.p-dropdown-panel {
+    /* Panel styling */
+    border: 1px solid #ced4da;
+    /* Panel border to match dropdown */
+    border-radius: 4px;
+    /* Rounded corners for the dropdown panel */
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    /* Slightly more prominent shadow for the panel */
+    z-index: 1000;
+    /* High z-index to ensure visibility over other components */
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+}
