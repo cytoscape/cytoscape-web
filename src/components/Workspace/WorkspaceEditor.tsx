@@ -50,6 +50,15 @@ import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
 import { validateHcx } from '../../features/HierarchyViewer/model/impl/hcxValidators'
 import { useMessageStore } from '../../store/MessageStore'
 import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
+import { FilterUrlParams } from '../../models/FilterModel/FilterUrlParams'
+import { DEFAULT_FILTER_NAME } from '../../features/HierarchyViewer/components/FilterPanel/FilterPanel'
+import {
+  DisplayMode,
+  FilterConfig,
+  FilterWidgetType,
+} from '../../models/FilterModel'
+import { GraphObjectType } from '../../models/NetworkModel'
+import { useFilterStore } from '../../store/FilterStore'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -76,6 +85,8 @@ const WorkSpaceEditor = (): JSX.Element => {
   const location = useLocation()
 
   const [search] = useSearchParams()
+
+  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
 
   // For restoring the selection state from URL
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
@@ -295,14 +306,36 @@ const WorkSpaceEditor = (): JSX.Element => {
    * Restore filter states from URL
    */
   const restoreFilterStates = (): void => {
-    const filterStr = search.get('filter')
-    if (filterStr !== undefined && filterStr !== null) {
-      // const filters = filterStr.split(' ')
-      // filters.forEach((filter) => {
-      //   const [filterName, filterValue] = filter.split('=')
-      //   applyFilter(filterName, filterValue)
-      // })
+    const filterFor = search.get(FilterUrlParams.FILTER_FOR)
+    const filterBy = search.get(FilterUrlParams.FILTER_BY)
+    const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
+    console.log('Filter states:', filterFor, filterBy, filterRange)
+
+    if (filterFor !== null && filterBy !== null && filterRange !== null) {
+      const filterConfig: FilterConfig = {
+        name: DEFAULT_FILTER_NAME,
+        attributeName: filterBy,
+        target:
+          filterFor === GraphObjectType.NODE
+            ? GraphObjectType.NODE
+            : GraphObjectType.EDGE,
+        widgetType: FilterWidgetType.CHECKBOX,
+        description: 'Filter nodes / edges by selected values',
+        label: 'Interaction edge filter',
+        range: { values: filterRange.split(',') },
+        displayMode: DisplayMode.SHOW_HIDE,
+        // visualMapping,
+      }
+      addFilterConfig(filterConfig)
     }
+
+    // if (filterStr !== undefined && filterStr !== null) {
+    // const filters = filterStr.split(' ')
+    // filters.forEach((filter) => {
+    //   const [filterName, filterValue] = filter.split('=')
+    //   applyFilter(filterName, filterValue)
+    // })
+    // }
   }
 
   /**
@@ -380,6 +413,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           if (path.includes(currentNetworkId)) {
             restoreSelectionStates()
             restoreTableBrowserTabState()
+            restoreFilterStates()
           }
 
           navigate(
