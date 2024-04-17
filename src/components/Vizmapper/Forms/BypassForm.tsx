@@ -48,9 +48,7 @@ function BypassFormContent(props: {
     visualProperty.defaultValue,
   )
 
-  const getViewModel = useViewModelStore(
-    (state) => state.getViewModel,
-  )
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
   const networkView: NetworkView | undefined = getViewModel(currentNetworkId)
 
   const setBypass = useVisualStyleStore((state) => state.setBypass)
@@ -317,6 +315,7 @@ export function BypassForm(props: {
   if (noBypasses) {
     viewBox = <EmptyVisualPropertyViewBox />
   } else {
+    const onlyOneBypassValue = props.visualProperty.bypassMap.size === 1
     viewBox = (
       <Badge
         max={10000}
@@ -325,11 +324,15 @@ export function BypassForm(props: {
         invisible={props.visualProperty.bypassMap.size <= 1}
       >
         <VisualPropertyViewBox>
-          <VisualPropertyValueRender
-            vpName={props.visualProperty.name}
-            value={Array.from(props.visualProperty.bypassMap.values())[0]}
-            vpValueType={props.visualProperty.type}
-          />
+          {onlyOneBypassValue ? (
+            <VisualPropertyValueRender
+              vpName={props.visualProperty.name}
+              value={Array.from(props.visualProperty.bypassMap.values())[0]}
+              vpValueType={props.visualProperty.type}
+            />
+          ) : (
+            <Box>?</Box>
+          )}
         </VisualPropertyViewBox>
       </Badge>
     )
