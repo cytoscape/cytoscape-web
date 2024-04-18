@@ -36,6 +36,8 @@ import {
   FilterWidgetType,
 } from '../../../../models/FilterModel'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
+import { useViewModelStore } from '../../../../store/ViewModelStore'
+import { use } from 'cytoscape'
 
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 
@@ -50,19 +52,20 @@ const isInteractionNetwork = (networkId: IdType): boolean => {
 export const FilterPanel = () => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
+  const updateFilterConfig = useFilterStore((state) => state.updateFilterConfig)
 
   const [isFilterEnabled, setIsFilterEnabled] = useState<boolean>(false)
 
   // Show or hide the advanced options
   const [showOptions, setShowOptions] = useState<boolean>(false)
-  // const [expanded, setExpanded] = useState(false)
-  const [switchClicked, setSwitchClicked] = useState(false)
 
   // URL search parameters
   const [searchParams, setSearchParams] = useSearchParams()
 
   // Pick style for color coding
   const styles = useVisualStyleStore((state) => state.visualStyles)
+
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
 
   // Find the target network
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -81,6 +84,10 @@ export const FilterPanel = () => {
 
   // Get target table from the store
   const tablePair = useTableStore((state) => state.tables[targetNetworkId])
+
+  const viewModel = getViewModel(targetNetworkId)
+  const selectedNodes: IdType[] = viewModel?.selectedNodes || []
+  const selectedEdges: IdType[] = viewModel?.selectedEdges || []
 
   const [nodeAttrName, setNodeAttrName] = useState<string>('')
   const [edgeAttrName, setEdgeAttrName] = useState<string>(
@@ -131,6 +138,44 @@ export const FilterPanel = () => {
     return matchedMapping
   }
 
+  /**
+   * Enable filter if URL parameters are set
+   */
+  useEffect(() => {
+    const filterEnabled = searchParams.get(FilterUrlParams.FILTER_ENABLED)
+    if (filterEnabled !== null) {
+      setIsFilterEnabled(filterEnabled === 'true')
+    }
+  }, [])
+
+  useEffect(() => {
+    // console.log('selectedNodes:', selectedNodes)
+    // console.log('selectedEdges:', selectedEdges)
+  }, [selectedNodes, selectedEdges])
+
+  /**
+   * Add visual mapping to the filter config
+   */
+  useEffect(() => {
+    if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) return
+
+    const filterConfig: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
+    const visualMapping = getMapping(vs, targetAttrName)
+
+    if (visualMapping === undefined) return
+
+    const newFilterConfig = { ...filterConfig, visualMapping }
+    updateFilterConfig(newFilterConfig.name, newFilterConfig)
+  }, [vs])
+
+  /**
+   * Set the URL parameters when the filter is enabled or disabled
+   */
+  useEffect(() => {
+    searchParams.set(FilterUrlParams.FILTER_ENABLED, isFilterEnabled.toString())
+    setSearchParams(searchParams)
+  }, [isFilterEnabled])
+
   useEffect(() => {
     if (!shouldApplyFilter) return
 
@@ -162,6 +207,10 @@ export const FilterPanel = () => {
       // Encode the filter settings into the URL
       searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
       searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
+      searchParams.set(
+        FilterUrlParams.FILTER_ENABLED,
+        isFilterEnabled.toString(),
+      )
       setSearchParams(searchParams)
     } else {
       // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
@@ -194,7 +243,7 @@ export const FilterPanel = () => {
           onChange={(event, isExpanded) => {
             if (!isFilterEnabled) {
               event.stopPropagation()
-              setSwitchClicked(false)
+              // setSwitchClicked(false)
             } else {
               setShowOptions(isExpanded)
             }
@@ -230,7 +279,7 @@ export const FilterPanel = () => {
                 checked={isFilterEnabled}
                 onClick={(event) => {
                   event.stopPropagation()
-                  setSwitchClicked(true)
+                  // setSwitchClicked(true)
                 }}
                 onChange={(event) => {
                   event.stopPropagation()

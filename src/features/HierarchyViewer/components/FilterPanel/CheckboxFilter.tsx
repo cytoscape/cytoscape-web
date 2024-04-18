@@ -75,7 +75,7 @@ export const CheckboxFilter = ({
         (viewModel.selectedNodes.length > 0 ||
           viewModel.selectedEdges.length > 0)
       ) {
-        exclusiveSelect(targetNetworkId, [''], [])
+        exclusiveSelect(targetNetworkId, [], [])
       }
       return
     }
@@ -168,9 +168,18 @@ export const CheckboxFilter = ({
       applyFilter()
     } else {
       // Select all nodes / edges
-      exclusiveSelect(targetNetworkId, [''], [])
+      exclusiveSelect(targetNetworkId, [], [])
     }
   }, [enableFilter, targetNetworkId, currentSelectedOptions.values])
+
+  /**
+   * Apply filter after initialization if the filter is enabled
+   */
+  useEffect(() => {
+    if (enableFilter) {
+      applyFilter()
+    }
+  }, [])
 
   const isAllSelected: boolean =
     allOptions.length > 0 &&

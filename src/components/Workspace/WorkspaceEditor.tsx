@@ -328,14 +328,6 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
       addFilterConfig(filterConfig)
     }
-
-    // if (filterStr !== undefined && filterStr !== null) {
-    // const filters = filterStr.split(' ')
-    // filters.forEach((filter) => {
-    //   const [filterName, filterValue] = filter.split('=')
-    //   applyFilter(filterName, filterValue)
-    // })
-    // }
   }
 
   /**
