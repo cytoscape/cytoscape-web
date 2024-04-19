@@ -19,7 +19,10 @@ import {
   VisualProperty,
   VisualStyle,
 } from '..'
-import { cxNodeLabelPositionConverter } from './cxNodeLabelPositionConverter'
+import {
+  cxNodeLabelPositionConverter,
+  nodeLabelPositionToCxConverter,
+} from './cxNodeLabelPositionConverter'
 
 export type CXLabelPositionValueType =
   | 'center'
@@ -89,9 +92,95 @@ export type CXVisualMappingFunction<T> =
 
 export type CXId = number
 
+export const convertDefaultValueToCX = (
+  vp: VisualProperty<VisualPropertyValueType>,
+  defaultValue: VisualPropertyValueType,
+  vs: VisualStyle,
+): CXVisualPropertyValue => {
+  const defaultNodeLabelPosition: CXLabelPositionType = {
+    HORIZONTAL_ALIGN: 'center',
+    HORIZONTAL_ANCHOR: 'center',
+    JUSTIFICATION: 'center',
+    MARGIN_X: 0.0,
+    MARGIN_Y: 0.0,
+    VERTICAL_ALIGN: 'center',
+    VERTICAL_ANCHOR: 'center',
+  }
+
+  const defaultFontValue: CXVisualPropertyValue = {
+    FONT_FAMILY: 'sans-serif',
+    FONT_STYLE: 'normal',
+    FONT_WEIGHT: 'normal',
+  }
+
+  if (
+    vp.name === 'nodeLabelVerticalAlign' ||
+    vp.name === 'nodeLabelHorizontalAlign'
+  ) {
+    const horizontalAlign = vs.nodeLabelHorizontalAlign.defaultValue
+    const verticalAlign = vs.nodeLabelVerticalAlign.defaultValue
+
+    const result = nodeLabelPositionToCxConverter(
+      horizontalAlign as HorizontalAlignType,
+      verticalAlign as VerticalAlignType,
+    )
+    return result ?? defaultNodeLabelPosition
+  }
+
+  if (vp.name === 'nodeLabelFont' || vp.name === 'edgeLabelFont') {
+    return Object.assign({}, defaultFontValue, { FONT_FAMILY: vp.defaultValue })
+  }
+
+  return vp.defaultValue as CXVisualPropertyValue
+}
+
+// TODO implement this
+// export const convertBypassToCX = (  vp: VisualProperty<VisualPropertyValueType>,
+//   bypassValue: VisualPropertyValueType,
+//   vs: VisualStyle,
+// ): CXVisualPropertyValue => {
+//   const defaultNodeLabelPosition: CXLabelPositionType = {
+//     HORIZONTAL_ALIGN: 'center',
+//     HORIZONTAL_ANCHOR: 'center',
+//     JUSTIFICATION: 'center',
+//     MARGIN_X: 0.0,
+//     MARGIN_Y: 0.0,
+//     VERTICAL_ALIGN: 'center',
+//     VERTICAL_ANCHOR: 'center',
+//   }
+
+//   const defaultFontValue: CXVisualPropertyValue = {
+//     FONT_FAMILY: 'sans-serif',
+//     FONT_STYLE: 'normal',
+//     FONT_WEIGHT: 'normal',
+//   }
+
+//   if (
+//     vp.name === 'nodeLabelVerticalAlign' ||
+//     vp.name === 'nodeLabelHorizontalAlign'
+//   ) {
+//     const horizontalAlign = vs.nodeLabelHorizontalAlign.defaultValue
+//     const verticalAlign = vs.nodeLabelVerticalAlign.defaultValue
+
+//     const result = nodeLabelPositionToCxConverter(
+//       horizontalAlign as HorizontalAlignType,
+//       verticalAlign as VerticalAlignType,
+//     )
+//     return result ?? defaultNodeLabelPosition
+//   }
+
+//   if (vpName === 'nodeLabelFont' || vpName === 'edgeLabelFont') {
+//     return Object.assign({}, defaultFontValue, { FONT_FAMILY: vpValue })
+//   }
+
+//   return vpValue as CXVisualPropertyValue
+
+// }
+
 export const vpToCX = (
   vpName: VisualPropertyName,
   vpValue: VisualPropertyValueType,
+  vs: VisualStyle,
 ): CXVisualPropertyValue => {
   const defaultNodeLabelPosition: CXLabelPositionType = {
     HORIZONTAL_ALIGN: 'center',
@@ -113,7 +202,14 @@ export const vpToCX = (
     vpName === 'nodeLabelVerticalAlign' ||
     vpName === 'nodeLabelHorizontalAlign'
   ) {
-    return Object.assign({}, defaultNodeLabelPosition)
+    const horizontalAlign = vs.nodeLabelHorizontalAlign.defaultValue
+    const verticalAlign = vs.nodeLabelVerticalAlign.defaultValue
+
+    const result = nodeLabelPositionToCxConverter(
+      horizontalAlign as HorizontalAlignType,
+      verticalAlign as VerticalAlignType,
+    )
+    return result ?? defaultNodeLabelPosition
   }
 
   if (vpName === 'nodeLabelFont' || vpName === 'edgeLabelFont') {
@@ -151,7 +247,7 @@ export const convertDiscreteMappingToCX = (
       attribute,
       map: Array.from(vpValueMap.entries()).map(([value, vpValue]) => ({
         v: value,
-        vp: vpToCX(vp.name, vpValue),
+        vp: vpToCX(vp.name, vpValue, vs), // TODO handle node label position case
       })),
     },
   }
@@ -173,8 +269,8 @@ export const convertContinuousMappingToCX = (
       intervals.push({
         min: curr.value as number,
         max: next.value as number,
-        minVPValue: vpToCX(vp.name, curr.vpValue),
-        maxVPValue: vpToCX(vp.name, next.vpValue),
+        minVPValue: vpToCX(vp.name, curr.vpValue, vs), // TODO handle node label position case if necessary
+        maxVPValue: vpToCX(vp.name, next.vpValue, vs), // TODO handle node label position case if necessary
         includeMin: curr.inclusive ?? true,
         includeMax: next.inclusive ?? true,
       })
@@ -187,14 +283,14 @@ export const convertContinuousMappingToCX = (
       map: [
         {
           max: min.value as number,
-          maxVPValue: vpToCX(vp.name, min.vpValue),
+          maxVPValue: vpToCX(vp.name, min.vpValue, vs), // TODO handle node label position case if necessary
           includeMax: min.inclusive ?? true,
           includeMin: true, // dummy value, not actually used here
         },
         ...intervals,
         {
           min: max.value as number,
-          minVPValue: vpToCX(vp.name, max.vpValue),
+          minVPValue: vpToCX(vp.name, max.vpValue, vs), // TODO handle node label position case if necessary
           includeMin: max.inclusive ?? true,
           includeMax: true, // dummy value, not actually used here
         },

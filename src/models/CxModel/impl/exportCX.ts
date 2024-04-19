@@ -26,6 +26,7 @@ import {
   convertPassthroughMappingToCX,
   convertDiscreteMappingToCX,
   vpToCX,
+  convertDefaultValueToCX,
 } from '../../VisualStyleModel/impl/cxVisualPropertyConverter'
 
 import { NdexNetworkSummary } from '../../NetworkSummaryModel'
@@ -75,7 +76,7 @@ export const exportNetworkToCx2 = (
     const { name, defaultValue } = vp
     const cxVPName = vpNameToCXName(name)
 
-    defaults[cxVPName] = vpToCX(vp.name, defaultValue)
+    defaults[cxVPName] = convertDefaultValueToCX(vp, defaultValue, vs)
 
     return defaults
   }
@@ -136,7 +137,7 @@ export const exportNetworkToCx2 = (
       if (bypasses[id] == null) {
         bypasses[id] = {}
       }
-      bypasses[id][cxVPName] = vpToCX(vp.name, value)
+      bypasses[id][cxVPName] = vpToCX(vp.name, value, vs)
     })
 
     return bypasses

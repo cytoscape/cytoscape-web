@@ -1,6 +1,9 @@
 import _ from 'lodash'
 import { HorizontalAlignType, VerticalAlignType } from '../VisualPropertyValue'
-import { CXLabelPositionType } from './cxVisualPropertyConverter'
+import {
+  CXLabelPositionType,
+  CXLabelPositionValueType,
+} from './cxVisualPropertyConverter'
 
 const cxNodeLabelPositionMap: any = {
   center: {
@@ -162,6 +165,43 @@ const cxNodeLabelPositionMap: any = {
       },
     },
   },
+}
+
+export const nodeLabelPositionToCxConverter = (
+  textHalign: HorizontalAlignType,
+  textValign: VerticalAlignType,
+): CXLabelPositionType | null => {
+  for (const verticalAnchor in cxNodeLabelPositionMap) {
+    for (const horizontalAnchor in cxNodeLabelPositionMap[verticalAnchor]) {
+      for (const verticalAlign in cxNodeLabelPositionMap[verticalAnchor][
+        horizontalAnchor
+      ]) {
+        for (const horizontalAlign in cxNodeLabelPositionMap[verticalAnchor][
+          horizontalAnchor
+        ][verticalAlign]) {
+          const position =
+            cxNodeLabelPositionMap[verticalAnchor][horizontalAnchor][
+              verticalAlign
+            ][horizontalAlign]
+          if (
+            position['text-halign'] === textHalign &&
+            position['text-valign'] === textValign
+          ) {
+            return {
+              MARGIN_X: 0,
+              MARGIN_Y: 0,
+              JUSTIFICATION: 'center',
+              VERTICAL_ANCHOR: verticalAnchor as CXLabelPositionValueType,
+              HORIZONTAL_ANCHOR: horizontalAnchor as CXLabelPositionValueType,
+              VERTICAL_ALIGN: verticalAlign as CXLabelPositionValueType,
+              HORIZONTAL_ALIGN: horizontalAlign as CXLabelPositionValueType,
+            }
+          }
+        }
+      }
+    }
+  }
+  return null // Return null if no match is found
 }
 
 export const cxNodeLabelPositionConverter = (
