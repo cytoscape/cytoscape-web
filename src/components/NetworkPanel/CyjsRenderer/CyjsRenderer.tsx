@@ -191,7 +191,7 @@ const CyjsRenderer = ({
 
       // single selection listener
       cy.on('tap', (e: EventObject) => {
-        // console.log('handling TAP event: ', e)
+        console.debug('handling TAP event: ', e)
         // Check for background click
         // This is necessary to access the latest value from closure
         const activeId: string = activeNetworkIdRef.current

@@ -12,7 +12,6 @@ import { Query } from './MainPanel'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
-import { putVisualStyleToDb } from '../../../store/persist/db'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
@@ -83,7 +82,6 @@ export const SubNetworkPanel = ({
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addTable = useTableStore((state) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
-  const viewModels = useViewModelStore((state) => state.viewModels)
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
@@ -206,7 +204,7 @@ export const SubNetworkPanel = ({
   // The query network to be rendered
   const queryNetwork: Network | undefined = networks.get(queryNetworkId)
 
-  const handleClick = (e: any): void => {
+  const handleClick = (): void => {
     setActiveNetworkView(queryNetworkId)
   }
 
@@ -215,16 +213,8 @@ export const SubNetworkPanel = ({
     if (viewModel === undefined) {
       return
     }
-    void saveLastQueryNetworkId(queryNetworkId).then(() => {
-      prevQueryNetworkIdRef.current = queryNetworkId
-    })
+    prevQueryNetworkIdRef.current = queryNetworkId
   }, [queryNetworkId])
-
-  const saveLastQueryNetworkId = async (id: string): Promise<void> => {
-    // const network: Network | undefined = networks.get(id)
-    const visualStyle: VisualStyle | undefined = vs[id]
-    await putVisualStyleToDb(id, visualStyle)
-  }
 
   const updateNetworkView = (): string => {
     if (data === undefined) {

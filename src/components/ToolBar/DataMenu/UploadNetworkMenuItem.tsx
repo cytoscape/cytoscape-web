@@ -17,13 +17,7 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import {
-  putNetworkToDb,
-  putTablesToDb,
-  putVisualStyleToDb,
-  putNetworkViewToDb,
-  putNetworkSummaryToDb,
-} from '../../../store/persist/db'
+import { putNetworkSummaryToDb } from '../../../store/persist/db'
 import { NdexNetworkProperty } from '../../../models/NetworkSummaryModel'
 import {
   getAttributeDeclarations,
@@ -61,23 +55,19 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
       LocalNetworkId,
       cxData,
     )
-    await putNetworkToDb(network)
 
     const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
       LocalNetworkId,
       cxData,
     )
-    await putTablesToDb(LocalNetworkId, nodeTable, edgeTable)
 
     const visualStyle: VisualStyle =
       VisualStyleFn.createVisualStyleFromCx(cxData)
-    await putVisualStyleToDb(LocalNetworkId, visualStyle)
 
     const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
       LocalNetworkId,
       cxData,
     )
-    await putNetworkViewToDb(LocalNetworkId, networkView)
 
     return { network, nodeTable, edgeTable, visualStyle, networkView }
   }

@@ -139,7 +139,18 @@ export const useVisualStyleStore = create(
 
       add: (networkId: IdType, visualStyle: VisualStyle) => {
         set((state) => {
+          if (state.visualStyles[networkId] !== undefined) {
+            console.warn(`Visual Style already exists for network ${networkId}`)
+            return state
+          }
           state.visualStyles[networkId] = visualStyle
+          void putVisualStyleToDb(networkId, visualStyle)
+            .then(() => {
+              console.debug('Added visual style to DB', networkId)
+            })
+            .catch((err) => {
+              console.error('Error adding visual style to DB', err)
+            })
           return state
         })
       },
@@ -332,10 +343,10 @@ export const useVisualStyleStore = create(
               visualPropertyType: type,
               defaultValue,
             }
-            void putVisualStyleToDb(
-              networkId,
-              state.visualStyles[networkId],
-            ).then(() => {})
+            // void putVisualStyleToDb(
+            //   networkId,
+            //   state.visualStyles[networkId],
+            // ).then(() => {})
 
             state.visualStyles[networkId][vpName].mapping = continuousMapping
           } else if (vpType === VisualPropertyValueTypeName.Number) {
