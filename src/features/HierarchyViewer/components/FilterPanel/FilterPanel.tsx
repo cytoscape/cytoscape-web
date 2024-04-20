@@ -36,8 +36,6 @@ import {
   FilterWidgetType,
 } from '../../../../models/FilterModel'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
-import { useViewModelStore } from '../../../../store/ViewModelStore'
-import { use } from 'cytoscape'
 
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 
@@ -54,7 +52,7 @@ export const FilterPanel = () => {
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
   const updateFilterConfig = useFilterStore((state) => state.updateFilterConfig)
 
-  const [isFilterEnabled, setIsFilterEnabled] = useState<boolean>(false)
+  const [isFilterEnabled, setIsFilterEnabled] = useState<boolean>(true)
 
   // Show or hide the advanced options
   const [showOptions, setShowOptions] = useState<boolean>(false)
@@ -64,8 +62,6 @@ export const FilterPanel = () => {
 
   // Pick style for color coding
   const styles = useVisualStyleStore((state) => state.visualStyles)
-
-  const getViewModel = useViewModelStore((state) => state.getViewModel)
 
   // Find the target network
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -78,16 +74,13 @@ export const FilterPanel = () => {
   // Use the active network if it exists, otherwise use the current network for filtering
   const targetNetworkId: IdType = activeNetworkId || currentNetworkId
 
+  // Hide the entire filter if it is not the main network
   const shouldApplyFilter: boolean = isInteractionNetwork(targetNetworkId)
 
   const vs: VisualStyle = styles[activeNetworkId]
 
   // Get target table from the store
   const tablePair = useTableStore((state) => state.tables[targetNetworkId])
-
-  const viewModel = getViewModel(targetNetworkId)
-  const selectedNodes: IdType[] = viewModel?.selectedNodes || []
-  const selectedEdges: IdType[] = viewModel?.selectedEdges || []
 
   const [nodeAttrName, setNodeAttrName] = useState<string>('')
   const [edgeAttrName, setEdgeAttrName] = useState<string>(
@@ -147,11 +140,6 @@ export const FilterPanel = () => {
       setIsFilterEnabled(filterEnabled === 'true')
     }
   }, [])
-
-  useEffect(() => {
-    // console.log('selectedNodes:', selectedNodes)
-    // console.log('selectedEdges:', selectedEdges)
-  }, [selectedNodes, selectedEdges])
 
   /**
    * Add visual mapping to the filter config
