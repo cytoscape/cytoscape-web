@@ -94,7 +94,9 @@ export const validateColumnValues = (
   values.forEach((value, index) => {
     if (
       !valueMatchesType(value, column.dataType, column.delimiter) &&
-      value !== ''
+      value !== '' &&
+      value !== undefined &&
+      value !== null
     ) {
       invalidRows.push(index)
     }

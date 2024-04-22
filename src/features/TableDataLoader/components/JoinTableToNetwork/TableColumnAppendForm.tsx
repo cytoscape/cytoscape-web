@@ -173,7 +173,10 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
     if (rawText === '') {
       return
     }
-    const result = Papa.parse(rawText, { header: useFirstRowAsColumns })
+    const result = Papa.parse(rawText, {
+      header: useFirstRowAsColumns,
+      skipEmptyLines: true,
+    })
     const rows = result.data.slice(skipNLines + (useFirstRowAsColumns ? 0 : 1))
 
     // setRows(result.data as DataTableValue[]);
@@ -221,9 +224,13 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
     }
   }, [rawText, skipNLines, useFirstRowAsColumns])
 
-  const rowValuesAreValid = columns
-    .filter((c) => c.meaning !== ColumnAppendType.NotImported)
-    .every((c) => c.invalidValues.length === 0)
+  const columnsToImport = columns.filter(
+    (c) => c.meaning !== ColumnAppendType.NotImported,
+  )
+
+  const rowValuesAreValid = columnsToImport.every(
+    (c) => c.invalidValues.length === 0,
+  )
   const networkHasKeyColumns =
     validNetworkKeyColumns(selectedTable?.columns).length > 0
   const submitDisabled = !(
@@ -353,7 +360,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
                         <Text size="sm" c="gray" fw={500}>
                           {h.name}
                         </Text>
-                        {h.invalidValues.length > 1 ? (
+                        {h.invalidValues.length > 0 ? (
                           <Tooltip
                             label={`Column '${h.name}' has ${
                               h.invalidValues.length
@@ -415,10 +422,10 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
           the table
         </Alert>
       ) : null}
-      {columns.some((c) => c.invalidValues.length > 1) ? (
+      {columnsToImport.some((c) => c.invalidValues.length > 0) ? (
         <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>
           {`The following columns have values that cannot be parsed as their assigned data type: ${columns
-            .filter((c) => c.invalidValues.length > 1)
+            .filter((c) => c.invalidValues.length > 0)
             .map((c) => `'${c.name}'`)
             .join(', ')}`}
         </Alert>

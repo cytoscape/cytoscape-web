@@ -99,7 +99,10 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   )
 
   useEffect(() => {
-    const result = Papa.parse(text, { header: useFirstRowAsColumns })
+    const result = Papa.parse(text, {
+      header: useFirstRowAsColumns,
+      skipEmptyLines: true,
+    })
     const rows = result.data.slice(skipNLines + (useFirstRowAsColumns ? 0 : 1))
 
     // setRows(result.data as DataTableValue[]);
@@ -227,16 +230,18 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     (c) => c.meaning === ColumnAssignmentType.SourceNode,
   )
 
-  const rowValuesAreValid = columns
-    .filter((c) => c.meaning !== ColumnAssignmentType.NotImported)
-    .every((c) => c.invalidValues.length === 0)
+  const columnsToImport = columns.filter(
+    (c) => c.meaning !== ColumnAssignmentType.NotImported,
+  )
+
+  const rowValuesAreValid = columnsToImport.every(
+    (c) => c.invalidValues.length === 0,
+  )
 
   const submitDisabled = !(
     rowValuesAreValid &&
     (tgtNodeCol !== undefined || srcNodeCol !== undefined)
   )
-
-  console.log(rows, columns)
 
   return (
     <Box style={{ zIndex: 2001 }}>
@@ -305,7 +310,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
                         <Text size="sm" c="gray" fw={500}>
                           {h.name}
                         </Text>
-                        {h.invalidValues.length > 1 ? (
+                        {h.invalidValues.length > 0 ? (
                           <Tooltip
                             zIndex={2001}
                             label={`Column '${h.name}' has ${h.invalidValues.length} values that cannot be parsed as type ${valueTypeName2Label[h.dataType]}`}
@@ -363,10 +368,10 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           One column must be assigned as a source or target node
         </Alert>
       ) : null}
-      {columns.some((c) => c.invalidValues.length > 1) ? (
+      {columnsToImport.some((c) => c.invalidValues.length > 0) ? (
         <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>
           {`The following columns have values that cannot be parsed as their assigned data type: ${columns
-            .filter((c) => c.invalidValues.length > 1)
+            .filter((c) => c.invalidValues.length > 0)
             .map((c) => `'${c.name}'`)
             .join(', ')}`}
         </Alert>
