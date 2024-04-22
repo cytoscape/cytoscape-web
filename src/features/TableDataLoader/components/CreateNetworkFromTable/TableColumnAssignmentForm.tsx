@@ -19,7 +19,7 @@ import Papa from 'papaparse'
 import 'primereact/resources/themes/md-light-indigo/theme.css'
 import { DataTable, DataTableValue } from 'primereact/datatable'
 import { Column } from 'primereact/column'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 
 import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
 import {
@@ -50,24 +50,21 @@ import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../../store/createNetworkFromTableStore'
-import {
-  putNetworkSummaryToDb,
-  putNetworkToDb,
-  putTablesToDb,
-  putVisualStyleToDb,
-  putNetworkViewToDb,
-} from '../../../../store/persist/db'
+import { putNetworkSummaryToDb } from '../../../../store/persist/db'
 import { useNetworkStore } from '../../../../store/NetworkStore'
 import { useTableStore } from '../../../../store/TableStore'
 import { useViewModelStore } from '../../../../store/ViewModelStore'
 import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
+import { AppConfigContext } from '../../../../AppConfigContext'
 
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
   const goToStep = useCreateNetworkFromTableStore((state) => state.goToStep)
   const reset = useCreateNetworkFromTableStore((state) => state.reset)
+
+  const [loading, setLoading] = useState(false)
 
   const [validColumnTypes, setValidColumnAssignmentTypes] = useState<
     ColumnAssignmentType[]
@@ -97,6 +94,8 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
+
+  const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
 
   useEffect(() => {
     const result = Papa.parse(text, {
@@ -185,11 +184,16 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
       res
     const newNetworkId = network.id
 
-    await putNetworkSummaryToDb(summary)
-    await putNetworkToDb(network)
-    await putTablesToDb(newNetworkId, nodeTable, edgeTable)
-    await putVisualStyleToDb(newNetworkId, visualStyle)
-    await putNetworkViewToDb(newNetworkId, networkView)
+    setLoading(true)
+
+    // const processedSummary =
+    //   network.nodes.length + network.edges.length > maxNetworkElementsThreshold
+    //     ? { ...summary, hasLayout: true }
+    //     : summary // dont run a layout if the network is over the max element threshold
+
+    const processedSummary = { ...summary, hasLayout: true } // dont run a default layout for now
+
+    await putNetworkSummaryToDb(processedSummary)
 
     addNetworkToWorkspace(newNetworkId)
     addNewNetwork(network)
@@ -197,6 +201,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     setTables(newNetworkId, nodeTable, edgeTable)
     setViewModel(newNetworkId, networkView)
     setCurrentNetworkId(newNetworkId)
+    setLoading(false)
     reset()
     props.handleClose()
   }
@@ -408,7 +413,12 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           </Popover.Dropdown>
         </Popover>
         <Group justify="space-between" gap="lg">
-          <Button variant="default" color="red" onClick={() => handleCancel()}>
+          <Button
+            disabled={loading}
+            variant="default"
+            color="red"
+            onClick={() => handleCancel()}
+          >
             Cancel
           </Button>
           <Tooltip
@@ -416,7 +426,11 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
             disabled={!submitDisabled}
             label="All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
           >
-            <Button disabled={submitDisabled} onClick={() => handleConfirm()}>
+            <Button
+              loading={loading}
+              disabled={submitDisabled}
+              onClick={() => handleConfirm()}
+            >
               Confirm
             </Button>
           </Tooltip>

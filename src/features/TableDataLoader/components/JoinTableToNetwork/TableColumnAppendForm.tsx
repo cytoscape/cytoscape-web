@@ -53,6 +53,7 @@ import { useTableStore } from '../../../../store/TableStore'
 import { useUiStateStore } from '../../../../store/UiStateStore'
 
 export function TableColumnAppendForm(props: BaseMenuProps) {
+  const [loading, setLoading] = useState(false)
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -118,6 +119,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
   }
 
   const handleConfirm = () => {
+    setLoading(true)
     const table = tableToAppend === 'node' ? nodeTable : edgeTable
     if (networkKeyColumn != null) {
       const nextTable = joinRowsToTable(
@@ -127,13 +129,10 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
         networkKeyColumn,
       )
       setTable(currentNetworkId, tableToAppend, nextTable)
-      reset()
-      props.handleClose()
     }
-    // join table
-    // table = joinTable(...)
-    // setTable(table)
-    // close modal
+    setLoading(false)
+    reset()
+    props.handleClose()
   }
 
   const handleSelectNoneClick = () => {
@@ -474,14 +473,23 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
           </Popover.Dropdown>
         </Popover>
         <Group justify="space-between" gap="lg">
-          <Button variant="default" color="red" onClick={() => handleCancel()}>
+          <Button
+            disabled={loading}
+            variant="default"
+            color="red"
+            onClick={() => handleCancel()}
+          >
             Cancel
           </Button>
           <Tooltip
             disabled={!submitDisabled}
             label="All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
           >
-            <Button disabled={submitDisabled} onClick={() => handleConfirm()}>
+            <Button
+              loading={loading}
+              disabled={submitDisabled}
+              onClick={() => handleConfirm()}
+            >
               Confirm
             </Button>
           </Tooltip>
