@@ -11,6 +11,7 @@ import {
   AccordionSummary,
   Box,
   Container,
+  Switch,
   Typography,
 } from '@mui/material'
 import { AttributeSelector } from './AttributeSelector'
@@ -34,6 +35,7 @@ import {
   FilterConfig,
   FilterWidgetType,
 } from '../../../../models/FilterModel'
+import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
 
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 
@@ -50,14 +52,13 @@ export const FilterPanel = () => {
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
   const updateFilterConfig = useFilterStore((state) => state.updateFilterConfig)
 
+  const [isFilterEnabled, setIsFilterEnabled] = useState<boolean>(true)
+
   // Show or hide the advanced options
   const [showOptions, setShowOptions] = useState<boolean>(false)
 
   // URL search parameters
   const [searchParams, setSearchParams] = useSearchParams()
-
-  // Enable filter only when the target network has a specific type
-  // const [enableFilter, setEnableFilter] = useState<boolean>(false)
 
   // Pick style for color coding
   const styles = useVisualStyleStore((state) => state.visualStyles)
@@ -73,6 +74,7 @@ export const FilterPanel = () => {
   // Use the active network if it exists, otherwise use the current network for filtering
   const targetNetworkId: IdType = activeNetworkId || currentNetworkId
 
+  // Hide the entire filter if it is not the main network
   const shouldApplyFilter: boolean = isInteractionNetwork(targetNetworkId)
 
   const vs: VisualStyle = styles[activeNetworkId]
@@ -93,17 +95,6 @@ export const FilterPanel = () => {
   const [displayMode, setDisplayMode] = useState<DisplayMode>(
     DisplayMode.SHOW_HIDE,
   )
-
-  // Enable the filter only when the target network is a temp network
-  // useEffect(() => {
-  //   if (targetNetworkId === undefined || targetNetworkId === '') return
-
-  //   if (targetNetworkId.includes('_')) {
-  //     setEnableFilter(true)
-  //   } else {
-  //     setEnableFilter(false)
-  //   }
-  // }, [targetNetworkId])
 
   const targetAttrName: string =
     selectedObjectType === GraphObjectType.NODE ? nodeAttrName : edgeAttrName
@@ -140,6 +131,39 @@ export const FilterPanel = () => {
     return matchedMapping
   }
 
+  /**
+   * Enable filter if URL parameters are set
+   */
+  useEffect(() => {
+    const filterEnabled = searchParams.get(FilterUrlParams.FILTER_ENABLED)
+    if (filterEnabled !== null) {
+      setIsFilterEnabled(filterEnabled === 'true')
+    }
+  }, [])
+
+  /**
+   * Add visual mapping to the filter config
+   */
+  useEffect(() => {
+    if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) return
+
+    const filterConfig: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
+    const visualMapping = getMapping(vs, targetAttrName)
+
+    if (visualMapping === undefined) return
+
+    const newFilterConfig = { ...filterConfig, visualMapping }
+    updateFilterConfig(newFilterConfig.name, newFilterConfig)
+  }, [vs])
+
+  /**
+   * Set the URL parameters when the filter is enabled or disabled
+   */
+  useEffect(() => {
+    searchParams.set(FilterUrlParams.FILTER_ENABLED, isFilterEnabled.toString())
+    setSearchParams(searchParams)
+  }, [isFilterEnabled])
+
   useEffect(() => {
     if (!shouldApplyFilter) return
 
@@ -169,8 +193,12 @@ export const FilterPanel = () => {
     if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
       addFilterConfig(filterConfig)
       // Encode the filter settings into the URL
-      searchParams.set('filterFor', selectedObjectType)
-      searchParams.set('filterBy', targetAttrName)
+      searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
+      searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
+      searchParams.set(
+        FilterUrlParams.FILTER_ENABLED,
+        isFilterEnabled.toString(),
+      )
       setSearchParams(searchParams)
     } else {
       // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
@@ -200,14 +228,53 @@ export const FilterPanel = () => {
             margin: 0,
           }}
           expanded={showOptions}
-          onChange={() => setShowOptions(!showOptions)}
+          onChange={(event, isExpanded) => {
+            if (!isFilterEnabled) {
+              event.stopPropagation()
+              // setSwitchClicked(false)
+            } else {
+              setShowOptions(isExpanded)
+            }
+          }}
         >
           <AccordionSummary
-            expandIcon={showOptions ? <ArrowDropDownIcon /> : <SettingsIcon />}
+            expandIcon={
+              showOptions ? (
+                <ArrowDropDownIcon />
+              ) : (
+                <SettingsIcon
+                  color={isFilterEnabled ? 'inherit' : 'disabled'}
+                />
+              )
+            }
             aria-controls="filter-option-panel"
             id="filter-option-header"
+            sx={{ margin: 0, padding: 0 }}
           >
-            <Typography>Filter:</Typography>
+            <Grid
+              item
+              sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                margin: 0,
+              }}
+            >
+              <Typography>Filter:</Typography>
+              <Switch
+                checked={isFilterEnabled}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  // setSwitchClicked(true)
+                }}
+                onChange={(event) => {
+                  event.stopPropagation()
+                  setIsFilterEnabled(!isFilterEnabled)
+                }}
+              />
+            </Grid>
           </AccordionSummary>
           <AccordionDetails>
             <Grid item sx={{ flex: 1 }}>
@@ -253,7 +320,7 @@ export const FilterPanel = () => {
               targetNetworkId={targetNetworkId}
               table={table}
               filterConfig={filterConfigs[DEFAULT_FILTER_NAME]}
-              enableFilter={true}
+              enableFilter={isFilterEnabled}
             />
           </Box>
         )}

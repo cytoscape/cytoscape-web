@@ -193,7 +193,6 @@ const CyjsRenderer = ({
       cy.on('tap', (e: EventObject) => {
         console.debug('handling TAP event: ', e)
         // Check for background click
-
         // This is necessary to access the latest value from closure
         const activeId: string = activeNetworkIdRef.current
 
@@ -210,7 +209,12 @@ const CyjsRenderer = ({
         }
 
         if (e.target === cy) {
-          exclusiveSelect(id, [], [])
+          // Background click
+          if (displayMode === DisplayMode.SELECT) {
+            exclusiveSelect(id, [], [])
+          } else {
+            exclusiveSelect(id, [], selectedEdges)
+          }
         } else if (e.target.isNode() || e.target.isEdge()) {
           const selectedNodes: IdType[] = []
           const selectedEdges: IdType[] = []
@@ -403,15 +407,17 @@ const CyjsRenderer = ({
     // Clear selection
     if (selectedNodes.length === 0 && selectedEdges.length === 0) {
       cy.elements().unselect()
+      cy.elements().show()
       return
     }
 
     if (selectedNodes.length === 0) {
+      cy.nodes().unselect()
       if (displayMode === DisplayMode.SHOW_HIDE) {
         cy.nodes().show()
       }
-      cy.nodes().unselect()
     } else {
+      cy.nodes().show()
       cy.nodes()
         .unselect()
         .filter((ele: SingularElementArgument) => {
@@ -419,14 +425,14 @@ const CyjsRenderer = ({
         })
         .select()
     }
+
+    // Handle edge selection
     if (selectedEdges.length === 0) {
+      // No edge is selected.
       cy.edges().unselect()
-      if (displayMode === DisplayMode.SHOW_HIDE) {
-        cy.edges().hide()
-      } else {
-        cy.edges().show()
-      }
+      // cy.edges().show()
     } else {
+      // At least one edge is selected.
       if (displayMode === DisplayMode.SHOW_HIDE) {
         cy.edges().hide()
       } else {
@@ -457,7 +463,7 @@ const CyjsRenderer = ({
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
-        wheelSensitivity: 0.1,
+        // wheelSensitivity: 0.1,
       })
       setCy(cy)
       // Now add event handlers. This is necessary only once.

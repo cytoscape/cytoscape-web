@@ -197,7 +197,6 @@ export const SubNetworkPanel = ({
   })
   const { data, error, isFetching } = result
 
-  // console.log('Fetch time = ', performance.now() - t0)
   if (error !== undefined && error !== null) {
     console.error('Failed to get network', error)
   }
