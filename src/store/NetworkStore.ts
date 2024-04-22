@@ -78,6 +78,7 @@ const persist =
           get().networks.get(currentNetworkId)
         const deleted = updated === undefined
         if (!deleted) {
+          console.debug('DB Update: network store', updated)
           await putNetworkToDb(updated)
         }
       },
