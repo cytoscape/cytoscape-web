@@ -22,7 +22,6 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { AppConfigContext } from '../../AppConfigContext'
 import { Workspace } from '../../models/WorkspaceModel'
-import { putNetworkViewToDb } from '../../store/persist/db'
 import { NetworkView } from '../../models/ViewModel'
 import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
 
@@ -379,26 +378,16 @@ const WorkSpaceEditor = (): JSX.Element => {
           isLoadingRef.current = false
         })
     } else {
-      putNetworkViewToDb(currentNetworkId, currentNetworkView)
+      loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          loadCurrentNetworkById(currentNetworkId)
-            .then(() => {
-              // restoreSelectionStates()
-              restoreTableBrowserTabState()
-              navigate(
-                `/${
-                  workspace.id
-                }/networks/${currentNetworkId}${location.search.toString()}`,
-              )
-            })
-            .catch((err) => console.error('Failed to load a network:', err))
+          restoreTableBrowserTabState()
+          navigate(
+            `/${
+              workspace.id
+            }/networks/${currentNetworkId}${location.search.toString()}`,
+          )
         })
-        .catch((err) => {
-          console.error('Failed to save network view to DB:', err)
-        })
-        .finally(() => {
-          isLoadingRef.current = false
-        })
+        .catch((err) => console.error('Failed to load a network:', err))
     }
   }, [currentNetworkId])
 

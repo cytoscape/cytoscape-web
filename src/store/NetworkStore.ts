@@ -74,10 +74,11 @@ const persist =
         const currentNetworkId: IdType =
           useWorkspaceStore.getState().workspace.currentNetworkId
         set(args)
-        const updated = get().networks.get(currentNetworkId)
+        const updated: Network | undefined =
+          get().networks.get(currentNetworkId)
         const deleted = updated === undefined
         if (!deleted) {
-          console.log('DB Update: network store', updated)
+          console.debug('DB Update: network store', updated)
           await putNetworkToDb(updated)
         }
       },
@@ -182,13 +183,32 @@ export const useNetworkStore = create(
           })
         },
 
+        /**
+         *
+         * Add a new network to the store
+         *
+         * @param network new network to be added
+         * @returns
+         */
         add: (network: Network) =>
           set((state) => {
+            if (state.networks.has(network.id)) {
+              console.warn('Network already exists in store', network.id)
+              return state
+            }
+
             const newNetworkMap = new Map(state.networks).set(
               network.id,
               network,
             )
             state.networks = newNetworkMap
+            void putNetworkToDb(network)
+              .then(() => {
+                console.debug('* New network has been added to DB', network.id)
+              })
+              .catch((err) => {
+                console.error('Failed adding network to DB', err)
+              })
             return state
           }),
         delete: (networkId: IdType) =>
@@ -203,12 +223,10 @@ export const useNetworkStore = create(
           set((state) => {
             clearNetworksFromDb()
               .then(() => {
-                console.log(
-                  '---------------------------@@@@Deleted all networks from db',
-                )
+                console.log('Deleted all networks from db')
               })
               .catch((err) => {
-                console.log('Error clearing all networks from db', err)
+                console.warn('Error clearing all networks from db', err)
               })
 
             return { ...state, networks: new Map<IdType, Network>() }
