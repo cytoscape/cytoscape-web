@@ -6,7 +6,7 @@ import { IdType } from '../../../models/IdType';
 import { useWorkspaceStore } from '../../../store/WorkspaceStore';
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel';
-import { Pair } from '../../../models/MergeModel/utils/dataInterface';
+import { Pair } from '../../../models/MergeModel/utils/Pair';
 
 export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
     const [openDialog, setOpenDialog] = useState<boolean>(false);
