@@ -5,6 +5,10 @@ import {
     Paper, Table, TableContainer, TableHead, TableRow, TableCell, TableBody,
     FormControl, InputLabel, FormControlLabel, Checkbox, TextField
 } from '@mui/material';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Column } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
@@ -15,11 +19,11 @@ import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
 import { Column as PrimeColumn } from 'primereact/column';
 import { PrimeReactProvider } from 'primereact/api';
-import { Pair } from '../../../models/MergeModel/utils/dataInterface';
+import { Pair } from '../../../models/MergeModel/utils/Pair';
 import { Network } from '../../../models/NetworkModel';
 import { Table as NetworkTable } from '../../../models/TableModel';
 import './MergeDialog.css';
-import { set } from 'lodash';
+import { initial, set } from 'lodash';
 
 enum MergeType {
     union = 'Union',
@@ -37,6 +41,7 @@ interface MatchingTableRow {
     mergedNetwork: string;
     type: string;
     id: number;
+    [key: string]: string | number;
 }
 interface MergeDialogProps {
     open: boolean;
@@ -53,7 +58,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     // Record the base network
     const [baseNetwork, setBaseNetwork] = useState<Pair<string, IdType>>(['', '']);
     // Record the matching columns for each network
-    const [matchingMatchingCols, setMatchingMatchingCols] = useState<Record<IdType, string>>({});
+    const [matchingCols, setmatchingCols] = useState<Record<IdType, string>>({});
     // Record the state of the matching table
     const [matchingTable, setMatchingTable] = useState<MatchingTableRow[]>([]);
     // Record the status of the available and selected networks lists
@@ -62,6 +67,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const [selectedAvailable, setSelectedAvailable] = useState<Pair<string, IdType>[]>([]);
     const [selectedToMerge, setSelectedToMerge] = useState<Pair<string, IdType>[]>([]);
     const matchingTableRef = useRef<HTMLDivElement>(null);
+
     const handleSelectAvailable = (uuid: string) => {
         const currentIndex = findPairIndex(selectedAvailable, uuid);
         const newSelectedAvailable = [...selectedAvailable];
@@ -92,16 +98,21 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
         setSelectedToMerge(newSelectedToMerge);
     };
 
-    const handleAddNetwork = () => {
+    const handleAddNetwork = async () => {
+        const newAvailableNetworksList = [...availableNetworksList];
+
+        for (const net of selectedAvailable) {
+            if (!networkRecords.hasOwnProperty(net[1])) {
+                await loadNetworkById(net[1]);
+                const netIndex = newAvailableNetworksList.findIndex(n => n[1] === net[1]);
+                if (netIndex > -1) {
+                    newAvailableNetworksList.splice(netIndex, 1);
+                }
+            }
+        }
         setToMergeNetworksList([...toMergeNetworksList, ...selectedAvailable]);
         setAvailableNetworksList(availableNetworksList.filter(net => !selectedAvailable.includes(net)));
         setSelectedAvailable([]);
-        toMergeNetworksList.forEach(async (net) => {
-            if (!networkRecords.hasOwnProperty(net[1])) {
-                await loadNetworkById(net[1]);
-            }
-
-        });
     };
 
     const handleRemoveNetwork = () => {
@@ -109,6 +120,44 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
         setToMergeNetworksList(toMergeNetworksList.filter(net => !selectedToMerge.includes(net)));
         setSelectedToMerge([]);
     };
+
+    // Function to move selected networks up
+    const handleMoveUp = () => {
+        const newToMergeNetworksList = [...toMergeNetworksList];
+        // Retrieve the current indices of the selected networks and sort them in ascending order for moving up
+        const sortedSelected = selectedToMerge
+            .map(selected => newToMergeNetworksList.findIndex(network => network[1] === selected[1]))
+            .sort((a, b) => a - b);
+
+        sortedSelected.forEach(currentIndex => {
+            if (currentIndex > 0 && !selectedToMerge.some(net => net[1] === newToMergeNetworksList[currentIndex - 1][1])) {
+                const temp = newToMergeNetworksList[currentIndex - 1];
+                newToMergeNetworksList[currentIndex - 1] = newToMergeNetworksList[currentIndex];
+                newToMergeNetworksList[currentIndex] = temp;
+            }
+        });
+
+        setToMergeNetworksList(newToMergeNetworksList);
+    };
+
+    const handleMoveDown = () => {
+        const newToMergeNetworksList = [...toMergeNetworksList];
+        // Retrieve the current indices of the selected networks and sort them in descending order for moving down
+        const sortedSelected = selectedToMerge
+            .map(selected => newToMergeNetworksList.findIndex(network => network[1] === selected[1]))
+            .sort((a, b) => b - a);
+
+        sortedSelected.forEach(currentIndex => {
+            if (currentIndex < newToMergeNetworksList.length - 1 && !selectedToMerge.some(net => net[1] === newToMergeNetworksList[currentIndex + 1][1])) {
+                const temp = newToMergeNetworksList[currentIndex + 1];
+                newToMergeNetworksList[currentIndex + 1] = newToMergeNetworksList[currentIndex];
+                newToMergeNetworksList[currentIndex] = temp;
+            }
+        });
+
+        setToMergeNetworksList(newToMergeNetworksList);
+    };
+
 
     const handleBaseNetworkChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         let newAvailableNetworksList = [...availableNetworksList];
@@ -122,14 +171,14 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
         const newBaseNetworkId = event.target.value as IdType;
         const newBaseNetworkName = workSpaceNetworks.find(net => net[1] === newBaseNetworkId)?.[0] ?? 'Error';
         newAvailableNetworksList = newAvailableNetworksList.filter(net => net[1] !== newBaseNetworkId);
+        if (!networkRecords.hasOwnProperty(newBaseNetworkId)) {
+            await loadNetworkById(newBaseNetworkId);
+        }
         setBaseNetwork([newBaseNetworkName, newBaseNetworkId]);
         setAvailableNetworksList(newAvailableNetworksList);
         setToMergeNetworksList(toMergeNetworksList.filter(net => net[1] !== newBaseNetworkId));
         setSelectedAvailable(selectedAvailable.filter(net => net[1] !== newBaseNetworkId));
         setSelectedToMerge(selectedToMerge.filter(net => net[1] !== newBaseNetworkId));
-        if (!networkRecords.hasOwnProperty(newBaseNetworkId)) {
-            await loadNetworkById(newBaseNetworkId);
-        }
     }
 
     const getToken: () => Promise<string> = useCredentialStore(
@@ -138,74 +187,85 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
 
     // Handler for the 'Matching Columns' dropdown changes
     const handleSetMatchingCols = (networkId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-        setMatchingMatchingCols({
-            ...matchingMatchingCols,
+        setmatchingCols({
+            ...matchingCols,
             [networkId]: event.target.value as string
         });
     };
 
     // Update the matching table when selectedNetworks changes
-    // useEffect(() => {
-    //     const sharedColsRecord: Record<IdType, string[]> = {};
-    //     // Create the initial matching table with the columns of the base network
-    //     if (baseNetwork !== undefined) {
-    //         const newMatchingTable = networkRecords[baseNetwork[1]]?.nodeTable?.columns.map((col, index) => {
-    //             const matchCols: Record<string, string> = {};
-    //             toMergeNetworksList.forEach(net => {
-    //                 const network = networkRecords[net[1]];
-    //                 if (network.nodeTable?.columns.some(nc => nc.name === col.name)) {
-    //                     const newSharedCols = sharedColsRecord[net[1]] ? [...sharedColsRecord[net[1]]] : [];
-    //                     newSharedCols.push(col.name);
-    //                     sharedColsRecord[net[1]] = newSharedCols;
-    //                     matchCols[net[1]] = col.name;
-    //                 } else {
-    //                     matchCols[net[1]] = 'None';
-    //                 }
-    //             });
-    //             return {
-    //                 id: index,
-    //                 [baseNetwork[1]]: col.name,
-    //                 ...matchCols,
-    //                 mergedNetwork: col.name,
-    //                 type: col.type,
-    //             };
-    //         });
+    useEffect(() => {
+        const sharedColsRecord: Record<IdType, string[]> = {};
+        // Create the initial matching table with the columns of the base network
+        const initialRow: MatchingTableRow = {
+            id: 0,
+            mergedNetwork: 'Matching.Attribute',
+            type: networkRecords[baseNetwork[1]]?.nodeTable?.columns.find(col => col.name === matchingCols[baseNetwork[1]])?.type || 'None'
+        }
+        const matchingRow: Record<string, string> = {};
+        Object.keys(matchingCols).forEach(key => {
+            matchingRow[key] = matchingCols[key];
+        });
+        const newMatchingTable = [{ ...initialRow, ...matchingRow }]
+        // Loop over networks and update the matching table for each network
+        if (baseNetwork !== undefined && baseNetwork[0].length > 0 && baseNetwork[1].length > 0) {
+            networkRecords[baseNetwork[1]]?.nodeTable?.columns.forEach(col => {
+                const matchCols: Record<string, string> = {};
+                toMergeNetworksList.forEach(net => {
+                    const network = networkRecords[net[1]];
+                    if (network.nodeTable?.columns.some(nc => nc.name === col.name)) {
+                        const newSharedCols = sharedColsRecord[net[1]] ? [...sharedColsRecord[net[1]]] : [];
+                        newSharedCols.push(col.name);
+                        sharedColsRecord[net[1]] = newSharedCols;
+                        matchCols[net[1]] = col.name;
+                    } else {
+                        matchCols[net[1]] = 'None';
+                    }
+                });
+                newMatchingTable.push({
+                    id: newMatchingTable.length,
+                    [baseNetwork[1]]: col.name,
+                    ...matchCols,
+                    mergedNetwork: col.name,
+                    type: col.type,
+                });
+            });
 
-    //         // Loop over networks and update the matching table for each network
-    //         toMergeNetworksList.forEach((net1, index1) => {
-    //             networkRecords[net1[1]]?.nodeTable?.columns.forEach(col => {
-    //                 if (!sharedColsRecord[net1[1]]?.includes(col.name)) {
-    //                     const matchCols: Record<string, string> = {};
-    //                     matchCols[net1[1]] = col.name;
+            // Loop over networks and update the matching table for each network
+            toMergeNetworksList.forEach((net1, index1) => {
+                networkRecords[net1[1]]?.nodeTable?.columns.forEach(col => {
+                    if (!sharedColsRecord[net1[1]]?.includes(col.name)) {
+                        const matchCols: Record<string, string> = {};
+                        matchCols[net1[1]] = col.name;
 
-    //                     toMergeNetworksList.slice(0, index1)?.forEach(net2 => {
-    //                         matchCols[net2[1]] = 'None';
-    //                     });
-    //                     toMergeNetworksList.slice(index1 + 1).forEach(net2 => {
-    //                         const network = networkRecords[net1[1]];
-    //                         if (network?.nodeTable?.columns.some(nc => nc.name === col.name)) {
-    //                             const newSharedCols = sharedColsRecord[net2[1]] ? [...sharedColsRecord[net2[1]]] : [];
-    //                             newSharedCols.push(col.name);
-    //                             sharedColsRecord[net2[1]] = newSharedCols;
-    //                             matchCols[net2[1]] = col.name;
-    //                         } else {
-    //                             matchCols[net2[1]] = 'None';
-    //                         }
-    //                     });
+                        toMergeNetworksList.slice(0, index1)?.forEach(net2 => {
+                            matchCols[net2[1]] = 'None';
+                        });
+                        toMergeNetworksList.slice(index1 + 1).forEach(net2 => {
+                            const network = networkRecords[net1[1]];
+                            if (network?.nodeTable?.columns.some(nc => nc.name === col.name)) {
+                                const newSharedCols = sharedColsRecord[net2[1]] ? [...sharedColsRecord[net2[1]]] : [];
+                                newSharedCols.push(col.name);
+                                sharedColsRecord[net2[1]] = newSharedCols;
+                                matchCols[net2[1]] = col.name;
+                            } else {
+                                matchCols[net2[1]] = 'None';
+                            }
+                        });
 
-    //                     newMatchingTable.push({
-    //                         id: newMatchingTable.length,
-    //                         [baseNetwork[1]]: 'None',
-    //                         ...matchCols,
-    //                         mergedNetwork: col.name,
-    //                         type: col.type,
-    //                     });
-    //                 }
-    //             });
-    //         });
-    //         setMatchingTable(newMatchingTable);
-    //     }
-    // }, [toMergeNetworksList, baseNetwork]);
+                        newMatchingTable.push({
+                            id: newMatchingTable.length,
+                            [baseNetwork[1]]: 'None',
+                            ...matchCols,
+                            mergedNetwork: col.name,
+                            type: col.type,
+                        });
+                    }
+                });
+            });
+            setMatchingTable(newMatchingTable);
+        }
+    }, [toMergeNetworksList, baseNetwork, matchingCols, networkRecords]);
 
     const handleMergeTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setMergeOption(event.target.value as MergeType);
@@ -267,9 +327,23 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     };
     // Handler for 'Dropdown' changes
     const onDropdownChange = (e: DropdownChangeEvent, rowData: { [x: string]: any; }, field: string) => {
-        setMatchingTable(prevTable => prevTable.map(row =>
-            row.id === rowData.id ? { ...row, [field]: e.target.value } : row
-        ));
+        setMatchingTable(prevTable => {
+            const updatedTable = prevTable.map(row => {
+                if (row.id === rowData.id) {
+                    return { ...row, [field]: e.value };
+                }
+                return row;
+            });
+
+            // Filter out rows where all network fields are 'None'
+            return updatedTable.filter(row => {
+                // Check all network IDs in the row except the 'mergedNetwork' and 'type' fields
+                const allNone = Object.keys(row)
+                    .filter(key => key !== 'mergedNetwork' && key !== 'type' && key !== 'id')
+                    .every(key => row[key] === 'None');
+                return !allNone;  // Keep rows that do not have all 'None'
+            });
+        });
     };
 
     // Handler for 'Merged Network' changes
@@ -278,6 +352,19 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
             row.id === rowData.id ? { ...row, mergedNetwork: e.target.value } : row
         ));
     };
+
+    // Handler for the 'Merge' button
+    const handleMerge = () => {
+        console.log('Merging Networks...');
+        console.log('Merge Type:', mergeType);
+        console.log('Base Network:', baseNetwork);
+        console.log('Selected Networks:', toMergeNetworksList);
+        console.log('Matching Columns:', matchingCols);
+        console.log('Matching Table:', matchingTable);
+
+        handleClose();
+    };
+
     return (
         <Dialog
             maxWidth="md"
@@ -342,7 +429,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                             onClick={handleAddNetwork}
                             disabled={selectedAvailable.length === 0}
                         >
-                            {'>'}
+                            <ArrowForwardIcon />
                         </Button>
                         <Button
                             variant="contained"
@@ -350,7 +437,15 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                             disabled={selectedToMerge.length === 0}
                             sx={{ mt: 1 }}
                         >
-                            {'<'}
+                            <ArrowBackIcon />
+                        </Button>
+                    </Box>
+                    <Box display="flex" flexDirection="column" justifyContent="center" m={1}>
+                        <Button variant="contained" onClick={handleMoveUp} disabled={selectedToMerge.length === 0}>
+                            <ArrowUpwardIcon />
+                        </Button>
+                        <Button variant="contained" onClick={handleMoveDown} disabled={selectedToMerge.length === 0} sx={{ mt: 1 }}>
+                            <ArrowDownwardIcon />
                         </Button>
                     </Box>
                     <List
@@ -389,7 +484,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                             <TableRow>
                                 <TableCell key={baseNetwork[1]}>
                                     <Select
-                                        value={matchingMatchingCols[baseNetwork[1]] || ''}
+                                        value={matchingCols[baseNetwork[1]] || ''}
                                         onChange={handleSetMatchingCols(baseNetwork[1])}
                                     >
                                         {networkRecords[baseNetwork[1]]?.nodeTable.columns.map((column) => (
@@ -402,7 +497,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                                 {toMergeNetworksList.map(net => (
                                     <TableCell key={net[1]}>
                                         <Select
-                                            value={matchingMatchingCols[net[1]] || ''}
+                                            value={matchingCols[net[1]] || ''}
                                             onChange={handleSetMatchingCols(net[1])}
                                         >
                                             {networkRecords[net[1]]?.nodeTable.columns.map((column) => (
@@ -425,8 +520,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                 <div className="card">
                     <PrimeReactProvider>
                         <DataTable value={matchingTable} tableStyle={{ minWidth: '50rem' }}>
-                            <PrimeColumn key={baseNetwork ? baseNetwork[1] : ''} field={baseNetwork ? baseNetwork[1] : ''}
-                                header={baseNetwork ? baseNetwork[0] : ''} body={networkColumnTemplate} />
+                            <PrimeColumn key={baseNetwork ? baseNetwork[1] : 'baseNetwork'} field={baseNetwork ? baseNetwork[1] : 'baseNetwork'}
+                                header={baseNetwork ? baseNetwork[0] : 'baseNetwork'} body={networkColumnTemplate} />
                             {
                                 toMergeNetworksList.map(net => <PrimeColumn key={net[1]} field={net[1]} header={net[0] ?? 'Error'} body={networkColumnTemplate} />)
                             }
@@ -454,7 +549,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                 <Button onClick={handleClose} color="primary">
                     Cancel
                 </Button>
-                <Button onClick={handleClose} color="secondary">
+                <Button onClick={handleMerge} color="secondary">
                     Merge
                 </Button>
             </DialogActions>
