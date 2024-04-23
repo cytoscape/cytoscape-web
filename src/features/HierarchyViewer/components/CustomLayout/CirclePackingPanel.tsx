@@ -44,8 +44,6 @@ const CpDefaults = {
 
 const CP_WRAPPER_CLASS = 'circle-packing-wrapper'
 
-// type CpDefaultsType = typeof CpDefaults[keyof typeof CpDefaults]
-
 /**
  * Circle Packing renderer as a variant of the network viewer
  *
@@ -104,6 +102,8 @@ export const CirclePackingPanel = ({
   const [tooltipContent, setTooltipContent] = useState<string>('')
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
 
+  const [hoveredEnter, setHoveredEnter] = useState<D3TreeNode>()
+
   // For selecting nodes in the sub network view
   const setSelectedNodes = useSubNetworkStore((state) => state.setSelectedNodes)
 
@@ -132,33 +132,6 @@ export const CirclePackingPanel = ({
       }
     }
   }, [])
-
-  /**
-   * Based on the network data and original view model, create a Circle Packing view model
-   */
-  useEffect(() => {
-    if (network === undefined || nodeTable === undefined) return
-    const primaryView = getViewModel(networkId)
-    if (primaryView === undefined) return
-
-    const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> = createTreeLayout(
-      network,
-      nodeTable,
-    )
-
-    const updatedView = applyVisualStyle({
-      network: network,
-      visualStyle: visualStyle,
-      nodeTable: nodeTable,
-      edgeTable: edgeTable,
-      networkView: primaryView,
-    })
-    const cpViewModel: CirclePackingView = createCirclePackingView(
-      updatedView,
-      rootNode,
-    )
-    addViewModel(network.id, cpViewModel)
-  }, [network, visualStyle])
 
   const getLabel = (nodeId: string): string => {
     let label: VisualPropertyValueType = ''
@@ -240,8 +213,6 @@ export const CirclePackingPanel = ({
   }
 
   const draw = (rootNode: d3Hierarchy.HierarchyNode<D3TreeNode>): void => {
-    // const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
-    //   circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
     const pack = d3Hierarchy
       .pack()
       .size([dimensions.width, dimensions.width])
@@ -321,6 +292,7 @@ export const CirclePackingPanel = ({
         if (label === '') {
           label = `${d.data.name}`
         }
+        console.log('ORIGINAL Label:', label)
 
         // Split the label into words
         const words = label === undefined ? [] : label.split(' ') ?? []
@@ -364,6 +336,73 @@ export const CirclePackingPanel = ({
     toCenter(wrapper)
   }
 
+  /**
+   * Redraw the circle packing layout when the view model has been updated
+   */
+  useEffect(() => {
+    if (circlePackingView === undefined) return
+
+    const newCpViewModel = updateView()
+
+    const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
+      newCpViewModel?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
+    const nodeViews = newCpViewModel?.nodeViews
+    if (nodeViews === undefined) return
+
+    d3Selection
+      .select('.circle-packing-wrapper')
+      .selectAll('text')
+      .data(rootNode.descendants())
+      .text((d) => {
+        const nodeId: string = d.data.id
+        const nv = nodeViews[nodeId]
+        if (nv === undefined) {
+          // This is a leaf node (does not exist in the original network)
+          return `${d.data.name}`
+        }
+        const label: string | undefined = nv.values.get('nodeLabel') as string
+        return label === undefined ? '' : label
+      })
+  }, [visualStyle])
+
+  const updateView = () => {
+    if (network === undefined || nodeTable === undefined) return
+    const primaryView = getViewModel(networkId)
+
+    // Primary view is not ready yet.
+    if (primaryView === undefined) return
+
+    let rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
+      circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
+
+    if (rootNode === undefined) {
+      rootNode = createTreeLayout(network, nodeTable)
+    }
+
+    const updatedView = applyVisualStyle({
+      network: network,
+      visualStyle: visualStyle,
+      nodeTable: nodeTable,
+      edgeTable: edgeTable,
+      networkView: primaryView,
+    })
+
+    const cpViewModel: CirclePackingView = createCirclePackingView(
+      updatedView,
+      rootNode,
+    )
+    addViewModel(network.id, cpViewModel)
+    console.log('CPV Model added-----------')
+    return cpViewModel
+  }
+
+  /**
+   * Based on the network data and original view model, create a Circle Packing view model
+   */
+  useEffect(() => {
+    updateView()
+  }, [network])
+
   useEffect(() => {
     if (
       ref.current === null ||
@@ -378,12 +417,13 @@ export const CirclePackingPanel = ({
 
     const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
       circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
+
+    if (rootNode === undefined) return
+
     draw(rootNode)
-    console.log('Initialized')
     initRef.current = true
   }, [circlePackingView, dimensions])
 
-  const [hoveredEnter, setHoveredEnter] = useState<D3TreeNode>()
   useEffect(() => {
     if (hoveredEnter === undefined) {
       setTooltipOpen(false)
@@ -429,7 +469,6 @@ export const CirclePackingPanel = ({
             ? CpDefaults.borderWidthHover
             : CpDefaults.borderWidth,
       )
-    console.log('Selected LF updated', selectedLeaf)
   }, [circlePackingView?.selectedNodes, selectedLeaf])
 
   return (
