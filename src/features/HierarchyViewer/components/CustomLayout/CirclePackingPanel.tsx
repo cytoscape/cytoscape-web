@@ -113,6 +113,8 @@ export const CirclePackingPanel = ({
 
   /**
    * Show all circles if selectedNodes has multiple entries
+   * Also, it display the selected nodes as a red circles
+   * 
    */
   useEffect(() => {
     if (selectedNodes.length > 1) {

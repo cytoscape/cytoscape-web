@@ -16,6 +16,7 @@ import {
   Operator,
 } from '../../../models/FilterModel/Search'
 import { createFuseIndex, filterColumns, runSearch } from './SearchUtils'
+import { SearchState } from '../../../models/FilterModel/SearchState'
 
 export const SearchBox = (): JSX.Element => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
@@ -39,6 +40,10 @@ export const SearchBox = (): JSX.Element => {
 
   const setQuery: (query: string) => void = useFilterStore(
     (state) => state.setQuery,
+  )
+
+  const setSearchState: (searchState: string) => void = useFilterStore(
+    (state) => state.setSearchState,
   )
 
   const searchOptions = useFilterStore((state) => state.search.options)
@@ -74,9 +79,12 @@ export const SearchBox = (): JSX.Element => {
   const clearSearch = (): void => {
     setQuery('')
     exclusiveSelect(currentNetworkId, [], [])
+
+    setSearchState(SearchState.READY)
   }
 
   const startSearch = (): void => {
+    setSearchState(SearchState.IN_PROGRESS)
     // Node and edge
     const indices: Indices<Fuse<Record<string, ValueType>>> =
       indexRecord[currentNetworkId]
@@ -103,6 +111,7 @@ export const SearchBox = (): JSX.Element => {
     }
 
     exclusiveSelect(currentNetworkId, nodesToBeSelected, edgesToBeSelected)
+    setSearchState(SearchState.DONE)
   }
 
   const reIndex = (forceUpdate: boolean): void => {
