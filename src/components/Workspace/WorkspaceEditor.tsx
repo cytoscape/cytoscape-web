@@ -22,7 +22,6 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { AppConfigContext } from '../../AppConfigContext'
 import { Workspace } from '../../models/WorkspaceModel'
-import { putNetworkViewToDb } from '../../store/persist/db'
 import { NetworkView } from '../../models/ViewModel'
 import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
 
@@ -55,6 +54,15 @@ import { JoinTableToNetworkForm } from '../../features/TableDataLoader/component
 import { useCreateNetworkFromTableStore } from '../../features/TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
+import { FilterUrlParams } from '../../models/FilterModel/FilterUrlParams'
+import { DEFAULT_FILTER_NAME } from '../../features/HierarchyViewer/components/FilterPanel/FilterPanel'
+import {
+  DisplayMode,
+  FilterConfig,
+  FilterWidgetType,
+} from '../../models/FilterModel'
+import { GraphObjectType } from '../../models/NetworkModel'
+import { useFilterStore } from '../../store/FilterStore'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -86,6 +94,8 @@ const WorkSpaceEditor = (): JSX.Element => {
   const location = useLocation()
 
   const [search] = useSearchParams()
+
+  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
 
   // For restoring the selection state from URL
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
@@ -310,6 +320,34 @@ const WorkSpaceEditor = (): JSX.Element => {
   }
 
   /**
+   * Restore filter states from URL
+   */
+  const restoreFilterStates = (): void => {
+    const filterFor = search.get(FilterUrlParams.FILTER_FOR)
+    const filterBy = search.get(FilterUrlParams.FILTER_BY)
+    const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
+    console.log('Filter states:', filterFor, filterBy, filterRange)
+
+    if (filterFor !== null && filterBy !== null && filterRange !== null) {
+      const filterConfig: FilterConfig = {
+        name: DEFAULT_FILTER_NAME,
+        attributeName: filterBy,
+        target:
+          filterFor === GraphObjectType.NODE
+            ? GraphObjectType.NODE
+            : GraphObjectType.EDGE,
+        widgetType: FilterWidgetType.CHECKBOX,
+        description: 'Filter nodes / edges by selected values',
+        label: 'Interaction edge filter',
+        range: { values: filterRange.split(',') },
+        displayMode: DisplayMode.SHOW_HIDE,
+        // visualMapping,
+      }
+      addFilterConfig(filterConfig)
+    }
+  }
+
+  /**
    * Initializations
    */
   useEffect(() => {
@@ -384,6 +422,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           if (path.includes(currentNetworkId)) {
             restoreSelectionStates()
             restoreTableBrowserTabState()
+            restoreFilterStates()
           }
 
           navigate(
@@ -397,26 +436,16 @@ const WorkSpaceEditor = (): JSX.Element => {
           isLoadingRef.current = false
         })
     } else {
-      putNetworkViewToDb(currentNetworkId, currentNetworkView)
+      loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          loadCurrentNetworkById(currentNetworkId)
-            .then(() => {
-              // restoreSelectionStates()
-              restoreTableBrowserTabState()
-              navigate(
-                `/${
-                  workspace.id
-                }/networks/${currentNetworkId}${location.search.toString()}`,
-              )
-            })
-            .catch((err) => console.error('Failed to load a network:', err))
+          restoreTableBrowserTabState()
+          navigate(
+            `/${
+              workspace.id
+            }/networks/${currentNetworkId}${location.search.toString()}`,
+          )
         })
-        .catch((err) => {
-          console.error('Failed to save network view to DB:', err)
-        })
-        .finally(() => {
-          isLoadingRef.current = false
-        })
+        .catch((err) => console.error('Failed to load a network:', err))
     }
   }, [currentNetworkId])
 

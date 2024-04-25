@@ -51,6 +51,7 @@ export const NetworkTabs = ({
           return (
             index === selected && (
               <NetworkTab
+                key={index}
                 network={network}
                 renderer={renderer}
                 isActive={isActive}

@@ -282,7 +282,7 @@ export const useViewModelStore = create(
             if (viewType !== 'circlePacking') {
               // Store only default view type (node-link diagram) only.
               void putNetworkViewToDb(networkId, networkView).then(() => {
-                // console.info('Network view model added to the DB.', networkId)
+                console.debug('Network view model added to the DB.', networkId)
               })
             }
             return state

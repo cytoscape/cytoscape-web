@@ -9,9 +9,6 @@ import {
   getTablesFromDb,
   getNetworkViewsFromDb,
   getVisualStyleFromDb,
-  putNetworkToDb,
-  putTablesToDb,
-  putVisualStyleToDb,
 } from '../store/persist/db'
 import { CachedData } from './CachedData'
 import { createNetworkAttributesFromCx } from '../models/TableModel/impl/NetworkAttributesImpl'
@@ -87,22 +84,15 @@ export const createDataFromCx = async (
   cxData: Cx2,
 ): Promise<NetworkWithView> => {
   const network: Network = NetworkFn.createNetworkFromCx(ndexNetworkId, cxData)
-  await putNetworkToDb(network)
-
   const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
     ndexNetworkId,
     cxData,
   )
-  await putTablesToDb(ndexNetworkId, nodeTable, edgeTable)
-
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
-  await putVisualStyleToDb(ndexNetworkId, visualStyle)
-
   const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
     ndexNetworkId,
     cxData,
   )
-
   const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
     ndexNetworkId,
     cxData,

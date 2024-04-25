@@ -115,10 +115,8 @@ const persist =
       async (args) => {
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
-        console.log('persist middleware updating table store')
         set(args)
         const updated = get().tables[currentNetworkId]
-        console.log('updated table: ', updated)
         const deleted = updated === undefined
         if (!deleted) {
           await putTablesToDb(
@@ -139,7 +137,18 @@ export const useTableStore = create(
 
       add: (networkId: IdType, nodeTable: Table, edgeTable: Table) => {
         set((state) => {
+          if (state.tables[networkId] !== undefined) {
+            console.warn('Table already exists for network', networkId)
+            return state
+          }
           state.tables[networkId] = { nodeTable, edgeTable }
+          void putTablesToDb(networkId, nodeTable, edgeTable)
+            .then(() => {
+              console.debug('Added tables to DB', networkId)
+            })
+            .catch((err) => {
+              console.error('Error adding tables to DB', err)
+            })
           return state
         })
       },
