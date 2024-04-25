@@ -188,6 +188,9 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
 
     await putNetworkSummaryToDb(summary)
 
+    // TODO the db syncing logic in various stores assumes the updated network is the current network
+    // therefore, as a temporary fix, the first operation that should be done is to set the
+    // current network to be the new network id
     setCurrentNetworkId(newNetworkId)
     addNewNetwork(network)
     setVisualStyle(newNetworkId, visualStyle)

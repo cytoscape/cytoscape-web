@@ -151,12 +151,16 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
         })
         const res = await createDataFromLocalCx2(localUuid, json)
         const { network, nodeTable, edgeTable, visualStyle, networkView } = res
+
+        // TODO the db syncing logic in various stores assumes the updated network is the current network
+        // therefore, as a temporary fix, the first operation that should be done is to set the
+        // current network to be the new network id
         addNetworkToWorkspace(localUuid)
+        setCurrentNetworkId(localUuid)
         addNewNetwork(network)
         setVisualStyle(localUuid, visualStyle)
         setTables(localUuid, nodeTable, edgeTable)
         setViewModel(localUuid, networkView)
-        setCurrentNetworkId(localUuid)
         props.handleClose()
       } catch (error) {
         console.error(error)
