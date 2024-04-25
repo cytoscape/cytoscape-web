@@ -16,6 +16,8 @@ import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
+import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
+
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -66,6 +68,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
         <Divider />
         <ResetLocalWorkspaceMenuItem handleClose={handleClose} />
         <Divider />
+        <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />
         <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />
         <SaveToNDExMenuItem handleClose={handleClose} />
         <CopyNetworkToNDExMenuItem handleClose={handleClose} />

@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { MenuItem, Box, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
+import { MenuItem, Box, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { BaseMenuProps } from '../BaseMenuProps';
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client';
@@ -7,7 +7,6 @@ import { useCredentialStore } from '../../../store/CredentialStore';
 import { AppConfigContext } from '../../../AppConfigContext';
 import { useMessageStore } from '../../../store/MessageStore';
 import { KeycloakContext } from '../../..';
-import { getWorkspaceFromDb } from '../../../store/persist/db';
 import { useWorkspaceStore } from '../../../store/WorkspaceStore';
 import { exportNetworkToCx2 } from '../../../store/io/exportCX';
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
@@ -18,16 +17,16 @@ import { useViewModelStore } from '../../../store/ViewModelStore';
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 
-export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactElement => {
+export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): React.ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext);
   const client = useContext(KeycloakContext);
   const getToken = useCredentialStore((state) => state.getToken);
   const authenticated: boolean = client?.authenticated ?? false;
   const addMessage = useMessageStore((state) => state.addMessage);
 
-  const [workspaceName, setWorkspaceName] = useState<string>('');
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const updateSummary = useNetworkSummaryStore((state) => state.update)
+  const workspace = useWorkspaceStore((state) => state.workspace)
 
   const handleOpenDialog = (): void => {
     setOpenDialog(true);
@@ -40,9 +39,6 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
     (state) => state.workspace.networkIds,
   )
 
-  const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    setWorkspaceName(event.target.value);
-  };
 
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
@@ -128,26 +124,19 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
   };
 
   const saveWorkspaceToNDEx = async (): Promise<void> => {
-    if (workspaceName.trim().length === 0) {
-      alert("Please enter a workspace name");
-      return;
-    }
     await saveAllNetworks()
     const ndexClient = new NDEx(ndexBaseUrl);
     const accessToken = await getToken();
     ndexClient.setAuthToken(accessToken);
 
     try {
-      const workspace = await getWorkspaceFromDb();
-      const response = await ndexClient.createCyWebWorkspace({
-        name: workspaceName,
+   
+      const update = await ndexClient.updateCyWebWorkspace( workspace.id, {
+        name: workspace.name,
         options: { currentNetwork: workspace.currentNetworkId },
         networkIDs: workspace.networkIds
-      });
-      const { uuid, modificationTime } = response;
-      console.log(uuid)
-      console.log(modificationTime)
-      
+      })
+      console.log(update)
 
       addMessage({
         message: `Saved workspace to NDEx.`,
@@ -171,19 +160,9 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
 
   const dialog = (
     <Dialog open={openDialog} onClose={handleCloseDialog}>
-      <DialogTitle>Save Workspace As...</DialogTitle>
+      <DialogTitle>Do you want to save (overwrite) the current workspace?</DialogTitle>
       <DialogContent>
-        <TextField
-          autoFocus
-          margin="dense"
-          id="name"
-          label="Workspace Name"
-          type="text"
-          fullWidth
-          variant="standard"
-          value={workspaceName}
-          onChange={handleNameChange}
-        />
+  
       </DialogContent>
       <DialogActions>
         <Button onClick={handleCloseDialog}>Cancel</Button>
@@ -197,7 +176,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
       disabled={!authenticated}
       onClick={handleSaveCurrentNetworkToNDEx}
     >
-      Save workspace as...
+      Save workspace
     </MenuItem>
   );
 
