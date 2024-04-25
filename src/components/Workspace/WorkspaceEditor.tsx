@@ -54,6 +54,7 @@ import { CreateNetworkFromTableForm } from '../../features/TableDataLoader/compo
 import { JoinTableToNetworkForm } from '../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
 import { useCreateNetworkFromTableStore } from '../../features/TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
+import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -209,6 +210,8 @@ const WorkSpaceEditor = (): JSX.Element => {
     setSummaries(summaries)
   }
 
+  const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
+
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     const currentToken = await getToken()
 
@@ -225,7 +228,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
     addViewModel(networkId, networkViews[0])
-    // addViewModel(networkId, networkViews !== undefined ? networkViews : [])
 
     if (isHCX(summary)) {
       const version =
@@ -244,30 +246,37 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
 
     if (!summary.hasLayout) {
-      const layoutEngineName = isHCX(summary)
-        ? defaultHierarchyLayout.name
-        : defaultLayout.name
-      const engine: LayoutEngine =
-        layoutEngines.find((engine) => engine.name === layoutEngineName) ??
-        layoutEngines[0]
-
-      const nextSummary = { ...summary, hasLayout: true }
-
-      setIsRunning(true)
-      const afterLayout = (
-        positionMap: Map<IdType, [number, number]>,
-      ): void => {
-        updateNodePositions(networkId, positionMap)
-        updateSummary(networkId, nextSummary)
-        setIsRunning(false)
-      }
-
-      engine.apply(
-        network.nodes,
-        network.edges,
-        afterLayout,
-        engine.algorithms[layoutEngineName],
+      const defaultLayout = getDefaultLayout(
+        summary,
+        network.nodes.length + network.edges.length,
+        maxNetworkElementsThreshold,
       )
+
+      if (defaultLayout !== undefined) {
+        const engine: LayoutEngine | undefined = layoutEngines.find(
+          (engine) => engine.name === defaultLayout.engineName,
+        )
+
+        if (engine !== undefined) {
+          const nextSummary = { ...summary, hasLayout: true }
+
+          setIsRunning(true)
+          const afterLayout = (
+            positionMap: Map<IdType, [number, number]>,
+          ): void => {
+            updateNodePositions(networkId, positionMap)
+            updateSummary(networkId, nextSummary)
+            setIsRunning(false)
+          }
+
+          engine.apply(
+            network.nodes,
+            network.edges,
+            afterLayout,
+            engine.algorithms[defaultLayout.algorithmName],
+          )
+        }
+      }
     }
   }
 

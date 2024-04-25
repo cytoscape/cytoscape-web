@@ -117,7 +117,7 @@ export function TableUpload(props: BaseMenuProps) {
               Or drag a tabular file here
             </Text>
             <Text size="sm" c="dimmed" inline mt={7}>
-              Files under 500mb supported
+              Files under 5mb supported
             </Text>
           </Stack>
         </Group>

@@ -441,6 +441,12 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
         </Alert>
       ) : null}
 
+      {loading ? (
+        <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>
+          Creating network. Large networks may take up to a few minutes...
+        </Alert>
+      ) : null}
+
       <Group justify="space-between">
         <Popover
           zIndex={2001}

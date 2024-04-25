@@ -186,21 +186,14 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
 
     setLoading(true)
 
-    // const processedSummary =
-    //   network.nodes.length + network.edges.length > maxNetworkElementsThreshold
-    //     ? { ...summary, hasLayout: true }
-    //     : summary // dont run a layout if the network is over the max element threshold
+    await putNetworkSummaryToDb(summary)
 
-    const processedSummary = { ...summary, hasLayout: true } // dont run a default layout for now
-
-    await putNetworkSummaryToDb(processedSummary)
-
-    addNetworkToWorkspace(newNetworkId)
+    setCurrentNetworkId(newNetworkId)
     addNewNetwork(network)
     setVisualStyle(newNetworkId, visualStyle)
     setTables(newNetworkId, nodeTable, edgeTable)
     setViewModel(newNetworkId, networkView)
-    setCurrentNetworkId(newNetworkId)
+    addNetworkToWorkspace(newNetworkId)
     setLoading(false)
     reset()
     props.handleClose()
@@ -379,6 +372,11 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
             .filter((c) => c.invalidValues.length > 0)
             .map((c) => `'${c.name}'`)
             .join(', ')}`}
+        </Alert>
+      ) : null}
+      {loading ? (
+        <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>
+          Creating network. Large networks may take up to a few minutes...
         </Alert>
       ) : null}
       <Group justify="space-between">
