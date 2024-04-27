@@ -1,9 +1,11 @@
 import * as d3Scale from 'd3-scale'
 import * as d3Interpolate from 'd3-interpolate'
 import * as d3Hierarchy from 'd3-hierarchy'
+import * as d3Selection from 'd3-selection'
 import { VisualPropertyValueType } from '../../../../models/VisualStyleModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
 import { NodeView } from '../../../../models/ViewModel'
+import { D3TreeNode } from './D3TreeNode'
 
 export const getColorMapper = (
   domain: [number, number],
@@ -18,7 +20,7 @@ export const getColorMapper = (
 export const getFontSize = (
   d: d3Hierarchy.HierarchyCircularNode<any>,
 ): number => {
-  return (d.r / 80) * 20
+  return (d.r / 80) * 50
 }
 
 export const toCenter = (
@@ -30,9 +32,14 @@ export const toCenter = (
   // Get the radius of the circle
   const radius = svg.select('circle').attr('r')
 
-  const adjustedX = centerX - radius
-  const adjustedY = centerY - radius
+  let adjustedX = centerX - radius
+  let adjustedY = centerY - radius
 
+  if (dimensions.height > dimensions.width) {
+    adjustedY = 0
+  } else {
+    adjustedX = 0
+  }
   svg.attr('transform', `translate(${adjustedX}, ${adjustedY})`)
 }
 
@@ -50,8 +57,46 @@ export const getLabel = (
     }
   }
 
+  console.log(label)
   if (label === undefined || label === '') {
     return defaultName
   }
   return label.toString()
+}
+
+/**
+ * Default styling values
+ *
+ */
+export const CpDefaults = {
+  borderColor: '#666',
+  selectedBorderColor: 'orange',
+  leafBorderColor: 'red',
+  borderWidth: 0.05,
+  borderWidthHover: 1,
+} as const
+
+export const displaySelectedNodes = (
+  selectedNodeSet: Set<string>,
+  selectedLeaf: string,
+) => {
+  d3Selection
+    .select('.circle-packing-wrapper')
+    .selectAll('circle')
+    .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
+      if (selectedNodeSet.has(d.data.id)) {
+        return CpDefaults.selectedBorderColor
+      } else if (d.data.name === selectedLeaf) {
+        return CpDefaults.leafBorderColor
+      } else {
+        return CpDefaults.borderColor
+      }
+    })
+    .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) =>
+      selectedNodeSet.has(d.data.id) ||
+      d.data.id === selectedLeaf ||
+      d.data.name === selectedLeaf
+        ? CpDefaults.borderWidthHover
+        : CpDefaults.borderWidth,
+    )
 }
