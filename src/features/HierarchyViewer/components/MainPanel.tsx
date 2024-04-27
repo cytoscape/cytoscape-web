@@ -35,11 +35,6 @@ export interface Query {
 const queryClient = new QueryClient()
 
 export const MainPanel = (): JSX.Element => {
-  const [bottomHeight, setBottomHeight] = useState<number>(500)
-
-  const handleResize = (newSize: number[]) => {
-    setBottomHeight(newSize[1])
-  }
   const [subNetworkName, setSubNetworkName] = useState<string>('')
   const [query, setQuery] = useState<Query>({ nodeIds: [] })
   const [interactionNetworkUuid, setInteractionNetworkId] = useState<string>('')
@@ -64,8 +59,7 @@ export const MainPanel = (): JSX.Element => {
   )
 
   // Selected nodes in the hierarchy
-  const selectedNodes: IdType[] =
-    networkViewModel !== undefined ? networkViewModel.selectedNodes : []
+  const selectedNodes: IdType[] = networkViewModel?.selectedNodes ?? []
 
   // At this point, summary can be any network prop object
   const networkSummary: any = useNetworkSummaryStore(
@@ -174,11 +168,18 @@ export const MainPanel = (): JSX.Element => {
     return <MessagePanel message="This network is not a hierarchy" />
   }
 
-  // if (isHierarchy && renderers.circlePacking === undefined) {
-  //   addRenderer(CirclePackingRenderer)
-  // }
   if (selectedNodes.length === 0) {
     return <MessagePanel message="Please select a subsystem" />
+  }
+
+  if (selectedNodes.length > 1) {
+    // Multiple nodes are selected
+    return (
+      <MessagePanel
+        message="Multiple nodes are selected"
+        subMessage="Please select one subsystem to display the associated interactions"
+      />
+    )
   }
 
   // Special case: neither of ID or membership is available
@@ -204,7 +205,7 @@ export const MainPanel = (): JSX.Element => {
           boxSizing: 'border-box',
         }}
       >
-        <Allotment vertical minSize={100} onChange={handleResize}>
+        <Allotment vertical minSize={100}>
           <Allotment.Pane preferredSize={'65%'}>
             <SubNetworkPanel
               hierarchyId={currentNetworkId}

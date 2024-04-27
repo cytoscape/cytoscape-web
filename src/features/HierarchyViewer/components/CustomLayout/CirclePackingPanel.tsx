@@ -101,7 +101,7 @@ export const CirclePackingPanel = ({
 
   const handleZoom = useCallback(
     (e: any): void => {
-      console.log('###Zooming with expand', expandAll)
+      // console.log('###Zooming with expand', expandAll)
       const selectedArea = d3Selection.select('svg g')
       selectedArea.attr('transform', e.transform)
       const currentZoomLevel = e.transform.k
@@ -113,7 +113,7 @@ export const CirclePackingPanel = ({
   )
 
   useEffect(() => {
-    console.log('###Expand State changed', expandAll)
+    console.log('* Search state changed', expandAll)
     updateForZoom(lastZoomLevel)
   }, [expandAll])
 
