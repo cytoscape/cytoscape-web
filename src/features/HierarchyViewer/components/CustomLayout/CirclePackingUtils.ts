@@ -57,7 +57,6 @@ export const getLabel = (
     }
   }
 
-  console.log(label)
   if (label === undefined || label === '') {
     return defaultName
   }

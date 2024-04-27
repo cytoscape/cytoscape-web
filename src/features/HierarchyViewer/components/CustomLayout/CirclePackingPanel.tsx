@@ -84,7 +84,6 @@ export const CirclePackingPanel = ({
     (state) => state.viewModels,
   )
   const views: NetworkView[] = viewModelMap[networkId] ?? []
-  const defaultViewModel = getViewModel(networkId)
 
   // For updating the selected nodes
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
@@ -97,6 +96,9 @@ export const CirclePackingPanel = ({
   const selectedNodes: IdType[] = circlePackingView?.selectedNodes ?? []
   const selectedNodeSet = new Set<string>(selectedNodes)
 
+  // Keep the last
+  const [lastZoomLevel, setLastZoomLevel] = useState<number>(1)
+
   const handleZoom = useCallback(
     (e: any): void => {
       console.log('###Zooming with expand', expandAll)
@@ -104,10 +106,16 @@ export const CirclePackingPanel = ({
       selectedArea.attr('transform', e.transform)
       const currentZoomLevel = e.transform.k
       const maxDepth = Math.ceil(currentZoomLevel)
+      setLastZoomLevel(maxDepth)
       updateForZoom(maxDepth)
     },
     [expandAll],
   )
+
+  useEffect(() => {
+    console.log('###Expand State changed', expandAll)
+    updateForZoom(lastZoomLevel)
+  }, [expandAll])
 
   useEffect(() => {
     if (searchState === SearchState.DONE) {
@@ -115,6 +123,7 @@ export const CirclePackingPanel = ({
     } else {
       setExpandAll(false)
     }
+    updateForZoom(lastZoomLevel)
   }, [searchState])
 
   useEffect(() => {
