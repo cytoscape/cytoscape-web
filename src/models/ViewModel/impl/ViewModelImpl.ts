@@ -13,6 +13,54 @@ import {
   NetworkVisualPropertyName,
   NodeVisualPropertyName,
 } from '../../VisualStyleModel/VisualPropertyName'
+import { Network } from '../../NetworkModel'
+
+export const createEmptyViewModel = (id: IdType): NetworkView => {
+  const nodeViews: Record<IdType, NodeView> = {}
+  const edgeViews: Record<IdType, EdgeView> = {}
+  const networkView: NetworkView = {
+    id,
+    nodeViews,
+    edgeViews,
+    selectedNodes: [],
+    selectedEdges: [],
+    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>(),
+  }
+
+  return networkView
+}
+
+export const createViewModel = (network: Network): NetworkView => {
+  const nodeViews: Record<IdType, NodeView> = {}
+  const edgeViews: Record<IdType, EdgeView> = {}
+  network.nodes.forEach(node => {
+    const values = new Map<NodeVisualPropertyName, VisualPropertyValueType>()
+    nodeViews[node.id] = {
+      id: node.id,
+      x: 0,
+      y: 0,
+      values,
+    }
+  })
+
+  network.edges.forEach(edge => {
+    edgeViews[edge.id] = {
+      id: edge.id,
+      values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>(),
+    }
+  })
+
+  const networkView: NetworkView = {
+    id: network.id,
+    nodeViews,
+    edgeViews,
+    selectedNodes: [],
+    selectedEdges: [],
+    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>(),
+  }
+
+  return networkView
+}
 
 export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
   const cxNodes: CxNode[] = cxUtil.getNodes(cx)
