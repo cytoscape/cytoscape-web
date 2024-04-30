@@ -62,6 +62,21 @@ export const createViewModel = (network: Network): NetworkView => {
   return networkView
 }
 
+export const createEmptyViewModel = (id: IdType): NetworkView => {
+  const nodeViews: Record<IdType, NodeView> = {}
+  const edgeViews: Record<IdType, EdgeView> = {}
+  const networkView: NetworkView = {
+    id,
+    nodeViews,
+    edgeViews,
+    selectedNodes: [],
+    selectedEdges: [],
+    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>(),
+  }
+
+  return networkView
+}
+
 export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
   const cxNodes: CxNode[] = cxUtil.getNodes(cx)
   const cxEdges: CxEdge[] = cxUtil.getEdges(cx)
@@ -98,4 +113,48 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
   }
 
   return networkView
+}
+
+export const addNodeViewsToModel = (networkView: NetworkView, nodeViews: NodeView[]): NetworkView => {
+  nodeViews.forEach(nodeView => {
+    networkView.nodeViews[nodeView.id] = nodeView;
+  });
+  return networkView;
+}
+
+export const addEdgeViewsToModel = (networkView: NetworkView, edgeViews: EdgeView[]): NetworkView => {
+  edgeViews.forEach(edgeView => {
+    networkView.edgeViews[edgeView.id] = edgeView;
+  });
+  return networkView;
+}
+
+
+export const addNodeViewToModel = (networkView: NetworkView, node: CxNode): NetworkView => {
+  const nodeView: NodeView = {
+    id: node.id.toString(),
+    x: node.x ?? 0,
+    y: node.y ?? 0,
+    values: new Map<NodeVisualPropertyName, VisualPropertyValueType>(),
+  };
+
+  if (node.z !== undefined) {
+    nodeView.z = node.z;
+  }
+
+  networkView.nodeViews[node.id.toString()] = nodeView;
+
+  return networkView;
+}
+
+export const addEdgeViewToModel = (networkView: NetworkView, edge: CxEdge): NetworkView => {
+  const translatedId = translateCXEdgeId(edge.id.toString());
+  const edgeView: EdgeView = {
+    id: translatedId,
+    values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>(),
+  };
+
+  networkView.edgeViews[translatedId] = edgeView;
+
+  return networkView;
 }

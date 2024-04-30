@@ -5,6 +5,10 @@ import {
     Paper, Table, TableContainer, TableHead, TableRow, TableCell, TableBody,
     FormControl, InputLabel, FormControlLabel, Checkbox, TextField
 } from '@mui/material';
+import './MergeDialog.css';
+import { v4 as uuidv4 } from 'uuid';
+import { initial, set } from 'lodash';
+import { MergeType, NetworkRecord, MatchingTableRow } from '../model/DataInterfaceForMerge';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -14,35 +18,20 @@ import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../store/CredentialStore';
-import { TableRecord, useTableStore } from '../../../store/TableStore';
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
 import { Column as PrimeColumn } from 'primereact/column';
 import { PrimeReactProvider } from 'primereact/api';
 import { Pair } from '../../../models/MergeModel/utils/Pair';
+import { useWorkspaceStore } from '../../../store/WorkspaceStore';
+import { useViewModelStore } from '../../../store/ViewModelStore';
+import { useNetworkStore } from '../../../store/NetworkStore';
+import { useTableStore } from '../../../store/TableStore';
+import { useVisualStyleStore } from '../../../store/VisualStyleStore';
+import { NetworkView } from '../../../models/ViewModel'
 import { Network } from '../../../models/NetworkModel';
-import { Table as NetworkTable } from '../../../models/TableModel';
-import './MergeDialog.css';
-import { initial, set } from 'lodash';
+import { mergeNetwork } from '../mergeNetwork';
 
-enum MergeType {
-    union = 'Union',
-    intersection = 'Intersection',
-    difference = 'Difference'
-}
-
-export interface NetworkRecord {
-    network: Network;
-    nodeTable: NetworkTable;
-    edgeTable: NetworkTable;
-}
-
-interface MatchingTableRow {
-    mergedNetwork: string;
-    type: string;
-    id: number;
-    [key: string]: string | number;
-}
 interface MergeDialogProps {
     open: boolean;
     handleClose: () => void;
@@ -67,6 +56,32 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const [selectedAvailable, setSelectedAvailable] = useState<Pair<string, IdType>[]>([]);
     const [selectedToMerge, setSelectedToMerge] = useState<Pair<string, IdType>[]>([]);
     const matchingTableRef = useRef<HTMLDivElement>(null);
+
+
+    const addNewNetwork = useNetworkStore((state) => state.add)
+    const setVisualStyle = useVisualStyleStore((state) => state.add)
+    const setViewModel = useViewModelStore((state) => state.add)
+    const setTables = useTableStore((state) => state.add)
+
+    const addNetworkToWorkspace = useWorkspaceStore(
+        (state) => state.addNetworkIds,
+    )
+    const setCurrentNetworkId = useWorkspaceStore(
+        (state) => state.setCurrentNetworkId,
+    )
+
+    // Retrieve the current network ,and its id, view model, tables and visual style
+    const currentNetworkId: IdType = useWorkspaceStore(
+        (state) => state.workspace.currentNetworkId,
+    )
+    const currentNetwork: Network | undefined = useNetworkStore(
+        (state) => state.networks.get(currentNetworkId)
+    );
+    const networkViewModel: NetworkView | undefined = useViewModelStore(
+        (state) => state.getViewModel(currentNetworkId)
+    )
+    const tables = useTableStore((state) => state.tables[currentNetworkId]);
+    const visualStyle = useVisualStyleStore((state) => state.visualStyles[currentNetworkId])
 
     const handleSelectAvailable = (uuid: string) => {
         const currentIndex = findPairIndex(selectedAvailable, uuid);
@@ -354,7 +369,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     };
 
     // Handler for the 'Merge' button
-    const handleMerge = () => {
+    const handleMerge = async (): Promise<void> => {
         console.log('Merging Networks...');
         console.log('Merge Type:', mergeType);
         console.log('Base Network:', baseNetwork);
@@ -362,6 +377,16 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
         console.log('Matching Columns:', matchingCols);
         console.log('Matching Table:', matchingTable);
 
+        const newNetworkId = uuidv4()
+        const newNetworkWithView = await mergeNetwork()
+
+        // Update state stores with the new network and its components   
+        addNetworkToWorkspace(newNetworkId);
+        addNewNetwork(newNetworkWithView.network);
+        setVisualStyle(newNetworkId, newNetworkWithView.visualStyle);
+        setTables(newNetworkId, newNetworkWithView.nodeTable, newNetworkWithView.edgeTable);
+        setViewModel(newNetworkId, newNetworkWithView.networkViews[0]);
+        setCurrentNetworkId(newNetworkId);
         handleClose();
     };
 
