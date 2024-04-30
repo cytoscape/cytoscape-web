@@ -5,15 +5,16 @@ import { Node } from "../../models/NetworkModel";
 import { Column } from "../../models/TableModel/Column";
 import { ValueType } from "../../models/TableModel/ValueType";
 import { valueMatcher } from "./utils/AttrValueMatcher";
+import { MatchingTable } from "./model/Impl/MatchingTable";
 
 export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
-    nodeAttributeMapping: Record<IdType, Map<IdType, IdType>>, edgeAttributeMapping: Record<IdType, Map<IdType, IdType>>,
-    networkAttributeMapping: Record<IdType, Map<IdType, IdType>>, matchingAttribute: Record<IdType, Column>) {
+    nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable,
+    networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>) {
     if (fromNetworks.length < 2) {
         throw new Error("No networks to merge");
     }
     // preprocess the network to merge    
-    const { mergedNodeTable, mergedEdgeTable } = preprocess(toNetworkId);
+    const { mergedNodeTable, mergedEdgeTable } = preprocess(toNetworkId, nodeAttributeMapping.getMergedAttributes(), edgeAttributeMapping.getMergedAttributes());
 
     // clone the base network
     const nodeValueMap: Map<IdType, ValueType> = cloneNetwork(fromNetworks[0], toNetworkId);
@@ -49,9 +50,9 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
 }
 
 
-function preprocess(toNetwork: IdType) {
-    const mergedNodeTable = TableFn.createTable(toNetwork, this.nodeAttributeMapping.getMergedColumns());
-    const mergedEdgeTable = TableFn.createTable(toNetwork, this.edgeAttributeMapping.getMergedColumns());
+function preprocess(toNetwork: IdType, nodeCols: Column[], edgeCols: Column[]) {
+    const mergedNodeTable = TableFn.createTable(toNetwork, nodeCols);
+    const mergedEdgeTable = TableFn.createTable(toNetwork, edgeCols);
     return {
         mergedNodeTable,
         mergedEdgeTable
@@ -59,12 +60,12 @@ function preprocess(toNetwork: IdType) {
 }
 
 function cloneNetwork(fromNetwork: IdType, toNetwork: IdType) {
-    const nodeTable = TableFn.createTable(fromNetwork, this.nodeAttributeMapping.getMergedColumns())
-    const edgeTable = TableFn.createTable(fromNetwork, this.edgeAttributeMapping.getMergedColumns());
-    for (const node of nodeTable.rows) {
-        this.nodeAttributeMapping.mapToGOAttr.set(node[1], node[0]);
-    }
-    for (const edge of edgeTable.rows) {
-        this.edgeAttributeMapping.mapToGOAttr.set(edge[1], edge[0]);
-    }
+//     const nodeTable = TableFn.createTable(fromNetwork, this.nodeAttributeMapping.getMergedColumns())
+//     const edgeTable = TableFn.createTable(fromNetwork, this.edgeAttributeMapping.getMergedColumns());
+//     for (const node of nodeTable.rows) {
+//         this.nodeAttributeMapping.mapToGOAttr.set(node[1], node[0]);
+//     }
+//     for (const edge of edgeTable.rows) {
+//         this.edgeAttributeMapping.mapToGOAttr.set(edge[1], edge[0]);
+//     }
 }
