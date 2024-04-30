@@ -15,10 +15,15 @@ import { deepClone } from './utils/DeepClone';
 import { NetworkAttributes } from '../../models/NetworkModel';
 import { useVisualStyleStore } from '../../store/VisualStyleStore';
 import { Column } from '../../models/TableModel/Column';
+import { MatchingTable } from './model/Impl/MatchingTable';
+import { useViewModelStore } from '../../store/ViewModelStore';
 
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
-    nodeAttributeMapping: Record<IdType, Map<IdType, IdType>>, edgeAttributeMapping: Record<IdType, Map<IdType, IdType>>,
-    networkAttributeMapping: Record<IdType, Map<IdType, IdType>>, matchingAttribute: Record<IdType, Column>): Promise<NetworkWithView> => {
+    nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable,
+    networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>): Promise<NetworkWithView> => {
+
+    const addNodeViews = useViewModelStore((state) => state.addNodeViews)
+    const addEdgeViews = useViewModelStore((state) => state.addEdgeViews)
 
     const baseNetworkId = fromNetworks[0]
     const visualStyle = useVisualStyleStore((state) => state.visualStyles[baseNetworkId])
@@ -26,7 +31,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     const newNetworkName = 'Merged Network'
     const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
         nodeAttributeMapping, edgeAttributeMapping, networkAttributeMapping, matchingAttribute)
-    const baseNetSummary = 'Merged Network'
+    const baseNetSummary = 'Merged Network' //todo fecth from db
     const newNetworkDescription = 'Merged Network'
     // todo: merge network attributes also
     const networkAttributes: NetworkAttributes = {
@@ -38,8 +43,13 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     const newNodeTable = mergedNetwork.nodeTable
     const newEdgeTable = mergedNetwork.edgeTable
 
+    // Initialize new visual style and network view model
     const newVisualStyle: VisualStyle = deepClone(visualStyle) || VisualStyleFn.createVisualStyle();
     const newNetworkView: NetworkView = ViewModelFn.createEmptyViewModel(toNetworkId)
+
+    // Add node and edge views
+    // addNodeViews(toNetworkId,)
+    // addEdgeViews(toNetworkId,)
 
     await putNetworkSummaryToDb({
         ownerUUID: toNetworkId,
