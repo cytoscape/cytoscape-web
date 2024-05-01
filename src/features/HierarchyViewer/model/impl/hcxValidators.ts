@@ -56,12 +56,6 @@ export const hcxVersionValidators = {
         (c) => c.name === SubsystemTag.memberNames,
       )
       const members = columns.find((c) => c.name === SubsystemTag.members)
-      if (members !== undefined && memberNames !== undefined) {
-        warnings.push(
-          `A column named ${SubsystemTag.memberNames} or ${SubsystemTag.members} must exist in the node table`,
-        )
-        isValid = false
-      }
 
       if (members === undefined && memberNames === undefined) {
         warnings.push(
