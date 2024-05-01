@@ -1,11 +1,12 @@
 import { IdType } from "../../models/IdType";
 import TableFn from "../../models/TableModel";
 import { NetworkRecord } from "./model/DataInterfaceForMerge";
-import { Node } from "../../models/NetworkModel";
+import NetworkFn, { Network, Node } from "../../models/NetworkModel";
 import { Column } from "../../models/TableModel/Column";
 import { ValueType } from "../../models/TableModel/ValueType";
 import { valueMatcher } from "./utils/AttrValueMatcher";
 import { MatchingTable } from "./model/Impl/MatchingTable";
+import { cloneNetwork } from "./utils/cloneNetwork";
 
 export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable,
@@ -17,7 +18,20 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
     const { mergedNodeTable, mergedEdgeTable } = preprocess(toNetworkId, nodeAttributeMapping.getMergedAttributes(), edgeAttributeMapping.getMergedAttributes());
 
     // clone the base network
-    const nodeValueMap: Map<IdType, ValueType> = cloneNetwork(fromNetworks[0], toNetworkId);
+    const baseNetworkID = fromNetworks[0];
+    // clone the network iteself
+    const mergedNetwork: Network = NetworkFn.createNetwork(toNetworkId)//cloneNetwork(baseNetworkID, toNetworkId);
+    // clone the table rows (columns have already been initialized in the preprocess step)
+    TableFn.insertRows(mergedNodeTable, [...networkRecords[baseNetworkID].nodeTable.rows.entries()]);
+    TableFn.insertRows(mergedEdgeTable, [...networkRecords[baseNetworkID].edgeTable.rows.entries()]);
+
+    // export const insertRows = (
+    //     table: Table,
+    //     idRowPairs: Array<[IdType, Record<AttributeName, ValueType>]>,
+    //   ): Table => {
+    //     idRowPairs.forEach((idRow) => table.rows.set(idRow[0], idRow[1]))
+    //     return table
+    //   }
 
     // merge nodes
     // loop over the networks to merge (the first network is base network)
@@ -42,7 +56,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
 
 
     return {
-        network: toNetwork,
+        network: mergedNetwork,
         nodeTable: mergedNodeTable,
         edgeTable: mergedEdgeTable
 
@@ -57,15 +71,4 @@ function preprocess(toNetwork: IdType, nodeCols: Column[], edgeCols: Column[]) {
         mergedNodeTable,
         mergedEdgeTable
     }
-}
-
-function cloneNetwork(fromNetwork: IdType, toNetwork: IdType) {
-//     const nodeTable = TableFn.createTable(fromNetwork, this.nodeAttributeMapping.getMergedColumns())
-//     const edgeTable = TableFn.createTable(fromNetwork, this.edgeAttributeMapping.getMergedColumns());
-//     for (const node of nodeTable.rows) {
-//         this.nodeAttributeMapping.mapToGOAttr.set(node[1], node[0]);
-//     }
-//     for (const edge of edgeTable.rows) {
-//         this.edgeAttributeMapping.mapToGOAttr.set(edge[1], edge[0]);
-//     }
 }
