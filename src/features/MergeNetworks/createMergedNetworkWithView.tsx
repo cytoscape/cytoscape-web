@@ -11,7 +11,7 @@ import { IdType } from '../../models/IdType';
 import { NetworkRecord, NetworktoMerge } from './model/DataInterfaceForMerge';
 import VisualStyleFn, { VisualStyle } from '../../models/VisualStyleModel';
 import ViewModelFn, { NetworkView } from '../../models/ViewModel';
-import { deepClone } from './utils/DeepClone';
+import { deepClone } from './utils/deepClone';
 import { NetworkAttributes } from '../../models/NetworkModel';
 import { useVisualStyleStore } from '../../store/VisualStyleStore';
 import { Column } from '../../models/TableModel/Column';
@@ -21,9 +21,6 @@ import { useViewModelStore } from '../../store/ViewModelStore';
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable,
     networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>): Promise<NetworkWithView> => {
-
-    const addNodeViews = useViewModelStore((state) => state.addNodeViews)
-    const addEdgeViews = useViewModelStore((state) => state.addEdgeViews)
 
     const baseNetworkId = fromNetworks[0]
     const visualStyle = useVisualStyleStore((state) => state.visualStyles[baseNetworkId])
@@ -45,11 +42,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
 
     // Initialize new visual style and network view model
     const newVisualStyle: VisualStyle = deepClone(visualStyle) || VisualStyleFn.createVisualStyle();
-    const newNetworkView: NetworkView = ViewModelFn.createEmptyViewModel(toNetworkId)
-
-    // Add node and edge views
-    // addNodeViews(toNetworkId,)
-    // addEdgeViews(toNetworkId,)
+    const newNetworkView: NetworkView = ViewModelFn.createViewModel(newNetwork)
 
     await putNetworkSummaryToDb({
         ownerUUID: toNetworkId,
