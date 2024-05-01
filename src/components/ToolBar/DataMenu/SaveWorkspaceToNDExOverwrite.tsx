@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { MenuItem, Box, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import { BaseMenuProps } from '../BaseMenuProps';
 // @ts-expect-error-next-line
@@ -27,11 +27,12 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const updateSummary = useNetworkSummaryStore((state) => state.update)
   const workspace = useWorkspaceStore((state) => state.workspace)
+  const [hasWorkspace, setHasWorkspace] = useState(false);
 
   const handleOpenDialog = (): void => {
     setOpenDialog(true);
   };
-  
+
   const handleCloseDialog = (): void => {
     setOpenDialog(false);
   };
@@ -44,7 +45,25 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
     (state) => state.addNetworkIds,
   )
 
-  const saveNetworkToNDEx = async (networkId:string): Promise<void> => {
+
+  useEffect(() => {
+    const fetchMyWorkspaces = async (): Promise<any> => {
+      const ndexClient = new NDEx(ndexBaseUrl);
+      const token = await getToken();
+      ndexClient.setAuthToken(token);
+      const myWorkspaces = await ndexClient.getUserCyWebWorkspaces();
+      return myWorkspaces;
+    };
+    fetchMyWorkspaces().then(function (resultArray) {
+      const workspaceIds = resultArray.map((item: { workspaceId: any; }) => item.workspaceId);
+      const savedWorkspace = workspaceIds.includes(workspace.id);
+      setHasWorkspace(savedWorkspace);
+    }).catch(function (error) {
+      console.error('Error:', error);
+    });
+  }, [open]);
+
+  const saveNetworkToNDEx = async (networkId: string): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     const network = useNetworkStore.getState().networks.get(networkId) as Network;
@@ -63,7 +82,6 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
       edgeTable,
       viewModel,
     )
-
     await ndexClient.updateNetworkFromRawCX2(networkId, cx)
     const ndexSummary = await ndexClient.getNetworkSummary(networkId)
     const newNdexModificationTime = ndexSummary.modificationTime
@@ -72,7 +90,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
     })
   }
 
-  const saveCopyToNDEx = async  (networkId:string): Promise<void> => {
+  const saveCopyToNDEx = async (networkId: string): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
@@ -97,26 +115,24 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
       addNetworkToWorkspace(uuid as IdType)
 
       addMessage({
-        message: `Saved a copy of the current network to NDEx with new uuid ${
-          uuid as string
-        }`,
+        message: `Saved a copy of the current network to NDEx with new uuid ${uuid as string
+          }`,
         duration: 3000,
       })
     } catch (e) {
       console.log(e)
       addMessage({
-        message: `Error: Could not save a copy of the current network to NDEx. ${
-          e.message as string
-        }`,
+        message: `Error: Could not save a copy of the current network to NDEx. ${e.message as string
+          }`,
         duration: 3000,
       })
     }
   }
 
-  const saveAllNetworks =  async (): Promise<void> => {
+  const saveAllNetworks = async (): Promise<void> => {
     for (const networkId of allNetworkId) {
       try {
-      await saveNetworkToNDEx(networkId);
+        await saveNetworkToNDEx(networkId);
       } catch (e) {
         await saveCopyToNDEx(networkId)
       }
@@ -130,8 +146,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
     ndexClient.setAuthToken(accessToken);
 
     try {
-   
-      const update = await ndexClient.updateCyWebWorkspace( workspace.id, {
+      const update = await ndexClient.updateCyWebWorkspace(workspace.id, {
         name: workspace.name,
         options: { currentNetwork: workspace.currentNetworkId },
         networkIDs: workspace.networkIds
@@ -162,7 +177,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
     <Dialog open={openDialog} onClose={handleCloseDialog}>
       <DialogTitle>Do you want to save (overwrite) the current workspace?</DialogTitle>
       <DialogContent>
-  
+
       </DialogContent>
       <DialogActions>
         <Button onClick={handleCloseDialog}>Cancel</Button>
@@ -173,7 +188,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
 
   const menuItem = (
     <MenuItem
-      disabled={!authenticated}
+      disabled={!authenticated || !hasWorkspace}
       onClick={handleSaveCurrentNetworkToNDEx}
     >
       Save workspace
