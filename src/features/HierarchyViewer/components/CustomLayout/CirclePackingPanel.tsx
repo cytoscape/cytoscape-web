@@ -56,6 +56,8 @@ export const CirclePackingPanel = ({
   // Check the state of the search result
   const searchState: SearchState = useFilterStore((state) => state.search.state)
 
+  const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
+
   // Expand all circles if the search result is shown
   const [expandAll, setExpandAll] = useState<boolean>(false)
 
@@ -136,14 +138,6 @@ export const CirclePackingPanel = ({
     }
   }, [handleZoom])
 
-  // const expandCircles = () => {
-  //   d3Selection.selectAll('circle').style('display', 'inline')
-  // }
-
-  // const collapseCircles = () => {
-  //   d3Selection.selectAll('circle').style('display', 'none')
-  // }
-
   // For tooltip
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false)
   const [tooltipContent, setTooltipContent] = useState<string>('')
@@ -200,6 +194,8 @@ export const CirclePackingPanel = ({
 
     // Pick the base tag
     const svg: any = d3Selection.select(ref.current)
+    svg.selectAll('*').remove()
+
     const wrapper = svg.append('g').attr('class', CP_WRAPPER_CLASS)
 
     wrapper
@@ -276,7 +272,7 @@ export const CirclePackingPanel = ({
         )
 
         // Split the label into words
-        const words = label === undefined ? [] : label.split(' ') ?? []
+        const words = label.split(' ') ?? []
 
         const fontSize = getFontSize(d)
         // Calculate the total height of the text
@@ -379,6 +375,7 @@ export const CirclePackingPanel = ({
       //This should be called only once.
       initRef.current = true
       console.log('###Circle Packing view is drawn')
+      setLastNetworkId(networkId)
     } else {
       // Need to update the existing view, e.g., when the visual style is changed
 
@@ -422,7 +419,7 @@ export const CirclePackingPanel = ({
 
   return (
     <>
-      <svg ref={ref} width={'100%'} height={'100%'} />
+      <svg id={'cpView'} ref={ref} width={'100%'} height={'100%'} />
       <Tooltip
         open={tooltipOpen}
         title={tooltipContent}

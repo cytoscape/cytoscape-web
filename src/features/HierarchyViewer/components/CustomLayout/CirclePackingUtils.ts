@@ -58,7 +58,10 @@ export const getLabel = (
   }
 
   if (label === undefined || label === '') {
-    return defaultName
+    if (defaultName === undefined || defaultName === '') {
+      return ''
+    }
+    return defaultName.toString()
   }
   return label.toString()
 }
