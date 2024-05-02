@@ -428,6 +428,9 @@ const WorkSpaceEditor = (): JSX.Element => {
           )
         })
         .catch((err) => console.error('Failed to load a network:', err))
+        .finally(() => {
+          isLoadingRef.current = false
+        })
     }
   }, [currentNetworkId])
 

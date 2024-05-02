@@ -370,7 +370,7 @@ export const CirclePackingPanel = ({
     const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
       circlePackingView.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
 
-    if (!isInitialized) {
+    if (networkId !== lastNetworkId) {
       draw(rootNode)
       //This should be called only once.
       initRef.current = true
