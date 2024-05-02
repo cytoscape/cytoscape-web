@@ -113,16 +113,17 @@ function BypassFormContent(props: {
     }
   })
 
-  Array.from(bypassElementIds).forEach((eleId) => {
-    elementsToRender.push({
-      id: eleId,
-      selected: false,
-      name: (selectedElementTable.rows.get(eleId)?.name ?? '') as string,
+  selectedElements
+    .filter((e) => bypassElementIds.has(e))
+    .forEach((e) => {
+      elementsToRender.push({
+        id: e,
+        selected: false,
+        name: (selectedElementTable.rows.get(e)?.name ?? '') as string,
 
-      hasBypass: true,
+        hasBypass: true,
+      })
     })
-  })
-
   const emptyBypassForm = (
     <>
       <Typography>Select network elements to apply a bypass</Typography>
@@ -308,14 +309,36 @@ export function BypassForm(props: {
     setFormAnchorEl(value)
   }
 
-  const noBypasses = props.visualProperty.bypassMap?.size === 0
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
+  const currentNetworkId = props.currentNetworkId
+
+  const networkView: NetworkView | undefined = getViewModel(currentNetworkId)
+
+  const selectedNodes = networkView?.selectedNodes ?? []
+  const selectedEdges = networkView?.selectedEdges ?? []
+
+  const selectedElements =
+    props.visualProperty.group === VisualPropertyGroup.Node
+      ? selectedNodes
+      : selectedEdges
+
+  const noBypasses =
+    (selectedElements.length > 0 &&
+      selectedElements.filter((e) => props.visualProperty.bypassMap.has(e))
+        .length === 0) ||
+    props.visualProperty.bypassMap.size === 0
+
+  const onlyOneBypassValue =
+    (selectedElements.length > 0 &&
+      selectedElements.filter((e) => props.visualProperty.bypassMap.has(e))
+        .length === 1) ||
+    props.visualProperty.bypassMap.size === 1
 
   let viewBox = null
 
   if (noBypasses) {
     viewBox = <EmptyVisualPropertyViewBox />
   } else {
-    const onlyOneBypassValue = props.visualProperty.bypassMap.size === 1
     viewBox = (
       <Badge
         max={10000}
