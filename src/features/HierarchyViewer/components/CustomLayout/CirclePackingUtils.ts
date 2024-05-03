@@ -8,9 +8,11 @@ import { NodeView } from '../../../../models/ViewModel'
 import { D3TreeNode } from './D3TreeNode'
 
 // Number of letters to display in the label
-const MAX_LABEL_LENGTH = 120
-const MAX_LINE_NUMBER = 5
+const MAX_LABEL_LENGTH = 90
+const MAX_LINE_NUMBER = 6
 export const LETTERS_PER_LINE: number = MAX_LABEL_LENGTH / MAX_LINE_NUMBER
+
+const SCALING_FACTOR = 1.15
 
 export const getColorMapper = (
   domain: [number, number],
@@ -27,15 +29,13 @@ export const getFontSize = (
   label: string,
 ): number => {
   // Width of the area to display the label
-  const width = d.r * 2
+  const width = d.r * 2 * SCALING_FACTOR
 
   const letterCount: number = label.length
   const baseSize: number = width / LETTERS_PER_LINE
   const oneLineSize: number = width / letterCount
   if (oneLineSize > baseSize) {
     return oneLineSize
-  } else if (letterCount < MAX_LABEL_LENGTH) {
-    return width / (letterCount / MAX_LINE_NUMBER)
   } else {
     return baseSize
   }
@@ -91,6 +91,90 @@ export const getLabel = (
   }
 
   return actualLabel
+}
+
+/**
+ * Convert space separated label to multiple lines
+ *
+ * @param label
+ */
+const toLines = (label: string): string[] => {
+  const lines: string[] = []
+
+  const spaceSeparated = label.split(' ')
+  // One word label
+  if (spaceSeparated.length === 1) {
+    return [label]
+  }
+
+  let currentString: string = spaceSeparated[0]
+
+  for (let i = 1; i < spaceSeparated.length; i++) {
+    const word = spaceSeparated[i]
+    const joinedString = currentString + ', ' + word
+    if (joinedString.length <= LETTERS_PER_LINE) {
+      currentString += ', ' + word
+    } else {
+      lines.push(currentString)
+      currentString = word
+    }
+  }
+  if (currentString !== '') {
+    lines.push(currentString)
+  }
+
+  return lines
+}
+
+const toMultiWordLines = (entries: string[]): string[] => {
+  const lines: string[] = []
+
+  let currentLine: string = ''
+
+  entries.forEach((entry: string) => {
+    const words = entry.split(' ')
+    if (words.length === 1) {
+      // One word entry
+      currentLine += words[0]
+    } else {
+      currentLine += words[0]
+      for (let i = 1; i < words.length; i++) {
+        const word = words[i]
+        if ((currentLine + ' ' + word).length <= LETTERS_PER_LINE) {
+          // Add space if not the last word
+          currentLine += ' ' + word
+        } else {
+          lines.push(currentLine)
+          currentLine = word
+        }
+      }
+    }
+
+    // Add comma if not the last entry
+    if (entry !== entries[entries.length - 1]) {
+      currentLine += ', '
+    }
+    if (currentLine.length > LETTERS_PER_LINE) {
+      lines.push(currentLine)
+      currentLine = ''
+    }
+  })
+  if (currentLine !== '') {
+    lines.push(currentLine)
+  }
+  return lines
+}
+
+const separator = /[,|]+/
+export const getWordLines = (label: string): string[] => {
+  // 1. First try separator to split the label
+  const entries: string[] = label.split(separator)
+  if (entries.length === 1) {
+    // No separator found. Try Split by space
+    return toLines(label)
+  } else {
+    return toMultiWordLines(entries)
+  }
 }
 
 /**

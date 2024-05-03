@@ -16,6 +16,7 @@ import {
   getColorMapper,
   getFontSize,
   getLabel,
+  getWordLines,
   toCenter,
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
@@ -277,65 +278,63 @@ export const CirclePackingPanel = ({
         )
         const fontSize = getFontSize(d, label)
 
-        const newStrings = []
+        const newStrings: string[] = getWordLines(label)
 
-        // Split the label into words
-        const words = label.split(/[,|]+/) ?? []
-        if (words.length === 1) {
-          console.log('no separator found', label)
+        // // Split the label into words
+        // const words = label.split(/[,|]+/) ?? []
+        // if (words.length === 1) {
+        //   const spaceSeparated = label.split(' ')
+        //   let currentString = spaceSeparated[0]
+        //   // If this contains a space, do not use comma
+        //   if (spaceSeparated.length > 1) {
+        //     spaceSeparated.forEach((word: string, index: number) => {
+        //       if ((currentString + ' ' + word).length <= LETTERS_PER_LINE) {
+        //         currentString += ' ' + word
+        //       } else {
+        //         newStrings.push(currentString)
+        //         currentString = word
+        //       }
+        //     })
+        //     if (currentString !== '') {
+        //       newStrings.push(currentString)
+        //     }
+        //   } else {
+        //     newStrings.push(label)
+        //   }
+        // } else {
+        //   // Re-arrange the words
 
-          const spaceSeparated = label.split(' ')
-          let currentString = spaceSeparated[0]
-          // If this contains a space, do not use comma
-          if (spaceSeparated.length > 1) {
-            spaceSeparated.forEach((word: string, index: number) => {
-              if ((currentString + ' ' + word).length <= LETTERS_PER_LINE) {
-                currentString += ' ' + word
-              } else {
-                newStrings.push(currentString)
-                currentString = word
-              }
-            })
-            if (currentString !== '') {
-              newStrings.push(currentString)
-            }
-          } else {
-            newStrings.push(label)
-          }
-        } else {
-          // Re-arrange the words
+        //   let currentString = words[0]
 
-          let currentString = words[0]
+        //   for (let i = 1; i < words.length; i++) {
+        //     const spaceSeparated = words[i].split(' ')
+        //     // If this contains a space, do not use comma
+        //     if (spaceSeparated.length > 1) {
+        //       spaceSeparated.forEach((word: string, index: number) => {
+        //         if ((currentString + ' ' + word).length <= LETTERS_PER_LINE) {
+        //           currentString += ' ' + word
+        //         } else {
+        //           newStrings.push(currentString)
+        //           currentString = word
+        //         }
+        //       })
+        //     } else {
+        //       if (
+        //         (currentString + ', ' + words[i]).length <= LETTERS_PER_LINE
+        //       ) {
+        //         currentString += ', ' + words[i]
+        //       } else {
+        //         newStrings.push(currentString)
+        //         currentString = words[i]
+        //       }
+        //     }
+        //   }
 
-          for (let i = 1; i < words.length; i++) {
-            const spaceSeparated = words[i].split(' ')
-            // If this contains a space, do not use comma
-            if (spaceSeparated.length > 1) {
-              spaceSeparated.forEach((word: string, index: number) => {
-                if ((currentString + ' ' + word).length <= LETTERS_PER_LINE) {
-                  currentString += ' ' + word
-                } else {
-                  newStrings.push(currentString)
-                  currentString = word
-                }
-              })
-            } else {
-              if (
-                (currentString + ', ' + words[i]).length <= LETTERS_PER_LINE
-              ) {
-                currentString += ', ' + words[i]
-              } else {
-                newStrings.push(currentString)
-                currentString = words[i]
-              }
-            }
-          }
-
-          // add the last string if it's not empty
-          if (currentString !== '') {
-            newStrings.push(currentString)
-          }
-        }
+        //   // add the last string if it's not empty
+        //   if (currentString !== '') {
+        //     newStrings.push(currentString)
+        //   }
+        // }
 
         const textHeight: number = newStrings.length * fontSize
 
