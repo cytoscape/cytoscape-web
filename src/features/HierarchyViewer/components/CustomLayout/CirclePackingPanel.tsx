@@ -11,6 +11,7 @@ import {
 } from './CirclePackingLayout'
 import {
   CpDefaults,
+  LETTERS_PER_LINE,
   displaySelectedNodes,
   getColorMapper,
   getFontSize,
@@ -189,7 +190,10 @@ export const CirclePackingPanel = ({
   const draw = (rootNode: d3Hierarchy.HierarchyNode<D3TreeNode>): void => {
     const width = ref.current?.clientWidth ?? 0
     const height = ref.current?.clientHeight ?? 0
-    const pack = d3Hierarchy.pack().size([width, height]).padding(0)
+    const pack: d3Hierarchy.PackLayout<any> = d3Hierarchy
+      .pack()
+      .size([width, height])
+      .padding(0)
     pack(rootNode)
 
     // Pick the base tag
@@ -258,6 +262,7 @@ export const CirclePackingPanel = ({
         setTooltipPosition({ x: e.clientX + 20, y: e.clientY + 20 })
       })
 
+    // Add the text labels
     wrapper
       .append('g')
       .selectAll('text')
@@ -270,34 +275,91 @@ export const CirclePackingPanel = ({
           circlePackingView,
           d.data.name,
         )
+        const fontSize = getFontSize(d, label)
+
+        const newStrings = []
 
         // Split the label into words
-        const words = label.split(' ') ?? []
+        const words = label.split(/[,|]+/) ?? []
+        if (words.length === 1) {
+          console.log('no separator found', label)
 
-        const fontSize = getFontSize(d)
-        // Calculate the total height of the text
-        const textHeight: number = words.length * fontSize
-        // Create a tspan for each word
-        words.forEach((word: string, lineNumber: number) => {
+          const spaceSeparated = label.split(' ')
+          let currentString = spaceSeparated[0]
+          // If this contains a space, do not use comma
+          if (spaceSeparated.length > 1) {
+            spaceSeparated.forEach((word: string, index: number) => {
+              if ((currentString + ' ' + word).length <= LETTERS_PER_LINE) {
+                currentString += ' ' + word
+              } else {
+                newStrings.push(currentString)
+                currentString = word
+              }
+            })
+            if (currentString !== '') {
+              newStrings.push(currentString)
+            }
+          } else {
+            newStrings.push(label)
+          }
+        } else {
+          // Re-arrange the words
+
+          let currentString = words[0]
+
+          for (let i = 1; i < words.length; i++) {
+            const spaceSeparated = words[i].split(' ')
+            // If this contains a space, do not use comma
+            if (spaceSeparated.length > 1) {
+              spaceSeparated.forEach((word: string, index: number) => {
+                if ((currentString + ' ' + word).length <= LETTERS_PER_LINE) {
+                  currentString += ' ' + word
+                } else {
+                  newStrings.push(currentString)
+                  currentString = word
+                }
+              })
+            } else {
+              if (
+                (currentString + ', ' + words[i]).length <= LETTERS_PER_LINE
+              ) {
+                currentString += ', ' + words[i]
+              } else {
+                newStrings.push(currentString)
+                currentString = words[i]
+              }
+            }
+          }
+
+          // add the last string if it's not empty
+          if (currentString !== '') {
+            newStrings.push(currentString)
+          }
+        }
+
+        const textHeight: number = newStrings.length * fontSize
+
+        newStrings.forEach((word: string, lineNumber: number) => {
           d3Selection
             .select(this)
             .append('tspan')
             .text(word)
+            .attr('font-size', fontSize)
+            .attr('text-anchor', 'middle')
+            .attr('alignment-baseline', 'middle')
+            .attr('text-align', 'center')
             .attr('x', d.x)
+            // .attr('y', d.y)
+            // .attr('y', d.y - fontSize / 2) // adjust this value to center the text
             .attr(
               'y',
-              d.y + lineNumber * fontSize * 1.2 - textHeight / 2 + fontSize / 2,
-            ) // Adjust the y position based on the line number
+              d.y + lineNumber * fontSize - textHeight / 2 + fontSize / 2,
+            )
+
+            // .attr('dy', `${lineNumber * 1.2}em`)
             .style('user-select', 'none')
         })
       })
-      .attr(
-        'font-size',
-        (d: d3Hierarchy.HierarchyCircularNode<any>) => `${d.r / 70}em`,
-      )
-      .attr('text-anchor', 'middle')
-      .attr('x', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.x)
-      .attr('y', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.y)
       .style('display', (d: d3Hierarchy.HierarchyNode<D3TreeNode>): string => {
         const isLeaf: boolean = d.height === 0
         const isRoot: boolean = d.depth === 0
@@ -370,7 +432,7 @@ export const CirclePackingPanel = ({
     const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
       circlePackingView.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
 
-    if (networkId !== lastNetworkId) {
+    if (!isInitialized || networkId !== lastNetworkId) {
       draw(rootNode)
       //This should be called only once.
       initRef.current = true
@@ -383,9 +445,82 @@ export const CirclePackingPanel = ({
         .select(`.${CP_WRAPPER_CLASS}`)
         .selectAll('text')
         .data(rootNode.descendants())
+        .join('text')
         .text((d) => getLabel(d.data.id, circlePackingView, d.data.name))
+        .each(function (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) {
+          const labelText = getLabel(d.data.id, circlePackingView, d.data.name)
+          adjustTextToFitInSquare(labelText, d3Selection.select(this), d.r * 2)
+        })
     }
   }, [circlePackingView])
+
+  function adjustTextToFitInSquare(
+    labelText: string,
+    textElement: any,
+    squareSize: number,
+  ) {
+    let fontSize = squareSize / 10
+    textElement.style('font-size', `${fontSize}px`)
+
+    let textHeight
+    let textWidth
+    let count = 0
+
+    do {
+      fontSize -= 1 // フォントサイズを小さくしていく
+      textElement.style('font-size', `${fontSize}px`)
+      wrapText(labelText, textElement, squareSize, fontSize) // テキストをラップする
+      const bbox = textElement.node()!.getBBox()
+      textHeight = bbox.height
+      textWidth = bbox.width
+      count++
+      if (count > 10) {
+        break
+      }
+    } while (textWidth > squareSize || textHeight > squareSize) // テキストが正方形に収まるまで繰り返す
+  }
+
+  // テキストをラップする関数
+  function wrapText(
+    labelText: string,
+    text: d3Selection.Selection<SVGTextElement, any, SVGGElement, unknown>,
+    maxWidth: number,
+    fontSize: number,
+  ) {
+    text.each(function (d) {
+      const text = d3Selection.select(this),
+        words = labelText.split(/[ ,|\s]+/).reverse(),
+        lineHeight = fontSize * 100,
+        y = text.attr('y'),
+        dy = parseFloat(text.attr('dy'))
+
+      let word,
+        line: string[] = [],
+        lineNumber = 0,
+        tspan = text
+          .append('tspan')
+          .attr('x', d.x)
+          .attr('y', y)
+          .attr('dy', `${dy}em`)
+
+      while ((word = words.pop())) {
+        line.push(word)
+        tspan.text(line.join(' '))
+        if (tspan.node()!.getComputedTextLength() > maxWidth) {
+          line.pop()
+          tspan.text(line.join(' '))
+          line = [word]
+          tspan = text
+            .append('tspan')
+            .attr('x', d.x)
+            .attr('y', y)
+            .attr('dy', `${lineNumber * lineHeight + dy}em`)
+            .text(word)
+          lineNumber++
+        }
+      }
+    })
+  }
 
   useEffect(() => {
     if (hoveredEnter === undefined) {

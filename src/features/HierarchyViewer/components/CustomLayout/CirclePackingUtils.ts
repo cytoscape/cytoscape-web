@@ -7,6 +7,11 @@ import { CirclePackingView } from '../../model/CirclePackingView'
 import { NodeView } from '../../../../models/ViewModel'
 import { D3TreeNode } from './D3TreeNode'
 
+// Number of letters to display in the label
+const MAX_LABEL_LENGTH = 120
+const MAX_LINE_NUMBER = 5
+export const LETTERS_PER_LINE: number = MAX_LABEL_LENGTH / MAX_LINE_NUMBER
+
 export const getColorMapper = (
   domain: [number, number],
 ): d3Scale.ScaleLinear<string, string> => {
@@ -18,9 +23,22 @@ export const getColorMapper = (
 }
 
 export const getFontSize = (
-  d: d3Hierarchy.HierarchyCircularNode<any>,
+  d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>,
+  label: string,
 ): number => {
-  return (d.r / 80) * 50
+  // Width of the area to display the label
+  const width = d.r * 2
+
+  const letterCount: number = label.length
+  const baseSize: number = width / LETTERS_PER_LINE
+  const oneLineSize: number = width / letterCount
+  if (oneLineSize > baseSize) {
+    return oneLineSize
+  } else if (letterCount < MAX_LABEL_LENGTH) {
+    return width / (letterCount / MAX_LINE_NUMBER)
+  } else {
+    return baseSize
+  }
 }
 
 export const toCenter = (
@@ -57,13 +75,22 @@ export const getLabel = (
     }
   }
 
+  let actualLabel = label
   if (label === undefined || label === '') {
     if (defaultName === undefined || defaultName === '') {
-      return ''
+      actualLabel = ''
+    } else {
+      actualLabel = defaultName.toString()
     }
-    return defaultName.toString()
+  } else {
+    actualLabel = label.toString()
   }
-  return label.toString()
+
+  if (actualLabel.length > MAX_LABEL_LENGTH) {
+    actualLabel = actualLabel.substring(0, MAX_LABEL_LENGTH) + '...'
+  }
+
+  return actualLabel
 }
 
 /**
