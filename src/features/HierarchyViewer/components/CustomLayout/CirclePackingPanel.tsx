@@ -31,6 +31,7 @@ import { useSubNetworkStore } from '../../store/SubNetworkStore'
 import { useTableStore } from '../../../../store/TableStore'
 import { SearchState } from '../../../../models/FilterModel/SearchState'
 import { useFilterStore } from '../../../../store/FilterStore'
+import { a } from 'react-spring'
 
 interface CirclePackingPanelProps {
   network: Network
@@ -277,86 +278,14 @@ export const CirclePackingPanel = ({
           d.data.name,
         )
         const fontSize = getFontSize(d, label)
-
         const newStrings: string[] = getWordLines(label)
-
-        // // Split the label into words
-        // const words = label.split(/[,|]+/) ?? []
-        // if (words.length === 1) {
-        //   const spaceSeparated = label.split(' ')
-        //   let currentString = spaceSeparated[0]
-        //   // If this contains a space, do not use comma
-        //   if (spaceSeparated.length > 1) {
-        //     spaceSeparated.forEach((word: string, index: number) => {
-        //       if ((currentString + ' ' + word).length <= LETTERS_PER_LINE) {
-        //         currentString += ' ' + word
-        //       } else {
-        //         newStrings.push(currentString)
-        //         currentString = word
-        //       }
-        //     })
-        //     if (currentString !== '') {
-        //       newStrings.push(currentString)
-        //     }
-        //   } else {
-        //     newStrings.push(label)
-        //   }
-        // } else {
-        //   // Re-arrange the words
-
-        //   let currentString = words[0]
-
-        //   for (let i = 1; i < words.length; i++) {
-        //     const spaceSeparated = words[i].split(' ')
-        //     // If this contains a space, do not use comma
-        //     if (spaceSeparated.length > 1) {
-        //       spaceSeparated.forEach((word: string, index: number) => {
-        //         if ((currentString + ' ' + word).length <= LETTERS_PER_LINE) {
-        //           currentString += ' ' + word
-        //         } else {
-        //           newStrings.push(currentString)
-        //           currentString = word
-        //         }
-        //       })
-        //     } else {
-        //       if (
-        //         (currentString + ', ' + words[i]).length <= LETTERS_PER_LINE
-        //       ) {
-        //         currentString += ', ' + words[i]
-        //       } else {
-        //         newStrings.push(currentString)
-        //         currentString = words[i]
-        //       }
-        //     }
-        //   }
-
-        //   // add the last string if it's not empty
-        //   if (currentString !== '') {
-        //     newStrings.push(currentString)
-        //   }
-        // }
-
         const textHeight: number = newStrings.length * fontSize
 
         newStrings.forEach((word: string, lineNumber: number) => {
-          d3Selection
-            .select(this)
-            .append('tspan')
-            .text(word)
-            .attr('font-size', fontSize)
-            .attr('text-anchor', 'middle')
-            .attr('alignment-baseline', 'middle')
-            .attr('text-align', 'center')
-            .attr('x', d.x)
-            // .attr('y', d.y)
-            // .attr('y', d.y - fontSize / 2) // adjust this value to center the text
-            .attr(
-              'y',
-              d.y + lineNumber * fontSize - textHeight / 2 + fontSize / 2,
-            )
-
-            // .attr('dy', `${lineNumber * 1.2}em`)
-            .style('user-select', 'none')
+          const element = d3Selection.select(this)
+          const y: number =
+            d.y + lineNumber * fontSize - textHeight / 2 + fontSize / 2
+          addLabels(element, word, fontSize, d.x, y)
         })
       })
       .style('display', (d: d3Hierarchy.HierarchyNode<D3TreeNode>): string => {
@@ -370,6 +299,25 @@ export const CirclePackingPanel = ({
     svg.call(zoom)
     updateForZoom(1)
     toCenter(wrapper, { width, height })
+  }
+
+  const addLabels = (
+    element: any,
+    word: string,
+    fontSize: number,
+    x: number,
+    y: number,
+  ) => {
+    element
+      .append('tspan')
+      .text(word)
+      .attr('font-size', fontSize)
+      .attr('text-anchor', 'middle')
+      .attr('alignment-baseline', 'middle')
+      .attr('text-align', 'center')
+      .attr('x', x)
+      .attr('y', y)
+      .style('user-select', 'none')
   }
 
   /**
@@ -445,10 +393,26 @@ export const CirclePackingPanel = ({
         .selectAll('text')
         .data(rootNode.descendants())
         .join('text')
-        .text((d) => getLabel(d.data.id, circlePackingView, d.data.name))
         .each(function (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) {
-          const labelText = getLabel(d.data.id, circlePackingView, d.data.name)
-          adjustTextToFitInSquare(labelText, d3Selection.select(this), d.r * 2)
+          const textSelection = d3Selection.select(this)
+          textSelection.selectAll('*').remove()
+
+          // Add the label on top of the circle
+          const label: string = getLabel(
+            d.data.id,
+            circlePackingView,
+            d.data.name,
+          )
+          const fontSize = getFontSize(d, label)
+          const newStrings: string[] = getWordLines(label)
+          const textHeight: number = newStrings.length * fontSize
+
+          newStrings.forEach((word: string, lineNumber: number) => {
+            const element = d3Selection.select(this)
+            const y: number =
+              d.y + lineNumber * fontSize - textHeight / 2 + fontSize / 2
+            addLabels(element, word, fontSize, d.x, y)
+          })
         })
     }
   }, [circlePackingView])
