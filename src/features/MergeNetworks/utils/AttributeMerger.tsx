@@ -1,74 +1,74 @@
-import { Column } from '../../../models/TableModel/Column'
-import { Network } from '../../../models/NetworkModel/Network'
+// import { Column } from '../../../models/TableModel/Column'
+// import { Network } from '../../../models/NetworkModel/Network'
 
-export interface AttributeMerger {
-    mergeAttribute(sourceAttributes: Map<Node, Column>, targetNode: Node, targetAttr: Column, network: Network): void;
-}
+// export interface AttributeMerger {
+//     mergeAttribute(sourceAttributes: Map<Node, Column>, targetNode: Node, targetAttr: Column, network: Network): void;
+// }
 
-export class DefaultAttributeMerger implements AttributeMerger {
-    protected conflictCollector: AttributeConflictCollector;
+// export class DefaultAttributeMerger implements AttributeMerger {
+//     protected conflictCollector: AttributeConflictCollector;
 
-    constructor(conflictCollector: AttributeConflictCollector) {
-        this.conflictCollector = conflictCollector;
-    }
+//     constructor(conflictCollector: AttributeConflictCollector) {
+//         this.conflictCollector = conflictCollector;
+//     }
 
-    mergeAttribute(sourceAttributes: Map<Node, Column>, targetNode: Node, targetAttr: Column, network: Network): void {
-        if (!sourceAttributes || !targetNode || !targetAttr) {
-            throw new Error("Required parameters cannot be null.");
-        }
+//     mergeAttribute(sourceAttributes: Map<Node, Column>, targetNode: Node, targetAttr: Column, network: Network): void {
+//         if (!sourceAttributes || !targetNode || !targetAttr) {
+//             throw new Error("Required parameters cannot be null.");
+//         }
 
-        const cyRow = network.rows.get(targetNode.id);
-        const colType = this.getColumnType(targetAttr);
+//         const cyRow = network.rows.get(targetNode.id);
+//         const colType = this.getColumnType(targetAttr);
 
-        sourceAttributes.forEach((fromColumn, fromNode) => {
-            const fromTable = fromColumn.table;
-            const fromCyRow = fromTable.rows.get(fromNode.id);
-            const fromColType = this.getColumnType(fromColumn);
+//         sourceAttributes.forEach((fromColumn, fromNode) => {
+//             const fromTable = fromColumn.table;
+//             const fromCyRow = fromTable.rows.get(fromNode.id);
+//             const fromColType = this.getColumnType(fromColumn);
 
-            if (colType === "string") {
-                let fromValue = fromCyRow.get(fromColumn.name);
-                if (fromValue && fromColType !== colType) {
-                    fromValue = this.castService(fromValue, colType);
-                }
-                const existingValue = cyRow.get(targetAttr.name);
+//             if (colType === "string") {
+//                 let fromValue = fromCyRow.get(fromColumn.name);
+//                 if (fromValue && fromColType !== colType) {
+//                     fromValue = this.castService(fromValue, colType);
+//                 }
+//                 const existingValue = cyRow.get(targetAttr.name);
 
-                if (!existingValue) {
-                    cyRow.set(targetAttr.name, fromValue);
-                } else if (fromValue !== existingValue) {
-                    this.conflictCollector.addConflict(fromNode, fromColumn, targetNode, targetAttr);
-                }
-            } else if (!this.isListType(colType)) {
-                let newValue = fromCyRow.get(fromColumn.name);
-                const existingValue = cyRow.get(targetAttr.name);
+//                 if (!existingValue) {
+//                     cyRow.set(targetAttr.name, fromValue);
+//                 } else if (fromValue !== existingValue) {
+//                     this.conflictCollector.addConflict(fromNode, fromColumn, targetNode, targetAttr);
+//                 }
+//             } else if (!this.isListType(colType)) {
+//                 let newValue = fromCyRow.get(fromColumn.name);
+//                 const existingValue = cyRow.get(targetAttr.name);
 
-                if (newValue && fromColType !== colType) {
-                    newValue = this.castService(newValue, colType);
-                }
+//                 if (newValue && fromColType !== colType) {
+//                     newValue = this.castService(newValue, colType);
+//                 }
 
-                if (!existingValue) {
-                    cyRow.set(targetAttr.name, newValue);
-                } else if (newValue !== existingValue) {
-                    this.conflictCollector.addConflict(fromNode, fromColumn, targetNode, targetAttr);
-                }
-            }
-        });
-    }
+//                 if (!existingValue) {
+//                     cyRow.set(targetAttr.name, newValue);
+//                 } else if (newValue !== existingValue) {
+//                     this.conflictCollector.addConflict(fromNode, fromColumn, targetNode, targetAttr);
+//                 }
+//             }
+//         });
+//     }
 
-    private getColumnType(column: Column): string {
-        // Implement this method
-        return "string";
-    }
+//     private getColumnType(column: Column): string {
+//         // Implement this method
+//         return "string";
+//     }
 
-    private castService(value: any, type: string): any {
-        // Implement this method
-        return value;
-    }
+//     private castService(value: any, type: string): any {
+//         // Implement this method
+//         return value;
+//     }
 
-    private isListType(type: string): boolean {
-        // Implement this method
-        return false;
-    }
-}
+//     private isListType(type: string): boolean {
+//         // Implement this method
+//         return false;
+//     }
+// }
 
 
 // Use the following Java code as a reference for the above TypeScript code:

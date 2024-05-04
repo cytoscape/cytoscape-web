@@ -12,3 +12,48 @@
     top: 0 !important;
     left: 0 !important;
 }
+
+
+/* toggle button */
+.toggleButtonGroup {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+
+}
+
+.toggleButton {
+    border: 1px solid #565656 !important;
+}
+
+.toggleButton.selected {
+    color: white !important;
+    background-color: #227dd8 !important;
+}
+
+.toggleButton:hover {
+    background-color: rgb(133, 186, 239) !important;
+}
+
+/* button */
+.buttonBase {
+    margin-top: 8px !important;
+    min-width: 24px !important;
+    padding: 2px !important;
+    background-color: #f0f0f0 !important;
+    border: 1px solid #dcdcdc !important;
+    border-radius: 4px !important;
+}
+
+.buttonBase:hover {
+    background-color: #e0e0e0 !important;
+}
+
+.iconSmall {
+    font-size: small !important;
+    color: #606060 !important;
+}
+
+.buttonMarginRight {
+    margin-right: 8px !important;
+}
