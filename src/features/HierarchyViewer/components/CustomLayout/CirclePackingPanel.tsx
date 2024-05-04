@@ -11,7 +11,6 @@ import {
 } from './CirclePackingLayout'
 import {
   CpDefaults,
-  LETTERS_PER_LINE,
   displaySelectedNodes,
   getColorMapper,
   getFontSize,
@@ -31,7 +30,6 @@ import { useSubNetworkStore } from '../../store/SubNetworkStore'
 import { useTableStore } from '../../../../store/TableStore'
 import { SearchState } from '../../../../models/FilterModel/SearchState'
 import { useFilterStore } from '../../../../store/FilterStore'
-import { a } from 'react-spring'
 
 interface CirclePackingPanelProps {
   network: Network
@@ -106,7 +104,6 @@ export const CirclePackingPanel = ({
 
   const handleZoom = useCallback(
     (e: any): void => {
-      // console.log('###Zooming with expand', expandAll)
       const selectedArea = d3Selection.select('svg g')
       selectedArea.attr('transform', e.transform)
       const currentZoomLevel = e.transform.k
@@ -118,7 +115,6 @@ export const CirclePackingPanel = ({
   )
 
   useEffect(() => {
-    console.log('* Search state changed', expandAll)
     updateForZoom(lastZoomLevel)
   }, [expandAll])
 
@@ -383,7 +379,6 @@ export const CirclePackingPanel = ({
       draw(rootNode)
       //This should be called only once.
       initRef.current = true
-      console.log('###Circle Packing view is drawn')
       setLastNetworkId(networkId)
     } else {
       // Need to update the existing view, e.g., when the visual style is changed
@@ -417,74 +412,6 @@ export const CirclePackingPanel = ({
     }
   }, [circlePackingView])
 
-  function adjustTextToFitInSquare(
-    labelText: string,
-    textElement: any,
-    squareSize: number,
-  ) {
-    let fontSize = squareSize / 10
-    textElement.style('font-size', `${fontSize}px`)
-
-    let textHeight
-    let textWidth
-    let count = 0
-
-    do {
-      fontSize -= 1 // フォントサイズを小さくしていく
-      textElement.style('font-size', `${fontSize}px`)
-      wrapText(labelText, textElement, squareSize, fontSize) // テキストをラップする
-      const bbox = textElement.node()!.getBBox()
-      textHeight = bbox.height
-      textWidth = bbox.width
-      count++
-      if (count > 10) {
-        break
-      }
-    } while (textWidth > squareSize || textHeight > squareSize) // テキストが正方形に収まるまで繰り返す
-  }
-
-  // テキストをラップする関数
-  function wrapText(
-    labelText: string,
-    text: d3Selection.Selection<SVGTextElement, any, SVGGElement, unknown>,
-    maxWidth: number,
-    fontSize: number,
-  ) {
-    text.each(function (d) {
-      const text = d3Selection.select(this),
-        words = labelText.split(/[ ,|\s]+/).reverse(),
-        lineHeight = fontSize * 100,
-        y = text.attr('y'),
-        dy = parseFloat(text.attr('dy'))
-
-      let word,
-        line: string[] = [],
-        lineNumber = 0,
-        tspan = text
-          .append('tspan')
-          .attr('x', d.x)
-          .attr('y', y)
-          .attr('dy', `${dy}em`)
-
-      while ((word = words.pop())) {
-        line.push(word)
-        tspan.text(line.join(' '))
-        if (tspan.node()!.getComputedTextLength() > maxWidth) {
-          line.pop()
-          tspan.text(line.join(' '))
-          line = [word]
-          tspan = text
-            .append('tspan')
-            .attr('x', d.x)
-            .attr('y', y)
-            .attr('dy', `${lineNumber * lineHeight + dy}em`)
-            .text(word)
-          lineNumber++
-        }
-      }
-    })
-  }
-
   useEffect(() => {
     if (hoveredEnter === undefined) {
       setTooltipOpen(false)
@@ -500,7 +427,7 @@ export const CirclePackingPanel = ({
     setTooltipOpen(true)
     const timeoutId = setTimeout(() => {
       setTooltipOpen(false)
-    }, 2000)
+    }, 3000)
 
     // Clear the timeout when the component unmounts
     return () => {
