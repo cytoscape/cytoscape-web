@@ -4,16 +4,14 @@ import { NetworkRecord } from "./model/DataInterfaceForMerge";
 import NetworkFn, { Network, Node } from "../../models/NetworkModel";
 import { Column } from "../../models/TableModel/Column";
 import { ValueType } from "../../models/TableModel/ValueType";
-import { valueMatcher } from "./utils/AttrValueMatcher";
+import { attributeValueMatcher } from "./utils/valueMatcher";
 import { MatchingTable } from "./model/Impl/MatchingTable";
 import { cloneNetwork } from "./utils/cloneNetwork";
 import { mergeAttributes } from "./utils/mergeAttributes";
 
 export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>) {
-    if (fromNetworks.length < 2) {
-        throw new Error("No networks to merge");
-    }
+
     // preprocess the network to merge    
     const { mergedNodeTable, mergedEdgeTable } = preprocess(toNetworkId, nodeAttributeMapping.getMergedAttributes(), edgeAttributeMapping.getMergedAttributes());
 
@@ -21,21 +19,34 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
     const baseNetworkID = fromNetworks[0];
     // clone the network iteself
     const mergedNetwork: Network = NetworkFn.createNetworkFromLists(toNetworkId, [...networkRecords[baseNetworkID].network.nodes], [...networkRecords[baseNetworkID].network.edges])
+    // cast the original attributes to the merged attributes
+    const initialNodeRows: [string, Record<string, ValueType>][] = []
+    const initialEdgeRows: [string, Record<string, ValueType>][] = []
+    networkRecords[baseNetworkID].nodeTable.rows.forEach((entry, id) => {
+        initialNodeRows.push([id, castAttributes(entry, nodeAttributeMapping.getAttributeMapping(baseNetworkID))])
+    });
+    // networkRecords[baseNetworkID].edgeTable.rows.forEach((entry, id) => {
+    //     initialEdgeRows.push([id, castAttributes(entry, edgeAttributeMapping.getAttributeMapping(baseNetworkID))])
+    // });
     //clone the table rows(columns have already been initialized in the preprocess step)
-
-    TableFn.insertRows(mergedNodeTable, [...networkRecords[baseNetworkID].nodeTable.rows.entries()]);
-    TableFn.insertRows(mergedEdgeTable, [...networkRecords[baseNetworkID].edgeTable.rows.entries()]);
+    TableFn.insertRows(mergedNodeTable, initialNodeRows);
+    TableFn.insertRows(mergedEdgeTable, initialEdgeRows);
 
     // map the node id in the mergedNetwork to the node id in the fromNetworks
     const nodeIdMap = new Map<IdType, Record<IdType, IdType>>();
     const nodeIdSet = new Set<IdType>(); // prevent duplicate nodes
+    const nodeAttMap = new Map<IdType, ValueType>();
+
     for (const node of networkRecords[baseNetworkID].network.nodes) {
         nodeIdMap.set(node.id, { baseNetworkID: node.id });
         if (nodeIdSet.has(node.id)) {
             throw new Error(`Duplicate node id found in the network:${baseNetworkID}`);
         }
         nodeIdSet.add(node.id);
+        const nodeRecord = networkRecords[baseNetworkID].nodeTable.rows.get(node.id);
+        nodeAttMap.set(node.id, nodeRecord ? nodeRecord[matchingAttribute[baseNetworkID].name] : '');
     }
+
     // merge nodes
     // loop over the networks to merge (the first network is base network)
     for (const netToMerge of fromNetworks.slice(1)) {
@@ -51,8 +62,9 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
         // loop over the nodes of the network to merge
         for (const nodeObj of nodeLst) {
             const nodeId = nodeObj.id;
-            const matchedNodeId = valueMatcher(nodeId, toNetworkId);
-            if (matchedNodeId === -1) { // if the node is not in the network
+            const nodeRecord = networkRecords[netToMerge].nodeTable.rows.get(nodeId);
+            const matchedNodeId = attributeValueMatcher(nodeRecord ? nodeRecord[matchingAttribute[netToMerge].name] : '', nodeAttMap);
+            if (!matchedNodeId) { // if the node is not in the network
                 unmatchedNodeIds.push(nodeId);
             }
             else {
@@ -73,7 +85,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
             if (nodeRecord === undefined) {
                 throw new Error("Node not found in the node table");
             }
-            TableFn.insertRow(mergedNodeTable, [newNodeId, nodeRecord]);
+            TableFn.insertRow(mergedNodeTable, [newNodeId, castAttributes(nodeRecord, nodeAttributeMapping.getAttributeMapping(netToMerge))]);
         }
 
         //matched nodes
@@ -84,14 +96,14 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
             if (nodeRecord === undefined || oriRow === undefined) {
                 throw new Error("Node not found in the node table");
             }
+            const castedRecord = castAttributes(nodeRecord, nodeAttributeMapping.getAttributeMapping(netToMerge));
             //update the row
-            Object.entries(nodeRecord).forEach((entry: [string, ValueType]) => {
-                oriRow.set(entry[0], entry[1]);
+            Object.entries(castedRecord).forEach((entry: [string, ValueType]) => {
+                oriRow[entry[0]] = entry[1];
             });
             // update the mergedNodeTable
             TableFn.updateRow(mergedNodeTable, [oriNodeId, oriRow]);
         }
-        TableFn.insertRows(mergedNodeTable, [...networkRecords[netToMerge].nodeTable.rows.entries()]);
 
     }
 
@@ -118,4 +130,17 @@ function preprocess(toNetwork: IdType, nodeCols: Column[], edgeCols: Column[]) {
 
 function generateId(): IdType {
     return `${Math.floor(Math.random() * 1000000000)}` as IdType;
-} 
+}
+
+function castAttributes(toMergeAttr: Record<string, ValueType>, attributeMapping: Map<string, Column>): Record<string, ValueType> {
+    const castedAttr: Record<string, ValueType> = {};
+    for (const [key, value] of Object.entries(toMergeAttr)) {
+        const col = attributeMapping.get(key);
+        if (col === undefined) {
+            throw new Error(`Attribute ${key} not found in the attribute mapping`);
+        }
+        castedAttr[col.name] = value;
+    }
+    // Todo: type coercion
+    return castedAttr;
+}

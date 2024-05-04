@@ -19,15 +19,32 @@ import { MatchingTable } from './model/Impl/MatchingTable';
 import { useViewModelStore } from '../../store/ViewModelStore';
 
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
-    nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable,
-    networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>): Promise<NetworkWithView> => {
-
+    nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable,
+    matchingAttribute: Record<IdType, Column>, visualStyle: VisualStyle): Promise<NetworkWithView> => {
+    if (fromNetworks.length < 2) {
+        throw new Error("No networks to merge");
+    }
+    for (const netId of fromNetworks) {
+        if (!networkRecords[netId]) {
+            throw new Error(`Network with id ${netId} not found`);
+        }
+        if (!nodeAttributeMapping.getAttributeMapping(netId)) {
+            throw new Error(`Node attribute mapping for network ${netId} not found`);
+        }
+        if (!matchingAttribute[netId]) {
+            throw new Error(`Matching attribute for network ${netId} not found`);
+        }
+    }
     const baseNetworkId = fromNetworks[0]
-    const visualStyle = useVisualStyleStore((state) => state.visualStyles[baseNetworkId])
-
     const newNetworkName = 'Merged Network'
-    const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
-        nodeAttributeMapping, edgeAttributeMapping, networkAttributeMapping, matchingAttribute)
+    let mergedNetwork: NetworkRecord
+    try {
+        mergedNetwork = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
+            nodeAttributeMapping, edgeAttributeMapping, networkAttributeMapping, matchingAttribute)
+    } catch (e) {
+        console.error(e)
+        throw new Error('Error merging networks')
+    }
     const baseNetSummary = 'Merged Network' //todo fecth from db
     const newNetworkDescription = 'Merged Network'
     // todo: merge network attributes also

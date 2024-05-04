@@ -49,21 +49,6 @@ export const createViewModel = (network: Network): NetworkView => {
   return networkView
 }
 
-export const createEmptyViewModel = (id: IdType): NetworkView => {
-  const nodeViews: Record<IdType, NodeView> = {}
-  const edgeViews: Record<IdType, EdgeView> = {}
-  const networkView: NetworkView = {
-    id,
-    nodeViews,
-    edgeViews,
-    selectedNodes: [],
-    selectedEdges: [],
-    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>(),
-  }
-
-  return networkView
-}
-
 export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
   const cxNodes: CxNode[] = cxUtil.getNodes(cx)
   const cxEdges: CxEdge[] = cxUtil.getEdges(cx)
