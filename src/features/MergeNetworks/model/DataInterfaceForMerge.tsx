@@ -6,6 +6,12 @@ export enum MergeType {
     difference = 'Difference'
 }
 
+export enum TableView {
+    node = 'Node',
+    edge = 'Edge',
+    network = 'Network'
+}
+
 export interface NetworktoMerge {
     nodes: NodeToMerge[];
     edges: EdgeToMerge[];

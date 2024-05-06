@@ -37,9 +37,23 @@ export class MatchingTable {
     }
     getAttributeMapping(netId: IdType): Map<string, Column> {
         const attMap = new Map()
-        for (const row of this.matchingTable.slice(1)) {
-            if (row.hasOwnProperty(netId)) {
-                attMap.set(row[netId], { name: row.mergedNetwork, type: row.type } as Column)
+        if (this.matchingTable.length > 0) {
+            for (const row of this.matchingTable.slice(1)) {
+                if (row.hasOwnProperty(netId)) {
+                    attMap.set(row[netId], { name: row.mergedNetwork, type: row.type } as Column)
+                }
+            }
+        }
+        return attMap
+    }
+
+    getReversedMergedAttMap(): Map<string, string> {
+        const attMap = new Map()
+        if (this.matchingTable.length > 0) {
+            for (const key in this.matchingTable[0]) {
+                if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type') {
+                    attMap.set(key, this.matchingTable[0][key])
+                }
             }
         }
         return attMap

@@ -21,8 +21,11 @@ import { useViewModelStore } from '../../store/ViewModelStore';
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable,
     matchingAttribute: Record<IdType, Column>, visualStyle: VisualStyle): Promise<NetworkWithView> => {
-    if (fromNetworks.length < 2) {
+    if (fromNetworks.length < 1) {
         throw new Error("No networks to merge");
+    }
+    if (nodeAttributeMapping.getMatchingTable().length < 2) {
+        throw new Error("Attributes Length should be greater than 1")
     }
     for (const netId of fromNetworks) {
         if (!networkRecords[netId]) {
