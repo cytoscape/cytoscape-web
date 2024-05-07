@@ -8,14 +8,14 @@ import {
 import { NetworkWithView } from '../../utils/cx-utils';
 import { mergeNetwork } from './mergeNetwork';
 import { IdType } from '../../models/IdType';
-import { NetworkRecord, NetworktoMerge } from './model/DataInterfaceForMerge';
+import { NetworkRecord, NetworktoMerge } from './models/DataInterfaceForMerge';
 import VisualStyleFn, { VisualStyle } from '../../models/VisualStyleModel';
 import ViewModelFn, { NetworkView } from '../../models/ViewModel';
 import { deepClone } from './utils/deepClone';
 import { NetworkAttributes } from '../../models/NetworkModel';
 import { useVisualStyleStore } from '../../store/VisualStyleStore';
 import { Column } from '../../models/TableModel/Column';
-import { MatchingTable } from './model/Impl/MatchingTable';
+import { MatchingTable } from './models/Impl/MatchingTable';
 import { useViewModelStore } from '../../store/ViewModelStore';
 
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
@@ -83,8 +83,8 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
         version: '',
         completed: false,
         visibility: 'PUBLIC',
-        nodeCount: 0,
-        edgeCount: 0,
+        nodeCount: newNetwork.nodes.length,
+        edgeCount: newNetwork.edges.length,
         description: newNetworkDescription,
         creationTime: new Date(Date.now()),
         externalId: toNetworkId,

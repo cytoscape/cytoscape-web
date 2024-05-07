@@ -9,7 +9,7 @@ import {
 import './MergeDialog.css';
 import { v4 as uuidv4 } from 'uuid';
 import { initial, merge, set } from 'lodash';
-import { MergeType, NetworkRecord, MatchingTableRow, TableView } from '../model/DataInterfaceForMerge';
+import { MergeType, NetworkRecord, MatchingTableRow, TableView, Pair } from '../models/DataInterfaceForMerge';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -24,7 +24,6 @@ import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
 import { Column as PrimeColumn } from 'primereact/column';
 import { PrimeReactProvider } from 'primereact/api';
-import { Pair } from '../../../models/MergeModel/utils/Pair';
 import { useWorkspaceStore } from '../../../store/WorkspaceStore';
 import { useViewModelStore } from '../../../store/ViewModelStore';
 import { useNetworkStore } from '../../../store/NetworkStore';
@@ -33,7 +32,7 @@ import { useVisualStyleStore } from '../../../store/VisualStyleStore';
 import { NetworkView } from '../../../models/ViewModel'
 import { Network } from '../../../models/NetworkModel';
 import { createMergedNetworkWithView } from '../createMergedNetworkWithView';
-import { MatchingTable } from '../model/Impl/MatchingTable';
+import { MatchingTable } from '../models/Impl/MatchingTable';
 import { VisualStyle } from '../../../models/VisualStyleModel';
 import { useLayoutStore } from '../../../store/LayoutStore';
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel';
