@@ -1,4 +1,4 @@
-import { NetworktoMerge } from "./model/DataInterfaceForMerge";
+import { NetworktoMerge } from "./models/DataInterfaceForMerge";
 
 export function UnionMerge(toNetwork: NetworktoMerge, fromNetworks: NetworktoMerge[],
     subtractOnlyUnconnectedNodes: boolean, nodesOnly: boolean): NetworktoMerge {

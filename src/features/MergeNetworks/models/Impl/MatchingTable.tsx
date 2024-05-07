@@ -35,10 +35,10 @@ export class MatchingTable {
     getMergedAttributes() {
         return this.mergedAttributes
     }
-    getAttributeMapping(netId: IdType): Map<string, Column> {
+    getAttributeMapping(netId: IdType, isNode: boolean = true): Map<string, Column> {
         const attMap = new Map()
         if (this.matchingTable.length > 0) {
-            for (const row of this.matchingTable.slice(1)) {
+            for (const row of (isNode ? this.matchingTable.slice(1) : this.matchingTable)) {
                 if (row.hasOwnProperty(netId)) {
                     attMap.set(row[netId], { name: row.mergedNetwork, type: row.type } as Column)
                 }

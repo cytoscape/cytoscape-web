@@ -12,6 +12,8 @@ export enum TableView {
     network = 'Network'
 }
 
+export type Pair<T1, T2> = [T1, T2];
+
 export interface NetworktoMerge {
     nodes: NodeToMerge[];
     edges: EdgeToMerge[];

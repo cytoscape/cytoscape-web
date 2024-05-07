@@ -19,8 +19,8 @@ import { Node } from '../../../models/NetworkModel/Node';
 import { Column } from '../../../models/TableModel/Column';
 import { ValueType } from '../../../models/TableModel/ValueType';
 import { Edge } from '../../../models/NetworkModel/Edge';
-import { MatchingTable } from '../model/Impl/MatchingTable';
-import { MatchingTableRow } from '../model/DataInterfaceForMerge';
+import { MatchingTable } from '../models/Impl/MatchingTable';
+import { MatchingTableRow } from '../models/DataInterfaceForMerge';
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -76,12 +76,12 @@ describe('mergeNetwork', () => {
         nodeTableRows2.set(nodeLst2[3], { name: 'node 8', att1: 8, att3: 'h' });
 
         const mergedNodeTableRows = new Map();
-        mergedNodeTableRows.set(mergedNodeLst[0], { name: 'node 1', matchingAtt: 'node 1', att1: 1, att2: 'd', att3: 'g' });
-        mergedNodeTableRows.set(mergedNodeLst[1], { name: 'node 2', matchingAtt: 'node 2', att1: 2, att2: 'c', att3: 'f' });
-        mergedNodeTableRows.set(mergedNodeLst[2], { name: 'node 3', matchingAtt: 'node 3', att1: 3, att2: 'b' });
-        mergedNodeTableRows.set(mergedNodeLst[3], { name: 'node 4', matchingAtt: 'node 4', att1: 4, att2: 'a' });
-        mergedNodeTableRows.set(mergedNodeLst[4], { name: 'node 5', matchingAtt: 'node 5', att1: 5, att3: 'e' });
-        mergedNodeTableRows.set(mergedNodeLst[5], { name: 'node 8', matchingAtt: 'node 8', att1: 8, att3: 'h' });
+        mergedNodeTableRows.set(mergedNodeLst[0], { name: 'node 1', matchingAtt: 'node 1', att1_merged: 1, att2: 'd', att33: 'g' });
+        mergedNodeTableRows.set(mergedNodeLst[1], { name: 'node 2', matchingAtt: 'node 2', att1_merged: 2, att2: 'c', att33: 'f' });
+        mergedNodeTableRows.set(mergedNodeLst[2], { name: 'node 3', matchingAtt: 'node 3', att1_merged: 3, att2: 'b' });
+        mergedNodeTableRows.set(mergedNodeLst[3], { name: 'node 4', matchingAtt: 'node 4', att1_merged: 4, att2: 'a' });
+        mergedNodeTableRows.set(mergedNodeLst[4], { name: 'node 5', matchingAtt: 'node 5', att1_merged: 5, att33: 'e' });
+        mergedNodeTableRows.set(mergedNodeLst[5], { name: 'node 8', matchingAtt: 'node 8', att1_merged: 8, att33: 'h' });
 
         const nodeTable1 = {
             id: fromNetworks[0],
@@ -97,7 +97,7 @@ describe('mergeNetwork', () => {
 
         const mergedNodeTable = {
             id: toNetworkId,
-            columns: [{ name: 'matchingAtt', type: 'string' }, { name: 'name', type: 'string' }, { name: 'att1', type: 'integer' }, { name: 'att2', type: 'string' }, { name: 'att3', type: 'string' }],
+            columns: [{ name: 'matchingAtt', type: 'string' }, { name: 'name', type: 'string' }, { name: 'att1_merged', type: 'integer' }, { name: 'att2', type: 'string' }, { name: 'att33', type: 'string' }],
             rows: mergedNodeTableRows
         };
 
@@ -116,9 +116,9 @@ describe('mergeNetwork', () => {
         const nodeAttributeMapping = new MatchingTable([
             { id: 0, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', mergedNetwork: 'matchingAtt', type: 'string' },
             { id: 1, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', mergedNetwork: 'name', type: 'string' },
-            { id: 2, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', mergedNetwork: 'att1', type: 'integer' },
+            { id: 2, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', mergedNetwork: 'att1_merged', type: 'integer' },
             { id: 3, [fromNetworks[0]]: 'att2', [fromNetworks[1]]: 'None', mergedNetwork: 'att2', type: 'string' },
-            { id: 4, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att3', mergedNetwork: 'att3', type: 'string' }
+            { id: 4, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att3', mergedNetwork: 'att33', type: 'string' }
         ] as MatchingTableRow[])
         const edgeAttributeMapping = new MatchingTable([])
         const networkAttributeMapping = new MatchingTable([])
