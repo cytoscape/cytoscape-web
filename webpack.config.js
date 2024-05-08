@@ -54,6 +54,9 @@ module.exports = {
         { from: /./, to: '/index.html' }, // all other routes
       ],
     },
+    headers: {
+      'Access-Control-Allow-Origin': '*', // allow access from any origin
+    },
     port: 5500,
   },
   plugins: [

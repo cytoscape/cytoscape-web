@@ -1,27 +1,36 @@
 import path from 'path';
+import url from 'url';
+
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default {
-  mode: 'development',
+  mode: 'production',
+  devtool: false,
+  optimization: {
+    minimize: true
+  },
   entry: './src/index.ts',
   output: {
-    filename: 'app1.js',
-    // eslint-disable-next-line no-undef
-    path: path.resolve(process.cwd(), 'dist'),
-
-    library: 'app1',
-    libraryTarget: 'umd',
-    globalObject: 'this'
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'app2.js',
+    library: {
+      type: 'module'
+    }
+  },
+  resolve: {
+    extensions: ['.ts', '.js']
   },
   module: {
     rules: [
-       {
-        test: /\.tsx?$/,
+      {
+        test: /\.ts$/,
         use: 'ts-loader',
         exclude: /node_modules/
-      },
+      }
     ]
   },
-  resolve: {
-    extensions: ['.ts', '.tsx']
+  experiments: {
+    outputModule: true
   }
 };

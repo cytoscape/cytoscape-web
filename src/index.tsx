@@ -12,6 +12,39 @@ import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
 enableMapSet()
 
+const appUrl = 'http://localhost:3000/app2.js'
+// import ext1 from 'http://localhost:3000/app1.js'
+
+async function loadModule() {
+  fetch(appUrl)
+    .then((response) => response.text())
+    .then((text) => {
+      eval(text)
+    })
+    .then((module) => {
+      console.log('Loaded module', module)
+    })
+    .catch((error) => {
+      console.error('!$$$$$$$$$Error loading module', error)
+    })
+}
+async function loadModule2(moduleUrl: string) {
+  try {
+    const module = await import(moduleUrl)
+    console.log('Loaded module', module)
+  } catch (error) {
+    console.error('Error loading module', error)
+  }
+}
+
+loadModule2(appUrl)
+  .then(() => {
+    console.log('Module loaded')
+  })
+  .catch((error) => {
+    console.error('###Error loading module', error)
+  })
+
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
 const rootElement: HTMLElement | null = document.getElementById('root')
