@@ -1,8 +1,13 @@
 {
   "name": "cytoscape-web",
   "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "license": "MIT",
   "scripts": {
+    "clean": "rm -rf dist",
     "test": "npm run test:playwright && npm run test:unit",
     "test:unit": "jest unittest",
     "test:playwright": "npx playwright test --trace on",

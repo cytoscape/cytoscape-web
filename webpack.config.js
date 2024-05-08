@@ -1,7 +1,6 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const ESLintPlugin = require('eslint-webpack-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
 const TerserPlugin = require('terser-webpack-plugin')
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
@@ -70,11 +69,6 @@ module.exports = {
       template: './index.html',
       favicon: './src/assets/favicon.ico',
     }),
-    // // lint all js/jsx/ts/tsx files
-    // new ESLintPlugin({
-    //   extensions: ['ts', 'tsx'],
-    // }),
-
     // netlify requires a _redirects file in the root of the dist folder to work with react router
     ...(process.env.BUILD === 'netlify'
       ? [

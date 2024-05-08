@@ -1,0 +1,10 @@
+{
+  "name": "hello-cy-world",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "webpack --config webpack.config.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
