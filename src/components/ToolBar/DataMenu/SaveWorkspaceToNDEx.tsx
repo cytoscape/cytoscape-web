@@ -24,6 +24,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
   const getToken = useCredentialStore((state) => state.getToken);
   const authenticated: boolean = client?.authenticated ?? false;
   const addMessage = useMessageStore((state) => state.addMessage);
+  const setId = useWorkspaceStore((state) => state.setId)
 
   const [workspaceName, setWorkspaceName] = useState<string>('');
   const [openDialog, setOpenDialog] = useState<boolean>(false);
@@ -145,7 +146,8 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
         networkIDs: workspace.networkIds
       });
       const { uuid, modificationTime } = response;
-      console.log(uuid)
+      setId(uuid)
+
       console.log(modificationTime)
       
 
