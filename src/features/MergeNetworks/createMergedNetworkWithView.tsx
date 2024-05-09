@@ -38,7 +38,6 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
             throw new Error(`Matching attribute for network ${netId} not found`);
         }
     }
-    const baseNetworkId = fromNetworks[0]
     const newNetworkName = 'Merged Network'
     let mergedNetwork: NetworkRecord
     try {
