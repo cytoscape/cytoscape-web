@@ -6,9 +6,6 @@ import { Column } from "../../models/TableModel/Column";
 import { ValueType } from "../../models/TableModel/ValueType";
 import { attributeValueMatcher } from "./utils/valueMatcher";
 import { MatchingTable } from "./models/Impl/MatchingTable";
-import { cloneNetwork } from "./utils/cloneNetwork";
-import { mergeAttributes } from "./utils/mergeAttributes";
-import { Pair } from './models/DataInterfaceForMerge';
 
 export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>) {
@@ -70,7 +67,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
         const newSourceId = node2nodeMap.get(`${baseNetworkId}-${oriSource}`);
         const newTargetId = node2nodeMap.get(`${baseNetworkId}-${oriTarget}`);
         if (newSourceId === undefined || newTargetId === undefined) {
-            throw new Error("Edge source or target not found in the node map");
+            throw new Error("Source or target Edge not found in the node map");
         }
         NetworkFn.addEdge(mergedNetwork, { id: newEdgeeId, s: newSourceId, t: newTargetId } as Edge);
         edgeMap.set(`${newSourceId}-${newTargetId}`, newEdgeeId);
