@@ -584,7 +584,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                         </Button>
                     </Box>
                 </Box>
-                <Accordion>
+                {/* <Accordion>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography>Advanced Options</Typography>
                     </AccordionSummary>
@@ -664,7 +664,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                             />
                         </div>
                     </AccordionDetails>
-                </Accordion>
+                </Accordion> */}
 
             </DialogContent>
             <DialogActions>
