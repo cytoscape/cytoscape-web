@@ -9,7 +9,11 @@ import {
 import './MergeDialog.css';
 import Icon from './icons';
 import { v4 as uuidv4 } from 'uuid';
-import { MergeType, NetworkRecord, MatchingTableRow, TableView, Pair } from '../models/DataInterfaceForMerge';
+import StarIcon from '@mui/icons-material/Star';
+import {
+    MergeType, NetworkRecord, MatchingTableRow,
+    TableView, Pair
+} from '../models/DataInterfaceForMerge';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -20,10 +24,6 @@ import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../store/CredentialStore';
-import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
-import { DataTable } from 'primereact/datatable';
-import { Column as PrimeColumn } from 'primereact/column';
-import { PrimeReactProvider } from 'primereact/api';
 import { useWorkspaceStore } from '../../../store/WorkspaceStore';
 import { useViewModelStore } from '../../../store/ViewModelStore';
 import { useNetworkStore } from '../../../store/NetworkStore';
@@ -557,7 +557,13 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                                 onClick={() => handleSelectToMerge(network[1])}
                                 key={index}
                             >
-                                <ListItemText primary={network[0]} />
+                                <ListItemText
+                                    primary={
+                                        <>
+                                            {network[0]}
+                                            {index === 0 && <StarIcon viewBox="0 -3.7 24 24" style={{ color: 'gold' }} />}
+                                        </>
+                                    } />
                             </ListItem>
                         ))}
                     </List>
