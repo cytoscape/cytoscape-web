@@ -10,40 +10,32 @@ import { App } from './App'
 import { enableMapSet } from 'immer'
 import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
+import { LoaderTargetPlugin } from 'webpack'
+
 enableMapSet()
 
-const appUrl = 'http://localhost:3000/app2.js'
-// import ext1 from 'http://localhost:3000/app1.js'
+function insertModuleScript(src: string) {
+  const script = document.createElement('script')
+  script.type = 'module'
+  script.src = src
+  document.head.appendChild(script)
 
-async function loadModule() {
-  fetch(appUrl)
-    .then((response) => response.text())
-    .then((text) => {
-      eval(text)
-    })
-    .then((module) => {
-      console.log('Loaded module', module)
-    })
-    .catch((error) => {
-      console.error('!$$$$$$$$$Error loading module', error)
-    })
-}
-async function loadModule2(moduleUrl: string) {
-  try {
-    const module = await import(moduleUrl)
-    console.log('Loaded module', module)
-  } catch (error) {
-    console.error('Error loading module', error)
+  script.onload = () => {
+    console.log('!!Script loaded successfully', window)
   }
 }
 
-loadModule2(appUrl)
-  .then(() => {
-    console.log('Module loaded')
-  })
-  .catch((error) => {
-    console.error('###Error loading module', error)
-  })
+// const url = 'http://localhost:3000/hello-cy-world.js'
+// const loadPlugin = async (url: string): Promise<void> => {
+//   const { HelloApp } = await import(url)
+//   console.log('DYNAMIC Loading2::::', HelloApp)
+// }
+
+// loadPlugin(url)
+// @ts-ignore
+// window.loadPlugin()
+
+// insertModuleScript('http://localhost:3000/hello-cy-world.js')
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 

@@ -6,6 +6,8 @@ const TerserPlugin = require('terser-webpack-plugin')
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
 const CompressionWebpackPlugin = require('compression-webpack-plugin')
 const config = require('./src/assets/config.json')
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -19,7 +21,7 @@ module.exports = {
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
-        exclude: /node_modules/,
+        exclude: [/node_modules/, /dist/, /apps/],
       },
       // look for css files to transform into the bundle
       {
@@ -36,6 +38,7 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.jsx'], // need .js and .jsx for dependency files
   },
+   
   // use content hash for cache busting
   output: {
     filename: '[name].[contenthash].js',
@@ -60,6 +63,7 @@ module.exports = {
     port: 5500,
   },
   plugins: [
+    new BundleAnalyzerPlugin(),
     new CopyPlugin({
       patterns: [{ from: './silent-check-sso.html', to: '.' }],
     }),

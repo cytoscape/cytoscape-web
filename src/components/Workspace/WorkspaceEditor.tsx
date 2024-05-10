@@ -447,6 +447,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
     }
   }, [summaries])
+  // console.log('Hello from WorkspaceEditor')
 
   // Return the main component including the network panel, network view, and the table browser
   return (

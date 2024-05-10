@@ -2,7 +2,7 @@
   "name": "hello-cy-world",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/app2.js",
+  "main": "dist/hello-cy-world.js",
   "scripts": {
     "clean": "rm -rf dist",
     "build": "webpack --config webpack.config.js"

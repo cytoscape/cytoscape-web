@@ -1,3 +1,2 @@
-export const displayMessage = (message: string): void => {
-  console.log(`Hello, world from the Cytoscape app module!: ${message}`)
-}
+export { HelloApp } from './HelloApp'
+export { HelloPanel } from './components/HelloPanel'
