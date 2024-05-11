@@ -12,6 +12,10 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "strictNullChecks": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@models/*": ["src/models/*"]
+    }
   }
 }

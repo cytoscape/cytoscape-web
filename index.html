@@ -6,14 +6,28 @@
     <title>Cytoscape Web 2.0</title>
 
     <script>
-      const loadPlugin = async () => {
-        const pluginModule = await import(
-          'http://localhost:3000/hello-cy-world.js'
-        )
-        console.log('DYNAMIC33::::', pluginModule)
-        const HelloPanel = pluginModule.HelloPanel
+      const loadConfig = async () => {
+        const response = await fetch('/app-config.json')
+        const appConfig = await response.json()
+        console.log('APP CONF is', appConfig)
+        return appConfig
       }
-      window.loadPlugin = loadPlugin
+
+      const loadApps = async () => {
+        const config = await loadConfig()
+        const appUrls = config.appUrls
+        appUrls.forEach(async (url) => {
+          console.log('APP URL:', url)
+          try {
+            const appModule = await import(url)
+            console.log('DYNAMIC22::::', appModule)
+            const def1 = appModule.default
+          } catch (e) {
+            console.warn('Fail app', e)
+          }
+        })
+      }
+      window.loadApps = loadApps
     </script>
   </head>
   <body>

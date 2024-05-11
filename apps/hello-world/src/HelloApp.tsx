@@ -1,4 +1,6 @@
-export const HelloApp = {
+import { CyApp } from '@models/AppModel/CyApp'
+
+export const HelloApp: CyApp = {
   id: 'hello-cy-world',
   name: 'Hello Cy World App',
   url: 'http://localhost:3000/hello-cy-world.js',

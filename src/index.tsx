@@ -10,7 +10,6 @@ import { App } from './App'
 import { enableMapSet } from 'immer'
 import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
-import { LoaderTargetPlugin } from 'webpack'
 
 enableMapSet()
 
@@ -25,17 +24,13 @@ function insertModuleScript(src: string) {
   }
 }
 
-// const url = 'http://localhost:3000/hello-cy-world.js'
-// const loadPlugin = async (url: string): Promise<void> => {
-//   const { HelloApp } = await import(url)
-//   console.log('DYNAMIC Loading2::::', HelloApp)
-// }
+declare global {
+  interface Window {
+    loadApps: () => void
+  }
+}
 
-// loadPlugin(url)
-// @ts-ignore
-// window.loadPlugin()
-
-// insertModuleScript('http://localhost:3000/hello-cy-world.js')
+window.loadApps()
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 

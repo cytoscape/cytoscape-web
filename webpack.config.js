@@ -63,9 +63,14 @@ module.exports = {
     port: 5500,
   },
   plugins: [
-    new BundleAnalyzerPlugin(),
+    new BundleAnalyzerPlugin({
+      analyzerMode: 'static',
+    }),
     new CopyPlugin({
-      patterns: [{ from: './silent-check-sso.html', to: '.' }],
+      patterns: [
+        { from: './silent-check-sso.html', to: '.' }, 
+        { from: './app-config.json', to: '.' }
+      ],
     }),
     // generate css files from the found css files in the source
     new MiniCssExtractPlugin({

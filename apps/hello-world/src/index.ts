@@ -1,2 +1,2 @@
-export { HelloApp } from './HelloApp'
+export { HelloApp as default } from './HelloApp'
 export { HelloPanel } from './components/HelloPanel'
