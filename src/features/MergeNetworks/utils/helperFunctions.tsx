@@ -1,3 +1,9 @@
+import { Pair } from "../models/DataInterfaceForMerge";
+
+//utility function to find index of a pair in a list
+export const findPairIndex = (pairs: Pair<string, string>[], uuid: string) => {
+    return pairs.findIndex(pair => pair[1] === uuid);
+};
 // Utility function for deep cloning objects that may contain arrays, maps, and functions
 export function deepClone<T>(obj: T): T {
     if (obj === null || typeof obj !== 'object') {

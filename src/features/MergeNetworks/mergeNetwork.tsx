@@ -4,7 +4,7 @@ import { NetworkRecord } from "./models/DataInterfaceForMerge";
 import NetworkFn, { Edge, Network, Node } from "../../models/NetworkModel";
 import { Column } from "../../models/TableModel/Column";
 import { ValueType } from "../../models/TableModel/ValueType";
-import { attributeValueMatcher } from "./utils/valueMatcher";
+import { attributeValueMatcher } from "./utils/attributesOperations";
 import { MatchingTable } from "./models/Impl/MatchingTable";
 import { preprocess, castAttributes, addMergedAtt } from "./utils/attributesOperations";
 

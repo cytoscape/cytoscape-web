@@ -11,12 +11,10 @@ import { IdType } from '../../models/IdType';
 import { NetworkRecord, NetworktoMerge } from './models/DataInterfaceForMerge';
 import VisualStyleFn, { VisualStyle } from '../../models/VisualStyleModel';
 import ViewModelFn, { NetworkView } from '../../models/ViewModel';
-import { deepClone } from './utils/deepClone';
+import { deepClone } from './utils/helperFunctions';
 import { NetworkAttributes } from '../../models/NetworkModel';
-import { useVisualStyleStore } from '../../store/VisualStyleStore';
 import { Column } from '../../models/TableModel/Column';
 import { MatchingTable } from './models/Impl/MatchingTable';
-import { useViewModelStore } from '../../store/ViewModelStore';
 
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable,
@@ -39,14 +37,9 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
         }
     }
     const newNetworkName = 'Merged Network'
-    let mergedNetwork: NetworkRecord
-    try {
-        mergedNetwork = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
-            nodeAttributeMapping, edgeAttributeMapping, networkAttributeMapping, matchingAttribute)
-    } catch (e) {
-        console.error(e)
-        throw new Error('Error merging networks')
-    }
+    const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
+        nodeAttributeMapping, edgeAttributeMapping, networkAttributeMapping, matchingAttribute)
+
     const baseNetSummary = 'Merged Network' //todo fecth from db
     const newNetworkDescription = 'Merged Network'
     // todo: merge network attributes also
