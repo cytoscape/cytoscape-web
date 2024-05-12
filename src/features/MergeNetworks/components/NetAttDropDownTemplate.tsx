@@ -73,6 +73,7 @@ export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, col
                 value={currentValue}
                 onChange={(e) => onDropdownChange(e, type, rowData, column)}
                 id={`select-${rowData.id}-${column}`}
+                style={{ minWidth: 100, maxWidth: 200 }}
             >
                 {networkOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>

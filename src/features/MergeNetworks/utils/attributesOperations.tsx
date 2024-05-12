@@ -34,7 +34,7 @@ export function addMergedAtt(castedRecord: Record<string, ValueType>, oriRecord:
     }
     let attVal = oriRecord[translatedAtt];
     if (attVal === undefined) {
-        console.log("Cannot find the merged attribute in the original network");
+        console.log("Cannot find the matching attribute in the original network");
         attVal = ''
     }
     castedRecord[mergedAttName] = attVal;

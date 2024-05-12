@@ -178,7 +178,6 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
                     }
                 }
                 // Todo: how to deal with the attribute conflicts?
-                // Todo: do we allow parallel edges? - Yes.
             } else { // insert a new edge
                 TableFn.insertRow(mergedEdgeTable, [newEdgeId, castedRecord]);
                 NetworkFn.addEdge(mergedNetwork, { id: newEdgeId, s: sourceId, t: targetId } as Edge);
@@ -188,7 +187,6 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
     }
     // Todo: merge nodes/edges in the same network
     // Todo: merge only nodes and ignore edges
-    console.log(edgeMap)
     return {
         network: mergedNetwork,
         nodeTable: mergedNodeTable,
