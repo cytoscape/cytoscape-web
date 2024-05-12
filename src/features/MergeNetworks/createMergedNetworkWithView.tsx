@@ -11,7 +11,7 @@ import { IdType } from '../../models/IdType';
 import { NetworkRecord, NetworktoMerge } from './models/DataInterfaceForMerge';
 import VisualStyleFn, { VisualStyle } from '../../models/VisualStyleModel';
 import ViewModelFn, { NetworkView } from '../../models/ViewModel';
-import { deepClone } from './utils/eepClone';
+import { deepClone } from './utils/deepClone';
 import { NetworkAttributes } from '../../models/NetworkModel';
 import { useVisualStyleStore } from '../../store/VisualStyleStore';
 import { Column } from '../../models/TableModel/Column';
