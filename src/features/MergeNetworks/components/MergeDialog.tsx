@@ -33,6 +33,9 @@ import { useLayoutStore } from '../../../store/LayoutStore';
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel';
 import { MatchingTableComp } from './MatchingTableComp';
 import { MatchingColumnTable } from './MatchingColumnTable';
+import { NetworkWithView } from '../../../utils/cx-utils';
+import { findPairIndex } from '../utils/helperFunctions';
+import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog';
 
 interface MergeDialogProps {
     open: boolean;
@@ -43,6 +46,8 @@ interface MergeDialogProps {
 const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceNetworks }): React.ReactElement => {
     const [readyToMerge, setReadyToMerge] = useState(false);
     const [tableView, setTableView] = useState(TableView.node);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [showError, setShowError] = useState(false);
     const { ndexBaseUrl } = useContext(AppConfigContext);
     const [mergeOpType, setMergeOpType] = useState(MergeType.union);
     // Record the information of the networks to be merged
@@ -317,32 +322,35 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
 
         return { network, nodeTable, edgeTable };
     }
-    //utility function to find index of a pair in a list
-    const findPairIndex = (pairs: Pair<string, string>[], uuid: string) => {
-        return pairs.findIndex(pair => pair[1] === uuid);
-    };
+
     // Handler for the 'Merge' button
     const handleMerge = async (): Promise<void> => {
-        const newNetworkId = uuidv4()
-        const newNetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
-            newNetworkId, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj, matchingCols, visualStyle)
+        const newNetworkId = uuidv4();
+        try {
+            const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
+                newNetworkId, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj, matchingCols, visualStyle)
 
-        // Update state stores with the new network and its components   
-        addNetworkToWorkspace(newNetworkId);
-        addNewNetwork(newNetworkWithView.network);
-        setVisualStyle(newNetworkId, newNetworkWithView.visualStyle);
-        setTables(newNetworkId, newNetworkWithView.nodeTable, newNetworkWithView.edgeTable);
-        setViewModel(newNetworkId, newNetworkWithView.networkViews[0]);
-        setCurrentNetworkId(newNetworkId);
+            // Update state stores with the new network and its components   
+            addNetworkToWorkspace(newNetworkId);
+            addNewNetwork(newNetworkWithView.network);
+            setVisualStyle(newNetworkId, newNetworkWithView.visualStyle);
+            setTables(newNetworkId, newNetworkWithView.nodeTable, newNetworkWithView.edgeTable);
+            setViewModel(newNetworkId, newNetworkWithView.networkViews[0]);
+            setCurrentNetworkId(newNetworkId);
 
-        // Apply layout to the network
-        setIsRunning(true)
-        engine.apply(newNetworkWithView.network.nodes,
-            newNetworkWithView.network.edges, (positionMap) => {
-                updateNodePositions(newNetworkId, positionMap);
-                setIsRunning(false);
-            }, defaultLayout)
-        handleClose();
+            // Apply layout to the network
+            setIsRunning(true)
+            engine.apply(newNetworkWithView.network.nodes,
+                newNetworkWithView.network.edges, (positionMap) => {
+                    updateNodePositions(newNetworkId, positionMap);
+                    setIsRunning(false);
+                }, defaultLayout)
+            handleClose();
+        } catch (e) {
+            console.error(e)
+            setErrorMessage(`An error occurred: ${e.message}`);  // Set the error message
+            setShowError(true); // Show the error message panel
+        }
     };
 
     return (
@@ -423,7 +431,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                         </Button>
                     </Box>
                 </Box>
-                <Accordion>
+                {/* <Accordion>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography>Advanced Options</Typography>
                     </AccordionSummary>
@@ -477,9 +485,13 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                             />
                         </div>
                     </AccordionDetails>
-                </Accordion>
+                </Accordion> */}
 
             </DialogContent>
+            <ConfirmationDialog
+                open={showError} setOpen={setShowError} title="Error"
+                message={errorMessage} onConfirm={() => setShowError(false)}
+            />
             <DialogActions>
                 <Button onClick={handleClose} color="primary">
                     Cancel
