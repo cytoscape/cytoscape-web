@@ -37,8 +37,8 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
         }
     };
     return (
-        <TableContainer component={Paper}>
-            <Table sx={{ minWidth: 650 }} aria-label="simple table">
+        <TableContainer component={Paper} sx={{ maxHeight: 500, overflow: 'auto' }}>
+            <Table sx={{ minWidth: 400 }} aria-label="simple table">
                 <TableHead>
                     <TableRow>
                         {netLst.map((net) => (
@@ -69,6 +69,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                                     variant="outlined"
                                     value={row.mergedNetwork}
                                     onChange={(e) => onMergedNetworkChange(e, type, row.id)}
+                                    style={{ minWidth: 100 }}
                                 />
                             </TableCell>
                             <TableCell key={`${row.id}-type`}>{row.type}</TableCell>

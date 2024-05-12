@@ -31,7 +31,7 @@ import { MatchingTable } from '../models/Impl/MatchingTable';
 import { VisualStyle } from '../../../models/VisualStyleModel';
 import { useLayoutStore } from '../../../store/LayoutStore';
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel';
-import { MatchingTableComp } from './MatchingTable';
+import { MatchingTableComp } from './MatchingTableComp';
 import { MatchingColumnTable } from './MatchingColumnTable';
 
 interface MergeDialogProps {
@@ -346,18 +346,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     };
 
     return (
-        <Dialog
-            maxWidth="md"
-            fullWidth={true}
-            open={open}
-            onClose={handleClose}
-        >
+        <Dialog maxWidth="md" fullWidth={true} open={open} onClose={handleClose}>
             <DialogTitle>Advanced Network Merge</DialogTitle>
             <DialogContent>
                 <Box className="toggleButtonGroup">
                     <ToggleButtonGroup
-                        value={mergeOpType} exclusive onChange={handleMergeTypeChange} aria-label="text alignment"
-                    >
+                        value={mergeOpType} exclusive onChange={handleMergeTypeChange} aria-label="text alignment" >
                         <ToggleButton className="toggleButton" classes={{ selected: 'selected' }} value={MergeType.union} aria-label="left aligned">
                             Union
                         </ToggleButton>
