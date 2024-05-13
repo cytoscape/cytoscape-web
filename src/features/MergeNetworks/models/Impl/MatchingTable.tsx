@@ -32,15 +32,29 @@ export class MatchingTable {
     getMatchingTable() {
         return this.matchingTable
     }
+
     getMergedAttributes() {
         return this.mergedAttributes
     }
-    getAttributeMapping(netId: IdType, isNode: boolean = true): Map<string, Column> {
+
+    getReversedAttributeMapping(netId: IdType, isNode: boolean = true): Map<string, Column> {
         const attMap = new Map()
         if (this.matchingTable.length > 0) {
             for (const row of (isNode ? this.matchingTable.slice(1) : this.matchingTable)) {
                 if (row.hasOwnProperty(netId)) {
                     attMap.set(row[netId], { name: row.mergedNetwork, type: row.type } as Column)
+                }
+            }
+        }
+        return attMap
+    }
+
+    getAttributeMapping(netId: IdType, isNode: boolean = true): Map<string, Column> {
+        const attMap = new Map()
+        if (this.matchingTable.length > 0) {
+            for (const row of (isNode ? this.matchingTable.slice(1) : this.matchingTable)) {
+                if (row.hasOwnProperty(netId) && row[netId] !== 'None') {
+                    attMap.set(row.mergedNetwork, { name: row[netId], type: row.type } as Column)
                 }
             }
         }

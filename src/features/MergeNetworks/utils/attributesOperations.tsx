@@ -13,12 +13,13 @@ export function preprocess(toNetwork: IdType, nodeCols: Column[], edgeCols: Colu
 export function castAttributes(toMergeAttr: Record<string, ValueType> | undefined, attributeMapping: Map<string, Column>): Record<string, ValueType> {
     const castedAttr: Record<string, ValueType> = {};
     if (toMergeAttr !== undefined) {
-        for (const [key, value] of Object.entries(toMergeAttr)) {
-            const col = attributeMapping.get(key);
-            if (col === undefined) {
-                throw new Error(`Attribute ${key} not found in the attribute mapping`);
+        for (const [mergedAttName, col] of attributeMapping.entries()) {
+            const oriAttName = col.name;
+            if (toMergeAttr.hasOwnProperty(oriAttName)) {
+                castedAttr[mergedAttName] = toMergeAttr[col.name];
+            } else {
+                console.log(`Cannot find the original attribute ${oriAttName} in the original network`);
             }
-            castedAttr[col.name] = value;
         }
     }
     // Todo: type coercion
