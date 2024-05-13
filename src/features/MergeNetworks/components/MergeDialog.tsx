@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button,
     Typography, Box, List, ListItem, ListItemText, ListSubheader,
-    Paper, FormControlLabel, Checkbox, ToggleButtonGroup,
+    Paper, FormControlLabel, Checkbox, ToggleButtonGroup, Tooltip,
     ToggleButton, Accordion, AccordionSummary, AccordionDetails,
 } from '@mui/material';
 import './MergeDialog.css';
@@ -416,7 +416,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                                     primary={
                                         <>
                                             {network[0]}
-                                            {index === 0 && <StarIcon viewBox="0 -3.7 24 24" style={{ color: 'gold' }} />}
+                                            {index === 0 && <Tooltip title={`This is the base network`} placement="top" arrow>
+                                                <StarIcon viewBox="0 -3.7 24 24" style={{ color: 'gold' }} />
+                                            </Tooltip>}
                                         </>
                                     } />
                             </ListItem>
@@ -431,7 +433,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                         </Button>
                     </Box>
                 </Box>
-                {/* <Accordion>
+                <Accordion>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography>Advanced Options</Typography>
                     </AccordionSummary>
@@ -485,7 +487,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                             />
                         </div>
                     </AccordionDetails>
-                </Accordion> */}
+                </Accordion>
 
             </DialogContent>
             <ConfirmationDialog
