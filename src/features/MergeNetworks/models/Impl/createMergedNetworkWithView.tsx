@@ -4,17 +4,18 @@ import {
     putVisualStyleToDb,
     putNetworkViewToDb,
     putNetworkSummaryToDb,
-} from '../../store/persist/db'
-import { NetworkWithView } from '../../utils/cx-utils';
+} from '../../../../store/persist/db'
+import { NetworkWithView } from '../../../../utils/cx-utils';
 import { mergeNetwork } from './mergeNetwork';
-import { IdType } from '../../models/IdType';
-import { NetworkRecord, NetworktoMerge } from './models/DataInterfaceForMerge';
-import VisualStyleFn, { VisualStyle } from '../../models/VisualStyleModel';
-import ViewModelFn, { NetworkView } from '../../models/ViewModel';
-import { deepClone } from './utils/helperFunctions';
-import { NetworkAttributes } from '../../models/NetworkModel';
-import { Column } from '../../models/TableModel/Column';
-import { MatchingTable } from './models/Impl/MatchingTable';
+import { IdType } from '../../../../models/IdType';
+import { NetworkRecord, NetworktoMerge } from '../DataInterfaceForMerge';
+import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel';
+import ViewModelFn, { NetworkView } from '../../../../models/ViewModel';
+import { deepClone } from '../../utils/helper-functions';
+import { NetworkAttributes } from '../../../../models/NetworkModel';
+import { Column } from '../../../../models/TableModel/Column';
+import { MatchingTable } from './MatchingTable';
+import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility';
 
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable,
@@ -74,7 +75,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
         owner: '',
         version: '',
         completed: false,
-        visibility: 'PUBLIC',
+        visibility: 'PUBLIC' as Visibility,
         nodeCount: newNetwork.nodes.length,
         edgeCount: newNetwork.edges.length,
         description: newNetworkDescription,
