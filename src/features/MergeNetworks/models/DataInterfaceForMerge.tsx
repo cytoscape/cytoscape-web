@@ -1,5 +1,5 @@
 import { Network } from "../../../models/NetworkModel";
-import { Table } from '../../../models/TableModel';
+import { Table, ValueType } from '../../../models/TableModel';
 export enum MergeType {
     union = 'Union',
     intersection = 'Intersection',
@@ -42,5 +42,5 @@ export interface MatchingTableRow {
     mergedNetwork: string;
     type: string;
     id: number;
-    [key: string]: string | number;
+    [key: string]: ValueType;
 }
