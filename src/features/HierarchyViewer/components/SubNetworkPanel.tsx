@@ -177,7 +177,6 @@ export const SubNetworkPanel = ({
   const getToken = useCredentialStore((state) => state.getToken)
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
-  const t0 = performance.now()
   const result = useQuery({
     queryKey: [
       hierarchyId,
