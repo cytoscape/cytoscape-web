@@ -265,7 +265,10 @@ export const useViewModelStore = create(
                   (viewModel) => viewModel.viewId === networkView.viewId,
                 )
               if (existingViewModel !== undefined) {
-                // Do not add if it already exists
+                // Replace the existing one if it already exists
+                const index =
+                  state.viewModels[networkId]?.indexOf(existingViewModel)
+                state.viewModels[networkId][index] = networkView
                 return state
               }
             }
