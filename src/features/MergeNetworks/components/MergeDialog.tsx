@@ -26,7 +26,7 @@ import { useViewModelStore } from '../../../store/ViewModelStore';
 import { useNetworkStore } from '../../../store/NetworkStore';
 import { useTableStore } from '../../../store/TableStore';
 import { useVisualStyleStore } from '../../../store/VisualStyleStore';
-import { createMergedNetworkWithView } from '../createMergedNetworkWithView';
+import { createMergedNetworkWithView } from '../models/Impl/createMergedNetworkWithView';
 import { MatchingTable } from '../models/Impl/MatchingTable';
 import { VisualStyle } from '../../../models/VisualStyleModel';
 import { useLayoutStore } from '../../../store/LayoutStore';
@@ -34,7 +34,7 @@ import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel';
 import { MatchingTableComp } from './MatchingTableComp';
 import { MatchingColumnTable } from './MatchingColumnTable';
 import { NetworkWithView } from '../../../utils/cx-utils';
-import { findPairIndex } from '../utils/helperFunctions';
+import { findPairIndex } from '../utils/helper-functions';
 import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog';
 
 interface MergeDialogProps {
@@ -325,8 +325,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
 
     // Handler for the 'Merge' button
     const handleMerge = async (): Promise<void> => {
-        const newNetworkId = uuidv4();
         try {
+            const newNetworkId = uuidv4();
             const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
                 newNetworkId, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj, matchingCols, visualStyle)
 

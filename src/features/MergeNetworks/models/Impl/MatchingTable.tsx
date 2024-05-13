@@ -1,9 +1,6 @@
 import { IdType } from "../../../../models/IdType";
 import { Column, Table } from "../../../../models/TableModel";
 import { MatchingTableRow } from "../DataInterfaceForMerge";
-import { ColumnType } from "../../utils/ColumnType";
-import { common } from "@mui/material/colors";
-import { has } from "lodash";
 
 export class MatchingTable {
     private matchingTable: MatchingTableRow[]

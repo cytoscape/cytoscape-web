@@ -14,7 +14,7 @@ import { Table } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { Network } from '../../../models/NetworkModel';
 import NetworkFn from '../../../models/NetworkModel';
-import { mergeNetwork } from '../mergeNetwork';
+import { mergeNetwork } from '../models/Impl/mergeNetwork';
 import { Node } from '../../../models/NetworkModel/Node';
 import { Column } from '../../../models/TableModel/Column';
 import { ValueType } from '../../../models/TableModel/ValueType';
