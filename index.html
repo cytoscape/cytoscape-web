@@ -9,7 +9,7 @@
       const loadConfig = async () => {
         const response = await fetch('/app-config.json')
         const appConfig = await response.json()
-        console.log('APP CONF is', appConfig)
+        console.log('APP config Loaded', appConfig, response.url)
         return appConfig
       }
 
@@ -23,7 +23,7 @@
             console.log('DYNAMIC22::::', appModule)
             const def1 = appModule.default
           } catch (e) {
-            console.warn('Fail app', e)
+            console.warn(`Fail to load the app from: ${url}`, e)
           }
         })
       }
