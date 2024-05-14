@@ -14,12 +14,13 @@ import { Table } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { Network } from '../../../models/NetworkModel';
 import NetworkFn from '../../../models/NetworkModel';
-import { mergeNetwork } from '../models/Impl/mergeNetwork';
+import { mergeNetwork } from '../models/Impl/MergeNetwork';
 import { Node } from '../../../models/NetworkModel/Node';
 import { Column } from '../../../models/TableModel/Column';
 import { ValueType } from '../../../models/TableModel/ValueType';
 import { Edge } from '../../../models/NetworkModel/Edge';
-import { MatchingTable } from '../models/Impl/MatchingTable';
+import { MatchingTable } from '../models/MatchingTable';
+import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
 import { MatchingTableRow } from '../models/DataInterfaceForMerge';
 
 beforeEach(() => {
@@ -113,15 +114,15 @@ describe('mergeNetwork', () => {
                 edgeTable: { id: fromNetworks[0], columns: [], rows: new Map() } as Table
             }
         }
-        const nodeAttributeMapping = new MatchingTable([
+        const nodeAttributeMapping = createMatchingTable([
             { id: 0, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', mergedNetwork: 'matchingAtt', type: 'string' },
             { id: 1, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', mergedNetwork: 'name', type: 'string' },
             { id: 2, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', mergedNetwork: 'att1_merged', type: 'integer' },
             { id: 3, [fromNetworks[0]]: 'att2', [fromNetworks[1]]: 'None', mergedNetwork: 'att2', type: 'string' },
             { id: 4, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att3', mergedNetwork: 'att33', type: 'string' }
         ] as MatchingTableRow[])
-        const edgeAttributeMapping = new MatchingTable([])
-        const networkAttributeMapping = new MatchingTable([])
+        const edgeAttributeMapping = createMatchingTable([])
+        const networkAttributeMapping = createMatchingTable([])
         const matchingAttribute = {
             [fromNetworks[0]]: { name: 'name', type: 'string' } as Column,
             [fromNetworks[1]]: { name: 'name', type: 'string' } as Column
