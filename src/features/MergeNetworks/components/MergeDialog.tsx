@@ -238,7 +238,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                             matchCols[net2[1]] = 'None';
                         });
                         toMergeNetworksList.slice(index1 + 1).forEach(net2 => {
-                            const network = networkRecords[net1[1]];
+                            const network = networkRecords[net2[1]];
                             if (network?.nodeTable?.columns.some(nc => nc.name === col.name)) {
                                 const newSharedCols = sharedNodeColsRecord[net2[1]] ? [...sharedNodeColsRecord[net2[1]]] : [];
                                 newSharedCols.push(col.name);
@@ -266,7 +266,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                             matchCols[net2[1]] = 'None';
                         });
                         toMergeNetworksList.slice(index1 + 1).forEach(net2 => {
-                            const network = networkRecords[net1[1]];
+                            const network = networkRecords[net2[1]];
                             if (network?.edgeTable?.columns.some(nc => nc.name === col.name)) {
                                 const newSharedCols = sharedEdgeColsRecord[net2[1]] ? [...sharedEdgeColsRecord[net2[1]]] : [];
                                 newSharedCols.push(col.name);
