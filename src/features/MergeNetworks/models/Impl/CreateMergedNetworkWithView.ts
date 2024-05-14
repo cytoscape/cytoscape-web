@@ -1,10 +1,4 @@
-import {
-    putNetworkToDb,
-    putTablesToDb,
-    putVisualStyleToDb,
-    putNetworkViewToDb,
-    putNetworkSummaryToDb,
-} from '../../../../store/persist/db'
+import { putNetworkSummaryToDb } from '../../../../store/persist/db'
 import { NetworkWithView } from '../../../../utils/cx-utils';
 import { mergeNetwork } from './MergeNetwork';
 import { IdType } from '../../../../models/IdType';
@@ -59,6 +53,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     const newNetworkView: NetworkView = ViewModelFn.createViewModel(newNetwork)
 
     await putNetworkSummaryToDb({
+        isNdex: false,
         ownerUUID: toNetworkId,
         name: newNetworkName,
         isReadOnly: false,
@@ -85,10 +80,6 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
         isDeleted: false,
         modificationTime: new Date(Date.now()),
     })
-    await putNetworkToDb(newNetwork);
-    await putTablesToDb(toNetworkId, newNodeTable, newEdgeTable);
-    await putVisualStyleToDb(toNetworkId, newVisualStyle)
-    await putNetworkViewToDb(toNetworkId, newNetworkView)
 
     return {
         network: newNetwork,
