@@ -20,7 +20,7 @@
           console.log('APP URL:', url)
           try {
             const appModule = await import(url)
-            console.log('DYNAMIC22::::', appModule)
+            console.log('DYNAMIC ES Module Loading::::', appModule)
             const def1 = appModule.default
           } catch (e) {
             console.warn(`Fail to load the app from: ${url}`, e)

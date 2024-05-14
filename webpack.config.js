@@ -6,14 +6,23 @@ const TerserPlugin = require('terser-webpack-plugin')
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
 const CompressionWebpackPlugin = require('compression-webpack-plugin')
 const config = require('./src/assets/config.json')
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const BundleAnalyzerPlugin =
+  require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+// Bundle dependencies as a separate ES moudule
+const packageJson = require('./package.json')
+const dependencies = Object.keys(packageJson.dependencies)
 
 const isProduction = process.env.NODE_ENV === 'production'
 
 module.exports = {
+  // This app is only for web browsers
+  target: 'web',
   mode: isProduction ? 'production' : 'development', // Set mode to production or development
-  entry: path.resolve(__dirname, './src/index.tsx'),
+  entry: {
+    cyweb: path.resolve(__dirname, './src/index.tsx'),
+  },
   devtool: isProduction ? false : 'inline-source-map',
   module: {
     rules: [
@@ -37,20 +46,23 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.jsx'], // need .js and .jsx for dependency files
+    alias: {
+      '@src': path.resolve(__dirname, 'src'),
+    },
   },
-   
+
   // use content hash for cache busting
   output: {
     filename: '[name].[contenthash].js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
     publicPath: config.urlBaseName !== '' ? config.urlBaseName : '/',
+    
   },
   // watch the dist file for changes when using the dev server
   devServer: {
     hot: true,
     static: path.resolve(__dirname, './dist'),
-    // historyApiFallback: true,
     historyApiFallback: {
       rewrites: [
         { from: /^\/$/, to: '/index.html' }, // default index route
@@ -68,8 +80,8 @@ module.exports = {
     }),
     new CopyPlugin({
       patterns: [
-        { from: './silent-check-sso.html', to: '.' }, 
-        { from: './app-config.json', to: '.' }
+        { from: './silent-check-sso.html', to: '.' },
+        { from: './app-config.json', to: '.' },
       ],
     }),
     // generate css files from the found css files in the source
@@ -81,6 +93,7 @@ module.exports = {
       template: './index.html',
       favicon: './src/assets/favicon.ico',
     }),
+    new CleanWebpackPlugin(),
     // netlify requires a _redirects file in the root of the dist folder to work with react router
     ...(process.env.BUILD === 'netlify'
       ? [

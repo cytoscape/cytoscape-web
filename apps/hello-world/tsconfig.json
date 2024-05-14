@@ -1,12 +1,4 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "module": "ESNext",
-    "target": "ESNext",
-    "jsx": "react-jsx",
-    "esModuleInterop": true,
-    "moduleResolution": "node"
-  },
   "include": ["src/**/*"]
 }

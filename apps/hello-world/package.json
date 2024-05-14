@@ -4,11 +4,12 @@
   "type": "module",
   "main": "dist/hello-cy-world.js",
   "scripts": {
-    "clean": "rm -rf dist",
     "build": "webpack --config webpack.config.js"
   },
-  "dependencies": {
-    "cytoscape-web": "^1.0.0"
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "dependencies": {}
 }

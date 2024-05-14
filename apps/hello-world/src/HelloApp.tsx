@@ -1,4 +1,4 @@
-import { CyApp } from '@models/AppModel/CyApp'
+import { CyApp } from '@src/models/AppModel/CyApp'
 
 export const HelloApp: CyApp = {
   id: 'hello-cy-world',

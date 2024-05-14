@@ -15,7 +15,7 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@models/*": ["src/models/*"]
+      "@src/*": ["src/*"]
     }
   }
 }
