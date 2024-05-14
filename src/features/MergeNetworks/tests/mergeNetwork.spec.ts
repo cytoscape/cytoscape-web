@@ -48,7 +48,7 @@ beforeEach(() => {
 
 describe('mergeNetwork', () => {
 
-    it('should merge the network nodes successfully', () => {
+    it('should merge the network nodes and edges successfully', () => {
         const fromNetworks: IdType[] = ['net1', 'net2']
         const toNetworkId = 'mergedNetwork'
         const net1: Network = NetworkFn.createNetwork(fromNetworks[0])

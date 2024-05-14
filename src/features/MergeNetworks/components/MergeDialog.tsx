@@ -332,12 +332,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                 newNetworkId, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj, matchingCols, visualStyle)
 
             // Update state stores with the new network and its components   
+            setCurrentNetworkId(newNetworkId);
             addNetworkToWorkspace(newNetworkId);
             addNewNetwork(newNetworkWithView.network);
             setVisualStyle(newNetworkId, newNetworkWithView.visualStyle);
             setTables(newNetworkId, newNetworkWithView.nodeTable, newNetworkWithView.edgeTable);
             setViewModel(newNetworkId, newNetworkWithView.networkViews[0]);
-            setCurrentNetworkId(newNetworkId);
 
             // Apply layout to the network
             setIsRunning(true)
