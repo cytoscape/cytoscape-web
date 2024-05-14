@@ -49,18 +49,20 @@ beforeEach(() => {
 describe('mergeNetwork', () => {
 
     it('should merge the network nodes and edges successfully', () => {
-        const fromNetworks: IdType[] = ['net1', 'net2']
+        const fromNetworks: IdType[] = ['net1', 'net2', 'net3']
         const toNetworkId = 'mergedNetwork'
-        const net1: Network = NetworkFn.createNetwork(fromNetworks[0])
-        const net2: Network = NetworkFn.createNetwork(fromNetworks[1])
-        const mergedNetwork: Network = NetworkFn.createNetwork(toNetworkId)
-        const nodeLst1: IdType[] = ['1', '2', '3', '4']
-        const nodeLst2: IdType[] = ['5', '6', '7', '8']
-        const mergedNodeLst: IdType[] = ['0', '1', '2', '3', '4', '5']
-
-        NetworkFn.addNodes(net1, nodeLst1)
-        NetworkFn.addNodes(net2, nodeLst2)
-        NetworkFn.addNodes(mergedNetwork, mergedNodeLst)
+        const nodeLst1: Node[] = [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }]
+        const nodeLst2: Node[] = [{ id: '5' }, { id: '6' }, { id: '7' }, { id: '8' }]
+        const nodeLst3: Node[] = [{ id: '9' }, { id: '10' }]
+        const mergedNodeLst: Node[] = [{ id: '0' }, { id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }, { id: '5' }, { id: '6' }, { id: '7' }, { id: '8' }, { id: '9' }, { id: '10' }]
+        const edgeLst1: Edge[] = [{ id: '1', s: '1', t: '2' }, { id: '2', s: '2', t: '3' }]
+        const edgeLst2: Edge[] = [{ id: '3', s: '5', t: '6' }, { id: '4', s: '6', t: '7' }]
+        const edgeLst3: Edge[] = [{ id: '5', s: '8', t: '9' }, { id: '6', s: '9', t: '10' }]
+        const mergedEdgeLst: Edge[] = [{ id: '0', s: '0', t: '1' }, { id: '1', s: '1', t: '2' }, { id: '2', s: '2', t: '3' }, { id: '3', s: '3', t: '4' }, { id: '4', s: '4', t: '5' }, { id: '5', s: '5', t: '6' }, { id: '6', s: '6', t: '7' }, { id: '7', s: '7', t: '8' }, { id: '8', s: '8', t: '9' }, { id: '9', s: '9', t: '10' }]
+        const net1: Network = NetworkFn.createNetworkFromLists(fromNetworks[0], nodeLst1, edgeLst1)
+        const net2: Network = NetworkFn.createNetworkFromLists(fromNetworks[1], nodeLst2, edgeLst2)
+        const net3: Network = NetworkFn.createNetworkFromLists(fromNetworks[2], nodeLst3, edgeLst3)
+        const mergedNetwork: Network = NetworkFn.createNetworkFromLists(toNetworkId, mergedNodeLst, mergedEdgeLst)
 
         const nodeTableRows1 = new Map();
         nodeTableRows1.set(nodeLst1[0], { name: 'node 1', att1: 1, att2: 'd' });
