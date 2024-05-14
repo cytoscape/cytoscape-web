@@ -1,3 +1,11 @@
+import {
+    ArrowForward as ArrowForwardIcon,
+    ArrowBack as ArrowBackIcon,
+    ArrowUpward as ArrowUpwardIcon,
+    ArrowDownward as ArrowDownwardIcon,
+    ExpandMore as ExpandMoreIcon,
+    Star as StarIcon
+} from '@mui/icons-material';
 import React, { useContext, useEffect, useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button,
@@ -7,15 +15,9 @@ import {
 } from '@mui/material';
 import './MergeDialog.css';
 import { v4 as uuidv4 } from 'uuid';
-import StarIcon from '@mui/icons-material/Star';
 import {
     MergeType, NetworkRecord, MatchingTableRow, TableView, Pair
 } from '../models/DataInterfaceForMerge';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Column } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
@@ -27,7 +29,6 @@ import { useNetworkStore } from '../../../store/NetworkStore';
 import { useTableStore } from '../../../store/TableStore';
 import { useVisualStyleStore } from '../../../store/VisualStyleStore';
 import { createMergedNetworkWithView } from '../models/Impl/CreateMergedNetworkWithView';
-import { MatchingTable } from '../models/MatchingTable';
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
 import { VisualStyle } from '../../../models/VisualStyleModel';
 import { useLayoutStore } from '../../../store/LayoutStore';
@@ -434,7 +435,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                         </Button>
                     </Box>
                 </Box>
-                <Accordion>
+                {/* <Accordion>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography>Advanced Options</Typography>
                     </AccordionSummary>
@@ -488,8 +489,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                             />
                         </div>
                     </AccordionDetails>
-                </Accordion>
-
+                </Accordion> */}
             </DialogContent>
             <ConfirmationDialog
                 open={showError} setOpen={setShowError} title="Error"

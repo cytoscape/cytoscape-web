@@ -122,6 +122,7 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
         const localNodeCount = json[1].metaData[2].elementCount
         const localEdgeCount = json[1].metaData[3].elementCount
         await putNetworkSummaryToDb({
+          isNdex: false,
           ownerUUID: localUuid,
           name: localName,
           isReadOnly: false,

@@ -5,12 +5,12 @@ import { IdType } from '../../../../models/IdType';
 import { NetworkRecord, NetworktoMerge } from '../DataInterfaceForMerge';
 import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel';
 import ViewModelFn, { NetworkView } from '../../../../models/ViewModel';
-import { deepClone } from '../../utils/helper-functions';
 import { NetworkAttributes } from '../../../../models/NetworkModel';
 import { Column } from '../../../../models/TableModel/Column';
 import { MatchingTable } from '../MatchingTable';
 import { getMatchingTableRows, getAttributeMapping } from './MatchingTableImpl';
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility';
+import cloneDeep from 'lodash/cloneDeep';
 
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable,
@@ -36,7 +36,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
         nodeAttributeMapping, edgeAttributeMapping, networkAttributeMapping, matchingAttribute)
 
-    const baseNetSummary = 'Merged Network' //todo fecth from db
+    const baseNetSummary = 'Merged Network' //todo: fetch from db
     const newNetworkDescription = 'Merged Network'
     // todo: merge network attributes also
     const networkAttributes: NetworkAttributes = {
@@ -49,7 +49,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     const newEdgeTable = mergedNetwork.edgeTable
 
     // Initialize new visual style and network view model
-    const newVisualStyle: VisualStyle = deepClone(visualStyle) || VisualStyleFn.createVisualStyle();
+    const newVisualStyle: VisualStyle = cloneDeep(visualStyle) || VisualStyleFn.createVisualStyle();
     const newNetworkView: NetworkView = ViewModelFn.createViewModel(newNetwork)
 
     await putNetworkSummaryToDb({

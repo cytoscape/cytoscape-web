@@ -1,19 +1,3 @@
-.p-dropdown-panel {
-    /* Panel styling */
-    border: 1px solid #ced4da;
-    /* Panel border to match dropdown */
-    border-radius: 4px;
-    /* Rounded corners for the dropdown panel */
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-    /* Slightly more prominent shadow for the panel */
-    z-index: 1000;
-    /* High z-index to ensure visibility over other components */
-    position: relative !important;
-    top: 0 !important;
-    left: 0 !important;
-}
-
-
 /* toggle button */
 .toggleButtonGroup {
     display: flex;
@@ -47,8 +31,8 @@
     margin: 2px 6px !important;
 }
 
-/* icons */
-@font-face {
+/* Todo: add icons beside the buttons */
+/* @font-face {
     font-family: 'MyIconFont';
     src: url('./assets/cytoscape-3.ttf') format('truetype');
     font-weight: normal;
@@ -70,4 +54,4 @@
 
 .icon.difference::before {
     content: "\0073";
-}
+} */
