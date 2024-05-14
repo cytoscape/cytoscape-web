@@ -8,11 +8,13 @@ import { ValueTypeName } from '../ValueTypeName'
 import { CxValue } from '../../CxModel/Cx2/CxValue'
 import { AttributeDeclaration } from '../../CxModel/Cx2/CoreAspects/AttributeDeclarations'
 import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
-export const createTable = (id: IdType): Table => ({
-  id,
-  columns: [],
-  rows: new Map<IdType, Record<AttributeName, ValueType>>(),
-})
+
+export const createTable = (id: IdType, colNames: Column[] = []): Table => (
+  {
+    id,
+    columns: [...colNames],
+    rows: new Map<IdType, Record<AttributeName, ValueType>>(),
+  })
 
 export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   const nodeTable = createTable(`${id}-nodes`)
@@ -143,6 +145,15 @@ export const insertRow = (
   table: Table,
   idRowPair: [IdType, Record<AttributeName, ValueType>],
 ): Table => {
+  // const tableCols = table.columns
+  // const rowVal: Record<AttributeName, ValueType> = {}
+  // // filter the row values to only include columns that are in the table
+  // Object.entries(idRowPair[1]).forEach(([key, value]) => {
+  //   if (tableCols.find((col) => (col.name === key))) {
+  //     rowVal[key] = value
+  //   }
+  // })
+  // table.rows.set(idRowPair[0], rowVal)
   table.rows.set(idRowPair[0], idRowPair[1])
   return table
 }
@@ -152,5 +163,13 @@ export const insertRows = (
   idRowPairs: Array<[IdType, Record<AttributeName, ValueType>]>,
 ): Table => {
   idRowPairs.forEach((idRow) => table.rows.set(idRow[0], idRow[1]))
+  return table
+}
+
+export const updateRow = (
+  table: Table,
+  idRowPair: [IdType, Record<AttributeName, ValueType>],
+): Table => {
+  table.rows.set(idRowPair[0], idRowPair[1])
   return table
 }

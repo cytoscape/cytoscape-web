@@ -1,0 +1,73 @@
+.p-dropdown-panel {
+    /* Panel styling */
+    border: 1px solid #ced4da;
+    /* Panel border to match dropdown */
+    border-radius: 4px;
+    /* Rounded corners for the dropdown panel */
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    /* Slightly more prominent shadow for the panel */
+    z-index: 1000;
+    /* High z-index to ensure visibility over other components */
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+}
+
+
+/* toggle button */
+.toggleButtonGroup {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+    margin-top: 16px;
+}
+
+.toggleButton {
+    border: 1px solid #565656 !important;
+}
+
+.toggleButton.selected {
+    color: white !important;
+    background-color: #227dd8 !important;
+}
+
+.toggleButton:hover {
+    background-color: rgb(133, 186, 239) !important;
+}
+
+/* button */
+.arrowButton {
+    background-color: #227dd8;
+    margin-top: 8px !important;
+    min-width: 36px !important;
+    padding: 2px !important;
+}
+
+.arrowIcon {
+    margin: 2px 6px !important;
+}
+
+/* icons */
+@font-face {
+    font-family: 'MyIconFont';
+    src: url('./assets/cytoscape-3.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.icon {
+    font-family: 'MyIconFont';
+    font-size: 22px;
+}
+
+.icon.union::before {
+    content: "\0071";
+}
+
+.icon.intersection::before {
+    content: "\0072";
+}
+
+.icon.difference::before {
+    content: "\0073";
+}

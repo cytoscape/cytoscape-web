@@ -33,7 +33,7 @@ export const createEmptyViewModel = (id: IdType): NetworkView => {
 export const createViewModel = (network: Network): NetworkView => {
   const nodeViews: Record<IdType, NodeView> = {}
   const edgeViews: Record<IdType, EdgeView> = {}
-  network.nodes.forEach(node => {
+  network.nodes.forEach((node) => {
     const values = new Map<NodeVisualPropertyName, VisualPropertyValueType>()
     nodeViews[node.id] = {
       id: node.id,
@@ -43,7 +43,7 @@ export const createViewModel = (network: Network): NetworkView => {
     }
   })
 
-  network.edges.forEach(edge => {
+  network.edges.forEach((edge) => {
     edgeViews[edge.id] = {
       id: edge.id,
       values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>(),
