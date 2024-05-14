@@ -3,6 +3,7 @@ import { NdexNetworkProperty } from './NdexNetworkProperty'
 import { Visibility } from './Visibility'
 
 export interface NdexNetworkSummary {
+  isNdex: boolean
   ownerUUID: IdType
   isReadOnly: boolean
   subnetworkIds: number[]
