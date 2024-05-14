@@ -18,7 +18,7 @@ export function castAttributes(toMergeAttr: Record<string, ValueType> | undefine
             if (toMergeAttr.hasOwnProperty(oriAttName)) {
                 castedAttr[mergedAttName] = toMergeAttr[col.name];
             } else {
-                console.log(`Cannot find the original attribute ${oriAttName} in the original network`);
+                console.log(`Cannot find the attribute ${oriAttName} in the original network`);
             }
         }
     }
