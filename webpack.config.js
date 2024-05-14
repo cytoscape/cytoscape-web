@@ -11,8 +11,6 @@ const BundleAnalyzerPlugin =
 
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 // Bundle dependencies as a separate ES moudule
-const packageJson = require('./package.json')
-const dependencies = Object.keys(packageJson.dependencies)
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -46,9 +44,6 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.jsx'], // need .js and .jsx for dependency files
-    alias: {
-      '@src': path.resolve(__dirname, 'src'),
-    },
   },
 
   // use content hash for cache busting
@@ -57,7 +52,6 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     clean: true,
     publicPath: config.urlBaseName !== '' ? config.urlBaseName : '/',
-    
   },
   // watch the dist file for changes when using the dev server
   devServer: {

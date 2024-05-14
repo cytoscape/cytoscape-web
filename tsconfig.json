@@ -13,9 +13,6 @@
     "sourceMap": true,
     "strictNullChecks": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@src/*": ["src/*"]
-    }
+    "baseUrl": "."
   }
 }

@@ -14,6 +14,7 @@
       }
 
       const loadApps = async () => {
+        const apps = []
         const config = await loadConfig()
         const appUrls = config.appUrls
         appUrls.forEach(async (url) => {
@@ -22,10 +23,13 @@
             const appModule = await import(url)
             console.log('DYNAMIC ES Module Loading::::', appModule)
             const def1 = appModule.default
+            apps.push(def1)
           } catch (e) {
             console.warn(`Fail to load the app from: ${url}`, e)
           }
         })
+
+        return apps
       }
       window.loadApps = loadApps
     </script>

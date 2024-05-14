@@ -24,14 +24,6 @@ function insertModuleScript(src: string) {
   }
 }
 
-declare global {
-  interface Window {
-    loadApps: () => void
-  }
-}
-
-window.loadApps()
-
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
 const rootElement: HTMLElement | null = document.getElementById('root')

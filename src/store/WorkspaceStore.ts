@@ -51,7 +51,7 @@ const EMPTY_WORKSPACE: Workspace = {
   currentNetworkId: '',
 }
 
-type WorkspaceStore = WorkspaceState & WorkspaceActions
+export type WorkspaceStore = WorkspaceState & WorkspaceActions
 
 const persist =
   (config: StateCreator<WorkspaceStore>) =>

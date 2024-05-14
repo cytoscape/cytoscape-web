@@ -1,4 +1,5 @@
-import { CyApp } from '@src/models/AppModel/CyApp'
+import { CyApp } from '../../../src/models/AppModel/CyApp'
+import { WorkspaceStore } from '../../../src/store/WorkspaceStore'
 
 export const HelloApp: CyApp = {
   id: 'hello-cy-world',
@@ -13,5 +14,9 @@ export const HelloApp: CyApp = {
     HelloFn: (message: string) => {
       console.log(`## Hello, world from the Cytoscape app module!: ${message}`)
     },
+  },
+  inject: (useStore: () => WorkspaceStore) => {
+    console.log('## Hello, world from the Cytoscape app module!')
+    console.log('## Workspace store:', useStore)
   },
 }

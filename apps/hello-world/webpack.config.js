@@ -22,14 +22,12 @@ export default {
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
-    alias: {
-      '@src': path.resolve(__dirname, '../../src'),
-    },
   },
-  externals: [
-    /^[a-z\-0-9@]+/,
-    { '@src/store/WorkspaceStore': '@src/store/WorkspaceStore' },
-  ],
+  externals: {
+    react: 'React',
+    'react-dom': 'ReactDOM',
+    zustand: 'zustand',
+  },
 
   module: {
     rules: [
