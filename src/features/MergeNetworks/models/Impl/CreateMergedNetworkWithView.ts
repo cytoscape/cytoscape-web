@@ -6,7 +6,7 @@ import {
     putNetworkSummaryToDb,
 } from '../../../../store/persist/db'
 import { NetworkWithView } from '../../../../utils/cx-utils';
-import { mergeNetwork } from './mergeNetwork';
+import { mergeNetwork } from './MergeNetwork';
 import { IdType } from '../../../../models/IdType';
 import { NetworkRecord, NetworktoMerge } from '../DataInterfaceForMerge';
 import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel';
@@ -14,7 +14,8 @@ import ViewModelFn, { NetworkView } from '../../../../models/ViewModel';
 import { deepClone } from '../../utils/helper-functions';
 import { NetworkAttributes } from '../../../../models/NetworkModel';
 import { Column } from '../../../../models/TableModel/Column';
-import { MatchingTable } from './MatchingTable';
+import { MatchingTable } from '../MatchingTable';
+import { getMatchingTableRows, getAttributeMapping } from './MatchingTableImpl';
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility';
 
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
@@ -23,14 +24,14 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     if (fromNetworks.length < 1) {
         throw new Error("No networks to merge");
     }
-    if (nodeAttributeMapping.getMatchingTable().length < 2) {
+    if (getMatchingTableRows(nodeAttributeMapping).length < 2) {
         throw new Error("Attributes Length should be greater than 1")
     }
     for (const netId of fromNetworks) {
         if (!networkRecords[netId]) {
             throw new Error(`Network with id ${netId} not found`);
         }
-        if (!nodeAttributeMapping.getAttributeMapping(netId)) {
+        if (!getAttributeMapping(nodeAttributeMapping, netId)) {
             throw new Error(`Node attribute mapping for network ${netId} not found`);
         }
         if (!matchingAttribute[netId]) {

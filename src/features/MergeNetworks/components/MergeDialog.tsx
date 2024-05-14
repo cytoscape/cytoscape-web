@@ -26,8 +26,9 @@ import { useViewModelStore } from '../../../store/ViewModelStore';
 import { useNetworkStore } from '../../../store/NetworkStore';
 import { useTableStore } from '../../../store/TableStore';
 import { useVisualStyleStore } from '../../../store/VisualStyleStore';
-import { createMergedNetworkWithView } from '../models/Impl/createMergedNetworkWithView';
-import { MatchingTable } from '../models/Impl/MatchingTable';
+import { createMergedNetworkWithView } from '../models/Impl/CreateMergedNetworkWithView';
+import { MatchingTable } from '../models/MatchingTable';
+import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
 import { VisualStyle } from '../../../models/VisualStyleModel';
 import { useLayoutStore } from '../../../store/LayoutStore';
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel';
@@ -64,9 +65,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const [selectedAvailable, setSelectedAvailable] = useState<Pair<string, IdType>[]>([]);
     const [selectedToMerge, setSelectedToMerge] = useState<Pair<string, IdType>[]>([]);
     // Initialize the matching tables
-    const nodeMatchingTableObj = new MatchingTable(nodeMatchingTable);
-    const edgeMatchingTableObj = new MatchingTable(edgeMatchingTable);
-    const netMatchingTableObj = new MatchingTable(netMatchingTable);
+    const nodeMatchingTableObj = createMatchingTable(nodeMatchingTable);
+    const edgeMatchingTableObj = createMatchingTable(edgeMatchingTable);
+    const netMatchingTableObj = createMatchingTable(netMatchingTable);
     // store
     const addNewNetwork = useNetworkStore((state) => state.add)
     const setVisualStyle = useVisualStyleStore((state) => state.add)
