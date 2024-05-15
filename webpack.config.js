@@ -10,6 +10,10 @@ const BundleAnalyzerPlugin =
   require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+
+const ModuleFederationPlugin =
+  require('webpack').container.ModuleFederationPlugin
+
 // Bundle dependencies as a separate ES moudule
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -69,6 +73,12 @@ module.exports = {
     port: 5500,
   },
   plugins: [
+    new ModuleFederationPlugin({
+      name: 'cytoscape-web',
+      remotes: {
+        'hello-cy-world': 'hello-cy-world@http://localhost:3000/remoteEntry.js',
+      },
+    }),
     new BundleAnalyzerPlugin({
       analyzerMode: 'static',
     }),

@@ -1,5 +1,7 @@
 import path from 'path'
 import url from 'url'
+const ModuleFederationPlugin =
+  require('webpack').container.ModuleFederationPlugin
 
 const __filename = url.fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -29,6 +31,16 @@ export default {
     zustand: 'zustand',
   },
 
+  plugins: [
+    // ...
+    new ModuleFederationPlugin({
+      name: 'hello-cy-world',
+      filename: 'remoteEntry.js',
+      exposes: {
+        './HelloWorld': './src/index',
+      },
+    }),
+  ],
   module: {
     rules: [
       {
