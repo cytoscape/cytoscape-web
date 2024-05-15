@@ -14,7 +14,10 @@ export const CreateNetworkFromTableFileMenuItem = (
 
   return (
     <div>
-      <MenuItem onClick={() => setShow(true)}>
+      <MenuItem onClick={() =>  { 
+        setShow(true)
+        props.handleClose()
+      }}>
         Upload network from table file
       </MenuItem>
     </div>

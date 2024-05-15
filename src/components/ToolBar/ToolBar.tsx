@@ -26,7 +26,7 @@ export const ToolBar = (): JSX.Element => {
             <DataMenu label="Data" />
             <EditMenu label="Edit" />
             <LayoutMenu label="Layout" />
-            <DropdownMenu label="Help" />
+            {/* <DropdownMenu label="Help" /> */}
             <AnalysisMenu label="Analysis" />
             <ToolsMenu label="Tools" />
           </Box>
