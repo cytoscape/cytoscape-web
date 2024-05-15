@@ -30,7 +30,7 @@ import { useTableStore } from '../../../store/TableStore';
 import { useVisualStyleStore } from '../../../store/VisualStyleStore';
 import { createMergedNetworkWithView } from '../models/Impl/CreateMergedNetworkWithView';
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
-import { VisualStyle } from '../../../models/VisualStyleModel';
+import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel';
 import { useLayoutStore } from '../../../store/LayoutStore';
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel';
 import { MatchingTableComp } from './MatchingTableComp';
@@ -38,6 +38,7 @@ import { MatchingColumnTable } from './MatchingColumnTable';
 import { NetworkWithView } from '../../../utils/cx-utils';
 import { findPairIndex } from '../utils/helper-functions';
 import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog';
+import { set } from 'lodash';
 
 interface MergeDialogProps {
     open: boolean;
@@ -46,12 +47,14 @@ interface MergeDialogProps {
 }
 
 const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceNetworks }): React.ReactElement => {
-    const [readyToMerge, setReadyToMerge] = useState(false);
-    const [tableView, setTableView] = useState(TableView.node);
-    const [errorMessage, setErrorMessage] = useState('');
-    const [showError, setShowError] = useState(false);
-    const { ndexBaseUrl } = useContext(AppConfigContext);
-    const [mergeOpType, setMergeOpType] = useState(MergeType.union);
+    const [readyToMerge, setReadyToMerge] = useState(false);// Flag to indicate whether it is ready to merge
+    const [tableView, setTableView] = useState(TableView.node); // Current table view
+    const [errorMessage, setErrorMessage] = useState(''); // Error message to display
+    const [showError, setShowError] = useState(false); // Flag to show the error message panel
+    const { ndexBaseUrl } = useContext(AppConfigContext); // Base URL for the NDEx server
+    const [mergeOpType, setMergeOpType] = useState(MergeType.union); // Type of merge operation
+    // Visual style of the base network
+    const [visualStyleRecord, setvisualStyleRecord] = useState<Record<IdType, VisualStyle>>({});
     // Record the information of the networks to be merged
     const [networkRecords, setNetworkRecords] = useState<Record<IdType, NetworkRecord>>({});
     // Record the matching columns for each network
@@ -74,7 +77,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const setVisualStyle = useVisualStyleStore((state) => state.add)
     const setViewModel = useViewModelStore((state) => state.add)
     const setTables = useTableStore((state) => state.add)
-    const visualStyle: VisualStyle = useVisualStyleStore((state) => state.visualStyles[toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : ''])
     const addNetworkToWorkspace = useWorkspaceStore(
         (state) => state.addNetworkIds,
     )
@@ -166,6 +168,17 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const handleRemoveNetwork = () => {
         setAvailableNetworksList([...availableNetworksList, ...selectedToMerge]);
         setToMergeNetworksList(toMergeNetworksList.filter(net => !selectedToMerge.includes(net)));
+        const newNetworkRecords = { ...networkRecords };
+        const newMatchingCols = { ...matchingCols };
+        const newVisualStyles = { ...visualStyleRecord };
+        selectedToMerge.forEach(net => {
+            delete newNetworkRecords[net[1]];
+            delete newMatchingCols[net[1]];
+            delete newVisualStyles[net[1]];
+        });
+        setNetworkRecords(newNetworkRecords);
+        setMatchingCols(newMatchingCols);
+        setvisualStyleRecord(newVisualStyles);
         setSelectedToMerge([]);
     };
 
@@ -209,6 +222,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const handleTableViewChange = (event: React.MouseEvent<HTMLElement>, newTableView: TableView) => {
         setTableView(newTableView);
     };
+
     // Update the matching table when selectedNetworks changes
     useEffect(() => {
         const sharedNodeColsRecord: Record<IdType, string[]> = {};
@@ -317,13 +331,16 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const loadNetworkById = async (networkId: IdType) => {
         const currentToken = await getToken();
         const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken);
-        const { network, nodeTable, edgeTable } = res;
+        const { network, nodeTable, edgeTable, visualStyle } = res;
 
         setNetworkRecords(prev => ({
             ...prev,
             [networkId]: { network, nodeTable, edgeTable }
         }));
-
+        setvisualStyleRecord(prev => ({
+            ...prev,
+            [networkId]: visualStyle
+        }));
         return { network, nodeTable, edgeTable };
     }
 
@@ -331,8 +348,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const handleMerge = async (): Promise<void> => {
         try {
             const newNetworkId = uuidv4();
+            const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : '';
             const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
-                newNetworkId, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj, matchingCols, visualStyle)
+                newNetworkId, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj, matchingCols, visualStyleRecord[baseNetwork])
 
             // Update state stores with the new network and its components   
             setCurrentNetworkId(newNetworkId);
