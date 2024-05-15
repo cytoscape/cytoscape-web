@@ -304,7 +304,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
 
     // set merge type
     const handleMergeTypeChange = (event: React.MouseEvent<HTMLElement>, opType: string) => {
-        setMergeOpType(opType as MergeType);
+        if (opType !== null) {
+            setMergeOpType(opType as MergeType);
+        }
     };
 
     //utility function to get token
