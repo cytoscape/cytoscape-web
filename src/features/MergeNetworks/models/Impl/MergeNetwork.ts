@@ -35,7 +35,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
     const edgeIdSet = new Set<IdType>(); // prevent duplicate edges
     const nodeAttMap = new Map<IdType, ValueType>();
     // record the edge
-    const edgeMap = new Map<string, IdType>();
+    const edgeMap = new Map<string, IdType[]>();
 
     networkRecords[baseNetworkId]?.nodeTable.rows.forEach((entry, oriId) => {
         const newNodeId: string = `${globalNodeId++}`;
@@ -55,7 +55,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
         NetworkFn.addNode(mergedNetwork, newNodeId);
     });
     networkRecords[baseNetworkId]?.network.edges.forEach(oriEdge => {
-        const newEdgeeId: string = `e${globalEdgeId++}`;
+        const newEdgeId: string = `e${globalEdgeId++}`;
         const [oriId, oriSource, oriTarget] = [oriEdge.id, oriEdge.s, oriEdge.t];
         if (edgeIdSet.has(oriId)) {
             throw new Error(`Duplicate edge id found in the network:${baseNetworkId}`);
@@ -65,14 +65,19 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
         if (oriEntry === undefined) {
             throw new Error("Edge not found in the edge table");
         }
-        initialEdgeRows.push([newEdgeeId, castAttributes(oriEntry, getAttributeMapping(edgeAttributeMapping, baseNetworkId, false))]);
+        initialEdgeRows.push([newEdgeId, castAttributes(oriEntry, getAttributeMapping(edgeAttributeMapping, baseNetworkId, false))]);
         const newSourceId = node2nodeMap.get(`${baseNetworkId}-${oriSource}`);
         const newTargetId = node2nodeMap.get(`${baseNetworkId}-${oriTarget}`);
         if (newSourceId === undefined || newTargetId === undefined) {
             throw new Error("Source or target Edge not found in the node map");
         }
-        NetworkFn.addEdge(mergedNetwork, { id: newEdgeeId, s: newSourceId, t: newTargetId } as Edge);
-        edgeMap.set(`${newSourceId}-${newTargetId}`, newEdgeeId);
+        NetworkFn.addEdge(mergedNetwork, { id: newEdgeId, s: newSourceId, t: newTargetId } as Edge);
+        const mergedEdgeIds = edgeMap.get(`${newSourceId}-${newTargetId}`);
+        if (mergedEdgeIds !== undefined) {
+            mergedEdgeIds.push(newEdgeId);
+        } else {
+            edgeMap.set(`${newSourceId}-${newTargetId}`, [newEdgeId]);
+        }
     });
 
     //clone the table rows(columns have already been initialized in the preprocess step)
@@ -160,14 +165,16 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
                 throw new Error("Edge source or target not found in the node map");
             }
             const castedRecord = castAttributes(edgeRecord, getAttributeMapping(edgeAttributeMapping, netToMerge, false));
-            const mergedEdgeId = edgeMap.get(`${sourceId}-${targetId}`);
-            if (mergedEdgeId !== undefined) { // there is already an edge between the source and target node
-                const mergedRow = mergedEdgeTable.rows.get(mergedEdgeId);
-                if (mergedRow === undefined) {
-                    throw new Error("Edge not found in the merged edge table");
-                }
-                if (mergedRow.hasOwnProperty('interaction') && castedRecord.hasOwnProperty('interaction')) {
-                    if (mergedRow['interaction'] === castedRecord['interaction']) {
+            const mergedEdgeIds = edgeMap.get(`${sourceId}-${targetId}`);
+            if (mergedEdgeIds !== undefined) { // there is already an edge between the source and target node
+                let hasMatched = false;
+                mergedEdgeIds.forEach((mergedEdgeId) => {
+                    const mergedRow = mergedEdgeTable.rows.get(mergedEdgeId);
+                    if (mergedRow === undefined) {
+                        throw new Error("Edge not found in the merged edge table");
+                    }
+                    if ((mergedRow.hasOwnProperty('interaction') && castedRecord.hasOwnProperty('interaction') && mergedRow['interaction'] === castedRecord['interaction']) ||
+                        (!mergedRow.hasOwnProperty('interaction') && !castedRecord.hasOwnProperty('interaction'))) {
                         //update the row
                         Object.entries(castedRecord).forEach((entry: [string, ValueType]) => {
                             if (!mergedRow.hasOwnProperty(entry[0])) {
@@ -176,13 +183,18 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
                         });
                         // update the mergedEdgeTable
                         TableFn.updateRow(mergedEdgeTable, [mergedEdgeId, mergedRow]);
+                        hasMatched = true;
                     }
+                });
+                if (!hasMatched) { // insert a new edge
+                    TableFn.insertRow(mergedEdgeTable, [newEdgeId, castedRecord]);
+                    NetworkFn.addEdge(mergedNetwork, { id: newEdgeId, s: sourceId, t: targetId } as Edge);
+                    edgeMap.get(`${sourceId}-${targetId}`)?.push(newEdgeId);
                 }
-                // Todo: how to deal with the attribute conflicts?
             } else { // insert a new edge
                 TableFn.insertRow(mergedEdgeTable, [newEdgeId, castedRecord]);
                 NetworkFn.addEdge(mergedNetwork, { id: newEdgeId, s: sourceId, t: targetId } as Edge);
-                edgeMap.set(`${sourceId}-${targetId}`, newEdgeId);
+                edgeMap.set(`${sourceId}-${targetId}`, [newEdgeId]);
             }
         }
     }
