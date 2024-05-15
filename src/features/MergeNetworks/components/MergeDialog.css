@@ -1,0 +1,57 @@
+/* toggle button */
+.toggleButtonGroup {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+    margin-top: 16px;
+}
+
+.toggleButton {
+    border: 1px solid #565656 !important;
+}
+
+.toggleButton.selected {
+    color: white !important;
+    background-color: #227dd8 !important;
+}
+
+.toggleButton:hover {
+    background-color: rgb(133, 186, 239) !important;
+}
+
+/* button */
+.arrowButton {
+    background-color: #227dd8;
+    margin-top: 8px !important;
+    min-width: 36px !important;
+    padding: 2px !important;
+}
+
+.arrowIcon {
+    margin: 2px 6px !important;
+}
+
+/* Todo: add icons beside the buttons */
+/* @font-face {
+    font-family: 'MyIconFont';
+    src: url('./assets/cytoscape-3.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.icon {
+    font-family: 'MyIconFont';
+    font-size: 22px;
+}
+
+.icon.union::before {
+    content: "\0071";
+}
+
+.icon.intersection::before {
+    content: "\0072";
+}
+
+.icon.difference::before {
+    content: "\0073";
+} */
