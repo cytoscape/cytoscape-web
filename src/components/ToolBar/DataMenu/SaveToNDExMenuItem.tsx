@@ -32,7 +32,6 @@ import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/Hc
 import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { NetworkView } from '../../../models/ViewModel'
 
-
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
@@ -51,8 +50,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -82,7 +81,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const addMessage = useMessageStore((state) => state.addMessage)
 
   const overwriteNDExNetwork = async (): Promise<void> => {
-    if(viewModel === undefined) {
+    if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
     }
 
@@ -116,7 +115,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const saveCopyToNDEx = async (): Promise<void> => {
-    if(viewModel === undefined) {
+    if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
     }
     const ndexClient = new NDEx(ndexBaseUrl)
@@ -209,7 +208,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     >
       <MenuItem
         sx={{ flexBasis: '100%', flexGrow: 3 }}
-        disabled={!authenticated}
+        disabled={!authenticated || !summary?.isNdex}
         onClick={handleClick}
       >
         Save to NDEx (overwrite)

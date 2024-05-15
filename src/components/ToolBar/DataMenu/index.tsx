@@ -14,6 +14,8 @@ import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem
 import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
+import { CreateNetworkFromTableFileMenuItem } from '../../../features/TableDataLoader/components/CreateNetworkFromTable/ImportNetworkFromTableMenuItem'
+import { JoinTableToNetworkMenuItem } from '../../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -70,6 +72,8 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
         <Divider />
         <UploadNetworkMenuItem handleClose={handleClose} />
         <DownloadNetworkMenuItem handleClose={handleClose} />
+        <CreateNetworkFromTableFileMenuItem handleClose={handleClose} />
+        <JoinTableToNetworkMenuItem handleClose={handleClose} />
       </Menu>
     </div>
   )

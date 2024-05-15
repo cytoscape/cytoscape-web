@@ -52,6 +52,7 @@ import { Panel } from '../../models/UiModel/Panel'
 import { Ui } from '../../models/UiModel'
 import NetworkInfoPanel from './NetworkInfoPanel'
 import { NetworkView } from '../../models/ViewModel'
+import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -118,6 +119,8 @@ export default function TableBrowser(props: {
     setUi(nextUi)
   }
 
+  const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
+
   const setColumnWidth = useUiStateStore((state) => state.setColumnWidth)
 
   const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
@@ -160,8 +163,8 @@ export default function TableBrowser(props: {
   )
   const setMapping = useVisualStyleStore((state) => state.setMapping)
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(networkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(networkId),
   )
   const selectedNodes = useViewModelStore(
     (state) => viewModel?.selectedNodes ?? [],
@@ -639,6 +642,13 @@ export default function TableBrowser(props: {
       </Button>
       <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
         Create Column
+      </Button>
+      <Button
+        disabled={tables[props.currentNetworkId] === undefined}
+        sx={{ mr: 1 }}
+        onClick={() => showTableJoinForm(true)}
+      >
+        Join table to network
       </Button>
       <CreateTableColumnForm
         error={createColumnFormError}

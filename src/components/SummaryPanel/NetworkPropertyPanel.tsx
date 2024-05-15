@@ -6,6 +6,7 @@ import {
   Theme,
   Typography,
   Divider,
+  Chip,
 } from '@mui/material'
 import { blueGrey } from '@mui/material/colors'
 import { useTheme } from '@mui/material/styles'
@@ -89,13 +90,29 @@ export const NetworkPropertyPanel = ({
         }}
       >
         <Box sx={{ width: '100%' }}>
-          <Typography
-            variant={'body2'}
-            sx={{ width: '100%', display: 'flex', alignItems: 'center' }}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
           >
-            {summary.name}
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Chip
+                color={summary.isNdex ? 'primary' : 'success'}
+                size="small"
+                sx={{ mr: 1, opacity: 0.8 }}
+                label={
+                  <Typography sx={{ fontSize: 10 }} variant="caption">
+                    {summary.isNdex ? 'NDEx' : 'Local'}
+                  </Typography>
+                }
+              />
+              <Typography variant={'body2'}>{summary.name}</Typography>
+            </Box>
+
             {networkModifiedIcon}
-          </Typography>
+          </Box>
           <Box
             sx={{
               display: 'flex',

@@ -3,14 +3,14 @@ import { immer } from 'zustand/middleware/immer'
 import { LayoutEngine } from '../models/LayoutModel/LayoutEngine'
 import { LayoutAlgorithm } from '../models/LayoutModel/LayoutAlgorithm'
 import { ValueType } from '../models/TableModel'
-import { G6Layout } from '../models/LayoutModel/impl/G6/G6Layout'
-import { CyjsLayout } from '../models/LayoutModel/impl/Cyjs/CyjsLayout'
-import { CosmosLayout } from '../models/LayoutModel/impl/Cosmos/CosmosLayout'
-import { Property } from '../models/PropertyModel/Property'
 
-const LayoutEngines: LayoutEngine[] = [G6Layout, CyjsLayout, CosmosLayout]
-const defAlgorithm: LayoutAlgorithm = G6Layout.algorithms.gForce
-const defHierarchicalAlgorithm: LayoutAlgorithm = G6Layout.algorithms.dagre
+import { Property } from '../models/PropertyModel/Property'
+import {
+  LayoutEngines,
+  defAlgorithm,
+  defHierarchicalAlgorithm,
+  getLayout,
+} from '../models/LayoutModel/impl/layoutSelection'
 
 /**
  * Store for layout parameters
@@ -31,27 +31,6 @@ interface LayoutAction {
   ) => void
   setPreferredLayout: (engineName: string, algorithmName: string) => void
   setIsRunning: (isRunning: boolean) => void
-}
-
-const getLayout = (
-  engineName: string,
-  algorithmName: string,
-): LayoutAlgorithm | undefined => {
-  const engine: LayoutEngine | undefined = LayoutEngines.find(
-    (engine: { name: string }) => engine.name === engineName,
-  )
-
-  if (engine === undefined) {
-    return
-  }
-
-  const algorithm: LayoutAlgorithm = engine.algorithms[algorithmName]
-
-  if (algorithm === undefined) {
-    return
-  }
-
-  return algorithm
 }
 
 export const useLayoutStore = create(

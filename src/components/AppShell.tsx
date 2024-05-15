@@ -21,7 +21,7 @@ import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
 import { AppConfigContext } from '../AppConfigContext'
 import {
   useNdexNetworkSummary,
-  networkSummaryFetcher,
+  ndexSummaryFetcher,
 } from '../store/hooks/useNdexNetworkSummary'
 import { useCredentialStore } from '../store/CredentialStore'
 
@@ -75,7 +75,6 @@ const AppShell = (): ReactElement => {
   }, [errorMessageInStore])
 
   const setUi = useUiStateStore((state) => state.setUi)
-
   // const { showErrorDialog } = useUiStateStore((state) => state.ui)
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
@@ -234,7 +233,7 @@ const AppShell = (): ReactElement => {
             token,
           )
           const networkSummary = summaryMap[networkId]
-          const ndexSummaries = await networkSummaryFetcher(
+          const ndexSummaries = await ndexSummaryFetcher(
             networkId,
             ndexBaseUrl,
             token,
