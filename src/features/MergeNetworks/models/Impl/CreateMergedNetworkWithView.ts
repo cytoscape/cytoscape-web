@@ -32,7 +32,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
             throw new Error(`Matching attribute for network ${netId} not found`);
         }
     }
-    const newNetworkName = 'Merged Network'
+    const newNetworkName = 'Merged Network';
     const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
         nodeAttributeMapping, edgeAttributeMapping, networkAttributeMapping, matchingAttribute)
 
@@ -49,7 +49,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     const newEdgeTable = mergedNetwork.edgeTable
 
     // Initialize new visual style and network view model
-    const newVisualStyle: VisualStyle = cloneDeep(visualStyle) || VisualStyleFn.createVisualStyle();
+    const newVisualStyle: VisualStyle = visualStyle ? (cloneDeep(visualStyle)) : (VisualStyleFn.createVisualStyle());
     const newNetworkView: NetworkView = ViewModelFn.createViewModel(newNetwork)
 
     await putNetworkSummaryToDb({
