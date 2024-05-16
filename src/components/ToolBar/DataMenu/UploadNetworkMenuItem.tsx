@@ -132,7 +132,7 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
           isShowcase: false,
           isCertified: false,
           indexLevel: '',
-          hasLayout: false,
+          hasLayout: true,
           hasSample: false,
           cxFileSize: 0,
           cx2FileSize: 0,
