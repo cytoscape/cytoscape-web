@@ -10,6 +10,7 @@ const BundleAnalyzerPlugin =
   require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const exp = require('constants')
 
 const ModuleFederationPlugin =
   require('webpack').container.ModuleFederationPlugin
@@ -17,6 +18,9 @@ const ModuleFederationPlugin =
 // Bundle dependencies as a separate ES moudule
 
 const isProduction = process.env.NODE_ENV === 'production'
+
+// Extract the common dependencies from the package.json file
+const deps = require('./package.json').dependencies
 
 module.exports = {
   // This app is only for web browsers
@@ -55,7 +59,8 @@ module.exports = {
     filename: '[name].[contenthash].js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
-    publicPath: config.urlBaseName !== '' ? config.urlBaseName : '/',
+    // publicPath: config.urlBaseName !== '' ? config.urlBaseName : '/',
+    publicPath: 'http://localhost:5500/',
   },
   // watch the dist file for changes when using the dev server
   devServer: {
@@ -74,19 +79,17 @@ module.exports = {
   },
   plugins: [
     new ModuleFederationPlugin({
-      name: 'cytoscape-web',
+      name: 'cyweb',
+      filename: 'remoteEntry.js',
       remotes: {
-        'hello-cy-world': 'hello-cy-world@http://localhost:3000/remoteEntry.js',
+        hello: 'hello@http://localhost:3000/remoteEntry.js',
       },
     }),
-    new BundleAnalyzerPlugin({
-      analyzerMode: 'static',
-    }),
+    // new BundleAnalyzerPlugin({
+    //   analyzerMode: 'static',
+    // }),
     new CopyPlugin({
-      patterns: [
-        { from: './silent-check-sso.html', to: '.' },
-        { from: './app-config.json', to: '.' },
-      ],
+      patterns: [{ from: './silent-check-sso.html', to: '.' }],
     }),
     // generate css files from the found css files in the source
     new MiniCssExtractPlugin({

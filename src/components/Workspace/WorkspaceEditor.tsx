@@ -68,11 +68,11 @@ declare global {
   }
 }
 
-let cyapps: CyApp[] = []
-window.loadApps().then((apps: CyApp[]) => {
-  console.log('## Apps loaded:', cyapps)
-  cyapps = apps
-})
+// let cyapps: CyApp[] = []
+// window.loadApps().then((apps: CyApp[]) => {
+//   console.log('## Apps loaded:', cyapps)
+//   cyapps = apps
+// })
 
 /**
  * The main workspace editor containing all except toolbar
@@ -119,9 +119,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   )
   const { panels, activeNetworkView } = ui
 
-  if (cyapps.length > 0) {
-    cyapps[0].inject(useWorkspaceStore)
-  }
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,

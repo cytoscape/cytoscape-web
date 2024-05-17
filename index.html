@@ -4,35 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cytoscape Web 2.0</title>
-
-    <script>
-      const loadConfig = async () => {
-        const response = await fetch('/app-config.json')
-        const appConfig = await response.json()
-        console.log('APP config Loaded', appConfig, response.url)
-        return appConfig
-      }
-
-      const loadApps = async () => {
-        const apps = []
-        const config = await loadConfig()
-        const appUrls = config.appUrls
-        appUrls.forEach(async (url) => {
-          console.log('APP URL:', url)
-          try {
-            const appModule = await import(url)
-            console.log('DYNAMIC ES Module Loading::::', appModule)
-            const def1 = appModule.default
-            apps.push(def1)
-          } catch (e) {
-            console.warn(`Fail to load the app from: ${url}`, e)
-          }
-        })
-
-        return apps
-      }
-      window.loadApps = loadApps
-    </script>
   </head>
   <body>
     <div id="root"></div>

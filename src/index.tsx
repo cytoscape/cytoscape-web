@@ -13,17 +13,6 @@ import Keycloak from 'keycloak-js'
 
 enableMapSet()
 
-function insertModuleScript(src: string) {
-  const script = document.createElement('script')
-  script.type = 'module'
-  script.src = src
-  document.head.appendChild(script)
-
-  script.onload = () => {
-    console.log('!!Script loaded successfully', window)
-  }
-}
-
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
 const rootElement: HTMLElement | null = document.getElementById('root')

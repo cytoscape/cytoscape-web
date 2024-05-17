@@ -2,9 +2,6 @@
   "name": "cytoscape-web",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "apps/*"
-  ],
   "license": "MIT",
   "scripts": {
     "clean": "rm -rf dist",
@@ -117,9 +114,9 @@
     "marked": "^4.2.4",
     "mui-nested-menu": "^3.2.0",
     "openai": "^4.18.0",
-    "react": "^18.2.0",
+    "react": "18.3.1",
     "react-color": "^2.19.3",
-    "react-dom": "^18.2.0",
+    "react-dom": "18.3.1",
     "react-draggable": "^4.4.5",
     "react-laag": "^2.0.5",
     "react-popper": "^2.3.0",

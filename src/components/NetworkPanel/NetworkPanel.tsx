@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react'
+import { ReactElement, useEffect, useState, Suspense } from 'react'
 import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -12,7 +12,15 @@ import { NetworkTab } from './NetworkTab'
 import { NetworkTabs } from './NetworkTabs'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { useRendererStore } from '../../store/RendererStore'
-import { use } from 'cytoscape'
+import React from 'react'
+
+const load1 = async () => {
+  const mod1 = await import('hello/HelloApp' as any)
+  const { HelloApp } = mod1
+  console.log('NetworkPanel rendered def', mod1, HelloApp)
+}
+
+load1()
 
 interface NetworkPanelProps {
   networkId: IdType
@@ -20,9 +28,9 @@ interface NetworkPanelProps {
 
 /**
  * Component to display the network visualizations for the current network data
- * 
+ *
  * @param networkId - the ID of the network model to display
- * 
+ *
  */
 const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const [isActive, setIsActive] = useState<boolean>(false)
@@ -78,7 +86,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   }
 
   const targetId = targetNetwork.id
-  
+
   // Check network has multiple views or single
   const views: NetworkView[] = networkViews[targetId]
   const vs: VisualStyle = visualStyles[targetNetwork.id]
