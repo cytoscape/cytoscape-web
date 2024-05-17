@@ -9,16 +9,17 @@ import { CxValue } from '../../CxModel/Cx2/CxValue'
 import { AttributeDeclaration } from '../../CxModel/Cx2/CoreAspects/AttributeDeclarations'
 import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
 
-export const createTable = (id: IdType, cols: Column[] = []): Table => (
-  {
-    id,
-    columns: [...cols],
-    rows: new Map<IdType, Record<AttributeName, ValueType>>(),
-  })
+export const createTable = (id: IdType, cols: Column[] = []): Table => ({
+  id,
+  columns: [...cols],
+  rows: new Map<IdType, Record<AttributeName, ValueType>>(),
+})
 
 export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   const nodeTable = createTable(`${id}-nodes`)
   const edgeTable = createTable(`${id}-edges`)
+
+  const nodes = cxUtil.getNodes(cx)
 
   const nodeAttr: Map<
     string,
@@ -88,6 +89,14 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
       processedAttributes[translatedAttrName] = value
     })
     nodeTable.rows.set(nodeId, processedAttributes)
+  })
+
+  // some nodes may not have a corresponding entry in the nodeAttr map
+  // initialize them in the table with an empty row
+  nodes.forEach((n) => {
+    if (!nodeTable.rows.has(`${n.id}`)) {
+      nodeTable.rows.set(`${n.id}`, {})
+    }
   })
 
   edgeAttr.forEach((attr, edgeId) => {
