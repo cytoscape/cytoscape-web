@@ -11,14 +11,15 @@ interface netAttDropDownTemplateProps {
     type: TableView;
     setNodeMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
     setEdgeMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
+    setNetMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
     setMatchingCols: (updateFunction: (prevCols: Record<string, Column>) => Record<string, Column>) => void;
 }
 
 
 // Editable cell template for the network attributes
-export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, column, type, setNodeMatchingTable, setEdgeMatchingTable, setMatchingCols }: netAttDropDownTemplateProps) => {
+export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, column, type, setNodeMatchingTable, setEdgeMatchingTable, setNetMatchingTable, setMatchingCols }: netAttDropDownTemplateProps) => {
     const emptyOption = { label: 'None', value: 'None' };
-    const tableType = type === TableView.node ? 'nodeTable' : 'edgeTable';
+    const tableType = type === TableView.node ? 'nodeTable' : (type === TableView.edge ? 'edgeTable' : 'netTable');
     const columns = networkRecords[column]?.[tableType]?.columns || [];
     const networkOptions = [...columns.map(nc => ({ label: nc.name, value: nc.name })), emptyOption];
     const currentValue = (networkOptions.some(option => option.value === rowData[column]) && rowData[column] !== 'None') ? rowData[column] : '';

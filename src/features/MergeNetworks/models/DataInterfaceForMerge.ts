@@ -36,6 +36,7 @@ export interface NetworkRecord {
     network: Network;
     nodeTable: Table;
     edgeTable: Table;
+    netTable?: Table;
 }
 
 export interface MatchingTableRow {
