@@ -61,7 +61,8 @@ import { AppConfigContext } from '../../../../AppConfigContext'
 
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
-  const goToStep = useCreateNetworkFromTableStore((state) => state.goToStep)
+  const setShow = useCreateNetworkFromTableStore((state) => state.setShow)
+  const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
   const reset = useCreateNetworkFromTableStore((state) => state.reset)
 
   const [loading, setLoading] = useState(false)
@@ -215,7 +216,8 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   }
 
   const handleCancel = () => {
-    goToStep(CreateNetworkFromTableStep.FileUpload)
+    setShow(false)
+    setRawText('')
   }
 
   const handleColumnClick = (column: ColumnAssignmentState) => {

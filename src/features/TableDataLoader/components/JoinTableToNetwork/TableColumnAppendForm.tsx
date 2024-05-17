@@ -148,6 +148,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
   }
 
   const handleCancel = () => {
+    reset()
     props.handleClose()
   }
 
