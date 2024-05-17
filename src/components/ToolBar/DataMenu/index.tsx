@@ -40,21 +40,69 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
 
   const menuItems = [
     {
+      label: 'Open network(s)From NDEx',
+      template: <LoadFromNdexMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: '(Demo) Open sample networks',
+      template: <LoadDemoNetworksMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: '',
+      template: <Divider />,
+    },
+    {
+      label: 'Remove Current Network',
+      template: () => <RemoveNetworkMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: 'Remove All Networks',
+      template: () => <RemoveAllNetworksMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: '',
+      template: <Divider />,
+    },
+    {
+      label: 'Reset Local Workspace',
+      template: () => <ResetLocalWorkspaceMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: '',
+      template: <Divider />,
+    },
+    {
+      label: 'Save to NDEx',
+      template: () => <SaveToNDExMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: 'Copy to NDEx',
+      template: () => <CopyNetworkToNDExMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: '',
+      template: <Divider />,
+    },
+    {
+      label: 'Open in Cytoscape',
+      template: () => (
+        <OpenNetworkInCytoscapeMenuItem handleClose={handleClose} />
+      ),
+    },
+    {
+      label: 'Download',
+      template: () => <DownloadNetworkMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: '',
+      template: <Divider />,
+    },
+    {
       label: 'Import',
       items: [
         {
-          label: 'From NDEx',
-          template: <LoadFromNdexMenuItem handleClose={handleClose} />,
-        },
-        {
           label: 'From File',
           template: <UploadNetworkMenuItem handleClose={handleClose} />,
-        },
-        {
-          label: 'From Table',
-          template: (
-            <CreateNetworkFromTableFileMenuItem handleClose={handleClose} />
-          ),
         },
         {
           label: '',
@@ -66,66 +114,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
             <JoinTableToNetworkMenuItem handleClose={handleClose} />
           ),
         },
-        {
-          label: '',
-          template: <Divider />,
-        },
-        {
-          label: 'Demo Networks',
-          template: <LoadDemoNetworksMenuItem handleClose={handleClose} />,
-        },
       ],
-    },
-    {
-      label: 'Export',
-      items: [
-        {
-          label: 'To NDEx',
-          items: [
-            {
-              label: 'Save to NDEx',
-              template: () => <SaveToNDExMenuItem handleClose={handleClose} />,
-            },
-            {
-              label: 'Copy to NDEx',
-              template: () => (
-                <CopyNetworkToNDExMenuItem handleClose={handleClose} />
-              ),
-            },
-          ],
-        },
-        {
-          label: 'Download',
-          template: () => <DownloadNetworkMenuItem handleClose={handleClose} />,
-        },
-      ],
-    },
-    {
-      label: 'Manage',
-      items: [
-        {
-          label: 'Remove Current Network',
-          template: () => <RemoveNetworkMenuItem handleClose={handleClose} />,
-        },
-        {
-          label: 'Remove All Networks',
-          template: () => (
-            <RemoveAllNetworksMenuItem handleClose={handleClose} />
-          ),
-        },
-        {
-          label: 'Reset Local Workspace',
-          template: () => (
-            <ResetLocalWorkspaceMenuItem handleClose={handleClose} />
-          ),
-        },
-      ],
-    },
-    {
-      label: 'Open in Cytoscape',
-      template: () => (
-        <OpenNetworkInCytoscapeMenuItem handleClose={handleClose} />
-      ),
     },
   ]
 
@@ -145,7 +134,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
         {label}
       </Button>
       <OverlayPanel ref={op} unstyled>
-        <TieredMenu model={menuItems} />
+        <TieredMenu style={{ width: 350 }} model={menuItems} />
       </OverlayPanel>
     </PrimeReactProvider>
   )
