@@ -648,7 +648,7 @@ export default function TableBrowser(props: {
         sx={{ mr: 1 }}
         onClick={() => showTableJoinForm(true)}
       >
-        Join table to network
+        Import Table From File
       </Button>
       <CreateTableColumnForm
         error={createColumnFormError}

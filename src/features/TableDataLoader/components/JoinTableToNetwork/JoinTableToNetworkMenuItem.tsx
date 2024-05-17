@@ -20,10 +20,14 @@ export const JoinTableToNetworkMenuItem = (
 
   return (
     <>
-      <MenuItem disabled={disabled} onClick={() => {
-        props.handleClose()
-        setShow(true)}}>
-        Join table to network
+      <MenuItem
+        disabled={disabled}
+        onClick={() => {
+          props.handleClose()
+          setShow(true)
+        }}
+      >
+        Table from File
       </MenuItem>
     </>
   )
