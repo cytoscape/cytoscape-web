@@ -213,7 +213,6 @@ describe('mergeNetwork', () => {
             { id: 2, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'None', mergedNetwork: 'att', type: 'integer' },
             { id: 3, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att2', mergedNetwork: 'att23', type: 'double' },
         ] as MatchingTableRow[])
-        const networkAttributeMapping = createMatchingTable([])
         const matchingAttribute = {
             [fromNetworks[0]]: { name: 'att1', type: 'string' } as Column,
             [fromNetworks[1]]: { name: 'att1', type: 'string' } as Column,

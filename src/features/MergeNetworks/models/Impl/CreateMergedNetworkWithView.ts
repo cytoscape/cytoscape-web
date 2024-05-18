@@ -2,7 +2,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import { mergeNetwork } from './MergeNetwork';
 import { MatchingTable } from '../MatchingTable';
 import { IdType } from '../../../../models/IdType';
-import { mergeNetSummaries } from './MergeNetSummaries';
+import { mergeNetSummary } from './MergeNetSummary';
 import { NetworkWithView } from '../../../../utils/cx-utils';
 import { Column } from '../../../../models/TableModel/Column';
 import { putNetworkSummaryToDb } from '../../../../store/persist/db'
@@ -37,7 +37,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     const newNetworkName = 'Merged Network';// default name
     const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
         nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
-    const mergedNetSummary = mergeNetSummaries(fromNetworks, networkAttributeMapping, netSummaries)
+    const mergedNetSummary = mergeNetSummary(fromNetworks, networkAttributeMapping, netSummaries)
 
     // todo: merge network attributes also
     const networkAttributes: NetworkAttributes = {

@@ -5,7 +5,7 @@ import { MatchingTable } from "../MatchingTable";
 import { getMatchingTableRows } from "./MatchingTableImpl";
 import { isBooleanArray, isNumberArray, isStringArray } from "../../utils/helper-functions";
 
-export function mergeNetSummaries(fromNetworks: IdType[], networkAttributeMapping: MatchingTable, netSummaries: Record<IdType, NdexNetworkSummary>) {
+export function mergeNetSummary(fromNetworks: IdType[], networkAttributeMapping: MatchingTable, netSummaries: Record<IdType, NdexNetworkSummary>) {
     // Version and Description: only preserve the base network's information
     const baseNetworkId = fromNetworks[0]
     const mergedVersion: string = netSummaries[baseNetworkId]?.version || ''
@@ -19,9 +19,9 @@ export function mergeNetSummaries(fromNetworks: IdType[], networkAttributeMappin
                 const oriProptName = row[netId]
                 const oriPropt = netSummaries[netId]?.properties.find((property) => property.predicateString === oriProptName)
                 if (!mergedProperties[`${row.id}`] && oriPropt) {
-                    mergedProperties[`${row.id}`] = cloneDeep(oriPropt)
+                    mergedProperties[`${row.id}`] = mergeProperty(row.mergedNetwork, cloneDeep(oriPropt))
                 } else if (oriPropt) {
-                    mergedProperties[`${row.id}`] = mergeProperty(cloneDeep(mergedProperties[`${row.id}`]), cloneDeep(oriPropt))
+                    mergedProperties[`${row.id}`] = mergeProperty(row.mergedNetwork, cloneDeep(mergedProperties[`${row.id}`]), cloneDeep(oriPropt))
                 }
             }
         }
@@ -37,7 +37,9 @@ export function mergeNetSummaries(fromNetworks: IdType[], networkAttributeMappin
     }
 }
 
-function mergeProperty(propt1: NdexNetworkProperty, propt2: NdexNetworkProperty): NdexNetworkProperty {
+function mergeProperty(mergedAttName: string, propt1: NdexNetworkProperty, propt2?: NdexNetworkProperty): NdexNetworkProperty {
+    propt1.predicateString = mergedAttName;
+    if (!propt2) return propt1;
     if (propt1.dataType === propt2.dataType) {
         let value1 = propt1.value;
         let value2 = propt2.value;
@@ -74,11 +76,8 @@ function mergeProperty(propt1: NdexNetworkProperty, propt2: NdexNetworkProperty)
             } else {
                 throw new Error('Mismatched array types');
             }
-        } else if (typeof value1 === 'string' && typeof value2 === 'string') {
-            if (value1 !== value2) {
-                propt1.value = value1 + ' ' + value2;
-            }
         }
+        propt1.value = propt1.value ?? propt2.value;
         propt1.subNetworkId = propt1.subNetworkId ?? propt2.subNetworkId;
     }
     //Todo: type coercion
