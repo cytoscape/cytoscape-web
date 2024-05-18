@@ -22,6 +22,8 @@ const load1 = async () => {
 
 load1()
 
+const HelloPanel = React.lazy(() => import('hello/HelloPanel' as any))
+
 interface NetworkPanelProps {
   networkId: IdType
 }
@@ -34,6 +36,8 @@ interface NetworkPanelProps {
  */
 const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const [isActive, setIsActive] = useState<boolean>(false)
+
+  console.log('Net2', HelloPanel)
 
   const ui = useUiStateStore((state) => state.ui)
   const { activeNetworkView, enablePopup } = ui
@@ -101,13 +105,18 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   if (Object.keys(renderers).length === 1) {
     // Use default renderer without tab if there is only one view
     return (
-      <NetworkTab
-        network={targetNetwork}
-        renderer={renderers[defaultRendererName]}
-        bgColor={bgColor}
-        isActive={isActive}
-        handleClick={handleClick}
-      />
+      <>
+        <Suspense fallback={<div>Loading HELLO...</div>}>
+          <HelloPanel />
+        </Suspense>
+        <NetworkTab
+          network={targetNetwork}
+          renderer={renderers[defaultRendererName]}
+          bgColor={bgColor}
+          isActive={isActive}
+          handleClick={handleClick}
+        />
+      </>
     )
   } else {
     return (

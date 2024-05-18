@@ -31,7 +31,7 @@ import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { networkSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
 import { dateFormatter } from '../../../utils/date-format'
-import { KeycloakContext } from '../../..'
+import { KeycloakContext } from '../../../bootstrap'
 import { useMessageStore } from '../../../store/MessageStore'
 
 interface LoadFromNdexDialogProps {

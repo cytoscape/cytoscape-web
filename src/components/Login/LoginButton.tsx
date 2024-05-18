@@ -3,7 +3,7 @@ import { deepOrange } from '@mui/material/colors'
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
 import { ReactElement, useContext, useState } from 'react'
 import { LoginPanel } from './LoginPanel'
-import { KeycloakContext } from '../..'
+import { KeycloakContext } from '../../bootstrap'
 
 export const LoginButton = (): ReactElement => {
   const [open, setOpen] = useState<boolean>(false)

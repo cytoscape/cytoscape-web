@@ -84,6 +84,10 @@ module.exports = {
       remotes: {
         hello: 'hello@http://localhost:3000/remoteEntry.js',
       },
+      shared: {
+        react: { singleton: true, requiredVersion: deps.react },
+        'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
+      },
     }),
     // new BundleAnalyzerPlugin({
     //   analyzerMode: 'static',
