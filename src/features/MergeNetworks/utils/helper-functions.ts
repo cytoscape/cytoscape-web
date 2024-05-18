@@ -2,7 +2,8 @@ import { IdType } from "../../../models/IdType";
 import { NdexNetworkSummary } from "../../../models/NetworkSummaryModel";
 import { Column, Table, ValueType } from "../../../models/TableModel";
 import { createTable, insertRows } from "../../../models/TableModel/impl/InMemoryTable";
-import { NetworkRecord, Pair, MatchingTableRow } from "../models/DataInterfaceForMerge";
+import { NetworkRecord, Pair } from "../models/DataInterfaceForMerge";
+import { MatchingTableRow } from "../models/MatchingTable";
 
 // Utility function to find index of a pair in a list
 export const findPairIndex = (pairs: Pair<string, string>[], uuid: string) => {
@@ -75,3 +76,15 @@ export const processColumns = (
     });
     return newTable;
 };
+
+export function isStringArray(value: any): value is string[] {
+    return Array.isArray(value) && value.every(item => typeof item === 'string');
+}
+
+export function isNumberArray(value: any): value is number[] {
+    return Array.isArray(value) && value.every(item => typeof item === 'number');
+}
+
+export function isBooleanArray(value: any): value is boolean[] {
+    return Array.isArray(value) && value.every(item => typeof item === 'boolean');
+}

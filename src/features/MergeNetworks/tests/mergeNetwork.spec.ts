@@ -21,7 +21,7 @@ import { Node } from '../../../models/NetworkModel/Node';
 import { Column } from '../../../models/TableModel/Column';
 import { Edge } from '../../../models/NetworkModel/Edge';
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
-import { MatchingTableRow } from '../models/DataInterfaceForMerge';
+import { MatchingTableRow } from '../models/MatchingTable';
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -219,7 +219,7 @@ describe('mergeNetwork', () => {
             [fromNetworks[1]]: { name: 'att1', type: 'string' } as Column,
             [fromNetworks[2]]: { name: 'att1', type: 'string' } as Column
         }
-        const result = mergeNetwork(fromNetworks, toNetworkId, networkRecords, nodeAttributeMapping, edgeAttributeMapping, networkAttributeMapping, matchingAttribute)
+        const result = mergeNetwork(fromNetworks, toNetworkId, networkRecords, nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
         expect(result).toEqual({
             network: mergedNetwork,
             nodeTable: mergedNodeTable,

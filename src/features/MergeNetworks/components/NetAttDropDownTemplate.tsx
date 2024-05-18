@@ -1,5 +1,6 @@
 import React from 'react';
-import { MatchingTableRow, NetworkRecord, TableView } from '../models/DataInterfaceForMerge';
+import { MatchingTableRow } from '../models/MatchingTable';
+import { NetworkRecord, TableView } from '../models/DataInterfaceForMerge';
 import { FormControl, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import { Column } from '../../../models/TableModel/Column';
 import { IdType } from '../../../models/IdType';

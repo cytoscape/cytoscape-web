@@ -2,7 +2,7 @@
 import React from 'react';
 import { NetworkRecord, Pair, TableView } from '../models/DataInterfaceForMerge';
 import { TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, TextField } from '@mui/material';
-import { MatchingTableRow } from '../models/DataInterfaceForMerge';
+import { MatchingTableRow } from '../models/MatchingTable';
 import { NetAttDropDownTemplate } from './NetAttDropDownTemplate';
 import { IdType } from '../../../models/IdType';
 import { Column } from '../../../models/TableModel/Column';
@@ -52,7 +52,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {data.map((row) => (
+                    {data.map((row, rowIndex) => (
                         <TableRow key={row.id}>
                             {netLst.map((net) => (
                                 <TableCell key={`${row.id}-${net[1]}`} component="th" scope="row">
@@ -74,6 +74,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                                     value={row.mergedNetwork}
                                     onChange={(e) => onMergedNetworkChange(e, type, row.id)}
                                     style={{ minWidth: 100 }}
+                                    disabled={type === TableView.network && rowIndex < 3}
                                 />
                             </TableCell>
                             <TableCell key={`${row.id}-type`}>{row.type}</TableCell>

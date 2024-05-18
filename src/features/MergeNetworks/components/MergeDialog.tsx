@@ -16,8 +16,9 @@ import {
 import './MergeDialog.css';
 import { v4 as uuidv4 } from 'uuid';
 import {
-    MergeType, NetworkRecord, MatchingTableRow, TableView, Pair
+    MergeType, NetworkRecord, TableView, Pair
 } from '../models/DataInterfaceForMerge';
+import { MatchingTableRow } from '../models/MatchingTable';
 import { Column, ValueType } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
@@ -39,6 +40,7 @@ import { NetworkWithView } from '../../../utils/cx-utils';
 import { findPairIndex, getNetTableFromSummary, processColumns } from '../utils/helper-functions';
 import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog';
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
+import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel';
 
 interface MergeDialogProps {
     open: boolean;
@@ -53,6 +55,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const [showError, setShowError] = useState(false); // Flag to show the error message panel
     const { ndexBaseUrl } = useContext(AppConfigContext); // Base URL for the NDEx server
     const [mergeOpType, setMergeOpType] = useState(MergeType.union); // Type of merge operation
+    const [typeConflict, setTypeConflict] = useState(false); // Flag to indicate whether there is a type conflict
     // Record the visual style of the networks to be merged
     const [visualStyleRecord, setvisualStyleRecord] = useState<Record<IdType, VisualStyle>>({});
     // Record the information of the networks to be merged
@@ -224,7 +227,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     };
     // Function to handle switch in the matching table view
     const handleTableViewChange = (event: React.MouseEvent<HTMLElement>, newTableView: TableView) => {
-        setTableView(newTableView);
+        if (newTableView !== null) {
+            setTableView(newTableView);
+        }
     };
 
     // Update the matching table when selectedNetworks changes
@@ -292,9 +297,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const handleMerge = async (): Promise<void> => {
         try {
             const newNetworkId = uuidv4();
+            const summaryRecord: Record<IdType, NdexNetworkSummary> = Object.fromEntries(Object.entries(netSummaries).filter(([id,]) => toMergeNetworksList.some(pair => pair[1] === id)));
             const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : '';
             const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
-                newNetworkId, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj, matchingCols, visualStyleRecord[baseNetwork])
+                newNetworkId, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj, matchingCols,
+                visualStyleRecord[baseNetwork], summaryRecord);
 
             // Update state stores with the new network and its components   
             setCurrentNetworkId(newNetworkId);
@@ -435,12 +442,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <Box className="toggleButtonGroup">
-                                <ToggleButtonGroup
-                                    value={tableView}
-                                    exclusive
-                                    onChange={handleTableViewChange}
-                                    aria-label="text alignment"
-                                >
+                                <ToggleButtonGroup value={tableView} exclusive onChange={handleTableViewChange} aria-label="text alignment">
                                     <ToggleButton className="toggleButton" classes={{ selected: 'selected' }} value={TableView.node} aria-label="left aligned">
                                         Node
                                     </ToggleButton>

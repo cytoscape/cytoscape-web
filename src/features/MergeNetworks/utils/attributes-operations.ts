@@ -1,5 +1,6 @@
 import { IdType } from "../../../models/IdType";
 import TableFn, { Column, ValueType } from "../../../models/TableModel";
+import { MatchingTable } from "../models/MatchingTable";
 
 export function preprocess(toNetwork: IdType, nodeCols: Column[], edgeCols: Column[]) {
     const mergedNodeTable = TableFn.createTable(toNetwork, nodeCols);
@@ -10,13 +11,12 @@ export function preprocess(toNetwork: IdType, nodeCols: Column[], edgeCols: Colu
     }
 }
 
-export function castAttributes(toMergeAttr: Record<string, ValueType> | undefined, attributeMapping: Map<string, Column>): Record<string, ValueType> {
+export function castAttributes(toMergeAttr: Record<string, ValueType> | undefined, netId: IdType, matchingTable: MatchingTable, isNode: boolean = true): Record<string, ValueType> {
     const castedAttr: Record<string, ValueType> = {};
     if (toMergeAttr !== undefined) {
-        for (const [mergedAttName, col] of attributeMapping.entries()) {
-            const oriAttName = col.name;
-            if (toMergeAttr.hasOwnProperty(oriAttName)) {
-                castedAttr[mergedAttName] = toMergeAttr[col.name];
+        for (const row of (isNode ? matchingTable.matchingTableRows.slice(1) : matchingTable.matchingTableRows)) {
+            if (row.hasOwnProperty(netId) && row[netId] !== 'None' && row[netId] !== '' && toMergeAttr.hasOwnProperty(row[netId])) {
+                castedAttr[row.mergedNetwork] = toMergeAttr[row[netId]];
             }
         }
     }

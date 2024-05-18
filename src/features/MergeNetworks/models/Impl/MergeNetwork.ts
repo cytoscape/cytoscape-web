@@ -10,7 +10,7 @@ import { getMergedAttributes, getAttributeMapping, getReversedMergedAttMap } fro
 import { preprocess, castAttributes, addMergedAtt } from "../../utils/attributes-operations";
 
 export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
-    nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>) {
+    nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>) {
     const nodeMergedAttributes = getMergedAttributes(nodeAttributeMapping)
     const edgeMergedAttributes = getMergedAttributes(edgeAttributeMapping)
     const reversedAttMap = getReversedMergedAttMap(nodeAttributeMapping)
@@ -50,7 +50,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
         }
         nodeAttMap.set(newNodeId, entry[matchingAttribute[baseNetworkId].name] as ValueType);
         initialNodeRows.push([newNodeId,
-            addMergedAtt(castAttributes(entry, getAttributeMapping(nodeAttributeMapping, baseNetworkId)), entry,
+            addMergedAtt(castAttributes(entry, baseNetworkId, nodeAttributeMapping), entry,
                 mergedAttName, reversedAttMap.get(baseNetworkId) as string)])
         NetworkFn.addNode(mergedNetwork, newNodeId);
     });
@@ -65,7 +65,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
         if (oriEntry === undefined) {
             throw new Error("Edge not found in the edge table");
         }
-        initialEdgeRows.push([newEdgeId, castAttributes(oriEntry, getAttributeMapping(edgeAttributeMapping, baseNetworkId, false))]);
+        initialEdgeRows.push([newEdgeId, castAttributes(oriEntry, baseNetworkId, edgeAttributeMapping, false)]);
         const newSourceId = node2nodeMap.get(`${baseNetworkId}-${oriSource}`);
         const newTargetId = node2nodeMap.get(`${baseNetworkId}-${oriTarget}`);
         if (newSourceId === undefined || newTargetId === undefined) {
@@ -120,7 +120,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
             NetworkFn.addNode(mergedNetwork, newNodeId);
             const nodeRecord = networkRecords[netToMerge].nodeTable.rows.get(nodeId);
             TableFn.insertRow(mergedNodeTable, [newNodeId,
-                addMergedAtt(castAttributes(nodeRecord, getAttributeMapping(nodeAttributeMapping, netToMerge)), nodeRecord,
+                addMergedAtt(castAttributes(nodeRecord, netToMerge, nodeAttributeMapping), nodeRecord,
                     mergedAttName, reversedAttMap.get(netToMerge) as string)]);
         }
 
@@ -135,7 +135,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
             if (mergedRow === undefined) {
                 throw new Error("Node not found in the node table");
             }
-            const castedRecord = castAttributes(nodeRecord, getAttributeMapping(nodeAttributeMapping, netToMerge));
+            const castedRecord = castAttributes(nodeRecord, netToMerge, nodeAttributeMapping);
             //update the row
             Object.entries(castedRecord).forEach((entry: [string, ValueType]) => {
                 if (!mergedRow.hasOwnProperty(entry[0])) {
@@ -164,11 +164,11 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
             if (sourceId === undefined || targetId === undefined) {
                 throw new Error("Edge source or target not found in the node map");
             }
-            const castedRecord = castAttributes(edgeRecord, getAttributeMapping(edgeAttributeMapping, netToMerge, false));
+            const castedRecord = castAttributes(edgeRecord, netToMerge, edgeAttributeMapping, false);
             const mergedEdgeIds = edgeMap.get(`${sourceId}-${targetId}`);
             if (mergedEdgeIds !== undefined) { // there is already an edge between the source and target node
                 let hasMatched = false;
-                mergedEdgeIds.forEach((mergedEdgeId) => {
+                for (const mergedEdgeId of mergedEdgeIds) {
                     const mergedRow = mergedEdgeTable.rows.get(mergedEdgeId);
                     if (mergedRow === undefined) {
                         throw new Error("Edge not found in the merged edge table");
@@ -184,8 +184,9 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
                         // update the mergedEdgeTable
                         TableFn.updateRow(mergedEdgeTable, [mergedEdgeId, mergedRow]);
                         hasMatched = true;
+                        continue;
                     }
-                });
+                };
                 if (!hasMatched) { // insert a new edge
                     TableFn.insertRow(mergedEdgeTable, [newEdgeId, castedRecord]);
                     NetworkFn.addEdge(mergedNetwork, { id: newEdgeId, s: sourceId, t: targetId } as Edge);

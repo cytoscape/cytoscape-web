@@ -38,10 +38,3 @@ export interface NetworkRecord {
     edgeTable: Table;
     netTable?: Table;
 }
-
-export interface MatchingTableRow {
-    mergedNetwork: string;
-    type: string;
-    id: number;
-    [key: string]: ValueType;
-}

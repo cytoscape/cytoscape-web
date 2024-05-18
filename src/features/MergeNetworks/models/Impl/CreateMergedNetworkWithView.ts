@@ -1,20 +1,22 @@
-import { putNetworkSummaryToDb } from '../../../../store/persist/db'
-import { NetworkWithView } from '../../../../utils/cx-utils';
-import { mergeNetwork } from './MergeNetwork';
-import { IdType } from '../../../../models/IdType';
-import { NetworkRecord, NetworktoMerge } from '../DataInterfaceForMerge';
-import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel';
-import ViewModelFn, { NetworkView } from '../../../../models/ViewModel';
-import { NetworkAttributes } from '../../../../models/NetworkModel';
-import { Column } from '../../../../models/TableModel/Column';
-import { MatchingTable } from '../MatchingTable';
-import { getMatchingTableRows, getAttributeMapping } from './MatchingTableImpl';
-import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility';
 import cloneDeep from 'lodash/cloneDeep';
+import { mergeNetwork } from './MergeNetwork';
+import { MatchingTable } from '../MatchingTable';
+import { IdType } from '../../../../models/IdType';
+import { mergeNetSummaries } from './MergeNetSummaries';
+import { NetworkWithView } from '../../../../utils/cx-utils';
+import { Column } from '../../../../models/TableModel/Column';
+import { putNetworkSummaryToDb } from '../../../../store/persist/db'
+import { NetworkAttributes } from '../../../../models/NetworkModel';
+import ViewModelFn, { NetworkView } from '../../../../models/ViewModel';
+import { NetworkRecord, NetworktoMerge } from '../DataInterfaceForMerge';
+import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel';
+import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility';
+import { getMatchingTableRows, getAttributeMapping } from './MatchingTableImpl';
+import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel';
 
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable,
-    matchingAttribute: Record<IdType, Column>, visualStyle: VisualStyle): Promise<NetworkWithView> => {
+    matchingAttribute: Record<IdType, Column>, visualStyle: VisualStyle, netSummaries: Record<IdType, NdexNetworkSummary>): Promise<NetworkWithView> => {
     if (fromNetworks.length < 1) {
         throw new Error("No networks to merge");
     }
@@ -32,12 +34,11 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
             throw new Error(`Matching attribute for network ${netId} not found`);
         }
     }
-    const newNetworkName = 'Merged Network';
+    const newNetworkName = 'Merged Network';// default name
     const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
-        nodeAttributeMapping, edgeAttributeMapping, networkAttributeMapping, matchingAttribute)
+        nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
+    const mergedNetSummary = mergeNetSummaries(fromNetworks, networkAttributeMapping, netSummaries)
 
-    const baseNetSummary = 'Merged Network' //todo: fetch from db
-    const newNetworkDescription = 'Merged Network'
     // todo: merge network attributes also
     const networkAttributes: NetworkAttributes = {
         id: toNetworkId,
@@ -67,14 +68,14 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
         hasSample: false,
         cxFileSize: 0,
         cx2FileSize: 0,
-        properties: [],
+        properties: mergedNetSummary.flattenedProperties,
         owner: '',
-        version: '',
+        version: mergedNetSummary.mergedVersion,
         completed: false,
         visibility: 'PUBLIC' as Visibility,
         nodeCount: newNetwork.nodes.length,
         edgeCount: newNetwork.edges.length,
-        description: newNetworkDescription,
+        description: mergedNetSummary.mergedDescription,
         creationTime: new Date(Date.now()),
         externalId: toNetworkId,
         isDeleted: false,
