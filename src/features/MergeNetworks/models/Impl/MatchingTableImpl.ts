@@ -44,13 +44,12 @@ export function getReversedAttributeMapping(matchingTable: MatchingTable, netId:
     return attMap
 }
 
-export function getAttributeMapping(matchingTable: MatchingTable, netId: IdType, isNode: boolean = true): Map<[number, string], Column> {
+export function getAttributeMapping(matchingTable: MatchingTable, netId: IdType, isNode: boolean = true): Map<number, Column> {
     const attMap = new Map()
     if (matchingTable.matchingTableRows.length > 0) {
         for (const row of (isNode ? matchingTable.matchingTableRows.slice(1) : matchingTable.matchingTableRows)) {
             if (row.hasOwnProperty(netId) && row[netId] !== 'None') {
-                attMap.set([row.id, row.mergedNetwork], { name: row[netId], type: row.type } as Column)
-                // Todo: what if the merged network attributes are not unique? Use the row.id as the key?
+                attMap.set(row.id, { name: row[netId], type: row.type } as Column)
             }
         }
     }
