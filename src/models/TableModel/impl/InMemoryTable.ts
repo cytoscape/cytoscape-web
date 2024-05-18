@@ -20,6 +20,7 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   const edgeTable = createTable(`${id}-edges`)
 
   const nodes = cxUtil.getNodes(cx)
+  const edges = cxUtil.getEdges(cx)
 
   const nodeAttr: Map<
     string,
@@ -118,6 +119,15 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
       processedAttributes[translatedAttrName] = value
     })
     edgeTable.rows.set(translatedEdgeId, processedAttributes)
+  })
+
+  // some edges may not have a corresponding entry in the edgeAttr map
+  // initialize them in the table with an empty row
+  edges.forEach((e) => {
+    const translatedEdgeId = translateCXEdgeId(`${e.id}`)
+    if (!edgeTable.rows.has(translatedEdgeId)) {
+      edgeTable.rows.set(translatedEdgeId, {})
+    }
   })
 
   return [nodeTable, edgeTable]
