@@ -1,10 +1,10 @@
 import { IdType } from "../../../models/IdType";
-import { Column, Table, ValueType } from "../../../models/TableModel";
+import { Column, Table, ValueType, ValueTypeName } from "../../../models/TableModel";
 
 export interface MatchingTableRow {
     id: number;
     mergedNetwork: string;
-    type: string;
+    type: ValueTypeName | 'None';
     [key: IdType]: string | number;
 }
 

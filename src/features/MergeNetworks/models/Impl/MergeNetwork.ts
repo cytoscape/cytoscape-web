@@ -14,7 +14,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
     const nodeMergedAttributes = getMergedAttributes(nodeAttributeMapping)
     const edgeMergedAttributes = getMergedAttributes(edgeAttributeMapping)
     const reversedAttMap = getReversedMergedAttMap(nodeAttributeMapping)
-    const mergedAttName = nodeMergedAttributes[0].name
+    const mergedAttCol: Column = { name: nodeMergedAttributes[0].name, type: nodeMergedAttributes[0].type }
     // preprocess the network to merge    
     const { mergedNodeTable, mergedEdgeTable } = preprocess(toNetworkId, nodeMergedAttributes, edgeMergedAttributes);
     // clone the base network
@@ -50,8 +50,8 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
         }
         nodeAttMap.set(newNodeId, entry[matchingAttribute[baseNetworkId].name] as ValueType);
         initialNodeRows.push([newNodeId,
-            addMergedAtt(castAttributes(entry, baseNetworkId, nodeAttributeMapping), entry,
-                mergedAttName, reversedAttMap.get(baseNetworkId) as string)])
+            addMergedAtt(castAttributes(entry, baseNetworkId, nodeAttributeMapping),
+                entry[reversedAttMap.get(baseNetworkId) as string], mergedAttCol)])
         NetworkFn.addNode(mergedNetwork, newNodeId);
     });
     networkRecords[baseNetworkId]?.network.edges.forEach(oriEdge => {
@@ -119,9 +119,12 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
             node2nodeMap.set(`${netToMerge}-${nodeId}`, newNodeId);
             NetworkFn.addNode(mergedNetwork, newNodeId);
             const nodeRecord = networkRecords[netToMerge].nodeTable.rows.get(nodeId);
+            if (nodeRecord === undefined) {
+                throw new Error("Node not found in the node table");
+            }
             TableFn.insertRow(mergedNodeTable, [newNodeId,
-                addMergedAtt(castAttributes(nodeRecord, netToMerge, nodeAttributeMapping), nodeRecord,
-                    mergedAttName, reversedAttMap.get(netToMerge) as string)]);
+                addMergedAtt(castAttributes(nodeRecord, netToMerge, nodeAttributeMapping),
+                    nodeRecord[reversedAttMap.get(netToMerge) as string], mergedAttCol)]);
         }
 
         //matched nodes

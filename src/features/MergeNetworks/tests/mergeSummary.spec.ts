@@ -73,7 +73,7 @@ describe('mergeNetSummary', () => {
             mergedVersion: '1.0',
             mergedDescription: 'network 1 description',
             flattenedProperties: [
-                { subNetworkId: 'subNet3', predicateString: 'att0', dataType: 'boolean', value: false },
+                { subNetworkId: null, predicateString: 'att0', dataType: 'boolean', value: false },
                 { subNetworkId: 'subNet1', predicateString: 'att2', dataType: 'integer', value: 1 },
                 { subNetworkId: 'subNet2', predicateString: 'att2', dataType: 'string', value: 'att2' },
                 { subNetworkId: 'subNet3', predicateString: 'att33', dataType: 'string', value: 'att33' },
