@@ -27,7 +27,7 @@ import { useCredentialStore } from '../../../store/CredentialStore';
 import { useWorkspaceStore } from '../../../store/WorkspaceStore';
 import { useViewModelStore } from '../../../store/ViewModelStore';
 import { useNetworkStore } from '../../../store/NetworkStore';
-import { useTableStore } from '../../../store/TableStore';
+import { TableRecord, useTableStore } from '../../../store/TableStore';
 import { useVisualStyleStore } from '../../../store/VisualStyleStore';
 import { createMergedNetworkWithView } from '../models/Impl/CreateMergedNetworkWithView';
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
@@ -236,16 +236,19 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     useEffect(() => {
         // Create the initial matching table with the columns of the base network
         const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0] : null;
-        const initialRow: MatchingTableRow = {
+        const matchingType = baseNetwork ? (networkRecords[baseNetwork[1]]?.nodeTable?.columns.find(col => col.name === matchingCols[baseNetwork[1]]?.name)?.type || 'None') : 'None';
+        let matchingColsConflicts = 0;
+        const initialRow = {
             id: 0,
             mergedNetwork: 'Matching.Attribute',
-            type: baseNetwork ? (networkRecords[baseNetwork[1]]?.nodeTable?.columns.find(col => col.name === matchingCols[baseNetwork[1]]?.name)?.type || 'None') : 'None'
+            type: matchingType
         }
         const matchingRow: Record<string, string> = {};
         Object.keys(matchingCols).forEach(key => {
             matchingRow[key] = matchingCols[key].name;
+            if (matchingCols[key].type !== matchingType) matchingColsConflicts += 1;
         });
-        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, ...matchingRow }]
+        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, ...matchingRow, numConflicts: matchingColsConflicts } as MatchingTableRow]
         if (baseNetwork !== null) {
             // Update the matching table for each network
             setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));
@@ -260,7 +263,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                     isReady = false
                 }
             })
-            if (isReady) setReadyToMerge(true);
+            setReadyToMerge(isReady);
         }
     }, [toMergeNetworksList, matchingCols, networkRecords]);
 
@@ -406,7 +409,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                         </Button>
                     </Box>
                 </Box>
-                {/* <Accordion>
+                <Accordion>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography>Advanced Options</Typography>
                     </AccordionSummary>
@@ -437,6 +440,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                                 setEdgeMatchingTable={setEdgeMatchingTable}
                                 setNetMatchingTable={setNetMatchingTable}
                                 setMatchingCols={setMatchingCols}
+                                matchingCols={matchingCols}
                             />
                         )}
 
@@ -464,7 +468,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                             />
                         </div>
                     </AccordionDetails>
-                </Accordion> */}
+                </Accordion>
             </DialogContent>
             <ConfirmationDialog
                 open={showError} setOpen={setShowError} title="Error"

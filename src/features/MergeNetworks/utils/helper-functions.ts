@@ -49,7 +49,7 @@ export const processColumns = (
             if (!sharedColsRecord[net1[1]]?.includes(col.name)) {
                 const matchCols: Record<string, string> = {};
                 matchCols[net1[1]] = col.name;
-
+                let numConflicts = 0;
                 toMergeNetworksList.slice(0, index1)?.forEach(net2 => {
                     matchCols[net2[1]] = 'None';
                 });
@@ -60,6 +60,9 @@ export const processColumns = (
                         newSharedCols.push(col.name);
                         sharedColsRecord[net2[1]] = newSharedCols;
                         matchCols[net2[1]] = col.name;
+                        if (col.type !== network[tableName]?.columns.find(nc => nc.name === col.name)?.type) {
+                            numConflicts += 1;
+                        }
                     } else {
                         matchCols[net2[1]] = 'None';
                     }
@@ -70,6 +73,7 @@ export const processColumns = (
                     ...matchCols,
                     mergedNetwork: col.name,
                     type: col.type,
+                    numConflicts: numConflicts
                 });
             }
         });

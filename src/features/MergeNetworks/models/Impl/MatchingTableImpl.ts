@@ -11,7 +11,7 @@ export function createMatchingTable(matchingTableRows: MatchingTableRow[]): Matc
             type: row.type
         } as Column
         for (const key in row) {
-            if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type') {
+            if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type' && key !== 'numConflicts') {
                 networkIds.add(key)
             }
         }
@@ -60,7 +60,7 @@ export function getReversedMergedAttMap(matchingTable: MatchingTable): Map<strin
     const attMap = new Map()
     if (matchingTable.matchingTableRows.length > 0) {
         for (const key in matchingTable.matchingTableRows[0]) {
-            if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type') {
+            if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type' && key !== 'numConflicts') {
                 attMap.set(key, matchingTable.matchingTableRows[0][key])
             }
         }

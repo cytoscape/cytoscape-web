@@ -1,7 +1,8 @@
 //import the necessary libraries and components
 import React from 'react';
+import { PriorityHigh as PriorityHighIcon } from '@mui/icons-material';
 import { NetworkRecord, Pair, TableView } from '../models/DataInterfaceForMerge';
-import { TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, TextField } from '@mui/material';
+import { TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, TextField, Tooltip } from '@mui/material';
 import { MatchingTableRow } from '../models/MatchingTable';
 import { NetAttDropDownTemplate } from './NetAttDropDownTemplate';
 import { IdType } from '../../../models/IdType';
@@ -16,7 +17,7 @@ interface MatchingTableProps {
     setEdgeMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
     setNetMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
     setMatchingCols: (updateFunction: (prevCols: Record<IdType, Column>) => Record<IdType, Column>) => void;
-
+    matchingCols?: Record<IdType, Column>;
 }
 
 export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, type, setNodeMatchingTable, setEdgeMatchingTable, setNetMatchingTable, setMatchingCols }: MatchingTableProps) => {
@@ -58,7 +59,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                                 <TableCell key={`${row.id}-${net[1]}`} component="th" scope="row">
                                     <NetAttDropDownTemplate
                                         networkRecords={networkRecords} rowData={row}
-                                        column={net[1]} type={type}
+                                        column={net[1]} type={type} netLst={netLst}
                                         setNodeMatchingTable={setNodeMatchingTable}
                                         setEdgeMatchingTable={setEdgeMatchingTable}
                                         setNetMatchingTable={setNetMatchingTable}
@@ -77,11 +78,16 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                                     disabled={type === TableView.network && rowIndex < 3}
                                 />
                             </TableCell>
-                            <TableCell key={`${row.id}-type`}>{row.type}</TableCell>
+                            <TableCell key={`${row.id}-type`}>
+                                {row.type}{row.numConflicts > 0 ?
+                                    <Tooltip title={`There are type conflicts in this attribute matching.`} placement="top" arrow>
+                                        <PriorityHighIcon viewBox="0 -3.7 24 24" style={{ color: 'red' }} />
+                                    </Tooltip > : ''}
+                            </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
-        </TableContainer>
+        </TableContainer >
     )
 });

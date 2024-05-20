@@ -3,6 +3,7 @@ import { Column, Table, ValueType, ValueTypeName } from "../../../models/TableMo
 
 export interface MatchingTableRow {
     id: number;
+    numConflicts: number;
     mergedNetwork: string;
     type: ValueTypeName | 'None';
     [key: IdType]: string | number;
