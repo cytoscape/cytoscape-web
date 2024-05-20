@@ -249,12 +249,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
             if (matchingCols[key].type !== matchingType) matchingColsConflicts += 1;
         });
         const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, ...matchingRow, numConflicts: matchingColsConflicts } as MatchingTableRow]
-        if (baseNetwork !== null) {
-            // Update the matching table for each network
-            setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));
-            setEdgeMatchingTable(processColumns('edgeTable', toMergeNetworksList, networkRecords));
-            setNetMatchingTable(processColumns('netTable', toMergeNetworksList, networkRecords));
-        }
+
+        // Update the matching table for each network
+        setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));
+        setEdgeMatchingTable(processColumns('edgeTable', toMergeNetworksList, networkRecords));
+        setNetMatchingTable(processColumns('netTable', toMergeNetworksList, networkRecords));
+
         // check whether it is ready to merge
         if (toMergeNetworksList.length > 0) {
             let isReady = true
@@ -264,6 +264,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                 }
             })
             setReadyToMerge(isReady);
+        } else {
+            setReadyToMerge(false);
         }
     }, [toMergeNetworksList, matchingCols, networkRecords]);
 
