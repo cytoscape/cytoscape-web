@@ -64,7 +64,7 @@ export function getReversedMergedAttMap(matchingTable: MatchingTable): Map<strin
                 attMap.set(key, matchingTable.matchingTableRows[0][key])
             }
         }
-        if (attMap.size !== (Object.entries(matchingTable.matchingTableRows[0]).length - 3)) {
+        if (attMap.size !== (Object.entries(matchingTable.matchingTableRows[0]).length - 4)) {
             throw new Error('Data inconsistency: networkIds and matchingTable have different length.')
         }
     }

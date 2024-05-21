@@ -14,14 +14,14 @@ import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility';
 import { getMatchingTableRows, getAttributeMapping } from './MatchingTableImpl';
 import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel';
 
-export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
+export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkName: string, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable,
     matchingAttribute: Record<IdType, Column>, visualStyle: VisualStyle, netSummaries: Record<IdType, NdexNetworkSummary>): Promise<NetworkWithView> => {
     if (fromNetworks.length < 1) {
         throw new Error("No networks to merge");
     }
-    if (getMatchingTableRows(nodeAttributeMapping).length < 2) {
-        throw new Error("Attributes Length should be greater than 1")
+    if (getMatchingTableRows(nodeAttributeMapping).length < 1) {
+        throw new Error("The length of node attribute mapping table must be greater than 0")
     }
     for (const netId of fromNetworks) {
         if (!networkRecords[netId]) {
@@ -34,7 +34,6 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
             throw new Error(`Matching attribute for network ${netId} not found`);
         }
     }
-    const newNetworkName = 'Merged Network';// default name
     const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
         nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
     const mergedNetSummary = mergeNetSummary(fromNetworks, networkAttributeMapping, netSummaries)
@@ -56,7 +55,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     await putNetworkSummaryToDb({
         isNdex: false,
         ownerUUID: toNetworkId,
-        name: newNetworkName,
+        name: networkName,
         isReadOnly: false,
         subnetworkIds: [],
         isValid: false,

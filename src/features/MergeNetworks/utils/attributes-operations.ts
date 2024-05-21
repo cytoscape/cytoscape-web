@@ -20,7 +20,7 @@ export function castAttributes(toMergeAttr: Record<string, ValueType> | undefine
         for (const row of (isNode ? matchingTable.matchingTableRows.slice(1) : matchingTable.matchingTableRows)) {
             if (row.hasOwnProperty(netId) && row[netId] !== 'None' && row[netId] !== '' && toMergeAttr.hasOwnProperty(row[netId])) {
                 const val = toMergeAttr[row[netId]];
-                if (isString(val) && ['null', 'nan', 'none'].includes(val)) {
+                if (isString(val) && ['null', 'nan', 'none'].includes(val.toLowerCase())) {
                     castedAttr[row.mergedNetwork] = castNaN(row.type, val)
                 } else {
                     castedAttr[row.mergedNetwork] = typeCoercion(val, row.type);

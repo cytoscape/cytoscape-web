@@ -11,7 +11,7 @@ import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button,
     Typography, Box, List, ListItem, ListItemText, ListSubheader,
     Paper, FormControlLabel, Checkbox, ToggleButtonGroup, Tooltip,
-    ToggleButton, Accordion, AccordionSummary, AccordionDetails,
+    ToggleButton, Accordion, AccordionSummary, AccordionDetails, TextField,
 } from '@mui/material';
 import './MergeDialog.css';
 import { v4 as uuidv4 } from 'uuid';
@@ -41,6 +41,7 @@ import { findPairIndex, getNetTableFromSummary, processColumns } from '../utils/
 import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog';
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel';
+import { generateUniqueName } from '../../../utils/network-utils';
 
 interface MergeDialogProps {
     open: boolean;
@@ -56,6 +57,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const { ndexBaseUrl } = useContext(AppConfigContext); // Base URL for the NDEx server
     const [mergeOpType, setMergeOpType] = useState(MergeType.union); // Type of merge operation
     const [typeConflict, setTypeConflict] = useState(false); // Flag to indicate whether there is a type conflict
+    const [mergedNetworkName, setMergedNetworkName] = useState('Merged Network'); // Name of the merged network
     // Record the visual style of the networks to be merged
     const [visualStyleRecord, setvisualStyleRecord] = useState<Record<IdType, VisualStyle>>({});
     // Record the information of the networks to be merged
@@ -225,6 +227,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
 
         setToMergeNetworksList(newToMergeNetworksList);
     };
+    // Function to handle changes in the merged network name
+    const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setMergedNetworkName(event.target.value);
+    };
     // Function to handle switch in the matching table view
     const handleTableViewChange = (event: React.MouseEvent<HTMLElement>, newTableView: TableView) => {
         if (newTableView !== null) {
@@ -302,11 +308,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const handleMerge = async (): Promise<void> => {
         try {
             const newNetworkId = uuidv4();
+            const networkName = generateUniqueName(workSpaceNetworks.map(net => net[0]), mergedNetworkName);
             const summaryRecord: Record<IdType, NdexNetworkSummary> = Object.fromEntries(Object.entries(netSummaries).filter(([id,]) => toMergeNetworksList.some(pair => pair[1] === id)));
             const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : '';
             const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
-                newNetworkId, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj, matchingCols,
-                visualStyleRecord[baseNetwork], summaryRecord);
+                newNetworkId, networkName, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj,
+                matchingCols, visualStyleRecord[baseNetwork], summaryRecord);
 
             // Update state stores with the new network and its components   
             setCurrentNetworkId(newNetworkId);
@@ -416,14 +423,25 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                         <Typography>Advanced Options</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
-                        <Typography variant="h6" style={{ margin: '20px 0' }}>
+
+                        <Typography variant="h6" style={{ margin: '5px 0 5px 0' }}>
+                            Merged Network Name:
+                        </Typography>
+                        <TextField
+                            label="Enter merged network name"
+                            value={mergedNetworkName}
+                            onChange={handleNameChange}
+                            fullWidth
+                            margin="normal"
+                        />
+                        <Typography variant="h6" style={{ margin: '5px 0 10px 0' }}>
                             Matching columns:
                         </Typography>
 
                         <MatchingColumnTable networkRecords={networkRecords} toMergeNetworksList={toMergeNetworksList}
                             matchingCols={matchingCols} setMatchingCols={setMatchingCols} />
 
-                        <Typography variant="h6" style={{ margin: '20px 0' }}>
+                        <Typography variant="h6" style={{ margin: '10px 0 10px 0' }}>
                             How to merge columns:
                         </Typography>
                         {tableView !== null && (
@@ -460,14 +478,14 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                                     </ToggleButton>
                                 </ToggleButtonGroup>
                             </Box>
-                            <FormControlLabel
+                            {/* <FormControlLabel
                                 control={<Checkbox />}
                                 label="Enable merging nodes/edges in the same network"
                             />
                             <FormControlLabel
                                 control={<Checkbox />}
                                 label="Merge only nodes and ignore edges"
-                            />
+                            /> */}
                         </div>
                     </AccordionDetails>
                 </Accordion>
