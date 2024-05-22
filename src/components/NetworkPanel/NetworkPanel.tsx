@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState, Suspense } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -12,17 +12,6 @@ import { NetworkTab } from './NetworkTab'
 import { NetworkTabs } from './NetworkTabs'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { useRendererStore } from '../../store/RendererStore'
-import React from 'react'
-
-const load1 = async () => {
-  const mod1 = await import('hello/HelloApp' as any)
-  const { HelloApp } = mod1
-  console.log('NetworkPanel rendered def', mod1, HelloApp)
-}
-
-load1()
-
-const HelloPanel = React.lazy(() => import('hello/HelloPanel' as any))
 
 interface NetworkPanelProps {
   networkId: IdType
@@ -36,8 +25,6 @@ interface NetworkPanelProps {
  */
 const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const [isActive, setIsActive] = useState<boolean>(false)
-
-  console.log('Net2', HelloPanel)
 
   const ui = useUiStateStore((state) => state.ui)
   const { activeNetworkView, enablePopup } = ui
@@ -105,18 +92,13 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   if (Object.keys(renderers).length === 1) {
     // Use default renderer without tab if there is only one view
     return (
-      <>
-        <Suspense fallback={<div>Loading HELLO...</div>}>
-          <HelloPanel />
-        </Suspense>
-        <NetworkTab
-          network={targetNetwork}
-          renderer={renderers[defaultRendererName]}
-          bgColor={bgColor}
-          isActive={isActive}
-          handleClick={handleClick}
-        />
-      </>
+      <NetworkTab
+        network={targetNetwork}
+        renderer={renderers[defaultRendererName]}
+        bgColor={bgColor}
+        isActive={isActive}
+        handleClick={handleClick}
+      />
     )
   } else {
     return (

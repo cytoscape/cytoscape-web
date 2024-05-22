@@ -1,3 +1,4 @@
+import { AppPanel } from '../../AppManager/AppPanel'
 import { ViewerPanel } from '../../../features/HierarchyViewer/components'
 import { TabPanel } from './TabPanel'
 
@@ -11,6 +12,9 @@ export const getTabContents = (selectedIndex: number): JSX.Element[] => {
   return [
     <TabPanel label="Hierarchy Viewer" key={0} index={0} value={selectedIndex}>
       <ViewerPanel />
+    </TabPanel>,
+    <TabPanel label="Apps" key={1} index={1} value={selectedIndex}>
+      <AppPanel />
     </TabPanel>,
   ]
 }
