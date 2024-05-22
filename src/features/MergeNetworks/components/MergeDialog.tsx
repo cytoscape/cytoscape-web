@@ -57,6 +57,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const [typeConflict, setTypeConflict] = useState(false); // Flag to indicate whether there is a type conflict
     const [mergedNetworkName, setMergedNetworkName] = useState('Merged Network'); // Name of the merged network
     const [fullScreen, setFullScreen] = useState(false); // Full screen mode for the dialog
+    const [tooltipOpen, setTooltipOpen] = useState(false); // Flag to indicate whether the tooltip is open
     // Record the visual style of the networks to be merged
     const [visualStyleRecord, setvisualStyleRecord] = useState<Record<IdType, VisualStyle>>({});
     // Record the information of the networks to be merged
@@ -236,7 +237,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
             setTableView(newTableView);
         }
     };
-
+    const handleFullScreenToggle = () => {
+        setFullScreen(!fullScreen);
+        setTooltipOpen(false); // Close tooltip on toggle
+    };
     // Update the matching table when selectedNetworks changes
     useEffect(() => {
         // Create the initial matching table with the columns of the base network
@@ -341,20 +345,21 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
         <Dialog fullScreen={fullScreen} maxWidth="md" fullWidth={true} open={open} onClose={handleClose}>
             <Box display="flex" alignItems="center" justifyContent="space-between" paddingRight={1} paddingLeft={1}>
                 <DialogTitle>Advanced Network Merge</DialogTitle>
-                {fullScreen ? (
-                    <IconButton onClick={() => setFullScreen(false)} color="inherit">
-                        <Tooltip title="Exit Fullscreen" placement="bottom">
-                            <FullscreenExitIcon />
-                        </Tooltip>
+                <Tooltip
+                    title={fullScreen ? "Exit Fullscreen" : "Fullscreen"}
+                    placement={fullScreen ? "bottom" : "top"}
+                    open={tooltipOpen}
+                    onClose={() => setTooltipOpen(false)}
+                >
+                    <IconButton
+                        onClick={handleFullScreenToggle}
+                        onMouseEnter={() => setTooltipOpen(true)}
+                        onMouseLeave={() => setTooltipOpen(false)}
+                        color="inherit"
+                    >
+                        {fullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
                     </IconButton>
-
-                ) : (
-                    <IconButton onClick={() => setFullScreen(true)} color="inherit">
-                        <Tooltip title="Fullscreen" placement="top">
-                            <FullscreenIcon />
-                        </Tooltip>
-                    </IconButton>
-                )}
+                </Tooltip>
             </Box>
             <DialogContent>
                 <Box className="toggleButtonGroup">
