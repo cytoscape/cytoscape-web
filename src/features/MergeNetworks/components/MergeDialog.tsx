@@ -1,17 +1,15 @@
 import {
-    ArrowForward as ArrowForwardIcon,
-    ArrowBack as ArrowBackIcon,
-    ArrowUpward as ArrowUpwardIcon,
-    ArrowDownward as ArrowDownwardIcon,
-    ExpandMore as ExpandMoreIcon,
-    Star as StarIcon
+    ArrowForward as ArrowForwardIcon, ArrowBack as ArrowBackIcon,
+    ArrowUpward as ArrowUpwardIcon, ArrowDownward as ArrowDownwardIcon,
+    ExpandMore as ExpandMoreIcon, Star as StarIcon,
+    Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon
 } from '@mui/icons-material';
 import React, { useContext, useEffect, useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button,
     Typography, Box, List, ListItem, ListItemText, ListSubheader,
     Paper, FormControlLabel, Checkbox, ToggleButtonGroup, Tooltip,
-    ToggleButton, Accordion, AccordionSummary, AccordionDetails, TextField,
+    ToggleButton, Accordion, AccordionSummary, AccordionDetails, TextField, IconButton,
 } from '@mui/material';
 import './MergeDialog.css';
 import { v4 as uuidv4 } from 'uuid';
@@ -58,6 +56,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const [mergeOpType, setMergeOpType] = useState(MergeType.union); // Type of merge operation
     const [typeConflict, setTypeConflict] = useState(false); // Flag to indicate whether there is a type conflict
     const [mergedNetworkName, setMergedNetworkName] = useState('Merged Network'); // Name of the merged network
+    const [fullScreen, setFullScreen] = useState(false); // Full screen mode for the dialog
     // Record the visual style of the networks to be merged
     const [visualStyleRecord, setvisualStyleRecord] = useState<Record<IdType, VisualStyle>>({});
     // Record the information of the networks to be merged
@@ -339,8 +338,24 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     };
 
     return (
-        <Dialog maxWidth="md" fullWidth={true} open={open} onClose={handleClose}>
-            <DialogTitle>Advanced Network Merge</DialogTitle>
+        <Dialog fullScreen={fullScreen} maxWidth="md" fullWidth={true} open={open} onClose={handleClose}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" paddingRight={1} paddingLeft={1}>
+                <DialogTitle>Advanced Network Merge</DialogTitle>
+                {fullScreen ? (
+                    <IconButton onClick={() => setFullScreen(false)} color="inherit">
+                        <Tooltip title="Exit Fullscreen" placement="bottom">
+                            <FullscreenExitIcon />
+                        </Tooltip>
+                    </IconButton>
+
+                ) : (
+                    <IconButton onClick={() => setFullScreen(true)} color="inherit">
+                        <Tooltip title="Fullscreen" placement="top">
+                            <FullscreenIcon />
+                        </Tooltip>
+                    </IconButton>
+                )}
+            </Box>
             <DialogContent>
                 <Box className="toggleButtonGroup">
                     <ToggleButtonGroup
@@ -364,7 +379,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                     <List
                         subheader={<ListSubheader>Available Networks</ListSubheader>}
                         component={Paper}
-                        style={{ width: 350, maxHeight: 300, overflow: 'auto' }}
+                        style={{ width: '42.5%', maxHeight: 300, overflow: 'auto' }}
                     >
                         {availableNetworksList.map((network, index) => (
                             <ListItem
@@ -388,7 +403,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                     <List
                         subheader={<ListSubheader>Networks to Merge</ListSubheader>}
                         component={Paper}
-                        style={{ width: 350, maxHeight: 300, overflow: 'auto' }}
+                        style={{ width: '42.5%', maxHeight: 300, overflow: 'auto' }}
                     >
                         {toMergeNetworksList.map((network, index) => (
                             <ListItem
@@ -478,14 +493,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                                     </ToggleButton>
                                 </ToggleButtonGroup>
                             </Box>
-                            {/* <FormControlLabel
-                                control={<Checkbox />}
-                                label="Enable merging nodes/edges in the same network"
-                            />
-                            <FormControlLabel
-                                control={<Checkbox />}
-                                label="Merge only nodes and ignore edges"
-                            /> */}
                         </div>
                     </AccordionDetails>
                 </Accordion>
@@ -502,7 +509,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                     Merge
                 </Button>
             </DialogActions>
-        </Dialog>
+        </Dialog >
     );
 };
 
