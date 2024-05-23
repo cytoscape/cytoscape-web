@@ -1,9 +1,10 @@
 import { IdType } from "../../../models/IdType";
 import { NdexNetworkSummary } from "../../../models/NetworkSummaryModel";
-import { Column, Table, ValueType } from "../../../models/TableModel";
+import { Column, Table, ValueType, ValueTypeName } from "../../../models/TableModel";
 import { createTable, insertRows } from "../../../models/TableModel/impl/InMemoryTable";
 import { NetworkRecord, Pair } from "../models/DataInterfaceForMerge";
 import { MatchingTableRow } from "../models/MatchingTable";
+import { getResonableCompatibleConvertionType } from "./attributes-operations";
 
 // Utility function to find index of a pair in a list
 export const findPairIndex = (pairs: Pair<string, string>[], uuid: string) => {
@@ -49,7 +50,8 @@ export const processColumns = (
             if (!sharedColsRecord[net1[1]]?.includes(col.name)) {
                 const matchCols: Record<string, string> = {};
                 matchCols[net1[1]] = col.name;
-                let numConflicts = 0;
+                const typeSet = new Set<ValueTypeName>();
+                typeSet.add(col.type);
                 toMergeNetworksList.slice(0, index1)?.forEach(net2 => {
                     matchCols[net2[1]] = 'None';
                 });
@@ -60,8 +62,9 @@ export const processColumns = (
                         newSharedCols.push(col.name);
                         sharedColsRecord[net2[1]] = newSharedCols;
                         matchCols[net2[1]] = col.name;
-                        if (col.type !== network[tableName]?.columns.find(nc => nc.name === col.name)?.type) {
-                            numConflicts += 1;
+                        const colType = network[tableName]?.columns.find(nc => nc.name === col.name)?.type;
+                        if (colType !== undefined) {
+                            typeSet.add(colType);
                         }
                     } else {
                         matchCols[net2[1]] = 'None';
@@ -72,8 +75,8 @@ export const processColumns = (
                     id: newTable.length,
                     ...matchCols,
                     mergedNetwork: col.name,
-                    type: col.type,
-                    numConflicts: numConflicts
+                    type: getResonableCompatibleConvertionType(typeSet),
+                    numConflicts: typeSet.size <= 1 ? 0 : 1
                 });
             }
         });

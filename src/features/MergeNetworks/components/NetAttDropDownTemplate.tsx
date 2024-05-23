@@ -5,6 +5,7 @@ import { FormControl, MenuItem, Select, SelectChangeEvent } from '@mui/material'
 import { Column } from '../../../models/TableModel/Column';
 import { IdType } from '../../../models/IdType';
 import { ValueTypeName } from '../../../models/TableModel';
+import { getResonableCompatibleConvertionType } from '../utils/attributes-operations';
 
 interface netAttDropDownTemplateProps {
     networkRecords: Record<IdType, NetworkRecord>
@@ -26,50 +27,33 @@ export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, col
     const columns = networkRecords[column]?.[tableType]?.columns || [];
     const networkOptions = (type === TableView.node && rowData.id === 0) ? columns.map(nc => ({ label: nc.name, value: nc.name })) : [...columns.map(nc => ({ label: nc.name, value: nc.name })), emptyOption];
     const currentValue = (networkOptions.some(option => option.value === rowData[column]) && rowData[column] !== 'None') ? rowData[column] : '';
+    const netIdLst = netLst.map(pair => pair[1]);
 
     // Handler for 'Dropdown' changes
     const onDropdownChange = (e: SelectChangeEvent<any>, type: TableView, rowData: { [x: string]: any; }, field: string) => {
-        const updateTable = (prevTable: MatchingTableRow[], fieldType: string) => {
-            const netIdLst = netLst.map(pair => pair[1]);
+        const updateTable = (prevTable: MatchingTableRow[]) => {
+
             const updatedTable = prevTable.map(row => {
                 if (row.id === rowData.id) {
-                    const netIdx: number = netIdLst.indexOf(field);
-                    const originalCol = row[field];
-                    const targetCol = e.target.value;
-                    const originalType = columns.find(col => col.name === originalCol)?.type || 'None';
-                    const targetType = columns.find(col => col.name === targetCol)?.type || 'None';
-
-                    if (netIdLst.slice(0, netIdx).every((net: IdType) => row[net] === 'None')) {
-                        let updatedNumConflicts = 0;
-                        let matchingType: ValueTypeName | 'None' = 'None';
-                        let startIdx = netIdx + 1;
-                        for (const [idx, netId] of netIdLst.slice(netIdx).entries()) {
-                            if ((idx === 0 && targetType !== 'None') || (idx > 0 && row[netId] !== 'None')) {
-                                matchingType = idx === 0 ? targetType : (networkRecords[netId]?.[tableType]?.columns.find(col => col.name === row[netId])?.type || 'None');
-                                startIdx = idx + netIdx + 1;
-                                break;
-                            }
+                    const typeSet = new Set<ValueTypeName>();
+                    const initType = columns.find(col => col.name === e.target.value)?.type
+                    if (initType !== undefined) typeSet.add(initType);
+                    netIdLst.forEach(netId => {
+                        if (netId !== field && row[netId] !== 'None') {
+                            const colType = networkRecords[netId]?.[tableType]?.columns.find(col => col.name === row[netId])?.type;
+                            if (colType !== undefined) typeSet.add(colType);
                         }
-                        netIdLst.slice(startIdx).forEach((netId: IdType) => {
-                            if (row[netId] !== 'None') {
-                                const matchingCol = networkRecords[netId]?.[tableType]?.columns.find(col => col.name === row[netId])?.type || 'None';
-                                if (matchingCol !== matchingType) {
-                                    updatedNumConflicts += 1;
-                                }
-                            }
-                        })
-                        return { ...row, [field]: targetCol, numConflicts: updatedNumConflicts, type: matchingType };
-                    } else {
-                        const updatedNumConflicts = ((originalType === row.type || originalType === 'None') ? 0 : -1) + ((targetType === 'None' || targetType === row.type) ? 0 : 1) + row.numConflicts;
-                        return { ...row, [field]: targetCol, numConflicts: updatedNumConflicts };
-                    }
+                    });
+                    const numConflicts = typeSet.size <= 1 ? 0 : 1;
+                    const mergedType = getResonableCompatibleConvertionType(typeSet);
+                    return { ...row, [field]: e.target.value, numConflicts, type: mergedType } as MatchingTableRow;
                 }
                 return row;
             });
             return filterRows(updatedTable);
         };
         if (type === TableView.node) {
-            setNodeMatchingTable(prevTable => updateTable(prevTable, 'nodeTable'));
+            setNodeMatchingTable(prevTable => updateTable(prevTable));
             if (rowData.id === 0) {
                 setMatchingCols(prevCols => {
                     const columnType = networkRecords[e.target.value]?.nodeTable?.columns.find(col => col.name === e.target.value)?.type || 'None';
@@ -77,9 +61,9 @@ export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, col
                 });
             }
         } else if (type === TableView.edge) {
-            setEdgeMatchingTable(prevTable => updateTable(prevTable, 'edgeTable'));
+            setEdgeMatchingTable(prevTable => updateTable(prevTable));
         } else if (type === TableView.network) {
-            setNetMatchingTable(prevTable => updateTable(prevTable, 'netTable'));
+            setNetMatchingTable(prevTable => updateTable(prevTable));
         }
     };
 

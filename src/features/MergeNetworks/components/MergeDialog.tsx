@@ -17,7 +17,7 @@ import {
     MergeType, NetworkRecord, TableView, Pair
 } from '../models/DataInterfaceForMerge';
 import { MatchingTableRow } from '../models/MatchingTable';
-import { Column, ValueType } from '../../../models/TableModel';
+import { Column, ValueType, ValueTypeName } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
 import { AppConfigContext } from '../../../AppConfigContext'
@@ -40,6 +40,7 @@ import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel';
 import { generateUniqueName } from '../../../utils/network-utils';
+import { getResonableCompatibleConvertionType } from '../utils/attributes-operations';
 
 interface MergeDialogProps {
     open: boolean;
@@ -244,20 +245,18 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     // Update the matching table when selectedNetworks changes
     useEffect(() => {
         // Create the initial matching table with the columns of the base network
-        const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0] : null;
-        const matchingType = baseNetwork ? (networkRecords[baseNetwork[1]]?.nodeTable?.columns.find(col => col.name === matchingCols[baseNetwork[1]]?.name)?.type || 'None') : 'None';
-        let matchingColsConflicts = 0;
-        const initialRow = {
-            id: 0,
-            mergedNetwork: 'Matching.Attribute',
-            type: matchingType
-        }
+        const typeSet = new Set<ValueTypeName>();
         const matchingRow: Record<string, string> = {};
         Object.keys(matchingCols).forEach(key => {
             matchingRow[key] = matchingCols[key].name;
-            if (matchingCols[key].type !== matchingType) matchingColsConflicts += 1;
+            typeSet.add(matchingCols[key].type);
         });
-        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, ...matchingRow, numConflicts: matchingColsConflicts } as MatchingTableRow]
+        const initialRow = {
+            id: 0,
+            mergedNetwork: 'Matching.Attribute',
+            type: getResonableCompatibleConvertionType(typeSet) || 'None',
+        }
+        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, ...matchingRow, numConflicts: typeSet.size <= 1 ? 0 : 1 } as MatchingTableRow]
 
         // Update the matching table for each network
         setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));

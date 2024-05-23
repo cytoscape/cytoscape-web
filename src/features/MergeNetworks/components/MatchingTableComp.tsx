@@ -80,7 +80,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                             </TableCell>
                             <TableCell key={`${row.id}-type`}>
                                 {row.type}{row.numConflicts > 0 ?
-                                    <Tooltip title={`There are type conflicts in this attribute matching.`} placement="top" arrow>
+                                    <Tooltip title={'Type coercion may be applied to this attribute.'} placement="top" arrow>
                                         <PriorityHighIcon viewBox="0 -3.7 24 24" style={{ color: 'red' }} />
                                     </Tooltip > : ''}
                             </TableCell>

@@ -134,3 +134,46 @@ function castUndefined(mergedType: ValueTypeName) {
             throw new Error(`Unsupported type ${mergedType}`);
     }
 }
+
+
+export function isConvertible(typeFrom: ValueTypeName, typeTo: ValueTypeName): boolean {
+    if (typeFrom === typeTo) {
+        return true;
+    }
+    if (typeTo === ValueTypeName.String) {
+        return true;
+    }
+    if (typeFrom === ValueTypeName.Integer && (typeTo === ValueTypeName.Long || typeTo === ValueTypeName.Double)) {
+        return true;
+    }
+    if (typeFrom === ValueTypeName.Long && typeTo === ValueTypeName.Double) {
+        return true;
+    }
+    if (isListType(typeTo) && isConvertible(getPlainType(typeFrom), getPlainType(typeTo))) {
+        return true;
+    }
+    return false;
+}
+
+export function getPlainType(type: ValueTypeName): ValueTypeName {
+    if (isListType(type)) {
+        return type.replace('list_of_', '') as ValueTypeName;
+    }
+    return type;
+}
+
+export function getResonableCompatibleConvertionType(types: Set<ValueTypeName>): ValueTypeName {
+    let curr = types.values().next().value;
+    let li = isListType(curr);
+    let ret = getPlainType(curr);
+    for (const type of types) {
+        const plain = getPlainType(type);
+        if (!isConvertible(plain, ret)) {
+            ret = isConvertible(ret, plain) ? plain : ValueTypeName.String;
+        }
+        if (!li) {
+            li = isListType(type);
+        }
+    }
+    return li ? `list_of_${ret}` as ValueTypeName : ret;
+}
