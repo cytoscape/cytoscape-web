@@ -135,7 +135,7 @@ export const CopyNetworkToNDExMenuItem = (
         disabled={!authenticated}
         onClick={handleClick}
       >
-        {summary?.isNdex ? `Save Copy to NDEx` : `Save to NDEx`}
+        {summary?.isNdex ? `Save Copy of the current network to NDEx` : `Save current network to NDEx`}
       </MenuItem>
     </Box>
   )

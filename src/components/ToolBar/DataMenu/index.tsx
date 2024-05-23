@@ -9,6 +9,12 @@ import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
 import { UploadNetworkMenuItem } from './ImportNetworkFromFileMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
 import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
+
+import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
+import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
+import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
+import { LoadWorkspaceMenuItem } from './LoadWorkspaceMenuItem'
+        
 import { useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
@@ -40,8 +46,12 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
 
   const menuItems = [
     {
-      label: 'Open network(s)From NDEx',
+      label: 'Open network(s)From NDEx...',
       template: <LoadFromNdexMenuItem handleClose={handleClose} />,
+    },
+        {
+      label: 'Open workspace from NDEx...',
+      template: <LoadWorkspaceMenuItem handleClose={handleClose} />,
     },
     {
       label: '(Demo) Open sample networks',
@@ -70,6 +80,14 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     {
       label: '',
       template: <Divider />,
+    },
+    {
+      label: 'Save Workspace to NDEx (overwrite)',
+      template: () => <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />
+    },
+    {
+      label: 'Save Workspace to NDEx',
+      template: () => <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />,
     },
     {
       label: 'Save to NDEx',
