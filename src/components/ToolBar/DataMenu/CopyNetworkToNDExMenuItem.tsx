@@ -1,5 +1,5 @@
 import { MenuItem, Box, Tooltip } from '@mui/material'
-import { ReactElement, useContext } from 'react'
+import { ReactElement, useContext, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 // @ts-expect-error-next-line
@@ -18,11 +18,20 @@ import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../..'
+import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
+import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
+import { NetworkView } from '../../../models/ViewModel'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
+  const [showHcxValidationDialog, setShowHcxValidationDialog] =
+    useState<boolean>(false)
+
+  const validationResults = useHcxValidatorStore(
+    (state) => state.validationResults,
+  )
 
   const client = useContext(KeycloakContext)
 
@@ -36,8 +45,8 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.summaries[currentNetworkId],
   )
 
-  const viewModel = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -58,6 +67,10 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.setCurrentNetworkId,
   )
   const saveCopyToNDEx = async (): Promise<void> => {
+    if (viewModel === undefined) {
+      throw new Error('Could not find the current network view model.')
+    }
+
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
@@ -68,7 +81,7 @@ export const CopyNetworkToNDExMenuItem = (
       table.nodeTable,
       table.edgeTable,
       viewModel,
-      `Copy of ${summary.name}`,
+      summary.isNdex ? `Copy of ${summary.name}` : summary.name,
     )
     try {
       const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
@@ -99,17 +112,46 @@ export const CopyNetworkToNDExMenuItem = (
     await saveCopyToNDEx()
   }
 
+  const handleClick = async (): Promise<void> => {
+    const validationResult = validationResults?.[currentNetworkId]
+
+    if (validationResult !== undefined && !validationResult.isValid) {
+      setShowHcxValidationDialog(true)
+    } else {
+      await handleSaveCurrentNetworkToNDEx()
+    }
+  }
+
   const menuItem = (
-    <MenuItem
-      disabled={!authenticated}
-      onClick={handleSaveCurrentNetworkToNDEx}
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}
     >
-      Save copy of the current network to NDEx
-    </MenuItem>
+      <MenuItem
+        sx={{ flexBasis: '100%', flexGrow: 3 }}
+        disabled={!authenticated}
+        onClick={handleClick}
+      >
+        {summary?.isNdex ? `Save Copy of the current network to NDEx` : `Save current network to NDEx`}
+      </MenuItem>
+    </Box>
   )
 
   if (authenticated) {
-    return <>{menuItem}</>
+    return (
+      <>
+        {menuItem}
+        <HcxValidationSaveDialog
+          open={showHcxValidationDialog}
+          onClose={() => setShowHcxValidationDialog(false)}
+          onSubmit={() => handleSaveCurrentNetworkToNDEx()}
+          validationResult={validationResults?.[currentNetworkId]}
+        />
+      </>
+    )
   } else {
     return (
       <Tooltip title="Login to save a copy of the current network to NDEx">

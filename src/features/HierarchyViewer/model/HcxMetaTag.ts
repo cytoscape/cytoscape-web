@@ -3,8 +3,13 @@ const hcxPrefix: HcxPrefix = 'HCX::'
 
 export const SubsystemTag = {
   isRoot: `${hcxPrefix}isRoot`,
+
+  // ID list of the subsystem members
   members: `${hcxPrefix}members`,
   memberNames: `${hcxPrefix}memberNames`,
+
+  // Human readable names of the subsystem members
+  memberName: `${hcxPrefix}memberName`,
 
   // This is an optional, and used to fetch the interaction network with layout
   interactionNetworkUuid: `${hcxPrefix}interactionNetworkUUID`,
@@ -28,6 +33,8 @@ export const HcxMetaTag = {
 
   // Number of files to represent the hierarchy: e.g. 2 (hierarchy and interaction)
   modelFileCount: `${hcxPrefix}modelFileCount`,
+
+  ndexSchema: `ndexSchema`,
 } as const
 
 export type HcxMetaTagType = (typeof HcxMetaTag)[keyof typeof HcxMetaTag]

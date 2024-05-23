@@ -28,10 +28,15 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { IdType } from '../../../models/IdType'
 import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../..'
+import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
+import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
+import { NetworkView } from '../../../models/ViewModel'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
+  const [showHcxValidationDialog, setShowHcxValidationDialog] =
+    useState<boolean>(false)
 
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -45,8 +50,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
-  const viewModel = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
@@ -65,6 +70,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const setNetworkModified = useWorkspaceStore(
     (state) => state.setNetworkModified,
   )
+  const validationResults = useHcxValidatorStore(
+    (state) => state.validationResults,
+  )
 
   const client = useContext(KeycloakContext)
 
@@ -73,6 +81,10 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const addMessage = useMessageStore((state) => state.addMessage)
 
   const overwriteNDExNetwork = async (): Promise<void> => {
+    if (viewModel === undefined) {
+      throw new Error('Could not find the current network view model.')
+    }
+
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
@@ -103,6 +115,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const saveCopyToNDEx = async (): Promise<void> => {
+    if (viewModel === undefined) {
+      throw new Error('Could not find the current network view model.')
+    }
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
@@ -141,6 +156,16 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     props.handleClose()
   }
 
+  const handleClick = async (): Promise<void> => {
+    const validationResult = validationResults?.[currentNetworkId]
+
+    if (validationResult !== undefined && !validationResult.isValid) {
+      setShowHcxValidationDialog(true)
+    } else {
+      await handleSaveCurrentNetworkToNDEx()
+    }
+  }
+
   const handleSaveCurrentNetworkToNDEx = async (): Promise<void> => {
     const localModificationTime = summary.modificationTime
     const ndexClient = new NDEx(ndexBaseUrl)
@@ -174,12 +199,21 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const menuItem = (
-    <MenuItem
-      disabled={!authenticated}
-      onClick={handleSaveCurrentNetworkToNDEx}
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}
     >
-      Save the current network to NDEx (overwrite)
-    </MenuItem>
+      <MenuItem
+        sx={{ flexBasis: '100%', flexGrow: 3 }}
+        disabled={!authenticated || !summary?.isNdex}
+        onClick={handleClick}
+      >
+        Save the current network to NDEx (overwrite)
+      </MenuItem>
+    </Box>
   )
 
   const dialog = (
@@ -212,6 +246,12 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       <>
         {menuItem}
         {dialog}
+        <HcxValidationSaveDialog
+          open={showHcxValidationDialog}
+          onClose={() => setShowHcxValidationDialog(false)}
+          onSubmit={() => handleSaveCurrentNetworkToNDEx()}
+          validationResult={validationResults?.[currentNetworkId]}
+        />
       </>
     )
   } else {

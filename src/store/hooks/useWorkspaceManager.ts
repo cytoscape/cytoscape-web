@@ -7,6 +7,7 @@ import { useViewModelStore } from '../ViewModelStore'
 import { useVisualStyleStore } from '../VisualStyleStore'
 import { useWorkspaceStore } from '../WorkspaceStore'
 import { useUiStateStore } from '../UiStateStore'
+import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
 
 /**
  * Based on the changes in the workspace store, this hook will
@@ -34,6 +35,16 @@ export const useWorkspaceManager = (): void => {
     (state) => state.deleteAllNetworkModifiedStatuses,
   )
 
+  const deleteValidationResult = useHcxValidatorStore(
+    (state) => state.deleteValidationResult,
+  )
+  const deleteAllValidationResults = useHcxValidatorStore(
+    (state) => state.deleteAllValidationResults,
+  )
+  const validationResults = useHcxValidatorStore(
+    (state) => state.validationResults,
+  )
+
   const setActiveNetworkView = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
@@ -52,6 +63,10 @@ export const useWorkspaceManager = (): void => {
     if (activeNetworkView === deleted) {
       setActiveNetworkView('')
     }
+
+    if (validationResults[deleted] !== undefined) {
+      deleteValidationResult(deleted)
+    }
   }
 
   const handleDeleteAll = (): void => {
@@ -61,11 +76,12 @@ export const useWorkspaceManager = (): void => {
     deleteAllVisualStyles()
     deleteAllTables()
     deleteAllNetworkModifiedStatuses()
+    deleteAllValidationResults()
     setActiveNetworkView('')
   }
 
   useEffect(() => {
-    const sub = useWorkspaceStore.subscribe(
+    const handleNetworkIdDeletion = useWorkspaceStore.subscribe(
       (state) => state.workspace.networkIds,
       (ids, lastIds) => {
         if (ids.length === 0 && lastIds.length !== 0) {
@@ -81,8 +97,23 @@ export const useWorkspaceManager = (): void => {
         }
       },
     )
+
+    // when current network id changes, update the active network view
+    const handleCurrentNetworkIdChange = useWorkspaceStore.subscribe(
+      (state) => state.workspace.currentNetworkId,
+      (id, lastId) => {
+        if (id !== lastId) {
+          if (id === '') {
+            setActiveNetworkView('')
+          } else {
+            setActiveNetworkView(id)
+          }
+        }
+      },
+    )
     return () => {
-      sub() // Unsubscribe
+      handleNetworkIdDeletion() // Unsubscribe
+      handleCurrentNetworkIdChange()
     }
   }, [])
 }

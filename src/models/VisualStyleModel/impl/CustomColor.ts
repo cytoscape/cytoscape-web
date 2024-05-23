@@ -1,15 +1,27 @@
 export const CompactCustomColors = [
-    '#ffffff', '#d3d2ff', '#d3d2ff', '#d3d2ff', '#ffcfd1', '#ffcfd1', '#ffcfd1', '#ffffcf', '#c5ffcf', '#c5ffcf', '#c5ffcf', '#c5ffcf',
-    '#d2d2d2', '#a4a2ff', '#a4a2ff', '#a4a2ff', '#ff9ba2', '#ff9ba2', '#ff9ba2', '#feff9b', '#7eff9c', '#7eff9c', '#7eff9c', '#7fffd0',
-    '#d2d2d2', '#63a5ff', '#746fff', '#ae6bff', '#ff5ea4', '#ff5f6e', '#ff9b6a', '#feff5e', '#7eff61', '#00ff62', '#00ff62', '#00ffd0',
-    '#a3a3a3', '#00a6ff', '#4035ff', '#b421ff', '#ff00a5', '#ff0030', '#ff9c1e', '#feff00', '#7dff00', '#00ff00', '#00ff63', '#00ffd1',
-    '#a3a3a3', '#00a7ff', '#1900ff', '#b600ff', '#ff00a5', '#ff0000', '#ff9c00', '#feff00', '#7dff00', '#00ff00', '#00ff63', '#00ffd1',
-    '#717171', '#00a7d5', '#1200d8', '#b500d7', '#e800a6', '#e70000', '#dba000', '#d1d300', '#94d500', '#00d800', '#00d86a', '#00d8d3',
-    '#717171', '#00a8a4', '#0b00a8', '#b400a7', '#b400a7', '#b40000', '#ac6e00', '#a2a400', '#a2a400', '#00a800', '#00a86f', '#00a8a4',
-    '#3a3a3a', '#007472', '#050075', '#7e0074', '#7d0000', '#7d0000', '#717200', '#717200', '#717200', '#1c7400', '#007472', '#007472',
-    '#000000', '#003c3b', '#01003c', '#41003c', '#41003c', '#3a3a00', '#808900', '#3a3a00', '#3a3a00', '#003c3b', '#003c3b', '#3a3a3a',
-    ]
-
+    '#ffffff', '#d3d2ff', '#d3d300', '#d3d301', '#ffcfd1', '#ffcfd2', '#ffcfd3', 
+    '#ffffcf', '#c5ffcf', '#c5ffd0', '#c5ffd1', 
+    '#c5ffd2', '#d2d2d2', '#a4a2ff', '#a4a300', '#a4a301', '#ff9ba2', '#ff9ba3', 
+    '#ff9ba4', '#feff9b', '#7eff9c', 
+    '#7eff9d', '#7eff9e', '#7fffd0', '#d2d2d3', '#63a5ff', '#746fff', '#ae6bff', 
+    '#ff5ea4', '#ff5f6e', '#ff9b6a', 
+    '#feff5e', '#7eff61', '#00ff62', '#00ff63', '#00ffd0', '#a3a3a3', '#00a6ff', 
+    '#4035ff', '#b421ff', '#ff00a5', 
+    '#ff0030', '#ff9c1e', '#feff00', '#7dff00', '#00ff00', '#00ff64', '#00ffd1', 
+    '#a3a3a4', '#00a7ff', '#1900ff', 
+    '#b600ff', '#ff00a6', '#ff0000', '#ff9c00', '#feff01', '#7dff01', '#00ff01', 
+    '#00ff65', '#00ffd2', 
+    '#717171', '#00a7d5', '#1200d8', '#b500d7', '#e800a6', '#e70000', '#dba000', 
+    '#d1d300', '#94d500', '#00d800', 
+    '#00d86a', '#00d8d3', '#717172', '#00a8a4', '#0b00a8', '#b400a7', '#b400a8', 
+    '#b40000', '#ac6e00', '#a2a400', 
+    '#a2a401', '#00a800', '#00a86f', '#00a8a5', '#3a3a3a', '#007472', '#050075', 
+    '#7e0074', '#7d0000', '#7d0001', 
+    '#717200', '#717201', '#717202', '#1c7400', '#007473', '#007474', '#000000', 
+    '#003c3b', '#01003c', '#41003c', 
+    '#41003d', '#3a3a00', '#808900', '#3a3a01', '#3a3a02', '#003c3c', '#003c3d', 
+    '#3a3a3b',
+];
 
 export const VirdisCustomColors = [
     ['#ffea00', '#98e21e', '#00ce71', '#00af91', '#008f9a', '#2f689b', '#55378d', '#560061'],
@@ -21,7 +33,7 @@ export const VirdisCustomColors = [
 export const SequentialCustomColors = [
     ['#f7fdf6', '#e5f7e3', '#c5eec5', '#9ae1a1', '#60cf7c', '#00b962', '#009a49', '#006836'],
     ['#f7fdf1', '#e0f6de', '#caefca', '#a2e4bb', '#69d6cb', '#0bbfdb', '#009ac9', '#0065ac'],
-    ['#fff8fc', '#f1e5f3', '#d6d7ea', '#aac6e1', '#aac6e1', '#009eca', '#009096', '#00735a'],
+    ['#fff8fc', '#f1e5f3', '#d6d7ea', '#aac6e1', '#aac6e2', '#009eca', '#009096', '#00735a'],
     ['#fff8f4', '#ffe2e1', '#ffc8c6', '#ffa2bd', '#ff62ac', '#f700a4', '#ca008c', '#940085'],
     ['#fff8ee', '#ffeacc', '#ffd7a3', '#ffbf89', '#ff8f5c', '#ff614a', '#f10011', '#b40000'],
     ['#f7fdfd', '#e1eff6', '#c2d9ea', '#a1c5e1', '#95a1cf', '#9e73bd', '#9f41aa', '#860079'],
@@ -37,9 +49,8 @@ export const SequentialCustomColors = [
     ['#f7fdfd', '#e5f7fa', '#cbf0e9', '#91e0cf', '#47cdad', '#00bb7e', '#009a49', '#006623'],
     ['#ffffdb', '#ecfab5', '#c5eeb9', '#6fd7c2', '#00c3cd', '#009fca', '#006bb5', '#003293'],
     ['#fff8fc', '#f0eaf4', '#d6d7ea', '#aac6e1', '#6fb5d7', '#009eca', '#007ebc', '#005a89'],
-  ]
-
-
+    ];
+    
 export const DivergingCustomColors = [
     ['#ff0000', '#ff304d', '#ff939b', '#ffdddf', '#e0dfff', '#9e9cff', '#5750ff', '#1900ff'],
     ['#cd002c', '#ed5e52', '#ffa989', '#ffdecc', '#d2e9f3', '#8ecee4', '#1ba1cd', '#0073b9'],
@@ -47,11 +58,14 @@ export const DivergingCustomColors = [
     ['#8e2191', '#ac78b7', '#cfacd7', '#eed8ec', '#d8f3d7', '#a0e2a6', '#3bbb66', '#008739'],
     ['#ee2957', '#ff6a43', '#ffb262', '#ffe38e', '#e5f89b', '#a6e4aa', '#47cdae', '#0096c8'],
     ['#a15600', '#d18820', '#e8c882', '#faeac7', '#c5efe8', '#71d7c8', '#00a59a', '#007569'],
-    ['#00ffff', '#00ffff', '#74ffff', '#d7ffff', '#ffddff', '#ff92ff', '#ff29ff', '#ff00ff'],
+    ['#00ffff', '#3AFFFF', '#74ffff', '#d7ffff', '#ffddff', '#ff92ff', '#ff29ff', '#ff00ff'],
     ['#f10021', '#ff6a43', '#ffb262', '#ffe38e', '#d8f38e', '#a1e16b', '#4ac967', '#00a755'],
     ['#e0008a', '#f378b8', '#febae0', '#ffe2f2', '#e6f7d4', '#b5e78a', '#75c739', '#35a002'],
     ['#cd002c', '#ed5e52', '#ffa989', '#ffdecc', '#e4e4e4', '#c2c2c2', '#929292', '#575757'],
     ['#f10021', '#ff6a43', '#ffb262', '#ffe393', '#e0f6f9', '#a8e0ed', '#6db8d9', '#3d82c0'],
-    ]
+   ];
+    
 
 
+
+    

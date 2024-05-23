@@ -4,7 +4,6 @@ import { BaseMenuProps } from '../BaseMenuProps'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
-import { NetworkView } from '../../../models/ViewModel'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 
 export const DeleteSelectedNodesMenuItem = (
@@ -17,12 +16,12 @@ export const DeleteSelectedNodesMenuItem = (
     (state) => state.workspace.currentNetworkId,
   )
 
-  const networkViewModel: NetworkView = useViewModelStore(
-    (state) => state.viewModels[currentNetworkId],
+  const viewModel = useViewModelStore(
+    (state) => state.getViewModel(currentNetworkId),
   )
 
   const selectedNodes: IdType[] =
-    networkViewModel !== undefined ? networkViewModel.selectedNodes : []
+    viewModel !== undefined ? viewModel.selectedNodes : []
 
   useEffect(() => {
     if (selectedNodes.length > 0) {

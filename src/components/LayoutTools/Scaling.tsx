@@ -53,8 +53,8 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     (state) => state.setIsRunning,
   )
 
-  const networkView: NetworkView | undefined = useViewModelStore(
-    (state) => state.viewModels[networkId],
+  const networkView: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(networkId),
   )
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   }, [networkId])
 
   useEffect(() => {
-    if (originalPositions.size === 0 && networkView !== undefined) {
+    if (networkView !== undefined) {
       const positions = new Map<IdType, [number, number, number?]>()
       // Need to record the original position
       const nodeIds: IdType[] = Object.keys(networkView.nodeViews)
@@ -111,10 +111,10 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
 
     // Scale relative to the original positions
     const positions = new Map<IdType, [number, number, number?]>()
-    const nodeIds: IdType[] =
-      originalPositions === undefined
-        ? []
-        : ([...originalPositions?.keys()] as IdType[])
+    let nodeIds: IdType[] = []
+    if (originalPositions !== undefined) {
+      nodeIds = [...originalPositions.keys()]
+    }
     if (nodeIds.length === 0) {
       return
     }

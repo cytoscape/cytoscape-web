@@ -23,19 +23,36 @@ import { useLayoutStore } from '../../../store/LayoutStore'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
-interface NetworkRendererProps {
-  network: Network
-}
+import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 
+interface NetworkRendererProps {
+  network?: Network
+
+  /**
+   * How to display the selections.
+   *
+   * If "select", then the selected objects will be highlighted.
+   * If "show_hide", then the selected objects will be shown and
+   * the others will be hidden.
+   */
+  displayMode?: DisplayMode
+}
 
 /**
  *
  * @returns
  */
-const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
+const CyjsRenderer = ({
+  network,
+  displayMode = DisplayMode.SELECT,
+}: NetworkRendererProps): ReactElement => {
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
   )
+  if (network === undefined) {
+    return <></>
+  }
+
   const { id } = network
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
@@ -46,7 +63,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     activeNetworkIdRef.current = activeNetworkId
   }, [activeNetworkId])
 
-
   let isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
   const setViewModel = useViewModelStore((state) => state.add)
@@ -54,7 +70,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
 
   const tables = useTableStore((state) => state.tables)
-  const viewModels = useViewModelStore((state) => state.viewModels)
+  const getViewModel: (id: IdType) => NetworkView | undefined =
+    useViewModelStore((state) => state.getViewModel)
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
 
@@ -74,7 +91,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   // TO avoid unnecessary re-rendering / fit
   const [nodesMoved, setNodesMoved] = useState<boolean>(false)
 
-  const networkView: NetworkView = viewModels[id]
+  const networkView: NetworkView | undefined = getViewModel(id)
   const vs: VisualStyle = visualStyles[id]
 
   const [bgColor, setBgColor] = useState<string>('#FFFFFF')
@@ -85,7 +102,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       setBgColor('#FFFFFF')
     }
   }, [vs, isRunning])
-
 
   const table = tables[id]
 
@@ -101,6 +117,23 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
   // Used to avoid unnecessary style updates during initialization
   const isViewCreated = useRef(false)
+
+  const selectionHandler = (event: EventObject) => {
+    console.log('handling Selection event2: ', event)
+    const selectedNodes: IdType[] = []
+    const selectedEdges: IdType[] = []
+    cy.elements()
+      .filter((e: SingularElementArgument) => e.selected())
+      .forEach((ele: SingularElementArgument) => {
+        const eleId: string = ele.data('id')
+        if (ele.isNode()) {
+          selectedNodes.push(eleId)
+        } else {
+          selectedEdges.push(eleId)
+        }
+      })
+    exclusiveSelect(id, selectedNodes, selectedEdges)
+  }
 
   const renderNetwork = useMemo(
     () => (): void => {
@@ -121,6 +154,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         edgeTable: table.edgeTable,
         visualStyle: vs,
       }
+
       const updatedNetworkView: NetworkView =
         VisualStyleFn.applyVisualStyle(data)
 
@@ -132,7 +166,9 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       setCyStyle(newStyle)
 
       // Restore selection state in Cyjs instance
-      const { selectedNodes, selectedEdges } = networkView
+      const selectedNodes = networkView?.selectedNodes ?? []
+      const selectedEdges = networkView?.selectedEdges ?? []
+
       cy.nodes()
         .filter((ele: SingularElementArgument) => {
           return selectedNodes.includes(ele.data('id'))
@@ -146,34 +182,20 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
       // Box selection listener
       cy.on(
-        'boxselect select',
+        'boxend',
         debounce((event: EventObject) => {
-          console.log('Selection event: ', event.target)
-          const selectedNodes: IdType[] = []
-          const selectedEdges: IdType[] = []
-          cy.elements()
-            .filter((e: SingularElementArgument) => e.selected())
-            .forEach((ele: SingularElementArgument) => {
-              const eleId: string = ele.data('id')
-              if (ele.isNode()) {
-                selectedNodes.push(eleId)
-              } else {
-                selectedEdges.push(eleId)
-              }
-            })
-          exclusiveSelect(id, selectedNodes, selectedEdges)
+          selectionHandler(event)
         }),
         100,
       )
 
       // single selection listener
       cy.on('tap', (e: EventObject) => {
-
+        console.debug('handling TAP event: ', e)
         // Check for background click
-
         // This is necessary to access the latest value from closure
         const activeId: string = activeNetworkIdRef.current
-        
+
         if (
           activeId !== undefined &&
           activeId !== '' &&
@@ -187,7 +209,21 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         }
 
         if (e.target === cy) {
-          exclusiveSelect(id, [], [])
+          // Background click
+          if (displayMode === DisplayMode.SELECT) {
+            exclusiveSelect(id, [], [])
+          } else {
+            exclusiveSelect(id, [], selectedEdges)
+          }
+        } else if (e.target.isNode() || e.target.isEdge()) {
+          const selectedNodes: IdType[] = []
+          const selectedEdges: IdType[] = []
+          if (e.target.isNode()) {
+            selectedNodes.push(e.target.data('id'))
+          } else {
+            selectedEdges.push(e.target.data('id'))
+          }
+          exclusiveSelect(id, selectedNodes, selectedEdges)
         }
         cy.autounselectify(false)
       })
@@ -222,7 +258,13 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
         isViewCreated.current = true
       }, 1000)
     },
-    [network, cy, activeNetworkId],
+    [
+      network,
+      cy,
+      activeNetworkId,
+      networkView?.selectedNodes,
+      networkView?.selectedEdges,
+    ],
   )
 
   const applyStyleUpdate = (): void => {
@@ -302,7 +344,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
   // Apply layout when node positions are changed
   useEffect(() => {
-    if (viewModels[id] === undefined || cy === null) {
+    const viewModel = getViewModel(id)
+    if (viewModel === undefined || cy === null) {
       return
     }
 
@@ -313,8 +356,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     }
 
     // Update position
-    const curView = viewModels[id]
-    const nodeViews = curView.nodeViews
+    const { nodeViews } = viewModel
     const viewCount = Object.keys(nodeViews).length
     const cyNodeCount = cy.nodes().length
     cy.nodes().forEach((cyNode: NodeSingular) => {
@@ -335,13 +377,13 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   }, [networkView?.nodeViews])
 
   useEffect(() => {
-    if (viewModels[id] === undefined || cy === null) {
+    const viewModel = getViewModel(id)
+    if (viewModel === undefined || cy === null) {
       return
     }
 
     // Edge deletion
-    const curView = viewModels[id]
-    const edgeViews = curView.edgeViews
+    const { edgeViews } = viewModel
     cy.edges().forEach((cyEdge: EdgeSingular) => {
       const cyEdgeId = cyEdge.data('id')
       if (edgeViews[cyEdgeId] === undefined) {
@@ -365,26 +407,49 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     // Clear selection
     if (selectedNodes.length === 0 && selectedEdges.length === 0) {
       cy.elements().unselect()
+      cy.elements().show()
       return
     }
 
     if (selectedNodes.length === 0) {
       cy.nodes().unselect()
+      if (displayMode === DisplayMode.SHOW_HIDE) {
+        cy.nodes().show()
+      }
     } else {
+      cy.nodes().show()
       cy.nodes()
+        .unselect()
         .filter((ele: SingularElementArgument) => {
           return selectedNodes.includes(ele.data('id'))
         })
         .select()
     }
+
+    // Handle edge selection
     if (selectedEdges.length === 0) {
+      // No edge is selected.
       cy.edges().unselect()
+      // cy.edges().show()
     } else {
-      cy.edges()
+      // At least one edge is selected.
+      if (displayMode === DisplayMode.SHOW_HIDE) {
+        cy.edges().hide()
+      } else {
+        cy.edges().show()
+      }
+
+      const newSelectedEdges = cy
+        .edges()
         .filter((ele: SingularElementArgument) => {
           return selectedEdges.includes(ele.data('id'))
         })
-        .select()
+
+      if (displayMode === DisplayMode.SHOW_HIDE) {
+        newSelectedEdges.show()
+      } else {
+        newSelectedEdges.select()
+      }
     }
   }, [networkView?.selectedNodes, networkView?.selectedEdges])
 
@@ -398,7 +463,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
-        wheelSensitivity: 0.1,
+        // wheelSensitivity: 0.1,
       })
       setCy(cy)
       // Now add event handlers. This is necessary only once.

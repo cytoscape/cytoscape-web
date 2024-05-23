@@ -48,10 +48,8 @@ function BypassFormContent(props: {
     visualProperty.defaultValue,
   )
 
-  const viewModels: Record<IdType, NetworkView> = useViewModelStore(
-    (state) => state.viewModels,
-  )
-  const networkView: NetworkView = viewModels[currentNetworkId]
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
+  const networkView: NetworkView | undefined = getViewModel(currentNetworkId)
 
   const setBypass = useVisualStyleStore((state) => state.setBypass)
   const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
@@ -64,7 +62,8 @@ function BypassFormContent(props: {
   const nodeTable = table?.nodeTable
   const edgeTable = table?.edgeTable
 
-  const { selectedNodes, selectedEdges } = networkView
+  const selectedNodes = networkView?.selectedNodes ?? []
+  const selectedEdges = networkView?.selectedEdges ?? []
 
   const validElementsSelected =
     (selectedNodes.length > 0 &&
@@ -74,7 +73,7 @@ function BypassFormContent(props: {
 
   // get union of selected elements and bypass elements
   // put all selected elements first (even if they have a bypass)
-  // render all elements, if they dont have a bypass, leave it empty
+  // render all elements, if they don't have a bypass, leave it empty
   const selectedElements: IdType[] =
     visualProperty.group === VisualPropertyGroup.Node
       ? selectedNodes
@@ -114,16 +113,17 @@ function BypassFormContent(props: {
     }
   })
 
-  Array.from(bypassElementIds).forEach((eleId) => {
-    elementsToRender.push({
-      id: eleId,
-      selected: false,
-      name: (selectedElementTable.rows.get(eleId)?.name ?? '') as string,
+  selectedElements
+    .filter((e) => bypassElementIds.has(e))
+    .forEach((e) => {
+      elementsToRender.push({
+        id: e,
+        selected: false,
+        name: (selectedElementTable.rows.get(e)?.name ?? '') as string,
 
-      hasBypass: true,
+        hasBypass: true,
+      })
     })
-  })
-
   const emptyBypassForm = (
     <>
       <Typography>Select network elements to apply a bypass</Typography>
@@ -309,7 +309,30 @@ export function BypassForm(props: {
     setFormAnchorEl(value)
   }
 
-  const noBypasses = props.visualProperty.bypassMap?.size === 0
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
+  const currentNetworkId = props.currentNetworkId
+
+  const networkView: NetworkView | undefined = getViewModel(currentNetworkId)
+
+  const selectedNodes = networkView?.selectedNodes ?? []
+  const selectedEdges = networkView?.selectedEdges ?? []
+
+  const selectedElements =
+    props.visualProperty.group === VisualPropertyGroup.Node
+      ? selectedNodes
+      : selectedEdges
+
+  const noBypasses =
+    (selectedElements.length > 0 &&
+      selectedElements.filter((e) => props.visualProperty.bypassMap.has(e))
+        .length === 0) ||
+    props.visualProperty.bypassMap.size === 0
+
+  const onlyOneBypassValue =
+    (selectedElements.length > 0 &&
+      selectedElements.filter((e) => props.visualProperty.bypassMap.has(e))
+        .length === 1) ||
+    props.visualProperty.bypassMap.size === 1
 
   let viewBox = null
 
@@ -324,11 +347,15 @@ export function BypassForm(props: {
         invisible={props.visualProperty.bypassMap.size <= 1}
       >
         <VisualPropertyViewBox>
-          <VisualPropertyValueRender
-            vpName={props.visualProperty.name}
-            value={Array.from(props.visualProperty.bypassMap.values())[0]}
-            vpValueType={props.visualProperty.type}
-          />
+          {onlyOneBypassValue ? (
+            <VisualPropertyValueRender
+              vpName={props.visualProperty.name}
+              value={Array.from(props.visualProperty.bypassMap.values())[0]}
+              vpValueType={props.visualProperty.type}
+            />
+          ) : (
+            <Box>?</Box>
+          )}
         </VisualPropertyViewBox>
       </Badge>
     )

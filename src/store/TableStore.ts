@@ -17,7 +17,7 @@ import {
   putTablesToDb,
 } from './persist/db'
 /** */
-interface TableRecord {
+export interface TableRecord {
   nodeTable: Table
   edgeTable: Table
 }
@@ -90,6 +90,8 @@ interface TableAction {
     column: AttributeName,
   ) => void
 
+  setTable: (networkId: IdType, tableType: TableType, table: Table) => void
+
   // Delete rows from the table. Should be called (via event) when nodes/edges are deleted
   deleteRows: (networkId: IdType, rows: IdType[]) => void
 
@@ -104,31 +106,29 @@ type TableStore = TableState & TableAction
 
 const persist =
   (config: StateCreator<TableStore>) =>
-  (
-    set: StoreApi<TableStore>['setState'],
-    get: StoreApi<TableStore>['getState'],
-    api: StoreApi<TableStore>,
-  ) =>
-    config(
-      async (args) => {
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
-        console.log('persist middleware updating table store')
-        set(args)
-        const updated = get().tables[currentNetworkId]
-        console.log('updated table: ', updated)
-        const deleted = updated === undefined
-        if (!deleted) {
-          await putTablesToDb(
-            currentNetworkId,
-            updated.nodeTable,
-            updated.edgeTable,
-          ).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+    (
+      set: StoreApi<TableStore>['setState'],
+      get: StoreApi<TableStore>['getState'],
+      api: StoreApi<TableStore>,
+    ) =>
+      config(
+        async (args) => {
+          const currentNetworkId =
+            useWorkspaceStore.getState().workspace.currentNetworkId
+          set(args)
+          const updated = get().tables[currentNetworkId]
+          const deleted = updated === undefined
+          if (!deleted) {
+            await putTablesToDb(
+              currentNetworkId,
+              updated.nodeTable,
+              updated.edgeTable,
+            ).then(() => { })
+          }
+        },
+        get,
+        api,
+      )
 
 export const useTableStore = create(
   immer<TableStore>(
@@ -137,7 +137,18 @@ export const useTableStore = create(
 
       add: (networkId: IdType, nodeTable: Table, edgeTable: Table) => {
         set((state) => {
+          if (state.tables[networkId] !== undefined) {
+            console.warn('Table already exists for network', networkId)
+            return state
+          }
           state.tables[networkId] = { nodeTable, edgeTable }
+          void putTablesToDb(networkId, nodeTable, edgeTable)
+            .then(() => {
+              console.debug('Added tables to DB', networkId)
+            })
+            .catch((err) => {
+              console.error('Error adding tables to DB', err)
+            })
           return state
         })
       },
@@ -224,7 +235,7 @@ export const useTableStore = create(
           const table = state.tables[networkId]
           const tableToUpdate =
             table[
-              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
 
           if (elementIds != null) {
@@ -252,7 +263,7 @@ export const useTableStore = create(
           const table = state.tables[networkId]
           const tableToUpdate =
             table[
-              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
 
           const columnIndex = tableToUpdate.columns.findIndex(
@@ -282,7 +293,7 @@ export const useTableStore = create(
           const table = state.tables[networkId]
           const tableToUpdate =
             table[
-              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
 
           tableToUpdate.columns.unshift({
@@ -367,6 +378,16 @@ export const useTableStore = create(
         })
       },
 
+      setTable: (networkId: IdType, tableType: TableType, table: Table) => {
+        set((state) => {
+          if (tableType === TableType.NODE) {
+            state.tables[networkId].nodeTable = table
+          } else {
+            state.tables[networkId].edgeTable = table
+          }
+          return state
+        })
+      },
       deleteRows: (networkId: IdType, rowIds: IdType[]) => {
         set((state) => {
           if (rowIds.length === 0) {

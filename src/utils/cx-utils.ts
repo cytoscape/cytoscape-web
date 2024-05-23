@@ -7,12 +7,8 @@ import { v4 as uuidv4 } from 'uuid'
 import {
   getNetworkFromDb,
   getTablesFromDb,
-  getNetworkViewFromDb,
+  getNetworkViewsFromDb,
   getVisualStyleFromDb,
-  putNetworkToDb,
-  putNetworkViewToDb,
-  putTablesToDb,
-  putVisualStyleToDb,
 } from '../store/persist/db'
 import { CachedData } from './CachedData'
 import { createNetworkAttributesFromCx } from '../models/TableModel/impl/NetworkAttributesImpl'
@@ -26,7 +22,7 @@ export interface NetworkWithView {
   nodeTable: Table
   edgeTable: Table
   visualStyle: VisualStyle
-  networkView: NetworkView
+  networkViews: NetworkView[]
 }
 
 /**
@@ -62,7 +58,7 @@ export const createNetworkViewFromCx2 = (
     nodeTable,
     edgeTable,
     visualStyle,
-    networkView,
+    networkViews: [networkView],
     networkAttributes,
   }
 }
@@ -70,7 +66,8 @@ export const createNetworkViewFromCx2 = (
 export const getCachedData = async (id: string): Promise<CachedData> => {
   const network = await getNetworkFromDb(id)
   const tables = await getTablesFromDb(id)
-  const networkView = await getNetworkViewFromDb(id)
+  const networkViews: NetworkView[] | undefined =
+    await getNetworkViewsFromDb(id)
   const visualStyle = await getVisualStyleFromDb(id)
 
   return {
@@ -78,7 +75,7 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
     visualStyle,
     nodeTable: tables !== undefined ? tables.nodeTable : undefined,
     edgeTable: tables !== undefined ? tables.edgeTable : undefined,
-    networkView,
+    networkViews: networkViews !== undefined ? networkViews : [],
   }
 }
 
@@ -87,23 +84,15 @@ export const createDataFromCx = async (
   cxData: Cx2,
 ): Promise<NetworkWithView> => {
   const network: Network = NetworkFn.createNetworkFromCx(ndexNetworkId, cxData)
-  await putNetworkToDb(network)
-
   const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
     ndexNetworkId,
     cxData,
   )
-  await putTablesToDb(ndexNetworkId, nodeTable, edgeTable)
-
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
-  await putVisualStyleToDb(ndexNetworkId, visualStyle)
-
   const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
     ndexNetworkId,
     cxData,
   )
-  await putNetworkViewToDb(ndexNetworkId, networkView)
-
   const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
     ndexNetworkId,
     cxData,
@@ -114,7 +103,7 @@ export const createDataFromCx = async (
     nodeTable,
     edgeTable,
     visualStyle,
-    networkView,
+    networkViews: [networkView],
     networkAttributes,
   }
 }

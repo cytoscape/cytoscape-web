@@ -161,7 +161,7 @@ export default function VizmapperView(props: {
               ml: 1,
               mb: 1,
               pt: 1,
-              // overflow: 'scroll',
+              overflow: 'scroll',
               height: props.height - 135, // we want to only scroll the vp list instead of the whole allotment
               // height has to be computed based on allotment size to allow overflow scroll
               // height is passed as a prop but this could be pulled from a uiState store instead in the future

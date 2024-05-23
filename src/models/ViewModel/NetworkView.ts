@@ -16,4 +16,19 @@ export interface NetworkView extends View {
   // Keep the selected objects in the view
   selectedNodes: IdType[]
   selectedEdges: IdType[]
+
+  /**
+   * Visualization type (e.g., node-link diagram, circle packing, etc.)
+   * nodeLink is the default and will be assigned if not given
+   */
+  type?: string
+
+  /**
+   * ID of the view. Syntax: <networkId>-<type>-<index>
+   * e.g., 12345-nodeLink-1
+   *
+   * This will be generated in the store if not given
+   * This will be used to manage the multiple views of the same network
+   */
+  viewId?: IdType
 }

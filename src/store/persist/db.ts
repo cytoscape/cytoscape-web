@@ -1,4 +1,6 @@
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
+import 'dexie-observable'
+
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Node, Edge, Network } from '../../models/NetworkModel'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
@@ -9,6 +11,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { NetworkView } from '../../models/ViewModel'
 import { Ui } from '../../models/UiModel'
 import { applyMigrations } from './migrations'
+import { getNetworkViewId } from '../ViewModelStore'
+import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 
 const DB_NAME = 'cyweb-db'
 
@@ -26,6 +30,8 @@ class CyDB extends Dexie {
   summaries!: DxTable<any>
   cyNetworkViews!: DxTable<any>
   uiState!: DxTable<any>
+  timestamp!: DxTable<any>
+  filters!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
@@ -37,6 +43,8 @@ class CyDB extends Dexie {
       cyVisualStyles: 'id',
       cyNetworkViews: 'id',
       uiState: 'id',
+      timestamp: 'id',
+      filters: 'id',
     })
 
     applyMigrations(this).catch((err) => console.log(err))
@@ -51,7 +59,7 @@ export const initializeDb = async (): Promise<void> => {
     throw err
   })
   db.open()
-    .then((dexi) => {})
+    .then(() => {})
     .catch((err) => {
       console.log(err)
     })
@@ -59,6 +67,10 @@ export const initializeDb = async (): Promise<void> => {
   db.on('ready', () => {
     console.info('Indexed DB is ready')
   })
+}
+
+export const getDb = async (): Promise<CyDB> => {
+  return await Promise.resolve(db)
 }
 
 export const deleteDb = async (): Promise<void> => {
@@ -341,29 +353,127 @@ export const clearVisualStyleFromDb = async (): Promise<void> => {
   })
 }
 
-// Network View
-export const getNetworkViewFromDb = async (
+//
+// Functions for Network Views
+//
+// Now the multiple views are supported
+//
+
+/**
+ * Get all network views for the given network ID
+ * @param id Network ID
+ * @returns NetworkView[] | undefined
+ *
+ **/
+export const getNetworkViewsFromDb = async (
   id: IdType,
-): Promise<NetworkView | undefined> => {
-  return await db.cyNetworkViews.get({ id })
+): Promise<NetworkView[] | undefined> => {
+  const entry = await db.cyNetworkViews.get({ id })
+  return entry?.views
 }
 
+/**
+ * Add a new network view to the DB
+ *
+ * @param id Network model ID
+ * @param view Network View to be added
+ */
 export const putNetworkViewToDb = async (
   id: IdType,
   view: NetworkView,
 ): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
-    await db.cyNetworkViews.put({ ...view })
+    if (view === undefined) {
+      console.warn('Network View model is undefined')
+      return
+    }
+
+    const networkViews = await db.cyNetworkViews.get({ id })
+    if (networkViews !== undefined) {
+      const viewList: NetworkView[] = networkViews.views
+      // Add only if the view does not exist
+
+      let found = false
+      viewList.forEach((v: NetworkView, idx: number) => {
+        const key1 = v.viewId
+        const key2 = view.viewId
+        if (key1 === key2) {
+          viewList[idx] = view
+          found = true
+        }
+      })
+      if (!found) {
+        if (view.viewId === undefined) {
+          view.viewId = getNetworkViewId(view, viewList)
+        }
+        viewList.push(view)
+      }
+      await db.cyNetworkViews.put({
+        id,
+        views: viewList,
+      })
+    } else {
+      if (view.viewId === undefined) {
+        // Add ID if not given
+        view.viewId = getNetworkViewId(view, [])
+      }
+      await db.cyNetworkViews.put({ id, views: [view] })
+    }
   })
 }
 
-export const deleteNetworkViewFromDb = async (id: IdType): Promise<void> => {
+/**
+ *
+ * Update multiple network views to the DB at once
+ *
+ * @param id Network model ID
+ * @param views Network Views to be updated
+ */
+export const putNetworkViewsToDb = async (
+  id: IdType,
+  views: NetworkView[],
+): Promise<void> => {
+  await db.transaction('rw', db.cyNetworkViews, async () => {
+    try {
+      if (views.filter((v) => v.type === 'circlePacking').length > 0) {
+        return
+      }
+      await db.cyNetworkViews.put({ id, views })
+    } catch (err) {
+      console.warn('Error storing network views', err)
+    }
+  })
+}
+
+/**
+ * Delete a network view from the DB
+ *
+ * @param id Network model ID
+ * @param viewId Network View ID to be deleted
+ */
+export const deleteNetworkViewFromDb = async (
+  id: IdType,
+  viewId: IdType,
+): Promise<void> => {
+  await db.transaction('rw', db.cyNetworkViews, async () => {
+    // TODO: delete only one view
+    // await db.cyNetworkViews.delete(id)
+  })
+}
+
+/**
+ * Delete all network views from the DB for the given network ID
+ */
+export const deleteNetworkViewsFromDb = async (id: IdType): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
     await db.cyNetworkViews.delete(id)
   })
 }
 
-export const clearNetworkViewFromDb = async (): Promise<void> => {
+/**
+ * Delete all network views from the DB for the given network ID
+ */
+export const clearNetworkViewsFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
     await db.cyNetworkViews.clear()
   })
@@ -389,5 +499,52 @@ export const putUiStateToDb = async (uiState: Ui): Promise<void> => {
 export const deleteUiStateFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.uiState, async () => {
     await db.uiState.delete(DEFAULT_UI_STATE_ID)
+  })
+}
+
+export const DEFAULT_TIMESTAMP_ID = 'timestamp'
+export const getTimestampFromDb = async (): Promise<number | undefined> => {
+  const ts = await db.timestamp.get({ id: DEFAULT_TIMESTAMP_ID })
+  if (ts !== undefined) {
+    return ts.timestamp
+  } else {
+    return undefined
+  }
+}
+
+export const putTimestampToDb = async (ts: number): Promise<void> => {
+  await db.transaction('rw', db.timestamp, async () => {
+    await db.timestamp.put({ id: DEFAULT_TIMESTAMP_ID, timestamp: ts })
+  })
+}
+
+/**
+ * Store filter settings to the DB
+ *
+ * @param filterConfig
+ */
+export const putFilterToDb = async (
+  filterConfig: FilterConfig,
+): Promise<void> => {
+  await db.transaction('rw', db.filters, async () => {
+    await db.filters.put({ id: filterConfig.name, ...filterConfig })
+  })
+}
+
+/**
+ * Get filter settings from the DB
+ */
+export const getFilterFromDb = async (
+  filterName: string,
+): Promise<FilterConfig | undefined> => {
+  return await db.filters.get({ id: filterName })
+}
+
+/**
+ * Delete filter settings from the DB
+ */
+export const deleteFilterFromDb = async (filterName: string): Promise<void> => {
+  await db.transaction('rw', db.filters, async () => {
+    await db.filters.delete(filterName)
   })
 }

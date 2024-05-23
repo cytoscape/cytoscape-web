@@ -22,7 +22,6 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { AppConfigContext } from '../../AppConfigContext'
 import { Workspace } from '../../models/WorkspaceModel'
-import { putNetworkViewToDb } from '../../store/persist/db'
 import { NetworkView } from '../../models/ViewModel'
 import { useWorkspaceManager } from '../../store/hooks/useWorkspaceManager'
 
@@ -45,7 +44,25 @@ import { Panel } from '../../models/UiModel/Panel'
 import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
 import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
-import { isHCX } from '../../features/HierarchyViewer/utils/hierarcy-util'
+import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
+import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
+import { validateHcx } from '../../features/HierarchyViewer/model/impl/hcxValidators'
+import { useMessageStore } from '../../store/MessageStore'
+import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
+import { CreateNetworkFromTableForm } from '../../features/TableDataLoader/components/CreateNetworkFromTable/CreateNetworkFromTableForm'
+import { JoinTableToNetworkForm } from '../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
+import { useCreateNetworkFromTableStore } from '../../features/TableDataLoader/store/createNetworkFromTableStore'
+import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
+import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
+import { FilterUrlParams } from '../../models/FilterModel/FilterUrlParams'
+import { DEFAULT_FILTER_NAME } from '../../features/HierarchyViewer/components/FilterPanel/FilterPanel'
+import {
+  DisplayMode,
+  FilterConfig,
+  FilterWidgetType,
+} from '../../models/FilterModel'
+import { GraphObjectType } from '../../models/NetworkModel'
+import { useFilterStore } from '../../store/FilterStore'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -63,6 +80,11 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers for optional features
   useHierarchyViewerManager()
 
+  const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
+  const showCreateNetworkFromTableForm = useCreateNetworkFromTableStore(
+    (state) => state.setShow,
+  )
+
   // Block multiple loading
   const isLoadingRef = useRef<boolean>(false)
 
@@ -72,6 +94,8 @@ const WorkSpaceEditor = (): JSX.Element => {
   const location = useLocation()
 
   const [search] = useSearchParams()
+
+  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
 
   // For restoring the selection state from URL
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
@@ -98,10 +122,15 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.setCurrentNetworkId,
   )
 
-  const viewModels: Record<string, NetworkView> = useViewModelStore(
+  const setValidationResult = useHcxValidatorStore(
+    (state) => state.setValidationResult,
+  )
+
+  const allViewModels: Record<string, NetworkView[]> = useViewModelStore(
     (state) => state.viewModels,
   )
-  const currentNetworkView: NetworkView = viewModels[currentNetworkId]
+  const currentNetworkView: NetworkView | undefined =
+    allViewModels[currentNetworkId]?.[0]
 
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
@@ -109,7 +138,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   // listen to view model changes
   // assume that if the view model change, the network has been modified and set the networkModified flag to true
   useViewModelStore.subscribe(
-    (state) => state.viewModels[currentNetworkId],
+    (state) => state.getViewModel(currentNetworkId),
     (prev: NetworkView, next: NetworkView) => {
       if (prev === undefined || next === undefined) {
         return
@@ -123,7 +152,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           _.omit(next, ['selectedNodes', 'selectedEdges']),
         )
 
-      // primitve compare fn that does not take into account the selection/hover state
+      // primitive compare fn that does not take into account the selection/hover state
       // this leads to the network having a 'modified' state even though nothing was modified
       const { networkModified } = workspace
       const currentNetworkIsNotModified =
@@ -167,6 +196,8 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.setIsRunning,
   )
 
+  const addMessage = useMessageStore((state) => state.addMessage)
+
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
   const addNewNetwork = useNetworkStore((state) => state.add)
@@ -189,6 +220,8 @@ const WorkSpaceEditor = (): JSX.Element => {
     setSummaries(summaries)
   }
 
+  const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
+
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     const currentToken = await getToken()
 
@@ -199,38 +232,61 @@ const WorkSpaceEditor = (): JSX.Element => {
     )
     const summary = summaryMap[networkId]
     const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
-    const { network, nodeTable, edgeTable, visualStyle, networkView } = res
+    const { network, nodeTable, edgeTable, visualStyle, networkViews } = res
 
     addNewNetwork(network)
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
-    addViewModel(networkId, networkView)
+    addViewModel(networkId, networkViews[0])
+
+    if (isHCX(summary)) {
+      const version =
+        summary.properties.find(
+          (p) => p.predicateString === HcxMetaTag.ndexSchema,
+        )?.value ?? ''
+      const validationRes = validateHcx(version as string, summary, nodeTable)
+
+      if (!validationRes.isValid) {
+        addMessage({
+          message: `This network is not a valid HCX network.  Some features may not work properly.`,
+          duration: 8000,
+        })
+      }
+      setValidationResult(networkId, validationRes)
+    }
 
     if (!summary.hasLayout) {
-      const layoutEngineName = isHCX(summary)
-        ? defaultHierarchyLayout.name
-        : defaultLayout.name
-      const engine: LayoutEngine =
-        layoutEngines.find((engine) => engine.name === layoutEngineName) ??
-        layoutEngines[0]
-
-      const nextSummary = { ...summary, hasLayout: true }
-
-      setIsRunning(true)
-      const afterLayout = (
-        positionMap: Map<IdType, [number, number]>,
-      ): void => {
-        updateNodePositions(networkId, positionMap)
-        updateSummary(networkId, nextSummary)
-        setIsRunning(false)
-      }
-
-      engine.apply(
-        network.nodes,
-        network.edges,
-        afterLayout,
-        engine.algorithms[layoutEngineName],
+      const defaultLayout = getDefaultLayout(
+        summary,
+        network.nodes.length + network.edges.length,
+        maxNetworkElementsThreshold,
       )
+
+      if (defaultLayout !== undefined) {
+        const engine: LayoutEngine | undefined = layoutEngines.find(
+          (engine) => engine.name === defaultLayout.engineName,
+        )
+
+        if (engine !== undefined) {
+          const nextSummary = { ...summary, hasLayout: true }
+
+          setIsRunning(true)
+          const afterLayout = (
+            positionMap: Map<IdType, [number, number]>,
+          ): void => {
+            updateNodePositions(networkId, positionMap)
+            updateSummary(networkId, nextSummary)
+            setIsRunning(false)
+          }
+
+          engine.apply(
+            network.nodes,
+            network.edges,
+            afterLayout,
+            engine.algorithms[defaultLayout.algorithmName],
+          )
+        }
+      }
     }
   }
 
@@ -261,6 +317,34 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
 
     exclusiveSelect(currentNetworkId, selectedNodes, selectedEdges)
+  }
+
+  /**
+   * Restore filter states from URL
+   */
+  const restoreFilterStates = (): void => {
+    const filterFor = search.get(FilterUrlParams.FILTER_FOR)
+    const filterBy = search.get(FilterUrlParams.FILTER_BY)
+    const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
+    console.log('Filter states:', filterFor, filterBy, filterRange)
+
+    if (filterFor !== null && filterBy !== null && filterRange !== null) {
+      const filterConfig: FilterConfig = {
+        name: DEFAULT_FILTER_NAME,
+        attributeName: filterBy,
+        target:
+          filterFor === GraphObjectType.NODE
+            ? GraphObjectType.NODE
+            : GraphObjectType.EDGE,
+        widgetType: FilterWidgetType.CHECKBOX,
+        description: 'Filter nodes / edges by selected values',
+        label: 'Interaction edge filter',
+        range: { values: filterRange.split(',') },
+        displayMode: DisplayMode.SHOW_HIDE,
+        // visualMapping,
+      }
+      addFilterConfig(filterConfig)
+    }
   }
 
   /**
@@ -338,6 +422,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           if (path.includes(currentNetworkId)) {
             restoreSelectionStates()
             restoreTableBrowserTabState()
+            restoreFilterStates()
           }
 
           navigate(
@@ -351,23 +436,16 @@ const WorkSpaceEditor = (): JSX.Element => {
           isLoadingRef.current = false
         })
     } else {
-      putNetworkViewToDb(currentNetworkId, currentNetworkView)
+      loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          loadCurrentNetworkById(currentNetworkId)
-            .then(() => {
-              // restoreSelectionStates()
-              restoreTableBrowserTabState()
-              navigate(
-                `/${
-                  workspace.id
-                }/networks/${currentNetworkId}${location.search.toString()}`,
-              )
-            })
-            .catch((err) => console.error('Failed to load a network:', err))
+          restoreTableBrowserTabState()
+          navigate(
+            `/${
+              workspace.id
+            }/networks/${currentNetworkId}${location.search.toString()}`,
+          )
         })
-        .catch((err) => {
-          console.error('Failed to save network view to DB:', err)
-        })
+        .catch((err) => console.error('Failed to load a network:', err))
         .finally(() => {
           isLoadingRef.current = false
         })
@@ -477,6 +555,12 @@ const WorkSpaceEditor = (): JSX.Element => {
                     ? currentNetworkId
                     : activeNetworkView
                 }
+              />
+              <JoinTableToNetworkForm
+                handleClose={() => showTableJoinForm(false)}
+              />
+              <CreateNetworkFromTableForm
+                handleClose={() => showCreateNetworkFromTableForm(false)}
               />
             </Suspense>
           </Allotment.Pane>

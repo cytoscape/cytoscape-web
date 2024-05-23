@@ -67,9 +67,7 @@ const persist =
         const newWorkspace = get().workspace
         // const deleted = updated === undefined
         if (lastWorkspace !== newWorkspace) {
-          void putWorkspaceToDb(newWorkspace).then(() => {
-            console.log('-------------New WS Stored in DB')
-          })
+          void putWorkspaceToDb(newWorkspace).then(() => {})
         }
       },
       get,

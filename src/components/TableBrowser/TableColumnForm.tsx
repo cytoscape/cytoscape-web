@@ -229,6 +229,22 @@ export function CreateTableColumnForm(
     ValueTypeName.String,
   )
   const [defaultValue, setDefaultValue] = React.useState('')
+  const disabled = columnName === ''
+
+  const submitButton = disabled ? (
+    <Tooltip title="Column name must not be empty">
+      <Box>
+        <Button disabled={true}>Confirm</Button>
+      </Box>
+    </Tooltip>
+  ) : (
+    <Button
+      disabled={columnName === ''}
+      onClick={() => props.onSubmit(columnName, valueTypeName, defaultValue)}
+    >
+      Confirm
+    </Button>
+  )
 
   return (
     <Dialog
@@ -276,13 +292,7 @@ export function CreateTableColumnForm(
       </DialogContent>
 
       <DialogActions>
-        <Button
-          onClick={() =>
-            props.onSubmit(columnName, valueTypeName, defaultValue)
-          }
-        >
-          Confirm
-        </Button>
+        {submitButton}
         <Button color="error" onClick={props.onClose}>
           Cancel
         </Button>

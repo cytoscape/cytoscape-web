@@ -58,10 +58,24 @@ export default function NetworkInfoPanel(props: {
   const networkInfo = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
+  const properties = networkInfo?.properties ?? []
 
-  const reference = networkInfo?.properties.find(
-    (p) => p.predicateString === 'Reference',
-  )
+  const containsHtmlAnchor = (text: string) => {
+    return /<a\s+href=/i.test(text);
+  };
+
+  const linkifyPlainTextUrls = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+  };
+
+  const hasReferenceProperties = properties.some((prop) =>
+  Object.keys(prop).some((key) => key.startsWith('reference'))
+  );
+
+  const hasRightsProperties = properties.some((prop) =>
+  Object.keys(prop).some((key) => key.startsWith('rights'))
+  );
 
   return (
     <Box sx={{ height: props.height - 50, overflow: 'scroll', pl: 1, pr: 1 }}>
@@ -111,18 +125,78 @@ export default function NetworkInfoPanel(props: {
           <Typography variant="body2">
             {parse(networkInfo?.description ?? '')}
           </Typography>
+          {hasRightsProperties && (
+          <Typography
+            sx={{ fontSize: 14, fontWeight: 'bold' }}
+            variant="subtitle1"
+          >
+            Rights:
+          </Typography>
+          )}
+          <Typography variant="body2">
+            {properties.map((prop, index) => (
+              <div key={index}>
+                {Object.entries(prop)
+                  .filter(([key, _]) => key.startsWith('rights') || key.startsWith('rightsholder'))
+                  .map(([key, value], idx) => (
+                    <div key={idx}>{`${key}: ${parse(value)}`}</div>
+                  ))}
+              </div>
+            ))}
+          </Typography>
+          {hasReferenceProperties && (
           <Typography
             sx={{ fontSize: 14, fontWeight: 'bold' }}
             variant="subtitle1"
           >
             Reference:
           </Typography>
+          )}
+          <Typography variant="body2">
+            {properties.map((prop, index) => (
+              <div key={index}>
+                {Object.entries(prop)
+                  .filter(([key, _]) => key.startsWith('reference'))
+                  .map(([_, value], idx) => (
+                    <div key={idx}>{parse(value)}</div>
+                  ))}
+              </div>
+            ))}
+          </Typography>
+          <Typography
+            sx={{ fontSize: 14, fontWeight: 'bold' }}
+            variant="subtitle1"
+          >
+            Properties:
+          </Typography>
+          <Typography variant="body2" component="div">
 
-          {reference != null ? (
-            <Typography variant="body2">
-              {parse((reference.value as string) ?? '')}
-            </Typography>
-          ) : null}
+            {properties.map((prop, index) => (
+              <div key={index}>
+                {Object.entries(prop)
+                  .filter(([key, _]) =>
+                    !key.startsWith('_') &&
+                    !key.startsWith('rights') &&
+                    !key.startsWith('rightsHolder') &&
+                    !key.startsWith('reference'))
+                  .map(([key, value], idx) => {
+                    let displayValue;
+                    if (typeof value === 'string') {
+                      if (containsHtmlAnchor(value)) {
+                        displayValue = parse(value);
+                      } else {
+                        const linkifiedValue = linkifyPlainTextUrls(value);
+                        displayValue = parse(linkifiedValue);
+                      }
+                    } else {
+                      displayValue = value;
+                    }
+
+                    return <div key={idx}>{`${key}: `}{displayValue}</div>;
+                  })}
+              </div>
+            ))}
+          </Typography>   
         </Box>
       </Box>
     </Box>
