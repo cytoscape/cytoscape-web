@@ -1,6 +1,13 @@
 import { IdType } from "../../../models/IdType";
-import { Column, Table } from "../../../models/TableModel";
-import { MatchingTableRow } from "./DataInterfaceForMerge";
+import { Column, Table, ValueType, ValueTypeName } from "../../../models/TableModel";
+
+export interface MatchingTableRow {
+    id: number;
+    numConflicts: number;
+    mergedNetwork: string;
+    type: ValueTypeName | 'None';
+    [key: IdType]: string | number;
+}
 
 export interface MatchingTable {
     matchingTableRows: MatchingTableRow[]

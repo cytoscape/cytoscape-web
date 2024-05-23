@@ -1,7 +1,6 @@
 import { IdType } from "../../../../models/IdType";
 import { Column, Table } from "../../../../models/TableModel";
-import { MatchingTableRow } from "../DataInterfaceForMerge";
-import { MatchingTable } from '../MatchingTable'
+import { MatchingTable, MatchingTableRow } from '../MatchingTable'
 
 export function createMatchingTable(matchingTableRows: MatchingTableRow[]): MatchingTable {
     const mergedAttributes: Column[] = []
@@ -12,7 +11,7 @@ export function createMatchingTable(matchingTableRows: MatchingTableRow[]): Matc
             type: row.type
         } as Column
         for (const key in row) {
-            if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type') {
+            if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type' && key !== 'numConflicts') {
                 networkIds.add(key)
             }
         }
@@ -45,12 +44,12 @@ export function getReversedAttributeMapping(matchingTable: MatchingTable, netId:
     return attMap
 }
 
-export function getAttributeMapping(matchingTable: MatchingTable, netId: IdType, isNode: boolean = true): Map<string, Column> {
+export function getAttributeMapping(matchingTable: MatchingTable, netId: IdType, isNode: boolean = true): Map<number, Column> {
     const attMap = new Map()
     if (matchingTable.matchingTableRows.length > 0) {
         for (const row of (isNode ? matchingTable.matchingTableRows.slice(1) : matchingTable.matchingTableRows)) {
             if (row.hasOwnProperty(netId) && row[netId] !== 'None') {
-                attMap.set(row.mergedNetwork, { name: row[netId], type: row.type } as Column)
+                attMap.set(row.id, { name: row[netId], type: row.type } as Column)
             }
         }
     }
@@ -61,9 +60,12 @@ export function getReversedMergedAttMap(matchingTable: MatchingTable): Map<strin
     const attMap = new Map()
     if (matchingTable.matchingTableRows.length > 0) {
         for (const key in matchingTable.matchingTableRows[0]) {
-            if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type') {
+            if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type' && key !== 'numConflicts') {
                 attMap.set(key, matchingTable.matchingTableRows[0][key])
             }
+        }
+        if (attMap.size !== (Object.entries(matchingTable.matchingTableRows[0]).length - 4)) {
+            throw new Error('Data inconsistency: networkIds and matchingTable have different length.')
         }
     }
     return attMap

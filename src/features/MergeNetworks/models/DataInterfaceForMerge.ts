@@ -36,11 +36,5 @@ export interface NetworkRecord {
     network: Network;
     nodeTable: Table;
     edgeTable: Table;
-}
-
-export interface MatchingTableRow {
-    mergedNetwork: string;
-    type: string;
-    id: number;
-    [key: string]: ValueType;
+    netTable?: Table;
 }

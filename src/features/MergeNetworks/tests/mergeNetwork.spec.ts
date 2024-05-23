@@ -21,7 +21,7 @@ import { Node } from '../../../models/NetworkModel/Node';
 import { Column } from '../../../models/TableModel/Column';
 import { Edge } from '../../../models/NetworkModel/Edge';
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
-import { MatchingTableRow } from '../models/DataInterfaceForMerge';
+import { MatchingTableRow } from '../models/MatchingTable';
 
 beforeEach(() => {
     jest.resetAllMocks();
@@ -201,25 +201,24 @@ describe('mergeNetwork', () => {
             }
         }
         const nodeAttributeMapping = createMatchingTable([
-            { id: 0, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'att1', mergedNetwork: 'matchingAtt', type: 'integer' },
-            { id: 1, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', [fromNetworks[2]]: 'name', mergedNetwork: 'name', type: 'string' },
-            { id: 2, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'att1', mergedNetwork: 'att1_merged', type: 'integer' },
-            { id: 3, [fromNetworks[0]]: 'att2', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att2', mergedNetwork: 'att22', type: 'string' },
-            { id: 4, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att3', [fromNetworks[2]]: 'att3', mergedNetwork: 'att333', type: 'string' }
+            { id: 0, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'att1', mergedNetwork: 'matchingAtt', type: 'integer', numConflicts: 0 },
+            { id: 1, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', [fromNetworks[2]]: 'name', mergedNetwork: 'name', type: 'string', numConflicts: 0 },
+            { id: 2, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'att1', mergedNetwork: 'att1_merged', type: 'integer', numConflicts: 0 },
+            { id: 3, [fromNetworks[0]]: 'att2', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att2', mergedNetwork: 'att22', type: 'string', numConflicts: 0 },
+            { id: 4, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att3', [fromNetworks[2]]: 'att3', mergedNetwork: 'att333', type: 'string', numConflicts: 0 }
         ] as MatchingTableRow[])
         const edgeAttributeMapping = createMatchingTable([
-            { id: 0, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', [fromNetworks[2]]: 'name', mergedNetwork: 'name', type: 'string' },
-            { id: 1, [fromNetworks[0]]: 'interaction', [fromNetworks[1]]: 'interaction', [fromNetworks[2]]: 'interaction', mergedNetwork: 'interaction', type: 'string' },
-            { id: 2, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'None', mergedNetwork: 'att', type: 'integer' },
-            { id: 3, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att2', mergedNetwork: 'att23', type: 'double' },
+            { id: 0, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', [fromNetworks[2]]: 'name', mergedNetwork: 'name', type: 'string', numConflicts: 0 },
+            { id: 1, [fromNetworks[0]]: 'interaction', [fromNetworks[1]]: 'interaction', [fromNetworks[2]]: 'interaction', mergedNetwork: 'interaction', type: 'string', numConflicts: 0 },
+            { id: 2, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'None', mergedNetwork: 'att', type: 'integer', numConflicts: 0 },
+            { id: 3, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att2', mergedNetwork: 'att23', type: 'double', numConflicts: 0 },
         ] as MatchingTableRow[])
-        const networkAttributeMapping = createMatchingTable([])
         const matchingAttribute = {
             [fromNetworks[0]]: { name: 'att1', type: 'string' } as Column,
             [fromNetworks[1]]: { name: 'att1', type: 'string' } as Column,
             [fromNetworks[2]]: { name: 'att1', type: 'string' } as Column
         }
-        const result = mergeNetwork(fromNetworks, toNetworkId, networkRecords, nodeAttributeMapping, edgeAttributeMapping, networkAttributeMapping, matchingAttribute)
+        const result = mergeNetwork(fromNetworks, toNetworkId, networkRecords, nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
         expect(result).toEqual({
             network: mergedNetwork,
             nodeTable: mergedNodeTable,
