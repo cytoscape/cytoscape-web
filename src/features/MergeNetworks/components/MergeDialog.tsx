@@ -5,6 +5,7 @@ import {
     Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon
 } from '@mui/icons-material';
 import React, { useContext, useEffect, useState } from 'react';
+import { UnionIcon, DifferenceIcon, IntersectionIcon } from './Icon';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button,
     Typography, Box, List, ListItem, ListItemText, ListSubheader,
@@ -366,13 +367,13 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                     <ToggleButtonGroup
                         value={mergeOpType} exclusive onChange={handleMergeTypeChange} aria-label="text alignment" >
                         <ToggleButton className="toggleButton" classes={{ selected: 'selected' }} value={MergeType.union} aria-label="left aligned">
-                            Union
+                            <UnionIcon /> Union
                         </ToggleButton>
                         <ToggleButton className="toggleButton" classes={{ selected: 'selected' }} value={MergeType.intersection} aria-label="centered">
-                            Intersection
+                            <IntersectionIcon /> Intersection
                         </ToggleButton>
                         <ToggleButton className="toggleButton" classes={{ selected: 'selected' }} value={MergeType.difference} aria-label="right aligned">
-                            Difference
+                            <DifferenceIcon /> Difference
                         </ToggleButton>
                     </ToggleButtonGroup>
                 </Box>
