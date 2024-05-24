@@ -52,11 +52,11 @@ export function attributeValueMatcher(val: ValueType, nodeAttMap: Map<IdType, Va
 }
 
 
-function typeCoercion(val: ValueType, mergedType: ValueTypeName | 'None'): ValueType {
+export function typeCoercion(val: ValueType, mergedType: ValueTypeName | 'None'): ValueType {
     if (mergedType === 'None') {
         throw new Error('Wrong Merged Type: received None type for the attribute');
     }
-    if (isListType(mergedType) && Array.isArray(val)) {
+    if (isListType(mergedType)) {
         return listValueTypeCoercion(val, mergedType);
     }
     return singleValueTypeCoercion(val, mergedType);
@@ -64,16 +64,16 @@ function typeCoercion(val: ValueType, mergedType: ValueTypeName | 'None'): Value
 
 function listValueTypeCoercion(val: ValueType, mergedType: ValueTypeName): ListOfValueType {
     const singleType = mergedType.replace('list_of_', '') as ValueTypeName;
-
+    const valArray = Array.isArray(val) ? val : [val];
     switch (singleType) {
         case ValueTypeName.String:
-            return (val as ValueType[]).map((v) => singleValueTypeCoercion(v, singleType)) as string[];
+            return valArray.map((v) => singleValueTypeCoercion(v, singleType)) as string[];
         case ValueTypeName.Boolean:
-            return (val as ValueType[]).map((v) => singleValueTypeCoercion(v, singleType)) as boolean[];
+            return valArray.map((v) => singleValueTypeCoercion(v, singleType)) as boolean[];
         case ValueTypeName.Double:
         case ValueTypeName.Long:
         case ValueTypeName.Integer:
-            return (val as ValueType[]).map((v) => singleValueTypeCoercion(v, singleType)) as number[];
+            return valArray.map((v) => singleValueTypeCoercion(v, singleType)) as number[];
         default:
             throw new Error(`Unsupported list type ${mergedType}`);
     }
@@ -85,7 +85,6 @@ function singleValueTypeCoercion(val: ValueType, mergedType: ValueTypeName): Sin
             case ValueTypeName.String:
                 return String(val);
             case ValueTypeName.Boolean:
-                if (val === 'true' || val === 'false') return val === 'true';
                 if (typeof val === 'boolean') return val;
                 throw new Error(`Cannot convert ${val} to Boolean`);
             case ValueTypeName.Double:

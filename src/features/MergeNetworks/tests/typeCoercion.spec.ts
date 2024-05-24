@@ -1,5 +1,5 @@
 import { ValueTypeName } from "../../../models/TableModel";
-import { getResonableCompatibleConvertionType, isConvertible, getPlainType } from "../utils/attributes-operations";
+import { typeCoercion, getResonableCompatibleConvertionType, isConvertible, getPlainType } from "../utils/attributes-operations";
 
 describe('Test type coercion functions', () => {
     it('should return true if the types are convertible', () => {
@@ -29,6 +29,10 @@ describe('Test type coercion functions', () => {
         expect(getResonableCompatibleConvertionType(new Set([ValueTypeName.Boolean, ValueTypeName.Double]))).toBe(ValueTypeName.String);
         expect(getResonableCompatibleConvertionType(new Set([ValueTypeName.ListBoolean, ValueTypeName.ListDouble]))).toBe(ValueTypeName.ListString);
 
+    })
+    it('should convert the value to the target type correctly', () => {
+        expect(typeCoercion(1, ValueTypeName.ListString)).toStrictEqual(['1']);
+        expect(typeCoercion([true, false], ValueTypeName.ListString)).toStrictEqual(['true', 'false']);
     })
 
 });
