@@ -84,6 +84,11 @@ module.exports = {
       remotes: {
         hello: 'hello@http://localhost:3000/remoteEntry.js',
       },
+      exposes: {
+        // Data models to be used by other apps
+        './useDataStore': './src/components/AppManager/useDataStore.tsx',
+        './WorkspaceStore': './src/store/WorkspaceStore.ts',
+      },
       shared: {
         react: { singleton: true, requiredVersion: deps.react },
         'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },

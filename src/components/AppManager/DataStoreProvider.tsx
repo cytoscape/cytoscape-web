@@ -1,26 +1,14 @@
-import React, { createContext, useContext, ReactNode } from 'react'
-import { WorkspaceStore, useWorkspaceStore } from 'src/store/WorkspaceStore'
-
-interface DataStore {
-  useWorkspaceStore: () => WorkspaceStore
-}
-
-const DataStoreContext = createContext<DataStore | undefined>(undefined)
+import React, { ReactNode } from 'react'
+import { useWorkspaceStore } from 'src/store/WorkspaceStore'
+import { DataStoreContext } from './DataStoreContext'
+import { useNetworkStore } from 'src/store/NetworkStore'
 
 export const DataStoreProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   return (
-    <DataStoreContext.Provider value={{ useWorkspaceStore }}>
+    <DataStoreContext.Provider value={{ useWorkspaceStore, useNetworkStore }}>
       {children}
     </DataStoreContext.Provider>
   )
-}
-
-export const useDataStore = (): DataStore => {
-  const context = useContext(DataStoreContext)
-  if (!context) {
-    throw new Error('useDataStore must be used within a DataStoreProvider')
-  }
-  return context
 }
