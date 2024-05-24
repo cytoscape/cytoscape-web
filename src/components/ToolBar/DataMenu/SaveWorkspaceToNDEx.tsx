@@ -57,8 +57,9 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
     const summary = useNetworkSummaryStore.getState().summaries[networkId];
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable;
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable;
-    const viewModel = useViewModelStore.getState().viewModels[networkId];
+    const viewModel = useViewModelStore((state) => state.getViewModel(networkId))
 
+    if (viewModel === undefined) throw new Error("Cannot find view model for network!")
     ndexClient.setAuthToken(accessToken)
     const cx = exportNetworkToCx2(
       network,
@@ -66,7 +67,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
       summary,
       nodeTable,
       edgeTable,
-      viewModel[0],
+      viewModel,
     )
 
     await ndexClient.updateNetworkFromRawCX2(networkId, cx)
@@ -86,14 +87,16 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
     const summary = useNetworkSummaryStore.getState().summaries[networkId];
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable;
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable;
-    const viewModel = useViewModelStore.getState().viewModels[networkId];
+    const viewModel = useViewModelStore((state) => state.getViewModel(networkId))
+
+    if (viewModel === undefined) throw new Error("Cannot find view model for network!")
     const cx = exportNetworkToCx2(
       network,
       visualStyle,
       summary,
       nodeTable,
       edgeTable,
-      viewModel[0],
+      viewModel,
       `Copy of ${summary.name}`,
     )
 
