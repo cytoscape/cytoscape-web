@@ -45,10 +45,11 @@ import { getResonableCompatibleConvertionType } from '../utils/attributes-operat
 interface MergeDialogProps {
     open: boolean;
     handleClose: () => void;
+    uniqueName: string;
     workSpaceNetworks: Pair<string, IdType>[];
 }
 
-const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceNetworks }): React.ReactElement => {
+const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName, workSpaceNetworks }): React.ReactElement => {
     const [readyToMerge, setReadyToMerge] = useState(false);// Flag to indicate whether it is ready to merge
     const [tableView, setTableView] = useState(TableView.node); // Current table view
     const [errorMessage, setErrorMessage] = useState(''); // Error message to display
@@ -56,7 +57,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const { ndexBaseUrl } = useContext(AppConfigContext); // Base URL for the NDEx server
     const [mergeOpType, setMergeOpType] = useState(MergeType.union); // Type of merge operation
     const [typeConflict, setTypeConflict] = useState(false); // Flag to indicate whether there is a type conflict
-    const [mergedNetworkName, setMergedNetworkName] = useState('Merged Network'); // Name of the merged network
+    const [mergedNetworkName, setMergedNetworkName] = useState(uniqueName); // Name of the merged network
     const [fullScreen, setFullScreen] = useState(false); // Full screen mode for the dialog
     const [tooltipOpen, setTooltipOpen] = useState(false); // Flag to indicate whether the tooltip is open
     // Record the visual style of the networks to be merged

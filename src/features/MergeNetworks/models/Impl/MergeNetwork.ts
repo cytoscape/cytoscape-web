@@ -3,16 +3,19 @@ import TableFn from "../../../../models/TableModel";
 import { NetworkRecord } from "../DataInterfaceForMerge";
 import NetworkFn, { Edge, Network, Node } from "../../../../models/NetworkModel";
 import { Column } from "../../../../models/TableModel/Column";
-import { ValueType } from "../../../../models/TableModel/ValueType";
+import { ListOfValueType, ValueType } from "../../../../models/TableModel/ValueType";
 import { attributeValueMatcher } from "../../utils/attributes-operations";
 import { MatchingTable } from "../MatchingTable";
-import { getMergedAttributes, getAttributeMapping, getReversedMergedAttMap } from "./MatchingTableImpl";
+import { getMergedAttributes, getReversedMergedAttMap } from "./MatchingTableImpl";
 import { preprocess, castAttributes, addMergedAtt } from "../../utils/attributes-operations";
 
 export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>) {
     const nodeMergedAttributes = getMergedAttributes(nodeAttributeMapping)
     const edgeMergedAttributes = getMergedAttributes(edgeAttributeMapping)
+    if (duplicateAttName(nodeMergedAttributes) || duplicateAttName(edgeMergedAttributes)) {
+        throw new Error("Duplicate merged attribute names found")
+    }
     const reversedAttMap = getReversedMergedAttMap(nodeAttributeMapping)
     const mergedAttCol: Column = { name: nodeMergedAttributes[0].name, type: nodeMergedAttributes[0].type }
     // preprocess the network to merge    
@@ -140,11 +143,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
             }
             const castedRecord = castAttributes(nodeRecord, netToMerge, nodeAttributeMapping);
             //update the row
-            Object.entries(castedRecord).forEach((entry: [string, ValueType]) => {
-                if (!mergedRow.hasOwnProperty(entry[0])) {
-                    mergedRow[entry[0]] = entry[1];
-                }
-            });
+            mergeAttributes(mergedRow, castedRecord);
             // update the mergedNodeTable
             TableFn.updateRow(mergedNodeTable, [mergedNodeId, mergedRow]);
         }
@@ -179,11 +178,7 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
                     if ((mergedRow.hasOwnProperty('interaction') && castedRecord.hasOwnProperty('interaction') && mergedRow['interaction'] === castedRecord['interaction']) ||
                         (!mergedRow.hasOwnProperty('interaction') && !castedRecord.hasOwnProperty('interaction'))) {
                         //update the row
-                        Object.entries(castedRecord).forEach((entry: [string, ValueType]) => {
-                            if (!mergedRow.hasOwnProperty(entry[0])) {
-                                mergedRow[entry[0]] = entry[1];
-                            }
-                        });
+                        mergeAttributes(mergedRow, castedRecord);
                         // update the mergedEdgeTable
                         TableFn.updateRow(mergedEdgeTable, [mergedEdgeId, mergedRow]);
                         hasMatched = true;
@@ -210,4 +205,22 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
         edgeTable: mergedEdgeTable
 
     }
+}
+
+function mergeAttributes(mergedRow: Record<string, ValueType>, castedRecord: Record<string, ValueType>): void {
+    Object.entries(castedRecord).forEach(([key, value]) => {
+        if (!mergedRow.hasOwnProperty(key)) {
+            mergedRow[key] = value;
+        } else if (Array.isArray(mergedRow[key]) && Array.isArray(value)) {
+            if ((mergedRow[key] as ListOfValueType).every(item => typeof item === typeof value[0])) {
+                mergedRow[key] = [...new Set([...(mergedRow[key] as ListOfValueType), ...value])] as ValueType;
+            } else {
+                throw new Error(`Type mismatch for key ${key}: ${typeof (mergedRow[key] as ListOfValueType)[0]} vs ${typeof value[0]}`);
+            }
+        }
+    });
+}
+
+function duplicateAttName(mergedAttributes: Column[]): boolean {
+    return (new Set(mergedAttributes.map(col => col.name))).size < mergedAttributes.length
 }

@@ -38,7 +38,6 @@ export function addMergedAtt(castedRecord: Record<string, ValueType>, oriMatchin
     }
     castedRecord[mergedAttCol.name] = typeCoercion(oriMatchingVal, mergedAttCol.type);
     return castedRecord;
-
 }
 
 export function attributeValueMatcher(val: ValueType, nodeAttMap: Map<IdType, ValueType>): string {
