@@ -80,7 +80,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
       summary,
       nodeTable,
       edgeTable,
-      viewModel,
+      viewModel[0],
     )
     await ndexClient.updateNetworkFromRawCX2(networkId, cx)
     const ndexSummary = await ndexClient.getNetworkSummary(networkId)
@@ -106,7 +106,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
       summary,
       nodeTable,
       edgeTable,
-      viewModel,
+      viewModel[0],
       `Copy of ${summary.name}`,
     )
 
