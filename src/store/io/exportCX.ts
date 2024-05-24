@@ -45,7 +45,7 @@ export const exportNetworkToCx2 = (
   summary: NdexNetworkSummary,
   nodeTable: Table,
   edgeTable: Table,
-  networkView: NetworkView,
+  networkView: NetworkView | undefined,
   networkName?: string, // optional new name for the network
 ): any => {
   // accumulate node/edge attributes into a object
@@ -185,8 +185,8 @@ export const exportNetworkToCx2 = (
 
     return {
       id: parseInt(node.id),
-      x: networkView.nodeViews[node.id].x,
-      y: networkView.nodeViews[node.id].y,
+      x: networkView?.nodeViews[node.id].x ?? 0,
+      y: networkView?.nodeViews[node.id].y ?? 0,
       v: nodeRow,
     }
   })
