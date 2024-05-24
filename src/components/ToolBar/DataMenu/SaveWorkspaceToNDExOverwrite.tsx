@@ -71,7 +71,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
     const summary = useNetworkSummaryStore.getState().summaries[networkId];
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable;
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable;
-    const viewModel = useViewModelStore.getState().viewModels[networkId];
+    const viewModel = useViewModelStore.getState().getViewModel(networkId);
 
     ndexClient.setAuthToken(accessToken)
     const cx = exportNetworkToCx2(
@@ -99,7 +99,8 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
     const summary = useNetworkSummaryStore.getState().summaries[networkId];
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable;
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable;
-    const viewModel = useViewModelStore.getState().viewModels[networkId];
+    const viewModel = useViewModelStore.getState().getViewModel(networkId);
+
     const cx = exportNetworkToCx2(
       network,
       visualStyle,

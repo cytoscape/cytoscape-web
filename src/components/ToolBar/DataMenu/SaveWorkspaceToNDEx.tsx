@@ -33,7 +33,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
   const handleOpenDialog = (): void => {
     setOpenDialog(true);
   };
-  
+
   const handleCloseDialog = (): void => {
     setOpenDialog(false);
   };
@@ -49,7 +49,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
     (state) => state.addNetworkIds,
   )
 
-  const saveNetworkToNDEx = async (networkId:string): Promise<void> => {
+  const saveNetworkToNDEx = async (networkId: string): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     const network = useNetworkStore.getState().networks.get(networkId) as Network;
@@ -57,7 +57,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
     const summary = useNetworkSummaryStore.getState().summaries[networkId];
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable;
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable;
-    const viewModel = useViewModelStore.getState().viewModels[networkId];
+    const viewModel = useViewModelStore.getState().getViewModel(networkId);
 
     ndexClient.setAuthToken(accessToken)
     const cx = exportNetworkToCx2(
@@ -77,7 +77,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
     })
   }
 
-  const saveCopyToNDEx = async  (networkId:string): Promise<void> => {
+  const saveCopyToNDEx = async (networkId: string): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
@@ -86,7 +86,8 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
     const summary = useNetworkSummaryStore.getState().summaries[networkId];
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable;
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable;
-    const viewModel = useViewModelStore.getState().viewModels[networkId];
+    const viewModel = useViewModelStore.getState().getViewModel(networkId);
+
     const cx = exportNetworkToCx2(
       network,
       visualStyle,
@@ -102,26 +103,24 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
       addNetworkToWorkspace(uuid as IdType)
 
       addMessage({
-        message: `Saved a copy of the current network to NDEx with new uuid ${
-          uuid as string
-        }`,
+        message: `Saved a copy of the current network to NDEx with new uuid ${uuid as string
+          }`,
         duration: 3000,
       })
     } catch (e) {
       console.log(e)
       addMessage({
-        message: `Error: Could not save a copy of the current network to NDEx. ${
-          e.message as string
-        }`,
+        message: `Error: Could not save a copy of the current network to NDEx. ${e.message as string
+          }`,
         duration: 3000,
       })
     }
   }
 
-  const saveAllNetworks =  async (): Promise<void> => {
+  const saveAllNetworks = async (): Promise<void> => {
     for (const networkId of allNetworkId) {
       try {
-      await saveNetworkToNDEx(networkId);
+        await saveNetworkToNDEx(networkId);
       } catch (e) {
         await saveCopyToNDEx(networkId)
       }
@@ -149,7 +148,7 @@ export const SaveWorkspaceToNDExMenuItem = (props: BaseMenuProps): React.ReactEl
       setId(uuid)
 
       console.log(modificationTime)
-      
+
 
       addMessage({
         message: `Saved workspace to NDEx.`,

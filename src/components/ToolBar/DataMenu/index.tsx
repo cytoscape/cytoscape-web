@@ -14,10 +14,9 @@ import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
 import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
 import { LoadWorkspaceMenuItem } from './LoadWorkspaceMenuItem'
-        
+
 import { useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
-import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 import { CreateNetworkFromTableFileMenuItem } from '../../../features/TableDataLoader/components/CreateNetworkFromTable/ImportNetworkFromTableMenuItem'
 import { JoinTableToNetworkMenuItem } from '../../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
 import { TieredMenu } from 'primereact/tieredmenu'
@@ -38,7 +37,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
   }
 
   const handleClose = (): void => {
-    ;(op.current as any)?.hide()
+    ; (op.current as any)?.hide()
     setAnchorEl(null)
   }
 
@@ -49,7 +48,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
       label: 'Open network(s)From NDEx...',
       template: <LoadFromNdexMenuItem handleClose={handleClose} />,
     },
-        {
+    {
       label: 'Open workspace from NDEx...',
       template: <LoadWorkspaceMenuItem handleClose={handleClose} />,
     },
