@@ -19,7 +19,7 @@ import Papa from 'papaparse'
 import 'primereact/resources/themes/md-light-indigo/theme.css'
 import { DataTable, DataTableValue } from 'primereact/datatable'
 import { Column } from 'primereact/column'
-import { useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
 import {
@@ -58,13 +58,14 @@ import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
 import { AppConfigContext } from '../../../../AppConfigContext'
+import { NetworkNameInput } from './NetworkNameInput'
 
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
   const setShow = useCreateNetworkFromTableStore((state) => state.setShow)
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
   const reset = useCreateNetworkFromTableStore((state) => state.reset)
-
+  const name = useCreateNetworkFromTableStore((state) => state.name)
   const [loading, setLoading] = useState(false)
 
   const [validColumnTypes, setValidColumnAssignmentTypes] = useState<
@@ -178,8 +179,8 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     setColumns(nextColumns)
   }
 
-  const handleConfirm = async () => {
-    const res = createNetworkFromTableData(rows, columns)
+  const handleConfirm = useCallback(async () => {
+    const res = createNetworkFromTableData(rows, columns, undefined, name)
 
     const { network, nodeTable, edgeTable, visualStyle, summary, networkView } =
       res
@@ -201,7 +202,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     setLoading(false)
     reset()
     props.handleClose()
-  }
+  }, [rows, columns, name])
 
   const handleSelectNoneClick = () => {
     const newColumns = unselectAllColumns(columns)
@@ -246,33 +247,8 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     (tgtNodeCol !== undefined || srcNodeCol !== undefined)
   )
 
-  return (
-    <Box style={{ zIndex: 2001 }}>
-      <Group justify="flex-end">
-        <Button
-          size="compact-xs"
-          variant="default"
-          disabled={columns.every(
-            (c) => c.meaning !== ColumnAssignmentType.NotImported,
-          )}
-          onClick={() => handleSelectAllClick()}
-        >
-          Select All
-        </Button>
-
-        <Button
-          size="compact-xs"
-          variant="default"
-          disabled={columns.every(
-            (c) => c.meaning === ColumnAssignmentType.NotImported,
-          )}
-          onClick={() => handleSelectNoneClick()}
-        >
-          Select None
-        </Button>
-      </Group>
-      <Space h="lg" />
-
+  const table = useMemo(
+    () => (
       <DataTable
         value={rows as DataTableValue[]}
         stripedRows
@@ -365,6 +341,40 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           )
         })}
       </DataTable>
+    ),
+    [columns, rows],
+  )
+
+  return (
+    <Box style={{ zIndex: 2001 }}>
+      <Group justify="space-between">
+        <NetworkNameInput />
+        <Group>
+          <Button
+            size="compact-xs"
+            variant="default"
+            disabled={columns.every(
+              (c) => c.meaning !== ColumnAssignmentType.NotImported,
+            )}
+            onClick={() => handleSelectAllClick()}
+          >
+            Select All
+          </Button>
+
+          <Button
+            size="compact-xs"
+            variant="default"
+            disabled={columns.every(
+              (c) => c.meaning === ColumnAssignmentType.NotImported,
+            )}
+            onClick={() => handleSelectNoneClick()}
+          >
+            Select None
+          </Button>
+        </Group>
+      </Group>
+      <Space h="lg" />
+      {table}
       <Space h="lg" />
       {srcNodeCol === undefined && tgtNodeCol === undefined ? (
         <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>

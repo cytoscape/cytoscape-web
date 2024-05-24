@@ -164,6 +164,7 @@ export function createNetworkFromTableData(
   rows: DataTableValue[],
   columns: ColumnAssignmentState[],
   uuid?: string,
+  name?: string,
 ): {
   summary: NdexNetworkSummary
   nodeTable: Table
@@ -311,7 +312,7 @@ export function createNetworkFromTableData(
   const summary = {
     isNdex: false,
     ownerUUID: networkId,
-    name: 'test',
+    name: name ?? 'test',
     isReadOnly: false,
     subnetworkIds: [],
     isValid: false,
