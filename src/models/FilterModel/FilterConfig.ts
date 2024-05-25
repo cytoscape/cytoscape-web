@@ -8,7 +8,7 @@ import { FilterWidgetType } from './FilterWidgetType'
 import { SelectionType } from './SelectionType'
 
 /**
- * Interface for storing the filter congifuration for building the filter UI.
+ * Interface for storing the filter configuration for building the filter UI.
  * This configuration will be passed to the Filter function to apply the filter.
  */
 export interface FilterConfig {

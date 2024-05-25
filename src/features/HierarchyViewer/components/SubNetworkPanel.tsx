@@ -26,6 +26,9 @@ import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { useFilterStore } from '../../../store/FilterStore'
 import { DEFAULT_FILTER_NAME } from './FilterPanel/FilterPanel'
 import { FilterConfig } from '../../../models/FilterModel'
+import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
+import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
+import { createFilterFromAspect } from '../utils/filter-asprct-util'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -287,7 +290,26 @@ export const SubNetworkPanel = ({
       return
     }
 
-    const { network } = data
+    const { network, otherAspects } = data
+    // Check optional data
+    if (otherAspects !== undefined && otherAspects.length > 0) {
+      // Check filter config is available or not
+      const filterConfig = otherAspects.find(
+        (aspect: Aspect) => aspect[FILTER_ASPECT_TAG],
+      )
+      if (filterConfig !== undefined) {
+        const filterAspects: FilterAspects = filterConfig[FILTER_ASPECT_TAG]
+
+        // TODO: Register filter here::
+        const filterConfigs: FilterConfig[] =
+          createFilterFromAspect(filterAspects)
+        console.log(
+          '#### Filter conf from Aspects:',
+          filterConfigs,
+          filterAspects,
+        )
+      }
+    }
     // Check if the network is already in the store
     const newUuid: string = network.id.toString()
     const queryNetwork: Network | undefined = networks.get(newUuid)
