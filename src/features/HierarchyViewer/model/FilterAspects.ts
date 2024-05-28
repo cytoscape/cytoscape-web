@@ -1,4 +1,5 @@
 import { FilterWidgetType } from '../../../models/FilterModel'
+import { DiscreteFilterDetails } from '../../../models/FilterModel/DiscreteFilterDetails'
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { AttributeName } from '../../../models/TableModel'
 
@@ -18,14 +19,6 @@ export interface FilterAspect {
   appliesTo: GraphObjectType
   attributeName: AttributeName
   label: string
-  filter: FilterOptions[]
+  filter: DiscreteFilterDetails[]
   mappingSource: string
-}
-
-export interface FilterOptions {
-  predicate: string
-  criterion?: string
-  description: string
-  tooltip?: string
-  value?: string
 }

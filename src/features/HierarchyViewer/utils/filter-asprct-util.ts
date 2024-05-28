@@ -1,9 +1,5 @@
 import { DisplayMode, FilterConfig } from '../../../models/FilterModel'
-import {
-  FilterAspect,
-  FilterAspects,
-  FilterOptions,
-} from '../model/FilterAspects'
+import { FilterAspect, FilterAspects } from '../model/FilterAspects'
 
 /**
  * Build FilterConfig objects from FilterAspects
@@ -17,12 +13,6 @@ export const createFilterFromAspect = (
 
   filterAspects.forEach((filterAspect: FilterAspect) => {
     const { filter, mappingSource } = filterAspect
-
-    const visualMapping = createVisualMappingFromFilter(
-      filter[0],
-      mappingSource,
-    )
-
     const filterConfig: FilterConfig = {
       name: 'test filter',
       description: 'Filter nodes / edges by selected values',
@@ -32,22 +22,11 @@ export const createFilterFromAspect = (
       widgetType: filterAspect.widgetType,
       range: { values: [] },
       displayMode: DisplayMode.SHOW_HIDE,
+      discreteFilterDetails: filter,
     }
 
     filterConfigs.push(filterConfig)
   })
 
   return filterConfigs
-}
-
-const createVisualMappingFromFilter = (
-  filter: FilterOptions,
-  mappingSource: string,
-) => {
-  return {
-    mappingType: 'discrete',
-    mappingSource,
-    mappingColumn: filter.predicate,
-    mappingColumnValues: filter.value,
-  }
 }

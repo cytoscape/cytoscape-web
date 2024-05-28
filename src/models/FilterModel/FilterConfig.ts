@@ -3,6 +3,7 @@ import { DiscreteRange } from '../PropertyModel/DiscreteRange'
 import { NumberRange } from '../PropertyModel/NumberRange'
 import { AttributeName, ValueType } from '../TableModel'
 import { VisualMappingFunction } from '../VisualStyleModel'
+import { DiscreteFilterDetails } from './DiscreteFilterDetails'
 import { DisplayMode } from './DisplayMode'
 import { FilterWidgetType } from './FilterWidgetType'
 import { SelectionType } from './SelectionType'
@@ -48,4 +49,6 @@ export interface FilterConfig {
   // the range is a DiscreteRange. If the widget type is "slider", then the
   // range is a NumberRange.
   range: NumberRange | DiscreteRange<ValueType>
+
+  discreteFilterDetails?: DiscreteFilterDetails[]
 }
