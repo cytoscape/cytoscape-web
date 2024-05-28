@@ -249,8 +249,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
         // Create the initial matching table with the columns of the base network
         const typeSet = new Set<ValueTypeName>();
         const matchingRow: Record<string, string> = {};
+        const typeRecord: Record<string, ValueTypeName> = {};
         Object.keys(matchingCols).forEach(key => {
             matchingRow[key] = matchingCols[key].name;
+            typeRecord[key] = matchingCols[key].type;
             typeSet.add(matchingCols[key].type);
         });
         const initialRow = {
@@ -258,7 +260,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             mergedNetwork: 'Matching.Attribute',
             type: getResonableCompatibleConvertionType(typeSet) || 'None',
         }
-        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, ...matchingRow, numConflicts: typeSet.size <= 1 ? 0 : 1 } as MatchingTableRow]
+        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, nameRecord: matchingRow, typeRecord: typeRecord, numConflicts: typeSet.size <= 1 ? 0 : 1 } as MatchingTableRow]
 
         // Update the matching table for each network
         setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));

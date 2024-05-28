@@ -6,7 +6,8 @@ export interface MatchingTableRow {
     numConflicts: number;
     mergedNetwork: string;
     type: ValueTypeName | 'None';
-    [key: IdType]: string | number;
+    typeRecord: Record<string, ValueTypeName>;
+    nameRecord: Record<string, string>;
 }
 
 export interface MatchingTable {

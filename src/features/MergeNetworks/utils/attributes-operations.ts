@@ -175,3 +175,39 @@ export function getResonableCompatibleConvertionType(types: Set<ValueTypeName>):
     }
     return li ? `list_of_${ret}` as ValueTypeName : ret;
 }
+
+export function getAllConvertiableTypes(types: Set<ValueTypeName>): ValueTypeName[] {
+    const singleTypes = [ValueTypeName.Boolean, ValueTypeName.Integer, ValueTypeName.Long, ValueTypeName.Double];
+    const convertiableSingleTypes: ValueTypeName[] = [];
+    let hasListType = false;
+
+    const plainTypes = new Set<ValueTypeName>();
+    for (const type of types) {
+        if (isListType(type)) {
+            hasListType = true;
+            break;
+        }
+        plainTypes.add(getPlainType(type));
+    }
+
+    for (const singleType of singleTypes) {
+        let allConvertible = true;
+        for (const type of plainTypes) {
+            if (!isConvertible(type, singleType)) {
+                allConvertible = false;
+                break;
+            }
+        }
+        if (allConvertible) {
+            convertiableSingleTypes.push(singleType)
+        }
+    }
+    convertiableSingleTypes.push(ValueTypeName.String);
+    const convertiableListTypes = convertiableSingleTypes.map(type => `list_of_${type}` as ValueTypeName);
+
+    if (hasListType) {
+        return convertiableListTypes;
+    } else {
+        return [...convertiableSingleTypes, ...convertiableListTypes];
+    }
+}

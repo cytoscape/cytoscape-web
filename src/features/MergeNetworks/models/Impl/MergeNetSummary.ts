@@ -15,8 +15,8 @@ export function mergeNetSummary(fromNetworks: IdType[], networkAttributeMapping:
     const matchingTableRows = getMatchingTableRows(networkAttributeMapping)
     matchingTableRows.slice(3).forEach((row) => {
         for (const netId of fromNetworks) {
-            if (row.hasOwnProperty(netId) && row[netId] !== 'None' && row[netId] !== '') {
-                const oriProptName = row[netId]
+            if (row.nameRecord.hasOwnProperty(netId) && row.nameRecord[netId] !== 'None' && row.nameRecord[netId] !== '') {
+                const oriProptName = row.nameRecord[netId]
                 const oriPropt = netSummaries[netId]?.properties.find((property) => property.predicateString === oriProptName)
                 if (!mergedProperties[`${row.id}`] && oriPropt) {
                     mergedProperties[`${row.id}`] = mergeProperty(row.mergedNetwork, cloneDeep(oriPropt))

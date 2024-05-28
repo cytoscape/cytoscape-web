@@ -49,9 +49,11 @@ export const processColumns = (
         networkRecords[net1[1]]?.[tableName]?.columns.forEach(col => {
             if (!sharedColsRecord[net1[1]]?.includes(col.name)) {
                 const matchCols: Record<string, string> = {};
+                const typeRecord: Record<string, ValueTypeName> = {};
                 matchCols[net1[1]] = col.name;
                 const typeSet = new Set<ValueTypeName>();
                 typeSet.add(col.type);
+                typeRecord[net1[1]] = col.type;
                 toMergeNetworksList.slice(0, index1)?.forEach(net2 => {
                     matchCols[net2[1]] = 'None';
                 });
@@ -65,6 +67,7 @@ export const processColumns = (
                         const colType = network[tableName]?.columns.find(nc => nc.name === col.name)?.type;
                         if (colType !== undefined) {
                             typeSet.add(colType);
+                            typeRecord[net2[1]] = colType;
                         }
                     } else {
                         matchCols[net2[1]] = 'None';
@@ -73,9 +76,10 @@ export const processColumns = (
 
                 newTable.push({
                     id: newTable.length,
-                    ...matchCols,
                     mergedNetwork: col.name,
                     type: getResonableCompatibleConvertionType(typeSet),
+                    typeRecord: typeRecord,
+                    nameRecord: matchCols,
                     numConflicts: typeSet.size <= 1 ? 0 : 1
                 });
             }

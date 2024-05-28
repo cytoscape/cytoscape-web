@@ -10,10 +10,8 @@ export function createMatchingTable(matchingTableRows: MatchingTableRow[]): Matc
             name: row.mergedNetwork,
             type: row.type
         } as Column
-        for (const key in row) {
-            if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type' && key !== 'numConflicts') {
-                networkIds.add(key)
-            }
+        for (const key in row.nameRecord) {
+            networkIds.add(key)
         }
         mergedAttributes.push(mergedCol)
     })
@@ -36,8 +34,8 @@ export function getReversedAttributeMapping(matchingTable: MatchingTable, netId:
     const attMap = new Map()
     if (matchingTable.matchingTableRows.length > 0) {
         for (const row of (isNode ? matchingTable.matchingTableRows.slice(1) : matchingTable.matchingTableRows)) {
-            if (row.hasOwnProperty(netId)) {
-                attMap.set(row[netId], { name: row.mergedNetwork, type: row.type } as Column)
+            if (row.nameRecord.hasOwnProperty(netId)) {
+                attMap.set(row.nameRecord[netId], { name: row.mergedNetwork, type: row.type } as Column)
             }
         }
     }
@@ -48,8 +46,8 @@ export function getAttributeMapping(matchingTable: MatchingTable, netId: IdType,
     const attMap = new Map()
     if (matchingTable.matchingTableRows.length > 0) {
         for (const row of (isNode ? matchingTable.matchingTableRows.slice(1) : matchingTable.matchingTableRows)) {
-            if (row.hasOwnProperty(netId) && row[netId] !== 'None') {
-                attMap.set(row.id, { name: row[netId], type: row.type } as Column)
+            if (row.nameRecord.hasOwnProperty(netId) && row.nameRecord[netId] !== 'None') {
+                attMap.set(row.id, { name: row.nameRecord[netId], type: row.type } as Column)
             }
         }
     }
@@ -59,13 +57,8 @@ export function getAttributeMapping(matchingTable: MatchingTable, netId: IdType,
 export function getReversedMergedAttMap(matchingTable: MatchingTable): Map<string, string> {
     const attMap = new Map()
     if (matchingTable.matchingTableRows.length > 0) {
-        for (const key in matchingTable.matchingTableRows[0]) {
-            if (key !== 'id' && key !== 'mergedNetwork' && key !== 'type' && key !== 'numConflicts') {
-                attMap.set(key, matchingTable.matchingTableRows[0][key])
-            }
-        }
-        if (attMap.size !== (Object.entries(matchingTable.matchingTableRows[0]).length - 4)) {
-            throw new Error('Data inconsistency: networkIds and matchingTable have different length.')
+        for (const key in matchingTable.matchingTableRows[0].nameRecord) {
+            attMap.set(key, matchingTable.matchingTableRows[0].nameRecord[key])
         }
     }
     return attMap
@@ -73,8 +66,8 @@ export function getReversedMergedAttMap(matchingTable: MatchingTable): Map<strin
 
 export function setAttribute(matchingTable: MatchingTable, rowId: number, netId: IdType, attName: string) {
     const row = matchingTable.matchingTableRows.find(r => r.id === rowId);
-    if (row && row.hasOwnProperty(netId)) {
-        row[netId] = attName
+    if (row && row.nameRecord.hasOwnProperty(netId)) {
+        row.nameRecord[netId] = attName
     }
 }
 
@@ -100,14 +93,14 @@ export function addNetwork(matchingTable: MatchingTable, netId: IdType, cols: Co
         let hasCommon = false
         for (const col of cols) {
             if (col.name === matchingTable.mergedAttributes[i].name) {
-                matchingTable.matchingTableRows[i][netId] = col.name
+                matchingTable.matchingTableRows[i].nameRecord[netId] = col.name
             }
             commonCols.push(col.name)
             hasCommon = true
             continue
         }
         if (!hasCommon) {
-            matchingTable.matchingTableRows[i][netId] = 'None'
+            matchingTable.matchingTableRows[i].nameRecord[netId] = 'None'
         }
 
     }
@@ -118,9 +111,9 @@ export function addNetwork(matchingTable: MatchingTable, netId: IdType, cols: Co
     for (const col of cols) {
         if (commonCols.indexOf(col.name) === -1) {
             matchingTable.matchingTableRows.push({
-                ...matchCols,
+                nameRecord: matchCols,
                 id: matchingTable.matchingTableRows.length,
-                [netId]: col.name,
+                numConflicts: 0,
                 mergedNetwork: col.name,
                 type: col.type
             } as MatchingTableRow)
@@ -139,11 +132,11 @@ export function removeNetwork(matchingTable: MatchingTable, netId: IdType) {
         matchingTable.networkIds.delete(netId)
     }
     for (let i = 0; i < matchingTable.matchingTableRows.length; i++) {
-        delete matchingTable.matchingTableRows[i][netId]
+        delete matchingTable.matchingTableRows[i].nameRecord[netId]
     }
     const filteredIdx = new Set<number>();
     matchingTable.matchingTableRows = matchingTable.matchingTableRows.filter((row, index) => {
-        delete row[netId];
+        delete row.nameRecord[netId];
         if (Object.keys(row).length > 3) {
             filteredIdx.add(index);
             return true;
