@@ -39,8 +39,8 @@ export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, col
                     const initType = columns.find(col => col.name === e.target.value)?.type
                     if (initType !== undefined) typeSet.add(initType);
                     netIdLst.forEach(netId => {
-                        if (netId !== field && row[netId] !== 'None') {
-                            const colType = networkRecords[netId]?.[tableType]?.columns.find(col => col.name === row[netId])?.type;
+                        if (netId !== field && row.nameRecord[netId] !== 'None') {
+                            const colType = networkRecords[netId]?.[tableType]?.columns.find(col => col.name === row.nameRecord[netId])?.type;
                             if (colType !== undefined) typeSet.add(colType);
                         }
                     });

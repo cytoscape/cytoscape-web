@@ -5,6 +5,7 @@ import { NetworkRecord, Pair, TableView } from '../models/DataInterfaceForMerge'
 import { TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, TextField, Tooltip } from '@mui/material';
 import { MatchingTableRow } from '../models/MatchingTable';
 import { NetAttDropDownTemplate } from './NetAttDropDownTemplate';
+import { TypeDropDownTemplate } from './TypeDropDownTemplate';
 import { IdType } from '../../../models/IdType';
 import { Column } from '../../../models/TableModel/Column';
 
@@ -79,7 +80,12 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                                 />
                             </TableCell>
                             <TableCell key={`${row.id}-type`}>
-                                {row.type}
+                                <TypeDropDownTemplate
+                                    type={type}
+                                    setNodeMatchingTable={setNodeMatchingTable}
+                                    setEdgeMatchingTable={setEdgeMatchingTable}
+                                    setNetMatchingTable={setNetMatchingTable}
+                                />
                                 {row.numConflicts > 0 ?
                                     <Tooltip title={'Type coercion may be applied to this attribute.'} placement="top" arrow>
                                         <PriorityHighIcon viewBox="0 -3.7 24 24" style={{ color: 'red' }} />
