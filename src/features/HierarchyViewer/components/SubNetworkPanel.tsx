@@ -295,15 +295,18 @@ export const SubNetworkPanel = ({
     // Check optional data
     if (otherAspects !== undefined && otherAspects.length > 0) {
       // Check filter config is available or not
-      const filterConfig = otherAspects.find(
+      const filterConfigAspect = otherAspects.find(
         (aspect: Aspect) => aspect[FILTER_ASPECT_TAG],
       )
-      if (filterConfig !== undefined) {
-        const filterAspects: FilterAspects = filterConfig[FILTER_ASPECT_TAG]
+      if (filterConfigAspect !== undefined) {
+        const filterAspects: FilterAspects =
+          filterConfigAspect[FILTER_ASPECT_TAG]
 
-        // TODO: Register filter here::
-        const filterConfigs: FilterConfig[] =
-          createFilterFromAspect(filterAspects)
+        const sourceNetworkId: IdType = network.id
+        const filterConfigs: FilterConfig[] = createFilterFromAspect(
+          sourceNetworkId,
+          filterAspects,
+        )
         filterConfigs.forEach((filterConfig: FilterConfig) => {
           addFilterConfig(filterConfig)
         })

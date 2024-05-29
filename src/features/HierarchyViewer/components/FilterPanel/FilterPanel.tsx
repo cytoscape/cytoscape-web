@@ -37,6 +37,7 @@ import {
 } from '../../../../models/FilterModel'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
 
+// Default filter name if none exists
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 
 // TODO: Import from CX
@@ -78,6 +79,8 @@ export const FilterPanel = () => {
   const shouldApplyFilter: boolean = isInteractionNetwork(targetNetworkId)
 
   const vs: VisualStyle = styles[activeNetworkId]
+
+  const selectedFilter: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
 
   // Get target table from the store
   const tablePair = useTableStore((state) => state.tables[targetNetworkId])
@@ -139,20 +142,44 @@ export const FilterPanel = () => {
     if (filterEnabled !== null) {
       setIsFilterEnabled(filterEnabled === 'true')
     }
+    const visualMapping = getMapping(vs, targetAttrName)
+
+    const filterConfig: FilterConfig = {
+      name: DEFAULT_FILTER_NAME,
+      attributeName: targetAttrName,
+      target: selectedObjectType,
+      widgetType: FilterWidgetType.CHECKBOX,
+      description: 'Filter nodes / edges by selected values',
+      label: 'Interaction edge filter',
+      range: { values: [] },
+      displayMode,
+      visualMapping,
+    }
+
+    if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
+      addFilterConfig(filterConfig)
+      // Encode the filter settings into the URL
+      searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
+      searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
+      searchParams.set(
+        FilterUrlParams.FILTER_ENABLED,
+        isFilterEnabled.toString(),
+      )
+      setSearchParams(searchParams)
+    }
   }, [])
 
   /**
    * Add visual mapping to the filter config
    */
   useEffect(() => {
-    if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) return
+    if (selectedFilter === undefined) return
 
-    const filterConfig: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
     const visualMapping = getMapping(vs, targetAttrName)
 
     if (visualMapping === undefined) return
 
-    const newFilterConfig = { ...filterConfig, visualMapping }
+    const newFilterConfig = { ...selectedFilter, visualMapping }
     updateFilterConfig(newFilterConfig.name, newFilterConfig)
   }, [vs])
 
@@ -169,13 +196,26 @@ export const FilterPanel = () => {
 
     // Create a filter for the selected attribute if it does not exist
 
-    const currentConfig: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
+    // const currentConfig: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
+    const currentConfig = filterConfigs[targetNetworkId]
+
+    const visualMapping = getMapping(vs, targetAttrName)
 
     if (currentConfig !== undefined) {
+      console.log('Need to upddate the exisiting filter config')
+      const newConfig = { ...currentConfig, visualMapping }
+      updateFilterConfig(newConfig.name, newConfig)
+      searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
+      searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
+      searchParams.set(
+        FilterUrlParams.FILTER_ENABLED,
+        isFilterEnabled.toString(),
+      )
+      setSearchParams(searchParams)
       return
     }
 
-    const visualMapping = getMapping(vs, targetAttrName)
+    // Specified filter is not available. Create a new filter
 
     // Build the filter UI settings
     const filterConfig: FilterConfig = {
@@ -205,7 +245,7 @@ export const FilterPanel = () => {
     }
   }, [targetAttrName, selectedObjectType, vs, displayMode])
 
-  if (!shouldApplyFilter) return null
+  if (!shouldApplyFilter || selectedFilter === undefined) return null
 
   return (
     <Container
@@ -308,7 +348,7 @@ export const FilterPanel = () => {
           overflow: 'auto',
         }}
       >
-        {filterConfigs[DEFAULT_FILTER_NAME] === undefined ? null : (
+        {selectedFilter === undefined ? null : (
           <Box
             style={{
               width: '100%',
@@ -319,7 +359,7 @@ export const FilterPanel = () => {
             <CheckboxFilter
               targetNetworkId={targetNetworkId}
               table={table}
-              filterConfig={filterConfigs[DEFAULT_FILTER_NAME]}
+              filterConfig={selectedFilter}
               enableFilter={isFilterEnabled}
             />
           </Box>
