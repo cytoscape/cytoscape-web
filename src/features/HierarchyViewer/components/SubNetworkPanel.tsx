@@ -62,6 +62,7 @@ export const SubNetworkPanel = ({
   interactionNetworkId,
 }: SubNetworkPanelProps): ReactElement => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
+  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
 
   const filterConfig: FilterConfig | undefined =
     filterConfigs[DEFAULT_FILTER_NAME]
@@ -303,11 +304,10 @@ export const SubNetworkPanel = ({
         // TODO: Register filter here::
         const filterConfigs: FilterConfig[] =
           createFilterFromAspect(filterAspects)
-        console.log(
-          '#### Filter conf from Aspects:',
-          filterConfigs,
-          filterAspects,
-        )
+        filterConfigs.forEach((filterConfig: FilterConfig) => {
+          addFilterConfig(filterConfig)
+        })
+        console.log('#### Filter conf from Aspects:', filterConfigs)
       }
     }
     // Check if the network is already in the store

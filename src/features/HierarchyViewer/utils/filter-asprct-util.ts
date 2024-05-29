@@ -12,13 +12,13 @@ export const createFilterFromAspect = (
   const filterConfigs: FilterConfig[] = []
 
   filterAspects.forEach((filterAspect: FilterAspect) => {
-    const { filter, mappingSource } = filterAspect
+    const { filter, label } = filterAspect
     const filterConfig: FilterConfig = {
-      name: 'test filter',
+      name: label,
       description: 'Filter nodes / edges by selected values',
       attributeName: filterAspect.attributeName,
       target: filterAspect.appliesTo,
-      label: filterAspect.label,
+      label: label,
       widgetType: filterAspect.widgetType,
       range: { values: [] },
       displayMode: DisplayMode.SHOW_HIDE,

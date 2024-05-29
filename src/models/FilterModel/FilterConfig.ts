@@ -50,5 +50,8 @@ export interface FilterConfig {
   // range is a NumberRange.
   range: NumberRange | DiscreteRange<ValueType>
 
+  /**
+   * Properties for the individual values in the discrete filter.
+   */
   discreteFilterDetails?: DiscreteFilterDetails[]
 }
