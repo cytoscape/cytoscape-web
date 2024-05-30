@@ -80,7 +80,8 @@ export const FilterPanel = () => {
 
   const vs: VisualStyle = styles[activeNetworkId]
 
-  const selectedFilter: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
+  const selectedFilter: FilterConfig = filterConfigs[targetNetworkId]
+  // const selectedFilter: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
 
   // Get target table from the store
   const tablePair = useTableStore((state) => state.tables[targetNetworkId])

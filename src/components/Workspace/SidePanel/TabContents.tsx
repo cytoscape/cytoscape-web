@@ -9,7 +9,7 @@ import { TabPanel } from './TabPanel'
 
 export const getTabContents = (selectedIndex: number): JSX.Element[] => {
   return [
-    <TabPanel label="Hierarchy Viewer" key={0} index={0} value={selectedIndex}>
+    <TabPanel label="Network Viewer" key={0} index={0} value={selectedIndex}>
       <ViewerPanel />
     </TabPanel>,
   ]
