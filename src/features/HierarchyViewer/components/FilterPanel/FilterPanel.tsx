@@ -303,7 +303,7 @@ export const FilterPanel = () => {
                 margin: 0,
               }}
             >
-              <Typography>Filter:</Typography>
+              <Typography>Filter: {selectedFilter.label}</Typography>
               <Switch
                 checked={isFilterEnabled}
                 onClick={(event) => {
