@@ -21,7 +21,7 @@ import { useCredentialStore } from '../../../store/CredentialStore'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 
 import { useQuery } from '@tanstack/react-query'
-import { Table } from '../../../models/TableModel'
+import { Table, ValueType } from '../../../models/TableModel'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { useFilterStore } from '../../../store/FilterStore'
 import { DEFAULT_FILTER_NAME } from './FilterPanel/FilterPanel'
@@ -101,6 +101,51 @@ export const SubNetworkPanel = ({
   const getViewModel: (id: IdType) => NetworkView | undefined =
     useViewModelStore((state) => state.getViewModel)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+
+  const queryNetworkViewModel: NetworkView | undefined =
+    getViewModel(queryNetworkId)
+
+  const selectedNodesInQueryNetwork: string[] =
+    queryNetworkViewModel?.selectedNodes ?? []
+
+  const setSelectedHierarchyNodeNames: (
+    selectedHierarchyNodeNames: string[],
+  ) => void = useSubNetworkStore((state) => state.setSelectedHierarchyNodes)
+
+  useEffect(() => {
+    console.log(
+      '###2222 Subnetwork Selection updated',
+      selectedNodesInQueryNetwork,
+    )
+
+    // Convert node IDs to names
+    const tableRecord = tables[queryNetworkId]
+    if (tableRecord === undefined) {
+      return
+    }
+
+    const { nodeTable } = tableRecord
+
+    const { rows } = nodeTable
+
+    // Select nodes in the circle packing view
+    if (selectedNodesInQueryNetwork.length > 0) {
+      // Select nodes in the circle packing view here
+      const selectedNodeNames: string[] = selectedNodesInQueryNetwork.map(
+        (nodeId: IdType) => {
+          const row: Record<string, ValueType> | undefined = rows.get(nodeId)
+          if (row === undefined) {
+            return ''
+          }
+          return row.name as string
+        },
+      )
+      setSelectedHierarchyNodeNames(selectedNodeNames)
+    } else {
+      // Clear selection in the circle packing view
+      setSelectedHierarchyNodeNames([])
+    }
+  }, [queryNetworkViewModel?.selectedNodes])
 
   /**
    * Selection based on the leaf node selection in the circle packing packing view

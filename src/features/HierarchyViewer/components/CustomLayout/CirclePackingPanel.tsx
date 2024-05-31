@@ -147,6 +147,18 @@ export const CirclePackingPanel = ({
   // For selecting nodes in the sub network view
   const setSelectedNodes = useSubNetworkStore((state) => state.setSelectedNodes)
 
+  // For selecting leaf nodes from the selection in the linked interaction network
+  const selectedHierarchyNodeNames = useSubNetworkStore(
+    (state) => state.selectedHierarchyNodeNames,
+  )
+
+  useEffect(() => {
+    if (selectedHierarchyNodeNames.length === 0) return
+
+    console.log('Selected hierarchy node names: ', selectedHierarchyNodeNames)
+    setSelectedLeaf(selectedHierarchyNodeNames[0])
+  }, [selectedHierarchyNodeNames])
+
   const showObjects = (
     d: d3Hierarchy.HierarchyNode<D3TreeNode>,
     maxDepth: number,
