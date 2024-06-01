@@ -314,11 +314,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const handleMerge = async (): Promise<void> => {
         try {
             const newNetworkId = uuidv4();
-            const networkName = generateUniqueName(workSpaceNetworks.map(net => net[0]), mergedNetworkName);
             const summaryRecord: Record<IdType, NdexNetworkSummary> = Object.fromEntries(Object.entries(netSummaries).filter(([id,]) => toMergeNetworksList.some(pair => pair[1] === id)));
             const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : '';
             const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
-                newNetworkId, networkName, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj,
+                newNetworkId, mergedNetworkName, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj,
                 matchingCols, visualStyleRecord[baseNetwork], summaryRecord);
 
             // Update state stores with the new network and its components   
