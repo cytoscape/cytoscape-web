@@ -260,7 +260,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             mergedNetwork: 'Matching.Attribute',
             type: getResonableCompatibleConvertionType(typeSet) || 'None',
         }
-        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, nameRecord: matchingRow, typeRecord: typeRecord, numConflicts: typeSet.size <= 1 ? 0 : 1 } as MatchingTableRow]
+        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, nameRecord: matchingRow, typeRecord: typeRecord, hasConflicts: typeSet.size > 1 } as MatchingTableRow]
 
         // Update the matching table for each network
         setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));

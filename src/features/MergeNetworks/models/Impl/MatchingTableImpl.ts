@@ -113,7 +113,7 @@ export function addNetwork(matchingTable: MatchingTable, netId: IdType, cols: Co
             matchingTable.matchingTableRows.push({
                 nameRecord: matchCols,
                 id: matchingTable.matchingTableRows.length,
-                numConflicts: 0,
+                hasConflicts: false,
                 mergedNetwork: col.name,
                 type: col.type
             } as MatchingTableRow)

@@ -3,10 +3,10 @@ import { Column, Table, ValueType, ValueTypeName } from "../../../models/TableMo
 
 export interface MatchingTableRow {
     id: number;
-    numConflicts: number;
+    hasConflicts: boolean;
     mergedNetwork: string;
     type: ValueTypeName | 'None';
-    typeRecord: Record<string, ValueTypeName>;
+    typeRecord: Record<string, ValueTypeName | 'None'>;
     nameRecord: Record<string, string>;
 }
 

@@ -55,16 +55,56 @@ describe('mergeNetSummary', () => {
         };
 
         const netAttributeMapping: MatchingTable = createMatchingTable([
-            { id: 0, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', [fromNetworks[2]]: 'name', mergedNetwork: 'name', type: 'string' },
-            { id: 1, [fromNetworks[0]]: 'version', [fromNetworks[1]]: 'version', [fromNetworks[2]]: 'version', mergedNetwork: 'version', type: 'string' },
-            { id: 2, [fromNetworks[0]]: 'description', [fromNetworks[1]]: 'description', [fromNetworks[2]]: 'description', mergedNetwork: 'description', type: 'string' },
-            { id: 3, [fromNetworks[0]]: 'att0', [fromNetworks[1]]: 'att0', [fromNetworks[2]]: 'att0', mergedNetwork: 'att0', type: 'boolean' },
-            { id: 4, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'att1', mergedNetwork: 'att2', type: 'integer' },
-            { id: 5, [fromNetworks[0]]: 'att2', [fromNetworks[1]]: 'att2', [fromNetworks[2]]: 'att2', mergedNetwork: 'att2', type: 'string' },
-            { id: 6, [fromNetworks[0]]: 'att3', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att3', mergedNetwork: 'att33', type: 'string' },
-            { id: 7, [fromNetworks[0]]: 'att4', [fromNetworks[1]]: 'att4', [fromNetworks[2]]: 'att4', mergedNetwork: 'att4', type: 'list_of_string' },
-            { id: 8, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att5', [fromNetworks[2]]: 'att5', mergedNetwork: 'att5', type: 'list_of_number' },
-            { id: 9, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att6', [fromNetworks[2]]: 'att6', mergedNetwork: 'att6', type: 'list_of_boolean' }
+            {
+                id: 0, mergedNetwork: 'name', type: 'string',
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'string', [fromNetworks[2]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', [fromNetworks[2]]: 'name' }
+            },
+            {
+                id: 1, mergedNetwork: 'version', type: 'string',
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'string', [fromNetworks[2]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'version', [fromNetworks[1]]: 'version', [fromNetworks[2]]: 'version' }
+            },
+            {
+                id: 2, mergedNetwork: 'description', type: 'string',
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'string', [fromNetworks[2]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'description', [fromNetworks[1]]: 'description', [fromNetworks[2]]: 'description' }
+            },
+            {
+                id: 3, mergedNetwork: 'att0', type: 'boolean',
+                typeRecord: { [fromNetworks[0]]: 'boolean', [fromNetworks[1]]: 'boolean', [fromNetworks[2]]: 'boolean' },
+                nameRecord: { [fromNetworks[0]]: 'att0', [fromNetworks[1]]: 'att0', [fromNetworks[2]]: 'att0' }
+            },
+            {
+                id: 4, mergedNetwork: 'att2', type: 'integer',
+                typeRecord: { [fromNetworks[0]]: 'integer', [fromNetworks[1]]: 'integer', [fromNetworks[2]]: 'integer' },
+                nameRecord: { [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'att1' }
+            },
+            {
+                id: 5, mergedNetwork: 'att2', type: 'string',
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'string', [fromNetworks[2]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'att2', [fromNetworks[1]]: 'att2', [fromNetworks[2]]: 'att2' }
+            },
+            {
+                id: 6, mergedNetwork: 'att33', type: 'string',
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'att3', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att3' }
+            },
+            {
+                id: 7, mergedNetwork: 'att4', type: 'list_of_string',
+                typeRecord: { [fromNetworks[0]]: 'list_of_string', [fromNetworks[1]]: 'list_of_string', [fromNetworks[2]]: 'list_of_string' },
+                nameRecord: { [fromNetworks[0]]: 'att4', [fromNetworks[1]]: 'att4', [fromNetworks[2]]: 'att4' }
+            },
+            {
+                id: 8, mergedNetwork: 'att5', type: 'list_of_number',
+                typeRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'list_of_number', [fromNetworks[2]]: 'list_of_number' },
+                nameRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att5', [fromNetworks[2]]: 'att5' }
+            },
+            {
+                id: 9, mergedNetwork: 'att6', type: 'list_of_boolean',
+                typeRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'list_of_boolean', [fromNetworks[2]]: 'list_of_boolean' },
+                nameRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att6', [fromNetworks[2]]: 'att6' }
+            }
         ] as MatchingTableRow[]);
 
         const mergedSummary = mergeNetSummary(fromNetworks, netAttributeMapping, netSummaryRecord);

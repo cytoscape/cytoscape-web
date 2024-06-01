@@ -9,7 +9,7 @@ import { getResonableCompatibleConvertionType } from '../utils/attributes-operat
 
 interface netAttDropDownTemplateProps {
     networkRecords: Record<IdType, NetworkRecord>
-    rowData: { [x: string]: any; };
+    rowData: MatchingTableRow;
     column: string;
     type: TableView;
     netLst: [string, string][];
@@ -26,27 +26,24 @@ export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, col
     const tableType = type === TableView.node ? 'nodeTable' : (type === TableView.edge ? 'edgeTable' : 'netTable');
     const columns = networkRecords[column]?.[tableType]?.columns || [];
     const networkOptions = (type === TableView.node && rowData.id === 0) ? columns.map(nc => ({ label: nc.name, value: nc.name })) : [...columns.map(nc => ({ label: nc.name, value: nc.name })), emptyOption];
-    const currentValue = (rowData[column] && rowData[column] !== 'None') ? rowData[column] : '';
+    const currentValue = (rowData.nameRecord[column] && rowData.nameRecord[column] !== 'None') ? rowData.nameRecord[column] : '';
     const netIdLst = netLst.map(pair => pair[1]);
 
     // Handler for 'Dropdown' changes
-    const onDropdownChange = (e: SelectChangeEvent<any>, type: TableView, rowData: { [x: string]: any; }, field: string) => {
+    const onDropdownChange = (e: SelectChangeEvent<any>, type: TableView, rowData: MatchingTableRow, field: string) => {
         const updateTable = (prevTable: MatchingTableRow[]) => {
 
             const updatedTable = prevTable.map(row => {
                 if (row.id === rowData.id) {
                     const typeSet = new Set<ValueTypeName>();
-                    const initType = columns.find(col => col.name === e.target.value)?.type
-                    if (initType !== undefined) typeSet.add(initType);
-                    netIdLst.forEach(netId => {
-                        if (netId !== field && row.nameRecord[netId] !== 'None') {
-                            const colType = networkRecords[netId]?.[tableType]?.columns.find(col => col.name === row.nameRecord[netId])?.type;
-                            if (colType !== undefined) typeSet.add(colType);
-                        }
+                    const newNameRecord = { ...row.nameRecord, [field]: e.target.value };
+                    const newTypeRecord = { ...row.typeRecord, [field]: columns.find(col => col.name === e.target.value)?.type || 'None' };
+                    Object.values(newTypeRecord).forEach(type => {
+                        if (type !== 'None') typeSet.add(type as ValueTypeName)
                     });
-                    const numConflicts = typeSet.size <= 1 ? 0 : 1;
+                    const hasConflicts = typeSet.size > 1;
                     const mergedType = getResonableCompatibleConvertionType(typeSet);
-                    return { ...row, [field]: e.target.value, numConflicts, type: mergedType } as MatchingTableRow;
+                    return { ...row, nameRecord: newNameRecord, typeRecord: newTypeRecord, hasConflicts, type: mergedType } as MatchingTableRow;
                 }
                 return row;
             });
@@ -88,9 +85,7 @@ export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, col
 
 const filterRows = (rows: MatchingTableRow[]) => {
     return rows.filter(row => {
-        const allNone = Object.keys(row)
-            .filter(key => key !== 'mergedNetwork' && key !== 'type' && key !== 'id' && key !== 'numConflicts')
-            .every(key => row[key] === 'None');
+        const allNone = Object.keys(row.nameRecord).every(key => row.nameRecord[key] === 'None');
         return !allNone;
     });
 };

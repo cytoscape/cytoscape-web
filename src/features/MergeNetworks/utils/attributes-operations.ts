@@ -18,8 +18,8 @@ export function castAttributes(toMergeAttr: Record<string, ValueType> | undefine
     const castedAttr: Record<string, ValueType> = {};
     if (toMergeAttr !== undefined) {
         for (const row of (isNode ? matchingTable.matchingTableRows.slice(1) : matchingTable.matchingTableRows)) {
-            if (row.hasOwnProperty(netId) && row[netId] !== 'None' && row[netId] !== '' && toMergeAttr.hasOwnProperty(row[netId])) {
-                const val = toMergeAttr[row[netId]];
+            if (row.nameRecord.hasOwnProperty(netId) && row.nameRecord[netId] !== 'None' && row.nameRecord[netId] !== '' && toMergeAttr.hasOwnProperty(row.nameRecord[netId])) {
+                const val = toMergeAttr[row.nameRecord[netId]];
                 if (isString(val) && ['null', 'nan', 'none'].includes(val.toLowerCase())) {
                     castedAttr[row.mergedNetwork] = castNaN(row.type, val)
                 } else {
@@ -176,13 +176,14 @@ export function getResonableCompatibleConvertionType(types: Set<ValueTypeName>):
     return li ? `list_of_${ret}` as ValueTypeName : ret;
 }
 
-export function getAllConvertiableTypes(types: Set<ValueTypeName>): ValueTypeName[] {
+export function getAllConvertiableTypes(types: Set<ValueTypeName | 'None'>): ValueTypeName[] {
     const singleTypes = [ValueTypeName.Boolean, ValueTypeName.Integer, ValueTypeName.Long, ValueTypeName.Double];
     const convertiableSingleTypes: ValueTypeName[] = [];
     let hasListType = false;
 
     const plainTypes = new Set<ValueTypeName>();
     for (const type of types) {
+        if (type === 'None') continue;
         if (isListType(type)) {
             hasListType = true;
             break;

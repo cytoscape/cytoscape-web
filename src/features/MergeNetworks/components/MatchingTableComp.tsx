@@ -81,12 +81,12 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                             </TableCell>
                             <TableCell key={`${row.id}-type`}>
                                 <TypeDropDownTemplate
-                                    type={type}
+                                    type={type} rowData={row} netLst={netLst}
                                     setNodeMatchingTable={setNodeMatchingTable}
                                     setEdgeMatchingTable={setEdgeMatchingTable}
                                     setNetMatchingTable={setNetMatchingTable}
                                 />
-                                {row.numConflicts > 0 ?
+                                {row.hasConflicts ?
                                     <Tooltip title={'Type coercion may be applied to this attribute.'} placement="top" arrow>
                                         <PriorityHighIcon viewBox="0 -3.7 24 24" style={{ color: 'red' }} />
                                     </Tooltip > : ''}
