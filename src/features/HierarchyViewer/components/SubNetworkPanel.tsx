@@ -30,6 +30,10 @@ import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
 import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
 import { createFilterFromAspect } from '../utils/filter-asprct-util'
 import { CirclePackingType } from './CustomLayout/CirclePackingLayout'
+import { CirclePackingView } from '../model/CirclePackingView'
+import { HierarchyNode } from 'd3-hierarchy'
+import { D3TreeNode } from './CustomLayout/D3TreeNode'
+import { find } from 'lodash'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -368,46 +372,116 @@ export const SubNetworkPanel = ({
     }
   }
 
-  const getCpNodeViews = (): Record<string, NodeView> => {
+  const getCpViewModel = (): CirclePackingView | undefined => {
     if (cpViewId === '' || hierarchyViewModels === undefined) {
-      return {}
+      return
     }
 
-    const cpViewModel = hierarchyViewModels.find((viewModel: NetworkView) => {
-      if (viewModel.viewId === cpViewId) {
-        return viewModel.nodeViews
-      }
-    })
+    const cpViewModel: NetworkView | undefined = hierarchyViewModels.find(
+      (viewModel: NetworkView) => {
+        if (viewModel.viewId === cpViewId) {
+          return viewModel
+        }
+      },
+    )
 
     if (cpViewModel === undefined) {
-      return {}
+      return
     }
 
-    return cpViewModel.nodeViews
+    return cpViewModel as CirclePackingView
   }
+
+  const findAllDescendants = (
+    root: HierarchyNode<D3TreeNode>,
+    targetNodeId: string,
+  ): string[] => {
+    let queue: HierarchyNode<D3TreeNode>[] = [root]
+    // Find the target node
+
+    let targetNode: HierarchyNode<D3TreeNode> | undefined
+    while (queue.length > 0) {
+      const node = queue.shift()
+      if (node === undefined) {
+        continue
+      }
+      if (node.data.id === targetNodeId) {
+        console.log('Hit::', targetNodeId, node)
+        targetNode = node
+        break
+      }
+      if (node.children) {
+        const children = node.children as HierarchyNode<D3TreeNode>[]
+        queue.push(...children)
+      }
+    }
+    // Collect all descendants' IDs
+    queue = [targetNode as HierarchyNode<D3TreeNode>]
+    const descendants: string[] = []
+    while (queue.length > 0) {
+      const node = queue.shift()
+      if (node === undefined) {
+        continue
+      }
+      descendants.push(node.data.id)
+      if (node.children) {
+        const children = node.children as HierarchyNode<D3TreeNode>[]
+        queue.push(...children)
+      }
+    }
+    return descendants
+  }
+
   const applyLayout = (
     interactionNetworkId: IdType,
     interactionNetworkTable: Table,
     nodeViews: Record<string, NodeView>,
   ): Map<IdType, [number, number]> => {
     // ID format is parentID-node name
-    const cpNodeViews = getCpNodeViews()
+    const cpViewModel = getCpViewModel()
+    if (cpViewModel === undefined) {
+      return new Map()
+    }
+
+    const { hierarchy } = cpViewModel
+    if (hierarchy === undefined) {
+      return new Map()
+    }
+
+    const allDescendants: string[] = findAllDescendants(
+      hierarchy,
+      subsystemNodeId,
+    )
+
+    // Filter to get only the leaf nodes
+    const filtered = allDescendants.filter(
+      (nodeId: string) => nodeId.split('-').length > 1,
+    )
+    console.log('### All descendants & Filtered:', allDescendants, filtered)
+
+    const cpNodeViews = cpViewModel.nodeViews
 
     const { rows } = interactionNetworkTable
 
     const id2name: Map<IdType, string> = new Map()
-    const prefix: string = subsystemNodeId + '-'
+    // const prefix: string = subsystemNodeId + '-'
     Object.keys(nodeViews).forEach((nodeId: string) => {
       const row = rows.get(nodeId)
       if (row === undefined) {
         return
       }
       const nodeName: string = row.name as string
-      id2name.set(nodeId, prefix + nodeName)
+      filtered.find((cpNodeId: string) => {
+        if (cpNodeId.split('-')[1] === nodeName) {
+          id2name.set(nodeId, cpNodeId)
+        }
+      })
+
+      // id2name.set(nodeId, prefix + nodeName)
     })
 
     const positionMap: Map<IdType, [number, number]> = new Map()
-    id2name.forEach((nodeName: string, nodeId: IdType) => {
+    id2name.forEach((nodeName: string, nodeId: string) => {
       const cpNodeView = cpNodeViews[nodeName]
       if (cpNodeView === undefined) {
         return
