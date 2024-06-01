@@ -6,7 +6,7 @@ import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
 import { cyNetDag2tree2, findRoot } from './DataBuilderUtil'
 import { D3TreeNode } from './D3TreeNode'
-import { NetworkView } from '../../../../models/ViewModel'
+import { NetworkView, NodeView } from '../../../../models/ViewModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
 
 /**
@@ -53,7 +53,6 @@ export const createTreeLayout = (
   return hierarchyRootNode
 }
 
-
 export const CirclePackingType = 'circlePacking'
 
 /**
@@ -61,19 +60,60 @@ export const CirclePackingType = 'circlePacking'
  *
  * @param primaryView NetworkView as a node-link diagram
  * @param root Root node of the hierarchy
- * 
+ *
  * @returns
  */
 export const createCirclePackingView = (
   primaryView: NetworkView,
   root: HierarchyNode<D3TreeNode>,
+  width: number,
+  height: number,
 ): CirclePackingView => {
+  const pack: d3Hierarchy.PackLayout<any> = d3Hierarchy
+    .pack()
+    .size([width, height])
+    .padding(0)
+  pack(root)
+
+  const nodePositions = new Map<string, { x: number; y: number }>()
+  copyLeafPositions(root, nodePositions)
+  console.log('######## nodePositions', nodePositions, width, height)
+
+  const originalNodeViews: Record<string, NodeView> = primaryView.nodeViews
+  const nodeViewsWithLeaves: Record<string, NodeView> = {
+    ...originalNodeViews,
+  }
+
+  nodePositions.forEach((pos: { x: number; y: number }, nodeId) => {
+    nodeViewsWithLeaves[nodeId] = {
+      id: nodeId,
+      x: pos.x,
+      y: pos.y,
+      values: new Map(),
+    }
+  })
+
   const cpView: CirclePackingView = {
     ...primaryView,
+    nodeViews: nodeViewsWithLeaves,
     type: CirclePackingType,
     viewId: `${primaryView.id}-${CirclePackingType}-1`, // TODO: make this auto-generated
     hierarchy: root,
   }
 
   return cpView
+}
+
+export const copyLeafPositions = (
+  node: HierarchyNode<D3TreeNode>,
+  nodePositions: Map<string, { x: number; y: number }>,
+): void => {
+  if (node.children) {
+    const children = node.children as HierarchyNode<D3TreeNode>[]
+    children.forEach((child) => {
+      copyLeafPositions(child, nodePositions)
+    })
+  } else {
+    nodePositions.set(node.data.id, { x: node.x ?? 0, y: node.y ?? 0 })
+  }
 }

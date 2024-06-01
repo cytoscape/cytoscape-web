@@ -200,11 +200,11 @@ export const CirclePackingPanel = ({
   const draw = (rootNode: d3Hierarchy.HierarchyNode<D3TreeNode>): void => {
     const width = ref.current?.clientWidth ?? 0
     const height = ref.current?.clientHeight ?? 0
-    const pack: d3Hierarchy.PackLayout<any> = d3Hierarchy
-      .pack()
-      .size([width, height])
-      .padding(0)
-    pack(rootNode)
+    // const pack: d3Hierarchy.PackLayout<any> = d3Hierarchy
+    //   .pack()
+    //   .size([width, height])
+    //   .padding(0)
+    // pack(rootNode)
 
     // Pick the base tag
     const svg: any = d3Selection.select(ref.current)
@@ -360,9 +360,13 @@ export const CirclePackingPanel = ({
     })
 
     // Create a new Circle Packing view model
+    const width = ref.current?.clientWidth ?? 0
+    const height = ref.current?.clientHeight ?? 0
     const cpViewModel: CirclePackingView = createCirclePackingView(
       updatedView,
       rootNode,
+      width,
+      height,
     )
 
     // Register the new view model

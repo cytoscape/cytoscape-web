@@ -13,7 +13,7 @@ import { useNetworkStore } from '../../../store/NetworkStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { VisualStyle } from '../../../models/VisualStyleModel'
-import { NetworkView } from '../../../models/ViewModel'
+import { NetworkView, NodeView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
@@ -29,6 +29,7 @@ import { FilterConfig } from '../../../models/FilterModel'
 import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
 import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
 import { createFilterFromAspect } from '../utils/filter-asprct-util'
+import { CirclePackingType } from './CustomLayout/CirclePackingLayout'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -101,6 +102,30 @@ export const SubNetworkPanel = ({
   const getViewModel: (id: IdType) => NetworkView | undefined =
     useViewModelStore((state) => state.getViewModel)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+
+  const viewModels: Record<string, NetworkView[]> = useViewModelStore(
+    (state) => state.viewModels,
+  )
+
+  const [cpViewId, setCpViewId] = useState<IdType>('')
+  const hierarchyViewModels: NetworkView[] = viewModels[hierarchyId]
+
+  useEffect(() => {
+    if (hierarchyViewModels === undefined) {
+      return
+    }
+    hierarchyViewModels.forEach((hierarchyViewModel: NetworkView) => {
+      const { type, viewId } = hierarchyViewModel
+      if (type === CirclePackingType) {
+        console.log('# CP model', hierarchyViewModel, viewId)
+        if (viewId !== undefined && viewId !== '' && viewId !== cpViewId)
+          setCpViewId(viewId)
+      } else {
+        console.log('Other model', hierarchyViewModel)
+      }
+      console.log('!!!CP model ID', cpViewId)
+    })
+  }, [hierarchyViewModels])
 
   const queryNetworkViewModel: NetworkView | undefined =
     getViewModel(queryNetworkId)
@@ -313,6 +338,18 @@ export const SubNetworkPanel = ({
     const newNetworkId: string = network.id
     addNewNetwork(network)
     addTable(newNetworkId, nodeTable, edgeTable)
+
+    const newPositions = applyLayout(
+      newNetworkId,
+      nodeTable,
+      networkView.nodeViews,
+    )
+
+    newPositions.forEach((position: [number, number], nodeId: IdType) => {
+      const [x, y] = position
+      networkView.nodeViews[nodeId].x = x
+      networkView.nodeViews[nodeId].y = y
+    })
     addViewModel(newNetworkId, networkView)
 
     if (interactionNetworkId === undefined || interactionNetworkId === '') {
@@ -329,6 +366,60 @@ export const SubNetworkPanel = ({
         engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
       }
     }
+  }
+
+  const getCpNodeViews = (): Record<string, NodeView> => {
+    if (cpViewId === '' || hierarchyViewModels === undefined) {
+      return {}
+    }
+
+    const cpViewModel = hierarchyViewModels.find((viewModel: NetworkView) => {
+      if (viewModel.viewId === cpViewId) {
+        return viewModel.nodeViews
+      }
+    })
+
+    if (cpViewModel === undefined) {
+      return {}
+    }
+
+    return cpViewModel.nodeViews
+  }
+  const applyLayout = (
+    interactionNetworkId: IdType,
+    interactionNetworkTable: Table,
+    nodeViews: Record<string, NodeView>,
+  ): Map<IdType, [number, number]> => {
+    // ID format is parentID-node name
+    const cpNodeViews = getCpNodeViews()
+
+    const { rows } = interactionNetworkTable
+
+    const id2name: Map<IdType, string> = new Map()
+    const prefix: string = subsystemNodeId + '-'
+    Object.keys(nodeViews).forEach((nodeId: string) => {
+      const row = rows.get(nodeId)
+      if (row === undefined) {
+        return
+      }
+      const nodeName: string = row.name as string
+      id2name.set(nodeId, prefix + nodeName)
+    })
+
+    const positionMap: Map<IdType, [number, number]> = new Map()
+    id2name.forEach((nodeName: string, nodeId: IdType) => {
+      const cpNodeView = cpNodeViews[nodeName]
+      if (cpNodeView === undefined) {
+        return
+      } else {
+        positionMap.set(nodeId, [cpNodeView.x * 50, cpNodeView.y * 50])
+      }
+    })
+
+    // Object.keys(nodeViews).forEach((nodeId: string) => {
+    //   positionMap.set(nodeId, [0, 0])
+    // })
+    return positionMap
   }
 
   useEffect(() => {
