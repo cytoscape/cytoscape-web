@@ -154,8 +154,6 @@ export const CirclePackingPanel = ({
 
   useEffect(() => {
     if (selectedHierarchyNodeNames.length === 0) return
-
-    console.log('Selected hierarchy node names: ', selectedHierarchyNodeNames)
     setSelectedLeaf(selectedHierarchyNodeNames[0])
   }, [selectedHierarchyNodeNames])
 

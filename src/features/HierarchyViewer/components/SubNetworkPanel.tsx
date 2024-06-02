@@ -142,11 +142,6 @@ export const SubNetworkPanel = ({
   ) => void = useSubNetworkStore((state) => state.setSelectedHierarchyNodes)
 
   useEffect(() => {
-    console.log(
-      '###2222 Subnetwork Selection updated',
-      selectedNodesInQueryNetwork,
-    )
-
     // Convert node IDs to names
     const tableRecord = tables[queryNetworkId]
     if (tableRecord === undefined) {
@@ -154,7 +149,6 @@ export const SubNetworkPanel = ({
     }
 
     const { nodeTable } = tableRecord
-
     const { rows } = nodeTable
 
     // Select nodes in the circle packing view
@@ -406,7 +400,6 @@ export const SubNetworkPanel = ({
         continue
       }
       if (node.data.id === targetNodeId) {
-        console.log('Hit::', targetNodeId, node)
         targetNode = node
         break
       }
@@ -454,10 +447,23 @@ export const SubNetworkPanel = ({
     )
 
     // Filter to get only the leaf nodes
-    const filtered = allDescendants.filter(
+    const leavesInCircle = allDescendants.filter(
       (nodeId: string) => nodeId.split('-').length > 1,
     )
-    console.log('### All descendants & Filtered:', allDescendants, filtered)
+
+    const itrRows = interactionNetworkTable.rows
+    const idsInTable: string[] = [...itrRows.keys()]
+    const namesInTable = new Set<string>()
+    idsInTable.forEach((nodeId: string) => {
+      const curRow = itrRows.get(nodeId)
+      const nodeName = curRow?.name
+      if (nodeName !== undefined && nodeName !== null && nodeName !== '') {
+        namesInTable.add(nodeName as string)
+      }
+    })
+    console.log('### All Names in network:', namesInTable)
+    console.log('### Filtered node in CP count:', leavesInCircle.length)
+    console.log('### gene node count:', interactionNetworkTable.rows.size)
 
     const cpNodeViews = cpViewModel.nodeViews
 
@@ -471,9 +477,19 @@ export const SubNetworkPanel = ({
         return
       }
       const nodeName: string = row.name as string
-      filtered.find((cpNodeId: string) => {
-        if (cpNodeId.split('-')[1] === nodeName) {
+      // Find the
+      leavesInCircle.find((cpNodeId: string) => {
+        const parts: string[] = cpNodeId.split('-')
+        if (parts[1] === nodeName || `${parts[1]}-${parts[2]}` === nodeName) {
           id2name.set(nodeId, cpNodeId)
+        } else {
+          const pattern = /^-?\d+$/
+          if (pattern.test(parts[1])) {
+            if (parts[2] === nodeName) {
+              console.log('SPECIAL NODE Hit:', parts, nodeName)
+              id2name.set(nodeId, cpNodeId)
+            }
+          }
         }
       })
 
@@ -490,9 +506,6 @@ export const SubNetworkPanel = ({
       }
     })
 
-    // Object.keys(nodeViews).forEach((nodeId: string) => {
-    //   positionMap.set(nodeId, [0, 0])
-    // })
     return positionMap
   }
 
@@ -520,7 +533,6 @@ export const SubNetworkPanel = ({
         filterConfigs.forEach((filterConfig: FilterConfig) => {
           addFilterConfig(filterConfig)
         })
-        console.log('#### Filter conf from Aspects:', filterConfigs)
       }
     }
     // Check if the network is already in the store
@@ -564,6 +576,7 @@ export const SubNetworkPanel = ({
     return <MessagePanel message={`Select a subsystem`} />
   }
 
+  console.log('nodes in network:', queryNetwork.nodes.length)
   return (
     <Box
       sx={{

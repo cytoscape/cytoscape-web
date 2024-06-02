@@ -75,7 +75,12 @@ export const createCirclePackingView = (
     .padding(0)
   pack(root)
 
+  const duplicateNameMap = new Map<string, HierarchyNode<D3TreeNode>[]>()
+  findDuplicateId(root, new Set<string>(), duplicateNameMap)
+  console.log('######## duplicateNameSet', duplicateNameMap)
+
   const nodePositions = new Map<string, { x: number; y: number }>()
+
   copyLeafPositions(root, nodePositions)
   console.log('######## nodePositions', nodePositions, width, height)
 
@@ -102,6 +107,30 @@ export const createCirclePackingView = (
   }
 
   return cpView
+}
+
+// Traverse the tree and find duplicate ID
+export const findDuplicateId = (
+  node: HierarchyNode<D3TreeNode>,
+  idSet: Set<string>,
+  duplicateIdMap: Map<string, HierarchyNode<D3TreeNode>[]>,
+): void => {
+  if (idSet.has(node.data.name) && node.children !== undefined) {
+    // Add non-leaf node to duplicate set
+    console.log('######## duplicate node', node.data.name, node.data.id)
+    const duplicateNodes = duplicateIdMap.get(node.data.name)
+    if (duplicateNodes === undefined) {
+      duplicateIdMap.set(node.data.name, [node])
+    } else {
+      duplicateNodes.push(node)
+      duplicateIdMap.set(node.data.name, duplicateNodes)
+    }
+  }
+  idSet.add(node.data.name)
+  if (node.children) {
+    const children = node.children as HierarchyNode<D3TreeNode>[]
+    children.some((child) => findDuplicateId(child, idSet, duplicateIdMap))
+  }
 }
 
 export const copyLeafPositions = (

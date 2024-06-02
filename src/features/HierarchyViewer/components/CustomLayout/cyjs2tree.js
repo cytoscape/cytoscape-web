@@ -29,8 +29,8 @@ const cyjs2tree = (cyjs, networkActions) => {
   // Run stratification function
   const tree = d3Hierarchy
     .stratify()
-    .id(d => d.id)
-    .parentId(d => d.parent)(table)
+    .id((d) => d.id)
+    .parentId((d) => d.parent)(table)
 
   table = null
   nodeMap = null
@@ -182,10 +182,10 @@ const transform = (rootId, edges, nodeMap) => {
     id: nodeMap[rootId].id,
     Label: rootLabel,
     parent: '',
-    props: nodeMap[rootId]
+    props: nodeMap[rootId],
   })
 
-  edges.forEach(edge => {
+  edges.forEach((edge) => {
     const source = nodeMap[edge.data.source]
     const target = nodeMap[edge.data.target]
 
@@ -220,7 +220,7 @@ const transform = (rootId, edges, nodeMap) => {
           value: size,
           NodeType: nodeType,
           props: source,
-          alias: source.alias
+          alias: source.alias,
         }
 
         if (source.originalId) {
@@ -234,7 +234,7 @@ const transform = (rootId, edges, nodeMap) => {
   return table
 }
 
-const getOriginalBranches = node => {
+const getOriginalBranches = (node) => {
   if (originals.has(node.id)) {
     branches.set(node.id, node)
   }
@@ -248,26 +248,11 @@ const getOriginalBranches = node => {
   }
 }
 
-const addBranches = node => {
+const addBranches = (node) => {
   const originalId = node.data.props.originalId
   const alias = node.data.props.alias
 
   const nodeChildren = node.children
-  // if (nodeChildren !== undefined) {
-  //   let len = nodeChildren.length
-  //   let termFound = false
-  //   while (len--) {
-  //     const child = nodeChildren[len]
-  //     if (child.data.NodeType !== 'Gene') {
-  //       termFound = true
-  //       break
-  //     }
-  //   }
-  //   if (!termFound) {
-  //     delete node.children
-  //     return
-  //   }
-  // }
 
   // Remove children of gene-only term
 
