@@ -486,7 +486,7 @@ export const SubNetworkPanel = ({
           const pattern = /^-?\d+$/
           if (pattern.test(parts[1])) {
             if (parts[2] === nodeName) {
-              console.log('SPECIAL NODE Hit:', parts, nodeName)
+              // console.log('SPECIAL NODE Hit:', parts, nodeName)
               id2name.set(nodeId, cpNodeId)
             }
           }
@@ -502,7 +502,7 @@ export const SubNetworkPanel = ({
       if (cpNodeView === undefined) {
         return
       } else {
-        positionMap.set(nodeId, [cpNodeView.x * 50, cpNodeView.y * 50])
+        positionMap.set(nodeId, [cpNodeView.x * 35, cpNodeView.y * 35])
       }
     })
 
