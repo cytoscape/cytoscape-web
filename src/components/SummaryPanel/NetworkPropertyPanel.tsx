@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 import {
   Tooltip,
   IconButton,
@@ -11,6 +11,7 @@ import {
 import { blueGrey } from '@mui/material/colors'
 import { useTheme } from '@mui/material/styles'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import CircleIcon from '@mui/icons-material/Circle'
 
 import { IdType } from '../../models/IdType'
@@ -20,6 +21,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 
 import { NetworkPropertyEditor } from './NdexNetworkPropertyEditor'
 import { HcxValidationButtonGroup } from '../../features/HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
+import { useNavigate } from 'react-router-dom'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
@@ -63,6 +65,14 @@ export const NetworkPropertyPanel = ({
 
   const networkModified =
     useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
+
+  const navigate = useNavigate()
+  const workspace = useWorkspaceStore((state) => state.workspace)
+  const workSpaceId = useWorkspaceStore((state) => state.workspace.id)
+  const networkIds: IdType[] = useWorkspaceStore((state) => state.workspace.networkIds)
+  const deleteCurrentNetwork = useWorkspaceStore(
+    (state) => state.deleteCurrentNetwork,
+  )
 
   const backgroundColor: string =
     currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
@@ -124,9 +134,8 @@ export const NetworkPropertyPanel = ({
               variant={'subtitle2'}
               sx={{ width: '100%', color: theme.palette.text.secondary }}
             >
-              {`N: ${nodeCount} (${
-                networkViewModel?.selectedNodes.length ?? 0
-              }) /
+              {`N: ${nodeCount} (${networkViewModel?.selectedNodes.length ?? 0
+                }) /
           E: ${edgeCount} (${networkViewModel?.selectedEdges.length ?? 0})`}
             </Typography>
 
@@ -145,13 +154,27 @@ export const NetworkPropertyPanel = ({
             <EditIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Tooltip>
-
+        <Tooltip title="Delete the network">
+          <IconButton
+            size="small"
+            sx={{ width: 30, height: 30 }}
+            onClick={(e) => {
+              deleteCurrentNetwork();
+              console.log(workspace)
+              if (networkIds.length === 1) {
+                navigate(`/${workSpaceId}/networks`)
+              }
+            }}
+          >
+            <DeleteIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
         <NetworkPropertyEditor
           anchorEl={editNetworkSummaryAnchorEl}
           summary={summary}
           onClose={hideEditNetworkSummaryForm}
         />
-      </Box>
+      </Box >
     </>
   )
 }
