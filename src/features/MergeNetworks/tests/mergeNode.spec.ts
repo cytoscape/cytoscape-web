@@ -1,4 +1,3 @@
-// At the top of your test file before any imports
 jest.mock('../../../models/NetworkModel', () => {
     return {
         default: {

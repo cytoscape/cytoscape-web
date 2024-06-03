@@ -33,6 +33,10 @@ describe('Test type coercion functions', () => {
     it('should convert the value to the target type correctly', () => {
         expect(typeCoercion(1, ValueTypeName.ListString)).toStrictEqual(['1']);
         expect(typeCoercion([true, false], ValueTypeName.ListString)).toStrictEqual(['true', 'false']);
+        expect(typeCoercion([1, 2], ValueTypeName.ListString)).toStrictEqual(['1', '2']);
+        expect(typeCoercion(1, ValueTypeName.String)).toBe('1');
+        expect(typeCoercion(1, ValueTypeName.Integer)).toBe(1);
+        expect(typeCoercion(1, ValueTypeName.Long)).toBe(1);
+        expect(typeCoercion(1, ValueTypeName.Double)).toBe(1);
     })
-
 });
