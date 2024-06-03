@@ -17,11 +17,10 @@ interface MatchingTableProps {
     setNodeMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
     setEdgeMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
     setNetMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
-    setMatchingCols: (updateFunction: (prevCols: Record<IdType, Column>) => Record<IdType, Column>) => void;
     matchingCols?: Record<IdType, Column>;
 }
 
-export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, type, setNodeMatchingTable, setEdgeMatchingTable, setNetMatchingTable, setMatchingCols }: MatchingTableProps) => {
+export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, type, setNodeMatchingTable, setEdgeMatchingTable, setNetMatchingTable }: MatchingTableProps) => {
     // Handler for 'Merged Network' changes
     const onMergedNetworkChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, type: TableView, rowIndex: number) => {
         const updatedValue = e.target.value;
@@ -64,7 +63,6 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                                         setNodeMatchingTable={setNodeMatchingTable}
                                         setEdgeMatchingTable={setEdgeMatchingTable}
                                         setNetMatchingTable={setNetMatchingTable}
-                                        setMatchingCols={setMatchingCols}
                                     />
                                 </TableCell>
                             ))}

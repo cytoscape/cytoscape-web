@@ -2,27 +2,25 @@ import React from "react";
 import { Column } from "../../../models/TableModel/Column";
 import { NetworkRecord, Pair } from "../models/DataInterfaceForMerge";
 import { MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material"
+import useMatchingColumnsStore from "../store/matchingTableStore";
 
 
 interface MatchingTableProps {
     networkRecords: Record<string, NetworkRecord>;
     toMergeNetworksList: Pair<string, string>[];
     matchingCols: Record<string, Column>;
-    setMatchingCols: (updateFunction: (prevCols: Record<string, Column>) => Record<string, Column>) => void;
 }
 
-export const MatchingColumnTable = React.memo(({ networkRecords, toMergeNetworksList, matchingCols, setMatchingCols }: MatchingTableProps) => {
+export const MatchingColumnTable = React.memo(({ networkRecords, toMergeNetworksList, matchingCols }: MatchingTableProps) => {
     const placeHolderForMatchingCol = "Please select networks to merge..."
+    const setMatchingCols = useMatchingColumnsStore(state => state.setMatchingCols);
     // Handler for the 'Matching Columns' dropdown changes
     const handleSetMatchingCols = (networkId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-        setMatchingCols(prevCols => {
-            return {
-                ...prevCols,
-                [networkId]: {
-                    name: event.target.value,
-                    type: networkRecords[networkId]?.nodeTable?.columns.find(col => col.name === event.target.value)?.type || 'None'
-                } as Column
-            }
+        setMatchingCols({
+            [networkId]: {
+                name: event.target.value,
+                type: networkRecords[networkId]?.nodeTable?.columns.find(col => col.name === event.target.value)?.type || 'None'
+            } as Column
         });
     };
 

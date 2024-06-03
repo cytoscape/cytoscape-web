@@ -6,6 +6,7 @@ import { Column } from '../../../models/TableModel/Column';
 import { IdType } from '../../../models/IdType';
 import { ValueTypeName } from '../../../models/TableModel';
 import { getResonableCompatibleConvertionType } from '../utils/attributes-operations';
+import useMatchingColumnsStore from '../store/matchingTableStore';
 
 interface netAttDropDownTemplateProps {
     networkRecords: Record<IdType, NetworkRecord>
@@ -16,28 +17,29 @@ interface netAttDropDownTemplateProps {
     setNodeMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
     setEdgeMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
     setNetMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
-    setMatchingCols: (updateFunction: (prevCols: Record<string, Column>) => Record<string, Column>) => void;
 }
 
 
 // Editable cell template for the network attributes
-export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, column, type, netLst, setNodeMatchingTable, setEdgeMatchingTable, setNetMatchingTable, setMatchingCols }: netAttDropDownTemplateProps) => {
+export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, column, type, netLst, setNodeMatchingTable, setEdgeMatchingTable, setNetMatchingTable }: netAttDropDownTemplateProps) => {
     const emptyOption = { label: 'None', value: 'None' };
     const tableType = type === TableView.node ? 'nodeTable' : (type === TableView.edge ? 'edgeTable' : 'netTable');
     const columns = networkRecords[column]?.[tableType]?.columns || [];
     const networkOptions = (type === TableView.node && rowData.id === 0) ? columns.map(nc => ({ label: nc.name, value: nc.name })) : [...columns.map(nc => ({ label: nc.name, value: nc.name })), emptyOption];
     const currentValue = (rowData.nameRecord[column] && rowData.nameRecord[column] !== 'None') ? rowData.nameRecord[column] : '';
     const netIdLst = netLst.map(pair => pair[1]);
-
+    const setMatchingCols = useMatchingColumnsStore(state => state.setMatchingCols);
     // Handler for 'Dropdown' changes
     const onDropdownChange = (e: SelectChangeEvent<any>, type: TableView, rowData: MatchingTableRow, field: string) => {
+        const newName = e.target.value;
+        const newType = columns.find(col => col.name === newName)?.type || 'None';
         const updateTable = (prevTable: MatchingTableRow[]) => {
 
             const updatedTable = prevTable.map(row => {
                 if (row.id === rowData.id) {
                     const typeSet = new Set<ValueTypeName>();
-                    const newNameRecord = { ...row.nameRecord, [field]: e.target.value };
-                    const newTypeRecord = { ...row.typeRecord, [field]: columns.find(col => col.name === e.target.value)?.type || 'None' };
+                    const newNameRecord = { ...row.nameRecord, [field]: newName };
+                    const newTypeRecord = { ...row.typeRecord, [field]: newType };
                     Object.values(newTypeRecord).forEach(type => {
                         if (type !== 'None') typeSet.add(type as ValueTypeName)
                     });
@@ -52,10 +54,7 @@ export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, col
         if (type === TableView.node) {
             setNodeMatchingTable(prevTable => updateTable(prevTable));
             if (rowData.id === 0) {
-                setMatchingCols(prevCols => {
-                    const columnType = networkRecords[e.target.value]?.nodeTable?.columns.find(col => col.name === e.target.value)?.type || 'None';
-                    return { ...prevCols, [field]: { name: e.target.value, type: columnType } as Column };
-                });
+                setMatchingCols({ [field]: { name: newName, type: newType } as Column });
             }
         } else if (type === TableView.edge) {
             setEdgeMatchingTable(prevTable => updateTable(prevTable));

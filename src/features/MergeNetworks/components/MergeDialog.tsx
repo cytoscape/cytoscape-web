@@ -18,6 +18,7 @@ import {
     MergeType, NetworkRecord, TableView, Pair
 } from '../models/DataInterfaceForMerge';
 import { MatchingTableRow } from '../models/MatchingTable';
+import useMatchingColumnsStore from '../store/matchingTableStore';
 import { Column, ValueType, ValueTypeName } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
@@ -66,7 +67,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     // Record the information of the networks to be merged
     const [networkRecords, setNetworkRecords] = useState<Record<IdType, NetworkRecord>>({});
     // Record the matching columns for each network
-    const [matchingCols, setMatchingCols] = useState<Record<IdType, Column>>({});
+    const matchingCols = useMatchingColumnsStore(state => state.matchingCols);
+    const setMatchingCols = useMatchingColumnsStore(state => state.setMatchingCols);
     // Record the state of the matching table
     const [nodeMatchingTable, setNodeMatchingTable] = useState<MatchingTableRow[]>([]);
     const [edgeMatchingTable, setEdgeMatchingTable] = useState<MatchingTableRow[]>([]);
@@ -461,7 +463,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                         </Typography>
 
                         <MatchingColumnTable networkRecords={networkRecords} toMergeNetworksList={toMergeNetworksList}
-                            matchingCols={matchingCols} setMatchingCols={setMatchingCols} />
+                            matchingCols={matchingCols} />
 
                         <Typography variant="h6" style={{ margin: '10px 0 10px 0' }}>
                             How to merge columns:
@@ -481,7 +483,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                                 setNodeMatchingTable={setNodeMatchingTable}
                                 setEdgeMatchingTable={setEdgeMatchingTable}
                                 setNetMatchingTable={setNetMatchingTable}
-                                setMatchingCols={setMatchingCols}
                                 matchingCols={matchingCols}
                             />
                         )}
