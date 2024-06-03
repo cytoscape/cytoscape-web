@@ -46,6 +46,7 @@ export const processColumns = (
     const newTable: MatchingTableRow[] = initialTable ? [...initialTable] : [];
     const sharedColsRecord: Record<IdType, string[]> = {};
     toMergeNetworksList.forEach((net1, index1) => {
+        // Todo: make sure the column names are sorted alphabetically(case-insensitive)
         networkRecords[net1[1]]?.[tableName]?.columns.forEach(col => {
             if (!sharedColsRecord[net1[1]]?.includes(col.name)) {
                 const matchCols: Record<string, string> = {};
@@ -100,3 +101,10 @@ export function isNumberArray(value: any): value is number[] {
 export function isBooleanArray(value: any): value is boolean[] {
     return Array.isArray(value) && value.every(item => typeof item === 'boolean');
 }
+
+export function filterRows(rows: MatchingTableRow[]) {
+    return rows.filter(row => {
+        const allNone = Object.keys(row.nameRecord).every(key => row.nameRecord[key] === 'None');
+        return !allNone;
+    });
+};

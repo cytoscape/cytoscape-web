@@ -2,7 +2,7 @@ import React from "react";
 import { Column } from "../../../models/TableModel/Column";
 import { NetworkRecord, Pair } from "../models/DataInterfaceForMerge";
 import { MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material"
-import useMatchingColumnsStore from "../store/matchingTableStore";
+import useMatchingColumnsStore from "../store/matchingColumnStore";
 
 
 interface MatchingTableProps {

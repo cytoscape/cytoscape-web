@@ -18,7 +18,10 @@ import {
     MergeType, NetworkRecord, TableView, Pair
 } from '../models/DataInterfaceForMerge';
 import { MatchingTableRow } from '../models/MatchingTable';
-import useMatchingColumnsStore from '../store/matchingTableStore';
+import useMatchingColumnsStore from '../store/matchingColumnStore';
+import useNodeMatchingTableStore from '../store/nodeMatchingTableStore';
+import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore';
+import useNetMatchingTableStore from '../store/netMatchingTableStore';
 import { Column, ValueType, ValueTypeName } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
@@ -69,10 +72,13 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     // Record the matching columns for each network
     const matchingCols = useMatchingColumnsStore(state => state.matchingCols);
     const setMatchingCols = useMatchingColumnsStore(state => state.setMatchingCols);
-    // Record the state of the matching table
-    const [nodeMatchingTable, setNodeMatchingTable] = useState<MatchingTableRow[]>([]);
-    const [edgeMatchingTable, setEdgeMatchingTable] = useState<MatchingTableRow[]>([]);
-    const [netMatchingTable, setNetMatchingTable] = useState<MatchingTableRow[]>([]);
+    // // Record the state of the matching table
+    const nodeMatchingTable = useNodeMatchingTableStore(state => state.rows);
+    const setNodeMatchingTable = useNodeMatchingTableStore(state => state.setAllRows);
+    const edgeMatchingTable = useEdgeMatchingTableStore(state => state.rows);
+    const setEdgeMatchingTable = useEdgeMatchingTableStore(state => state.setAllRows);
+    const netMatchingTable = useNetMatchingTableStore(state => state.rows);
+    const setNetMatchingTable = useNetMatchingTableStore(state => state.setAllRows);
     // Record the status of the available and selected networks lists
     const [availableNetworksList, setAvailableNetworksList] = useState<Pair<string, IdType>[]>(workSpaceNetworks);
     const [toMergeNetworksList, setToMergeNetworksList] = useState<Pair<string, IdType>[]>([]);
@@ -472,17 +478,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                             <MatchingTableComp
                                 networkRecords={networkRecords}
                                 netLst={toMergeNetworksList}
-                                data={
-                                    tableView === TableView.node
-                                        ? nodeMatchingTable
-                                        : tableView === TableView.edge
-                                            ? edgeMatchingTable
-                                            : netMatchingTable
-                                }
                                 type={tableView}
-                                setNodeMatchingTable={setNodeMatchingTable}
-                                setEdgeMatchingTable={setEdgeMatchingTable}
-                                setNetMatchingTable={setNetMatchingTable}
                                 matchingCols={matchingCols}
                             />
                         )}

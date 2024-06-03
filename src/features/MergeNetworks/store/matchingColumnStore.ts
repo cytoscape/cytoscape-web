@@ -6,10 +6,15 @@ import { Column } from '../../../models/TableModel';
 
 interface MatchingColsState {
     matchingCols: Record<string, Column>;
-    setMatchingCols: (newMatchingCols: Record<string, Column>) => void;
 }
 
-const useMatchingColumnsStore = create<MatchingColsState>((set) => ({
+interface MatchingColsAction {
+    setMatchingCols: (newMatchingCols: Record<string, Column>) => void
+}
+
+type MatchingColsStore = MatchingColsState & MatchingColsAction
+
+const useMatchingColumnsStore = create<MatchingColsStore>((set) => ({
     matchingCols: {},
     setMatchingCols: (newMatchingCols: Record<IdType, Column>) => set((state) => ({
         matchingCols: { ...state.matchingCols, ...newMatchingCols }
