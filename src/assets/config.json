@@ -27,6 +27,6 @@
   "maxNetworkElementsThreshold": 20000,
   "maxNetworkFileSize": 524288000,
   "urlBaseName": "/",
-  "openAIAPIKey": ""
+  "openAIAPIKey": "",
+  "googleAnalyticsId": "G-BBK8LX4CX4"
 }
-

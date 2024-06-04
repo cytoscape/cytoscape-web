@@ -16,6 +16,7 @@ export interface AppConfig {
   testNetworks: IdType[]
   urlBaseName: string
   openAIAPIKey: string
+  googleAnalyticsId: string
 }
 
 export const defaultAppConfig: AppConfig = {
@@ -45,6 +46,7 @@ export const defaultAppConfig: AppConfig = {
   ],
   urlBaseName: '',
   openAIAPIKey: '',
+  googleAnalyticsId: '',
 }
 
 export const AppConfigContext = createContext<AppConfig>(defaultAppConfig)
