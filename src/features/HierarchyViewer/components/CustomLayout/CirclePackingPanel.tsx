@@ -30,6 +30,7 @@ import { useSubNetworkStore } from '../../store/SubNetworkStore'
 import { useTableStore } from '../../../../store/TableStore'
 import { SearchState } from '../../../../models/FilterModel/SearchState'
 import { useFilterStore } from '../../../../store/FilterStore'
+import { last } from 'lodash'
 
 interface CirclePackingPanelProps {
   network: Network
@@ -38,7 +39,7 @@ interface CirclePackingPanelProps {
 const CP_WRAPPER_CLASS = 'circle-packing-wrapper'
 
 // Color scale for the circles in the view
-const colorScale = getColorMapper([0, 1000])
+const colorScale = getColorMapper([0, 5])
 
 /**
  * Circle Packing renderer as a variant of the network viewer
@@ -100,7 +101,12 @@ export const CirclePackingPanel = ({
   const selectedNodeSet = new Set<string>(selectedNodes)
 
   // Keep the last
-  const [lastZoomLevel, setLastZoomLevel] = useState<number>(1)
+  // const [lastZoomLevel, setLastZoomLevel] = useState<number>(1)
+  const lastZoomLevelRef = useRef(1)
+
+  useEffect(() => {
+    console.log('Zoom changed:', lastZoomLevelRef.current)
+  }, [lastZoomLevelRef.current])
 
   const handleZoom = useCallback(
     (e: any): void => {
@@ -108,14 +114,21 @@ export const CirclePackingPanel = ({
       selectedArea.attr('transform', e.transform)
       const currentZoomLevel = e.transform.k
       const maxDepth = Math.ceil(currentZoomLevel)
-      setLastZoomLevel(maxDepth)
-      updateForZoom(maxDepth)
+
+      console.log('Setting Zoom :', lastZoomLevelRef.current, maxDepth)
+      if (lastZoomLevelRef.current > maxDepth) {
+        lastZoomLevelRef.current = maxDepth
+      } else {
+        // setLastZoomLevel(maxDepth)
+        lastZoomLevelRef.current = maxDepth
+        updateForZoom(maxDepth)
+      }
     },
     [expandAll],
   )
 
   useEffect(() => {
-    updateForZoom(lastZoomLevel)
+    updateForZoom(lastZoomLevelRef.current)
   }, [expandAll])
 
   useEffect(() => {
@@ -124,7 +137,7 @@ export const CirclePackingPanel = ({
     } else {
       setExpandAll(false)
     }
-    updateForZoom(lastZoomLevel)
+    updateForZoom(lastZoomLevelRef.current)
   }, [searchState])
 
   useEffect(() => {
@@ -231,7 +244,8 @@ export const CirclePackingPanel = ({
           : CpDefaults.borderWidth
       })
       .attr('fill', (d: d3Hierarchy.HierarchyNode<D3TreeNode>) => {
-        return colorScale(d.depth * 200)
+        return colorScale(d.depth)
+        // return colorScale(d.depth * 200)
       })
       .on(
         'mouseenter',
@@ -455,6 +469,15 @@ export const CirclePackingPanel = ({
   useEffect(() => {
     displaySelectedNodes(selectedNodeSet, selectedLeaf)
   }, [selectedNodes, selectedLeaf])
+
+  useEffect(() => {
+    console.log('INIT to CP: isSelected??', ref, selectedNodes)
+    if (selectedNodes.length > 0) {
+      updateForZoom(9)
+      // setLastZoomLevel(9)
+      lastZoomLevelRef.current = 9
+    }
+  }, [ref.current])
 
   return (
     <>

@@ -33,7 +33,8 @@ import { CirclePackingType } from './CustomLayout/CirclePackingLayout'
 import { CirclePackingView } from '../model/CirclePackingView'
 import { HierarchyNode } from 'd3-hierarchy'
 import { D3TreeNode } from './CustomLayout/D3TreeNode'
-import { find } from 'lodash'
+import { find, get } from 'lodash'
+import { applyCpLayout } from '../utils/hierarchy-util'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -121,13 +122,11 @@ export const SubNetworkPanel = ({
     hierarchyViewModels.forEach((hierarchyViewModel: NetworkView) => {
       const { type, viewId } = hierarchyViewModel
       if (type === CirclePackingType) {
-        console.log('# CP model', hierarchyViewModel, viewId)
         if (viewId !== undefined && viewId !== '' && viewId !== cpViewId)
           setCpViewId(viewId)
       } else {
-        console.log('Other model', hierarchyViewModel)
+        // console.log('Other model', hierarchyViewModel)
       }
-      console.log('!!!CP model ID', cpViewId)
     })
   }, [hierarchyViewModels])
 
@@ -337,7 +336,9 @@ export const SubNetworkPanel = ({
     addNewNetwork(network)
     addTable(newNetworkId, nodeTable, edgeTable)
 
-    const newPositions = applyLayout(
+    const newPositions = applyCpLayout(
+      getCpViewModel() as CirclePackingView,
+      subsystemNodeId,
       newNetworkId,
       nodeTable,
       networkView.nodeViews,
@@ -370,7 +371,6 @@ export const SubNetworkPanel = ({
     if (cpViewId === '' || hierarchyViewModels === undefined) {
       return
     }
-
     const cpViewModel: NetworkView | undefined = hierarchyViewModels.find(
       (viewModel: NetworkView) => {
         if (viewModel.viewId === cpViewId) {
@@ -378,135 +378,10 @@ export const SubNetworkPanel = ({
         }
       },
     )
-
     if (cpViewModel === undefined) {
       return
     }
-
     return cpViewModel as CirclePackingView
-  }
-
-  const findAllDescendants = (
-    root: HierarchyNode<D3TreeNode>,
-    targetNodeId: string,
-  ): string[] => {
-    let queue: HierarchyNode<D3TreeNode>[] = [root]
-    // Find the target node
-
-    let targetNode: HierarchyNode<D3TreeNode> | undefined
-    while (queue.length > 0) {
-      const node = queue.shift()
-      if (node === undefined) {
-        continue
-      }
-      if (node.data.id === targetNodeId) {
-        targetNode = node
-        break
-      }
-      if (node.children) {
-        const children = node.children as HierarchyNode<D3TreeNode>[]
-        queue.push(...children)
-      }
-    }
-    // Collect all descendants' IDs
-    queue = [targetNode as HierarchyNode<D3TreeNode>]
-    const descendants: string[] = []
-    while (queue.length > 0) {
-      const node = queue.shift()
-      if (node === undefined) {
-        continue
-      }
-      descendants.push(node.data.id)
-      if (node.children) {
-        const children = node.children as HierarchyNode<D3TreeNode>[]
-        queue.push(...children)
-      }
-    }
-    return descendants
-  }
-
-  const applyLayout = (
-    interactionNetworkId: IdType,
-    interactionNetworkTable: Table,
-    nodeViews: Record<string, NodeView>,
-  ): Map<IdType, [number, number]> => {
-    // ID format is parentID-node name
-    const cpViewModel = getCpViewModel()
-    if (cpViewModel === undefined) {
-      return new Map()
-    }
-
-    const { hierarchy } = cpViewModel
-    if (hierarchy === undefined) {
-      return new Map()
-    }
-
-    const allDescendants: string[] = findAllDescendants(
-      hierarchy,
-      subsystemNodeId,
-    )
-
-    // Filter to get only the leaf nodes
-    const leavesInCircle = allDescendants.filter(
-      (nodeId: string) => nodeId.split('-').length > 1,
-    )
-
-    const itrRows = interactionNetworkTable.rows
-    const idsInTable: string[] = [...itrRows.keys()]
-    const namesInTable = new Set<string>()
-    idsInTable.forEach((nodeId: string) => {
-      const curRow = itrRows.get(nodeId)
-      const nodeName = curRow?.name
-      if (nodeName !== undefined && nodeName !== null && nodeName !== '') {
-        namesInTable.add(nodeName as string)
-      }
-    })
-    console.log('### All Names in network:', namesInTable)
-    console.log('### Filtered node in CP count:', leavesInCircle.length)
-    console.log('### gene node count:', interactionNetworkTable.rows.size)
-
-    const cpNodeViews = cpViewModel.nodeViews
-
-    const { rows } = interactionNetworkTable
-
-    const id2name: Map<IdType, string> = new Map()
-    // const prefix: string = subsystemNodeId + '-'
-    Object.keys(nodeViews).forEach((nodeId: string) => {
-      const row = rows.get(nodeId)
-      if (row === undefined) {
-        return
-      }
-      const nodeName: string = row.name as string
-      // Find the
-      leavesInCircle.find((cpNodeId: string) => {
-        const parts: string[] = cpNodeId.split('-')
-        if (parts[1] === nodeName || `${parts[1]}-${parts[2]}` === nodeName) {
-          id2name.set(nodeId, cpNodeId)
-        } else {
-          const pattern = /^-?\d+$/
-          if (pattern.test(parts[1])) {
-            if (parts[2] === nodeName) {
-              // console.log('SPECIAL NODE Hit:', parts, nodeName)
-              id2name.set(nodeId, cpNodeId)
-            }
-          }
-        }
-      })
-
-      // id2name.set(nodeId, prefix + nodeName)
-    })
-
-    const positionMap: Map<IdType, [number, number]> = new Map()
-    id2name.forEach((nodeName: string, nodeId: string) => {
-      const cpNodeView = cpNodeViews[nodeName]
-      if (cpNodeView === undefined) {
-        return
-      } else {
-        positionMap.set(nodeId, [cpNodeView.x * 35, cpNodeView.y * 35])
-      }
-    })
-
-    return positionMap
   }
 
   useEffect(() => {
@@ -576,7 +451,6 @@ export const SubNetworkPanel = ({
     return <MessagePanel message={`Select a subsystem`} />
   }
 
-  console.log('nodes in network:', queryNetwork.nodes.length)
   return (
     <Box
       sx={{

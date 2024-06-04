@@ -14,13 +14,16 @@ export const LETTERS_PER_LINE: number = MAX_LABEL_LENGTH / MAX_LINE_NUMBER
 
 const SCALING_FACTOR = 1.15
 
+const ROOT_COLOR = '#E5FBFF'
+const LEAF_COLOR = 'rgb(0,220,255)'
+
 export const getColorMapper = (
   domain: [number, number],
 ): d3Scale.ScaleLinear<string, string> => {
   return d3Scale
     .scaleLinear<string>()
     .domain(domain)
-    .range(['white', 'rgb(0,220,255)'])
+    .range([ROOT_COLOR, LEAF_COLOR])
     .interpolate(d3Interpolate.interpolateRgb)
 }
 
