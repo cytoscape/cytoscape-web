@@ -21,7 +21,6 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 
 import { NetworkPropertyEditor } from './NdexNetworkPropertyEditor'
 import { HcxValidationButtonGroup } from '../../features/HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
-import { useNavigate } from 'react-router-dom'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
@@ -66,10 +65,6 @@ export const NetworkPropertyPanel = ({
   const networkModified =
     useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
 
-  const navigate = useNavigate()
-  const workspace = useWorkspaceStore((state) => state.workspace)
-  const workSpaceId = useWorkspaceStore((state) => state.workspace.id)
-  const networkIds: IdType[] = useWorkspaceStore((state) => state.workspace.networkIds)
   const deleteCurrentNetwork = useWorkspaceStore(
     (state) => state.deleteCurrentNetwork,
   )
@@ -158,13 +153,7 @@ export const NetworkPropertyPanel = ({
           <IconButton
             size="small"
             sx={{ width: 30, height: 30 }}
-            onClick={(e) => {
-              deleteCurrentNetwork();
-              console.log(workspace)
-              if (networkIds.length === 1) {
-                navigate(`/${workSpaceId}/networks`)
-              }
-            }}
+            onClick={(e) => { deleteCurrentNetwork(); }}
           >
             <DeleteIcon sx={{ fontSize: 18 }} />
           </IconButton>
