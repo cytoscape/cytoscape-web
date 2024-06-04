@@ -7,12 +7,13 @@ import { filterRows } from '../utils/helper-functions';
 import { NetworkRecord } from '../models/DataInterfaceForMerge';
 import { getResonableCompatibleConvertionType } from '../utils/attributes-operations';
 
-interface MatchingTableState {
+interface NodeMatchingTableState {
     rows: MatchingTableRow[];
     networkIds: Set<IdType>;
+    matchingAttributes: Record<string, Column>
 }
 
-interface MatchingTableActions {
+interface NodeMatchingTableActions {
     setAllRows: (newRows: MatchingTableRow[]) => void;
     setRow: (rowIndex: number, updatedRow: MatchingTableRow) => void;
     addRow: (newRow: MatchingTableRow) => void
@@ -20,29 +21,46 @@ interface MatchingTableActions {
     addNetworksToTable: (networkIds: IdType[], networkRecords: Record<IdType, NetworkRecord>) => void
 }
 
-type MatchingTableStore = MatchingTableState & MatchingTableActions
+type MatchingTableStore = NodeMatchingTableState & NodeMatchingTableActions
+
 const addNetwork = (state: MatchingTableStore, networkId: IdType, netRecord: NetworkRecord) => {
     const netCols = netRecord.nodeTable.columns;
     const sharedCols = new Set<string>();
-    state.rows = state.rows.map((row) => {
-        if (!row.nameRecord.hasOwnProperty(networkId)) {
-            if (netCols.some(nc => nc.name === row.mergedNetwork)) {
-                sharedCols.add(row.mergedNetwork);
-                row.nameRecord[networkId] = row.mergedNetwork;
-                row.typeRecord[networkId] = netCols.find(nc => nc.name === row.mergedNetwork)?.type || 'None';
-                const typeSet: Set<ValueTypeName> = new Set();
-                for (const colType of Object.values(row.typeRecord)) {
-                    if (colType !== 'None') typeSet.add(colType);
-                }
-                row.hasConflicts = typeSet.size > 1;
-                row.type = getResonableCompatibleConvertionType(typeSet);
-            } else {
-                row.nameRecord[networkId] = 'None';
-                row.typeRecord[networkId] = 'None';
+    if (state.rows.length > 0) {
+        state.rows = state.rows.map((row, id) => {
+            if (id === 0) {
+                row.nameRecord[networkId] = state.matchingAttributes[networkId]?.name || 'None';
+                row.typeRecord[networkId] = state.matchingAttributes[networkId]?.type || 'None';
+                return row;
             }
-        }
-        return row;
-    });
+            if (!row.nameRecord.hasOwnProperty(networkId)) {
+                if (netCols.some(nc => nc.name === row.mergedNetwork)) {
+                    sharedCols.add(row.mergedNetwork);
+                    row.nameRecord[networkId] = row.mergedNetwork;
+                    row.typeRecord[networkId] = netCols.find(nc => nc.name === row.mergedNetwork)?.type || 'None';
+                    const typeSet: Set<ValueTypeName> = new Set();
+                    for (const colType of Object.values(row.typeRecord)) {
+                        if (colType !== 'None') typeSet.add(colType);
+                    }
+                    row.hasConflicts = typeSet.size > 1;
+                    row.type = getResonableCompatibleConvertionType(typeSet);
+                } else {
+                    row.nameRecord[networkId] = 'None';
+                    row.typeRecord[networkId] = 'None';
+                }
+            }
+            return row;
+        });
+    } else {
+        state.rows.push({
+            id: 0,
+            mergedNetwork: state.matchingAttributes[networkId]?.name || 'None',
+            type: state.matchingAttributes[networkId]?.type || 'None',
+            nameRecord: { [networkId]: state.matchingAttributes[networkId]?.name || 'None' },
+            typeRecord: { [networkId]: state.matchingAttributes[networkId]?.type || 'None' },
+            hasConflicts: false
+        });
+    }
 
     // Add new rows for columns not in sharedCols
     netCols.forEach(col => {
@@ -61,9 +79,14 @@ const addNetwork = (state: MatchingTableStore, networkId: IdType, netRecord: Net
     state.networkIds.add(networkId);
 };
 
+const removeNetwork = (state: MatchingTableStore, networkId: IdType, netRecord: NetworkRecord) => {
+
+}
+
 const useNetMatchingTableStore = create(immer<MatchingTableStore>((set) => ({
     rows: [],
     networkIds: new Set(),
+    matchingAttributes: {},
     setAllRows: (newRows) => set((state) => ({
         rows: filterRows(newRows)
     })),
