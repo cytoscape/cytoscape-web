@@ -181,7 +181,7 @@ export const LoadFromNdexDialog = (
       const ndexClient = new NDEx(ndexBaseUrl)
       const token = await getToken()
       ndexClient.setAuthToken(token)
-      const myNetworks = await ndexClient.getAccountPageNetworks(0, 400)
+      const myNetworks = await ndexClient.getAccountPageNetworks(0, 1000)
       return myNetworks
     }
     if (authenticated) {
@@ -222,7 +222,7 @@ export const LoadFromNdexDialog = (
       const token = await getToken()
       ndexClient.setAuthToken(token)
     }
-    const searchResults = await ndexClient.searchNetworks(searchValue, 0, 400)
+    const searchResults = await ndexClient.searchNetworks(searchValue, 0, 1000)
     setSearchResultNetworks(searchResults?.networks ?? [])
     setLoading(false)
   }

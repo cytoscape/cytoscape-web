@@ -8,7 +8,6 @@ import {
   Tooltip,
 } from '@mantine/core'
 
-import { TableUpload } from './TableUpload'
 import { TableColumnAssignmentForm } from './TableColumnAssignmentForm'
 import { PrimeReactProvider } from 'primereact/api'
 import {
@@ -31,9 +30,7 @@ export function CreateNetworkFromTableForm(props: BaseMenuProps) {
       : 'Edit Column Definitions'
 
   const stepContentMap = {
-    [CreateNetworkFromTableStep.FileUpload]: (
-      <TableUpload {...props}></TableUpload>
-    ),
+    [CreateNetworkFromTableStep.FileUpload]: <div></div>,
     [CreateNetworkFromTableStep.ColumnAssignmentForm]: (
       <TableColumnAssignmentForm {...props} />
     ),

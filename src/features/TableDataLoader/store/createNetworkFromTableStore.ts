@@ -29,6 +29,7 @@ interface CreateNetworkFromTableState {
   file?: File
   rawText: string
   options: CreateNetworkFromTableOptions
+  name: string
 }
 
 interface CreateNetworkFromTableAction {
@@ -36,6 +37,7 @@ interface CreateNetworkFromTableAction {
   goToStep: (nextStep: CreateNetworkFromTableStep) => void
   setFile: (f: File) => void
   setRawText: (s: string) => void
+  setName: (s: string) => void
   reset: () => void
 }
 
@@ -49,6 +51,12 @@ export const useCreateNetworkFromTableStore = create(
     step: CreateNetworkFromTableStep.FileUpload,
     options: defaultTableDataLoaderOpts,
     rawText: '',
+    name: '',
+    setName: (s: string) => {
+      set((state) => {
+        state.name = s
+      })
+    },
     setShow: (show: boolean) => {
       set((state) => {
         state.show = show
