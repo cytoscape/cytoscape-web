@@ -203,11 +203,6 @@ export const SubNetworkPanel = ({
           }
         })
       })
-      console.log(
-        '!Subnetwork Selection delay updated',
-        selectedNodes,
-        toBeSelected,
-      )
 
       exclusiveSelect(queryNetworkId, toBeSelected, [])
     }

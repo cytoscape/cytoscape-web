@@ -104,10 +104,6 @@ export const CirclePackingPanel = ({
   // const [lastZoomLevel, setLastZoomLevel] = useState<number>(1)
   const lastZoomLevelRef = useRef(1)
 
-  useEffect(() => {
-    console.log('Zoom changed:', lastZoomLevelRef.current)
-  }, [lastZoomLevelRef.current])
-
   const handleZoom = useCallback(
     (e: any): void => {
       const selectedArea = d3Selection.select('svg g')
@@ -115,11 +111,9 @@ export const CirclePackingPanel = ({
       const currentZoomLevel = e.transform.k
       const maxDepth = Math.ceil(currentZoomLevel)
 
-      console.log('Setting Zoom :', lastZoomLevelRef.current, maxDepth)
       if (lastZoomLevelRef.current > maxDepth) {
         lastZoomLevelRef.current = maxDepth
       } else {
-        // setLastZoomLevel(maxDepth)
         lastZoomLevelRef.current = maxDepth
         updateForZoom(maxDepth)
       }
@@ -471,10 +465,8 @@ export const CirclePackingPanel = ({
   }, [selectedNodes, selectedLeaf])
 
   useEffect(() => {
-    console.log('INIT to CP: isSelected??', ref, selectedNodes)
     if (selectedNodes.length > 0) {
       updateForZoom(9)
-      // setLastZoomLevel(9)
       lastZoomLevelRef.current = 9
     }
   }, [ref.current])
