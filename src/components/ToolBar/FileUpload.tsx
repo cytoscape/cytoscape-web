@@ -44,6 +44,8 @@ import {
   CreateNetworkFromTableStep,
 } from '../../features/TableDataLoader/store/createNetworkFromTableStore'
 import { PrimeReactProvider } from 'primereact/api'
+import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
+import { generateUniqueName } from '../../utils/network-utils'
 
 interface FileUploadProps {
   show: boolean
@@ -187,10 +189,13 @@ export function FileUpload(props: FileUploadProps) {
     }
   }
 
+  const summaries = useNetworkSummaryStore((state) => state.summaries)
+
   const setFile = useCreateNetworkFromTableStore((state) => state.setFile)
   const setShow = useCreateNetworkFromTableStore((state) => state.setShow)
   const goToStep = useCreateNetworkFromTableStore((state) => state.goToStep)
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
+  const setName = useCreateNetworkFromTableStore((state) => state.setName)
   const onFileError = () => {
     notifications.show({
       color: 'red',
@@ -204,9 +209,17 @@ export function FileUpload(props: FileUploadProps) {
     // Parse CSV here using PapaParse
     // const result = Papa.parse(text)
 
+    const name = generateUniqueName(
+      Object.values(summaries).map((s) => s.name),
+      file.name,
+    )
+
+    console.log('SUM', summaries, file.name)
+
     setFile(file)
     goToStep(CreateNetworkFromTableStep.ColumnAssignmentForm)
     setRawText(text)
+    setName(name)
     setShow(true)
     props.handleClose()
   }
