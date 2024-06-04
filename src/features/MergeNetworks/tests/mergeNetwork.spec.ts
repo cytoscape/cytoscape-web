@@ -201,17 +201,53 @@ describe('mergeNetwork', () => {
             }
         }
         const nodeAttributeMapping = createMatchingTable([
-            { id: 0, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'att1', mergedNetwork: 'matchingAtt', type: 'integer', numConflicts: 0 },
-            { id: 1, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', [fromNetworks[2]]: 'name', mergedNetwork: 'name', type: 'string', numConflicts: 0 },
-            { id: 2, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'att1', mergedNetwork: 'att1_merged', type: 'integer', numConflicts: 0 },
-            { id: 3, [fromNetworks[0]]: 'att2', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att2', mergedNetwork: 'att22', type: 'string', numConflicts: 0 },
-            { id: 4, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att3', [fromNetworks[2]]: 'att3', mergedNetwork: 'att333', type: 'string', numConflicts: 0 }
+            {
+                id: 0, mergedNetwork: 'matchingAtt', type: 'integer', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'integer', [fromNetworks[1]]: 'integer', [fromNetworks[2]]: 'integer' },
+                nameRecord: { [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'att1' }
+            },
+            {
+                id: 1, mergedNetwork: 'name', type: 'string', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'string', [fromNetworks[2]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', [fromNetworks[2]]: 'name' }
+            },
+            {
+                id: 2, mergedNetwork: 'att1_merged', type: 'integer', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'integer', [fromNetworks[1]]: 'integer', [fromNetworks[2]]: 'integer' },
+                nameRecord: { [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'att1' }
+            },
+            {
+                id: 3, mergedNetwork: 'att22', type: 'string', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'att2', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att2' }
+            },
+            {
+                id: 4, mergedNetwork: 'att333', type: 'string', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'string', [fromNetworks[2]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att3', [fromNetworks[2]]: 'att3' }
+            }
         ] as MatchingTableRow[])
         const edgeAttributeMapping = createMatchingTable([
-            { id: 0, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', [fromNetworks[2]]: 'name', mergedNetwork: 'name', type: 'string', numConflicts: 0 },
-            { id: 1, [fromNetworks[0]]: 'interaction', [fromNetworks[1]]: 'interaction', [fromNetworks[2]]: 'interaction', mergedNetwork: 'interaction', type: 'string', numConflicts: 0 },
-            { id: 2, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'None', mergedNetwork: 'att', type: 'integer', numConflicts: 0 },
-            { id: 3, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att2', mergedNetwork: 'att23', type: 'double', numConflicts: 0 },
+            {
+                id: 0, mergedNetwork: 'name', type: 'string', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'string', [fromNetworks[2]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', [fromNetworks[2]]: 'name' }
+            },
+            {
+                id: 1, mergedNetwork: 'interaction', type: 'string', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'string', [fromNetworks[2]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'interaction', [fromNetworks[1]]: 'interaction', [fromNetworks[2]]: 'interaction' }
+            },
+            {
+                id: 2, mergedNetwork: 'att', type: 'integer', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'integer', [fromNetworks[2]]: 'None' },
+                nameRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att1', [fromNetworks[2]]: 'None' }
+            },
+            {
+                id: 3, mergedNetwork: 'att23', type: 'double', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'double' },
+                nameRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'None', [fromNetworks[2]]: 'att2' }
+            },
         ] as MatchingTableRow[])
         const matchingAttribute = {
             [fromNetworks[0]]: { name: 'att1', type: 'string' } as Column,

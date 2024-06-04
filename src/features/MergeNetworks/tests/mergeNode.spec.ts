@@ -1,4 +1,3 @@
-// At the top of your test file before any imports
 jest.mock('../../../models/NetworkModel', () => {
     return {
         default: {
@@ -113,11 +112,31 @@ describe('mergeNetwork', () => {
             }
         }
         const nodeAttributeMapping = createMatchingTable([
-            { id: 0, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', mergedNetwork: 'matchingAtt', type: 'string', numConflicts: 0 },
-            { id: 1, [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name', mergedNetwork: 'name', type: 'string', numConflicts: 0 },
-            { id: 2, [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1', mergedNetwork: 'att1_merged', type: 'integer', numConflicts: 0 },
-            { id: 3, [fromNetworks[0]]: 'att2', [fromNetworks[1]]: 'None', mergedNetwork: 'att2', type: 'string', numConflicts: 0 },
-            { id: 4, [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att3', mergedNetwork: 'att33', type: 'string', numConflicts: 0 }
+            {
+                id: 0, mergedNetwork: 'matchingAtt', type: 'string', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name' }
+            },
+            {
+                id: 1, mergedNetwork: 'name', type: 'string', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'string' },
+                nameRecord: { [fromNetworks[0]]: 'name', [fromNetworks[1]]: 'name' }
+            },
+            {
+                id: 2, mergedNetwork: 'att1_merged', type: 'integer', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'integer', [fromNetworks[1]]: 'integer' },
+                nameRecord: { [fromNetworks[0]]: 'att1', [fromNetworks[1]]: 'att1' }
+            },
+            {
+                id: 3, mergedNetwork: 'att2', type: 'string', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'None' },
+                nameRecord: { [fromNetworks[0]]: 'att2', [fromNetworks[1]]: 'None' }
+            },
+            {
+                id: 4, mergedNetwork: 'att33', type: 'string', hasConflicts: false,
+                typeRecord: { [fromNetworks[0]]: 'string', [fromNetworks[1]]: 'None' },
+                nameRecord: { [fromNetworks[0]]: 'None', [fromNetworks[1]]: 'att3' }
+            }
         ] as MatchingTableRow[])
         const edgeAttributeMapping = createMatchingTable([])
         const matchingAttribute = {

@@ -18,8 +18,8 @@ export function castAttributes(toMergeAttr: Record<string, ValueType> | undefine
     const castedAttr: Record<string, ValueType> = {};
     if (toMergeAttr !== undefined) {
         for (const row of (isNode ? matchingTable.matchingTableRows.slice(1) : matchingTable.matchingTableRows)) {
-            if (row.hasOwnProperty(netId) && row[netId] !== 'None' && row[netId] !== '' && toMergeAttr.hasOwnProperty(row[netId])) {
-                const val = toMergeAttr[row[netId]];
+            if (row.nameRecord.hasOwnProperty(netId) && row.nameRecord[netId] !== 'None' && row.nameRecord[netId] !== '' && toMergeAttr.hasOwnProperty(row.nameRecord[netId])) {
+                const val = toMergeAttr[row.nameRecord[netId]];
                 if (isString(val) && ['null', 'nan', 'none'].includes(val.toLowerCase())) {
                     castedAttr[row.mergedNetwork] = castNaN(row.type, val)
                 } else {
@@ -38,7 +38,6 @@ export function addMergedAtt(castedRecord: Record<string, ValueType>, oriMatchin
     }
     castedRecord[mergedAttCol.name] = typeCoercion(oriMatchingVal, mergedAttCol.type);
     return castedRecord;
-
 }
 
 export function attributeValueMatcher(val: ValueType, nodeAttMap: Map<IdType, ValueType>): string {
@@ -53,11 +52,11 @@ export function attributeValueMatcher(val: ValueType, nodeAttMap: Map<IdType, Va
 }
 
 
-function typeCoercion(val: ValueType, mergedType: ValueTypeName | 'None'): ValueType {
+export function typeCoercion(val: ValueType, mergedType: ValueTypeName | 'None'): ValueType {
     if (mergedType === 'None') {
         throw new Error('Wrong Merged Type: received None type for the attribute');
     }
-    if (isListType(mergedType) && Array.isArray(val)) {
+    if (isListType(mergedType)) {
         return listValueTypeCoercion(val, mergedType);
     }
     return singleValueTypeCoercion(val, mergedType);
@@ -65,16 +64,16 @@ function typeCoercion(val: ValueType, mergedType: ValueTypeName | 'None'): Value
 
 function listValueTypeCoercion(val: ValueType, mergedType: ValueTypeName): ListOfValueType {
     const singleType = mergedType.replace('list_of_', '') as ValueTypeName;
-
+    const valArray = Array.isArray(val) ? val : [val];
     switch (singleType) {
         case ValueTypeName.String:
-            return (val as ValueType[]).map((v) => singleValueTypeCoercion(v, singleType)) as string[];
+            return valArray.map((v) => singleValueTypeCoercion(v, singleType)) as string[];
         case ValueTypeName.Boolean:
-            return (val as ValueType[]).map((v) => singleValueTypeCoercion(v, singleType)) as boolean[];
+            return valArray.map((v) => singleValueTypeCoercion(v, singleType)) as boolean[];
         case ValueTypeName.Double:
         case ValueTypeName.Long:
         case ValueTypeName.Integer:
-            return (val as ValueType[]).map((v) => singleValueTypeCoercion(v, singleType)) as number[];
+            return valArray.map((v) => singleValueTypeCoercion(v, singleType)) as number[];
         default:
             throw new Error(`Unsupported list type ${mergedType}`);
     }
@@ -86,7 +85,6 @@ function singleValueTypeCoercion(val: ValueType, mergedType: ValueTypeName): Sin
             case ValueTypeName.String:
                 return String(val);
             case ValueTypeName.Boolean:
-                if (val === 'true' || val === 'false') return val === 'true';
                 if (typeof val === 'boolean') return val;
                 throw new Error(`Cannot convert ${val} to Boolean`);
             case ValueTypeName.Double:
@@ -132,5 +130,85 @@ function castUndefined(mergedType: ValueTypeName) {
             return '';
         default:
             throw new Error(`Unsupported type ${mergedType}`);
+    }
+}
+
+
+export function isConvertible(typeFrom: ValueTypeName, typeTo: ValueTypeName): boolean {
+    if (typeFrom === typeTo) {
+        return true;
+    }
+    if (typeTo === ValueTypeName.String) {
+        return true;
+    }
+    if (typeFrom === ValueTypeName.Integer && (typeTo === ValueTypeName.Long || typeTo === ValueTypeName.Double)) {
+        return true;
+    }
+    if (typeFrom === ValueTypeName.Long && typeTo === ValueTypeName.Double) {
+        return true;
+    }
+    if (isListType(typeTo) && isConvertible(getPlainType(typeFrom), getPlainType(typeTo))) {
+        return true;
+    }
+    return false;
+}
+
+export function getPlainType(type: ValueTypeName): ValueTypeName {
+    if (isListType(type)) {
+        return type.replace('list_of_', '') as ValueTypeName;
+    }
+    return type;
+}
+
+export function getResonableCompatibleConvertionType(types: Set<ValueTypeName>): ValueTypeName {
+    let curr = types.values().next().value;
+    let li = isListType(curr);
+    let ret = getPlainType(curr);
+    for (const type of types) {
+        const plain = getPlainType(type);
+        if (!isConvertible(plain, ret)) {
+            ret = isConvertible(ret, plain) ? plain : ValueTypeName.String;
+        }
+        if (!li) {
+            li = isListType(type);
+        }
+    }
+    return li ? `list_of_${ret}` as ValueTypeName : ret;
+}
+
+export function getAllConvertiableTypes(types: Set<ValueTypeName | 'None'>): ValueTypeName[] {
+    const singleTypes = [ValueTypeName.Boolean, ValueTypeName.Integer, ValueTypeName.Long, ValueTypeName.Double];
+    const convertiableSingleTypes: ValueTypeName[] = [];
+    let hasListType = false;
+
+    const plainTypes = new Set<ValueTypeName>();
+    for (const type of types) {
+        if (type === 'None') continue;
+        if (isListType(type)) {
+            hasListType = true;
+            break;
+        }
+        plainTypes.add(getPlainType(type));
+    }
+
+    for (const singleType of singleTypes) {
+        let allConvertible = true;
+        for (const type of plainTypes) {
+            if (!isConvertible(type, singleType)) {
+                allConvertible = false;
+                break;
+            }
+        }
+        if (allConvertible) {
+            convertiableSingleTypes.push(singleType)
+        }
+    }
+    convertiableSingleTypes.push(ValueTypeName.String);
+    const convertiableListTypes = convertiableSingleTypes.map(type => `list_of_${type}` as ValueTypeName);
+
+    if (hasListType) {
+        return convertiableListTypes;
+    } else {
+        return [...convertiableSingleTypes, ...convertiableListTypes];
     }
 }

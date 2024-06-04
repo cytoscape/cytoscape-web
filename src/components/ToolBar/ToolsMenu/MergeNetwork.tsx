@@ -7,10 +7,10 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore';
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel';
 import { Pair } from '../../../features/MergeNetworks/models/DataInterfaceForMerge';
+import { generateUniqueName } from '../../../utils/network-utils';
 
 export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
     const [openDialog, setOpenDialog] = useState<boolean>(false);
-
     const networkIds: IdType[] = useWorkspaceStore(
         (state) => state.workspace.networkIds,
     )
@@ -22,6 +22,8 @@ export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
         const networkName = networkSummaries[networkId]?.name
         return [networkName, networkId]
     })
+    const uniqueName = generateUniqueName(workSpaceNetworks.map(net => net[0]), 'Merged Network');
+
     const handleOpenDialog = (): void => {
         setOpenDialog(true);
     };
@@ -39,6 +41,7 @@ export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
             <MergeDialog
                 open={openDialog}
                 handleClose={handleCloseDialog}
+                uniqueName={uniqueName}
                 workSpaceNetworks={workSpaceNetworks}
             />
         </>

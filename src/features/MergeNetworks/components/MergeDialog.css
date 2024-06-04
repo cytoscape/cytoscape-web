@@ -31,27 +31,7 @@
     margin: 2px 6px !important;
 }
 
-/* Todo: add icons beside the buttons */
-/* @font-face {
-    font-family: 'MyIconFont';
-    src: url('./assets/cytoscape-3.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
+/* union difference and intersection icon */
+.iconify.iconify--gis {
+    margin-right: 5px;
 }
-
-.icon {
-    font-family: 'MyIconFont';
-    font-size: 22px;
-}
-
-.icon.union::before {
-    content: "\0071";
-}
-
-.icon.intersection::before {
-    content: "\0072";
-}
-
-.icon.difference::before {
-    content: "\0073";
-} */

@@ -5,6 +5,7 @@ import {
     Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon
 } from '@mui/icons-material';
 import React, { useContext, useEffect, useState } from 'react';
+import { UnionIcon, DifferenceIcon, IntersectionIcon } from './Icon';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button,
     Typography, Box, List, ListItem, ListItemText, ListSubheader,
@@ -17,7 +18,7 @@ import {
     MergeType, NetworkRecord, TableView, Pair
 } from '../models/DataInterfaceForMerge';
 import { MatchingTableRow } from '../models/MatchingTable';
-import { Column, ValueType } from '../../../models/TableModel';
+import { Column, ValueType, ValueTypeName } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
 import { AppConfigContext } from '../../../AppConfigContext'
@@ -40,14 +41,16 @@ import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel';
 import { generateUniqueName } from '../../../utils/network-utils';
+import { getResonableCompatibleConvertionType } from '../utils/attributes-operations';
 
 interface MergeDialogProps {
     open: boolean;
     handleClose: () => void;
+    uniqueName: string;
     workSpaceNetworks: Pair<string, IdType>[];
 }
 
-const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceNetworks }): React.ReactElement => {
+const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName, workSpaceNetworks }): React.ReactElement => {
     const [readyToMerge, setReadyToMerge] = useState(false);// Flag to indicate whether it is ready to merge
     const [tableView, setTableView] = useState(TableView.node); // Current table view
     const [errorMessage, setErrorMessage] = useState(''); // Error message to display
@@ -55,7 +58,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const { ndexBaseUrl } = useContext(AppConfigContext); // Base URL for the NDEx server
     const [mergeOpType, setMergeOpType] = useState(MergeType.union); // Type of merge operation
     const [typeConflict, setTypeConflict] = useState(false); // Flag to indicate whether there is a type conflict
-    const [mergedNetworkName, setMergedNetworkName] = useState('Merged Network'); // Name of the merged network
+    const [mergedNetworkName, setMergedNetworkName] = useState(uniqueName); // Name of the merged network
     const [fullScreen, setFullScreen] = useState(false); // Full screen mode for the dialog
     const [tooltipOpen, setTooltipOpen] = useState(false); // Flag to indicate whether the tooltip is open
     // Record the visual style of the networks to be merged
@@ -244,20 +247,20 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     // Update the matching table when selectedNetworks changes
     useEffect(() => {
         // Create the initial matching table with the columns of the base network
-        const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0] : null;
-        const matchingType = baseNetwork ? (networkRecords[baseNetwork[1]]?.nodeTable?.columns.find(col => col.name === matchingCols[baseNetwork[1]]?.name)?.type || 'None') : 'None';
-        let matchingColsConflicts = 0;
+        const typeSet = new Set<ValueTypeName>();
+        const matchingRow: Record<string, string> = {};
+        const typeRecord: Record<string, ValueTypeName> = {};
+        Object.keys(matchingCols).forEach(key => {
+            matchingRow[key] = matchingCols[key].name;
+            typeRecord[key] = matchingCols[key].type;
+            typeSet.add(matchingCols[key].type);
+        });
         const initialRow = {
             id: 0,
             mergedNetwork: 'Matching.Attribute',
-            type: matchingType
+            type: getResonableCompatibleConvertionType(typeSet) || 'None',
         }
-        const matchingRow: Record<string, string> = {};
-        Object.keys(matchingCols).forEach(key => {
-            matchingRow[key] = matchingCols[key].name;
-            if (matchingCols[key].type !== matchingType) matchingColsConflicts += 1;
-        });
-        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, ...matchingRow, numConflicts: matchingColsConflicts } as MatchingTableRow]
+        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, nameRecord: matchingRow, typeRecord: typeRecord, hasConflicts: typeSet.size > 1 } as MatchingTableRow]
 
         // Update the matching table for each network
         setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));
@@ -311,11 +314,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
     const handleMerge = async (): Promise<void> => {
         try {
             const newNetworkId = uuidv4();
-            const networkName = generateUniqueName(workSpaceNetworks.map(net => net[0]), mergedNetworkName);
             const summaryRecord: Record<IdType, NdexNetworkSummary> = Object.fromEntries(Object.entries(netSummaries).filter(([id,]) => toMergeNetworksList.some(pair => pair[1] === id)));
             const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : '';
             const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
-                newNetworkId, networkName, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj,
+                newNetworkId, mergedNetworkName, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj,
                 matchingCols, visualStyleRecord[baseNetwork], summaryRecord);
 
             // Update state stores with the new network and its components   
@@ -366,13 +368,13 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, workSpaceN
                     <ToggleButtonGroup
                         value={mergeOpType} exclusive onChange={handleMergeTypeChange} aria-label="text alignment" >
                         <ToggleButton className="toggleButton" classes={{ selected: 'selected' }} value={MergeType.union} aria-label="left aligned">
-                            Union
+                            <UnionIcon /> Union
                         </ToggleButton>
                         <ToggleButton className="toggleButton" classes={{ selected: 'selected' }} value={MergeType.intersection} aria-label="centered">
-                            Intersection
+                            <IntersectionIcon /> Intersection
                         </ToggleButton>
                         <ToggleButton className="toggleButton" classes={{ selected: 'selected' }} value={MergeType.difference} aria-label="right aligned">
-                            Difference
+                            <DifferenceIcon /> Difference
                         </ToggleButton>
                     </ToggleButtonGroup>
                 </Box>
