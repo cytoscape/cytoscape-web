@@ -75,6 +75,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     // // Record the state of the matching table
     const nodeMatchingTable = useNodeMatchingTableStore(state => state.rows);
     const setNodeMatchingTable = useNodeMatchingTableStore(state => state.setAllRows);
+    const addNetsToNodeTable = useNodeMatchingTableStore(state => state.addNetworksToTable);
+    const addNetToNodeTable = useNodeMatchingTableStore(state => state.addNetworkToTable);
     const edgeMatchingTable = useEdgeMatchingTableStore(state => state.rows);
     const setEdgeMatchingTable = useEdgeMatchingTableStore(state => state.setAllRows);
     const netMatchingTable = useNetMatchingTableStore(state => state.rows);
@@ -164,6 +166,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                     newAvailableNetworksList.splice(netIndex, 1);
                 }
             }
+            addNetToNodeTable(net[1], netData); // Add the network to the node matching table
             // Set the default matching column for the network
             let hasName = false;
             for (const col of netData.nodeTable.columns ?? []) {
@@ -271,9 +274,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
         const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, nameRecord: matchingRow, typeRecord: typeRecord, hasConflicts: typeSet.size > 1 } as MatchingTableRow]
 
         // Update the matching table for each network
-        setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));
-        setEdgeMatchingTable(processColumns('edgeTable', toMergeNetworksList, networkRecords));
-        setNetMatchingTable(processColumns('netTable', toMergeNetworksList, networkRecords));
+        // setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));
+        // setEdgeMatchingTable(processColumns('edgeTable', toMergeNetworksList, networkRecords));
+        // setNetMatchingTable(processColumns('netTable', toMergeNetworksList, networkRecords));
 
         // check whether it is ready to merge
         if (toMergeNetworksList.length > 0) {
