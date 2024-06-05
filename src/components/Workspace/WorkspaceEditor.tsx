@@ -107,12 +107,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
-  const workSpaceID = useWorkspaceStore(
-    (state) => state.workspace.id,
-  )
-  const deleteCurrentNetwork = useWorkspaceStore(
-    (state) => state.deleteCurrentNetwork,
-  )
+
   const ui: Ui = useUiStateStore((state) => state.ui)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
@@ -383,7 +378,6 @@ const WorkSpaceEditor = (): JSX.Element => {
         // Remove the last one
         removeSummary(Object.keys(summaries)[0])
       }
-      navigate(`/${workSpaceID}/networks`)
       return
     }
 

@@ -135,29 +135,32 @@ export const NetworkPropertyPanel = ({
             </Typography>
 
             <HcxValidationButtonGroup id={id} />
+            <Tooltip title="Edit network properties">
+              <IconButton
+                size="small"
+                sx={{ width: 25, height: 25 }}
+                onClick={(e) => {
+                  setCurrentNetworkId(id)
+                  showEditNetworkSummaryForm(e)
+                }}
+              >
+                <EditIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete the network">
+              <IconButton
+                size="small"
+                sx={{ width: 25, height: 25 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteCurrentNetwork();
+                }}
+              >
+                <DeleteIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
-        <Tooltip title="Edit network properties">
-          <IconButton
-            size="small"
-            sx={{ width: 30, height: 30 }}
-            onClick={(e) => {
-              setCurrentNetworkId(id)
-              showEditNetworkSummaryForm(e)
-            }}
-          >
-            <EditIcon sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Delete the network">
-          <IconButton
-            size="small"
-            sx={{ width: 30, height: 30 }}
-            onClick={(e) => { deleteCurrentNetwork(); }}
-          >
-            <DeleteIcon sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Tooltip>
         <NetworkPropertyEditor
           anchorEl={editNetworkSummaryAnchorEl}
           summary={summary}

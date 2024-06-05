@@ -16,6 +16,7 @@ import { Panel } from '../../../models/UiModel/Panel'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
 import { LLMQueryResultPanel } from '../../../features/LLMQuery/components'
 import llmLogo from '../../../assets/openai.svg'
+import { useNavigate } from 'react-router-dom'
 
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
@@ -41,9 +42,13 @@ export const NetworkBrowserPanel = ({
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
+  const navigate = useNavigate()
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const workspaceId = useWorkspaceStore((state) => state.workspace.id)
+  const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
+
   const activeNetworkViewId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
@@ -57,6 +62,12 @@ export const NetworkBrowserPanel = ({
       setTargetNetworkId(currentNetworkId)
     }
   }, [activeNetworkViewId, currentNetworkId])
+
+  useEffect(() => {
+    if (networkIds.length === 0) {
+      navigate(`/${workspaceId}/networks`)
+    }
+  }, [networkIds.length])
 
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
