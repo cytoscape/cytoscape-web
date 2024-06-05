@@ -22,9 +22,9 @@ interface MatchingTableActions {
 
 type MatchingTableStore = MatchingTableState & MatchingTableActions
 const addNetwork = (state: MatchingTableStore, networkId: IdType, netRecord: NetworkRecord) => {
-    const netCols = netRecord.nodeTable.columns;
+    const netCols = netRecord.netTable?.columns || [];
     const sharedCols = new Set<string>();
-    let updatedRows = state.rows.map((row) => {
+    state.rows = state.rows.map((row, id) => {
         if (!row.nameRecord.hasOwnProperty(networkId)) {
             if (netCols.some(nc => nc.name === row.mergedNetwork)) {
                 sharedCols.add(row.mergedNetwork);
@@ -43,26 +43,22 @@ const addNetwork = (state: MatchingTableStore, networkId: IdType, netRecord: Net
         }
         return row;
     });
-    const netIdLst = Array.from(state.networkIds);
+
     // Add new rows for columns not in sharedCols
     netCols.forEach(col => {
         if (!sharedCols.has(col.name)) {
-            updatedRows.push({
-                id: updatedRows.length,
+            state.rows.push({
+                id: state.rows.length,
                 mergedNetwork: col.name,
                 type: col.type,
-                nameRecord: { ...netIdLst.reduce((acc, key) => ({ ...acc, [key]: 'None' }), {}), [networkId]: col.name },
-                typeRecord: { ...netIdLst.reduce((acc, key) => ({ ...acc, [key]: 'None' }), {}), [networkId]: col.type },
+                nameRecord: { ...Array.from(state.networkIds).reduce((acc, key) => ({ ...acc, [key]: 'None' }), {}), [networkId]: col.name },
+                typeRecord: { ...Array.from(state.networkIds).reduce((acc, key) => ({ ...acc, [key]: 'None' }), {}), [networkId]: col.type },
                 hasConflicts: false
             });
         }
     });
     // Update network IDs
     state.networkIds.add(networkId);
-    return {
-        rows: updatedRows,
-        networkIds: state.networkIds
-    };
 };
 const useNetMatchingTableStore = create(immer<MatchingTableStore>((set) => ({
     rows: [],

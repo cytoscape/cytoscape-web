@@ -154,7 +154,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     // Function to add selected networks to the 'Networks to Merge' list
     const handleAddNetwork = async () => {
         const newAvailableNetworksList = [...availableNetworksList];
-        const newMatchingCols = { ...matchingCols };
+        const newMatchingCols: Record<string, Column> = {};
         for (const net of selectedAvailable) {
             // Load the network data
             // Todo: check if the network is already loaded in the workspace
@@ -166,7 +166,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                     newAvailableNetworksList.splice(netIndex, 1);
                 }
             }
-            addNetToNodeTable(net[1], netData); // Add the network to the node matching table
+
             // Set the default matching column for the network
             let hasName = false;
             for (const col of netData.nodeTable.columns ?? []) {
@@ -176,14 +176,16 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                     break;
                 }
             }
-
             if (!hasName) {
                 newMatchingCols[net[1]] = netData.nodeTable.columns.length > 0 ? netData.nodeTable.columns[0] : ({ name: 'none', type: 'string' } as Column);
             }
+            // Add the network to the matching table
+            addNetToNodeTable(net[1], netData, newMatchingCols[net[1]]);
         }
+        // addNetsToNodeTable(selectedAvailable.map(pair => pair[1]), networkRecords, newMatchingCols);
         setToMergeNetworksList([...toMergeNetworksList, ...selectedAvailable]);
         setAvailableNetworksList(availableNetworksList.filter(net => !selectedAvailable.includes(net)));
-        setMatchingCols(newMatchingCols);
+        setMatchingCols({ ...matchingCols, ...newMatchingCols });
         setSelectedAvailable([]);
     };
     // Function to remove selected networks from the 'Networks to Merge' list
@@ -274,7 +276,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
         const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, nameRecord: matchingRow, typeRecord: typeRecord, hasConflicts: typeSet.size > 1 } as MatchingTableRow]
 
         // Update the matching table for each network
-        // setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));
+        setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));
         // setEdgeMatchingTable(processColumns('edgeTable', toMergeNetworksList, networkRecords));
         // setNetMatchingTable(processColumns('netTable', toMergeNetworksList, networkRecords));
 
