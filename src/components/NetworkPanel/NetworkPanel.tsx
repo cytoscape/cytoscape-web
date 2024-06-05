@@ -19,9 +19,9 @@ interface NetworkPanelProps {
 
 /**
  * Component to display the network visualizations for the current network data
- * 
+ *
  * @param networkId - the ID of the network model to display
- * 
+ *
  */
 const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const [isActive, setIsActive] = useState<boolean>(false)
@@ -77,7 +77,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   }
 
   const targetId = targetNetwork.id
-  
+
   // Check network has multiple views or single
   const views: NetworkView[] = networkViews[targetId]
   const vs: VisualStyle = visualStyles[targetNetwork.id]
@@ -98,6 +98,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
         bgColor={bgColor}
         isActive={isActive}
         handleClick={handleClick}
+        selected={true}
       />
     )
   } else {

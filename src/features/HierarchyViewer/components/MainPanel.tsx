@@ -73,9 +73,10 @@ export const MainPanel = (): JSX.Element => {
     id: 'circlePacking',
     name: 'Cell View',
     description: 'Circle Packing Renderer',
-    getComponent: (networkData: Network) => (
-      <CirclePackingPanel network={networkData} />
-    ),
+    getComponent: (
+      networkData: Network,
+      initialSize: { w: number; h: number },
+    ) => <CirclePackingPanel network={networkData} initialSize={initialSize} />,
   }
 
   const checkDataType = (): void => {
