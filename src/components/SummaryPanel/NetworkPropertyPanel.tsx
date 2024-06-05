@@ -65,8 +65,8 @@ export const NetworkPropertyPanel = ({
   const networkModified =
     useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
 
-  const deleteCurrentNetwork = useWorkspaceStore(
-    (state) => state.deleteCurrentNetwork,
+  const deleteNetwork = useWorkspaceStore(
+    (state) => state.deleteNetwork,
   )
 
   const backgroundColor: string =
@@ -153,7 +153,7 @@ export const NetworkPropertyPanel = ({
                 sx={{ width: 25, height: 25 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteCurrentNetwork();
+                  deleteNetwork(id);
                 }}
               >
                 <DeleteIcon sx={{ fontSize: 18 }} />
