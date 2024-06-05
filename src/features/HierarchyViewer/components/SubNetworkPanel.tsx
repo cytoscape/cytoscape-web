@@ -13,7 +13,7 @@ import { useNetworkStore } from '../../../store/NetworkStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { VisualStyle } from '../../../models/VisualStyleModel'
-import { NetworkView } from '../../../models/ViewModel'
+import { NetworkView, NodeView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
@@ -21,11 +21,20 @@ import { useCredentialStore } from '../../../store/CredentialStore'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 
 import { useQuery } from '@tanstack/react-query'
-import { Table } from '../../../models/TableModel'
+import { Table, ValueType } from '../../../models/TableModel'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { useFilterStore } from '../../../store/FilterStore'
 import { DEFAULT_FILTER_NAME } from './FilterPanel/FilterPanel'
 import { FilterConfig } from '../../../models/FilterModel'
+import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
+import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
+import { createFilterFromAspect } from '../utils/filter-asprct-util'
+import { CirclePackingType } from './CustomLayout/CirclePackingLayout'
+import { CirclePackingView } from '../model/CirclePackingView'
+import { HierarchyNode } from 'd3-hierarchy'
+import { D3TreeNode } from './CustomLayout/D3TreeNode'
+import { find, get } from 'lodash'
+import { applyCpLayout } from '../utils/hierarchy-util'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -59,6 +68,7 @@ export const SubNetworkPanel = ({
   interactionNetworkId,
 }: SubNetworkPanelProps): ReactElement => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
+  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
 
   const filterConfig: FilterConfig | undefined =
     filterConfigs[DEFAULT_FILTER_NAME]
@@ -98,6 +108,67 @@ export const SubNetworkPanel = ({
     useViewModelStore((state) => state.getViewModel)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
 
+  const viewModels: Record<string, NetworkView[]> = useViewModelStore(
+    (state) => state.viewModels,
+  )
+
+  const [cpViewId, setCpViewId] = useState<IdType>('')
+  const hierarchyViewModels: NetworkView[] = viewModels[hierarchyId]
+
+  useEffect(() => {
+    if (hierarchyViewModels === undefined) {
+      return
+    }
+    hierarchyViewModels.forEach((hierarchyViewModel: NetworkView) => {
+      const { type, viewId } = hierarchyViewModel
+      if (type === CirclePackingType) {
+        if (viewId !== undefined && viewId !== '' && viewId !== cpViewId)
+          setCpViewId(viewId)
+      } else {
+        // console.log('Other model', hierarchyViewModel)
+      }
+    })
+  }, [hierarchyViewModels])
+
+  const queryNetworkViewModel: NetworkView | undefined =
+    getViewModel(queryNetworkId)
+
+  const selectedNodesInQueryNetwork: string[] =
+    queryNetworkViewModel?.selectedNodes ?? []
+
+  const setSelectedHierarchyNodeNames: (
+    selectedHierarchyNodeNames: string[],
+  ) => void = useSubNetworkStore((state) => state.setSelectedHierarchyNodes)
+
+  useEffect(() => {
+    // Convert node IDs to names
+    const tableRecord = tables[queryNetworkId]
+    if (tableRecord === undefined) {
+      return
+    }
+
+    const { nodeTable } = tableRecord
+    const { rows } = nodeTable
+
+    // Select nodes in the circle packing view
+    if (selectedNodesInQueryNetwork.length > 0) {
+      // Select nodes in the circle packing view here
+      const selectedNodeNames: string[] = selectedNodesInQueryNetwork.map(
+        (nodeId: IdType) => {
+          const row: Record<string, ValueType> | undefined = rows.get(nodeId)
+          if (row === undefined) {
+            return ''
+          }
+          return row.name as string
+        },
+      )
+      setSelectedHierarchyNodeNames(selectedNodeNames)
+    } else {
+      // Clear selection in the circle packing view
+      setSelectedHierarchyNodeNames([])
+    }
+  }, [queryNetworkViewModel?.selectedNodes])
+
   /**
    * Selection based on the leaf node selection in the circle packing packing view
    */
@@ -132,11 +203,6 @@ export const SubNetworkPanel = ({
           }
         })
       })
-      console.log(
-        '!Subnetwork Selection delay updated',
-        selectedNodes,
-        toBeSelected,
-      )
 
       exclusiveSelect(queryNetworkId, toBeSelected, [])
     }
@@ -264,6 +330,20 @@ export const SubNetworkPanel = ({
     const newNetworkId: string = network.id
     addNewNetwork(network)
     addTable(newNetworkId, nodeTable, edgeTable)
+
+    const newPositions = applyCpLayout(
+      getCpViewModel() as CirclePackingView,
+      subsystemNodeId,
+      newNetworkId,
+      nodeTable,
+      networkView.nodeViews,
+    )
+
+    newPositions.forEach((position: [number, number], nodeId: IdType) => {
+      const [x, y] = position
+      networkView.nodeViews[nodeId].x = x
+      networkView.nodeViews[nodeId].y = y
+    })
     addViewModel(newNetworkId, networkView)
 
     if (interactionNetworkId === undefined || interactionNetworkId === '') {
@@ -282,12 +362,49 @@ export const SubNetworkPanel = ({
     }
   }
 
+  const getCpViewModel = (): CirclePackingView | undefined => {
+    if (cpViewId === '' || hierarchyViewModels === undefined) {
+      return
+    }
+    const cpViewModel: NetworkView | undefined = hierarchyViewModels.find(
+      (viewModel: NetworkView) => {
+        if (viewModel.viewId === cpViewId) {
+          return viewModel
+        }
+      },
+    )
+    if (cpViewModel === undefined) {
+      return
+    }
+    return cpViewModel as CirclePackingView
+  }
+
   useEffect(() => {
     if (data === undefined) {
       return
     }
 
-    const { network } = data
+    const { network, otherAspects } = data
+    // Check optional data
+    if (otherAspects !== undefined && otherAspects.length > 0) {
+      // Check filter config is available or not
+      const filterConfigAspect = otherAspects.find(
+        (aspect: Aspect) => aspect[FILTER_ASPECT_TAG],
+      )
+      if (filterConfigAspect !== undefined) {
+        const filterAspects: FilterAspects =
+          filterConfigAspect[FILTER_ASPECT_TAG]
+
+        const sourceNetworkId: IdType = network.id
+        const filterConfigs: FilterConfig[] = createFilterFromAspect(
+          sourceNetworkId,
+          filterAspects,
+        )
+        filterConfigs.forEach((filterConfig: FilterConfig) => {
+          addFilterConfig(filterConfig)
+        })
+      }
+    }
     // Check if the network is already in the store
     const newUuid: string = network.id.toString()
     const queryNetwork: Network | undefined = networks.get(newUuid)

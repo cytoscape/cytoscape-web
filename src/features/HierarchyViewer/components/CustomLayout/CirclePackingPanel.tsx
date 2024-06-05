@@ -30,6 +30,7 @@ import { useSubNetworkStore } from '../../store/SubNetworkStore'
 import { useTableStore } from '../../../../store/TableStore'
 import { SearchState } from '../../../../models/FilterModel/SearchState'
 import { useFilterStore } from '../../../../store/FilterStore'
+import { last } from 'lodash'
 
 interface CirclePackingPanelProps {
   network: Network
@@ -38,7 +39,7 @@ interface CirclePackingPanelProps {
 const CP_WRAPPER_CLASS = 'circle-packing-wrapper'
 
 // Color scale for the circles in the view
-const colorScale = getColorMapper([0, 1000])
+const colorScale = getColorMapper([0, 5])
 
 /**
  * Circle Packing renderer as a variant of the network viewer
@@ -100,7 +101,8 @@ export const CirclePackingPanel = ({
   const selectedNodeSet = new Set<string>(selectedNodes)
 
   // Keep the last
-  const [lastZoomLevel, setLastZoomLevel] = useState<number>(1)
+  // const [lastZoomLevel, setLastZoomLevel] = useState<number>(1)
+  const lastZoomLevelRef = useRef(1)
 
   const handleZoom = useCallback(
     (e: any): void => {
@@ -108,14 +110,19 @@ export const CirclePackingPanel = ({
       selectedArea.attr('transform', e.transform)
       const currentZoomLevel = e.transform.k
       const maxDepth = Math.ceil(currentZoomLevel)
-      setLastZoomLevel(maxDepth)
-      updateForZoom(maxDepth)
+
+      if (lastZoomLevelRef.current > maxDepth) {
+        lastZoomLevelRef.current = maxDepth
+      } else {
+        lastZoomLevelRef.current = maxDepth
+        updateForZoom(maxDepth)
+      }
     },
     [expandAll],
   )
 
   useEffect(() => {
-    updateForZoom(lastZoomLevel)
+    updateForZoom(lastZoomLevelRef.current)
   }, [expandAll])
 
   useEffect(() => {
@@ -124,7 +131,7 @@ export const CirclePackingPanel = ({
     } else {
       setExpandAll(false)
     }
-    updateForZoom(lastZoomLevel)
+    updateForZoom(lastZoomLevelRef.current)
   }, [searchState])
 
   useEffect(() => {
@@ -146,6 +153,16 @@ export const CirclePackingPanel = ({
 
   // For selecting nodes in the sub network view
   const setSelectedNodes = useSubNetworkStore((state) => state.setSelectedNodes)
+
+  // For selecting leaf nodes from the selection in the linked interaction network
+  const selectedHierarchyNodeNames = useSubNetworkStore(
+    (state) => state.selectedHierarchyNodeNames,
+  )
+
+  useEffect(() => {
+    if (selectedHierarchyNodeNames.length === 0) return
+    setSelectedLeaf(selectedHierarchyNodeNames[0])
+  }, [selectedHierarchyNodeNames])
 
   const showObjects = (
     d: d3Hierarchy.HierarchyNode<D3TreeNode>,
@@ -188,11 +205,11 @@ export const CirclePackingPanel = ({
   const draw = (rootNode: d3Hierarchy.HierarchyNode<D3TreeNode>): void => {
     const width = ref.current?.clientWidth ?? 0
     const height = ref.current?.clientHeight ?? 0
-    const pack: d3Hierarchy.PackLayout<any> = d3Hierarchy
-      .pack()
-      .size([width, height])
-      .padding(0)
-    pack(rootNode)
+    // const pack: d3Hierarchy.PackLayout<any> = d3Hierarchy
+    //   .pack()
+    //   .size([width, height])
+    //   .padding(0)
+    // pack(rootNode)
 
     // Pick the base tag
     const svg: any = d3Selection.select(ref.current)
@@ -221,7 +238,8 @@ export const CirclePackingPanel = ({
           : CpDefaults.borderWidth
       })
       .attr('fill', (d: d3Hierarchy.HierarchyNode<D3TreeNode>) => {
-        return colorScale(d.depth * 200)
+        return colorScale(d.depth)
+        // return colorScale(d.depth * 200)
       })
       .on(
         'mouseenter',
@@ -348,9 +366,13 @@ export const CirclePackingPanel = ({
     })
 
     // Create a new Circle Packing view model
+    const width = ref.current?.clientWidth ?? 0
+    const height = ref.current?.clientHeight ?? 0
     const cpViewModel: CirclePackingView = createCirclePackingView(
       updatedView,
       rootNode,
+      width,
+      height,
     )
 
     // Register the new view model
@@ -441,6 +463,13 @@ export const CirclePackingPanel = ({
   useEffect(() => {
     displaySelectedNodes(selectedNodeSet, selectedLeaf)
   }, [selectedNodes, selectedLeaf])
+
+  useEffect(() => {
+    if (selectedNodes.length > 0) {
+      updateForZoom(9)
+      lastZoomLevelRef.current = 9
+    }
+  }, [ref.current])
 
   return (
     <>

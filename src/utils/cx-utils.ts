@@ -12,6 +12,8 @@ import {
 } from '../store/persist/db'
 import { CachedData } from './CachedData'
 import { createNetworkAttributesFromCx } from '../models/TableModel/impl/NetworkAttributesImpl'
+import { Aspect } from '../models/CxModel/Cx2/Aspect'
+import { CoreAspectTag } from '../models/CxModel/Cx2/CoreAspectTag'
 
 /**
  * An utility interface to hold all the data needed to build a network view
@@ -23,6 +25,7 @@ export interface NetworkWithView {
   edgeTable: Table
   visualStyle: VisualStyle
   networkViews: NetworkView[]
+  otherAspects?: any[] // All other optional aspects found in the CX2 stream
 }
 
 /**
@@ -98,6 +101,8 @@ export const createDataFromCx = async (
     cxData,
   )
 
+  const otherAspects: Aspect[] = getOptionalAspects(cxData)
+
   return {
     network,
     nodeTable,
@@ -105,5 +110,32 @@ export const createDataFromCx = async (
     visualStyle,
     networkViews: [networkView],
     networkAttributes,
+    otherAspects,
   }
+}
+const CoreAspectTagValueSet = new Set<string>(
+  Object.values(CoreAspectTag) as string[],
+)
+
+/**
+ * Extract optional aspects from CX2
+ *
+ * @param cx2
+ * @returns Array of optional Aspects
+ */
+const getOptionalAspects = (cx2: Cx2): Aspect[] => {
+  const optionalAspects: Aspect[] = []
+  for (const entry of cx2) {
+    if (entry !== undefined) {
+      const key = Object.keys(entry)[0]
+      if (
+        !CoreAspectTagValueSet.has(key) &&
+        key !== 'status' &&
+        key !== 'CXVersion'
+      ) {
+        optionalAspects.push(entry as Aspect)
+      }
+    }
+  }
+  return optionalAspects
 }

@@ -144,7 +144,7 @@ export const useFilterStore = create(
         state.filterConfigs[newName] = filter
         putFilterToDb(filter)
           .then(() => {
-            console.log('New filter saved to db: ', filter.name)
+            // console.log('New filter saved to db: ', filter.name)
           })
           .catch((e) => {
             console.error(
