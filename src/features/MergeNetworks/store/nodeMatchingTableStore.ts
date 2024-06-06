@@ -126,7 +126,7 @@ const addNetworks = (state: NodeMatchingTableStore, networkIds: IdType[], networ
         };
         const typeSet: Set<ValueTypeName> = new Set();
         for (const netId of networkIds) {
-            console.log(matchingCols[netId])
+            //Todo: whether it is necessary to throw error here since it should not be none
             matchingColRow.nameRecord[netId] = matchingCols[netId]?.name || 'None';
             const colType = (matchingCols[netId]?.type as ValueTypeName | 'None') || 'None';
             matchingColRow.typeRecord[netId] = colType;

@@ -158,7 +158,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
         const newNetworkRecords: Record<IdType, NetworkRecord> = {};
         for (const net of selectedAvailable) {
             // Load the network data
-            // Todo: check if the network is already loaded in the workspace
             let netData = networkRecords[net[1]];  // Attempt to use cached data
             if (!netData) {
                 netData = await loadNetworkById(net[1]);  // Fetch and use fresh data if not available
@@ -281,7 +280,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             setReadyToMerge(false);
         }
     }, [toMergeNetworksList, matchingCols, networkRecords]);
-
+    // Set the initial state of the networkRecords
     useEffect(() => {
         setNetworkRecords(networksLoaded)
     }, [])
