@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 import {
   Tooltip,
   IconButton,
@@ -11,6 +11,7 @@ import {
 import { blueGrey } from '@mui/material/colors'
 import { useTheme } from '@mui/material/styles'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import CircleIcon from '@mui/icons-material/Circle'
 
 import { IdType } from '../../models/IdType'
@@ -63,6 +64,10 @@ export const NetworkPropertyPanel = ({
 
   const networkModified =
     useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
+
+  const deleteNetwork = useWorkspaceStore(
+    (state) => state.deleteNetwork,
+  )
 
   const backgroundColor: string =
     currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
@@ -124,34 +129,44 @@ export const NetworkPropertyPanel = ({
               variant={'subtitle2'}
               sx={{ width: '100%', color: theme.palette.text.secondary }}
             >
-              {`N: ${nodeCount} (${
-                networkViewModel?.selectedNodes.length ?? 0
-              }) /
+              {`N: ${nodeCount} (${networkViewModel?.selectedNodes.length ?? 0
+                }) /
           E: ${edgeCount} (${networkViewModel?.selectedEdges.length ?? 0})`}
             </Typography>
 
             <HcxValidationButtonGroup id={id} />
+            <Tooltip title="Edit network properties">
+              <IconButton
+                size="small"
+                sx={{ width: 25, height: 25 }}
+                onClick={(e) => {
+                  setCurrentNetworkId(id)
+                  showEditNetworkSummaryForm(e)
+                }}
+              >
+                <EditIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Remove the network from workspace">
+              <IconButton
+                size="small"
+                sx={{ width: 25, height: 25 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteNetwork(id);
+                }}
+              >
+                <DeleteIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
-        <Tooltip title="Edit network properties">
-          <IconButton
-            size="small"
-            sx={{ width: 30, height: 30 }}
-            onClick={(e) => {
-              setCurrentNetworkId(id)
-              showEditNetworkSummaryForm(e)
-            }}
-          >
-            <EditIcon sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Tooltip>
-
         <NetworkPropertyEditor
           anchorEl={editNetworkSummaryAnchorEl}
           summary={summary}
           onClose={hideEditNetworkSummaryForm}
         />
-      </Box>
+      </Box >
     </>
   )
 }

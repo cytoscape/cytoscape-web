@@ -3,16 +3,10 @@ import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
-import { useNavigate } from 'react-router-dom'
 
 export const RemoveAllNetworksMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
-  const navigate = useNavigate()
-  const workspace = useWorkspaceStore((state) => state.workspace)
-
-  const { id } = workspace
-
   const [open, setOpen] = useState(false)
   const deleteAllNetworks = useWorkspaceStore(
     (state) => state.deleteAllNetworks,
@@ -21,9 +15,6 @@ export const RemoveAllNetworksMenuItem = (
   const handleDeleteAllNetworks = (): void => {
     props.handleClose()
     deleteAllNetworks()
-
-    // Update the URL
-    navigate(`/${id}/networks`)
   }
 
   return (
