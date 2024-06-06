@@ -16,6 +16,7 @@ interface EdgeMatchingTableActions {
     setAllRows: (newRows: MatchingTableRow[]) => void;
     setRow: (rowIndex: number, updatedRow: MatchingTableRow) => void;
     addRow: (newRow: MatchingTableRow) => void
+    resetStore: () => void;
     addNetworksToTable: (networkIds: IdType[], networkRecords: Record<IdType, NetworkRecord>, matchingCols: Record<string, Column>) => void
     removeNetworksFromTable: (networkIds: IdType[]) => void
 }
@@ -126,6 +127,10 @@ const useEdgeMatchingTableStore = create(immer<EdgeMatchingTableStore>((set) => 
     addRow: (newRow) => set((state) => {
         state.rows.push(newRow);
     }),
+    resetStore: () => set(() => ({
+        rows: [],
+        networkIds: new Set(),
+    })),
     addNetworksToTable: (networkIds, networkRecords, matchingCols) => set(state => { addNetworks(state, networkIds, networkRecords, matchingCols) }),
     removeNetworksFromTable: (networkIds) => set(state => { removeNetworks(state, networkIds) })
 })));

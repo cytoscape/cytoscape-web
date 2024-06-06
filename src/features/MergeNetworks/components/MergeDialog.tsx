@@ -71,16 +71,20 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     // Record the matching columns for each network
     const matchingCols = useMatchingColumnsStore(state => state.matchingCols);
     const setMatchingCols = useMatchingColumnsStore(state => state.setMatchingCols);
+    const resetMatchingCols = useMatchingColumnsStore(state => state.resetStore);
     // // Record the state of the matching table
     const nodeMatchingTable = useNodeMatchingTableStore(state => state.rows);
     const addNetsToNodeTable = useNodeMatchingTableStore(state => state.addNetworksToTable);
     const removeNetsFromNodeTable = useNodeMatchingTableStore(state => state.removeNetworksFromTable);
+    const resetNodeMatchingTable = useNodeMatchingTableStore(state => state.resetStore);
     const edgeMatchingTable = useEdgeMatchingTableStore(state => state.rows);
     const addNetsToEdgeTable = useEdgeMatchingTableStore(state => state.addNetworksToTable);
     const removeNetsFromEdgeTable = useEdgeMatchingTableStore(state => state.removeNetworksFromTable);
+    const resetEdgeMatchingTable = useEdgeMatchingTableStore(state => state.resetStore);
     const netMatchingTable = useNetMatchingTableStore(state => state.rows);
     const addNetsToNetTable = useNetMatchingTableStore(state => state.addNetworksToTable);
     const removeNetsFromNetTable = useNetMatchingTableStore(state => state.removeNetworksFromTable);
+    const resetNetMatchingTable = useNetMatchingTableStore(state => state.resetStore);
     // Record the status of the available and selected networks lists
     const [availableNetworksList, setAvailableNetworksList] = useState<Pair<string, IdType>[]>(workSpaceNetworks);
     const [toMergeNetworksList, setToMergeNetworksList] = useState<Pair<string, IdType>[]>([]);
@@ -283,6 +287,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     // Set the initial state of the networkRecords
     useEffect(() => {
         setNetworkRecords(networksLoaded)
+        return () => {
+            resetNodeMatchingTable();
+            resetEdgeMatchingTable();
+            resetNetMatchingTable();
+            resetMatchingCols();
+        }
     }, [])
     // set merge type
     const handleMergeTypeChange = (event: React.MouseEvent<HTMLElement>, opType: string) => {

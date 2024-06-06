@@ -17,6 +17,7 @@ interface NodeMatchingTableActions {
     setRow: (rowIndex: number, updatedRow: MatchingTableRow) => void;
     addRow: (newRow: MatchingTableRow) => void
     updateRow: (rowIndex: number, netId: string, col: Column) => void;
+    resetStore: () => void;
     addNetworkToTable: (networkId: IdType, netRecord: NetworkRecord, matchingCol: Column) => void
     addNetworksToTable: (networkIds: IdType[], networkRecords: Record<IdType, NetworkRecord>, matchingCols: Record<string, Column>) => void
     removeNetworksFromTable: (networkIds: IdType[]) => void
@@ -228,6 +229,10 @@ const useNodeMatchingTableStore = create(immer<NodeMatchingTableStore>((set) => 
             row.type = getResonableCompatibleConvertionType(typeSet);
         }
     }),
+    resetStore: () => set(() => ({
+        rows: [],
+        networkIds: new Set(),
+    })),
     addNetworkToTable: (networkId, netRecord, matchingCol) => set(state => { addNetwork(state, networkId, netRecord, matchingCol) }),
     addNetworksToTable: (networkIds, networkRecords, matchingCols) => set(state => { addNetworks(state, networkIds, networkRecords, matchingCols) }),
     removeNetworksFromTable: (networkIds) => set(state => { removeNetworks(state, networkIds) })
