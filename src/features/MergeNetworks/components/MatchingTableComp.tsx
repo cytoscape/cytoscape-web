@@ -8,38 +8,26 @@ import { NetAttDropDownTemplate } from './NetAttDropDownTemplate';
 import { TypeDropDownTemplate } from './TypeDropDownTemplate';
 import { IdType } from '../../../models/IdType';
 import { Column } from '../../../models/TableModel/Column';
+import useNodeMatchingTableStore from '../store/nodeMatchingTableStore';
+import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore';
+import useNetMatchingTableStore from '../store/netMatchingTableStore';
 
 interface MatchingTableProps {
     networkRecords: Record<IdType, NetworkRecord>
     netLst: Pair<string, string>[];
-    data: MatchingTableRow[];
     type: TableView;
-    setNodeMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
-    setEdgeMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
-    setNetMatchingTable: (updateFunction: (prevTable: MatchingTableRow[]) => MatchingTableRow[]) => void;
-    setMatchingCols: (updateFunction: (prevCols: Record<IdType, Column>) => Record<IdType, Column>) => void;
     matchingCols?: Record<IdType, Column>;
 }
 
-export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, type, setNodeMatchingTable, setEdgeMatchingTable, setNetMatchingTable, setMatchingCols }: MatchingTableProps) => {
+export const MatchingTableComp = React.memo(({ networkRecords, netLst, type }: MatchingTableProps) => {
+    const tableData = (type === TableView.node) ? useNodeMatchingTableStore(state => state.rows) :
+        (type === TableView.edge ? useEdgeMatchingTableStore(state => state.rows) : useNetMatchingTableStore(state => state.rows))
+    const setMatchingTable = (type === TableView.node) ? useNodeMatchingTableStore(state => state.setRow) :
+        (type === TableView.edge ? useEdgeMatchingTableStore(state => state.setRow) : useNetMatchingTableStore(state => state.setRow));
     // Handler for 'Merged Network' changes
-    const onMergedNetworkChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, type: TableView, rowIndex: number) => {
-        const updatedValue = e.target.value;
-        const updateTable = (prevTable: MatchingTableRow[]) => {
-            if (rowIndex < 0 || rowIndex > prevTable.length) return prevTable;
-            const newRow = { ...prevTable[rowIndex], mergedNetwork: updatedValue };
-            const newTable = [...prevTable];
-            newTable[rowIndex] = newRow;
-            return newTable;
-        };
-
-        if (type === TableView.node) {
-            setNodeMatchingTable(updateTable);
-        } else if (type === TableView.edge) {
-            setEdgeMatchingTable(updateTable);
-        } else if (type === TableView.network) {
-            setNetMatchingTable(updateTable);
-        }
+    const onMergedNetworkChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, rowIndex: number) => {
+        const updatedRow = { ...tableData[rowIndex], mergedNetwork: e.target.value };
+        setMatchingTable(rowIndex, updatedRow);
     };
     return (
         <TableContainer component={Paper} sx={{ maxHeight: 500, overflow: 'auto' }}>
@@ -54,17 +42,13 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {data.map((row, rowIndex) => (
+                    {tableData.map((row, rowIndex) => (
                         <TableRow key={row.id}>
                             {netLst.map((net) => (
                                 <TableCell key={`${row.id}-${net[1]}`} component="th" scope="row">
                                     <NetAttDropDownTemplate
                                         networkRecords={networkRecords} rowData={row}
                                         column={net[1]} type={type} netLst={netLst}
-                                        setNodeMatchingTable={setNodeMatchingTable}
-                                        setEdgeMatchingTable={setEdgeMatchingTable}
-                                        setNetMatchingTable={setNetMatchingTable}
-                                        setMatchingCols={setMatchingCols}
                                     />
                                 </TableCell>
                             ))}
@@ -74,18 +58,13 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, data, typ
                                     fullWidth
                                     variant="outlined"
                                     value={row.mergedNetwork}
-                                    onChange={(e) => onMergedNetworkChange(e, type, row.id)}
+                                    onChange={(e) => onMergedNetworkChange(e, row.id)}
                                     style={{ minWidth: 100 }}
                                     disabled={type === TableView.network && rowIndex < 3}
                                 />
                             </TableCell>
                             <TableCell key={`${row.id}-type`}>
-                                <TypeDropDownTemplate
-                                    type={type} rowData={row} netLst={netLst}
-                                    setNodeMatchingTable={setNodeMatchingTable}
-                                    setEdgeMatchingTable={setEdgeMatchingTable}
-                                    setNetMatchingTable={setNetMatchingTable}
-                                />
+                                <TypeDropDownTemplate type={type} rowData={row} netLst={netLst} />
                                 {row.hasConflicts ?
                                     <Tooltip title={'Type coercion may be applied to this attribute.'} placement="top" arrow>
                                         <PriorityHighIcon viewBox="0 -3.7 24 24" style={{ color: 'red' }} />
