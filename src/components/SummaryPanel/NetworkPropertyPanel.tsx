@@ -147,7 +147,7 @@ export const NetworkPropertyPanel = ({
                 <EditIcon sx={{ fontSize: 18 }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Delete the network">
+            <Tooltip title="Remove the network from workspace">
               <IconButton
                 size="small"
                 sx={{ width: 25, height: 25 }}

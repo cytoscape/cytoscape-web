@@ -426,8 +426,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           }
 
           navigate(
-            `/${workspace.id
-            }/networks/${currentNetworkId}${location.search.toString()}`,
+            `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
           )
         })
         .catch((err) => console.error('Failed to load a network:', err))
@@ -467,6 +466,11 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   }, [summaries])
 
+  useEffect(() => {
+    if (workspace.networkIds.length === 0) {
+      navigate(`/${workspace.id}/networks`)
+    }
+  }, [workspace.networkIds.length])
   // Return the main component including the network panel, network view, and the table browser
   return (
     <Box
