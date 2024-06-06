@@ -108,3 +108,14 @@ export function filterRows(rows: MatchingTableRow[]) {
         return !allNone;
     });
 };
+
+export function getMergedType(typeRecord: Record<string, ValueTypeName | 'None'>) {
+    const typeSet: Set<ValueTypeName> = new Set();
+    for (const colType of Object.values(typeRecord)) {
+        if (colType !== 'None') typeSet.add(colType);
+    }
+    return {
+        hasConflicts: typeSet.size > 1,
+        mergedType: getResonableCompatibleConvertionType(typeSet)
+    }
+}
