@@ -368,16 +368,13 @@ const WorkSpaceEditor = (): JSX.Element => {
     const networkCount: number = workspace.networkIds.length
     const summaryCount: number = Object.keys(summaries).length
 
-    if (networkCount === 0 && summaryCount === 0) {
-      return
-    }
-
     // No action required if empty or no change
     if (networkCount === 0) {
       if (summaryCount !== 0) {
         // Remove the last one
         removeSummary(Object.keys(summaries)[0])
       }
+      navigate(`/${workspace.id}/networks`)
       return
     }
 
@@ -438,8 +435,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         .then(() => {
           restoreTableBrowserTabState()
           navigate(
-            `/${workspace.id
-            }/networks/${currentNetworkId}${location.search.toString()}`,
+            `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
           )
         })
         .catch((err) => console.error('Failed to load a network:', err))
@@ -466,11 +462,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   }, [summaries])
 
-  useEffect(() => {
-    if (workspace.networkIds.length === 0) {
-      navigate(`/${workspace.id}/networks`)
-    }
-  }, [workspace.networkIds.length])
   // Return the main component including the network panel, network view, and the table browser
   return (
     <Box
