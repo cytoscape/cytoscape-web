@@ -21,6 +21,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 
 import { NetworkPropertyEditor } from './NdexNetworkPropertyEditor'
 import { HcxValidationButtonGroup } from '../../features/HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
+import { ConfirmationDialog } from '../Util/ConfirmationDialog'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
@@ -31,7 +32,7 @@ export const NetworkPropertyPanel = ({
 }: NetworkPropertyPanelProps): ReactElement => {
   const theme: Theme = useTheme()
   const { nodeCount, edgeCount } = summary
-
+  const [open, setOpen] = useState<boolean>(false)
   // Need to use ID from the summary since it is different from the currentNetworkId
   const id: IdType = summary.externalId
 
@@ -115,7 +116,6 @@ export const NetworkPropertyPanel = ({
               />
               <Typography variant={'body2'}>{summary.name}</Typography>
             </Box>
-
             {networkModifiedIcon}
           </Box>
           <Box
@@ -152,8 +152,8 @@ export const NetworkPropertyPanel = ({
                 size="small"
                 sx={{ width: 25, height: 25 }}
                 onClick={(e) => {
-                  e.stopPropagation();
-                  deleteNetwork(id);
+                  e.stopPropagation()
+                  setOpen(true)
                 }}
               >
                 <DeleteIcon sx={{ fontSize: 18 }} />
@@ -165,6 +165,14 @@ export const NetworkPropertyPanel = ({
           anchorEl={editNetworkSummaryAnchorEl}
           summary={summary}
           onClose={hideEditNetworkSummaryForm}
+        />
+        <ConfirmationDialog
+          title="Remove Network From Workspace"
+          message={`Do you really want to delete the network, ${summary.name}?`}
+          onConfirm={() => { deleteNetwork(id); }}
+          open={open}
+          setOpen={setOpen}
+          buttonTitle="Yes (cannot be undone)"
         />
       </Box >
     </>
