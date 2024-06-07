@@ -32,7 +32,7 @@ export const NetworkPropertyPanel = ({
 }: NetworkPropertyPanelProps): ReactElement => {
   const theme: Theme = useTheme()
   const { nodeCount, edgeCount } = summary
-  const [open, setOpen] = useState<boolean>(false)
+  const [openConfirmation, setOpenConfirmation] = useState<boolean>(false)
   // Need to use ID from the summary since it is different from the currentNetworkId
   const id: IdType = summary.externalId
 
@@ -40,28 +40,25 @@ export const NetworkPropertyPanel = ({
     HTMLButtonElement | undefined
   >(undefined)
 
+  const currentNetworkId: IdType = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+  const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
+  const networkViewModel = useViewModelStore((state) => state.getViewModel(id))
+
   const hideEditNetworkSummaryForm = (event: any): void => {
     event.stopPropagation()
     setEditNetworkSummaryAnchorEl(undefined)
   }
 
-  const currentNetworkId: IdType = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
-
-  const networkViewModel = useViewModelStore((state) => state.getViewModel(id))
-
   const showEditNetworkSummaryForm = (
     event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
     event.stopPropagation()
-
     setEditNetworkSummaryAnchorEl(event.currentTarget)
   }
-
-  const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
-    (state) => state.setCurrentNetworkId,
-  )
 
   const networkModified =
     useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
@@ -69,6 +66,12 @@ export const NetworkPropertyPanel = ({
   const deleteNetwork = useWorkspaceStore(
     (state) => state.deleteNetwork,
   )
+
+  const onClickDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    setCurrentNetworkId(id)
+    setOpenConfirmation(true)
+  }
 
   const backgroundColor: string =
     currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
@@ -151,10 +154,7 @@ export const NetworkPropertyPanel = ({
               <IconButton
                 size="small"
                 sx={{ width: 25, height: 25 }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setOpen(true)
-                }}
+                onClick={(e) => { onClickDelete(e) }}
               >
                 <DeleteIcon sx={{ fontSize: 18 }} />
               </IconButton>
@@ -170,8 +170,8 @@ export const NetworkPropertyPanel = ({
           title="Remove Network From Workspace"
           message={`Do you really want to delete the network, ${summary.name}?`}
           onConfirm={() => { deleteNetwork(id); }}
-          open={open}
-          setOpen={setOpen}
+          open={openConfirmation}
+          setOpen={setOpenConfirmation}
           buttonTitle="Yes (cannot be undone)"
         />
       </Box >
