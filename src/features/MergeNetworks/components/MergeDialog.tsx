@@ -2,7 +2,7 @@ import {
     ArrowForward as ArrowForwardIcon, ArrowBack as ArrowBackIcon,
     ArrowUpward as ArrowUpwardIcon, ArrowDownward as ArrowDownwardIcon,
     ExpandMore as ExpandMoreIcon, Star as StarIcon,
-    Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon
+    Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon, Merge
 } from '@mui/icons-material';
 import React, { useContext, useEffect, useState } from 'react';
 import { UnionIcon, DifferenceIcon, IntersectionIcon } from './Icon';
@@ -60,7 +60,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const [showError, setShowError] = useState(false); // Flag to show the error message panel
     const { ndexBaseUrl } = useContext(AppConfigContext); // Base URL for the NDEx server
     const [mergeOpType, setMergeOpType] = useState(MergeType.union); // Type of merge operation
-    const [typeConflict, setTypeConflict] = useState(false); // Flag to indicate whether there is a type conflict
+    const [mergeWithinNetwork, setMergeWithinNetwork] = useState(false); // Flag to indicate whether to merge within the same network
+    const [mergeOnlyNodes, setMergeOnlyNodes] = useState(false); // Flag to indicate whether to ignore type conflicts
     const [mergedNetworkName, setMergedNetworkName] = useState(uniqueName); // Name of the merged network
     const [fullScreen, setFullScreen] = useState(false); // Full screen mode for the dialog
     const [tooltipOpen, setTooltipOpen] = useState(false); // Flag to indicate whether the tooltip is open
@@ -327,7 +328,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : '';
             const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
                 newNetworkId, mergedNetworkName, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj,
-                matchingCols, visualStyleRecord[baseNetwork], summaryRecord);
+                matchingCols, visualStyleRecord[baseNetwork], summaryRecord, mergeOpType, mergeWithinNetwork, mergeOnlyNodes);
 
             // Update state stores with the new network and its components   
             setCurrentNetworkId(newNetworkId);
@@ -499,6 +500,37 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                                 </ToggleButtonGroup>
                             </Box>
                         </div>
+                        <Box display="flex" flexDirection="column" justifyContent="left" m={1}>
+                            <FormControlLabel
+                                control={<Checkbox
+                                    checked={mergeWithinNetwork}
+                                    onChange={() => setMergeWithinNetwork(!mergeWithinNetwork)}
+                                    name="mergeWithinNetwork"
+                                    color="primary"
+                                />}
+                                label="Enable merging nodes/edges in the same network"
+                            />
+                            <Tooltip
+                                placement="top-start"
+                                title="Cannot ignore edges when operating 'Union Merge'"
+                                disableHoverListener={MergeType.union !== mergeOpType}  // Tooltip is only active when the checkbox is disabled
+                            >
+                                <FormControlLabel
+                                    control={
+
+                                        <Checkbox
+                                            checked={mergeOnlyNodes}
+                                            onChange={() => setMergeOnlyNodes(!mergeOnlyNodes)}
+                                            name="mergeOnlyNodes"
+                                            color="primary"
+                                            disabled={MergeType.union === mergeOpType}
+                                        />
+                                    }
+                                    label="Merge only nodes and ignore edges"
+                                />
+                            </Tooltip>
+                        </Box>
+
                     </AccordionDetails>
                 </Accordion>
             </DialogContent>

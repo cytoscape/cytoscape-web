@@ -8,15 +8,17 @@ import { Column } from '../../../../models/TableModel/Column';
 import { putNetworkSummaryToDb } from '../../../../store/persist/db'
 import { NetworkAttributes } from '../../../../models/NetworkModel';
 import ViewModelFn, { NetworkView } from '../../../../models/ViewModel';
-import { NetworkRecord, NetworktoMerge } from '../DataInterfaceForMerge';
+import { MergeType, NetworkRecord, NetworktoMerge } from '../DataInterfaceForMerge';
 import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel';
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility';
 import { getMatchingTableRows, getAttributeMapping } from './MatchingTableImpl';
 import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel';
 
-export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkName: string, networkRecords: Record<IdType, NetworkRecord>,
-    nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable,
-    matchingAttribute: Record<IdType, Column>, visualStyle: VisualStyle, netSummaries: Record<IdType, NdexNetworkSummary>): Promise<NetworkWithView> => {
+export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkName: string,
+    networkRecords: Record<IdType, NetworkRecord>, nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable,
+    networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>, visualStyle: VisualStyle,
+    netSummaries: Record<IdType, NdexNetworkSummary>, mergeOpType: MergeType = MergeType.union, mergeWithinNetwork: boolean = false, mergeOnlyNodes: boolean = false
+): Promise<NetworkWithView> => {
     if (fromNetworks.length < 1) {
         throw new Error("No networks to merge");
     }
@@ -35,7 +37,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
         }
     }
     const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
-        nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
+        nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork)
     const mergedNetSummary = mergeNetSummary(fromNetworks, networkAttributeMapping, netSummaries)
 
     // todo: merge network attributes also

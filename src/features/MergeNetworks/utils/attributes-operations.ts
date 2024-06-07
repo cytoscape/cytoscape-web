@@ -40,12 +40,11 @@ export function addMergedAtt(castedRecord: Record<string, ValueType>, oriMatchin
     return castedRecord;
 }
 
-export function attributeValueMatcher(val: ValueType, nodeAttMap: Map<IdType, ValueType>): string {
+export function attributeValueMatcher(val: ValueType, nodeAttMap: Map<SingleValueType, IdType>): string {
     if (val !== undefined) {
-        for (const entry of nodeAttMap.entries()) {
-            if (entry[1] !== '' && val === entry[1]) {
-                return entry[0];
-            }
+        const nodeId = nodeAttMap.get(getKeybyAttribute(val));
+        if (nodeId !== undefined) {
+            return nodeId;
         }
     }
     return ''
@@ -60,6 +59,17 @@ export function typeCoercion(val: ValueType, mergedType: ValueTypeName | 'None')
         return listValueTypeCoercion(val, mergedType);
     }
     return singleValueTypeCoercion(val, mergedType);
+}
+
+export function getKeybyAttribute(val: ValueType): SingleValueType {
+    if (Array.isArray(val)) {
+        return stringifyList(val as ListOfValueType);
+    }
+    return val as SingleValueType;
+}
+
+function stringifyList(val: ListOfValueType): string {
+    return val.join(',');
 }
 
 function listValueTypeCoercion(val: ValueType, mergedType: ValueTypeName): ListOfValueType {
