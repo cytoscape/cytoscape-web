@@ -13,7 +13,6 @@ import {
   CpDefaults,
   displaySelectedNodes,
   findHierarchyNode,
-  getCircleDimension,
   getColorMapper,
   getFontSize,
   getLabel,
@@ -102,16 +101,19 @@ export const CirclePackingPanel = ({
     (view) => view.type === CirclePackingType,
   ) as CirclePackingView
 
+  // Selected circle(s). Only the first one is used for now
   const selectedNodes: IdType[] = circlePackingView?.selectedNodes ?? []
   const selectedNodeSet = new Set<string>(selectedNodes)
 
+  // For keeping track of the selected node's depth in the hierarchy
+  const selectedDepthRef = useRef(0)
+  // Keep the last zoom level for comparison
+  const lastZoomLevelRef = useRef(0)
+
   useEffect(() => {
-    console.log(
-      '---------- Visibility changed ----------',
-      visible,
-      initialSize,
-    )
+    console.log('# Network View Visibility changed', visible, initialSize)
     if (!visible) return
+
     if (selectedNodes.length > 0) {
       const targetNode: IdType = selectedNodes[0]
       const rootNode =
@@ -124,19 +126,18 @@ export const CirclePackingPanel = ({
         return
       }
 
-      const depth: number = circleNode?.depth ?? 0
+      const depth: number = circleNode.depth
+      selectedDepthRef.current = depth
       updateForZoom(depth)
       lastZoomLevelRef.current = depth
     }
 
+    // Move to center
     if (initialSize !== undefined && initialSize.w > 0 && initialSize.h > 0) {
       const wrapper = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
       toCenter(wrapper, { width: initialSize.w, height: initialSize.h })
     }
   }, [visible])
-
-  // Keep the last
-  const lastZoomLevelRef = useRef(1)
 
   const handleZoom = useCallback(
     (e: any): void => {
@@ -145,8 +146,8 @@ export const CirclePackingPanel = ({
       const currentZoomLevel = e.transform.k
       const maxDepth = Math.ceil(currentZoomLevel)
 
-      if (lastZoomLevelRef.current > maxDepth) {
-        lastZoomLevelRef.current = maxDepth
+      if (selectedDepthRef.current > maxDepth) {
+        lastZoomLevelRef.current = selectedDepthRef.current
       } else {
         lastZoomLevelRef.current = maxDepth
         updateForZoom(maxDepth)
@@ -501,24 +502,13 @@ export const CirclePackingPanel = ({
 
     // Expand circles to the level of the selected node and zoom in to that circle
     if (selectedNodes.length > 0) {
-      // Use the first selected node as the target node
       // updateForZoom(9)
       // lastZoomLevelRef.current = 9
     }
   }, [selectedNodes, selectedLeaf])
 
   useEffect(() => {
-    if (selectedNodes.length > 0) {
-      // const targetNode: IdType = selectedNodes[0]
-      // const rootNode =
-      //   circlePackingView.hierarchy as d3Hierarchy.HierarchyCircularNode<D3TreeNode>
-      // const selectedCircle = getCircleDimension(targetNode, rootNode)
-    }
-  }, [ref.current])
-
-  useEffect(() => {
     if (initialSize !== undefined && initialSize.w > 0 && initialSize.h > 0) {
-      console.log('Base panel is ready:', ref.current, initialSize)
       updateViewModel()
     }
   }, [initialSize])

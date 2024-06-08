@@ -224,28 +224,28 @@ export const displaySelectedNodes = (
  *
  * @param id target node id
  * @param root Root of the hierarchy
+ *
+ * @returns The D3 hierarchy node if found, otherwise undefined
  */
 export const findHierarchyNode = (
   id: IdType,
   node: d3Hierarchy.HierarchyCircularNode<D3TreeNode>,
 ): d3Hierarchy.HierarchyCircularNode<D3TreeNode> | undefined => {
-  const nodeId = node.data.id
+  const nodeId: IdType = node.data.id
   if (nodeId === id) {
-    console.log('Found node', node)
     return node
   }
 
   const children = node.children
   if (children !== undefined && children.length > 0) {
     for (const child of children) {
-      console.log('Cur child', child.data.id, id)
       const found = findHierarchyNode(id, child)
       if (found !== undefined && found.data.id === id) {
         return found
       }
     }
   }
-  return undefined
+  return undefined // Not found
 }
 
 export const getCircleDimension = (

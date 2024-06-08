@@ -24,6 +24,7 @@ export const NetworkTab = ({
   boxSize,
 }: NetworkTabProps): ReactElement => {
   const rendererComponent = renderer.getComponent(network, boxSize, selected)
+
   return (
     <Box
       sx={{
@@ -34,6 +35,8 @@ export const NetworkTab = ({
         border: isActive ? '3px solid orange' : '3px solid transparent',
         // Adjust the hidden bottom border to be 4px
         borderBottom: isActive ? '4px solid orange' : '4px solid transparent',
+
+        // Mount all components in the background but display only the selected one
         display: selected ? 'block' : 'none',
       }}
       onClick={handleClick}
