@@ -17,8 +17,11 @@ import { v4 as uuidv4 } from 'uuid';
 import {
     MergeType, NetworkRecord, TableView, Pair
 } from '../models/DataInterfaceForMerge';
-import { MatchingTableRow } from '../models/MatchingTable';
-import { Column, ValueType, ValueTypeName } from '../../../models/TableModel';
+import useMatchingColumnsStore from '../store/matchingColumnStore';
+import useNodeMatchingTableStore from '../store/nodeMatchingTableStore';
+import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore';
+import useNetMatchingTableStore from '../store/netMatchingTableStore';
+import { Column } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
 import { AppConfigContext } from '../../../AppConfigContext'
@@ -26,31 +29,31 @@ import { useCredentialStore } from '../../../store/CredentialStore';
 import { useWorkspaceStore } from '../../../store/WorkspaceStore';
 import { useViewModelStore } from '../../../store/ViewModelStore';
 import { useNetworkStore } from '../../../store/NetworkStore';
-import { TableRecord, useTableStore } from '../../../store/TableStore';
+import { useTableStore } from '../../../store/TableStore';
 import { useVisualStyleStore } from '../../../store/VisualStyleStore';
 import { createMergedNetworkWithView } from '../models/Impl/CreateMergedNetworkWithView';
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
-import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel';
+import { VisualStyle } from '../../../models/VisualStyleModel';
 import { useLayoutStore } from '../../../store/LayoutStore';
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel';
 import { MatchingTableComp } from './MatchingTableComp';
 import { MatchingColumnTable } from './MatchingColumnTable';
 import { NetworkWithView } from '../../../utils/cx-utils';
-import { findPairIndex, getNetTableFromSummary, processColumns } from '../utils/helper-functions';
+import { findPairIndex, getNetTableFromSummary } from '../utils/helper-functions';
 import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog';
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel';
-import { generateUniqueName } from '../../../utils/network-utils';
-import { getResonableCompatibleConvertionType } from '../utils/attributes-operations';
+import { use } from 'cytoscape';
 
 interface MergeDialogProps {
     open: boolean;
     handleClose: () => void;
     uniqueName: string;
     workSpaceNetworks: Pair<string, IdType>[];
+    networksLoaded: Record<IdType, NetworkRecord>;
 }
 
-const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName, workSpaceNetworks }): React.ReactElement => {
+const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName, workSpaceNetworks, networksLoaded }): React.ReactElement => {
     const [readyToMerge, setReadyToMerge] = useState(false);// Flag to indicate whether it is ready to merge
     const [tableView, setTableView] = useState(TableView.node); // Current table view
     const [errorMessage, setErrorMessage] = useState(''); // Error message to display
@@ -66,11 +69,22 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     // Record the information of the networks to be merged
     const [networkRecords, setNetworkRecords] = useState<Record<IdType, NetworkRecord>>({});
     // Record the matching columns for each network
-    const [matchingCols, setMatchingCols] = useState<Record<IdType, Column>>({});
-    // Record the state of the matching table
-    const [nodeMatchingTable, setNodeMatchingTable] = useState<MatchingTableRow[]>([]);
-    const [edgeMatchingTable, setEdgeMatchingTable] = useState<MatchingTableRow[]>([]);
-    const [netMatchingTable, setNetMatchingTable] = useState<MatchingTableRow[]>([]);
+    const matchingCols = useMatchingColumnsStore(state => state.matchingCols);
+    const setMatchingCols = useMatchingColumnsStore(state => state.setMatchingCols);
+    const resetMatchingCols = useMatchingColumnsStore(state => state.resetStore);
+    // // Record the state of the matching table
+    const nodeMatchingTable = useNodeMatchingTableStore(state => state.rows);
+    const addNetsToNodeTable = useNodeMatchingTableStore(state => state.addNetworksToTable);
+    const removeNetsFromNodeTable = useNodeMatchingTableStore(state => state.removeNetworksFromTable);
+    const resetNodeMatchingTable = useNodeMatchingTableStore(state => state.resetStore);
+    const edgeMatchingTable = useEdgeMatchingTableStore(state => state.rows);
+    const addNetsToEdgeTable = useEdgeMatchingTableStore(state => state.addNetworksToTable);
+    const removeNetsFromEdgeTable = useEdgeMatchingTableStore(state => state.removeNetworksFromTable);
+    const resetEdgeMatchingTable = useEdgeMatchingTableStore(state => state.resetStore);
+    const netMatchingTable = useNetMatchingTableStore(state => state.rows);
+    const addNetsToNetTable = useNetMatchingTableStore(state => state.addNetworksToTable);
+    const removeNetsFromNetTable = useNetMatchingTableStore(state => state.removeNetworksFromTable);
+    const resetNetMatchingTable = useNetMatchingTableStore(state => state.resetStore);
     // Record the status of the available and selected networks lists
     const [availableNetworksList, setAvailableNetworksList] = useState<Pair<string, IdType>[]>(workSpaceNetworks);
     const [toMergeNetworksList, setToMergeNetworksList] = useState<Pair<string, IdType>[]>([]);
@@ -144,10 +158,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     // Function to add selected networks to the 'Networks to Merge' list
     const handleAddNetwork = async () => {
         const newAvailableNetworksList = [...availableNetworksList];
-        const newMatchingCols = { ...matchingCols };
+        const newMatchingCols: Record<string, Column> = {};
+        const newNetworkRecords: Record<IdType, NetworkRecord> = {};
         for (const net of selectedAvailable) {
             // Load the network data
-            // Todo: check if the network is already loaded in the workspace
             let netData = networkRecords[net[1]];  // Attempt to use cached data
             if (!netData) {
                 netData = await loadNetworkById(net[1]);  // Fetch and use fresh data if not available
@@ -156,6 +170,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                     newAvailableNetworksList.splice(netIndex, 1);
                 }
             }
+            newNetworkRecords[net[1]] = netData;
             // Set the default matching column for the network
             let hasName = false;
             for (const col of netData.nodeTable.columns ?? []) {
@@ -165,14 +180,19 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                     break;
                 }
             }
-
             if (!hasName) {
                 newMatchingCols[net[1]] = netData.nodeTable.columns.length > 0 ? netData.nodeTable.columns[0] : ({ name: 'none', type: 'string' } as Column);
             }
         }
+        // Add the networks to the matching tables
+        addNetsToNodeTable(selectedAvailable.map(pair => pair[1]), newNetworkRecords, newMatchingCols);
+        addNetsToEdgeTable(selectedAvailable.map(pair => pair[1]), newNetworkRecords, newMatchingCols);
+        addNetsToNetTable(selectedAvailable.map(pair => pair[1]), newNetworkRecords, newMatchingCols);
+        // Update the state stores
+        setNetworkRecords({ ...networkRecords, ...newNetworkRecords });
         setToMergeNetworksList([...toMergeNetworksList, ...selectedAvailable]);
         setAvailableNetworksList(availableNetworksList.filter(net => !selectedAvailable.includes(net)));
-        setMatchingCols(newMatchingCols);
+        setMatchingCols({ ...matchingCols, ...newMatchingCols });
         setSelectedAvailable([]);
     };
     // Function to remove selected networks from the 'Networks to Merge' list
@@ -188,6 +208,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             delete newMatchingCols[net[1]];
             delete newVisualStyles[net[1]];
         });
+        // Remove the networks from the matching tables
+        removeNetsFromNodeTable(selectedToMerge.map(pair => pair[1]));
+        removeNetsFromEdgeTable(selectedToMerge.map(pair => pair[1]));
+        removeNetsFromNetTable(selectedToMerge.map(pair => pair[1]));
+        // Update the state stores
         setNetworkRecords(newNetworkRecords);
         setMatchingCols(newMatchingCols);
         setvisualStyleRecord(newVisualStyles);
@@ -246,27 +271,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     };
     // Update the matching table when selectedNetworks changes
     useEffect(() => {
-        // Create the initial matching table with the columns of the base network
-        const typeSet = new Set<ValueTypeName>();
-        const matchingRow: Record<string, string> = {};
-        const typeRecord: Record<string, ValueTypeName> = {};
-        Object.keys(matchingCols).forEach(key => {
-            matchingRow[key] = matchingCols[key].name;
-            typeRecord[key] = matchingCols[key].type;
-            typeSet.add(matchingCols[key].type);
-        });
-        const initialRow = {
-            id: 0,
-            mergedNetwork: 'Matching.Attribute',
-            type: getResonableCompatibleConvertionType(typeSet) || 'None',
-        }
-        const newNodeMatchingTable: MatchingTableRow[] = [{ ...initialRow, nameRecord: matchingRow, typeRecord: typeRecord, hasConflicts: typeSet.size > 1 } as MatchingTableRow]
-
-        // Update the matching table for each network
-        setNodeMatchingTable(processColumns('nodeTable', toMergeNetworksList, networkRecords, newNodeMatchingTable));
-        setEdgeMatchingTable(processColumns('edgeTable', toMergeNetworksList, networkRecords));
-        setNetMatchingTable(processColumns('netTable', toMergeNetworksList, networkRecords));
-
         // check whether it is ready to merge
         if (toMergeNetworksList.length > 0) {
             let isReady = true
@@ -280,7 +284,16 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             setReadyToMerge(false);
         }
     }, [toMergeNetworksList, matchingCols, networkRecords]);
-
+    // Set the initial state of the networkRecords
+    useEffect(() => {
+        setNetworkRecords(networksLoaded)
+        return () => {
+            resetNodeMatchingTable();
+            resetEdgeMatchingTable();
+            resetNetMatchingTable();
+            resetMatchingCols();
+        }
+    }, [])
     // set merge type
     const handleMergeTypeChange = (event: React.MouseEvent<HTMLElement>, opType: string) => {
         if (opType !== null) {
@@ -299,10 +312,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
         const { network, nodeTable, edgeTable, visualStyle } = res;
         const summary = netSummaries[networkId];
         const netTable = getNetTableFromSummary(summary)
-        setNetworkRecords(prev => ({
-            ...prev,
-            [networkId]: { network, nodeTable, edgeTable, netTable }
-        }));
         setvisualStyleRecord(prev => ({
             ...prev,
             [networkId]: visualStyle
@@ -461,7 +470,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                         </Typography>
 
                         <MatchingColumnTable networkRecords={networkRecords} toMergeNetworksList={toMergeNetworksList}
-                            matchingCols={matchingCols} setMatchingCols={setMatchingCols} />
+                            matchingCols={matchingCols} />
 
                         <Typography variant="h6" style={{ margin: '10px 0 10px 0' }}>
                             How to merge columns:
@@ -470,18 +479,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                             <MatchingTableComp
                                 networkRecords={networkRecords}
                                 netLst={toMergeNetworksList}
-                                data={
-                                    tableView === TableView.node
-                                        ? nodeMatchingTable
-                                        : tableView === TableView.edge
-                                            ? edgeMatchingTable
-                                            : netMatchingTable
-                                }
                                 type={tableView}
-                                setNodeMatchingTable={setNodeMatchingTable}
-                                setEdgeMatchingTable={setEdgeMatchingTable}
-                                setNetMatchingTable={setNetMatchingTable}
-                                setMatchingCols={setMatchingCols}
                                 matchingCols={matchingCols}
                             />
                         )}

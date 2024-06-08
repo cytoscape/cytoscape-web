@@ -44,6 +44,7 @@ export const NetworkBrowserPanel = ({
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+
   const activeNetworkViewId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
