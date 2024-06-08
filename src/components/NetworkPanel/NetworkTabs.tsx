@@ -46,8 +46,6 @@ export const NetworkTabs = ({
     setSelected(newValue)
   }
 
-  console.log('##########box size:::', boxSize)
-
   const rendererList = Object.values(renderers)
   return (
     <Container
@@ -83,23 +81,6 @@ export const NetworkTabs = ({
           )
         })}
       </Box>
-
-      {/* <Box sx={{ flexGrow: 1, width: '100%' }}>
-        {rendererList.map((renderer: Renderer, index: number) => {
-          return (
-            index === selected && (
-              <NetworkTab
-                key={index}
-                network={network}
-                renderer={renderer}
-                isActive={isActive}
-                bgColor={bgColor}
-                handleClick={handleClick}
-              />
-            )
-          )
-        })}
-      </Box> */}
     </Container>
   )
 }

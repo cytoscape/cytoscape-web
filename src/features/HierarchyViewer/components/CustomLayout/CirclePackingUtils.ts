@@ -6,6 +6,8 @@ import { VisualPropertyValueType } from '../../../../models/VisualStyleModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
 import { NodeView } from '../../../../models/ViewModel'
 import { D3TreeNode } from './D3TreeNode'
+import { IdType } from '../../../../models/IdType'
+import { find } from 'lodash'
 
 // Number of letters to display in the label
 const MAX_LABEL_LENGTH = 90
@@ -215,4 +217,46 @@ export const displaySelectedNodes = (
         ? CpDefaults.borderWidthHover
         : CpDefaults.borderWidth,
     )
+}
+
+/**
+ * Find the node in the D3 hierarchy
+ *
+ * @param id target node id
+ * @param root Root of the hierarchy
+ */
+export const findHierarchyNode = (
+  id: IdType,
+  node: d3Hierarchy.HierarchyCircularNode<D3TreeNode>,
+): d3Hierarchy.HierarchyCircularNode<D3TreeNode> | undefined => {
+  const nodeId = node.data.id
+  if (nodeId === id) {
+    console.log('Found node', node)
+    return node
+  }
+
+  const children = node.children
+  if (children !== undefined && children.length > 0) {
+    for (const child of children) {
+      console.log('Cur child', child.data.id, id)
+      const found = findHierarchyNode(id, child)
+      if (found !== undefined && found.data.id === id) {
+        return found
+      }
+    }
+  }
+  return undefined
+}
+
+export const getCircleDimension = (
+  id: IdType,
+  root: d3Hierarchy.HierarchyCircularNode<D3TreeNode>,
+): [number, number, number] => {
+  const node: d3Hierarchy.HierarchyCircularNode<D3TreeNode> | undefined =
+    findHierarchyNode(id, root)
+  if (node === undefined) {
+    return [0, 0, 0]
+  }
+
+  return [node.r, node.x, node.y]
 }

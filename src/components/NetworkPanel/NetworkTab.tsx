@@ -23,6 +23,7 @@ export const NetworkTab = ({
   selected,
   boxSize,
 }: NetworkTabProps): ReactElement => {
+  const rendererComponent = renderer.getComponent(network, boxSize, selected)
   return (
     <Box
       sx={{
@@ -37,7 +38,7 @@ export const NetworkTab = ({
       }}
       onClick={handleClick}
     >
-      {renderer.getComponent(network, boxSize)}
+      {rendererComponent}
       <FloatingToolBar />
     </Box>
   )

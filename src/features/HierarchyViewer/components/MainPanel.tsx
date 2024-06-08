@@ -76,7 +76,14 @@ export const MainPanel = (): JSX.Element => {
     getComponent: (
       networkData: Network,
       initialSize: { w: number; h: number },
-    ) => <CirclePackingPanel network={networkData} initialSize={initialSize} />,
+      visible: boolean,
+    ) => (
+      <CirclePackingPanel
+        network={networkData}
+        initialSize={initialSize}
+        visible={visible}
+      />
+    ),
   }
 
   const checkDataType = (): void => {

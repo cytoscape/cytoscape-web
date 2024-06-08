@@ -32,5 +32,6 @@ export interface Renderer {
   getComponent: (
     network: Network,
     initialSize?: { w: number; h: number },
+    visible?: boolean,
   ) => ReactElement
 }
