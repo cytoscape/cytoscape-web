@@ -222,3 +222,25 @@ export function getAllConvertiableTypes(types: Set<ValueTypeName | 'None'>): Val
         return [...convertiableSingleTypes, ...convertiableListTypes];
     }
 }
+
+
+export function mergeAttributes(orinalRow: Record<string, ValueType>, castedRecord: Record<string, ValueType>): Record<string, ValueType> {
+    const mergedRow = { ...orinalRow }
+    Object.entries(castedRecord).forEach(([key, value]) => {
+        if (!mergedRow.hasOwnProperty(key)) {
+            mergedRow[key] = value;
+        } else if (Array.isArray(mergedRow[key]) && Array.isArray(value)) {
+            if ((mergedRow[key] as ListOfValueType).every(item => typeof item === typeof value[0])) {
+                mergedRow[key] = [...new Set([...(mergedRow[key] as ListOfValueType), ...value])] as ValueType;
+            } else {
+                throw new Error(`Type mismatch for key ${key}: ${typeof (mergedRow[key] as ListOfValueType)[0]} vs ${typeof value[0]}`);
+            }
+        }
+    });
+    //Todo: whether to concat string, the behavior is not clear
+    return mergedRow;
+}
+
+export function duplicateAttName(mergedAttributes: Column[]): boolean {
+    return (new Set(mergedAttributes.map(col => col.name))).size < mergedAttributes.length
+}
