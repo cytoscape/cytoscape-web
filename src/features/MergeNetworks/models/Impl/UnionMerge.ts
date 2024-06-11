@@ -9,7 +9,7 @@ import { MatchingTable } from "../MatchingTable";
 import { getMergedAttributes, getReversedMergedAttMap } from "./MatchingTableImpl";
 import { preprocess, castAttributes, addMergedAtt, getKeybyAttribute, mergeAttributes, duplicateAttName } from "../../utils/attributes-operations";
 
-export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
+export function unionMerge(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>,
     mergeWithinNetwork: boolean = false): NetworkRecord {
     const nodeMergedAttributes = getMergedAttributes(nodeAttributeMapping)
@@ -200,30 +200,32 @@ export function mergeNetwork(fromNetworks: IdType[], toNetworkId: IdType, networ
             }
             const castedRecord = castAttributes(edgeRecord, netToMerge, edgeAttributeMapping, false);
             const mergedEdgeIds = edgeMap.get(`${sourceId}-${targetId}`);
+            let shouldAddEdge = true;
             if (mergedEdgeIds !== undefined) { // there is already an edge between the source and target node
-                let hasMatched = false;
-                for (const mergedEdgeId of mergedEdgeIds) {
+                let hasMatched = mergedEdgeIds.some(mergedEdgeId => {
                     const originalRow = mergedEdgeTable.rows.get(mergedEdgeId);
                     if (originalRow === undefined) {
                         throw new Error("Edge not found in the merged edge table");
                     }
-                    if ((originalRow.hasOwnProperty('interaction') && castedRecord.hasOwnProperty('interaction') && originalRow['interaction'] === castedRecord['interaction']) ||
-                        (!originalRow.hasOwnProperty('interaction') && !castedRecord.hasOwnProperty('interaction'))) {
-                        // update the mergedEdgeTable
+                    const isMatch = (originalRow.interaction === castedRecord.interaction) ||
+                        (!originalRow.hasOwnProperty('interaction') && !castedRecord.hasOwnProperty('interaction'));
+                    if (isMatch) {
                         TableFn.updateRow(mergedEdgeTable, [mergedEdgeId, mergeAttributes(originalRow, castedRecord)]);
-                        hasMatched = true;
-                        break;
+                        return true
                     }
-                };
-                if (!hasMatched) { // insert a new edge
-                    TableFn.insertRow(mergedEdgeTable, [newEdgeId, castedRecord]);
-                    NetworkFn.addEdge(mergedNetwork, { id: newEdgeId, s: sourceId, t: targetId } as Edge);
-                    edgeMap.get(`${sourceId}-${targetId}`)?.push(newEdgeId);
-                }
-            } else { // insert a new edge
+                    return false
+                })
+                shouldAddEdge = !hasMatched;
+            }
+            if (shouldAddEdge) {
                 TableFn.insertRow(mergedEdgeTable, [newEdgeId, castedRecord]);
                 NetworkFn.addEdge(mergedNetwork, { id: newEdgeId, s: sourceId, t: targetId } as Edge);
-                edgeMap.set(`${sourceId}-${targetId}`, [newEdgeId]);
+                if (mergedEdgeIds) {
+                    mergedEdgeIds.push(newEdgeId);
+                }
+                else {
+                    edgeMap.set(`${sourceId}-${targetId}`, [newEdgeId]);
+                }
             }
         }
     }

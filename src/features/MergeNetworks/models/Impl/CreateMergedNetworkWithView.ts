@@ -1,5 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { mergeNetwork } from './MergeNetwork';
+import { unionMerge } from './UnionMerge';
+import { intersectionMerge } from './IntersectionMerge';
 import { MatchingTable } from '../MatchingTable';
 import { IdType } from '../../../../models/IdType';
 import { mergeNetSummary } from './MergeNetSummary';
@@ -36,11 +37,17 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
             throw new Error(`Matching attribute for network ${netId} not found`);
         }
     }
-    const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
-        nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork)
+    let mergedNetwork: NetworkRecord = {} as NetworkRecord
+    if (mergeOpType === MergeType.union) {
+        mergedNetwork = unionMerge(fromNetworks, toNetworkId, networkRecords,
+            nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork)
+    } else if (mergeOpType === MergeType.intersection) {
+        mergedNetwork = intersectionMerge(fromNetworks, toNetworkId, networkRecords,
+            nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork, mergeOnlyNodes)
+    }
     const mergedNetSummary = mergeNetSummary(fromNetworks, networkAttributeMapping, netSummaries)
 
-    // todo: merge network attributes also
+    // Todo: merge network attributes also
     const networkAttributes: NetworkAttributes = {
         id: toNetworkId,
         attributes: {},
