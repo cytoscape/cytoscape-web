@@ -1,6 +1,7 @@
 import cloneDeep from 'lodash/cloneDeep';
 import { unionMerge } from './UnionMerge';
 import { intersectionMerge } from './IntersectionMerge';
+import { differenceMerge } from './DifferenceMerge';
 import { MatchingTable } from '../MatchingTable';
 import { IdType } from '../../../../models/IdType';
 import { mergeNetSummary } from './MergeNetSummary';
@@ -43,6 +44,9 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
             nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork)
     } else if (mergeOpType === MergeType.intersection) {
         mergedNetwork = intersectionMerge(fromNetworks, toNetworkId, networkRecords,
+            nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork, mergeOnlyNodes)
+    } else {
+        mergedNetwork = differenceMerge(fromNetworks, toNetworkId, networkRecords,
             nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork, mergeOnlyNodes)
     }
     const mergedNetSummary = mergeNetSummary(fromNetworks, networkAttributeMapping, netSummaries)

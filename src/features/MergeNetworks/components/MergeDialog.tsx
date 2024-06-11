@@ -65,6 +65,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const [mergedNetworkName, setMergedNetworkName] = useState(uniqueName); // Name of the merged network
     const [fullScreen, setFullScreen] = useState(false); // Full screen mode for the dialog
     const [tooltipOpen, setTooltipOpen] = useState(false); // Flag to indicate whether the tooltip is open
+    // confirmation window
+    const [openConfirmation, setOpenConfirmation] = useState(false);
+    const [confirmationTitle, setConfirmationTitle] = useState('');
+    const [confirmationMessage, setConfirmationMessage] = useState('');
+
     // Record the visual style of the networks to be merged
     const [visualStyleRecord, setvisualStyleRecord] = useState<Record<IdType, VisualStyle>>({});
     // Record the information of the networks to be merged
@@ -298,7 +303,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     // set merge type
     const handleMergeTypeChange = (event: React.MouseEvent<HTMLElement>, opType: string) => {
         if (opType !== null) {
-            setMergeOpType(opType as MergeType);
+            if (opType === MergeType.difference && toMergeNetworksList.length > 2) {
+                setOpenConfirmation(true)
+            } else {
+                setMergeOpType(opType as MergeType);
+            }
         }
     };
 
@@ -450,6 +459,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                         </Button>
                     </Box>
                 </Box>
+
+                {(mergeOpType === MergeType.difference) && <></>}
                 <Accordion>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography>Advanced Options</Typography>
@@ -546,6 +557,14 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                     Merge
                 </Button>
             </DialogActions>
+            <ConfirmationDialog
+                title="Warning: Only two networks will be kept!"
+                message="Only the first two networks in the selected network list will be merged for the difference operation. All the other selected networks will be removed. Are you sure?"
+                onConfirm={() => { }}
+                open={openConfirmation}
+                setOpen={setOpenConfirmation}
+                buttonTitle="Yes"
+            />
         </Dialog >
     );
 };
