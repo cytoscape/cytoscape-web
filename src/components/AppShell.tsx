@@ -15,7 +15,7 @@ import {
 } from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
-import { parsePathName } from '../utils/paths-util'
+import { ParsedUrlParams, parsePathName } from '../utils/paths-util'
 import { WarningDialog } from './ExternalLoading/WarningDialog'
 import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
 import { AppConfigContext } from '../AppConfigContext'
@@ -50,6 +50,10 @@ const AppShell = (): ReactElement => {
   const [search] = useSearchParams()
 
   const initializedRef = useRef(false)
+
+  // Keep track of the network ID in the URL
+  const urlNetIdRef = useRef<string>('')
+
   const navigate = useNavigate()
   const setWorkspace = useWorkspaceStore((state) => state.set)
   const workspace = useWorkspaceStore((state) => state.workspace)
@@ -89,7 +93,7 @@ const AppShell = (): ReactElement => {
   const authenticated = client?.authenticated ?? false
   const { id, currentNetworkId, networkIds, networkModified } = workspace
 
-  const parsed = parsePathName(location.pathname)
+  // const parsed = parsePathName(location.pathname)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
@@ -100,12 +104,17 @@ const AppShell = (): ReactElement => {
    * Initializing assigned workspace for this session
    */
   const setupWorkspace = (): void => {
+    const parsed: ParsedUrlParams = parsePathName(location.pathname)
+
+    const { workspaceId, networkId } = parsed
+    urlNetIdRef.current = networkId
+
     // Check location and curren workspace ID
     if (id === '') {
       // No workspace ID is set
       // Check if the URL has workspace ID
 
-      let targetWorkspaceId: string = parsed.workspaceId
+      let targetWorkspaceId: string = workspaceId
 
       // TODO: URL design should be consolidated as constants
       if (targetWorkspaceId === 'network') {
@@ -171,32 +180,36 @@ const AppShell = (): ReactElement => {
    * Once this component is initialized, check the workspace ID
    */
   useEffect(() => {
+    const initializeWorkspace = async (): Promise<void> => {
+      try {
+        await initializeDb()
+        setupWorkspace()
+        await loadUiState()
+        restorePanelStates()
+        restoreTableBrowserTabState()
+      } catch (error) {
+        throw new Error(`Failed to initialize the workspace: ${error.message}`)
+      } finally {
+        // initializedRef.current = true
+      }
+    }
+
     // Use this flag to prevent creating a new workspace more than once
     if (!initializedRef.current) {
       initializedRef.current = true
-      initializeDb().catch((e) => {
-        throw e
-      })
-      setupWorkspace()
-      loadUiState()
-        .then(() => {
-          restorePanelStates()
-          restoreTableBrowserTabState()
-        })
-        .catch((e) => {
-          throw e
-        })
+      initializeWorkspace()
     }
   }, [])
 
   const redirect = async (): Promise<void> => {
     if (!initializedRef.current || id === '') return
 
-    const parsed = parsePathName(location.pathname)
+    // const parsed = parsePathName(location.pathname)
+    const parsedNetworkId = urlNetIdRef.current
 
     // At this point, workspace ID is always available
     if (currentNetworkId === '' || currentNetworkId === undefined) {
-      const parsedNetworkId = parsed.networkId
+      // ID from the URL parameter
       if (parsedNetworkId !== '' && parsedNetworkId !== undefined) {
         addNetworkIds(parsedNetworkId)
         setCurrentNetworkId(parsedNetworkId)
@@ -216,7 +229,7 @@ const AppShell = (): ReactElement => {
     } else {
       // This is the network ID in the URL, not yet set as the current network ID
       // No network ID in the URL --> redirect to the current network
-      const { networkId } = parsed
+      const networkId: string = parsedNetworkId
       if (networkId === '' || networkId === undefined) {
         navigate(
           `/${id}/networks/${currentNetworkId}${location.search.toString()}`,
@@ -287,7 +300,7 @@ const AppShell = (): ReactElement => {
 
   useEffect(() => {
     // Now workspace ID is set. route to the correct page
-    if (id !== '') {
+    if (id !== '' && initializedRef.current) {
       redirect()
         .then(() => {})
         .catch((e) => {

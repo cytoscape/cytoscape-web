@@ -80,6 +80,9 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers for optional features
   useHierarchyViewerManager()
 
+  // Check if the component is initialized
+  const isInitializedRef = useRef<boolean>(false)
+
   const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
   const showCreateNetworkFromTableForm = useCreateNetworkFromTableStore(
     (state) => state.setShow,
@@ -185,13 +188,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.layoutEngines,
   )
 
-  const defaultLayout: LayoutAlgorithm = useLayoutStore(
-    (state) => state.preferredLayout,
-  )
-
-  const defaultHierarchyLayout: LayoutAlgorithm = useLayoutStore(
-    (state) => state.preferredHierarchicalLayout,
-  )
   const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
     (state) => state.setIsRunning,
   )
@@ -221,6 +217,20 @@ const WorkSpaceEditor = (): JSX.Element => {
   }
 
   const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
+
+  /**
+   * Initializations
+   */
+  useEffect(() => {
+    const windowWidthListener = (): void => {
+      setTableBrowserWidth(window.innerWidth)
+    }
+    window.addEventListener('resize', windowWidthListener)
+
+    return () => {
+      window.removeEventListener('resize', windowWidthListener)
+    }
+  }, [])
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     const currentToken = await getToken()
@@ -326,7 +336,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     const filterFor = search.get(FilterUrlParams.FILTER_FOR)
     const filterBy = search.get(FilterUrlParams.FILTER_BY)
     const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
-    console.log('Filter states:', filterFor, filterBy, filterRange)
 
     if (filterFor !== null && filterBy !== null && filterRange !== null) {
       const filterConfig: FilterConfig = {
@@ -348,20 +357,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   }
 
   /**
-   * Initializations
-   */
-  useEffect(() => {
-    const windowWidthListener = (): void => {
-      setTableBrowserWidth(window.innerWidth)
-    }
-    window.addEventListener('resize', windowWidthListener)
-
-    return () => {
-      window.removeEventListener('resize', windowWidthListener)
-    }
-  }, [])
-
-  /**
    * Check number of networks in the workspace
    */
   useEffect(() => {
@@ -369,7 +364,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     const summaryCount: number = Object.keys(summaries).length
 
     // No action required if empty or no change
-    if (networkCount === 0) {
+    if (networkCount === 0 && isInitializedRef.current === true) {
       if (summaryCount !== 0) {
         // Remove the last one
         removeSummary(Object.keys(summaries)[0])
@@ -393,7 +388,7 @@ const WorkSpaceEditor = (): JSX.Element => {
 
     // TODO: Load only diffs
     loadNetworkSummaries()
-      .then(() => { })
+      .then(() => {})
       .catch((err) => console.error(err))
   }, [workspace.networkIds])
 
@@ -443,6 +438,9 @@ const WorkSpaceEditor = (): JSX.Element => {
           isLoadingRef.current = false
         })
     }
+
+    // Mark as initialized after loading the first network to avoid 
+    isInitializedRef.current = true
   }, [currentNetworkId])
 
   /**
