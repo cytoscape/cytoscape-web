@@ -19,7 +19,14 @@ import Papa from 'papaparse'
 import 'primereact/resources/themes/md-light-indigo/theme.css'
 import { DataTable, DataTableValue } from 'primereact/datatable'
 import { Column } from 'primereact/column'
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
 import {
@@ -45,7 +52,10 @@ import {
   selectAllColumns,
   valueTypeName2Label,
 } from '../../model/impl/CreateNetworkFromTable'
-import { validateColumnValues } from '../../model/impl/ParseValues'
+import {
+  generateInferredColumnAssignment,
+  validateColumnValues,
+} from '../../model/impl/ParseValues'
 import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
@@ -78,8 +88,28 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const [skipNLines, setSkipNLines] = useState(0)
   const [useFirstRowAsColumns, setUseFirstRowAsColumns] = useState(true)
 
-  const [rows, setRows] = useState<DataTableValue[]>([])
-  const [columns, setColumns] = useState<ColumnAssignmentState[]>([])
+  const [rows, setRows] = useState<DataTableValue[]>(() => {
+    const result = Papa.parse(text, {
+      header: useFirstRowAsColumns,
+      skipEmptyLines: true,
+    })
+    let headers: string[] = []
+    headers = result.meta.fields as string[]
+    return result.data as DataTableValue[]
+  })
+  const [columns, setColumns] = useState<ColumnAssignmentState[]>(() => {
+    const result = Papa.parse(text, {
+      header: useFirstRowAsColumns,
+      skipEmptyLines: true,
+    })
+    let headers: string[] = []
+    headers = result.meta.fields as string[]
+    const nextColumns = generateInferredColumnAssignment(
+      rows as DataTableValue[],
+    )
+
+    return nextColumns
+  })
 
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
@@ -105,20 +135,12 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
       skipEmptyLines: true,
     })
     const rows = result.data.slice(skipNLines + (useFirstRowAsColumns ? 0 : 1))
-
-    // setRows(result.data as DataTableValue[]);
-    // const headers = result.meta.fields ?? Object.keys(result.data[0] as { [s: string]: string });
     let headers: string[]
     if (useFirstRowAsColumns) {
       headers = result.meta.fields as string[]
       setRows(rows as DataTableValue[])
       const nextColumns = headers.map((c, i) => {
         return {
-          ...{
-            meaning: ColumnAssignmentType.EdgeAttribute,
-            dataType: ValueTypeName.String,
-            invalidValues: [],
-          },
           ...(columns[i] ?? {}),
           name: headers[i],
         }

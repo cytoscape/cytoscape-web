@@ -43,7 +43,10 @@ import {
   validNetworkKeyColumns,
   findValidRowsToJoin,
 } from '../../model/impl/JoinTableToNetwork'
-import { validateColumnValues } from '../../model/impl/ParseValues'
+import {
+  generateInferredColumnAppend,
+  validateColumnValues,
+} from '../../model/impl/ParseValues'
 import { ValueTypeNameRender, ValueTypeForm } from '../ValueTypeNameForm'
 import { ColumnAppendTypeRender, ColumnAppendForm } from './ColumnAppendForm'
 import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
@@ -88,8 +91,26 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
   const [skipNLines, setSkipNLines] = useState(0)
   const [useFirstRowAsColumns, setUseFirstRowAsColumns] = useState(true)
 
-  const [rows, setRows] = useState<DataTableValue[]>([])
-  const [columns, setColumns] = useState<ColumnAppendState[]>([])
+  const [rows, setRows] = useState<DataTableValue[]>(() => {
+    const result = Papa.parse(rawText, {
+      header: useFirstRowAsColumns,
+      skipEmptyLines: true,
+    })
+    let headers: string[] = []
+    headers = result.meta.fields as string[]
+    return result.data as DataTableValue[]
+  })
+  const [columns, setColumns] = useState<ColumnAppendState[]>(() => {
+    const result = Papa.parse(rawText, {
+      header: useFirstRowAsColumns,
+      skipEmptyLines: true,
+    })
+    let headers: string[] = []
+    headers = result.meta.fields as string[]
+    const nextColumns = generateInferredColumnAppend(rows as DataTableValue[])
+
+    return nextColumns
+  })
 
   // const setTables = useJoinTableToNetworkStore((state) => state.setTables)
 
@@ -179,19 +200,12 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
     })
     const rows = result.data.slice(skipNLines + (useFirstRowAsColumns ? 0 : 1))
 
-    // setRows(result.data as DataTableValue[]);
-    // const headers = result.meta.fields ?? Object.keys(result.data[0] as { [s: string]: string });
     let headers: string[]
     if (useFirstRowAsColumns) {
       headers = result.meta.fields as string[]
       setRows(rows as DataTableValue[])
       const nextColumns = headers.map((c, i) => {
         return {
-          ...{
-            meaning: ColumnAppendType.Attribute,
-            dataType: ValueTypeName.String,
-            invalidValues: [],
-          },
           ...(columns[i] ?? {}),
           name: headers[i],
         }

@@ -764,8 +764,8 @@ export default function TableBrowser(props: {
             onHeaderClicked={onHeaderClicked}
             onColumnMoved={onColMoved}
             onItemHovered={(e) => onItemHovered(e.location)}
-            overscrollX={200}
-            overscrollY={200}
+            overscrollX={10}
+            overscrollY={10}
             onColumnResizeEnd={onColumnResize}
             width={props.width}
             height={props.height - 85}
@@ -793,8 +793,8 @@ export default function TableBrowser(props: {
             onHeaderClicked={onHeaderClicked}
             onColumnMoved={onColMoved}
             onItemHovered={(e) => onItemHovered(e.location)}
-            overscrollX={200}
-            overscrollY={200}
+            overscrollX={10}
+            overscrollY={10}
             onColumnResizeEnd={onColumnResize}
             width={props.width}
             height={props.height - 85}
