@@ -1,6 +1,8 @@
 import { ValueTypeName, ValueType } from '../../../../models/TableModel'
 import { ColumnAppendState } from '../ColumnAppendState'
+import { ColumnAppendType } from '../ColumnAppendType'
 import { ColumnAssignmentState } from '../ColumnAssignmentState'
+import { ColumnAssignmentType } from '../ColumnAssignmentType'
 import { DelimiterType } from '../DelimiterType'
 import { DataTableValue } from 'primereact/datatable'
 
@@ -112,21 +114,25 @@ export type TypeInferenceResult = {
   inferredType?: ValueTypeName
 }
 
+// ordered list of types
+// this is used for tie breakers in the inferred type
+// going from most specific to least specific
+// elements in the list are ordered by priority from greatest to least
+export const typeOrder: ValueTypeName[] = [
+  ValueTypeName.Double,
+  ValueTypeName.Long,
+  ValueTypeName.Integer,
+  ValueTypeName.Boolean,
+  ValueTypeName.ListLong,
+  ValueTypeName.ListInteger,
+  ValueTypeName.ListDouble,
+  ValueTypeName.ListBoolean,
+  ValueTypeName.String,
+  ValueTypeName.ListString,
+]
+
 // given a list of string values from a column, infer the type of the column
 export function inferColumnType(values: string[]): TypeInferenceResult {
-  const typeOrder: ValueTypeName[] = [
-    ValueTypeName.String,
-    ValueTypeName.Long,
-    ValueTypeName.Integer,
-    ValueTypeName.Double,
-    ValueTypeName.Boolean,
-    ValueTypeName.ListString,
-    ValueTypeName.ListLong,
-    ValueTypeName.ListInteger,
-    ValueTypeName.ListDouble,
-    ValueTypeName.ListBoolean,
-  ]
-
   // record of how many column values match each value type
   const valueTypeCounts: Map<ValueTypeName, number> = new Map()
 
@@ -166,4 +172,70 @@ export function inferColumnType(values: string[]): TypeInferenceResult {
     columnTypesWithMaxMatches,
     inferredType: winningType,
   }
+}
+
+export function generateInferredColumnAssignment(
+  rows: DataTableValue[],
+): ColumnAssignmentState[] {
+  const inferredColumns: ColumnAssignmentState[] = []
+  if (rows.length === 0) {
+    return inferredColumns
+  }
+
+  const firstRow = rows[0]
+
+  Object.keys(firstRow).forEach((key) => {
+    const values = rows.map((row) => row[key])
+
+    const typeInferenceResult = inferColumnType(values)
+
+    let inferredType = typeInferenceResult.inferredType
+
+    if (inferredType !== undefined) {
+      inferredColumns.push({
+        name: key,
+        dataType: inferredType,
+        meaning: ColumnAssignmentType.EdgeAttribute,
+        invalidValues: [],
+      })
+    } else {
+      inferredColumns.push({
+        name: key,
+        dataType: ValueTypeName.String,
+        meaning: ColumnAssignmentType.EdgeAttribute,
+        invalidValues: [],
+      })
+    }
+  })
+
+  return inferredColumns
+}
+
+export function generateInferredColumnAppend(
+  rows: DataTableValue[],
+): ColumnAppendState[] {
+  const inferredColumns: ColumnAppendState[] = []
+  if (rows.length === 0) {
+    return inferredColumns
+  }
+
+  const firstRow = rows[0]
+
+  Object.keys(firstRow).forEach((key) => {
+    const values = rows.map((row) => row[key])
+
+    const typeInferenceResult = inferColumnType(values)
+
+    let inferredType = typeInferenceResult.inferredType
+
+    inferredColumns.push({
+      name: key,
+      dataType: inferredType ?? ValueTypeName.String,
+      meaning: ColumnAppendType.Attribute,
+      invalidValues: [],
+      rowsToJoin: [],
+    })
+  })
+
+  return inferredColumns
 }
