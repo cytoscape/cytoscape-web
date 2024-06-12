@@ -20,7 +20,7 @@ import { Column } from '../../../models/TableModel/Column';
 import { Edge } from '../../../models/NetworkModel/Edge';
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
 import { MatchingTableRow } from '../models/MatchingTable';
-import { intersectionMerge } from '../models/Impl/ntersectionMerge';
+import { intersectionMerge } from '../models/Impl/IntersectionMerge';
 
 beforeEach(() => {
     jest.resetAllMocks();

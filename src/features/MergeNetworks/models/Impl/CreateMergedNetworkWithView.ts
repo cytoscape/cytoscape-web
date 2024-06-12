@@ -1,6 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep';
 import { unionMerge } from './UnionMerge';
-import { intersectionMerge } from './ntersectionMerge';
+import { intersectionMerge } from './IntersectionMerge';
 import { differenceMerge } from './DifferenceMerge';
 import { MatchingTable } from '../MatchingTable';
 import { IdType } from '../../../../models/IdType';
