@@ -1,6 +1,6 @@
 import { ColorType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box } from '@mui/material'
-import { PhotoshopPicker, SwatchesPicker, CompactPicker } from 'react-color'
+import { ChromePicker, SwatchesPicker, CompactPicker } from 'react-color'
 import React from 'react'
 import debounce from 'lodash.debounce'
 import {
@@ -25,7 +25,7 @@ export function ColorPicker(props: {
 
   return (
     <Box>
-      <PhotoshopPicker
+      <ChromePicker
         color={localColorValue}
         onChange={(color: any) => {
           setLocalColorValue(color.hex)
