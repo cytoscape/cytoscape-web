@@ -69,7 +69,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const [openConfirmation, setOpenConfirmation] = useState(false);
     const [confirmationTitle, setConfirmationTitle] = useState('');
     const [confirmationMessage, setConfirmationMessage] = useState('');
-
+    const [onConfirmation, setOnConfirmation] = useState<() => void>(() => { });
     // Record the visual style of the networks to be merged
     const [visualStyleRecord, setvisualStyleRecord] = useState<Record<IdType, VisualStyle>>({});
     // Record the information of the networks to be merged
@@ -163,6 +163,17 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     };
     // Function to add selected networks to the 'Networks to Merge' list
     const handleAddNetwork = async () => {
+        if (mergeOpType === MergeType.difference && (toMergeNetworksList.length + selectedAvailable.length) > 2) {
+            setConfirmationTitle("Warning!")
+            setConfirmationMessage("Difference operation only supports two networks.\
+                                     If you want to replace the selected network, remove\
+                                     it first and select a new")
+            setOnConfirmation(() => {//only keep the first two networks in the networksToMerge List
+                setOpenConfirmation(false);
+            })
+            setOpenConfirmation(true)
+            return
+        }
         const newAvailableNetworksList = [...availableNetworksList];
         const newMatchingCols: Record<string, Column> = {};
         const newNetworkRecords: Record<IdType, NetworkRecord> = {};
@@ -304,6 +315,15 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const handleMergeTypeChange = (event: React.MouseEvent<HTMLElement>, opType: string) => {
         if (opType !== null) {
             if (opType === MergeType.difference && toMergeNetworksList.length > 2) {
+                setConfirmationTitle("Warning: Only two networks will be kept!")
+                setConfirmationMessage("Only the first two networks in the selected network\
+                                        list will be merged for the difference operation.\
+                                        All the other selected networks will be removed.Are you sure ? ")
+                setOnConfirmation(() => {//only keep the first two networks in the networksToMerge List
+
+                    setOpenConfirmation(false);
+                    setMergeOpType(MergeType.difference);
+                })
                 setOpenConfirmation(true)
             } else {
                 setMergeOpType(opType as MergeType);
@@ -558,9 +578,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                 </Button>
             </DialogActions>
             <ConfirmationDialog
-                title="Warning: Only two networks will be kept!"
-                message="Only the first two networks in the selected network list will be merged for the difference operation. All the other selected networks will be removed. Are you sure?"
-                onConfirm={() => { }}
+                title={confirmationTitle}
+                message={confirmationMessage}
+                onConfirm={onConfirmation}
                 open={openConfirmation}
                 setOpen={setOpenConfirmation}
                 buttonTitle="Yes"
