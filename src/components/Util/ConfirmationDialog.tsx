@@ -18,10 +18,12 @@ export const ConfirmationDialog = (
 ): JSX.Element => {
   const { open, setOpen, message, title, buttonTitle, onConfirm } = props
 
-  const handleCancel = (): void => {
+  const handleCancel = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    e.stopPropagation()
     setOpen(false)
   }
-  const handleConfirm = (): void => {
+  const handleConfirm = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    e.stopPropagation()
     setOpen(false)
     onConfirm()
   }
