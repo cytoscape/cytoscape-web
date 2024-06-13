@@ -61,6 +61,9 @@ export const CirclePackingPanel = ({
   // Reference to check the Circle Packing is initialized or not
   const initRef = useRef(false)
 
+  // Keep the transform state for zooming
+  const [transform, setTransform] = useState(d3Zoom.zoomIdentity)
+
   // Check the state of the search result
   const searchState: SearchState = useFilterStore((state) => state.search.state)
 
@@ -396,10 +399,10 @@ export const CirclePackingPanel = ({
       })
 
     // Now this should work
-    const zoom = d3Zoom.zoom().scaleExtent([0.1, 40]).on('zoom', handleZoom)
-    svg.call(zoom)
+    // const zoom = d3Zoom.zoom().scaleExtent([0.1, 40]).on('zoom', handleZoom)
+    // svg.call(zoom)
     updateForZoom(1)
-    fitCircle()
+    // fitCircle()
   }
 
   const addLabels = (
