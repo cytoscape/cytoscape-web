@@ -17,7 +17,6 @@ import {
   getFontSize,
   getLabel,
   getWordLines,
-  toCenter,
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
 import { useViewModelStore } from '../../../../store/ViewModelStore'
@@ -31,8 +30,10 @@ import { useSubNetworkStore } from '../../store/SubNetworkStore'
 import { useTableStore } from '../../../../store/TableStore'
 import { SearchState } from '../../../../models/FilterModel/SearchState'
 import { useFilterStore } from '../../../../store/FilterStore'
+import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
 
 interface CirclePackingPanelProps {
+  rendererId: string
   network: Network
   visible: boolean
   initialSize?: { w: number; h: number }
@@ -49,6 +50,7 @@ const colorScale = getColorMapper([0, 5])
  *
  */
 export const CirclePackingPanel = ({
+  rendererId,
   network,
   initialSize,
   visible,
@@ -110,6 +112,14 @@ export const CirclePackingPanel = ({
   // Keep the last zoom level for comparison
   const lastZoomLevelRef = useRef(0)
 
+  // For fit function
+  const getRendererFunction = useRendererFunctionStore(
+    (state) => state.getFunction,
+  )
+  const setRendererFunction = useRendererFunctionStore(
+    (state) => state.setFunction,
+  )
+
   useEffect(() => {
     console.log('# Network View Visibility changed', visible, initialSize)
     if (!visible) return
@@ -133,15 +143,65 @@ export const CirclePackingPanel = ({
     }
 
     // Move to center
+    const fitFunction = getRendererFunction(rendererId, 'fit')
+    if (fitFunction === undefined) {
+      console.log('Registering fit function for CP renderer')
+      setRendererFunction(rendererId, 'fit', fitCircle)
+    }
     if (initialSize !== undefined && initialSize.w > 0 && initialSize.h > 0) {
       const wrapper = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
-      toCenter(wrapper, { width: initialSize.w, height: initialSize.h })
+      // toCenter(wrapper, { width: initialSize.w, height: initialSize.h })
     }
   }, [visible])
 
+  const fitCircle = () => {
+    if (ref.current === null) return
+
+    const { width, height } = ref.current.getBoundingClientRect()
+    const parentWidth = width
+    const parentHeight = height
+
+    const wrapper = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
+    if (wrapper === null) return
+
+    const node = wrapper.node() as SVGGraphicsElement
+    if (node === null) return
+
+    const bbox = node.getBBox()
+    const wrapperWidth = bbox.width
+    const wrapperHeight = bbox.height
+
+    const scaleX = parentWidth / wrapperWidth
+    const scaleY = parentHeight / wrapperHeight
+    const scale = Math.min(scaleX, scaleY) // Fit to the smaller dimension
+
+    const scaledWidth = wrapperWidth * scale
+    const scaledHeight = wrapperHeight * scale
+
+    let translateX = 0
+    let translateY = 0
+
+    if (parentWidth > parentHeight) {
+      // Wider rectangle area. Fit to the height to display the whole area
+      translateX = 0
+      translateY = (parentHeight - scaledHeight) / 2
+    } else {
+      // Tall area.
+      translateX = (parentWidth - scaledWidth) / 2
+      translateY = 0
+    }
+
+    console.log('Scaling factor::', scale, translateX, translateY)
+    wrapper.attr(
+      'transform',
+      `translate(${translateX},${translateY}) scale(${scale})`,
+    )
+  }
+
   const handleZoom = useCallback(
     (e: any): void => {
-      const selectedArea = d3Selection.select('svg g')
+      const selectedArea = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
+      // const selectedArea = d3Selection.select('svg g')
       selectedArea.attr('transform', e.transform)
       const currentZoomLevel = e.transform.k
       const maxDepth = Math.ceil(currentZoomLevel)
@@ -238,14 +298,6 @@ export const CirclePackingPanel = ({
   }
 
   const draw = (rootNode: d3Hierarchy.HierarchyNode<D3TreeNode>): void => {
-    const width = ref.current?.clientWidth ?? 0
-    const height = ref.current?.clientHeight ?? 0
-    // const pack: d3Hierarchy.PackLayout<any> = d3Hierarchy
-    //   .pack()
-    //   .size([width, height])
-    //   .padding(0)
-    // pack(rootNode)
-
     // Pick the base tag
     const svg: any = d3Selection.select(ref.current)
     svg.selectAll('*').remove()
@@ -347,7 +399,7 @@ export const CirclePackingPanel = ({
     const zoom = d3Zoom.zoom().scaleExtent([0.1, 40]).on('zoom', handleZoom)
     svg.call(zoom)
     updateForZoom(1)
-    toCenter(wrapper, { width, height })
+    fitCircle()
   }
 
   const addLabels = (

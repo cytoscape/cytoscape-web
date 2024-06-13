@@ -34,6 +34,8 @@ export interface Query {
 
 const queryClient = new QueryClient()
 
+export const CP_RENDERER_ID: string = 'circlePacking'
+
 export const MainPanel = (): JSX.Element => {
   const [subNetworkName, setSubNetworkName] = useState<string>('')
   const [query, setQuery] = useState<Query>({ nodeIds: [] })
@@ -70,7 +72,7 @@ export const MainPanel = (): JSX.Element => {
   const renderers = useRendererStore((state) => state.renderers)
 
   const CirclePackingRenderer: Renderer = {
-    id: 'circlePacking',
+    id: CP_RENDERER_ID,
     name: 'Cell View',
     description: 'Circle Packing Renderer',
     getComponent: (
@@ -79,6 +81,7 @@ export const MainPanel = (): JSX.Element => {
       visible: boolean,
     ) => (
       <CirclePackingPanel
+        rendererId={CP_RENDERER_ID}
         network={networkData}
         initialSize={initialSize}
         visible={visible}

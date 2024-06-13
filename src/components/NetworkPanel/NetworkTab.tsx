@@ -42,7 +42,7 @@ export const NetworkTab = ({
       onClick={handleClick}
     >
       {rendererComponent}
-      <FloatingToolBar />
+      <FloatingToolBar rendererId={renderer.id} />
     </Box>
   )
 }

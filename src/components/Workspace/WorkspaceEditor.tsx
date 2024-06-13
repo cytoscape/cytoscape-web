@@ -439,7 +439,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         })
     }
 
-    // Mark as initialized after loading the first network to avoid 
+    // Mark as initialized after loading the first network to avoid
     isInitializedRef.current = true
   }, [currentNetworkId])
 

@@ -1,4 +1,4 @@
-import { Box, Container, Tab, Tabs } from '@mui/material'
+import { Box, Tab, Tabs } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
 import { NetworkView } from '../../models/ViewModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
@@ -48,8 +48,7 @@ export const NetworkTabs = ({
 
   const rendererList = Object.values(renderers)
   return (
-    <Container
-      disableGutters={true}
+    <Box
       sx={{
         width: '100%',
         height: '100%',
@@ -81,6 +80,6 @@ export const NetworkTabs = ({
           )
         })}
       </Box>
-    </Container>
+    </Box>
   )
 }
