@@ -68,10 +68,6 @@ export const NetworkSeachField = (props: {
         type="text"
         fullWidth
         variant="standard"
-        onFocus={(e) => {
-          e.stopPropagation()
-          e.preventDefault()
-        }}
         onChange={(e) => setSearchValue(e.target.value)}
         value={searchValue}
         onKeyDown={handleKeyDown}
