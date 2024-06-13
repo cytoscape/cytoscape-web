@@ -12,7 +12,6 @@ import * as d3Scale from 'd3-scale'
 // import * as d3Color from 'd3-color'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 
-
 const enumTypes: Set<VisualPropertyValueTypeName> = new Set([
   VisualPropertyValueTypeName.NodeShape,
   VisualPropertyValueTypeName.EdgeLine,
@@ -25,7 +24,23 @@ const enumTypes: Set<VisualPropertyValueTypeName> = new Set([
 ])
 
 // all enum value strings are in lower case
-const enumValueNormalizationFn = (value: string): string => value.toLowerCase()
+const enumValueNormalizationFn = (
+  pm: PassthroughMappingFunction,
+  value: VisualPropertyValueType,
+): VisualPropertyValueType => {
+  if (pm.visualPropertyType === VisualPropertyValueTypeName.Visibility) {
+    if (typeof value === 'string') {
+      const normalizedValue = value.toLowerCase()
+      if (normalizedValue === 'true' || normalizedValue === 'false') {
+        return JSON.parse(normalizedValue)
+      }
+    }
+    if (typeof value === 'boolean') {
+      return value
+    }
+  }
+  return value
+}
 /**
  * Derive the mapping function from given VMF object
  */
@@ -41,10 +56,9 @@ export const createPassthroughMapper = (
 ): Mapper => {
   return (value: ValueType): VisualPropertyValueType => {
     if (enumTypes.has(pm.visualPropertyType)) {
-      return enumValueNormalizationFn(value as string) as VisualPropertyValueType
+      return enumValueNormalizationFn(pm, value as VisualPropertyValueType)
     } else {
       return (value as VisualPropertyValueType) ?? pm.defaultValue
-
     }
   }
 }
