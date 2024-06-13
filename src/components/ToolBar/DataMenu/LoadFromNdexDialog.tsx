@@ -387,6 +387,14 @@ export const LoadFromNdexDialog = (
   const { open, handleClose } = props
   return (
     <Dialog
+      onKeyDown={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
+      }}
+      onClick={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
+      }}
       PaperProps={{
         sx: {
           minHeight: 600,
