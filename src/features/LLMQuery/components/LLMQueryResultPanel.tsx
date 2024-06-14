@@ -103,7 +103,7 @@ export const LLMQueryResultPanel = (): ReactElement => {
   )
 
   return (
-    <Box sx={{ p: 1 }}>
+    <Box sx={{ overflow: 'auto', width: '100%', height: '100%', p: 1 }}>
       <Box>
         <Tooltip title="enter a comma space seperated list of gene names e.g. 'FOXA1, HNF1A, PDX1' ">
           <TextField
@@ -119,10 +119,12 @@ export const LLMQueryResultPanel = (): ReactElement => {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            mt: 1,
+            mb: 1
           }}
         >
           {regenerateResponseButton}
-          <Box>{`Model: ${LLMModel}`}</Box>
+          <Box sx={{ ml: 2 }}>{`Model: ${LLMModel}`}</Box>
         </Box>
       </Box>
       <Box>
