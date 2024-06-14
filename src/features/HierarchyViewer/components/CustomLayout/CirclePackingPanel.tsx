@@ -61,6 +61,8 @@ export const CirclePackingPanel = ({
   // Reference to check the Circle Packing is initialized or not
   const initRef = useRef(false)
 
+  const zoomRef = useRef<d3Zoom.ZoomBehavior<Element, any> | null>(null)
+
   // Keep the transform state for zooming
   const [transform, setTransform] = useState(d3Zoom.zoomIdentity)
 
@@ -152,11 +154,15 @@ export const CirclePackingPanel = ({
       setRendererFunction(rendererId, 'fit', fitCircle)
     }
     if (initialSize !== undefined && initialSize.w > 0 && initialSize.h > 0) {
-      const wrapper = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
-      // toCenter(wrapper, { width: initialSize.w, height: initialSize.h })
+      fitCircle()
     }
   }, [visible])
 
+  /**
+   * Fit the circle to the view port
+   *
+   * @returns
+   */
   const fitCircle = () => {
     if (ref.current === null) return
 
@@ -164,7 +170,9 @@ export const CirclePackingPanel = ({
     const parentWidth = width
     const parentHeight = height
 
-    const wrapper = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
+    const wrapper = d3Selection.select(
+      `g.${CP_WRAPPER_CLASS}`,
+    ) as d3Selection.Selection<Element, any, any, any>
     if (wrapper === null) return
 
     const node = wrapper.node() as SVGGraphicsElement
@@ -195,29 +203,35 @@ export const CirclePackingPanel = ({
     }
 
     console.log('Scaling factor::', scale, translateX, translateY)
-    wrapper.attr(
-      'transform',
-      `translate(${translateX},${translateY}) scale(${scale})`,
-    )
+    const newTransform = d3Zoom.zoomIdentity
+      .translate(translateX, translateY)
+      .scale(scale)
+
+    if (zoomRef.current === null) return
+
+    setTransform(newTransform)
+    zoomRef.current.transform(wrapper, newTransform)
   }
 
-  const handleZoom = useCallback(
-    (e: any): void => {
-      const selectedArea = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
-      // const selectedArea = d3Selection.select('svg g')
-      selectedArea.attr('transform', e.transform)
-      const currentZoomLevel = e.transform.k
-      const maxDepth = Math.ceil(currentZoomLevel)
+  const handleZoom = (e: any): void => {
+    const selectedArea = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
+    selectedArea.attr('transform', e.transform)
+    const currentZoomLevel = e.transform.k
+    const maxDepth = Math.ceil(currentZoomLevel)
 
-      if (selectedDepthRef.current > maxDepth) {
-        lastZoomLevelRef.current = selectedDepthRef.current
-      } else {
-        lastZoomLevelRef.current = maxDepth
-        updateForZoom(maxDepth)
-      }
-    },
-    [expandAll],
-  )
+    if (selectedDepthRef.current > maxDepth) {
+      lastZoomLevelRef.current = selectedDepthRef.current
+    } else {
+      lastZoomLevelRef.current = maxDepth
+      updateForZoom(maxDepth)
+    }
+  }
+  useEffect(() => {
+    if (zoomRef.current !== null && ref.current !== null) {
+      const selection = d3Selection.select(ref.current)
+      selection.call(zoomRef.current.transform, d3Zoom.zoomIdentity)
+    }
+  }, [transform])
 
   useEffect(() => {
     updateForZoom(lastZoomLevelRef.current)
@@ -233,14 +247,24 @@ export const CirclePackingPanel = ({
   }, [searchState])
 
   useEffect(() => {
-    const svg: any = d3Selection.select(ref.current)
-    const zoom = d3Zoom.zoom().scaleExtent([0.1, 40]).on('zoom', handleZoom)
-    svg.call(zoom)
+    if (ref.current === null) return
+    if (zoomRef.current !== null) {
+      return
+    }
 
+    const svg: any = d3Selection.select(ref.current)
+    const zoomBehavior: d3Zoom.ZoomBehavior<Element, any> = d3Zoom
+      .zoom()
+      .scaleExtent([0.1, 40])
+      .on('zoom', handleZoom)
+
+    // Share zoom behavior as a state
+    zoomRef.current = zoomBehavior
+    d3Selection.select(ref.current).call(zoomRef.current)
     return () => {
       svg.on('zoom', null)
     }
-  }, [handleZoom])
+  }, [])
 
   // For tooltip
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false)
