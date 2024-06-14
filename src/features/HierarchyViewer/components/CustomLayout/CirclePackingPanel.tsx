@@ -61,6 +61,7 @@ export const CirclePackingPanel = ({
   // Reference to check the Circle Packing is initialized or not
   const initRef = useRef(false)
 
+  // Keep the zoom behavior as a state
   const zoomRef = useRef<d3Zoom.ZoomBehavior<Element, any> | null>(null)
 
   // Keep the transform state for zooming
@@ -126,7 +127,6 @@ export const CirclePackingPanel = ({
   )
 
   useEffect(() => {
-    console.log('# Network View Visibility changed', visible, initialSize)
     if (!visible) return
 
     if (selectedNodes.length > 0) {
@@ -189,20 +189,9 @@ export const CirclePackingPanel = ({
     const scaledWidth = wrapperWidth * scale
     const scaledHeight = wrapperHeight * scale
 
-    let translateX = 0
-    let translateY = 0
+    const translateX = (parentWidth - scaledWidth) / 2
+    const translateY = (parentHeight - scaledHeight) / 2
 
-    if (parentWidth > parentHeight) {
-      // Wider rectangle area. Fit to the height to display the whole area
-      translateX = 0
-      translateY = (parentHeight - scaledHeight) / 2
-    } else {
-      // Tall area.
-      translateX = (parentWidth - scaledWidth) / 2
-      translateY = 0
-    }
-
-    console.log('Scaling factor::', scale, translateX, translateY)
     const newTransform = d3Zoom.zoomIdentity
       .translate(translateX, translateY)
       .scale(scale)
@@ -230,6 +219,7 @@ export const CirclePackingPanel = ({
     if (zoomRef.current !== null && ref.current !== null) {
       const selection = d3Selection.select(ref.current)
       selection.call(zoomRef.current.transform, d3Zoom.zoomIdentity)
+      zoomRef.current.transform(selection, transform)
     }
   }, [transform])
 
@@ -480,8 +470,6 @@ export const CirclePackingPanel = ({
     })
 
     // Create a new Circle Packing view model
-    // const width = ref.current?.clientWidth ?? 0
-    // const height = ref.current?.clientHeight ?? 0
     const width = initialSize?.w ?? 0
     const height = initialSize?.h ?? 0
     const cpViewModel: CirclePackingView = createCirclePackingView(
