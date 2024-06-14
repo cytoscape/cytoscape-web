@@ -39,13 +39,14 @@ export function unionMerge(fromNetworks: IdType[], toNetworkId: IdType, networkR
     // record the edge
     const edgeMap = new Map<string, IdType[]>();
 
-    networkRecords[baseNetworkId]?.nodeTable.rows.forEach((entry, oriId) => {
+    networkRecords[baseNetworkId]?.network.nodes.forEach((nodeObj) => {
         const newNodeId: string = `${globalNodeId++}`;
-        node2nodeMap.set(`${baseNetworkId}-${oriId}`, newNodeId);
-        if (nodeIdSet.has(oriId)) {
+        node2nodeMap.set(`${baseNetworkId}-${nodeObj.id}`, newNodeId);
+        if (nodeIdSet.has(nodeObj.id)) {
             throw new Error(`Duplicate node id found in the network:${baseNetworkId}`);
         }
-        nodeIdSet.add(oriId);
+        nodeIdSet.add(nodeObj.id);
+        const entry = networkRecords[baseNetworkId].nodeTable.rows.get(nodeObj.id);
         if (entry === undefined) {
             throw new Error("Node not found in the node table");
         }
@@ -57,7 +58,7 @@ export function unionMerge(fromNetworks: IdType[], toNetworkId: IdType, networkR
                 initialNodeRows[matchedNodeId] = mergeAttributes( //merge within the network
                     initialNodeRows[matchedNodeId], castAttributes(entry, baseNetworkId, nodeAttributeMapping)
                 )
-                node2nodeMap.set(`${baseNetworkId}-${oriId}`, matchedNodeId);//reset the node2nodeMap
+                node2nodeMap.set(`${baseNetworkId}-${nodeObj.id}`, matchedNodeId);//reset the node2nodeMap
             }
 
         } else {

@@ -12,6 +12,9 @@ import { preprocess, castAttributes, addMergedAtt, getKeybyAttribute, mergeAttri
 export function intersectionMerge(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>,
     mergeWithinNetwork: boolean = false, mergeOnlyNodes: boolean = false): NetworkRecord {
+    if (fromNetworks.length < 2) {
+        throw new Error('Intersection merge must be operated between two or more networks.')
+    }
     const nodeMergedAttributes = getMergedAttributes(nodeAttributeMapping)
     const edgeMergedAttributes = getMergedAttributes(edgeAttributeMapping)
     if (duplicateAttName(nodeMergedAttributes) || duplicateAttName(edgeMergedAttributes)) {

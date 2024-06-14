@@ -70,8 +70,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const [confirmationTitle, setConfirmationTitle] = useState('');
     const [confirmationMessage, setConfirmationMessage] = useState('');
     const [onConfirmation, setOnConfirmation] = useState<() => void>(() => { });
-    // Record the visual style of the networks to be merged
-    const [visualStyleRecord, setvisualStyleRecord] = useState<Record<IdType, VisualStyle>>({});
     // Record the information of the networks to be merged
     const [networkRecords, setNetworkRecords] = useState<Record<IdType, NetworkRecord>>({});
     // Record the matching columns for each network
@@ -167,14 +165,14 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             setConfirmationTitle("Warning!")
             setConfirmationMessage("Difference operation only supports two networks.\
                                      If you want to replace the selected network, remove\
-                                     it first and select a new")
-            setOnConfirmation(() => {//only keep the first two networks in the networksToMerge List
+                                     it first and select a new one.")
+            setOnConfirmation(() => () => {
+                setSelectedAvailable([])
                 setOpenConfirmation(false);
-            })
+            });
             setOpenConfirmation(true)
             return
         }
-        const newAvailableNetworksList = [...availableNetworksList];
         const newMatchingCols: Record<string, Column> = {};
         const newNetworkRecords: Record<IdType, NetworkRecord> = {};
         for (const net of selectedAvailable) {
@@ -182,10 +180,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             let netData = networkRecords[net[1]];  // Attempt to use cached data
             if (!netData) {
                 netData = await loadNetworkById(net[1]);  // Fetch and use fresh data if not available
-                const netIndex = newAvailableNetworksList.findIndex(n => n[1] === net[1]);
-                if (netIndex > -1) {
-                    newAvailableNetworksList.splice(netIndex, 1);
-                }
             }
             newNetworkRecords[net[1]] = netData;
             // Set the default matching column for the network
@@ -219,11 +213,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
         //Todo: whether to delete all these information or not
         const newNetworkRecords = { ...networkRecords };
         const newMatchingCols = { ...matchingCols };
-        const newVisualStyles = { ...visualStyleRecord };
         selectedToMerge.forEach(net => {
             delete newNetworkRecords[net[1]];
             delete newMatchingCols[net[1]];
-            delete newVisualStyles[net[1]];
         });
         // Remove the networks from the matching tables
         removeNetsFromNodeTable(selectedToMerge.map(pair => pair[1]));
@@ -232,7 +224,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
         // Update the state stores
         setNetworkRecords(newNetworkRecords);
         setMatchingCols(newMatchingCols);
-        setvisualStyleRecord(newVisualStyles);
         setSelectedToMerge([]);
     };
 
@@ -296,6 +287,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                     isReady = false
                 }
             })
+            // Intersection Operation must take two or more networks while Difference Operation must take exactly two networks
+            if (mergeOpType === MergeType.intersection && toMergeNetworksList.length < 2) isReady = false
+            if (mergeOpType === MergeType.difference && toMergeNetworksList.length !== 2) isReady = false
             setReadyToMerge(isReady);
         } else {
             setReadyToMerge(false);
@@ -303,7 +297,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     }, [toMergeNetworksList, matchingCols, networkRecords]);
     // Set the initial state of the networkRecords
     useEffect(() => {
-        setNetworkRecords(networksLoaded)
+        setNetworkRecords(networksLoaded);
         return () => {
             resetNodeMatchingTable();
             resetEdgeMatchingTable();
@@ -319,10 +313,24 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                 setConfirmationMessage("Only the first two networks in the selected network\
                                         list will be merged for the difference operation.\
                                         All the other selected networks will be removed.Are you sure ? ")
-                setOnConfirmation(() => {//only keep the first two networks in the networksToMerge List
-
-                    setOpenConfirmation(false);
+                setOnConfirmation(() => () => {//only keep the first two networks in the networksToMerge List
+                    const networksToRemove = toMergeNetworksList.slice(2)
+                    const newNetworkRecords = { ...networkRecords };
+                    const newMatchingCols = { ...matchingCols };
+                    networksToRemove.forEach(net => {
+                        delete newNetworkRecords[net[1]];
+                        delete newMatchingCols[net[1]];
+                    });
+                    removeNetsFromNodeTable(networksToRemove.map(pair => pair[1]));
+                    removeNetsFromEdgeTable(networksToRemove.map(pair => pair[1]));
+                    removeNetsFromNetTable(networksToRemove.map(pair => pair[1]));
+                    setNetworkRecords(newNetworkRecords);
+                    setMatchingCols(newMatchingCols);
+                    setSelectedToMerge([]);
+                    setToMergeNetworksList(toMergeNetworksList.slice(0, 2))
+                    setAvailableNetworksList([...availableNetworksList, ...networksToRemove]);
                     setMergeOpType(MergeType.difference);
+                    setOpenConfirmation(false);
                 })
                 setOpenConfirmation(true)
             } else {
@@ -342,11 +350,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
         const { network, nodeTable, edgeTable, visualStyle } = res;
         const summary = netSummaries[networkId];
         const netTable = getNetTableFromSummary(summary)
-        setvisualStyleRecord(prev => ({
-            ...prev,
-            [networkId]: visualStyle
-        }));
-        return { network, nodeTable, edgeTable, netTable };
+        return { network, nodeTable, edgeTable, netTable, visualStyle };
     }
 
     // Handler for the 'Merge' button
@@ -357,7 +361,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : '';
             const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
                 newNetworkId, mergedNetworkName, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj,
-                matchingCols, visualStyleRecord[baseNetwork], summaryRecord, mergeOpType, mergeWithinNetwork, mergeOnlyNodes);
+                matchingCols, summaryRecord, mergeOpType, mergeWithinNetwork, mergeOnlyNodes);
 
             // Update state stores with the new network and its components   
             setCurrentNetworkId(newNetworkId);

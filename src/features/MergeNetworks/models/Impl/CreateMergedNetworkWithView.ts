@@ -18,8 +18,8 @@ import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel'
 
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkName: string,
     networkRecords: Record<IdType, NetworkRecord>, nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable,
-    networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>, visualStyle: VisualStyle,
-    netSummaries: Record<IdType, NdexNetworkSummary>, mergeOpType: MergeType = MergeType.union, mergeWithinNetwork: boolean = false, mergeOnlyNodes: boolean = false
+    networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>, netSummaries: Record<IdType, NdexNetworkSummary>,
+    mergeOpType: MergeType = MergeType.union, mergeWithinNetwork: boolean = false, mergeOnlyNodes: boolean = false
 ): Promise<NetworkWithView> => {
     if (fromNetworks.length < 1) {
         throw new Error("No networks to merge");
@@ -32,7 +32,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
             throw new Error(`Network with id ${netId} not found`);
         }
         if (!getAttributeMapping(nodeAttributeMapping, netId)) {
-            throw new Error(`Node attribute mapping for network ${netId} not found`);
+            throw new Error(`Node Attribute mapping for network ${netId} not found`);
         }
         if (!matchingAttribute[netId]) {
             throw new Error(`Matching attribute for network ${netId} not found`);
@@ -62,7 +62,8 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     const newEdgeTable = mergedNetwork.edgeTable
 
     // Initialize new visual style and network view model
-    const newVisualStyle: VisualStyle = visualStyle ? (cloneDeep(visualStyle)) : (VisualStyleFn.createVisualStyle());
+    const baseVisualStyle = networkRecords[fromNetworks[0]].visualStyle
+    const newVisualStyle: VisualStyle = baseVisualStyle ? (cloneDeep(baseVisualStyle)) : (VisualStyleFn.createVisualStyle());
     const newNetworkView: NetworkView = ViewModelFn.createViewModel(newNetwork)
 
     await putNetworkSummaryToDb({
