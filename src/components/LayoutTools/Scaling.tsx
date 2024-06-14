@@ -3,10 +3,11 @@ import Slider from '@mui/material/Slider'
 import { useLayoutStore } from '../../store/LayoutStore'
 import { IdType } from '../../models/IdType'
 import { useViewModelStore } from '../../store/ViewModelStore'
-import { useEffect, useState } from 'react'
+import { MutableRefObject, useEffect, useRef, useState } from 'react'
 import { NetworkView, NodeView } from '../../models/ViewModel'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { ScalingType, ScalingTypeSelector } from './ScalingTypeSelector'
+import { calcScale } from './scaling-util'
 
 const marks = [
   {
@@ -38,10 +39,13 @@ interface ScalingProps {
 export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   const theme: Theme = useTheme()
 
+  // Check initialization state
+  const initRef: MutableRefObject<boolean> = useRef<boolean>(true)
+
   // Scaling type. Default is both with and height
   const [scalingType, setScalingType] = useState<ScalingType>('both')
 
-  // Slider position. Default position is center (0)
+  // Slider position. Default position is center (0) = identity scaling
   const [value, setValue] = useState<number>(0)
 
   // Original positions of the nodes. Assign empty map as default
@@ -49,22 +53,27 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     Map<IdType, [number, number, number?]>
   >(new Map<IdType, [number, number, number?]>())
 
+  // Notify other components that the manual layout is running
   const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
     (state) => state.setIsRunning,
   )
 
+  // Target network view
   const networkView: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(networkId),
   )
 
   useEffect(() => {
-    // Switched. Reset the slider
+    initRef.current = false
+    // Current network is switched. Reset the slider to zero
     setValue(0)
     setOriginalPositions(new Map<IdType, [number, number, number?]>())
   }, [networkId])
 
   useEffect(() => {
-    if (networkView !== undefined) {
+    // Make sure this is called only once when network is switched.
+    // Otherwise, the original positions will be confused
+    if (networkView !== undefined && initRef.current === false) {
       const positions = new Map<IdType, [number, number, number?]>()
       // Need to record the original position
       const nodeIds: IdType[] = Object.keys(networkView.nodeViews)
@@ -73,6 +82,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
         positions.set(nv.id, [nv.x, nv.y, nv.z])
       })
       setOriginalPositions(positions)
+      initRef.current = true
     }
   }, [networkView])
 
@@ -85,20 +95,11 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     setValue(value as number)
   }
 
-  const calcScale = (value: number): number => {
-    let scale = 1.0
-    if (value < 0) {
-      scale = (10 - Math.abs(value)) / 10
-    } else {
-      scale = value + 1.0
-    }
-
-    return scale
-  }
   const handleUpdate = (event: Event, value: number | number[]): void => {
     const valueAsNumber: number = typeof value === 'number' ? value : value[0]
     setValue(valueAsNumber)
-    applyScaling(calcScale(valueAsNumber))
+    const scalingFactor = calcScale(valueAsNumber)
+    applyScaling(scalingFactor)
   }
 
   const applyScaling = (scalingFactor: number): void => {
@@ -111,6 +112,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
 
     // Scale relative to the original positions
     const positions = new Map<IdType, [number, number, number?]>()
+
     let nodeIds: IdType[] = []
     if (originalPositions !== undefined) {
       nodeIds = [...originalPositions.keys()]
