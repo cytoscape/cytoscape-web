@@ -31,10 +31,8 @@ import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
 import { createFilterFromAspect } from '../utils/filter-asprct-util'
 import { CirclePackingType } from './CustomLayout/CirclePackingLayout'
 import { CirclePackingView } from '../model/CirclePackingView'
-import { HierarchyNode } from 'd3-hierarchy'
-import { D3TreeNode } from './CustomLayout/D3TreeNode'
-import { find, get } from 'lodash'
 import { applyCpLayout } from '../utils/hierarchy-util'
+import { DefaultRenderer } from '../../../store/DefaultRenderer'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -473,6 +471,7 @@ export const SubNetworkPanel = ({
       </Typography>
       <CyjsRenderer network={queryNetwork} displayMode={displayMode} />
       <FloatingToolBar
+        rendererId={DefaultRenderer.id}
         targetNetworkId={queryNetworkId ?? undefined}
         networkLabel={networkLabel}
       />

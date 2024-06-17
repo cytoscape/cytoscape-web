@@ -9,11 +9,15 @@ interface FloatingToolBarProps {
 
   // Label for the network to be used if the network has no summary
   networkLabel?: string
+
+  // Target Renderer ID to apply the commands
+  rendererId: string
 }
 
 export const FloatingToolBar = ({
   targetNetworkId,
   networkLabel,
+  rendererId,
 }: FloatingToolBarProps): JSX.Element => {
   return (
     <Box
@@ -31,7 +35,7 @@ export const FloatingToolBar = ({
     >
       <Divider orientation="vertical" flexItem />
       <ApplyLayoutButton targetNetworkId={targetNetworkId} />
-      <FitButton />
+      <FitButton rendererId={rendererId} />
       <OpenInCytoscapeButton networkLabel={networkLabel} />
       <ShareNetworkButton />
     </Box>
