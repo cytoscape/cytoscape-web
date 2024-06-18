@@ -2,7 +2,10 @@ import { ValueTypeName } from '../../TableModel'
 import { SingleValueType } from '../../TableModel/ValueType'
 import { MappingFunctionType, VisualPropertyValueTypeName } from '..'
 
-const valueType2BaseType: Record<ValueTypeName | VisualPropertyValueTypeName, SingleValueType | null> = {
+const valueType2BaseType: Record<
+  ValueTypeName | VisualPropertyValueTypeName,
+  SingleValueType | null
+> = {
   [ValueTypeName.String]: 'string',
   [ValueTypeName.Long]: 'number',
   [ValueTypeName.Integer]: 'number',
@@ -52,16 +55,17 @@ export const typesCanBeMapped = (
   mappingType: MappingFunctionType,
   valueTypeName: ValueTypeName,
   vpValueTypeName: VisualPropertyValueTypeName,
-  columnName?: string
+  columnName?: string,
 ): boolean => {
   if (mappingType === MappingFunctionType.Passthrough) {
     const vtBaseType = valueType2BaseType[valueTypeName]
     const isSingleValue = vtBaseType != null
-    const typesMatch = valueTypeName === vpValueTypeName
-    const singleStringType = isSingleValue && valueType2BaseType[vpValueTypeName] === VisualPropertyValueTypeName.String /// any single value type can be mapped to a string
-    return (
-      typesMatch || singleStringType
-    )
+    const typesMatch =
+      valueTypeName === vpValueTypeName || vtBaseType === vpValueTypeName
+    const singleStringType =
+      isSingleValue &&
+      valueType2BaseType[vpValueTypeName] === VisualPropertyValueTypeName.String /// any single value type can be mapped to a string
+    return typesMatch || singleStringType
   }
 
   if (mappingType === MappingFunctionType.Continuous) {

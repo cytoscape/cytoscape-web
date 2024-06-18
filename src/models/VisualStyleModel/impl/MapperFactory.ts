@@ -1,5 +1,6 @@
 import { ValueType } from '../../TableModel'
 import { ColorType, VisualPropertyValueType } from '../VisualPropertyValue'
+import { VisibilityType } from '../../VisualStyleModel/VisualPropertyValue/VisibilityType'
 import {
   ContinuousFunctionControlPoint,
   ContinuousMappingFunction,
@@ -32,11 +33,13 @@ const enumValueNormalizationFn = (
     if (typeof value === 'string') {
       const normalizedValue = value.toLowerCase()
       if (normalizedValue === 'true' || normalizedValue === 'false') {
-        return JSON.parse(normalizedValue)
+        return normalizedValue === 'true'
+          ? VisibilityType.Element
+          : VisibilityType.None
       }
     }
     if (typeof value === 'boolean') {
-      return value
+      return value === true ? VisibilityType.Element : VisibilityType.None
     }
   }
   return value
