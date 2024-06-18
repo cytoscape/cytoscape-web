@@ -181,6 +181,8 @@ export const CirclePackingPanel = ({
     const bbox = node.getBBox()
     const wrapperWidth = bbox.width
     const wrapperHeight = bbox.height
+    const deltaX: number = bbox.x
+    const deltaY: number = bbox.y
 
     const scaleX = parentWidth / wrapperWidth
     const scaleY = parentHeight / wrapperHeight
@@ -189,8 +191,8 @@ export const CirclePackingPanel = ({
     const scaledWidth = wrapperWidth * scale
     const scaledHeight = wrapperHeight * scale
 
-    const translateX = (parentWidth - scaledWidth) / 2
-    const translateY = (parentHeight - scaledHeight) / 2
+    const translateX = (parentWidth - scaledWidth) / 2 - deltaX * scale
+    const translateY = (parentHeight - scaledHeight) / 2 - deltaY * scale
 
     const newTransform = d3Zoom.zoomIdentity
       .translate(translateX, translateY)
