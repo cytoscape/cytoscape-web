@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "test": "npm run test:playwright && npm run test:unit",
-    "test:unit": "jest src/features/MergeNetworks/tests/*.spec.ts",
+    "test:unit": "jest unittest",
     "test:playwright": "npx playwright test --trace on",
     "build": "webpack --mode production",
     "build:netlify": "BUILD=netlify webpack --mode production",

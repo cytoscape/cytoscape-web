@@ -19,7 +19,7 @@ import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel'
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkName: string,
     networkRecords: Record<IdType, NetworkRecord>, nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable,
     networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>, netSummaries: Record<IdType, NdexNetworkSummary>,
-    mergeOpType: MergeType = MergeType.union, mergeWithinNetwork: boolean = false, mergeOnlyNodes: boolean = false
+    mergeOpType: MergeType = MergeType.union, mergeWithinNetwork: boolean = false, mergeOnlyNodes: boolean = false, strictRemoveMode: boolean = false
 ): Promise<NetworkWithView> => {
     if (fromNetworks.length < 1) {
         throw new Error("No networks to merge");
@@ -47,7 +47,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
             nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork, mergeOnlyNodes)
     } else {
         mergedNetwork = differenceMerge(fromNetworks, toNetworkId, networkRecords,
-            nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork, mergeOnlyNodes)
+            nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork, mergeOnlyNodes, strictRemoveMode)
     }
     const mergedNetSummary = mergeNetSummary(fromNetworks, networkAttributeMapping, netSummaries)
 

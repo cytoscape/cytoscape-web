@@ -68,7 +68,7 @@ export function getKeybyAttribute(val: ValueType): SingleValueType {
     return val as SingleValueType;
 }
 
-function stringifyList(val: ListOfValueType): string {
+export function stringifyList(val: ListOfValueType): string {
     return val.join(',');
 }
 

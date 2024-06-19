@@ -4,13 +4,13 @@ import {
     ExpandMore as ExpandMoreIcon, Star as StarIcon,
     Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon, Merge
 } from '@mui/icons-material';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { ChangeEvent, useContext, useEffect, useState } from 'react';
 import { UnionIcon, DifferenceIcon, IntersectionIcon } from './Icon';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button,
     Typography, Box, List, ListItem, ListItemText, ListSubheader,
     Paper, FormControlLabel, Checkbox, ToggleButtonGroup, Tooltip,
-    ToggleButton, Accordion, AccordionSummary, AccordionDetails, TextField, IconButton,
+    ToggleButton, Accordion, AccordionSummary, AccordionDetails, TextField, IconButton, FormControl, FormLabel, RadioGroup, Radio,
 } from '@mui/material';
 import './MergeDialog.css';
 import { v4 as uuidv4 } from 'uuid';
@@ -65,6 +65,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const [mergedNetworkName, setMergedNetworkName] = useState(uniqueName); // Name of the merged network
     const [fullScreen, setFullScreen] = useState(false); // Full screen mode for the dialog
     const [tooltipOpen, setTooltipOpen] = useState(false); // Flag to indicate whether the tooltip is open
+    const [strictRemoveMode, setStrictRemoveMode] = useState(false); // Flag to indicate the rules of difference merge
     // confirmation window
     const [openConfirmation, setOpenConfirmation] = useState(false);
     const [confirmationTitle, setConfirmationTitle] = useState('');
@@ -352,6 +353,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
         const netTable = getNetTableFromSummary(summary)
         return { network, nodeTable, edgeTable, netTable, visualStyle };
     }
+    const handleStrictRemoveModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setStrictRemoveMode(event.target.value === 'true');
+    };
 
     // Handler for the 'Merge' button
     const handleMerge = async (): Promise<void> => {
@@ -361,7 +365,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : '';
             const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
                 newNetworkId, mergedNetworkName, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj,
-                matchingCols, summaryRecord, mergeOpType, mergeWithinNetwork, mergeOnlyNodes);
+                matchingCols, summaryRecord, mergeOpType, mergeWithinNetwork, mergeOnlyNodes, strictRemoveMode);
 
             // Update state stores with the new network and its components   
             setCurrentNetworkId(newNetworkId);
@@ -421,6 +425,32 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                         </ToggleButton>
                     </ToggleButtonGroup>
                 </Box>
+
+                {mergeOpType === MergeType.difference &&
+                    <FormControl component="fieldset" style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '10px', width: '100%' }}>
+                        <FormLabel component="legend" style={{ marginBottom: '10px' }}>Node Removal Rule</FormLabel>
+                        <RadioGroup
+                            aria-label="node removal policy"
+                            value={strictRemoveMode}
+                            onChange={handleStrictRemoveModeChange}
+                            name="node-removal-options"
+                            style={{ marginLeft: '20px' }}
+                        >
+                            <FormControlLabel
+                                value="false" // String value for false
+                                control={<Radio />}
+                                label="Only remove nodes if all their edges are being subtracted, too"
+                                style={{ marginBottom: '5px' }}
+                            />
+                            <FormControlLabel
+                                value="true" // String value for true
+                                control={<Radio />}
+                                label="Remove all nodes that are in the second network"
+                            />
+                        </RadioGroup>
+                    </FormControl>
+                }
+
                 <Typography variant="h6" style={{ margin: '20px 0' }}>
                     Select Networks to Merge:
                 </Typography>
@@ -484,7 +514,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                     </Box>
                 </Box>
 
-                {(mergeOpType === MergeType.difference) && <></>}
                 <Accordion>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography>Advanced Options</Typography>
