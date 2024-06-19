@@ -172,6 +172,19 @@ export function intersectionMerge(fromNetworks: IdType[], toNetworkId: IdType, n
             const edgeInteraction = edgeRecord['interaction'] ?? ''
             const edgeKey = `${sourceId}-${targetId}-${edgeInteraction}`
             const mergedEdgeIds = edgeMap.get(edgeKey);
+            if (mergeOnlyNodes) {
+                if (intersectedNodeIds.has(sourceId as string) && intersectedNodeIds.has(targetId as string)) {
+                    const newEdgeId = `e${globalEdgeId++}`;
+                    initialEdgeRows[newEdgeId] = castAttributes(edgeRecord, netToMerge, edgeAttributeMapping, false);
+                    if (mergedEdgeIds) {
+                        mergedEdgeIds.push(newEdgeId);
+                    } else {
+                        edgeMap.set(edgeKey, [newEdgeId]);
+                    }
+                }
+                continue;
+            }
+
             if (mergedEdgeIds) {
                 intersectionEdgeIds.add(edgeKey)
                 const originalRow = initialEdgeRows[mergedEdgeIds[0]];
@@ -179,9 +192,11 @@ export function intersectionMerge(fromNetworks: IdType[], toNetworkId: IdType, n
             }
 
         }
-        for (const edgeKey of edgeMap.keys()) {
-            if (!intersectionEdgeIds.has(edgeKey)) {
-                edgeMap.delete(edgeKey)
+        if (!mergeOnlyNodes) {
+            for (const edgeKey of edgeMap.keys()) {
+                if (!intersectionEdgeIds.has(edgeKey)) {
+                    edgeMap.delete(edgeKey)
+                }
             }
         }
     }
