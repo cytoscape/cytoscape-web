@@ -439,7 +439,16 @@ export default function TableBrowser(props: {
             bgColor: '#d9d9d9',
           }}
         >
-          <Box sx={{ mr: 1 }}>Selected Column: {selectedColumn.id}</Box>
+          <Box
+            sx={{
+              mr: 1,
+              width: 250,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            Selected Column: {selectedColumn.id}
+          </Box>
           <ButtonGroup size="small">
             <Button
               onClick={() => {
