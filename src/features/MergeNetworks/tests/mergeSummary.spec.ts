@@ -1,13 +1,13 @@
+jest.mock('lodash/cloneDeep', () => ({
+    __esModule: true,
+    default: jest.fn(deepClone),
+}));
+
 import { createMatchingTable } from "../models/Impl/MatchingTableImpl";
 import { MatchingTable, MatchingTableRow } from "../models/MatchingTable";
 import { mergeNetSummary } from "../models/Impl/MergeNetSummary";
 import { NdexNetworkProperty, NdexNetworkSummary } from "../../../models/NetworkSummaryModel";
 import { IdType } from "../../../models/IdType";
-
-jest.mock('lodash/cloneDeep', () => ({
-    __esModule: true,
-    default: jest.fn(deepClone),
-}));
 
 describe('mergeNetSummary', () => {
     beforeEach(() => {

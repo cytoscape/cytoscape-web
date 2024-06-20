@@ -40,12 +40,11 @@ export function addMergedAtt(castedRecord: Record<string, ValueType>, oriMatchin
     return castedRecord;
 }
 
-export function attributeValueMatcher(val: ValueType, nodeAttMap: Map<IdType, ValueType>): string {
+export function attributeValueMatcher(val: ValueType, nodeAttMap: Map<SingleValueType, IdType>): string {
     if (val !== undefined) {
-        for (const entry of nodeAttMap.entries()) {
-            if (entry[1] !== '' && val === entry[1]) {
-                return entry[0];
-            }
+        const nodeId = nodeAttMap.get(getKeybyAttribute(val));
+        if (nodeId !== undefined) {
+            return nodeId;
         }
     }
     return ''
@@ -60,6 +59,17 @@ export function typeCoercion(val: ValueType, mergedType: ValueTypeName | 'None')
         return listValueTypeCoercion(val, mergedType);
     }
     return singleValueTypeCoercion(val, mergedType);
+}
+
+export function getKeybyAttribute(val: ValueType): SingleValueType {
+    if (Array.isArray(val)) {
+        return stringifyList(val as ListOfValueType);
+    }
+    return val as SingleValueType;
+}
+
+export function stringifyList(val: ListOfValueType): string {
+    return val.join(',');
 }
 
 function listValueTypeCoercion(val: ValueType, mergedType: ValueTypeName): ListOfValueType {
@@ -211,4 +221,26 @@ export function getAllConvertiableTypes(types: Set<ValueTypeName | 'None'>): Val
     } else {
         return [...convertiableSingleTypes, ...convertiableListTypes];
     }
+}
+
+
+export function mergeAttributes(orinalRow: Record<string, ValueType>, castedRecord: Record<string, ValueType>): Record<string, ValueType> {
+    const mergedRow = { ...orinalRow }
+    Object.entries(castedRecord).forEach(([key, value]) => {
+        if (!mergedRow.hasOwnProperty(key)) {
+            mergedRow[key] = value;
+        } else if (Array.isArray(mergedRow[key]) && Array.isArray(value)) {
+            if ((mergedRow[key] as ListOfValueType).every(item => typeof item === typeof value[0])) {
+                mergedRow[key] = [...new Set([...(mergedRow[key] as ListOfValueType), ...value])] as ValueType;
+            } else {
+                throw new Error(`Type mismatch for key ${key}: ${typeof (mergedRow[key] as ListOfValueType)[0]} vs ${typeof value[0]}`);
+            }
+        }
+    });
+    //Todo: whether to concat string, the behavior is not clear
+    return mergedRow;
+}
+
+export function duplicateAttName(mergedAttributes: Column[]): boolean {
+    return (new Set(mergedAttributes.map(col => col.name))).size < mergedAttributes.length
 }

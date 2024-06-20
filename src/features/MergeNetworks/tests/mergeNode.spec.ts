@@ -13,7 +13,7 @@ import { Table } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { Network } from '../../../models/NetworkModel';
 import NetworkFn from '../../../models/NetworkModel';
-import { mergeNetwork } from '../models/Impl/MergeNetwork';
+import { unionMerge } from '../models/Impl/UnionMerge';
 import { Node } from '../../../models/NetworkModel/Node';
 import { Column } from '../../../models/TableModel/Column';
 import { Edge } from '../../../models/NetworkModel/Edge';
@@ -143,7 +143,7 @@ describe('mergeNetwork', () => {
             [fromNetworks[0]]: { name: 'name', type: 'string' } as Column,
             [fromNetworks[1]]: { name: 'name', type: 'string' } as Column
         }
-        const result = mergeNetwork(fromNetworks, toNetworkId, networkRecords, nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
+        const result = unionMerge(fromNetworks, toNetworkId, networkRecords, nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
         expect(net1.nodes).toHaveLength(4);
         expect(net2.nodes).toHaveLength(4);
         expect(mergedNetwork.nodes).toHaveLength(6);
