@@ -11,6 +11,7 @@ import {
   putNetworkViewsToDb,
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
+import { cloneDeep } from 'lodash'
 
 // Default view type (a node-link diagram)
 const DEF_VIEW_TYPE = 'nodeLink'
@@ -315,19 +316,29 @@ export const useViewModelStore = create(
         ) => {
           set((state) => {
             const viewList: NetworkView[] | undefined =
-              state.viewModels[networkId]
+              get().viewModels[networkId]
+            // state.viewModels[networkId]
             if (viewList === undefined) {
               return state
             }
 
             const newViewList: NetworkView[] = []
             viewList.forEach((view: NetworkView) => {
-              const newView = { ...view }
+              const newView = cloneDeep(view)
               newView.selectedNodes = selectedNodes
               newView.selectedEdges = selectedEdges
+              newView.nodeViews = view.nodeViews
+              newView.edgeViews = view.edgeViews
               newViewList.push(newView)
             })
+
             state.viewModels[networkId] = newViewList
+            console.log(
+              'VM',
+              viewList,
+              newViewList,
+              state.viewModels[networkId],
+            )
             return state
           })
         },

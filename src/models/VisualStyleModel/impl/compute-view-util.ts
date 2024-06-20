@@ -65,6 +65,16 @@ export const createNewNetworkView = (
   edgeTable: Table,
 ): NetworkView => {
   const mappers = buildMappers(vs)
+
+  console.log(
+    'CNV',
+    nodeViewBuilder(
+      network.nodes,
+      VisualStyleFnImpl.nodeVisualProperties(vs),
+      mappers,
+      nodeTable,
+    ),
+  )
   return {
     id: network.id,
     values: new Map<VisualPropertyName, VisualPropertyValueType>(),
@@ -97,9 +107,24 @@ export const updateNetworkView = (
 
   const nodeViewCount = Object.keys(nodeViews).length
   const nodeCount = network.nodes.length
-  if( nodeViewCount !== nodeCount ) {
-    console.error('## nodeViews.length !== network.nodes.length', nodeCount, nodeViewCount)
+  if (nodeViewCount !== nodeCount) {
+    console.error(
+      '## nodeViews.length !== network.nodes.length',
+      nodeCount,
+      nodeViewCount,
+    )
   }
+
+  console.log(
+    'UNV',
+    nodeViewBuilder(
+      network.nodes,
+      VisualStyleFnImpl.nodeVisualProperties(vs),
+      mappers,
+      nodeTable,
+      nodeViews,
+    ),
+  )
 
   const nextView: NetworkView = {
     id: network.id,
@@ -135,7 +160,11 @@ const nodeViewBuilder = (
   const columns: Column[] = nodeTable.columns
   let idx: number = nodes.length
   if (idx !== nodes.length) {
-    console.error('# of nodes does not match to the # of node views:', idx, nodeViews)
+    console.error(
+      '# of nodes does not match to the # of node views:',
+      idx,
+      nodeViews,
+    )
   }
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   while (idx--) {
@@ -143,7 +172,7 @@ const nodeViewBuilder = (
     const nodeId = node.id
     const nodeView: NodeView | undefined =
       nodeViews !== undefined ? nodeViews[nodeId] : undefined
-    
+
     if (nodeView === undefined) {
       console.error('@@nodeView is undefined. This might break the view.')
     }
@@ -223,6 +252,7 @@ const computeView = (
         const computedValue: VisualPropertyValueType = mapper(
           attributeValueAssigned,
         )
+        console.log(id, name, computedValue)
         pairs.set(name, computedValue)
       } else {
         pairs.set(name, defaultValue)

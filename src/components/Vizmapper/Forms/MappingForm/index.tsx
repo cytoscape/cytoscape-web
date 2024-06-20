@@ -221,6 +221,11 @@ function MappingFormContent(props: {
         const attributeType = currentTable.columns.find(
           (c) => c.name === column,
         )?.type
+        console.log(
+          attributeType,
+          props.visualProperty.type,
+          props.visualProperty.mapping?.type,
+        )
         return (
           attributeType != null &&
           typesCanBeMapped(
@@ -240,6 +245,11 @@ function MappingFormContent(props: {
       [MappingFunctionType.Passthrough]: ['400px', 'auto'],
       '': ['400px', '200px'],
     }
+
+  console.log('MAPPING', props.visualProperty.mapping)
+  console.log('MAPPING COLUMN', column)
+  console.log('VALID MAPPINGS', validMappings)
+
   return (
     <Box
       sx={{

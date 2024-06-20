@@ -94,6 +94,8 @@ const CyjsRenderer = ({
   const networkView: NetworkView | undefined = getViewModel(id)
   const vs: VisualStyle = visualStyles[id]
 
+  console.log('VM', networkView)
+
   const [bgColor, setBgColor] = useState<string>('#FFFFFF')
   useEffect(() => {
     if (vs?.networkBackgroundColor !== undefined) {
@@ -208,6 +210,7 @@ const CyjsRenderer = ({
           return
         }
 
+        window.cy = cy
         if (e.target === cy) {
           // Background click
           if (displayMode === DisplayMode.SELECT) {
