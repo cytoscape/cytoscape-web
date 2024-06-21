@@ -82,6 +82,12 @@ export const NetworkPropertyPanel = ({
     }
   }
 
+  const onCancelDelete = () => {
+    if (lastOpenedNetworkId && lastOpenedNetworkId !== id) {
+      setCurrentNetworkId(lastOpenedNetworkId);
+    }
+  }
+
   const backgroundColor: string =
     currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
 
@@ -178,6 +184,7 @@ export const NetworkPropertyPanel = ({
         <ConfirmationDialog
           title="Remove Network From Workspace"
           message={`Do you really want to delete the network, ${summary.name}?`}
+          onCancel={onCancelDelete}
           onConfirm={onConfirmDelete}
           open={openConfirmation}
           setOpen={setOpenConfirmation}
