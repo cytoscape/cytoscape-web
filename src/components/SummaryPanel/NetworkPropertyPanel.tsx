@@ -43,6 +43,7 @@ export const NetworkPropertyPanel = ({
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const [lastOpenedNetworkId, setLastOpenedNetworkId] = useState<IdType>('')
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
@@ -69,8 +70,22 @@ export const NetworkPropertyPanel = ({
 
   const onClickDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
+    setLastOpenedNetworkId(currentNetworkId)
     setCurrentNetworkId(id)
     setOpenConfirmation(true)
+  }
+
+  const onConfirmDelete = () => {
+    deleteNetwork(id);
+    if (lastOpenedNetworkId && lastOpenedNetworkId !== id) {
+      setCurrentNetworkId(lastOpenedNetworkId);
+    }
+  }
+
+  const onCancelDelete = () => {
+    if (lastOpenedNetworkId && lastOpenedNetworkId !== id) {
+      setCurrentNetworkId(lastOpenedNetworkId);
+    }
   }
 
   const backgroundColor: string =
@@ -169,7 +184,8 @@ export const NetworkPropertyPanel = ({
         <ConfirmationDialog
           title="Remove Network From Workspace"
           message={`Do you really want to delete the network, ${summary.name}?`}
-          onConfirm={() => { deleteNetwork(id); }}
+          onCancel={onCancelDelete}
+          onConfirm={onConfirmDelete}
           open={openConfirmation}
           setOpen={setOpenConfirmation}
           buttonTitle="Yes (cannot be undone)"
