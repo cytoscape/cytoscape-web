@@ -69,7 +69,6 @@ export const NetworkPropertyPanel = ({
 
   const onClickDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
-    setCurrentNetworkId(id)
     setOpenConfirmation(true)
   }
 
