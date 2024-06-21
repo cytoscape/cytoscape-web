@@ -262,7 +262,7 @@ export function CreateTableColumnForm(
           value={columnName}
           label={'Column Name'}
         />
-        <FormControl>
+        <FormControl variant="standard" size="small">
           <InputLabel id="data-type-select">Data type</InputLabel>
           <Select
             size="small"
