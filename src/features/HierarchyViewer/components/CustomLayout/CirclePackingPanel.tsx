@@ -2,7 +2,7 @@ import { Tooltip } from '@mui/material'
 import * as d3Hierarchy from 'd3-hierarchy'
 import * as d3Selection from 'd3-selection'
 import * as d3Zoom from 'd3-zoom'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Network } from '../../../../models/NetworkModel'
 import {
   CirclePackingType,
@@ -40,6 +40,7 @@ interface CirclePackingPanelProps {
 }
 
 const CP_WRAPPER_CLASS = 'circle-packing-wrapper'
+const SVG_ID = 'cpView'
 
 // Color scale for the circles in the view
 const colorScale = getColorMapper([0, 5])
@@ -323,6 +324,23 @@ export const CirclePackingPanel = ({
 
     const wrapper = svg.append('g').attr('class', CP_WRAPPER_CLASS)
 
+    svg.on('click', function (event: any) {
+      if (event.target.id === SVG_ID) {
+        // Clear the selection in interaction network
+        setSelectedNodes([])
+
+        // Clear the selection in the CP view's leaf node
+        setSelectedLeaf('')
+
+        // Clear the selection of a circle in the CP view
+        exclusiveSelect(network.id, [], [])
+
+        // Redraw the CP view
+        displaySelectedNodes(new Set<string>(), '')
+        console.log('Selection in CP cleared', selectedNodes.length)
+      }
+    })
+
     wrapper
       .append('g')
       .selectAll('circle')
@@ -584,7 +602,7 @@ export const CirclePackingPanel = ({
 
   return (
     <>
-      <svg id={'cpView'} ref={ref} width={'100%'} height={'100%'} />
+      <svg id={SVG_ID} ref={ref} width={'100%'} height={'100%'} />
       <Tooltip
         open={tooltipOpen}
         title={tooltipContent}
