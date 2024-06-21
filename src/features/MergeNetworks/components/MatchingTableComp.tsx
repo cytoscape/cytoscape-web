@@ -53,15 +53,27 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, type }: M
                                 </TableCell>
                             ))}
                             <TableCell key={`${row.id}-mergedNetwork`}>
-                                <TextField
-                                    key={`${row.id}-textField`}
-                                    fullWidth
-                                    variant="outlined"
-                                    value={row.mergedNetwork}
-                                    onChange={(e) => onMergedNetworkChange(e, row.id)}
-                                    style={{ minWidth: 100 }}
-                                    disabled={type === TableView.network && rowIndex < 3}
-                                />
+                                {(row.id === 0 && type === TableView.node) ?
+                                    <Tooltip title={'This attribute is used to match nodes between networks.'} placement="top" arrow>
+                                        <TextField
+                                            key={`${row.id}-textField`}
+                                            fullWidth
+                                            variant="outlined"
+                                            value={row.mergedNetwork}
+                                            onChange={(e) => onMergedNetworkChange(e, row.id)}
+                                            style={{ minWidth: 100 }}
+                                            InputProps={{ style: { color: 'red' } }}
+                                        />
+                                    </Tooltip> :
+                                    <TextField
+                                        key={`${row.id}-textField`}
+                                        fullWidth
+                                        variant="outlined"
+                                        value={row.mergedNetwork}
+                                        onChange={(e) => onMergedNetworkChange(e, row.id)}
+                                        style={{ minWidth: 100 }}
+                                        disabled={type === TableView.network && rowIndex < 3}
+                                    />}
                             </TableCell>
                             <TableCell key={`${row.id}-type`}>
                                 <TypeDropDownTemplate type={type} rowData={row} netLst={netLst} />

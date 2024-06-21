@@ -66,6 +66,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const [fullScreen, setFullScreen] = useState(false); // Full screen mode for the dialog
     const [tooltipOpen, setTooltipOpen] = useState(false); // Flag to indicate whether the tooltip is open
     const [strictRemoveMode, setStrictRemoveMode] = useState(false); // Flag to indicate the rules of difference merge
+    const [isNameDuplicate, setIsNameDuplicate] = useState(false);
+    const existingNetNames = new Set(workSpaceNetworks.map(pair => pair[0])); // Set of existing network names
     // confirmation window
     const [openConfirmation, setOpenConfirmation] = useState(false);
     const [confirmationTitle, setConfirmationTitle] = useState('');
@@ -266,7 +268,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     };
     // Function to handle changes in the merged network name
     const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setMergedNetworkName(event.target.value);
+        const newName = event.target.value;
+        setMergedNetworkName(newName);
+        setIsNameDuplicate(existingNetNames.has(newName));
     };
     // Function to handle switch in the matching table view
     const handleTableViewChange = (event: React.MouseEvent<HTMLElement>, newTableView: TableView) => {
@@ -529,7 +533,15 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                             onChange={handleNameChange}
                             fullWidth
                             margin="normal"
+                            InputProps={{
+                                style: { color: isNameDuplicate ? 'orange' : 'inherit' }
+                            }}
                         />
+                        {isNameDuplicate && (
+                            <Typography color="error">
+                                This name already exists. Please choose a different name.
+                            </Typography>
+                        )}
                         <Typography variant="h6" style={{ margin: '5px 0 10px 0' }}>
                             Matching columns:
                         </Typography>

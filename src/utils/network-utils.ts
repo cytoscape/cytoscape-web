@@ -4,9 +4,9 @@ export function generateUniqueName(existingNames: string[], proposedName: string
         return proposedName;
     } else {
         let i = 1;
-        while (existingNames.includes(proposedName + i)) {
+        while (existingNames.includes(proposedName + '_' + i)) {
             i++;
         }
-        return proposedName + i;
+        return proposedName + '_' + i;
     }
 }
