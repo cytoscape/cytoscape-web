@@ -39,7 +39,7 @@ import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel';
 import { MatchingTableComp } from './MatchingTableComp';
 import { MatchingColumnTable } from './MatchingColumnTable';
 import { NetworkWithView } from '../../../utils/cx-utils';
-import { findPairIndex, getNetTableFromSummary } from '../utils/helper-functions';
+import { findPairIndex, getNetTableFromSummary, sortListAlphabetically } from '../utils/helper-functions';
 import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog';
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel';
@@ -93,7 +93,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const removeNetsFromNetTable = useNetMatchingTableStore(state => state.removeNetworksFromTable);
     const resetNetMatchingTable = useNetMatchingTableStore(state => state.resetStore);
     // Record the status of the available and selected networks lists
-    const [availableNetworksList, setAvailableNetworksList] = useState<Pair<string, IdType>[]>(workSpaceNetworks);
+    const [availableNetworksList, setAvailableNetworksList] = useState<Pair<string, IdType>[]>(sortListAlphabetically(workSpaceNetworks));
     const [toMergeNetworksList, setToMergeNetworksList] = useState<Pair<string, IdType>[]>([]);
     const [selectedAvailable, setSelectedAvailable] = useState<Pair<string, IdType>[]>([]);
     const [selectedToMerge, setSelectedToMerge] = useState<Pair<string, IdType>[]>([]);
@@ -211,7 +211,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     };
     // Function to remove selected networks from the 'Networks to Merge' list
     const handleRemoveNetwork = () => {
-        setAvailableNetworksList([...availableNetworksList, ...selectedToMerge]);
+        setAvailableNetworksList(sortListAlphabetically([...availableNetworksList, ...selectedToMerge]));
         setToMergeNetworksList(toMergeNetworksList.filter(net => !selectedToMerge.includes(net)));
         //Todo: whether to delete all these information or not
         const newNetworkRecords = { ...networkRecords };

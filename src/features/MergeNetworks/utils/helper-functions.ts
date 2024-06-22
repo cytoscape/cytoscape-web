@@ -119,3 +119,17 @@ export function getMergedType(typeRecord: Record<string, ValueTypeName | 'None'>
         mergedType: getResonableCompatibleConvertionType(typeSet)
     }
 }
+
+export function sortListAlphabetically(list: [string, IdType][]): [string, IdType][] {
+    return list.sort((a, b) => {
+        const nameA = a[0].toLowerCase();
+        const nameB = b[0].toLowerCase();
+        if (nameA < nameB) {
+            return -1;
+        }
+        if (nameA > nameB) {
+            return 1;
+        }
+        return 0;
+    });
+}
