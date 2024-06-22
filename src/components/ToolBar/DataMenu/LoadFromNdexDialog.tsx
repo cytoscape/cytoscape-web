@@ -41,6 +41,7 @@ interface LoadFromNdexDialogProps {
 
 export const NetworkSeachField = (props: {
   startSearch: (searchValue: string) => Promise<void>
+  handleClose: () => void
 }): ReactElement => {
   const [searchValue, setSearchValue] = useState<string>('')
 
@@ -51,6 +52,10 @@ export const NetworkSeachField = (props: {
     event.stopPropagation()
     if (event.key === 'Enter') {
       void props.startSearch(searchValue)
+    }
+
+    if (event.key === 'Escape') {
+      props.handleClose()
     }
   }
   return (
@@ -420,7 +425,10 @@ export const LoadFromNdexDialog = (
           </Tabs>
         </Box>
         {currentTabIndex === 0 && (
-          <NetworkSeachField startSearch={fetchSearchResults} />
+          <NetworkSeachField
+            startSearch={fetchSearchResults}
+            handleClose={props.handleClose}
+          />
         )}
         {loading ? <CircularProgress /> : null}
         {content}

@@ -11,7 +11,7 @@ jest.mock('../../../models/NetworkModel', () => {
 });
 
 import { Table } from '../../../models/TableModel';
-import { mergeNetwork } from '../models/Impl/MergeNetwork';
+import { unionMerge } from '../models/Impl/UnionMerge';
 import { Node } from '../../../models/NetworkModel/Node';
 import { Column } from '../../../models/TableModel/Column';
 import { Edge } from '../../../models/NetworkModel/Edge';
@@ -152,7 +152,7 @@ describe('Test type coercion during network merge', () => {
             }
         ] as MatchingTableRow[])
         const edgeAttributeMapping = createMatchingTable([])
-        const result = mergeNetwork(fromNetworks, toNetworkId, networkRecords, nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
+        const result = unionMerge(fromNetworks, toNetworkId, networkRecords, nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
 
         expect(result).toEqual({
             network: mergedNetwork,

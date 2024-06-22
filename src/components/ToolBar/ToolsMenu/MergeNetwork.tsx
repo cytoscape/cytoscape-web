@@ -12,6 +12,8 @@ import { useTableStore } from '../../../store/TableStore';
 import { useNetworkStore } from '../../../store/NetworkStore';
 import { getNetTableFromSummary } from '../../../features/MergeNetworks/utils/helper-functions';
 import { Network } from '../../../models/NetworkModel';
+import { useVisualStyleStore } from '../../../store/VisualStyleStore';
+import { VisualStyle } from '../../../models/VisualStyleModel';
 
 export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
     const [openDialog, setOpenDialog] = useState<boolean>(false);
@@ -21,6 +23,7 @@ export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
     const networkSummaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
         (state) => state.summaries,
     )
+    const networkVisualStyles: Record<string, VisualStyle> = useVisualStyleStore(state => state.visualStyles)
     const networkTables = useTableStore(state => state.tables);
     const networkStore = useNetworkStore(state => state.networks)
     const workSpaceNetworks: Pair<string, string>[] = networkIds.map((networkId) => {
@@ -47,7 +50,8 @@ export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
                 network: networkStore.get(networkId) ?? ({} as Network),
                 nodeTable: networkTables[networkId].nodeTable,
                 edgeTable: networkTables[networkId].edgeTable,
-                netTable: getNetTableFromSummary(networkSummaries[networkId])
+                netTable: getNetTableFromSummary(networkSummaries[networkId]),
+                visualStyle: networkVisualStyles[networkId]
             }
         }
     })

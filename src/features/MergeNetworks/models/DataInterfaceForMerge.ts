@@ -1,5 +1,6 @@
 import { Network } from "../../../models/NetworkModel";
 import { Table, ValueType } from '../../../models/TableModel';
+import { VisualStyle } from "../../../models/VisualStyleModel";
 export enum MergeType {
     union = 'Union',
     intersection = 'Intersection',
@@ -37,4 +38,5 @@ export interface NetworkRecord {
     nodeTable: Table;
     edgeTable: Table;
     netTable?: Table;
+    visualStyle?: VisualStyle
 }

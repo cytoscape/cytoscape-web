@@ -1,4 +1,3 @@
-// At the top of your test file before any imports
 jest.mock('../../../models/NetworkModel', () => {
     return {
         default: {
@@ -16,7 +15,7 @@ import { Table } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { Network } from '../../../models/NetworkModel';
 import NetworkFn from '../../../models/NetworkModel';
-import { mergeNetwork } from '../models/Impl/MergeNetwork';
+import { unionMerge } from '../models/Impl/UnionMerge';
 import { Node } from '../../../models/NetworkModel/Node';
 import { Column } from '../../../models/TableModel/Column';
 import { Edge } from '../../../models/NetworkModel/Edge';
@@ -254,7 +253,7 @@ describe('mergeNetwork', () => {
             [fromNetworks[1]]: { name: 'att1', type: 'string' } as Column,
             [fromNetworks[2]]: { name: 'att1', type: 'string' } as Column
         }
-        const result = mergeNetwork(fromNetworks, toNetworkId, networkRecords, nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
+        const result = unionMerge(fromNetworks, toNetworkId, networkRecords, nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
         expect(result).toEqual({
             network: mergedNetwork,
             nodeTable: mergedNodeTable,

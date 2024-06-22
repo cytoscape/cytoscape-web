@@ -1,5 +1,7 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { mergeNetwork } from './MergeNetwork';
+import { unionMerge } from './UnionMerge';
+import { intersectionMerge } from './IntersectionMerge';
+import { differenceMerge } from './DifferenceMerge';
 import { MatchingTable } from '../MatchingTable';
 import { IdType } from '../../../../models/IdType';
 import { mergeNetSummary } from './MergeNetSummary';
@@ -8,15 +10,17 @@ import { Column } from '../../../../models/TableModel/Column';
 import { putNetworkSummaryToDb } from '../../../../store/persist/db'
 import { NetworkAttributes } from '../../../../models/NetworkModel';
 import ViewModelFn, { NetworkView } from '../../../../models/ViewModel';
-import { NetworkRecord, NetworktoMerge } from '../DataInterfaceForMerge';
+import { MergeType, NetworkRecord, NetworktoMerge } from '../DataInterfaceForMerge';
 import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel';
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility';
 import { getMatchingTableRows, getAttributeMapping } from './MatchingTableImpl';
 import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel';
 
-export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkName: string, networkRecords: Record<IdType, NetworkRecord>,
-    nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, networkAttributeMapping: MatchingTable,
-    matchingAttribute: Record<IdType, Column>, visualStyle: VisualStyle, netSummaries: Record<IdType, NdexNetworkSummary>): Promise<NetworkWithView> => {
+export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkName: string,
+    networkRecords: Record<IdType, NetworkRecord>, nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable,
+    networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>, netSummaries: Record<IdType, NdexNetworkSummary>,
+    mergeOpType: MergeType = MergeType.union, mergeWithinNetwork: boolean = false, mergeOnlyNodes: boolean = false, strictRemoveMode: boolean = false
+): Promise<NetworkWithView> => {
     if (fromNetworks.length < 1) {
         throw new Error("No networks to merge");
     }
@@ -28,17 +32,26 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
             throw new Error(`Network with id ${netId} not found`);
         }
         if (!getAttributeMapping(nodeAttributeMapping, netId)) {
-            throw new Error(`Node attribute mapping for network ${netId} not found`);
+            throw new Error(`Node Attribute mapping for network ${netId} not found`);
         }
         if (!matchingAttribute[netId]) {
             throw new Error(`Matching attribute for network ${netId} not found`);
         }
     }
-    const mergedNetwork: NetworkRecord = mergeNetwork(fromNetworks, toNetworkId, networkRecords,
-        nodeAttributeMapping, edgeAttributeMapping, matchingAttribute)
+    let mergedNetwork: NetworkRecord = {} as NetworkRecord
+    if (mergeOpType === MergeType.union) {
+        mergedNetwork = unionMerge(fromNetworks, toNetworkId, networkRecords,
+            nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork)
+    } else if (mergeOpType === MergeType.intersection) {
+        mergedNetwork = intersectionMerge(fromNetworks, toNetworkId, networkRecords,
+            nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork, mergeOnlyNodes)
+    } else {
+        mergedNetwork = differenceMerge(fromNetworks, toNetworkId, networkRecords,
+            nodeAttributeMapping, edgeAttributeMapping, matchingAttribute, mergeWithinNetwork, mergeOnlyNodes, strictRemoveMode)
+    }
     const mergedNetSummary = mergeNetSummary(fromNetworks, networkAttributeMapping, netSummaries)
 
-    // todo: merge network attributes also
+    // Todo: merge network attributes also
     const networkAttributes: NetworkAttributes = {
         id: toNetworkId,
         attributes: {},
@@ -49,7 +62,8 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     const newEdgeTable = mergedNetwork.edgeTable
 
     // Initialize new visual style and network view model
-    const newVisualStyle: VisualStyle = visualStyle ? (cloneDeep(visualStyle)) : (VisualStyleFn.createVisualStyle());
+    const baseVisualStyle = networkRecords[fromNetworks[0]].visualStyle
+    const newVisualStyle: VisualStyle = baseVisualStyle ? (cloneDeep(baseVisualStyle)) : (VisualStyleFn.createVisualStyle());
     const newNetworkView: NetworkView = ViewModelFn.createViewModel(newNetwork)
 
     await putNetworkSummaryToDb({
