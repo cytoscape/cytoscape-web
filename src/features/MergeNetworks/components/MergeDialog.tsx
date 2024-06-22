@@ -461,7 +461,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
 
                 <Box display="flex" justifyContent="space-between" p={2}>
                     <List
-                        subheader={<ListSubheader>Available Networks</ListSubheader>}
+                        subheader={<ListSubheader className="listSubheader" component="div" >Available Networks</ListSubheader>}
                         component={Paper}
                         style={{ width: '42.5%', maxHeight: 300, overflow: 'auto' }}
                     >
@@ -485,7 +485,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                         </Button>
                     </Box>
                     <List
-                        subheader={<ListSubheader>Networks to Merge</ListSubheader>}
+                        subheader={<ListSubheader className="listSubheader" component="div" >Networks to Merge</ListSubheader>}
                         component={Paper}
                         style={{ width: '42.5%', maxHeight: 300, overflow: 'auto' }}
                     >
@@ -609,7 +609,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
 
                     </AccordionDetails>
                 </Accordion>
-            </DialogContent>
+            </DialogContent >
             <ConfirmationDialog
                 open={showError} setOpen={setShowError} title="Error"
                 message={errorMessage} onConfirm={() => setShowError(false)}

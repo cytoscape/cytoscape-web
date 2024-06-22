@@ -12,7 +12,7 @@
 
 .toggleButton.selected {
     color: white !important;
-    background-color: #227dd8 !important;
+    background-color: #217dd8 !important;
 }
 
 .toggleButton:hover {
@@ -21,10 +21,20 @@
 
 /* button */
 .arrowButton {
-    background-color: #227dd8;
+    background-color: #217dd8 !important;
+    color: white !important;
     margin-top: 8px !important;
     min-width: 36px !important;
     padding: 2px !important;
+}
+
+.arrowButton:disabled {
+    background: #e0e0e0 !important;
+    color: #A6A6A6 !important
+}
+
+.arrowButton:hover {
+    background-color: #337ab7 !important;
 }
 
 .arrowIcon {
@@ -34,4 +44,13 @@
 /* union difference and intersection icon */
 .iconify.iconify--gis {
     margin-right: 5px;
+}
+
+/* list header */
+.listSubheader {
+    font-size: 1.0em !important;
+    background-color: #217dd8 !important;
+    color: white !important;
+    padding-left: 17px !important;
+    border-radius: 4px !important
 }
