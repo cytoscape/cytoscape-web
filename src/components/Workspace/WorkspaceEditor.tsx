@@ -118,6 +118,11 @@ const WorkSpaceEditor = (): JSX.Element => {
   const setActiveTableBrowserIndex = useUiStateStore(
     (state) => state.setActiveTableBrowserIndex,
   )
+
+  const setActiveNetworkView = useUiStateStore(
+    (state) => state.setActiveNetworkView,
+  )
+
   const { panels, activeNetworkView } = ui
 
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
@@ -356,6 +361,13 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   }
 
+  const restoreActiveNetworkView = (): void => {
+    const activeNetworkView = search.get('activeNetworkView')
+    if (activeNetworkView !== null) {
+      setActiveNetworkView(activeNetworkView)
+    }
+  }
+
   /**
    * Check number of networks in the workspace
    */
@@ -415,6 +427,9 @@ const WorkSpaceEditor = (): JSX.Element => {
             restoreSelectionStates()
             restoreTableBrowserTabState()
             restoreFilterStates()
+            setTimeout(() => {
+              restoreActiveNetworkView()
+            }, 1000)
           }
 
           navigate(

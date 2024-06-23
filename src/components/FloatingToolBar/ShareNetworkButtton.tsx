@@ -50,11 +50,13 @@ export const ShareNetworkButton = (): JSX.Element => {
   const getQueryString = (): string => {
     const panelParams = new URLSearchParams(panels)
     const panelObj = Object.fromEntries(panelParams.entries())
-    const searchObj = {
+    const searchObj: Record<string, string> = {
       ...Object.fromEntries(search.entries()),
       ...panelObj,
       activeTableBrowserTab: `${ui.tableUi.activeTabIndex}`,
-      activeNetworkView: `${activeNetworkView}`,
+    }
+    if (activeNetworkView !== currentNetworkId) {
+      searchObj.activeNetworkView = activeNetworkView
     }
     const searchStr = new URLSearchParams(searchObj).toString()
     return searchStr
