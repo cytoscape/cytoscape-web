@@ -1,5 +1,5 @@
 //import the necessary libraries and components
-import React from 'react';
+import React, { useEffect } from 'react';
 import { PriorityHigh as PriorityHighIcon } from '@mui/icons-material';
 import { NetworkRecord, Pair, TableView } from '../models/DataInterfaceForMerge';
 import { TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, TextField, Tooltip } from '@mui/material';
@@ -48,15 +48,26 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, type }: M
     });
     //get rows that have duplicated name
     const duplicatedNamesIds = new Set((Array.from(name2RowId.values()).filter((ids) => ids.length > 1)).reduce((acc, val) => acc.concat(val), []));
-    if (duplicatedNamesIds.size > 0) {
-        setMergeTooltipIsOpen(true);
-        setMergeTooltipText('Some rows have duplicated names. Please make sure each row has a unique name.');
-    } else if (emptyRowIds.size > 0) {
-        setMergeTooltipIsOpen(true);
-        setMergeTooltipText('Merged network attribute name cannot be empty.');
-    } else {
-        setMergeTooltipIsOpen(false);
-    }
+
+    useEffect(() => {
+        if (duplicatedNamesIds.size > 0) {
+            setMergeTooltipIsOpen(true);
+            setMergeTooltipText('Some rows have duplicated names. Please make sure each row has a unique name.');
+        } else if (emptyRowIds.size > 0) {
+            setMergeTooltipIsOpen(true);
+            setMergeTooltipText('Merged network attribute name cannot be empty.');
+        } else {
+            setMergeTooltipIsOpen(false);
+        }
+    }, [duplicatedNamesIds, emptyRowIds, setMergeTooltipIsOpen, setMergeTooltipText]);
+
+    const getTooltipMessage = (row: MatchingTableRow, duplicatedNamesIds: Set<number>, emptyRowIds: Set<number>) => {
+        if (row.hasConflicts) return 'This row has type conflict';
+        if (duplicatedNamesIds.has(row.id)) return 'This row has duplicated merged network attribute name';
+        if (emptyRowIds.has(row.id)) return 'This row\'s merged network attribute name is empty';
+        return '';
+    };
+
     return (
         <TableContainer key={`${type}-tablecontainer`} component={Paper} sx={{ maxHeight: 500, overflow: 'auto' }}>
             <Table sx={{ minWidth: 400 }} aria-label="simple table">
@@ -71,9 +82,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, type }: M
                 </TableHead>
                 <TableBody>
                     {tableData.map((row, rowIndex) => (
-                        <Tooltip key={`${row.id}-row-tooltip`} title={row.hasConflicts ? 'This row has type conflict' :
-                            (duplicatedNamesIds.has(row.id) ? 'This row has duplicated merged network attribute name' :
-                                (emptyRowIds.has(row.id) ? 'This row\'s merged network attribute name is empty' : ''))} placement="top" arrow>
+                        <Tooltip key={`${row.id}-row-tooltip`} title={getTooltipMessage(row, duplicatedNamesIds, emptyRowIds)} placement="top" arrow>
                             <TableRow key={`${row.id}-row`} style={{ backgroundColor: (row.hasConflicts || duplicatedNamesIds.has(row.id) || emptyRowIds.has(row.id)) ? '#e27070' : 'transparent' }}>
                                 {netLst.map((net) => (
                                     <TableCell key={`${row.id}-${net[1]}`} component="th" scope="row">
