@@ -74,17 +74,18 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     // Make sure this is called only once when network is switched.
     // Otherwise, the original positions will be confused
     if (networkView !== undefined && initRef.current === false) {
-      const positions = new Map<IdType, [number, number, number?]>()
-      // Need to record the original position
-      const nodeIds: IdType[] = Object.keys(networkView.nodeViews)
-      nodeIds.forEach((nodeId: IdType) => {
-        const nv: NodeView = networkView.nodeViews[nodeId]
-        positions.set(nv.id, [nv.x, nv.y, nv.z])
-      })
-      setOriginalPositions(positions)
+      refreshPositions(networkView.nodeViews)
       initRef.current = true
     }
   }, [networkView])
+
+  useEffect(() => {
+    if (initRef.current && networkView !== undefined) {
+      // If external components change the node positions after initialization,
+      // update the original positions used for scaling
+      refreshPositions(networkView.nodeViews)
+    }
+  }, [networkView?.nodeViews])
 
   const updateNodePositions: (
     networkId: IdType,
@@ -143,15 +144,18 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       return
     }
     // Copy current positions to the original positions
+    refreshPositions(networkView.nodeViews)
+    setValue(0)
+  }
+
+  const refreshPositions = (nodeViews: Record<IdType, NodeView>): void => {
     const positions = new Map<IdType, [number, number, number?]>()
-    const { nodeViews } = networkView
     const nodeIds: IdType[] = Object.keys(nodeViews)
     nodeIds.forEach((nodeId: IdType) => {
       const nv: NodeView = nodeViews[nodeId]
       positions.set(nodeId, [nv.x, nv.y, nv.z])
     })
     setOriginalPositions(positions)
-    setValue(0)
   }
 
   const valuetext = (value: number): string => {
