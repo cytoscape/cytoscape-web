@@ -21,6 +21,7 @@ import useMatchingColumnsStore from '../store/matchingColumnStore';
 import useNodeMatchingTableStore from '../store/nodeMatchingTableStore';
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore';
 import useNetMatchingTableStore from '../store/netMatchingTableStore';
+import useMergeToolTipStore from '../store/mergeToolTip';
 import { Column } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork';
@@ -54,7 +55,6 @@ interface MergeDialogProps {
 }
 
 const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName, workSpaceNetworks, networksLoaded }): React.ReactElement => {
-    const [readyToMerge, setReadyToMerge] = useState(false);// Flag to indicate whether it is ready to merge
     const [tableView, setTableView] = useState(TableView.node); // Current table view
     const [errorMessage, setErrorMessage] = useState(''); // Error message to display
     const [showError, setShowError] = useState(false); // Flag to show the error message panel
@@ -66,8 +66,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const [fullScreen, setFullScreen] = useState(false); // Full screen mode for the dialog
     const [tooltipOpen, setTooltipOpen] = useState(false); // Flag to indicate whether the tooltip is open
     const [strictRemoveMode, setStrictRemoveMode] = useState(false); // Flag to indicate the rules of difference merge
-    const [isNameDuplicate, setIsNameDuplicate] = useState(false);
+    const [isNameDuplicate, setIsNameDuplicate] = useState(false); // Flag to indicate whether the network name is a duplicate
     const existingNetNames = new Set(workSpaceNetworks.map(pair => pair[0])); // Set of existing network names
+    const mergeTooltipIsOpen = useMergeToolTipStore(state => state.isOpen)
+    const setMergeTooltipIsOpen = useMergeToolTipStore(state => state.setIsOpen)
+    const mergeTooltipText = useMergeToolTipStore(state => state.text)
+    const setMergeTooltipText = useMergeToolTipStore(state => state.setText)
     // confirmation window
     const [openConfirmation, setOpenConfirmation] = useState(false);
     const [confirmationTitle, setConfirmationTitle] = useState('');
@@ -290,16 +294,24 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             toMergeNetworksList.forEach((net) => {
                 if (!networkRecords[net[1]]?.nodeTable?.columns.some(col => col.name === matchingCols[net[1]].name && col.type === matchingCols[net[1]].type)) {
                     isReady = false
+                    setMergeTooltipText("The matching column for " + net[0] + " is not found in the node table.")
                 }
             })
             // Intersection Operation must take two or more networks while Difference Operation must take exactly two networks
-            if (mergeOpType === MergeType.intersection && toMergeNetworksList.length < 2) isReady = false
-            if (mergeOpType === MergeType.difference && toMergeNetworksList.length !== 2) isReady = false
-            setReadyToMerge(isReady);
+            if (mergeOpType === MergeType.intersection && toMergeNetworksList.length < 2) {
+                isReady = false
+                setMergeTooltipText("Intersection operation must take two or more networks")
+            } else if (mergeOpType === MergeType.difference && toMergeNetworksList.length !== 2) {
+                isReady = false
+                setMergeTooltipText("Difference operation must take exactly two networks")
+            }
+            setMergeTooltipIsOpen(!isReady);
         } else {
-            setReadyToMerge(false);
+            setMergeTooltipIsOpen(true);
+            setMergeTooltipText("Please select networks to merge")
         }
-    }, [toMergeNetworksList, matchingCols, networkRecords]);
+    }, [toMergeNetworksList, matchingCols, mergeOpType, networkRecords]);
+
     // Set the initial state of the networkRecords
     useEffect(() => {
         setNetworkRecords(networksLoaded);
@@ -615,12 +627,22 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                 message={errorMessage} onConfirm={() => setShowError(false)}
             />
             <DialogActions>
-                <Button onClick={handleClose} color="primary">
+                <Button onClick={handleClose} color="secondary">
                     Cancel
                 </Button>
-                <Button onClick={handleMerge} color="secondary" disabled={!readyToMerge}>
-                    Merge
-                </Button>
+                {
+                    mergeTooltipIsOpen ?
+                        <Tooltip title={mergeTooltipText} placement="top" arrow>
+                            <span>
+                                <Button color="primary" disabled={true}>
+                                    Merge
+                                </Button>
+                            </span>
+                        </Tooltip> :
+                        <Button onClick={handleMerge} color="primary">
+                            Merge
+                        </Button>
+                }
             </DialogActions>
             <ConfirmationDialog
                 title={confirmationTitle}

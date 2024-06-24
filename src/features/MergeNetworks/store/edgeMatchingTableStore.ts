@@ -6,6 +6,7 @@ import { MatchingTableRow } from '../models/MatchingTable';
 import { filterRows, getMergedType } from '../utils/helper-functions';
 import { NetworkRecord } from '../models/DataInterfaceForMerge';
 import { getResonableCompatibleConvertionType } from '../utils/attributes-operations';
+import { generateUniqueName } from '../../../utils/network-utils';
 
 interface EdgeMatchingTableState {
     rows: MatchingTableRow[];
@@ -26,6 +27,7 @@ type EdgeMatchingTableStore = EdgeMatchingTableState & EdgeMatchingTableActions
 const addNetworks = (state: EdgeMatchingTableStore, networkIds: IdType[], networkRecords: Record<IdType, NetworkRecord>, matchingCols: Record<string, Column>) => {
     const sharedColsRecord: Record<IdType, Set<string>> = {};
     networkIds.forEach(netId => sharedColsRecord[netId] = new Set());
+    const mergedNetworkNames = new Set(state.rows.map(row => row.mergedNetwork));
     state.rows = state.rows.map((row, id) => {
         let typeCheck = false;
         for (const netId of networkIds) {
@@ -80,9 +82,11 @@ const addNetworks = (state: EdgeMatchingTableStore, networkIds: IdType[], networ
                         typeRecord[net2] = 'None';
                     }
                 });
+                const mergedNetworkName = generateUniqueName(mergedNetworkNames, col.name);
+                mergedNetworkNames.add(mergedNetworkName);
                 state.rows.push({
                     id: state.rows.length,
-                    mergedNetwork: col.name,
+                    mergedNetwork: mergedNetworkName,
                     type: getResonableCompatibleConvertionType(typeSet),
                     typeRecord: typeRecord,
                     nameRecord: matchCols,
