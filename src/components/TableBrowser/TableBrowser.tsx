@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material'
 import { Button, ButtonGroup } from '@mui/material'
+import _ from 'lodash'
 
 import {
   Table,
@@ -40,9 +41,7 @@ import {
   deserializeValueList,
   valueDisplay,
   isListType,
-  SortDirection,
   SortType,
-  sortFnToType,
   serializedStringIsValid,
   deserializeValue,
 } from '../../models/TableModel/impl/ValueTypeImpl'
@@ -224,7 +223,7 @@ export default function TableBrowser(props: {
   const rowsWithIds = Array.from(
     (currentTable?.rows ?? new Map()).entries(),
   ).map(([key, value]) => ({ ...value, id: key }))
-  const rows =
+  let rows =
     selectedElements?.length > 0
       ? rowsWithIds.filter((r) => selectedElementsSet.has(r.id))
       : rowsWithIds
@@ -243,13 +242,14 @@ export default function TableBrowser(props: {
   }, [selectedElements])
 
   if (sort.column != null && sort.direction != null && sort.valueType != null) {
-    const sortFn = sortFnToType[sort.valueType]
-    rows.sort((a, b) => {
-      if (a == null || b == null || sort.column == null) return 0
-      const aVal = (a as Record<string, ValueType>)[sort.column]
-      const bVal = (b as Record<string, ValueType>)[sort.column]
-      return sortFn(aVal, bVal, sort.direction as SortDirection)
-    })
+    if (sort.column != null) {
+      rows = _.orderBy(
+        rows,
+        (o) =>
+          (o as Record<string, ValueType>)[sort.column as string] as ValueType,
+        sort.direction,
+      )
+    }
   }
 
   const handleChange = (
