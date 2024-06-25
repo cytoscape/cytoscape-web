@@ -279,8 +279,9 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
         tableStyle={{ minWidth: '50rem' }}
         scrollable
         scrollHeight="400px"
-        height={450}
-        virtualScrollerOptions={{ itemSize: 10, delay: 50 }}
+        virtualScrollerOptions={{
+          itemSize: 10,
+        }}
       >
         {columns.map((h, i) => {
           return (

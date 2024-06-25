@@ -330,9 +330,8 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
         size="small"
         tableStyle={{ minWidth: '50rem' }}
         scrollable
-        scrollHeight="300px"
-        height={300}
-        virtualScrollerOptions={{ itemSize: 10, delay: 50 }}
+        scrollHeight="350px"
+        virtualScrollerOptions={{ itemSize: 10 }}
       >
         {columns.map((h, i) => {
           return (
