@@ -46,7 +46,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   const [scalingType, setScalingType] = useState<ScalingType>('both')
 
   // Slider position. Default position is center (0) = identity scaling
-  const [value, setValue] = useState<number>(0)
+  const [sliderValue, setSliderValue] = useState<number>(0)
 
   // Original positions of the nodes. Assign empty map as default
   const [originalPositions, setOriginalPositions] = useState<
@@ -58,18 +58,30 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     (state) => state.setIsRunning,
   )
 
+  // Update node positions in the network view model
+  const updateNodePositions: (
+    networkId: IdType,
+    positions: Map<IdType, [number, number, number?]>,
+  ) => void = useViewModelStore((state) => state.updateNodePositions)
+
   // Target network view
   const networkView: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(networkId),
   )
 
+  /**
+   * Initialize the original positions when new network is detected
+   */
   useEffect(() => {
     initRef.current = false
     // Current network is switched. Reset the slider to zero
-    setValue(0)
+    setSliderValue(0)
     setOriginalPositions(new Map<IdType, [number, number, number?]>())
   }, [networkId])
 
+  /**
+   * Set the original positions only once when the network view is initialized
+   */
   useEffect(() => {
     // Make sure this is called only once when network is switched.
     // Otherwise, the original positions will be confused
@@ -79,26 +91,41 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     }
   }, [networkView])
 
+  /**
+   * Update the original positions when the node positions are changed
+   * by external components after the initialization
+   */
   useEffect(() => {
     if (initRef.current && networkView !== undefined) {
+      const { nodeViews } = networkView
       // If external components change the node positions after initialization,
       // update the original positions used for scaling
-      refreshPositions(networkView.nodeViews)
+      const scalingFactor = calcScale(sliderValue)
+      Object.keys(nodeViews).forEach((nodeId) => {
+        const nv = nodeViews[nodeId]
+        if (
+          nv.x !== originalPositions?.get(nodeId)?.[0] ||
+          nv.y !== originalPositions?.get(nodeId)?.[1] ||
+          nv.z !== originalPositions?.get(nodeId)?.[2]
+        ) {
+          // Adjust the original node position based on the current scaling factor
+          originalPositions?.set(nodeId, [
+            nv.x / scalingFactor,
+            nv.y / scalingFactor,
+            nv.z ?? 0 / scalingFactor,
+          ])
+        }
+      })
     }
   }, [networkView?.nodeViews])
 
-  const updateNodePositions: (
-    networkId: IdType,
-    positions: Map<IdType, [number, number, number?]>,
-  ) => void = useViewModelStore((state) => state.updateNodePositions)
-
   const handleChange = (event: Event, value: number | number[]): void => {
-    setValue(value as number)
+    setSliderValue(value as number)
   }
 
   const handleUpdate = (event: Event, value: number | number[]): void => {
     const valueAsNumber: number = typeof value === 'number' ? value : value[0]
-    setValue(valueAsNumber)
+    setSliderValue(valueAsNumber)
     const scalingFactor = calcScale(valueAsNumber)
     applyScaling(scalingFactor)
   }
@@ -145,7 +172,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     }
     // Copy current positions to the original positions
     refreshPositions(networkView.nodeViews)
-    setValue(0)
+    setSliderValue(0)
   }
 
   const refreshPositions = (nodeViews: Record<IdType, NodeView>): void => {
@@ -181,7 +208,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       >
         <Slider
           aria-label="Scaling marks"
-          value={value}
+          value={sliderValue}
           step={0.1}
           size="small"
           marks={marks}
