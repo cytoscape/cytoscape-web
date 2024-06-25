@@ -48,6 +48,7 @@ const addNetworks = (state: NetMatchingTableStore, networkIds: IdType[], network
             row.hasConflicts = hasConflicts;
             row.type = mergedType;
         }
+        mergedNetworkNames.add(row.mergedNetwork);
         return row;
     });
 

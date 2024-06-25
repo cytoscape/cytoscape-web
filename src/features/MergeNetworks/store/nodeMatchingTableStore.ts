@@ -60,6 +60,7 @@ const addNetworks = (state: NodeMatchingTableStore, networkIds: IdType[], networ
                 row.hasConflicts = hasConflicts;
                 row.type = mergedType;
             }
+            mergedNetworkNames.add(row.mergedNetwork);
             return row;
         });
     } else {
