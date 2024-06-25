@@ -86,7 +86,7 @@ const addNetworks = (state: NetMatchingTableStore, networkIds: IdType[], network
                 mergedNetworkNames.add(mergedNetworkName);
                 state.rows.push({
                     id: state.rows.length,
-                    mergedNetwork: col.name,
+                    mergedNetwork: mergedNetworkName,
                     type: getResonableCompatibleConvertionType(typeSet),
                     typeRecord: typeRecord,
                     nameRecord: matchCols,
