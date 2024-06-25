@@ -6,6 +6,7 @@ import { MatchingTable } from '../MatchingTable';
 import { IdType } from '../../../../models/IdType';
 import { mergeNetSummary } from './MergeNetSummary';
 import { NetworkWithView } from '../../../../utils/cx-utils';
+import { checkAttribute } from '../../utils/attributes-operations';
 import { Column } from '../../../../models/TableModel/Column';
 import { putNetworkSummaryToDb } from '../../../../store/persist/db'
 import { NetworkAttributes } from '../../../../models/NetworkModel';
@@ -13,7 +14,6 @@ import ViewModelFn, { NetworkView } from '../../../../models/ViewModel';
 import { MergeType, NetworkRecord, NetworktoMerge } from '../DataInterfaceForMerge';
 import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel';
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility';
-import { getMatchingTableRows, getAttributeMapping } from './MatchingTableImpl';
 import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel';
 
 export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetworkId: IdType, networkName: string,
@@ -21,22 +21,8 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>, netSummaries: Record<IdType, NdexNetworkSummary>,
     mergeOpType: MergeType = MergeType.union, mergeWithinNetwork: boolean = false, mergeOnlyNodes: boolean = false, strictRemoveMode: boolean = false
 ): Promise<NetworkWithView> => {
-    if (fromNetworks.length < 1) {
-        throw new Error("No networks to merge");
-    }
-    if (getMatchingTableRows(nodeAttributeMapping).length < 1) {
-        throw new Error("The length of node attribute mapping table must be greater than 0")
-    }
-    for (const netId of fromNetworks) {
-        if (!networkRecords[netId]) {
-            throw new Error(`Network with id ${netId} not found`);
-        }
-        if (!getAttributeMapping(nodeAttributeMapping, netId)) {
-            throw new Error(`Node Attribute mapping for network ${netId} not found`);
-        }
-        if (!matchingAttribute[netId]) {
-            throw new Error(`Matching attribute for network ${netId} not found`);
-        }
+    if (checkAttribute(nodeAttributeMapping, edgeAttributeMapping, networkRecords, fromNetworks)) {
+        throw new Error(`Attribute not found in the network`);
     }
     let mergedNetwork: NetworkRecord = {} as NetworkRecord
     if (mergeOpType === MergeType.union) {

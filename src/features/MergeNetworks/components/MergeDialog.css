@@ -7,7 +7,15 @@
 }
 
 .toggleButton {
-    border: 1px solid #565656 !important;
+    border: 1.5px solid #565656 !important;
+}
+
+.toggleButton:first-child {
+    border-right: none !important;
+}
+
+.toggleButton:last-child {
+    border-left: none !important;
 }
 
 .toggleButton.selected {
@@ -52,5 +60,11 @@
     background-color: #217dd8 !important;
     color: white !important;
     padding-left: 17px !important;
-    border-radius: 4px !important
+    border-radius: 4px 4px 0 0 !important;
+    border-bottom: 2px solid #000000 !important;
+}
+
+.scrollableList {
+    overflow: auto;
+    max-height: 250px;
 }

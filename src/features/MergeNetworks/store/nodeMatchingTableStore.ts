@@ -29,6 +29,7 @@ const addNetworks = (state: NodeMatchingTableStore, networkIds: IdType[], networ
     const sharedColsRecord: Record<IdType, Set<string>> = {};
     networkIds.forEach(netId => sharedColsRecord[netId] = new Set());
     const mergedNetworkNames = new Set(state.rows.map(row => row.mergedNetwork));
+    let checkFirstRow = false;
     if (state.rows.length > 0) {
         state.rows = state.rows.map((row, id) => {
             let typeCheck = false;
@@ -82,7 +83,7 @@ const addNetworks = (state: NodeMatchingTableStore, networkIds: IdType[], networ
         matchingColRow.hasConflicts = typeSet.size > 1;
         matchingColRow.type = getResonableCompatibleConvertionType(typeSet);
         state.rows.push(matchingColRow);
-        mergedNetworkNames.add(defaultMatchingAttributeName);
+        checkFirstRow = true
     }
     const originalNetworkIds = Array.from(state.networkIds);
     networkIds.forEach((net1, index1) => {
@@ -128,6 +129,9 @@ const addNetworks = (state: NodeMatchingTableStore, networkIds: IdType[], networ
             }
         });
     });
+    if (checkFirstRow) {
+        state.rows[0].mergedNetwork = generateUniqueName(mergedNetworkNames, state.rows[0].mergedNetwork);
+    }
 }
 
 const removeNetworks = (state: NodeMatchingTableStore, networkIds: IdType[]) => {

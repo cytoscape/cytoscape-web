@@ -1,7 +1,7 @@
 //import the necessary libraries and components
 import React, { useEffect } from 'react';
 import { PriorityHigh as PriorityHighIcon } from '@mui/icons-material';
-import { NetworkRecord, Pair, TableView } from '../models/DataInterfaceForMerge';
+import { MergeType, NetworkRecord, Pair, TableView } from '../models/DataInterfaceForMerge';
 import { TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, TextField, Tooltip } from '@mui/material';
 import { MatchingTableRow } from '../models/MatchingTable';
 import { NetAttDropDownTemplate } from './NetAttDropDownTemplate';
@@ -16,15 +16,15 @@ import useMergeToolTipStore from '../store/mergeToolTip';
 interface MatchingTableProps {
     networkRecords: Record<IdType, NetworkRecord>
     netLst: Pair<string, string>[];
-    type: TableView;
-    matchingCols?: Record<IdType, Column>;
+    tableView: TableView;
+    mergeOpType: MergeType;
 }
 
-export const MatchingTableComp = React.memo(({ networkRecords, netLst, type }: MatchingTableProps) => {
-    const tableData = (type === TableView.node) ? useNodeMatchingTableStore(state => state.rows) :
-        (type === TableView.edge ? useEdgeMatchingTableStore(state => state.rows) : useNetMatchingTableStore(state => state.rows))
-    const setMatchingTable = (type === TableView.node) ? useNodeMatchingTableStore(state => state.setRow) :
-        (type === TableView.edge ? useEdgeMatchingTableStore(state => state.setRow) : useNetMatchingTableStore(state => state.setRow));
+export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView, mergeOpType }: MatchingTableProps) => {
+    const tableData = (tableView === TableView.node) ? useNodeMatchingTableStore(state => state.rows) :
+        (tableView === TableView.edge ? useEdgeMatchingTableStore(state => state.rows) : useNetMatchingTableStore(state => state.rows))
+    const setMatchingTable = (tableView === TableView.node) ? useNodeMatchingTableStore(state => state.setRow) :
+        (tableView === TableView.edge ? useEdgeMatchingTableStore(state => state.setRow) : useNetMatchingTableStore(state => state.setRow));
     // Handler for 'Merged Network' changes
     const onMergedNetworkChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, rowIndex: number) => {
         const updatedRow = { ...tableData[rowIndex], mergedNetwork: e.target.value };
@@ -50,16 +50,35 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, type }: M
     const duplicatedNamesIds = new Set((Array.from(name2RowId.values()).filter((ids) => ids.length > 1)).reduce((acc, val) => acc.concat(val), []));
 
     useEffect(() => {
-        if (duplicatedNamesIds.size > 0) {
-            setMergeTooltipIsOpen(true);
-            setMergeTooltipText('Some rows have duplicated names. Please make sure each row has a unique name.');
-        } else if (emptyRowIds.size > 0) {
-            setMergeTooltipIsOpen(true);
-            setMergeTooltipText('Merged network attribute name cannot be empty.');
+        if (netLst.length > 0) {
+            let isReady = true
+            if (duplicatedNamesIds.size > 0) {
+                isReady = false
+                setMergeTooltipText('Some rows have duplicated names. Please make sure each row has a unique name.');
+            } else if (emptyRowIds.size > 0) {
+                isReady = false
+                setMergeTooltipText('Merged network attribute name cannot be empty.');
+            }
+            if (mergeOpType === MergeType.intersection && netLst.length < 2) {
+                isReady = false
+                setMergeTooltipText("Intersection operation must take two or more networks")
+            } else if (mergeOpType === MergeType.difference && netLst.length !== 2) {
+                isReady = false
+                setMergeTooltipText("Difference operation must take exactly two networks")
+            }
+            if (tableView === TableView.node && tableData.length < 1) {
+                isReady = false
+                setMergeTooltipText("The length of node attribute mapping table must be greater than 0")
+            } else if (tableView === TableView.network && tableData.length < 3) {
+                isReady = false
+                setMergeTooltipText("The length of network attribute mapping table must be greater than 2")
+            }
+            setMergeTooltipIsOpen(!isReady);
         } else {
-            setMergeTooltipIsOpen(false);
+            setMergeTooltipIsOpen(true);
+            setMergeTooltipText("Please select networks to merge")
         }
-    }, [duplicatedNamesIds, emptyRowIds, setMergeTooltipIsOpen, setMergeTooltipText]);
+    }, [duplicatedNamesIds, emptyRowIds, netLst, mergeOpType]);
 
     const getTooltipMessage = (row: MatchingTableRow, duplicatedNamesIds: Set<number>, emptyRowIds: Set<number>) => {
         if (row.hasConflicts) return 'This row has type conflict';
@@ -69,7 +88,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, type }: M
     };
 
     return (
-        <TableContainer key={`${type}-tablecontainer`} component={Paper} sx={{ maxHeight: 500, overflow: 'auto' }}>
+        <TableContainer key={`${tableView}-tablecontainer`} component={Paper} sx={{ maxHeight: 500, overflow: 'auto' }}>
             <Table sx={{ minWidth: 400 }} aria-label="simple table">
                 <TableHead>
                     <TableRow>
@@ -88,12 +107,12 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, type }: M
                                     <TableCell key={`${row.id}-${net[1]}`} component="th" scope="row">
                                         <NetAttDropDownTemplate
                                             networkRecords={networkRecords} rowData={row}
-                                            column={net[1]} type={type} netLst={netLst}
+                                            column={net[1]} type={tableView} netLst={netLst}
                                         />
                                     </TableCell>
                                 ))}
                                 <TableCell key={`${row.id}-mergedNetwork`}>
-                                    {(row.id === 0 && type === TableView.node) ?
+                                    {(row.id === 0 && tableView === TableView.node) ?
                                         <Tooltip key={`${row.id}-mergedNetwork-tooltip`} title={'This attribute is used to match nodes between networks.'} placement="top" arrow>
                                             <TextField
                                                 key={`${row.id}-matchingAttribute-textField`}
@@ -112,11 +131,11 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, type }: M
                                             value={row.mergedNetwork}
                                             onChange={(e) => onMergedNetworkChange(e, row.id)}
                                             style={{ minWidth: 100 }}
-                                            disabled={type === TableView.network && rowIndex < 3}
+                                            disabled={tableView === TableView.network && rowIndex < 3}
                                         />}
                                 </TableCell>
                                 <TableCell key={`${row.id}-type`}>
-                                    <TypeDropDownTemplate type={type} rowData={row} netLst={netLst} />
+                                    <TypeDropDownTemplate type={tableView} rowData={row} netLst={netLst} />
                                 </TableCell>
                             </TableRow>
                         </Tooltip>

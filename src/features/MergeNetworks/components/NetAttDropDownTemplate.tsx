@@ -25,7 +25,7 @@ export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, col
     const emptyOption = { label: 'None', value: 'None' };
     const tableType = type === TableView.node ? 'nodeTable' : (type === TableView.edge ? 'edgeTable' : 'netTable');
     const columns = networkRecords[column]?.[tableType]?.columns || [];
-    const networkOptions = (type === TableView.node && rowData.id === 0) ? columns.map(nc => ({ label: nc.name, value: nc.name })) : [...columns.map(nc => ({ label: nc.name, value: nc.name })), emptyOption];
+    const networkOptions = ((type === TableView.node && rowData.id === 0) || (type === TableView.network && rowData.id < 3)) ? columns.map(nc => ({ label: nc.name, value: nc.name })) : [...columns.map(nc => ({ label: nc.name, value: nc.name })), emptyOption];
     const currentValue = (rowData.nameRecord[column] && rowData.nameRecord[column] !== 'None') ? rowData.nameRecord[column] : '';
     const netIdLst = netLst.map(pair => pair[1]);
     const setMatchingCols = useMatchingColumnsStore(state => state.setMatchingCols);

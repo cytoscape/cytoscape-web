@@ -286,31 +286,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
         setFullScreen(!fullScreen);
         setTooltipOpen(false); // Close tooltip on toggle
     };
-    // Update the matching table when selectedNetworks changes
-    useEffect(() => {
-        // check whether it is ready to merge
-        if (toMergeNetworksList.length > 0) {
-            let isReady = true
-            toMergeNetworksList.forEach((net) => {
-                if (!networkRecords[net[1]]?.nodeTable?.columns.some(col => col.name === matchingCols[net[1]].name && col.type === matchingCols[net[1]].type)) {
-                    isReady = false
-                    setMergeTooltipText("The matching column for " + net[0] + " is not found in the node table.")
-                }
-            })
-            // Intersection Operation must take two or more networks while Difference Operation must take exactly two networks
-            if (mergeOpType === MergeType.intersection && toMergeNetworksList.length < 2) {
-                isReady = false
-                setMergeTooltipText("Intersection operation must take two or more networks")
-            } else if (mergeOpType === MergeType.difference && toMergeNetworksList.length !== 2) {
-                isReady = false
-                setMergeTooltipText("Difference operation must take exactly two networks")
-            }
-            setMergeTooltipIsOpen(!isReady);
-        } else {
-            setMergeTooltipIsOpen(true);
-            setMergeTooltipText("Please select networks to merge")
-        }
-    }, [toMergeNetworksList, matchingCols, mergeOpType, networkRecords]);
 
     // Set the initial state of the networkRecords
     useEffect(() => {
@@ -472,22 +447,22 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                 </Typography>
 
                 <Box display="flex" justifyContent="space-between" p={2}>
-                    <List
-                        subheader={<ListSubheader className="listSubheader" component="div" >Available Networks</ListSubheader>}
-                        component={Paper}
-                        style={{ width: '42.5%', maxHeight: 300, overflow: 'auto' }}
-                    >
-                        {availableNetworksList.map((network, index) => (
-                            <ListItem
-                                button
-                                selected={selectedAvailable.includes(network)}
-                                onClick={() => handleSelectAvailable(network[1])}
-                                key={index}
-                            >
-                                <ListItemText primary={network[0]} />
-                            </ListItem>
-                        ))}
-                    </List>
+                    <Paper style={{ width: '42.5%' }}>
+                        <ListSubheader className="listSubheader" component="div">Available Networks</ListSubheader>
+                        <List className="scrollableList" component="div">
+                            {availableNetworksList.map((network, index) => (
+                                <ListItem
+                                    button
+                                    selected={selectedAvailable.includes(network)}
+                                    onClick={() => handleSelectAvailable(network[1])}
+                                    key={index}
+                                >
+                                    <ListItemText primary={network[0]} />
+                                </ListItem>
+                            ))}
+                        </List>
+                    </Paper>
+
                     <Box display="flex" flexDirection="column" justifyContent="center" m={1}>
                         <Button className="arrowButton" variant="contained" onClick={handleAddNetwork} disabled={selectedAvailable.length === 0} size='small'>
                             <ArrowForwardIcon className="arrowIcon" fontSize="small" />
@@ -496,30 +471,29 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                             <ArrowBackIcon className="arrowIcon" fontSize="small" />
                         </Button>
                     </Box>
-                    <List
-                        subheader={<ListSubheader className="listSubheader" component="div" >Networks to Merge</ListSubheader>}
-                        component={Paper}
-                        style={{ width: '42.5%', maxHeight: 300, overflow: 'auto' }}
-                    >
-                        {toMergeNetworksList.map((network, index) => (
-                            <ListItem
-                                button
-                                selected={selectedToMerge.includes(network)}
-                                onClick={() => handleSelectToMerge(network[1])}
-                                key={index}
-                            >
-                                <ListItemText
-                                    primary={
-                                        <>
-                                            {network[0]}
-                                            {index === 0 && <Tooltip title={`This is the base network`} placement="top" arrow>
-                                                <StarIcon viewBox="0 -3.7 24 24" style={{ color: 'gold' }} />
-                                            </Tooltip>}
-                                        </>
-                                    } />
-                            </ListItem>
-                        ))}
-                    </List>
+                    <Paper style={{ width: '42.5%' }}>
+                        <ListSubheader className="listSubheader" component="div">Networks to Merge</ListSubheader>
+                        <List className="scrollableList" component="div">
+                            {toMergeNetworksList.map((network, index) => (
+                                <ListItem
+                                    button
+                                    selected={selectedToMerge.includes(network)}
+                                    onClick={() => handleSelectToMerge(network[1])}
+                                    key={index}
+                                >
+                                    <ListItemText
+                                        primary={
+                                            <>
+                                                {network[0]}
+                                                {index === 0 && <Tooltip title={`This is the base network`} placement="top" arrow>
+                                                    <StarIcon viewBox="0 -3.7 24 24" style={{ color: 'gold' }} />
+                                                </Tooltip>}
+                                            </>
+                                        } />
+                                </ListItem>
+                            ))}
+                        </List>
+                    </Paper>
                     <Box display="flex" flexDirection="column" justifyContent="center" m={1}>
                         <Button className="arrowButton" variant="contained" onClick={handleMoveUp} disabled={selectedToMerge.length === 0} size='small'>
                             <ArrowUpwardIcon className="arrowIcon" fontSize="small" />
@@ -568,8 +542,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                             <MatchingTableComp
                                 networkRecords={networkRecords}
                                 netLst={toMergeNetworksList}
-                                type={tableView}
-                                matchingCols={matchingCols}
+                                tableView={tableView}
+                                mergeOpType={mergeOpType}
                             />
                         )}
 
