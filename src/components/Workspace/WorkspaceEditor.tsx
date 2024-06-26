@@ -220,6 +220,14 @@ const WorkSpaceEditor = (): JSX.Element => {
     )
     
     setSummaries({...summaries, ...newSummaries})
+
+    const loadedNetworks = Object.keys(newSummaries)
+    if(loadedNetworks.length !== networkIds.length){
+      networkIds.filter(id => !loadedNetworks.includes(id)).forEach((id) => {
+        deleteNetwork(id)
+      })
+    
+    }
   }
 
   const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
@@ -403,12 +411,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     })
     loadNetworkSummaries(toBeAdded)
       .then(() => {})
-      .catch((err) => {
-        console.error(err)
-        toBeAdded.forEach((id) => {
-          deleteNetwork(id)
-        })
-      })
+      .catch((err) => { console.error(err) })
   }, [workspace.networkIds])
 
   /**
