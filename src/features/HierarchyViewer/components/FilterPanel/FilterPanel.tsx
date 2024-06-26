@@ -36,6 +36,7 @@ import {
   FilterWidgetType,
 } from '../../../../models/FilterModel'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
+import { Table } from '../../../../models/TableModel'
 
 // Default filter name if none exists
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
@@ -108,10 +109,13 @@ export const FilterPanel = () => {
       ? setNodeAttrName
       : setEdgeAttrName
 
-  const table =
-    selectedObjectType === GraphObjectType.NODE
-      ? tablePair.nodeTable
-      : tablePair.edgeTable
+  let table: Table | undefined
+  if (tablePair !== undefined) {
+    table =
+      selectedObjectType === GraphObjectType.NODE
+        ? tablePair.nodeTable
+        : tablePair.edgeTable
+  }
 
   const getMapping = (
     style: VisualStyle,
@@ -246,7 +250,8 @@ export const FilterPanel = () => {
     }
   }, [targetAttrName, selectedObjectType, vs, displayMode])
 
-  if (!shouldApplyFilter || selectedFilter === undefined) return null
+  if (!shouldApplyFilter || selectedFilter === undefined || table === undefined)
+    return null
 
   return (
     <Container
