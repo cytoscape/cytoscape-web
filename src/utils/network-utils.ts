@@ -1,12 +1,24 @@
 // Network Naming Utilities
-export function generateUniqueName(existingNames: string[], proposedName: string): string {
-    if (!existingNames.includes(proposedName)) {
-        return proposedName;
-    } else {
-        let i = 1;
-        while (existingNames.includes(proposedName + i)) {
-            i++;
+export function generateUniqueName(existingNames: string[] | Set<string>, proposedName: string): string {
+    if (existingNames instanceof Set) {
+        if (!existingNames.has(proposedName)) {
+            return proposedName;
+        } else {
+            let i = 1;
+            while (existingNames.has(proposedName + '_' + i)) {
+                i++;
+            }
+            return proposedName + '_' + i;
         }
-        return proposedName + i;
+    } else {
+        if (!existingNames.includes(proposedName)) {
+            return proposedName;
+        } else {
+            let i = 1;
+            while (existingNames.includes(proposedName + '_' + i)) {
+                i++;
+            }
+            return proposedName + '_' + i;
+        }
     }
 }

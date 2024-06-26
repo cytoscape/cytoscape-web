@@ -6,6 +6,7 @@ import { MatchingTableRow } from '../models/MatchingTable';
 import { filterRows, getMergedType } from '../utils/helper-functions';
 import { NetworkRecord } from '../models/DataInterfaceForMerge';
 import { getResonableCompatibleConvertionType } from '../utils/attributes-operations';
+import { generateUniqueName } from '../../../utils/network-utils';
 
 interface NodeMatchingTableState {
     rows: MatchingTableRow[];
@@ -18,72 +19,17 @@ interface NodeMatchingTableActions {
     addRow: (newRow: MatchingTableRow) => void
     updateRow: (rowIndex: number, netId: string, col: Column) => void;
     resetStore: () => void;
-    addNetworkToTable: (networkId: IdType, netRecord: NetworkRecord, matchingCol: Column) => void
     addNetworksToTable: (networkIds: IdType[], networkRecords: Record<IdType, NetworkRecord>, matchingCols: Record<string, Column>) => void
     removeNetworksFromTable: (networkIds: IdType[]) => void
 }
 
 type NodeMatchingTableStore = NodeMatchingTableState & NodeMatchingTableActions
 
-const addNetwork = (state: NodeMatchingTableStore, networkId: IdType, netRecord: NetworkRecord, matchingCol: Column) => {
-    const netCols = netRecord.nodeTable.columns;
-    const sharedCols = new Set<string>();
-    if (state.rows.length > 0) {
-        state.rows = state.rows.map((row, id) => {
-            let typeCheck = true
-            if (id === 0) {
-                row.nameRecord[networkId] = matchingCol.name || 'None';
-                row.typeRecord[networkId] = matchingCol.type || 'None';
-            }
-            else {
-                if (netCols.some(nc => nc.name === row.mergedNetwork)) {
-                    sharedCols.add(row.mergedNetwork);
-                    row.nameRecord[networkId] = row.mergedNetwork;
-                    row.typeRecord[networkId] = netCols.find(nc => nc.name === row.mergedNetwork)?.type || 'None';
-                } else {
-                    row.nameRecord[networkId] = 'None';
-                    row.typeRecord[networkId] = 'None';
-                    typeCheck = false;
-                }
-            }
-            if (typeCheck) {
-                const { hasConflicts, mergedType } = getMergedType(row.typeRecord);
-                row.hasConflicts = hasConflicts;
-                row.type = mergedType;
-            }
-            return row;
-        });
-    } else {
-        state.rows.push({
-            id: 0,
-            mergedNetwork: 'Matching.Attribute',
-            type: matchingCol.type || 'None',
-            nameRecord: { [networkId]: matchingCol.name || 'None' },
-            typeRecord: { [networkId]: matchingCol.type || 'None' },
-            hasConflicts: false
-        });
-    }
-
-    // Add new rows for columns not in sharedCols
-    netCols.forEach(col => {
-        if (!sharedCols.has(col.name)) {
-            state.rows.push({
-                id: state.rows.length,
-                mergedNetwork: col.name,
-                type: col.type,
-                nameRecord: { ...Array.from(state.networkIds).reduce((acc, key) => ({ ...acc, [key]: 'None' }), {}), [networkId]: col.name },
-                typeRecord: { ...Array.from(state.networkIds).reduce((acc, key) => ({ ...acc, [key]: 'None' }), {}), [networkId]: col.type },
-                hasConflicts: false
-            });
-        }
-    });
-    // Update network IDs
-    state.networkIds.add(networkId);
-};
-
 const addNetworks = (state: NodeMatchingTableStore, networkIds: IdType[], networkRecords: Record<IdType, NetworkRecord>, matchingCols: Record<string, Column>) => {
     const sharedColsRecord: Record<IdType, Set<string>> = {};
     networkIds.forEach(netId => sharedColsRecord[netId] = new Set());
+    const mergedNetworkNames = new Set(state.rows.map(row => row.mergedNetwork));
+    let checkFirstRow = false;
     if (state.rows.length > 0) {
         state.rows = state.rows.map((row, id) => {
             let typeCheck = false;
@@ -114,12 +60,14 @@ const addNetworks = (state: NodeMatchingTableStore, networkIds: IdType[], networ
                 row.hasConflicts = hasConflicts;
                 row.type = mergedType;
             }
+            mergedNetworkNames.add(row.mergedNetwork);
             return row;
         });
     } else {
+        const defaultMatchingAttributeName = 'Matching.Attribute';
         const matchingColRow: MatchingTableRow = {
             id: 0,
-            mergedNetwork: 'Matching.Attribute',
+            mergedNetwork: defaultMatchingAttributeName,
             type: 'None',
             nameRecord: {},
             typeRecord: {},
@@ -136,6 +84,7 @@ const addNetworks = (state: NodeMatchingTableStore, networkIds: IdType[], networ
         matchingColRow.hasConflicts = typeSet.size > 1;
         matchingColRow.type = getResonableCompatibleConvertionType(typeSet);
         state.rows.push(matchingColRow);
+        checkFirstRow = true
     }
     const originalNetworkIds = Array.from(state.networkIds);
     networkIds.forEach((net1, index1) => {
@@ -168,9 +117,11 @@ const addNetworks = (state: NodeMatchingTableStore, networkIds: IdType[], networ
                         typeRecord[net2] = 'None';
                     }
                 });
+                const mergedNetworkName = generateUniqueName(mergedNetworkNames, col.name);
+                mergedNetworkNames.add(mergedNetworkName);
                 state.rows.push({
                     id: state.rows.length,
-                    mergedNetwork: col.name,
+                    mergedNetwork: mergedNetworkName,
                     type: getResonableCompatibleConvertionType(typeSet),
                     typeRecord: typeRecord,
                     nameRecord: matchCols,
@@ -179,6 +130,9 @@ const addNetworks = (state: NodeMatchingTableStore, networkIds: IdType[], networ
             }
         });
     });
+    if (checkFirstRow) {
+        state.rows[0].mergedNetwork = generateUniqueName(mergedNetworkNames, state.rows[0].mergedNetwork);
+    }
 }
 
 const removeNetworks = (state: NodeMatchingTableStore, networkIds: IdType[]) => {
@@ -233,7 +187,6 @@ const useNodeMatchingTableStore = create(immer<NodeMatchingTableStore>((set) => 
         rows: [],
         networkIds: new Set(),
     })),
-    addNetworkToTable: (networkId, netRecord, matchingCol) => set(state => { addNetwork(state, networkId, netRecord, matchingCol) }),
     addNetworksToTable: (networkIds, networkRecords, matchingCols) => set(state => { addNetworks(state, networkIds, networkRecords, matchingCols) }),
     removeNetworksFromTable: (networkIds) => set(state => { removeNetworks(state, networkIds) })
 })));

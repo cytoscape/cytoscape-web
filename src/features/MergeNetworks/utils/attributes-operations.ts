@@ -4,6 +4,7 @@ import TableFn, { Column, ValueType, ValueTypeName } from "../../../models/Table
 import { ListOfValueType, SingleValueType } from "../../../models/TableModel/ValueType";
 import { isListType, isSingleType } from "../../../models/TableModel/impl/ValueTypeImpl";
 import { MatchingTable } from "../models/MatchingTable";
+import { NetworkRecord } from "../models/DataInterfaceForMerge";
 
 export function preprocess(toNetwork: IdType, nodeCols: Column[], edgeCols: Column[]) {
     const mergedNodeTable = TableFn.createTable(toNetwork, nodeCols);
@@ -12,6 +13,24 @@ export function preprocess(toNetwork: IdType, nodeCols: Column[], edgeCols: Colu
         mergedNodeTable,
         mergedEdgeTable
     }
+}
+
+export function checkAttribute(nodeMatchingTable: MatchingTable, edgeMatchingTable: MatchingTable, networkRecords: Record<IdType, NetworkRecord>, netIds: IdType[]): boolean {
+    for (const netId of netIds) {
+        for (const row of nodeMatchingTable.matchingTableRows) {
+            if (!row.nameRecord.hasOwnProperty(netId) || !row.typeRecord.hasOwnProperty(netId) ||
+                (row.nameRecord[netId] !== 'None' && !networkRecords[netId]?.nodeTable?.columns.some(col => col.name === row.nameRecord[netId] && col.type === row.typeRecord[netId]))) {
+                return true;
+            }
+        }
+        for (const row of edgeMatchingTable.matchingTableRows) {
+            if (!row.nameRecord.hasOwnProperty(netId) || !row.typeRecord.hasOwnProperty(netId) ||
+                (row.nameRecord[netId] !== 'None' && !networkRecords[netId]?.edgeTable?.columns.some(col => col.name === row.nameRecord[netId] && col.type === row.typeRecord[netId]))) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 export function castAttributes(toMergeAttr: Record<string, ValueType> | undefined, netId: IdType, matchingTable: MatchingTable, isNode: boolean = true): Record<string, ValueType> {

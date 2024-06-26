@@ -37,59 +37,6 @@ export const getNetTableFromSummary = (summary: NdexNetworkSummary): Table => {
     return netTable;
 };
 
-export const processColumns = (
-    tableName: 'nodeTable' | 'edgeTable' | 'netTable',
-    toMergeNetworksList: Pair<string, string>[],
-    networkRecords: Record<IdType, NetworkRecord>,
-    initialTable?: MatchingTableRow[],
-): MatchingTableRow[] => {
-    const newTable: MatchingTableRow[] = initialTable ? [...initialTable] : [];
-    const sharedColsRecord: Record<IdType, string[]> = {};
-    toMergeNetworksList.forEach((net1, index1) => {
-        // Todo: make sure the column names are sorted alphabetically(case-insensitive)
-        networkRecords[net1[1]]?.[tableName]?.columns.forEach(col => {
-            if (!sharedColsRecord[net1[1]]?.includes(col.name)) {
-                const matchCols: Record<string, string> = {};
-                const typeRecord: Record<string, ValueTypeName | 'None'> = {};
-                matchCols[net1[1]] = col.name;
-                const typeSet = new Set<ValueTypeName>();
-                typeSet.add(col.type);
-                typeRecord[net1[1]] = col.type;
-                toMergeNetworksList.slice(0, index1)?.forEach(net2 => {
-                    matchCols[net2[1]] = 'None';
-                });
-                toMergeNetworksList.slice(index1 + 1).forEach(net2 => {
-                    const network = networkRecords[net2[1]];
-                    if (network?.[tableName]?.columns.some(nc => nc.name === col.name)) {
-                        const newSharedCols = sharedColsRecord[net2[1]] ? [...sharedColsRecord[net2[1]]] : [];
-                        newSharedCols.push(col.name);
-                        sharedColsRecord[net2[1]] = newSharedCols;
-                        matchCols[net2[1]] = col.name;
-                        const colType = network[tableName]?.columns.find(nc => nc.name === col.name)?.type;
-                        if (colType !== undefined) {
-                            typeSet.add(colType);
-                            typeRecord[net2[1]] = colType;
-                        }
-                    } else {
-                        matchCols[net2[1]] = 'None';
-                        typeRecord[net2[1]] = 'None';
-                    }
-                });
-
-                newTable.push({
-                    id: newTable.length,
-                    mergedNetwork: col.name,
-                    type: getResonableCompatibleConvertionType(typeSet),
-                    typeRecord: typeRecord,
-                    nameRecord: matchCols,
-                    hasConflicts: typeSet.size > 1
-                });
-            }
-        });
-    });
-    return newTable;
-};
-
 export function isStringArray(value: any): value is string[] {
     return Array.isArray(value) && value.every(item => typeof item === 'string');
 }
@@ -118,4 +65,18 @@ export function getMergedType(typeRecord: Record<string, ValueTypeName | 'None'>
         hasConflicts: typeSet.size > 1,
         mergedType: getResonableCompatibleConvertionType(typeSet)
     }
+}
+
+export function sortListAlphabetically(list: [string, IdType][]): [string, IdType][] {
+    return list.sort((a, b) => {
+        const nameA = a[0].toLowerCase();
+        const nameB = b[0].toLowerCase();
+        if (nameA < nameB) {
+            return -1;
+        }
+        if (nameA > nameB) {
+            return 1;
+        }
+        return 0;
+    });
 }

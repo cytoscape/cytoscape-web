@@ -29,7 +29,7 @@ export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
     const workSpaceNetworks: Pair<string, string>[] = networkIds.map((networkId) => {
         const networkName = networkSummaries[networkId]?.name
         return [networkName, networkId]
-    })
+    }).filter((pair) => pair[0] !== undefined && pair[1] !== undefined) as Pair<string, string>[];
     const uniqueName = generateUniqueName(workSpaceNetworks.map(net => net[0]), 'Merged Network');
 
     const handleOpenDialog = (): void => {
