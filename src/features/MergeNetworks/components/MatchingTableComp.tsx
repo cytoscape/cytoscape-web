@@ -12,6 +12,7 @@ import useNodeMatchingTableStore from '../store/nodeMatchingTableStore';
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore';
 import useNetMatchingTableStore from '../store/netMatchingTableStore';
 import useMergeToolTipStore from '../store/mergeToolTip';
+import { ValueTypeName } from '../../../models/TableModel';
 
 interface MatchingTableProps {
     networkRecords: Record<IdType, NetworkRecord>
@@ -54,24 +55,24 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView
             let isReady = true
             if (duplicatedNamesIds.size > 0) {
                 isReady = false
-                setMergeTooltipText('Some rows have duplicated names. Please make sure each row has a unique name.');
+                setMergeTooltipText("Merge is disabled because there are duplicated network attribute names. Please ensure each attribute name is unique.");
             } else if (emptyRowIds.size > 0) {
                 isReady = false
-                setMergeTooltipText('Merged network attribute name cannot be empty.');
+                setMergeTooltipText("Merge is disabled because some network attribute names are empty. Please provide a name for each attribute.");
             }
             if (mergeOpType === MergeType.intersection && netLst.length < 2) {
                 isReady = false
-                setMergeTooltipText("Intersection operation must take two or more networks")
+                setMergeTooltipText("Merge is disabled because intersection merge operation must take two or more networks. Please select at least two networks in the \'Networks to Merge\' list.")
             } else if (mergeOpType === MergeType.difference && netLst.length !== 2) {
                 isReady = false
-                setMergeTooltipText("Difference operation must take exactly two networks")
+                setMergeTooltipText("Merge is disabled because difference merge operation must take exactly two networks. Plesae select exactly two networks in the \'Networks to Merge\' list.")
             }
             if (tableView === TableView.node && tableData.length < 1) {
                 isReady = false
-                setMergeTooltipText("The length of node attribute mapping table must be greater than 0")
+                setMergeTooltipText("Merge is disabled because the node column table must contain at least one row.")
             } else if (tableView === TableView.network && tableData.length < 3) {
                 isReady = false
-                setMergeTooltipText("The length of network attribute mapping table must be greater than 2")
+                setMergeTooltipText("Merge is disabled because the network column table must contain at least three rows.")
             }
             setMergeTooltipIsOpen(!isReady);
         } else {
@@ -80,10 +81,21 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView
         }
     }, [duplicatedNamesIds, emptyRowIds, netLst, mergeOpType]);
 
-    const getTooltipMessage = (row: MatchingTableRow, duplicatedNamesIds: Set<number>, emptyRowIds: Set<number>) => {
-        if (row.hasConflicts) return 'This row has type conflict';
-        if (duplicatedNamesIds.has(row.id)) return 'This row has duplicated merged network attribute name';
-        if (emptyRowIds.has(row.id)) return 'This row\'s merged network attribute name is empty';
+    const getTooltipMessage = (row: MatchingTableRow, duplicatedNamesIds: Set<number>, emptyRowIds: Set<number>, netLst: Pair<string, string>[]) => {
+        if (row.hasConflicts) {
+            const conflictDescription: string[] = [];
+            const typeSet = new Set<ValueTypeName | 'None'>();
+            for (const [_, netId] of netLst) {
+                if (row.nameRecord[netId] !== 'None' && row.typeRecord[netId] !== undefined && !typeSet.has(row.typeRecord[netId])) {
+                    conflictDescription.push(`${row.nameRecord[netId]}(${row.typeRecord[netId]})`);
+                    typeSet.add(row.typeRecord[netId]);
+                }
+            }
+            const conflictStr: string[] = conflictDescription.length > 2 ? ['type conflicts', 'conflicts'] : ['a type conflict', 'conflict'];
+            return `This row has ${conflictStr[0]}: ${conflictDescription.join(', ')} . Please resolve the ${conflictStr[1]}.`;
+        }
+        if (duplicatedNamesIds.has(row.id)) return "This row has a duplicated merged network attribute name. Please ensure each attribute name is unique.";
+        if (emptyRowIds.has(row.id)) return "This row has an empty merged network attribute name. Please provide a name for each attribute.";
         return '';
     };
 
@@ -101,8 +113,8 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView
                 </TableHead>
                 <TableBody>
                     {tableData.map((row, rowIndex) => (
-                        <Tooltip key={`${row.id}-row-tooltip`} title={getTooltipMessage(row, duplicatedNamesIds, emptyRowIds)} placement="top" arrow>
-                            <TableRow key={`${row.id}-row`} style={{ backgroundColor: (row.hasConflicts || duplicatedNamesIds.has(row.id) || emptyRowIds.has(row.id)) ? '#e27070' : 'transparent' }}>
+                        <Tooltip key={`${row.id}-row-tooltip`} title={getTooltipMessage(row, duplicatedNamesIds, emptyRowIds, netLst)} placement="top" arrow>
+                            <TableRow key={`${row.id}-row`} style={{ backgroundColor: (row.hasConflicts || duplicatedNamesIds.has(row.id) || emptyRowIds.has(row.id)) ? '#e98e8e' : 'transparent' }}>
                                 {netLst.map((net) => (
                                     <TableCell key={`${row.id}-${net[1]}`} component="th" scope="row">
                                         <NetAttDropDownTemplate

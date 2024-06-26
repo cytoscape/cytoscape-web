@@ -524,8 +524,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                             }}
                         />
                         {isNameDuplicate && (
-                            <Typography color="error">
-                                This name already exists. Please choose a different name.
+                            <Typography color="orange">
+                                Warning: A network with this name already exists in your workspace.
                             </Typography>
                         )}
                         <Typography variant="h6" style={{ margin: '5px 0 10px 0' }}>
