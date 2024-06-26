@@ -107,6 +107,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.getToken,
   )
 
+  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -210,15 +211,15 @@ const WorkSpaceEditor = (): JSX.Element => {
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  const loadNetworkSummaries = async (): Promise<void> => {
+  const loadNetworkSummaries = async (networkIds:IdType[]): Promise<void> => {
     const currentToken = await getToken()
-    const summaries = await useNdexNetworkSummary(
-      workspace.networkIds,
+    const newSummaries = await useNdexNetworkSummary(
+      networkIds,
       ndexBaseUrl,
       currentToken,
     )
-
-    setSummaries(summaries)
+    
+    setSummaries({...summaries, ...newSummaries})
   }
 
   const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
@@ -397,11 +398,17 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
 
     // Case 2: network added
-
-    // TODO: Load only diffs
-    loadNetworkSummaries()
+    const toBeAdded: IdType[] = workspace.networkIds.filter((id) => {
+      return !summaryIds.includes(id)
+    })
+    loadNetworkSummaries(toBeAdded)
       .then(() => {})
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        console.error(err)
+        toBeAdded.forEach((id) => {
+          deleteNetwork(id)
+        })
+      })
   }, [workspace.networkIds])
 
   /**
