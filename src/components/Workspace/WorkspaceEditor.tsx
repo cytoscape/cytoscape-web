@@ -411,7 +411,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     })
     loadNetworkSummaries(toBeAdded)
       .then(() => {})
-      .catch((err) => { console.error(err) })
+      .catch((err) => console.error(err))
   }, [workspace.networkIds])
 
   /**
