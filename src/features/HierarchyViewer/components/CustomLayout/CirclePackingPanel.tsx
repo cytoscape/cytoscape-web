@@ -373,8 +373,10 @@ export const CirclePackingPanel = ({
       )
       .on('click', function (e: any, d: d3Hierarchy.HierarchyNode<D3TreeNode>) {
         if (d.height !== 0) {
+          // Selected item is a subsystem
           if (d.data.originalId !== undefined) {
-            exclusiveSelect(network.id, [d.data.originalId], [])
+            // Select both current and original branch
+            exclusiveSelect(network.id, [d.data.originalId, d.data.id], [])
           } else {
             exclusiveSelect(network.id, [d.data.id], [])
           }

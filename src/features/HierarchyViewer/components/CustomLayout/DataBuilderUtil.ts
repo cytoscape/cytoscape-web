@@ -4,6 +4,7 @@ import { Table, ValueType } from '../../../../models/TableModel'
 import { SubsystemTag } from '../../model/HcxMetaTag'
 import { D3TreeNode } from './D3TreeNode'
 
+export const DuplicateNodeSeparator = '-'
 /**
  * Get the member list of the given node
  *
@@ -64,7 +65,9 @@ export const cyNetDag2tree2 = (
 
   // Create a new node ID based on visited count (use the same ID for the first visit)
   const newNodeId =
-    visited[nodeId] > 1 ? `${nodeId}-${visited[nodeId]}` : nodeId
+    visited[nodeId] > 1
+      ? `${nodeId}${DuplicateNodeSeparator}${visited[nodeId]}`
+      : nodeId
 
   const newNode: D3TreeNode = {
     id: newNodeId,
