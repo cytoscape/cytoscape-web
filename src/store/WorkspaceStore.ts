@@ -24,7 +24,7 @@ interface WorkspaceActions {
   // Remove current network from workspace
   deleteCurrentNetwork: () => void
 
-  deleteNetwork: (id: IdType) => void
+  deleteNetwork: (id: IdType | IdType[]) => void
 
   // Remove all networks from the workspace
   deleteAllNetworks: () => void
@@ -135,12 +135,22 @@ export const useWorkspaceStore = create(
             return state
           })
         },
-        deleteNetwork: (id: IdType) => {
+        deleteNetwork: (id: IdType | IdType[]) => {
           set((state) => {
-            const idsWithoutCurrentNetworkId =
-              state.workspace.networkIds.filter((i) => i !== id)
-            state.workspace.networkIds = idsWithoutCurrentNetworkId
-            if (idsWithoutCurrentNetworkId.length === 0) {
+            let newNetworkIds: IdType[] = []
+            if (Array.isArray(id)) {
+              const toBeDeleted = new Set(id)
+              newNetworkIds = state.workspace.networkIds.filter(
+                (netId: IdType) => toBeDeleted.has(netId) === false,
+              )
+            } else {
+              newNetworkIds = state.workspace.networkIds.filter(
+                (netId) => netId !== id,
+              )
+            }
+            state.workspace.networkIds = newNetworkIds
+            
+            if (newNetworkIds.length === 0) {
               state.workspace.currentNetworkId = ''
             }
             return state
