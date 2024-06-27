@@ -48,7 +48,8 @@ export function differenceMerge(fromNetworks: IdType[], toNetworkId: IdType, net
 
     const nodeToSubtract: Set<SingleValueType> = new Set()
     const baseMatchingColName: string = matchingAttribute[baseNetId].name
-    const secMatchingColName: string = matchingAttribute[secondNetId].name
+    const secMatchingColName: string = matchingAttribute[secondNetId].name    
+
     networkRecords[secondNetId].network.nodes.forEach(nodeObj => {
         const nodeEntry = networkRecords[secondNetId].nodeTable.rows.get(nodeObj.id)
         if (nodeEntry === undefined) throw new Error("Node not found in the node table")
@@ -56,19 +57,31 @@ export function differenceMerge(fromNetworks: IdType[], toNetworkId: IdType, net
     })
 
     if (strictRemoveMode) { // subtract the node as long as it exists in the second network    
+
+        const remainingNodeIds: Set<IdType> = new Set(node2nodeMap.keys())
         networkRecords[baseNetId].network.nodes.forEach(nodeObj => {
+            const newNodeId: string = `${globalNodeId++}`;
+            node2nodeMap.set(`${baseNetId}-${nodeObj.id}`, newNodeId);
             const nodeEntry = networkRecords[baseNetId].nodeTable.rows.get(nodeObj.id)
             if (nodeEntry === undefined) throw new Error("Node not found in the node table")
-            if (!nodeToSubtract.has(getKeybyAttribute(nodeEntry[baseMatchingColName]))) {
-                const newNodeId = `${globalNodeId++}`
+            const attributeMapKey = getKeybyAttribute(nodeEntry[matchingAttribute[baseNetId].name]);
+    
+            if (mergeWithinNetwork && matchingAttributeMap.has(attributeMapKey)) {
+                const matchedNodeId = matchingAttributeMap.get(attributeMapKey);
+                if (matchedNodeId !== undefined) {
+                    initialNodeRows[matchedNodeId] = mergeAttributes( //merge within the network
+                        initialNodeRows[matchedNodeId], castAttributes(nodeEntry, baseNetId, nodeAttributeMapping)
+                    )
+                    node2nodeMap.set(`${baseNetId}-${nodeObj.id}`, matchedNodeId);//reset the node2nodeMap
+                }
+            }else{
+                if (attributeMapKey !== undefined && attributeMapKey !== '') {
+                    matchingAttributeMap.set(attributeMapKey, newNodeId);
+                }
                 initialNodeRows[newNodeId] = addMergedAtt(castAttributes(nodeEntry, baseNetId, nodeAttributeMapping),
-                    nodeEntry[reversedAttMap.get(baseNetId) as string], mergedAttCol)
-                NetworkFn.addNode(mergedNetwork, newNodeId);
-                node2nodeMap.set(nodeObj.id, newNodeId)
-            }
+                nodeEntry[reversedAttMap.get(baseNetId) as string], mergedAttCol)
+            }    
         })
-        const remainingNodeIds: Set<IdType> = new Set(node2nodeMap.keys())
-
         networkRecords[baseNetId].network.edges.forEach(edgeObj => {
             const edgeEntry = networkRecords[baseNetId].edgeTable.rows.get(edgeObj.id)
             if (edgeEntry === undefined) throw new Error("Edge not found in the edge table")
