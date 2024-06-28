@@ -71,10 +71,6 @@ export const ndexSummaryFetcher = async (
     const summaries: NdexNetworkSummary[] =
       await ndexClient.getNetworkSummariesByUUIDs(ids)
 
-    if(summaries.length !== ids.length){
-      console.error('Failed to fetch all summaries')
-    }
-    
     const processedSummaries = summaries.map((s) => {
       return {
         ...s,

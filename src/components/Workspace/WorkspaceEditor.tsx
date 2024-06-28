@@ -223,10 +223,13 @@ const WorkSpaceEditor = (): JSX.Element => {
 
     const loadedNetworks = Object.keys(newSummaries)
     if(loadedNetworks.length !== networkIds.length){
-      networkIds.filter(id => !loadedNetworks.includes(id)).forEach((id) => {
-        deleteNetwork(id)
+
+      const  networksFailtoLoad = networkIds.filter(id => !loadedNetworks.includes(id))
+      deleteNetwork(networksFailtoLoad)
+      addMessage({
+        message: `Failed to load network(s) with id(s): ${networksFailtoLoad.join(', ')}`,
+        duration: 5000,
       })
-    
     }
   }
 
