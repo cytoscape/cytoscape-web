@@ -223,10 +223,9 @@ const WorkSpaceEditor = (): JSX.Element => {
 
     const loadedNetworks = Object.keys(newSummaries)
     if(loadedNetworks.length !== networkIds.length){
-
       const  networksFailtoLoad = networkIds.filter(id => !loadedNetworks.includes(id))
-      deleteNetwork(networksFailtoLoad)
-      addMessage({
+      deleteNetwork(networksFailtoLoad)// remove the networks that the app fails to load from the workspace
+      addMessage({ // show a message to the user
         message: `Failed to load network(s) with id(s): ${networksFailtoLoad.join(', ')}`,
         duration: 5000,
       })
