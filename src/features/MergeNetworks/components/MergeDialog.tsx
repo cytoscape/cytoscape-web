@@ -106,6 +106,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     const edgeMatchingTableObj = createMatchingTable(edgeMatchingTable);
     const netMatchingTableObj = createMatchingTable(netMatchingTable);
     // Functions relying on store hooks
+    const updateSummary = useNetworkSummaryStore((state) => state.update)
     const netSummaries = useNetworkSummaryStore((state) => state.summaries);
     const addNewNetwork = useNetworkStore((state) => state.add)
     const setVisualStyle = useVisualStyleStore((state) => state.add)
@@ -354,7 +355,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             const newNetworkId = uuidv4();
             const summaryRecord: Record<IdType, NdexNetworkSummary> = Object.fromEntries(Object.entries(netSummaries).filter(([id,]) => toMergeNetworksList.some(pair => pair[1] === id)));
             const baseNetwork = toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : '';
-            const newNetworkWithView: NetworkWithView = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
+            const [newNetworkWithView, networkSummary] = await createMergedNetworkWithView([...toMergeNetworksList.map(i => i[1])],
                 newNetworkId, mergedNetworkName, networkRecords, nodeMatchingTableObj, edgeMatchingTableObj, netMatchingTableObj,
                 matchingCols, summaryRecord, mergeOpType, mergeWithinNetwork, mergeOnlyNodes, strictRemoveMode);
 
@@ -365,12 +366,13 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
             setVisualStyle(newNetworkId, newNetworkWithView.visualStyle);
             setTables(newNetworkId, newNetworkWithView.nodeTable, newNetworkWithView.edgeTable);
             setViewModel(newNetworkId, newNetworkWithView.networkViews[0]);
-
+            const newSummary = { ...networkSummary, hasLayout: true }
             // Apply layout to the network
             setIsRunning(true)
             engine.apply(newNetworkWithView.network.nodes,
                 newNetworkWithView.network.edges, (positionMap) => {
                     updateNodePositions(newNetworkId, positionMap);
+                    updateSummary(newNetworkId, newSummary)
                     setIsRunning(false);
                 }, defaultLayout)
             handleClose();
