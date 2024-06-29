@@ -20,7 +20,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     networkRecords: Record<IdType, NetworkRecord>, nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable,
     networkAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>, netSummaries: Record<IdType, NdexNetworkSummary>,
     mergeOpType: MergeType = MergeType.union, mergeWithinNetwork: boolean = false, mergeOnlyNodes: boolean = false, strictRemoveMode: boolean = false
-): Promise<NetworkWithView> => {
+): Promise<[NetworkWithView,NdexNetworkSummary]> => {
     if (checkAttribute(nodeAttributeMapping, edgeAttributeMapping, networkRecords, fromNetworks)) {
         throw new Error(`Attribute not found in the network`);
     }
@@ -52,7 +52,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
     const newVisualStyle: VisualStyle = baseVisualStyle ? (cloneDeep(baseVisualStyle)) : (VisualStyleFn.createVisualStyle());
     const newNetworkView: NetworkView = ViewModelFn.createViewModel(newNetwork)
 
-    await putNetworkSummaryToDb({
+    const networkSummary:NdexNetworkSummary = {
         isNdex: false,
         ownerUUID: toNetworkId,
         name: networkName,
@@ -63,7 +63,7 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
         isShowcase: false,
         isCertified: false,
         indexLevel: '',
-        hasLayout: true,
+        hasLayout: false,
         hasSample: false,
         cxFileSize: 0,
         cx2FileSize: 0,
@@ -79,15 +79,16 @@ export const createMergedNetworkWithView = async (fromNetworks: IdType[], toNetw
         externalId: toNetworkId,
         isDeleted: false,
         modificationTime: new Date(Date.now()),
-    })
+    }
+    await putNetworkSummaryToDb(networkSummary)
 
-    return {
+    return [{
         network: newNetwork,
         nodeTable: newNodeTable,
         edgeTable: newEdgeTable,
         visualStyle: newVisualStyle,
         networkViews: [newNetworkView],
         networkAttributes,
-    }
+    },networkSummary]
 }
 
