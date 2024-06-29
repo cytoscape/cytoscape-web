@@ -36,7 +36,7 @@ import { Table } from '../../../../models/TableModel'
 import {
   getAllDiscreteValues,
   getDefaultCheckboxFilterConfig,
-} from './filter-util'
+} from '../../utils/filter-util'
 
 // Default filter name if none exists
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
@@ -149,7 +149,9 @@ export const FilterPanel = () => {
     const visualMapping = getMapping(vs, targetAttrName)
 
     const allValues =
-      table !== undefined ? getAllDiscreteValues(table, targetAttrName) : []
+      table !== undefined
+        ? getAllDiscreteValues(table.rows, targetAttrName)
+        : []
     const filterConfig: FilterConfig = getDefaultCheckboxFilterConfig(
       DEFAULT_FILTER_NAME,
       targetAttrName,
@@ -200,8 +202,8 @@ export const FilterPanel = () => {
 
     // Create a filter for the selected attribute if it does not exist
 
-    const currentConfig: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
-    // const currentConfig = filterConfigs[targetNetworkId]
+    // const currentConfig: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
+    const currentConfig = filterConfigs[targetNetworkId]
 
     const visualMapping = getMapping(vs, targetAttrName)
 
@@ -222,7 +224,9 @@ export const FilterPanel = () => {
     // Specified filter is not available. Create a new filter
 
     const allValues =
-      table !== undefined ? getAllDiscreteValues(table, targetAttrName) : []
+      table !== undefined
+        ? getAllDiscreteValues(table.rows, targetAttrName)
+        : []
     const filterConfig: FilterConfig = getDefaultCheckboxFilterConfig(
       DEFAULT_FILTER_NAME,
       targetAttrName,

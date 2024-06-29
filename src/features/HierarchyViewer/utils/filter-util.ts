@@ -1,12 +1,12 @@
 import {
-  DisplayMode,
   FilterConfig,
   FilterWidgetType,
-} from '../../../../models/FilterModel'
-import { GraphObjectType } from '../../../../models/NetworkModel'
-import { VisualMappingFunction } from '../../../../models/VisualStyleModel'
-import { Table, ValueType } from '../../../../models/TableModel'
-import { IdType } from '../../../../models/IdType'
+  DisplayMode,
+} from '../../../models/FilterModel'
+import { IdType } from '../../../models/IdType'
+import { GraphObjectType } from '../../../models/NetworkModel'
+import { Table, ValueType } from '../../../models/TableModel'
+import { VisualMappingFunction } from '../../../models/VisualStyleModel'
 
 export const getDefaultCheckboxFilterConfig = (
   name: string,
@@ -36,15 +36,15 @@ export const getDefaultCheckboxFilterConfig = (
  * @param attributeName
  */
 export const getAllDiscreteValues = (
-  table: Table,
+  rows: Map<IdType, Record<string, ValueType>>,
   attributeName: string,
 ): string[] => {
-  const { rows } = table
-
-  if (Object.keys(rows).length === 0) return []
+  const ids: IdType[] = [...rows.keys()]
+  if (ids.length === 0) return []
 
   const valueSet = new Set<string>()
-  rows.forEach((row: Record<IdType, ValueType>) => {
+  ids.forEach((id: IdType) => {
+    const row: Record<string, ValueType> = rows.get(id) ?? {}
     valueSet.add(row[attributeName] as string)
   })
 
