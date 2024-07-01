@@ -576,8 +576,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                             />
                             <Tooltip
                                 placement="top-start"
-                                title="Cannot ignore edges when operating 'Union Merge'"
-                                disableHoverListener={MergeType.union !== mergeOpType}  // Tooltip is only active when the checkbox is disabled
+                                title={`Cannot ignore edges when operating '${mergeOpType} Merge'`}
+                                disableHoverListener={MergeType.intersection === mergeOpType}  // Tooltip is only active when the checkbox is disabled
                             >
                                 <FormControlLabel
                                     control={
@@ -587,7 +587,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                                             onChange={() => setMergeOnlyNodes(!mergeOnlyNodes)}
                                             name="mergeOnlyNodes"
                                             color="primary"
-                                            disabled={MergeType.union === mergeOpType}
+                                            disabled={MergeType.intersection !== mergeOpType}
                                         />
                                     }
                                     label="Merge only nodes and ignore edges"
