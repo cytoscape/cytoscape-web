@@ -26,6 +26,7 @@ import { VisualStyle } from '../../../models/VisualStyleModel'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import FilterPanel from './FilterPanel/FilterPanel'
+import { DuplicateNodeSeparator } from './CustomLayout/DataBuilderUtil'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -183,14 +184,26 @@ export const MainPanel = (): JSX.Element => {
     return <MessagePanel message="Please select a subsystem" />
   }
 
+  // This is the ID of the selected subsystem in the hierarchy
+  let targetNode: IdType = selectedNodes[0]
+
   if (selectedNodes.length > 1) {
     // Multiple nodes are selected
-    return (
-      <MessagePanel
-        message="Multiple nodes are selected"
-        subMessage="Please select one subsystem to display the associated interactions"
-      />
-    )
+    // Check if same branches are selected
+    const normalizedIds = selectedNodes.map((nodeId) => {
+      return nodeId.split(DuplicateNodeSeparator)[0]
+    })
+    const uniqueBranches = new Set(normalizedIds)
+    if (uniqueBranches.size !== 1) {
+      return (
+        <MessagePanel
+          message="Multiple nodes are selected"
+          subMessage="Please select one subsystem to display the associated interactions"
+        />
+      )
+    } else {
+      targetNode = Array.from(uniqueBranches)[0]
+    }
   }
 
   // Special case: neither of ID or membership is available
@@ -203,8 +216,6 @@ export const MainPanel = (): JSX.Element => {
     )
   }
 
-  // This is the ID of the selected subsystem in the hierarchy
-  const targetNode: IdType = selectedNodes[0]
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
 
   return (
