@@ -59,7 +59,6 @@ export default function NetworkInfoPanel(props: {
     (state) => state.summaries[currentNetworkId],
   )
   const properties = networkInfo?.properties ?? []
-  console.log(properties)
 
   const containsHtmlAnchor = (text: string) => {
     return /<a\s+href=/i.test(text);
