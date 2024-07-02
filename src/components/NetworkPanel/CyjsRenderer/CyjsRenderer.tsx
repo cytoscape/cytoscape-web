@@ -472,6 +472,18 @@ const CyjsRenderer = ({
     }
   }, [networkView?.selectedNodes, networkView?.selectedEdges])
 
+  useEffect(() => {
+    if (cy === null) {
+      return
+    }
+    if (displayMode === DisplayMode.SHOW_HIDE) {
+      // Disable box selection for show/hide mode
+      cy.boxSelectionEnabled(false)
+    } else {
+      cy.boxSelectionEnabled(true)
+    }
+  }, [displayMode])
+
   /**
    * Initializes the Cytoscape.js instance
    */
@@ -483,6 +495,7 @@ const CyjsRenderer = ({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
         // wheelSensitivity: 0.1,
+        boxSelectionEnabled: displayMode === DisplayMode.SELECT ? true : false,
       })
       setCy(cy)
       // Now add event handlers. This is necessary only once.
