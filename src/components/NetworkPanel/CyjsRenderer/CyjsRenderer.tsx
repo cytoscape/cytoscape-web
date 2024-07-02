@@ -119,7 +119,11 @@ const CyjsRenderer = ({
   const isViewCreated = useRef(false)
 
   const selectionHandler = (event: EventObject) => {
-    console.log('handling Selection event2: ', event)
+    // Do nothing if selection mode is not "select"
+    if (displayMode === DisplayMode.SHOW_HIDE) {
+      return
+    }
+
     const selectedNodes: IdType[] = []
     const selectedEdges: IdType[] = []
     cy.elements()
@@ -213,17 +217,27 @@ const CyjsRenderer = ({
           if (displayMode === DisplayMode.SELECT) {
             exclusiveSelect(id, [], [])
           } else {
-            exclusiveSelect(id, [], selectedEdges)
+            // do nothing. Keep the selection as-is
           }
         } else if (e.target.isNode() || e.target.isEdge()) {
-          const selectedNodes: IdType[] = []
-          const selectedEdges: IdType[] = []
-          if (e.target.isNode()) {
-            selectedNodes.push(e.target.data('id'))
+          if (displayMode === DisplayMode.SHOW_HIDE) {
+            // Select nodes only
+            if (e.target.isNode()) {
+              const selectedNodes: IdType[] = []
+              selectedNodes.push(e.target.data('id'))
+              // Keep edges as-is
+              exclusiveSelect(id, selectedNodes, selectedEdges)
+            }
           } else {
-            selectedEdges.push(e.target.data('id'))
+            const selectedNodes: IdType[] = []
+            const selectedEdges: IdType[] = []
+            if (e.target.isNode()) {
+              selectedNodes.push(e.target.data('id'))
+            } else {
+              selectedEdges.push(e.target.data('id'))
+            }
+            exclusiveSelect(id, selectedNodes, selectedEdges)
           }
-          exclusiveSelect(id, selectedNodes, selectedEdges)
         }
         cy.autounselectify(false)
       })
@@ -407,7 +421,12 @@ const CyjsRenderer = ({
     // Clear selection
     if (selectedNodes.length === 0 && selectedEdges.length === 0) {
       cy.elements().unselect()
-      cy.elements().show()
+      if (displayMode === DisplayMode.SELECT) {
+        cy.elements().show()
+      } else {
+        cy.nodes().show()
+        cy.edges().hide()
+      }
       return
     }
 
