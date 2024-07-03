@@ -22,6 +22,7 @@ import { JoinTableToNetworkMenuItem } from '../../../features/TableDataLoader/co
 import { TieredMenu } from 'primereact/tieredmenu'
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
+import { ExportImageMenuItem } from './ExportNetworkToImageMenuItem'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -37,7 +38,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
   }
 
   const handleClose = (): void => {
-    ; (op.current as any)?.hide()
+    ;(op.current as any)?.hide()
     setAnchorEl(null)
   }
 
@@ -82,11 +83,13 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     },
     {
       label: 'Save Workspace to NDEx (overwrite)',
-      template: () => <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />
+      template: () => <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />,
     },
     {
       label: 'Save Workspace to NDEx',
-      template: () => <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />,
+      template: () => (
+        <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />
+      ),
     },
     {
       label: 'Save to NDEx',
@@ -130,6 +133,15 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
           template: () => (
             <JoinTableToNetworkMenuItem handleClose={handleClose} />
           ),
+        },
+      ],
+    },
+    {
+      label: 'Export',
+      items: [
+        {
+          label: 'Network to Image...',
+          template: <ExportImageMenuItem handleClose={handleClose} />,
         },
       ],
     },

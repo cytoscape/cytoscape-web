@@ -8,6 +8,8 @@ import Cytoscape, {
   SingularElementArgument,
 } from 'cytoscape'
 
+import { registerCyExtensions } from './register-cy-extensions'
+
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
@@ -24,6 +26,8 @@ import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+
+registerCyExtensions()
 
 interface NetworkRendererProps {
   network?: Network
@@ -473,7 +477,53 @@ const CyjsRenderer = ({
           cy.fit()
         }
       }
+
+      const exportPngFunction = (): string => {
+        if (cy !== null) {
+          const result = cy.png()
+          return result
+        } else {
+          return ''
+        }
+      }
+
+      const exportPdfFunction = (): Promise<Blob> => {
+        if (cy !== null) {
+          // @ts-expect-error-next-line
+          const result = cy.pdf({
+            paperSize: 'LETTER',
+            orientation: 'LANDSCAPE',
+            debug: true,
+          })
+
+          console.log(result)
+          return result
+        } else {
+          return Promise.resolve(new Blob())
+        }
+      }
+
+      const exportSvgFunction = (): Blob => {
+        if (cy !== null) {
+          // @ts-expect-error-next-line
+          const result = cy.svg({
+            scale: 1,
+            full: true,
+            background: 'white',
+          })
+
+          const svgBlob = new Blob([result], { type: 'image/svg+xml' })
+
+          console.log(result)
+          return svgBlob
+        } else {
+          return new Blob()
+        }
+      }
       setRendererFunction('cyjs', 'fit', fitFunction)
+      setRendererFunction('cyjs', 'exportPng', exportPngFunction)
+      setRendererFunction('cyjs', 'exportPdf', exportPdfFunction)
+      setRendererFunction('cyjs', 'exportSvg', exportSvgFunction)
     }
 
     return () => {
