@@ -190,7 +190,7 @@ const AppShell = (): ReactElement => {
       } catch (error) {
         throw new Error(`Failed to initialize the workspace: ${error.message}`)
       } finally {
-        initializedRef.current = true
+        // initializedRef.current = true
       }
     }
 
