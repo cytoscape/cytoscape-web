@@ -7,7 +7,6 @@ const TerserPlugin = require('terser-webpack-plugin')
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
 const CompressionWebpackPlugin = require('compression-webpack-plugin')
 const config = require('./src/assets/config.json')
-const { over } = require('lodash')
 
 const isProduction = process.env.NODE_ENV === 'production'
 
