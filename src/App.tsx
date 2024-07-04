@@ -70,15 +70,11 @@ const router = createBrowserRouter(
         }
         errorElement={<Error />}
       >
-        <Route path="networks" element={<div />} />
+        <Route path="networks" element={<div />} errorElement={<Error />} />
         <Route
           path="networks/:networkId"
           element={<div />}
-          errorElement={
-            <div>
-              <p>ERROR in network</p>
-            </div>
-          }
+          errorElement={<Error />}
         />
         <Route path="*" element={<RedirectPanel />} />
       </Route>
