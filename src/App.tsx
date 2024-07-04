@@ -52,12 +52,7 @@ const router = createBrowserRouter(
           <AppShell />
         </Suspense>
       }
-      errorElement={
-        <div>
-          <p>ERROR1</p>
-        </div>
-      }
-      // errorElement={<Error />}
+      errorElement={<Error />}
     >
       <Route
         path=":workspaceId"
