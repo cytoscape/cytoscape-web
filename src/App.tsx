@@ -52,7 +52,12 @@ const router = createBrowserRouter(
           <AppShell />
         </Suspense>
       }
-      errorElement={<Error />}
+      errorElement={
+        <div>
+          <p>ERROR1</p>
+        </div>
+      }
+      // errorElement={<Error />}
     >
       <Route
         path=":workspaceId"
@@ -63,11 +68,22 @@ const router = createBrowserRouter(
             <WorkspaceEditor />
           </Suspense>
         }
+        errorElement={<Error />}
       >
         <Route path="networks" element={<div />} />
-        <Route path="networks/:networkId" element={<div />} />
+        <Route
+          path="networks/:networkId"
+          element={<div />}
+          errorElement={
+            <div>
+              <p>ERROR in network</p>
+            </div>
+          }
+        />
         <Route path="*" element={<RedirectPanel />} />
       </Route>
+
+      <Route path="/error" element={<Error />} />
     </Route>,
   ),
   routerOpts,

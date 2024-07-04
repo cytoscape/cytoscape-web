@@ -36,21 +36,25 @@ export const createTreeLayout = (
     treeElementList,
     allMembers,
   )
-  const hierarchyRootNode: HierarchyNode<D3TreeNode> =
-    d3Hierarchy.stratify<D3TreeNode>()(treeElementList)
-  // countAllChildren(hierarchyRootNode)
+  try {
+    const hierarchyRootNode: HierarchyNode<D3TreeNode> =
+      d3Hierarchy.stratify<D3TreeNode>()(treeElementList)
+    // countAllChildren(hierarchyRootNode)
 
-  // hierarchyRootNode.sum((d: D3TreeNode) => d.members.length)
-  hierarchyRootNode
-    .sum((d: D3TreeNode) => 1)
-    .sort((a, b) => {
-      const valA = a.value as number
-      const valB = b.value as number
-      return valB - valA
-    })
+    // hierarchyRootNode.sum((d: D3TreeNode) => d.members.length)
+    hierarchyRootNode
+      .sum((d: D3TreeNode) => 1)
+      .sort((a, b) => {
+        const valA = a.value as number
+        const valB = b.value as number
+        return valB - valA
+      })
+    return hierarchyRootNode
+  } catch (e) {
+    console.error('Failed to build tree,', e)
+    throw e
+  }
   // hierarchyRootNode.sum((d: D3TreeNode) => Math.floor(Math.random() * 100))
-
-  return hierarchyRootNode
 }
 
 export const CirclePackingType = 'circlePacking'
