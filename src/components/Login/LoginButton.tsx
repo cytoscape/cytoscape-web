@@ -22,14 +22,17 @@ export const LoginButton = (): ReactElement => {
 
     if (!open) {
       const token = client?.token
+      let ndexUser: any
       if (token !== undefined && authenticated) {
         setOpen(true)
+        // ndexUser = await ndexClient.signInFromIdToken(token);
       } else if (!authenticated) {
         // Need to login
         client
           ?.login()
           .then((result) => {
             console.log('* Login success', result)
+            // ndexUser = await ndexClient.signInFromIdToken(result.token);
           })
           .catch((error: any) => {
             console.warn('Failed to login', error)
