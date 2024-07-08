@@ -466,7 +466,12 @@ export const CirclePackingPanel = ({
   useEffect(() => {
     if (circlePackingView === undefined) return
 
-    updateViewModel()
+    try {
+      updateViewModel()
+    } catch (e) {
+      console.error('Failed to build the Circle Packing view', e)
+      throw e
+    }
   }, [visualStyle])
 
   const updateViewModel = (): void => {

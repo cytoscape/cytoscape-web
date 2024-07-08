@@ -1,5 +1,5 @@
 import { Button, Grid, Typography } from '@mui/material'
-import { ReactElement } from 'react'
+import { ReactElement, useEffect } from 'react'
 import {
   isRouteErrorResponse,
   useNavigate,
@@ -8,9 +8,14 @@ import {
 import { useWorkspaceStore } from './store/WorkspaceStore'
 
 export const Error = (): ReactElement => {
-  const error = useRouteError()
+  const error: any = useRouteError()
   const navigate = useNavigate()
   const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
+
+  useEffect(() => {
+    // Force to block infinite redirect and navigate to the error URL
+    navigate('/error', { replace: true })
+  }, [navigate])
 
   const handleReset = (): void => {
     resetWorkspace()
@@ -47,10 +52,9 @@ export const Error = (): ReactElement => {
       </Grid>
       <Grid item xs={12}>
         <Typography variant="body1">
-          Your local cache might contain outdated 
-          workspace data and it can be the cause of this error. 
-          Please reset your local workspace cache and restart 
-          the app using the button below.
+          Your local cache might contain outdated workspace data and it can be
+          the cause of this error. Please reset your local workspace cache and
+          restart the app using the button below.
         </Typography>
       </Grid>
       <Grid item xs={12}>
