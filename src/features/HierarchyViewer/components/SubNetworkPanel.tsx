@@ -382,7 +382,7 @@ export const SubNetworkPanel = ({
       return
     }
 
-    const { network, otherAspects } = data
+    const { network, otherAspects, nodeTable, edgeTable } = data
     // Check optional data
     if (otherAspects !== undefined && otherAspects.length > 0) {
       // Check filter config is available or not
@@ -397,6 +397,8 @@ export const SubNetworkPanel = ({
         const filterConfigs: FilterConfig[] = createFilterFromAspect(
           sourceNetworkId,
           filterAspects,
+          nodeTable,
+          edgeTable,
         )
         filterConfigs.forEach((filterConfig: FilterConfig) => {
           addFilterConfig(filterConfig)

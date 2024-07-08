@@ -30,13 +30,13 @@ import {
 import { CompatibleVisualProperties } from './CompatibleVisualMappings'
 import { CheckboxFilter } from './CheckboxFilter'
 import { useFilterStore } from '../../../../store/FilterStore'
-import {
-  DisplayMode,
-  FilterConfig,
-  FilterWidgetType,
-} from '../../../../models/FilterModel'
+import { DisplayMode, FilterConfig } from '../../../../models/FilterModel'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
 import { Table } from '../../../../models/TableModel'
+import {
+  getAllDiscreteValues,
+  getDefaultCheckboxFilterConfig,
+} from '../../utils/filter-util'
 
 // Default filter name if none exists
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
@@ -82,7 +82,6 @@ export const FilterPanel = () => {
   const vs: VisualStyle = styles[activeNetworkId]
 
   const selectedFilter: FilterConfig = filterConfigs[targetNetworkId]
-  // const selectedFilter: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
 
   // Get target table from the store
   const tablePair = useTableStore((state) => state.tables[targetNetworkId])
@@ -149,20 +148,22 @@ export const FilterPanel = () => {
     }
     const visualMapping = getMapping(vs, targetAttrName)
 
-    const filterConfig: FilterConfig = {
-      name: DEFAULT_FILTER_NAME,
-      attributeName: targetAttrName,
-      target: selectedObjectType,
-      widgetType: FilterWidgetType.CHECKBOX,
-      description: 'Filter nodes / edges by selected values',
-      label: 'Interaction edge filter',
-      range: { values: [] },
-      displayMode,
+    const allValues =
+      table !== undefined
+        ? getAllDiscreteValues(table.rows, targetAttrName)
+        : []
+    const filterConfig: FilterConfig = getDefaultCheckboxFilterConfig(
+      DEFAULT_FILTER_NAME,
+      targetAttrName,
+      selectedObjectType,
+      allValues,
       visualMapping,
-    }
+    )
 
     if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
+      // New filter. Add it to the store
       addFilterConfig(filterConfig)
+
       // Encode the filter settings into the URL
       searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
       searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
@@ -207,7 +208,7 @@ export const FilterPanel = () => {
     const visualMapping = getMapping(vs, targetAttrName)
 
     if (currentConfig !== undefined) {
-      console.log('Need to upddate the exisiting filter config')
+      console.log('Need to update the existing filter config')
       const newConfig = { ...currentConfig, visualMapping }
       updateFilterConfig(newConfig.name, newConfig)
       searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
@@ -222,18 +223,17 @@ export const FilterPanel = () => {
 
     // Specified filter is not available. Create a new filter
 
-    // Build the filter UI settings
-    const filterConfig: FilterConfig = {
-      name: DEFAULT_FILTER_NAME,
-      attributeName: targetAttrName,
-      target: selectedObjectType,
-      widgetType: FilterWidgetType.CHECKBOX,
-      description: 'Filter nodes / edges by selected values',
-      label: 'Interaction edge filter',
-      range: { values: [] },
-      displayMode,
+    const allValues =
+      table !== undefined
+        ? getAllDiscreteValues(table.rows, targetAttrName)
+        : []
+    const filterConfig: FilterConfig = getDefaultCheckboxFilterConfig(
+      DEFAULT_FILTER_NAME,
+      targetAttrName,
+      selectedObjectType,
+      allValues,
       visualMapping,
-    }
+    )
 
     if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
       addFilterConfig(filterConfig)
