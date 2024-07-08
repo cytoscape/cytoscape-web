@@ -28,9 +28,8 @@ export const LoginButton = (): ReactElement => {
         // Need to login
         client
           ?.login()
-          .then(async (result) => {
+          .then((result) => {
             console.log('* Login success', result)
-            await ndexClient.signInFromIdToken(token);
           })
           .catch((error: any) => {
             console.warn('Failed to login', error)

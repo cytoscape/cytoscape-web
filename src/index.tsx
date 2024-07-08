@@ -12,12 +12,13 @@ import ReactGA from 'react-ga4'
 import { enableMapSet } from 'immer'
 import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
+// @ts-expect-error-next-line
+import { NDEx } from '@js4cytoscape/ndex-client'
 enableMapSet()
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
-
 const rootElement: HTMLElement | null = document.getElementById('root')
-const { keycloakConfig, urlBaseName, googleAnalyticsId } = appConfig
+const { keycloakConfig, urlBaseName, googleAnalyticsId, ndexBaseUrl } = appConfig
 
 if (googleAnalyticsId !== '') {
   ReactGA.initialize(googleAnalyticsId)
@@ -31,7 +32,9 @@ keycloak
     silentCheckSsoRedirectUri:
       window.location.origin + urlBaseName + 'silent-check-sso.html',
   })
-  .then(() => {
+  .then(async (result: any) => {
+    const ndexClient = new NDEx(ndexBaseUrl)
+    await ndexClient.signInFromIdToken(result.token);
     if (rootElement !== null) {
       ReactDOM.createRoot(rootElement).render(
         <AppConfigContext.Provider value={appConfig}>
