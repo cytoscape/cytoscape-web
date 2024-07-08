@@ -32,9 +32,11 @@ keycloak
     silentCheckSsoRedirectUri:
       window.location.origin + urlBaseName + 'silent-check-sso.html',
   })
-  .then(async (result: any) => {
-    const ndexClient = new NDEx(ndexBaseUrl)
-    await ndexClient.signInFromIdToken(result.token);
+  .then(async (result: boolean) => {
+    if (result) {
+      const ndexClient = new NDEx(ndexBaseUrl)
+      await ndexClient.signInFromIdToken(keycloak.token);
+    }
     if (rootElement !== null) {
       ReactDOM.createRoot(rootElement).render(
         <AppConfigContext.Provider value={appConfig}>

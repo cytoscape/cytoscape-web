@@ -68,7 +68,7 @@
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
     "@glideapps/glide-data-grid": "^5.2.1",
-    "@js4cytoscape/ndex-client": "0.4.3-alpha.7",
+    "@js4cytoscape/ndex-client": "0.4.3-alpha.12",
     "@mantine/core": "^7.6.2",
     "@mantine/dropzone": "^7.6.2",
     "@mantine/hooks": "^7.6.2",
