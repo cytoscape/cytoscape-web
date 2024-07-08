@@ -11,6 +11,15 @@ export const findPairIndex = (pairs: Pair<string, string>[], uuid: string) => {
     return pairs.findIndex(pair => pair[1] === uuid);
 };
 
+// Function to find and remove the pair
+export const removePair = (list: Pair<string, string>[], target: string): Pair<string, string> | undefined => {
+    const index = list.findIndex((pair) => pair[0] === target);
+    if (index !== -1) {
+        return list.splice(index, 1)[0];  // Remove the item and return it
+    }
+    return undefined;  // Return undefined if no item was found
+};
+
 export const getNetTableFromSummary = (summary: NdexNetworkSummary): Table => {
     const id = summary.externalId;
     const cols: Column[] = [];
