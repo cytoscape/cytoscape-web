@@ -21,6 +21,7 @@ import { useSearchParams } from 'react-router-dom'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
 import { useTheme } from '@mui/material/styles'
 import { DiscreteFilterDetails } from '../../../../models/FilterModel/DiscreteFilterDetails'
+import { getAllDiscreteValues } from '../../utils/filter-util'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -94,18 +95,7 @@ export const CheckboxFilter = ({
   }
 
   useEffect(() => {
-    const { rows } = table
-
-    if (Object.keys(rows).length === 0) return
-
-    const valueSet = new Set<string>()
-    rows.forEach((row: Record<IdType, ValueType>) => {
-      valueSet.add(row[attributeName] as string)
-    })
-
-    // Convert set to array and sort
-    const newOptions = Array.from(valueSet).sort()
-    setAllOptions(newOptions)
+    setAllOptions(getAllDiscreteValues(table.rows, attributeName))
   }, [table, attributeName])
 
   /**
