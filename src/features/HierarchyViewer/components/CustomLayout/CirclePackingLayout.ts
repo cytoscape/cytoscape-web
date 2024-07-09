@@ -36,10 +36,10 @@ export const createTreeLayout = (
     treeElementList,
     allMembers,
   )
+
   try {
     const hierarchyRootNode: HierarchyNode<D3TreeNode> =
       d3Hierarchy.stratify<D3TreeNode>()(treeElementList)
-    // countAllChildren(hierarchyRootNode)
 
     // hierarchyRootNode.sum((d: D3TreeNode) => d.members.length)
     hierarchyRootNode
@@ -55,7 +55,6 @@ export const createTreeLayout = (
     // throw e
     return {} as HierarchyNode<D3TreeNode>
   }
-  // hierarchyRootNode.sum((d: D3TreeNode) => Math.floor(Math.random() * 100))
 }
 
 export const CirclePackingType = 'circlePacking'
