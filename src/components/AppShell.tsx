@@ -304,7 +304,7 @@ const AppShell = (): ReactElement => {
       redirect()
         .then(() => {})
         .catch((e) => {
-          console.log(e)
+          console.error('Failed to redirect in initialization process', e)
         })
     }
   }, [id])

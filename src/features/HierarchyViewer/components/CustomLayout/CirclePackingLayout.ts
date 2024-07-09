@@ -51,8 +51,9 @@ export const createTreeLayout = (
       })
     return hierarchyRootNode
   } catch (e) {
-    console.error('Failed to build tree,', e)
-    throw e
+    console.error('Failed to build D3 tree,', e)
+    // throw e
+    return {} as HierarchyNode<D3TreeNode>
   }
   // hierarchyRootNode.sum((d: D3TreeNode) => Math.floor(Math.random() * 100))
 }
