@@ -26,6 +26,10 @@ import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+import {
+  Orientation,
+  PaperSize,
+} from '../../ToolBar/DataMenu/ExportNetworkToImage/PdfExportForm'
 
 registerCyExtensions()
 
@@ -487,12 +491,23 @@ const CyjsRenderer = ({
         }
       }
 
-      const exportPdfFunction = (): Promise<Blob> => {
+      const exportPdfFunction = (
+        fullBg: boolean,
+        paperSize: PaperSize,
+        orientation: Orientation,
+        margin: number,
+        customWidth?: number,
+        customHeight?: number,
+      ): Promise<Blob> => {
         if (cy !== null) {
           // @ts-expect-error-next-line
           const result = cy.pdf({
-            paperSize: 'LETTER',
-            orientation: 'LANDSCAPE',
+            paperSize,
+            orientation,
+            full: fullBg,
+            margin,
+            width: customWidth,
+            height: customHeight,
             debug: true,
           })
 
