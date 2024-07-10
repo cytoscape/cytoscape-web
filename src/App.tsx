@@ -16,6 +16,7 @@ import appConfig from './assets/config.json'
 import { KeycloakContext } from '.'
 import { useCredentialStore } from './store/CredentialStore'
 import { RedirectPanel } from './RedirectPanel'
+import ErrorBoundary from './ErrorBoundary'
 
 enableMapSet()
 
@@ -91,7 +92,9 @@ export const App = (): React.ReactElement => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <RouterProvider router={router} />
+      <ErrorBoundary>
+        <RouterProvider router={router} />
+      </ErrorBoundary>
     </ThemeProvider>
   )
 }

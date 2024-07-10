@@ -12,6 +12,7 @@ import ReactGA from 'react-ga4'
 import { enableMapSet } from 'immer'
 import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
+import ErrorBoundary from './ErrorBoundary'
 enableMapSet()
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
@@ -37,7 +38,9 @@ keycloak
         <AppConfigContext.Provider value={appConfig}>
           <React.StrictMode>
             <KeycloakContext.Provider value={keycloak}>
-              <App />
+              <ErrorBoundary>
+                <App />
+              </ErrorBoundary>
             </KeycloakContext.Provider>
           </React.StrictMode>
         </AppConfigContext.Provider>,

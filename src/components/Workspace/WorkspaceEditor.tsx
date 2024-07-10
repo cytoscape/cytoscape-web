@@ -211,15 +211,15 @@ const WorkSpaceEditor = (): JSX.Element => {
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  const loadNetworkSummaries = async (networkIds:IdType[]): Promise<void> => {
+  const loadNetworkSummaries = async (networkIds: IdType[]): Promise<void> => {
     const currentToken = await getToken()
     const newSummaries = await useNdexNetworkSummary(
       networkIds,
       ndexBaseUrl,
       currentToken,
     )
-    
-    setSummaries({...summaries, ...newSummaries})
+
+    setSummaries({ ...summaries, ...newSummaries })
 
     const loadedNetworks = Object.keys(newSummaries)
     if(loadedNetworks.length !== networkIds.length){
@@ -453,7 +453,9 @@ const WorkSpaceEditor = (): JSX.Element => {
             `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
           )
         })
-        .catch((err) => console.error('Failed to load a network:', err))
+        .catch((err) => {
+          console.error('* Failed to load a network:', err)
+        })
         .finally(() => {
           isLoadingRef.current = false
         })
@@ -465,7 +467,9 @@ const WorkSpaceEditor = (): JSX.Element => {
             `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
           )
         })
-        .catch((err) => console.error('Failed to load a network:', err))
+        .catch((err) => {
+          console.error('Failed to load a network:', err)
+        })
         .finally(() => {
           isLoadingRef.current = false
         })
