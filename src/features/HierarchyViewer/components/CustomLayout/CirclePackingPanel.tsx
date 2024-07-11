@@ -31,6 +31,7 @@ import { useTableStore } from '../../../../store/TableStore'
 import { SearchState } from '../../../../models/FilterModel/SearchState'
 import { useFilterStore } from '../../../../store/FilterStore'
 import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
+import { useCredentialStore } from '../../../../store/CredentialStore'
 
 interface CirclePackingPanelProps {
   rendererId: string
@@ -125,6 +126,12 @@ export const CirclePackingPanel = ({
   )
   const setRendererFunction = useRendererFunctionStore(
     (state) => state.setFunction,
+  )
+
+  const getToken = useCredentialStore((state) => state.getToken)
+
+  const rootNetworkId: IdType = useSubNetworkStore(
+    (state) => state.rootNetworkId,
   )
 
   useEffect(() => {
@@ -493,31 +500,34 @@ export const CirclePackingPanel = ({
       circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
 
     if (rootNode === undefined) {
-      rootNode = createTreeLayout(network, nodeTable)
+      createTreeLayout(network, nodeTable, getToken, rootNetworkId).then(
+        (root) => {
+          rootNode = root
+          if (rootNode && Object.keys(rootNode).length === 0) return
+
+          const updatedView = applyVisualStyle({
+            network: network,
+            visualStyle: visualStyle,
+            nodeTable: nodeTable,
+            edgeTable: edgeTable,
+            networkView: primaryView,
+          })
+
+          // Create a new Circle Packing view model
+          const width = initialSize?.w ?? 0
+          const height = initialSize?.h ?? 0
+          const cpViewModel: CirclePackingView = createCirclePackingView(
+            updatedView,
+            rootNode,
+            width,
+            height,
+          )
+
+          // Register the new view model
+          addViewModel(network.id, cpViewModel)
+        },
+      )
     }
-
-    if (rootNode && Object.keys(rootNode).length === 0) return
-
-    const updatedView = applyVisualStyle({
-      network: network,
-      visualStyle: visualStyle,
-      nodeTable: nodeTable,
-      edgeTable: edgeTable,
-      networkView: primaryView,
-    })
-
-    // Create a new Circle Packing view model
-    const width = initialSize?.w ?? 0
-    const height = initialSize?.h ?? 0
-    const cpViewModel: CirclePackingView = createCirclePackingView(
-      updatedView,
-      rootNode,
-      width,
-      height,
-    )
-
-    // Register the new view model
-    addViewModel(network.id, cpViewModel)
   }
 
   /**
