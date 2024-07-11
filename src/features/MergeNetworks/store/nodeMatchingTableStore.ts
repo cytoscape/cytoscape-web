@@ -15,7 +15,7 @@ interface NodeMatchingTableState {
 
 interface NodeMatchingTableActions {
     setAllRows: (newRows: MatchingTableRow[]) => void;
-    setRow: (updatedRow: MatchingTableRow) => void;
+    setRow: (rowIndex: number, updatedRow: MatchingTableRow) => void;
     addRow: (newRow: MatchingTableRow) => void
     updateRow: (rowIndex: number, netId: string, col: Column) => void;
     resetStore: () => void;
@@ -161,21 +161,17 @@ const useNodeMatchingTableStore = create(immer<NodeMatchingTableStore>((set) => 
     setAllRows: (newRows) => set((state) => {
         state.rows = filterRows(newRows)
     }),
-    setRow: (updatedRow) => set((state) => {
-        for (let i = 0; i < state.rows.length; i++) {
-            if (state.rows[i].id === updatedRow.id) {
-                state.rows[i] = updatedRow;
-                break;
-            }
-        }
+    setRow: (rowIndex, updatedRow) => set((state) => {
+        if (rowIndex < 0 || rowIndex >= state.rows.length) return;
+        state.rows[rowIndex] = updatedRow;
         state.rows = filterRows(state.rows);
     }),
     addRow: (newRow) => set((state) => {
         state.rows.push(newRow);
     }),
-    updateRow: (rowId, netId, col) => set((state) => {
-        const row = state.rows.find((r) => r.id === rowId);
-        if (row === undefined) return;
+    updateRow: (rowIndex, netId, col) => set((state) => {
+        if (rowIndex < 0 || rowIndex >= state.rows.length) return;
+        const row = state.rows[rowIndex];
         if (row.nameRecord.hasOwnProperty(netId) && row.typeRecord.hasOwnProperty(netId)) {
             row.nameRecord[netId] = col.name;
             row.typeRecord[netId] = col.type;

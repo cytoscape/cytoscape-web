@@ -14,6 +14,7 @@ import useNetMatchingTableStore from '../store/netMatchingTableStore';
 interface netAttDropDownTemplateProps {
     networkRecords: Record<IdType, NetworkRecord>
     rowData: MatchingTableRow;
+    rowIndex: number;
     column: string;
     type: TableView;
     netLst: [string, string][];
@@ -21,7 +22,7 @@ interface netAttDropDownTemplateProps {
 
 
 // Editable cell template for the network attributes
-export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, column, type, netLst }: netAttDropDownTemplateProps) => {
+export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, rowIndex, column, type, netLst }: netAttDropDownTemplateProps) => {
     const emptyOption = { label: 'None', value: 'None' };
     const tableType = type === TableView.node ? 'nodeTable' : (type === TableView.edge ? 'edgeTable' : 'netTable');
     const columns = networkRecords[column]?.[tableType]?.columns || [];
@@ -49,7 +50,7 @@ export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, col
         if (tableType === TableView.node && rowData.id === 0) {
             setMatchingCols({ [field]: { name: newName, type: newType } as Column });
         }
-        setMatchingTable(updatedRow);
+        setMatchingTable(rowIndex, updatedRow);
     };
 
     return (
