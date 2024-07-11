@@ -49,7 +49,7 @@ export const NetAttDropDownTemplate = React.memo(({ networkRecords, rowData, col
         if (tableType === TableView.node && rowData.id === 0) {
             setMatchingCols({ [field]: { name: newName, type: newType } as Column });
         }
-        setMatchingTable(rowData.id, updatedRow);
+        setMatchingTable(updatedRow);
     };
 
     return (

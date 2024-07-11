@@ -21,7 +21,7 @@ export const TypeDropDownTemplate = React.memo(({ type, rowData, netLst }: typeD
         (type === TableView.edge ? useEdgeMatchingTableStore(state => state.setRow) : useNetMatchingTableStore(state => state.setRow));
     const onDropDownChange = (e: SelectChangeEvent<any>, rowData: MatchingTableRow) => {
         const updatedRow: MatchingTableRow = { ...rowData, type: e.target.value as ValueTypeName };
-        setMatchingTable(rowData.id, updatedRow);
+        setMatchingTable(updatedRow);
     }
 
     return (

@@ -27,9 +27,9 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView
     const setMatchingTable = (tableView === TableView.node) ? useNodeMatchingTableStore(state => state.setRow) :
         (tableView === TableView.edge ? useEdgeMatchingTableStore(state => state.setRow) : useNetMatchingTableStore(state => state.setRow));
     // Handler for 'Merged Network' changes
-    const onMergedNetworkChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, rowIndex: number) => {
-        const updatedRow = { ...tableData[rowIndex], mergedNetwork: e.target.value };
-        setMatchingTable(rowIndex, updatedRow);
+    const onMergedNetworkChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, rowData: MatchingTableRow) => {
+        const updatedRow = { ...rowData, mergedNetwork: e.target.value };
+        setMatchingTable(updatedRow);
     };
     const setMergeTooltipIsOpen = useMergeToolTipStore(state => state.setIsOpen)
     const setMergeTooltipText = useMergeToolTipStore(state => state.setText)
@@ -131,7 +131,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView
                                                 fullWidth
                                                 variant="outlined"
                                                 value={row.mergedNetwork}
-                                                onChange={(e) => onMergedNetworkChange(e, row.id)}
+                                                onChange={(e) => onMergedNetworkChange(e, row)}
                                                 style={{ minWidth: 100 }}
                                                 InputProps={{ style: { color: 'red' } }}
                                             />
@@ -141,7 +141,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView
                                             fullWidth
                                             variant="outlined"
                                             value={row.mergedNetwork}
-                                            onChange={(e) => onMergedNetworkChange(e, row.id)}
+                                            onChange={(e) => onMergedNetworkChange(e, row)}
                                             style={{ minWidth: 100 }}
                                             disabled={tableView === TableView.network && rowIndex < 3}
                                         />}
