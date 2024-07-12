@@ -8,8 +8,8 @@ import { cyNetDag2tree2, findRoot, getMembers } from './DataBuilderUtil'
 import { D3TreeNode } from './D3TreeNode'
 import { NetworkView, NodeView } from '../../../../models/ViewModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
-import { translateMemberIds } from '../../../LLMQuery/api/translateMemberIds'
 import { IdType } from '../../../../models/IdType'
+import { translateMemberIds } from '../../../../utils/ndex-utils'
 
 /**
  *
@@ -19,6 +19,7 @@ import { IdType } from '../../../../models/IdType'
  * @returns
  */
 export const getNames = async (
+  url: string,
   getToken: () => Promise<string>,
   uuid: string,
   nodeIds: string[],
@@ -29,6 +30,7 @@ export const getNames = async (
   const names: string[] = await translateMemberIds({
     networkUUID: uuid,
     ids: nodeIds,
+    url,
     accessToken: token,
   })
 
@@ -41,12 +43,19 @@ export const getNames = async (
  * @param nodeId
  * @returns Edge list of the children of the node
  */
-export const createTreeLayout = async (
-  network: Network,
-  nodeTable: Table,
-  getToken: () => Promise<string>,
-  rootNetworkId: IdType,
-): Promise<HierarchyNode<D3TreeNode>> => {
+export const createTreeLayout = async ({
+  network,
+  nodeTable,
+  url,
+  getToken,
+  rootNetworkId,
+}: {
+  network: Network
+  nodeTable: Table
+  url: string
+  getToken: () => Promise<string>
+  rootNetworkId: IdType
+}): Promise<HierarchyNode<D3TreeNode>> => {
   // Get the internal data store. In this case, it is a cytoscape instance
   const cyNet: Core = NetworkFn.getInternalNetworkDataStore(network) as Core
   const root = findRoot(cyNet)
@@ -61,7 +70,7 @@ export const createTreeLayout = async (
   const firstMember: string = rootMembers[0]
   const id2name: Map<string, string> = new Map<string, string>()
   if (Number.parseInt(firstMember)) {
-    const names = await getNames(getToken, rootNetworkId, rootMembers)
+    const names = await getNames(url, getToken, rootNetworkId, rootMembers)
     rootMembers.forEach((member: string, index: number) => {
       id2name.set(member, names[index])
     })
