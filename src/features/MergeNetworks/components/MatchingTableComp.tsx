@@ -27,8 +27,8 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView
     const setMatchingTable = (tableView === TableView.node) ? useNodeMatchingTableStore(state => state.setRow) :
         (tableView === TableView.edge ? useEdgeMatchingTableStore(state => state.setRow) : useNetMatchingTableStore(state => state.setRow));
     // Handler for 'Merged Network' changes
-    const onMergedNetworkChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, rowIndex: number) => {
-        const updatedRow = { ...tableData[rowIndex], mergedNetwork: e.target.value };
+    const onMergedNetworkChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, rowIndex: number, rowData: MatchingTableRow) => {
+        const updatedRow = { ...rowData, mergedNetwork: e.target.value };
         setMatchingTable(rowIndex, updatedRow);
     };
     const setMergeTooltipIsOpen = useMergeToolTipStore(state => state.setIsOpen)
@@ -118,7 +118,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView
                                 {netLst.map((net) => (
                                     <TableCell key={`${row.id}-${net[1]}`} component="th" scope="row">
                                         <NetAttDropDownTemplate
-                                            networkRecords={networkRecords} rowData={row}
+                                            networkRecords={networkRecords} rowData={row} rowIndex={rowIndex}
                                             column={net[1]} type={tableView} netLst={netLst}
                                         />
                                     </TableCell>
@@ -131,7 +131,7 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView
                                                 fullWidth
                                                 variant="outlined"
                                                 value={row.mergedNetwork}
-                                                onChange={(e) => onMergedNetworkChange(e, row.id)}
+                                                onChange={(e) => onMergedNetworkChange(e, rowIndex, row)}
                                                 style={{ minWidth: 100 }}
                                                 InputProps={{ style: { color: 'red' } }}
                                             />
@@ -141,13 +141,13 @@ export const MatchingTableComp = React.memo(({ networkRecords, netLst, tableView
                                             fullWidth
                                             variant="outlined"
                                             value={row.mergedNetwork}
-                                            onChange={(e) => onMergedNetworkChange(e, row.id)}
+                                            onChange={(e) => onMergedNetworkChange(e, rowIndex, row)}
                                             style={{ minWidth: 100 }}
                                             disabled={tableView === TableView.network && rowIndex < 3}
                                         />}
                                 </TableCell>
                                 <TableCell key={`${row.id}-type`}>
-                                    <TypeDropDownTemplate type={tableView} rowData={row} netLst={netLst} />
+                                    <TypeDropDownTemplate type={tableView} rowData={row} rowIndex={rowIndex} netLst={netLst} />
                                 </TableCell>
                             </TableRow>
                         </Tooltip>
