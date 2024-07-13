@@ -3,11 +3,13 @@ import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../../../models/IdType'
 
 interface SubNetworkState {
+  rootNetworkId: IdType
   selectedNodes: IdType[]
   selectedHierarchyNodeNames: string[]
 }
 
 interface SubNetworkAction {
+  setRootNetworkId: (rootNetworkId: IdType) => void
   setSelectedNodes: (selectedNodes: IdType[]) => void
   setSelectedHierarchyNodes: (selectedHierarchyNodeNames: string[]) => void
 }
@@ -20,8 +22,14 @@ export type SubNetworkStore = SubNetworkState & SubNetworkAction
  */
 export const useSubNetworkStore = create(
   immer<SubNetworkStore>((set) => ({
+    rootNetworkId: '',
     selectedNodes: [],
     selectedHierarchyNodeNames: [],
+    setRootNetworkId: (rootNetworkId) => {
+      set((state) => {
+        state.rootNetworkId = rootNetworkId
+      })
+    },
     setSelectedNodes: (selectedNodes) => {
       set((state) => {
         state.selectedNodes = selectedNodes

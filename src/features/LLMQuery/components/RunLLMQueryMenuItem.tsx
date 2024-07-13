@@ -1,5 +1,5 @@
 import { MenuItem, Tooltip, Box } from '@mui/material'
-import { ReactElement } from 'react'
+import { ReactElement, useContext } from 'react'
 import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
 import { IdType } from '../../../models/IdType'
 import { serializeValueList } from '../../../models/TableModel/impl/ValueTypeImpl'
@@ -16,11 +16,14 @@ import {
 } from '../../HierarchyViewer/model/HcxMetaTag'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
-import { translateMemberIds } from '../api/translateMemberIds'
 import { useLLMQueryStore } from '../store'
 import { NetworkView } from '../../../models/ViewModel'
+import { translateMemberIds } from '../../../utils/ndex-utils'
+import { AppConfigContext } from '../../../AppConfigContext'
 
 export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
+  const { ndexBaseUrl } = useContext(AppConfigContext)
+
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
@@ -50,8 +53,8 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
       (state) => state.summaries[currentNetworkId]?.properties,
     ) ?? []
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
   const selectedNodes = viewModel?.selectedNodes ?? []
 
@@ -83,6 +86,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
             const names = await translateMemberIds({
               networkUUID: parentInteractionNetworkId as string,
               ids: members as string[],
+              url: ndexBaseUrl,
               accessToken: token,
             })
 
@@ -181,8 +185,8 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     const tooltipTitle = loading
       ? 'Generating response...'
       : LLMApiKey === ''
-      ? 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
-      : 'LLM query is only available for HCX networks'
+        ? 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
+        : 'LLM query is only available for HCX networks'
     return (
       <Tooltip title={tooltipTitle}>
         <Box>{menuItem}</Box>

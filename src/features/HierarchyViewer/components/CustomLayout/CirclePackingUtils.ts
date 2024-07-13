@@ -7,7 +7,6 @@ import { CirclePackingView } from '../../model/CirclePackingView'
 import { NodeView } from '../../../../models/ViewModel'
 import { D3TreeNode } from './D3TreeNode'
 import { IdType } from '../../../../models/IdType'
-import { find } from 'lodash'
 
 // Number of letters to display in the label
 const MAX_LABEL_LENGTH = 90
