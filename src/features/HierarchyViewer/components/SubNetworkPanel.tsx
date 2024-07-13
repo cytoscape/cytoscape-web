@@ -13,7 +13,7 @@ import { useNetworkStore } from '../../../store/NetworkStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { VisualStyle } from '../../../models/VisualStyleModel'
-import { NetworkView, NodeView } from '../../../models/ViewModel'
+import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
@@ -50,7 +50,11 @@ interface SubNetworkPanelProps {
   // ID of member nodes
   query: Query
 
+  // ID of the interaction network
   interactionNetworkId: IdType
+
+  // Optional: URL of the server storing the interaction network
+  interactionNetworkHost: string
 }
 
 /**
@@ -64,6 +68,7 @@ export const SubNetworkPanel = ({
   subsystemNodeId,
   query,
   interactionNetworkId,
+  interactionNetworkHost,
 }: SubNetworkPanelProps): ReactElement => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
@@ -239,12 +244,17 @@ export const SubNetworkPanel = ({
   const prevQueryNetworkIdRef = useRef<string>()
 
   const getToken = useCredentialStore((state) => state.getToken)
+  let interactionSourceUrl = interactionNetworkHost
   const { ndexBaseUrl } = useContext(AppConfigContext)
+
+  if (interactionSourceUrl === '') {
+    interactionSourceUrl = ndexBaseUrl
+  }
 
   const result = useQuery({
     queryKey: [
       hierarchyId,
-      ndexBaseUrl,
+      interactionSourceUrl,
       rootNetworkId,
       subsystemNodeId,
       query,

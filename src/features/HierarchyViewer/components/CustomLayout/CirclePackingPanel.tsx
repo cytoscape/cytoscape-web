@@ -137,6 +137,13 @@ export const CirclePackingPanel = ({
     (state) => state.rootNetworkId,
   )
 
+  const rootNetworkHost: string = useSubNetworkStore(
+    (state) => state.rootNetworkHost,
+  )
+
+  const rootNetworkHostUrl: string =
+    rootNetworkHost === '' ? ndexBaseUrl : rootNetworkHost
+
   useEffect(() => {
     if (!visible) return
 
@@ -506,7 +513,7 @@ export const CirclePackingPanel = ({
       createTreeLayout({
         network,
         nodeTable,
-        url: ndexBaseUrl,
+        rootNetworkHostUrl,
         getToken,
         rootNetworkId,
       }).then((root) => {
