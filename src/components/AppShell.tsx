@@ -12,6 +12,7 @@ import {
   getUiStateFromDb,
   getWorkspaceFromDb,
   initializeDb,
+  putNetworkSummaryToDb,
 } from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
@@ -32,8 +33,18 @@ import { Panel } from '../models/UiModel/Panel'
 import { Workspace } from '../models/WorkspaceModel'
 import { SyncTabsAction } from './SyncTabs'
 
+import { useMessageStore } from '../store/MessageStore'
+
+import { fetchUrlCx } from '../models/CxModel/fetch-url-cx-util'
+import { useNetworkStore } from '../store/NetworkStore'
+import { useTableStore } from '../store/TableStore'
+import { useViewModelStore } from '../store/ViewModelStore'
+import { useVisualStyleStore } from '../store/VisualStyleStore'
+
 // This is a valid workspace ID for sharing
 const DUMMY_WS_ID = '0'
+
+const IMPORT_KEY = 'import'
 
 /**
  *
@@ -47,7 +58,9 @@ const AppShell = (): ReactElement => {
 
   // This is necessary to prevent creating a new workspace on every render
   const [showDialog, setShowDialog] = useState<boolean>(false)
-  const [search] = useSearchParams()
+  const [search, setSearch] = useSearchParams()
+
+  const addMessage = useMessageStore((state) => state.addMessage)
 
   const initializedRef = useRef(false)
 
@@ -82,6 +95,18 @@ const AppShell = (): ReactElement => {
   // const { showErrorDialog } = useUiStateStore((state) => state.ui)
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
+  )
+
+  const addNewNetwork = useNetworkStore((state) => state.add)
+
+  const setVisualStyle = useVisualStyleStore((state) => state.add)
+
+  const setViewModel = useViewModelStore((state) => state.add)
+
+  const setTables = useTableStore((state) => state.add)
+
+  const addNetworkToWorkspace = useWorkspaceStore(
+    (state) => state.addNetworkIds,
   )
 
   const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
@@ -298,14 +323,55 @@ const AppShell = (): ReactElement => {
     }
   }
 
+  const handleImportNetworkFromSearchParam = async (): Promise<void> => {
+    search.forEach(async (value, key) => {
+      if (key === IMPORT_KEY) {
+        try {
+          const nextParams = new URLSearchParams(search)
+          nextParams.delete(IMPORT_KEY)
+
+          setSearch(nextParams)
+          const res = await fetchUrlCx(value, 10000000)
+
+          const { networkWithView, summary } = res
+          const { network, nodeTable, edgeTable, visualStyle, networkViews } =
+            networkWithView
+          const newNetworkId = network.id
+
+          await putNetworkSummaryToDb(summary)
+
+          // TODO the db syncing logic in various stores assumes the updated network is the current network
+          // therefore, as a temporary fix, the first operation that should be done is to set the
+          // current network to be the new network id
+          setCurrentNetworkId(newNetworkId)
+          addNewNetwork(network)
+          setVisualStyle(newNetworkId, visualStyle)
+          setTables(newNetworkId, nodeTable, edgeTable)
+          setViewModel(newNetworkId, networkViews[0])
+          addNetworkToWorkspace(newNetworkId)
+        } catch (error) {
+          addMessage({
+            message: `Failed to import network from url: ${value}`,
+            duration: 5000,
+          })
+        }
+      }
+    })
+  }
+
   useEffect(() => {
+    const handleInit = async () => {
+      try {
+        await redirect()
+      } catch (error) {
+        console.error('Failed to redirect', error)
+      }
+
+      await handleImportNetworkFromSearchParam()
+    }
     // Now workspace ID is set. route to the correct page
     if (id !== '' && initializedRef.current) {
-      redirect()
-        .then(() => {})
-        .catch((e) => {
-          console.log(e)
-        })
+      void handleInit()
     }
   }, [id])
 

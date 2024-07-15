@@ -283,6 +283,8 @@ export const CirclePackingPanel = ({
     d: d3Hierarchy.HierarchyNode<D3TreeNode>,
     maxDepth: number,
   ): string => {
+    if (d === undefined) return 'none'
+
     // Always display all subsystems/genes if the search result is shown
     if (expandAll || d.depth === 0 || d.depth <= maxDepth) {
       return 'inline'
@@ -292,11 +294,17 @@ export const CirclePackingPanel = ({
   }
 
   const updateForZoom = (maxDepth: number): void => {
-    d3Selection
-      .selectAll('circle')
-      .style('display', (d: d3Hierarchy.HierarchyNode<D3TreeNode>): string =>
+    const circles: d3Selection.Selection<
+      d3Selection.BaseType,
+      unknown,
+      HTMLElement,
+      any
+    > = d3Selection.selectAll('circle')
+    circles.style(
+      'display',
+      (d: d3Hierarchy.HierarchyNode<D3TreeNode>): string =>
         showObjects(d, maxDepth),
-      )
+    )
 
     d3Selection
       .selectAll('text')
@@ -466,7 +474,12 @@ export const CirclePackingPanel = ({
   useEffect(() => {
     if (circlePackingView === undefined) return
 
-    updateViewModel()
+    try {
+      updateViewModel()
+    } catch (e) {
+      console.error('Failed to build the Circle Packing view', e)
+      throw e
+    }
   }, [visualStyle])
 
   const updateViewModel = (): void => {
@@ -482,6 +495,8 @@ export const CirclePackingPanel = ({
     if (rootNode === undefined) {
       rootNode = createTreeLayout(network, nodeTable)
     }
+
+    if (rootNode && Object.keys(rootNode).length === 0) return
 
     const updatedView = applyVisualStyle({
       network: network,
@@ -517,7 +532,11 @@ export const CirclePackingPanel = ({
   }, [network])
 
   useEffect(() => {
-    if (circlePackingView === undefined) return
+    if (
+      circlePackingView === undefined ||
+      circlePackingView.hierarchy === undefined
+    )
+      return
 
     const isInitialized: boolean = initRef.current
     const rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =

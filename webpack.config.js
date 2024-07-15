@@ -47,6 +47,9 @@ module.exports = {
   // watch the dist file for changes when using the dev server
   devServer: {
     hot: true,
+    client: {
+      overlay: true,
+    },
     static: path.resolve(__dirname, './dist'),
     // historyApiFallback: true,
     historyApiFallback: {
@@ -78,10 +81,10 @@ module.exports = {
     // netlify requires a _redirects file in the root of the dist folder to work with react router
     ...(process.env.BUILD === 'netlify'
       ? [
-        new CopyPlugin({
-          patterns: [{ from: 'netlify/_redirects', to: '.' }],
-        }),
-      ]
+          new CopyPlugin({
+            patterns: [{ from: 'netlify/_redirects', to: '.' }],
+          }),
+        ]
       : []),
     // ...(isProduction ? [] : [new ESLintPlugin({ extensions: ['ts', 'tsx'] })]),
     ...(isProduction ? [new CompressionWebpackPlugin()] : []),

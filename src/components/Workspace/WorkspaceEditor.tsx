@@ -211,22 +211,27 @@ const WorkSpaceEditor = (): JSX.Element => {
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  const loadNetworkSummaries = async (networkIds:IdType[]): Promise<void> => {
+  const loadNetworkSummaries = async (networkIds: IdType[]): Promise<void> => {
     const currentToken = await getToken()
     const newSummaries = await useNdexNetworkSummary(
       networkIds,
       ndexBaseUrl,
       currentToken,
     )
-    
-    setSummaries({...summaries, ...newSummaries})
+
+    setSummaries({ ...summaries, ...newSummaries })
 
     const loadedNetworks = Object.keys(newSummaries)
     if(loadedNetworks.length !== networkIds.length){
-      const  networksFailtoLoad = networkIds.filter(id => !loadedNetworks.includes(id))
+      const networksFailtoLoad = networkIds.filter(id => !loadedNetworks.includes(id))
+      const numOfNets = networksFailtoLoad.length
+      const largestNum = 3
+      const largeNum = numOfNets > largestNum
       deleteNetwork(networksFailtoLoad)// remove the networks that the app fails to load from the workspace
       addMessage({ // show a message to the user
-        message: `Failed to load network(s) with id(s): ${networksFailtoLoad.join(', ')}`,
+        message: `Failed to load ${networksFailtoLoad.length} network${largeNum?'s':''} with id${largeNum?'s':''}: ${
+          largeNum?(networksFailtoLoad.slice(0,largestNum).join(', ')+'...' ):networksFailtoLoad.join(', ')
+        }`,
         duration: 5000,
       })
     }
@@ -448,7 +453,9 @@ const WorkSpaceEditor = (): JSX.Element => {
             `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
           )
         })
-        .catch((err) => console.error('Failed to load a network:', err))
+        .catch((err) => {
+          console.error('* Failed to load a network:', err)
+        })
         .finally(() => {
           isLoadingRef.current = false
         })
@@ -460,7 +467,9 @@ const WorkSpaceEditor = (): JSX.Element => {
             `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
           )
         })
-        .catch((err) => console.error('Failed to load a network:', err))
+        .catch((err) => {
+          console.error('Failed to load a network:', err)
+        })
         .finally(() => {
           isLoadingRef.current = false
         })

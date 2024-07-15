@@ -48,6 +48,17 @@ export const findRoot = (cyNet: Core): NodeSingular => {
   return roots[0]
 }
 
+/**
+ * Function to convert a DAG to a tree for stratify
+ *
+ * @param node
+ * @param parentId
+ * @param cyNet
+ * @param nodeTable
+ * @param visited
+ * @param treeElements
+ * @param members
+ */
 export const cyNetDag2tree2 = (
   node: NodeSingular,
   parentId: string | null,
@@ -64,9 +75,10 @@ export const cyNetDag2tree2 = (
   visited[nodeId] = visited[nodeId] === undefined ? 1 : visited[nodeId] + 1
 
   // Create a new node ID based on visited count (use the same ID for the first visit)
+  // The new ID is the original ID with a suffix '-1d', '-2d', ...
   const newNodeId =
     visited[nodeId] > 1
-      ? `${nodeId}${DuplicateNodeSeparator}${visited[nodeId]}`
+      ? `${nodeId}${DuplicateNodeSeparator}${visited[nodeId]}d`
       : nodeId
 
   const newNode: D3TreeNode = {
@@ -75,7 +87,6 @@ export const cyNetDag2tree2 = (
     parentId: parentId === null ? '' : parentId,
     name: nodeTable.rows.get(nodeId)?.name as string,
     size: getMembers(nodeId, nodeTable).length,
-    // size: 1,
     members: getMembers(nodeId, nodeTable),
   }
   treeElements.push(newNode)
