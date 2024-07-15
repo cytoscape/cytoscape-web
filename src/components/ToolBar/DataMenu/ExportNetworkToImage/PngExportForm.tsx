@@ -178,7 +178,7 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
         disabled={loading}
         onClick={async () => {
           setLoading(true)
-          const result = await pngFunction?.()
+          const result = await pngFunction?.(fullBg, customWidth, customHeight)
           saveAs(result, 'network.png')
           setLoading(false)
           props.handleClose()

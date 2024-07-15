@@ -532,14 +532,15 @@ const CyjsRenderer = ({
 
       const exportPngFunction = (
         fullBg: boolean,
-        customWidth?: number,
-        customHeight?: number,
+        customWidth: number,
+        customHeight: number,
       ): string => {
         if (cy !== null) {
           console.log(cy.width(), cy.height())
           const result = cy.png({
-            // maxWidth: 1000,
-            // maxHeight: 1000,
+            full: fullBg,
+            maxWidth: customWidth,
+            maxHeight: customHeight,
             bg: 'white',
           })
           return result
