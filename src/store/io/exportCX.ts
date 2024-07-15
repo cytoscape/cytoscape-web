@@ -182,7 +182,9 @@ export const exportNetworkToCx2 = (
 
   const nodes = network.nodes.map((node) => {
     const nodeRow = nodeTable.rows.get(node.id)
-
+    if (nodeRow) {
+      console.log(nodeRow)
+    }
     return {
       id: parseInt(node.id),
       x: networkView?.nodeViews[node.id].x ?? 0,
