@@ -56,11 +56,11 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
       }}
       PaperProps={{
         sx: {
-          minHeight: 600,
+          minHeight: 300,
         },
       }}
-      fullWidth={true}
-      maxWidth="lg"
+      fullWidth
+      maxWidth="sm"
       open={props.open}
       onClose={props.handleClose}
     >

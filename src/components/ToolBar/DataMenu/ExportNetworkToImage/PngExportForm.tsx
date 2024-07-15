@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Checkbox,
+  DialogActions,
   FormControl,
   FormControlLabel,
   InputLabel,
@@ -22,7 +23,8 @@ const MAX_ZOOM = 5
 
 export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
   const [loading, setLoading] = useState(false)
-  const [fileName, setFileName] = useState<string>('network.png')
+  const [fileName, setFileName] = useState<string>('network')
+  const [transparentBg, setTransparentBg] = useState(true)
   const [fullBg, setFullBg] = useState(true)
   const [customWidth, setCustomWidth] = useState<number>(0)
   const [customHeight, setCustomHeight] = useState<number>(0)
@@ -86,7 +88,6 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
     <Box sx={{ p: 1 }}>
       <Box sx={{ p: 1 }}>
         <TextField
-          disabled
           size="small"
           label="File name"
           type="text"
@@ -109,6 +110,17 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
             />
           }
           label="Export full network image"
+        />
+      </Box>
+      <Box sx={{ p: 1 }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={transparentBg}
+              onChange={(e) => setTransparentBg(e.target.checked)}
+            />
+          }
+          label="Transparent background"
         />
       </Box>
       <Box>
@@ -171,21 +183,28 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
           />
         </Box>
       </Box>
-      <Button color="error" onClick={props.handleClose}>
-        Cancel
-      </Button>
-      <Button
-        disabled={loading}
-        onClick={async () => {
-          setLoading(true)
-          const result = await pngFunction?.(fullBg, customWidth, customHeight)
-          saveAs(result, 'network.png')
-          setLoading(false)
-          props.handleClose()
-        }}
-      >
-        Confirm
-      </Button>
+      <DialogActions>
+        <Button color="error" onClick={props.handleClose}>
+          Cancel
+        </Button>
+        <Button
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true)
+            const result = await pngFunction?.(
+              fullBg,
+              customWidth,
+              customHeight,
+              transparentBg,
+            )
+            saveAs(result, `${fileName}.png`)
+            setLoading(false)
+            props.handleClose()
+          }}
+        >
+          Confirm
+        </Button>
+      </DialogActions>
     </Box>
   )
 }

@@ -534,15 +534,20 @@ const CyjsRenderer = ({
         fullBg: boolean,
         customWidth: number,
         customHeight: number,
+        transparentBg: boolean,
       ): string => {
         if (cy !== null) {
-          console.log(cy.width(), cy.height())
-          const result = cy.png({
+          const opt: any = {
             full: fullBg,
             maxWidth: customWidth,
             maxHeight: customHeight,
-            bg: 'white',
-          })
+          }
+
+          if (!transparentBg) {
+            opt.bg = 'white'
+          }
+
+          const result = cy.png(opt)
           return result
         } else {
           return ''

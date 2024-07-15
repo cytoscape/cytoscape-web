@@ -4,6 +4,7 @@ import {
   FormControlLabel,
   Checkbox,
   TextField,
+  DialogActions,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 //@ts-expect-error
@@ -14,7 +15,7 @@ import { useRendererFunctionStore } from '../../../../store/RendererFunctionStor
 export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
   const [loading, setLoading] = useState(false)
   const [fullBg, setFullBg] = useState(true)
-  const [fileName, setFileName] = useState<string>('network.svg')
+  const [fileName, setFileName] = useState<string>('network')
 
   const svgFunction = useRendererFunctionStore((state) =>
     state.getFunction('cyjs', 'exportSvg'),
@@ -24,7 +25,6 @@ export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
     <Box sx={{ p: 1 }}>
       <Box>
         <TextField
-          disabled
           size="small"
           label="File name"
           type="text"
@@ -50,22 +50,24 @@ export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
           label="Export full network image"
         />
       </Box>
-      <Button color="error" onClick={props.handleClose}>
-        Cancel
-      </Button>
-      <Button
-        disabled={loading}
-        onClick={async () => {
-          setLoading(true)
-          const result = await svgFunction?.()
-          const blob = new Blob([result], { type: 'image/svg+xml' })
-          saveAs(blob, 'network.svg')
-          setLoading(false)
-          props.handleClose()
-        }}
-      >
-        Confirm
-      </Button>
+      <DialogActions>
+        <Button color="error" onClick={props.handleClose}>
+          Cancel
+        </Button>
+        <Button
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true)
+            const result = await svgFunction?.()
+            const blob = new Blob([result], { type: 'image/svg+xml' })
+            saveAs(blob, `${fileName}.svg`)
+            setLoading(false)
+            props.handleClose()
+          }}
+        >
+          Confirm
+        </Button>
+      </DialogActions>
     </Box>
   )
 }

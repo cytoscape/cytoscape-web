@@ -9,6 +9,7 @@ import {
   Switch,
   Checkbox,
   TextField,
+  DialogActions,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 //@ts-expect-error
@@ -38,7 +39,7 @@ export const Orientation = {
 export type Orientation = (typeof Orientation)[keyof typeof Orientation]
 
 export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
-  const [fileName, setFileName] = useState<string>('network.pdf')
+  const [fileName, setFileName] = useState<string>('network')
   const [loading, setLoading] = useState(false)
   const [fullBg, setFullBg] = useState(true)
   const [paperSize, setPaperSize] = useState<PaperSize>(PaperSize.LETTER)
@@ -65,7 +66,6 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
     <Box sx={{ p: 1 }}>
       <Box>
         <TextField
-          disabled
           size="small"
           label="File name"
           type="text"
@@ -114,7 +114,7 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
             size="small"
             sx={{ mr: 1 }}
             id="outlined-number"
-            label="Custom Width"
+            label="Width (inches)"
             type="number"
             onChange={(e) => setCustomWidth(Number(e.target.value))}
             value={customWidth}
@@ -125,7 +125,7 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
           <TextField
             size="small"
             id="outlined-number"
-            label="Custom Height"
+            label="Height (inches)"
             type="number"
             onChange={(e) => setCustomHeight(Number(e.target.value))}
             value={customHeight}
@@ -167,28 +167,30 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
           }}
         />
       </Box>
-      <Button color="error" onClick={props.handleClose}>
-        Cancel
-      </Button>
-      <Button
-        disabled={loading}
-        onClick={async () => {
-          setLoading(true)
-          const result = await pdfFunction?.(
-            fullBg,
-            paperSize,
-            orientation,
-            margin,
-            paperSize === PaperSize.CUSTOM ? customWidth : undefined,
-            paperSize === PaperSize.CUSTOM ? customHeight : undefined,
-          )
-          saveAs(result, 'network.pdf')
-          setLoading(false)
-          props.handleClose()
-        }}
-      >
-        Confirm
-      </Button>
+      <DialogActions>
+        <Button color="error" onClick={props.handleClose}>
+          Cancel
+        </Button>
+        <Button
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true)
+            const result = await pdfFunction?.(
+              fullBg,
+              paperSize,
+              orientation,
+              margin,
+              paperSize === PaperSize.CUSTOM ? customWidth : undefined,
+              paperSize === PaperSize.CUSTOM ? customHeight : undefined,
+            )
+            saveAs(result, `${fileName}.pdf`)
+            setLoading(false)
+            props.handleClose()
+          }}
+        >
+          Confirm
+        </Button>
+      </DialogActions>
     </Box>
   )
 }
