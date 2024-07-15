@@ -177,7 +177,8 @@ export const applyCpLayout = (
       if (parts[1] === nodeName || `${parts[1]}-${parts[2]}` === nodeName) {
         id2name.set(nodeId, cpNodeId)
       } else {
-        const pattern = /^-?\d+$/
+        // Accept new suffix for duplicate subsystem nodes, which are -1d, -2d, etc.
+        const pattern = /^-?\d+d?$/
         if (pattern.test(parts[1])) {
           if (parts[2] === nodeName || `${parts[2]}-${parts[3]}` === nodeName) {
             id2name.set(nodeId, cpNodeId)
@@ -185,8 +186,6 @@ export const applyCpLayout = (
         }
       }
     })
-
-    // id2name.set(nodeId, prefix + nodeName)
   })
 
   const positionMap: Map<IdType, [number, number]> = new Map()
