@@ -17,6 +17,9 @@ import { saveAs } from 'file-saver'
 import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
 import { ExportImageFormatProps } from './ExportNetworkToImageMenuItem'
 
+const MIN_ZOOM = 0
+const MAX_ZOOM = 5
+
 export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
   const [loading, setLoading] = useState(false)
   const [fileName, setFileName] = useState<string>('network.png')
@@ -35,18 +38,49 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
     state.getFunction('cyjs', 'height'),
   )
 
+  const maxHeight = heightFunction?.() * MAX_ZOOM
+  const maxWidth = widthFunction?.() * MAX_ZOOM
+
   useEffect(() => {
     if (widthFunction && heightFunction) {
-      setCustomWidth(widthFunction() * zoom)
-      setCustomHeight(heightFunction() * zoom)
+      setCustomWidth(Math.round(widthFunction() * zoom))
+      setCustomHeight(Math.round(heightFunction() * zoom))
     }
   }, [])
 
   // when zoom changes, update the width and height to the corresponding value
   const handleZoomChange = (e: any) => {
     setZoom(e.target.value)
-    setCustomWidth((widthFunction?.() ?? 0) * e.target.value)
-    setCustomHeight((heightFunction?.() ?? 0) * e.target.value)
+    setCustomWidth(Math.round((widthFunction?.() ?? 0) * e.target.value))
+    setCustomHeight(Math.round((heightFunction?.() ?? 0) * e.target.value))
+  }
+
+  const handleWidthChange = (e: any) => {
+    const newWidth = Math.round(
+      Math.max(0, Math.min(Number(e.target.value), maxWidth)),
+    )
+    const newZoom = Math.round(
+      Math.min(newWidth / (widthFunction?.() ?? 1), MAX_ZOOM),
+    )
+    const newHeight = Math.round((heightFunction?.() ?? 0) * newZoom)
+
+    setCustomWidth(newWidth)
+    setCustomHeight(newHeight)
+    setZoom(newZoom)
+  }
+
+  const handleHeightChange = (e: any) => {
+    const newHeight = Math.round(
+      Math.max(0, Math.min(Number(e.target.value), maxHeight)),
+    )
+    const newZoom = Math.round(
+      Math.min(newHeight / (heightFunction?.() ?? 1), MAX_ZOOM),
+    )
+    const newWidth = Math.round((widthFunction?.() ?? 0) * newZoom)
+
+    setCustomHeight(newHeight)
+    setCustomWidth(newWidth)
+    setZoom(newZoom)
   }
   return (
     <Box sx={{ p: 1 }}>
@@ -82,10 +116,8 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
           <TextField
             size="small"
             sx={{ mr: 1 }}
-            id="outlined-number"
             label="Custom Width"
-            type="number"
-            onChange={(e) => setCustomWidth(Number(e.target.value))}
+            onChange={handleWidthChange}
             value={customWidth}
             InputLabelProps={{
               shrink: true,
@@ -93,10 +125,8 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
           />
           <TextField
             size="small"
-            id="outlined-number"
             label="Custom Height"
-            type="number"
-            onChange={(e) => setCustomHeight(Number(e.target.value))}
+            onChange={handleHeightChange}
             value={customHeight}
             InputLabelProps={{
               shrink: true,
@@ -107,14 +137,14 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
           <Box>Zoom</Box>
           <Slider
             value={zoom}
-            min={0}
-            max={5}
+            min={MIN_ZOOM}
+            max={MAX_ZOOM}
             step={0.1}
             valueLabelDisplay="auto"
             onChange={(e: any) => handleZoomChange(e)}
             marks={[
               {
-                value: 0,
+                value: MIN_ZOOM,
                 label: '0%',
               },
               {
@@ -134,7 +164,7 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
                 label: '400%',
               },
               {
-                value: 5,
+                value: MAX_ZOOM,
                 label: '500%',
               },
             ]}

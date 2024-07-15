@@ -50,11 +50,9 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
     <Dialog
       onKeyDown={(e) => {
         e.stopPropagation()
-        e.preventDefault()
       }}
       onClick={(e) => {
         e.stopPropagation()
-        e.preventDefault()
       }}
       PaperProps={{
         sx: {
