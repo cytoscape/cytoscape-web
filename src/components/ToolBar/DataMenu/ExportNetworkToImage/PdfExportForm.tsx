@@ -7,6 +7,7 @@ import {
   MenuItem,
   Select,
   Switch,
+  Checkbox,
   TextField,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
@@ -37,13 +38,13 @@ export const Orientation = {
 export type Orientation = (typeof Orientation)[keyof typeof Orientation]
 
 export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
+  const [fileName, setFileName] = useState<string>('network.pdf')
   const [loading, setLoading] = useState(false)
   const [fullBg, setFullBg] = useState(true)
   const [paperSize, setPaperSize] = useState<PaperSize>(PaperSize.LETTER)
   const [orientation, setOrientation] = useState<Orientation>(
     Orientation.PORTRAIT,
   )
-
   const [customWidth, setCustomWidth] = useState<number>(0)
   const [customHeight, setCustomHeight] = useState<number>(0)
   const [margin, setMargin] = useState<number>(52)
@@ -62,10 +63,26 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
 
   return (
     <Box sx={{ p: 1 }}>
+      <Box>
+        <TextField
+          disabled
+          size="small"
+          label="File name"
+          type="text"
+          value={fileName}
+          onChange={(e) => {
+            console.log(e.target.value)
+            setFileName(e.target.value)
+          }}
+          InputLabelProps={{
+            shrink: true,
+          }}
+        ></TextField>
+      </Box>
       <Box sx={{ p: 1 }}>
         <FormControlLabel
           control={
-            <Switch
+            <Checkbox
               checked={fullBg}
               onChange={(e) => setFullBg(e.target.checked)}
             />
@@ -167,6 +184,7 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
           )
           saveAs(result, 'network.pdf')
           setLoading(false)
+          props.handleClose()
         }}
       >
         Confirm

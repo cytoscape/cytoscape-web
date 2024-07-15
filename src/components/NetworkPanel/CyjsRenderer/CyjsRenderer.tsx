@@ -482,9 +482,18 @@ const CyjsRenderer = ({
         }
       }
 
-      const exportPngFunction = (): string => {
+      const exportPngFunction = (
+        fullBg: boolean,
+        customWidth?: number,
+        customHeight?: number,
+      ): string => {
         if (cy !== null) {
-          const result = cy.png()
+          console.log(cy.width(), cy.height())
+          const result = cy.png({
+            // maxWidth: 1000,
+            // maxHeight: 1000,
+            bg: 'white',
+          })
           return result
         } else {
           return ''
@@ -535,10 +544,28 @@ const CyjsRenderer = ({
           return new Blob()
         }
       }
+
+      const widthFunction = (): number => {
+        if (cy !== null) {
+          return cy.width()
+        } else {
+          return 0
+        }
+      }
+
+      const heightFunction = (): number => {
+        if (cy !== null) {
+          return cy.height()
+        } else {
+          return 0
+        }
+      }
       setRendererFunction('cyjs', 'fit', fitFunction)
       setRendererFunction('cyjs', 'exportPng', exportPngFunction)
       setRendererFunction('cyjs', 'exportPdf', exportPdfFunction)
       setRendererFunction('cyjs', 'exportSvg', exportSvgFunction)
+      setRendererFunction('cyjs', 'width', widthFunction)
+      setRendererFunction('cyjs', 'height', heightFunction)
     }
 
     return () => {
