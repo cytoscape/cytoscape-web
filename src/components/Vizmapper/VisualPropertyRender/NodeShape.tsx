@@ -25,6 +25,18 @@ const nodeShapeMap: Record<NodeShapeType, React.ReactElement> = {
   [NodeShapeType.Vee]: <VeeIcon />,
 }
 
+const nodeShapeDisplayNameMap: Record<NodeShapeType, string> = {
+  [NodeShapeType.Ellipse]: 'ellipse',
+  [NodeShapeType.Rectangle]: 'rectangle',
+  [NodeShapeType.RoundRectangle]: 'round-rectangle',
+  [NodeShapeType.Triangle]: 'triangle',
+  [NodeShapeType.Diamond]: 'diamond',
+  [NodeShapeType.Hexagon]: 'hexagon',
+  [NodeShapeType.Octagon]: 'octagon',
+  [NodeShapeType.Parallelogram]: 'parallelogram',
+  [NodeShapeType.Vee]: 'vee',
+}
+
 export function NodeShapePicker(props: {
   currentValue: NodeShapeType | null
   onValueChange: (shape: NodeShapeType) => void
@@ -61,7 +73,7 @@ export function NodeShapePicker(props: {
             }}
           >
             <NodeShape value={shape} />
-            <Box>{shape}</Box>
+            <Box>{nodeShapeDisplayNameMap[shape]}</Box>
           </Box>
         </Box>
       ))}
