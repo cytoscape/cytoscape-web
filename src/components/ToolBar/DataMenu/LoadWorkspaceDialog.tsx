@@ -50,10 +50,10 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
       return myWorkspaces;
     };
 
-    if (open) {
+    if (openDialog) {
       void fetchMyWorkspaces().then(setMyWorkspaces);
     }
-  }, [open]);
+  }, [openDialog]);
 
   const handleRowSelect = (workspaceId: string): void => {
     setSelectedWorkspaceId(workspaceId);

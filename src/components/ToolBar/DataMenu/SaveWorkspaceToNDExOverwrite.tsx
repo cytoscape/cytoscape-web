@@ -54,14 +54,16 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
       const myWorkspaces = await ndexClient.getUserCyWebWorkspaces();
       return myWorkspaces;
     };
-    fetchMyWorkspaces().then(function (resultArray) {
-      const workspaceIds = resultArray.map((item: { workspaceId: any; }) => item.workspaceId);
-      const savedWorkspace = workspaceIds.includes(workspace.id);
-      setHasWorkspace(savedWorkspace);
-    }).catch(function (error) {
-      console.error('Error:', error);
-    });
-  }, [open]);
+    if (openDialog) {
+      fetchMyWorkspaces().then(function (resultArray) {
+        const workspaceIds = resultArray.map((item: { workspaceId: any; }) => item.workspaceId);
+        const savedWorkspace = workspaceIds.includes(workspace.id);
+        setHasWorkspace(savedWorkspace);
+      }).catch(function (error) {
+        console.error('Error:', error);
+      });
+    }
+  }, [openDialog]);
 
   const saveNetworkToNDEx = async (networkId: string): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
@@ -199,7 +201,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (props: BaseMenuProps): Reac
   return (
     <>
       {authenticated ? menuItem : (
-        <Tooltip title="Login to save a copy of the current network to NDEx">
+        <Tooltip title="Login to save the current network in NDEx">
           <Box>{menuItem}</Box>
         </Tooltip>
       )}
