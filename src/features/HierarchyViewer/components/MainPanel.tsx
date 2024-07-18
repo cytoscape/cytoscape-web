@@ -27,6 +27,8 @@ import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import FilterPanel from './FilterPanel/FilterPanel'
 import { DuplicateNodeSeparator } from './CustomLayout/DataBuilderUtil'
+import { useSubNetworkStore } from '../store/SubNetworkStore'
+import { set } from 'lodash'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -71,6 +73,11 @@ export const MainPanel = (): JSX.Element => {
   const addRenderer = useRendererStore((state) => state.add)
   const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
+
+  const setRootNetworkId = useSubNetworkStore((state) => state.setRootNetworkId)
+  const setRootNetworkHost = useSubNetworkStore(
+    (state) => state.setRootNetworkHost,
+  )
 
   const CirclePackingRenderer: Renderer = {
     id: CP_RENDERER_ID,
@@ -176,6 +183,16 @@ export const MainPanel = (): JSX.Element => {
     setInteractionNetworkId(interactionUuid)
   }, [selectedNodes])
 
+  useEffect(() => {
+    if (
+      metadata !== undefined &&
+      metadata.interactionNetworkUUID !== undefined
+    ) {
+      setRootNetworkId(metadata.interactionNetworkUUID)
+      setRootNetworkHost(metadata.interactionNetworkHost ?? '')
+    }
+  }, [metadata])
+
   if (!isHierarchy) {
     return <MessagePanel message="This network is not a hierarchy" />
   }
@@ -217,6 +234,7 @@ export const MainPanel = (): JSX.Element => {
   }
 
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
+  const interactionNetworkHost: string = metadata?.interactionNetworkHost ?? ''
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -236,6 +254,7 @@ export const MainPanel = (): JSX.Element => {
               subsystemNodeId={targetNode}
               query={query}
               interactionNetworkId={interactionNetworkUuid}
+              interactionNetworkHost={interactionNetworkHost}
             />
           </Allotment.Pane>
           <Allotment.Pane>

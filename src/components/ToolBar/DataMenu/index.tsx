@@ -83,13 +83,11 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     },
     {
       label: 'Save Workspace to NDEx (overwrite)',
-      template: () => <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />,
+      template: () => <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />
     },
     {
       label: 'Save Workspace to NDEx',
-      template: () => (
-        <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />
-      ),
+      template: () => <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />,
     },
     {
       label: 'Save to NDEx',

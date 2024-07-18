@@ -67,6 +67,7 @@ export const cyNetDag2tree2 = (
   visited: Record<string, number>,
   treeElements: any[],
   members: Set<string>,
+  rootMemberMap: Map<string, string>,
 ): void => {
   // CUrrent node ID
   const nodeId = node.id()
@@ -94,7 +95,6 @@ export const cyNetDag2tree2 = (
   const children: NodeCollection = node.outgoers().nodes()
 
   if (children.size() === 0) {
-    // console.log('## This is a Leaf node. adding genes', node.data())
     // Add all members to the new node as new leaf nodes
     getMembers(nodeId, nodeTable).forEach((member: string) => {
       if (members.has(member)) {
@@ -102,11 +102,14 @@ export const cyNetDag2tree2 = (
       } else {
         members.add(member)
       }
+
+      // Use the conversion map only for the generated leaf nodes
+      const label = rootMemberMap.get(member) ?? member
       treeElements.push({
         id: `${newNodeId}-${member}`,
         originalId: member,
         parentId: newNodeId,
-        name: member,
+        name: label,
         size: 1,
         members: [],
       })
@@ -129,12 +132,14 @@ export const cyNetDag2tree2 = (
 
     nodeMembers.forEach((member: string) => {
       members.add(member)
+      const label = rootMemberMap.get(member) ?? member
+
       if (!childMembers.has(member)) {
         treeElements.push({
           id: `${newNodeId}-${member}`,
           originalId: member,
           parentId: newNodeId,
-          name: member,
+          name: label,
           size: 1,
           members: [],
         })
@@ -151,6 +156,7 @@ export const cyNetDag2tree2 = (
       visited,
       treeElements,
       members,
+      rootMemberMap,
     )
   })
 }

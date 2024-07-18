@@ -4,11 +4,38 @@ import { Table } from '../../../../models/TableModel'
 
 import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
-import { cyNetDag2tree2, findRoot } from './DataBuilderUtil'
+import { cyNetDag2tree2, findRoot, getMembers } from './DataBuilderUtil'
 import { D3TreeNode } from './D3TreeNode'
 import { NetworkView, NodeView } from '../../../../models/ViewModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
+import { IdType } from '../../../../models/IdType'
+import { translateMemberIds } from '../../../../utils/ndex-utils'
 
+/**
+ *
+ * @param getToken
+ * @param uuid
+ * @param nodeIds
+ * @returns
+ */
+export const getNames = async (
+  url: string,
+  getToken: () => Promise<string>,
+  uuid: string,
+  nodeIds: string[],
+): Promise<string[]> => {
+  const token: string = await getToken()
+
+  // TODO: move this function to the core??
+  const names: string[] = await translateMemberIds({
+    networkUUID: uuid,
+    ids: nodeIds,
+    url,
+    accessToken: token,
+  })
+
+  return names
+}
 /**
  * Return the branch of the network rooted at the given node
  *
@@ -16,10 +43,19 @@ import { CirclePackingView } from '../../model/CirclePackingView'
  * @param nodeId
  * @returns Edge list of the children of the node
  */
-export const createTreeLayout = (
-  network: Network,
-  nodeTable: Table,
-): HierarchyNode<D3TreeNode> => {
+export const createTreeLayout = async ({
+  network,
+  nodeTable,
+  rootNetworkHostUrl,
+  getToken,
+  rootNetworkId,
+}: {
+  network: Network
+  nodeTable: Table
+  rootNetworkHostUrl: string
+  getToken: () => Promise<string>
+  rootNetworkId: IdType
+}): Promise<HierarchyNode<D3TreeNode>> => {
   // Get the internal data store. In this case, it is a cytoscape instance
   const cyNet: Core = NetworkFn.getInternalNetworkDataStore(network) as Core
   const root = findRoot(cyNet)
@@ -27,6 +63,28 @@ export const createTreeLayout = (
   const visited3: { [key: string]: number } = {}
 
   const allMembers = new Set<string>()
+
+  // Create ID to readable name map only when it is necessary
+  const rootMembers: string[] = getMembers(root.id(), nodeTable)
+  // test the first ID is a number or not
+  const firstMember: string = rootMembers[0]
+  const id2name: Map<string, string> = new Map<string, string>()
+  if (Number.parseInt(firstMember)) {
+    try {
+      const names = await getNames(
+        rootNetworkHostUrl,
+        getToken,
+        rootNetworkId,
+        rootMembers,
+      )
+      rootMembers.forEach((member: string, index: number) => {
+        id2name.set(member, names[index])
+      })
+    } catch (e) {
+      console.warn('Failed to convert to ID to node names', e)
+    }
+  }
+
   cyNetDag2tree2(
     root,
     null,
@@ -35,6 +93,7 @@ export const createTreeLayout = (
     visited3,
     treeElementList,
     allMembers,
+    id2name,
   )
 
   try {

@@ -1,20 +1,24 @@
-import config from '../../../assets/config.json'
-import { IdType } from '../../../models/IdType'
+import { IdType } from '../models/IdType'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
+import { getNdexClient } from './fetchers'
 
 export const translateMemberIds = async ({
   networkUUID,
   ids,
   accessToken,
+  url,
 }: {
   networkUUID: IdType
   ids: string[]
-  accessToken: string
+  url: string
+  accessToken?: string
 }): Promise<string[]> => {
-  const { ndexBaseUrl } = config
-  const ndexClient = new NDEx(ndexBaseUrl)
+  if (!url) {
+    throw new Error('Server URL is not provided')
+  }
 
+  const ndexClient: NDEx = getNdexClient(url, accessToken)
   const geneNameMap = await ndexClient.getAttributesOfSelectedNodes(
     networkUUID,
     {
