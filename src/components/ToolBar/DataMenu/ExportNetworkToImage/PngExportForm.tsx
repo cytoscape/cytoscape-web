@@ -172,8 +172,6 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
       ).toFixed(2),
     )
 
-    console.log(newWidthInches, newHeightInches)
-
     setWidthInches(newWidthInches)
     setHeightInches(newHeightInches)
     setDpi(e.target.value)
@@ -215,9 +213,6 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
     const newZoom = parseFloat(
       ((newHeightInches / maxHeightInches) * MAX_ZOOM).toFixed(2),
     )
-
-    console.log(newZoom, 'NZ')
-    console.log(newHeightInches, maxHeightInches, 'NH')
 
     const newWidth = Math.round(
       Math.max(0, Math.min((widthFunction?.() ?? 0) * newZoom), maxWidth),

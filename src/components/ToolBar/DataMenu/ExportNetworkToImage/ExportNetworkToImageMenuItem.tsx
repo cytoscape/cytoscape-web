@@ -20,6 +20,7 @@ import { useRendererFunctionStore } from '../../../../store/RendererFunctionStor
 import { PdfExportForm } from './PdfExportForm'
 import { PngExportForm } from './PngExportForm'
 import { SvgExportForm } from './SvgExportForm'
+import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 
 interface ExportImageProps {
   open: boolean
@@ -89,8 +90,13 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
 export const ExportImageMenuItem = (props: BaseMenuProps): ReactElement => {
   const [show, setShow] = useState(false)
 
+  const workspace = useWorkspaceStore((state) => state.workspace)
   const menuItem = (
-    <MenuItem component="label" onClick={() => setShow(true)}>
+    <MenuItem
+      disabled={workspace.networkIds.length === 0}
+      component="label"
+      onClick={() => setShow(true)}
+    >
       Network to Image...
     </MenuItem>
   )

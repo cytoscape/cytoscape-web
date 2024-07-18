@@ -30,7 +30,6 @@ export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
           type="text"
           value={fileName}
           onChange={(e) => {
-            console.log(e.target.value)
             setFileName(e.target.value)
           }}
           InputLabelProps={{
