@@ -46,13 +46,13 @@ export const getNames = async (
 export const createTreeLayout = async ({
   network,
   nodeTable,
-  url,
+  rootNetworkHostUrl,
   getToken,
   rootNetworkId,
 }: {
   network: Network
   nodeTable: Table
-  url: string
+  rootNetworkHostUrl: string
   getToken: () => Promise<string>
   rootNetworkId: IdType
 }): Promise<HierarchyNode<D3TreeNode>> => {
@@ -70,10 +70,19 @@ export const createTreeLayout = async ({
   const firstMember: string = rootMembers[0]
   const id2name: Map<string, string> = new Map<string, string>()
   if (Number.parseInt(firstMember)) {
-    const names = await getNames(url, getToken, rootNetworkId, rootMembers)
-    rootMembers.forEach((member: string, index: number) => {
-      id2name.set(member, names[index])
-    })
+    try {
+      const names = await getNames(
+        rootNetworkHostUrl,
+        getToken,
+        rootNetworkId,
+        rootMembers,
+      )
+      rootMembers.forEach((member: string, index: number) => {
+        id2name.set(member, names[index])
+      })
+    } catch (e) {
+      console.warn('Failed to convert to ID to node names', e)
+    }
   }
 
   cyNetDag2tree2(
