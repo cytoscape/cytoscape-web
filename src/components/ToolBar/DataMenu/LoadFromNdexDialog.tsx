@@ -29,7 +29,7 @@ import { formatBytes } from '../../../utils/byte-conversion'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { networkSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
+import { ndexSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
 import { dateFormatter } from '../../../utils/date-format'
 import { KeycloakContext } from '../../../bootstrap'
 import { useMessageStore } from '../../../store/MessageStore'
@@ -41,6 +41,7 @@ interface LoadFromNdexDialogProps {
 
 export const NetworkSeachField = (props: {
   startSearch: (searchValue: string) => Promise<void>
+  handleClose: () => void
 }): ReactElement => {
   const [searchValue, setSearchValue] = useState<string>('')
 
@@ -51,6 +52,10 @@ export const NetworkSeachField = (props: {
     event.stopPropagation()
     if (event.key === 'Enter') {
       void props.startSearch(searchValue)
+    }
+
+    if (event.key === 'Escape') {
+      props.handleClose()
     }
   }
   return (
@@ -142,11 +147,7 @@ export const LoadFromNdexDialog = (
   ): Promise<void> => {
     try {
       const token = await getToken()
-      const summaries = await networkSummaryFetcher(
-        networkIds,
-        ndexBaseUrl,
-        token,
-      )
+      const summaries = await ndexSummaryFetcher(networkIds, ndexBaseUrl, token)
 
       const invalidNetworkIds: IdType[] = []
       const validNetworkIds: IdType[] = []
@@ -185,7 +186,7 @@ export const LoadFromNdexDialog = (
       const ndexClient = new NDEx(ndexBaseUrl)
       const token = await getToken()
       ndexClient.setAuthToken(token)
-      const myNetworks = await ndexClient.getAccountPageNetworks(0, 400)
+      const myNetworks = await ndexClient.getAccountPageNetworks(0, 1000)
       return myNetworks
     }
     if (authenticated) {
@@ -226,7 +227,7 @@ export const LoadFromNdexDialog = (
       const token = await getToken()
       ndexClient.setAuthToken(token)
     }
-    const searchResults = await ndexClient.searchNetworks(searchValue, 0, 400)
+    const searchResults = await ndexClient.searchNetworks(searchValue, 0, 1000)
     setSearchResultNetworks(searchResults?.networks ?? [])
     setLoading(false)
   }
@@ -236,6 +237,7 @@ export const LoadFromNdexDialog = (
   const emptyListMessageContent = <Typography>{emptyListMessage}</Typography>
   const networksToRender =
     currentTabIndex === 0 ? searchResultNetworks : myNetworks
+
   const networkListContent = (
     <Box>
       <TableContainer sx={{ height: 460 }}>
@@ -260,6 +262,7 @@ export const LoadFromNdexDialog = (
                 edgeCount,
                 modificationTime,
                 cx2FileSize,
+                subnetworkIds,
               } = network
               const selected = selectedNetworks.includes(externalId)
               const networkAlreadyLoaded = networkIds.includes(externalId)
@@ -267,7 +270,9 @@ export const LoadFromNdexDialog = (
                 +nodeCount + +edgeCount < maxNetworkElementsThreshold &&
                 cx2FileSize < maxNetworkFileSize
               const networkCanBeSelected =
-                !networkAlreadyLoaded && networkIsSmallEnough
+                !networkAlreadyLoaded &&
+                networkIsSmallEnough &&
+                subnetworkIds.length === 0
 
               const dateDisplay = dateFormatter(modificationTime)
 
@@ -357,9 +362,11 @@ export const LoadFromNdexDialog = (
               } else {
                 const tooltipMessage = networkAlreadyLoaded
                   ? 'Network already loaded in the workspace'
-                  : `Networks must be smaller than ${formatBytes(
-                      maxNetworkFileSize,
-                    )} and contain less than ${maxNetworkElementsThreshold} nodes/edges.`
+                  : subnetworkIds.length > 0
+                    ? 'Collections cannot be imported into Cytoscape Web'
+                    : `Networks must be smaller than ${formatBytes(
+                        maxNetworkFileSize,
+                      )} and contain less than ${maxNetworkElementsThreshold} nodes/edges.`
 
                 return (
                   <Tooltip key={externalId} title={tooltipMessage}>
@@ -385,6 +392,14 @@ export const LoadFromNdexDialog = (
   const { open, handleClose } = props
   return (
     <Dialog
+      onKeyDown={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
+      }}
+      onClick={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
+      }}
       PaperProps={{
         sx: {
           minHeight: 600,
@@ -410,7 +425,10 @@ export const LoadFromNdexDialog = (
           </Tabs>
         </Box>
         {currentTabIndex === 0 && (
-          <NetworkSeachField startSearch={fetchSearchResults} />
+          <NetworkSeachField
+            startSearch={fetchSearchResults}
+            handleClose={props.handleClose}
+          />
         )}
         {loading ? <CircularProgress /> : null}
         {content}

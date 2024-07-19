@@ -208,10 +208,10 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     >
       <MenuItem
         sx={{ flexBasis: '100%', flexGrow: 3 }}
-        disabled={!authenticated}
+        disabled={!authenticated || !summary?.isNdex}
         onClick={handleClick}
       >
-        Save to NDEx (overwrite)
+        Save the current network to NDEx (overwrite)
       </MenuItem>
     </Box>
   )

@@ -29,7 +29,7 @@ export const useNdexNetworkSummary = async (
 
     // fetch summaries not found in the cache in NDEx
     // and then save them to the cache
-    const newSummaries = await networkSummaryFetcher(
+    const newSummaries = await ndexSummaryFetcher(
       Array.from(nonCachedIds),
       url,
       accessToken,
@@ -54,7 +54,7 @@ export const useNdexNetworkSummary = async (
 }
 
 // fetch network summaries from NDEx
-export const networkSummaryFetcher = async (
+export const ndexSummaryFetcher = async (
   id: IdType | IdType[],
   url: string,
   accessToken?: string,
@@ -74,6 +74,7 @@ export const networkSummaryFetcher = async (
     const processedSummaries = summaries.map((s) => {
       return {
         ...s,
+        isNdex: true,
         creationTime: new Date(s.creationTime),
         modificationTime: new Date(s.modificationTime),
       }

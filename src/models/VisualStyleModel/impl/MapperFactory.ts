@@ -1,5 +1,6 @@
 import { ValueType } from '../../TableModel'
 import { ColorType, VisualPropertyValueType } from '../VisualPropertyValue'
+import { VisibilityType } from '../../VisualStyleModel/VisualPropertyValue/VisibilityType'
 import {
   ContinuousFunctionControlPoint,
   ContinuousMappingFunction,
@@ -11,7 +12,6 @@ import { PassthroughMappingFunction } from '../VisualMappingFunction/Passthrough
 import * as d3Scale from 'd3-scale'
 // import * as d3Color from 'd3-color'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
-
 
 const enumTypes: Set<VisualPropertyValueTypeName> = new Set([
   VisualPropertyValueTypeName.NodeShape,
@@ -25,7 +25,25 @@ const enumTypes: Set<VisualPropertyValueTypeName> = new Set([
 ])
 
 // all enum value strings are in lower case
-const enumValueNormalizationFn = (value: string): string => value.toLowerCase()
+const enumValueNormalizationFn = (
+  pm: PassthroughMappingFunction,
+  value: VisualPropertyValueType,
+): VisualPropertyValueType => {
+  if (pm.visualPropertyType === VisualPropertyValueTypeName.Visibility) {
+    if (typeof value === 'string') {
+      const normalizedValue = value.toLowerCase()
+      if (normalizedValue === 'true' || normalizedValue === 'false') {
+        return normalizedValue === 'true'
+          ? VisibilityType.Element
+          : VisibilityType.None
+      }
+    }
+    if (typeof value === 'boolean') {
+      return value === true ? VisibilityType.Element : VisibilityType.None
+    }
+  }
+  return value
+}
 /**
  * Derive the mapping function from given VMF object
  */
@@ -41,10 +59,9 @@ export const createPassthroughMapper = (
 ): Mapper => {
   return (value: ValueType): VisualPropertyValueType => {
     if (enumTypes.has(pm.visualPropertyType)) {
-      return enumValueNormalizationFn(value as string) as VisualPropertyValueType
+      return enumValueNormalizationFn(pm, value as VisualPropertyValueType)
     } else {
       return (value as VisualPropertyValueType) ?? pm.defaultValue
-
     }
   }
 }

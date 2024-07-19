@@ -6,17 +6,24 @@ import appConfig from './assets/config.json'
 import { AppConfigContext } from './AppConfigContext'
 import { App } from './App'
 
+import ReactGA from 'react-ga4'
+
 // this allows immer to work with Map and Set
 import { enableMapSet } from 'immer'
 import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
-
+import ErrorBoundary from './ErrorBoundary'
 enableMapSet()
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
 const rootElement: HTMLElement | null = document.getElementById('root')
-const { keycloakConfig, urlBaseName } = appConfig
+const { keycloakConfig, urlBaseName, googleAnalyticsId } = appConfig
+
+if (googleAnalyticsId !== '') {
+  ReactGA.initialize(googleAnalyticsId)
+}
+
 const keycloak = new Keycloak(keycloakConfig)
 keycloak
   .init({
@@ -31,7 +38,9 @@ keycloak
         <AppConfigContext.Provider value={appConfig}>
           <React.StrictMode>
             <KeycloakContext.Provider value={keycloak}>
-              <App />
+              <ErrorBoundary>
+                <App />
+              </ErrorBoundary>
             </KeycloakContext.Provider>
           </React.StrictMode>
         </AppConfigContext.Provider>,

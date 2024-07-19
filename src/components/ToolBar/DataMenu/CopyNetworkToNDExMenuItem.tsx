@@ -81,7 +81,7 @@ export const CopyNetworkToNDExMenuItem = (
       table.nodeTable,
       table.edgeTable,
       viewModel,
-      `Copy of ${summary.name}`,
+      summary.isNdex ? `Copy of ${summary.name}` : summary.name,
     )
     try {
       const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
@@ -135,7 +135,7 @@ export const CopyNetworkToNDExMenuItem = (
         disabled={!authenticated}
         onClick={handleClick}
       >
-        Save Copy to NDEx
+        {summary?.isNdex ? `Save Copy of the current network to NDEx` : `Save current network to NDEx`}
       </MenuItem>
     </Box>
   )

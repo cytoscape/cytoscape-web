@@ -36,11 +36,11 @@ export const ShareNetworkButton = (): JSX.Element => {
   const [search, setSearch] = useSearchParams()
 
   const ui: Ui = useUiStateStore((state) => state.ui)
-  const { panels } = ui
+  const { panels, activeNetworkView } = ui
 
   // This will be used to watch the selection state
-  const networkViewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const networkViewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
 
   const { selectedNodes, selectedEdges } = networkViewModel ?? {}
@@ -50,10 +50,13 @@ export const ShareNetworkButton = (): JSX.Element => {
   const getQueryString = (): string => {
     const panelParams = new URLSearchParams(panels)
     const panelObj = Object.fromEntries(panelParams.entries())
-    const searchObj = {
+    const searchObj: Record<string, string> = {
       ...Object.fromEntries(search.entries()),
       ...panelObj,
       activeTableBrowserTab: `${ui.tableUi.activeTabIndex}`,
+    }
+    if (activeNetworkView !== currentNetworkId) {
+      searchObj.activeNetworkView = activeNetworkView
     }
     const searchStr = new URLSearchParams(searchObj).toString()
     return searchStr

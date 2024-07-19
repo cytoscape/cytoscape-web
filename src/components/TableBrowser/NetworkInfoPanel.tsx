@@ -69,13 +69,9 @@ export default function NetworkInfoPanel(props: {
     return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
   };
 
-  const hasReferenceProperties = properties.some((prop) =>
-  Object.keys(prop).some((key) => key.startsWith('reference'))
-  );
-
-  const hasRightsProperties = properties.some((prop) =>
-  Object.keys(prop).some((key) => key.startsWith('rights'))
-  );
+  const capitalizeFirstLetter = (string: string): string => {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  };
 
   return (
     <Box sx={{ height: props.height - 50, overflow: 'scroll', pl: 1, pr: 1 }}>
@@ -124,45 +120,27 @@ export default function NetworkInfoPanel(props: {
           </Typography>
           <Typography variant="body2">
             {parse(networkInfo?.description ?? '')}
+            {properties
+              .filter(prop => prop.predicateString.startsWith('rights') || prop.predicateString.startsWith('reference'))
+              .map((prop, index) => {
+                let displayValue: React.ReactNode;
+
+                const valueString = prop.value.toString();
+
+                if (containsHtmlAnchor(valueString)) {
+                  displayValue = parse(valueString);
+                } else {
+                  displayValue = parse(linkifyPlainTextUrls(valueString));
+                }
+
+                return (
+                  <div key={index}>
+                    <span style={{ fontWeight: 'bold' }}>{capitalizeFirstLetter(prop.predicateString)}:</span> {displayValue}
+                  </div>
+                );
+              })}
           </Typography>
-          {hasRightsProperties && (
-          <Typography
-            sx={{ fontSize: 14, fontWeight: 'bold' }}
-            variant="subtitle1"
-          >
-            Rights:
-          </Typography>
-          )}
-          <Typography variant="body2">
-            {properties.map((prop, index) => (
-              <div key={index}>
-                {Object.entries(prop)
-                  .filter(([key, _]) => key.startsWith('rights') || key.startsWith('rightsholder'))
-                  .map(([key, value], idx) => (
-                    <div key={idx}>{`${key}: ${parse(value)}`}</div>
-                  ))}
-              </div>
-            ))}
-          </Typography>
-          {hasReferenceProperties && (
-          <Typography
-            sx={{ fontSize: 14, fontWeight: 'bold' }}
-            variant="subtitle1"
-          >
-            Reference:
-          </Typography>
-          )}
-          <Typography variant="body2">
-            {properties.map((prop, index) => (
-              <div key={index}>
-                {Object.entries(prop)
-                  .filter(([key, _]) => key.startsWith('reference'))
-                  .map(([_, value], idx) => (
-                    <div key={idx}>{parse(value)}</div>
-                  ))}
-              </div>
-            ))}
-          </Typography>
+
           <Typography
             sx={{ fontSize: 14, fontWeight: 'bold' }}
             variant="subtitle1"
@@ -170,33 +148,30 @@ export default function NetworkInfoPanel(props: {
             Properties:
           </Typography>
           <Typography variant="body2" component="div">
+            {properties
+              .filter(prop => !prop.predicateString.startsWith('__') && 
+                              prop.predicateString !== 'description' && 
+                              prop.predicateString !== 'reference' && 
+                              prop.predicateString !== 'rights' && 
+                              prop.predicateString !== 'rightsHolder')
+              .map((prop, index) => {
+                let displayValue: React.ReactNode;
 
-            {properties.map((prop, index) => (
-              <div key={index}>
-                {Object.entries(prop)
-                  .filter(([key, _]) =>
-                    !key.startsWith('_') &&
-                    !key.startsWith('rights') &&
-                    !key.startsWith('rightsHolder') &&
-                    !key.startsWith('reference'))
-                  .map(([key, value], idx) => {
-                    let displayValue;
-                    if (typeof value === 'string') {
-                      if (containsHtmlAnchor(value)) {
-                        displayValue = parse(value);
-                      } else {
-                        const linkifiedValue = linkifyPlainTextUrls(value);
-                        displayValue = parse(linkifiedValue);
-                      }
-                    } else {
-                      displayValue = value;
-                    }
+                const valueString = prop.value.toString();
 
-                    return <div key={idx}>{`${key}: `}{displayValue}</div>;
-                  })}
-              </div>
-            ))}
-          </Typography>   
+                if (containsHtmlAnchor(valueString)) {
+                  displayValue = parse(valueString);
+                } else {
+                  displayValue = parse(linkifyPlainTextUrls(valueString));
+                }
+
+                return (
+                  <div key={index}>
+                    {capitalizeFirstLetter(prop.predicateString)}: {displayValue}
+                  </div>
+                );
+              })}
+          </Typography>
         </Box>
       </Box>
     </Box>

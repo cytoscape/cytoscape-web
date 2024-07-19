@@ -26,6 +26,9 @@ import { VisualStyle } from '../../../models/VisualStyleModel'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import FilterPanel from './FilterPanel/FilterPanel'
+import { DuplicateNodeSeparator } from './CustomLayout/DataBuilderUtil'
+import { useSubNetworkStore } from '../store/SubNetworkStore'
+import { set } from 'lodash'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -34,12 +37,9 @@ export interface Query {
 
 const queryClient = new QueryClient()
 
-export const MainPanel = (): JSX.Element => {
-  const [bottomHeight, setBottomHeight] = useState<number>(500)
+export const CP_RENDERER_ID: string = 'circlePacking'
 
-  const handleResize = (newSize: number[]) => {
-    setBottomHeight(newSize[1])
-  }
+export const MainPanel = (): JSX.Element => {
   const [subNetworkName, setSubNetworkName] = useState<string>('')
   const [query, setQuery] = useState<Query>({ nodeIds: [] })
   const [interactionNetworkUuid, setInteractionNetworkId] = useState<string>('')
@@ -64,8 +64,7 @@ export const MainPanel = (): JSX.Element => {
   )
 
   // Selected nodes in the hierarchy
-  const selectedNodes: IdType[] =
-    networkViewModel !== undefined ? networkViewModel.selectedNodes : []
+  const selectedNodes: IdType[] = networkViewModel?.selectedNodes ?? []
 
   // At this point, summary can be any network prop object
   const networkSummary: any = useNetworkSummaryStore(
@@ -75,12 +74,26 @@ export const MainPanel = (): JSX.Element => {
   const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
 
+  const setRootNetworkId = useSubNetworkStore((state) => state.setRootNetworkId)
+  const setRootNetworkHost = useSubNetworkStore(
+    (state) => state.setRootNetworkHost,
+  )
+
   const CirclePackingRenderer: Renderer = {
-    id: 'circlePacking',
+    id: CP_RENDERER_ID,
     name: 'Cell View',
     description: 'Circle Packing Renderer',
-    getComponent: (networkData: Network) => (
-      <CirclePackingPanel network={networkData} />
+    getComponent: (
+      networkData: Network,
+      initialSize: { w: number; h: number },
+      visible: boolean,
+    ) => (
+      <CirclePackingPanel
+        rendererId={CP_RENDERER_ID}
+        network={networkData}
+        initialSize={initialSize}
+        visible={visible}
+      />
     ),
   }
 
@@ -170,15 +183,44 @@ export const MainPanel = (): JSX.Element => {
     setInteractionNetworkId(interactionUuid)
   }, [selectedNodes])
 
+  useEffect(() => {
+    if (
+      metadata !== undefined &&
+      metadata.interactionNetworkUUID !== undefined
+    ) {
+      setRootNetworkId(metadata.interactionNetworkUUID)
+      setRootNetworkHost(metadata.interactionNetworkHost ?? '')
+    }
+  }, [metadata])
+
   if (!isHierarchy) {
     return <MessagePanel message="This network is not a hierarchy" />
   }
 
-  // if (isHierarchy && renderers.circlePacking === undefined) {
-  //   addRenderer(CirclePackingRenderer)
-  // }
   if (selectedNodes.length === 0) {
     return <MessagePanel message="Please select a subsystem" />
+  }
+
+  // This is the ID of the selected subsystem in the hierarchy
+  let targetNode: IdType = selectedNodes[0]
+
+  if (selectedNodes.length > 1) {
+    // Multiple nodes are selected
+    // Check if same branches are selected
+    const normalizedIds = selectedNodes.map((nodeId) => {
+      return nodeId.split(DuplicateNodeSeparator)[0]
+    })
+    const uniqueBranches = new Set(normalizedIds)
+    if (uniqueBranches.size !== 1) {
+      return (
+        <MessagePanel
+          message="Multiple nodes are selected"
+          subMessage="Please select one subsystem to display the associated interactions"
+        />
+      )
+    } else {
+      targetNode = Array.from(uniqueBranches)[0]
+    }
   }
 
   // Special case: neither of ID or membership is available
@@ -191,9 +233,8 @@ export const MainPanel = (): JSX.Element => {
     )
   }
 
-  // This is the ID of the selected subsystem in the hierarchy
-  const targetNode: IdType = selectedNodes[0]
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
+  const interactionNetworkHost: string = metadata?.interactionNetworkHost ?? ''
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -204,7 +245,7 @@ export const MainPanel = (): JSX.Element => {
           boxSizing: 'border-box',
         }}
       >
-        <Allotment vertical minSize={100} onChange={handleResize}>
+        <Allotment vertical minSize={100}>
           <Allotment.Pane preferredSize={'65%'}>
             <SubNetworkPanel
               hierarchyId={currentNetworkId}
@@ -213,6 +254,7 @@ export const MainPanel = (): JSX.Element => {
               subsystemNodeId={targetNode}
               query={query}
               interactionNetworkId={interactionNetworkUuid}
+              interactionNetworkHost={interactionNetworkHost}
             />
           </Allotment.Pane>
           <Allotment.Pane>

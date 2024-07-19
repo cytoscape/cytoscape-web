@@ -16,6 +16,7 @@ import appConfig from './assets/config.json'
 import { KeycloakContext } from './bootstrap'
 import { useCredentialStore } from './store/CredentialStore'
 import { RedirectPanel } from './RedirectPanel'
+import ErrorBoundary from './ErrorBoundary'
 
 enableMapSet()
 
@@ -63,11 +64,18 @@ const router = createBrowserRouter(
             <WorkspaceEditor />
           </Suspense>
         }
+        errorElement={<Error />}
       >
-        <Route path="networks" element={<div />} />
-        <Route path="networks/:networkId" element={<div />} />
+        <Route path="networks" element={<div />} errorElement={<Error />} />
+        <Route
+          path="networks/:networkId"
+          element={<div />}
+          errorElement={<Error />}
+        />
         <Route path="*" element={<RedirectPanel />} />
       </Route>
+
+      <Route path="/error" element={<Error />} />
     </Route>,
   ),
   routerOpts,
@@ -84,7 +92,9 @@ export const App = (): React.ReactElement => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <RouterProvider router={router} />
+      <ErrorBoundary>
+        <RouterProvider router={router} />
+      </ErrorBoundary>
     </ThemeProvider>
   )
 }

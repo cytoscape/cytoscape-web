@@ -29,5 +29,20 @@ export interface Renderer {
   /**
    * Get an actual renderer React component for the given data model
    */
-  getComponent: (network: Network) => ReactElement
+  getComponent: (
+    /**
+     * Network data model to be rendered
+     */
+    network: Network,
+
+    /**
+     * (Optional) Initial size of the renderer's container
+     */
+    initialSize?: { w: number; h: number },
+
+    /**
+     * (Optional) Visibility of the renderer component
+     */
+    visible?: boolean,
+  ) => ReactElement
 }

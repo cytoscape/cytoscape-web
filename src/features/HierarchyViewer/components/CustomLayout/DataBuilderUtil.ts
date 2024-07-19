@@ -4,6 +4,7 @@ import { Table, ValueType } from '../../../../models/TableModel'
 import { SubsystemTag } from '../../model/HcxMetaTag'
 import { D3TreeNode } from './D3TreeNode'
 
+export const DuplicateNodeSeparator = '-'
 /**
  * Get the member list of the given node
  *
@@ -47,6 +48,17 @@ export const findRoot = (cyNet: Core): NodeSingular => {
   return roots[0]
 }
 
+/**
+ * Function to convert a DAG to a tree for stratify
+ *
+ * @param node
+ * @param parentId
+ * @param cyNet
+ * @param nodeTable
+ * @param visited
+ * @param treeElements
+ * @param members
+ */
 export const cyNetDag2tree2 = (
   node: NodeSingular,
   parentId: string | null,
@@ -55,6 +67,7 @@ export const cyNetDag2tree2 = (
   visited: Record<string, number>,
   treeElements: any[],
   members: Set<string>,
+  rootMemberMap: Map<string, string>,
 ): void => {
   // CUrrent node ID
   const nodeId = node.id()
@@ -63,8 +76,11 @@ export const cyNetDag2tree2 = (
   visited[nodeId] = visited[nodeId] === undefined ? 1 : visited[nodeId] + 1
 
   // Create a new node ID based on visited count (use the same ID for the first visit)
+  // The new ID is the original ID with a suffix '-1d', '-2d', ...
   const newNodeId =
-    visited[nodeId] > 1 ? `${nodeId}-${visited[nodeId]}` : nodeId
+    visited[nodeId] > 1
+      ? `${nodeId}${DuplicateNodeSeparator}${visited[nodeId]}d`
+      : nodeId
 
   const newNode: D3TreeNode = {
     id: newNodeId,
@@ -72,7 +88,6 @@ export const cyNetDag2tree2 = (
     parentId: parentId === null ? '' : parentId,
     name: nodeTable.rows.get(nodeId)?.name as string,
     size: getMembers(nodeId, nodeTable).length,
-    // size: 1,
     members: getMembers(nodeId, nodeTable),
   }
   treeElements.push(newNode)
@@ -80,7 +95,6 @@ export const cyNetDag2tree2 = (
   const children: NodeCollection = node.outgoers().nodes()
 
   if (children.size() === 0) {
-    // console.log('## This is a Leaf node. adding genes', node.data())
     // Add all members to the new node as new leaf nodes
     getMembers(nodeId, nodeTable).forEach((member: string) => {
       if (members.has(member)) {
@@ -88,11 +102,14 @@ export const cyNetDag2tree2 = (
       } else {
         members.add(member)
       }
+
+      // Use the conversion map only for the generated leaf nodes
+      const label = rootMemberMap.get(member) ?? member
       treeElements.push({
         id: `${newNodeId}-${member}`,
         originalId: member,
         parentId: newNodeId,
-        name: member,
+        name: label,
         size: 1,
         members: [],
       })
@@ -115,12 +132,14 @@ export const cyNetDag2tree2 = (
 
     nodeMembers.forEach((member: string) => {
       members.add(member)
+      const label = rootMemberMap.get(member) ?? member
+
       if (!childMembers.has(member)) {
         treeElements.push({
           id: `${newNodeId}-${member}`,
           originalId: member,
           parentId: newNodeId,
-          name: member,
+          name: label,
           size: 1,
           members: [],
         })
@@ -137,6 +156,7 @@ export const cyNetDag2tree2 = (
       visited,
       treeElements,
       members,
+      rootMemberMap,
     )
   })
 }

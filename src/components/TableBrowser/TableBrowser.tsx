@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material'
 import { Button, ButtonGroup } from '@mui/material'
+import _ from 'lodash'
 
 import {
   Table,
@@ -40,9 +41,7 @@ import {
   deserializeValueList,
   valueDisplay,
   isListType,
-  SortDirection,
   SortType,
-  sortFnToType,
   serializedStringIsValid,
   deserializeValue,
 } from '../../models/TableModel/impl/ValueTypeImpl'
@@ -52,6 +51,7 @@ import { Panel } from '../../models/UiModel/Panel'
 import { Ui } from '../../models/UiModel'
 import NetworkInfoPanel from './NetworkInfoPanel'
 import { NetworkView } from '../../models/ViewModel'
+import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -118,6 +118,8 @@ export default function TableBrowser(props: {
     setUi(nextUi)
   }
 
+  const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
+
   const setColumnWidth = useUiStateStore((state) => state.setColumnWidth)
 
   const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
@@ -160,8 +162,8 @@ export default function TableBrowser(props: {
   )
   const setMapping = useVisualStyleStore((state) => state.setMapping)
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(networkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(networkId),
   )
   const selectedNodes = useViewModelStore(
     (state) => viewModel?.selectedNodes ?? [],
@@ -221,7 +223,7 @@ export default function TableBrowser(props: {
   const rowsWithIds = Array.from(
     (currentTable?.rows ?? new Map()).entries(),
   ).map(([key, value]) => ({ ...value, id: key }))
-  const rows =
+  let rows =
     selectedElements?.length > 0
       ? rowsWithIds.filter((r) => selectedElementsSet.has(r.id))
       : rowsWithIds
@@ -240,13 +242,14 @@ export default function TableBrowser(props: {
   }, [selectedElements])
 
   if (sort.column != null && sort.direction != null && sort.valueType != null) {
-    const sortFn = sortFnToType[sort.valueType]
-    rows.sort((a, b) => {
-      if (a == null || b == null || sort.column == null) return 0
-      const aVal = (a as Record<string, ValueType>)[sort.column]
-      const bVal = (b as Record<string, ValueType>)[sort.column]
-      return sortFn(aVal, bVal, sort.direction as SortDirection)
-    })
+    if (sort.column != null) {
+      rows = _.orderBy(
+        rows,
+        (o) =>
+          (o as Record<string, ValueType>)[sort.column as string] as ValueType,
+        sort.direction,
+      )
+    }
   }
 
   const handleChange = (
@@ -436,7 +439,16 @@ export default function TableBrowser(props: {
             bgColor: '#d9d9d9',
           }}
         >
-          <Box sx={{ mr: 1 }}>Selected Column: {selectedColumn.id}</Box>
+          <Box
+            sx={{
+              mr: 1,
+              width: 250,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            Selected Column: {selectedColumn.id}
+          </Box>
           <ButtonGroup size="small">
             <Button
               onClick={() => {
@@ -640,6 +652,13 @@ export default function TableBrowser(props: {
       <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
         Create Column
       </Button>
+      <Button
+        disabled={tables[props.currentNetworkId] === undefined}
+        sx={{ mr: 1 }}
+        onClick={() => showTableJoinForm(true)}
+      >
+        Import Table From File
+      </Button>
       <CreateTableColumnForm
         error={createColumnFormError}
         open={showCreateColumnForm}
@@ -754,8 +773,8 @@ export default function TableBrowser(props: {
             onHeaderClicked={onHeaderClicked}
             onColumnMoved={onColMoved}
             onItemHovered={(e) => onItemHovered(e.location)}
-            overscrollX={200}
-            overscrollY={200}
+            overscrollX={10}
+            overscrollY={10}
             onColumnResizeEnd={onColumnResize}
             width={props.width}
             height={props.height - 85}
@@ -783,8 +802,8 @@ export default function TableBrowser(props: {
             onHeaderClicked={onHeaderClicked}
             onColumnMoved={onColMoved}
             onItemHovered={(e) => onItemHovered(e.location)}
-            overscrollX={200}
-            overscrollY={200}
+            overscrollX={10}
+            overscrollY={10}
             onColumnResizeEnd={onColumnResize}
             width={props.width}
             height={props.height - 85}

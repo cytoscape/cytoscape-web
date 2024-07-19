@@ -4,12 +4,13 @@ import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
 import { ReactElement, useContext, useState } from 'react'
 import { LoginPanel } from './LoginPanel'
 import { KeycloakContext } from '../../bootstrap'
+import { AppConfigContext } from '../../AppConfigContext'
 
 export const LoginButton = (): ReactElement => {
   const [open, setOpen] = useState<boolean>(false)
 
   const client: Keycloak = useContext(KeycloakContext)
-
+  const { urlBaseName } = useContext(AppConfigContext)
   const enabled = true
   const handleClose = async (): Promise<void> => {
     if (!enabled) {
@@ -45,7 +46,7 @@ export const LoginButton = (): ReactElement => {
     }
     client
       ?.logout({
-        redirectUri: window.location.origin,
+        redirectUri: window.location.origin + urlBaseName,
       })
       .then(() => {
         console.log('* Logout success')

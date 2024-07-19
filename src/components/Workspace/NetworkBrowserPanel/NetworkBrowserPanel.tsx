@@ -44,6 +44,7 @@ export const NetworkBrowserPanel = ({
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+
   const activeNetworkViewId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
@@ -140,11 +141,9 @@ export const NetworkBrowserPanel = ({
         {currentTabIndex === 0 && (
           <Box
             sx={{
-              overflow: 'auto',
-              // height: '100%',
-              // height: allotmentDimensions[0] - 48,
+              height: allotmentDimensions[0] - 96,
               // need to set a height to enable scroll in the network list
-              // 48 is the height of the tool bar
+              // 96 is the height of the tool bar
               width: '100%',
               padding: 0,
               margin: 0,
@@ -167,7 +166,13 @@ export const NetworkBrowserPanel = ({
       </div>
       <div hidden={currentTabIndex !== 2}>
         {currentTabIndex === 2 && (
-          <Box>
+          <Box
+            sx={{
+              height: allotmentDimensions[0] - 96,
+              width: '100%',
+              padding: 0,
+              margin: 0,
+            }}>
             <LLMQueryResultPanel />
           </Box>
         )}

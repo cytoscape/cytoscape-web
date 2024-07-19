@@ -12,16 +12,22 @@ interface ConfirmationDialogProps {
   message: string
   buttonTitle?: string
   onConfirm: () => void
+  onCancel?: () => void
 }
 export const ConfirmationDialog = (
   props: ConfirmationDialogProps,
 ): JSX.Element => {
-  const { open, setOpen, message, title, buttonTitle, onConfirm } = props
+  const { open, setOpen, message, title, buttonTitle, onConfirm, onCancel } = props
 
-  const handleCancel = (): void => {
+  const handleCancel = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    e.stopPropagation()
     setOpen(false)
+    if (onCancel) {
+      onCancel()
+    }
   }
-  const handleConfirm = (): void => {
+  const handleConfirm = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    e.stopPropagation()
     setOpen(false)
     onConfirm()
   }

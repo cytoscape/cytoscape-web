@@ -24,6 +24,7 @@ import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+import { set } from 'lodash'
 
 interface NetworkRendererProps {
   network?: Network
@@ -49,6 +50,14 @@ const CyjsRenderer = ({
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
   )
+
+  // Store sub-selection state. If show-hide mode is selected, then
+  // the selected node will be highlighted and the others will be shown, too.
+  const [subSelectedEdges, setSubSelectedEdges] = useState<IdType[]>([])
+
+  // Store the selection type (click or filter)
+  const [clickSelection, setClickSelection] = useState<boolean>(false)
+
   if (network === undefined) {
     return <></>
   }
@@ -119,7 +128,11 @@ const CyjsRenderer = ({
   const isViewCreated = useRef(false)
 
   const selectionHandler = (event: EventObject) => {
-    console.log('handling Selection event2: ', event)
+    // Do nothing if selection mode is not "select"
+    if (displayMode === DisplayMode.SHOW_HIDE) {
+      return
+    }
+
     const selectedNodes: IdType[] = []
     const selectedEdges: IdType[] = []
     cy.elements()
@@ -135,87 +148,100 @@ const CyjsRenderer = ({
     exclusiveSelect(id, selectedNodes, selectedEdges)
   }
 
-  const renderNetwork = useMemo(
-    () => (): void => {
-      if (renderedId === id || cy === null) {
+  const renderNetwork = (): void => {
+    if (renderedId === id || cy === null) {
+      return
+    }
+
+    isViewCreated.current = false
+    // cy.unmount()
+    cy.removeAllListeners()
+    cy.startBatch()
+    cy.remove('*')
+
+    const data: NetworkViewSources = {
+      network,
+      networkView,
+      nodeTable: table.nodeTable,
+      edgeTable: table.edgeTable,
+      visualStyle: vs,
+    }
+
+    const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
+
+    const { nodeViews, edgeViews } = updatedNetworkView
+    addObjects(cy, Object.values(nodeViews), network.edges, edgeViews)
+
+    // Generate a new Cytoscape.js styles based on given visual style
+    const newStyle = createCyjsDataMapper(vs)
+    setCyStyle(newStyle)
+
+    // Restore selection state in Cyjs instance
+    const selectedNodes = networkView?.selectedNodes ?? []
+    const selectedEdges = networkView?.selectedEdges ?? []
+
+    cy.nodes()
+      .filter((ele: SingularElementArgument) => {
+        return selectedNodes.includes(ele.data('id'))
+      })
+      .select()
+    cy.edges()
+      .filter((ele: SingularElementArgument) => {
+        return selectedEdges.includes(ele.data('id'))
+      })
+      .select()
+
+    // Box selection listener
+    cy.on(
+      'boxend',
+      debounce((event: EventObject) => {
+        selectionHandler(event)
+      }),
+      100,
+    )
+
+    // single selection listener
+    cy.on('tap', (e: EventObject) => {
+      console.debug('handling TAP event: ', e)
+      // Check for background click
+      // This is necessary to access the latest value from closure
+      const activeId: string = activeNetworkIdRef.current
+
+      if (
+        activeId !== undefined &&
+        activeId !== '' &&
+        id !== '' &&
+        id !== activeId
+      ) {
+        if (cy.autounselectify() === false) {
+          cy.autounselectify(true)
+        }
         return
       }
 
-      isViewCreated.current = false
-      // cy.unmount()
-      cy.removeAllListeners()
-      cy.startBatch()
-      cy.remove('*')
-
-      const data: NetworkViewSources = {
-        network,
-        networkView,
-        nodeTable: table.nodeTable,
-        edgeTable: table.edgeTable,
-        visualStyle: vs,
-      }
-
-      const updatedNetworkView: NetworkView =
-        VisualStyleFn.applyVisualStyle(data)
-
-      const { nodeViews, edgeViews } = updatedNetworkView
-      addObjects(cy, Object.values(nodeViews), network.edges, edgeViews)
-
-      // Generate a new Cytoscape.js styles based on given visual style
-      const newStyle = createCyjsDataMapper(vs)
-      setCyStyle(newStyle)
-
-      // Restore selection state in Cyjs instance
-      const selectedNodes = networkView?.selectedNodes ?? []
-      const selectedEdges = networkView?.selectedEdges ?? []
-
-      cy.nodes()
-        .filter((ele: SingularElementArgument) => {
-          return selectedNodes.includes(ele.data('id'))
-        })
-        .select()
-      cy.edges()
-        .filter((ele: SingularElementArgument) => {
-          return selectedEdges.includes(ele.data('id'))
-        })
-        .select()
-
-      // Box selection listener
-      cy.on(
-        'boxend',
-        debounce((event: EventObject) => {
-          selectionHandler(event)
-        }),
-        100,
-      )
-
-      // single selection listener
-      cy.on('tap', (e: EventObject) => {
-        console.debug('handling TAP event: ', e)
-        // Check for background click
-        // This is necessary to access the latest value from closure
-        const activeId: string = activeNetworkIdRef.current
-
-        if (
-          activeId !== undefined &&
-          activeId !== '' &&
-          id !== '' &&
-          id !== activeId
-        ) {
-          if (cy.autounselectify() === false) {
-            cy.autounselectify(true)
-          }
-          return
+      if (e.target === cy) {
+        // Background click
+        if (displayMode === DisplayMode.SELECT) {
+          exclusiveSelect(id, [], [])
+          // setSubSelectedEdges([])
+        } else {
+          // do nothing. Keep the selection as-is
         }
-
-        if (e.target === cy) {
-          // Background click
-          if (displayMode === DisplayMode.SELECT) {
-            exclusiveSelect(id, [], [])
+      } else if (e.target.isNode() || e.target.isEdge()) {
+        if (displayMode === DisplayMode.SHOW_HIDE) {
+          // Select nodes only
+          if (e.target.isNode()) {
+            const selectedNodes: IdType[] = []
+            selectedNodes.push(e.target.data('id'))
+            // Keep edges as-is
+            exclusiveSelect(id, selectedNodes, selectedEdges)
           } else {
-            exclusiveSelect(id, [], selectedEdges)
+            // Edge is clicked. Simply select it and handle sub-selection in
+            const newSelection = e.target.data('id')
+            exclusiveSelect(id, selectedNodes, [newSelection])
+            setClickSelection(true)
           }
-        } else if (e.target.isNode() || e.target.isEdge()) {
+        } else {
           const selectedNodes: IdType[] = []
           const selectedEdges: IdType[] = []
           if (e.target.isNode()) {
@@ -225,47 +251,40 @@ const CyjsRenderer = ({
           }
           exclusiveSelect(id, selectedNodes, selectedEdges)
         }
-        cy.autounselectify(false)
-      })
+      }
+      cy.autounselectify(false)
+    })
 
-      // Moving nodes
-      cy.on('dragfree', 'node', (e: EventObject): void => {
-        // Enable flag to avoid unnecessary fit
-        setNodesMoved(true)
+    // Moving nodes
+    cy.on('dragfree', 'node', (e: EventObject): void => {
+      // Enable flag to avoid unnecessary fit
+      setNodesMoved(true)
 
-        const targetNode = e.target
-        const nodeId: IdType = targetNode.data('id')
-        const position = targetNode.position()
-        setNodePosition(id, nodeId, [position.x, position.y])
-      })
+      const targetNode = e.target
+      const nodeId: IdType = targetNode.data('id')
+      const position = targetNode.position()
+      setNodePosition(id, nodeId, [position.x, position.y])
+    })
 
-      cy.on('mouseover', 'node, edge', (e: EventObject): void => {
-        const targetNode = e.target
-        setHoveredElement(targetNode.data('id'))
-      })
-      cy.on('mouseout', 'node, edge', (e: EventObject): void => {
-        setHoveredElement(undefined)
-      })
+    cy.on('mouseover', 'node, edge', (e: EventObject): void => {
+      const targetNode = e.target
+      setHoveredElement(targetNode.data('id'))
+    })
+    cy.on('mouseout', 'node, edge', (e: EventObject): void => {
+      setHoveredElement(undefined)
+    })
 
-      cy.endBatch()
+    cy.endBatch()
 
-      cy.style(newStyle)
+    cy.style(newStyle)
 
-      cy.fit()
+    cy.fit()
 
-      setVisualStyle(id, vs)
-      setTimeout(() => {
-        isViewCreated.current = true
-      }, 1000)
-    },
-    [
-      network,
-      cy,
-      activeNetworkId,
-      networkView?.selectedNodes,
-      networkView?.selectedEdges,
-    ],
-  )
+    setVisualStyle(id, vs)
+    setTimeout(() => {
+      isViewCreated.current = true
+    }, 1000)
+  }
 
   const applyStyleUpdate = (): void => {
     if (cyStyle.length === 0) {
@@ -404,10 +423,16 @@ const CyjsRenderer = ({
     }
 
     const { selectedNodes, selectedEdges } = networkView
+
     // Clear selection
     if (selectedNodes.length === 0 && selectedEdges.length === 0) {
       cy.elements().unselect()
-      cy.elements().show()
+      if (displayMode === DisplayMode.SELECT) {
+        cy.elements().show()
+      } else {
+        cy.nodes().show()
+        cy.edges().hide()
+      }
       return
     }
 
@@ -439,19 +464,42 @@ const CyjsRenderer = ({
         cy.edges().show()
       }
 
-      const newSelectedEdges = cy
-        .edges()
-        .filter((ele: SingularElementArgument) => {
-          return selectedEdges.includes(ele.data('id'))
-        })
-
       if (displayMode === DisplayMode.SHOW_HIDE) {
+        const targetEdgeIds = clickSelection ? subSelectedEdges : selectedEdges
+        const newSelectedEdges = cy
+          .edges()
+          .filter((ele: SingularElementArgument) => {
+            return targetEdgeIds.includes(ele.data('id'))
+          })
         newSelectedEdges.show()
+        if (clickSelection) {
+          setClickSelection(false)
+        } else {
+          // Keep these selected edges in the sub-selection state for later use
+          setSubSelectedEdges(selectedEdges)
+        }
       } else {
+        const newSelectedEdges = cy
+          .edges()
+          .filter((ele: SingularElementArgument) => {
+            return selectedEdges.includes(ele.data('id'))
+          })
         newSelectedEdges.select()
       }
     }
   }, [networkView?.selectedNodes, networkView?.selectedEdges])
+
+  useEffect(() => {
+    if (cy === null) {
+      return
+    }
+    if (displayMode === DisplayMode.SHOW_HIDE) {
+      // Disable box selection for show/hide mode
+      cy.boxSelectionEnabled(false)
+    } else {
+      cy.boxSelectionEnabled(true)
+    }
+  }, [displayMode])
 
   /**
    * Initializes the Cytoscape.js instance
@@ -464,6 +512,7 @@ const CyjsRenderer = ({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
         // wheelSensitivity: 0.1,
+        boxSelectionEnabled: displayMode === DisplayMode.SELECT ? true : false,
       })
       setCy(cy)
       // Now add event handlers. This is necessary only once.
@@ -488,6 +537,10 @@ const CyjsRenderer = ({
       renderNetwork()
     }
   }, [cy])
+
+  useEffect(() => {
+    console.log('New subselection edges: ', subSelectedEdges)
+  }, [subSelectedEdges])
 
   return (
     <>

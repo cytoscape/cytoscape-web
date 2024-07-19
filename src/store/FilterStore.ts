@@ -8,6 +8,7 @@ import { NumberRange } from '../models/PropertyModel/NumberRange'
 import { DiscreteRange } from '../models/PropertyModel/DiscreteRange'
 import { deleteFilterFromDb, putFilterToDb } from './persist/db'
 import { FilterConfig } from '../models/FilterModel'
+import { SearchState } from '../models/FilterModel/SearchState'
 
 /**
  * The store for both search and filter.
@@ -19,6 +20,7 @@ interface FilterState<T> {
 }
 
 interface FilterAction {
+  setSearchState: (searchState: SearchState) => void
   setQuery: (query: string) => void
   setIndexedColumns: (
     networkId: IdType,
@@ -47,6 +49,7 @@ export const useFilterStore = create(
   immer<FilterStore>((set, get) => ({
     filterConfigs: {},
     search: {
+      state: SearchState.READY,
       query: '',
       indexedColumns: {},
       options: {
@@ -58,6 +61,11 @@ export const useFilterStore = create(
         return result
       },
       index: {},
+    },
+    setSearchState: (searchState: SearchState) => {
+      set((state) => {
+        state.search.state = searchState
+      })
     },
     setConverter: (converter: (result: any) => IdType[]) => {
       set((state) => {
@@ -136,7 +144,7 @@ export const useFilterStore = create(
         state.filterConfigs[newName] = filter
         putFilterToDb(filter)
           .then(() => {
-            console.log('New filter saved to db: ', filter.name)
+            // console.log('New filter saved to db: ', filter.name)
           })
           .catch((e) => {
             console.error(

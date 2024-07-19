@@ -1,5 +1,6 @@
 import { IdType } from '../IdType'
 import { GraphObjectType } from '../NetworkModel'
+import { SearchState } from './SearchState'
 
 export interface IndexedColumns {
   [GraphObjectType.NODE]: string[]
@@ -20,6 +21,9 @@ export interface Indices<T> {
  *
  */
 export interface Search<T> {
+  // Current state of the search
+  state: SearchState
+  
   // Raw query string from the user
   query: string
 

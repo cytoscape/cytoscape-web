@@ -98,6 +98,7 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
         bgColor={bgColor}
         isActive={isActive}
         handleClick={handleClick}
+        selected={true}
       />
     )
   } else {

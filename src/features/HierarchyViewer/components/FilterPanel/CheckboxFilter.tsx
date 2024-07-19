@@ -20,6 +20,8 @@ import {
 import { useSearchParams } from 'react-router-dom'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
 import { useTheme } from '@mui/material/styles'
+import { DiscreteFilterDetails } from '../../../../models/FilterModel/DiscreteFilterDetails'
+import { getAllDiscreteValues } from '../../utils/filter-util'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -50,6 +52,11 @@ export const CheckboxFilter = ({
   const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const { description, attributeName } = filterConfig
+  const discreteFilterDetails = filterConfig.discreteFilterDetails ?? []
+  const name2label = new Map<string, string>()
+  discreteFilterDetails.forEach((details: DiscreteFilterDetails) => {
+    name2label.set(details.criterion, details.description)
+  })
   const updateRange = useFilterStore((state) => state.updateRange)
 
   const [allOptions, setAllOptions] = useState<string[]>([])
@@ -88,18 +95,7 @@ export const CheckboxFilter = ({
   }
 
   useEffect(() => {
-    const { rows } = table
-
-    if (Object.keys(rows).length === 0) return
-
-    const valueSet = new Set<string>()
-    rows.forEach((row: Record<IdType, ValueType>) => {
-      valueSet.add(row[attributeName] as string)
-    })
-
-    // Convert set to array and sort
-    const newOptions = Array.from(valueSet).sort()
-    setAllOptions(newOptions)
+    setAllOptions(getAllDiscreteValues(table.rows, attributeName))
   }, [table, attributeName])
 
   /**
@@ -239,7 +235,7 @@ export const CheckboxFilter = ({
                   onChange={() => handleToggle(option)}
                 />
               }
-              label={option}
+              label={name2label.get(option) ?? option}
             />
           )
         })}

@@ -49,6 +49,11 @@ import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
 import { validateHcx } from '../../features/HierarchyViewer/model/impl/hcxValidators'
 import { useMessageStore } from '../../store/MessageStore'
 import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
+import { CreateNetworkFromTableForm } from '../../features/TableDataLoader/components/CreateNetworkFromTable/CreateNetworkFromTableForm'
+import { JoinTableToNetworkForm } from '../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
+import { useCreateNetworkFromTableStore } from '../../features/TableDataLoader/store/createNetworkFromTableStore'
+import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
+import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { FilterUrlParams } from '../../models/FilterModel/FilterUrlParams'
 import { DEFAULT_FILTER_NAME } from '../../features/HierarchyViewer/components/FilterPanel/FilterPanel'
 import {
@@ -87,6 +92,14 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers for optional features
   useHierarchyViewerManager()
 
+  // Check if the component is initialized
+  const isInitializedRef = useRef<boolean>(false)
+
+  const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
+  const showCreateNetworkFromTableForm = useCreateNetworkFromTableStore(
+    (state) => state.setShow,
+  )
+
   // Block multiple loading
   const isLoadingRef = useRef<boolean>(false)
 
@@ -106,6 +119,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.getToken,
   )
 
+  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -117,6 +131,11 @@ const WorkSpaceEditor = (): JSX.Element => {
   const setActiveTableBrowserIndex = useUiStateStore(
     (state) => state.setActiveTableBrowserIndex,
   )
+
+  const setActiveNetworkView = useUiStateStore(
+    (state) => state.setActiveNetworkView,
+  )
+
   const { panels, activeNetworkView } = ui
 
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
@@ -187,13 +206,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.layoutEngines,
   )
 
-  const defaultLayout: LayoutAlgorithm = useLayoutStore(
-    (state) => state.preferredLayout,
-  )
-
-  const defaultHierarchyLayout: LayoutAlgorithm = useLayoutStore(
-    (state) => state.preferredHierarchicalLayout,
-  )
   const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
     (state) => state.setIsRunning,
   )
@@ -211,16 +223,47 @@ const WorkSpaceEditor = (): JSX.Element => {
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  const loadNetworkSummaries = async (): Promise<void> => {
+  const loadNetworkSummaries = async (networkIds: IdType[]): Promise<void> => {
     const currentToken = await getToken()
-    const summaries = await useNdexNetworkSummary(
-      workspace.networkIds,
+    const newSummaries = await useNdexNetworkSummary(
+      networkIds,
       ndexBaseUrl,
       currentToken,
     )
 
-    setSummaries(summaries)
+    setSummaries({ ...summaries, ...newSummaries })
+
+    const loadedNetworks = Object.keys(newSummaries)
+    if(loadedNetworks.length !== networkIds.length){
+      const networksFailtoLoad = networkIds.filter(id => !loadedNetworks.includes(id))
+      const numOfNets = networksFailtoLoad.length
+      const largestNum = 3
+      const largeNum = numOfNets > largestNum
+      deleteNetwork(networksFailtoLoad)// remove the networks that the app fails to load from the workspace
+      addMessage({ // show a message to the user
+        message: `Failed to load ${networksFailtoLoad.length} network${largeNum?'s':''} with id${largeNum?'s':''}: ${
+          largeNum?(networksFailtoLoad.slice(0,largestNum).join(', ')+'...' ):networksFailtoLoad.join(', ')
+        }`,
+        duration: 5000,
+      })
+    }
   }
+
+  const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
+
+  /**
+   * Initializations
+   */
+  useEffect(() => {
+    const windowWidthListener = (): void => {
+      setTableBrowserWidth(window.innerWidth)
+    }
+    window.addEventListener('resize', windowWidthListener)
+
+    return () => {
+      window.removeEventListener('resize', windowWidthListener)
+    }
+  }, [])
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     const currentToken = await getToken()
@@ -238,7 +281,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
     addViewModel(networkId, networkViews[0])
-    // addViewModel(networkId, networkViews !== undefined ? networkViews : [])
 
     if (isHCX(summary)) {
       const version =
@@ -257,30 +299,37 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
 
     if (!summary.hasLayout) {
-      const layoutEngineName = isHCX(summary)
-        ? defaultHierarchyLayout.name
-        : defaultLayout.name
-      const engine: LayoutEngine =
-        layoutEngines.find((engine) => engine.name === layoutEngineName) ??
-        layoutEngines[0]
-
-      const nextSummary = { ...summary, hasLayout: true }
-
-      setIsRunning(true)
-      const afterLayout = (
-        positionMap: Map<IdType, [number, number]>,
-      ): void => {
-        updateNodePositions(networkId, positionMap)
-        updateSummary(networkId, nextSummary)
-        setIsRunning(false)
-      }
-
-      engine.apply(
-        network.nodes,
-        network.edges,
-        afterLayout,
-        engine.algorithms[layoutEngineName],
+      const defaultLayout = getDefaultLayout(
+        summary,
+        network.nodes.length + network.edges.length,
+        maxNetworkElementsThreshold,
       )
+
+      if (defaultLayout !== undefined) {
+        const engine: LayoutEngine | undefined = layoutEngines.find(
+          (engine) => engine.name === defaultLayout.engineName,
+        )
+
+        if (engine !== undefined) {
+          const nextSummary = { ...summary, hasLayout: true }
+
+          setIsRunning(true)
+          const afterLayout = (
+            positionMap: Map<IdType, [number, number]>,
+          ): void => {
+            updateNodePositions(networkId, positionMap)
+            updateSummary(networkId, nextSummary)
+            setIsRunning(false)
+          }
+
+          engine.apply(
+            network.nodes,
+            network.edges,
+            afterLayout,
+            engine.algorithms[defaultLayout.algorithmName],
+          )
+        }
+      }
     }
   }
 
@@ -320,7 +369,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     const filterFor = search.get(FilterUrlParams.FILTER_FOR)
     const filterBy = search.get(FilterUrlParams.FILTER_BY)
     const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
-    console.log('Filter states:', filterFor, filterBy, filterRange)
 
     if (filterFor !== null && filterBy !== null && filterRange !== null) {
       const filterConfig: FilterConfig = {
@@ -341,19 +389,12 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   }
 
-  /**
-   * Initializations
-   */
-  useEffect(() => {
-    const windowWidthListener = (): void => {
-      setTableBrowserWidth(window.innerWidth)
+  const restoreActiveNetworkView = (): void => {
+    const activeNetworkView = search.get('activeNetworkView')
+    if (activeNetworkView !== null) {
+      setActiveNetworkView(activeNetworkView)
     }
-    window.addEventListener('resize', windowWidthListener)
-
-    return () => {
-      window.removeEventListener('resize', windowWidthListener)
-    }
-  }, [])
+  }
 
   /**
    * Check number of networks in the workspace
@@ -362,16 +403,13 @@ const WorkSpaceEditor = (): JSX.Element => {
     const networkCount: number = workspace.networkIds.length
     const summaryCount: number = Object.keys(summaries).length
 
-    if (networkCount === 0 && summaryCount === 0) {
-      return
-    }
-
     // No action required if empty or no change
-    if (networkCount === 0) {
+    if (networkCount === 0 && isInitializedRef.current === true) {
       if (summaryCount !== 0) {
         // Remove the last one
         removeSummary(Object.keys(summaries)[0])
       }
+      navigate(`/${workspace.id}/networks`)
       return
     }
 
@@ -387,9 +425,10 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
 
     // Case 2: network added
-
-    // TODO: Load only diffs
-    loadNetworkSummaries()
+    const toBeAdded: IdType[] = workspace.networkIds.filter((id) => {
+      return !summaryIds.includes(id)
+    })
+    loadNetworkSummaries(toBeAdded)
       .then(() => {})
       .catch((err) => console.error(err))
   }, [workspace.networkIds])
@@ -417,15 +456,18 @@ const WorkSpaceEditor = (): JSX.Element => {
             restoreSelectionStates()
             restoreTableBrowserTabState()
             restoreFilterStates()
+            setTimeout(() => {
+              restoreActiveNetworkView()
+            }, 1000)
           }
 
           navigate(
-            `/${
-              workspace.id
-            }/networks/${currentNetworkId}${location.search.toString()}`,
+            `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
           )
         })
-        .catch((err) => console.error('Failed to load a network:', err))
+        .catch((err) => {
+          console.error('* Failed to load a network:', err)
+        })
         .finally(() => {
           isLoadingRef.current = false
         })
@@ -434,13 +476,19 @@ const WorkSpaceEditor = (): JSX.Element => {
         .then(() => {
           restoreTableBrowserTabState()
           navigate(
-            `/${
-              workspace.id
-            }/networks/${currentNetworkId}${location.search.toString()}`,
+            `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
           )
         })
-        .catch((err) => console.error('Failed to load a network:', err))
+        .catch((err) => {
+          console.error('Failed to load a network:', err)
+        })
+        .finally(() => {
+          isLoadingRef.current = false
+        })
     }
+
+    // Mark as initialized after loading the first network to avoid
+    isInitializedRef.current = true
   }, [currentNetworkId])
 
   /**
@@ -547,6 +595,12 @@ const WorkSpaceEditor = (): JSX.Element => {
                     ? currentNetworkId
                     : activeNetworkView
                 }
+              />
+              <JoinTableToNetworkForm
+                handleClose={() => showTableJoinForm(false)}
+              />
+              <CreateNetworkFromTableForm
+                handleClose={() => showCreateNetworkFromTableForm(false)}
               />
             </Suspense>
           </Allotment.Pane>

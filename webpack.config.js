@@ -65,6 +65,9 @@ module.exports = {
   // watch the dist file for changes when using the dev server
   devServer: {
     hot: true,
+    client: {
+      overlay: true,
+    },
     static: path.resolve(__dirname, './dist'),
     historyApiFallback: {
       rewrites: [
