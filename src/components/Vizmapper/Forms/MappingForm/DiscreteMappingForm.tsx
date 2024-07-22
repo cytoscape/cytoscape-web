@@ -85,6 +85,15 @@ export function DiscreteMappingForm(props: {
     new Set([...existingMappingKeys, ...Array.from(networkAttributeValues)]),
   )
 
+  // const allMappingKeys = Array.from(
+  //   new Set([
+  //     ...existingMappingKeys,
+  //     ...Array.from(networkAttributeValues).map((v) =>
+  //       Array.isArray(v) ? v.join(',') : v,
+  //     ),
+  //   ]),
+  // )
+
   const mappingKeysNotInColumn = allMappingKeys.filter(
     (mk) => !networkAttributeValues.has(mk),
   )
@@ -164,7 +173,7 @@ export function DiscreteMappingForm(props: {
                           </Box>
                         </Tooltip>
                       ) : (
-                        <Typography variant="body2">{key}</Typography>
+                        <Typography variant="body2">{`${key}`}</Typography>
                       )}
                     </Box>
                   </TableCell>
