@@ -571,10 +571,9 @@ const CyjsRenderer = ({
             margin,
             width: customWidth,
             height: customHeight,
-            debug: true,
+            debug: false,
           })
 
-          console.log(result)
           return result
         } else {
           return Promise.resolve(new Blob())
@@ -592,7 +591,6 @@ const CyjsRenderer = ({
 
           const svgBlob = new Blob([result], { type: 'image/svg+xml' })
 
-          console.log(result)
           return svgBlob
         } else {
           return new Blob()
