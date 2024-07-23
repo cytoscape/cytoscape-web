@@ -39,7 +39,18 @@ export const fetchUrlCx = async (
       isShowcase: false,
       isCertified: false,
       indexLevel: '',
-      hasLayout: false,
+      hasLayout: network.networkViews
+        .map(
+          (v) =>
+            Object.values(v.nodeViews).filter(
+              (nv) =>
+                nv.x !== undefined &&
+                nv.y !== undefined &&
+                nv.x !== 0 &&
+                nv.y !== 0,
+            ).length > 0,
+        )
+        .reduce((acc, cur) => acc || cur, false),
       hasSample: false,
       cxFileSize: 0,
       cx2FileSize: 0,
