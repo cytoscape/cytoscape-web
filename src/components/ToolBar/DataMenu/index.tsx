@@ -22,6 +22,7 @@ import { JoinTableToNetworkMenuItem } from '../../../features/TableDataLoader/co
 import { TieredMenu } from 'primereact/tieredmenu'
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
+import { ExportImageMenuItem } from './ExportNetworkToImage/ExportNetworkToImageMenuItem'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -37,7 +38,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
   }
 
   const handleClose = (): void => {
-    ; (op.current as any)?.hide()
+    ;(op.current as any)?.hide()
     setAnchorEl(null)
   }
 
@@ -130,6 +131,15 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
           template: () => (
             <JoinTableToNetworkMenuItem handleClose={handleClose} />
           ),
+        },
+      ],
+    },
+    {
+      label: 'Export',
+      items: [
+        {
+          label: 'Network to Image...',
+          template: <ExportImageMenuItem handleClose={handleClose} />,
         },
       ],
     },

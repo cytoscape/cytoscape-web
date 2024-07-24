@@ -405,6 +405,9 @@ export const CirclePackingPanel = ({
           } else {
             exclusiveSelect(network.id, [d.data.id], [])
           }
+
+          // Clear the selection in leafs in the selected node
+          setSelectedLeaf('')
         } else {
           // This is a leaf node
 

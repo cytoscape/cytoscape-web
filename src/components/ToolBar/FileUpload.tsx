@@ -214,8 +214,6 @@ export function FileUpload(props: FileUploadProps) {
       file.name,
     )
 
-    console.log('SUM', summaries, file.name)
-
     setFile(file)
     goToStep(CreateNetworkFromTableStep.ColumnAssignmentForm)
     setRawText(text)

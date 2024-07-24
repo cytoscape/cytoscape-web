@@ -8,6 +8,8 @@ import Cytoscape, {
   SingularElementArgument,
 } from 'cytoscape'
 
+import { registerCyExtensions } from './register-cy-extensions'
+
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
@@ -24,7 +26,12 @@ import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
-import { set } from 'lodash'
+import {
+  Orientation,
+  PaperSize,
+} from '../../ToolBar/DataMenu/ExportNetworkToImage/PdfExportForm'
+
+registerCyExtensions()
 
 interface NetworkRendererProps {
   network?: Network
@@ -522,7 +529,95 @@ const CyjsRenderer = ({
           cy.fit()
         }
       }
+
+      const exportPngFunction = (
+        fullBg: boolean,
+        customWidth: number,
+        customHeight: number,
+        transparentBg: boolean,
+      ): string => {
+        if (cy !== null) {
+          const opt: any = {
+            full: fullBg,
+            maxWidth: customWidth,
+            maxHeight: customHeight,
+          }
+
+          if (!transparentBg) {
+            opt.bg = 'white'
+          }
+
+          const result = cy.png(opt)
+          return result
+        } else {
+          return ''
+        }
+      }
+
+      const exportPdfFunction = (
+        fullBg: boolean,
+        paperSize: PaperSize,
+        orientation: Orientation,
+        margin: number,
+        customWidth?: number,
+        customHeight?: number,
+      ): Promise<Blob> => {
+        if (cy !== null) {
+          // @ts-expect-error-next-line
+          const result = cy.pdf({
+            paperSize,
+            orientation,
+            full: fullBg,
+            margin,
+            width: customWidth,
+            height: customHeight,
+            debug: false,
+          })
+
+          return result
+        } else {
+          return Promise.resolve(new Blob())
+        }
+      }
+
+      const exportSvgFunction = (): Blob => {
+        if (cy !== null) {
+          // @ts-expect-error-next-line
+          const result = cy.svg({
+            scale: 1,
+            full: true,
+            background: 'white',
+          })
+
+          const svgBlob = new Blob([result], { type: 'image/svg+xml' })
+
+          return svgBlob
+        } else {
+          return new Blob()
+        }
+      }
+
+      const widthFunction = (): number => {
+        if (cy !== null) {
+          return cy.width()
+        } else {
+          return 0
+        }
+      }
+
+      const heightFunction = (): number => {
+        if (cy !== null) {
+          return cy.height()
+        } else {
+          return 0
+        }
+      }
       setRendererFunction('cyjs', 'fit', fitFunction)
+      setRendererFunction('cyjs', 'exportPng', exportPngFunction)
+      setRendererFunction('cyjs', 'exportPdf', exportPdfFunction)
+      setRendererFunction('cyjs', 'exportSvg', exportSvgFunction)
+      setRendererFunction('cyjs', 'width', widthFunction)
+      setRendererFunction('cyjs', 'height', heightFunction)
     }
 
     return () => {
