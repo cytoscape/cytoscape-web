@@ -83,7 +83,9 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     },
     {
       label: 'Save Workspace to NDEx (overwrite)',
-      template: () => <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />
+      template: () => (
+        <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />
+      ),
     },
     {
       label: 'Save Workspace to NDEx',
@@ -117,6 +119,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     },
     {
       label: 'Import',
+      style: { height: 38 },
       items: [
         {
           label: 'From File',
@@ -136,6 +139,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     },
     {
       label: 'Export',
+      style: { height: 38 },
       items: [
         {
           label: 'Network to Image...',
