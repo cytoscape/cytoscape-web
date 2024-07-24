@@ -17,6 +17,9 @@ import { ReactElement, useEffect, useState } from 'react'
 import { saveAs } from 'file-saver'
 import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
 import { ExportImageFormatProps } from './ExportNetworkToImageMenuItem'
+import { IdType } from '../../../../models/IdType'
+import { useUiStateStore } from '../../../../store/UiStateStore'
+import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 
 const MIN_ZOOM = 0
 const MAX_ZOOM = 5
@@ -37,14 +40,26 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
   const [widthInches, setWidthInches] = useState<number>(0)
   const [heightInches, setHeightInches] = useState<number>(0)
 
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+  const currentNetworkId: IdType = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+
+  const targetNetworkId: IdType =
+    activeNetworkId === undefined || activeNetworkId === ''
+      ? currentNetworkId
+      : activeNetworkId
+
   const pngFunction = useRendererFunctionStore((state) =>
-    state.getFunction('cyjs', 'exportPng'),
+    state.getFunction('cyjs', 'exportPng', targetNetworkId),
   )
   const widthFunction = useRendererFunctionStore((state) =>
-    state.getFunction('cyjs', 'width'),
+    state.getFunction('cyjs', 'width', targetNetworkId),
   )
   const heightFunction = useRendererFunctionStore((state) =>
-    state.getFunction('cyjs', 'height'),
+    state.getFunction('cyjs', 'height', targetNetworkId),
   )
 
   const maxHeight = heightFunction?.() * MAX_ZOOM
