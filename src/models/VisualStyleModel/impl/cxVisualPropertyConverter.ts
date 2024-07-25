@@ -97,9 +97,7 @@ export const vpToCX = (
   if (vpName === 'nodeLabelFont' || vpName === 'edgeLabelFont') {
     return Object.assign({}, defaultFontValue, { FONT_FAMILY: vpValue })
   }
-  if (vpValue === 'YDL194W') {
-    console.log('vpValue', vpValue)
-  }
+
   return vpValue as CXVisualPropertyValue
 }
 
