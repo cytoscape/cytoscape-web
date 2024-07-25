@@ -1,8 +1,7 @@
-import { Suspense } from 'react'
-import ErrorHandler from './ErrorHandler'
-import React from 'react'
+import React, { Suspense } from 'react'
 
 const HelloPanel = React.lazy(() => import('hello/HelloPanel' as any))
+const SubPanel = React.lazy(() => import('hello/SubPanel' as any))
 
 /**
  * @file AppPanel.tsx
@@ -11,10 +10,9 @@ const HelloPanel = React.lazy(() => import('hello/HelloPanel' as any))
  */
 export const AppPanel = () => {
   return (
-    <ErrorHandler>
-      <Suspense fallback={<div>Loading app...</div>}>
-        <HelloPanel message={'fgdsgfdsgf'} />
-      </Suspense>
-    </ErrorHandler>
+    <Suspense fallback={<div>Loading app...</div>}>
+      <HelloPanel message={'This message is from the host app.'} />
+      <SubPanel message={'Sub message from the host app.'} color={'red'} />
+    </Suspense>
   )
 }

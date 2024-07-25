@@ -22,6 +22,9 @@ const isProduction = process.env.NODE_ENV === 'production'
 // Extract the common dependencies from the package.json file
 const deps = require('./package.json').dependencies
 
+// External Apps
+const externalAppsConfig = require('./src/assets/apps.json')
+
 module.exports = {
   // This app is only for web browsers
   target: 'web',
@@ -84,9 +87,7 @@ module.exports = {
     new ModuleFederationPlugin({
       name: 'cyweb',
       filename: 'remoteEntry.js',
-      remotes: {
-        hello: 'hello@http://localhost:3000/remoteEntry.js',
-      },
+      remotes: externalAppsConfig,
       exposes: {
         // Data models to be used by other apps
         './useDataStore': './src/components/AppManager/useDataStore.tsx',
@@ -95,6 +96,10 @@ module.exports = {
       shared: {
         react: { singleton: true, requiredVersion: deps.react },
         'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
+        '@mui/material': {
+          singleton: true,
+          requiredVersion: deps['@mui/material'],
+        },
       },
     }),
     // new BundleAnalyzerPlugin({
