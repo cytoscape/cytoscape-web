@@ -21,7 +21,8 @@ import * as MapperFactory from './MapperFactory'
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
   const mappers: Map<VisualPropertyName, Mapper> = new Map()
-  Object.keys(vs).forEach((vpName: VisualPropertyName) => {
+  const vpNames: VisualPropertyName[] = Object.keys(vs) as VisualPropertyName[]
+  vpNames.forEach((vpName: VisualPropertyName) => {
     const vp: VisualProperty<VisualPropertyValueType> = vs[vpName]
     const vmf: VisualMappingFunction | undefined = vp.mapping
     if (vmf !== undefined) {
@@ -97,8 +98,12 @@ export const updateNetworkView = (
 
   const nodeViewCount = Object.keys(nodeViews).length
   const nodeCount = network.nodes.length
-  if( nodeViewCount !== nodeCount ) {
-    console.error('## nodeViews.length !== network.nodes.length', nodeCount, nodeViewCount)
+  if (nodeViewCount !== nodeCount) {
+    console.error(
+      '## nodeViews.length !== network.nodes.length',
+      nodeCount,
+      nodeViewCount,
+    )
   }
 
   const nextView: NetworkView = {
@@ -135,7 +140,11 @@ const nodeViewBuilder = (
   const columns: Column[] = nodeTable.columns
   let idx: number = nodes.length
   if (idx !== nodes.length) {
-    console.error('# of nodes does not match to the # of node views:', idx, nodeViews)
+    console.error(
+      '# of nodes does not match to the # of node views:',
+      idx,
+      nodeViews,
+    )
   }
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   while (idx--) {
@@ -143,7 +152,7 @@ const nodeViewBuilder = (
     const nodeId = node.id
     const nodeView: NodeView | undefined =
       nodeViews !== undefined ? nodeViews[nodeId] : undefined
-    
+
     if (nodeView === undefined) {
       console.error('@@nodeView is undefined. This might break the view.')
     }

@@ -9,6 +9,6 @@
     "module": "NodeNext",
     "moduleResolution": "nodenext"
   },
-  "include": ["./*.ts"],
-  "exclude": ["node_modules", "**/node_modules", "**/impl", "**/impl/**"]
+  "include": ["./index.ts"],
+  "exclude": ["node_modules", "**/node_modules", "**/impl/*", "./impl"]
 }

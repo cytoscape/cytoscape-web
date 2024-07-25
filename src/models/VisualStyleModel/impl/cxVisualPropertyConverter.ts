@@ -39,7 +39,6 @@ interface CXFontFaceType {
 
 export type CXVisualPropertyValue =
   | VisualPropertyValueType
-  | CXLabelPositionType
   | CXFontFaceType
   | CXLabelPositionType
 
@@ -236,8 +235,8 @@ export const VPFontTypeConverter = (
 ): CXVisualPropertyConverter<FontType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: CXFontFaceType): FontType =>
-      cxVPValue.FONT_FAMILY as FontType,
+    valueConverter: (cxVPValue: CXVisualPropertyValue): FontType =>
+      (cxVPValue as CXFontFaceType).FONT_FAMILY,
   }
 }
 
@@ -266,7 +265,7 @@ export const VPNodeLabelHorizontalAlignTypeConverter = (
 ): CXVisualPropertyConverter<HorizontalAlignType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: CXLabelPositionType): HorizontalAlignType => {
+    valueConverter: (cxVPValue: CXVisualPropertyValue): HorizontalAlignType => {
       return 'center' // TODO - implement real conversion
     },
   }
@@ -276,7 +275,7 @@ export const VPNodeLabelVerticalAlignTypeConverter = (
 ): CXVisualPropertyConverter<VerticalAlignType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: CXLabelPositionType): VerticalAlignType => {
+    valueConverter: (cxVPValue: CXVisualPropertyValue): VerticalAlignType => {
       return 'center' // TODO - implement real conversion
     },
   }
@@ -287,7 +286,8 @@ export const VPVisibilityTypeConverter = (
 ): CXVisualPropertyConverter<VisibilityType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: VisibilityType): VisibilityType => cxVPValue,
+    valueConverter: (cxVPValue: CXVisualPropertyValue): VisibilityType =>
+      cxVPValue as VisibilityType,
   }
 }
 
@@ -296,7 +296,8 @@ export const VPEdgeLineTypeConverter = (
 ): CXVisualPropertyConverter<EdgeLineType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: EdgeLineType): EdgeLineType => cxVPValue,
+    valueConverter: (cxVPValue: CXVisualPropertyValue): EdgeLineType =>
+      cxVPValue as EdgeLineType,
   }
 }
 
@@ -305,8 +306,8 @@ export const VPEdgeArrowShapeTypeConverter = (
 ): CXVisualPropertyConverter<EdgeArrowShapeType> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: EdgeArrowShapeType): EdgeArrowShapeType =>
-      cxVPValue,
+    valueConverter: (cxVPValue: CXVisualPropertyValue): EdgeArrowShapeType =>
+      cxVPValue as EdgeArrowShapeType,
   }
 }
 export const VPBooleanConverter = (
@@ -314,7 +315,8 @@ export const VPBooleanConverter = (
 ): CXVisualPropertyConverter<boolean> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue: boolean): boolean => cxVPValue,
+    valueConverter: (cxVPValue: CXVisualPropertyValue): boolean =>
+      cxVPValue as boolean,
   }
 }
 
@@ -375,7 +377,6 @@ export const cxVisualPropertyConverter: Record<
   edgeSelectedPaint: VPColorConverter('EDGE_SELECTED_PAINT'),
   edgeMaxLabelWidth: VPNumberConverter('EDGE_LABEL_MAX_WIDTH'),
   edgeZOrder: VPNumberConverter('EDGE_Z_LOCATION'),
-
 
   networkBackgroundColor: VPColorConverter('NETWORK_BACKGROUND_COLOR'),
 }
