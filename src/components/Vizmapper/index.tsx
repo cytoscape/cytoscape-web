@@ -7,12 +7,13 @@ import VisualStyleFn, {
   VisualPropertyValueType,
   VisualStyle,
 } from '../../models/VisualStyleModel'
-
+import { NodeVisualPropertyNames } from '../../models/VisualStyleModel/VisualPropertyName'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 
 import { MappingForm } from './Forms/MappingForm'
 import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
+import { SizeValueForm } from './Forms/SizeValueForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
 
@@ -31,11 +32,18 @@ function VisualPropertyView(props: {
         p: 0.25,
       }}
     >
-      <DefaultValueForm
-        sx={{ mr: 1 }}
-        visualProperty={visualProperty}
-        currentNetworkId={currentNetworkId}
-      />
+      {(visualProperty.name === NodeVisualPropertyNames.nodeHeight || visualProperty.name === NodeVisualPropertyNames.nodeWidth) ?
+        (<DefaultValueForm
+          sx={{ mr: 1 }}
+          visualProperty={visualProperty}
+          currentNetworkId={currentNetworkId}
+        />) :
+        (<SizeValueForm
+          sx={{ mr: 1 }}
+          visualProperty={visualProperty}
+          currentNetworkId={currentNetworkId}
+        />)
+      }
       {visualProperty.group === VisualPropertyGroup.Network ? (
         <>
           <Tooltip title={'Mapping not available for network properties'}>

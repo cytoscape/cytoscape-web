@@ -21,6 +21,7 @@ import {
   NodeBorderLinePicker,
 } from '../VisualPropertyRender/NodeBorderLine'
 import { NumberInput, NumberRender } from '../VisualPropertyRender/Number'
+import { SizeInput, SizeRender } from '../VisualPropertyRender/Size'
 import { Font, FontPicker } from '../VisualPropertyRender/Font'
 import {
   HorizontalAlignPicker,
