@@ -16,6 +16,9 @@ import { ReactElement, useState } from 'react'
 import { saveAs } from 'file-saver'
 import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
 import { ExportImageFormatProps } from './ExportNetworkToImageMenuItem'
+import { IdType } from '../../../../models/IdType'
+import { useUiStateStore } from '../../../../store/UiStateStore'
+import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 
 export const PaperSize = {
   LETTER: 'LETTER',
@@ -58,8 +61,20 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
     setOrientation(event.target.value)
   }
 
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+  const currentNetworkId: IdType = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+
+  const targetNetworkId: IdType =
+    activeNetworkId === undefined || activeNetworkId === ''
+      ? currentNetworkId
+      : activeNetworkId
+
   const pdfFunction = useRendererFunctionStore((state) =>
-    state.getFunction('cyjs', 'exportPdf'),
+    state.getFunction('cyjs', 'exportPdf', targetNetworkId),
   )
 
   return (
