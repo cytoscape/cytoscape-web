@@ -48,7 +48,9 @@ export const SaveWorkspaceToNDExMenuItem = (
 
   const handleCloseDialog = (): void => {
     setOpenDialog(false)
+    props.handleClose()
   }
+
   const allNetworkId = useWorkspaceStore((state) => state.workspace.networkIds)
 
   const handleNameChange = (
@@ -188,7 +190,17 @@ export const SaveWorkspaceToNDExMenuItem = (
   }
 
   const dialog = (
-    <Dialog open={openDialog} onClose={handleCloseDialog}>
+    <Dialog
+      onClick={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
+      }}
+      onKeyDown={(e) => {
+        e.stopPropagation()
+      }}
+      open={openDialog}
+      onClose={handleCloseDialog}
+    >
       <DialogTitle>Save Workspace As...</DialogTitle>
       <DialogContent>
         <TextField
@@ -201,6 +213,9 @@ export const SaveWorkspaceToNDExMenuItem = (
           variant="standard"
           value={workspaceName}
           onChange={handleNameChange}
+          onKeyDown={(e) => {
+            e.stopPropagation()
+          }}
         />
       </DialogContent>
       <DialogActions>

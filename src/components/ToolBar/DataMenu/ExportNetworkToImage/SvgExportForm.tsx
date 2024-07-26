@@ -11,14 +11,29 @@ import { ReactElement, useState } from 'react'
 import { saveAs } from 'file-saver'
 import { ExportImageFormatProps } from './ExportNetworkToImageMenuItem'
 import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
+import { IdType } from '../../../../models/IdType'
+import { useUiStateStore } from '../../../../store/UiStateStore'
+import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 
 export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
   const [loading, setLoading] = useState(false)
   const [fullBg, setFullBg] = useState(true)
   const [fileName, setFileName] = useState<string>('network')
 
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+  const currentNetworkId: IdType = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+
+  const targetNetworkId: IdType =
+    activeNetworkId === undefined || activeNetworkId === ''
+      ? currentNetworkId
+      : activeNetworkId
+
   const svgFunction = useRendererFunctionStore((state) =>
-    state.getFunction('cyjs', 'exportSvg'),
+    state.getFunction('cyjs', 'exportSvg', targetNetworkId),
   )
 
   return (

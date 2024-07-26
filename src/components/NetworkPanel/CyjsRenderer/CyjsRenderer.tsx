@@ -612,12 +612,12 @@ const CyjsRenderer = ({
           return 0
         }
       }
-      setRendererFunction('cyjs', 'fit', fitFunction)
-      setRendererFunction('cyjs', 'exportPng', exportPngFunction)
-      setRendererFunction('cyjs', 'exportPdf', exportPdfFunction)
-      setRendererFunction('cyjs', 'exportSvg', exportSvgFunction)
-      setRendererFunction('cyjs', 'width', widthFunction)
-      setRendererFunction('cyjs', 'height', heightFunction)
+      setRendererFunction('cyjs', 'fit', fitFunction, id)
+      setRendererFunction('cyjs', 'exportPng', exportPngFunction, id)
+      setRendererFunction('cyjs', 'exportPdf', exportPdfFunction, id)
+      setRendererFunction('cyjs', 'exportSvg', exportSvgFunction, id)
+      setRendererFunction('cyjs', 'width', widthFunction, id)
+      setRendererFunction('cyjs', 'height', heightFunction, id)
     }
 
     return () => {
