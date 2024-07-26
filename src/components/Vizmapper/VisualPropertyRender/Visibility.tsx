@@ -24,6 +24,7 @@ const visibilityMap: Record<VisibilityType, React.ReactElement> = {
 export function VisibilityPicker(props: {
   currentValue: VisibilityType | null
   onValueChange: (visibility: VisibilityType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
 

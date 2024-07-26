@@ -1,22 +1,34 @@
-import { Box, TextField, Typography, Button } from '@mui/material'
-import * as React from 'react'
+import { Box, TextField, Typography, Button, FormControlLabel, Checkbox } from '@mui/material'
+import { useState, useEffect, ChangeEvent } from 'react'
+import { useLockNodeSizeStore } from '../../../store/LockNodeSizeStore'
 import { serializedStringIsValid } from '../../../models/TableModel/impl/ValueTypeImpl'
 import { ValueTypeName } from '../../../models/TableModel'
+import { VisualPropertyName, NodeVisualPropertyNames } from '../../../models/VisualStyleModel/VisualPropertyName'
+
 export function NumberInput(props: {
   currentValue: number | null
   onValueChange: (value: number) => void
+  closePopover: () => void
+  vpName?: VisualPropertyName
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
-  const [value, setValue] = React.useState(String(currentValue ?? 0))
+  const { onValueChange, currentValue, vpName, closePopover } = props
+  const isHeight = vpName === NodeVisualPropertyNames.nodeHeight
+  const [value, setValue] = useState(String(currentValue ?? 0))
   const strValueIsValid = (value: string): boolean => {
     return serializedStringIsValid(ValueTypeName.Integer, value) || serializedStringIsValid(ValueTypeName.Double, value) || serializedStringIsValid(ValueTypeName.Long, value)
 
   }
-  const [isValid, setValueIsValid] = React.useState(strValueIsValid(value))
+  const [isValid, setValueIsValid] = useState(strValueIsValid(value))
+  const setLockNodeSize = useLockNodeSizeStore(store => store.setLockState)
 
-  React.useEffect(() => {
+  useEffect(() => {
     setValue(String(currentValue ?? 0))
   }, [currentValue])
+
+  const handleToggle = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const isChecked: boolean = event.target.checked
+    setLockNodeSize(isChecked, isHeight)
+  }
 
   return (
     <Box>
@@ -30,6 +42,15 @@ export function NumberInput(props: {
       >
         <Typography variant="h6">{value}</Typography>
       </TextField>
+      <FormControlLabel
+        control={<Checkbox
+          checked={false}
+          onChange={handleToggle}
+          name="lockNodeSize"
+          color="primary"
+        />}
+        label="Lock node width and height"
+      />
       <Box
         sx={{
           display: 'flex',
@@ -39,7 +60,11 @@ export function NumberInput(props: {
       >
         <Button
           color="error"
-          onClick={() => setValue(String(currentValue ?? 0))}
+          onClick={() => {
+            setValue(String(currentValue ?? 0));
+            setValueIsValid(strValueIsValid(String(currentValue ?? 0)));
+            closePopover();
+          }}
         >
           Cancel
         </Button>
@@ -50,12 +75,13 @@ export function NumberInput(props: {
             if (!isNaN(nextValue)) {
               onValueChange(nextValue)
             }
+            closePopover();
           }}
         >
           Confirm
         </Button>
       </Box>
-    </Box>
+    </Box >
   )
 }
 

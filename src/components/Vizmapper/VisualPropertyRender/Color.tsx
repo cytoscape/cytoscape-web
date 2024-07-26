@@ -13,6 +13,7 @@ import {
 export function ColorPicker(props: {
   currentValue: ColorType | null
   onValueChange: (color: ColorType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const debouncedValueChange = debounce(onValueChange, 200)
@@ -39,6 +40,7 @@ export function ColorPicker(props: {
 export function ColorPickerCompact(props: {
   currentValue: ColorType | null
   onValueChange: (color: ColorType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const debouncedValueChange = debounce(onValueChange, 200)
@@ -66,6 +68,7 @@ export function ColorPickerCompact(props: {
 export function ColorPickerViridis(props: {
   currentValue: ColorType | null
   onValueChange: (color: ColorType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const debouncedValueChange = debounce(onValueChange, 200)
@@ -93,6 +96,7 @@ export function ColorPickerViridis(props: {
 export function ColorPickerSequential(props: {
   currentValue: ColorType | null
   onValueChange: (color: ColorType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const debouncedValueChange = debounce(onValueChange, 200)
@@ -121,6 +125,7 @@ export function ColorPickerSequential(props: {
 export function ColorPickerDiverging(props: {
   currentValue: ColorType | null
   onValueChange: (color: ColorType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const debouncedValueChange = debounce(onValueChange, 200)

@@ -4,6 +4,7 @@ import { Box } from '@mui/material'
 export function FontPicker(props: {
   currentValue: FontType | null
   onValueChange: (font: FontType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
 

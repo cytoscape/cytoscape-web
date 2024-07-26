@@ -19,11 +19,9 @@ export const useLockNodeSizeStore = create(
         setLockState: (lockState: boolean, isHeight: boolean) => {
             set((state) => {
                 if (isHeight) {
-                    state.isWidthLocked = lockState;
-                    state.isHeightLocked = false;
-                } else {
-                    state.isWidthLocked = false;
                     state.isHeightLocked = lockState;
+                } else {
+                    state.isWidthLocked = lockState;
                 }
             })
         },

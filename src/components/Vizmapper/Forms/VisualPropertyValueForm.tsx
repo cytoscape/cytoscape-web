@@ -21,7 +21,6 @@ import {
   NodeBorderLinePicker,
 } from '../VisualPropertyRender/NodeBorderLine'
 import { NumberInput, NumberRender } from '../VisualPropertyRender/Number'
-import { SizeInput, SizeRender } from '../VisualPropertyRender/Size'
 import { Font, FontPicker } from '../VisualPropertyRender/Font'
 import {
   HorizontalAlignPicker,
@@ -70,6 +69,7 @@ const vpType2RenderMap: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
+      closePopover: () => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -136,6 +136,7 @@ const vpType2RenderMap2: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
+      closePopover: () => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -201,6 +202,7 @@ const vpType2RenderMapViridis: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
+      closePopover: () => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -267,6 +269,8 @@ const vpType2RenderMapSequential: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
+      closePopover: () => void
+      vpName?: VisualPropertyName
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -333,6 +337,7 @@ const vpType2RenderMapDiverging: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
+      closePopover: () => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -403,6 +408,8 @@ const vpName2RenderMap: Partial<
       pickerRender: (props: {
         currentValue: VisualPropertyValueType | null
         onValueChange: (newValue: VisualPropertyValueType) => void
+        closePopover: () => void
+        vpName?: VisualPropertyName
       }) => React.ReactElement
       valueRender: (props: {
         value: VisualPropertyValueType
@@ -486,6 +493,11 @@ export function VisualPropertyValueForm(
   const showValuePicker = (value: Element | null): void => {
     setValuePicker(value)
   }
+
+  const closePopover = (): void => {
+    setValuePicker(null);
+  };
+
   if (
     vpType2RenderMap[props.visualProperty.type] == null &&
     vpName2RenderMap[props.visualProperty.name] == null
@@ -513,7 +525,7 @@ export function VisualPropertyValueForm(
       >
         <Box>
           {props.visualProperty &&
-          props.visualProperty.displayName.includes('Color') ? (
+            props.visualProperty.displayName.includes('Color') ? (
             <>
               <Tabs
                 value={activeTab}
@@ -547,11 +559,13 @@ export function VisualPropertyValueForm(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMapSequential[props.visualProperty.type]
                   .pickerRender ??
-                (() => {})
+                (() => { })
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                vpName: props.visualProperty.name,
+                closePopover: closePopover,
               })}
             </Box>
           )}
@@ -574,11 +588,12 @@ export function VisualPropertyValueForm(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMapDiverging[props.visualProperty.type]
                   .pickerRender ??
-                (() => {})
+                (() => { })
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                closePopover: closePopover,
               })}
             </Box>
           )}
@@ -603,11 +618,12 @@ export function VisualPropertyValueForm(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMapViridis[props.visualProperty.type]
                   .pickerRender ??
-                (() => {})
+                (() => { })
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                closePopover: closePopover,
               })}
             </Box>
           )}
@@ -631,11 +647,12 @@ export function VisualPropertyValueForm(
               {(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMap2[props.visualProperty.type].pickerRender ??
-                (() => {})
+                (() => { })
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                closePopover: closePopover,
               })}
             </Box>
           )}
@@ -659,11 +676,12 @@ export function VisualPropertyValueForm(
               {(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMap[props.visualProperty.type].pickerRender ??
-                (() => {})
+                (() => { })
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                closePopover: closePopover
               })}
             </Box>
           )}

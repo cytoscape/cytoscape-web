@@ -3,6 +3,7 @@ import { Box, TextField, Typography } from '@mui/material'
 export function StringInput(props: {
   currentValue: string | null
   onValueChange: (value: string) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   return (

@@ -21,6 +21,7 @@ const edgeArrowShapeMap: Record<EdgeArrowShapeType, React.ReactElement> = {
 export function EdgeArrowShapePicker(props: {
   currentValue: EdgeArrowShapeType | null
   onValueChange: (edgeArrowShape: EdgeArrowShapeType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
 
