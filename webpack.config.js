@@ -33,6 +33,7 @@ module.exports = {
     cyweb: path.resolve(__dirname, './src/index.tsx'),
   },
   devtool: isProduction ? false : 'inline-source-map',
+  stats: 'normal',
   module: {
     rules: [
       // look for tsx files to transform into the bundle
@@ -56,14 +57,13 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.jsx'], // need .js and .jsx for dependency files
   },
-
   // use content hash for cache busting
   output: {
     filename: '[name].[contenthash].js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
     // publicPath: config.urlBaseName !== '' ? config.urlBaseName : '/',
-    publicPath: 'http://localhost:5500/',
+    publicPath: 'auto', // Required to use module federation (? Need to double check)
   },
   // watch the dist file for changes when using the dev server
   devServer: {
@@ -96,10 +96,6 @@ module.exports = {
       shared: {
         react: { singleton: true, requiredVersion: deps.react },
         'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
-        '@mui/material': {
-          singleton: true,
-          requiredVersion: deps['@mui/material'],
-        },
       },
     }),
     // new BundleAnalyzerPlugin({

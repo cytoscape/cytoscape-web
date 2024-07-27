@@ -1,23 +1,15 @@
 import { Button, Menu, MenuItem } from '@mui/material'
-import { lazy, ReactNode, Suspense, useEffect, useState } from 'react'
+import { Suspense, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
-
-const SimpleMenu = lazy(() => import('hello/MenuExample' as any))
+import ExternalComponent from '../../AppManager/ExternalComponent'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
-  useEffect(() => {
-    console.log('####### Simple AppMenu loaded', SimpleMenu)
-    if (SimpleMenu !== undefined) {
-      console.log('####### Adding Simple AppMenu loaded', SimpleMenu)
-      setMenuItems([<SimpleMenu key="simple-menu" />])
-    }
-  }, [SimpleMenu])
-
-  const [menuItems, setMenuItems] = useState<ReactNode[]>([])
+  // const SimpleMenu = ExternalComponent('hello', './MenuExample')
+  const AppMenuItem = ExternalComponent('menu', './AppMenuItem')
 
   const handleOpenDropdownMenu = (
     event: React.MouseEvent<HTMLButtonElement>,
@@ -53,7 +45,10 @@ export const AppMenu = (props: DropdownMenuProps) => {
         }}
       >
         <MenuItem>Test</MenuItem>
-        {menuItems}
+        <Suspense fallback={<div>Loading...</div>}>
+          {/* <SimpleMenu /> */}
+          <AppMenuItem />
+        </Suspense>
       </Menu>
     </div>
   )
