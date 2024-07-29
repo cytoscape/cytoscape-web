@@ -12,6 +12,7 @@ export function NumberInput(props: {
   vpName?: VisualPropertyName
 }): React.ReactElement {
   const { onValueChange, currentValue, vpName, closePopover } = props
+  const isSize = vpName === NodeVisualPropertyNames.nodeHeight || vpName === NodeVisualPropertyNames.nodeWidth
   const isHeight = vpName === NodeVisualPropertyNames.nodeHeight
   const [value, setValue] = useState(String(currentValue ?? 0))
   const strValueIsValid = (value: string): boolean => {
@@ -20,21 +21,44 @@ export function NumberInput(props: {
   }
   const [isValid, setValueIsValid] = useState(strValueIsValid(value))
   const setLockNodeSize = useLockNodeSizeStore(store => store.setLockState)
+  const setSize = useLockNodeSizeStore(store => store.setSize)
+  const isHeightLocked = useLockNodeSizeStore(store => store.isHeightLocked)
+  const isWidthLocked = useLockNodeSizeStore(store => store.isWidthLocked)
+  const size = useLockNodeSizeStore(store => store.size)
+  const [isChecked, setIsChecked] = useState(isHeight ? isHeightLocked : isWidthLocked)
 
   useEffect(() => {
     setValue(String(currentValue ?? 0))
   }, [currentValue])
 
+  useEffect(() => {
+    if (isSize && (isHeight ? isHeightLocked : isWidthLocked)) {
+      setValue(String(size))
+      const nextValue = Number(Number(size).toFixed(4))
+      if (!isNaN(nextValue)) {
+        onValueChange(nextValue)
+      }
+    }
+  }, [size])
+
   const handleToggle = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    const isChecked: boolean = event.target.checked
-    setLockNodeSize(isChecked, isHeight)
+    setIsChecked(!isChecked)
+    setLockNodeSize(!isChecked, currentValue ?? 0, isHeight)
   }
 
+
   return (
-    <Box>
+    <Box
+      // make inside components align vertically
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <TextField
         value={value}
         error={!isValid}
+        disabled={isSize ? (isHeight ? isHeightLocked : isWidthLocked) : false}
         onChange={(e) => {
           setValue(e.target.value)
           setValueIsValid(strValueIsValid(e.target.value))
@@ -42,15 +66,16 @@ export function NumberInput(props: {
       >
         <Typography variant="h6">{value}</Typography>
       </TextField>
-      <FormControlLabel
+      {isSize && <FormControlLabel
+        disabled={isValid && isHeight ? isHeightLocked : isWidthLocked}
         control={<Checkbox
-          checked={false}
+          checked={isChecked}
           onChange={handleToggle}
           name="lockNodeSize"
           color="primary"
         />}
-        label="Lock node width and height"
-      />
+        label='Lock node width and height'
+      />}
       <Box
         sx={{
           display: 'flex',
@@ -74,6 +99,9 @@ export function NumberInput(props: {
             const nextValue = Number(Number(value).toFixed(4))
             if (!isNaN(nextValue)) {
               onValueChange(nextValue)
+            }
+            if (isSize && isChecked) {
+              setSize(nextValue)
             }
             closePopover();
           }}
