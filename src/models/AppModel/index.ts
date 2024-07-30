@@ -1,2 +1,3 @@
 export { CyApp } from './CyApp'
-export { CyMenuItem, RootMenu } from './CyMenuItem'
+export { CyMenuItem } from './CyMenuItem'
+export { RootMenu } from './RootMenu'

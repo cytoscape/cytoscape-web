@@ -5,18 +5,22 @@
  *
  */
 export interface CyApp {
-  // Unique ID of the app
+  // Unique ID of the app. This works as the namespace for the app
+  // in the module federation.
   id: string
 
-  // Human readable name of the app
+  // Human-readable name of the app
   name: string
+
+  // Description of the app
+  description?: string
 
   // Base URL to access the app (hosting remoteEntry.js)
   url: string
 
   // Turn on/off the app in the host
-  enabled: boolean
+  // enabled: boolean
 
-  // Name of components to be exposed as custom components
+  // Name of components to be exposed via Module Federation
   components?: string[]
 }

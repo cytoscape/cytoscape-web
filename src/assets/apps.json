@@ -1,4 +1,4 @@
 {
   "hello": "hello@http://localhost:2222/remoteEntry.js",
-  "menu": "menu@http://localhost:3333/remoteEntry.js"
+  "simpleMenu": "simpleMenu@http://localhost:3333/remoteEntry.js"
 }

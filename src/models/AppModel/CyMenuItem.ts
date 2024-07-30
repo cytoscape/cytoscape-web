@@ -1,14 +1,13 @@
 import { ReactElement } from 'react'
-
-export const RootMenu = {
-  Data: 'Data',
-  Edit: 'Edit',
-} as const
-
-export type RootMenu = (typeof RootMenu)[keyof typeof RootMenu]
+import { RootMenu } from './RootMenu'
 
 export interface CyMenuItem {
+  // Unique ID of the menu item
   id: string
+
+  // Parent menu of the menu item
   parent: RootMenu
+
+  // Actual menu item to be rendered
   menuItem: ReactElement
 }
