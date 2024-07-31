@@ -1,6 +1,7 @@
 import { SxProps, Box } from '@mui/material'
 
 import {
+  NodeVisualPropertyNames,
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
@@ -16,8 +17,16 @@ export function DefaultValueForm(props: {
   sx?: SxProps
 }): React.ReactElement {
   const { visualProperty, currentNetworkId } = props
+  const vpName = visualProperty.name
   const setDefault = useVisualStyleStore((state) => state.setDefault)
-
+  let syncValue = (newValue: VisualPropertyValueType) => { }
+  if (vpName === NodeVisualPropertyNames.nodeHeight) {
+    syncValue = (newValue) =>
+      setDefault(currentNetworkId, NodeVisualPropertyNames.nodeWidth, newValue)
+  } else if (vpName === NodeVisualPropertyNames.nodeWidth) {
+    syncValue = (newValue) =>
+      setDefault(currentNetworkId, NodeVisualPropertyNames.nodeHeight, newValue)
+  }
   return (
     <Box sx={props.sx ?? {}}>
       <VisualPropertyValueForm
@@ -27,6 +36,7 @@ export function DefaultValueForm(props: {
         onValueChange={(newValue) =>
           setDefault(currentNetworkId, visualProperty.name, newValue)
         }
+        syncValue={syncValue}
       />
     </Box>
   )

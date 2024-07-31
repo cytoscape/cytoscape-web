@@ -1,17 +1,20 @@
 import { Box, TextField, Typography, Button, FormControlLabel, Checkbox } from '@mui/material'
 import { useState, useEffect, ChangeEvent } from 'react'
-import { useLockNodeSizeStore } from '../../../store/LockNodeSizeStore'
+import { useLockNodeSizeStore, LockedDimension } from '../../../store/LockNodeSizeStore'
 import { serializedStringIsValid } from '../../../models/TableModel/impl/ValueTypeImpl'
 import { ValueTypeName } from '../../../models/TableModel'
 import { VisualPropertyName, NodeVisualPropertyNames } from '../../../models/VisualStyleModel/VisualPropertyName'
+import { LockSizeCheckbox } from './Checkbox'
+import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 
 export function NumberInput(props: {
   currentValue: number | null
   onValueChange: (value: number) => void
   closePopover: () => void
-  vpName?: VisualPropertyName
+  vpName: VisualPropertyName
+  syncValue: (value: number) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue, vpName, closePopover } = props
+  const { onValueChange, currentValue, vpName, closePopover, syncValue } = props
   const isSize = vpName === NodeVisualPropertyNames.nodeHeight || vpName === NodeVisualPropertyNames.nodeWidth
   const isHeight = vpName === NodeVisualPropertyNames.nodeHeight
   const [value, setValue] = useState(String(currentValue ?? 0))
@@ -20,36 +23,14 @@ export function NumberInput(props: {
 
   }
   const [isValid, setValueIsValid] = useState(strValueIsValid(value))
-  const setLockNodeSize = useLockNodeSizeStore(store => store.setLockState)
-  const setSize = useLockNodeSizeStore(store => store.setSize)
-  const isHeightLocked = useLockNodeSizeStore(store => store.isHeightLocked)
-  const isWidthLocked = useLockNodeSizeStore(store => store.isWidthLocked)
-  const size = useLockNodeSizeStore(store => store.size)
-  const [isChecked, setIsChecked] = useState(isHeight ? isHeightLocked : isWidthLocked)
+  const isChecked = useLockNodeSizeStore(state => state.isLocked);
 
   useEffect(() => {
     setValue(String(currentValue ?? 0))
   }, [currentValue])
 
-  useEffect(() => {
-    if (isSize && (isHeight ? isHeightLocked : isWidthLocked)) {
-      setValue(String(size))
-      const nextValue = Number(Number(size).toFixed(4))
-      if (!isNaN(nextValue)) {
-        onValueChange(nextValue)
-      }
-    }
-  }, [size])
-
-  const handleToggle = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    setIsChecked(!isChecked)
-    setLockNodeSize(!isChecked, currentValue ?? 0, isHeight)
-  }
-
-
   return (
     <Box
-      // make inside components align vertically
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -58,7 +39,6 @@ export function NumberInput(props: {
       <TextField
         value={value}
         error={!isValid}
-        disabled={isSize ? (isHeight ? isHeightLocked : isWidthLocked) : false}
         onChange={(e) => {
           setValue(e.target.value)
           setValueIsValid(strValueIsValid(e.target.value))
@@ -66,16 +46,7 @@ export function NumberInput(props: {
       >
         <Typography variant="h6">{value}</Typography>
       </TextField>
-      {isSize && <FormControlLabel
-        disabled={isValid && isHeight ? isHeightLocked : isWidthLocked}
-        control={<Checkbox
-          checked={isChecked}
-          onChange={handleToggle}
-          name="lockNodeSize"
-          color="primary"
-        />}
-        label='Lock node width and height'
-      />}
+      {isSize && <LockSizeCheckbox isHeight={isHeight} syncValue={syncValue} size={Number(currentValue)} />}
       <Box
         sx={{
           display: 'flex',
@@ -99,9 +70,9 @@ export function NumberInput(props: {
             const nextValue = Number(Number(value).toFixed(4))
             if (!isNaN(nextValue)) {
               onValueChange(nextValue)
-            }
-            if (isSize && isChecked) {
-              setSize(nextValue)
+              if (isSize && isChecked) {
+                syncValue(nextValue)
+              }
             }
             closePopover();
           }}

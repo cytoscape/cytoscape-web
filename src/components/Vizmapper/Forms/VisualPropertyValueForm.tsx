@@ -271,6 +271,7 @@ const vpType2RenderMapSequential: Record<
       onValueChange: (newValue: VisualPropertyValueType) => void
       closePopover: () => void
       vpName?: VisualPropertyName
+      syncValue?: (newValue: VisualPropertyValueType) => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -410,6 +411,7 @@ const vpName2RenderMap: Partial<
         onValueChange: (newValue: VisualPropertyValueType) => void
         closePopover: () => void
         vpName?: VisualPropertyName
+        syncValue?: (newValue: VisualPropertyValueType) => void
       }) => React.ReactElement
       valueRender: (props: {
         value: VisualPropertyValueType
@@ -443,6 +445,7 @@ interface VisualPropertyRenderProps {
   value: VisualPropertyValueType | null
   vpValueType: VisualPropertyValueTypeName
   vpName: VisualPropertyName
+  syncValue?: (newValue: VisualPropertyValueType) => void
 }
 
 export function VisualPropertyValueRender(
@@ -479,6 +482,7 @@ interface VisualPropertyValueFormProps {
   visualProperty: VisualProperty<VisualPropertyValueType>
   currentValue: VisualPropertyValueType | null
   onValueChange: (newValue: VisualPropertyValueType) => void
+  syncValue?: (newValue: VisualPropertyValueType) => void
   title?: string
   tooltipText?: string
 }
@@ -566,6 +570,7 @@ export function VisualPropertyValueForm(
                 currentValue: props.currentValue,
                 vpName: props.visualProperty.name,
                 closePopover: closePopover,
+                syncValue: props.syncValue
               })}
             </Box>
           )}

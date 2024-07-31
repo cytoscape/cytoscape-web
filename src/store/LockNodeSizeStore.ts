@@ -1,14 +1,23 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
+export enum LockedDimension {
+    width = 'width',
+    height = 'height',
+    none = 'none'
+}
+
 interface LockNodeSizeState {
-    isWidthLocked: boolean
-    isHeightLocked: boolean
-    size: number
+    isLocked: boolean
+    lockedDimension: 'width' | 'height' | 'none'
+    sharedState: {
+        size: number
+    }
 }
 
 interface LockNodeSizeAction {
-    setLockState: (lockState: boolean, size: number, isHeight: boolean) => void
+    toggleLockState: (lockState?: boolean) => void
+    setLockDimension: (dimension: LockedDimension) => void
     setSize: (size: number) => void
 }
 
@@ -16,22 +25,24 @@ type LockNodeSizeStore = LockNodeSizeState & LockNodeSizeAction
 
 export const useLockNodeSizeStore = create(
     immer<LockNodeSizeStore>((set) => ({
-        isWidthLocked: false,
-        isHeightLocked: false,
-        size: 0,
-        setLockState: (lockState: boolean, size: number, isHeight: boolean) => {
-            set((state) => {
-                if (isHeight) {
-                    state.isWidthLocked = lockState;
-                } else {
-                    state.isHeightLocked = lockState;
-                }
-                state.size = size;
-            })
+        isLocked: false,
+        lockedDimension: LockedDimension.none,
+        sharedState: {
+            size: 0
+        },
+        toggleLockState: (lockState?: boolean) => {
+            set(state => {
+                state.isLocked = lockState ?? !state.isLocked; // Lock width when height is toggled
+            });
+        },
+        setLockDimension: (dimension: LockedDimension) => {
+            set(state => {
+                state.lockedDimension = dimension;
+            });
         },
         setSize: (size: number) => {
             set((state) => {
-                state.size = size
+                state.sharedState.size = size
             })
         }
     })),

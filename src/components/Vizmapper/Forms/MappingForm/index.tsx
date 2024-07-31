@@ -1,4 +1,4 @@
-import * as React from 'react'
+import { useEffect, useState } from 'react'
 import {
   Box,
   Popover,
@@ -11,6 +11,8 @@ import {
   Tooltip,
   Divider,
   Button,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material'
 
 import { IdType } from '../../../../models/IdType'
@@ -19,6 +21,7 @@ import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { useTableStore } from '../../../../store/TableStore'
 
 import {
+  NodeVisualPropertyNames,
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
@@ -43,6 +46,8 @@ import {
 import { DiscreteMappingForm } from './DiscreteMappingForm'
 import { ContinuousMappingForm } from './ContinuousMappingForm'
 import { VisualPropertyGroup } from '../../../../models/VisualStyleModel/VisualPropertyGroup'
+import { useLockNodeSizeStore } from '../../../../store/LockNodeSizeStore'
+import { LockSizeCheckbox } from '../../VisualPropertyRender/Checkbox'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   [MappingFunctionType.Passthrough]: <PassthroughMappingFunctionIcon />,
@@ -54,10 +59,10 @@ function MappingFormContent(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
-  const [column, setColumn] = React.useState<AttributeName | ''>(
+  const [column, setColumn] = useState<AttributeName | ''>(
     props.visualProperty.mapping?.attribute ?? '',
   )
-  const [mappingType, setMappingType] = React.useState<
+  const [mappingType, setMappingType] = useState<
     MappingFunctionType | ''
   >(props.visualProperty.mapping?.type ?? '')
 
@@ -145,7 +150,7 @@ function MappingFormContent(props: {
     }
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     setMappingType(props.visualProperty.mapping?.type ?? '')
   }, [props.visualProperty.mapping])
 
@@ -204,12 +209,12 @@ function MappingFormContent(props: {
   const validColumns =
     mappingType !== ''
       ? columns.filter((c) => {
-          return typesCanBeMapped(
-            mappingType,
-            c.type,
-            props.visualProperty.type,
-          )
-        })
+        return typesCanBeMapped(
+          mappingType,
+          c.type,
+          props.visualProperty.type,
+        )
+      })
       : columns
   const validColumnNames = validColumns.map((c) => c.name)
 
@@ -234,12 +239,12 @@ function MappingFormContent(props: {
   )
 
   const mappingDimensions: Record<MappingFunctionType | '', [string, string]> =
-    {
-      [MappingFunctionType.Discrete]: ['400px', '600px'],
-      [MappingFunctionType.Continuous]: ['650px', 'auto'],
-      [MappingFunctionType.Passthrough]: ['400px', 'auto'],
-      '': ['400px', '200px'],
-    }
+  {
+    [MappingFunctionType.Discrete]: ['400px', '600px'],
+    [MappingFunctionType.Continuous]: ['650px', 'auto'],
+    [MappingFunctionType.Passthrough]: ['400px', 'auto'],
+    '': ['400px', '200px'],
+  }
   return (
     <Box
       sx={{
@@ -307,11 +312,9 @@ function MappingFormContent(props: {
                 if (validColumnNames.includes(c.name)) {
                   return columnMenuItem
                 } else {
-                  const invalidColumnTooltipStr = `${mappingType} mapping functions${
-                    c.name !== '' ? ` on column '${c.name}' ` : ' '
-                  }cannot be applied to property ${
-                    props.visualProperty.displayName
-                  }`
+                  const invalidColumnTooltipStr = `${mappingType} mapping functions${c.name !== '' ? ` on column '${c.name}' ` : ' '
+                    }cannot be applied to property ${props.visualProperty.displayName
+                    }`
 
                   return (
                     <Tooltip key={c.name} title={invalidColumnTooltipStr}>
@@ -347,11 +350,9 @@ function MappingFormContent(props: {
                 if (validMappings.includes(mappingFnType)) {
                   return mappingFnMenuItem
                 } else {
-                  const invalidMappingTooltipStr = `${mappingFnType} mapping functions${
-                    column !== '' ? ` on column '${column}' ` : ' '
-                  }cannot be applied to property ${
-                    props.visualProperty.displayName
-                  }`
+                  const invalidMappingTooltipStr = `${mappingFnType} mapping functions${column !== '' ? ` on column '${column}' ` : ' '
+                    }cannot be applied to property ${props.visualProperty.displayName
+                    }`
                   return (
                     <Tooltip
                       key={mappingFnType}
@@ -376,7 +377,10 @@ export function MappingForm(props: {
   visualProperty: VisualProperty<VisualPropertyValueType>
   sx?: SxProps
 }): React.ReactElement {
-  const [formAnchorEl, setFormAnchorEl] = React.useState<Element | null>(null)
+  const [formAnchorEl, setFormAnchorEl] = useState<Element | null>(null)
+  const vpName = props.visualProperty.name
+  const isSize = vpName === NodeVisualPropertyNames.nodeHeight || vpName === NodeVisualPropertyNames.nodeWidth
+  const isHeight = vpName === NodeVisualPropertyNames.nodeHeight
 
   const showForm = (value: Element | null): void => {
     setFormAnchorEl(value)
@@ -404,6 +408,7 @@ export function MappingForm(props: {
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <MappingFormContent {...props} />
+        {isSize && <LockSizeCheckbox isHeight={isHeight} syncValue={() => { }} />}
       </Popover>
     </Box>
   )
