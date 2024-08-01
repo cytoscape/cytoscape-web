@@ -63,21 +63,10 @@ import {
 } from '../../models/FilterModel'
 import { GraphObjectType } from '../../models/NetworkModel'
 import { useFilterStore } from '../../store/FilterStore'
-import { CyApp } from 'src/models/AppModel'
+import { useAppManager } from '../../store/hooks/useAppManager'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
-declare global {
-  interface Window {
-    loadApps: () => Promise<CyApp[]>
-  }
-}
-
-// let cyapps: CyApp[] = []
-// window.loadApps().then((apps: CyApp[]) => {
-//   console.log('## Apps loaded:', cyapps)
-//   cyapps = apps
-// })
 
 /**
  * The main workspace editor containing all except toolbar
@@ -85,6 +74,8 @@ declare global {
  */
 const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers to the stores
+  useAppManager() // Register dynamically loaded apps to the store
+
   useWorkspaceManager()
   useNetworkViewManager()
   useTableManager()
@@ -234,15 +225,20 @@ const WorkSpaceEditor = (): JSX.Element => {
     setSummaries({ ...summaries, ...newSummaries })
 
     const loadedNetworks = Object.keys(newSummaries)
-    if(loadedNetworks.length !== networkIds.length){
-      const networksFailtoLoad = networkIds.filter(id => !loadedNetworks.includes(id))
+    if (loadedNetworks.length !== networkIds.length) {
+      const networksFailtoLoad = networkIds.filter(
+        (id) => !loadedNetworks.includes(id),
+      )
       const numOfNets = networksFailtoLoad.length
       const largestNum = 3
       const largeNum = numOfNets > largestNum
-      deleteNetwork(networksFailtoLoad)// remove the networks that the app fails to load from the workspace
-      addMessage({ // show a message to the user
-        message: `Failed to load ${networksFailtoLoad.length} network${largeNum?'s':''} with id${largeNum?'s':''}: ${
-          largeNum?(networksFailtoLoad.slice(0,largestNum).join(', ')+'...' ):networksFailtoLoad.join(', ')
+      deleteNetwork(networksFailtoLoad) // remove the networks that the app fails to load from the workspace
+      addMessage({
+        // show a message to the user
+        message: `Failed to load ${networksFailtoLoad.length} network${largeNum ? 's' : ''} with id${largeNum ? 's' : ''}: ${
+          largeNum
+            ? networksFailtoLoad.slice(0, largestNum).join(', ') + '...'
+            : networksFailtoLoad.join(', ')
         }`,
         duration: 5000,
       })

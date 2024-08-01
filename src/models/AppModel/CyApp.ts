@@ -18,9 +18,6 @@ export interface CyApp {
   // Base URL to access the app (hosting remoteEntry.js)
   url: string
 
-  // Turn on/off the app in the host
-  // enabled: boolean
-
   // Name of components to be exposed via Module Federation
-  components?: string[]
+  componentNames?: string[]
 }

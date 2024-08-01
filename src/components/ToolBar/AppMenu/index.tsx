@@ -1,15 +1,15 @@
-import { Button, Menu, MenuItem } from '@mui/material'
+import { Button, Menu } from '@mui/material'
 import { Suspense, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import ExternalComponent from '../../AppManager/ExternalComponent'
+import { AppSettingsMenuItem } from './AppSettingsMenuItem'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
-  // const SimpleMenu = ExternalComponent('hello', './MenuExample')
-  const AppMenuItem = ExternalComponent('menu', './AppMenuItem')
+  const AppMenuItem = ExternalComponent('simpleMenu', './AppMenuItem')
 
   const handleOpenDropdownMenu = (
     event: React.MouseEvent<HTMLButtonElement>,
@@ -44,9 +44,8 @@ export const AppMenu = (props: DropdownMenuProps) => {
           'aria-labelledby': label,
         }}
       >
-        <MenuItem>Test</MenuItem>
+        <AppSettingsMenuItem handleClose={handleClose} />
         <Suspense fallback={<div>Loading...</div>}>
-          {/* <SimpleMenu /> */}
           <AppMenuItem />
         </Suspense>
       </Menu>

@@ -62,8 +62,8 @@ module.exports = {
     filename: '[name].[contenthash].js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
-    // publicPath: config.urlBaseName !== '' ? config.urlBaseName : '/',
-    publicPath: 'auto', // Required to use module federation (? Need to double check)
+    publicPath: config.urlBaseName !== '' ? config.urlBaseName : '/',
+    // publicPath: 'auto', // Required to use module federation (? Need to double check)
   },
   // watch the dist file for changes when using the dev server
   devServer: {
