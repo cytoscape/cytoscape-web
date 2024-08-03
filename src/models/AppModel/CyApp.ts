@@ -1,3 +1,5 @@
+import { ComponentMetadata } from './ComponentMetadata'
+
 /**
  * Base interface to define the app object
  *
@@ -20,4 +22,5 @@ export interface CyApp {
 
   // Name of components to be exposed via Module Federation
   componentNames?: string[]
+  components?: ComponentMetadata[]
 }

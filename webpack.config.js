@@ -23,7 +23,17 @@ const isProduction = process.env.NODE_ENV === 'production'
 const deps = require('./package.json').dependencies
 
 // External Apps
-const externalAppsConfig = require('./src/assets/apps.json')
+
+// List of external app properties.
+// This is used in both build and runtime to manage the external apps
+const appConfig = require('./src/assets/apps.json')
+const externalAppsConfig = {}
+appConfig.forEach((app) => {
+  externalAppsConfig[app.name] = `${app.name}@${app.url}`
+})
+
+console.log('App config found:', appConfig)
+console.log('These apps can be used in this build:', externalAppsConfig)
 
 module.exports = {
   // This app is only for web browsers
@@ -87,7 +97,11 @@ module.exports = {
     new ModuleFederationPlugin({
       name: 'cyweb',
       filename: 'remoteEntry.js',
-      remotes: externalAppsConfig,
+      // remotes: externalAppsConfig,
+      remotes: {
+        hello: 'hello@http://localhost:2222/remoteEntry.js',
+        simpleMenu: 'simpleMenu@http://localhost:3333/remoteEntry.js',
+      },
       exposes: {
         // Data models to be used by other apps
         './useDataStore': './src/components/AppManager/useDataStore.tsx',

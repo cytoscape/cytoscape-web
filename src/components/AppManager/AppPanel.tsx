@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react'
+import React, { Suspense } from 'react'
 
 const HelloPanel = React.lazy(() => import('hello/HelloPanel' as any))
 const SubPanel = React.lazy(() => import('hello/SubPanel' as any))

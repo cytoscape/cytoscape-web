@@ -1,4 +1,12 @@
-{
-  "hello": "hello@http://localhost:2222/remoteEntry.js",
-  "simpleMenu": "simpleMenu@http://localhost:3333/remoteEntry.js"
-}
+[
+  {
+    "name": "hello",
+    "url": "http://localhost:2222/remoteEntry.js",
+    "entryPoint": "HelloApp"
+  },
+  {
+    "name": "simpleMenu",
+    "url": "http://localhost:3333/remoteEntry.js",
+    "entryPoint": "SimpleMenuApp"
+  }
+]
