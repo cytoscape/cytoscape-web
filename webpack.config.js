@@ -97,11 +97,11 @@ module.exports = {
     new ModuleFederationPlugin({
       name: 'cyweb',
       filename: 'remoteEntry.js',
-      // remotes: externalAppsConfig,
-      remotes: {
-        hello: 'hello@http://localhost:2222/remoteEntry.js',
-        simpleMenu: 'simpleMenu@http://localhost:3333/remoteEntry.js',
-      },
+      remotes: externalAppsConfig,
+      // remotes: {
+      //   hello: 'hello@http://localhost:2222/remoteEntry.js',
+      //   simpleMenu: 'simpleMenu@http://localhost:3333/remoteEntry.js',
+      // },
       exposes: {
         // Data models to be used by other apps
         './useDataStore': './src/components/AppManager/useDataStore.tsx',

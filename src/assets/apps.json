@@ -8,5 +8,10 @@
     "name": "simpleMenu",
     "url": "http://localhost:3333/remoteEntry.js",
     "entryPoint": "SimpleMenuApp"
+  },
+  {
+    "name": "simplePanel",
+    "url": "http://localhost:4001/remoteEntry.js",
+    "entryPoint": "SimplePanelApp"
   }
 ]

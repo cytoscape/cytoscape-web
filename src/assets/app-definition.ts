@@ -5,4 +5,5 @@
 export const appImportMap = {
   hello: () => import('hello/HelloApp' as any),
   simpleMenu: () => import('simpleMenu/SimpleMenuApp' as any),
+  simplePanel: () => import('simplePanel/SimplePanelApp' as any),
 }
