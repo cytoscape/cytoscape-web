@@ -113,7 +113,16 @@ function BypassFormContent(props: {
     }
   })
 
-  selectedElements
+  const elements =
+    selectedElementsWithBypass > 0
+      ? selectedElements
+      : selectedElements.length === 0
+        ? visualProperty.group === VisualPropertyGroup.Node
+          ? Array.from(nodeTable.rows.keys())
+          : Array.from(edgeTable.rows.keys())
+        : selectedElements
+
+  elements
     .filter((e) => bypassElementIds.has(e))
     .forEach((e) => {
       elementsToRender.push({

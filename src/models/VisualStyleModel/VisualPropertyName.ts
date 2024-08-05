@@ -11,8 +11,6 @@ export type NodeVisualPropertyName =
   | 'nodeLabelColor'
   | 'nodeLabelFontSize'
   | 'nodeLabelFont'
-  | 'nodeLabelVerticalAlign'
-  | 'nodeLabelHorizontalAlign'
   | 'nodeLabelRotation'
   | 'nodeLabelOpacity'
   // | 'nodePositionX'
@@ -23,6 +21,7 @@ export type NodeVisualPropertyName =
   | 'nodeSelectedPaint'
   | 'nodeMaxLabelWidth'
   | 'nodeZOrder'
+  | 'nodeLabelPosition'
 
 export type EdgeVisualPropertyName =
   | 'edgeLineType'
@@ -44,8 +43,6 @@ export type EdgeVisualPropertyName =
   | 'edgeSelectedPaint'
   | 'edgeMaxLabelWidth'
   | 'edgeZOrder'
-
-
 
 export type NetworkVisualPropertyName = 'networkBackgroundColor'
 

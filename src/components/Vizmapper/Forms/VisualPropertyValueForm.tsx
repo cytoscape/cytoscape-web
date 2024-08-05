@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { Box, Popover, Typography, Tooltip, Tabs, Tab } from '@mui/material'
 
-
 import {
   VisualProperty,
   VisualPropertyValueType,
@@ -9,7 +8,14 @@ import {
 } from '../../../models/VisualStyleModel'
 
 import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
-import { Color, ColorPicker, ColorPickerCompact, ColorPickerViridis, ColorPickerSequential, ColorPickerDiverging } from '../VisualPropertyRender/Color'
+import {
+  Color,
+  ColorPicker,
+  ColorPickerCompact,
+  ColorPickerViridis,
+  ColorPickerSequential,
+  ColorPickerDiverging,
+} from '../VisualPropertyRender/Color'
 import {
   NodeBorderLine,
   NodeBorderLinePicker,
@@ -52,6 +58,10 @@ import {
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
 import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
+import {
+  NodeLabelPositionPicker,
+  NodeLabelPositionRender,
+} from '../VisualPropertyRender/NodeLabelPosition'
 
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,
@@ -112,6 +122,10 @@ const vpType2RenderMap: Record<
   boolean: {
     pickerRender: BooleanSwitch,
     valueRender: BooleanRender,
+  },
+  nodeLabelPosition: {
+    pickerRender: NodeLabelPositionPicker,
+    valueRender: NodeLabelPositionRender,
   },
 }
 
@@ -175,6 +189,10 @@ const vpType2RenderMap2: Record<
     pickerRender: BooleanSwitch,
     valueRender: BooleanRender,
   },
+  nodeLabelPosition: {
+    pickerRender: NodeLabelPositionPicker,
+    valueRender: NodeLabelPositionRender,
+  },
 }
 const vpType2RenderMapViridis: Record<
   VisualPropertyValueTypeName,
@@ -235,6 +253,10 @@ const vpType2RenderMapViridis: Record<
   boolean: {
     pickerRender: BooleanSwitch,
     valueRender: BooleanRender,
+  },
+  nodeLabelPosition: {
+    pickerRender: NodeLabelPositionPicker,
+    valueRender: NodeLabelPositionRender,
   },
 }
 
@@ -298,6 +320,10 @@ const vpType2RenderMapSequential: Record<
     pickerRender: BooleanSwitch,
     valueRender: BooleanRender,
   },
+  nodeLabelPosition: {
+    pickerRender: NodeLabelPositionPicker,
+    valueRender: NodeLabelPositionRender,
+  },
 }
 
 const vpType2RenderMapDiverging: Record<
@@ -359,6 +385,10 @@ const vpType2RenderMapDiverging: Record<
   boolean: {
     pickerRender: BooleanSwitch,
     valueRender: BooleanRender,
+  },
+  nodeLabelPosition: {
+    pickerRender: NodeLabelPositionPicker,
+    valueRender: NodeLabelPositionRender,
   },
 }
 
@@ -450,7 +480,7 @@ export function VisualPropertyValueForm(
   props: VisualPropertyValueFormProps,
 ): React.ReactElement {
   const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
-  const [activeTab, setActiveTab] = React.useState(0);
+  const [activeTab, setActiveTab] = React.useState(0)
 
   const showValuePicker = (value: Element | null): void => {
     setValuePicker(value)
@@ -481,36 +511,42 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box>
-          {
-            props.visualProperty && props.visualProperty.displayName.includes("Color") ? (
-              <>
-                <Tabs
-                  value={activeTab}
-                  onChange={(event, newValue) => setActiveTab(newValue)}
-                  aria-label="Tab panel"
-                >
-                  <Tab label="ColorBrewer Sequential" />
-                  <Tab label="ColorBrewer Diverging" />
-                  <Tab label="Viridis Sequential" />
-                  <Tab label="Swatches" />
-                  <Tab label="Color Picker" />
-                </Tabs>
-              </>
-            ) : null
-          }
+          {props.visualProperty &&
+          props.visualProperty.displayName.includes('Color') ? (
+            <>
+              <Tabs
+                value={activeTab}
+                onChange={(event, newValue) => setActiveTab(newValue)}
+                aria-label="Tab panel"
+              >
+                <Tab label="ColorBrewer Sequential" />
+                <Tab label="ColorBrewer Diverging" />
+                <Tab label="Viridis Sequential" />
+                <Tab label="Swatches" />
+                <Tab label="Color Picker" />
+              </Tabs>
+            </>
+          ) : null}
           {activeTab === 0 && (
-            <Box sx={{
-              margin: "auto", display: "flex", justifyContent: "center", alignItems: "center", overflow: 'auto',
-              '&::-webkit-scrollbar': {
-                display: 'none',
-              },
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none'
-            }}>
+            <Box
+              sx={{
+                margin: 'auto',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'auto',
+                '&::-webkit-scrollbar': {
+                  display: 'none',
+                },
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+            >
               {(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
-                vpType2RenderMapSequential[props.visualProperty.type].pickerRender ??
-                (() => { })
+                vpType2RenderMapSequential[props.visualProperty.type]
+                  .pickerRender ??
+                (() => {})
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
@@ -519,20 +555,25 @@ export function VisualPropertyValueForm(
             </Box>
           )}
           {activeTab === 1 && (
-            <Box sx={{
-              margin: "auto", display: "flex", justifyContent: "center", alignItems: "center",
-              overflow: 'auto',
-              '&::-webkit-scrollbar': {
-                display: 'none',
-              },
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none'
-            }}
+            <Box
+              sx={{
+                margin: 'auto',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'auto',
+                '&::-webkit-scrollbar': {
+                  display: 'none',
+                },
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
             >
               {(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
-                vpType2RenderMapDiverging[props.visualProperty.type].pickerRender ??
-                (() => { })
+                vpType2RenderMapDiverging[props.visualProperty.type]
+                  .pickerRender ??
+                (() => {})
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
@@ -542,71 +583,89 @@ export function VisualPropertyValueForm(
           )}
 
           {activeTab === 2 && (
-            <Box sx={{
-              margin: "auto", display: "flex", justifyContent: "center", alignItems: "center",
-              overflow: 'auto',
-              '&::-webkit-scrollbar': {
-                display: 'none',
-              },
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none'
-            }}
-            >              {(
-              vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
-              vpType2RenderMapViridis[props.visualProperty.type].pickerRender ??
-              (() => { })
-            )({
-              onValueChange: (value: VisualPropertyValueType) =>
-                props.onValueChange(value),
-              currentValue: props.currentValue,
-            })}
+            <Box
+              sx={{
+                margin: 'auto',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'auto',
+                '&::-webkit-scrollbar': {
+                  display: 'none',
+                },
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+            >
+              {' '}
+              {(
+                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+                vpType2RenderMapViridis[props.visualProperty.type]
+                  .pickerRender ??
+                (() => {})
+              )({
+                onValueChange: (value: VisualPropertyValueType) =>
+                  props.onValueChange(value),
+                currentValue: props.currentValue,
+              })}
             </Box>
           )}
 
           {activeTab === 3 && (
-            <Box sx={{
-              margin: "auto", display: "flex", justifyContent: "center", alignItems: "center",
-              overflow: 'auto',
-              '&::-webkit-scrollbar': {
-                display: 'none',
-              },
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none'
-            }}
-            >              {(
-              vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
-              vpType2RenderMap2[props.visualProperty.type].pickerRender ??
-              (() => { })
-            )({
-              onValueChange: (value: VisualPropertyValueType) =>
-                props.onValueChange(value),
-              currentValue: props.currentValue,
-            })}
+            <Box
+              sx={{
+                margin: 'auto',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'auto',
+                '&::-webkit-scrollbar': {
+                  display: 'none',
+                },
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+            >
+              {' '}
+              {(
+                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+                vpType2RenderMap2[props.visualProperty.type].pickerRender ??
+                (() => {})
+              )({
+                onValueChange: (value: VisualPropertyValueType) =>
+                  props.onValueChange(value),
+                currentValue: props.currentValue,
+              })}
             </Box>
           )}
 
           {activeTab === 4 && (
-            <Box sx={{
-              margin: "auto", display: "flex", justifyContent: "center", alignItems: "center",
-              overflow: 'auto',
-              '&::-webkit-scrollbar': {
-                display: 'none',
-              },
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none'
-            }}
-            >              {(
-              vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
-              vpType2RenderMap[props.visualProperty.type].pickerRender ??
-              (() => { })
-            )({
-              onValueChange: (value: VisualPropertyValueType) =>
-                props.onValueChange(value),
-              currentValue: props.currentValue,
-            })}
+            <Box
+              sx={{
+                margin: 'auto',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'auto',
+                '&::-webkit-scrollbar': {
+                  display: 'none',
+                },
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+            >
+              {' '}
+              {(
+                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+                vpType2RenderMap[props.visualProperty.type].pickerRender ??
+                (() => {})
+              )({
+                onValueChange: (value: VisualPropertyValueType) =>
+                  props.onValueChange(value),
+                currentValue: props.currentValue,
+              })}
             </Box>
           )}
-
         </Box>
       </Popover>
     </Box>

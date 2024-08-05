@@ -10,6 +10,7 @@ import {
   VerticalAlignType,
   VisibilityType,
   EdgeLineType,
+  NodeLabelPositionType,
   EdgeArrowShapeType,
 } from '../VisualPropertyValue'
 import {
@@ -87,27 +88,10 @@ export const vpToCX = (
   vpName: VisualPropertyName,
   vpValue: VisualPropertyValueType,
 ): CXVisualPropertyValue => {
-  const defaultNodeLabelPosition: CXLabelPositionType = {
-    HORIZONTAL_ALIGN: 'center',
-    HORIZONTAL_ANCHOR: 'center',
-    JUSTIFICATION: 'center',
-    MARGIN_X: 0.0,
-    MARGIN_Y: 0.0,
-    VERTICAL_ALIGN: 'center',
-    VERTICAL_ANCHOR: 'center',
-  }
-
   const defaultFontValue: CXVisualPropertyValue = {
     FONT_FAMILY: 'sans-serif',
     FONT_STYLE: 'normal',
     FONT_WEIGHT: 'normal',
-  }
-
-  if (
-    vpName === 'nodeLabelVerticalAlign' ||
-    vpName === 'nodeLabelHorizontalAlign'
-  ) {
-    return Object.assign({}, defaultNodeLabelPosition)
   }
 
   if (vpName === 'nodeLabelFont' || vpName === 'edgeLabelFont') {
@@ -261,27 +245,6 @@ export const VPNodeShapeTypeConverter = (
   }
 }
 
-export const VPNodeLabelHorizontalAlignTypeConverter = (
-  cxVPName: string,
-): CXVisualPropertyConverter<HorizontalAlignType> => {
-  return {
-    cxVPName,
-    valueConverter: (cxVPValue: CXLabelPositionType): HorizontalAlignType => {
-      return 'center' // TODO - implement real conversion
-    },
-  }
-}
-export const VPNodeLabelVerticalAlignTypeConverter = (
-  cxVPName: string,
-): CXVisualPropertyConverter<VerticalAlignType> => {
-  return {
-    cxVPName,
-    valueConverter: (cxVPValue: CXLabelPositionType): VerticalAlignType => {
-      return 'center' // TODO - implement real conversion
-    },
-  }
-}
-
 export const VPVisibilityTypeConverter = (
   cxVPName: string,
 ): CXVisualPropertyConverter<VisibilityType> => {
@@ -318,6 +281,16 @@ export const VPBooleanConverter = (
   }
 }
 
+export const VPNodeLabelPositionConverter = (
+  cxVPName: string,
+): CXVisualPropertyConverter<NodeLabelPositionType> => {
+  return {
+    cxVPName,
+    valueConverter: (cxVPValue: NodeLabelPositionType): NodeLabelPositionType =>
+      cxVPValue,
+  }
+}
+
 // lookup table of visual style property names to cx property names
 export const cxVisualPropertyConverter: Record<
   VisualPropertyName,
@@ -335,12 +308,7 @@ export const cxVisualPropertyConverter: Record<
   nodeLabelColor: VPColorConverter('NODE_LABEL_COLOR'),
   nodeLabelFontSize: VPNumberConverter('NODE_LABEL_FONT_SIZE'),
   nodeLabelFont: VPFontTypeConverter('NODE_LABEL_FONT_FACE'),
-  nodeLabelHorizontalAlign: VPNodeLabelHorizontalAlignTypeConverter(
-    'NODE_LABEL_POSITION',
-  ),
-  nodeLabelVerticalAlign: VPNodeLabelVerticalAlignTypeConverter(
-    'NODE_LABEL_POSITION',
-  ),
+  nodeLabelPosition: VPNodeLabelPositionConverter('NODE_LABEL_POSITION'),
   nodeLabelRotation: VPNumberConverter('NODE_LABEL_ROTATION'),
   nodeLabelOpacity: VPNumberConverter('NODE_LABEL_OPACITY'),
   // nodePositionX: VPNumberConverter('NODE_X_LOCATION'),
@@ -375,7 +343,6 @@ export const cxVisualPropertyConverter: Record<
   edgeSelectedPaint: VPColorConverter('EDGE_SELECTED_PAINT'),
   edgeMaxLabelWidth: VPNumberConverter('EDGE_LABEL_MAX_WIDTH'),
   edgeZOrder: VPNumberConverter('EDGE_Z_LOCATION'),
-
 
   networkBackgroundColor: VPColorConverter('NETWORK_BACKGROUND_COLOR'),
 }

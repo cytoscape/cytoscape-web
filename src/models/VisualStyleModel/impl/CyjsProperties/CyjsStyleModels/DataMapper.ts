@@ -6,4 +6,4 @@ import { VisualPropertyName } from '../../../VisualPropertyName'
  *
  * In this type, Visual Property names are NOT Cytoscape.js ones.
  */
-export type DataMapper = `data(${VisualPropertyName})`
+export type DataMapper = `data(${VisualPropertyName})` | `data(${string})`
