@@ -22,7 +22,12 @@ export const useAppStore = create(
 
     add: (app: CyApp) => {
       set((state) => {
-        state.apps[app.id] = app
+        // Add app only when it is not already present
+        if (!state.apps[app.id]) {
+          state.apps[app.id] = app
+          console.info(`App registered: ${app.id}`)
+          state.isEnabled.set(app.id, true)
+        }
       })
     },
     setEnabled: (id: string, enabled: boolean) => {
