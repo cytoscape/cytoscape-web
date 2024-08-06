@@ -14,7 +14,7 @@ export const loadComponent = (scope: string, module: string) => {
   }
 }
 
-const ExternalComponent = (scope: string, module: string) => {
+export const ExternalComponent = (scope: string, module: string) => {
   return lazy(loadComponent(scope, module))
 }
 

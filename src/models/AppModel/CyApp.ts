@@ -21,6 +21,5 @@ export interface CyApp {
   url: string
 
   // Name of components to be exposed via Module Federation
-  componentNames?: string[]
-  components?: ComponentMetadata[]
+  components: ComponentMetadata[]
 }

@@ -14,8 +14,6 @@ export const useAppManager = (): void => {
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const registerApp = useAppStore((state) => state.add)
 
-  const loadAllModules = async (): Promise<void> => {}
-
   useEffect(() => {
     const loadModules = async () => {
       const moduleNames = Object.keys(
