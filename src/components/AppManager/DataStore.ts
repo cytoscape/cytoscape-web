@@ -1,5 +1,5 @@
-import { WorkspaceStore } from 'src/store/WorkspaceStore'
-import { NetworkStore } from 'src/store/NetworkStore'
+import { NetworkStore } from '../../models/StoreModel/NetworkStoreModel'
+import { WorkspaceStore } from '../../models/StoreModel/WorkspaceStoreModel'
 
 export interface DataStore {
   useWorkspaceStore: () => WorkspaceStore
