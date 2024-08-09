@@ -3,7 +3,10 @@ import { IdType } from '../../../models/IdType'
 import { Edge } from '../../../models/NetworkModel'
 import { ValueType } from '../../../models/TableModel'
 import { EdgeView, NodeView } from '../../../models/ViewModel'
-import { VisualPropertyName } from '../../../models/VisualStyleModel'
+import {
+  VisualPropertyName,
+  VisualPropertyValueType,
+} from '../../../models/VisualStyleModel'
 
 export interface CyNode {
   group: 'nodes'
@@ -50,9 +53,11 @@ const createCyEdges = (
       source: edge.s,
       target: edge.t,
     }
-    values.forEach((value: ValueType, key: VisualPropertyName) => {
-      newData[key] = value
-    })
+    values.forEach(
+      (value: VisualPropertyValueType, key: VisualPropertyName) => {
+        newData[key] = value as ValueType
+      },
+    )
     return {
       group: 'edges',
       data: newData,

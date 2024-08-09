@@ -32,16 +32,19 @@ import {
 import { getDefaultVisualStyle } from './DefaultVisualStyle'
 import { createNewNetworkView, updateNetworkView } from './compute-view-util'
 
-const sortByDisplayName = (a: VisualProperty<VisualPropertyValueType>, b: VisualProperty<VisualPropertyValueType>) => {
-  const nameA = a.displayName.toLowerCase();
-  const nameB = b.displayName.toLowerCase();
+const sortByDisplayName = (
+  a: VisualProperty<VisualPropertyValueType>,
+  b: VisualProperty<VisualPropertyValueType>,
+) => {
+  const nameA = a.displayName.toLowerCase()
+  const nameB = b.displayName.toLowerCase()
   if (nameA < nameB) {
-    return -1;
+    return -1
   } else if (nameA > nameB) {
-    return 1;
+    return 1
   }
-  return 0;
-};
+  return 0
+}
 
 export const applyVisualStyle = (data: NetworkViewSources): NetworkView => {
   const { network, visualStyle, nodeTable, edgeTable, networkView } = data
@@ -62,25 +65,25 @@ export const applyVisualStyle = (data: NetworkViewSources): NetworkView => {
 export const nodeVisualProperties = (
   visualStyle: VisualStyle,
 ): Array<VisualProperty<VisualPropertyValueType>> => {
-  return Object.values(visualStyle).filter(
-    (value) => value.group === VisualPropertyGroup.Node,
-  ).sort(sortByDisplayName);
+  return Object.values(visualStyle)
+    .filter((value) => value.group === VisualPropertyGroup.Node)
+    .sort(sortByDisplayName)
 }
 
 export const edgeVisualProperties = (
   visualStyle: VisualStyle,
 ): Array<VisualProperty<VisualPropertyValueType>> => {
-  return Object.values(visualStyle).filter(
-    (value) => value.group === VisualPropertyGroup.Edge,
-  ).sort(sortByDisplayName);
+  return Object.values(visualStyle)
+    .filter((value) => value.group === VisualPropertyGroup.Edge)
+    .sort(sortByDisplayName)
 }
 
 export const networkVisualProperties = (
   visualStyle: VisualStyle,
 ): Array<VisualProperty<VisualPropertyValueType>> => {
-  return Object.values(visualStyle).filter(
-    (value) => value.group === VisualPropertyGroup.Network,
-  ).sort(sortByDisplayName);
+  return Object.values(visualStyle)
+    .filter((value) => value.group === VisualPropertyGroup.Network)
+    .sort(sortByDisplayName)
 }
 
 export const createVisualStyle = (): VisualStyle => {
@@ -194,7 +197,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
         cxVPName: string,
       ): CXVisualMappingFunction<CXVisualPropertyValue> | null =>
         edgeMapping?.[
-        cxVPName
+          cxVPName
         ] as CXVisualMappingFunction<CXVisualPropertyValue>,
       getBypass: (): Map<VisualPropertyName, Bypass<VisualPropertyValueType>> =>
         edgeBypassMap,
