@@ -5,8 +5,8 @@ import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import { View } from '../../../models/ViewModel/View'
 import VisualStyleFn, {
   NodeLabelPositionType,
-  EdgeVisualPropertyNames,
-  NodeVisualPropertyNames,
+  EdgeVisualPropertyName,
+  NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyName,
   VisualPropertyValueType,
@@ -160,25 +160,25 @@ const updateCyObjects = <T extends View>(
       let color
       switch (lockState) {
         case nodeSizeLockedType.WIDTHLOCKED:
-          obj.data(NodeVisualPropertyNames.nodeWidth, obj.data(NodeVisualPropertyNames.nodeHeight))
+          obj.data(NodeVisualPropertyName.NodeWidth, obj.data(NodeVisualPropertyName.NodeHeight))
           break;
         case nodeSizeLockedType.HEIGHTLOCKED:
-          obj.data(NodeVisualPropertyNames.nodeHeight, obj.data(NodeVisualPropertyNames.nodeWidth))
+          obj.data(NodeVisualPropertyName.NodeHeight, obj.data(NodeVisualPropertyName.NodeWidth))
           break;
         case arrowColorMatchesEdgeType.SRCARRCOLOR:
-          color = obj.data(EdgeVisualPropertyNames.edgeSourceArrowColor)
-          obj.data(EdgeVisualPropertyNames.edgeTargetArrowColor, color);
-          obj.data(EdgeVisualPropertyNames.edgeLineColor, color);
+          color = obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor)
+          obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor, color);
+          obj.data(EdgeVisualPropertyName.EdgeLineColor, color);
           break;
         case arrowColorMatchesEdgeType.TGTARRCOLOR:
-          color = obj.data(EdgeVisualPropertyNames.edgeTargetArrowColor)
-          obj.data(EdgeVisualPropertyNames.edgeSourceArrowColor, color);
-          obj.data(EdgeVisualPropertyNames.edgeLineColor, color);
+          color = obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor)
+          obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor, color);
+          obj.data(EdgeVisualPropertyName.EdgeLineColor, color);
           break;
         case arrowColorMatchesEdgeType.LINECOLOR:
-          color = obj.data(EdgeVisualPropertyNames.edgeLineColor)
-          obj.data(EdgeVisualPropertyNames.edgeSourceArrowColor, color);
-          obj.data(EdgeVisualPropertyNames.edgeTargetArrowColor, color);
+          color = obj.data(EdgeVisualPropertyName.EdgeLineColor)
+          obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor, color);
+          obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor, color);
           break;
       }
     }

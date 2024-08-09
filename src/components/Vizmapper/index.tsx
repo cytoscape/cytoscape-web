@@ -3,9 +3,8 @@ import { Box, Typography, Tabs, Tab, Divider, Tooltip, IconButton } from '@mui/m
 import InfoIcon from '@mui/icons-material/Info';
 import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
-  EdgeVisualPropertyNames,
+  EdgeVisualPropertyName,
   NodeVisualPropertyName,
-  NodeVisualPropertyNames,
   VisualProperty,
   VisualPropertyValueType,
   VisualStyle,
@@ -30,11 +29,11 @@ function VisualPropertyView(props: {
   const nodeSizeLocked = useUiStateStore(state => state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties.nodeSizeLocked)
   const arrowColorMatchesEdge = useUiStateStore(state => state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties.arrowColorMatchesEdge)
   const LockControlMap: Record<string, string | string[]> = {
-    [nodeSizeLockedType.HEIGHTLOCKED]: NodeVisualPropertyNames.nodeHeight,
-    [nodeSizeLockedType.WIDTHLOCKED]: NodeVisualPropertyNames.nodeWidth,
-    [arrowColorMatchesEdgeType.LINECOLOR]: [EdgeVisualPropertyNames.edgeSourceArrowColor, EdgeVisualPropertyNames.edgeTargetArrowColor],
-    [arrowColorMatchesEdgeType.SRCARRCOLOR]: [EdgeVisualPropertyNames.edgeTargetArrowColor, EdgeVisualPropertyNames.edgeLineColor],
-    [arrowColorMatchesEdgeType.TGTARRCOLOR]: [EdgeVisualPropertyNames.edgeSourceArrowColor, EdgeVisualPropertyNames.edgeLineColor],
+    [nodeSizeLockedType.HEIGHTLOCKED]: NodeVisualPropertyName.NodeHeight,
+    [nodeSizeLockedType.WIDTHLOCKED]: NodeVisualPropertyName.NodeWidth,
+    [arrowColorMatchesEdgeType.LINECOLOR]: [EdgeVisualPropertyName.EdgeSourceArrowColor, EdgeVisualPropertyName.EdgeTargetArrowColor],
+    [arrowColorMatchesEdgeType.SRCARRCOLOR]: [EdgeVisualPropertyName.EdgeTargetArrowColor, EdgeVisualPropertyName.EdgeLineColor],
+    [arrowColorMatchesEdgeType.TGTARRCOLOR]: [EdgeVisualPropertyName.EdgeSourceArrowColor, EdgeVisualPropertyName.EdgeLineColor],
     [arrowColorMatchesEdgeType.NONE]: [],
   }
   const tooltipTextMap: Record<string, string> = {

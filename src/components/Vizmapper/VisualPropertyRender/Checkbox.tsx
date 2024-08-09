@@ -4,7 +4,7 @@ import { IdType } from '../../../models/IdType';
 import { useUiStateStore } from '../../../store/UiStateStore';
 import { arrowColorMatchesEdgeType, nodeSizeLockedType } from '../../../models/VisualStyleModel/VisualStyleOptions';
 import { Ui } from '../../../models/UiModel';
-import { EdgeVisualPropertyName, EdgeVisualPropertyNames } from '../../../models/VisualStyleModel';
+import { EdgeVisualPropertyName } from '../../../models/VisualStyleModel';
 import { use } from 'cytoscape';
 
 export const LockSizeCheckbox = (props: {
@@ -44,9 +44,9 @@ export const LockColorCheckbox = (props: {
     currentNetworkId: IdType,
 }) => {
     const lockStateMap: Record<string, arrowColorMatchesEdgeType> = {
-        [EdgeVisualPropertyNames.edgeSourceArrowColor]: arrowColorMatchesEdgeType.SRCARRCOLOR,
-        [EdgeVisualPropertyNames.edgeTargetArrowColor]: arrowColorMatchesEdgeType.TGTARRCOLOR,
-        [EdgeVisualPropertyNames.edgeLineColor]: arrowColorMatchesEdgeType.LINECOLOR,
+        [EdgeVisualPropertyName.EdgeSourceArrowColor]: arrowColorMatchesEdgeType.SRCARRCOLOR,
+        [EdgeVisualPropertyName.EdgeTargetArrowColor]: arrowColorMatchesEdgeType.TGTARRCOLOR,
+        [EdgeVisualPropertyName.EdgeLineColor]: arrowColorMatchesEdgeType.LINECOLOR,
     }
     const { currentNetworkId } = props;
     const arrowColorMatchesEdge = useUiStateStore(state => state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties.arrowColorMatchesEdge);

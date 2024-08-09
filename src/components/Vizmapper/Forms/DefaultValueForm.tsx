@@ -1,7 +1,6 @@
 import { SxProps, Box } from '@mui/material'
 
 import {
-  NodeVisualPropertyNames,
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'

@@ -21,8 +21,8 @@ import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { useTableStore } from '../../../../store/TableStore'
 
 import {
-  EdgeVisualPropertyNames,
-  NodeVisualPropertyNames,
+  EdgeVisualPropertyName,
+  NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
@@ -379,10 +379,10 @@ export function MappingForm(props: {
 }): React.ReactElement {
   const [formAnchorEl, setFormAnchorEl] = useState<Element | null>(null)
   const vpName = props.visualProperty.name
-  const isSize = vpName === NodeVisualPropertyNames.nodeHeight || vpName === NodeVisualPropertyNames.nodeWidth
-  const isEdgeLineColor = vpName === EdgeVisualPropertyNames.edgeLineColor || vpName === EdgeVisualPropertyNames.edgeTargetArrowColor || vpName === EdgeVisualPropertyNames.edgeSourceArrowColor;
+  const isSize = vpName === NodeVisualPropertyName.NodeHeight || vpName === NodeVisualPropertyName.NodeWidth
+  const isEdgeLineColor = vpName === EdgeVisualPropertyName.EdgeLineColor || vpName === EdgeVisualPropertyName.EdgeTargetArrowColor || vpName === EdgeVisualPropertyName.EdgeSourceArrowColor;
 
-  const isHeight = vpName === NodeVisualPropertyNames.nodeHeight
+  const isHeight = vpName === NodeVisualPropertyName.NodeHeight
 
   const showForm = (value: Element | null): void => {
     setFormAnchorEl(value)

@@ -4,16 +4,16 @@ import { Edge } from '../../../models/NetworkModel'
 import { ValueType } from '../../../models/TableModel'
 import { EdgeView, NodeView } from '../../../models/ViewModel'
 import {
-  VisualPropertyName, NodeVisualPropertyNames, EdgeVisualPropertyNames, EdgeVisualPropertyName,
+  VisualPropertyName, NodeVisualPropertyName, EdgeVisualPropertyName,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
 import { arrowColorMatchesEdgeType, nodeSizeLockedType, VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 
 function updateEdgeColors(newData: Record<string, ValueType>, colorProperty: EdgeVisualPropertyName) {
   const color = newData[colorProperty];
-  newData[EdgeVisualPropertyNames.edgeSourceArrowColor] = color;
-  newData[EdgeVisualPropertyNames.edgeTargetArrowColor] = color;
-  newData[EdgeVisualPropertyNames.edgeLineColor] = color;
+  newData[EdgeVisualPropertyName.EdgeSourceArrowColor] = color;
+  newData[EdgeVisualPropertyName.EdgeTargetArrowColor] = color;
+  newData[EdgeVisualPropertyName.EdgeLineColor] = color;
 }
 
 export interface CyNode {
@@ -39,9 +39,9 @@ const createCyNodes = (nodeViews: NodeView[], nodeSizeLocked: nodeSizeLockedType
       ...Object.fromEntries(nv.values.entries()),
     }
     if (nodeSizeLocked === nodeSizeLockedType.WIDTHLOCKED) {
-      data[NodeVisualPropertyNames.nodeWidth] = data[NodeVisualPropertyNames.nodeHeight]
+      data[NodeVisualPropertyName.NodeWidth] = data[NodeVisualPropertyName.NodeHeight]
     } else if (nodeSizeLocked === nodeSizeLockedType.HEIGHTLOCKED) {
-      data[NodeVisualPropertyNames.nodeHeight] = data[NodeVisualPropertyNames.nodeWidth]
+      data[NodeVisualPropertyName.NodeHeight] = data[NodeVisualPropertyName.NodeWidth]
     }
     return {
       group: 'nodes',
@@ -74,13 +74,13 @@ const createCyEdges = (
 
     switch (arrowColorMatchesEdge) {
       case arrowColorMatchesEdgeType.SRCARRCOLOR:
-        updateEdgeColors(newData, EdgeVisualPropertyNames.edgeSourceArrowColor);
+        updateEdgeColors(newData, EdgeVisualPropertyName.EdgeSourceArrowColor);
         break;
       case arrowColorMatchesEdgeType.TGTARRCOLOR:
-        updateEdgeColors(newData, EdgeVisualPropertyNames.edgeTargetArrowColor);
+        updateEdgeColors(newData, EdgeVisualPropertyName.EdgeTargetArrowColor);
         break;
       case arrowColorMatchesEdgeType.LINECOLOR:
-        updateEdgeColors(newData, EdgeVisualPropertyNames.edgeLineColor);
+        updateEdgeColors(newData, EdgeVisualPropertyName.EdgeLineColor);
         break;
     }
 

@@ -20,8 +20,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 
 import { IdType } from '../../../models/IdType'
 import {
-  EdgeVisualPropertyNames,
-  NodeVisualPropertyNames,
+  EdgeVisualPropertyName,
+  NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
@@ -51,9 +51,9 @@ function BypassFormContent(props: {
     visualProperty.defaultValue,
   )
   const vpName = props.visualProperty.name
-  const isSize = vpName === (NodeVisualPropertyNames.nodeHeight || NodeVisualPropertyNames.nodeWidth)
-  const isHeight = vpName === NodeVisualPropertyNames.nodeHeight
-  const isEdgeLineColor = vpName === EdgeVisualPropertyNames.edgeLineColor || vpName === EdgeVisualPropertyNames.edgeTargetArrowColor || vpName === EdgeVisualPropertyNames.edgeSourceArrowColor;
+  const isSize = vpName === (NodeVisualPropertyName.NodeHeight || NodeVisualPropertyName.NodeWidth)
+  const isHeight = vpName === NodeVisualPropertyName.NodeHeight
+  const isEdgeLineColor = vpName === EdgeVisualPropertyName.EdgeLineColor || vpName === EdgeVisualPropertyName.EdgeTargetArrowColor || vpName === EdgeVisualPropertyName.EdgeSourceArrowColor;
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const networkView: NetworkView | undefined = getViewModel(currentNetworkId)
 

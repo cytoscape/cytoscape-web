@@ -2,7 +2,7 @@ import { Box, TextField, Typography, Button, FormControlLabel, Checkbox } from '
 import { useState, useEffect, ChangeEvent } from 'react'
 import { serializedStringIsValid } from '../../../models/TableModel/impl/ValueTypeImpl'
 import { ValueTypeName } from '../../../models/TableModel'
-import { VisualPropertyName, NodeVisualPropertyNames } from '../../../models/VisualStyleModel/VisualPropertyName'
+import { VisualPropertyName, NodeVisualPropertyName } from '../../../models/VisualStyleModel/VisualPropertyName'
 import { LockSizeCheckbox } from './Checkbox'
 import { IdType } from '../../../models/IdType'
 
@@ -15,8 +15,8 @@ export function NumberInput(props: {
   showCheckbox?: boolean
 }): React.ReactElement {
   const { onValueChange, currentValue, vpName, closePopover, currentNetworkId, showCheckbox } = props
-  const isSize = vpName === NodeVisualPropertyNames.nodeHeight || vpName === NodeVisualPropertyNames.nodeWidth
-  const isHeight = vpName === NodeVisualPropertyNames.nodeHeight
+  const isSize = vpName === NodeVisualPropertyName.NodeHeight || vpName === NodeVisualPropertyName.NodeWidth
+  const isHeight = vpName === NodeVisualPropertyName.NodeHeight
   const [value, setValue] = useState(String(currentValue ?? 0))
   const strValueIsValid = (value: string): boolean => {
     return serializedStringIsValid(ValueTypeName.Integer, value) || serializedStringIsValid(ValueTypeName.Double, value) || serializedStringIsValid(ValueTypeName.Long, value)
