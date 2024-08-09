@@ -1,10 +1,11 @@
 import * as React from 'react'
-import { Box, Popover, Typography, Tooltip, Tabs, Tab } from '@mui/material'
+import { Box, Popover, Typography, Tooltip, Tabs, Tab, Divider } from '@mui/material'
 
 import {
   VisualProperty,
   VisualPropertyValueType,
   VisualPropertyName,
+  EdgeVisualPropertyNames,
 } from '../../../models/VisualStyleModel'
 
 import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
@@ -62,6 +63,9 @@ import {
   NodeLabelPositionPicker,
   NodeLabelPositionRender,
 } from '../VisualPropertyRender/NodeLabelPosition'
+import { IdType } from '../../../models/IdType'
+import { CheckBox } from '@mui/icons-material'
+import { LockColorCheckbox } from '../VisualPropertyRender/Checkbox'
 
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,
@@ -270,8 +274,9 @@ const vpType2RenderMapSequential: Record<
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
       closePopover: () => void
+      currentNetworkId?: IdType
+      showCheckbox?: boolean
       vpName?: VisualPropertyName
-      syncValue?: (newValue: VisualPropertyValueType) => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -410,8 +415,9 @@ const vpName2RenderMap: Partial<
         currentValue: VisualPropertyValueType | null
         onValueChange: (newValue: VisualPropertyValueType) => void
         closePopover: () => void
+        currentNetworkId?: IdType
+        showCheckbox?: boolean
         vpName?: VisualPropertyName
-        syncValue?: (newValue: VisualPropertyValueType) => void
       }) => React.ReactElement
       valueRender: (props: {
         value: VisualPropertyValueType
@@ -445,7 +451,6 @@ interface VisualPropertyRenderProps {
   value: VisualPropertyValueType | null
   vpValueType: VisualPropertyValueTypeName
   vpName: VisualPropertyName
-  syncValue?: (newValue: VisualPropertyValueType) => void
 }
 
 export function VisualPropertyValueRender(
@@ -482,7 +487,8 @@ interface VisualPropertyValueFormProps {
   visualProperty: VisualProperty<VisualPropertyValueType>
   currentValue: VisualPropertyValueType | null
   onValueChange: (newValue: VisualPropertyValueType) => void
-  syncValue?: (newValue: VisualPropertyValueType) => void
+  currentNetworkId: IdType
+  showCheckbox?: boolean
   title?: string
   tooltipText?: string
 }
@@ -493,7 +499,9 @@ export function VisualPropertyValueForm(
 ): React.ReactElement {
   const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
   const [activeTab, setActiveTab] = React.useState(0)
-
+  const isColor = props.visualProperty.displayName.includes("Color");
+  const vpName = props.visualProperty.name;
+  const isEdgeLineColor = vpName === EdgeVisualPropertyNames.edgeLineColor || vpName === EdgeVisualPropertyNames.edgeTargetArrowColor || vpName === EdgeVisualPropertyNames.edgeSourceArrowColor;
   const showValuePicker = (value: Element | null): void => {
     setValuePicker(value)
   }
@@ -528,22 +536,23 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box>
-          {props.visualProperty &&
-            props.visualProperty.displayName.includes('Color') ? (
-            <>
-              <Tabs
-                value={activeTab}
-                onChange={(event, newValue) => setActiveTab(newValue)}
-                aria-label="Tab panel"
-              >
-                <Tab label="ColorBrewer Sequential" />
-                <Tab label="ColorBrewer Diverging" />
-                <Tab label="Viridis Sequential" />
-                <Tab label="Swatches" />
-                <Tab label="Color Picker" />
-              </Tabs>
-            </>
-          ) : null}
+          {
+            isColor ? (
+              <>
+                <Tabs
+                  value={activeTab}
+                  onChange={(event, newValue) => setActiveTab(newValue)}
+                  aria-label="Tab panel"
+                >
+                  <Tab label="ColorBrewer Sequential" />
+                  <Tab label="ColorBrewer Diverging" />
+                  <Tab label="Viridis Sequential" />
+                  <Tab label="Swatches" />
+                  <Tab label="Color Picker" />
+                </Tabs>
+              </>
+            ) : null
+          }
           {activeTab === 0 && (
             <Box
               sx={{
@@ -568,9 +577,10 @@ export function VisualPropertyValueForm(
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                currentNetworkId: props.currentNetworkId,
+                showCheckbox: props.showCheckbox ?? false,
                 vpName: props.visualProperty.name,
                 closePopover: closePopover,
-                syncValue: props.syncValue
               })}
             </Box>
           )}
@@ -690,6 +700,17 @@ export function VisualPropertyValueForm(
               })}
             </Box>
           )}
+          {props.showCheckbox && isEdgeLineColor &&
+            (
+              <>
+                <Divider />
+                <LockColorCheckbox
+                  vpName={props.visualProperty.name}
+                  currentNetworkId={props.currentNetworkId}
+                />
+              </>
+            )
+          }
         </Box>
       </Popover>
     </Box>

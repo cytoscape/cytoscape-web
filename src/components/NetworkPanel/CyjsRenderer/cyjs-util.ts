@@ -5,6 +5,8 @@ import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import { View } from '../../../models/ViewModel/View'
 import VisualStyleFn, {
   NodeLabelPositionType,
+  EdgeVisualPropertyNames,
+  NodeVisualPropertyNames,
   VisualProperty,
   VisualPropertyName,
   VisualPropertyValueType,
@@ -15,6 +17,7 @@ import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualP
 import { computeNodeLabelPosition } from './nodeLabelPositionMap'
 import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
 import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
+import { VisualEditorProperties, arrowColorMatchesEdgeType, nodeSizeLockedType } from '../../../models/VisualStyleModel/VisualStyleOptions'
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
@@ -121,15 +124,16 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   return cyStyle
 }
 
-export const applyViewModel = (cy: Core, networkView: NetworkView): void => {
+export const applyViewModel = (cy: Core, networkView: NetworkView, visualEditorProperties: VisualEditorProperties): void => {
   const { nodeViews, edgeViews } = networkView
-  updateCyObjects<NodeView>(nodeViews, cy.nodes())
-  updateCyObjects<EdgeView>(edgeViews, cy.edges())
+  updateCyObjects<NodeView>(nodeViews, cy.nodes(), visualEditorProperties.nodeSizeLocked)
+  updateCyObjects<EdgeView>(edgeViews, cy.edges(), visualEditorProperties.arrowColorMatchesEdge)
 }
 
 const updateCyObjects = <T extends View>(
   views: Record<IdType, T>,
   cyObjects: Collection<SingularElementArgument>,
+  lockState?: nodeSizeLockedType | arrowColorMatchesEdgeType
 ): void => {
   cyObjects.forEach((obj: SingularElementArgument) => {
     const cyId = obj.data('id')
@@ -153,6 +157,30 @@ const updateCyObjects = <T extends View>(
           }
         },
       )
+      let color
+      switch (lockState) {
+        case nodeSizeLockedType.WIDTHLOCKED:
+          obj.data(NodeVisualPropertyNames.nodeWidth, obj.data(NodeVisualPropertyNames.nodeHeight))
+          break;
+        case nodeSizeLockedType.HEIGHTLOCKED:
+          obj.data(NodeVisualPropertyNames.nodeHeight, obj.data(NodeVisualPropertyNames.nodeWidth))
+          break;
+        case arrowColorMatchesEdgeType.SRCARRCOLOR:
+          color = obj.data(EdgeVisualPropertyNames.edgeSourceArrowColor)
+          obj.data(EdgeVisualPropertyNames.edgeTargetArrowColor, color);
+          obj.data(EdgeVisualPropertyNames.edgeLineColor, color);
+          break;
+        case arrowColorMatchesEdgeType.TGTARRCOLOR:
+          color = obj.data(EdgeVisualPropertyNames.edgeTargetArrowColor)
+          obj.data(EdgeVisualPropertyNames.edgeSourceArrowColor, color);
+          obj.data(EdgeVisualPropertyNames.edgeLineColor, color);
+          break;
+        case arrowColorMatchesEdgeType.LINECOLOR:
+          color = obj.data(EdgeVisualPropertyNames.edgeLineColor)
+          obj.data(EdgeVisualPropertyNames.edgeSourceArrowColor, color);
+          obj.data(EdgeVisualPropertyNames.edgeTargetArrowColor, color);
+          break;
+      }
     }
   })
 }

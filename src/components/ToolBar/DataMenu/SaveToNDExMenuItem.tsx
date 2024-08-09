@@ -31,6 +31,7 @@ import { KeycloakContext } from '../../..'
 import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
 import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { NetworkView } from '../../../models/ViewModel'
+import { useUiStateStore } from '../../../store/UiStateStore'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -55,6 +56,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
+  )
+  const visualStyleOptions = useUiStateStore(
+    (state) => state.ui.visualStyleOptions[currentNetworkId]
   )
   const network = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
@@ -94,6 +98,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       summary,
       table.nodeTable,
       table.edgeTable,
+      visualStyleOptions,
       viewModel,
     )
 
@@ -127,6 +132,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       summary,
       table.nodeTable,
       table.edgeTable,
+      visualStyleOptions,
       viewModel,
       `Copy of ${summary.name}`,
     )
@@ -137,17 +143,15 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       setCurrentNetworkId(uuid as IdType)
 
       addMessage({
-        message: `Saved a copy of the current network to NDEx with new uuid ${
-          uuid as string
-        }`,
+        message: `Saved a copy of the current network to NDEx with new uuid ${uuid as string
+          }`,
         duration: 3000,
       })
     } catch (e) {
       console.log(e)
       addMessage({
-        message: `Error: Could not save a copy of the current network to NDEx. ${
-          e.message as string
-        }`,
+        message: `Error: Could not save a copy of the current network to NDEx. ${e.message as string
+          }`,
         duration: 3000,
       })
     }
@@ -189,9 +193,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         console.log(e)
 
         addMessage({
-          message: `Error: Could not overwrite the current network to NDEx. ${
-            e.message as string
-          }`,
+          message: `Error: Could not overwrite the current network to NDEx. ${e.message as string
+            }`,
           duration: 3000,
         })
       }

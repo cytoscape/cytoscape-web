@@ -17,26 +17,19 @@ export function DefaultValueForm(props: {
   sx?: SxProps
 }): React.ReactElement {
   const { visualProperty, currentNetworkId } = props
-  const vpName = visualProperty.name
   const setDefault = useVisualStyleStore((state) => state.setDefault)
-  let syncValue = (newValue: VisualPropertyValueType) => { }
-  if (vpName === NodeVisualPropertyNames.nodeHeight) {
-    syncValue = (newValue) =>
-      setDefault(currentNetworkId, NodeVisualPropertyNames.nodeWidth, newValue)
-  } else if (vpName === NodeVisualPropertyNames.nodeWidth) {
-    syncValue = (newValue) =>
-      setDefault(currentNetworkId, NodeVisualPropertyNames.nodeHeight, newValue)
-  }
+
   return (
     <Box sx={props.sx ?? {}}>
       <VisualPropertyValueForm
         title={`Default ${visualProperty.displayName}`}
         visualProperty={visualProperty}
         currentValue={visualProperty.defaultValue}
+        currentNetworkId={currentNetworkId}
+        showCheckbox={true}
         onValueChange={(newValue) =>
           setDefault(currentNetworkId, visualProperty.name, newValue)
         }
-        syncValue={syncValue}
       />
     </Box>
   )

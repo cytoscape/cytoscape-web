@@ -160,9 +160,8 @@ export function DiscreteMappingForm(props: {
                         <Tooltip
                           title={`Value '${String(
                             key,
-                          )}' is not found in the column '${
-                            mapping?.attribute ?? ''
-                          }'.  You will not be able to re-edit this entry if you delete this value from the discrete mapping. `}
+                          )}' is not found in the column '${mapping?.attribute ?? ''
+                            }'.  You will not be able to re-edit this entry if you delete this value from the discrete mapping. `}
                         >
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <WarningAmberIcon
@@ -181,6 +180,7 @@ export function DiscreteMappingForm(props: {
                     <VisualPropertyValueForm
                       visualProperty={props.visualProperty}
                       currentValue={value}
+                      currentNetworkId={props.currentNetworkId}
                       onValueChange={(newValue) => {
                         setDiscreteMappingValue(
                           props.currentNetworkId,
@@ -242,6 +242,7 @@ export function DiscreteMappingForm(props: {
           <VisualPropertyValueForm
             visualProperty={props.visualProperty}
             currentValue={currentDiscreteMappingformVPValue}
+            currentNetworkId={props.currentNetworkId}
             onValueChange={(newValue) =>
               setCurrentDiscreteMappingformVPValue(newValue)
             }

@@ -4,11 +4,11 @@ import { IdType } from '../models/IdType'
 import { Ui } from '../models/UiModel'
 import { PanelState } from '../models/UiModel/PanelState'
 import { Panel } from '../models/UiModel/Panel'
-
 import { TableUIState } from '../models/UiModel/TableUi'
 import { putUiStateToDb } from './persist/db'
 
 import { TableType } from './TableStore'
+import { VisualStyleOptions, arrowColorMatchesEdgeType, nodeSizeLockedType } from '../models/VisualStyleModel/VisualStyleOptions'
 interface UiState {
   ui: Ui
 }
@@ -28,6 +28,9 @@ interface UiStateAction {
   ) => void
   setActiveTableBrowserIndex: (index: number) => void
   setActiveNetworkBrowserPanelIndex: (index: number) => void
+  setVisualStyleOptions: (networkId: IdType, options: VisualStyleOptions | undefined) => void
+  setNodeSizeLocked: (networkId: IdType, nodeSizeLocked: nodeSizeLockedType) => void
+  setArrowColorMatchesEdge: (networkId: IdType, arrowColorMatchesEdge: arrowColorMatchesEdgeType) => void
 }
 
 type UiStateStore = UiState & UiStateAction
@@ -49,6 +52,7 @@ export const DEFAULT_UI_STATE = {
   networkBrowserPanelUi: {
     activeTabIndex: 0,
   },
+  visualStyleOptions: {}
 }
 
 export const serializeColumnUIKey = (
@@ -170,5 +174,28 @@ export const useUiStateStore = create(
         return state
       })
     },
+    setVisualStyleOptions: (networkId: IdType, visualStyleOptions: VisualStyleOptions | undefined): void => {
+      set((state) => {
+        state.ui.visualStyleOptions[networkId] = visualStyleOptions ?? {
+          visualEditorProperties: {
+            nodeSizeLocked: nodeSizeLockedType.NONE,
+            arrowColorMatchesEdge: arrowColorMatchesEdgeType.NONE
+          }
+        }
+        return state
+      })
+    },
+    setNodeSizeLocked: (networkId: IdType, nodeSizeLocked: nodeSizeLockedType): void => {
+      set((state) => {
+        state.ui.visualStyleOptions[networkId].visualEditorProperties.nodeSizeLocked = nodeSizeLocked
+        return state
+      })
+    },
+    setArrowColorMatchesEdge: (networkId: IdType, arrowColorMatchesEdge: arrowColorMatchesEdgeType): void => {
+      set((state) => {
+        state.ui.visualStyleOptions[networkId].visualEditorProperties.arrowColorMatchesEdge = arrowColorMatchesEdge
+        return state
+      })
+    }
   })),
 )

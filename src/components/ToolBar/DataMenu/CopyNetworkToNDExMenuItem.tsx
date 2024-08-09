@@ -21,6 +21,7 @@ import { KeycloakContext } from '../../..'
 import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
 import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { NetworkView } from '../../../models/ViewModel'
+import { useUiStateStore } from '../../../store/UiStateStore'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
@@ -51,6 +52,9 @@ export const CopyNetworkToNDExMenuItem = (
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
   )
+  const visualStyleOptions = useUiStateStore(
+    (state) => state.ui.visualStyleOptions[currentNetworkId]
+  )
   const network = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   ) as Network
@@ -80,6 +84,7 @@ export const CopyNetworkToNDExMenuItem = (
       summary,
       table.nodeTable,
       table.edgeTable,
+      visualStyleOptions,
       viewModel,
       summary.isNdex ? `Copy of ${summary.name}` : summary.name,
     )
@@ -89,18 +94,16 @@ export const CopyNetworkToNDExMenuItem = (
       setCurrentNetworkId(uuid as IdType)
 
       addMessage({
-        message: `Saved a copy of the current network to NDEx with new uuid ${
-          uuid as string
-        }`,
+        message: `Saved a copy of the current network to NDEx with new uuid ${uuid as string
+          }`,
         duration: 3000,
       })
     } catch (e) {
       console.log(e)
 
       addMessage({
-        message: `Error: Could not save a copy of the current network to NDEx. ${
-          e.message as string
-        }`,
+        message: `Error: Could not save a copy of the current network to NDEx. ${e.message as string
+          }`,
         duration: 3000,
       })
     }

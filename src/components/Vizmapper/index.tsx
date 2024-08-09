@@ -1,8 +1,11 @@
 import * as React from 'react'
-import { Box, Typography, Tabs, Tab, Divider, Tooltip } from '@mui/material'
-
+import { Box, Typography, Tabs, Tab, Divider, Tooltip, IconButton } from '@mui/material'
+import InfoIcon from '@mui/icons-material/Info';
 import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
+  EdgeVisualPropertyNames,
+  NodeVisualPropertyName,
+  NodeVisualPropertyNames,
   VisualProperty,
   VisualPropertyValueType,
   VisualStyle,
@@ -15,55 +18,104 @@ import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
+import { useUiStateStore } from '../../store/UiStateStore'
+import { arrowColorMatchesEdgeType, nodeSizeLockedType } from '../../models/VisualStyleModel/VisualStyleOptions'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
   const { visualProperty, currentNetworkId } = props
-
+  const vpName = visualProperty.name
+  const nodeSizeLocked = useUiStateStore(state => state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties.nodeSizeLocked)
+  const arrowColorMatchesEdge = useUiStateStore(state => state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties.arrowColorMatchesEdge)
+  const LockControlMap: Record<string, string | string[]> = {
+    [nodeSizeLockedType.HEIGHTLOCKED]: NodeVisualPropertyNames.nodeHeight,
+    [nodeSizeLockedType.WIDTHLOCKED]: NodeVisualPropertyNames.nodeWidth,
+    [arrowColorMatchesEdgeType.LINECOLOR]: [EdgeVisualPropertyNames.edgeSourceArrowColor, EdgeVisualPropertyNames.edgeTargetArrowColor],
+    [arrowColorMatchesEdgeType.SRCARRCOLOR]: [EdgeVisualPropertyNames.edgeTargetArrowColor, EdgeVisualPropertyNames.edgeLineColor],
+    [arrowColorMatchesEdgeType.TGTARRCOLOR]: [EdgeVisualPropertyNames.edgeSourceArrowColor, EdgeVisualPropertyNames.edgeLineColor],
+    [arrowColorMatchesEdgeType.NONE]: [],
+  }
+  const tooltipTextMap: Record<string, string> = {
+    [nodeSizeLockedType.HEIGHTLOCKED]: 'Height',
+    [nodeSizeLockedType.WIDTHLOCKED]: 'Width',
+    [arrowColorMatchesEdgeType.LINECOLOR]: 'Line Color',
+    [arrowColorMatchesEdgeType.SRCARRCOLOR]: 'Source Arrow Color',
+    [arrowColorMatchesEdgeType.TGTARRCOLOR]: 'Target Arrow Color'
+  }
+  const disabled = LockControlMap[nodeSizeLocked] === vpName || LockControlMap[arrowColorMatchesEdge].includes(vpName)
   return (
     <Box
       sx={{
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         p: 0.25,
       }}
     >
-      <DefaultValueForm
-        sx={{ mr: 1 }}
-        visualProperty={visualProperty}
-        currentNetworkId={currentNetworkId}
-      />
-      {visualProperty.group === VisualPropertyGroup.Network ? (
-        <>
-          <Tooltip title={'Mapping not available for network properties'}>
-            <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />
-          </Tooltip>
-          <Tooltip title={'Bypasses not available for network properties'}>
-            <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />
-          </Tooltip>
-        </>
-      ) : (
-        <>
-          <MappingForm
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}
+      >
+        {disabled ?
+          <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />
+          : <DefaultValueForm
             sx={{ mr: 1 }}
-            currentNetworkId={currentNetworkId}
             visualProperty={visualProperty}
-          />
-          <BypassForm
-            sx={{ mr: 1 }}
             currentNetworkId={currentNetworkId}
-            visualProperty={visualProperty}
           />
-        </>
-      )}
+        }
+        {(visualProperty.group === VisualPropertyGroup.Network || disabled) ? (
+          <>
+            <Tooltip title={disabled ? '' : 'Mapping not available for network properties'}>
+              <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />
+            </Tooltip>
+            <Tooltip title={disabled ? '' : 'Bypasses not available for network properties'}>
+              <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />
+            </Tooltip>
+          </>
+        ) : (
+          <>
+            <MappingForm
+              sx={{ mr: 1 }}
+              currentNetworkId={currentNetworkId}
+              visualProperty={visualProperty}
+            />
+            <BypassForm
+              sx={{ mr: 1 }}
+              currentNetworkId={currentNetworkId}
+              visualProperty={visualProperty}
+            />
+          </>
+        )}
 
-      <Typography variant="body2" sx={{ ml: 1 }}>
-        {visualProperty.displayName}
-      </Typography>
+        <Typography variant="body2" sx={{ ml: 1, color: disabled ? 'gray' : 'black' }}>
+          {visualProperty.displayName}
+        </Typography>
+      </Box>
+      {disabled &&
+        <Tooltip
+          placement='top'
+          title={disabled ? (LockControlMap[nodeSizeLocked] === vpName ?
+            `To enable this visual property, uncheck the \'Lock node width and height\' in the \'${tooltipTextMap[nodeSizeLocked]}\'.` :
+            `To enable this visual property, uncheck the \'Edge color to arrows\' in the \'${tooltipTextMap[arrowColorMatchesEdge]}\'.`) : ''}
+          arrow={true}
+          sx={{
+            mr: 1,
+          }}
+        >
+          <IconButton sx={{ padding: 0.5 }}>
+            <InfoIcon />
+          </IconButton>
+        </Tooltip>
+      }
     </Box>
+
   )
 }
 

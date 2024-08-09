@@ -21,6 +21,7 @@ import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
 import { useTableStore } from '../../../../store/TableStore'
 
 import {
+  EdgeVisualPropertyNames,
   NodeVisualPropertyNames,
   VisualProperty,
   VisualPropertyValueType,
@@ -46,8 +47,7 @@ import {
 import { DiscreteMappingForm } from './DiscreteMappingForm'
 import { ContinuousMappingForm } from './ContinuousMappingForm'
 import { VisualPropertyGroup } from '../../../../models/VisualStyleModel/VisualPropertyGroup'
-import { useLockNodeSizeStore } from '../../../../store/LockNodeSizeStore'
-import { LockSizeCheckbox } from '../../VisualPropertyRender/Checkbox'
+import { LockColorCheckbox, LockSizeCheckbox } from '../../VisualPropertyRender/Checkbox'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   [MappingFunctionType.Passthrough]: <PassthroughMappingFunctionIcon />,
@@ -380,6 +380,8 @@ export function MappingForm(props: {
   const [formAnchorEl, setFormAnchorEl] = useState<Element | null>(null)
   const vpName = props.visualProperty.name
   const isSize = vpName === NodeVisualPropertyNames.nodeHeight || vpName === NodeVisualPropertyNames.nodeWidth
+  const isEdgeLineColor = vpName === EdgeVisualPropertyNames.edgeLineColor || vpName === EdgeVisualPropertyNames.edgeTargetArrowColor || vpName === EdgeVisualPropertyNames.edgeSourceArrowColor;
+
   const isHeight = vpName === NodeVisualPropertyNames.nodeHeight
 
   const showForm = (value: Element | null): void => {
@@ -408,7 +410,9 @@ export function MappingForm(props: {
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <MappingFormContent {...props} />
-        {isSize && <LockSizeCheckbox isHeight={isHeight} syncValue={() => { }} />}
+        <Divider />
+        {isSize && <LockSizeCheckbox isHeight={isHeight} currentNetworkId={props.currentNetworkId} />}
+        {isEdgeLineColor && <LockColorCheckbox vpName={vpName} currentNetworkId={props.currentNetworkId} />}
       </Popover>
     </Box>
   )

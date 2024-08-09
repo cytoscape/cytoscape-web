@@ -46,6 +46,8 @@ import {
 import { PrimeReactProvider } from 'primereact/api'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/network-utils'
+import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { useUiStateStore } from '../../store/UiStateStore'
 
 interface FileUploadProps {
   show: boolean
@@ -59,6 +61,7 @@ export function FileUpload(props: FileUploadProps) {
     edgeTable: Table
     visualStyle: VisualStyle
     networkView: NetworkView
+    visualStyleOptions: VisualStyleOptions
   }
 
   const setCurrentNetworkId = useWorkspaceStore(
@@ -68,6 +71,8 @@ export function FileUpload(props: FileUploadProps) {
   const addNewNetwork = useNetworkStore((state) => state.add)
 
   const setVisualStyle = useVisualStyleStore((state) => state.add)
+
+  const setVisualStyleOptions = useUiStateStore((state) => state.setVisualStyleOptions)
 
   const setViewModel = useViewModelStore((state) => state.add)
 
@@ -90,15 +95,16 @@ export function FileUpload(props: FileUploadProps) {
       cxData,
     )
 
-    const visualStyle: VisualStyle =
-      VisualStyleFn.createVisualStyleFromCx(cxData)
+    const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
 
     const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
       LocalNetworkId,
       cxData,
     )
 
-    return { network, nodeTable, edgeTable, visualStyle, networkView }
+    const visualStyleOptions: VisualStyleOptions = VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
+
+    return { network, nodeTable, edgeTable, visualStyle, networkView, visualStyleOptions }
   }
 
   const handleCX2File = async (jsonStr: string) => {
@@ -172,11 +178,12 @@ export function FileUpload(props: FileUploadProps) {
         modificationTime: new Date(Date.now()),
       })
       const res = await createDataFromLocalCx2(localUuid, json)
-      const { network, nodeTable, edgeTable, visualStyle, networkView } = res
+      const { network, nodeTable, edgeTable, visualStyle, networkView, visualStyleOptions } = res
 
       // TODO the db syncing logic in various stores assumes the updated network is the current network
       // therefore, as a temporary fix, the first operation that should be done is to set the
       // current network to be the new network id
+      setVisualStyleOptions(localUuid, visualStyleOptions)
       addNetworkToWorkspace(localUuid)
       setCurrentNetworkId(localUuid)
       addNewNetwork(network)
@@ -260,7 +267,7 @@ export function FileUpload(props: FileUploadProps) {
                 onReject={(files: any) => {
                   onFileError()
                 }}
-                // maxSize={}
+              // maxSize={}
               >
                 <Group
                   justify="center"
