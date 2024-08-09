@@ -13,7 +13,7 @@ export function NodeLabelPositionPicker(props: {
   const { onValueChange, currentValue } = props
 
   return (
-    <Box>
+    <Box sx={{ p: 2 }}>
       <Box>Vertical Align</Box>
       <Box
         sx={{

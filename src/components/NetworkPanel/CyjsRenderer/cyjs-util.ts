@@ -13,6 +13,8 @@ import VisualStyleFn, {
 import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
 import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
 import { computeNodeLabelPosition } from './nodeLabelPositionMap'
+import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
+import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
@@ -51,16 +53,16 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         cyStyle.push(selectedNodeMapping as CyjsDirectMapper)
       } else if (vp.name === 'nodeLabelPosition') {
         const valignDirectMapping: CyjsDirectMapper = {
-          selector: `node[nodeLabelVerticalAlign]`,
+          selector: `node[${SpecialPropertyName.NodeLabelVerticalAlign}]`,
           style: {
-            'text-valign': 'data(nodeLabelVerticalAlign)',
+            [CyjsVisualPropertyName.LabelVerticalAlign]: `data(${SpecialPropertyName.NodeLabelVerticalAlign})`,
           },
         }
 
         const halignDirectMapping: CyjsDirectMapper = {
-          selector: `node[nodeLabelHorizontalAlign]`,
+          selector: `node[${SpecialPropertyName.NodeLabelHorizontalAlign}]`,
           style: {
-            'text-halign': 'data(nodeLabelHorizontalAlign)',
+            [CyjsVisualPropertyName.LabelHorizontalAlign]: `data(${SpecialPropertyName.NodeLabelHorizontalAlign})`,
           },
         }
 
@@ -137,12 +139,15 @@ const updateCyObjects = <T extends View>(
       const { values } = view
       values.forEach(
         (value: VisualPropertyValueType, key: VisualPropertyName) => {
-          if (key === 'nodeLabelPosition') {
+          if (key === VisualPropertyName.NodeLabelPosition) {
             const labelPosition = value as NodeLabelPositionType
             const { horizontalAlign, verticalAlign } =
               computeNodeLabelPosition(labelPosition)
-            obj.data('nodeLabelHorizontalAlign', horizontalAlign)
-            obj.data('nodeLabelVerticalAlign', verticalAlign)
+            obj.data(
+              SpecialPropertyName.NodeLabelHorizontalAlign,
+              horizontalAlign,
+            )
+            obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
           } else {
             obj.data(key, value)
           }
