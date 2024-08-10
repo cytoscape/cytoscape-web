@@ -51,7 +51,7 @@ function BypassFormContent(props: {
     visualProperty.defaultValue,
   )
   const vpName = props.visualProperty.name
-  const isSize = vpName === (NodeVisualPropertyName.NodeHeight || NodeVisualPropertyName.NodeWidth)
+  const isSize = vpName === NodeVisualPropertyName.NodeHeight || vpName === NodeVisualPropertyName.NodeWidth
   const isHeight = vpName === NodeVisualPropertyName.NodeHeight
   const isEdgeLineColor = vpName === EdgeVisualPropertyName.EdgeLineColor || vpName === EdgeVisualPropertyName.EdgeTargetArrowColor || vpName === EdgeVisualPropertyName.EdgeSourceArrowColor;
   const getViewModel = useViewModelStore((state) => state.getViewModel)

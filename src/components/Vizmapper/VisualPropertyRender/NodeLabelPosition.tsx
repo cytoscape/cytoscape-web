@@ -9,6 +9,7 @@ import { DEFAULT_NODE_LABEL_POSITION } from '../../../models/VisualStyleModel/im
 export function NodeLabelPositionPicker(props: {
   currentValue: NodeLabelPositionType | null
   onValueChange: (labelPosition: NodeLabelPositionType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
 

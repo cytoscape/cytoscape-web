@@ -5,7 +5,7 @@ import {
   VisualProperty,
   VisualPropertyValueType,
   VisualPropertyName,
-  EdgeVisualPropertyNames,
+  EdgeVisualPropertyName,
 } from '../../../models/VisualStyleModel'
 
 import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
@@ -501,7 +501,7 @@ export function VisualPropertyValueForm(
   const [activeTab, setActiveTab] = React.useState(0)
   const isColor = props.visualProperty.displayName.includes("Color");
   const vpName = props.visualProperty.name;
-  const isEdgeLineColor = vpName === EdgeVisualPropertyNames.edgeLineColor || vpName === EdgeVisualPropertyNames.edgeTargetArrowColor || vpName === EdgeVisualPropertyNames.edgeSourceArrowColor;
+  const isEdgeLineColor = vpName === EdgeVisualPropertyName.EdgeLineColor || vpName === EdgeVisualPropertyName.EdgeTargetArrowColor || vpName === EdgeVisualPropertyName.EdgeSourceArrowColor;
   const showValuePicker = (value: Element | null): void => {
     setValuePicker(value)
   }
