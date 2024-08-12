@@ -13,10 +13,13 @@ import {
   VisualPropertyValueType,
   VisualStyle,
   Mapper,
+  NodeLabelPositionType,
 } from '..'
 
 import * as VisualStyleFnImpl from './VisualStyleFnImpl'
 import * as MapperFactory from './MapperFactory'
+import { computeNodeLabelPosition } from '../../../components/NetworkPanel/CyjsRenderer/nodeLabelPositionMap'
+import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/DirectMappingSelector'
 
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
@@ -97,8 +100,12 @@ export const updateNetworkView = (
 
   const nodeViewCount = Object.keys(nodeViews).length
   const nodeCount = network.nodes.length
-  if( nodeViewCount !== nodeCount ) {
-    console.error('## nodeViews.length !== network.nodes.length', nodeCount, nodeViewCount)
+  if (nodeViewCount !== nodeCount) {
+    console.error(
+      '## nodeViews.length !== network.nodes.length',
+      nodeCount,
+      nodeViewCount,
+    )
   }
 
   const nextView: NetworkView = {
@@ -135,7 +142,11 @@ const nodeViewBuilder = (
   const columns: Column[] = nodeTable.columns
   let idx: number = nodes.length
   if (idx !== nodes.length) {
-    console.error('# of nodes does not match to the # of node views:', idx, nodeViews)
+    console.error(
+      '# of nodes does not match to the # of node views:',
+      idx,
+      nodeViews,
+    )
   }
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   while (idx--) {
@@ -143,7 +154,7 @@ const nodeViewBuilder = (
     const nodeId = node.id
     const nodeView: NodeView | undefined =
       nodeViews !== undefined ? nodeViews[nodeId] : undefined
-    
+
     if (nodeView === undefined) {
       console.error('@@nodeView is undefined. This might break the view.')
     }
@@ -223,12 +234,54 @@ const computeView = (
         const computedValue: VisualPropertyValueType = mapper(
           attributeValueAssigned,
         )
-        pairs.set(name, computedValue)
+        if (vp.name === VisualPropertyName.NodeLabelPosition) {
+          const computedPosition = computeNodeLabelPosition(
+            computedValue as NodeLabelPositionType,
+          )
+          pairs.set(
+            SpecialPropertyName.NodeLabelHorizontalAlign as VisualPropertyName,
+            computedPosition.horizontalAlign,
+          )
+          pairs.set(
+            SpecialPropertyName.NodeLabelVerticalAlign as VisualPropertyName,
+            computedPosition.verticalAlign,
+          )
+        } else {
+          pairs.set(name, computedValue)
+        }
+      } else {
+        if (vp.name === VisualPropertyName.NodeLabelPosition) {
+          const computedPosition = computeNodeLabelPosition(
+            defaultValue as NodeLabelPositionType,
+          )
+          pairs.set(
+            SpecialPropertyName.NodeLabelHorizontalAlign as VisualPropertyName,
+            computedPosition.horizontalAlign,
+          )
+          pairs.set(
+            SpecialPropertyName.NodeLabelVerticalAlign as VisualPropertyName,
+            computedPosition.verticalAlign,
+          )
+        } else {
+          pairs.set(name, defaultValue)
+        }
+      }
+    } else {
+      if (vp.name === VisualPropertyName.NodeLabelPosition) {
+        const computedPosition = computeNodeLabelPosition(
+          defaultValue as NodeLabelPositionType,
+        )
+        pairs.set(
+          SpecialPropertyName.NodeLabelHorizontalAlign as VisualPropertyName,
+          computedPosition.horizontalAlign,
+        )
+        pairs.set(
+          SpecialPropertyName.NodeLabelVerticalAlign as VisualPropertyName,
+          computedPosition.verticalAlign,
+        )
       } else {
         pairs.set(name, defaultValue)
       }
-    } else {
-      pairs.set(name, defaultValue)
     }
   })
 
