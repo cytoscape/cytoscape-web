@@ -140,7 +140,15 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
             )
             nodeBypassMap.set(vpName, entry)
           } else {
-            nodeBypassMap.set(vpName, new Map())
+            nodeBypassMap.set(
+              vpName,
+              new Map().set(
+                String(id),
+                cxVPConverter.valueConverter(
+                  v[cxVPName] as CXVisualPropertyValue,
+                ),
+              ),
+            )
           }
         }
       })
