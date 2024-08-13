@@ -28,9 +28,6 @@ interface UiStateAction {
   ) => void
   setActiveTableBrowserIndex: (index: number) => void
   setActiveNetworkBrowserPanelIndex: (index: number) => void
-  setVisualStyleOptions: (networkId: IdType, options: VisualStyleOptions | undefined) => void
-  setNodeSizeLocked: (networkId: IdType, nodeSizeLocked: boolean) => void
-  setArrowColorMatchesEdge: (networkId: IdType, arrowColorMatchesEdge: boolean) => void
 }
 
 type UiStateStore = UiState & UiStateAction
@@ -84,6 +81,22 @@ export const deserializeColumnUIKey = (
   const str3 = parts[5].substr(0, str3Len)
 
   return [str1, str2, str3]
+}
+
+export const setVisualStyleOptions = (uiState: Ui, networkId: IdType, visualStyleOptions: VisualStyleOptions | undefined): Ui => {
+  const newUi = {
+    ...uiState,
+    visualStyleOptions: {
+      ...uiState.visualStyleOptions,
+      [networkId]: visualStyleOptions ?? {
+        visualEditorProperties: {
+          nodeSizeLocked: false,
+          arrowColorMatchesEdge: false
+        }
+      }
+    }
+  }
+  return newUi
 }
 
 export const useUiStateStore = create(
@@ -174,28 +187,5 @@ export const useUiStateStore = create(
         return state
       })
     },
-    setVisualStyleOptions: (networkId: IdType, visualStyleOptions: VisualStyleOptions | undefined): void => {
-      set((state) => {
-        state.ui.visualStyleOptions[networkId] = visualStyleOptions ?? {
-          visualEditorProperties: {
-            nodeSizeLocked: false,
-            arrowColorMatchesEdge: false
-          }
-        }
-        return state
-      })
-    },
-    setNodeSizeLocked: (networkId: IdType, nodeSizeLocked: boolean): void => {
-      set((state) => {
-        state.ui.visualStyleOptions[networkId].visualEditorProperties.nodeSizeLocked = nodeSizeLocked
-        return state
-      })
-    },
-    setArrowColorMatchesEdge: (networkId: IdType, arrowColorMatchesEdge: boolean): void => {
-      set((state) => {
-        state.ui.visualStyleOptions[networkId].visualEditorProperties.arrowColorMatchesEdge = arrowColorMatchesEdge
-        return state
-      })
-    }
   })),
 )

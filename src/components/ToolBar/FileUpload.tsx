@@ -47,7 +47,7 @@ import { PrimeReactProvider } from 'primereact/api'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/network-utils'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
-import { useUiStateStore } from '../../store/UiStateStore'
+import { useUiStateStore, setVisualStyleOptions } from '../../store/UiStateStore'
 
 interface FileUploadProps {
   show: boolean
@@ -72,7 +72,8 @@ export function FileUpload(props: FileUploadProps) {
 
   const setVisualStyle = useVisualStyleStore((state) => state.add)
 
-  const setVisualStyleOptions = useUiStateStore((state) => state.setVisualStyleOptions)
+  const ui = useUiStateStore((state) => state.ui)
+  const setUi = useUiStateStore((state) => state.setUi)
 
   const setViewModel = useViewModelStore((state) => state.add)
 
@@ -183,7 +184,8 @@ export function FileUpload(props: FileUploadProps) {
       // TODO the db syncing logic in various stores assumes the updated network is the current network
       // therefore, as a temporary fix, the first operation that should be done is to set the
       // current network to be the new network id
-      setVisualStyleOptions(localUuid, visualStyleOptions)
+      const newUi = setVisualStyleOptions(ui, localUuid, visualStyleOptions)
+      setUi(newUi)
       addNetworkToWorkspace(localUuid)
       setCurrentNetworkId(localUuid)
       addNewNetwork(network)

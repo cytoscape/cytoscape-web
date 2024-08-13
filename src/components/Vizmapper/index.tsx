@@ -34,7 +34,11 @@ function VisualPropertyView(props: {
   return (
     <Tooltip
       placement='top'
-      title=''>
+      title={disabled ? (widthDisabled ?
+        'To enable this visual property, uncheck the \'Lock node width and height\' in the \'Height\' property.' :
+        'To enable this visual property, uncheck the \'Edge color to arrows\' in the \'Line Color\' property.') : ''
+      }
+    >
       <Box
         sx={{
           display: 'flex',
@@ -93,7 +97,7 @@ function VisualPropertyView(props: {
             placement='top'
             title={disabled ? (widthDisabled ?
               'To enable this visual property, uncheck the \'Lock node width and height\' in the \'Height\' property.' :
-              'To enable this visual property, uncheck the \'Edge color to arrows\' in the \' Line Color \' property.') : ''}
+              'To enable this visual property, uncheck the \'Edge color to arrows\' in the \'Line Color\' property.') : ''}
             arrow={true}
             sx={{
               mr: 1,
