@@ -267,7 +267,8 @@ const WorkSpaceEditor = (): JSX.Element => {
     const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
     const { network, nodeTable, edgeTable, visualStyle, networkViews, visualStyleOptions } = res
 
-    setVisualStyleOptions(ui, networkId, visualStyleOptions)
+    const newUi = setVisualStyleOptions(ui, networkId, visualStyleOptions)
+    setUi(newUi)
     addNewNetwork(network)
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)

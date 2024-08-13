@@ -157,10 +157,10 @@ const updateCyObjects = <T extends View>(
           }
         },
       )
-      if (visualEditorProperties.nodeSizeLocked) {
+      if (visualEditorProperties?.nodeSizeLocked) {
         obj.data(NodeVisualPropertyName.NodeWidth, obj.data(NodeVisualPropertyName.NodeHeight))
       }
-      if (visualEditorProperties.arrowColorMatchesEdge) {
+      if (visualEditorProperties?.arrowColorMatchesEdge) {
         const color = obj.data(EdgeVisualPropertyName.EdgeLineColor)
         obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor, color)
         obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor, color)

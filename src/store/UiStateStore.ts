@@ -83,7 +83,7 @@ export const deserializeColumnUIKey = (
   return [str1, str2, str3]
 }
 
-export const setVisualStyleOptions = (uiState: Ui, networkId: IdType, visualStyleOptions: VisualStyleOptions | undefined): Ui => {
+export const setVisualStyleOptions = (uiState: Ui, networkId: IdType, visualStyleOptions?: VisualStyleOptions): Ui => {
   const newUi = {
     ...uiState,
     visualStyleOptions: {

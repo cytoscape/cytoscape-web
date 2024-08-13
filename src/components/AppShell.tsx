@@ -18,7 +18,7 @@ import {
 import { ToolBar } from './ToolBar'
 import { ParsedUrlParams, parsePathName } from '../utils/paths-util'
 import { WarningDialog } from './ExternalLoading/WarningDialog'
-import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
+import { DEFAULT_UI_STATE, setVisualStyleOptions, useUiStateStore } from '../store/UiStateStore'
 import { AppConfigContext } from '../AppConfigContext'
 import {
   useNdexNetworkSummary,
@@ -343,6 +343,9 @@ const AppShell = (): ReactElement => {
           // TODO the db syncing logic in various stores assumes the updated network is the current network
           // therefore, as a temporary fix, the first operation that should be done is to set the
           // current network to be the new network id
+          const ui = await getUiStateFromDb().then((uiState) => uiState ?? DEFAULT_UI_STATE)
+          const newUi = setVisualStyleOptions(ui, newNetworkId);
+          setUi(newUi);
           setCurrentNetworkId(newNetworkId)
           addNewNetwork(network)
           setVisualStyle(newNetworkId, visualStyle)
