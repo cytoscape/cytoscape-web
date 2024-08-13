@@ -18,7 +18,7 @@ import { CxValue } from './Cx2/CxValue'
 import { Attribute } from './Cx2/CoreAspects/Attribute'
 import { NodeBypasses } from './Cx2/CoreAspects/NodeBypasses'
 import { EdgeBypasses } from './Cx2/CoreAspects/EdgeBypasses'
-import { VisualEditorProperties, VisualStyleOptions, arrowColorMatchesEdgeType, nodeSizeLockedType } from '../VisualStyleModel/VisualStyleOptions'
+import { VisualEditorProperties, VisualStyleOptions } from '../VisualStyleModel/VisualStyleOptions'
 
 const isAspect = (aspect: Aspect | CxDescriptor): boolean => {
   const keys = Object.keys(aspect)
@@ -182,16 +182,16 @@ const getVisualEditorProperties = (cx2: Cx2): VisualStyleOptions => {
   if (filtered.length === 0) {
     return {
       visualEditorProperties: {
-        nodeSizeLocked: nodeSizeLockedType.NONE,
-        arrowColorMatchesEdge: arrowColorMatchesEdgeType.NONE,
+        nodeSizeLocked: false,
+        arrowColorMatchesEdge: false,
       },
     }
   }
   const properties = Object.values(Object.values(filtered[0])[0][0])[0] as VisualEditorProperties
   return {
     visualEditorProperties: {
-      nodeSizeLocked: properties.nodeSizeLocked ? nodeSizeLockedType.WIDTHLOCKED : nodeSizeLockedType.NONE,
-      arrowColorMatchesEdge: properties.arrowColorMatchesEdge ? arrowColorMatchesEdgeType.LINECOLOR : arrowColorMatchesEdgeType.NONE,
+      nodeSizeLocked: properties.nodeSizeLocked ?? false,
+      arrowColorMatchesEdge: properties.arrowColorMatchesEdge ?? false,
     },
   }
 }

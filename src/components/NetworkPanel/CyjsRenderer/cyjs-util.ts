@@ -17,7 +17,7 @@ import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualP
 import { computeNodeLabelPosition } from './nodeLabelPositionMap'
 import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
 import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
-import { VisualEditorProperties, arrowColorMatchesEdgeType, nodeSizeLockedType } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
@@ -126,14 +126,14 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
 
 export const applyViewModel = (cy: Core, networkView: NetworkView, visualEditorProperties: VisualEditorProperties): void => {
   const { nodeViews, edgeViews } = networkView
-  updateCyObjects<NodeView>(nodeViews, cy.nodes(), visualEditorProperties.nodeSizeLocked)
-  updateCyObjects<EdgeView>(edgeViews, cy.edges(), visualEditorProperties.arrowColorMatchesEdge)
+  updateCyObjects<NodeView>(nodeViews, cy.nodes(), visualEditorProperties)
+  updateCyObjects<EdgeView>(edgeViews, cy.edges(), visualEditorProperties)
 }
 
 const updateCyObjects = <T extends View>(
   views: Record<IdType, T>,
   cyObjects: Collection<SingularElementArgument>,
-  lockState?: nodeSizeLockedType | arrowColorMatchesEdgeType
+  visualEditorProperties: VisualEditorProperties
 ): void => {
   cyObjects.forEach((obj: SingularElementArgument) => {
     const cyId = obj.data('id')
@@ -157,29 +157,13 @@ const updateCyObjects = <T extends View>(
           }
         },
       )
-      let color
-      switch (lockState) {
-        case nodeSizeLockedType.WIDTHLOCKED:
-          obj.data(NodeVisualPropertyName.NodeWidth, obj.data(NodeVisualPropertyName.NodeHeight))
-          break;
-        case nodeSizeLockedType.HEIGHTLOCKED:
-          obj.data(NodeVisualPropertyName.NodeHeight, obj.data(NodeVisualPropertyName.NodeWidth))
-          break;
-        case arrowColorMatchesEdgeType.SRCARRCOLOR:
-          color = obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor)
-          obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor, color);
-          obj.data(EdgeVisualPropertyName.EdgeLineColor, color);
-          break;
-        case arrowColorMatchesEdgeType.TGTARRCOLOR:
-          color = obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor)
-          obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor, color);
-          obj.data(EdgeVisualPropertyName.EdgeLineColor, color);
-          break;
-        case arrowColorMatchesEdgeType.LINECOLOR:
-          color = obj.data(EdgeVisualPropertyName.EdgeLineColor)
-          obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor, color);
-          obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor, color);
-          break;
+      if (visualEditorProperties.nodeSizeLocked) {
+        obj.data(NodeVisualPropertyName.NodeWidth, obj.data(NodeVisualPropertyName.NodeHeight))
+      }
+      if (visualEditorProperties.arrowColorMatchesEdge) {
+        const color = obj.data(EdgeVisualPropertyName.EdgeLineColor)
+        obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor, color)
+        obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor, color)
       }
     }
   })

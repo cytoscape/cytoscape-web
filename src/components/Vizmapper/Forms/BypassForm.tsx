@@ -311,8 +311,8 @@ function BypassFormContent(props: {
         <Divider />
         {elementsToRender.length > 0 ? nonEmptyBypassForm : emptyBypassForm}
         <Divider />
-        {isSize && <LockSizeCheckbox isHeight={isHeight} currentNetworkId={props.currentNetworkId} />}
-        {isEdgeLineColor && <LockColorCheckbox vpName={vpName} currentNetworkId={currentNetworkId} />}
+        {isSize && <LockSizeCheckbox currentNetworkId={props.currentNetworkId} />}
+        {isEdgeLineColor && <LockColorCheckbox currentNetworkId={currentNetworkId} />}
       </Box>
     </Box>
   )

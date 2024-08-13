@@ -16,7 +16,6 @@ import { createNetworkAttributesFromCx } from '../models/TableModel/impl/Network
 import { Aspect } from '../models/CxModel/Cx2/Aspect'
 import { CoreAspectTag } from '../models/CxModel/Cx2/CoreAspectTag'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
-import { arrowColorMatchesEdgeType, nodeSizeLockedType } from '../models/VisualStyleModel/VisualStyleOptions'
 
 /**
  * An utility interface to hold all the data needed to build a network view

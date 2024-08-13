@@ -45,7 +45,7 @@ export function NumberInput(props: {
       >
         <Typography variant="h6">{value}</Typography>
       </TextField>
-      {isSize && showCheckbox && <LockSizeCheckbox isHeight={isHeight} currentNetworkId={currentNetworkId} />}
+      {isSize && showCheckbox && <LockSizeCheckbox currentNetworkId={currentNetworkId} />}
       <Box
         sx={{
           display: 'flex',

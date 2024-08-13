@@ -705,7 +705,6 @@ export function VisualPropertyValueForm(
               <>
                 <Divider />
                 <LockColorCheckbox
-                  vpName={props.visualProperty.name}
                   currentNetworkId={props.currentNetworkId}
                 />
               </>

@@ -38,7 +38,7 @@ import {
 } from '../../models/VisualStyleModel/VisualMappingFunction'
 
 import { deserializeValue } from '../../models/TableModel/impl/ValueTypeImpl'
-import { VisualStyleOptions, arrowColorMatchesEdgeType, nodeSizeLockedType } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 
 export const exportNetworkToCx2 = (
   network: Network,
@@ -212,8 +212,8 @@ export const exportNetworkToCx2 = (
   const visualEditorProperties = [
     {
       properties: {
-        nodeSizeLocked: nodeSizeLocked === nodeSizeLockedType.WIDTHLOCKED || nodeSizeLocked === nodeSizeLockedType.HEIGHTLOCKED,
-        arrowColorMatchesEdge: arrowColorMatchesEdge === arrowColorMatchesEdgeType.SRCARRCOLOR || arrowColorMatchesEdge === arrowColorMatchesEdgeType.TGTARRCOLOR || arrowColorMatchesEdge === arrowColorMatchesEdgeType.LINECOLOR,
+        nodeSizeLocked: nodeSizeLocked ?? false,
+        arrowColorMatchesEdge: arrowColorMatchesEdge ?? false,
       },
     },
   ]

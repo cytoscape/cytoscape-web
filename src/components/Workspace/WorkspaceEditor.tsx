@@ -63,7 +63,6 @@ import {
 } from '../../models/FilterModel'
 import { GraphObjectType } from '../../models/NetworkModel'
 import { useFilterStore } from '../../store/FilterStore'
-import { VisualEditorProperties, VisualStyleOptions, arrowColorMatchesEdgeType, nodeSizeLockedType } from '../../models/VisualStyleModel/VisualStyleOptions'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))

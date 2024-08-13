@@ -411,8 +411,8 @@ export function MappingForm(props: {
       >
         <MappingFormContent {...props} />
         <Divider />
-        {isSize && <LockSizeCheckbox isHeight={isHeight} currentNetworkId={props.currentNetworkId} />}
-        {isEdgeLineColor && <LockColorCheckbox vpName={vpName} currentNetworkId={props.currentNetworkId} />}
+        {isSize && <LockSizeCheckbox currentNetworkId={props.currentNetworkId} />}
+        {isEdgeLineColor && <LockColorCheckbox currentNetworkId={props.currentNetworkId} />}
       </Popover>
     </Box>
   )
