@@ -1,5 +1,12 @@
 import NetworkFn, { NetworkAttributes } from '../models/NetworkModel'
-import { IdType, Network, NetworkView, Table, VisualStyle } from '../models'
+import {
+  getBaseSummary,
+  IdType,
+  Network,
+  NetworkView,
+  Table,
+  VisualStyle,
+} from '../models'
 import { v4 as uuidv4 } from 'uuid'
 import TableFn from '../models/TableModel'
 import ViewModelFn from '../models/ViewModel'
@@ -10,16 +17,29 @@ import { useTableStore } from '../store/TableStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useCallback } from 'react'
+import { NetworkStore } from '../models/StoreModel/NetworkStoreModel'
+import { TableStore } from '../models/StoreModel/TableStoreModel'
+import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 
+/**
+ * Create an empty network object with generated ID
+ *
+ * @returns Network object
+ *
+ */
 export const createEmptyNetwork = (): Network => {
   const id: IdType = uuidv4()
-  const newNetwork = NetworkFn.createNetworkFromLists(id, [], [])
-
-  console.log('Created::', newNetwork)
-  return newNetwork
+  return NetworkFn.createNetworkFromLists(id, [], [])
 }
 
-export const createView = (network: Network): NetworkWithView => {
+/**
+ * Create a complete network object with view and style for the given network
+ *
+ * @param network
+ *
+ * @returns NetworkWithView object
+ */
+export const createViewForNetwork = (network: Network): NetworkWithView => {
   const networkId: IdType = network.id
 
   // Add base columns (e.g., name)
@@ -32,7 +52,7 @@ export const createView = (network: Network): NetworkWithView => {
     attributes: {},
   }
 
-  return {
+  const withView: NetworkWithView = {
     network,
     nodeTable,
     edgeTable,
@@ -40,28 +60,48 @@ export const createView = (network: Network): NetworkWithView => {
     networkViews: [networkView],
     networkAttributes,
   }
+
+  return withView
+}
+
+interface CreateNetworkWithViewProps {
+  name?: string
+  description?: string
 }
 
 /**
  * Register all of the objects in the given networkWithView object
  *
  */
-export const useCreateNetworkWithView = (): (() => NetworkWithView) => {
-  const addNetwork = useNetworkStore((state) => state.add)
-  const addTable = useTableStore((state) => state.add)
+export const useCreateNetworkWithView = (): (({
+  name,
+  description,
+}: CreateNetworkWithViewProps) => NetworkWithView) => {
+  const addNetwork = useNetworkStore((state: NetworkStore) => state.add)
+  const addTable = useTableStore((state: TableStore) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
   const addVisualStyle = useVisualStyleStore((state) => state.add)
+  const addSummary = useNetworkSummaryStore((state) => state.add)
 
-  const createNetworkWithView = useCallback(() => {
-    const network = createEmptyNetwork()
-    const withView = createView(network)
-    addNetwork(network)
-    addVisualStyle(network.id, withView.visualStyle)
-    addTable(network.id, withView.nodeTable, withView.edgeTable)
-    addViewModel(network.id, withView.networkViews[0])
+  const createNetworkWithView = useCallback(
+    ({ name, description }: CreateNetworkWithViewProps) => {
+      const network: Network = createEmptyNetwork()
+      const withView: NetworkWithView = createViewForNetwork(network)
+      const summary = getBaseSummary({
+        uuid: network.id,
+        name: name || '',
+        description: description || '',
+      })
+      addNetwork(network)
+      addVisualStyle(network.id, withView.visualStyle)
+      addTable(network.id, withView.nodeTable, withView.edgeTable)
+      addViewModel(network.id, withView.networkViews[0])
+      addSummary(network.id, summary)
 
-    return withView
-  }, [addNetwork, addViewModel, addVisualStyle])
+      return withView
+    },
+    [],
+  )
 
   return createNetworkWithView
 }

@@ -8,7 +8,7 @@ import { Panel } from '../models/UiModel/Panel'
 import { TableUIState } from '../models/UiModel/TableUi'
 import { putUiStateToDb } from './persist/db'
 
-import { TableType } from './TableStore'
+import { TableType } from '../models/StoreModel/TableStoreModel'
 interface UiState {
   ui: Ui
 }

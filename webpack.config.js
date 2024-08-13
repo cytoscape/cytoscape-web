@@ -109,7 +109,7 @@ module.exports = {
         './WorkspaceStore': './src/store/WorkspaceStore.ts',
 
         // Tasks
-        // './CreateNetwork': './src/task/CreateNetwork.tsx',
+        './CreateNetwork': './src/task/CreateNetwork.tsx',
       },
       shared: {
         react: { singleton: true, requiredVersion: deps.react },

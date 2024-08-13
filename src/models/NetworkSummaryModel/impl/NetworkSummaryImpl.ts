@@ -1,19 +1,21 @@
+import { NdexNetworkSummary } from '../NdexNetworkSummary'
 import { Visibility } from '../Visibility'
 
 interface BaseSummaryProps {
   uuid: string
-  newNetworkName: string
-  newNetworkDescription: string
+  name: string
+  description: string
 }
 
 export const getBaseSummary = ({
   uuid,
-  newNetworkName,
-  newNetworkDescription,
-}: BaseSummaryProps) => {
-  const baseSummary = {
-    ownerUUID: uuid,
-    name: newNetworkName,
+  name,
+  description,
+}: BaseSummaryProps): NdexNetworkSummary => {
+  const baseSummary: NdexNetworkSummary = {
+    isNdex: false,
+    ownerUUID: '',
+    name,
     isReadOnly: false,
     subnetworkIds: [],
     isValid: false,
@@ -32,7 +34,7 @@ export const getBaseSummary = ({
     visibility: 'PUBLIC' as Visibility,
     nodeCount: 0,
     edgeCount: 0,
-    description: newNetworkDescription,
+    description,
     creationTime: new Date(Date.now()),
     externalId: uuid,
     isDeleted: false,
