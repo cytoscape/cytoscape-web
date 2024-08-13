@@ -1,8 +1,10 @@
-import { NetworkWithView, createDataFromCx } from '../../utils/cx-utils'
+import { createDataFromCx } from '../../utils/cx-utils'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { Cx2 } from './Cx2'
 import { v4 as uuidv4 } from 'uuid'
 import { Visibility } from '../NetworkSummaryModel/Visibility'
+import { NetworkWithView } from '../NetworkWithViewModel'
+
 export const fetchUrlCx = async (
   url: string,
   maxSize: number,

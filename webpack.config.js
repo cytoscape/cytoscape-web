@@ -98,18 +98,26 @@ module.exports = {
       name: 'cyweb',
       filename: 'remoteEntry.js',
       remotes: externalAppsConfig,
-      // remotes: {
-      //   hello: 'hello@http://localhost:2222/remoteEntry.js',
-      //   simpleMenu: 'simpleMenu@http://localhost:3333/remoteEntry.js',
-      // },
       exposes: {
         // Data models to be used by other apps
-        './useDataStore': './src/components/AppManager/useDataStore.tsx',
+        // './useDataStore': './src/components/AppManager/useDataStore.tsx',
+        './LayoutStore': './src/store/LayoutStore.ts',
+        './NetworkStore': './src/store/NetworkStore.ts',
+        './TableStore': './src/store/TableStore.ts',
+        './ViewModelStore': './src/store/ViewModelStore.ts',
+        './VisualStyleStore': './src/store/VisualStyleStore.ts',
         './WorkspaceStore': './src/store/WorkspaceStore.ts',
+
+        // Tasks
+        // './CreateNetwork': './src/task/CreateNetwork.tsx',
       },
       shared: {
         react: { singleton: true, requiredVersion: deps.react },
         'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
+        '@mui/material': {
+          singleton: true,
+          requiredVersion: deps['@mui/material'],
+        },
       },
     }),
     // new BundleAnalyzerPlugin({

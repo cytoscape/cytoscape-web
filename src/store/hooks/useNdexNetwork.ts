@@ -1,11 +1,8 @@
 import { Cx2 } from '../../models/CxModel/Cx2'
-import {
-  NetworkWithView,
-  createDataFromCx,
-  getCachedData,
-} from '../../utils/cx-utils'
+import { createDataFromCx, getCachedData } from '../../utils/cx-utils'
 import { CachedData } from '../../utils/CachedData'
 import { ndexNetworkFetcher } from '../../utils/fetchers'
+import { NetworkWithView } from '../../models/NetworkWithViewModel'
 
 export const useNdexNetwork = async (
   ndexNetworkId: string,
