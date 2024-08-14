@@ -1,5 +1,15 @@
+import { NodeLabelPositionType } from '../VisualPropertyValue'
 import { VisualStyle } from '../VisualStyle'
 
+export const DEFAULT_NODE_LABEL_POSITION: NodeLabelPositionType = {
+  HORIZONTAL_ALIGN: 'center',
+  VERTICAL_ALIGN: 'center',
+  HORIZONTAL_ANCHOR: 'center',
+  VERTICAL_ANCHOR: 'center',
+  JUSTIFICATION: 'center',
+  MARGIN_X: 0,
+  MARGIN_Y: 0,
+}
 export const getDefaultVisualStyle = (): VisualStyle => ({
   nodeShape: {
     group: 'node',
@@ -97,22 +107,6 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 'serif',
     bypassMap: new Map(),
   },
-  nodeLabelHorizontalAlign: {
-    group: 'node',
-    name: 'nodeLabelHorizontalAlign',
-    displayName: 'Label Horizontal Align',
-    type: 'horizontalAlign',
-    defaultValue: 'center',
-    bypassMap: new Map(),
-  },
-  nodeLabelVerticalAlign: {
-    group: 'node',
-    name: 'nodeLabelVerticalAlign',
-    displayName: 'Label Vertical Align',
-    type: 'verticalAlign',
-    defaultValue: 'center',
-    bypassMap: new Map(),
-  },
   nodeLabelRotation: {
     group: 'node',
     name: 'nodeLabelRotation',
@@ -127,6 +121,14 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     displayName: 'Label Opacity',
     type: 'number',
     defaultValue: 1.0,
+    bypassMap: new Map(),
+  },
+  nodeLabelPosition: {
+    group: 'node',
+    name: 'nodeLabelPosition',
+    displayName: 'Label Position',
+    type: 'nodeLabelPosition',
+    defaultValue: DEFAULT_NODE_LABEL_POSITION,
     bypassMap: new Map(),
   },
   // nodePositionX: {
@@ -346,7 +348,6 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     bypassMap: new Map(),
   },
 
-
   networkBackgroundColor: {
     group: 'network',
     name: 'networkBackgroundColor',
@@ -355,5 +356,4 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: '#FFFFFF',
     bypassMap: new Map(),
   },
-
 })

@@ -21,8 +21,7 @@ const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
   nodeLabelColor: CyVpName.LabelColor,
   nodeLabelFontSize: CyVpName.LabelFontSize,
   nodeLabelFont: CyVpName.LabelFont,
-  nodeLabelHorizontalAlign: CyVpName.LabelHorizontalAlign,
-  nodeLabelVerticalAlign: CyVpName.LabelVerticalAlign,
+  nodeLabelPosition: CyVpName.LabelVerticalAlign, // label position is a special case, and it produces two cyjs visual properties.  This value is a placeholder
   nodeLabelRotation: CyVpName.LabelRotation,
   nodeLabelOpacity: CyVpName.LabelOpacity,
 

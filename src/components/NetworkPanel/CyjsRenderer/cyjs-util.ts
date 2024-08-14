@@ -4,6 +4,7 @@ import { ValueType } from '../../../models/TableModel'
 import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import { View } from '../../../models/ViewModel/View'
 import VisualStyleFn, {
+  NodeLabelPositionType,
   VisualProperty,
   VisualPropertyName,
   VisualPropertyValueType,
@@ -11,6 +12,9 @@ import VisualStyleFn, {
 } from '../../../models/VisualStyleModel'
 import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
 import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
+import { computeNodeLabelPosition } from './nodeLabelPositionMap'
+import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
+import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
@@ -47,6 +51,23 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           },
         }
         cyStyle.push(selectedNodeMapping as CyjsDirectMapper)
+      } else if (vp.name === 'nodeLabelPosition') {
+        const valignDirectMapping: CyjsDirectMapper = {
+          selector: `node[${SpecialPropertyName.NodeLabelVerticalAlign}]`,
+          style: {
+            [CyjsVisualPropertyName.LabelVerticalAlign]: `data(${SpecialPropertyName.NodeLabelVerticalAlign})`,
+          },
+        }
+
+        const halignDirectMapping: CyjsDirectMapper = {
+          selector: `node[${SpecialPropertyName.NodeLabelHorizontalAlign}]`,
+          style: {
+            [CyjsVisualPropertyName.LabelHorizontalAlign]: `data(${SpecialPropertyName.NodeLabelHorizontalAlign})`,
+          },
+        }
+
+        cyStyle.push(valignDirectMapping)
+        cyStyle.push(halignDirectMapping)
       } else {
         const directMapping: CyjsDirectMapper = {
           selector: `node[${vp.name}]`,
@@ -116,9 +137,22 @@ const updateCyObjects = <T extends View>(
     const view: View = views[cyId]
     if (view !== undefined) {
       const { values } = view
-      values.forEach((value: ValueType, key: VisualPropertyName) => {
-        obj.data(key, value)
-      })
+      values.forEach(
+        (value: VisualPropertyValueType, key: VisualPropertyName) => {
+          if (key === VisualPropertyName.NodeLabelPosition) {
+            const labelPosition = value as NodeLabelPositionType
+            const { horizontalAlign, verticalAlign } =
+              computeNodeLabelPosition(labelPosition)
+            obj.data(
+              SpecialPropertyName.NodeLabelHorizontalAlign,
+              horizontalAlign,
+            )
+            obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
+          } else {
+            obj.data(key, value)
+          }
+        },
+      )
     }
   })
 }

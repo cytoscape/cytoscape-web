@@ -1,55 +1,65 @@
+export const NodeVisualPropertyName = {
+  NodeShape: 'nodeShape',
+  NodeBorderColor: 'nodeBorderColor',
+  NodeBorderLineType: 'nodeBorderLineType',
+  NodeBorderWidth: 'nodeBorderWidth',
+  NodeBorderOpacity: 'nodeBorderOpacity',
+  NodeHeight: 'nodeHeight',
+  NodeWidth: 'nodeWidth',
+  NodeBackgroundColor: 'nodeBackgroundColor',
+  NodeLabel: 'nodeLabel',
+  NodeLabelColor: 'nodeLabelColor',
+  NodeLabelFontSize: 'nodeLabelFontSize',
+  NodeLabelFont: 'nodeLabelFont',
+  NodeLabelRotation: 'nodeLabelRotation',
+  NodeLabelOpacity: 'nodeLabelOpacity',
+  NodeOpacity: 'nodeOpacity',
+  NodeVisibility: 'nodeVisibility',
+  NodeSelectedPaint: 'nodeSelectedPaint',
+  NodeMaxLabelWidth: 'nodeMaxLabelWidth',
+  NodeZOrder: 'nodeZOrder',
+  NodeLabelPosition: 'nodeLabelPosition',
+} as const
+
 export type NodeVisualPropertyName =
-  | 'nodeShape'
-  | 'nodeBorderColor'
-  | 'nodeBorderLineType'
-  | 'nodeBorderWidth'
-  | 'nodeBorderOpacity'
-  | 'nodeHeight'
-  | 'nodeWidth'
-  | 'nodeBackgroundColor'
-  | 'nodeLabel'
-  | 'nodeLabelColor'
-  | 'nodeLabelFontSize'
-  | 'nodeLabelFont'
-  | 'nodeLabelVerticalAlign'
-  | 'nodeLabelHorizontalAlign'
-  | 'nodeLabelRotation'
-  | 'nodeLabelOpacity'
-  // | 'nodePositionX'
-  // | 'nodePositionY'
-  // | 'nodePositionZ'
-  | 'nodeOpacity'
-  | 'nodeVisibility'
-  | 'nodeSelectedPaint'
-  | 'nodeMaxLabelWidth'
-  | 'nodeZOrder'
+  (typeof NodeVisualPropertyName)[keyof typeof NodeVisualPropertyName]
+
+export const EdgeVisualPropertyName = {
+  EdgeLineType: 'edgeLineType',
+  EdgeLineColor: 'edgeLineColor',
+  EdgeWidth: 'edgeWidth',
+  EdgeTargetArrowShape: 'edgeTargetArrowShape',
+  EdgeTargetArrowColor: 'edgeTargetArrowColor',
+  EdgeSourceArrowShape: 'edgeSourceArrowShape',
+  EdgeSourceArrowColor: 'edgeSourceArrowColor',
+  EdgeLabel: 'edgeLabel',
+  EdgeLabelColor: 'edgeLabelColor',
+  EdgeLabelFontSize: 'edgeLabelFontSize',
+  EdgeLabelFont: 'edgeLabelFont',
+  EdgeLabelRotation: 'edgeLabelRotation',
+  EdgeLabelOpacity: 'edgeLabelOpacity',
+  EdgeOpacity: 'edgeOpacity',
+  EdgeVisibility: 'edgeVisibility',
+  EdgeSelectedPaint: 'edgeSelectedPaint',
+  EdgeMaxLabelWidth: 'edgeMaxLabelWidth',
+  EdgeZOrder: 'edgeZOrder',
+} as const
 
 export type EdgeVisualPropertyName =
-  | 'edgeLineType'
-  | 'edgeLineColor'
-  | 'edgeWidth'
-  | 'edgeTargetArrowShape'
-  | 'edgeTargetArrowColor'
-  | 'edgeSourceArrowShape'
-  | 'edgeSourceArrowColor'
-  | 'edgeLabel'
-  | 'edgeLabelColor'
-  | 'edgeLabelFontSize'
-  | 'edgeLabelFont'
-  | 'edgeLabelRotation'
-  // | 'edgeLabelAutoRotation'
-  | 'edgeLabelOpacity'
-  | 'edgeOpacity'
-  | 'edgeVisibility'
-  | 'edgeSelectedPaint'
-  | 'edgeMaxLabelWidth'
-  | 'edgeZOrder'
+  (typeof EdgeVisualPropertyName)[keyof typeof EdgeVisualPropertyName]
 
+export const NetworkVisualPropertyName = {
+  NetworkBackgroundColor: 'networkBackgroundColor',
+} as const
 
+export type NetworkVisualPropertyName =
+  (typeof NetworkVisualPropertyName)[keyof typeof NetworkVisualPropertyName]
 
-export type NetworkVisualPropertyName = 'networkBackgroundColor'
+export const VisualPropertyName = {
+  ...NodeVisualPropertyName,
+  ...EdgeVisualPropertyName,
+  ...NetworkVisualPropertyName,
+}
 
 export type VisualPropertyName =
-  | NodeVisualPropertyName
-  | EdgeVisualPropertyName
-  | NetworkVisualPropertyName
+  (typeof VisualPropertyName)[keyof typeof VisualPropertyName]

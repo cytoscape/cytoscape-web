@@ -13,10 +13,13 @@ import {
   VisualPropertyValueType,
   VisualStyle,
   Mapper,
+  NodeLabelPositionType,
 } from '..'
 
 import * as VisualStyleFnImpl from './VisualStyleFnImpl'
 import * as MapperFactory from './MapperFactory'
+import { computeNodeLabelPosition } from '../../../components/NetworkPanel/CyjsRenderer/nodeLabelPositionMap'
+import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/DirectMappingSelector'
 
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
@@ -201,6 +204,30 @@ const edgeViewBuilder = (
   return result
 }
 
+const computeNameAndPropertyPairs = (
+  vpName: VisualPropertyName,
+  value: VisualPropertyValueType,
+): [string, VisualPropertyValueType][] => {
+  if (vpName === VisualPropertyName.NodeLabelPosition) {
+    const computedPosition = computeNodeLabelPosition(
+      value as NodeLabelPositionType,
+    )
+
+    return [
+      [
+        SpecialPropertyName.NodeLabelHorizontalAlign,
+        computedPosition.horizontalAlign,
+      ],
+      [
+        SpecialPropertyName.NodeLabelVerticalAlign,
+        computedPosition.verticalAlign,
+      ],
+    ]
+  } else {
+    return [[vpName, value]]
+  }
+}
+
 const computeView = (
   id: IdType,
   visualProperties: Array<VisualProperty<VisualPropertyValueType>>,
@@ -213,9 +240,9 @@ const computeView = (
   visualProperties.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
     const { defaultValue, mapping, bypassMap, name } = vp
     const bypass = bypassMap.get(id)
+    let pairsToAdd: [string, VisualPropertyValueType][] = []
     if (bypass !== undefined) {
-      // Bypass is available. Use it
-      pairs.set(name, bypass)
+      pairsToAdd = computeNameAndPropertyPairs(vp.name, bypass)
     } else if (mapping !== undefined) {
       // Mapping is available.
       // TODO: compute mapping
@@ -232,13 +259,17 @@ const computeView = (
         const computedValue: VisualPropertyValueType = mapper(
           attributeValueAssigned,
         )
-        pairs.set(name, computedValue)
+        pairsToAdd = computeNameAndPropertyPairs(vp.name, computedValue)
       } else {
-        pairs.set(name, defaultValue)
+        pairsToAdd = computeNameAndPropertyPairs(vp.name, defaultValue)
       }
     } else {
-      pairs.set(name, defaultValue)
+      pairsToAdd = computeNameAndPropertyPairs(vp.name, defaultValue)
     }
+
+    pairsToAdd.forEach(([computedName, computedValue]) => {
+      pairs.set(computedName as VisualPropertyName, computedValue)
+    })
   })
 
   return pairs
