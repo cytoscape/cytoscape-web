@@ -45,7 +45,7 @@ import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore';
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel';
 import { use } from 'cytoscape';
-import { setVisualStyleOptions, useUiStateStore } from '../../../store/UiStateStore';
+import { useUiStateStore } from '../../../store/UiStateStore';
 
 interface MergeDialogProps {
     open: boolean;
@@ -107,8 +107,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
     // Functions relying on store hooks
     const updateSummary = useNetworkSummaryStore((state) => state.update)
     const netSummaries = useNetworkSummaryStore((state) => state.summaries);
-    const ui = useUiStateStore(state => state.ui);
-    const setUi = useUiStateStore((state) => state.setUi)
+    const setVisualStyleOptions = useUiStateStore((state) => state.setVisualStyleOptions)
     const addNewNetwork = useNetworkStore((state) => state.add)
     const setVisualStyle = useVisualStyleStore((state) => state.add)
     const setViewModel = useViewModelStore((state) => state.add)
@@ -360,8 +359,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({ open, handleClose, uniqueName
                 matchingCols, summaryRecord, mergeOpType, mergeWithinNetwork, mergeOnlyNodes, strictRemoveMode);
 
             // Update state stores with the new network and its components
-            const newUi = setVisualStyleOptions(ui, newNetworkId, newNetworkWithView.visualStyleOptions);
-            setUi(newUi);
+            setVisualStyleOptions(newNetworkId, newNetworkWithView.visualStyleOptions);
             setCurrentNetworkId(newNetworkId);
             addNetworkToWorkspace(newNetworkId);
             addNewNetwork(newNetworkWithView.network);

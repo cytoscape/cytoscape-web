@@ -9,24 +9,10 @@ export const LockSizeCheckbox = (props: {
 }) => {
     const { currentNetworkId } = props;
     const nodeSizeLocked = useUiStateStore(state => state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties.nodeSizeLocked);
-    const uiState = useUiStateStore(state => state.ui);
-    const setUi = useUiStateStore(state => state.setUi);
+    const setNodeSizeLockedState = useUiStateStore(state => state.setNodeSizeLockedState);
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newStatus = event.target.checked;
-        const newUi = {
-            ...uiState,
-            visualStyleOptions: {
-                ...uiState.visualStyleOptions,
-                [currentNetworkId]: {
-                    ...uiState.visualStyleOptions[currentNetworkId],
-                    visualEditorProperties: {
-                        nodeSizeLocked: newStatus,
-                        arrowColorMatchesEdge: uiState.visualStyleOptions[currentNetworkId]?.visualEditorProperties.arrowColorMatchesEdge ?? false
-                    }
-                }
-            }
-        }
-        setUi(newUi)
+        setNodeSizeLockedState(currentNetworkId, newStatus);
     };
 
     return (
@@ -48,24 +34,10 @@ export const LockColorCheckbox = (props: {
 }) => {
     const { currentNetworkId } = props;
     const arrowColorMatchesEdge = useUiStateStore(state => state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties.arrowColorMatchesEdge);
-    const uiState = useUiStateStore(state => state.ui);
-    const setUi = useUiStateStore(state => state.setUi);
+    const setArrowColorMatchesEdgeState = useUiStateStore(state => state.setArrowColorMatchesEdgeState);
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newStatus = event.target.checked;
-        const newUi = {
-            ...uiState,
-            visualStyleOptions: {
-                ...uiState.visualStyleOptions,
-                [currentNetworkId]: {
-                    ...uiState.visualStyleOptions[currentNetworkId],
-                    visualEditorProperties: {
-                        nodeSizeLocked: uiState.visualStyleOptions[currentNetworkId]?.visualEditorProperties.nodeSizeLocked ?? false,
-                        arrowColorMatchesEdge: newStatus
-                    }
-                }
-            }
-        }
-        setUi(newUi);
+        setArrowColorMatchesEdgeState(currentNetworkId, newStatus);
     };
 
     return (

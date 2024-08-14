@@ -30,7 +30,7 @@ import { SnackbarMessageList } from '../Messages'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 
 import { SidePanel } from './SidePanel/SidePanel'
-import { useUiStateStore, setVisualStyleOptions } from '../../store/UiStateStore'
+import { useUiStateStore } from '../../store/UiStateStore'
 import { Ui } from '../../models/UiModel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
@@ -114,7 +114,7 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const ui: Ui = useUiStateStore((state) => state.ui)
 
-  const setUi = useUiStateStore((state) => state.setUi)
+  const setVisualStyleOptions = useUiStateStore((state) => state.setVisualStyleOptions)
 
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
@@ -267,8 +267,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
     const { network, nodeTable, edgeTable, visualStyle, networkViews, visualStyleOptions } = res
 
-    const newUi = setVisualStyleOptions(ui, networkId, visualStyleOptions)
-    setUi(newUi)
+    setVisualStyleOptions(networkId, visualStyleOptions)
     addNewNetwork(network)
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)

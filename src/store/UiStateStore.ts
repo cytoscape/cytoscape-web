@@ -28,6 +28,9 @@ interface UiStateAction {
   ) => void
   setActiveTableBrowserIndex: (index: number) => void
   setActiveNetworkBrowserPanelIndex: (index: number) => void
+  setVisualStyleOptions: (networkId: IdType, visualStyleOptions?: VisualStyleOptions) => void
+  setNodeSizeLockedState: (networkId: IdType, nodeSizeLocked: boolean) => void
+  setArrowColorMatchesEdgeState: (networkId: IdType, arrowColorMatchesEdge: boolean) => void
 }
 
 type UiStateStore = UiState & UiStateAction
@@ -83,22 +86,6 @@ export const deserializeColumnUIKey = (
   return [str1, str2, str3]
 }
 
-export const setVisualStyleOptions = (uiState: Ui, networkId: IdType, visualStyleOptions?: VisualStyleOptions): Ui => {
-  const newUi = {
-    ...uiState,
-    visualStyleOptions: {
-      ...uiState.visualStyleOptions,
-      [networkId]: visualStyleOptions ?? {
-        visualEditorProperties: {
-          nodeSizeLocked: false,
-          arrowColorMatchesEdge: false
-        }
-      }
-    }
-  }
-  return newUi
-}
-
 export const useUiStateStore = create(
   immer<UiStateStore>((set, get) => ({
     ui: DEFAULT_UI_STATE,
@@ -118,6 +105,7 @@ export const useUiStateStore = create(
     setPanelState: (panel: Panel, panelState: PanelState) => {
       set((state) => {
         state.ui.panels[panel] = panelState
+
         return state
       })
     },
@@ -183,6 +171,73 @@ export const useUiStateStore = create(
         void putUiStateToDb(nextUi)
 
         state.ui.tableUi.columnUiState[key] = { width }
+
+        return state
+      })
+    },
+    setVisualStyleOptions: (networkId: IdType, visualStyleOptions?: VisualStyleOptions) => {
+      set((state) => {
+        const nextVisualStyleOptions = {
+          ...get().ui.visualStyleOptions,
+          [networkId]: visualStyleOptions ?? {
+            ...get().ui.visualStyleOptions[networkId],
+            visualEditorProperties: {
+              nodeSizeLocked: false,
+              arrowColorMatchesEdge: false
+            }
+          },
+        }
+
+        const nextUi = { ...get().ui, visualStyleOptions: nextVisualStyleOptions }
+
+        void putUiStateToDb(nextUi)
+
+        state.ui.visualStyleOptions = nextVisualStyleOptions
+
+        return state
+      })
+    },
+    setNodeSizeLockedState(networkId, nodeSizeLocked) {
+      set((state) => {
+
+        const nextVisualStyleOptions = {
+          ...get().ui.visualStyleOptions,
+          [networkId]: {
+            ...get().ui.visualStyleOptions[networkId],
+            visualEditorProperties: {
+              ...get().ui.visualStyleOptions[networkId]?.visualEditorProperties,
+              nodeSizeLocked
+            }
+          }
+        }
+
+        const nextUi = { ...get().ui, visualStyleOptions: nextVisualStyleOptions }
+
+        void putUiStateToDb(nextUi)
+
+        state.ui.visualStyleOptions = nextVisualStyleOptions
+
+        return state
+      })
+    },
+    setArrowColorMatchesEdgeState(networkId, arrowColorMatchesEdge) {
+      set((state) => {
+        const nextVisualStyleOptions = {
+          ...get().ui.visualStyleOptions,
+          [networkId]: {
+            ...get().ui.visualStyleOptions[networkId],
+            visualEditorProperties: {
+              ...get().ui.visualStyleOptions[networkId]?.visualEditorProperties,
+              arrowColorMatchesEdge
+            }
+          }
+        }
+
+        const nextUi = { ...get().ui, visualStyleOptions: nextVisualStyleOptions }
+
+        void putUiStateToDb(nextUi)
+
+        state.ui.visualStyleOptions = nextVisualStyleOptions
 
         return state
       })
