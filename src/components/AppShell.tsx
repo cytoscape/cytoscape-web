@@ -12,7 +12,6 @@ import {
   getUiStateFromDb,
   getWorkspaceFromDb,
   initializeDb,
-  putNetworkSummaryToDb,
 } from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
@@ -40,6 +39,7 @@ import { useNetworkStore } from '../store/NetworkStore'
 import { useTableStore } from '../store/TableStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
+import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 
 // This is a valid workspace ID for sharing
 const DUMMY_WS_ID = '0'
@@ -96,6 +96,8 @@ const AppShell = (): ReactElement => {
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
   )
+
+  const addSummary = useNetworkSummaryStore((state) => state.add)
 
   const addNewNetwork = useNetworkStore((state) => state.add)
 
@@ -338,7 +340,7 @@ const AppShell = (): ReactElement => {
             networkWithView
           const newNetworkId = network.id
 
-          await putNetworkSummaryToDb(summary)
+          addSummary(newNetworkId, summary)
 
           // TODO the db syncing logic in various stores assumes the updated network is the current network
           // therefore, as a temporary fix, the first operation that should be done is to set the

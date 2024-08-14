@@ -35,6 +35,7 @@ export const useNetworkSummaryStore = create(
     add: (networkId: IdType, summary: NdexNetworkSummary) => {
       set((state) => {
         state.summaries[networkId] = summary
+        putNetworkSummaryToDb(summary)
 
         return state
       })
