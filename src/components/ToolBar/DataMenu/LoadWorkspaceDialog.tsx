@@ -49,14 +49,13 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
       const myWorkspaces = await ndexClient.getUserCyWebWorkspaces();
       return myWorkspaces;
     };
-
-    if (openDialog) {
+    if (open) {
       void fetchMyWorkspaces().then(setMyWorkspaces);
     }
-  }, [openDialog]);
-
+  }, [open, ndexBaseUrl, getToken]);
+  
   const handleRowSelect = (workspaceId: string): void => {
-    setSelectedWorkspaceId(workspaceId);
+    setSelectedWorkspaceId(prevId => prevId === workspaceId ? null : workspaceId);
   };
 
   const handleOpenWorkspace = async (): Promise<void> => {
@@ -115,11 +114,16 @@ export const LoadWorkspaceDialog: React.FC<{ open: boolean; handleClose: () => v
         </TableHead>
         <TableBody>
           {myWorkspaces.map((workspace) => (
-            <TableRow key={workspace.workspaceId}>
+            <TableRow 
+              key={workspace.workspaceId}
+              onClick={() => handleRowSelect(workspace.workspaceId)}
+              hover
+            >
               <TableCell padding="checkbox">
                 <Checkbox
                   checked={selectedWorkspaceId === workspace.workspaceId}
                   onChange={() => handleRowSelect(workspace.workspaceId)}
+                  onClick={(e) => e.stopPropagation()}
                 />
               </TableCell>
               <TableCell>{workspace.name}</TableCell>
