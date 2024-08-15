@@ -14,12 +14,15 @@ import {
   VisualStyle,
   Mapper,
   NodeLabelPositionType,
+  EdgeFillType,
+  EdgeArrowShapeType,
 } from '..'
 
 import * as VisualStyleFnImpl from './VisualStyleFnImpl'
 import * as MapperFactory from './MapperFactory'
 import { computeNodeLabelPosition } from '../../../components/NetworkPanel/CyjsRenderer/nodeLabelPositionMap'
 import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/DirectMappingSelector'
+import { isOpenShape, openShapeToFilledShape } from './EdgeArrowShapeImpl'
 
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
@@ -220,6 +223,30 @@ const computeNameAndPropertyPairs = (
       [
         SpecialPropertyName.NodeLabelVerticalAlign,
         computedPosition.verticalAlign,
+      ],
+    ]
+  }
+  if (
+    vpName === VisualPropertyName.EdgeSourceArrowShape ||
+    vpName === VisualPropertyName.EdgeTargetArrowShape
+  ) {
+    const fillPos =
+      vpName === VisualPropertyName.EdgeSourceArrowShape
+        ? SpecialPropertyName.SourceArrowFill
+        : SpecialPropertyName.TargetArrowFill
+
+    return [
+      [
+        fillPos,
+        isOpenShape(value as EdgeArrowShapeType)
+          ? EdgeFillType.Hollow
+          : EdgeFillType.Filled,
+      ],
+      [
+        vpName,
+        isOpenShape(value as EdgeArrowShapeType)
+          ? openShapeToFilledShape(value as EdgeArrowShapeType)
+          : value,
       ],
     ]
   } else {

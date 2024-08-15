@@ -345,6 +345,75 @@ export function TriangleCrossArrowIcon(props: IconProps): React.ReactElement {
   )
 }
 
+export function OpenCircleArrowIcon(props: IconProps): React.ReactElement {
+  return (
+    <SvgIcon
+      viewBox="0 0 32 32"
+      sx={props.sx ?? defaultIconStyle.sx}
+      style={props.style ?? defaultIconStyle.style}
+    >
+      <path
+        d="M24,8 C28.418,8 32,11.582 32,16 C32,20.418 28.418,24 24,24 C20.159,23.988 16.913,21.231 16.15,17.5 L0,17.5 L0,14.5 L16.15,14.5 C16.893,10.658 20.138,8.098 24,8 z"
+        fill="white"
+        stroke="black"
+        strokeWidth="2"
+      />
+    </SvgIcon>
+  )
+}
+
+export function OpenDiamondArrowIcon(props: IconProps): React.ReactElement {
+  return (
+    <SvgIcon
+      viewBox="0 0 32 32"
+      sx={props.sx ?? defaultIconStyle.sx}
+      style={props.style ?? defaultIconStyle.style}
+    >
+      <path
+        d="M24,8 L32,16 L24,24 L17.5,17.5 L-0,17.5 L-0,14.5 L17.5,14.5 L24,8 z"
+        fill="white"
+        stroke="black"
+        strokeWidth="2"
+      />
+    </SvgIcon>
+  )
+}
+
+export function OpenSquareArrowIcon(props: IconProps): React.ReactElement {
+  // Continuing from the provided code snippet, assuming a square path similar to the others.
+  return (
+    <SvgIcon
+      viewBox="0 0 32 32"
+      sx={props.sx ?? defaultIconStyle.sx}
+      style={props.style ?? defaultIconStyle.style}
+    >
+      <path
+        d="M8,8 L24,8 L24,24 L8,24 L8,8 z"
+        fill="white"
+        stroke="black"
+        strokeWidth="2"
+      />
+    </SvgIcon>
+  )
+}
+
+export function OpenTriangleArrowIcon(props: IconProps): React.ReactElement {
+  return (
+    <SvgIcon
+      viewBox="0 0 32 32"
+      sx={props.sx ?? defaultIconStyle.sx}
+      style={props.style ?? defaultIconStyle.style}
+    >
+      <path
+        d="M18,8 L32,16 L18,24 L18,17.5 L-0,17.5 L-0,14.5 L18,14.5 L18,8 z"
+        fill="white"
+        stroke="black"
+        strokeWidth="2"
+      />
+    </SvgIcon>
+  )
+}
+
 /* ====[ LINE STYLES ]======================================================================== */
 
 export function DashedLineIcon(props: IconProps): React.ReactElement {
