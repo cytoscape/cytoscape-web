@@ -3,10 +3,13 @@ import Menu from '@mui/material/Menu'
 
 import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
-import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
-import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
+import { BugReportMenuItem } from './BugReportMenuItem'
+import { CitationMenuItem } from './CitationMenuItem'
+import { CodeRepositoryMenuItem } from './CodeRepositoryMenuitem'
+import { TutorialMenuItem } from './TutorialMenuItem'
 
-export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
+
+export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
@@ -44,8 +47,10 @@ export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
           'aria-labelledby': label,
         }}
       >
-        <DeleteSelectedNodesMenuItem handleClose={handleClose} />
-        <DeleteSelectedEdgesMenuItem handleClose={handleClose} />
+        <TutorialMenuItem handleClose={handleClose} />
+        <BugReportMenuItem handleClose={handleClose} />
+        <CitationMenuItem handleClose={handleClose} />
+        <CodeRepositoryMenuItem handleClose={handleClose} />
       </Menu>
     </div>
   )
