@@ -38,6 +38,7 @@ import {
 } from './VisualPropertyViewBox'
 import { NetworkView } from '../../../models/ViewModel'
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
+import { translateEdgeIdToCX } from '../../../models/NetworkModel/impl/CyNetwork'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType
@@ -119,7 +120,9 @@ function BypassFormContent(props: {
       : selectedElements.length === 0
         ? visualProperty.group === VisualPropertyGroup.Node
           ? Array.from(nodeTable.rows.keys())
-          : Array.from(edgeTable.rows.keys())
+          : Array.from(edgeTable.rows.keys()).map((id) =>
+              translateEdgeIdToCX(id),
+            )
         : selectedElements
 
   elements
