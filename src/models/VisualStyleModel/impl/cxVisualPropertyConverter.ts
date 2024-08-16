@@ -269,7 +269,9 @@ export const VPEdgeArrowShapeTypeConverter = (
   return {
     cxVPName,
     valueConverter: (cxVPValue: EdgeArrowShapeType): EdgeArrowShapeType =>
-      cxVPValue,
+      cxVPValue === EdgeArrowShapeType.Arrow
+        ? EdgeArrowShapeType.Triangle
+        : cxVPValue,
   }
 }
 export const VPBooleanConverter = (

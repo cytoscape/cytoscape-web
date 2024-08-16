@@ -345,6 +345,25 @@ export function TriangleCrossArrowIcon(props: IconProps): React.ReactElement {
   )
 }
 
+export function OpenTriangleCrossArrowIcon(
+  props: IconProps,
+): React.ReactElement {
+  return (
+    <SvgIcon
+      viewBox="0 0 32 32"
+      sx={props.sx ?? defaultIconStyle.sx}
+      style={props.style ?? defaultIconStyle.style}
+    >
+      <path
+        d="M13.5,8 L13.5,14.5 L18,14.5 L18,8 L32,16 L18,24 L18,17.5 L13.5,17.5 L13.5,24 L10.5,24 L10.5,17.5 L0,17.5 L0,14.5 L10.5,14.5 L10.5,8 L13.5,8 z"
+        fill="white"
+        stroke="black"
+        strokeWidth="2"
+      />
+    </SvgIcon>
+  )
+}
+
 export function OpenCircleArrowIcon(props: IconProps): React.ReactElement {
   return (
     <SvgIcon

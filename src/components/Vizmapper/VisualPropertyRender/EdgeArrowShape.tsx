@@ -11,6 +11,8 @@ import {
   OpenDiamondArrowIcon,
   OpenSquareArrowIcon,
   OpenTriangleArrowIcon,
+  TriangleCrossArrowIcon,
+  OpenTriangleCrossArrowIcon,
 } from '../VisualStyleIcons'
 
 const edgeArrowShapeMap: Record<EdgeArrowShapeType, React.ReactElement> = {
@@ -19,12 +21,14 @@ const edgeArrowShapeMap: Record<EdgeArrowShapeType, React.ReactElement> = {
   [EdgeArrowShapeType.Diamond]: <DiamondArrowIcon />,
   [EdgeArrowShapeType.Square]: <SquareArrowIcon />,
   [EdgeArrowShapeType.Triangle]: <TriangleArrowIcon />,
+  [EdgeArrowShapeType.TriangleCross]: <TriangleCrossArrowIcon />,
   [EdgeArrowShapeType.Tee]: <TeeArrowIcon />,
   [EdgeArrowShapeType.Arrow]: <TriangleArrowIcon />,
   [EdgeArrowShapeType.OpenCircle]: <OpenCircleArrowIcon />,
   [EdgeArrowShapeType.OpenDiamond]: <OpenDiamondArrowIcon />,
   [EdgeArrowShapeType.OpenSquare]: <OpenSquareArrowIcon />,
   [EdgeArrowShapeType.OpenDelta]: <OpenTriangleArrowIcon />,
+  [EdgeArrowShapeType.OpenCrossDelta]: <OpenTriangleCrossArrowIcon />,
 }
 
 export function EdgeArrowShapePicker(props: {

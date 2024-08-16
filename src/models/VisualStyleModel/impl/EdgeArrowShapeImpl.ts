@@ -19,6 +19,10 @@ export const openShapeToFilledShape = (
   if (shape === EdgeArrowShapeType.OpenDelta) {
     return EdgeArrowShapeType.Triangle
   }
+
+  if (shape === EdgeArrowShapeType.OpenCrossDelta) {
+    return EdgeArrowShapeType.TriangleCross
+  }
   if (isOpenShape(shape)) {
     return shape.replace('open_', '') as EdgeArrowShapeType
   }
