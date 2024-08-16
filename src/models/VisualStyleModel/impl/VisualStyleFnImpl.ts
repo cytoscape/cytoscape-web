@@ -31,6 +31,7 @@ import {
 
 import { getDefaultVisualStyle } from './DefaultVisualStyle'
 import { createNewNetworkView, updateNetworkView } from './compute-view-util'
+import { VisualStyleOptions } from '../VisualStyleOptions'
 
 const sortByDisplayName = (
   a: VisualProperty<VisualPropertyValueType>,
@@ -365,4 +366,8 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   })
 
   return visualStyle
+}
+
+export const createVisualStyleOptionsFromCx = (cx: Cx2): VisualStyleOptions => {
+  return cxUtil.getVisualEditorProperties(cx) ?? {}
 }

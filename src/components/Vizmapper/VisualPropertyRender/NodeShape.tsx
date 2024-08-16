@@ -40,6 +40,7 @@ const nodeShapeDisplayNameMap: Record<NodeShapeType, string> = {
 export function NodeShapePicker(props: {
   currentValue: NodeShapeType | null
   onValueChange: (shape: NodeShapeType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
 

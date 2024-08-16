@@ -13,6 +13,7 @@ const edgeLineMap: Record<EdgeLineType, React.ReactElement> = {
 export function EdgeLinePicker(props: {
   currentValue: EdgeLineType | null
   onValueChange: (edgeLine: EdgeLineType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
 

@@ -69,6 +69,7 @@ import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
 import { AppConfigContext } from '../../../../AppConfigContext'
 import { NetworkNameInput } from './NetworkNameInput'
+import { useUiStateStore } from '../../../../store/UiStateStore'
 
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
@@ -114,6 +115,9 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
+
+  const ui = useUiStateStore((state) => state.ui)
+  const setVisualStyleOptions = useUiStateStore((state) => state.setVisualStyleOptions)
 
   const addNewNetwork = useNetworkStore((state) => state.add)
 
@@ -216,6 +220,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     // therefore, as a temporary fix, the first operation that should be done is to set the
     // current network to be the new network id
     setCurrentNetworkId(newNetworkId)
+    setVisualStyleOptions(newNetworkId);
     addNewNetwork(network)
     setVisualStyle(newNetworkId, visualStyle)
     setTables(newNetworkId, nodeTable, edgeTable)

@@ -9,11 +9,13 @@ import {
   getTablesFromDb,
   getNetworkViewsFromDb,
   getVisualStyleFromDb,
+  getUiStateFromDb,
 } from '../store/persist/db'
 import { CachedData } from './CachedData'
 import { createNetworkAttributesFromCx } from '../models/TableModel/impl/NetworkAttributesImpl'
 import { Aspect } from '../models/CxModel/Cx2/Aspect'
 import { CoreAspectTag } from '../models/CxModel/Cx2/CoreAspectTag'
+import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 
 /**
  * An utility interface to hold all the data needed to build a network view
@@ -25,6 +27,7 @@ export interface NetworkWithView {
   edgeTable: Table
   visualStyle: VisualStyle
   networkViews: NetworkView[]
+  visualStyleOptions?: VisualStyleOptions
   otherAspects?: any[] // All other optional aspects found in the CX2 stream
 }
 
@@ -48,7 +51,7 @@ export const createNetworkViewFromCx2 = (
     uuid,
     cx2,
   )
-
+  const visualStyleOptions: VisualStyleOptions = VisualStyleFn.createVisualStyleOptionsFromCx(cx2)
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cx2)
   const networkView: NetworkView = ViewModelFn.createViewModelFromCX(uuid, cx2)
   const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
@@ -62,6 +65,7 @@ export const createNetworkViewFromCx2 = (
     edgeTable,
     visualStyle,
     networkViews: [networkView],
+    visualStyleOptions,
     networkAttributes,
   }
 }
@@ -72,13 +76,14 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
   const networkViews: NetworkView[] | undefined =
     await getNetworkViewsFromDb(id)
   const visualStyle = await getVisualStyleFromDb(id)
-
+  const visualStyleOptions = await getUiStateFromDb().then((uiState) => uiState?.visualStyleOptions[id])
   return {
     network,
     visualStyle,
     nodeTable: tables !== undefined ? tables.nodeTable : undefined,
     edgeTable: tables !== undefined ? tables.edgeTable : undefined,
-    networkViews: networkViews !== undefined ? networkViews : [],
+    networkViews: networkViews ?? [],
+    visualStyleOptions: visualStyleOptions
   }
 }
 
@@ -100,7 +105,7 @@ export const createDataFromCx = async (
     ndexNetworkId,
     cxData,
   )
-
+  const visualStyleOptions: VisualStyleOptions = VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
   const otherAspects: Aspect[] = getOptionalAspects(cxData)
 
   return {
@@ -110,6 +115,7 @@ export const createDataFromCx = async (
     visualStyle,
     networkViews: [networkView],
     networkAttributes,
+    visualStyleOptions,
     otherAspects,
   }
 }

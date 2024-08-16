@@ -17,6 +17,7 @@ const nodeLineMap: Record<NodeBorderLineType, React.ReactElement> = {
 export function NodeBorderLinePicker(props: {
   currentValue: NodeBorderLineType | null
   onValueChange: (borderLine: NodeBorderLineType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
 

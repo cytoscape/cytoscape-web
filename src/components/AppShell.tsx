@@ -92,6 +92,7 @@ const AppShell = (): ReactElement => {
   }, [errorMessageInStore])
 
   const setUi = useUiStateStore((state) => state.setUi)
+  const setVisualStyleOptions = useUiStateStore((state) => state.setVisualStyleOptions)
   // const { showErrorDialog } = useUiStateStore((state) => state.ui)
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
@@ -343,6 +344,8 @@ const AppShell = (): ReactElement => {
           // TODO the db syncing logic in various stores assumes the updated network is the current network
           // therefore, as a temporary fix, the first operation that should be done is to set the
           // current network to be the new network id
+
+          setVisualStyleOptions(newNetworkId);
           setCurrentNetworkId(newNetworkId)
           addNewNetwork(network)
           setVisualStyle(newNetworkId, visualStyle)

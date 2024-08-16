@@ -5,6 +5,8 @@ import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import { View } from '../../../models/ViewModel/View'
 import VisualStyleFn, {
   NodeLabelPositionType,
+  EdgeVisualPropertyName,
+  NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyName,
   VisualPropertyValueType,
@@ -15,6 +17,7 @@ import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualP
 import { computeNodeLabelPosition } from './nodeLabelPositionMap'
 import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
 import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
+import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
@@ -121,15 +124,16 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   return cyStyle
 }
 
-export const applyViewModel = (cy: Core, networkView: NetworkView): void => {
+export const applyViewModel = (cy: Core, networkView: NetworkView, visualEditorProperties: VisualEditorProperties): void => {
   const { nodeViews, edgeViews } = networkView
-  updateCyObjects<NodeView>(nodeViews, cy.nodes())
-  updateCyObjects<EdgeView>(edgeViews, cy.edges())
+  updateCyObjects<NodeView>(nodeViews, cy.nodes(), visualEditorProperties)
+  updateCyObjects<EdgeView>(edgeViews, cy.edges(), visualEditorProperties)
 }
 
 const updateCyObjects = <T extends View>(
   views: Record<IdType, T>,
   cyObjects: Collection<SingularElementArgument>,
+  visualEditorProperties: VisualEditorProperties
 ): void => {
   cyObjects.forEach((obj: SingularElementArgument) => {
     const cyId = obj.data('id')
@@ -153,6 +157,14 @@ const updateCyObjects = <T extends View>(
           }
         },
       )
+      if (visualEditorProperties?.nodeSizeLocked) {
+        obj.data(NodeVisualPropertyName.NodeWidth, obj.data(NodeVisualPropertyName.NodeHeight))
+      }
+      if (visualEditorProperties?.arrowColorMatchesEdge) {
+        const color = obj.data(EdgeVisualPropertyName.EdgeLineColor)
+        obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor, color)
+        obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor, color)
+      }
     }
   })
 }

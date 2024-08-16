@@ -18,6 +18,7 @@ import { CxValue } from './Cx2/CxValue'
 import { Attribute } from './Cx2/CoreAspects/Attribute'
 import { NodeBypasses } from './Cx2/CoreAspects/NodeBypasses'
 import { EdgeBypasses } from './Cx2/CoreAspects/EdgeBypasses'
+import { VisualEditorProperties, VisualStyleOptions } from '../VisualStyleModel/VisualStyleOptions'
 
 const isAspect = (aspect: Aspect | CxDescriptor): boolean => {
   const keys = Object.keys(aspect)
@@ -173,6 +174,28 @@ const getEdges = (cx2: Cx2): Edge[] => {
   return getAspect(cx2, CoreAspectTag.Edges) as Edge[]
 }
 
+const getVisualEditorProperties = (cx2: Cx2): VisualStyleOptions => {
+  const filtered = cx2.filter((entry) => {
+    return entry.hasOwnProperty(CoreAspectTag.VisualEditorProperties)
+  })
+
+  if (filtered.length === 0) {
+    return {
+      visualEditorProperties: {
+        nodeSizeLocked: false,
+        arrowColorMatchesEdge: false,
+      },
+    }
+  }
+  const properties = Object.values(Object.values(filtered[0])[0][0])[0] as VisualEditorProperties
+  return {
+    visualEditorProperties: {
+      nodeSizeLocked: properties.nodeSizeLocked ?? false,
+      arrowColorMatchesEdge: properties.arrowColorMatchesEdge ?? false,
+    },
+  }
+}
+
 const toCx2Network = (cx2: Cx2): Cx2Network => {
   const networkAttributes: NetworkAttributeValue = {
     name: '',
@@ -242,4 +265,5 @@ export {
   getVisualProperties,
   getNodeBypasses,
   getEdgeBypasses,
+  getVisualEditorProperties,
 }
