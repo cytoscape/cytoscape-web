@@ -40,7 +40,6 @@ export function EdgeArrowShapePicker(props: {
             sx={{
               color: currentValue === edgeArrowShape ? 'blue' : 'black',
               fontWeight: currentValue === edgeArrowShape ? 'bold' : 'normal',
-              width: 100,
               p: 1,
               '&:hover': { cursor: 'pointer' },
             }}
@@ -53,11 +52,13 @@ export function EdgeArrowShapePicker(props: {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 alignContent: 'center',
-                width: 100,
+                width: 80,
               }}
             >
-              <EdgeArrowShape value={edgeArrowShape} isSelected={currentValue === edgeArrowShape} />
-              <Box>{edgeArrowShape}</Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <EdgeArrowShape value={edgeArrowShape} isSelected={currentValue === edgeArrowShape} />
+              </Box>
+              <Box sx={{ textAlign: 'center' }}>{edgeArrowShape}</Box>
             </Box>
           </Box>
         ),

@@ -35,7 +35,6 @@ export function NodeBorderLinePicker(props: {
             sx={{
               color: currentValue === borderLine ? 'blue' : 'black',
               fontWeight: currentValue === borderLine ? 'bold' : 'normal',
-              width: 100,
               p: 1,
               '&:hover': { cursor: 'pointer' },
             }}
@@ -48,7 +47,7 @@ export function NodeBorderLinePicker(props: {
                 justifyContent: 'space-between',
                 flexDirection: 'column',
                 alignItems: 'center',
-                width: 100,
+                width: 80,
               }}
             >
               <NodeBorderLine value={borderLine} isSelected={currentValue === borderLine} />

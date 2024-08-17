@@ -31,7 +31,6 @@ export function EdgeLinePicker(props: {
           sx={{
             color: currentValue === edgeLine ? 'blue' : 'black',
             fontWeight: currentValue === edgeLine ? 'bold' : 'normal',
-            width: 100,
             p: 1,
             '&:hover': { cursor: 'pointer' },
           }}
@@ -44,7 +43,7 @@ export function EdgeLinePicker(props: {
               flexDirection: 'column',
               justifyContent: 'space-between',
               alignItems: 'center',
-              width: 100,
+              width: 80,
             }}
           >
             <EdgeLine value={edgeLine} isSelected={currentValue === edgeLine} />
