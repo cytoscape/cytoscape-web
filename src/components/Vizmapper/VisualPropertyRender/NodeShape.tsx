@@ -50,7 +50,7 @@ export function NodeShapePicker(props: {
         display: 'flex',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        width: 300,
+        width: 450,
       }}
     >
       {sortedNodeShapes.map((shape: NodeShapeType) => (
@@ -58,7 +58,6 @@ export function NodeShapePicker(props: {
           sx={{
             color: currentValue === shape ? 'blue' : 'black',
             fontWeight: currentValue === shape ? 'bold' : 'normal',
-            width: 100,
             p: 1,
             '&:hover': { cursor: 'pointer' },
           }}
@@ -71,7 +70,7 @@ export function NodeShapePicker(props: {
               flexDirection: 'column',
               justifyContent: 'space-between',
               alignItems: 'center',
-              width: 100,
+              width: 130,
             }}
           >
             <NodeShape value={shape} isSelected={currentValue === shape} />
