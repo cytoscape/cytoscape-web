@@ -13,16 +13,16 @@ import {
 } from '../VisualStyleIcons'
 import React from 'react'
 
-const nodeShapeMap: Record<NodeShapeType, React.ReactElement> = {
-  [NodeShapeType.Ellipse]: <EllipseIcon />,
-  [NodeShapeType.Rectangle]: <RectangleIcon />,
-  [NodeShapeType.RoundRectangle]: <RoundRectangleIcon />,
-  [NodeShapeType.Triangle]: <TriangleIcon />,
-  [NodeShapeType.Diamond]: <DiamondIcon />,
-  [NodeShapeType.Hexagon]: <HexagonIcon />,
-  [NodeShapeType.Octagon]: <OctagonIcon />,
-  [NodeShapeType.Parallelogram]: <ParallelogramIcon />,
-  [NodeShapeType.Vee]: <VeeIcon />,
+const nodeShapeMap: Record<NodeShapeType, (isSelected: boolean) => React.ReactElement> = {
+  [NodeShapeType.Ellipse]: (isSelected: boolean) => <EllipseIcon isSelected={isSelected} />,
+  [NodeShapeType.Rectangle]: (isSelected: boolean) => <RectangleIcon isSelected={isSelected} />,
+  [NodeShapeType.RoundRectangle]: (isSelected: boolean) => <RoundRectangleIcon isSelected={isSelected} />,
+  [NodeShapeType.Triangle]: (isSelected: boolean) => <TriangleIcon isSelected={isSelected} />,
+  [NodeShapeType.Diamond]: (isSelected: boolean) => <DiamondIcon isSelected={isSelected} />,
+  [NodeShapeType.Hexagon]: (isSelected: boolean) => <HexagonIcon isSelected={isSelected} />,
+  [NodeShapeType.Octagon]: (isSelected: boolean) => <OctagonIcon isSelected={isSelected} />,
+  [NodeShapeType.Parallelogram]: (isSelected: boolean) => <ParallelogramIcon isSelected={isSelected} />,
+  [NodeShapeType.Vee]: (isSelected: boolean) => <VeeIcon isSelected={isSelected} />,
 }
 
 const nodeShapeDisplayNameMap: Record<NodeShapeType, string> = {
@@ -43,7 +43,7 @@ export function NodeShapePicker(props: {
   closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
-
+  const sortedNodeShapes = Object.values(NodeShapeType).sort();
   return (
     <Box
       sx={{
@@ -53,10 +53,11 @@ export function NodeShapePicker(props: {
         width: 300,
       }}
     >
-      {Object.values(NodeShapeType).map((shape: NodeShapeType) => (
+      {sortedNodeShapes.map((shape: NodeShapeType) => (
         <Box
           sx={{
             color: currentValue === shape ? 'blue' : 'black',
+            fontWeight: currentValue === shape ? 'bold' : 'normal',
             width: 100,
             p: 1,
             '&:hover': { cursor: 'pointer' },
@@ -73,7 +74,7 @@ export function NodeShapePicker(props: {
               width: 100,
             }}
           >
-            <NodeShape value={shape} />
+            <NodeShape value={shape} isSelected={currentValue === shape} />
             <Box>{nodeShapeDisplayNameMap[shape]}</Box>
           </Box>
         </Box>
@@ -82,6 +83,7 @@ export function NodeShapePicker(props: {
   )
 }
 
-export function NodeShape(props: { value: NodeShapeType }): React.ReactElement {
-  return nodeShapeMap[props.value] ?? <Box>{props.value}</Box>
+export function NodeShape(props: { value: NodeShapeType, isSelected: boolean }): React.ReactElement {
+  const { value, isSelected } = props
+  return nodeShapeMap[value](isSelected) ?? <Box>{value}</Box>
 }

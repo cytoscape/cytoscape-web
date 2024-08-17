@@ -17,6 +17,7 @@ const defaultIconStyle = {
 export interface IconProps {
   style?: React.CSSProperties
   sx?: SxProps
+  isSelected?: boolean
 }
 
 /* ====[ LOGOS ]============================================================================== */
@@ -152,11 +153,12 @@ export function NodeLabelIcon(props: IconProps): React.ReactElement {
 /* ====[ NODE SHAPES ]======================================================================== */
 
 export function DiamondIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M16,-0 L32,16 L16,32 L-0,16 L16,-0 z" />
     </SvgIcon>
@@ -164,11 +166,12 @@ export function DiamondIcon(props: IconProps): React.ReactElement {
 }
 
 export function EllipseIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M16,32 C7.163,32 -0,24.837 -0,16 C-0,7.163 7.163,-0 16,-0 C24.837,-0 32,7.163 32,16 C32,24.837 24.837,32 16,32 z" />
     </SvgIcon>
@@ -176,11 +179,12 @@ export function EllipseIcon(props: IconProps): React.ReactElement {
 }
 
 export function HexagonIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M7.917,32 L-0.166,16 L7.917,0 L24.083,0 L32.166,16 L24.083,32 z" />
     </SvgIcon>
@@ -188,11 +192,12 @@ export function HexagonIcon(props: IconProps): React.ReactElement {
 }
 
 export function OctagonIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M9.373,32 L0,22.627 L0,9.373 L9.373,0 L22.627,-0 L32,9.373 L32,22.627 L22.627,32 z" />
     </SvgIcon>
@@ -200,11 +205,12 @@ export function OctagonIcon(props: IconProps): React.ReactElement {
 }
 
 export function RectangleIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M0,0 L32,0 L32,32 L0,32 L0,0 z" />
     </SvgIcon>
@@ -212,11 +218,12 @@ export function RectangleIcon(props: IconProps): React.ReactElement {
 }
 
 export function ParallelogramIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M21.68,0 L-0,0 L10.32,32 L32,32 L21.68,0 z" />
     </SvgIcon>
@@ -224,11 +231,12 @@ export function ParallelogramIcon(props: IconProps): React.ReactElement {
 }
 
 export function RoundRectangleIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M8,-0 L24,-0 C28.418,-0 32,3.582 32,8 L32,24 C32,28.418 28.418,32 24,32 L8,32 C3.582,32 -0,28.418 -0,24 L-0,8 C-0,3.582 3.582,-0 8,-0 z" />
     </SvgIcon>
@@ -236,11 +244,12 @@ export function RoundRectangleIcon(props: IconProps): React.ReactElement {
 }
 
 export function TriangleIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M0,32 L16,-0 L32,32 z" />
     </SvgIcon>
@@ -248,11 +257,12 @@ export function TriangleIcon(props: IconProps): React.ReactElement {
 }
 
 export function VeeIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M32,0 L16,32 L0,0 L32,0 z M32,0 L0,0 L16,11 L32,0 z" />
     </SvgIcon>
@@ -262,11 +272,12 @@ export function VeeIcon(props: IconProps): React.ReactElement {
 /* ====[ ARROW SHAPES ]======================================================================= */
 
 export function CircleArrowIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M24,8 C28.418,8 32,11.582 32,16 C32,20.418 28.418,24 24,24 C20.159,23.988 16.913,21.231 16.15,17.5 L0,17.5 L0,14.5 L16.15,14.5 C16.893,10.658 20.138,8.098 24,8 z" />
     </SvgIcon>
@@ -274,11 +285,12 @@ export function CircleArrowIcon(props: IconProps): React.ReactElement {
 }
 
 export function DiamondArrowIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M24,8 L32,16 L24,24 L17.5,17.5 L-0,17.5 L-0,14.5 L17.5,14.5 L24,8 z" />
     </SvgIcon>
@@ -286,11 +298,12 @@ export function DiamondArrowIcon(props: IconProps): React.ReactElement {
 }
 
 export function NoneArrowIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M-0,14.5 L32,14.5 L32,17.5 L-0,17.5 L-0,14.5 z" />
     </SvgIcon>
@@ -298,11 +311,12 @@ export function NoneArrowIcon(props: IconProps): React.ReactElement {
 }
 
 export function SquareArrowIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M16,24 L16,17.5 L0,17.5 L0,14.5 L16,14.5 L16,8 L32,8 L32,24 L16,24 z" />
     </SvgIcon>
@@ -310,11 +324,12 @@ export function SquareArrowIcon(props: IconProps): React.ReactElement {
 }
 
 export function TeeArrowIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M29,8 L29,24 L24,24 L24,17.5 L0,17.5 L0,14.5 L24,14.5 L24,8 L29,8 z" />
     </SvgIcon>
@@ -322,11 +337,12 @@ export function TeeArrowIcon(props: IconProps): React.ReactElement {
 }
 
 export function TriangleArrowIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M18,8 L32,16 L18,24 L18,17.5 L-0,17.5 L-0,14.5 L18,14.5 L18,8 z" />
     </SvgIcon>
@@ -334,11 +350,12 @@ export function TriangleArrowIcon(props: IconProps): React.ReactElement {
 }
 
 export function TriangleCrossArrowIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M13.5,8 L13.5,14.5 L18,14.5 L18,8 L32,16 L18,24 L18,17.5 L13.5,17.5 L13.5,24 L10.5,24 L10.5,17.5 L0,17.5 L0,14.5 L10.5,14.5 L10.5,8 L13.5,8 z" />
     </SvgIcon>
@@ -348,11 +365,12 @@ export function TriangleCrossArrowIcon(props: IconProps): React.ReactElement {
 /* ====[ LINE STYLES ]======================================================================== */
 
 export function DashedLineIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M29.789,0.09 L31.91,2.211 L24.839,9.282 L22.718,7.161 L29.789,0.09 z" />
       <path d="M7.161,22.718 L9.282,24.839 L2.211,31.91 L0.09,29.789 L7.161,22.718 z" />
@@ -362,11 +380,12 @@ export function DashedLineIcon(props: IconProps): React.ReactElement {
 }
 
 export function DottedLineIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M3.272,26.607 L5.393,28.728 L3.272,30.849 L1.151,28.728 L3.272,26.607 z" />
       <path d="M7.515,22.364 L9.636,24.485 L7.515,26.607 L5.393,24.485 L7.515,22.364 z" />
@@ -380,11 +399,12 @@ export function DottedLineIcon(props: IconProps): React.ReactElement {
 }
 
 export function SolidLineIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M0.09,29.789 L29.789,0.09 L31.91,2.211 L2.211,31.91 L0.09,29.789 z" />
     </SvgIcon>
@@ -392,11 +412,12 @@ export function SolidLineIcon(props: IconProps): React.ReactElement {
 }
 
 export function DoubleLineIcon(props: IconProps): React.ReactElement {
+  const { sx, style, isSelected } = props
   return (
     <SvgIcon
       viewBox="0 0 32 32"
-      sx={props.sx ?? defaultIconStyle.sx}
-      style={props.style ?? defaultIconStyle.style}
+      sx={{ ...(sx ?? defaultIconStyle.sx), transform: isSelected ? 'scale(1.1)' : 'none' }}
+      style={style ?? defaultIconStyle.style}
     >
       <path d="M-5.09,24.789 L24.789,-5.09 26.91,-3.211 L-3.211,26.91 L-5.09,24.789 z" />
       <path d="M5.09,34.789 L34.789,5.09 L36.91,7.211 L7.211,36.91 L5.09,34.789 z" />
