@@ -5,14 +5,21 @@ import { CyApp } from '../../models/AppModel/CyApp'
 import { appImportMap } from '../../assets/app-definition'
 
 console.log('[AppManager] App config loaded: ', appConfig)
+
+// appConfig contains reference list of available apps.
 const appNameMap = new Map<string, string>()
+const appNames: string[] = []
+
 appConfig.forEach((app: any) => {
   appNameMap.set(app.name, app.entryPoint)
+  appNames.push(app.name)
 })
 
 export const useAppManager = (): void => {
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const registerApp = useAppStore((state) => state.add)
+  const restore = useAppStore((state) => state.restore)
+  const setStatus = useAppStore((state) => state.setStatus)
 
   useEffect(() => {
     const loadModules = async () => {
@@ -23,7 +30,20 @@ export const useAppManager = (): void => {
         moduleNames.map((moduleName) => {
           const importFunc = appImportMap[moduleName]
           if (importFunc) {
-            return [moduleName, importFunc()]
+            try {
+              const externalAppModule = importFunc()
+                .then((module) => module)
+                .catch((e) => {
+                  console.warn(
+                    `## Error loading external module ${moduleName}:`,
+                    e,
+                  )
+                })
+              return [moduleName, externalAppModule]
+            } catch (e) {
+              console.error(`Error loading external module ${moduleName}:`, e)
+              return [moduleName, null]
+            }
           }
           throw new Error(`Unknown module name: ${moduleName}`)
         }),
@@ -32,14 +52,28 @@ export const useAppManager = (): void => {
         const moduleName = moduleEntry[0] as string
         const module: any = await moduleEntry[1]
         const entryName = appNameMap.get(moduleName)
-        const cyApp: CyApp = await module[entryName as string]
-        if (cyApp !== undefined) {
-          registerApp(cyApp)
+        try {
+          const cyApp: CyApp = await module[entryName as string]
+          if (cyApp !== undefined) {
+            registerApp(cyApp)
+          }
+        } catch (err) {
+          console.warn(`* Failed to load a remote app: ${entryName}`, err)
+          const cachedApp = apps[entryName as string]
+          if (cachedApp) {
+            // set status to error
+            setStatus(entryName as string, 'error')
+          } else {
+            // register dummy app name
+          }
         }
       })
     }
 
-    loadModules()
+    restore(appNames).then(() => {
+      // Load remote modules after loading from cached.
+      loadModules()
+    })
 
     return () => {
       console.log('App Manager unmounted')

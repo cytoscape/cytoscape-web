@@ -15,6 +15,8 @@ import Keycloak from 'keycloak-js'
 import ErrorBoundary from './ErrorBoundary'
 enableMapSet()
 
+console.log('-----------BS start')
+
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
 const rootElement: HTMLElement | null = document.getElementById('root')

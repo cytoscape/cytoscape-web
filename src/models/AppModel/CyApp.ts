@@ -1,4 +1,5 @@
 import { ComponentMetadata } from './ComponentMetadata'
+import { AppStatus } from './AppStatus'
 
 /**
  * Base interface to define the app object
@@ -17,9 +18,9 @@ export interface CyApp {
   // Description of the app
   description?: string
 
-  // Base URL to access the app (hosting remoteEntry.js)
-  url: string
-
   // Name of components to be exposed via Module Federation
   components: ComponentMetadata[]
+
+  // Current status of the app. Default is 'active', which is set by the host
+  status?: AppStatus
 }

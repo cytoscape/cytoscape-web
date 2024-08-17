@@ -10,6 +10,7 @@ import {
   Button,
 } from '@mui/material'
 import { useAppStore } from '../../store/AppStore'
+import { AppStatus } from '../../models/AppModel/AppStatus'
 
 interface AppSettingsDialogProps {
   open: boolean
@@ -23,8 +24,7 @@ export const AppSettingsDialog = ({
   handleClose,
 }: AppSettingsDialogProps) => {
   const apps = useAppStore((state) => state.apps)
-  const isEnabled = useAppStore((state) => state.isEnabled)
-  const setEnabled = useAppStore((state) => state.setEnabled)
+  const setStatus = useAppStore((state) => state.setStatus)
 
   const handleClick = () => {
     setOpen(false)
@@ -33,14 +33,20 @@ export const AppSettingsDialog = ({
 
   return (
     <Dialog open={open}>
-      <DialogTitle>App Settings</DialogTitle>
+      <DialogTitle>Active Apps</DialogTitle>
       <DialogContent>
         {Object.values(apps).map((app) => (
           <div key={app.id}>
             <input
               type="checkbox"
-              checked={isEnabled.get(app.id)}
-              onChange={(e) => setEnabled(app.id, e.target.checked)}
+              disabled={app.status === AppStatus.Error}
+              checked={app.status === AppStatus.Active}
+              onChange={(e) =>
+                setStatus(
+                  app.id,
+                  e.target.checked ? AppStatus.Active : AppStatus.Inactive,
+                )
+              }
             />
             {app.name}
           </div>

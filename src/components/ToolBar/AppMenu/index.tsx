@@ -84,52 +84,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
     setComponentList(componentList)
   }, [apps])
 
-  useEffect(() => {
-    // // Check the app is already processed or not
-    // Object.keys(apps).forEach((appId: string) => {
-    //   const app: CyApp = apps[appId]
-    //   const { components } = app
-    //   if (appIds.has(appId) === false && components !== undefined) {
-    //     components.forEach((component: ComponentMetadata) => {
-    //       const componentId: string = component.id
-    //       if (!menuIds.has(componentId)) {
-    //         // Dynamically load the React component from remote
-    //         const MenuItemComponent: LazyExoticComponent<ComponentType<any>> =
-    //           ExternalComponent(appId, './' + componentId)
-    //         if (Menu1 === undefined) {
-    //           setAppMenuItem(MenuItemComponent)
-    //         } else {
-    //           setAppMenuItem2(MenuItemComponent)
-    //         }
-    //         setMenuItems((prevMenuItems) => [
-    //           ...prevMenuItems,
-    //           MenuItemComponent,
-    //         ])
-    //         setMenuIds((prevMenuIds) => new Set([...prevMenuIds, componentId]))
-    //       }
-    //     })
-    //   }
-    //   setAppIds((prevAppIds) => {
-    //     const newAppIds = new Set(prevAppIds)
-    //     newAppIds.add(appId)
-    //     return newAppIds
-    //   })
-    // })
-    // const simpleMenu = apps['simpleMenu']
-    // if (simpleMenu !== undefined) {
-    //   const { componentNames } = simpleMenu
-    //   if (componentNames !== undefined && componentNames.length > 0) {
-    //     const Comp1 = ExternalComponent('simpleMenu', './' + componentNames[0])
-    //     console.log('Comp1:', Comp1)
-    //     setAppMenuItem(Comp1)
-    //   }
-    // }
-  }, [])
-
-  useEffect(() => {
-    console.log('## MenuItem added', menuItems)
-  }, [menuItems])
-
   return (
     <div>
       <Button
