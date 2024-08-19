@@ -1,6 +1,13 @@
 import _ from 'lodash'
 import { NodeLabelPositionType } from '../../../models/VisualStyleModel'
 
+// 'hanchor': 'right'
+// 'vanchor': 'top'
+// 'halign': 'left'
+// 'valign': 'bottom'
+
+//vc, hc, va, ha
+
 export const nodeLabelPositionMap: any = {
   center: {
     center: {
@@ -103,7 +110,7 @@ export const nodeLabelPositionMap: any = {
       },
       bottom: {
         center: { 'text-halign': 'right', 'text-valign': 'center' },
-        left: { 'text-halign': 'right', 'text-valign': 'center' },
+        left: { 'text-halign': 'right', 'text-valign': 'top' },
         right: { 'text-halign': 'center', 'text-valign': 'center' },
       },
     },
@@ -151,7 +158,7 @@ export const nodeLabelPositionMap: any = {
       },
       top: {
         center: { 'text-halign': 'right', 'text-valign': 'bottom' },
-        left: { 'text-halign': 'right', 'text-valign': 'center' },
+        left: { 'text-halign': 'right', 'text-valign': 'bottom' },
         right: { 'text-halign': 'center', 'text-valign': 'center' },
       },
       bottom: {
