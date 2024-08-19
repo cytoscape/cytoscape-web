@@ -20,6 +20,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 
 import { IdType } from '../../../models/IdType'
 import {
+  EdgeVisualPropertyName,
+  NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
@@ -39,6 +41,10 @@ import {
 import { NetworkView } from '../../../models/ViewModel'
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
 import { translateEdgeIdToCX } from '../../../models/NetworkModel/impl/CyNetwork'
+import {
+  LockColorCheckbox,
+  LockSizeCheckbox,
+} from '../VisualPropertyRender/Checkbox'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType
@@ -48,7 +54,15 @@ function BypassFormContent(props: {
   const [bypassValue, setBypassValue] = React.useState(
     visualProperty.defaultValue,
   )
-
+  const vpName = props.visualProperty.name
+  const isSize =
+    vpName === NodeVisualPropertyName.NodeHeight ||
+    vpName === NodeVisualPropertyName.NodeWidth
+  const isHeight = vpName === NodeVisualPropertyName.NodeHeight
+  const isEdgeLineColor =
+    vpName === EdgeVisualPropertyName.EdgeLineColor ||
+    vpName === EdgeVisualPropertyName.EdgeTargetArrowColor ||
+    vpName === EdgeVisualPropertyName.EdgeSourceArrowColor
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const networkView: NetworkView | undefined = getViewModel(currentNetworkId)
 
@@ -201,6 +215,7 @@ function BypassFormContent(props: {
                     <VisualPropertyValueForm
                       visualProperty={visualProperty}
                       currentValue={bypassValue}
+                      currentNetworkId={currentNetworkId}
                       onValueChange={(value) => {
                         setBypass(
                           currentNetworkId,
@@ -260,6 +275,7 @@ function BypassFormContent(props: {
           <VisualPropertyValueForm
             visualProperty={visualProperty}
             currentValue={bypassValue}
+            currentNetworkId={currentNetworkId}
             onValueChange={(newBypassValue: VisualPropertyValueType): void =>
               setBypassValue(newBypassValue)
             }
@@ -305,6 +321,13 @@ function BypassFormContent(props: {
       <Box>
         <Divider />
         {elementsToRender.length > 0 ? nonEmptyBypassForm : emptyBypassForm}
+        <Divider />
+        {isSize && (
+          <LockSizeCheckbox currentNetworkId={props.currentNetworkId} />
+        )}
+        {isEdgeLineColor && (
+          <LockColorCheckbox currentNetworkId={currentNetworkId} />
+        )}
       </Box>
     </Box>
   )

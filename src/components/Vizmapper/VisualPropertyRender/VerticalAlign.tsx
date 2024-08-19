@@ -4,6 +4,7 @@ import { Box, Typography } from '@mui/material'
 export function VerticalAlignPicker(props: {
   currentValue: VerticalAlignType | null
   onValueChange: (verticalAlign: VerticalAlignType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
 

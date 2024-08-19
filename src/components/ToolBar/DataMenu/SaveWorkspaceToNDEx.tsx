@@ -27,6 +27,7 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
+import { useUiStateStore } from '../../../store/UiStateStore';
 
 export const SaveWorkspaceToNDExMenuItem = (
   props: BaseMenuProps,
@@ -74,6 +75,7 @@ export const SaveWorkspaceToNDExMenuItem = (
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable
     const viewModel = useViewModelStore.getState().getViewModel(networkId)
+    const visualStyleOptions = useUiStateStore.getState().ui.visualStyleOptions[networkId]
 
     ndexClient.setAuthToken(accessToken)
     const cx = exportNetworkToCx2(
@@ -82,6 +84,7 @@ export const SaveWorkspaceToNDExMenuItem = (
       summary,
       nodeTable,
       edgeTable,
+      visualStyleOptions,
       viewModel,
     )
 
@@ -105,6 +108,7 @@ export const SaveWorkspaceToNDExMenuItem = (
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable
     const viewModel = useViewModelStore.getState().getViewModel(networkId)
+    const visualStyleOptions = useUiStateStore.getState().ui.visualStyleOptions[networkId]
 
     const cx = exportNetworkToCx2(
       network,
@@ -112,6 +116,7 @@ export const SaveWorkspaceToNDExMenuItem = (
       summary,
       nodeTable,
       edgeTable,
+      visualStyleOptions,
       viewModel,
       `Copy of ${summary.name}`,
     )
@@ -121,17 +126,15 @@ export const SaveWorkspaceToNDExMenuItem = (
       addNetworkToWorkspace(uuid as IdType)
 
       addMessage({
-        message: `Saved a copy of the current network to NDEx with new uuid ${
-          uuid as string
-        }`,
+        message: `Saved a copy of the current network to NDEx with new uuid ${uuid as string
+          }`,
         duration: 3000,
       })
     } catch (e) {
       console.log(e)
       addMessage({
-        message: `Error: Could not save a copy of the current network to NDEx. ${
-          e.message as string
-        }`,
+        message: `Error: Could not save a copy of the current network to NDEx. ${e.message as string
+          }`,
         duration: 3000,
       })
     }

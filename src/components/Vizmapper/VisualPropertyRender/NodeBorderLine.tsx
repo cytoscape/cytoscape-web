@@ -7,19 +7,20 @@ import {
   DoubleLineIcon,
 } from '../VisualStyleIcons'
 
-const nodeLineMap: Record<NodeBorderLineType, React.ReactElement> = {
-  [NodeBorderLineType.Solid]: <SolidLineIcon />,
-  [NodeBorderLineType.Dotted]: <DottedLineIcon />,
-  [NodeBorderLineType.Dashed]: <DashedLineIcon />,
-  [NodeBorderLineType.Double]: <DoubleLineIcon />,
-}
+const nodeLineMap: Record<NodeBorderLineType, (isSelected: boolean) => React.ReactElement> = {
+  [NodeBorderLineType.Solid]: (isSelected: boolean) => <SolidLineIcon isSelected={isSelected} />,
+  [NodeBorderLineType.Dotted]: (isSelected: boolean) => <DottedLineIcon isSelected={isSelected} />,
+  [NodeBorderLineType.Dashed]: (isSelected: boolean) => <DashedLineIcon isSelected={isSelected} />,
+  [NodeBorderLineType.Double]: (isSelected: boolean) => <DoubleLineIcon isSelected={isSelected} />,
+};
 
 export function NodeBorderLinePicker(props: {
   currentValue: NodeBorderLineType | null
   onValueChange: (borderLine: NodeBorderLineType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
-
+  const sortedBorderLines = Object.values(NodeBorderLineType).sort();
   return (
     <Box
       sx={{
@@ -28,12 +29,12 @@ export function NodeBorderLinePicker(props: {
         flexWrap: 'wrap',
       }}
     >
-      {Object.values(NodeBorderLineType).map(
+      {sortedBorderLines.map(
         (borderLine: NodeBorderLineType) => (
           <Box
             sx={{
               color: currentValue === borderLine ? 'blue' : 'black',
-              width: 100,
+              fontWeight: currentValue === borderLine ? 'bold' : 'normal',
               p: 1,
               '&:hover': { cursor: 'pointer' },
             }}
@@ -46,10 +47,10 @@ export function NodeBorderLinePicker(props: {
                 justifyContent: 'space-between',
                 flexDirection: 'column',
                 alignItems: 'center',
-                width: 100,
+                width: 80,
               }}
             >
-              <NodeBorderLine value={borderLine} />
+              <NodeBorderLine value={borderLine} isSelected={currentValue === borderLine} />
               <Box>{borderLine}</Box>
             </Box>
           </Box>
@@ -60,7 +61,9 @@ export function NodeBorderLinePicker(props: {
 }
 
 export function NodeBorderLine(props: {
-  value: NodeBorderLineType
+  value: NodeBorderLineType,
+  isSelected: boolean
 }): React.ReactElement {
-  return nodeLineMap[props.value] ?? <Box>{props.value}</Box>
+  const { value, isSelected } = props
+  return nodeLineMap[value](isSelected) ?? <Box>{value}</Box>
 }

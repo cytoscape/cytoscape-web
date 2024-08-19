@@ -10,6 +10,7 @@ const opacityToPercent = (val: number): number => Math.floor(val * 100)
 export function OpacitySlider(props: {
   currentValue: number | null
   onValueChange: (value: number) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const debouncedOpacityValueChange = debounce(onValueChange, 150)

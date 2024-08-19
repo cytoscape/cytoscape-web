@@ -11,6 +11,7 @@ import {
   Slider,
   Switch,
   TextField,
+  Typography,
 } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 //@ts-expect-error
@@ -28,7 +29,6 @@ type UnitType = 'pixels' | 'inches'
 
 export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
   const [loading, setLoading] = useState(false)
-  const [fileName, setFileName] = useState<string>('network')
   const [transparentBg, setTransparentBg] = useState(true)
   const [fullBg, setFullBg] = useState(true)
   const [customWidth, setCustomWidth] = useState<number>(0)
@@ -248,156 +248,154 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
     setZoom(newZoom)
   }
   return (
-    <Box sx={{ p: 1 }}>
-      <Box sx={{ p: 1 }}>
-        <TextField
-          size="small"
-          label="File name"
-          type="text"
-          value={fileName}
-          onChange={(e) => {
-            setFileName(e.target.value)
-          }}
-          InputLabelProps={{
-            shrink: true,
-          }}
-        ></TextField>
-      </Box>
-      <Box sx={{ p: 1 }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={fullBg}
-              onChange={(e) => setFullBg(e.target.checked)}
-            />
-          }
-          label="Export full network image"
-        />
-      </Box>
-      <Box sx={{ p: 1 }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={transparentBg}
-              onChange={(e) => setTransparentBg(e.target.checked)}
-            />
-          }
-          label="Transparent background"
-        />
-      </Box>
+    <Box sx={{
+      mt: 1, height: 500, display: 'flex',
+      flexDirection: 'column', justifyContent: 'space-between',
+    }}>
       <Box>
-        <Select
-          sx={{ p: 1 }}
-          size="small"
-          labelId="label"
-          value={unit}
-          label="File type"
-          onChange={handleUnitChange}
-        >
-          <MenuItem value={'pixels' as UnitType}>Pixels</MenuItem>
-          <MenuItem value={'inches' as UnitType}>Inches</MenuItem>
-        </Select>
-
-        {unit === 'pixels' ? (
-          <Box sx={{ p: 1 }}>
-            <TextField
-              size="small"
-              sx={{ mr: 1 }}
-              label="Width (pixels)"
-              onChange={handleWidthChange}
-              value={customWidth}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-            <TextField
-              size="small"
-              label="Height (pixels)"
-              onChange={handleHeightChange}
-              value={customHeight}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-          </Box>
-        ) : (
-          <Box sx={{ p: 1 }}>
-            <TextField
-              size="small"
-              sx={{ mr: 1 }}
-              label="Width (inches)"
-              onChange={handleWidthInchesChange}
-              value={widthInches}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-            <TextField
-              size="small"
-              label="Height (inches)"
-              onChange={handleHeightInchesChange}
-              value={heightInches}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-            <Select
-              size="small"
-              label="DPI"
-              value={dpi}
-              onChange={handleDpiChange}
-            >
-              <MenuItem value={72}>72</MenuItem>
-              <MenuItem value={100}>100</MenuItem>
-              <MenuItem value={150}>150</MenuItem>
-              <MenuItem value={300}>300</MenuItem>
-              <MenuItem value={600}>600</MenuItem>
-            </Select>
-          </Box>
-        )}
+        <Box sx={{ mb: 0.25 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={fullBg}
+                onChange={(e) => setFullBg(e.target.checked)}
+              />
+            }
+            label="Export full network image"
+          />
+        </Box>
+        <Box sx={{ mb: 1 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={transparentBg}
+                onChange={(e) => setTransparentBg(e.target.checked)}
+              />
+            }
+            label="Transparent background"
+          />
+        </Box>
+        <Box sx={{ mb: 1 }} >
+          <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
+            File Type
+          </Typography>
+          <Select
+            size="small"
+            labelId="label"
+            value={unit}
+            onChange={handleUnitChange}
+          >
+            <MenuItem value={'pixels' as UnitType}>Pixels</MenuItem>
+            <MenuItem value={'inches' as UnitType}>Inches</MenuItem>
+          </Select>
+        </Box>
+        <Box sx={{ mb: 1.5 }}>
+          <Typography variant="subtitle1" style={{ margin: '0 0 7px 0' }}>
+            Size
+          </Typography>
+          {unit === 'pixels' ? (
+            <Box>
+              <TextField
+                size="small"
+                sx={{ mr: 1 }}
+                label="Width (pixels)"
+                onChange={handleWidthChange}
+                value={customWidth}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <TextField
+                size="small"
+                label="Height (pixels)"
+                onChange={handleHeightChange}
+                value={customHeight}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Box>
+          ) : (
+            <Box>
+              <TextField
+                size="small"
+                sx={{ mr: 1 }}
+                label="Width (inches)"
+                onChange={handleWidthInchesChange}
+                value={widthInches}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <TextField
+                size="small"
+                label="Height (inches)"
+                onChange={handleHeightInchesChange}
+                value={heightInches}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <Select
+                size="small"
+                label="DPI"
+                value={dpi}
+                onChange={handleDpiChange}
+              >
+                <MenuItem value={72}>72</MenuItem>
+                <MenuItem value={100}>100</MenuItem>
+                <MenuItem value={150}>150</MenuItem>
+                <MenuItem value={300}>300</MenuItem>
+                <MenuItem value={600}>600</MenuItem>
+              </Select>
+            </Box>
+          )}
+        </Box>
+        <Box>
+          <Box>Zoom</Box>
+          <Slider
+            sx={{ ml: 1.5, width: '85%' }}
+            value={zoom}
+            min={MIN_ZOOM}
+            max={MAX_ZOOM}
+            step={0.1}
+            valueLabelDisplay="auto"
+            onChange={(e: any) => handleZoomChange(e)}
+            marks={[
+              {
+                value: MIN_ZOOM,
+                label: '0%',
+              },
+              {
+                value: 1,
+                label: '100%',
+              },
+              {
+                value: 2,
+                label: '200%',
+              },
+              {
+                value: 3,
+                label: '300%',
+              },
+              {
+                value: 4,
+                label: '400%',
+              },
+              {
+                value: MAX_ZOOM,
+                label: '500%',
+              },
+            ]}
+          />
+        </Box>
       </Box>
-      <Box sx={{ p: 1 }}>
-        <Box>Zoom</Box>
-        <Slider
-          value={zoom}
-          min={MIN_ZOOM}
-          max={MAX_ZOOM}
-          step={0.1}
-          valueLabelDisplay="auto"
-          onChange={(e: any) => handleZoomChange(e)}
-          marks={[
-            {
-              value: MIN_ZOOM,
-              label: '0%',
-            },
-            {
-              value: 1,
-              label: '100%',
-            },
-            {
-              value: 2,
-              label: '200%',
-            },
-            {
-              value: 3,
-              label: '300%',
-            },
-            {
-              value: 4,
-              label: '400%',
-            },
-            {
-              value: MAX_ZOOM,
-              label: '500%',
-            },
-          ]}
-        />
-      </Box>
-      <DialogActions>
-        <Button color="error" onClick={props.handleClose}>
+      <DialogActions sx={{ pr: 1 }}>
+        <Button color="secondary" onClick={props.handleClose}>
           Cancel
         </Button>
         <Button
+          color="primary"
           disabled={loading}
           onClick={async () => {
             setLoading(true)
@@ -407,7 +405,7 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
               customHeight,
               transparentBg,
             )
-            saveAs(result, `${fileName}.png`)
+            saveAs(result, `${props.fileName}.png`)
             setLoading(false)
             props.handleClose()
           }}

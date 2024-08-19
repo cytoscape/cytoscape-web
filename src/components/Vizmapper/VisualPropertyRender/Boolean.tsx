@@ -3,6 +3,7 @@ import { Box, Switch } from '@mui/material'
 export function BooleanSwitch(props: {
   currentValue: boolean | null
   onValueChange: (value: boolean) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   return (

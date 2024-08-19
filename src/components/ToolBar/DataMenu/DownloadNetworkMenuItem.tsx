@@ -11,6 +11,8 @@ import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
+import { useUiStateStore } from '../../../store/UiStateStore'
+import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
 
 export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
@@ -29,6 +31,10 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
   )
+  const visualStyleOptions = useUiStateStore(
+    (state) => state.ui.visualStyleOptions[currentNetworkId]
+  ) as VisualStyleOptions
+
   const network = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   ) as Network
@@ -43,6 +49,7 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
       summary,
       table.nodeTable,
       table.edgeTable,
+      visualStyleOptions,
       viewModel,
       `Copy of ${summary.name}`,
     )

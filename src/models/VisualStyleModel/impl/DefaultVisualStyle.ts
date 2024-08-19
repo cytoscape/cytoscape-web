@@ -30,7 +30,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   nodeBorderLineType: {
     group: 'node',
     name: 'nodeBorderLineType',
-    displayName: 'Border Line',
+    displayName: 'Border Line Type',
     type: 'nodeBorderLine',
     defaultValue: 'solid',
     bypassMap: new Map(),
@@ -182,10 +182,11 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   nodeMaxLabelWidth: {
     group: 'node',
     name: 'nodeMaxLabelWidth',
-    displayName: 'Max Node Label Width',
+    displayName: 'Label Width',
     type: 'number',
     defaultValue: 100,
     bypassMap: new Map(),
+    tooltip: 'The maximum width of the node label'
   },
   nodeZOrder: {
     group: 'node',
@@ -198,7 +199,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   edgeLineColor: {
     group: 'edge',
     name: 'edgeLineColor',
-    displayName: 'Line Color',
+    displayName: 'Stroke Color',
     type: 'color',
     defaultValue: '#000000',
     bypassMap: new Map(),
@@ -334,10 +335,11 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   edgeMaxLabelWidth: {
     group: 'edge',
     name: 'edgeMaxLabelWidth',
-    displayName: 'Max Edge Label Width',
+    displayName: 'Label Width',
     type: 'number',
     defaultValue: 100,
     bypassMap: new Map(),
+    tooltip: 'The maximum width of the edge label'
   },
   edgeZOrder: {
     group: 'edge',

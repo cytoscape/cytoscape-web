@@ -1,10 +1,11 @@
 import * as React from 'react'
-import { Box, Popover, Typography, Tooltip, Tabs, Tab } from '@mui/material'
+import { Box, Popover, Typography, Tooltip, Tabs, Tab, Divider } from '@mui/material'
 
 import {
   VisualProperty,
   VisualPropertyValueType,
   VisualPropertyName,
+  EdgeVisualPropertyName,
 } from '../../../models/VisualStyleModel'
 
 import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
@@ -62,6 +63,9 @@ import {
   NodeLabelPositionPicker,
   NodeLabelPositionRender,
 } from '../VisualPropertyRender/NodeLabelPosition'
+import { IdType } from '../../../models/IdType'
+import { CheckBox } from '@mui/icons-material'
+import { LockColorCheckbox } from '../VisualPropertyRender/Checkbox'
 
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,
@@ -69,6 +73,7 @@ const vpType2RenderMap: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
+      closePopover: () => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -135,6 +140,7 @@ const vpType2RenderMap2: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
+      closePopover: () => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -200,6 +206,7 @@ const vpType2RenderMapViridis: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
+      closePopover: () => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -266,6 +273,10 @@ const vpType2RenderMapSequential: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
+      closePopover: () => void
+      currentNetworkId?: IdType
+      showCheckbox?: boolean
+      vpName?: VisualPropertyName
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -332,6 +343,7 @@ const vpType2RenderMapDiverging: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
+      closePopover: () => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -402,6 +414,10 @@ const vpName2RenderMap: Partial<
       pickerRender: (props: {
         currentValue: VisualPropertyValueType | null
         onValueChange: (newValue: VisualPropertyValueType) => void
+        closePopover: () => void
+        currentNetworkId?: IdType
+        showCheckbox?: boolean
+        vpName?: VisualPropertyName
       }) => React.ReactElement
       valueRender: (props: {
         value: VisualPropertyValueType
@@ -471,6 +487,8 @@ interface VisualPropertyValueFormProps {
   visualProperty: VisualProperty<VisualPropertyValueType>
   currentValue: VisualPropertyValueType | null
   onValueChange: (newValue: VisualPropertyValueType) => void
+  currentNetworkId: IdType
+  showCheckbox?: boolean
   title?: string
   tooltipText?: string
 }
@@ -481,10 +499,17 @@ export function VisualPropertyValueForm(
 ): React.ReactElement {
   const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
   const [activeTab, setActiveTab] = React.useState(0)
-
+  const isColor = props.visualProperty.displayName.includes("Color");
+  const vpName = props.visualProperty.name;
+  const isEdgeLineColor = vpName === EdgeVisualPropertyName.EdgeLineColor || vpName === EdgeVisualPropertyName.EdgeTargetArrowColor || vpName === EdgeVisualPropertyName.EdgeSourceArrowColor;
   const showValuePicker = (value: Element | null): void => {
     setValuePicker(value)
   }
+
+  const closePopover = (): void => {
+    setValuePicker(null);
+  };
+
   if (
     vpType2RenderMap[props.visualProperty.type] == null &&
     vpName2RenderMap[props.visualProperty.name] == null
@@ -511,22 +536,23 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box>
-          {props.visualProperty &&
-          props.visualProperty.displayName.includes('Color') ? (
-            <>
-              <Tabs
-                value={activeTab}
-                onChange={(event, newValue) => setActiveTab(newValue)}
-                aria-label="Tab panel"
-              >
-                <Tab label="ColorBrewer Sequential" />
-                <Tab label="ColorBrewer Diverging" />
-                <Tab label="Viridis Sequential" />
-                <Tab label="Swatches" />
-                <Tab label="Color Picker" />
-              </Tabs>
-            </>
-          ) : null}
+          {
+            isColor ? (
+              <>
+                <Tabs
+                  value={activeTab}
+                  onChange={(event, newValue) => setActiveTab(newValue)}
+                  aria-label="Tab panel"
+                >
+                  <Tab label="ColorBrewer Sequential" />
+                  <Tab label="ColorBrewer Diverging" />
+                  <Tab label="Viridis Sequential" />
+                  <Tab label="Swatches" />
+                  <Tab label="Color Picker" />
+                </Tabs>
+              </>
+            ) : null
+          }
           {activeTab === 0 && (
             <Box
               sx={{
@@ -546,11 +572,15 @@ export function VisualPropertyValueForm(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMapSequential[props.visualProperty.type]
                   .pickerRender ??
-                (() => {})
+                (() => { })
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                currentNetworkId: props.currentNetworkId,
+                showCheckbox: props.showCheckbox ?? false,
+                vpName: props.visualProperty.name,
+                closePopover: closePopover,
               })}
             </Box>
           )}
@@ -573,11 +603,12 @@ export function VisualPropertyValueForm(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMapDiverging[props.visualProperty.type]
                   .pickerRender ??
-                (() => {})
+                (() => { })
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                closePopover: closePopover,
               })}
             </Box>
           )}
@@ -602,11 +633,12 @@ export function VisualPropertyValueForm(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMapViridis[props.visualProperty.type]
                   .pickerRender ??
-                (() => {})
+                (() => { })
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                closePopover: closePopover,
               })}
             </Box>
           )}
@@ -630,11 +662,12 @@ export function VisualPropertyValueForm(
               {(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMap2[props.visualProperty.type].pickerRender ??
-                (() => {})
+                (() => { })
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                closePopover: closePopover,
               })}
             </Box>
           )}
@@ -658,14 +691,25 @@ export function VisualPropertyValueForm(
               {(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMap[props.visualProperty.type].pickerRender ??
-                (() => {})
+                (() => { })
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
+                closePopover: closePopover
               })}
             </Box>
           )}
+          {props.showCheckbox && isEdgeLineColor &&
+            (
+              <>
+                <Divider />
+                <LockColorCheckbox
+                  currentNetworkId={props.currentNetworkId}
+                />
+              </>
+            )
+          }
         </Box>
       </Popover>
     </Box>
