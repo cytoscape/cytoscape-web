@@ -5,6 +5,7 @@ import {
   Checkbox,
   TextField,
   DialogActions,
+  Typography,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 //@ts-expect-error
@@ -18,7 +19,6 @@ import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
   const [loading, setLoading] = useState(false)
   const [fullBg, setFullBg] = useState(true)
-  const [fileName, setFileName] = useState<string>('network')
 
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
@@ -37,34 +37,24 @@ export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
   )
 
   return (
-    <Box sx={{ p: 1 }}>
+    <Box sx={{
+      mt: 1, height: 500, display: 'flex',
+      flexDirection: 'column', justifyContent: 'space-between',
+    }}>
       <Box>
-        <TextField
-          size="small"
-          label="File name"
-          type="text"
-          value={fileName}
-          onChange={(e) => {
-            setFileName(e.target.value)
-          }}
-          InputLabelProps={{
-            shrink: true,
-          }}
-        ></TextField>
+        <Box>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={fullBg}
+                onChange={(e) => setFullBg(e.target.checked)}
+              />
+            }
+            label="Export full network image"
+          />
+        </Box>
       </Box>
-
-      <Box sx={{ p: 1 }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={fullBg}
-              onChange={(e) => setFullBg(e.target.checked)}
-            />
-          }
-          label="Export full network image"
-        />
-      </Box>
-      <DialogActions>
+      <DialogActions sx={{ pr: 1 }}>
         <Button color="error" onClick={props.handleClose}>
           Cancel
         </Button>
@@ -74,7 +64,7 @@ export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
             setLoading(true)
             const result = await svgFunction?.()
             const blob = new Blob([result], { type: 'image/svg+xml' })
-            saveAs(blob, `${fileName}.svg`)
+            saveAs(blob, `${props.fileName}.svg`)
             setLoading(false)
             props.handleClose()
           }}

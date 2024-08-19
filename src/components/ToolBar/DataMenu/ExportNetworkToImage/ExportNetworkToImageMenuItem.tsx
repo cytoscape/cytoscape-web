@@ -2,12 +2,15 @@ import {
   Box,
   Button,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
   InputLabel,
   MenuItem,
   Select,
+  TextField,
+  Typography,
 } from '@mui/material'
 import { ReactElement, useRef, useState } from 'react'
 import { BaseMenuProps } from '../../BaseMenuProps'
@@ -29,20 +32,21 @@ interface ExportImageProps {
 
 export interface ExportImageFormatProps {
   handleClose: () => void
+  fileName: string
 }
 
 type FileType = 'png' | 'pdf' | 'svg'
 export const ExportImage = (props: ExportImageProps): ReactElement => {
   const [fileType, setFileType] = useState<FileType>('png')
-
+  const [fileName, setFileName] = useState<string>('network')
   const handleChange = (event: any) => {
     setFileType(event.target.value as 'png' | 'pdf' | 'svg')
   }
 
   const imageExportContentMap = {
-    png: <PngExportForm handleClose={props.handleClose} />,
-    pdf: <PdfExportForm handleClose={props.handleClose} />,
-    svg: <SvgExportForm handleClose={props.handleClose} />,
+    png: <PngExportForm handleClose={props.handleClose} fileName={fileName} />,
+    pdf: <PdfExportForm handleClose={props.handleClose} fileName={fileName} />,
+    svg: <SvgExportForm handleClose={props.handleClose} fileName={fileName} />,
   }
 
   const currentExportForm = imageExportContentMap[fileType]
@@ -66,20 +70,35 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
       onClose={props.handleClose}
     >
       <DialogTitle>Export Network To Image</DialogTitle>
-      <DialogContent sx={{ mb: 1 }}>
+      <DialogContent sx={{ pl: 4, pr: 0, pb: 0.5 }}>
         <Box sx={{ display: 'inline' }}>
-          <Box>File Type</Box>
+          <Typography variant="subtitle1" style={{ margin: '5px 0 5px 0' }}>
+            File Type
+          </Typography>
           <Select
             size="small"
             labelId="label"
             value={fileType}
-            label="File type"
             onChange={handleChange}
           >
             <MenuItem value={'png' as FileType}>PNG</MenuItem>
             <MenuItem value={'svg' as FileType}>SVG</MenuItem>
             <MenuItem value={'pdf' as FileType}>PDF</MenuItem>
           </Select>
+          <Typography variant="subtitle1" style={{ margin: '5px 0 5px 0' }}>
+            File Name
+          </Typography>
+          <TextField
+            size="small"
+            type="text"
+            value={fileName}
+            onChange={(e) => {
+              setFileName(e.target.value)
+            }}
+            InputLabelProps={{
+              shrink: true,
+            }}>
+          </TextField>
         </Box>
         {currentExportForm}
       </DialogContent>
