@@ -18,6 +18,7 @@ import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
 import { useUiStateStore } from '../../store/UiStateStore'
+import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/DefaultVisualStyle';
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -31,12 +32,16 @@ function VisualPropertyView(props: {
   const widthDisabled = nodeSizeLocked && NodeVisualPropertyName.NodeWidth === vpName
   const arrowColorDisabled = arrowColorMatchesEdge && (EdgeVisualPropertyName.EdgeSourceArrowColor === vpName || EdgeVisualPropertyName.EdgeTargetArrowColor === vpName)
   const disabled = widthDisabled || arrowColorDisabled
+
+  const edgeLineColorName = getDefaultVisualStyle()['edgeLineColor'].displayName
+  const heightName = getDefaultVisualStyle()['nodeHeight'].displayName
   return (
     <Tooltip
       placement='top'
+      arrow={true}
       title={disabled ? (widthDisabled ?
-        'To enable this visual property, uncheck the \'Lock node width and height\' in the \'Height\' property.' :
-        'To enable this visual property, uncheck the \'Edge color to arrows\' in the \'Line Color\' property.') : ''
+        `To enable this visual property, uncheck the \'Lock node width and height\' in the \'${heightName}\' property.` :
+        `To enable this visual property, uncheck the \'Edge color to arrows\' in the \'${edgeLineColorName}\' property.`) : ''
       }
     >
       <Box
@@ -92,12 +97,13 @@ function VisualPropertyView(props: {
           </Typography>
         </Box>
 
-        {disabled &&
+        {(disabled || visualProperty.tooltip) &&
           <Tooltip
             placement='top'
             title={disabled ? (widthDisabled ?
-              'To enable this visual property, uncheck the \'Lock node width and height\' in the \'Height\' property.' :
-              'To enable this visual property, uncheck the \'Edge color to arrows\' in the \'Line Color\' property.') : ''}
+              `To enable this visual property, uncheck the \'Lock node width and height\' in the \'${heightName}\' property.` :
+              `To enable this visual property, uncheck the \'Edge color to arrows\' in the \'${edgeLineColorName}\' property.`) :
+              (visualProperty.tooltip ?? '')}
             arrow={true}
             sx={{
               mr: 1,
