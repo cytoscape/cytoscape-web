@@ -82,6 +82,7 @@ export function ColorPickerViridis(props: {
   return (
     <Box>
       <SwatchesPicker
+        width={231}
         colors={VirdisCustomColors}
         color={localColorValue}
         onChange={(color: any) => {
@@ -110,7 +111,7 @@ export function ColorPickerSequential(props: {
   return (
     <Box>
       <SwatchesPicker
-        width={1000}
+        width={945}
         colors={SequentialCustomColors}
         color={localColorValue}
         onChange={(color: any) => {
