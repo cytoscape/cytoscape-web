@@ -8,9 +8,12 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Tooltip,
 } from '@mui/material'
+import { WarningOutlined } from '@mui/icons-material'
 import { useAppStore } from '../../store/AppStore'
 import { AppStatus } from '../../models/AppModel/AppStatus'
+import { CyApp } from '../../models/AppModel'
 
 interface AppSettingsDialogProps {
   open: boolean
@@ -23,7 +26,7 @@ export const AppSettingsDialog = ({
   setOpen,
   handleClose,
 }: AppSettingsDialogProps) => {
-  const apps = useAppStore((state) => state.apps)
+  const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const setStatus = useAppStore((state) => state.setStatus)
 
   const handleClick = () => {
@@ -33,10 +36,15 @@ export const AppSettingsDialog = ({
 
   return (
     <Dialog open={open}>
-      <DialogTitle>Active Apps</DialogTitle>
+      <DialogTitle>
+        {Object.keys(apps).length === 0 ? '(No Apps Available)' : 'Status of Apps'}
+      </DialogTitle>
       <DialogContent>
         {Object.values(apps).map((app) => (
-          <div key={app.id}>
+          <div
+            key={app.id}
+            style={{ display: 'flex', verticalAlign: 'center' }}
+          >
             <input
               type="checkbox"
               disabled={app.status === AppStatus.Error}
@@ -49,6 +57,11 @@ export const AppSettingsDialog = ({
               }
             />
             {app.name}
+            {app.status === AppStatus.Error && (
+              <Tooltip title="Could not load the app">
+                <WarningOutlined color="error" />
+              </Tooltip>
+            )}
           </div>
         ))}
       </DialogContent>

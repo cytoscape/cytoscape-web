@@ -97,6 +97,7 @@ export const useAppManager = (): void => {
     console.log('App Store updating:', apps)
     appIds.forEach((appId: string) => {
       if (!apps[appId] && activatedAppIdSet.has(appId)) {
+        //
         registerApp(loadedApps.find((app) => app.id === appId) as CyApp)
       } else if (apps[appId] && !activatedAppIdSet.has(appId)) {
         setStatus(appId, AppStatus.Error)

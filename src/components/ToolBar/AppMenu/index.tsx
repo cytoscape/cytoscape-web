@@ -1,11 +1,12 @@
-import { Button, Menu, MenuItem } from '@mui/material'
-import { LazyExoticComponent, Suspense, useEffect, useState } from 'react'
+import { Button, Menu, Tooltip } from '@mui/material'
+import { Suspense, useEffect, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { AppSettingsMenuItem } from './AppSettingsMenuItem'
 import { useAppStore } from '../../../store/AppStore'
 import { ComponentType, CyApp } from '../../../models'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
+import { AppStatus } from '../../../models/AppModel/AppStatus'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   // Actual CyApp objects
@@ -36,37 +37,20 @@ export const AppMenu = (props: DropdownMenuProps) => {
     setAnchorEl(null)
   }
 
-  const generateMenuItem = (apps: Record<string, CyApp>): any[] => {
-    // Dynamically load and generate the menu items
-
-    const componentList: any = []
-    Object.keys(apps).map((appId: string) => {
-      const app: CyApp = apps[appId]
-      const { components } = app
-
-      if (components !== undefined) {
-        components.forEach((component: ComponentMetadata) => {
-          const componentId: string = component.id
-          if (!menuIds.has(componentId)) {
-            // Dynamically load the React component from remote
-            const MenuItemComponent = ExternalComponent(
-              appId,
-              './' + componentId,
-            )
-            // componentList.push(<MenuItemComponent />)
-            setAppMenuItem(MenuItemComponent)
-          }
-        })
-      }
-    })
-
-    return componentList
-  }
-
   useEffect(() => {
+    // Filter and use only active apps
+    const appIds: string[] = Object.keys(apps)
+
+    const activeIds = appIds.filter(
+      (id) => apps[id].status === AppStatus.Active,
+    )
+    if (activeIds.length === 0) {
+      return
+    }
+
     const componentList: [string, string][] = []
     // Extract component list from the apps
-    Object.keys(apps).forEach((appId: string) => {
+    activeIds.forEach((appId: string) => {
       const app: CyApp = apps[appId]
       const { components } = app
       if (components !== undefined) {
