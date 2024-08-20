@@ -37,10 +37,6 @@ export const BugReportMenuItem = ({ handleClose }: BugReportMenuItemProps): Reac
             setIsLoading(false);
           }
         },
-        fieldValues: {
-          summary: '',
-          description: `How to reproduce the bug:\n\n${getIssueEnvironment()}`
-        }
       }
 
       const script = document.createElement('script')
@@ -49,12 +45,6 @@ export const BugReportMenuItem = ({ handleClose }: BugReportMenuItemProps): Reac
       document.body.appendChild(script)
     }
   }, [open])
-
-  const getIssueEnvironment = () => {
-    // Implement this function to get the environment details
-    // You may need to pass this information from your app's state
-    return 'Cytoscape Version: \nOperating System: \nJava Version: '
-  }
 
   return (
     <>
