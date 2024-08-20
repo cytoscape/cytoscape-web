@@ -1,13 +1,15 @@
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 
+import { Divider } from '@mui/material'
 import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { BugReportMenuItem } from './BugReportMenuItem'
 import { CitationMenuItem } from './CitationMenuItem'
 import { CodeRepositoryMenuItem } from './CodeRepositoryMenuitem'
 import { TutorialMenuItem } from './TutorialMenuItem'
-
+import { DeveloperMenuItem } from './DeveloperMenuItem'
+import { AboutCytoscapeWebMenuItem } from './AboutCytoscapeWebMenuItem'
 
 export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
   const { label } = props
@@ -47,10 +49,15 @@ export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
           'aria-labelledby': label,
         }}
       >
+        <AboutCytoscapeWebMenuItem handleClose={handleClose} />
+        <Divider />
         <TutorialMenuItem handleClose={handleClose} />
-        <BugReportMenuItem handleClose={handleClose} />
+        <DeveloperMenuItem handleClose={handleClose} />
+        <Divider />
         <CitationMenuItem handleClose={handleClose} />
+        <Divider />
         <CodeRepositoryMenuItem handleClose={handleClose} />
+        <BugReportMenuItem handleClose={handleClose} />
       </Menu>
     </div>
   )
