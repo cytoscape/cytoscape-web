@@ -1,5 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
-import { MenuItem, Dialog, DialogContent, DialogTitle, Button } from '@mui/material'
+import { MenuItem, Dialog, DialogContent, DialogTitle, Button, IconButton } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 import { ReactElement, useState, useEffect } from 'react'
 
 interface BugReportMenuItemProps {
@@ -61,7 +62,21 @@ export const BugReportMenuItem = ({ handleClose }: BugReportMenuItemProps): Reac
         Report a Bug
       </MenuItem>
       <Dialog open={open} onClose={handleDialogClose} maxWidth="md" fullWidth>
-        <DialogTitle>Report a Bug</DialogTitle>
+        <DialogTitle>
+          Report a Bug
+          <IconButton
+            aria-label="close"
+            onClick={handleDialogClose}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
           <p className="lead">
             <b>TELL US: 1)</b> How to reproduce the bug. <b>2)</b> What browser you're using <b>3)</b> What
