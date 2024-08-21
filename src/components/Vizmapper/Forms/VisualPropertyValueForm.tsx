@@ -1,5 +1,13 @@
 import * as React from 'react'
-import { Box, Popover, Typography, Tooltip, Tabs, Tab, Divider } from '@mui/material'
+import {
+  Box,
+  Popover,
+  Typography,
+  Tooltip,
+  Tabs,
+  Tab,
+  Divider,
+} from '@mui/material'
 
 import {
   VisualProperty,
@@ -73,7 +81,7 @@ const vpType2RenderMap: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
+      closePopover: (reason: PopoverCloseReason) => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -140,7 +148,7 @@ const vpType2RenderMap2: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
+      closePopover: (reason: PopoverCloseReason) => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -158,7 +166,7 @@ const vpType2RenderMapViridis: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
+      closePopover: (reason: PopoverCloseReason) => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -177,7 +185,7 @@ const vpType2RenderMapSequential: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
+      closePopover: (reason: PopoverCloseReason) => void
       currentNetworkId?: IdType
       showCheckbox?: boolean
       vpName?: VisualPropertyName
@@ -247,7 +255,7 @@ const vpType2RenderMapDiverging: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
+      closePopover: (reason: PopoverCloseReason) => void
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -257,7 +265,7 @@ const vpType2RenderMapDiverging: Record<
   color: {
     pickerRender: ColorPickerDiverging,
     valueRender: Color,
-  }
+  },
 }
 
 // in some cases, we have specialized value renders
@@ -270,7 +278,7 @@ const vpName2RenderMap: Partial<
       pickerRender: (props: {
         currentValue: VisualPropertyValueType | null
         onValueChange: (newValue: VisualPropertyValueType) => void
-        closePopover: () => void
+        closePopover: (reason: PopoverCloseReason) => void
         currentNetworkId?: IdType
         showCheckbox?: boolean
         vpName?: VisualPropertyName
@@ -349,22 +357,32 @@ interface VisualPropertyValueFormProps {
   tooltipText?: string
 }
 
+// The popover is either closed by clicking away or by clicking a button
+// in the case of clicking away, handle
+export type PopoverCloseReason = 'clickaway' | 'buttonclick'
+
 // this component combines rendering vp values and a mechanism to mutate them via popover
 export function VisualPropertyValueForm(
   props: VisualPropertyValueFormProps,
 ): React.ReactElement {
   const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
   const [activeTab, setActiveTab] = React.useState(0)
-  const isColor = props.visualProperty.displayName.includes("Color");
-  const vpName = props.visualProperty.name;
-  const isEdgeLineColor = vpName === EdgeVisualPropertyName.EdgeLineColor || vpName === EdgeVisualPropertyName.EdgeTargetArrowColor || vpName === EdgeVisualPropertyName.EdgeSourceArrowColor;
+  const [popoverCloseReason, setPopoverCloseReason] =
+    React.useState<PopoverCloseReason | null>(null)
+  const isColor = props.visualProperty.displayName.includes('Color')
+  const vpName = props.visualProperty.name
+  const isEdgeLineColor =
+    vpName === EdgeVisualPropertyName.EdgeLineColor ||
+    vpName === EdgeVisualPropertyName.EdgeTargetArrowColor ||
+    vpName === EdgeVisualPropertyName.EdgeSourceArrowColor
   const showValuePicker = (value: Element | null): void => {
     setValuePicker(value)
   }
 
-  const closePopover = (): void => {
-    setValuePicker(null);
-  };
+  const closePopover = (reason: PopoverCloseReason): void => {
+    setPopoverCloseReason(reason)
+    setValuePicker(null)
+  }
 
   if (
     vpType2RenderMap[props.visualProperty.type] == null &&
@@ -392,23 +410,21 @@ export function VisualPropertyValueForm(
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box sx={{ overflow: 'hidden' }}>
-          {
-            isColor ? (
-              <>
-                <Tabs
-                  value={activeTab}
-                  onChange={(event, newValue) => setActiveTab(newValue)}
-                  aria-label="Tab panel"
-                >
-                  <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Sequential" />
-                  <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Diverging" />
-                  <Tab sx={{ pl: 3, pr: 3 }} label="Viridis Sequential" />
-                  <Tab sx={{ pl: 3, pr: 3 }} label="Swatches" />
-                  <Tab sx={{ pl: 3, pr: 3 }} label="Color Picker" />
-                </Tabs>
-              </>
-            ) : null
-          }
+          {isColor ? (
+            <>
+              <Tabs
+                value={activeTab}
+                onChange={(event, newValue) => setActiveTab(newValue)}
+                aria-label="Tab panel"
+              >
+                <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Sequential" />
+                <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Diverging" />
+                <Tab sx={{ pl: 3, pr: 3 }} label="Viridis Sequential" />
+                <Tab sx={{ pl: 3, pr: 3 }} label="Swatches" />
+                <Tab sx={{ pl: 3, pr: 3 }} label="Color Picker" />
+              </Tabs>
+            </>
+          ) : null}
           {activeTab === 0 && (
             <Box
               sx={{
@@ -427,7 +443,7 @@ export function VisualPropertyValueForm(
                 vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMapSequential[props.visualProperty.type]
                   .pickerRender ??
-                (() => { })
+                (() => {})
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
@@ -455,8 +471,7 @@ export function VisualPropertyValueForm(
             >
               {(
                 vpType2RenderMapDiverging[props.visualProperty.type]
-                  .pickerRender ??
-                (() => { })
+                  .pickerRender ?? (() => {})
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
@@ -482,8 +497,7 @@ export function VisualPropertyValueForm(
             >
               {(
                 vpType2RenderMapViridis[props.visualProperty.type]
-                  .pickerRender ??
-                (() => { })
+                  .pickerRender ?? (() => {})
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
@@ -510,7 +524,7 @@ export function VisualPropertyValueForm(
               {' '}
               {(
                 vpType2RenderMap2[props.visualProperty.type].pickerRender ??
-                (() => { })
+                (() => {})
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
@@ -537,25 +551,21 @@ export function VisualPropertyValueForm(
               {' '}
               {(
                 vpType2RenderMap[props.visualProperty.type].pickerRender ??
-                (() => { })
+                (() => {})
               )({
                 onValueChange: (value: VisualPropertyValueType) =>
                   props.onValueChange(value),
                 currentValue: props.currentValue,
-                closePopover: closePopover
+                closePopover: closePopover,
               })}
             </Box>
           )}
-          {props.showCheckbox && isEdgeLineColor &&
-            (
-              <>
-                <Divider />
-                <LockColorCheckbox
-                  currentNetworkId={props.currentNetworkId}
-                />
-              </>
-            )
-          }
+          {props.showCheckbox && isEdgeLineColor && (
+            <>
+              <Divider />
+              <LockColorCheckbox currentNetworkId={props.currentNetworkId} />
+            </>
+          )}
         </Box>
       </Popover>
     </Box>
