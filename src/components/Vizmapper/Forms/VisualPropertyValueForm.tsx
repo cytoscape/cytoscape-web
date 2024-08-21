@@ -147,57 +147,9 @@ const vpType2RenderMap2: Record<
     }) => React.ReactElement
   }
 > = {
-  nodeShape: {
-    pickerRender: NodeShapePicker,
-    valueRender: NodeShape,
-  },
   color: {
     pickerRender: ColorPickerCompact,
     valueRender: Color,
-  },
-  nodeBorderLine: {
-    pickerRender: NodeBorderLinePicker,
-    valueRender: NodeBorderLine,
-  },
-  number: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  font: {
-    pickerRender: FontPicker,
-    valueRender: Font,
-  },
-  horizontalAlign: {
-    pickerRender: HorizontalAlignPicker,
-    valueRender: HorizontalAlign,
-  },
-  verticalAlign: {
-    pickerRender: VerticalAlignPicker,
-    valueRender: VerticalAlign,
-  },
-  visibility: {
-    pickerRender: VisibilityPicker,
-    valueRender: Visibility,
-  },
-  edgeArrowShape: {
-    pickerRender: EdgeArrowShapePicker,
-    valueRender: EdgeArrowShape,
-  },
-  edgeLine: {
-    pickerRender: EdgeLinePicker,
-    valueRender: EdgeLine,
-  },
-  string: {
-    pickerRender: StringInput,
-    valueRender: StringRender,
-  },
-  boolean: {
-    pickerRender: BooleanSwitch,
-    valueRender: BooleanRender,
-  },
-  nodeLabelPosition: {
-    pickerRender: NodeLabelPositionPicker,
-    valueRender: NodeLabelPositionRender,
   },
 }
 const vpType2RenderMapViridis: Record<
@@ -213,57 +165,9 @@ const vpType2RenderMapViridis: Record<
     }) => React.ReactElement
   }
 > = {
-  nodeShape: {
-    pickerRender: NodeShapePicker,
-    valueRender: NodeShape,
-  },
   color: {
     pickerRender: ColorPickerViridis,
     valueRender: Color,
-  },
-  nodeBorderLine: {
-    pickerRender: NodeBorderLinePicker,
-    valueRender: NodeBorderLine,
-  },
-  number: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  font: {
-    pickerRender: FontPicker,
-    valueRender: Font,
-  },
-  horizontalAlign: {
-    pickerRender: HorizontalAlignPicker,
-    valueRender: HorizontalAlign,
-  },
-  verticalAlign: {
-    pickerRender: VerticalAlignPicker,
-    valueRender: VerticalAlign,
-  },
-  visibility: {
-    pickerRender: VisibilityPicker,
-    valueRender: Visibility,
-  },
-  edgeArrowShape: {
-    pickerRender: EdgeArrowShapePicker,
-    valueRender: EdgeArrowShape,
-  },
-  edgeLine: {
-    pickerRender: EdgeLinePicker,
-    valueRender: EdgeLine,
-  },
-  string: {
-    pickerRender: StringInput,
-    valueRender: StringRender,
-  },
-  boolean: {
-    pickerRender: BooleanSwitch,
-    valueRender: BooleanRender,
-  },
-  nodeLabelPosition: {
-    pickerRender: NodeLabelPositionPicker,
-    valueRender: NodeLabelPositionRender,
   },
 }
 
@@ -350,58 +254,10 @@ const vpType2RenderMapDiverging: Record<
     }) => React.ReactElement
   }
 > = {
-  nodeShape: {
-    pickerRender: NodeShapePicker,
-    valueRender: NodeShape,
-  },
   color: {
     pickerRender: ColorPickerDiverging,
     valueRender: Color,
-  },
-  nodeBorderLine: {
-    pickerRender: NodeBorderLinePicker,
-    valueRender: NodeBorderLine,
-  },
-  number: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  font: {
-    pickerRender: FontPicker,
-    valueRender: Font,
-  },
-  horizontalAlign: {
-    pickerRender: HorizontalAlignPicker,
-    valueRender: HorizontalAlign,
-  },
-  verticalAlign: {
-    pickerRender: VerticalAlignPicker,
-    valueRender: VerticalAlign,
-  },
-  visibility: {
-    pickerRender: VisibilityPicker,
-    valueRender: Visibility,
-  },
-  edgeArrowShape: {
-    pickerRender: EdgeArrowShapePicker,
-    valueRender: EdgeArrowShape,
-  },
-  edgeLine: {
-    pickerRender: EdgeLinePicker,
-    valueRender: EdgeLine,
-  },
-  string: {
-    pickerRender: StringInput,
-    valueRender: StringRender,
-  },
-  boolean: {
-    pickerRender: BooleanSwitch,
-    valueRender: BooleanRender,
-  },
-  nodeLabelPosition: {
-    pickerRender: NodeLabelPositionPicker,
-    valueRender: NodeLabelPositionRender,
-  },
+  }
 }
 
 // in some cases, we have specialized value renders
@@ -535,7 +391,7 @@ export function VisualPropertyValueForm(
         onClose={() => showValuePicker(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
-        <Box>
+        <Box sx={{ overflow: 'hidden' }}>
           {
             isColor ? (
               <>
@@ -544,11 +400,11 @@ export function VisualPropertyValueForm(
                   onChange={(event, newValue) => setActiveTab(newValue)}
                   aria-label="Tab panel"
                 >
-                  <Tab label="ColorBrewer Sequential" />
-                  <Tab label="ColorBrewer Diverging" />
-                  <Tab label="Viridis Sequential" />
-                  <Tab label="Swatches" />
-                  <Tab label="Color Picker" />
+                  <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Sequential" />
+                  <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Diverging" />
+                  <Tab sx={{ pl: 3, pr: 3 }} label="Viridis Sequential" />
+                  <Tab sx={{ pl: 3, pr: 3 }} label="Swatches" />
+                  <Tab sx={{ pl: 3, pr: 3 }} label="Color Picker" />
                 </Tabs>
               </>
             ) : null
@@ -560,7 +416,6 @@ export function VisualPropertyValueForm(
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                overflow: 'auto',
                 '&::-webkit-scrollbar': {
                   display: 'none',
                 },
@@ -591,7 +446,6 @@ export function VisualPropertyValueForm(
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                overflow: 'auto',
                 '&::-webkit-scrollbar': {
                   display: 'none',
                 },
@@ -600,7 +454,6 @@ export function VisualPropertyValueForm(
               }}
             >
               {(
-                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMapDiverging[props.visualProperty.type]
                   .pickerRender ??
                 (() => { })
@@ -620,7 +473,6 @@ export function VisualPropertyValueForm(
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                overflow: 'auto',
                 '&::-webkit-scrollbar': {
                   display: 'none',
                 },
@@ -628,9 +480,7 @@ export function VisualPropertyValueForm(
                 msOverflowStyle: 'none',
               }}
             >
-              {' '}
               {(
-                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMapViridis[props.visualProperty.type]
                   .pickerRender ??
                 (() => { })
@@ -650,7 +500,6 @@ export function VisualPropertyValueForm(
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                overflow: 'auto',
                 '&::-webkit-scrollbar': {
                   display: 'none',
                 },
@@ -660,7 +509,6 @@ export function VisualPropertyValueForm(
             >
               {' '}
               {(
-                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMap2[props.visualProperty.type].pickerRender ??
                 (() => { })
               )({
@@ -679,7 +527,6 @@ export function VisualPropertyValueForm(
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                overflow: 'auto',
                 '&::-webkit-scrollbar': {
                   display: 'none',
                 },
@@ -689,7 +536,6 @@ export function VisualPropertyValueForm(
             >
               {' '}
               {(
-                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
                 vpType2RenderMap[props.visualProperty.type].pickerRender ??
                 (() => { })
               )({
