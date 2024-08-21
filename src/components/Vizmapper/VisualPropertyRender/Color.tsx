@@ -38,58 +38,68 @@ export function ColorPicker(props: {
         <Tab sx={{ pl: 3, pr: 3 }} label="Swatches" />
         <Tab sx={{ pl: 3, pr: 3 }} label="Color Picker" />
       </Tabs>
-      {activeTab === 0 && (
-        <SwatchesPicker
-          width={945}
-          colors={SequentialCustomColors}
-          color={localColorValue}
-          onChange={(color: any) => {
-            setLocalColorValue(color.hex)
-            debouncedValueChange(color.hex)
-          }}
-        />
-      )}
-      {activeTab === 1 && (
-        <SwatchesPicker
-          width={600}
-          colors={DivergingCustomColors}
-          color={localColorValue}
-          onChange={(color: any) => {
-            setLocalColorValue(color.hex)
-            debouncedValueChange(color.hex)
-          }}
-        />
-      )}
-      {activeTab === 2 && (
-        <SwatchesPicker
-          width={231}
-          colors={VirdisCustomColors}
-          color={localColorValue}
-          onChange={(color: any) => {
-            setLocalColorValue(color.hex)
-            debouncedValueChange(color.hex)
-          }}
-        />
-      )}
-      {activeTab === 3 && (
-        <CompactPicker
-          colors={CompactCustomColors}
-          color={localColorValue}
-          onChange={(color: any) => {
-            setLocalColorValue(color.hex)
-            debouncedValueChange(color.hex)
-          }}
-        />
-      )}
-      {activeTab === 4 && (
-        <ChromePicker
-          color={localColorValue}
-          onChange={(color: any) => {
-            setLocalColorValue(color.hex)
-            debouncedValueChange(color.hex)
-          }}
-        />
-      )}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 1,
+          height: 275,
+        }}
+      >
+        {activeTab === 0 && (
+          <SwatchesPicker
+            width={945}
+            colors={SequentialCustomColors}
+            color={localColorValue}
+            onChange={(color: any) => {
+              setLocalColorValue(color.hex)
+              debouncedValueChange(color.hex)
+            }}
+          />
+        )}
+        {activeTab === 1 && (
+          <SwatchesPicker
+            width={600}
+            colors={DivergingCustomColors}
+            color={localColorValue}
+            onChange={(color: any) => {
+              setLocalColorValue(color.hex)
+              debouncedValueChange(color.hex)
+            }}
+          />
+        )}
+        {activeTab === 2 && (
+          <SwatchesPicker
+            width={231}
+            colors={VirdisCustomColors}
+            color={localColorValue}
+            onChange={(color: any) => {
+              setLocalColorValue(color.hex)
+              debouncedValueChange(color.hex)
+            }}
+          />
+        )}
+        {activeTab === 3 && (
+          <CompactPicker
+            colors={CompactCustomColors}
+            color={localColorValue}
+            onChange={(color: any) => {
+              setLocalColorValue(color.hex)
+              debouncedValueChange(color.hex)
+            }}
+          />
+        )}
+        {activeTab === 4 && (
+          <ChromePicker
+            color={localColorValue}
+            onChange={(color: any) => {
+              setLocalColorValue(color.hex)
+              debouncedValueChange(color.hex)
+            }}
+          />
+        )}
+      </Box>
     </Box>
   )
 }
