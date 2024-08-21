@@ -1,5 +1,6 @@
 import { ColorType } from './ColorType'
 import { EdgeArrowShapeType } from './EdgeArrowShapeType'
+import { EdgeFillType } from './EdgeFillType'
 import { EdgeLineType } from './EdgeLineType'
 import { FontType } from './FontType'
 import { NodeBorderLineType } from './NodeBorderLineType'
@@ -25,6 +26,7 @@ export type VisualPropertyValueType =
   | NodeBorderLineType
   | VisibilityType
   | NodeLabelPositionType
+  | EdgeFillType
   | string
   | number
   | boolean
