@@ -17,6 +17,8 @@ import { Aspect } from '../models/CxModel/Cx2/Aspect'
 import { CoreAspectTag } from '../models/CxModel/Cx2/CoreAspectTag'
 import { NetworkWithView } from '../models/NetworkWithViewModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
+import { Ui } from '../models/UiModel'
+import { IdType } from '../models/IdType'
 
 /**
  *
@@ -59,21 +61,28 @@ export const createNetworkViewFromCx2 = (
 }
 
 export const getCachedData = async (id: string): Promise<CachedData> => {
-  const network = await getNetworkFromDb(id)
-  const tables = await getTablesFromDb(id)
-  const networkViews: NetworkView[] | undefined =
-    await getNetworkViewsFromDb(id)
-  const visualStyle = await getVisualStyleFromDb(id)
-  const visualStyleOptions = await getUiStateFromDb().then(
-    (uiState) => uiState?.visualStyleOptions[id],
-  )
-  return {
-    network,
-    visualStyle,
-    nodeTable: tables !== undefined ? tables.nodeTable : undefined,
-    edgeTable: tables !== undefined ? tables.edgeTable : undefined,
-    networkViews: networkViews ?? [],
-    visualStyleOptions: visualStyleOptions,
+  try {
+    const network = await getNetworkFromDb(id)
+    const tables = await getTablesFromDb(id)
+    const networkViews: NetworkView[] | undefined =
+      await getNetworkViewsFromDb(id)
+    const visualStyle = await getVisualStyleFromDb(id)
+    const uiState: Ui | undefined = await getUiStateFromDb()
+    const vsOptions: Record<IdType, VisualStyleOptions> =
+      uiState?.visualStyleOptions ?? {}
+    // Fall back to an empty object if the visual style options are not found
+    const visualStyleOptions: VisualStyleOptions = vsOptions[id] ?? {}
+    return {
+      network,
+      visualStyle,
+      nodeTable: tables !== undefined ? tables.nodeTable : undefined,
+      edgeTable: tables !== undefined ? tables.edgeTable : undefined,
+      networkViews: networkViews ?? [],
+      visualStyleOptions: visualStyleOptions,
+    }
+  } catch (e) {
+    console.error('Failed to restore data from IndexedDB', e)
+    throw e
   }
 }
 
