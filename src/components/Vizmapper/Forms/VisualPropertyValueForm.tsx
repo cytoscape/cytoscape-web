@@ -74,6 +74,9 @@ const vpType2RenderMap: Record<
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
       closePopover: () => void
+      currentNetworkId?: IdType
+      showCheckbox?: boolean
+      vpName?: VisualPropertyName
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -280,14 +283,17 @@ export function VisualPropertyValueForm(
               msOverflowStyle: 'none',
             }}
           >
-            {' '}
             {(
-              vpType2RenderMap[props.visualProperty.type].pickerRender ??
+              vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+              vpType2RenderMap[props.visualProperty.type]?.pickerRender ??
               (() => {})
             )({
               onValueChange: (value: VisualPropertyValueType) =>
                 props.onValueChange(value),
               currentValue: props.currentValue,
+              currentNetworkId: props.currentNetworkId,
+              showCheckbox: props.showCheckbox ?? false,
+              vpName: props.visualProperty.name,
               closePopover: closePopover,
             })}
           </Box>
