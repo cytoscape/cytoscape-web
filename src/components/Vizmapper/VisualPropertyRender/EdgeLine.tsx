@@ -5,16 +5,18 @@ import {
   SolidLineIcon,
   DashedLineIcon,
 } from '../VisualStyleIcons'
-const edgeLineMap: Record<EdgeLineType, React.ReactElement> = {
-  [EdgeLineType.Solid]: <SolidLineIcon />,
-  [EdgeLineType.Dotted]: <DottedLineIcon />,
-  [EdgeLineType.Dashed]: <DashedLineIcon />,
+const edgeLineMap: Record<EdgeLineType, (isSelected: boolean) => React.ReactElement> = {
+  [EdgeLineType.Solid]: (isSelected: boolean) => <SolidLineIcon isSelected={isSelected} />,
+  [EdgeLineType.Dotted]: (isSelected: boolean) => <DottedLineIcon isSelected={isSelected} />,
+  [EdgeLineType.Dashed]: (isSelected: boolean) => <DashedLineIcon isSelected={isSelected} />,
 }
 export function EdgeLinePicker(props: {
   currentValue: EdgeLineType | null
   onValueChange: (edgeLine: EdgeLineType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
+  const sortedEdgeLines = Object.values(EdgeLineType).sort();
 
   return (
     <Box
@@ -24,11 +26,11 @@ export function EdgeLinePicker(props: {
         flexWrap: 'wrap',
       }}
     >
-      {Object.values(EdgeLineType).map((edgeLine: EdgeLineType) => (
+      {sortedEdgeLines.map((edgeLine: EdgeLineType) => (
         <Box
           sx={{
             color: currentValue === edgeLine ? 'blue' : 'black',
-            width: 100,
+            fontWeight: currentValue === edgeLine ? 'bold' : 'normal',
             p: 1,
             '&:hover': { cursor: 'pointer' },
           }}
@@ -41,10 +43,10 @@ export function EdgeLinePicker(props: {
               flexDirection: 'column',
               justifyContent: 'space-between',
               alignItems: 'center',
-              width: 100,
+              width: 80,
             }}
           >
-            <EdgeLine value={edgeLine} />
+            <EdgeLine value={edgeLine} isSelected={currentValue === edgeLine} />
             <Box>{edgeLine}</Box>
           </Box>
         </Box>
@@ -53,6 +55,7 @@ export function EdgeLinePicker(props: {
   )
 }
 
-export function EdgeLine(props: { value: EdgeLineType }): React.ReactElement {
-  return edgeLineMap[props.value] ?? <Box>{props.value}</Box>
+export function EdgeLine(props: { value: EdgeLineType, isSelected: boolean }): React.ReactElement {
+  const { value, isSelected } = props
+  return edgeLineMap[value](isSelected) ?? <Box>{value}</Box>
 }

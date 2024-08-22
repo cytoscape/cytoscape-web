@@ -62,7 +62,7 @@ export const initializeDb = async (): Promise<void> => {
     throw err
   })
   db.open()
-    .then(() => {})
+    .then(() => { })
     .catch((err) => {
       console.log(err)
     })

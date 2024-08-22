@@ -84,7 +84,7 @@ const CyjsRenderer = ({
   const setViewModel = useViewModelStore((state) => state.add)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
-
+  const visualEditorProperties = useUiStateStore((state) => state.ui.visualStyleOptions[id]?.visualEditorProperties);
   const tables = useTableStore((state) => state.tables)
   const getViewModel: (id: IdType) => NetworkView | undefined =
     useViewModelStore((state) => state.getViewModel)
@@ -177,7 +177,7 @@ const CyjsRenderer = ({
     const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
 
     const { nodeViews, edgeViews } = updatedNetworkView
-    addObjects(cy, Object.values(nodeViews), network.edges, edgeViews)
+    addObjects(cy, Object.values(nodeViews), network.edges, edgeViews, visualEditorProperties)
 
     // Generate a new Cytoscape.js styles based on given visual style
     const newStyle = createCyjsDataMapper(vs)
@@ -310,7 +310,7 @@ const CyjsRenderer = ({
     }
     const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
     // Apply style from view model
-    applyViewModel(cy, updatedNetworkView)
+    applyViewModel(cy, updatedNetworkView, visualEditorProperties)
 
     cy.endBatch()
     if (cyStyle.length > 0) {
@@ -351,7 +351,7 @@ const CyjsRenderer = ({
     () => (): void => {
       applyStyleUpdate()
     },
-    [vs, table],
+    [vs, table, visualEditorProperties],
   )
 
   // when the visual style model, table model, or edge/node views change re-render cy.js style
@@ -366,7 +366,7 @@ const CyjsRenderer = ({
     }
 
     applyUpdates()
-  }, [vs, table])
+  }, [vs, table, visualEditorProperties])
 
   // Apply layout when node positions are changed
   useEffect(() => {

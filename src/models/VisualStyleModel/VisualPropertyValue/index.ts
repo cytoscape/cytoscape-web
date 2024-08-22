@@ -11,5 +11,6 @@ export {
 } from './NodeLabelPositionType'
 export { NodeBorderLineType } from './NodeBorderLineType'
 export { VisibilityType } from './VisibilityType'
+export { EdgeFillType } from './EdgeFillType'
 
 export { VisualPropertyValueType } from './VisualPropertyValueType'

@@ -4,7 +4,10 @@ import { ValueType } from '../../../models/TableModel'
 import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import { View } from '../../../models/ViewModel/View'
 import VisualStyleFn, {
+  EdgeArrowShapeType,
   NodeLabelPositionType,
+  EdgeVisualPropertyName,
+  NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyName,
   VisualPropertyValueType,
@@ -15,6 +18,7 @@ import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualP
 import { computeNodeLabelPosition } from './nodeLabelPositionMap'
 import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
 import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
+import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
@@ -43,7 +47,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   nodeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
     const cyjsVpName = getCyjsVpName(vp.name)
     if (cyjsVpName !== undefined) {
-      if (vp.name === 'nodeSelectedPaint') {
+      if (vp.name === VisualPropertyName.NodeSelectedPaint) {
         const selectedNodeMapping = {
           selector: 'node:selected',
           style: {
@@ -51,7 +55,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           },
         }
         cyStyle.push(selectedNodeMapping as CyjsDirectMapper)
-      } else if (vp.name === 'nodeLabelPosition') {
+      } else if (vp.name === VisualPropertyName.NodeLabelPosition) {
         const valignDirectMapping: CyjsDirectMapper = {
           selector: `node[${SpecialPropertyName.NodeLabelVerticalAlign}]`,
           style: {
@@ -92,6 +96,32 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           },
         }
         cyStyle.push(selectedNodeMapping as CyjsDirectMapper)
+      } else if (
+        vp.name === VisualPropertyName.EdgeSourceArrowShape ||
+        vp.name === VisualPropertyName.EdgeTargetArrowShape
+      ) {
+        const edgeArrowShapeMapping: CyjsDirectMapper = {
+          selector: `edge[${vp.name}]`,
+          style: {
+            [cyjsVpName]: `data(${vp.name})`,
+          },
+        }
+        const edgePos =
+          vp.name === VisualPropertyName.EdgeSourceArrowShape
+            ? 'source'
+            : 'target'
+        const edgePosFillSelector =
+          vp.name === VisualPropertyName.EdgeSourceArrowShape
+            ? SpecialPropertyName.SourceArrowFill
+            : SpecialPropertyName.TargetArrowFill
+        const edgeArrowFillMapping: CyjsDirectMapper = {
+          selector: `edge[${edgePosFillSelector}]`,
+          style: {
+            [`${edgePos}-arrow-fill`]: `data(${edgePosFillSelector})`,
+          },
+        }
+        cyStyle.push(edgeArrowFillMapping)
+        cyStyle.push(edgeArrowShapeMapping)
       } else {
         const directMapping: CyjsDirectMapper = {
           selector: `edge[${vp.name}]`,
@@ -121,15 +151,16 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   return cyStyle
 }
 
-export const applyViewModel = (cy: Core, networkView: NetworkView): void => {
+export const applyViewModel = (cy: Core, networkView: NetworkView, visualEditorProperties: VisualEditorProperties): void => {
   const { nodeViews, edgeViews } = networkView
-  updateCyObjects<NodeView>(nodeViews, cy.nodes())
-  updateCyObjects<EdgeView>(edgeViews, cy.edges())
+  updateCyObjects<NodeView>(nodeViews, cy.nodes(), visualEditorProperties)
+  updateCyObjects<EdgeView>(edgeViews, cy.edges(), visualEditorProperties)
 }
 
 const updateCyObjects = <T extends View>(
   views: Record<IdType, T>,
   cyObjects: Collection<SingularElementArgument>,
+  visualEditorProperties: VisualEditorProperties
 ): void => {
   cyObjects.forEach((obj: SingularElementArgument) => {
     const cyId = obj.data('id')
@@ -148,11 +179,45 @@ const updateCyObjects = <T extends View>(
               horizontalAlign,
             )
             obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
+          } else if (
+            key === VisualPropertyName.EdgeTargetArrowShape ||
+            key === VisualPropertyName.EdgeSourceArrowShape
+          ) {
+            const srcArrowFill = view.values.get(
+              SpecialPropertyName.SourceArrowFill as VisualPropertyName,
+            )
+            const tgtArrowFill = view.values.get(
+              SpecialPropertyName.TargetArrowFill as VisualPropertyName,
+            )
+
+            const edgePosFillSelector =
+              key === VisualPropertyName.EdgeSourceArrowShape
+                ? SpecialPropertyName.SourceArrowFill
+                : SpecialPropertyName.TargetArrowFill
+
+            obj.data(key, value)
+            obj.data(
+              edgePosFillSelector,
+              key === VisualPropertyName.EdgeSourceArrowShape
+                ? srcArrowFill
+                : tgtArrowFill,
+            )
+            if (obj.data(key) === EdgeArrowShapeType.Arrow) {
+              obj.data(key, EdgeArrowShapeType.Triangle)
+            }
           } else {
             obj.data(key, value)
           }
         },
       )
+      if (visualEditorProperties?.nodeSizeLocked) {
+        obj.data(NodeVisualPropertyName.NodeWidth, obj.data(NodeVisualPropertyName.NodeHeight))
+      }
+      if (visualEditorProperties?.arrowColorMatchesEdge) {
+        const color = obj.data(EdgeVisualPropertyName.EdgeLineColor)
+        obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor, color)
+        obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor, color)
+      }
     }
   })
 }

@@ -19,7 +19,8 @@ export const useNdexNetwork = async (
       cache.nodeTable === undefined ||
       cache.edgeTable === undefined ||
       cache.visualStyle === undefined ||
-      cache.networkViews === undefined
+      cache.networkViews === undefined ||
+      cache.visualStyleOptions === undefined
     ) {
       const cxData: Cx2 = await ndexNetworkFetcher(
         ndexNetworkId,
@@ -34,6 +35,7 @@ export const useNdexNetwork = async (
         edgeTable: cache.edgeTable,
         visualStyle: cache.visualStyle,
         networkViews: cache.networkViews,
+        visualStyleOptions: cache.visualStyleOptions,
       }
     }
   } catch (error) {

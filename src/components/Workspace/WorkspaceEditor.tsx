@@ -42,7 +42,7 @@ import { useNetworkSummaryManager } from '../../store/hooks/useNetworkSummaryMan
 import { ChevronRight } from '@mui/icons-material'
 import { Panel } from '../../models/UiModel/Panel'
 import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
-import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
+import { LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
 import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
@@ -116,6 +116,11 @@ const WorkSpaceEditor = (): JSX.Element => {
   )
 
   const ui: Ui = useUiStateStore((state) => state.ui)
+
+  const setVisualStyleOptions = useUiStateStore(
+    (state) => state.setVisualStyleOptions,
+  )
+
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
@@ -271,8 +276,16 @@ const WorkSpaceEditor = (): JSX.Element => {
     )
     const summary = summaryMap[networkId]
     const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
-    const { network, nodeTable, edgeTable, visualStyle, networkViews } = res
+    const {
+      network,
+      nodeTable,
+      edgeTable,
+      visualStyle,
+      networkViews,
+      visualStyleOptions,
+    } = res
 
+    setVisualStyleOptions(networkId, visualStyleOptions)
     addNewNetwork(network)
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)

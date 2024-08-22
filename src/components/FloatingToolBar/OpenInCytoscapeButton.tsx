@@ -75,6 +75,9 @@ export const OpenInCytoscapeButton = ({
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[targetNetworkId],
   )
+  const visualStyleOptions = useUiStateStore((state) =>
+    state.ui.visualStyleOptions[targetNetworkId],
+  )
   const network = useNetworkStore((state) =>
     state.networks.get(targetNetworkId),
   ) as Network
@@ -102,6 +105,7 @@ export const OpenInCytoscapeButton = ({
       targetSummary,
       table.nodeTable,
       table.edgeTable,
+      visualStyleOptions,
       viewModel,
       targetSummary.name,
     )

@@ -25,6 +25,7 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 import { KeycloakContext } from '../../../bootstrap'
+import { useUiStateStore } from '../../../store/UiStateStore'
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
   props: BaseMenuProps,
@@ -87,6 +88,8 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable
     const viewModel = useViewModelStore.getState().getViewModel(networkId)
+    const visualStyleOptions =
+      useUiStateStore.getState().ui.visualStyleOptions[networkId]
 
     ndexClient.setAuthToken(accessToken)
     const cx = exportNetworkToCx2(
@@ -95,6 +98,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       summary,
       nodeTable,
       edgeTable,
+      visualStyleOptions,
       viewModel,
     )
     await ndexClient.updateNetworkFromRawCX2(networkId, cx)
@@ -117,6 +121,8 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
     const nodeTable = useTableStore.getState().tables[networkId].nodeTable
     const edgeTable = useTableStore.getState().tables[networkId].edgeTable
     const viewModel = useViewModelStore.getState().getViewModel(networkId)
+    const visualStyleOptions =
+      useUiStateStore.getState().ui.visualStyleOptions[networkId]
 
     const cx = exportNetworkToCx2(
       network,
@@ -124,6 +130,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       summary,
       nodeTable,
       edgeTable,
+      visualStyleOptions,
       viewModel,
       `Copy of ${summary.name}`,
     )

@@ -4,8 +4,10 @@ import { Box } from '@mui/material'
 export function FontPicker(props: {
   currentValue: FontType | null
   onValueChange: (font: FontType) => void
+  closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
+  const sortedFontTypes = Object.values(FontType).sort();
 
   return (
     <Box
@@ -15,10 +17,11 @@ export function FontPicker(props: {
         flexWrap: 'wrap',
       }}
     >
-      {Object.values(FontType).map((font: FontType) => (
+      {sortedFontTypes.map((font: FontType) => (
         <Box
           sx={{
             color: currentValue === font ? 'blue' : 'black',
+            fontWeight: currentValue === font ? 'bold' : 'normal',
             width: 100,
             display: 'flex',
             flexDirection: 'column',
@@ -31,7 +34,7 @@ export function FontPicker(props: {
           onClick={() => onValueChange(font)}
           key={font}
         >
-          <Font value={font} />
+          <Font value={font} isSelected={currentValue === font} />
           {font}
         </Box>
       ))}
@@ -39,6 +42,7 @@ export function FontPicker(props: {
   )
 }
 
-export function Font(props: { value: FontType }): React.ReactElement {
-  return <Box sx={{ fontFamily: props.value }}>Aa</Box>
+export function Font(props: { value: FontType, isSelected: boolean }): React.ReactElement {
+  const { value, isSelected } = props
+  return <Box sx={{ fontFamily: value, transform: isSelected ? 'scale(1.1)' : 'none' }}>Aa</Box>
 }

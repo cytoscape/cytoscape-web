@@ -8,7 +8,7 @@ import {
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
 } from '@mui/icons-material'
-import React, { useContext, useEffect, useState } from 'react'
+import React, { ChangeEvent, useContext, useEffect, useState } from 'react'
 import { UnionIcon, DifferenceIcon, IntersectionIcon } from './Icon'
 import {
   Dialog,
@@ -75,6 +75,7 @@ import {
 import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
+import { useUiStateStore } from '../../../store/UiStateStore'
 
 interface MergeDialogProps {
   open: boolean
@@ -105,9 +106,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const [isNameDuplicate, setIsNameDuplicate] = useState(false) // Flag to indicate whether the network name is a duplicate
   const existingNetNames = new Set(workSpaceNetworks.map((pair) => pair[0])) // Set of existing network names
   const mergeTooltipIsOpen = useMergeToolTipStore((state) => state.isOpen)
-  const setMergeTooltipIsOpen = useMergeToolTipStore((state) => state.setIsOpen)
   const mergeTooltipText = useMergeToolTipStore((state) => state.text)
-  const setMergeTooltipText = useMergeToolTipStore((state) => state.setText)
   // confirmation window
   const [openConfirmation, setOpenConfirmation] = useState(false)
   const [confirmationTitle, setConfirmationTitle] = useState('')
@@ -174,6 +173,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   // Functions relying on store hooks
   const updateSummary = useNetworkSummaryStore((state) => state.update)
   const netSummaries = useNetworkSummaryStore((state) => state.summaries)
+  const setVisualStyleOptions = useUiStateStore(
+    (state) => state.setVisualStyleOptions,
+  )
   const addNewNetwork = useNetworkStore((state) => state.add)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const setViewModel = useViewModelStore((state) => state.add)
@@ -486,8 +488,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             toMergeNetworksList.some((pair) => pair[1] === id),
           ),
         )
-      const baseNetwork =
-        toMergeNetworksList.length > 0 ? toMergeNetworksList[0][1] : ''
       const [newNetworkWithView, networkSummary] =
         await createMergedNetworkWithView(
           [...toMergeNetworksList.map((i) => i[1])],
@@ -506,6 +506,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         )
 
       // Update state stores with the new network and its components
+      setVisualStyleOptions(newNetworkId, newNetworkWithView.visualStyleOptions)
       setCurrentNetworkId(newNetworkId)
       addNetworkToWorkspace(newNetworkId)
       addNewNetwork(newNetworkWithView.network)

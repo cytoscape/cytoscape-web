@@ -31,27 +31,27 @@ import { VisualStyleStore } from '../models/StoreModel/VisualStyleStoreModel'
  */
 const persist =
   (config: StateCreator<VisualStyleStore>) =>
-  (
-    set: StoreApi<VisualStyleStore>['setState'],
-    get: StoreApi<VisualStyleStore>['getState'],
-    api: StoreApi<VisualStyleStore>,
-  ) =>
-    config(
-      async (args) => {
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
+    (
+      set: StoreApi<VisualStyleStore>['setState'],
+      get: StoreApi<VisualStyleStore>['getState'],
+      api: StoreApi<VisualStyleStore>,
+    ) =>
+      config(
+        async (args) => {
+          const currentNetworkId =
+            useWorkspaceStore.getState().workspace.currentNetworkId
 
-        set(args)
-        const updated = get().visualStyles[currentNetworkId]
-        const deleted = updated === undefined
+          set(args)
+          const updated = get().visualStyles[currentNetworkId]
+          const deleted = updated === undefined
 
-        if (!deleted) {
-          await putVisualStyleToDb(currentNetworkId, updated).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+          if (!deleted) {
+            await putVisualStyleToDb(currentNetworkId, updated).then(() => { })
+          }
+        },
+        get,
+        api,
+      )
 
 export const useVisualStyleStore = create(
   immer<VisualStyleStore>(
