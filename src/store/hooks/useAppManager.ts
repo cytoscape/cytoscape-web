@@ -23,14 +23,17 @@ appConfig.forEach((app: any) => {
  */
 const loadModules = async () => {
   const moduleNames = Object.keys(appImportMap) as (keyof typeof appImportMap)[]
+  if (moduleNames.length === 0) {
+    return []
+  }
   const loadedModules = await Promise.all(
     moduleNames.map((moduleName) => {
-      const importFunc = appImportMap[moduleName]
-      if (importFunc) {
+      const importFunc: any = appImportMap[moduleName]
+      if (importFunc !== undefined) {
         try {
           const externalAppModule = importFunc()
-            .then((module) => module)
-            .catch((e) => {
+            .then((module: any) => module)
+            .catch((e: any) => {
               console.warn(`## Error loading external module ${moduleName}:`, e)
             })
           return [moduleName, externalAppModule]

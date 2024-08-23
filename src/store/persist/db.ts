@@ -62,7 +62,7 @@ export const initializeDb = async (): Promise<void> => {
     throw err
   })
   db.open()
-    .then(() => { })
+    .then(() => {})
     .catch((err) => {
       console.log(err)
     })
@@ -74,6 +74,10 @@ export const initializeDb = async (): Promise<void> => {
 
 export const getDb = async (): Promise<CyDB> => {
   return await Promise.resolve(db)
+}
+
+export const closeDb = async (): Promise<void> => {
+  await db.close()
 }
 
 export const deleteDb = async (): Promise<void> => {
