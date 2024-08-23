@@ -2,7 +2,10 @@ import { ViewerPanel } from '../../../features/HierarchyViewer/components'
 import { TabPanel } from './TabPanel'
 import { ComponentType, LazyExoticComponent, Suspense } from 'react'
 import { useAppStore } from '../../../store/AppStore'
-import { CyApp } from '../../../models'
+import {
+  CyApp,
+  ComponentType as AppComponentType,
+} from '../../../models/AppModel'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
 import ExternalComponent from '../../../components/AppManager/ExternalComponent'
 
@@ -23,7 +26,7 @@ export const getTabContents = (selectedIndex: number): JSX.Element[] => {
       if (components === undefined) return
 
       components.forEach((component: ComponentMetadata) => {
-        if (component.type === 'panel') {
+        if (component.type === AppComponentType.Panel) {
           const PanelComponent: any = ExternalComponent(
             app.id,
             './' + component.id,
