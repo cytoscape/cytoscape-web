@@ -11,7 +11,7 @@ import {
   putNetworkViewsToDb,
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
-import { ViewModelStore } from '../models/StoreModel/NetworkViewStoreModel'
+import { ViewModelStore } from '../models/StoreModel/ViewModelStoreModel'
 
 // Default view type (a node-link diagram)
 const DEF_VIEW_TYPE = 'nodeLink'

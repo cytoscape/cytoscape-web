@@ -7,30 +7,10 @@ import {
   deleteNetworkSummaryFromDb,
   putNetworkSummaryToDb,
 } from './persist/db'
-
-interface NetworkSummaryStore {
-  summaries: Record<IdType, NdexNetworkSummary>
-}
-
-interface NetworkSummaryActions {
-  // Add a network summary to the store
-  add: (networkId: IdType, summary: NdexNetworkSummary) => void
-
-  // Batch add network summaries to the store
-  addAll: (summaries: Record<IdType, NdexNetworkSummary>) => void
-
-  // Update an entry
-  update: (id: IdType, summary: Partial<NdexNetworkSummary>) => void
-
-  // Delete a network summary from the store
-  delete: (networkId: IdType) => void
-
-  // Delete all summaries from the store
-  deleteAll: () => void
-}
+import { NetworkSummaryStoreModel } from '../models/StoreModel/NetworkSummaryStoreModel'
 
 export const useNetworkSummaryStore = create(
-  immer<NetworkSummaryStore & NetworkSummaryActions>((set, get) => ({
+  immer<NetworkSummaryStoreModel>((set, get) => ({
     summaries: {},
     add: (networkId: IdType, summary: NdexNetworkSummary) => {
       set((state) => {

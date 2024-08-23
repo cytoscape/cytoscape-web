@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
-import { Ui } from '../models/UiModel'
 import { PanelState } from '../models/UiModel/PanelState'
 import { Panel } from '../models/UiModel/Panel'
 import { TableUIState } from '../models/UiModel/TableUi'
@@ -9,37 +8,8 @@ import { putUiStateToDb } from './persist/db'
 
 import { TableType } from '../models/StoreModel/TableStoreModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
-interface UiState {
-  ui: Ui
-}
-
-interface UiStateAction {
-  setUi: (ui: Ui) => void
-  setActiveNetworkView: (id: IdType) => void
-  setPanelState: (panel: Panel, state: PanelState) => void
-  enablePopup: (enable: boolean) => void
-  setShowErrorDialog: (show: boolean) => void
-  setErrorMessage: (message: string) => void
-  setColumnWidth: (
-    networkId: IdType,
-    tableType: TableType,
-    columnId: string,
-    width: number,
-  ) => void
-  setActiveTableBrowserIndex: (index: number) => void
-  setActiveNetworkBrowserPanelIndex: (index: number) => void
-  setVisualStyleOptions: (
-    networkId: IdType,
-    visualStyleOptions?: VisualStyleOptions,
-  ) => void
-  setNodeSizeLockedState: (networkId: IdType, nodeSizeLocked: boolean) => void
-  setArrowColorMatchesEdgeState: (
-    networkId: IdType,
-    arrowColorMatchesEdge: boolean,
-  ) => void
-}
-
-type UiStateStore = UiState & UiStateAction
+import { UiStateStore } from '../models/StoreModel/UiStateStoreModel'
+import { Ui } from '../models/UiModel'
 
 export const DEFAULT_UI_STATE = {
   panels: {
