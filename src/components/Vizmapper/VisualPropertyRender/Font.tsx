@@ -7,7 +7,7 @@ export function FontPicker(props: {
   closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
-  const sortedFontTypes = Object.values(FontType).sort();
+  const sortedFontTypes = Object.values(FontType).sort()
 
   return (
     <Box
@@ -42,7 +42,16 @@ export function FontPicker(props: {
   )
 }
 
-export function Font(props: { value: FontType, isSelected: boolean }): React.ReactElement {
+export function Font(props: {
+  value: FontType
+  isSelected: boolean
+}): React.ReactElement {
   const { value, isSelected } = props
-  return <Box sx={{ fontFamily: value, transform: isSelected ? 'scale(1.1)' : 'none' }}>Aa</Box>
+  return (
+    <Box
+      sx={{ fontFamily: value, transform: isSelected ? 'scale(1.1)' : 'none' }}
+    >
+      Aa
+    </Box>
+  )
 }

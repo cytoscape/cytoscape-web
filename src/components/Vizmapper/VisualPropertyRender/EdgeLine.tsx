@@ -5,57 +5,77 @@ import {
   SolidLineIcon,
   DashedLineIcon,
 } from '../VisualStyleIcons'
-const edgeLineMap: Record<EdgeLineType, (isSelected: boolean) => React.ReactElement> = {
-  [EdgeLineType.Solid]: (isSelected: boolean) => <SolidLineIcon isSelected={isSelected} />,
-  [EdgeLineType.Dotted]: (isSelected: boolean) => <DottedLineIcon isSelected={isSelected} />,
-  [EdgeLineType.Dashed]: (isSelected: boolean) => <DashedLineIcon isSelected={isSelected} />,
+import React from 'react'
+
+const edgeLineMap: Record<
+  EdgeLineType,
+  (isSelected: boolean) => React.ReactElement
+> = {
+  [EdgeLineType.Solid]: (isSelected: boolean) => (
+    <SolidLineIcon isSelected={isSelected} />
+  ),
+  [EdgeLineType.Dotted]: (isSelected: boolean) => (
+    <DottedLineIcon isSelected={isSelected} />
+  ),
+  [EdgeLineType.Dashed]: (isSelected: boolean) => (
+    <DashedLineIcon isSelected={isSelected} />
+  ),
 }
 export function EdgeLinePicker(props: {
   currentValue: EdgeLineType | null
   onValueChange: (edgeLine: EdgeLineType) => void
-  closePopover: () => void
+  closePopover: (reason: string) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
-  const sortedEdgeLines = Object.values(EdgeLineType).sort();
+  const sortedEdgeLines = Object.values(EdgeLineType).sort()
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-      }}
-    >
-      {sortedEdgeLines.map((edgeLine: EdgeLineType) => (
+    <>
+      <Box sx={{ p: 1 }}>
         <Box
           sx={{
-            color: currentValue === edgeLine ? 'blue' : 'black',
-            fontWeight: currentValue === edgeLine ? 'bold' : 'normal',
-            p: 1,
-            '&:hover': { cursor: 'pointer' },
+            display: 'flex',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
           }}
-          onClick={() => onValueChange(edgeLine)}
-          key={edgeLine}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              width: 80,
-            }}
-          >
-            <EdgeLine value={edgeLine} isSelected={currentValue === edgeLine} />
-            <Box>{edgeLine}</Box>
-          </Box>
+          {sortedEdgeLines.map((edgeLine: EdgeLineType) => (
+            <Box
+              sx={{
+                color: currentValue === edgeLine ? 'blue' : 'black',
+                fontWeight: currentValue === edgeLine ? 'bold' : 'normal',
+                '&:hover': { cursor: 'pointer' },
+              }}
+              onClick={() => onValueChange(edgeLine)}
+              key={edgeLine}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  width: 80,
+                }}
+              >
+                <EdgeLine
+                  value={edgeLine}
+                  isSelected={currentValue === edgeLine}
+                />
+                <Box>{edgeLine}</Box>
+              </Box>
+            </Box>
+          ))}
         </Box>
-      ))}
-    </Box>
+      </Box>
+    </>
   )
 }
 
-export function EdgeLine(props: { value: EdgeLineType, isSelected: boolean }): React.ReactElement {
+export function EdgeLine(props: {
+  value: EdgeLineType
+  isSelected: boolean
+}): React.ReactElement {
   const { value, isSelected } = props
-  return edgeLineMap[value](isSelected) ?? <Box>{value}</Box>
+  return edgeLineMap[value]?.(isSelected) ?? <Box>{value}</Box>
 }

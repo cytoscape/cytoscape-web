@@ -8,14 +8,30 @@ import {
   SquareArrowIcon,
   NoneArrowIcon,
 } from '../VisualStyleIcons'
+import React from 'react'
 
-const edgeArrowShapeMap: Record<EdgeArrowShapeType, (isSelected: boolean) => React.ReactElement> = {
-  [EdgeArrowShapeType.None]: (isSelected: boolean) => <NoneArrowIcon isSelected={isSelected} />,
-  [EdgeArrowShapeType.Circle]: (isSelected: boolean) => <CircleArrowIcon isSelected={isSelected} />,
-  [EdgeArrowShapeType.Diamond]: (isSelected: boolean) => <DiamondArrowIcon isSelected={isSelected} />,
-  [EdgeArrowShapeType.Square]: (isSelected: boolean) => <SquareArrowIcon isSelected={isSelected} />,
-  [EdgeArrowShapeType.Triangle]: (isSelected: boolean) => <TriangleArrowIcon isSelected={isSelected} />,
-  [EdgeArrowShapeType.Tee]: (isSelected: boolean) => <TeeArrowIcon isSelected={isSelected} />,
+const edgeArrowShapeMap: Record<
+  EdgeArrowShapeType,
+  (isSelected: boolean) => React.ReactElement
+> = {
+  [EdgeArrowShapeType.None]: (isSelected: boolean) => (
+    <NoneArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.Circle]: (isSelected: boolean) => (
+    <CircleArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.Diamond]: (isSelected: boolean) => (
+    <DiamondArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.Square]: (isSelected: boolean) => (
+    <SquareArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.Triangle]: (isSelected: boolean) => (
+    <TriangleArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.Tee]: (isSelected: boolean) => (
+    <TeeArrowIcon isSelected={isSelected} />
+  ),
 }
 
 export function EdgeArrowShapePicker(props: {
@@ -24,18 +40,18 @@ export function EdgeArrowShapePicker(props: {
   closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
-  const sortedEdgeArrowShapes = Object.values(EdgeArrowShapeType).sort();
+  const sortedEdgeArrowShapes = Object.values(EdgeArrowShapeType).sort()
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-      }}
-    >
-      {sortedEdgeArrowShapes.map(
-        (edgeArrowShape: EdgeArrowShapeType) => (
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+        }}
+      >
+        {sortedEdgeArrowShapes.map((edgeArrowShape: EdgeArrowShapeType) => (
           <Box
             sx={{
               color: currentValue === edgeArrowShape ? 'blue' : 'black',
@@ -56,21 +72,24 @@ export function EdgeArrowShapePicker(props: {
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                <EdgeArrowShape value={edgeArrowShape} isSelected={currentValue === edgeArrowShape} />
+                <EdgeArrowShape
+                  value={edgeArrowShape}
+                  isSelected={currentValue === edgeArrowShape}
+                />
               </Box>
               <Box sx={{ textAlign: 'center' }}>{edgeArrowShape}</Box>
             </Box>
           </Box>
-        ),
-      )}
+        ))}
+      </Box>
     </Box>
   )
 }
 
 export function EdgeArrowShape(props: {
-  value: EdgeArrowShapeType,
+  value: EdgeArrowShapeType
   isSelected: boolean
 }): React.ReactElement {
   const { value, isSelected } = props
-  return edgeArrowShapeMap[value](isSelected) ?? <Box>{value}</Box>
+  return edgeArrowShapeMap[value]?.(isSelected) ?? <Box>{value}</Box>
 }

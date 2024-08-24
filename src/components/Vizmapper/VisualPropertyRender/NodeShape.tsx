@@ -13,16 +13,37 @@ import {
 } from '../VisualStyleIcons'
 import React from 'react'
 
-const nodeShapeMap: Record<NodeShapeType, (isSelected: boolean) => React.ReactElement> = {
-  [NodeShapeType.Ellipse]: (isSelected: boolean) => <EllipseIcon isSelected={isSelected} />,
-  [NodeShapeType.Rectangle]: (isSelected: boolean) => <RectangleIcon isSelected={isSelected} />,
-  [NodeShapeType.RoundRectangle]: (isSelected: boolean) => <RoundRectangleIcon isSelected={isSelected} />,
-  [NodeShapeType.Triangle]: (isSelected: boolean) => <TriangleIcon isSelected={isSelected} />,
-  [NodeShapeType.Diamond]: (isSelected: boolean) => <DiamondIcon isSelected={isSelected} />,
-  [NodeShapeType.Hexagon]: (isSelected: boolean) => <HexagonIcon isSelected={isSelected} />,
-  [NodeShapeType.Octagon]: (isSelected: boolean) => <OctagonIcon isSelected={isSelected} />,
-  [NodeShapeType.Parallelogram]: (isSelected: boolean) => <ParallelogramIcon isSelected={isSelected} />,
-  [NodeShapeType.Vee]: (isSelected: boolean) => <VeeIcon isSelected={isSelected} />,
+const nodeShapeMap: Record<
+  NodeShapeType,
+  (isSelected: boolean) => React.ReactElement
+> = {
+  [NodeShapeType.Ellipse]: (isSelected: boolean) => (
+    <EllipseIcon isSelected={isSelected} />
+  ),
+  [NodeShapeType.Rectangle]: (isSelected: boolean) => (
+    <RectangleIcon isSelected={isSelected} />
+  ),
+  [NodeShapeType.RoundRectangle]: (isSelected: boolean) => (
+    <RoundRectangleIcon isSelected={isSelected} />
+  ),
+  [NodeShapeType.Triangle]: (isSelected: boolean) => (
+    <TriangleIcon isSelected={isSelected} />
+  ),
+  [NodeShapeType.Diamond]: (isSelected: boolean) => (
+    <DiamondIcon isSelected={isSelected} />
+  ),
+  [NodeShapeType.Hexagon]: (isSelected: boolean) => (
+    <HexagonIcon isSelected={isSelected} />
+  ),
+  [NodeShapeType.Octagon]: (isSelected: boolean) => (
+    <OctagonIcon isSelected={isSelected} />
+  ),
+  [NodeShapeType.Parallelogram]: (isSelected: boolean) => (
+    <ParallelogramIcon isSelected={isSelected} />
+  ),
+  [NodeShapeType.Vee]: (isSelected: boolean) => (
+    <VeeIcon isSelected={isSelected} />
+  ),
 }
 
 const nodeShapeDisplayNameMap: Record<NodeShapeType, string> = {
@@ -43,7 +64,7 @@ export function NodeShapePicker(props: {
   closePopover: () => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
-  const sortedNodeShapes = Object.values(NodeShapeType).sort();
+  const sortedNodeShapes = Object.values(NodeShapeType).sort()
   return (
     <Box
       sx={{
@@ -82,7 +103,10 @@ export function NodeShapePicker(props: {
   )
 }
 
-export function NodeShape(props: { value: NodeShapeType, isSelected: boolean }): React.ReactElement {
+export function NodeShape(props: {
+  value: NodeShapeType
+  isSelected: boolean
+}): React.ReactElement {
   const { value, isSelected } = props
-  return nodeShapeMap[value](isSelected) ?? <Box>{value}</Box>
+  return nodeShapeMap[value]?.(isSelected) ?? <Box>{value}</Box>
 }
