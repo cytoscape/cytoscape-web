@@ -101,8 +101,13 @@ module.exports = {
       exposes: {
         // Data models to be used by other apps
         // './useDataStore': './src/components/AppManager/useDataStore.tsx',
+        './CredentialStore': './src/store/CredentialStore.ts',
         './LayoutStore': './src/store/LayoutStore.ts',
+        './MessageStore': './src/store/MessageStore.ts',
         './NetworkStore': './src/store/NetworkStore.ts',
+        './NetworkSummaryStore': './src/store/NetworkSummaryStore.ts',
+        './RendererStore': './src/store/RendererStore.ts',
+        './UiStateStore': './src/store/UiStateStore.ts',
         './TableStore': './src/store/TableStore.ts',
         './ViewModelStore': './src/store/ViewModelStore.ts',
         './VisualStyleStore': './src/store/VisualStyleStore.ts',

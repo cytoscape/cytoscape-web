@@ -1,4 +1,8 @@
-import NetworkFn, { NetworkAttributes } from '../models/NetworkModel'
+import NetworkFn, {
+  NetworkAttributes,
+  Node,
+  Edge,
+} from '../models/NetworkModel'
 import {
   getBaseSummary,
   IdType,
@@ -30,6 +34,31 @@ import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 export const createEmptyNetwork = (): Network => {
   const id: IdType = uuidv4()
   return NetworkFn.createNetworkFromLists(id, [], [])
+}
+
+const toNode = (id: IdType): Node => {
+  return {
+    id,
+  }
+}
+
+const toEdge = (edge: [IdType, IdType]): Edge => {
+  return {
+    id: edge[0] + '-' + edge[1],
+    s: edge[0],
+    t: edge[1],
+  }
+}
+
+const createNetworkFromEdgeList = (
+  edgeList: Array<[IdType, IdType]>,
+): Network => {
+  const id: IdType = uuidv4()
+
+  const nodeSet: Set<IdType> = new Set(edgeList.flat())
+  const nodes: Node[] = Array.from(nodeSet).map(toNode)
+  const edges: Edge[] = edgeList.map(toEdge)
+  return NetworkFn.createNetworkFromLists(id, nodes, edges)
 }
 
 /**
