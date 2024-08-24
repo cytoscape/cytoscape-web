@@ -18,7 +18,7 @@ export function OpacitySlider(props: {
     currentValue ?? 0,
   )
   return (
-    <Box sx={{ p: 1, width: 200, height: 80 }}>
+    <Box sx={{ p: 1, mt: 3, width: 200, height: 80 }}>
       <Stack spacing={2} direction="row" sx={{ mt: 2 }} alignItems="center">
         <VisibilityOffIcon sx={{ color: '#D9D9D9' }} />
         <Slider

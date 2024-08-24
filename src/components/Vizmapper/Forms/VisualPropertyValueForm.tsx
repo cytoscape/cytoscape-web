@@ -66,6 +66,7 @@ import {
 } from '../VisualPropertyRender/NodeLabelPosition'
 import { IdType } from '../../../models/IdType'
 import { LockColorCheckbox } from '../VisualPropertyRender/Checkbox'
+import { CancelConfirmButtonGroup } from '../VisualPropertyRender/CancelConfirmButtonGroup'
 
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,
@@ -73,7 +74,7 @@ const vpType2RenderMap: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
+      closePopover: (reason: string) => void
       currentNetworkId?: IdType
       showCheckbox?: boolean
       vpName?: VisualPropertyName
@@ -147,7 +148,7 @@ const vpName2RenderMap: Partial<
       pickerRender: (props: {
         currentValue: VisualPropertyValueType | null
         onValueChange: (newValue: VisualPropertyValueType) => void
-        closePopover: () => void
+        closePopover: (reason: string) => void
         currentNetworkId?: IdType
         showCheckbox?: boolean
         vpName?: VisualPropertyName
@@ -231,6 +232,8 @@ export function VisualPropertyValueForm(
   props: VisualPropertyValueFormProps,
 ): React.ReactElement {
   const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
+  const [prevValue, setPrevValue] =
+    React.useState<VisualPropertyValueType | null>(props.currentValue)
   const vpName = props.visualProperty.name
   const isEdgeLineColor =
     vpName === EdgeVisualPropertyName.EdgeLineColor ||
@@ -240,7 +243,14 @@ export function VisualPropertyValueForm(
     setValuePicker(value)
   }
 
-  const closePopover = (): void => {
+  const closePopover = (
+    reason: 'backdropClick' | 'escapeKeyDown' | 'confirm' | 'cancel',
+  ): void => {
+    if (reason !== 'confirm') {
+      if (prevValue != null) {
+        props.onValueChange(prevValue)
+      }
+    }
     setValuePicker(null)
   }
 
@@ -266,7 +276,9 @@ export function VisualPropertyValueForm(
       <Popover
         open={valuePicker != null}
         anchorEl={valuePicker}
-        onClose={() => showValuePicker(null)}
+        onClose={(e: any, reason: 'backdropClick' | 'escapeKeyDown') =>
+          closePopover(reason)
+        }
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box sx={{ overflow: 'hidden' }}>
@@ -304,6 +316,9 @@ export function VisualPropertyValueForm(
             </>
           )}
         </Box>
+        {props.visualProperty.type !== VisualPropertyValueTypeName.Number ? (
+          <CancelConfirmButtonGroup closePopover={closePopover} />
+        ) : null}
       </Popover>
     </Box>
   )
