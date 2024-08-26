@@ -42,7 +42,7 @@ import { useNetworkSummaryManager } from '../../store/hooks/useNetworkSummaryMan
 import { ChevronRight } from '@mui/icons-material'
 import { Panel } from '../../models/UiModel/Panel'
 import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
-import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
+import { LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
 import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
@@ -63,6 +63,7 @@ import {
 } from '../../models/FilterModel'
 import { GraphObjectType } from '../../models/NetworkModel'
 import { useFilterStore } from '../../store/FilterStore'
+import { useAppManager } from '../../store/hooks/useAppManager'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -73,6 +74,8 @@ const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
  */
 const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers to the stores
+  useAppManager() // Register dynamically loaded apps to the store
+
   useWorkspaceManager()
   useNetworkViewManager()
   useTableManager()
@@ -114,7 +117,9 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const ui: Ui = useUiStateStore((state) => state.ui)
 
-  const setVisualStyleOptions = useUiStateStore((state) => state.setVisualStyleOptions)
+  const setVisualStyleOptions = useUiStateStore(
+    (state) => state.setVisualStyleOptions,
+  )
 
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
@@ -226,14 +231,20 @@ const WorkSpaceEditor = (): JSX.Element => {
 
     const loadedNetworks = Object.keys(newSummaries)
     if (loadedNetworks.length !== networkIds.length) {
-      const networksFailtoLoad = networkIds.filter(id => !loadedNetworks.includes(id))
+      const networksFailtoLoad = networkIds.filter(
+        (id) => !loadedNetworks.includes(id),
+      )
       const numOfNets = networksFailtoLoad.length
       const largestNum = 3
       const largeNum = numOfNets > largestNum
-      deleteNetwork(networksFailtoLoad)// remove the networks that the app fails to load from the workspace
-      addMessage({ // show a message to the user
-        message: `Failed to load ${networksFailtoLoad.length} network${largeNum ? 's' : ''} with id${largeNum ? 's' : ''}: ${largeNum ? (networksFailtoLoad.slice(0, largestNum).join(', ') + '...') : networksFailtoLoad.join(', ')
-          }`,
+      deleteNetwork(networksFailtoLoad) // remove the networks that the app fails to load from the workspace
+      addMessage({
+        // show a message to the user
+        message: `Failed to load ${networksFailtoLoad.length} network${largeNum ? 's' : ''} with id${largeNum ? 's' : ''}: ${
+          largeNum
+            ? networksFailtoLoad.slice(0, largestNum).join(', ') + '...'
+            : networksFailtoLoad.join(', ')
+        }`,
         duration: 5000,
       })
     }
@@ -265,7 +276,14 @@ const WorkSpaceEditor = (): JSX.Element => {
     )
     const summary = summaryMap[networkId]
     const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
-    const { network, nodeTable, edgeTable, visualStyle, networkViews, visualStyleOptions } = res
+    const {
+      network,
+      nodeTable,
+      edgeTable,
+      visualStyle,
+      networkViews,
+      visualStyleOptions,
+    } = res
 
     setVisualStyleOptions(networkId, visualStyleOptions)
     addNewNetwork(network)
@@ -420,7 +438,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       return !summaryIds.includes(id)
     })
     loadNetworkSummaries(toBeAdded)
-      .then(() => { })
+      .then(() => {})
       .catch((err) => console.error(err))
   }, [workspace.networkIds])
 
@@ -498,6 +516,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
     }
   }, [summaries])
+  // console.log('Hello from WorkspaceEditor')
 
   // Return the main component including the network panel, network view, and the table browser
   return (

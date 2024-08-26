@@ -28,7 +28,8 @@ import { translateEdgeIdToCX } from '../../NetworkModel/impl/CyNetwork'
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
   const mappers: Map<VisualPropertyName, Mapper> = new Map()
-  Object.keys(vs).forEach((vpName: VisualPropertyName) => {
+  const vpNames: VisualPropertyName[] = Object.keys(vs) as VisualPropertyName[]
+  vpNames.forEach((vpName: VisualPropertyName) => {
     const vp: VisualProperty<VisualPropertyValueType> = vs[vpName]
     const vmf: VisualMappingFunction | undefined = vp.mapping
     if (vmf !== undefined) {

@@ -2,6 +2,8 @@ import { Network } from '../../src/models/NetworkModel'
 import { NetworkView } from '../../src/models/ViewModel'
 import * as db from '../../src/store/persist/db' // Assuming db is a module
 
+jest.setTimeout(30000)
+
 const networkModelId1 = 'network1'
 
 const net1: Network = {
@@ -58,6 +60,8 @@ describe('DB functions', () => {
   })
 
   afterEach(async () => {
+    await db.closeDb()
+    await db.deleteDb()
     jest.clearAllMocks()
   })
 
@@ -75,6 +79,7 @@ describe('DB functions', () => {
     // Check that the view was added correctly
     await db.putNetworkViewsToDb(networkModelId1, [networkView1, networkView2])
     const viewList = await db.getNetworkViewsFromDb(networkModelId1)
+    expect(viewList).toBeDefined()
     expect(viewList?.length).toEqual(2)
     expect(viewList).toEqual([networkView1, networkView2])
   })
@@ -91,11 +96,11 @@ describe('DB functions', () => {
     // Test deleteNetworkViewFromDb
     await db.putNetworkViewsToDb(networkModelId1, [networkView1, networkView2])
     await db.putNetworkViewsToDb(net2.id, [networkView2])
-    
+
     await db.deleteNetworkViewsFromDb(networkModelId1)
     const result = await db.getNetworkViewsFromDb(networkModelId1)
     expect(result).toBeUndefined()
-    
+
     const result2 = await db.getNetworkViewsFromDb(net2.id)
     expect(result2).toBeDefined()
     expect(result2).toEqual([networkView2])

@@ -1,6 +1,3 @@
-import { IdType } from '../IdType'
-import { AttributeName } from '../TableModel'
-
 export interface ColumnUIState {
   width: number
   visible?: boolean

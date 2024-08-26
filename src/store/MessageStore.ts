@@ -1,16 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { Message } from '../models/MessageModel'
-
-interface MessageState {
-  messages: Message[]
-}
-
-interface MessageAction {
-  addMessage: (message: Message) => void
-}
-
-type MessageStore = MessageState & MessageAction
+import { MessageStore } from '../models/StoreModel/MessageStoreModel'
 
 export const useMessageStore = create(
   immer<MessageStore>((set) => ({

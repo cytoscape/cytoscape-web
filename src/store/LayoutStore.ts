@@ -11,30 +11,13 @@ import {
   defHierarchicalAlgorithm,
   getLayout,
 } from '../models/LayoutModel/impl/layoutSelection'
+import { LayoutStoreModel } from '../models/StoreModel/LayoutStoreModel'
 
 /**
  * Store for layout parameters
  */
-interface LayoutState {
-  layoutEngines: LayoutEngine[]
-  preferredLayout: LayoutAlgorithm
-  preferredHierarchicalLayout: LayoutAlgorithm
-  isRunning: boolean
-}
-
-interface LayoutAction {
-  setLayoutOption: <T extends ValueType>(
-    engineName: string,
-    algorithmName: string,
-    propertyName: string,
-    propertyValue: T,
-  ) => void
-  setPreferredLayout: (engineName: string, algorithmName: string) => void
-  setIsRunning: (isRunning: boolean) => void
-}
-
 export const useLayoutStore = create(
-  immer<LayoutState & LayoutAction>((set) => ({
+  immer<LayoutStoreModel>((set) => ({
     layoutEngines: LayoutEngines,
     preferredLayout: defAlgorithm,
     preferredHierarchicalLayout: defHierarchicalAlgorithm,

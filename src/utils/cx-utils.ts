@@ -15,23 +15,10 @@ import { CachedData } from './CachedData'
 import { createNetworkAttributesFromCx } from '../models/TableModel/impl/NetworkAttributesImpl'
 import { Aspect } from '../models/CxModel/Cx2/Aspect'
 import { CoreAspectTag } from '../models/CxModel/Cx2/CoreAspectTag'
+import { NetworkWithView } from '../models/NetworkWithViewModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { Ui } from '../models/UiModel'
 import { IdType } from '../models/IdType'
-
-/**
- * An utility interface to hold all the data needed to build a network view
- */
-export interface NetworkWithView {
-  network: Network
-  networkAttributes?: NetworkAttributes
-  nodeTable: Table
-  edgeTable: Table
-  visualStyle: VisualStyle
-  networkViews: NetworkView[]
-  visualStyleOptions?: VisualStyleOptions
-  otherAspects?: any[] // All other optional aspects found in the CX2 stream
-}
 
 /**
  *
