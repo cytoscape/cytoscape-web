@@ -73,7 +73,7 @@ const getNodeBypasses = (cx2: Cx2): NodeBypasses => {
 
 const getEdgeBypasses = (cx2: Cx2): EdgeBypasses => {
   const filtered = cx2.filter((entry) => {
-    return entry.hasOwnProperty(CoreAspectTag.NodeBypasses)
+    return entry.hasOwnProperty(CoreAspectTag.EdgeBypasses)
   })
 
   if (filtered.length === 0) {

@@ -7,6 +7,12 @@ import {
   TriangleArrowIcon,
   SquareArrowIcon,
   NoneArrowIcon,
+  OpenCircleArrowIcon,
+  OpenDiamondArrowIcon,
+  OpenSquareArrowIcon,
+  OpenTriangleArrowIcon,
+  TriangleCrossArrowIcon,
+  OpenTriangleCrossArrowIcon,
 } from '../VisualStyleIcons'
 import React from 'react'
 
@@ -32,6 +38,27 @@ const edgeArrowShapeMap: Record<
   [EdgeArrowShapeType.Tee]: (isSelected: boolean) => (
     <TeeArrowIcon isSelected={isSelected} />
   ),
+  [EdgeArrowShapeType.TriangleCross]: (isSelected: boolean) => (
+    <TriangleCrossArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.Arrow]: (isSelected: boolean) => (
+    <TriangleArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.OpenCircle]: (isSelected: boolean) => (
+    <OpenCircleArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.OpenDiamond]: (isSelected: boolean) => (
+    <OpenDiamondArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.OpenSquare]: (isSelected: boolean) => (
+    <OpenSquareArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.OpenDelta]: (isSelected: boolean) => (
+    <OpenTriangleArrowIcon isSelected={isSelected} />
+  ),
+  [EdgeArrowShapeType.OpenCrossDelta]: (isSelected: boolean) => (
+    <OpenTriangleCrossArrowIcon isSelected={isSelected} />
+  ),
 }
 
 export function EdgeArrowShapePicker(props: {
@@ -43,45 +70,44 @@ export function EdgeArrowShapePicker(props: {
   const sortedEdgeArrowShapes = Object.values(EdgeArrowShapeType).sort()
 
   return (
-    <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-        }}
-      >
-        {sortedEdgeArrowShapes.map((edgeArrowShape: EdgeArrowShapeType) => (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        width: 350,
+      }}
+    >
+      {sortedEdgeArrowShapes.map((edgeArrowShape: EdgeArrowShapeType) => (
+        <Box
+          sx={{
+            color: currentValue === edgeArrowShape ? 'blue' : 'black',
+            fontWeight: currentValue === edgeArrowShape ? 'bold' : 'normal',
+            p: 1,
+            '&:hover': { cursor: 'pointer' },
+          }}
+          onClick={() => onValueChange(edgeArrowShape)}
+          key={edgeArrowShape}
+        >
           <Box
             sx={{
-              color: currentValue === edgeArrowShape ? 'blue' : 'black',
-              fontWeight: currentValue === edgeArrowShape ? 'bold' : 'normal',
-              p: 1,
-              '&:hover': { cursor: 'pointer' },
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              alignContent: 'center',
+              width: 80,
             }}
-            onClick={() => onValueChange(edgeArrowShape)}
-            key={edgeArrowShape}
           >
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                alignContent: 'center',
-                width: 80,
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                <EdgeArrowShape
-                  value={edgeArrowShape}
-                  isSelected={currentValue === edgeArrowShape}
-                />
-              </Box>
-              <Box sx={{ textAlign: 'center' }}>{edgeArrowShape}</Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <EdgeArrowShape
+                value={edgeArrowShape}
+                isSelected={currentValue === edgeArrowShape}
+              />
             </Box>
+            <Box sx={{ textAlign: 'center' }}>{edgeArrowShape}</Box>
           </Box>
-        ))}
-      </Box>
+        </Box>
+      ))}
     </Box>
   )
 }

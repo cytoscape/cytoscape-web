@@ -40,7 +40,11 @@ import {
 } from './VisualPropertyViewBox'
 import { NetworkView } from '../../../models/ViewModel'
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
-import { LockColorCheckbox, LockSizeCheckbox } from '../VisualPropertyRender/Checkbox'
+import { translateEdgeIdToCX } from '../../../models/NetworkModel/impl/CyNetwork'
+import {
+  LockColorCheckbox,
+  LockSizeCheckbox,
+} from '../VisualPropertyRender/Checkbox'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType
@@ -51,9 +55,14 @@ function BypassFormContent(props: {
     visualProperty.defaultValue,
   )
   const vpName = props.visualProperty.name
-  const isSize = vpName === NodeVisualPropertyName.NodeHeight || vpName === NodeVisualPropertyName.NodeWidth
+  const isSize =
+    vpName === NodeVisualPropertyName.NodeHeight ||
+    vpName === NodeVisualPropertyName.NodeWidth
   const isHeight = vpName === NodeVisualPropertyName.NodeHeight
-  const isEdgeLineColor = vpName === EdgeVisualPropertyName.EdgeLineColor || vpName === EdgeVisualPropertyName.EdgeTargetArrowColor || vpName === EdgeVisualPropertyName.EdgeSourceArrowColor;
+  const isEdgeLineColor =
+    vpName === EdgeVisualPropertyName.EdgeLineColor ||
+    vpName === EdgeVisualPropertyName.EdgeTargetArrowColor ||
+    vpName === EdgeVisualPropertyName.EdgeSourceArrowColor
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const networkView: NetworkView | undefined = getViewModel(currentNetworkId)
 
@@ -125,7 +134,9 @@ function BypassFormContent(props: {
       : selectedElements.length === 0
         ? visualProperty.group === VisualPropertyGroup.Node
           ? Array.from(nodeTable.rows.keys())
-          : Array.from(edgeTable.rows.keys())
+          : Array.from(edgeTable.rows.keys()).map((id) =>
+              translateEdgeIdToCX(id),
+            )
         : selectedElements
 
   elements
@@ -311,8 +322,12 @@ function BypassFormContent(props: {
         <Divider />
         {elementsToRender.length > 0 ? nonEmptyBypassForm : emptyBypassForm}
         <Divider />
-        {isSize && <LockSizeCheckbox currentNetworkId={props.currentNetworkId} />}
-        {isEdgeLineColor && <LockColorCheckbox currentNetworkId={currentNetworkId} />}
+        {isSize && (
+          <LockSizeCheckbox currentNetworkId={props.currentNetworkId} />
+        )}
+        {isEdgeLineColor && (
+          <LockColorCheckbox currentNetworkId={currentNetworkId} />
+        )}
       </Box>
     </Box>
   )

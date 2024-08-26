@@ -1,9 +1,10 @@
 import { Cx2 } from '../../../models/CxModel/Cx2'
-import { NetworkWithView, createDataFromCx } from '../../../utils/cx-utils'
+import { createDataFromCx } from '../../../utils/cx-utils'
 import { getNdexClient } from '../../../utils/fetchers'
 import { NetworkView } from '../../../models/ViewModel'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
+import { NetworkWithView } from '../../../models/NetworkWithViewModel'
 
 const MAX_RETRY_COUNT: number = 1
 

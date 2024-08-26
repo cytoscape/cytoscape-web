@@ -14,17 +14,22 @@ import {
   VisualStyle,
   Mapper,
   NodeLabelPositionType,
+  EdgeFillType,
+  EdgeArrowShapeType,
 } from '..'
 
 import * as VisualStyleFnImpl from './VisualStyleFnImpl'
 import * as MapperFactory from './MapperFactory'
 import { computeNodeLabelPosition } from '../../../components/NetworkPanel/CyjsRenderer/nodeLabelPositionMap'
 import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/DirectMappingSelector'
+import { isOpenShape, openShapeToFilledShape } from './EdgeArrowShapeImpl'
+import { translateEdgeIdToCX } from '../../NetworkModel/impl/CyNetwork'
 
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
   const mappers: Map<VisualPropertyName, Mapper> = new Map()
-  Object.keys(vs).forEach((vpName: VisualPropertyName) => {
+  const vpNames: VisualPropertyName[] = Object.keys(vs) as VisualPropertyName[]
+  vpNames.forEach((vpName: VisualPropertyName) => {
     const vp: VisualProperty<VisualPropertyValueType> = vs[vpName]
     const vmf: VisualMappingFunction | undefined = vp.mapping
     if (vmf !== undefined) {
@@ -222,6 +227,30 @@ const computeNameAndPropertyPairs = (
         computedPosition.verticalAlign,
       ],
     ]
+  }
+  if (
+    vpName === VisualPropertyName.EdgeSourceArrowShape ||
+    vpName === VisualPropertyName.EdgeTargetArrowShape
+  ) {
+    const fillPos =
+      vpName === VisualPropertyName.EdgeSourceArrowShape
+        ? SpecialPropertyName.SourceArrowFill
+        : SpecialPropertyName.TargetArrowFill
+
+    return [
+      [
+        fillPos,
+        isOpenShape(value as EdgeArrowShapeType)
+          ? EdgeFillType.Hollow
+          : EdgeFillType.Filled,
+      ],
+      [
+        vpName,
+        isOpenShape(value as EdgeArrowShapeType)
+          ? openShapeToFilledShape(value as EdgeArrowShapeType)
+          : value,
+      ],
+    ]
   } else {
     return [[vpName, value]]
   }
@@ -237,8 +266,9 @@ const computeView = (
   const pairs = new Map<VisualPropertyName, VisualPropertyValueType>()
 
   visualProperties.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
-    const { defaultValue, mapping, bypassMap, name } = vp
-    const bypass = bypassMap.get(id)
+    const { defaultValue, mapping, bypassMap, name, group } = vp
+    const bypassId = group === 'node' ? id : translateEdgeIdToCX(id)
+    const bypass = bypassMap.get(bypassId)
     let pairsToAdd: [string, VisualPropertyValueType][] = []
     if (bypass !== undefined) {
       pairsToAdd = computeNameAndPropertyPairs(vp.name, bypass)

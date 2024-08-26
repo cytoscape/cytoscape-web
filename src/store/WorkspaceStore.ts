@@ -4,42 +4,10 @@ import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
 import { Workspace } from '../models/WorkspaceModel'
 import { deleteDb, putWorkspaceToDb } from './persist/db'
-
-interface WorkspaceState {
-  workspace: Workspace
-}
-
-interface WorkspaceActions {
-  // Set current workspace for this session
-  set: (workspace: Workspace) => void
-
-  setId: (id: IdType) => void
-  setName: (name: string) => void
-  setCurrentNetworkId: (id: IdType) => void
-
-  addNetworkIds: (ids: IdType | IdType[]) => void
-
-  // Delete functions just remove networks from the workspace, but not from the database
-
-  // Remove current network from workspace
-  deleteCurrentNetwork: () => void
-
-  deleteNetwork: (id: IdType | IdType[]) => void
-
-  // Remove all networks from the workspace
-  deleteAllNetworks: () => void
-
-  // Remove all networks from the workspace and reset the workspace
-  resetWorkspace: () => void
-
-  // Change modified flag for a network
-  setNetworkModified: (networkId: IdType, isModified: boolean) => void
-
-  // Remove networkId modified status
-  deleteNetworkModifiedStatus: (networkId: IdType) => void
-
-  deleteAllNetworkModifiedStatuses: () => void
-}
+import {
+  WorkspaceStore,
+  WorkspaceActions,
+} from '../models/StoreModel/WorkspaceStoreModel'
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
@@ -50,8 +18,6 @@ const EMPTY_WORKSPACE: Workspace = {
   localModificationTime: new Date(),
   currentNetworkId: '',
 }
-
-type WorkspaceStore = WorkspaceState & WorkspaceActions
 
 const persist =
   (config: StateCreator<WorkspaceStore>) =>
@@ -149,7 +115,7 @@ export const useWorkspaceStore = create(
               )
             }
             state.workspace.networkIds = newNetworkIds
-            
+
             if (newNetworkIds.length === 0) {
               state.workspace.currentNetworkId = ''
             }

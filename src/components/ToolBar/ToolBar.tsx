@@ -2,7 +2,6 @@ import AppBar from '@mui/material/AppBar'
 import Box from '@mui/material/Box'
 import Toolbar from '@mui/material/Toolbar'
 
-import { DropdownMenu } from './DropdownMenu'
 import { DataMenu } from './DataMenu'
 
 import logo from '../../assets/cytoscape.svg'
@@ -12,6 +11,7 @@ import { EditMenu } from './EditMenu'
 import { SearchBox } from './Search'
 import { AnalysisMenu } from './AnalysisMenu'
 import { ToolsMenu } from './ToolsMenu'
+import { AppMenu } from './AppMenu'
 
 export const ToolBar = (): JSX.Element => {
   return (
@@ -29,6 +29,7 @@ export const ToolBar = (): JSX.Element => {
             {/* <DropdownMenu label="Help" /> */}
             <AnalysisMenu label="Analysis" />
             <ToolsMenu label="Tools" />
+            <AppMenu label="Apps" />
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
