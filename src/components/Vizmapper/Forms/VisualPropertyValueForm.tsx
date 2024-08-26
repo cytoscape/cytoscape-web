@@ -316,9 +316,7 @@ export function VisualPropertyValueForm(
             </>
           )}
         </Box>
-        {props.visualProperty.type !== VisualPropertyValueTypeName.Number ? (
-          <CancelConfirmButtonGroup closePopover={closePopover} />
-        ) : null}
+        <CancelConfirmButtonGroup closePopover={closePopover} />
       </Popover>
     </Box>
   )
