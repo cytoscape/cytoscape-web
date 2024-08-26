@@ -1,8 +1,18 @@
-import { Box, TextField, Typography, Button, FormControlLabel, Checkbox } from '@mui/material'
+import {
+  Box,
+  TextField,
+  Typography,
+  Button,
+  FormControlLabel,
+  Checkbox,
+} from '@mui/material'
 import { useState, useEffect, ChangeEvent } from 'react'
 import { serializedStringIsValid } from '../../../models/TableModel/impl/ValueTypeImpl'
 import { ValueTypeName } from '../../../models/TableModel'
-import { VisualPropertyName, NodeVisualPropertyName } from '../../../models/VisualStyleModel/VisualPropertyName'
+import {
+  VisualPropertyName,
+  NodeVisualPropertyName,
+} from '../../../models/VisualStyleModel/VisualPropertyName'
 import { LockSizeCheckbox } from './Checkbox'
 import { IdType } from '../../../models/IdType'
 
@@ -14,13 +24,28 @@ export function NumberInput(props: {
   vpName: VisualPropertyName
   showCheckbox?: boolean
 }): React.ReactElement {
-  const { onValueChange, currentValue, vpName, closePopover, currentNetworkId, showCheckbox } = props
-  const isSize = vpName === NodeVisualPropertyName.NodeHeight || vpName === NodeVisualPropertyName.NodeWidth
-  const isHeight = vpName === NodeVisualPropertyName.NodeHeight
+  const {
+    onValueChange,
+    currentValue,
+    vpName,
+    closePopover,
+    currentNetworkId,
+    showCheckbox,
+  } = props
+  const isSize =
+    vpName === NodeVisualPropertyName.NodeHeight ||
+    vpName === NodeVisualPropertyName.NodeWidth
   const [value, setValue] = useState(String(currentValue ?? 0))
   const strValueIsValid = (value: string): boolean => {
-    return serializedStringIsValid(ValueTypeName.Integer, value) || serializedStringIsValid(ValueTypeName.Double, value) || serializedStringIsValid(ValueTypeName.Long, value)
-
+    if (
+      serializedStringIsValid(ValueTypeName.Integer, value) ||
+      serializedStringIsValid(ValueTypeName.Double, value) ||
+      serializedStringIsValid(ValueTypeName.Long, value)
+    ) {
+      const numValue = Number(value)
+      if (numValue >= 0 && numValue < 10 ** 3) return true
+    }
+    return false
   }
   const [isValid, setValueIsValid] = useState(strValueIsValid(value))
 
@@ -45,7 +70,9 @@ export function NumberInput(props: {
       >
         <Typography variant="h6">{value}</Typography>
       </TextField>
-      {isSize && showCheckbox && <LockSizeCheckbox currentNetworkId={currentNetworkId} />}
+      {isSize && showCheckbox && (
+        <LockSizeCheckbox currentNetworkId={currentNetworkId} />
+      )}
       <Box
         sx={{
           display: 'flex',
@@ -56,9 +83,9 @@ export function NumberInput(props: {
         <Button
           color="error"
           onClick={() => {
-            setValue(String(currentValue ?? 0));
-            setValueIsValid(strValueIsValid(String(currentValue ?? 0)));
-            closePopover();
+            setValue(String(currentValue ?? 0))
+            setValueIsValid(strValueIsValid(String(currentValue ?? 0)))
+            closePopover()
           }}
         >
           Cancel
@@ -70,13 +97,13 @@ export function NumberInput(props: {
             if (!isNaN(nextValue)) {
               onValueChange(nextValue)
             }
-            closePopover();
+            closePopover()
           }}
         >
           Confirm
         </Button>
       </Box>
-    </Box >
+    </Box>
   )
 }
 
