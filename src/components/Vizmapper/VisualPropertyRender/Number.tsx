@@ -7,7 +7,8 @@ import {
 import { LockSizeCheckbox } from './Checkbox'
 import { IdType } from '../../../models/IdType'
 
-import { MantineProvider, NumberInput as Input } from '@mantine/core'
+import { MantineProvider, NumberInput as NumericInput } from '@mantine/core'
+import React from 'react'
 
 export function NumberInput(props: {
   currentValue: number | null
@@ -32,21 +33,31 @@ export function NumberInput(props: {
   const debouncedValueChange = debounce(onValueChange, 150)
   const [localValue, setLocalValue] = useState<number>(currentValue ?? 0)
 
+  React.useEffect(() => {
+    setLocalValue(currentValue ?? 0)
+  }, [currentValue])
+
   return (
     <MantineProvider>
-      <Input
-        style={{
-          margin: 15,
-        }}
-        onChange={(v) => {
-          setLocalValue(Number(v))
-          debouncedValueChange(Number(v))
-        }}
-        value={localValue ?? 0}
-      ></Input>
-      {isSize && showCheckbox && (
-        <LockSizeCheckbox currentNetworkId={currentNetworkId} />
-      )}
+      <Box>
+        <Box>
+          <NumericInput
+            style={{
+              margin: 15,
+            }}
+            onChange={(v) => {
+              setLocalValue(Number(v))
+              debouncedValueChange(Number(v))
+            }}
+            value={localValue ?? 0}
+          ></NumericInput>
+        </Box>
+        {isSize && showCheckbox && (
+          <Box sx={{ pl: 2 }}>
+            <LockSizeCheckbox currentNetworkId={currentNetworkId} />
+          </Box>
+        )}
+      </Box>
     </MantineProvider>
   )
 }

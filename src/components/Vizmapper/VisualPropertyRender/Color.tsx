@@ -25,6 +25,10 @@ export function ColorPicker(props: {
     currentValue ?? `#ffffff`,
   )
 
+  React.useEffect(() => {
+    setLocalColorValue(currentValue ?? `#ffffff`)
+  }, [currentValue])
+
   return (
     <Box>
       <Tabs

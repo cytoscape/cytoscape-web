@@ -17,6 +17,10 @@ export function OpacitySlider(props: {
   const [localOpacityValue, setLocalOpacityValue] = React.useState<number>(
     currentValue ?? 0,
   )
+
+  React.useEffect(() => {
+    setLocalOpacityValue(currentValue ?? 0)
+  }, [currentValue])
   return (
     <Box sx={{ p: 1, mt: 3, width: 200, height: 80 }}>
       <Stack spacing={2} direction="row" sx={{ mt: 2 }} alignItems="center">

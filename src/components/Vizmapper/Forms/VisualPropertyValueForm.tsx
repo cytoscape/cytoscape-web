@@ -250,6 +250,8 @@ export function VisualPropertyValueForm(
       if (prevValue != null) {
         props.onValueChange(prevValue)
       }
+    } else {
+      setPrevValue(props.currentValue)
     }
     setValuePicker(null)
   }
@@ -310,10 +312,10 @@ export function VisualPropertyValueForm(
             })}
           </Box>
           {props.showCheckbox && isEdgeLineColor && (
-            <>
+            <Box sx={{ pl: 2 }}>
               <Divider />
               <LockColorCheckbox currentNetworkId={props.currentNetworkId} />
-            </>
+            </Box>
           )}
         </Box>
         <CancelConfirmButtonGroup closePopover={closePopover} />

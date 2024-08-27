@@ -31,6 +31,11 @@ export function NodeLabelPositionPicker(props: {
                   currentValue?.VERTICAL_ALIGN === verticalAlign
                     ? 'blue'
                     : 'black',
+                fontWeight:
+                  currentValue?.VERTICAL_ALIGN === verticalAlign
+                    ? 'bold'
+                    : 'normal',
+
                 width: 100,
                 p: 1,
                 '&:hover': { cursor: 'pointer' },
@@ -69,6 +74,11 @@ export function NodeLabelPositionPicker(props: {
                   currentValue?.HORIZONTAL_ALIGN === horizontalAlign
                     ? 'blue'
                     : 'black',
+                fontWeight:
+                  currentValue?.HORIZONTAL_ALIGN === horizontalAlign
+                    ? 'bold'
+                    : 'normal',
+
                 width: 100,
                 p: 1,
                 '&:hover': { cursor: 'pointer' },
