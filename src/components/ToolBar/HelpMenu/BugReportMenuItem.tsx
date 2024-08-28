@@ -2,6 +2,36 @@
 import { MenuItem, Dialog, DialogContent, DialogTitle, Button, IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { ReactElement, useState, useEffect } from 'react'
+import packageInfo from '../../../../package.json';
+
+
+function getIssueEnvironment(): string {
+    const cyVersion = packageInfo.version ? packageInfo.version : "N/A";
+    const userAgent = navigator.userAgent;
+    const osDetails = userAgent.includes("Windows") ? "Windows" : 
+                       userAgent.includes("Mac") ? "Mac" : 
+                       userAgent.includes("Linux") ? "Linux" : 
+                       userAgent.includes("Android") ? "Android" : 
+                       userAgent.includes("iPhone") ? "iPhone" : 
+                       "Unknown";
+    const osVersion = userAgent.includes("Windows") ? userAgent.match(/Windows NT (\d+\.\d+)/)?.[1] : 
+                        userAgent.includes("Mac") ? userAgent.match(/Mac OS X (\d+_\d+)/)?.[1] : 
+                        userAgent.includes("Linux") ? userAgent.match(/Linux (\d+\.\d+)/)?.[1] : 
+                        userAgent.includes("Android") ? userAgent.match(/Android (\d+\.\d+)/)?.[1] : 
+                        userAgent.includes("iPhone") ? userAgent.match(/iPhone OS (\d+_\d+)/)?.[1] : 
+                        "N/A";
+
+    const osVersionInfo = osDetails + ' ' + osVersion;
+
+    const browserInfo = navigator.userAgent;
+    const browserVersion = browserInfo.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
+    const browser = browserVersion[1].toLowerCase() === 'trident' ? 'IE' : browserVersion[1];
+    const version = browserVersion[2];
+    const browserVersionInfo = browser + ' ' + version;
+
+
+    return "Cytoscape Web Version: " + (cyVersion ? cyVersion : "") + "\n\nOperating System: " + (osVersionInfo ? osVersionInfo : "") + "\n\nBrowser Version: " + (browserVersionInfo ? browserVersionInfo : "");
+}
 
 interface BugReportMenuItemProps {
   handleClose?: () => void;
@@ -36,7 +66,13 @@ export const BugReportMenuItem = ({ handleClose }: BugReportMenuItemProps): Reac
             });
             setIsLoading(false);
           }
+          
         },
+        // {{ edit_1 }} Adding fieldValues for the issue collector
+        fieldValues: {
+          summary: "",
+          description: "How to reproduce the bug in Cytoscape Web:\n\n" + getIssueEnvironment()
+        }
       }
 
       const script = document.createElement('script')
@@ -69,8 +105,8 @@ export const BugReportMenuItem = ({ handleClose }: BugReportMenuItemProps): Reac
         </DialogTitle>
         <DialogContent>
           <p className="lead">
-            <b>TELL US: 1)</b> How to reproduce the bug. <b>2)</b> What browser you're using <b>3)</b> What
-            Cytoscape Web version you're using. Try to reproduce the bug
+            <b>TELL US: 1)</b> How to reproduce the bug. <b>2)</b> What operating system you're using <b>3)</b> What
+            Cytoscape Web version you're using. <b>4)</b> What browser you're using. Try to reproduce the bug
             yourself <b>before</b> you report it. Be sure to include any data we may need to reproduce the bug.
           </p>
           <div id="myCustomTrigger">
