@@ -15,6 +15,8 @@ import {
   TableHead,
   TableRow,
   TableContainer,
+  Select,
+  MenuItem,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import * as MapperFactory from '../../../models/VisualStyleModel/impl/MapperFactory'
@@ -50,6 +52,8 @@ import {
   LockColorCheckbox,
   LockSizeCheckbox,
 } from '../VisualPropertyRender/Checkbox'
+import { useState } from 'react'
+import { Column } from 'src/models'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType
@@ -59,6 +63,7 @@ function BypassFormContent(props: {
   const [bypassValue, setBypassValue] = React.useState(
     visualProperty.defaultValue,
   )
+
   const vpName = props.visualProperty.name
   const isSize =
     vpName === NodeVisualPropertyName.NodeHeight ||
@@ -76,6 +81,11 @@ function BypassFormContent(props: {
   const toggleSelected = useViewModelStore((state) => state.toggleSelected)
   const additiveSelect = useViewModelStore((state) => state.additiveSelect)
   const additiveUnselect = useViewModelStore((state) => state.additiveUnselect)
+  const DEFAULT_ELENAME_BY_COL = 'DEFAULT'
+  const [eleNameByCol, setEleNameByCol] = useState(DEFAULT_ELENAME_BY_COL)
+  const handleEleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEleNameByCol(event.target.value)
+  }
 
   const labelName =
     visualProperty.group === VisualPropertyGroup.Node
@@ -227,9 +237,22 @@ function BypassFormContent(props: {
                 />
               </TableCell>
               <TableCell>
-                {visualProperty.group[0].toUpperCase() +
-                  visualProperty.group.slice(1).toLowerCase()}{' '}
-                Name
+                <Select
+                  size="small"
+                  labelId="label"
+                  value={eleNameByCol}
+                  onChange={handleEleNameChange}
+                >
+                  <MenuItem value={DEFAULT_ELENAME_BY_COL}>
+                    {`${
+                      visualProperty.group[0].toUpperCase() +
+                      visualProperty.group.slice(1).toLowerCase()
+                    } Name (Default)`}
+                  </MenuItem>
+                  {selectedElementTable.columns.map((col: Column) => {
+                    return <MenuItem value={col.name}>{col.name}</MenuItem>
+                  })}
+                </Select>
               </TableCell>
               <TableCell>Bypass</TableCell>
               <TableCell padding={'none'}></TableCell>
@@ -249,7 +272,10 @@ function BypassFormContent(props: {
                     />
                   </TableCell>
                   <TableCell sx={{ maxWidth: 200, overflow: 'scroll' }}>
-                    {name}
+                    {eleNameByCol === DEFAULT_ELENAME_BY_COL
+                      ? name
+                      : (selectedElementTable.rows.get(id)?.[eleNameByCol] ??
+                        '')}
                   </TableCell>
 
                   <TableCell>
