@@ -133,7 +133,7 @@ function BypassFormContent(props: {
     const hasBypass = visualProperty?.bypassMap.has(id)
     const { defaultValue, mapping, bypassMap } = labelVp
     // default name is the name attribute(if it exists) or the id
-    let name = selectedElementTable.rows.get(id)?.name ?? (id as string)
+    let name = selectedElementTable.rows.get(id)?.name ?? ''
     // if the mapping is defined, then overwrite with the mapped value
     // with the priority of bypassMap > mapping > defaultValue
     if (bypassMap !== undefined && bypassMap.has(id)) {
