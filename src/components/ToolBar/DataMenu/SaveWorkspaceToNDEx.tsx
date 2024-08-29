@@ -28,6 +28,8 @@ import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 import { KeycloakContext } from '../../../bootstrap'
 import { useUiStateStore } from '../../../store/UiStateStore'
+import { NdexNetworkSummary, NetworkView, Table, VisualStyle } from 'src/models'
+import { VisualStyleOptions } from 'src/models/VisualStyleModel/VisualStyleOptions'
 
 export const SaveWorkspaceToNDExMenuItem = (
   props: BaseMenuProps,
@@ -38,6 +40,16 @@ export const SaveWorkspaceToNDExMenuItem = (
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
   const setId = useWorkspaceStore((state) => state.setId)
+
+  // data from store
+  const networks = useNetworkStore((state) => state.networks)
+  const visualStyles = useVisualStyleStore((state) => state.visualStyles)
+  const summaries = useNetworkSummaryStore((state) => state.summaries)
+  const tables = useTableStore((state) => state.tables)
+  const viewModels = useViewModelStore((state) => state.viewModels)
+  const networkVisualStyleOpt = useUiStateStore(
+    (state) => state.ui.visualStyleOptions,
+  )
 
   const [workspaceName, setWorkspaceName] = useState<string>('')
   const [openDialog, setOpenDialog] = useState<boolean>(false)
@@ -64,19 +76,18 @@ export const SaveWorkspaceToNDExMenuItem = (
     (state) => state.addNetworkIds,
   )
 
-  const saveNetworkToNDEx = async (networkId: string): Promise<void> => {
+  const saveNetworkToNDEx = async (
+    networkId: string,
+    network: Network,
+    visualStyle: VisualStyle,
+    summary: NdexNetworkSummary,
+    nodeTable: Table,
+    edgeTable: Table,
+    visualStyleOptions: VisualStyleOptions,
+    viewModel: NetworkView,
+  ): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
-    const network = useNetworkStore
-      .getState()
-      .networks.get(networkId) as Network
-    const visualStyle = useVisualStyleStore.getState().visualStyles[networkId]
-    const summary = useNetworkSummaryStore.getState().summaries[networkId]
-    const nodeTable = useTableStore.getState().tables[networkId].nodeTable
-    const edgeTable = useTableStore.getState().tables[networkId].edgeTable
-    const viewModel = useViewModelStore.getState().getViewModel(networkId)
-    const visualStyleOptions =
-      useUiStateStore.getState().ui.visualStyleOptions[networkId]
 
     ndexClient.setAuthToken(accessToken)
     const cx = exportNetworkToCx2(
@@ -97,20 +108,18 @@ export const SaveWorkspaceToNDExMenuItem = (
     })
   }
 
-  const saveCopyToNDEx = async (networkId: string): Promise<void> => {
+  const saveCopyToNDEx = async (
+    network: Network,
+    visualStyle: VisualStyle,
+    summary: NdexNetworkSummary,
+    nodeTable: Table,
+    edgeTable: Table,
+    visualStyleOptions: VisualStyleOptions,
+    viewModel: NetworkView,
+  ): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
-    const network = useNetworkStore
-      .getState()
-      .networks.get(networkId) as Network
-    const visualStyle = useVisualStyleStore.getState().visualStyles[networkId]
-    const summary = useNetworkSummaryStore.getState().summaries[networkId]
-    const nodeTable = useTableStore.getState().tables[networkId].nodeTable
-    const edgeTable = useTableStore.getState().tables[networkId].edgeTable
-    const viewModel = useViewModelStore.getState().getViewModel(networkId)
-    const visualStyleOptions =
-      useUiStateStore.getState().ui.visualStyleOptions[networkId]
 
     const cx = exportNetworkToCx2(
       network,
@@ -146,10 +155,50 @@ export const SaveWorkspaceToNDExMenuItem = (
 
   const saveAllNetworks = async (): Promise<void> => {
     for (const networkId of allNetworkId) {
+      const network = networks.get(networkId) as Network
+      const visualStyle = visualStyles[networkId]
+      const summary = summaries[networkId]
+      const nodeTable = tables[networkId]?.nodeTable
+      const edgeTable = tables[networkId]?.edgeTable
+      const viewModel = viewModels[networkId]?.[0]
+      const visualStyleOptions = networkVisualStyleOpt[networkId]
+
+      if (
+        network === undefined ||
+        visualStyle === undefined ||
+        summary === undefined ||
+        nodeTable === undefined ||
+        edgeTable === undefined
+      ) {
+        continue
+      }
+
       try {
-        await saveNetworkToNDEx(networkId)
+        await saveNetworkToNDEx(
+          networkId,
+          network,
+          visualStyle,
+          summary,
+          nodeTable,
+          edgeTable,
+          visualStyleOptions,
+          viewModel,
+        )
       } catch (e) {
-        await saveCopyToNDEx(networkId)
+        console.error(e)
+        try {
+          await saveCopyToNDEx(
+            network,
+            visualStyle,
+            summary,
+            nodeTable,
+            edgeTable,
+            visualStyleOptions,
+            viewModel,
+          )
+        } catch (e) {
+          console.error(e)
+        }
       }
     }
   }
