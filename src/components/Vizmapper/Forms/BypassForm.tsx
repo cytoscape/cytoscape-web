@@ -247,7 +247,7 @@ function BypassFormContent(props: {
                     {`${
                       visualProperty.group[0].toUpperCase() +
                       visualProperty.group.slice(1).toLowerCase()
-                    } Name (Default)`}
+                    } Name`}
                   </MenuItem>
                   {selectedElementTable.columns.map((col: Column) => {
                     return <MenuItem value={col.name}>{col.name}</MenuItem>
