@@ -1,12 +1,5 @@
 import _ from 'lodash'
-import { NodeLabelPositionType } from '../../../models/VisualStyleModel'
-
-// 'hanchor': 'right'
-// 'vanchor': 'top'
-// 'halign': 'left'
-// 'valign': 'bottom'
-
-//vc, hc, va, ha
+import { NodeLabelPositionType } from '../VisualPropertyValue'
 
 export const nodeLabelPositionMap: any = {
   center: {
