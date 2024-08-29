@@ -34,8 +34,8 @@ export const CyjsNodeShapeTags: string[] = CyjsNodeShapeNames.map((shape) =>
   toCamelCase(shape),
 )
 
-export type CyjsNodeShapeType = typeof CyjsNodeShapeNames[number]
-export type CyjsNodeShapeTagType = typeof CyjsNodeShapeTags[number]
+export type CyjsNodeShapeType = (typeof CyjsNodeShapeNames)[number]
+export type CyjsNodeShapeTagType = (typeof CyjsNodeShapeTags)[number]
 
 const toCamelCase = (str: string): string => {
   return str
@@ -59,4 +59,4 @@ export const CyjsNodeShapeTypeObj = CyjsNodeShapeNames.reduce(
 const newShape: Record<CyjsNodeShapeTagType, CyjsNodeShapeType> = {
   ...CyjsNodeShapeTypeObj,
 } as const
-export type CyjsNodeShapeType2 = typeof newShape[keyof typeof newShape]
+export type CyjsNodeShapeType2 = (typeof newShape)[keyof typeof newShape]

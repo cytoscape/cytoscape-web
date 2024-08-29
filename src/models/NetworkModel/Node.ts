@@ -1,4 +1,4 @@
-import { GraphObject } from "./GraphObject";
+import { GraphObject } from './GraphObject'
 
 /**
  * Marker interface for nodes

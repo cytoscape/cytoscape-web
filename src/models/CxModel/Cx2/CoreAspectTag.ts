@@ -11,4 +11,4 @@ export const CoreAspectTag = {
   Properties: 'properties',
 } as const
 
-export type CoreAspectTag = typeof CoreAspectTag[keyof typeof CoreAspectTag]
+export type CoreAspectTag = (typeof CoreAspectTag)[keyof typeof CoreAspectTag]

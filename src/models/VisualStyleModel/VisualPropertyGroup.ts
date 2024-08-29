@@ -5,4 +5,4 @@ export const VisualPropertyGroup = {
 } as const
 
 export type VisualPropertyGroup =
-  typeof VisualPropertyGroup[keyof typeof VisualPropertyGroup]
+  (typeof VisualPropertyGroup)[keyof typeof VisualPropertyGroup]

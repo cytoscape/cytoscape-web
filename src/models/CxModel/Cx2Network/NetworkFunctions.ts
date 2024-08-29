@@ -8,7 +8,7 @@ export type getObject<ID, T> = (id: ID) => T
 export type getObjects<T> = (key: string, value: string) => T[]
 export type getAttribute<T extends GraphObject> = (
   obj: T,
-  attributeName: string
+  attributeName: string,
 ) => CxValue
 
 export interface NetworkFunctions {

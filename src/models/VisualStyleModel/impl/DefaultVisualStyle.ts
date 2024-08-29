@@ -186,7 +186,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 100,
     bypassMap: new Map(),
-    tooltip: 'The maximum width of the node label'
+    tooltip: 'The maximum width of the node label',
   },
   nodeZOrder: {
     group: 'node',
@@ -339,7 +339,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 100,
     bypassMap: new Map(),
-    tooltip: 'The maximum width of the edge label'
+    tooltip: 'The maximum width of the edge label',
   },
   edgeZOrder: {
     group: 'edge',
