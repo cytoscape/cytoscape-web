@@ -7,4 +7,4 @@
  */
 export const SelectorType = { Node: 'node', Edge: 'edge' } as const
 
-export type SelectorType = typeof SelectorType[keyof typeof SelectorType]
+export type SelectorType = (typeof SelectorType)[keyof typeof SelectorType]

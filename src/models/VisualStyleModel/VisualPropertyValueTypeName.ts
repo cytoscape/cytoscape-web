@@ -16,4 +16,4 @@ export const VisualPropertyValueTypeName = {
 }
 
 export type VisualPropertyValueTypeName =
-  typeof VisualPropertyValueTypeName[keyof typeof VisualPropertyValueTypeName]
+  (typeof VisualPropertyValueTypeName)[keyof typeof VisualPropertyValueTypeName]

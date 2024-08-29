@@ -10,4 +10,4 @@ export const NodeShapeType = {
   Vee: 'vee',
 } as const
 
-export type NodeShapeType = typeof NodeShapeType[keyof typeof NodeShapeType]
+export type NodeShapeType = (typeof NodeShapeType)[keyof typeof NodeShapeType]

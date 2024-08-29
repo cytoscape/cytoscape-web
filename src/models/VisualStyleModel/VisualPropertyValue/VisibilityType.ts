@@ -3,4 +3,5 @@ export const VisibilityType = {
   None: 'none',
 } as const
 
-export type VisibilityType = typeof VisibilityType[keyof typeof VisibilityType]
+export type VisibilityType =
+  (typeof VisibilityType)[keyof typeof VisibilityType]
