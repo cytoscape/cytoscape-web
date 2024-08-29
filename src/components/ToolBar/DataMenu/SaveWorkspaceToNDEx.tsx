@@ -29,7 +29,8 @@ import { IdType } from '../../../models/IdType'
 import { KeycloakContext } from '../../../bootstrap'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { NdexNetworkSummary, NetworkView, Table, VisualStyle } from 'src/models'
-import { VisualStyleOptions } from 'src/models/VisualStyleModel/VisualStyleOptions'
+import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork'
 
 export const SaveWorkspaceToNDExMenuItem = (
   props: BaseMenuProps,
@@ -170,7 +171,8 @@ export const SaveWorkspaceToNDExMenuItem = (
         nodeTable === undefined ||
         edgeTable === undefined
       ) {
-        continue
+        const currentToken = await getToken()
+        const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
       }
 
       try {
