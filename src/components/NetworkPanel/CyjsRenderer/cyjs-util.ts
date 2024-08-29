@@ -1,6 +1,5 @@
 import { Collection, Core, SingularElementArgument } from 'cytoscape'
 import { IdType } from '../../../models/IdType'
-import { ValueType } from '../../../models/TableModel'
 import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import { View } from '../../../models/ViewModel/View'
 import VisualStyleFn, {
@@ -15,10 +14,10 @@ import VisualStyleFn, {
 } from '../../../models/VisualStyleModel'
 import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
 import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
-import { computeNodeLabelPosition } from './nodeLabelPositionMap'
 import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
 import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)

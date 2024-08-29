@@ -1,8 +1,8 @@
 export interface VisualEditorProperties {
-    nodeSizeLocked: boolean
-    arrowColorMatchesEdge: boolean
+  nodeSizeLocked: boolean
+  arrowColorMatchesEdge: boolean
 }
 
 export type VisualStyleOptions = {
-    visualEditorProperties: VisualEditorProperties
+  visualEditorProperties: VisualEditorProperties
 }

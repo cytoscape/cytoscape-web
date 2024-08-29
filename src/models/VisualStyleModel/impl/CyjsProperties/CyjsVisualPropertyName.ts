@@ -21,7 +21,7 @@ export const CyjsEdgeVisualPropertyName = {
 } as const
 
 export type CyjsEdgeVisualPropertyType =
-  typeof CyjsEdgeVisualPropertyName[keyof typeof CyjsEdgeVisualPropertyName]
+  (typeof CyjsEdgeVisualPropertyName)[keyof typeof CyjsEdgeVisualPropertyName]
 
 export const CyjsNodeVisualPropertyName = {
   Width: 'width',
@@ -50,7 +50,7 @@ export const CyjsNodeVisualPropertyName = {
 } as const
 
 export type CyjsNodeVisualPropertyType =
-  typeof CyjsNodeVisualPropertyName[keyof typeof CyjsNodeVisualPropertyName]
+  (typeof CyjsNodeVisualPropertyName)[keyof typeof CyjsNodeVisualPropertyName]
 
 export type CyjsNodeVisualPropertyTypes =
   | 'width'

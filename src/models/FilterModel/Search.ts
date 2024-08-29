@@ -23,7 +23,7 @@ export interface Indices<T> {
 export interface Search<T> {
   // Current state of the search
   state: SearchState
-  
+
   // Raw query string from the user
   query: string
 

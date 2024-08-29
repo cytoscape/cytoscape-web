@@ -4,4 +4,4 @@ export const EdgeLineType = {
   Dashed: 'dashed',
 } as const
 
-export type EdgeLineType = typeof EdgeLineType[keyof typeof EdgeLineType]
+export type EdgeLineType = (typeof EdgeLineType)[keyof typeof EdgeLineType]
