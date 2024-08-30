@@ -50,6 +50,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 1.0,
     bypassMap: new Map(),
+    maxVal: 1,
   },
   nodeHeight: {
     group: 'node',
@@ -114,6 +115,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 0,
     bypassMap: new Map(),
+    maxVal: 360,
   },
   nodeLabelOpacity: {
     group: 'node',
@@ -122,6 +124,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 1.0,
     bypassMap: new Map(),
+    maxVal: 1,
   },
   nodeLabelPosition: {
     group: 'node',
@@ -162,6 +165,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 1.0,
     bypassMap: new Map(),
+    maxVal: 1,
   },
   nodeVisibility: {
     group: 'node',
@@ -219,6 +223,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 1.0,
     bypassMap: new Map(),
+    maxVal: 1,
   },
   edgeSourceArrowColor: {
     group: 'edge',
@@ -291,6 +296,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 0,
     bypassMap: new Map(),
+    maxVal: 360,
   },
   edgeLabelOpacity: {
     group: 'edge',
@@ -299,6 +305,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 1.0,
     type: 'number',
     bypassMap: new Map(),
+    maxVal: 1,
   },
   // edgeLabelAutoRotation: {
   //   group: 'edge',

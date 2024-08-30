@@ -15,6 +15,7 @@ import {
 } from '../../../models/VisualStyleModel/VisualPropertyName'
 import { LockSizeCheckbox } from './Checkbox'
 import { IdType } from '../../../models/IdType'
+import { getDefaultVisualStyle } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 
 export function NumberInput(props: {
   currentValue: number | null
@@ -43,7 +44,9 @@ export function NumberInput(props: {
       serializedStringIsValid(ValueTypeName.Long, value)
     ) {
       const numValue = Number(value)
-      if (numValue >= 0 && numValue < 10 ** 3) return true
+      const maxVal = getDefaultVisualStyle()[vpName].maxVal
+      if (numValue >= 0 && (maxVal === undefined || numValue <= maxVal))
+        return true
     }
     return false
   }
