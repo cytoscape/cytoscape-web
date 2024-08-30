@@ -69,8 +69,31 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           },
         }
 
+        const marginXDirectMapping: CyjsDirectMapper = {
+          selector: `node[${SpecialPropertyName.NodeLabelMarginX}]`,
+          style: {
+            'text-margin-x': `data(${SpecialPropertyName.NodeLabelMarginX})`,
+          },
+        }
+
+        const marginYDirectMapping: CyjsDirectMapper = {
+          selector: `node[${SpecialPropertyName.NodeLabelMarginY}]`,
+          style: {
+            'text-margin-y': `data(${SpecialPropertyName.NodeLabelMarginY})`,
+          },
+        }
+        const justificationDirectMapping: CyjsDirectMapper = {
+          selector: `node[${SpecialPropertyName.NodeLabelJustification}]`,
+          style: {
+            'text-justification': `data(${SpecialPropertyName.NodeLabelJustification})`,
+          },
+        }
+
         cyStyle.push(valignDirectMapping)
         cyStyle.push(halignDirectMapping)
+        cyStyle.push(marginXDirectMapping)
+        cyStyle.push(marginYDirectMapping)
+        cyStyle.push(justificationDirectMapping)
       } else {
         const directMapping: CyjsDirectMapper = {
           selector: `node[${vp.name}]`,
@@ -150,7 +173,11 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   return cyStyle
 }
 
-export const applyViewModel = (cy: Core, networkView: NetworkView, visualEditorProperties: VisualEditorProperties): void => {
+export const applyViewModel = (
+  cy: Core,
+  networkView: NetworkView,
+  visualEditorProperties: VisualEditorProperties,
+): void => {
   const { nodeViews, edgeViews } = networkView
   updateCyObjects<NodeView>(nodeViews, cy.nodes(), visualEditorProperties)
   updateCyObjects<EdgeView>(edgeViews, cy.edges(), visualEditorProperties)
@@ -159,7 +186,7 @@ export const applyViewModel = (cy: Core, networkView: NetworkView, visualEditorP
 const updateCyObjects = <T extends View>(
   views: Record<IdType, T>,
   cyObjects: Collection<SingularElementArgument>,
-  visualEditorProperties: VisualEditorProperties
+  visualEditorProperties: VisualEditorProperties,
 ): void => {
   cyObjects.forEach((obj: SingularElementArgument) => {
     const cyId = obj.data('id')
@@ -173,11 +200,15 @@ const updateCyObjects = <T extends View>(
             const labelPosition = value as NodeLabelPositionType
             const { horizontalAlign, verticalAlign } =
               computeNodeLabelPosition(labelPosition)
+            const { MARGIN_X, MARGIN_Y, JUSTIFICATION } = labelPosition
             obj.data(
               SpecialPropertyName.NodeLabelHorizontalAlign,
               horizontalAlign,
             )
             obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
+            obj.data(SpecialPropertyName.NodeLabelMarginX, MARGIN_X)
+            obj.data(SpecialPropertyName.NodeLabelMarginY, MARGIN_Y)
+            obj.data(SpecialPropertyName.NodeLabelJustification, JUSTIFICATION)
           } else if (
             key === VisualPropertyName.EdgeTargetArrowShape ||
             key === VisualPropertyName.EdgeSourceArrowShape
@@ -210,7 +241,10 @@ const updateCyObjects = <T extends View>(
         },
       )
       if (visualEditorProperties?.nodeSizeLocked) {
-        obj.data(NodeVisualPropertyName.NodeWidth, obj.data(NodeVisualPropertyName.NodeHeight))
+        obj.data(
+          NodeVisualPropertyName.NodeWidth,
+          obj.data(NodeVisualPropertyName.NodeHeight),
+        )
       }
       if (visualEditorProperties?.arrowColorMatchesEdge) {
         const color = obj.data(EdgeVisualPropertyName.EdgeLineColor)
