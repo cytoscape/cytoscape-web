@@ -73,7 +73,9 @@ export function FileUpload(props: FileUploadProps) {
   const setVisualStyle = useVisualStyleStore((state) => state.add)
 
   const ui = useUiStateStore((state) => state.ui)
-  const setVisualStyleOptions = useUiStateStore((state) => state.setVisualStyleOptions)
+  const setVisualStyleOptions = useUiStateStore(
+    (state) => state.setVisualStyleOptions,
+  )
 
   const setViewModel = useViewModelStore((state) => state.add)
 
@@ -96,16 +98,25 @@ export function FileUpload(props: FileUploadProps) {
       cxData,
     )
 
-    const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
+    const visualStyle: VisualStyle =
+      VisualStyleFn.createVisualStyleFromCx(cxData)
 
     const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
       LocalNetworkId,
       cxData,
     )
 
-    const visualStyleOptions: VisualStyleOptions = VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
+    const visualStyleOptions: VisualStyleOptions =
+      VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
 
-    return { network, nodeTable, edgeTable, visualStyle, networkView, visualStyleOptions }
+    return {
+      network,
+      nodeTable,
+      edgeTable,
+      visualStyle,
+      networkView,
+      visualStyleOptions,
+    }
   }
 
   const handleCX2File = async (jsonStr: string) => {
@@ -179,7 +190,14 @@ export function FileUpload(props: FileUploadProps) {
         modificationTime: new Date(Date.now()),
       })
       const res = await createDataFromLocalCx2(localUuid, json)
-      const { network, nodeTable, edgeTable, visualStyle, networkView, visualStyleOptions } = res
+      const {
+        network,
+        nodeTable,
+        edgeTable,
+        visualStyle,
+        networkView,
+        visualStyleOptions,
+      } = res
 
       // TODO the db syncing logic in various stores assumes the updated network is the current network
       // therefore, as a temporary fix, the first operation that should be done is to set the
@@ -251,7 +269,7 @@ export function FileUpload(props: FileUploadProps) {
         <MantineProvider>
           <ModalsProvider>
             <Modal
-              onClose={() => props.handleClose}
+              onClose={() => props.handleClose()}
               opened={props.show}
               zIndex={2000}
               centered
@@ -268,7 +286,7 @@ export function FileUpload(props: FileUploadProps) {
                 onReject={(files: any) => {
                   onFileError()
                 }}
-              // maxSize={}
+                // maxSize={}
               >
                 <Group
                   justify="center"
