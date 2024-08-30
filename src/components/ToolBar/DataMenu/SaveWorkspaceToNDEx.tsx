@@ -43,6 +43,7 @@ export const SaveWorkspaceToNDExMenuItem = (
   const setId = useWorkspaceStore((state) => state.setId)
 
   // data from store
+  const workSpace = useWorkspaceStore((state) => state.workspace)
   const networks = useNetworkStore((state) => state.networks)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const summaries = useNetworkSummaryStore((state) => state.summaries)
@@ -84,8 +85,8 @@ export const SaveWorkspaceToNDExMenuItem = (
     summary: NdexNetworkSummary,
     nodeTable: Table,
     edgeTable: Table,
-    visualStyleOptions: VisualStyleOptions,
     viewModel: NetworkView,
+    visualStyleOptions?: VisualStyleOptions,
   ): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
@@ -115,8 +116,8 @@ export const SaveWorkspaceToNDExMenuItem = (
     summary: NdexNetworkSummary,
     nodeTable: Table,
     edgeTable: Table,
-    visualStyleOptions: VisualStyleOptions,
     viewModel: NetworkView,
+    visualStyleOptions?: VisualStyleOptions,
   ): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
@@ -156,50 +157,60 @@ export const SaveWorkspaceToNDExMenuItem = (
 
   const saveAllNetworks = async (): Promise<void> => {
     for (const networkId of allNetworkId) {
-      const network = networks.get(networkId) as Network
-      const visualStyle = visualStyles[networkId]
+      let network = networks.get(networkId) as Network
+      let visualStyle = visualStyles[networkId]
       const summary = summaries[networkId]
-      const nodeTable = tables[networkId]?.nodeTable
-      const edgeTable = tables[networkId]?.edgeTable
-      const viewModel = viewModels[networkId]?.[0]
-      const visualStyleOptions = networkVisualStyleOpt[networkId]
+      let nodeTable = tables[networkId]?.nodeTable
+      let edgeTable = tables[networkId]?.edgeTable
+      let networkViews: NetworkView[] = viewModels[networkId]
+      let visualStyleOptions: VisualStyleOptions | undefined =
+        networkVisualStyleOpt[networkId]
 
-      if (
-        network === undefined ||
-        visualStyle === undefined ||
-        summary === undefined ||
-        nodeTable === undefined ||
-        edgeTable === undefined
-      ) {
+      if (!network || !visualStyle || !nodeTable || !edgeTable) {
         const currentToken = await getToken()
-        const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
+        try {
+          const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
+          // Using parentheses to perform destructuring assignment correctly
+          ;({
+            network,
+            nodeTable,
+            edgeTable,
+            visualStyle,
+            networkViews,
+            visualStyleOptions,
+          } = res)
+        } catch (error) {
+          console.error('Failed to update network details:', error)
+        }
       }
 
-      try {
-        await saveNetworkToNDEx(
-          networkId,
-          network,
-          visualStyle,
-          summary,
-          nodeTable,
-          edgeTable,
-          visualStyleOptions,
-          viewModel,
-        )
-      } catch (e) {
-        console.error(e)
+      if (workSpace.networkModified[networkId] === true) {
         try {
-          await saveCopyToNDEx(
+          await saveNetworkToNDEx(
+            networkId,
             network,
             visualStyle,
             summary,
             nodeTable,
             edgeTable,
+            networkViews?.[0],
             visualStyleOptions,
-            viewModel,
           )
         } catch (e) {
           console.error(e)
+          try {
+            await saveCopyToNDEx(
+              network,
+              visualStyle,
+              summary,
+              nodeTable,
+              edgeTable,
+              networkViews?.[0],
+              visualStyleOptions,
+            )
+          } catch (e) {
+            console.error(e)
+          }
         }
       }
     }
