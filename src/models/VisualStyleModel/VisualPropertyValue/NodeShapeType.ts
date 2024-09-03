@@ -4,7 +4,7 @@ export const NodeShapeType = {
   Ellipse: 'ellipse',
   Hexagon: 'hexagon',
   Octagon: 'octagon',
-  Parallelogram: 'rhomboid',
+  Parallelogram: 'parallelogram',
   RoundRectangle: 'round-rectangle',
   Triangle: 'triangle',
   Vee: 'vee',

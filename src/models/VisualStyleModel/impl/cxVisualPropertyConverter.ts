@@ -19,19 +19,6 @@ import {
   VisualStyle,
 } from '..'
 
-const NodeShapeMapping: Record<string, NodeShapeType> = {
-  'rhomboid': NodeShapeType.Parallelogram,
-  'parallelogram': NodeShapeType.Parallelogram,
-  'diamond': NodeShapeType.Diamond,
-  'ellipse': NodeShapeType.Ellipse,
-  'triangle': NodeShapeType.Triangle,
-  'rectangle': NodeShapeType.Rectangle,
-  'round-rectangle': NodeShapeType.RoundRectangle,
-  'octagon': NodeShapeType.Octagon,
-  'hexagon': NodeShapeType.Hexagon,
-  'vee': NodeShapeType.Vee,
-}
-
 type CXLabelPositionValueType = 'center' | 'top' | 'bottom' | 'left' | 'right'
 export interface CXLabelPositionType {
   HORIZONTAL_ALIGN: CXLabelPositionValueType
@@ -252,7 +239,7 @@ export const VPNodeShapeTypeConverter = (
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXVisualPropertyValue): NodeShapeType =>
-      NodeShapeMapping[cxVPValue as string] as NodeShapeType,
+      cxVPValue as NodeShapeType,
   }
 }
 

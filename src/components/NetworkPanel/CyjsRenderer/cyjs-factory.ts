@@ -4,10 +4,25 @@ import { Edge } from '../../../models/NetworkModel'
 import { ValueType } from '../../../models/TableModel'
 import { EdgeView, NodeView } from '../../../models/ViewModel'
 import {
-  VisualPropertyName, NodeVisualPropertyName, EdgeVisualPropertyName,
+  VisualPropertyName,
+  NodeVisualPropertyName,
+  EdgeVisualPropertyName,
   VisualPropertyValueType,
+  NodeShapeType,
 } from '../../../models/VisualStyleModel'
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
+
+export const NodeShapeMapping: Record<NodeShapeType, string> = {
+  [NodeShapeType.Parallelogram]: 'rhomboid',
+  [NodeShapeType.RoundRectangle]: 'roundrectangle',
+  [NodeShapeType.Triangle]: 'triangle',
+  [NodeShapeType.Diamond]: 'diamond',
+  [NodeShapeType.Octagon]: 'octagon',
+  [NodeShapeType.Hexagon]: 'hexagon',
+  [NodeShapeType.Ellipse]: 'ellipse',
+  [NodeShapeType.Rectangle]: 'rectangle',
+  [NodeShapeType.Vee]: 'vee',
+}
 
 export interface CyNode {
   group: 'nodes'
@@ -25,15 +40,31 @@ export interface CyEdge {
   }
 }
 
-const createCyNodes = (nodeViews: NodeView[], nodeSizeLocked: boolean): CyNode[] =>
+const createCyNodes = (
+  nodeViews: NodeView[],
+  nodeSizeLocked: boolean,
+): CyNode[] =>
   nodeViews.map((nv: NodeView) => {
     const data: Record<VisualPropertyName | IdType, ValueType> = {
       id: nv.id,
-      ...Object.fromEntries(nv.values.entries()),
+      ...Object.fromEntries(
+        Array.from(nv.values.entries()).map(([k, v]) => {
+          if (k === NodeVisualPropertyName.NodeShape) {
+            console.log('k', k)
+            console.log('v', v)
+            console.log(NodeShapeMapping[v as NodeShapeType])
+            return [k, NodeShapeMapping[v as NodeShapeType]]
+          }
+          return [k, v]
+        }),
+      ),
     }
-    if (nodeSizeLocked) {// Use height to override width
-      data[NodeVisualPropertyName.NodeWidth] = data[NodeVisualPropertyName.NodeHeight]
+    if (nodeSizeLocked) {
+      // Use height to override width
+      data[NodeVisualPropertyName.NodeWidth] =
+        data[NodeVisualPropertyName.NodeHeight]
     }
+
     return {
       group: 'nodes',
       data,
@@ -47,7 +78,7 @@ const createCyNodes = (nodeViews: NodeView[], nodeSizeLocked: boolean): CyNode[]
 const createCyEdges = (
   edges: Edge[],
   edgeViews: Record<IdType, EdgeView>,
-  arrowColorMatchesEdge: boolean
+  arrowColorMatchesEdge: boolean,
 ): CyEdge[] =>
   edges.map((edge: Edge): CyEdge => {
     const edgeView: EdgeView = edgeViews[edge.id]
@@ -64,9 +95,9 @@ const createCyEdges = (
     )
 
     if (arrowColorMatchesEdge) {
-      const color = newData[EdgeVisualPropertyName.EdgeLineColor];
-      newData[EdgeVisualPropertyName.EdgeSourceArrowColor] = color;
-      newData[EdgeVisualPropertyName.EdgeTargetArrowColor] = color;
+      const color = newData[EdgeVisualPropertyName.EdgeLineColor]
+      newData[EdgeVisualPropertyName.EdgeSourceArrowColor] = color
+      newData[EdgeVisualPropertyName.EdgeTargetArrowColor] = color
     }
 
     return {
@@ -80,8 +111,16 @@ export const addObjects = (
   nodeViews: NodeView[],
   edges: Edge[],
   edgeViews: Record<IdType, EdgeView>,
-  visualEditorProperties: VisualEditorProperties
+  visualEditorProperties: VisualEditorProperties,
 ): void => {
-  cy.add(createCyNodes(nodeViews, visualEditorProperties?.nodeSizeLocked ?? false))
-  cy.add(createCyEdges(edges, edgeViews, visualEditorProperties?.arrowColorMatchesEdge ?? false))
+  cy.add(
+    createCyNodes(nodeViews, visualEditorProperties?.nodeSizeLocked ?? false),
+  )
+  cy.add(
+    createCyEdges(
+      edges,
+      edgeViews,
+      visualEditorProperties?.arrowColorMatchesEdge ?? false,
+    ),
+  )
 }
