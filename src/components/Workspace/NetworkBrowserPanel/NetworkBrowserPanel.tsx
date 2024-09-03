@@ -81,7 +81,10 @@ export const NetworkBrowserPanel = ({
     <Box
       sx={{
         height: '100%',
+        p: 0,
+        margin: 0,
       }}
+      gap={0}
     >
       <Box
         sx={{
@@ -137,9 +140,13 @@ export const NetworkBrowserPanel = ({
           />
         )}
       </Box>
+      <Box style={{ background: 'red', padding: 0, margin: 0 }}>
+        <p>NAME 1</p>
+      </Box>
       <div hidden={currentTabIndex !== 0}>
         {currentTabIndex === 0 && (
           <Box
+            gap={0}
             sx={{
               height: allotmentDimensions[0] - 96,
               // need to set a height to enable scroll in the network list
@@ -172,7 +179,8 @@ export const NetworkBrowserPanel = ({
               width: '100%',
               padding: 0,
               margin: 0,
-            }}>
+            }}
+          >
             <LLMQueryResultPanel />
           </Box>
         )}
