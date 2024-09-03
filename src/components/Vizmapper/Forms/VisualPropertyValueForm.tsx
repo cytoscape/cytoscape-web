@@ -232,8 +232,6 @@ export function VisualPropertyValueForm(
   props: VisualPropertyValueFormProps,
 ): React.ReactElement {
   const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
-  const [prevValue, setPrevValue] =
-    React.useState<VisualPropertyValueType | null>(props.currentValue)
   const vpName = props.visualProperty.name
   const isEdgeLineColor =
     vpName === EdgeVisualPropertyName.EdgeLineColor ||
@@ -246,13 +244,6 @@ export function VisualPropertyValueForm(
   const closePopover = (
     reason: 'backdropClick' | 'escapeKeyDown' | 'confirm' | 'cancel',
   ): void => {
-    if (reason !== 'confirm') {
-      if (prevValue != null) {
-        props.onValueChange(prevValue)
-      }
-    } else {
-      setPrevValue(props.currentValue)
-    }
     setValuePicker(null)
   }
 
@@ -278,6 +269,8 @@ export function VisualPropertyValueForm(
       <Popover
         open={valuePicker != null}
         anchorEl={valuePicker}
+        disableEscapeKeyDown={true}
+        hideBackdrop={true}
         onClose={(e: any, reason: 'backdropClick' | 'escapeKeyDown') =>
           closePopover(reason)
         }
@@ -318,7 +311,6 @@ export function VisualPropertyValueForm(
             </Box>
           )}
         </Box>
-        <CancelConfirmButtonGroup closePopover={closePopover} />
       </Popover>
     </Box>
   )

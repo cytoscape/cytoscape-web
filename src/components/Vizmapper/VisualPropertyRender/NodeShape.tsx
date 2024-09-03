@@ -1,5 +1,5 @@
 import { NodeShapeType } from '../../../models/VisualStyleModel/VisualPropertyValue'
-import { Box } from '@mui/material'
+import { Box, Button } from '@mui/material'
 import {
   EllipseIcon,
   RectangleIcon,
@@ -61,44 +61,72 @@ const nodeShapeDisplayNameMap: Record<NodeShapeType, string> = {
 export function NodeShapePicker(props: {
   currentValue: NodeShapeType | null
   onValueChange: (shape: NodeShapeType) => void
-  closePopover: () => void
+  closePopover: (reason: string) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const sortedNodeShapes = Object.values(NodeShapeType).sort()
+  const [localValue, setLocalValue] = React.useState(
+    currentValue ?? NodeShapeType.Rectangle,
+  )
+
+  React.useEffect(() => {
+    setLocalValue(currentValue ?? NodeShapeType.Rectangle)
+  }, [currentValue])
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        width: 450,
-      }}
-    >
-      {sortedNodeShapes.map((shape: NodeShapeType) => (
-        <Box
-          sx={{
-            color: currentValue === shape ? 'blue' : 'black',
-            fontWeight: currentValue === shape ? 'bold' : 'normal',
-            p: 1,
-            '&:hover': { cursor: 'pointer' },
-          }}
-          onClick={() => onValueChange(shape)}
-          key={shape}
-        >
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          width: 450,
+        }}
+      >
+        {sortedNodeShapes.map((shape: NodeShapeType) => (
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              width: 130,
+              color: localValue === shape ? 'blue' : 'black',
+              fontWeight: localValue === shape ? 'bold' : 'normal',
+              p: 1,
+              '&:hover': { cursor: 'pointer' },
             }}
+            onClick={() => setLocalValue(shape)}
+            key={shape}
           >
-            <NodeShape value={shape} isSelected={currentValue === shape} />
-            <Box>{nodeShapeDisplayNameMap[shape]}</Box>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: 130,
+              }}
+            >
+              <NodeShape value={shape} isSelected={localValue === shape} />
+              <Box>{nodeShapeDisplayNameMap[shape]}</Box>
+            </Box>
           </Box>
-        </Box>
-      ))}
+        ))}
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+        <Button
+          color="error"
+          onClick={() => {
+            props.closePopover('cancel')
+            setLocalValue(currentValue ?? NodeShapeType.Rectangle)
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={() => {
+            props.onValueChange(localValue)
+            props.closePopover('confirm')
+          }}
+        >
+          Confirm
+        </Button>
+      </Box>
     </Box>
   )
 }

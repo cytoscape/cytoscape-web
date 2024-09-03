@@ -1,5 +1,5 @@
 import { EdgeArrowShapeType } from '../../../models/VisualStyleModel/VisualPropertyValue'
-import { Box } from '@mui/material'
+import { Box, Button } from '@mui/material'
 import {
   CircleArrowIcon,
   DiamondArrowIcon,
@@ -64,50 +64,77 @@ const edgeArrowShapeMap: Record<
 export function EdgeArrowShapePicker(props: {
   currentValue: EdgeArrowShapeType | null
   onValueChange: (edgeArrowShape: EdgeArrowShapeType) => void
-  closePopover: () => void
+  closePopover: (reason: string) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const sortedEdgeArrowShapes = Object.values(EdgeArrowShapeType).sort()
+  const [localValue, setLocalValue] = React.useState(
+    currentValue ?? EdgeArrowShapeType.None,
+  )
 
+  React.useEffect(() => {
+    setLocalValue(currentValue ?? EdgeArrowShapeType.None)
+  }, [currentValue])
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        width: 350,
-      }}
-    >
-      {sortedEdgeArrowShapes.map((edgeArrowShape: EdgeArrowShapeType) => (
-        <Box
-          sx={{
-            color: currentValue === edgeArrowShape ? 'blue' : 'black',
-            fontWeight: currentValue === edgeArrowShape ? 'bold' : 'normal',
-            p: 1,
-            '&:hover': { cursor: 'pointer' },
-          }}
-          onClick={() => onValueChange(edgeArrowShape)}
-          key={edgeArrowShape}
-        >
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          width: 350,
+        }}
+      >
+        {sortedEdgeArrowShapes.map((edgeArrowShape: EdgeArrowShapeType) => (
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              alignContent: 'center',
-              width: 80,
+              color: localValue === edgeArrowShape ? 'blue' : 'black',
+              fontWeight: localValue === edgeArrowShape ? 'bold' : 'normal',
+              p: 1,
+              '&:hover': { cursor: 'pointer' },
             }}
+            onClick={() => setLocalValue(edgeArrowShape)}
+            key={edgeArrowShape}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <EdgeArrowShape
-                value={edgeArrowShape}
-                isSelected={currentValue === edgeArrowShape}
-              />
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                alignContent: 'center',
+                width: 80,
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <EdgeArrowShape
+                  value={edgeArrowShape}
+                  isSelected={localValue === edgeArrowShape}
+                />
+              </Box>
+              <Box sx={{ textAlign: 'center' }}>{edgeArrowShape}</Box>
             </Box>
-            <Box sx={{ textAlign: 'center' }}>{edgeArrowShape}</Box>
           </Box>
-        </Box>
-      ))}
+        ))}
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+        <Button
+          color="error"
+          onClick={() => {
+            props.closePopover('cancel')
+            setLocalValue(currentValue ?? EdgeArrowShapeType.None)
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={() => {
+            props.onValueChange(localValue)
+            props.closePopover('confirm')
+          }}
+        >
+          Confirm
+        </Button>
+      </Box>
     </Box>
   )
 }

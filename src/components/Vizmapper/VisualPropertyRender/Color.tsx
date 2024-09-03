@@ -1,5 +1,5 @@
 import { ColorType } from '../../../models/VisualStyleModel/VisualPropertyValue'
-import { Box, Tab, Tabs } from '@mui/material'
+import { Box, Button, Tab, Tabs } from '@mui/material'
 import { ChromePicker, SwatchesPicker, CompactPicker } from 'react-color'
 import React from 'react'
 import debounce from 'lodash.debounce'
@@ -13,7 +13,7 @@ import {
 export function ColorPicker(props: {
   currentValue: ColorType | null
   onValueChange: (color: ColorType) => void
-  closePopover: () => void
+  closePopover: (reason: string) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const debouncedValueChange = debounce(onValueChange, 200)
@@ -58,7 +58,6 @@ export function ColorPicker(props: {
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
-              debouncedValueChange(color.hex)
             }}
           />
         )}
@@ -69,7 +68,6 @@ export function ColorPicker(props: {
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
-              debouncedValueChange(color.hex)
             }}
           />
         )}
@@ -80,7 +78,6 @@ export function ColorPicker(props: {
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
-              debouncedValueChange(color.hex)
             }}
           />
         )}
@@ -90,7 +87,6 @@ export function ColorPicker(props: {
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
-              debouncedValueChange(color.hex)
             }}
           />
         )}
@@ -99,10 +95,28 @@ export function ColorPicker(props: {
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
-              debouncedValueChange(color.hex)
             }}
           />
         )}
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+        <Button
+          color="error"
+          onClick={() => {
+            props.closePopover('cancel')
+            setLocalColorValue(currentValue ?? `#ffffff`)
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={() => {
+            props.onValueChange(localColorValue)
+            props.closePopover('confirm')
+          }}
+        >
+          Confirm
+        </Button>
       </Box>
     </Box>
   )

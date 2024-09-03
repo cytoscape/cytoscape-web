@@ -3,15 +3,24 @@ import {
   VerticalAlignType,
   HorizontalAlignType,
 } from '../../../models/VisualStyleModel/VisualPropertyValue'
-import { Box, Typography } from '@mui/material'
+import { Box, Button, Typography } from '@mui/material'
 import { DEFAULT_NODE_LABEL_POSITION } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
+import React from 'react'
 
 export function NodeLabelPositionPicker(props: {
   currentValue: NodeLabelPositionType | null
   onValueChange: (labelPosition: NodeLabelPositionType) => void
-  closePopover: () => void
+  closePopover: (reason: string) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
+
+  const [localValue, setLocalValue] = React.useState(
+    currentValue ?? DEFAULT_NODE_LABEL_POSITION,
+  )
+
+  React.useEffect(() => {
+    setLocalValue(currentValue ?? DEFAULT_NODE_LABEL_POSITION)
+  }, [currentValue])
 
   return (
     <Box sx={{ p: 2 }}>
@@ -28,11 +37,11 @@ export function NodeLabelPositionPicker(props: {
             <Box
               sx={{
                 color:
-                  currentValue?.VERTICAL_ALIGN === verticalAlign
+                  localValue?.VERTICAL_ALIGN === verticalAlign
                     ? 'blue'
                     : 'black',
                 fontWeight:
-                  currentValue?.VERTICAL_ALIGN === verticalAlign
+                  localValue?.VERTICAL_ALIGN === verticalAlign
                     ? 'bold'
                     : 'normal',
 
@@ -41,14 +50,10 @@ export function NodeLabelPositionPicker(props: {
                 '&:hover': { cursor: 'pointer' },
               }}
               onClick={() => {
-                onValueChange(
-                  Object.assign(
-                    {},
-                    currentValue ?? DEFAULT_NODE_LABEL_POSITION,
-                    {
-                      VERTICAL_ALIGN: verticalAlign,
-                    },
-                  ),
+                setLocalValue(
+                  Object.assign({}, localValue ?? DEFAULT_NODE_LABEL_POSITION, {
+                    VERTICAL_ALIGN: verticalAlign,
+                  }),
                 )
               }}
               key={verticalAlign}
@@ -71,11 +76,11 @@ export function NodeLabelPositionPicker(props: {
             <Box
               sx={{
                 color:
-                  currentValue?.HORIZONTAL_ALIGN === horizontalAlign
+                  localValue?.HORIZONTAL_ALIGN === horizontalAlign
                     ? 'blue'
                     : 'black',
                 fontWeight:
-                  currentValue?.HORIZONTAL_ALIGN === horizontalAlign
+                  localValue?.HORIZONTAL_ALIGN === horizontalAlign
                     ? 'bold'
                     : 'normal',
 
@@ -85,13 +90,9 @@ export function NodeLabelPositionPicker(props: {
               }}
               onClick={() => {
                 onValueChange(
-                  Object.assign(
-                    {},
-                    currentValue ?? DEFAULT_NODE_LABEL_POSITION,
-                    {
-                      HORIZONTAL_ALIGN: horizontalAlign,
-                    },
-                  ),
+                  Object.assign({}, localValue ?? DEFAULT_NODE_LABEL_POSITION, {
+                    HORIZONTAL_ALIGN: horizontalAlign,
+                  }),
                 )
               }}
               key={horizontalAlign}
@@ -100,6 +101,25 @@ export function NodeLabelPositionPicker(props: {
             </Box>
           ),
         )}
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+        <Button
+          color="error"
+          onClick={() => {
+            props.closePopover('cancel')
+            setLocalValue(currentValue ?? DEFAULT_NODE_LABEL_POSITION)
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={() => {
+            props.onValueChange(localValue)
+            props.closePopover('confirm')
+          }}
+        >
+          Confirm
+        </Button>
       </Box>
     </Box>
   )

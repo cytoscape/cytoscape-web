@@ -1,7 +1,8 @@
 import { VisibilityType } from '../../../models/VisualStyleModel/VisualPropertyValue'
-import { Box } from '@mui/material'
+import { Box, Button } from '@mui/material'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
+import React from 'react'
 const visibilityMap: Record<
   VisibilityType,
   (isSelected: boolean) => React.ReactElement
@@ -29,41 +30,69 @@ const visibilityMap: Record<
 export function VisibilityPicker(props: {
   currentValue: VisibilityType | null
   onValueChange: (visibility: VisibilityType) => void
-  closePopover: () => void
+  closePopover: (reason: string) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
+  const [localValue, setLocalValue] = React.useState(
+    currentValue ?? VisibilityType.Element,
+  )
+
+  React.useEffect(() => {
+    setLocalValue(currentValue ?? VisibilityType.Element)
+  }, [currentValue])
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-      }}
-    >
-      {Object.values(VisibilityType).map((visibility: VisibilityType) => (
-        <Box
-          sx={{
-            color: currentValue === visibility ? 'blue' : 'black',
-            fontWeight: currentValue === visibility ? 'bold' : 'normal',
-            width: 100,
-            p: 1,
-            '&:hover': { cursor: 'pointer' },
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+        }}
+      >
+        {Object.values(VisibilityType).map((visibility: VisibilityType) => (
+          <Box
+            sx={{
+              color: localValue === visibility ? 'blue' : 'black',
+              fontWeight: localValue === visibility ? 'bold' : 'normal',
+              width: 100,
+              p: 1,
+              '&:hover': { cursor: 'pointer' },
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+            onClick={() => setLocalValue(visibility)}
+            key={visibility}
+          >
+            <Visibility
+              value={visibility}
+              isSelected={localValue === visibility}
+            />
+            <Box>{visibility}</Box>
+          </Box>
+        ))}
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+        <Button
+          color="error"
+          onClick={() => {
+            props.closePopover('cancel')
+            setLocalValue(currentValue ?? VisibilityType.Element)
           }}
-          onClick={() => onValueChange(visibility)}
-          key={visibility}
         >
-          <Visibility
-            value={visibility}
-            isSelected={currentValue === visibility}
-          />
-          <Box>{visibility}</Box>
-        </Box>
-      ))}
+          Cancel
+        </Button>
+        <Button
+          onClick={() => {
+            props.onValueChange(localValue)
+            props.closePopover('confirm')
+          }}
+        >
+          Confirm
+        </Button>
+      </Box>
     </Box>
   )
 }
