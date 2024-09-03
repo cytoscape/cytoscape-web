@@ -43,7 +43,12 @@ export const SaveWorkspaceToNDExMenuItem = (
   const setId = useWorkspaceStore((state) => state.setId)
 
   // data from store
-  const workSpace = useWorkspaceStore((state) => state.workspace)
+  const networkModifiedStatus = useWorkspaceStore(
+    (state) => state.workspace.networkModified,
+  )
+  const deleteNetworkModifiedStatus = useWorkspaceStore(
+    (state) => state.deleteNetworkModifiedStatus,
+  )
   const networks = useNetworkStore((state) => state.networks)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const summaries = useNetworkSummaryStore((state) => state.summaries)
@@ -184,7 +189,7 @@ export const SaveWorkspaceToNDExMenuItem = (
         }
       }
 
-      if (workSpace.networkModified[networkId] === true) {
+      if (networkModifiedStatus[networkId] === true) {
         try {
           await saveNetworkToNDEx(
             networkId,
@@ -196,6 +201,7 @@ export const SaveWorkspaceToNDExMenuItem = (
             networkViews?.[0],
             visualStyleOptions,
           )
+          deleteNetworkModifiedStatus(networkId)
         } catch (e) {
           console.error(e)
           try {
@@ -254,7 +260,7 @@ export const SaveWorkspaceToNDExMenuItem = (
     props.handleClose()
   }
 
-  const handleSaveCurrentNetworkToNDEx = async (): Promise<void> => {
+  const handleSaveWorkspaceToNDEx = async (): Promise<void> => {
     handleOpenDialog()
   }
 
@@ -295,10 +301,7 @@ export const SaveWorkspaceToNDExMenuItem = (
   )
 
   const menuItem = (
-    <MenuItem
-      disabled={!authenticated}
-      onClick={handleSaveCurrentNetworkToNDEx}
-    >
+    <MenuItem disabled={!authenticated} onClick={handleSaveWorkspaceToNDEx}>
       Save workspace as...
     </MenuItem>
   )
