@@ -50,9 +50,6 @@ const createCyNodes = (
       ...Object.fromEntries(
         Array.from(nv.values.entries()).map(([k, v]) => {
           if (k === NodeVisualPropertyName.NodeShape) {
-            console.log('k', k)
-            console.log('v', v)
-            console.log(NodeShapeMapping[v as NodeShapeType])
             return [k, NodeShapeMapping[v as NodeShapeType]]
           }
           return [k, v]
