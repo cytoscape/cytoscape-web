@@ -1,13 +1,22 @@
-import { Box, Typography, debounce } from '@mui/material'
-import { useState } from 'react'
+import {
+  Box,
+  TextField,
+  Typography,
+  Button,
+  FormControlLabel,
+  Checkbox,
+} from '@mui/material'
+import { useState, useEffect, ChangeEvent } from 'react'
+import { serializedStringIsValid } from '../../../models/TableModel/impl/ValueTypeImpl'
+import { ValueTypeName } from '../../../models/TableModel'
 import {
   VisualPropertyName,
   NodeVisualPropertyName,
 } from '../../../models/VisualStyleModel/VisualPropertyName'
 import { LockSizeCheckbox } from './Checkbox'
 import { IdType } from '../../../models/IdType'
+import { getDefaultVisualStyle } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 
-import { MantineProvider, NumberInput as NumericInput } from '@mantine/core'
 import React from 'react'
 
 export function NumberInput(props: {
@@ -22,43 +31,84 @@ export function NumberInput(props: {
     onValueChange,
     currentValue,
     vpName,
+    closePopover,
     currentNetworkId,
     showCheckbox,
   } = props
   const isSize =
     vpName === NodeVisualPropertyName.NodeHeight ||
     vpName === NodeVisualPropertyName.NodeWidth
-  const isHeight = vpName === NodeVisualPropertyName.NodeHeight
-
-  const debouncedValueChange = debounce(onValueChange, 150)
-  const [localValue, setLocalValue] = useState<number>(currentValue ?? 0)
+  const [value, setValue] = useState(String(currentValue ?? 0))
+  const strValueIsValid = (value: string): boolean => {
+    if (
+      serializedStringIsValid(ValueTypeName.Integer, value) ||
+      serializedStringIsValid(ValueTypeName.Double, value) ||
+      serializedStringIsValid(ValueTypeName.Long, value)
+    ) {
+      const numValue = Number(value)
+      const maxVal = getDefaultVisualStyle()[vpName].maxVal
+      if (numValue >= 0 && (maxVal === undefined || numValue <= maxVal))
+        return true
+    }
+    return false
+  }
+  const [isValid, setValueIsValid] = useState(strValueIsValid(value))
 
   React.useEffect(() => {
-    setLocalValue(currentValue ?? 0)
+    setValue(String(currentValue ?? 0))
   }, [currentValue])
 
   return (
-    <MantineProvider>
-      <Box>
-        <Box>
-          <NumericInput
-            style={{
-              margin: 15,
-            }}
-            onChange={(v) => {
-              setLocalValue(Number(v))
-              debouncedValueChange(Number(v))
-            }}
-            value={localValue ?? 0}
-          ></NumericInput>
-        </Box>
-        {isSize && showCheckbox && (
-          <Box sx={{ pl: 2 }}>
-            <LockSizeCheckbox currentNetworkId={currentNetworkId} />
-          </Box>
-        )}
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <TextField
+        value={value}
+        error={!isValid}
+        onChange={(e) => {
+          setValue(e.target.value)
+          setValueIsValid(strValueIsValid(e.target.value))
+        }}
+      >
+        <Typography variant="h6">{value}</Typography>
+      </TextField>
+      {isSize && showCheckbox && (
+        <LockSizeCheckbox currentNetworkId={currentNetworkId} />
+      )}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Button
+          color="error"
+          onClick={() => {
+            setValue(String(currentValue ?? 0))
+            setValueIsValid(strValueIsValid(String(currentValue ?? 0)))
+            closePopover()
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          disabled={!isValid}
+          onClick={() => {
+            const nextValue = Number(Number(value).toFixed(4))
+            if (!isNaN(nextValue)) {
+              onValueChange(nextValue)
+            }
+            closePopover()
+          }}
+        >
+          Confirm
+        </Button>
       </Box>
-    </MantineProvider>
+    </Box>
   )
 }
 

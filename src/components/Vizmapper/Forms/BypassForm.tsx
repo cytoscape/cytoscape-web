@@ -15,13 +15,20 @@ import {
   TableHead,
   TableRow,
   TableContainer,
+  Select,
+  MenuItem,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-
+import * as MapperFactory from '../../../models/VisualStyleModel/impl/MapperFactory'
 import { IdType } from '../../../models/IdType'
 import {
+  ContinuousMappingFunction,
+  DiscreteMappingFunction,
   EdgeVisualPropertyName,
+  Mapper,
+  MappingFunctionType,
   NodeVisualPropertyName,
+  PassthroughMappingFunction,
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
@@ -45,6 +52,8 @@ import {
   LockColorCheckbox,
   LockSizeCheckbox,
 } from '../VisualPropertyRender/Checkbox'
+import { useState } from 'react'
+import { Column } from 'src/models'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType
@@ -54,11 +63,11 @@ function BypassFormContent(props: {
   const [bypassValue, setBypassValue] = React.useState(
     visualProperty.defaultValue,
   )
+
   const vpName = props.visualProperty.name
   const isSize =
     vpName === NodeVisualPropertyName.NodeHeight ||
     vpName === NodeVisualPropertyName.NodeWidth
-  const isHeight = vpName === NodeVisualPropertyName.NodeHeight
   const isEdgeLineColor =
     vpName === EdgeVisualPropertyName.EdgeLineColor ||
     vpName === EdgeVisualPropertyName.EdgeTargetArrowColor ||
@@ -66,12 +75,23 @@ function BypassFormContent(props: {
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const networkView: NetworkView | undefined = getViewModel(currentNetworkId)
 
+  const visualStyle = useVisualStyleStore((state) => state.visualStyles)
   const setBypass = useVisualStyleStore((state) => state.setBypass)
   const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
   const toggleSelected = useViewModelStore((state) => state.toggleSelected)
   const additiveSelect = useViewModelStore((state) => state.additiveSelect)
   const additiveUnselect = useViewModelStore((state) => state.additiveUnselect)
+  const DEFAULT_ELENAME_BY_COL = 'DEFAULT'
+  const [eleNameByCol, setEleNameByCol] = useState(DEFAULT_ELENAME_BY_COL)
+  const handleEleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEleNameByCol(event.target.value)
+  }
 
+  const labelName =
+    visualProperty.group === VisualPropertyGroup.Node
+      ? NodeVisualPropertyName.NodeLabel
+      : EdgeVisualPropertyName.EdgeLabel
+  const labelVp = visualStyle[currentNetworkId][labelName]
   const tables = useTableStore((state) => state.tables)
   const table = tables[currentNetworkId]
   const nodeTable = table?.nodeTable
@@ -111,11 +131,42 @@ function BypassFormContent(props: {
   let selectedElementsWithBypass = 0
   selectedElements.forEach((id: IdType) => {
     const hasBypass = visualProperty?.bypassMap.has(id)
+    const { defaultValue, mapping, bypassMap } = labelVp
+    // default name is the name attribute(if it exists) or the id
+    let name = selectedElementTable.rows.get(id)?.name ?? ''
+    // if the mapping is defined, then overwrite with the mapped value
+    // with the priority of bypassMap > mapping > defaultValue
+    if (bypassMap !== undefined && bypassMap.has(id)) {
+      name = bypassMap.get(id) as string
+    } else if (mapping !== undefined) {
+      let mapper: Mapper
+      const mappingType: MappingFunctionType = mapping.type
+      if (mappingType === MappingFunctionType.Discrete) {
+        mapper = MapperFactory.createDiscreteMapper(
+          mapping as DiscreteMappingFunction,
+        )
+      } else if (mappingType === MappingFunctionType.Continuous) {
+        mapper = MapperFactory.createContinuousMapper(
+          mapping as ContinuousMappingFunction,
+        )
+      } else if (mappingType === MappingFunctionType.Passthrough) {
+        mapper = MapperFactory.createPassthroughMapper(
+          mapping as PassthroughMappingFunction,
+        )
+      } else {
+        throw new Error(`Unknown mapping type for ${vpName}`)
+      }
+      name = mapper(
+        selectedElementTable.rows.get(id)?.[mapping.attribute] ?? '',
+      ) as string
+    } else if (defaultValue !== undefined && defaultValue !== '') {
+      name = defaultValue as string
+    }
+
     elementsToRender.push({
       id,
       selected: true,
-      name: (selectedElementTable.rows.get(id)?.name ?? '') as string,
-
+      name: name as string,
       hasBypass: hasBypass ?? false,
     })
 
@@ -186,9 +237,22 @@ function BypassFormContent(props: {
                 />
               </TableCell>
               <TableCell>
-                {visualProperty.group[0].toUpperCase() +
-                  visualProperty.group.slice(1).toLowerCase()}{' '}
-                Name
+                <Select
+                  size="small"
+                  labelId="label"
+                  value={eleNameByCol}
+                  onChange={handleEleNameChange}
+                >
+                  <MenuItem value={DEFAULT_ELENAME_BY_COL}>
+                    {`${
+                      visualProperty.group[0].toUpperCase() +
+                      visualProperty.group.slice(1).toLowerCase()
+                    } Name`}
+                  </MenuItem>
+                  {selectedElementTable.columns.map((col: Column) => {
+                    return <MenuItem value={col.name}>{col.name}</MenuItem>
+                  })}
+                </Select>
               </TableCell>
               <TableCell>Bypass</TableCell>
               <TableCell padding={'none'}></TableCell>
@@ -208,7 +272,10 @@ function BypassFormContent(props: {
                     />
                   </TableCell>
                   <TableCell sx={{ maxWidth: 200, overflow: 'scroll' }}>
-                    {name}
+                    {eleNameByCol === DEFAULT_ELENAME_BY_COL
+                      ? name
+                      : (selectedElementTable.rows.get(id)?.[eleNameByCol] ??
+                        '')}
                   </TableCell>
 
                   <TableCell>

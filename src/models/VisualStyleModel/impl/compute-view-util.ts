@@ -20,10 +20,10 @@ import {
 
 import * as VisualStyleFnImpl from './VisualStyleFnImpl'
 import * as MapperFactory from './MapperFactory'
-import { computeNodeLabelPosition } from '../../../components/NetworkPanel/CyjsRenderer/nodeLabelPositionMap'
 import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/DirectMappingSelector'
 import { isOpenShape, openShapeToFilledShape } from './EdgeArrowShapeImpl'
 import { translateEdgeIdToCX } from '../../NetworkModel/impl/CyNetwork'
+import { computeNodeLabelPosition } from './nodeLabelPositionMap'
 
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {

@@ -6,6 +6,7 @@
   "types": "index.d.ts",
   "scripts": {
     "build": "rm -rf ./dist && tsc --project tsconfig.json",
+    "format": "prettier --config ../../.prettierrc.json --write .",
     "test": "echo \"Error: Types only. No test specified\" && exit 1"
   },
   "keywords": [

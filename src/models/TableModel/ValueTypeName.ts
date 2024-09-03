@@ -11,4 +11,4 @@ export const ValueTypeName = {
   ListBoolean: 'list_of_boolean',
 } as const
 
-export type ValueTypeName = typeof ValueTypeName[keyof typeof ValueTypeName]
+export type ValueTypeName = (typeof ValueTypeName)[keyof typeof ValueTypeName]

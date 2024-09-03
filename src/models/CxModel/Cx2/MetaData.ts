@@ -1,4 +1,4 @@
-import { Aspect } from "./Aspect"
+import { Aspect } from './Aspect'
 
 export interface MetaData extends Aspect {
   metaData: MetaDataValue[]

@@ -6,4 +6,4 @@ export const NodeBorderLineType = {
 } as const
 
 export type NodeBorderLineType =
-  typeof NodeBorderLineType[keyof typeof NodeBorderLineType]
+  (typeof NodeBorderLineType)[keyof typeof NodeBorderLineType]
