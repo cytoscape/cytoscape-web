@@ -69,7 +69,11 @@ export const LoadWorkspaceDialog: React.FC<{
       return myWorkspaces
     }
     if (open) {
-      void fetchMyWorkspaces().then(setMyWorkspaces)
+      void fetchMyWorkspaces()
+        .then(setMyWorkspaces)
+        .catch((err) => {
+          console.log(err)
+        })
     }
   }, [open, ndexBaseUrl, getToken])
 

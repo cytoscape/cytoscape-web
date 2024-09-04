@@ -138,26 +138,8 @@ export const SaveWorkspaceToNDExMenuItem = (
       viewModel,
       `Copy of ${summary.name}`,
     )
-
-    try {
-      const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
-      addNetworkToWorkspace(uuid as IdType)
-
-      addMessage({
-        message: `Saved a copy of the current network to NDEx with new uuid ${
-          uuid as string
-        }`,
-        duration: 3000,
-      })
-    } catch (e) {
-      console.log(e)
-      addMessage({
-        message: `Error: Could not save a copy of the current network to NDEx. ${
-          e.message as string
-        }`,
-        duration: 3000,
-      })
-    }
+    const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
+    addNetworkToWorkspace(uuid as IdType)
   }
 
   const saveAllNetworks = async (): Promise<void> => {
@@ -173,22 +155,29 @@ export const SaveWorkspaceToNDExMenuItem = (
 
       if (!network || !visualStyle || !nodeTable || !edgeTable) {
         const currentToken = await getToken()
-        try {
-          const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
-          // Using parentheses to perform destructuring assignment correctly
-          ;({
-            network,
-            nodeTable,
-            edgeTable,
-            visualStyle,
-            networkViews,
-            visualStyleOptions,
-          } = res)
-        } catch (error) {
-          console.error('Failed to update network details:', error)
-        }
+        const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
+        // Using parentheses to perform destructuring assignment correctly
+        ;({
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkViews,
+          visualStyleOptions,
+        } = res)
       }
-
+      if (summary.isNdex === false) {
+        await saveCopyToNDEx(
+          network,
+          visualStyle,
+          summary,
+          nodeTable,
+          edgeTable,
+          networkViews?.[0],
+          visualStyleOptions,
+        )
+        continue
+      }
       if (networkModifiedStatus[networkId] === true) {
         try {
           await saveNetworkToNDEx(
@@ -203,7 +192,6 @@ export const SaveWorkspaceToNDExMenuItem = (
           )
           deleteNetworkModifiedStatus(networkId)
         } catch (e) {
-          console.error(e)
           try {
             await saveCopyToNDEx(
               network,
@@ -214,8 +202,16 @@ export const SaveWorkspaceToNDExMenuItem = (
               networkViews?.[0],
               visualStyleOptions,
             )
+            addMessage({
+              message: `Unable to save the modified network to NDEx. Instead, saved its copy to NDEx. Error: ${e.message as string}`,
+              duration: 3000,
+            })
           } catch (e) {
-            console.error(e)
+            addMessage({
+              message: `Unable to save the network or its copy to NDEx. Error: ${e.message as string}`,
+              duration: 3000,
+            })
+            throw e
           }
         }
       }
@@ -227,12 +223,12 @@ export const SaveWorkspaceToNDExMenuItem = (
       alert('Please enter a workspace name')
       return
     }
-    await saveAllNetworks()
-    const ndexClient = new NDEx(ndexBaseUrl)
-    const accessToken = await getToken()
-    ndexClient.setAuthToken(accessToken)
-
     try {
+      await saveAllNetworks()
+      const ndexClient = new NDEx(ndexBaseUrl)
+      const accessToken = await getToken()
+      ndexClient.setAuthToken(accessToken)
+
       const workspace = await getWorkspaceFromDb()
       const response = await ndexClient.createCyWebWorkspace({
         name: workspaceName,
