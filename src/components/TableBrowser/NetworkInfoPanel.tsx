@@ -61,20 +61,24 @@ export default function NetworkInfoPanel(props: {
   const properties = networkInfo?.properties ?? []
 
   const containsHtmlAnchor = (text: string) => {
-    return /<a\s+href=/i.test(text);
-  };
+    return /<a\s+href=/i.test(text)
+  }
 
   const linkifyPlainTextUrls = (text: string) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
-  };
+    const urlRegex = /(https?:\/\/[^\s]+)/g
+    return text.replace(
+      urlRegex,
+      (url) =>
+        `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`,
+    )
+  }
 
   const capitalizeFirstLetter = (string: string): string => {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-  };
+    return string.charAt(0).toUpperCase() + string.slice(1)
+  }
 
   return (
-    <Box sx={{ height: props.height - 50, overflow: 'scroll', pl: 1, pr: 1 }}>
+    <Box sx={{ height: props.height, overflow: 'auto', pl: 1, pr: 1 }}>
       <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
         <Typography variant="h6">{networkInfo?.name ?? ''}</Typography>
         {networkInfo?.visibility != null ? (
@@ -121,23 +125,30 @@ export default function NetworkInfoPanel(props: {
           <Typography variant="body2">
             {parse(networkInfo?.description ?? '')}
             {properties
-              .filter(prop => prop.predicateString.startsWith('rights') || prop.predicateString.startsWith('reference'))
+              .filter(
+                (prop) =>
+                  prop.predicateString.startsWith('rights') ||
+                  prop.predicateString.startsWith('reference'),
+              )
               .map((prop, index) => {
-                let displayValue: React.ReactNode;
+                let displayValue: React.ReactNode
 
-                const valueString = prop.value.toString();
+                const valueString = prop.value.toString()
 
                 if (containsHtmlAnchor(valueString)) {
-                  displayValue = parse(valueString);
+                  displayValue = parse(valueString)
                 } else {
-                  displayValue = parse(linkifyPlainTextUrls(valueString));
+                  displayValue = parse(linkifyPlainTextUrls(valueString))
                 }
 
                 return (
                   <div key={index}>
-                    <span style={{ fontWeight: 'bold' }}>{capitalizeFirstLetter(prop.predicateString)}:</span> {displayValue}
+                    <span style={{ fontWeight: 'bold' }}>
+                      {capitalizeFirstLetter(prop.predicateString)}:
+                    </span>{' '}
+                    {displayValue}
                   </div>
-                );
+                )
               })}
           </Typography>
 
@@ -149,27 +160,31 @@ export default function NetworkInfoPanel(props: {
           </Typography>
           <Typography variant="body2" component="div">
             {properties
-              .filter(prop => !prop.predicateString.startsWith('__') && 
-                              prop.predicateString !== 'description' && 
-                              prop.predicateString !== 'reference' && 
-                              prop.predicateString !== 'rights' && 
-                              prop.predicateString !== 'rightsHolder')
+              .filter(
+                (prop) =>
+                  !prop.predicateString.startsWith('__') &&
+                  prop.predicateString !== 'description' &&
+                  prop.predicateString !== 'reference' &&
+                  prop.predicateString !== 'rights' &&
+                  prop.predicateString !== 'rightsHolder',
+              )
               .map((prop, index) => {
-                let displayValue: React.ReactNode;
+                let displayValue: React.ReactNode
 
-                const valueString = prop.value.toString();
+                const valueString = prop.value.toString()
 
                 if (containsHtmlAnchor(valueString)) {
-                  displayValue = parse(valueString);
+                  displayValue = parse(valueString)
                 } else {
-                  displayValue = parse(linkifyPlainTextUrls(valueString));
+                  displayValue = parse(linkifyPlainTextUrls(valueString))
                 }
 
                 return (
                   <div key={index}>
-                    {capitalizeFirstLetter(prop.predicateString)}: {displayValue}
+                    {capitalizeFirstLetter(prop.predicateString)}:{' '}
+                    {displayValue}
                   </div>
-                );
+                )
               })}
           </Typography>
         </Box>

@@ -83,6 +83,8 @@ export const NetworkBrowserPanel = ({
         height: '100%',
         p: 0,
         margin: 0,
+        border: '4px solid green',
+        boxSizing: 'border-box',
       }}
       gap={0}
     >

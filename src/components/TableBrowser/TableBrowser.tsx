@@ -67,6 +67,12 @@ export interface TableColumn {
   width?: number
 }
 
+// Used for calculating proper height for the Data Grid
+const TOOLBAR_HEIGHT = 23
+
+// Adjust Data Grid size
+const GRID_GAP = TOOLBAR_HEIGHT * 2 - 1
+
 function TabPanel(props: TabPanelProps): React.ReactElement {
   const { children, value, index, ...other } = props
 
@@ -76,6 +82,7 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
+      style={{ flexGrow: 1 }}
       {...other}
     >
       {value === index && <Box>{children}</Box>}
@@ -645,7 +652,7 @@ export default function TableBrowser(props: {
     ) : null
 
   const tableBrowserToolbar = (
-    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <Box sx={{ height: TOOLBAR_HEIGHT, display: 'flex', alignItems: 'center' }}>
       <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
         Search
       </Button>
@@ -705,7 +712,16 @@ export default function TableBrowser(props: {
   )
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box
+      sx={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: 0,
+      }}
+    >
       <Box
         sx={{
           borderBottom: 1,
@@ -714,7 +730,6 @@ export default function TableBrowser(props: {
           justifyContent: 'space-between',
           alignItems: 'center',
           backgroundColor: '#2F80ED',
-          height: 28,
         }}
       >
         <Tabs
@@ -726,12 +741,12 @@ export default function TableBrowser(props: {
             fontSize: 10,
             '& button.Mui-selected': { color: 'white' },
             '& button': {
-              minHeight: 30,
-              height: 30,
+              minHeight: TOOLBAR_HEIGHT,
+              height: TOOLBAR_HEIGHT,
               width: 200,
             },
-            height: 30,
-            minHeight: 30,
+            height: TOOLBAR_HEIGHT,
+            minHeight: TOOLBAR_HEIGHT,
           }}
         >
           <Tab label={<Typography variant="caption">Nodes</Typography>} />
@@ -758,64 +773,60 @@ export default function TableBrowser(props: {
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
         {tableBrowserToolbar}
-        <Box>
-          <DataEditor
-            ref={nodeDataEditorRef}
-            onCellClicked={onCellClicked}
-            onCellContextMenu={onCellContextMenu}
-            rowMarkers={'checkbox'}
-            rowMarkerStartIndex={minNodeId}
-            showSearch={showSearch}
-            keybindings={{ search: true }}
-            onPaste={true}
-            getCellsForSelection={true}
-            onSearchClose={onSearchClose}
-            onHeaderClicked={onHeaderClicked}
-            onColumnMoved={onColMoved}
-            onItemHovered={(e) => onItemHovered(e.location)}
-            overscrollX={10}
-            overscrollY={10}
-            onColumnResizeEnd={onColumnResize}
-            width={props.width}
-            height={props.height - 85}
-            getCellContent={getContent}
-            onCellEdited={onCellEdited}
-            columns={columns}
-            rows={maxNodeId - minNodeId + 1}
-          />
-        </Box>
+        <DataEditor
+          ref={nodeDataEditorRef}
+          onCellClicked={onCellClicked}
+          onCellContextMenu={onCellContextMenu}
+          rowMarkers={'checkbox'}
+          rowMarkerStartIndex={minNodeId}
+          showSearch={showSearch}
+          keybindings={{ search: true }}
+          onPaste={true}
+          getCellsForSelection={true}
+          onSearchClose={onSearchClose}
+          onHeaderClicked={onHeaderClicked}
+          onColumnMoved={onColMoved}
+          onItemHovered={(e) => onItemHovered(e.location)}
+          overscrollX={10}
+          overscrollY={10}
+          onColumnResizeEnd={onColumnResize}
+          width={props.width}
+          height={props.height - GRID_GAP}
+          getCellContent={getContent}
+          onCellEdited={onCellEdited}
+          columns={columns}
+          rows={maxNodeId - minNodeId + 1}
+        />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
         {tableBrowserToolbar}
-        <Box>
-          <DataEditor
-            ref={edgeDataEditorRef}
-            onCellClicked={onCellClicked}
-            onCellContextMenu={onCellContextMenu}
-            rowMarkers={'checkbox'}
-            rowMarkerStartIndex={minEdgeId}
-            showSearch={showSearch}
-            keybindings={{ search: true }}
-            getCellsForSelection={true}
-            onPaste={true}
-            onSearchClose={onSearchClose}
-            onHeaderClicked={onHeaderClicked}
-            onColumnMoved={onColMoved}
-            onItemHovered={(e) => onItemHovered(e.location)}
-            overscrollX={10}
-            overscrollY={10}
-            onColumnResizeEnd={onColumnResize}
-            width={props.width}
-            height={props.height - 85}
-            getCellContent={getContent}
-            onCellEdited={onCellEdited}
-            columns={columns}
-            rows={maxEdgeId - minEdgeId + 1}
-          />
-        </Box>
+        <DataEditor
+          ref={edgeDataEditorRef}
+          onCellClicked={onCellClicked}
+          onCellContextMenu={onCellContextMenu}
+          rowMarkers={'checkbox'}
+          rowMarkerStartIndex={minEdgeId}
+          showSearch={showSearch}
+          keybindings={{ search: true }}
+          getCellsForSelection={true}
+          onPaste={true}
+          onSearchClose={onSearchClose}
+          onHeaderClicked={onHeaderClicked}
+          onColumnMoved={onColMoved}
+          onItemHovered={(e) => onItemHovered(e.location)}
+          overscrollX={10}
+          overscrollY={10}
+          onColumnResizeEnd={onColumnResize}
+          width={props.width}
+          height={props.height - GRID_GAP}
+          getCellContent={getContent}
+          onCellEdited={onCellEdited}
+          columns={columns}
+          rows={maxEdgeId - minEdgeId + 1}
+        />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={2}>
-        <NetworkInfoPanel height={props.height} />
+        <NetworkInfoPanel height={props.height - TOOLBAR_HEIGHT - 1} />
       </TabPanel>
     </Box>
   )

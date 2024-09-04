@@ -522,7 +522,11 @@ const WorkSpaceEditor = (): JSX.Element => {
   return (
     <Box
       sx={{
-        height: 'calc(100vh - 48px)',
+        // height: 'calc(100vh - 48px)',
+        height: '100%',
+        width: '100%',
+        overflow: 'hidden',
+        // border: '4px solid blue',
       }}
     >
       <Allotment>
@@ -564,13 +568,14 @@ const WorkSpaceEditor = (): JSX.Element => {
                     boxSizing: 'border-box',
                     display: 'flex',
                     flexDirection: 'column',
+                    border: '4px solid red',
                   }}
                 >
                   <div
                     style={{
                       flexGrow: 2,
                       boxSizing: 'border-box',
-                      overflow: 'auto',
+                      overflow: 'hidden',
                     }}
                   >
                     <NetworkBrowserPanel

@@ -1,22 +1,22 @@
 {
   "ndexBaseUrl": "dev1.ndexbio.org",
   "options": {
-   "debug": true
+    "debug": true
   },
   "keycloakConfig": {
-   "url": "https://dev1.ndexbio.org/auth2",
-   "clientId": "cytoscapendex",
-   "realm": "ndex"
+    "url": "https://dev1.ndexbio.org/auth2",
+    "clientId": "cytoscapendex",
+    "realm": "ndex"
   },
   "testNetworks": [
-   "7e1d61ca-21c6-11ee-b3b9-005056aecf54",
-   "ea23f41d-21c6-11ee-b3b9-005056aecf54",
-   "529fb200-21c7-11ee-b3b9-005056aecf54",
-   "c68c5c93-21c7-11ee-b3b9-005056aecf54"
+    "7e1d61ca-21c6-11ee-b3b9-005056aecf54",
+    "ea23f41d-21c6-11ee-b3b9-005056aecf54",
+    "529fb200-21c7-11ee-b3b9-005056aecf54",
+    "c68c5c93-21c7-11ee-b3b9-005056aecf54"
   ],
   "maxNetworkElementsThreshold": 20000,
   "maxNetworkFileSize": 524288000,
-  "urlBaseName": "/cytoscape/",
+  "urlBaseName": "/",
   "openAIAPIKey": "",
   "googleAnalyticsId": "G-B3X9SFXC2P"
- }
+}
