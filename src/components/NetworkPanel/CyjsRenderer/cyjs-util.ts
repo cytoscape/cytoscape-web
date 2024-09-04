@@ -11,6 +11,7 @@ import VisualStyleFn, {
   VisualPropertyName,
   VisualPropertyValueType,
   VisualStyle,
+  NodeShapeType,
 } from '../../../models/VisualStyleModel'
 import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
 import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
@@ -18,6 +19,7 @@ import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsP
 import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
+import { NodeShapeMapping } from './cyjs-factory'
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
@@ -235,6 +237,8 @@ const updateCyObjects = <T extends View>(
             if (obj.data(key) === EdgeArrowShapeType.Arrow) {
               obj.data(key, EdgeArrowShapeType.Triangle)
             }
+          } else if (key === VisualPropertyName.NodeShape) {
+            obj.data(key, NodeShapeMapping[value as NodeShapeType])
           } else {
             obj.data(key, value)
           }
