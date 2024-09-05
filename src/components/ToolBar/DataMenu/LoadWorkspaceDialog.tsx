@@ -23,6 +23,7 @@ import { useCredentialStore } from '../../../store/CredentialStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import { fetchMyWorkspaces } from '../../../utils/ndex-utils'
+import { Workspace } from 'src/models'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
@@ -37,7 +38,7 @@ export const LoadWorkspaceDialog: React.FC<{
   const addNetworks: (ids: IdType | IdType[]) => void = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
-  const setId = useWorkspaceStore((state) => state.setId)
+  const setWorkSpace = useWorkspaceStore((state) => state.set)
 
   const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
 
@@ -84,10 +85,16 @@ export const LoadWorkspaceDialog: React.FC<{
       )
       if (selectedWorkspace) {
         handleDeleteAllNetworks()
-        resetWorkspace().then(() => {
-          setId(selectedWorkspaceId)
-          addNetworks(selectedWorkspace.networkIDs)
-        })
+        resetWorkspace()
+        setWorkSpace({
+          name: selectedWorkspace.name,
+          id: selectedWorkspace.workspaceId,
+          currentNetworkId: selectedWorkspace.options?.currentNetwork ?? '',
+          networkIds: selectedWorkspace.networkIDs,
+          localModificationTime: selectedWorkspace.modificationTime,
+          creationTime: selectedWorkspace.creationTime,
+          networkModified: {},
+        } as Workspace)
       } else {
         alert('Selected workspace not found')
       }
