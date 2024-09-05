@@ -1,11 +1,19 @@
-import { Box, IconButton, Tooltip, Typography, useTheme } from '@mui/material'
+import {
+  Box,
+  IconButton,
+  Theme,
+  Tooltip,
+  Typography,
+  useTheme,
+} from '@mui/material'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { Workspace } from '../../../models'
 import EditIcon from '@mui/icons-material/Edit'
 
 export const WorkspaceNamePanel = () => {
-  const theme = useTheme()
-  const background = theme.palette.background.paper
+  const theme: Theme = useTheme()
+  const background = theme.palette.primary.dark
+  const textColor = theme.palette.primary.contrastText
   const borderColor = theme.palette.divider
 
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
@@ -14,7 +22,8 @@ export const WorkspaceNamePanel = () => {
       sx={{
         width: '100%',
         backgroundColor: background,
-        p: '0.5em',
+        color: textColor,
+        p: theme.spacing(1),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -45,12 +54,11 @@ export const WorkspaceNamePanel = () => {
       <Tooltip title="Edit workspace properties">
         <IconButton
           size="small"
-          sx={{ width: 25, height: 25 }}
-          onClick={(e) => {
+          onClick={() => {
             console.log('Edit workspace properties')
           }}
         >
-          <EditIcon sx={{ fontSize: 18 }} />
+          <EditIcon sx={{ fontSize: '1em', color: textColor }} />
         </IconButton>
       </Tooltip>
     </Box>

@@ -149,6 +149,9 @@ export const NetworkBrowserPanel = ({
           />
         )}
       </Box>
+      <Box hidden={currentTabIndex !== 0}>
+        <WorkspaceNamePanel />
+      </Box>
       <Box
         sx={{
           flexGrow: 1,
@@ -158,7 +161,6 @@ export const NetworkBrowserPanel = ({
         }}
         hidden={currentTabIndex !== 0}
       >
-        <WorkspaceNamePanel />
         {currentTabIndex === 0 && <SummaryList summaries={summaries} />}
       </Box>
       <Box hidden={currentTabIndex !== 1}>
