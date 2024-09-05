@@ -1,5 +1,13 @@
 import * as React from 'react'
-import { Box, Popover, Typography, Tooltip, Tabs, Tab, Divider } from '@mui/material'
+import {
+  Box,
+  Popover,
+  Typography,
+  Tooltip,
+  Tabs,
+  Tab,
+  Divider,
+} from '@mui/material'
 
 import {
   VisualProperty,
@@ -9,14 +17,7 @@ import {
 } from '../../../models/VisualStyleModel'
 
 import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
-import {
-  Color,
-  ColorPicker,
-  ColorPickerCompact,
-  ColorPickerViridis,
-  ColorPickerSequential,
-  ColorPickerDiverging,
-} from '../VisualPropertyRender/Color'
+import { Color, ColorPicker } from '../VisualPropertyRender/Color'
 import {
   NodeBorderLine,
   NodeBorderLinePicker,
@@ -64,8 +65,8 @@ import {
   NodeLabelPositionRender,
 } from '../VisualPropertyRender/NodeLabelPosition'
 import { IdType } from '../../../models/IdType'
-import { CheckBox } from '@mui/icons-material'
 import { LockColorCheckbox } from '../VisualPropertyRender/Checkbox'
+import { CancelConfirmButtonGroup } from '../VisualPropertyRender/CancelConfirmButtonGroup'
 
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,
@@ -73,7 +74,10 @@ const vpType2RenderMap: Record<
     pickerRender: (props: {
       currentValue: VisualPropertyValueType | null
       onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
+      closePopover: (reason: string) => void
+      currentNetworkId?: IdType
+      showCheckbox?: boolean
+      vpName?: VisualPropertyName
     }) => React.ReactElement
     valueRender: (props: {
       value: VisualPropertyValueType
@@ -134,132 +138,6 @@ const vpType2RenderMap: Record<
   },
 }
 
-const vpType2RenderMap2: Record<
-  VisualPropertyValueTypeName,
-  {
-    pickerRender: (props: {
-      currentValue: VisualPropertyValueType | null
-      onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
-    }) => React.ReactElement
-    valueRender: (props: {
-      value: VisualPropertyValueType
-    }) => React.ReactElement
-  }
-> = {
-  color: {
-    pickerRender: ColorPickerCompact,
-    valueRender: Color,
-  },
-}
-const vpType2RenderMapViridis: Record<
-  VisualPropertyValueTypeName,
-  {
-    pickerRender: (props: {
-      currentValue: VisualPropertyValueType | null
-      onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
-    }) => React.ReactElement
-    valueRender: (props: {
-      value: VisualPropertyValueType
-    }) => React.ReactElement
-  }
-> = {
-  color: {
-    pickerRender: ColorPickerViridis,
-    valueRender: Color,
-  },
-}
-
-const vpType2RenderMapSequential: Record<
-  VisualPropertyValueTypeName,
-  {
-    pickerRender: (props: {
-      currentValue: VisualPropertyValueType | null
-      onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
-      currentNetworkId?: IdType
-      showCheckbox?: boolean
-      vpName?: VisualPropertyName
-    }) => React.ReactElement
-    valueRender: (props: {
-      value: VisualPropertyValueType
-    }) => React.ReactElement
-  }
-> = {
-  nodeShape: {
-    pickerRender: NodeShapePicker,
-    valueRender: NodeShape,
-  },
-  color: {
-    pickerRender: ColorPickerSequential,
-    valueRender: Color,
-  },
-  nodeBorderLine: {
-    pickerRender: NodeBorderLinePicker,
-    valueRender: NodeBorderLine,
-  },
-  number: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  font: {
-    pickerRender: FontPicker,
-    valueRender: Font,
-  },
-  horizontalAlign: {
-    pickerRender: HorizontalAlignPicker,
-    valueRender: HorizontalAlign,
-  },
-  verticalAlign: {
-    pickerRender: VerticalAlignPicker,
-    valueRender: VerticalAlign,
-  },
-  visibility: {
-    pickerRender: VisibilityPicker,
-    valueRender: Visibility,
-  },
-  edgeArrowShape: {
-    pickerRender: EdgeArrowShapePicker,
-    valueRender: EdgeArrowShape,
-  },
-  edgeLine: {
-    pickerRender: EdgeLinePicker,
-    valueRender: EdgeLine,
-  },
-  string: {
-    pickerRender: StringInput,
-    valueRender: StringRender,
-  },
-  boolean: {
-    pickerRender: BooleanSwitch,
-    valueRender: BooleanRender,
-  },
-  nodeLabelPosition: {
-    pickerRender: NodeLabelPositionPicker,
-    valueRender: NodeLabelPositionRender,
-  },
-}
-
-const vpType2RenderMapDiverging: Record<
-  VisualPropertyValueTypeName,
-  {
-    pickerRender: (props: {
-      currentValue: VisualPropertyValueType | null
-      onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: () => void
-    }) => React.ReactElement
-    valueRender: (props: {
-      value: VisualPropertyValueType
-    }) => React.ReactElement
-  }
-> = {
-  color: {
-    pickerRender: ColorPickerDiverging,
-    valueRender: Color,
-  }
-}
-
 // in some cases, we have specialized value renders
 // e.g. opacity needs to be rendered as 0% -> 100% instead of 0.0 to 1.0
 // another example is label rotation which will be rendered in angles
@@ -270,7 +148,7 @@ const vpName2RenderMap: Partial<
       pickerRender: (props: {
         currentValue: VisualPropertyValueType | null
         onValueChange: (newValue: VisualPropertyValueType) => void
-        closePopover: () => void
+        closePopover: (reason: string) => void
         currentNetworkId?: IdType
         showCheckbox?: boolean
         vpName?: VisualPropertyName
@@ -354,17 +232,20 @@ export function VisualPropertyValueForm(
   props: VisualPropertyValueFormProps,
 ): React.ReactElement {
   const [valuePicker, setValuePicker] = React.useState<Element | null>(null)
-  const [activeTab, setActiveTab] = React.useState(0)
-  const isColor = props.visualProperty.displayName.includes("Color");
-  const vpName = props.visualProperty.name;
-  const isEdgeLineColor = vpName === EdgeVisualPropertyName.EdgeLineColor || vpName === EdgeVisualPropertyName.EdgeTargetArrowColor || vpName === EdgeVisualPropertyName.EdgeSourceArrowColor;
+  const vpName = props.visualProperty.name
+  const isEdgeLineColor =
+    vpName === EdgeVisualPropertyName.EdgeLineColor ||
+    vpName === EdgeVisualPropertyName.EdgeTargetArrowColor ||
+    vpName === EdgeVisualPropertyName.EdgeSourceArrowColor
   const showValuePicker = (value: Element | null): void => {
     setValuePicker(value)
   }
 
-  const closePopover = (): void => {
-    setValuePicker(null);
-  };
+  const closePopover = (
+    reason: 'backdropClick' | 'escapeKeyDown' | 'confirm' | 'cancel',
+  ): void => {
+    setValuePicker(null)
+  }
 
   if (
     vpType2RenderMap[props.visualProperty.type] == null &&
@@ -388,174 +269,47 @@ export function VisualPropertyValueForm(
       <Popover
         open={valuePicker != null}
         anchorEl={valuePicker}
-        onClose={() => showValuePicker(null)}
+        disableEscapeKeyDown={true}
+        hideBackdrop={true}
+        onClose={(e: any, reason: 'backdropClick' | 'escapeKeyDown') =>
+          closePopover(reason)
+        }
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box sx={{ overflow: 'hidden' }}>
-          {
-            isColor ? (
-              <>
-                <Tabs
-                  value={activeTab}
-                  onChange={(event, newValue) => setActiveTab(newValue)}
-                  aria-label="Tab panel"
-                >
-                  <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Sequential" />
-                  <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Diverging" />
-                  <Tab sx={{ pl: 3, pr: 3 }} label="Viridis Sequential" />
-                  <Tab sx={{ pl: 3, pr: 3 }} label="Swatches" />
-                  <Tab sx={{ pl: 3, pr: 3 }} label="Color Picker" />
-                </Tabs>
-              </>
-            ) : null
-          }
-          {activeTab === 0 && (
-            <Box
-              sx={{
-                margin: 'auto',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                '&::-webkit-scrollbar': {
-                  display: 'none',
-                },
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-              }}
-            >
-              {(
-                vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
-                vpType2RenderMapSequential[props.visualProperty.type]
-                  .pickerRender ??
-                (() => { })
-              )({
-                onValueChange: (value: VisualPropertyValueType) =>
-                  props.onValueChange(value),
-                currentValue: props.currentValue,
-                currentNetworkId: props.currentNetworkId,
-                showCheckbox: props.showCheckbox ?? false,
-                vpName: props.visualProperty.name,
-                closePopover: closePopover,
-              })}
+          <Box
+            sx={{
+              margin: 'auto',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              '&::-webkit-scrollbar': {
+                display: 'none',
+              },
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}
+          >
+            {(
+              vpName2RenderMap[props.visualProperty.name]?.pickerRender ??
+              vpType2RenderMap[props.visualProperty.type]?.pickerRender ??
+              (() => {})
+            )({
+              onValueChange: (value: VisualPropertyValueType) =>
+                props.onValueChange(value),
+              currentValue: props.currentValue,
+              currentNetworkId: props.currentNetworkId,
+              showCheckbox: props.showCheckbox ?? false,
+              vpName: props.visualProperty.name,
+              closePopover: closePopover,
+            })}
+          </Box>
+          {props.showCheckbox && isEdgeLineColor && (
+            <Box sx={{ pl: 2 }}>
+              <Divider />
+              <LockColorCheckbox currentNetworkId={props.currentNetworkId} />
             </Box>
           )}
-          {activeTab === 1 && (
-            <Box
-              sx={{
-                margin: 'auto',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                '&::-webkit-scrollbar': {
-                  display: 'none',
-                },
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-              }}
-            >
-              {(
-                vpType2RenderMapDiverging[props.visualProperty.type]
-                  .pickerRender ??
-                (() => { })
-              )({
-                onValueChange: (value: VisualPropertyValueType) =>
-                  props.onValueChange(value),
-                currentValue: props.currentValue,
-                closePopover: closePopover,
-              })}
-            </Box>
-          )}
-
-          {activeTab === 2 && (
-            <Box
-              sx={{
-                margin: 'auto',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                '&::-webkit-scrollbar': {
-                  display: 'none',
-                },
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-              }}
-            >
-              {(
-                vpType2RenderMapViridis[props.visualProperty.type]
-                  .pickerRender ??
-                (() => { })
-              )({
-                onValueChange: (value: VisualPropertyValueType) =>
-                  props.onValueChange(value),
-                currentValue: props.currentValue,
-                closePopover: closePopover,
-              })}
-            </Box>
-          )}
-
-          {activeTab === 3 && (
-            <Box
-              sx={{
-                margin: 'auto',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                '&::-webkit-scrollbar': {
-                  display: 'none',
-                },
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-              }}
-            >
-              {' '}
-              {(
-                vpType2RenderMap2[props.visualProperty.type].pickerRender ??
-                (() => { })
-              )({
-                onValueChange: (value: VisualPropertyValueType) =>
-                  props.onValueChange(value),
-                currentValue: props.currentValue,
-                closePopover: closePopover,
-              })}
-            </Box>
-          )}
-
-          {activeTab === 4 && (
-            <Box
-              sx={{
-                margin: 'auto',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                '&::-webkit-scrollbar': {
-                  display: 'none',
-                },
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-              }}
-            >
-              {' '}
-              {(
-                vpType2RenderMap[props.visualProperty.type].pickerRender ??
-                (() => { })
-              )({
-                onValueChange: (value: VisualPropertyValueType) =>
-                  props.onValueChange(value),
-                currentValue: props.currentValue,
-                closePopover: closePopover
-              })}
-            </Box>
-          )}
-          {props.showCheckbox && isEdgeLineColor &&
-            (
-              <>
-                <Divider />
-                <LockColorCheckbox
-                  currentNetworkId={props.currentNetworkId}
-                />
-              </>
-            )
-          }
         </Box>
       </Popover>
     </Box>

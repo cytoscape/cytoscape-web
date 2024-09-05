@@ -1,5 +1,5 @@
 import { ColorType } from '../../../models/VisualStyleModel/VisualPropertyValue'
-import { Box } from '@mui/material'
+import { Box, Button, Tab, Tabs } from '@mui/material'
 import { ChromePicker, SwatchesPicker, CompactPicker } from 'react-color'
 import React from 'react'
 import debounce from 'lodash.debounce'
@@ -13,10 +13,11 @@ import {
 export function ColorPicker(props: {
   currentValue: ColorType | null
   onValueChange: (color: ColorType) => void
-  closePopover: () => void
+  closePopover: (reason: string) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
   const debouncedValueChange = debounce(onValueChange, 200)
+  const [activeTab, setActiveTab] = React.useState(0)
 
   // use local state to appear instantaneous in the color picker,
   // but the actual visual style model updates are debounced
@@ -24,130 +25,99 @@ export function ColorPicker(props: {
     currentValue ?? `#ffffff`,
   )
 
-  return (
-    <Box>
-      <ChromePicker
-        color={localColorValue}
-        onChange={(color: any) => {
-          setLocalColorValue(color.hex)
-          debouncedValueChange(color.hex)
-        }}
-      />
-    </Box>
-  )
-}
-
-export function ColorPickerCompact(props: {
-  currentValue: ColorType | null
-  onValueChange: (color: ColorType) => void
-  closePopover: () => void
-}): React.ReactElement {
-  const { onValueChange, currentValue } = props
-  const debouncedValueChange = debounce(onValueChange, 200)
-
-  // use local state to appear instantaneous in the color picker,
-  // but the actual visual style model updates are debounced
-  const [localColorValue, setLocalColorValue] = React.useState<ColorType>(
-    currentValue ?? `#ffffff`,
-  )
+  React.useEffect(() => {
+    setLocalColorValue(currentValue ?? `#ffffff`)
+  }, [currentValue])
 
   return (
     <Box>
-      <CompactPicker
-        colors={CompactCustomColors}
-        color={localColorValue}
-        onChange={(color: any) => {
-          setLocalColorValue(color.hex)
-          debouncedValueChange(color.hex)
+      <Tabs
+        value={activeTab}
+        onChange={(event, newValue) => setActiveTab(newValue)}
+        aria-label="Tab panel"
+      >
+        <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Sequential" />
+        <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Diverging" />
+        <Tab sx={{ pl: 3, pr: 3 }} label="Viridis Sequential" />
+        <Tab sx={{ pl: 3, pr: 3 }} label="Swatches" />
+        <Tab sx={{ pl: 3, pr: 3 }} label="Color Picker" />
+      </Tabs>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 1,
+          height: 275,
         }}
-      />
-    </Box>
-  )
-}
-
-export function ColorPickerViridis(props: {
-  currentValue: ColorType | null
-  onValueChange: (color: ColorType) => void
-  closePopover: () => void
-}): React.ReactElement {
-  const { onValueChange, currentValue } = props
-  const debouncedValueChange = debounce(onValueChange, 200)
-
-  // use local state to appear instantaneous in the color picker,
-  // but the actual visual style model updates are debounced
-  const [localColorValue, setLocalColorValue] = React.useState<ColorType>(
-    currentValue ?? `#ffffff`,
-  )
-
-  return (
-    <Box>
-      <SwatchesPicker
-        width={231}
-        colors={VirdisCustomColors}
-        color={localColorValue}
-        onChange={(color: any) => {
-          setLocalColorValue(color.hex)
-          debouncedValueChange(color.hex)
-        }}
-      />
-    </Box>
-  )
-}
-
-export function ColorPickerSequential(props: {
-  currentValue: ColorType | null
-  onValueChange: (color: ColorType) => void
-  closePopover: () => void
-}): React.ReactElement {
-  const { onValueChange, currentValue } = props
-  const debouncedValueChange = debounce(onValueChange, 200)
-
-  // use local state to appear instantaneous in the color picker,
-  // but the actual visual style model updates are debounced
-  const [localColorValue, setLocalColorValue] = React.useState<ColorType>(
-    currentValue ?? `#ffffff`,
-  )
-
-  return (
-    <Box>
-      <SwatchesPicker
-        width={945}
-        colors={SequentialCustomColors}
-        color={localColorValue}
-        onChange={(color: any) => {
-          setLocalColorValue(color.hex)
-          debouncedValueChange(color.hex)
-        }}
-      />
-    </Box>
-  )
-}
-
-export function ColorPickerDiverging(props: {
-  currentValue: ColorType | null
-  onValueChange: (color: ColorType) => void
-  closePopover: () => void
-}): React.ReactElement {
-  const { onValueChange, currentValue } = props
-  const debouncedValueChange = debounce(onValueChange, 200)
-
-  // use local state to appear instantaneous in the color picker,
-  // but the actual visual style model updates are debounced
-  const [localColorValue, setLocalColorValue] = React.useState<ColorType>(
-    currentValue ?? `#ffffff`,
-  )
-
-  return (
-    <Box>
-      <SwatchesPicker
-        width={600}
-        colors={DivergingCustomColors}
-        color={localColorValue}
-        onChange={(color: any) => {
-          setLocalColorValue(color.hex)
-          debouncedValueChange(color.hex)
-        }}
-      />
+      >
+        {activeTab === 0 && (
+          <SwatchesPicker
+            width={945}
+            colors={SequentialCustomColors}
+            color={localColorValue}
+            onChange={(color: any) => {
+              setLocalColorValue(color.hex)
+            }}
+          />
+        )}
+        {activeTab === 1 && (
+          <SwatchesPicker
+            width={600}
+            colors={DivergingCustomColors}
+            color={localColorValue}
+            onChange={(color: any) => {
+              setLocalColorValue(color.hex)
+            }}
+          />
+        )}
+        {activeTab === 2 && (
+          <SwatchesPicker
+            width={231}
+            colors={VirdisCustomColors}
+            color={localColorValue}
+            onChange={(color: any) => {
+              setLocalColorValue(color.hex)
+            }}
+          />
+        )}
+        {activeTab === 3 && (
+          <CompactPicker
+            colors={CompactCustomColors}
+            color={localColorValue}
+            onChange={(color: any) => {
+              setLocalColorValue(color.hex)
+            }}
+          />
+        )}
+        {activeTab === 4 && (
+          <ChromePicker
+            color={localColorValue}
+            onChange={(color: any) => {
+              setLocalColorValue(color.hex)
+            }}
+          />
+        )}
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+        <Button
+          color="error"
+          onClick={() => {
+            props.closePopover('cancel')
+            setLocalColorValue(currentValue ?? `#ffffff`)
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={() => {
+            props.onValueChange(localColorValue)
+            props.closePopover('confirm')
+          }}
+        >
+          Confirm
+        </Button>
+      </Box>
     </Box>
   )
 }

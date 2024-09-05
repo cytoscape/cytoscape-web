@@ -17,6 +17,8 @@ import { LockSizeCheckbox } from './Checkbox'
 import { IdType } from '../../../models/IdType'
 import { getDefaultVisualStyle } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 
+import React from 'react'
+
 export function NumberInput(props: {
   currentValue: number | null
   onValueChange: (value: number) => void
@@ -52,7 +54,7 @@ export function NumberInput(props: {
   }
   const [isValid, setValueIsValid] = useState(strValueIsValid(value))
 
-  useEffect(() => {
+  React.useEffect(() => {
     setValue(String(currentValue ?? 0))
   }, [currentValue])
 
