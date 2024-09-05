@@ -51,8 +51,8 @@ const createCyNodes = (
         Array.from(nv.values.entries()).map(([k, v]) => {
           if (k === NodeVisualPropertyName.NodeShape) {
             return [k, NodeShapeMapping[v as NodeShapeType]]
-          } else if(k===NodeVisualPropertyName.NodeLabelRotation){
-            return [k, (v as number) * Math.PI / 180]
+          } else if (k === NodeVisualPropertyName.NodeLabelRotation) {
+            return [k, ((v as number) * Math.PI) / 180]
           }
           return [k, v]
         }),
@@ -87,11 +87,11 @@ const createCyEdges = (
       target: edge.t,
       ...Object.fromEntries(
         Array.from(edgeView.values.entries()).map(([k, v]) => {
-          if(k === EdgeVisualPropertyName.EdgeLabelRotation){
-            return [k, (v as number) * Math.PI / 180]
+          if (k === EdgeVisualPropertyName.EdgeLabelRotation) {
+            return [k, ((v as number) * Math.PI) / 180]
           }
           return [k, v]
-        })
+        }),
       ),
     }
 
