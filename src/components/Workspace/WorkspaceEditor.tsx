@@ -516,17 +516,15 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
     }
   }, [summaries])
-  // console.log('Hello from WorkspaceEditor')
+  console.log('SIZE =', allotmentDimensions, tableBrowserHeight)
 
   // Return the main component including the network panel, network view, and the table browser
   return (
     <Box
       sx={{
-        // height: 'calc(100vh - 48px)',
         height: '100%',
         width: '100%',
         overflow: 'hidden',
-        // border: '4px solid blue',
       }}
     >
       <Allotment>
@@ -563,26 +561,28 @@ const WorkSpaceEditor = (): JSX.Element => {
               ) : (
                 <Box
                   sx={{
-                    height: '100%',
                     width: '100%',
+                    height: '100%',
                     boxSizing: 'border-box',
                     display: 'flex',
                     flexDirection: 'column',
-                    border: '4px solid red',
+                    overflow: 'hidden',
                   }}
                 >
-                  <div
-                    style={{
-                      flexGrow: 2,
-                      boxSizing: 'border-box',
+                  <Box
+                    sx={{
+                      minHeight: '3em',
+                      flexGrow: 1,
                       overflow: 'hidden',
                     }}
                   >
                     <NetworkBrowserPanel
                       allotmentDimensions={allotmentDimensions}
                     />
-                  </div>
-                  <LayoutToolsBasePanel />
+                  </Box>
+                  <Box sx={{ borderTop: '1px solid #AAAAAA' }}>
+                    <LayoutToolsBasePanel />
+                  </Box>
                 </Box>
               )}
             </Allotment.Pane>

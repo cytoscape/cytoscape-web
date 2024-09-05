@@ -16,6 +16,7 @@ import { Panel } from '../../../models/UiModel/Panel'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
 import { LLMQueryResultPanel } from '../../../features/LLMQuery/components'
 import llmLogo from '../../../assets/openai.svg'
+import { WorkspaceNamePanel } from './WorkspaceNamePanel'
 
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
@@ -80,43 +81,49 @@ export const NetworkBrowserPanel = ({
   return (
     <Box
       sx={{
-        height: '100%',
         p: 0,
         margin: 0,
-        border: '4px solid green',
+        height: '100%',
         boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
       }}
-      gap={0}
     >
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-start',
+          p: 0,
+          m: 0,
         }}
       >
         <Tabs
           sx={{
             display: 'flex',
             alignItems: 'center',
-            height: '40px',
+            height: '2.5em',
+            minHeight: '2.5em',
             flexGrow: 1,
           }}
           value={currentTabIndex}
           onChange={changeTab}
         >
           <Tab
+            sx={{ height: '2.5em', minHeight: '2.5em' }}
             icon={<ShareIcon />}
             iconPosition="start"
             label={<Typography variant="body2">WORKSPACE</Typography>}
           />
           <Tab
+            sx={{ height: '2.5em', minHeight: '2.5em' }}
             icon={<PaletteIcon />}
             iconPosition="start"
             label={<Typography variant="body2">STYLE</Typography>}
           />
           {showLLMQueryPanel && (
             <Tab
+              sx={{ height: '2.5em', minHeight: '2.5em' }}
               icon={
                 <img
                   height="25"
@@ -142,51 +149,29 @@ export const NetworkBrowserPanel = ({
           />
         )}
       </Box>
-      <Box style={{ background: 'red', padding: 0, margin: 0 }}>
-        <p>NAME 1</p>
+      <Box
+        sx={{
+          flexGrow: 1,
+          width: '100%',
+          height: '100%',
+          overflowY: 'auto',
+        }}
+        hidden={currentTabIndex !== 0}
+      >
+        <WorkspaceNamePanel />
+        {currentTabIndex === 0 && <SummaryList summaries={summaries} />}
       </Box>
-      <div hidden={currentTabIndex !== 0}>
-        {currentTabIndex === 0 && (
-          <Box
-            gap={0}
-            sx={{
-              height: allotmentDimensions[0] - 96,
-              // need to set a height to enable scroll in the network list
-              // 96 is the height of the tool bar
-              width: '100%',
-              padding: 0,
-              margin: 0,
-            }}
-          >
-            <SummaryList summaries={summaries} />
-          </Box>
-        )}
-      </div>
-      <div hidden={currentTabIndex !== 1}>
+      <Box hidden={currentTabIndex !== 1}>
         {currentTabIndex === 1 && (
-          <Box>
-            {' '}
-            <VizmapperView
-              networkId={targetNetworkId}
-              height={allotmentDimensions[0]}
-            />
-          </Box>
+          <VizmapperView
+            networkId={targetNetworkId}
+            height={allotmentDimensions[0]}
+          />
         )}
-      </div>
-      <div hidden={currentTabIndex !== 2}>
-        {currentTabIndex === 2 && (
-          <Box
-            sx={{
-              height: allotmentDimensions[0] - 96,
-              width: '100%',
-              padding: 0,
-              margin: 0,
-            }}
-          >
-            <LLMQueryResultPanel />
-          </Box>
-        )}
-      </div>
+      </Box>
+      <Box hidden={currentTabIndex !== 2}>
+        {currentTabIndex === 2 && <LLMQueryResultPanel />}
+      </Box>
     </Box>
   )
 }
