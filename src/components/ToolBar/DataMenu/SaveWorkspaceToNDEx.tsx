@@ -18,19 +18,14 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../store/MessageStore'
 import { getWorkspaceFromDb } from '../../../store/persist/db'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import { Network } from '../../../models/NetworkModel'
-import { IdType } from '../../../models/IdType'
 import { KeycloakContext } from '../../../bootstrap'
 import { useUiStateStore } from '../../../store/UiStateStore'
-import { NdexNetworkSummary, NetworkView, Table, VisualStyle } from 'src/models'
-import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
-import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork'
+import { saveAllNetworks } from '../../../utils/ndex-utils'
 
 export const SaveWorkspaceToNDExMenuItem = (
   props: BaseMenuProps,
@@ -83,148 +78,28 @@ export const SaveWorkspaceToNDExMenuItem = (
     (state) => state.addNetworkIds,
   )
 
-  const saveNetworkToNDEx = async (
-    networkId: string,
-    network: Network,
-    visualStyle: VisualStyle,
-    summary: NdexNetworkSummary,
-    nodeTable: Table,
-    edgeTable: Table,
-    viewModel: NetworkView,
-    visualStyleOptions?: VisualStyleOptions,
-  ): Promise<void> => {
-    const ndexClient = new NDEx(ndexBaseUrl)
-    const accessToken = await getToken()
-
-    ndexClient.setAuthToken(accessToken)
-    const cx = exportNetworkToCx2(
-      network,
-      visualStyle,
-      summary,
-      nodeTable,
-      edgeTable,
-      visualStyleOptions,
-      viewModel,
-    )
-
-    await ndexClient.updateNetworkFromRawCX2(networkId, cx)
-    const ndexSummary = await ndexClient.getNetworkSummary(networkId)
-    const newNdexModificationTime = ndexSummary.modificationTime
-    updateSummary(networkId, {
-      modificationTime: newNdexModificationTime,
-    })
-  }
-
-  const saveCopyToNDEx = async (
-    network: Network,
-    visualStyle: VisualStyle,
-    summary: NdexNetworkSummary,
-    nodeTable: Table,
-    edgeTable: Table,
-    viewModel: NetworkView,
-    visualStyleOptions?: VisualStyleOptions,
-  ): Promise<void> => {
-    const ndexClient = new NDEx(ndexBaseUrl)
-    const accessToken = await getToken()
-    ndexClient.setAuthToken(accessToken)
-
-    const cx = exportNetworkToCx2(
-      network,
-      visualStyle,
-      summary,
-      nodeTable,
-      edgeTable,
-      visualStyleOptions,
-      viewModel,
-      `Copy of ${summary.name}`,
-    )
-    const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
-    addNetworkToWorkspace(uuid as IdType)
-  }
-
-  const saveAllNetworks = async (): Promise<void> => {
-    for (const networkId of allNetworkId) {
-      let network = networks.get(networkId) as Network
-      let visualStyle = visualStyles[networkId]
-      const summary = summaries[networkId]
-      let nodeTable = tables[networkId]?.nodeTable
-      let edgeTable = tables[networkId]?.edgeTable
-      let networkViews: NetworkView[] = viewModels[networkId]
-      let visualStyleOptions: VisualStyleOptions | undefined =
-        networkVisualStyleOpt[networkId]
-
-      if (!network || !visualStyle || !nodeTable || !edgeTable) {
-        const currentToken = await getToken()
-        const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
-        // Using parentheses to perform destructuring assignment correctly
-        ;({
-          network,
-          nodeTable,
-          edgeTable,
-          visualStyle,
-          networkViews,
-          visualStyleOptions,
-        } = res)
-      }
-      if (summary.isNdex === false) {
-        await saveCopyToNDEx(
-          network,
-          visualStyle,
-          summary,
-          nodeTable,
-          edgeTable,
-          networkViews?.[0],
-          visualStyleOptions,
-        )
-        continue
-      }
-      if (networkModifiedStatus[networkId] === true) {
-        try {
-          await saveNetworkToNDEx(
-            networkId,
-            network,
-            visualStyle,
-            summary,
-            nodeTable,
-            edgeTable,
-            networkViews?.[0],
-            visualStyleOptions,
-          )
-          deleteNetworkModifiedStatus(networkId)
-        } catch (e) {
-          try {
-            await saveCopyToNDEx(
-              network,
-              visualStyle,
-              summary,
-              nodeTable,
-              edgeTable,
-              networkViews?.[0],
-              visualStyleOptions,
-            )
-            addMessage({
-              message: `Unable to save the modified network to NDEx. Instead, saved its copy to NDEx. Error: ${e.message as string}`,
-              duration: 3000,
-            })
-          } catch (e) {
-            addMessage({
-              message: `Unable to save the network or its copy to NDEx. Error: ${e.message as string}`,
-              duration: 3000,
-            })
-            throw e
-          }
-        }
-      }
-    }
-  }
-
   const saveWorkspaceToNDEx = async (): Promise<void> => {
     if (workspaceName.trim().length === 0) {
       alert('Please enter a workspace name')
       return
     }
     try {
-      await saveAllNetworks()
+      await saveAllNetworks(
+        getToken,
+        allNetworkId,
+        ndexBaseUrl,
+        addNetworkToWorkspace,
+        networkModifiedStatus,
+        updateSummary,
+        deleteNetworkModifiedStatus,
+        addMessage,
+        networks,
+        visualStyles,
+        summaries,
+        tables,
+        viewModels,
+        networkVisualStyleOpt,
+      )
       const ndexClient = new NDEx(ndexBaseUrl)
       const accessToken = await getToken()
       ndexClient.setAuthToken(accessToken)

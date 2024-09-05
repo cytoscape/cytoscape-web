@@ -22,6 +22,7 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
+import { fetchMyWorkspaces } from '../../../utils/ndex-utils'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
@@ -61,15 +62,8 @@ export const LoadWorkspaceDialog: React.FC<{
   }
 
   useEffect(() => {
-    const fetchMyWorkspaces = async (): Promise<any> => {
-      const ndexClient = new NDEx(ndexBaseUrl)
-      const token = await getToken()
-      ndexClient.setAuthToken(token)
-      const myWorkspaces = await ndexClient.getUserCyWebWorkspaces()
-      return myWorkspaces
-    }
     if (open) {
-      void fetchMyWorkspaces()
+      void fetchMyWorkspaces(ndexBaseUrl, getToken)
         .then(setMyWorkspaces)
         .catch((err) => {
           console.log(err)
