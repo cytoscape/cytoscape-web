@@ -239,6 +239,11 @@ const updateCyObjects = <T extends View>(
             }
           } else if (key === VisualPropertyName.NodeShape) {
             obj.data(key, NodeShapeMapping[value as NodeShapeType])
+          } else if (
+            key === VisualPropertyName.NodeLabelRotation ||
+            key === VisualPropertyName.EdgeLabelRotation
+          ) {
+            obj.data(key, ((value as number) * Math.PI) / 180)
           } else {
             obj.data(key, value)
           }

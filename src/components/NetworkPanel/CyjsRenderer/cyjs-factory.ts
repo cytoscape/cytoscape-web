@@ -51,6 +51,8 @@ const createCyNodes = (
         Array.from(nv.values.entries()).map(([k, v]) => {
           if (k === NodeVisualPropertyName.NodeShape) {
             return [k, NodeShapeMapping[v as NodeShapeType]]
+          } else if(k===NodeVisualPropertyName.NodeLabelRotation){
+            return [k, (v as number) * Math.PI / 180]
           }
           return [k, v]
         }),
@@ -79,17 +81,19 @@ const createCyEdges = (
 ): CyEdge[] =>
   edges.map((edge: Edge): CyEdge => {
     const edgeView: EdgeView = edgeViews[edge.id]
-    const { values } = edgeView
     const newData: Record<string, ValueType> = {
       id: edge.id,
       source: edge.s,
       target: edge.t,
+      ...Object.fromEntries(
+        Array.from(edgeView.values.entries()).map(([k, v]) => {
+          if(k === EdgeVisualPropertyName.EdgeLabelRotation){
+            return [k, (v as number) * Math.PI / 180]
+          }
+          return [k, v]
+        })
+      ),
     }
-    values.forEach(
-      (value: VisualPropertyValueType, key: VisualPropertyName) => {
-        newData[key] = value as ValueType
-      },
-    )
 
     if (arrowColorMatchesEdge) {
       const color = newData[EdgeVisualPropertyName.EdgeLineColor]
