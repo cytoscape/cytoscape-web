@@ -13,6 +13,7 @@ import { BaseMenuProps } from '../BaseMenuProps'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useCredentialStore } from '../../../store/CredentialStore'
+import { getWorkspaceFromDb } from '../../../store/persist/db'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../store/MessageStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
@@ -106,6 +107,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       const accessToken = await getToken()
       ndexClient.setAuthToken(accessToken)
 
+      const workspace = await getWorkspaceFromDb()
       const update = await ndexClient.updateCyWebWorkspace(workspace.id, {
         name: workspace.name,
         options: { currentNetwork: workspace.currentNetworkId },
