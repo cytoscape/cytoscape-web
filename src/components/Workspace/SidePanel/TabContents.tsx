@@ -18,8 +18,8 @@ import ExternalComponent from '../../../components/AppManager/ExternalComponent'
 export const getTabContents = (selectedIndex: number): JSX.Element[] => {
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
 
-  const getPanelComponents = () => {
-    const panels: any = []
+  const getPanelComponents = (): [string, any][] => {
+    const panels: [string, any][] = []
     Object.keys(apps).forEach((appId: string) => {
       const app: CyApp = apps[appId]
       const { components } = app
@@ -31,24 +31,25 @@ export const getTabContents = (selectedIndex: number): JSX.Element[] => {
             app.id,
             './' + component.id,
           )
-          panels.push(PanelComponent)
+          panels.push([component.id, PanelComponent])
         }
       })
     })
 
     return panels
   }
+
   const getPanels = () => {
     return getPanelComponents().map(
-      (AppPanel: LazyExoticComponent<ComponentType<any>>, index: number) => {
+      (
+        entry: [string, LazyExoticComponent<ComponentType<any>>],
+        index: number,
+      ) => {
         const key: number = index + 1
+        const title: string = entry[0]
+        const AppPanel = entry[1]
         return (
-          <TabPanel
-            label={`App ${index}`}
-            key={key}
-            index={key}
-            value={selectedIndex}
-          >
+          <TabPanel label={title} key={key} index={key} value={selectedIndex}>
             <Suspense>
               <AppPanel />
             </Suspense>
@@ -67,8 +68,5 @@ export const getTabContents = (selectedIndex: number): JSX.Element[] => {
       <ViewerPanel />
     </TabPanel>,
     ...getPanels(),
-    // <TabPanel label="Apps" key={1} index={1} value={selectedIndex}>
-    //   <AppPanel />
-    // </TabPanel>,
   ]
 }
