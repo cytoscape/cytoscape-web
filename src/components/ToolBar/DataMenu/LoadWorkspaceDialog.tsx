@@ -21,9 +21,8 @@ import { NDEx } from '@js4cytoscape/ndex-client'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { IdType } from '../../../models/IdType'
 import { fetchMyWorkspaces } from '../../../utils/ndex-utils'
-import { Workspace } from 'src/models'
+import { Workspace } from '../../../models'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
@@ -35,23 +34,15 @@ export const LoadWorkspaceDialog: React.FC<{
   )
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
-  const addNetworks: (ids: IdType | IdType[]) => void = useWorkspaceStore(
-    (state) => state.addNetworkIds,
-  )
   const setWorkSpace = useWorkspaceStore((state) => state.set)
-
-  const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
-
-  const dateFormatter = (timestamp: string | number | Date): string => {
-    return new Date(timestamp).toLocaleString()
-  }
   const deleteAllNetworks = useWorkspaceStore(
     (state) => state.deleteAllNetworks,
   )
-
-  const handleDeleteAllNetworks = (): void => {
-    deleteAllNetworks()
+  const resetWorksapce = useWorkspaceStore((state) => state.resetWorkspace)
+  const dateFormatter = (timestamp: string | number | Date): string => {
+    return new Date(timestamp).toLocaleString()
   }
+
   const [openDialog, setOpenDialog] = useState(false)
 
   const handleDeleteWorkspaceClick = (): void => {
@@ -59,7 +50,7 @@ export const LoadWorkspaceDialog: React.FC<{
   }
 
   const handleCloseDialog = (): void => {
-    setOpenDialog(false) //
+    setOpenDialog(false)
   }
 
   useEffect(() => {
@@ -84,8 +75,8 @@ export const LoadWorkspaceDialog: React.FC<{
         (workspace) => workspace.workspaceId === selectedWorkspaceId,
       )
       if (selectedWorkspace) {
-        handleDeleteAllNetworks()
-        resetWorkspace()
+        deleteAllNetworks()
+        resetWorksapce()
         setWorkSpace({
           name: selectedWorkspace.name,
           id: selectedWorkspace.workspaceId,

@@ -36,7 +36,7 @@ export const SaveWorkspaceToNDExMenuItem = (
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
   const setId = useWorkspaceStore((state) => state.setId)
-
+  const renameWorkspace = useWorkspaceStore((state) => state.setName)
   // data from store
   const networkModifiedStatus = useWorkspaceStore(
     (state) => state.workspace.networkModified,
@@ -112,6 +112,7 @@ export const SaveWorkspaceToNDExMenuItem = (
       })
       const { uuid, modificationTime } = response
       setId(uuid)
+      renameWorkspace(workspaceName)
 
       console.log(modificationTime)
 
