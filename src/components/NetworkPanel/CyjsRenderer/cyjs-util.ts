@@ -44,7 +44,6 @@ vpHandlers.set(VisualPropertyName.NodeLabelPosition, (obj, key, value, view) => 
 
 vpHandlers.set(VisualPropertyName.EdgeTargetArrowShape, (obj, key, value, view) => {
   updateEdgeArrowShape(obj, key, value, view, SpecialPropertyName.TargetArrowFill);
-  console.log('EdgeTargetArrowShape');
 });
 
 vpHandlers.set(VisualPropertyName.EdgeSourceArrowShape, (obj, key, value, view) => {
