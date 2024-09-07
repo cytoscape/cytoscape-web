@@ -16,28 +16,23 @@ import { AppStatus } from '../../models/AppModel/AppStatus'
 import { CyApp } from '../../models/AppModel'
 
 interface AppSettingsDialogProps {
-  open: boolean
-  setOpen: (isOpen: boolean) => void
-  handleClose: () => void
+  openDialog: boolean
+  setOpenDialog: (open: boolean) => void
 }
 
 export const AppSettingsDialog = ({
-  open,
-  setOpen,
-  handleClose,
+  openDialog,
+  setOpenDialog,
 }: AppSettingsDialogProps) => {
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const setStatus = useAppStore((state) => state.setStatus)
 
-  const handleClick = () => {
-    setOpen(false)
-    handleClose()
-  }
-
   return (
-    <Dialog open={open}>
+    <Dialog open={openDialog}>
       <DialogTitle>
-        {Object.keys(apps).length === 0 ? '(No Apps Available)' : 'Status of Apps'}
+        {Object.keys(apps).length === 0
+          ? '(No Apps Available)'
+          : 'Status of Apps'}
       </DialogTitle>
       <DialogContent>
         {Object.values(apps).map((app) => (
@@ -66,7 +61,7 @@ export const AppSettingsDialog = ({
         ))}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClick}>Close</Button>
+        <Button onClick={() => setOpenDialog(false)}>Close</Button>
       </DialogActions>
     </Dialog>
   )

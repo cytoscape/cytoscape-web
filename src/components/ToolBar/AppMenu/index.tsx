@@ -1,12 +1,12 @@
-import { Button, Menu, Tooltip } from '@mui/material'
+import { Button, Menu, MenuItem } from '@mui/material'
 import { Suspense, useEffect, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import ExternalComponent from '../../AppManager/ExternalComponent'
-import { AppSettingsMenuItem } from './AppSettingsMenuItem'
 import { useAppStore } from '../../../store/AppStore'
 import { ComponentType, CyApp } from '../../../models'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   // Actual CyApp objects
@@ -15,15 +15,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
-
-  const [menuItems, setMenuItems] = useState<any>([])
-  const [menuIds, setMenuIds] = useState<Set<string>>(new Set())
-
-  // ID set of Apps already processed
-  const [appIds, setAppIds] = useState<Set<string>>(new Set())
-
-  const [Menu1, setAppMenuItem] = useState<any>()
-  const [ExampleMenu, setAppMenuItem2] = useState<any>()
+  const [openDialog, setOpenDialog] = useState<boolean>(false)
 
   const [componentList, setComponentList] = useState<[string, string][]>([])
 
@@ -35,6 +27,11 @@ export const AppMenu = (props: DropdownMenuProps) => {
 
   const handleClose = (): void => {
     setAnchorEl(null)
+  }
+
+  const handleOpenDialog = (isDialogOpen: boolean): void => {
+    setAnchorEl(null)
+    setOpenDialog(isDialogOpen)
   }
 
   useEffect(() => {
@@ -69,7 +66,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
   }, [apps])
 
   return (
-    <div>
+    <>
       <Button
         sx={{
           color: 'white',
@@ -94,11 +91,15 @@ export const AppMenu = (props: DropdownMenuProps) => {
         <Suspense fallback={<div>Loading...</div>}>
           {componentList.map(([appId, componentId], index) => {
             const MenuComponent = ExternalComponent(appId, './' + componentId)
-            return <MenuComponent key={index} />
+            return <MenuComponent key={index} handleClose={handleClose}/>
           })}
         </Suspense>
-        <AppSettingsMenuItem handleClose={handleClose} />
+        <MenuItem onClick={() => handleOpenDialog(true)}>App Settings</MenuItem>
       </Menu>
-    </div>
+      <AppSettingsDialog
+        openDialog={openDialog}
+        setOpenDialog={setOpenDialog}
+      />
+    </>
   )
 }
