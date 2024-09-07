@@ -20,7 +20,6 @@ import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/Cy
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 import { NodeShapeMapping } from './cyjs-factory'
-import { c } from 'playwright-report/trace/assets/workbench-cab53a1b'
 
 function updateEdgeArrowShape(obj: SingularElementArgument, key: VisualPropertyName, value: any, view: View, arrowFillProperty: SpecialPropertyName) {
   const arrowFillValue = view.values.get(arrowFillProperty as VisualPropertyName);
