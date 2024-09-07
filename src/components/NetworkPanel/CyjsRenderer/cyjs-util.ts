@@ -20,6 +20,50 @@ import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/Cy
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 import { NodeShapeMapping } from './cyjs-factory'
+import { c } from 'playwright-report/trace/assets/workbench-cab53a1b'
+
+function updateEdgeArrowShape(obj: SingularElementArgument, key: VisualPropertyName, value: any, view: View, arrowFillProperty: SpecialPropertyName) {
+  const arrowFillValue = view.values.get(arrowFillProperty as VisualPropertyName);
+  obj.data(key, value);
+  obj.data(arrowFillProperty, arrowFillValue);
+  if (obj.data(key) === EdgeArrowShapeType.Arrow) {
+    obj.data(key, EdgeArrowShapeType.Triangle);
+  }
+}
+
+const vpHandlers = new Map<VisualPropertyName, (obj: SingularElementArgument, key: VisualPropertyName, value: any, view: View) => void>();
+
+vpHandlers.set(VisualPropertyName.NodeLabelPosition, (obj, key, value, view) => {
+  const { horizontalAlign, verticalAlign } = computeNodeLabelPosition(value);
+  obj.data(SpecialPropertyName.NodeLabelHorizontalAlign, horizontalAlign);
+  obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign);
+  obj.data(SpecialPropertyName.NodeLabelMarginX, value.MARGIN_X);
+  obj.data(SpecialPropertyName.NodeLabelMarginY, value.MARGIN_Y);
+  obj.data(SpecialPropertyName.NodeLabelJustification, value.JUSTIFICATION);
+});
+
+vpHandlers.set(VisualPropertyName.EdgeTargetArrowShape, (obj, key, value, view) => {
+  updateEdgeArrowShape(obj, key, value, view, SpecialPropertyName.TargetArrowFill);
+  console.log('EdgeTargetArrowShape');
+});
+
+vpHandlers.set(VisualPropertyName.EdgeSourceArrowShape, (obj, key, value, view) => {
+  updateEdgeArrowShape(obj, key, value, view, SpecialPropertyName.SourceArrowFill);
+  
+});
+
+vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value, view) => {
+  obj.data(key, NodeShapeMapping[value as NodeShapeType]);
+});
+
+vpHandlers.set(VisualPropertyName.NodeLabelRotation, (obj, key, value, view) => {
+  obj.data(key, (value * Math.PI) / 180);
+});
+
+vpHandlers.set(VisualPropertyName.EdgeLabelRotation, (obj, key, value, view) => {
+  obj.data(key, (value * Math.PI) / 180);
+});
+
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
@@ -195,60 +239,15 @@ const updateCyObjects = <T extends View>(
 
     const view: View = views[cyId]
     if (view !== undefined) {
-      const { values } = view
-      values.forEach(
-        (value: VisualPropertyValueType, key: VisualPropertyName) => {
-          if (key === VisualPropertyName.NodeLabelPosition) {
-            const labelPosition = value as NodeLabelPositionType
-            const { horizontalAlign, verticalAlign } =
-              computeNodeLabelPosition(labelPosition)
-            const { MARGIN_X, MARGIN_Y, JUSTIFICATION } = labelPosition
-            obj.data(
-              SpecialPropertyName.NodeLabelHorizontalAlign,
-              horizontalAlign,
-            )
-            obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
-            obj.data(SpecialPropertyName.NodeLabelMarginX, MARGIN_X)
-            obj.data(SpecialPropertyName.NodeLabelMarginY, MARGIN_Y)
-            obj.data(SpecialPropertyName.NodeLabelJustification, JUSTIFICATION)
-          } else if (
-            key === VisualPropertyName.EdgeTargetArrowShape ||
-            key === VisualPropertyName.EdgeSourceArrowShape
-          ) {
-            const srcArrowFill = view.values.get(
-              SpecialPropertyName.SourceArrowFill as VisualPropertyName,
-            )
-            const tgtArrowFill = view.values.get(
-              SpecialPropertyName.TargetArrowFill as VisualPropertyName,
-            )
+      view.values.forEach((value, key) => {
+        const vpHandler = vpHandlers.get(key);
+        if (vpHandler) {
+          vpHandler(obj, key, value, view);
+        } else {
+          obj.data(key, value);
+        }
+      });
 
-            const edgePosFillSelector =
-              key === VisualPropertyName.EdgeSourceArrowShape
-                ? SpecialPropertyName.SourceArrowFill
-                : SpecialPropertyName.TargetArrowFill
-
-            obj.data(key, value)
-            obj.data(
-              edgePosFillSelector,
-              key === VisualPropertyName.EdgeSourceArrowShape
-                ? srcArrowFill
-                : tgtArrowFill,
-            )
-            if (obj.data(key) === EdgeArrowShapeType.Arrow) {
-              obj.data(key, EdgeArrowShapeType.Triangle)
-            }
-          } else if (key === VisualPropertyName.NodeShape) {
-            obj.data(key, NodeShapeMapping[value as NodeShapeType])
-          } else if (
-            key === VisualPropertyName.NodeLabelRotation ||
-            key === VisualPropertyName.EdgeLabelRotation
-          ) {
-            obj.data(key, ((value as number) * Math.PI) / 180)
-          } else {
-            obj.data(key, value)
-          }
-        },
-      )
       if (visualEditorProperties?.nodeSizeLocked) {
         obj.data(
           NodeVisualPropertyName.NodeWidth,
