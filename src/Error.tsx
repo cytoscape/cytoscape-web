@@ -18,9 +18,10 @@ export const Error = (): ReactElement => {
   }, [navigate])
 
   const handleReset = (): void => {
-    resetWorkspace()
-    navigate('/')
-    navigate(0)
+    resetWorkspace().then(() => {
+      navigate('/')
+      navigate(0)
+    })
   }
 
   let status = 'Unknown'
