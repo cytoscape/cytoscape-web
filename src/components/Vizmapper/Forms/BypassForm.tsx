@@ -7,7 +7,6 @@ import {
   SxProps,
   Badge,
   IconButton,
-  Checkbox,
   Divider,
   Table,
   TableBody,
@@ -17,18 +16,17 @@ import {
   TableContainer,
   Select,
   MenuItem,
+  Tooltip,
 } from '@mui/material'
+import InfoIcon from '@mui/icons-material/Info'
 import DeleteIcon from '@mui/icons-material/Delete'
 import * as MapperFactory from '../../../models/VisualStyleModel/impl/MapperFactory'
 import { IdType } from '../../../models/IdType'
 import {
-  ContinuousMappingFunction,
-  DiscreteMappingFunction,
   EdgeVisualPropertyName,
   Mapper,
   MappingFunctionType,
   NodeVisualPropertyName,
-  PassthroughMappingFunction,
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
@@ -47,7 +45,6 @@ import {
 } from './VisualPropertyViewBox'
 import { NetworkView } from '../../../models/ViewModel'
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
-import { translateEdgeIdToCX } from '../../../models/NetworkModel/impl/CyNetwork'
 import {
   LockColorCheckbox,
   LockSizeCheckbox,
@@ -78,45 +75,53 @@ function BypassFormContent(props: {
   const visualStyle = useVisualStyleStore((state) => state.visualStyles)
   const setBypass = useVisualStyleStore((state) => state.setBypass)
   const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
-  const toggleSelected = useViewModelStore((state) => state.toggleSelected)
   const additiveSelect = useViewModelStore((state) => state.additiveSelect)
-  const additiveUnselect = useViewModelStore((state) => state.additiveUnselect)
-  const DEFAULT_ELENAME_BY_COL = 'DEFAULT'
-  const [eleNameByCol, setEleNameByCol] = useState(DEFAULT_ELENAME_BY_COL)
+  const tables = useTableStore((state) => state.tables)
+
+  const table = tables[currentNetworkId]
+  const nodeTable = table?.nodeTable
+  const edgeTable = table?.edgeTable
+  const selectedNodes = networkView?.selectedNodes ?? []
+  const selectedEdges = networkView?.selectedEdges ?? []
+  const isNode = visualProperty.group === VisualPropertyGroup.Node
+  const selectedElements: IdType[] = isNode ? selectedNodes : selectedEdges
+  const selectedElementTable = isNode ? nodeTable : edgeTable
+
+  const defaultColName = selectedElementTable.columns
+    .map((col) => col.name.toLowerCase())
+    .includes('name')
+    ? (selectedElementTable.columns.find(
+        (col) => col.name.toLowerCase() === 'name',
+      )?.name as string)
+    : selectedElementTable.columns[0].name
+
+  const [eleNameByCol, setEleNameByCol] = useState(defaultColName)
   const handleEleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setEleNameByCol(event.target.value)
   }
 
-  const labelName =
-    visualProperty.group === VisualPropertyGroup.Node
-      ? NodeVisualPropertyName.NodeLabel
-      : EdgeVisualPropertyName.EdgeLabel
+  const labelName = isNode
+    ? NodeVisualPropertyName.NodeLabel
+    : EdgeVisualPropertyName.EdgeLabel
   const labelVp = visualStyle[currentNetworkId][labelName]
-  const tables = useTableStore((state) => state.tables)
-  const table = tables[currentNetworkId]
-  const nodeTable = table?.nodeTable
-  const edgeTable = table?.edgeTable
-
-  const selectedNodes = networkView?.selectedNodes ?? []
-  const selectedEdges = networkView?.selectedEdges ?? []
+  React.useEffect(() => {
+    const { mapping } = labelVp
+    if (
+      mapping !== undefined &&
+      mapping.type === MappingFunctionType.Passthrough
+    ) {
+      setEleNameByCol(mapping.attribute)
+    }
+  }, [labelVp])
 
   const validElementsSelected =
-    (selectedNodes.length > 0 &&
-      visualProperty.group === VisualPropertyGroup.Node) ||
-    (selectedEdges.length > 0 &&
+    selectedNodes.length > 0 &&
+    (visualProperty.group === VisualPropertyGroup.Node ||
       visualProperty.group === VisualPropertyGroup.Edge)
 
   // get union of selected elements and bypass elements
   // put all selected elements first (even if they have a bypass)
   // render all elements, if they don't have a bypass, leave it empty
-  const selectedElements: IdType[] =
-    visualProperty.group === VisualPropertyGroup.Node
-      ? selectedNodes
-      : selectedEdges
-
-  const selectedElementTable =
-    visualProperty.group === VisualPropertyGroup.Node ? nodeTable : edgeTable
-
   const bypassElementIds = new Set(
     Array.from(visualProperty?.bypassMap?.keys()).map((k) => String(k)) ?? [],
   )
@@ -131,42 +136,10 @@ function BypassFormContent(props: {
   let selectedElementsWithBypass = 0
   selectedElements.forEach((id: IdType) => {
     const hasBypass = visualProperty?.bypassMap.has(id)
-    const { defaultValue, mapping, bypassMap } = labelVp
-    // default name is the name attribute(if it exists) or the id
-    let name = selectedElementTable.rows.get(id)?.name ?? ''
-    // if the mapping is defined, then overwrite with the mapped value
-    // with the priority of bypassMap > mapping > defaultValue
-    if (bypassMap !== undefined && bypassMap.has(id)) {
-      name = bypassMap.get(id) as string
-    } else if (mapping !== undefined) {
-      let mapper: Mapper
-      const mappingType: MappingFunctionType = mapping.type
-      if (mappingType === MappingFunctionType.Discrete) {
-        mapper = MapperFactory.createDiscreteMapper(
-          mapping as DiscreteMappingFunction,
-        )
-      } else if (mappingType === MappingFunctionType.Continuous) {
-        mapper = MapperFactory.createContinuousMapper(
-          mapping as ContinuousMappingFunction,
-        )
-      } else if (mappingType === MappingFunctionType.Passthrough) {
-        mapper = MapperFactory.createPassthroughMapper(
-          mapping as PassthroughMappingFunction,
-        )
-      } else {
-        throw new Error(`Unknown mapping type for ${vpName}`)
-      }
-      name = mapper(
-        selectedElementTable.rows.get(id)?.[mapping.attribute] ?? '',
-      ) as string
-    } else if (defaultValue !== undefined && defaultValue !== '') {
-      name = defaultValue as string
-    }
-
     elementsToRender.push({
       id,
       selected: true,
-      name: name as string,
+      name: (selectedElementTable.rows.get(id)?.name ?? '') as string,
       hasBypass: hasBypass ?? false,
     })
 
@@ -183,11 +156,9 @@ function BypassFormContent(props: {
     selectedElementsWithBypass > 0
       ? selectedElements
       : selectedElements.length === 0
-        ? visualProperty.group === VisualPropertyGroup.Node
+        ? isNode
           ? Array.from(nodeTable.rows.keys())
-          : Array.from(edgeTable.rows.keys()).map((id) =>
-              translateEdgeIdToCX(id),
-            )
+          : Array.from(edgeTable.rows.keys())
         : selectedElements
 
   elements
@@ -197,10 +168,16 @@ function BypassFormContent(props: {
         id: e,
         selected: false,
         name: (selectedElementTable.rows.get(e)?.name ?? '') as string,
-
         hasBypass: true,
       })
     })
+
+  if (selectedElements.length === 0 && elementsToRender.length > 0) {
+    additiveSelect(
+      currentNetworkId,
+      elementsToRender.map((e) => e.id),
+    )
+  }
   const emptyBypassForm = (
     <>
       <Typography>Select network elements to apply a bypass</Typography>
@@ -217,25 +194,6 @@ function BypassFormContent(props: {
         <Table size={'small'} stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={allSelected}
-                  indeterminate={someSelected}
-                  onClick={() => {
-                    if (allSelected) {
-                      additiveUnselect(
-                        currentNetworkId,
-                        elementsToRender.map((e) => e.id),
-                      )
-                    } else {
-                      additiveSelect(
-                        currentNetworkId,
-                        elementsToRender.map((e) => e.id),
-                      )
-                    }
-                  }}
-                />
-              </TableCell>
               <TableCell>
                 <Select
                   size="small"
@@ -243,39 +201,36 @@ function BypassFormContent(props: {
                   value={eleNameByCol}
                   onChange={handleEleNameChange}
                 >
-                  <MenuItem value={DEFAULT_ELENAME_BY_COL}>
-                    {`${
-                      visualProperty.group[0].toUpperCase() +
-                      visualProperty.group.slice(1).toLowerCase()
-                    } Name`}
-                  </MenuItem>
                   {selectedElementTable.columns.map((col: Column) => {
                     return <MenuItem value={col.name}>{col.name}</MenuItem>
                   })}
                 </Select>
               </TableCell>
-              <TableCell>Bypass</TableCell>
+              <TableCell>
+                Bypass/Overwrite
+                <Tooltip
+                  arrow={true}
+                  title="This is to overwrite "
+                  placement="top"
+                >
+                  <IconButton sx={{ padding: 0.5, mb: 0.5 }}>
+                    <InfoIcon />
+                  </IconButton>
+                </Tooltip>
+              </TableCell>
               <TableCell padding={'none'}></TableCell>
             </TableRow>
           </TableHead>
-          <TableBody sx={{ overflow: 'scroll' }}>
+          <TableBody sx={{ overflow: 'auto' }}>
             {elementsToRender.map((ele) => {
               const { id, selected, hasBypass, name } = ele
               const bypassValue = visualProperty.bypassMap?.get(id) ?? null
-
               return (
-                <TableRow key={id} hover={true} selected={selected}>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      onClick={() => toggleSelected(currentNetworkId, [id])}
-                      checked={selected}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: 200, overflow: 'scroll' }}>
-                    {eleNameByCol === DEFAULT_ELENAME_BY_COL
-                      ? name
-                      : (selectedElementTable.rows.get(id)?.[eleNameByCol] ??
-                        '')}
+                <TableRow key={id}>
+                  <TableCell sx={{ maxWidth: 200, overflow: 'auto' }}>
+                    <div>
+                      {selectedElementTable.rows.get(id)?.[eleNameByCol] ?? ''}
+                    </div>
                   </TableCell>
 
                   <TableCell>
