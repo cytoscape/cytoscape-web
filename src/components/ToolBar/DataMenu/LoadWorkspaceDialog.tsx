@@ -76,16 +76,17 @@ export const LoadWorkspaceDialog: React.FC<{
       )
       if (selectedWorkspace) {
         deleteAllNetworks()
-        resetWorksapce()
-        setWorkSpace({
-          name: selectedWorkspace.name,
-          id: selectedWorkspace.workspaceId,
-          currentNetworkId: selectedWorkspace.options?.currentNetwork ?? '',
-          networkIds: selectedWorkspace.networkIDs,
-          localModificationTime: selectedWorkspace.modificationTime,
-          creationTime: selectedWorkspace.creationTime,
-          networkModified: {},
-        } as Workspace)
+        resetWorksapce().then(() => {
+          setWorkSpace({
+            name: selectedWorkspace.name,
+            id: selectedWorkspace.workspaceId,
+            currentNetworkId: selectedWorkspace.options?.currentNetwork ?? '',
+            networkIds: selectedWorkspace.networkIDs,
+            localModificationTime: selectedWorkspace.modificationTime,
+            creationTime: selectedWorkspace.creationTime,
+            networkModified: {},
+          } as Workspace)
+        })
       } else {
         alert('Selected workspace not found')
       }

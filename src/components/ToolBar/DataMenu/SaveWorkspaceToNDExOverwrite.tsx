@@ -38,7 +38,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   const [openDialog, setOpenDialog] = useState<boolean>(false)
   const updateSummary = useNetworkSummaryStore((state) => state.update)
   const setId = useWorkspaceStore((state) => state.setId)
-  const workspace = useWorkspaceStore((state) => state.workspace)
+  const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
   const [hasWorkspace, setHasWorkspace] = useState(false)
 
   // data from store
@@ -78,7 +78,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
           const workspaceIds = resultArray.map(
             (item: { workspaceId: any }) => item.workspaceId,
           )
-          const savedWorkspace = workspaceIds.includes(workspace.id)
+          const savedWorkspace = workspaceIds.includes(currentWorkspaceId)
           setHasWorkspace(savedWorkspace)
           setIsLoading(false)
         })
@@ -113,14 +113,13 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       const accessToken = await getToken()
       ndexClient.setAuthToken(accessToken)
 
-      const workspace = await getWorkspaceFromDb()
+      const workspace = await getWorkspaceFromDb(currentWorkspaceId)
       if (hasWorkspace) {
-        const update = await ndexClient.updateCyWebWorkspace(workspace.id, {
+        await ndexClient.updateCyWebWorkspace(workspace.id, {
           name: workspace.name,
           options: { currentNetwork: workspace.currentNetworkId },
           networkIDs: workspace.networkIds,
         })
-        console.log(update)
       } else {
         const response = await ndexClient.createCyWebWorkspace({
           name: workspace.name,

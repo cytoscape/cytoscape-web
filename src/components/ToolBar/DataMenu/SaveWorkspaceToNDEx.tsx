@@ -36,6 +36,7 @@ export const SaveWorkspaceToNDExMenuItem = (
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
   const setId = useWorkspaceStore((state) => state.setId)
+  const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
   const renameWorkspace = useWorkspaceStore((state) => state.setName)
   // data from store
   const networkModifiedStatus = useWorkspaceStore(
@@ -104,7 +105,7 @@ export const SaveWorkspaceToNDExMenuItem = (
       const accessToken = await getToken()
       ndexClient.setAuthToken(accessToken)
 
-      const workspace = await getWorkspaceFromDb()
+      const workspace = await getWorkspaceFromDb(currentWorkspaceId)
       const response = await ndexClient.createCyWebWorkspace({
         name: workspaceName,
         options: { currentNetwork: workspace.currentNetworkId },
