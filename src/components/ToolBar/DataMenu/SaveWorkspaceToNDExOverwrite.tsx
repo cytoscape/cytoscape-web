@@ -34,9 +34,10 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
-
+  const [isLoading, setIsLoading] = useState(true)
   const [openDialog, setOpenDialog] = useState<boolean>(false)
   const updateSummary = useNetworkSummaryStore((state) => state.update)
+  const setId = useWorkspaceStore((state) => state.setId)
   const workspace = useWorkspaceStore((state) => state.workspace)
   const [hasWorkspace, setHasWorkspace] = useState(false)
 
@@ -71,6 +72,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
 
   useEffect(() => {
     if (authenticated) {
+      setIsLoading(true)
       fetchMyWorkspaces(ndexBaseUrl, getToken)
         .then(function (resultArray) {
           const workspaceIds = resultArray.map(
@@ -78,10 +80,14 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
           )
           const savedWorkspace = workspaceIds.includes(workspace.id)
           setHasWorkspace(savedWorkspace)
+          setIsLoading(false)
         })
         .catch(function (error) {
           console.error('Error:', error)
+          setIsLoading(false)
         })
+    } else {
+      setIsLoading(false)
     }
   }, [])
 
@@ -108,12 +114,22 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       ndexClient.setAuthToken(accessToken)
 
       const workspace = await getWorkspaceFromDb()
-      const update = await ndexClient.updateCyWebWorkspace(workspace.id, {
-        name: workspace.name,
-        options: { currentNetwork: workspace.currentNetworkId },
-        networkIDs: workspace.networkIds,
-      })
-      console.log(update)
+      if (hasWorkspace) {
+        const update = await ndexClient.updateCyWebWorkspace(workspace.id, {
+          name: workspace.name,
+          options: { currentNetwork: workspace.currentNetworkId },
+          networkIDs: workspace.networkIds,
+        })
+        console.log(update)
+      } else {
+        const response = await ndexClient.createCyWebWorkspace({
+          name: workspace.name,
+          options: { currentNetwork: workspace.currentNetworkId },
+          networkIDs: workspace.networkIds,
+        })
+        const { uuid, modificationTime } = response
+        setId(uuid)
+      }
 
       addMessage({
         message: `Saved workspace to NDEx.`,
@@ -143,21 +159,9 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       <DialogContent></DialogContent>
       <DialogActions>
         <Button onClick={handleCloseDialog}>Cancel</Button>
-        <Tooltip
-          arrow={true}
-          placement="top"
-          title={
-            hasWorkspace
-              ? ''
-              : "Current workspace does not exist on this account, please use 'Save workspace as...' first."
-          }
-        >
-          <Box>
-            <Button disabled={!hasWorkspace} onClick={saveWorkspaceToNDEx}>
-              Save
-            </Button>
-          </Box>
-        </Tooltip>
+        <Button disabled={isLoading} onClick={saveWorkspaceToNDEx}>
+          Save
+        </Button>
       </DialogActions>
     </Dialog>
   )

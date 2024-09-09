@@ -154,7 +154,7 @@ export const SaveWorkspaceToNDExMenuItem = (
           autoFocus
           margin="dense"
           id="name"
-          label="Workspace Name"
+          label="Unique Workspace Name"
           type="text"
           fullWidth
           variant="standard"
