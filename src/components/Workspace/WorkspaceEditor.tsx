@@ -516,7 +516,6 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
     }
   }, [summaries])
-  console.log('SIZE =', allotmentDimensions, tableBrowserHeight)
 
   // Return the main component including the network panel, network view, and the table browser
   return (
