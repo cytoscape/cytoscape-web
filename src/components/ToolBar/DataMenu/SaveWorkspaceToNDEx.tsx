@@ -25,7 +25,10 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { KeycloakContext } from '../../../bootstrap'
 import { useUiStateStore } from '../../../store/UiStateStore'
-import { saveAllNetworks } from '../../../utils/ndex-utils'
+import {
+  ndexDuplicateKeyErrorMessage,
+  saveAllNetworks,
+} from '../../../utils/ndex-utils'
 
 export const SaveWorkspaceToNDExMenuItem = (
   props: BaseMenuProps,
@@ -122,11 +125,18 @@ export const SaveWorkspaceToNDExMenuItem = (
         duration: 3000,
       })
     } catch (e) {
-      console.error(e)
-      addMessage({
-        message: `Error: Could not save workspace to NDEx. ${e.message as string}`,
-        duration: 3000,
-      })
+      if (e.response?.data?.message?.includes(ndexDuplicateKeyErrorMessage)) {
+        addMessage({
+          message:
+            'This workspace name already exists. Please enter a unique workspace name',
+          duration: 3000,
+        })
+      } else {
+        addMessage({
+          message: `Error: Could not save workspace to NDEx. ${e.message as string}`,
+          duration: 3000,
+        })
+      }
     }
 
     handleCloseDialog()

@@ -8,6 +8,8 @@ import { exportNetworkToCx2 } from '../store/io/exportCX'
 import { TableRecord } from 'src/models/StoreModel/TableStoreModel'
 import { useNdexNetwork } from '../store/hooks/useNdexNetwork'
 
+export const ndexDuplicateKeyErrorMessage = 'duplicate key value violates unique constraint'
+
 export const translateMemberIds = async ({
   networkUUID,
   ids,
