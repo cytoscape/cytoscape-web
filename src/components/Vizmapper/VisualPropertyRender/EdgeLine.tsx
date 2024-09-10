@@ -52,7 +52,7 @@ export function EdgeLinePicker(props: {
               fontWeight: localValue === edgeLine ? 'bold' : 'normal',
               '&:hover': { cursor: 'pointer' },
             }}
-            onClick={() => onValueChange(edgeLine)}
+            onClick={() => setLocalValue(edgeLine)}
             key={edgeLine}
           >
             <Box

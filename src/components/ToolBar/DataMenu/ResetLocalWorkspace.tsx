@@ -14,9 +14,10 @@ export const ResetLocalWorkspaceMenuItem = (
 
   const handleReset = (): void => {
     props.handleClose()
-    resetWorkspace()
-    navigate('/')
-    navigate(0)
+    resetWorkspace().then(() => {
+      navigate('/')
+      navigate(0)
+    })
   }
 
   return (

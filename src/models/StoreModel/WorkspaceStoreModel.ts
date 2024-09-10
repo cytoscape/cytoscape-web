@@ -26,7 +26,7 @@ export interface WorkspaceActions {
   deleteAllNetworks: () => void
 
   // Remove all networks from the workspace and reset the workspace
-  resetWorkspace: () => void
+  resetWorkspace: () => Promise<void>
 
   // Change modified flag for a network
   setNetworkModified: (networkId: IdType, isModified: boolean) => void

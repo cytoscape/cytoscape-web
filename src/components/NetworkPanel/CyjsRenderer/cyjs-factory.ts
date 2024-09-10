@@ -40,6 +40,37 @@ export interface CyEdge {
   }
 }
 
+const transformNodeProperties = (entries: Iterable<[string, any]>): Record<string, any> => {
+  const result: Record<string, any> = {};
+  for (const [key, value] of entries) {
+    switch (key) {
+      case NodeVisualPropertyName.NodeShape:
+        result[key] = NodeShapeMapping[value as NodeShapeType];
+        break;
+      case NodeVisualPropertyName.NodeLabelRotation:
+        result[key] = (value as number * Math.PI) / 180;
+        break;
+      default:
+        result[key] = value;
+    }
+  }
+  return result;
+};
+
+const transformEdgeProperties = (entries: Iterable<[string, any]>): Record<string, any> => {
+  const result: Record<string, any> = {};
+  for (const [key, value] of entries) {
+    switch (key) {
+      case EdgeVisualPropertyName.EdgeLabelRotation:
+        result[key] = (value as number * Math.PI) / 180;
+        break;
+      default:
+        result[key] = value;
+    }
+  }
+  return result;
+}
+
 const createCyNodes = (
   nodeViews: NodeView[],
   nodeSizeLocked: boolean,
@@ -47,19 +78,11 @@ const createCyNodes = (
   nodeViews.map((nv: NodeView) => {
     const data: Record<VisualPropertyName | IdType, ValueType> = {
       id: nv.id,
-      ...Object.fromEntries(
-        Array.from(nv.values.entries()).map(([k, v]) => {
-          if (k === NodeVisualPropertyName.NodeShape) {
-            return [k, NodeShapeMapping[v as NodeShapeType]]
-          }
-          return [k, v]
-        }),
-      ),
-    }
+      ...transformNodeProperties(nv.values.entries()),
+    };
+
     if (nodeSizeLocked) {
-      // Use height to override width
-      data[NodeVisualPropertyName.NodeWidth] =
-        data[NodeVisualPropertyName.NodeHeight]
+      data[NodeVisualPropertyName.NodeWidth] = data[NodeVisualPropertyName.NodeHeight];
     }
 
     return {
@@ -69,8 +92,8 @@ const createCyNodes = (
         x: nv.x,
         y: nv.y,
       },
-    }
-  })
+    };
+  });
 
 const createCyEdges = (
   edges: Edge[],
@@ -79,17 +102,12 @@ const createCyEdges = (
 ): CyEdge[] =>
   edges.map((edge: Edge): CyEdge => {
     const edgeView: EdgeView = edgeViews[edge.id]
-    const { values } = edgeView
     const newData: Record<string, ValueType> = {
       id: edge.id,
       source: edge.s,
       target: edge.t,
+      ...transformEdgeProperties(edgeView.values.entries()),
     }
-    values.forEach(
-      (value: VisualPropertyValueType, key: VisualPropertyName) => {
-        newData[key] = value as ValueType
-      },
-    )
 
     if (arrowColorMatchesEdge) {
       const color = newData[EdgeVisualPropertyName.EdgeLineColor]

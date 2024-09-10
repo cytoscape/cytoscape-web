@@ -188,7 +188,7 @@ export const useTableStore = create(
             (c) => c.name === columnName,
           )
           if (columnIndex !== -1) {
-            tableToUpdate.columns.splice(columnIndex)
+            tableToUpdate.columns.splice(columnIndex, 1)
           }
 
           const rows = tableToUpdate.rows.values()

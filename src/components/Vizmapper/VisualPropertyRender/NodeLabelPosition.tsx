@@ -89,7 +89,7 @@ export function NodeLabelPositionPicker(props: {
                 '&:hover': { cursor: 'pointer' },
               }}
               onClick={() => {
-                onValueChange(
+                setLocalValue(
                   Object.assign({}, localValue ?? DEFAULT_NODE_LABEL_POSITION, {
                     HORIZONTAL_ALIGN: horizontalAlign,
                   }),

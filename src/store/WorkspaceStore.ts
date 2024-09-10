@@ -4,10 +4,7 @@ import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../models/IdType'
 import { Workspace } from '../models/WorkspaceModel'
 import { deleteDb, putWorkspaceToDb } from './persist/db'
-import {
-  WorkspaceStore,
-  WorkspaceActions,
-} from '../models/StoreModel/WorkspaceStoreModel'
+import { WorkspaceStore } from '../models/StoreModel/WorkspaceStoreModel'
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
@@ -42,7 +39,7 @@ const persist =
   }
 export const useWorkspaceStore = create(
   subscribeWithSelector(
-    immer<WorkspaceStore & WorkspaceActions>(
+    immer<WorkspaceStore>(
       persist((set) => ({
         workspace: EMPTY_WORKSPACE,
         set: (workspace: Workspace) => {
@@ -122,9 +119,12 @@ export const useWorkspaceStore = create(
             return state
           })
         },
-        resetWorkspace() {
+        resetWorkspace: async () => {
+          await deleteDb()
+          console.log('Workspace cache has been reset')
           set((state) => {
-            void deleteDb().then(() => {})
+            console.log('Now creating a new workspace')
+            state.workspace = { ...EMPTY_WORKSPACE }
             return state
           })
         },
