@@ -128,7 +128,6 @@ function BypassFormContent(props: {
 
   const elementsToRender: Array<{
     id: IdType
-    name: string
     selected: boolean
     hasBypass: boolean
   }> = []
@@ -139,7 +138,6 @@ function BypassFormContent(props: {
     elementsToRender.push({
       id,
       selected: true,
-      name: (selectedElementTable.rows.get(id)?.name ?? '') as string,
       hasBypass: hasBypass ?? false,
     })
 
@@ -167,7 +165,6 @@ function BypassFormContent(props: {
       elementsToRender.push({
         id: e,
         selected: false,
-        name: (selectedElementTable.rows.get(e)?.name ?? '') as string,
         hasBypass: true,
       })
     })
@@ -180,17 +177,15 @@ function BypassFormContent(props: {
   }
   const emptyBypassForm = (
     <>
-      <Typography>Select network elements to apply a bypass</Typography>
+      <Typography sx={{ m: 2 }}>
+        Select network elements to apply a bypass
+      </Typography>
     </>
   )
 
-  const allSelected = selectedElements.length === elementsToRender.length
-  const someSelected = selectedElements.length > 0 && !allSelected
-  // const noneSelected = selectedElements.length === 0
-
   const nonEmptyBypassForm = (
     <>
-      <TableContainer sx={{ height: 460, overflow: 'auto' }}>
+      <TableContainer sx={{ height: 475, overflow: 'auto' }}>
         <Table size={'small'} stickyHeader>
           <TableHead>
             <TableRow>
@@ -206,7 +201,7 @@ function BypassFormContent(props: {
                   })}
                 </Select>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ minWidth: 180 }}>
                 Bypass/Overwrite
                 <Tooltip
                   arrow={true}
@@ -218,12 +213,12 @@ function BypassFormContent(props: {
                   </IconButton>
                 </Tooltip>
               </TableCell>
-              <TableCell padding={'none'}></TableCell>
+              <TableCell>Undo</TableCell>
             </TableRow>
           </TableHead>
           <TableBody sx={{ overflow: 'auto' }}>
             {elementsToRender.map((ele) => {
-              const { id, selected, hasBypass, name } = ele
+              const { id, selected, hasBypass } = ele
               const bypassValue = visualProperty.bypassMap?.get(id) ?? null
               return (
                 <TableRow key={id}>
@@ -278,20 +273,10 @@ function BypassFormContent(props: {
         }}
       >
         <Box>
-          <Button
-            size="small"
-            color="error"
-            disabled={selectedElementsWithBypass === 0}
-            onClick={() => {
-              deleteBypass(
-                currentNetworkId,
-                visualProperty.name,
-                selectedElements,
-              )
-            }}
-          >
-            Remove selected
-          </Button>
+          {isSize && <LockSizeCheckbox currentNetworkId={currentNetworkId} />}
+          {isEdgeLineColor && (
+            <LockColorCheckbox currentNetworkId={currentNetworkId} />
+          )}
         </Box>
         <Box sx={{ m: 1, mr: 0, display: 'flex', justifyContent: 'end' }}>
           <VisualPropertyValueForm
@@ -316,7 +301,7 @@ function BypassFormContent(props: {
               )
             }}
           >
-            Apply to selected
+            Apply to all
           </Button>
         </Box>
       </Box>
@@ -338,18 +323,11 @@ function BypassFormContent(props: {
       }}
     >
       <Typography
-        sx={{ m: 1 }}
-      >{`${visualProperty.displayName} bypasses`}</Typography>
+        sx={{ m: 2, fontWeight: 'bold' }}
+      >{`${visualProperty.displayName} Bypasses`}</Typography>
       <Box>
         <Divider />
         {elementsToRender.length > 0 ? nonEmptyBypassForm : emptyBypassForm}
-        <Divider />
-        {isSize && (
-          <LockSizeCheckbox currentNetworkId={props.currentNetworkId} />
-        )}
-        {isEdgeLineColor && (
-          <LockColorCheckbox currentNetworkId={currentNetworkId} />
-        )}
       </Box>
     </Box>
   )
@@ -385,11 +363,17 @@ export function BypassForm(props: {
         .length === 0) ||
     props.visualProperty.bypassMap.size === 0
 
+  const bypassValuesBySelected = Array.from(
+    props.visualProperty.bypassMap.entries(),
+  )
+    .filter(([k, v]) => selectedElements.includes(k))
+    .map(([_, v]) => v)
   const onlyOneBypassValue =
-    (selectedElements.length > 0 &&
-      selectedElements.filter((e) => props.visualProperty.bypassMap.has(e))
-        .length === 1) ||
-    props.visualProperty.bypassMap.size === 1
+    new Set(
+      selectedElements.length > 0
+        ? bypassValuesBySelected
+        : props.visualProperty.bypassMap.values(),
+    ).size === 1
 
   let viewBox = null
 
@@ -400,14 +384,26 @@ export function BypassForm(props: {
       <Badge
         max={10000}
         color="primary"
-        badgeContent={props.visualProperty.bypassMap.size}
-        invisible={props.visualProperty.bypassMap.size <= 1}
+        badgeContent={
+          selectedElements.length > 0
+            ? bypassValuesBySelected.length
+            : props.visualProperty.bypassMap.size
+        }
+        invisible={
+          selectedElements.length > 0
+            ? bypassValuesBySelected.length <= 1
+            : props.visualProperty.bypassMap.size <= 1
+        }
       >
         <VisualPropertyViewBox>
           {onlyOneBypassValue ? (
             <VisualPropertyValueRender
               vpName={props.visualProperty.name}
-              value={Array.from(props.visualProperty.bypassMap.values())[0]}
+              value={
+                selectedElements.length > 0
+                  ? bypassValuesBySelected[0]
+                  : Array.from(props.visualProperty.bypassMap.values())[0]
+              }
               vpValueType={props.visualProperty.type}
             />
           ) : (

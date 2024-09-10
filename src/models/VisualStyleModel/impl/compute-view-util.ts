@@ -270,8 +270,7 @@ const computeView = (
 
   visualProperties.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
     const { defaultValue, mapping, bypassMap, name, group } = vp
-    const bypassId = group === 'node' ? id : translateEdgeIdToCX(id)
-    const bypass = bypassMap.get(bypassId)
+    const bypass = bypassMap.get(id)
     let pairsToAdd: [string, VisualPropertyValueType][] = []
     if (bypass !== undefined) {
       pairsToAdd = computeNameAndPropertyPairs(vp.name, bypass)
