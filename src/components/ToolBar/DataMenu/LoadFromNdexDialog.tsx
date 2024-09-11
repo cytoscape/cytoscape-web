@@ -199,7 +199,6 @@ export const LoadFromNdexDialog = (
         .catch((err) => {
           setErrorMessage(err.message)
           setLoading(false)
-          throw err
         })
     } else {
       setMyNetworks([])
@@ -215,7 +214,6 @@ export const LoadFromNdexDialog = (
       .catch((err) => {
         setErrorMessage(err.message)
         setLoading(false)
-        throw err
       })
   }, [])
 

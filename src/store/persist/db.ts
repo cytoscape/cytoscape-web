@@ -271,7 +271,7 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
 }
 
 // const DEF_WORKSPACE_ID = 'newWorkspace'
-const DEF_WORKSPACE_NAME = 'New Workspace'
+const DEF_WORKSPACE_NAME = 'Untitled Workspace'
 
 const createWorkspace = (): Workspace => {
   return {

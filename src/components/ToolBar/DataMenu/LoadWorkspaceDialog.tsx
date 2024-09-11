@@ -21,7 +21,8 @@ import { NDEx } from '@js4cytoscape/ndex-client'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { IdType } from '../../../models/IdType'
+import { fetchMyWorkspaces } from '../../../utils/ndex-utils'
+import { Workspace } from '../../../models'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
@@ -33,23 +34,15 @@ export const LoadWorkspaceDialog: React.FC<{
   )
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
-  const addNetworks: (ids: IdType | IdType[]) => void = useWorkspaceStore(
-    (state) => state.addNetworkIds,
-  )
-  const setId = useWorkspaceStore((state) => state.setId)
-
-  const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
-
-  const dateFormatter = (timestamp: string | number | Date): string => {
-    return new Date(timestamp).toLocaleString()
-  }
+  const setWorkSpace = useWorkspaceStore((state) => state.set)
   const deleteAllNetworks = useWorkspaceStore(
     (state) => state.deleteAllNetworks,
   )
-
-  const handleDeleteAllNetworks = (): void => {
-    deleteAllNetworks()
+  const resetWorksapce = useWorkspaceStore((state) => state.resetWorkspace)
+  const dateFormatter = (timestamp: string | number | Date): string => {
+    return new Date(timestamp).toLocaleString()
   }
+
   const [openDialog, setOpenDialog] = useState(false)
 
   const handleDeleteWorkspaceClick = (): void => {
@@ -57,19 +50,16 @@ export const LoadWorkspaceDialog: React.FC<{
   }
 
   const handleCloseDialog = (): void => {
-    setOpenDialog(false) //
+    setOpenDialog(false)
   }
 
   useEffect(() => {
-    const fetchMyWorkspaces = async (): Promise<any> => {
-      const ndexClient = new NDEx(ndexBaseUrl)
-      const token = await getToken()
-      ndexClient.setAuthToken(token)
-      const myWorkspaces = await ndexClient.getUserCyWebWorkspaces()
-      return myWorkspaces
-    }
     if (open) {
-      void fetchMyWorkspaces().then(setMyWorkspaces)
+      void fetchMyWorkspaces(ndexBaseUrl, getToken)
+        .then(setMyWorkspaces)
+        .catch((err) => {
+          console.log(err)
+        })
     }
   }, [open, ndexBaseUrl, getToken])
 
@@ -85,10 +75,17 @@ export const LoadWorkspaceDialog: React.FC<{
         (workspace) => workspace.workspaceId === selectedWorkspaceId,
       )
       if (selectedWorkspace) {
-        handleDeleteAllNetworks()
-        resetWorkspace().then(() => {
-          setId(selectedWorkspaceId)
-          addNetworks(selectedWorkspace.networkIDs)
+        deleteAllNetworks()
+        resetWorksapce().then(() => {
+          setWorkSpace({
+            name: selectedWorkspace.name,
+            id: selectedWorkspace.workspaceId,
+            currentNetworkId: selectedWorkspace.options?.currentNetwork ?? '',
+            networkIds: selectedWorkspace.networkIDs,
+            localModificationTime: selectedWorkspace.modificationTime,
+            creationTime: selectedWorkspace.creationTime,
+            networkModified: {},
+          } as Workspace)
         })
       } else {
         alert('Selected workspace not found')

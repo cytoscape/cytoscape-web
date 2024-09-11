@@ -46,7 +46,7 @@ export const exportNetworkToCx2 = (
   summary: NdexNetworkSummary,
   nodeTable: Table,
   edgeTable: Table,
-  visualStyleOptions: VisualStyleOptions, //visual editor properties
+  visualStyleOptions?: VisualStyleOptions, //visual editor properties
   networkView?: NetworkView,
   networkName?: string, // optional new name for the network
 ): any => {
