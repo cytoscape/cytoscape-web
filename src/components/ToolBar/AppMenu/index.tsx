@@ -3,10 +3,10 @@ import { Suspense, useEffect, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { useAppStore } from '../../../store/AppStore'
-import { ComponentType, CyApp } from '../../../models'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
+import { ComponentType, CyApp } from '../../../models/AppModel'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   // Actual CyApp objects
@@ -91,7 +91,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
         <Suspense fallback={<div>Loading...</div>}>
           {componentList.map(([appId, componentId], index) => {
             const MenuComponent = ExternalComponent(appId, './' + componentId)
-            return <MenuComponent key={index} handleClose={handleClose}/>
+            return <MenuComponent key={index} handleClose={handleClose} />
           })}
         </Suspense>
         <MenuItem onClick={() => handleOpenDialog(true)}>App Settings</MenuItem>
