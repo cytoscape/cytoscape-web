@@ -1,6 +1,168 @@
 import _ from 'lodash'
 import { NodeLabelPositionType } from '../VisualPropertyValue'
 
+export const NodeLabelOrientationType = {
+  TopLeft: 'top-left',
+  TopCenter: 'top-center',
+  TopRight: 'top-right',
+  CenterLeft: 'center-left',
+  Center: 'center',
+  CenterRight: 'center-right',
+  BottomLeft: 'bottom-left',
+  BottomCenter: 'bottom-center',
+  BottomRight: 'bottom-right',
+} as const
+export type NodeLabelOrientationType =
+  (typeof NodeLabelOrientationType)[keyof typeof NodeLabelOrientationType]
+
+const orientationToCyJsValueMap: Record<
+  NodeLabelOrientationType,
+  { verticalAlign: string; horizontalAlign: string }
+> = {
+  [NodeLabelOrientationType.TopLeft]: {
+    horizontalAlign: 'left',
+    verticalAlign: 'top',
+  },
+  [NodeLabelOrientationType.TopCenter]: {
+    horizontalAlign: 'center',
+    verticalAlign: 'top',
+  },
+  [NodeLabelOrientationType.TopRight]: {
+    horizontalAlign: 'right',
+    verticalAlign: 'top',
+  },
+  [NodeLabelOrientationType.CenterLeft]: {
+    horizontalAlign: 'left',
+    verticalAlign: 'center',
+  },
+  [NodeLabelOrientationType.Center]: {
+    horizontalAlign: 'center',
+    verticalAlign: 'center',
+  },
+  [NodeLabelOrientationType.CenterRight]: {
+    horizontalAlign: 'right',
+    verticalAlign: 'center',
+  },
+  [NodeLabelOrientationType.BottomLeft]: {
+    horizontalAlign: 'left',
+    verticalAlign: 'bottom',
+  },
+  [NodeLabelOrientationType.BottomCenter]: {
+    horizontalAlign: 'center',
+    verticalAlign: 'bottom',
+  },
+  [NodeLabelOrientationType.BottomRight]: {
+    horizontalAlign: 'right',
+    verticalAlign: 'bottom',
+  },
+}
+
+export const translateNodePositionToOrientation = (
+  position: NodeLabelPositionType,
+): NodeLabelOrientationType => {
+  const computedPosition = computeNodeLabelPosition(position)
+  let orientation: NodeLabelOrientationType = NodeLabelOrientationType.Center
+  Object.entries(orientationToCyJsValueMap).forEach(
+    ([orientationKey, cyjsValue]) => {
+      if (
+        computedPosition.horizontalAlign == cyjsValue.horizontalAlign &&
+        computedPosition.verticalAlign == cyjsValue.verticalAlign
+      ) {
+        orientation = orientationKey as NodeLabelOrientationType
+      }
+    },
+  )
+
+  return orientation
+}
+
+export const orientationToPositionMap: Record<
+  NodeLabelOrientationType,
+  NodeLabelPositionType
+> = {
+  [NodeLabelOrientationType.TopLeft]: {
+    HORIZONTAL_ALIGN: 'right',
+    VERTICAL_ALIGN: 'bottom',
+    HORIZONTAL_ANCHOR: 'left',
+    VERTICAL_ANCHOR: 'top',
+    MARGIN_X: 0,
+    MARGIN_Y: 0,
+    JUSTIFICATION: 'center',
+  },
+  [NodeLabelOrientationType.TopCenter]: {
+    HORIZONTAL_ALIGN: 'center',
+    VERTICAL_ALIGN: 'bottom',
+    HORIZONTAL_ANCHOR: 'center',
+    VERTICAL_ANCHOR: 'top',
+    MARGIN_X: 0,
+    MARGIN_Y: 0,
+    JUSTIFICATION: 'center',
+  },
+  [NodeLabelOrientationType.TopRight]: {
+    HORIZONTAL_ALIGN: 'left',
+    VERTICAL_ALIGN: 'bottom',
+    HORIZONTAL_ANCHOR: 'right',
+    VERTICAL_ANCHOR: 'top',
+    MARGIN_X: 0,
+    MARGIN_Y: 0,
+    JUSTIFICATION: 'center',
+  },
+  [NodeLabelOrientationType.CenterLeft]: {
+    HORIZONTAL_ALIGN: 'right',
+    VERTICAL_ALIGN: 'center',
+    HORIZONTAL_ANCHOR: 'left',
+    VERTICAL_ANCHOR: 'center',
+    MARGIN_X: 0,
+    MARGIN_Y: 0,
+    JUSTIFICATION: 'center',
+  },
+  [NodeLabelOrientationType.Center]: {
+    HORIZONTAL_ALIGN: 'center',
+    VERTICAL_ALIGN: 'center',
+    HORIZONTAL_ANCHOR: 'center',
+    VERTICAL_ANCHOR: 'center',
+    MARGIN_X: 0,
+    MARGIN_Y: 0,
+    JUSTIFICATION: 'center',
+  },
+  [NodeLabelOrientationType.CenterRight]: {
+    HORIZONTAL_ALIGN: 'left',
+    VERTICAL_ALIGN: 'center',
+    HORIZONTAL_ANCHOR: 'right',
+    VERTICAL_ANCHOR: 'center',
+    MARGIN_X: 0,
+    MARGIN_Y: 0,
+    JUSTIFICATION: 'center',
+  },
+  [NodeLabelOrientationType.BottomLeft]: {
+    HORIZONTAL_ALIGN: 'right',
+    VERTICAL_ALIGN: 'top',
+    HORIZONTAL_ANCHOR: 'left',
+    VERTICAL_ANCHOR: 'bottom',
+    MARGIN_X: 0,
+    MARGIN_Y: 0,
+    JUSTIFICATION: 'center',
+  },
+  [NodeLabelOrientationType.BottomCenter]: {
+    HORIZONTAL_ALIGN: 'center',
+    VERTICAL_ALIGN: 'top',
+    HORIZONTAL_ANCHOR: 'center',
+    VERTICAL_ANCHOR: 'bottom',
+    MARGIN_X: 0,
+    MARGIN_Y: 0,
+    JUSTIFICATION: 'center',
+  },
+  [NodeLabelOrientationType.BottomRight]: {
+    HORIZONTAL_ALIGN: 'left',
+    VERTICAL_ALIGN: 'top',
+    HORIZONTAL_ANCHOR: 'right',
+    VERTICAL_ANCHOR: 'bottom',
+    MARGIN_X: 0,
+    MARGIN_Y: 0,
+    JUSTIFICATION: 'center',
+  },
+}
+
 export const nodeLabelPositionMap: any = {
   center: {
     center: {

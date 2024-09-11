@@ -1,11 +1,16 @@
 import {
   NodeLabelPositionType,
-  VerticalAlignType,
-  HorizontalAlignType,
+  NodeLabelPositionValueType,
 } from '../../../models/VisualStyleModel/VisualPropertyValue'
-import { Box, Button, Typography } from '@mui/material'
+import { Box, Button, MenuItem, Select, Typography } from '@mui/material'
 import { DEFAULT_NODE_LABEL_POSITION } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 import React from 'react'
+import {
+  NodeLabelOrientationType,
+  orientationToPositionMap,
+  translateNodePositionToOrientation,
+} from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
+import { MantineProvider, NumberInput } from '@mantine/core'
 
 export function NodeLabelPositionPicker(props: {
   currentValue: NodeLabelPositionType | null
@@ -13,6 +18,13 @@ export function NodeLabelPositionPicker(props: {
   closePopover: (reason: string) => void
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
+
+  const [labelRegion, setLabelRegion] =
+    React.useState<NodeLabelOrientationType>(
+      translateNodePositionToOrientation(
+        currentValue ?? DEFAULT_NODE_LABEL_POSITION,
+      ),
+    )
 
   const [localValue, setLocalValue] = React.useState(
     currentValue ?? DEFAULT_NODE_LABEL_POSITION,
@@ -22,86 +34,91 @@ export function NodeLabelPositionPicker(props: {
     setLocalValue(currentValue ?? DEFAULT_NODE_LABEL_POSITION)
   }, [currentValue])
 
+  const handleRegionChange = (region: NodeLabelOrientationType) => {
+    const position = orientationToPositionMap[region]
+    setLabelRegion(region)
+    const computedPosition = Object.assign({}, position, {
+      MARGIN_X: localValue.MARGIN_X,
+      MARGIN_Y: localValue.MARGIN_Y,
+      JUSTIFICATION: localValue.JUSTIFICATION,
+    })
+
+    console.log(computedPosition)
+
+    setLocalValue(computedPosition)
+  }
+
   return (
-    <Box sx={{ p: 2 }}>
-      <Box>Vertical Align</Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-        }}
-      >
-        {Object.values(VerticalAlignType).map(
-          (verticalAlign: VerticalAlignType) => (
-            <Box
-              sx={{
-                color:
-                  localValue?.VERTICAL_ALIGN === verticalAlign
-                    ? 'blue'
-                    : 'black',
-                fontWeight:
-                  localValue?.VERTICAL_ALIGN === verticalAlign
-                    ? 'bold'
-                    : 'normal',
-
-                width: 100,
-                p: 1,
-                '&:hover': { cursor: 'pointer' },
-              }}
-              onClick={() => {
-                setLocalValue(
-                  Object.assign({}, localValue ?? DEFAULT_NODE_LABEL_POSITION, {
-                    VERTICAL_ALIGN: verticalAlign,
-                  }),
-                )
-              }}
-              key={verticalAlign}
-            >
-              {verticalAlign}
-            </Box>
-          ),
-        )}
+    <Box sx={{ p: 1 }}>
+      <Box sx={{ p: 1 }}>
+        <Box sx={{ mb: 1 }}>Orientation</Box>
+        <Select
+          size="small"
+          value={labelRegion}
+          label="Preset label positions"
+          onChange={(e) =>
+            handleRegionChange(e.target.value as NodeLabelOrientationType)
+          }
+        >
+          {Object.values(NodeLabelOrientationType).map((region) => {
+            return (
+              <MenuItem key={region} value={region}>
+                {region}
+              </MenuItem>
+            )
+          })}
+        </Select>
       </Box>
-      <Box>Horizontal Align</Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-        }}
-      >
-        {Object.values(HorizontalAlignType).map(
-          (horizontalAlign: HorizontalAlignType) => (
-            <Box
-              sx={{
-                color:
-                  localValue?.HORIZONTAL_ALIGN === horizontalAlign
-                    ? 'blue'
-                    : 'black',
-                fontWeight:
-                  localValue?.HORIZONTAL_ALIGN === horizontalAlign
-                    ? 'bold'
-                    : 'normal',
-
-                width: 100,
-                p: 1,
-                '&:hover': { cursor: 'pointer' },
-              }}
-              onClick={() => {
-                setLocalValue(
-                  Object.assign({}, localValue ?? DEFAULT_NODE_LABEL_POSITION, {
-                    HORIZONTAL_ALIGN: horizontalAlign,
-                  }),
-                )
-              }}
-              key={horizontalAlign}
-            >
-              {horizontalAlign}
-            </Box>
-          ),
-        )}
+      <Box sx={{ p: 1 }}>
+        <Box sx={{ mb: 1 }}>Label Justification</Box>
+        <Select
+          size="small"
+          value={localValue.JUSTIFICATION}
+          label="Text justification"
+          onChange={(e) => {
+            setLocalValue({
+              ...localValue,
+              JUSTIFICATION: e.target.value as NodeLabelPositionValueType,
+            })
+          }}
+        >
+          <MenuItem value="left">Left</MenuItem>
+          <MenuItem value="center">Center</MenuItem>
+          <MenuItem value="right">Right</MenuItem>
+        </Select>{' '}
       </Box>
+
+      <MantineProvider>
+        <Box sx={{ p: 1 }}>
+          <Box sx={{ mb: 1 }}>X offset</Box>
+          <NumberInput
+            allowDecimal={false}
+            value={localValue.MARGIN_X}
+            onChange={(e: number) => {
+              setLocalValue({
+                ...localValue,
+                MARGIN_X: e,
+              })
+            }}
+          />
+        </Box>
+
+        <Box sx={{ p: 1 }}>
+          <Box sx={{ mb: 1 }}>Y offset</Box>
+
+          <NumberInput
+            allowDecimal={false}
+            value={localValue.MARGIN_Y}
+            onChange={(e: number) => {
+              setLocalValue({
+                ...localValue,
+                MARGIN_Y: e,
+              })
+            }}
+          />
+        </Box>
+      </MantineProvider>
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
         <Button
           color="error"
