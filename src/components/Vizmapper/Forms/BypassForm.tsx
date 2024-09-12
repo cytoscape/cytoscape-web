@@ -17,9 +17,15 @@ import {
   Select,
   MenuItem,
   Tooltip,
+  AccordionDetails,
+  Accordion,
+  AccordionSummary,
 } from '@mui/material'
-import InfoIcon from '@mui/icons-material/Info'
-import DeleteIcon from '@mui/icons-material/Delete'
+import {
+  Delete as DeleteIcon,
+  Info as InfoIcon,
+  ExpandMore as ExpandMoreIcon,
+} from '@mui/icons-material'
 import * as MapperFactory from '../../../models/VisualStyleModel/impl/MapperFactory'
 import { IdType } from '../../../models/IdType'
 import {
@@ -185,85 +191,6 @@ function BypassFormContent(props: {
 
   const nonEmptyBypassForm = (
     <>
-      <TableContainer sx={{ height: 475, overflow: 'auto' }}>
-        <Table size={'small'} stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <Select
-                  size="small"
-                  labelId="label"
-                  value={eleNameByCol}
-                  onChange={handleEleNameChange}
-                >
-                  {selectedElementTable.columns.map((col: Column) => {
-                    return <MenuItem value={col.name}>{col.name}</MenuItem>
-                  })}
-                </Select>
-              </TableCell>
-              <TableCell sx={{ minWidth: 180 }}>
-                Bypass/Overwrite
-                <Tooltip
-                  arrow={true}
-                  title="This is to overwrite "
-                  placement="top"
-                >
-                  <IconButton sx={{ padding: 0.5, mb: 0.5 }}>
-                    <InfoIcon />
-                  </IconButton>
-                </Tooltip>
-              </TableCell>
-              <TableCell>Undo</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody sx={{ overflow: 'auto' }}>
-            {elementsToRender.map((ele) => {
-              const { id, selected, hasBypass } = ele
-              const bypassValue = visualProperty.bypassMap?.get(id) ?? null
-              return (
-                <TableRow key={id}>
-                  <TableCell sx={{ maxWidth: 200, overflow: 'auto' }}>
-                    <div>
-                      {selectedElementTable.rows.get(id)?.[eleNameByCol] ?? ''}
-                    </div>
-                  </TableCell>
-
-                  <TableCell>
-                    <VisualPropertyValueForm
-                      visualProperty={visualProperty}
-                      currentValue={bypassValue}
-                      currentNetworkId={currentNetworkId}
-                      onValueChange={(value) => {
-                        setBypass(
-                          currentNetworkId,
-                          visualProperty.name,
-                          [id],
-                          value,
-                        )
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      onClick={() => {
-                        deleteBypass(currentNetworkId, visualProperty.name, [
-                          id,
-                        ])
-                      }}
-                      disabled={!hasBypass}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Divider />
-
       <Box
         sx={{
           display: 'flex',
@@ -305,6 +232,92 @@ function BypassFormContent(props: {
           </Button>
         </Box>
       </Box>
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography>Advanced Options</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <TableContainer sx={{ height: '400px', overflow: 'auto' }}>
+            <Table size={'small'} stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <Select
+                      size="small"
+                      labelId="label"
+                      value={eleNameByCol}
+                      onChange={handleEleNameChange}
+                    >
+                      {selectedElementTable.columns.map((col: Column) => {
+                        return <MenuItem value={col.name}>{col.name}</MenuItem>
+                      })}
+                    </Select>
+                  </TableCell>
+                  <TableCell sx={{ minWidth: 180 }}>
+                    Bypass/Overwrite
+                    <Tooltip
+                      arrow={true}
+                      title="This is to overwrite "
+                      placement="top"
+                    >
+                      <IconButton sx={{ padding: 0.5, mb: 0.5 }}>
+                        <InfoIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell>Remove</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody sx={{ overflow: 'auto' }}>
+                {elementsToRender.map((ele) => {
+                  const { id, selected, hasBypass } = ele
+                  const bypassValue = visualProperty.bypassMap?.get(id) ?? null
+                  return (
+                    <TableRow key={id}>
+                      <TableCell sx={{ maxWidth: 200, overflow: 'auto' }}>
+                        <div>
+                          {selectedElementTable.rows.get(id)?.[eleNameByCol] ??
+                            ''}
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <VisualPropertyValueForm
+                          visualProperty={visualProperty}
+                          currentValue={bypassValue}
+                          currentNetworkId={currentNetworkId}
+                          onValueChange={(value) => {
+                            setBypass(
+                              currentNetworkId,
+                              visualProperty.name,
+                              [id],
+                              value,
+                            )
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <IconButton
+                          onClick={() => {
+                            deleteBypass(
+                              currentNetworkId,
+                              visualProperty.name,
+                              [id],
+                            )
+                          }}
+                          disabled={!hasBypass}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </AccordionDetails>
+      </Accordion>
     </>
   )
 
