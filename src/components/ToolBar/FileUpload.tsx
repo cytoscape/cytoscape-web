@@ -159,8 +159,18 @@ export function FileUpload(props: FileUploadProps) {
       })
 
       const localUuid = uuidv4()
-      const localNodeCount = json[1].metaData[2].elementCount
-      const localEdgeCount = json[1].metaData[3].elementCount
+      const res = await createDataFromLocalCx2(localUuid, json)
+      const {
+        network,
+        nodeTable,
+        edgeTable,
+        visualStyle,
+        networkView,
+        visualStyleOptions,
+      } = res
+
+      const localNodeCount = network.nodes.length
+      const localEdgeCount = network.edges.length
       await putNetworkSummaryToDb({
         isNdex: false,
         ownerUUID: localUuid,
@@ -189,16 +199,6 @@ export function FileUpload(props: FileUploadProps) {
         isDeleted: false,
         modificationTime: new Date(Date.now()),
       })
-      const res = await createDataFromLocalCx2(localUuid, json)
-      const {
-        network,
-        nodeTable,
-        edgeTable,
-        visualStyle,
-        networkView,
-        visualStyleOptions,
-      } = res
-
       // TODO the db syncing logic in various stores assumes the updated network is the current network
       // therefore, as a temporary fix, the first operation that should be done is to set the
       // current network to be the new network id
