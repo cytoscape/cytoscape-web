@@ -19,7 +19,7 @@ export function NodeLabelPositionPicker(props: {
 }): React.ReactElement {
   const { onValueChange, currentValue } = props
 
-  const [labelRegion, setLabelRegion] =
+  const [labelOrientation, setlabelOrientation] =
     React.useState<NodeLabelOrientationType>(
       translateNodePositionToOrientation(
         currentValue ?? DEFAULT_NODE_LABEL_POSITION,
@@ -34,16 +34,14 @@ export function NodeLabelPositionPicker(props: {
     setLocalValue(currentValue ?? DEFAULT_NODE_LABEL_POSITION)
   }, [currentValue])
 
-  const handleRegionChange = (region: NodeLabelOrientationType) => {
-    const position = orientationToPositionMap[region]
-    setLabelRegion(region)
+  const handleOrientationChange = (orientation: NodeLabelOrientationType) => {
+    const position = orientationToPositionMap[orientation]
+    setlabelOrientation(orientation)
     const computedPosition = Object.assign({}, position, {
       MARGIN_X: localValue.MARGIN_X,
       MARGIN_Y: localValue.MARGIN_Y,
       JUSTIFICATION: localValue.JUSTIFICATION,
     })
-
-    console.log(computedPosition)
 
     setLocalValue(computedPosition)
   }
@@ -54,16 +52,16 @@ export function NodeLabelPositionPicker(props: {
         <Box sx={{ mb: 1 }}>Orientation</Box>
         <Select
           size="small"
-          value={labelRegion}
+          value={labelOrientation}
           label="Preset label positions"
           onChange={(e) =>
-            handleRegionChange(e.target.value as NodeLabelOrientationType)
+            handleOrientationChange(e.target.value as NodeLabelOrientationType)
           }
         >
-          {Object.values(NodeLabelOrientationType).map((region) => {
+          {Object.values(NodeLabelOrientationType).map((orientation) => {
             return (
-              <MenuItem key={region} value={region}>
-                {region}
+              <MenuItem key={orientation} value={orientation}>
+                {orientation}
               </MenuItem>
             )
           })}
