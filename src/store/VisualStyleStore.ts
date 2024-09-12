@@ -7,7 +7,7 @@ import {
 
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { ValueType, AttributeName } from '../models/TableModel'
+import { ValueType } from '../models/TableModel'
 import {
   DiscreteMappingFunction,
   MappingFunctionType,
@@ -23,114 +23,35 @@ import {
   putVisualStyleToDb,
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
-/**
-//  * Visual Style State manager based on zustand
-//  */
-interface VisualStyleState {
-  visualStyles: Record<IdType, VisualStyle>
-}
+import { VisualStyleStore } from '../models/StoreModel/VisualStyleStoreModel'
 
 /**
- * Actions to mutate visual style structure
+ * Visual Style State manager based on zustand
+ *
  */
-interface UpdateVisualStyleAction {
-  setDefault: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    vpValue: VisualPropertyValueType,
-  ) => void
-  setBypass: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    elementIds: IdType[],
-    vpValue: VisualPropertyValueType,
-  ) => void
-  deleteBypass: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    elementIds: IdType[],
-  ) => void
-  setDiscreteMappingValue: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    values: ValueType[],
-    vpValue: VisualPropertyValueType,
-  ) => void
-  deleteDiscreteMappingValue: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    values: ValueType[],
-  ) => void
-  setContinuousMappingValues: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    min: ContinuousFunctionControlPoint,
-    max: ContinuousFunctionControlPoint,
-    controlPoints: ContinuousFunctionControlPoint[],
-  ) => void
-  setMapping: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    mapping:
-      | DiscreteMappingFunction
-      | ContinuousMappingFunction
-      | PassthroughMappingFunction
-      | undefined,
-  ) => void
-  createContinuousMapping: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    vpType: VisualPropertyValueTypeName,
-    attribute: AttributeName,
-    attributeValues: ValueType[],
-  ) => void
-  createDiscreteMapping: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    attribute: AttributeName,
-  ) => void
-  createPassthroughMapping: (
-    networkId: IdType,
-    vpName: VisualPropertyName,
-    attribute: AttributeName,
-  ) => void
-  removeMapping: (networkId: IdType, vpName: VisualPropertyName) => void
-  // setMapping: () // TODO
-}
-
-interface VisualStyleAction {
-  add: (networkId: IdType, visualStyle: VisualStyle) => void
-  delete: (networkId: IdType) => void
-  deleteAll: () => void
-}
-
-type VisualStyleStore = VisualStyleState &
-  VisualStyleAction &
-  UpdateVisualStyleAction
-
 const persist =
   (config: StateCreator<VisualStyleStore>) =>
-  (
-    set: StoreApi<VisualStyleStore>['setState'],
-    get: StoreApi<VisualStyleStore>['getState'],
-    api: StoreApi<VisualStyleStore>,
-  ) =>
-    config(
-      async (args) => {
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
+    (
+      set: StoreApi<VisualStyleStore>['setState'],
+      get: StoreApi<VisualStyleStore>['getState'],
+      api: StoreApi<VisualStyleStore>,
+    ) =>
+      config(
+        async (args) => {
+          const currentNetworkId =
+            useWorkspaceStore.getState().workspace.currentNetworkId
 
-        set(args)
-        const updated = get().visualStyles[currentNetworkId]
-        const deleted = updated === undefined
+          set(args)
+          const updated = get().visualStyles[currentNetworkId]
+          const deleted = updated === undefined
 
-        if (!deleted) {
-          await putVisualStyleToDb(currentNetworkId, updated).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+          if (!deleted) {
+            await putVisualStyleToDb(currentNetworkId, updated).then(() => { })
+          }
+        },
+        get,
+        api,
+      )
 
 export const useVisualStyleStore = create(
   immer<VisualStyleStore>(

@@ -10,6 +10,7 @@ import {
   Checkbox,
   TextField,
   DialogActions,
+  Typography,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 //@ts-expect-error
@@ -42,7 +43,6 @@ export const Orientation = {
 export type Orientation = (typeof Orientation)[keyof typeof Orientation]
 
 export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
-  const [fileName, setFileName] = useState<string>('network')
   const [loading, setLoading] = useState(false)
   const [fullBg, setFullBg] = useState(true)
   const [paperSize, setPaperSize] = useState<PaperSize>(PaperSize.LETTER)
@@ -78,110 +78,108 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
   )
 
   return (
-    <Box sx={{ p: 1 }}>
+    <Box sx={{
+      mt: 1, height: 500, display: 'flex',
+      flexDirection: 'column', justifyContent: 'space-between',
+    }}>
       <Box>
-        <TextField
-          size="small"
-          label="File name"
-          type="text"
-          value={fileName}
-          onChange={(e) => {
-            setFileName(e.target.value)
-          }}
-          InputLabelProps={{
-            shrink: true,
-          }}
-        ></TextField>
-      </Box>
-      <Box sx={{ p: 1 }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={fullBg}
-              onChange={(e) => setFullBg(e.target.checked)}
-            />
-          }
-          label="Export full network image"
-        />
-      </Box>
-      <Box sx={{ p: 1 }}>
-        <FormControl variant="outlined">
-          <InputLabel id="label">Paper Size</InputLabel>
-          <Select
-            size="small"
-            labelId="label"
-            value={paperSize}
-            label="Paper size"
-            onChange={handlePaperSizeChange}
-          >
-            {Object.keys(PaperSize).map((key) => (
-              <MenuItem key={key} value={key as PaperSize}>
-                {key}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-      {paperSize === PaperSize.CUSTOM && (
-        <Box sx={{ p: 1, pl: 3 }}>
-          <TextField
-            size="small"
-            sx={{ mr: 1 }}
-            id="outlined-number"
-            label="Width (inches)"
-            type="number"
-            onChange={(e) => setCustomWidth(Number(e.target.value))}
-            value={customWidth}
-            InputLabelProps={{
-              shrink: true,
-            }}
+        <Box sx={{ mb: 1 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={fullBg}
+                onChange={(e) => setFullBg(e.target.checked)}
+              />
+            }
+            label="Export full network image"
           />
+        </Box>
+        <Box sx={{ mb: 1 }}>
+          <FormControl variant="outlined">
+            <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
+              Paper Size
+            </Typography>
+            <Select
+              size="small"
+              labelId="label"
+              value={paperSize}
+              onChange={handlePaperSizeChange}
+            >
+              {Object.keys(PaperSize).map((key) => (
+                <MenuItem key={key} value={key as PaperSize}>
+                  {key}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+        {paperSize === PaperSize.CUSTOM && (
+          <Box sx={{ mb: 1 }}>
+            <Typography variant="subtitle1" style={{ margin: '0 0 7px 0' }}>
+              Size
+            </Typography>
+            <TextField
+              size="small"
+              sx={{ mr: 1 }}
+              id="outlined-number"
+              label="Width (inches)"
+              type="number"
+              onChange={(e) => setCustomWidth(Number(e.target.value))}
+              value={customWidth}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+            <TextField
+              size="small"
+              id="outlined-number"
+              label="Height (inches)"
+              type="number"
+              onChange={(e) => setCustomHeight(Number(e.target.value))}
+              value={customHeight}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          </Box>
+        )}
+
+        <Box sx={{ mb: 1 }}>
+          <FormControl variant="outlined">
+            <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
+              Orientation
+            </Typography>
+            <Select
+              size="small"
+              labelId="label"
+              value={orientation}
+              onChange={handleOrientationChange}
+            >
+              {Object.keys(Orientation).map((key) => (
+                <MenuItem key={key} value={key as Orientation}>
+                  {key}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
+            Margin
+          </Typography>
           <TextField
             size="small"
             id="outlined-number"
-            label="Height (inches)"
             type="number"
-            onChange={(e) => setCustomHeight(Number(e.target.value))}
-            value={customHeight}
+            value={margin}
+            onChange={(e) => setMargin(Number(e.target.value))}
             InputLabelProps={{
               shrink: true,
             }}
           />
         </Box>
-      )}
-
-      <Box sx={{ p: 1 }}>
-        <FormControl variant="outlined">
-          <InputLabel id="label">Orientation</InputLabel>
-          <Select
-            size="small"
-            labelId="label"
-            value={orientation}
-            label="Orientation"
-            onChange={handleOrientationChange}
-          >
-            {Object.keys(Orientation).map((key) => (
-              <MenuItem key={key} value={key as Orientation}>
-                {key}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
       </Box>
-      <Box sx={{ p: 1 }}>
-        <TextField
-          size="small"
-          id="outlined-number"
-          label="Margin"
-          type="number"
-          value={margin}
-          onChange={(e) => setMargin(Number(e.target.value))}
-          InputLabelProps={{
-            shrink: true,
-          }}
-        />
-      </Box>
-      <DialogActions>
+      <DialogActions sx={{ pr: 1 }}>
         <Button color="error" onClick={props.handleClose}>
           Cancel
         </Button>
@@ -197,7 +195,7 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
               paperSize === PaperSize.CUSTOM ? customWidth : undefined,
               paperSize === PaperSize.CUSTOM ? customHeight : undefined,
             )
-            saveAs(result, `${fileName}.pdf`)
+            saveAs(result, `${props.fileName}.pdf`)
             setLoading(false)
             props.handleClose()
           }}

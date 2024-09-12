@@ -16,11 +16,10 @@ import {
 } from '../../VisualStyleModel/VisualPropertyName'
 import { Network } from '../../NetworkModel'
 
-
 export const createViewModel = (network: Network): NetworkView => {
   const nodeViews: Record<IdType, NodeView> = {}
   const edgeViews: Record<IdType, EdgeView> = {}
-  network.nodes.forEach(node => {
+  network.nodes.forEach((node) => {
     const values = new Map<NodeVisualPropertyName, VisualPropertyValueType>()
     nodeViews[node.id] = {
       id: node.id,
@@ -30,7 +29,7 @@ export const createViewModel = (network: Network): NetworkView => {
     }
   })
 
-  network.edges.forEach(edge => {
+  network.edges.forEach((edge) => {
     edgeViews[edge.id] = {
       id: edge.id,
       values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>(),
@@ -124,48 +123,58 @@ export const createViewModelFromNetwork = (
   }
 
   return networkView
-
 }
-export const addNodeViewsToModel = (networkView: NetworkView, nodeViews: NodeView[]): NetworkView => {
-  nodeViews.forEach(nodeView => {
-    networkView.nodeViews[nodeView.id] = nodeView;
-  });
-  return networkView;
-}
-
-export const addEdgeViewsToModel = (networkView: NetworkView, edgeViews: EdgeView[]): NetworkView => {
-  edgeViews.forEach(edgeView => {
-    networkView.edgeViews[edgeView.id] = edgeView;
-  });
-  return networkView;
+export const addNodeViewsToModel = (
+  networkView: NetworkView,
+  nodeViews: NodeView[],
+): NetworkView => {
+  nodeViews.forEach((nodeView) => {
+    networkView.nodeViews[nodeView.id] = nodeView
+  })
+  return networkView
 }
 
+export const addEdgeViewsToModel = (
+  networkView: NetworkView,
+  edgeViews: EdgeView[],
+): NetworkView => {
+  edgeViews.forEach((edgeView) => {
+    networkView.edgeViews[edgeView.id] = edgeView
+  })
+  return networkView
+}
 
-export const addNodeViewToModel = (networkView: NetworkView, node: CxNode): NetworkView => {
+export const addNodeViewToModel = (
+  networkView: NetworkView,
+  node: CxNode,
+): NetworkView => {
   const nodeView: NodeView = {
     id: node.id.toString(),
     x: node.x ?? 0,
     y: node.y ?? 0,
     values: new Map<NodeVisualPropertyName, VisualPropertyValueType>(),
-  };
-
-  if (node.z !== undefined) {
-    nodeView.z = node.z;
   }
 
-  networkView.nodeViews[node.id.toString()] = nodeView;
+  if (node.z !== undefined) {
+    nodeView.z = node.z
+  }
 
-  return networkView;
+  networkView.nodeViews[node.id.toString()] = nodeView
+
+  return networkView
 }
 
-export const addEdgeViewToModel = (networkView: NetworkView, edge: CxEdge): NetworkView => {
-  const translatedId = translateCXEdgeId(edge.id.toString());
+export const addEdgeViewToModel = (
+  networkView: NetworkView,
+  edge: CxEdge,
+): NetworkView => {
+  const translatedId = translateCXEdgeId(edge.id.toString())
   const edgeView: EdgeView = {
     id: translatedId,
     values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>(),
-  };
+  }
 
-  networkView.edgeViews[translatedId] = edgeView;
+  networkView.edgeViews[translatedId] = edgeView
 
-  return networkView;
+  return networkView
 }

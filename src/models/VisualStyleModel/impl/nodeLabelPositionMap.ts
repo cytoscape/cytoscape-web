@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { NodeLabelPositionType } from '../../../models/VisualStyleModel'
+import { NodeLabelPositionType } from '../VisualPropertyValue'
 
 export const nodeLabelPositionMap: any = {
   center: {
@@ -103,7 +103,7 @@ export const nodeLabelPositionMap: any = {
       },
       bottom: {
         center: { 'text-halign': 'right', 'text-valign': 'center' },
-        left: { 'text-halign': 'right', 'text-valign': 'center' },
+        left: { 'text-halign': 'right', 'text-valign': 'top' },
         right: { 'text-halign': 'center', 'text-valign': 'center' },
       },
     },
@@ -151,7 +151,7 @@ export const nodeLabelPositionMap: any = {
       },
       top: {
         center: { 'text-halign': 'right', 'text-valign': 'bottom' },
-        left: { 'text-halign': 'right', 'text-valign': 'center' },
+        left: { 'text-halign': 'right', 'text-valign': 'bottom' },
         right: { 'text-halign': 'center', 'text-valign': 'center' },
       },
       bottom: {

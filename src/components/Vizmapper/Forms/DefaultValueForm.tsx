@@ -24,6 +24,8 @@ export function DefaultValueForm(props: {
         title={`Default ${visualProperty.displayName}`}
         visualProperty={visualProperty}
         currentValue={visualProperty.defaultValue}
+        currentNetworkId={currentNetworkId}
+        showCheckbox={true}
         onValueChange={(newValue) =>
           setDefault(currentNetworkId, visualProperty.name, newValue)
         }

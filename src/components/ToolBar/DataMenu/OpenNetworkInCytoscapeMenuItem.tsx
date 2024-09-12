@@ -14,6 +14,7 @@ import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
+import { useUiStateStore } from '../../../store/UiStateStore'
 
 export const OpenNetworkInCytoscapeMenuItem = (
   props: BaseMenuProps,
@@ -35,6 +36,9 @@ export const OpenNetworkInCytoscapeMenuItem = (
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
   )
+  const visualStyleOptions = useUiStateStore(
+    (state) => state.ui.visualStyleOptions[currentNetworkId]
+  )
   const network = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   ) as Network
@@ -49,6 +53,7 @@ export const OpenNetworkInCytoscapeMenuItem = (
       summary,
       table.nodeTable,
       table.edgeTable,
+      visualStyleOptions,
       viewModel,
       `Copy of ${summary.name}`,
     )

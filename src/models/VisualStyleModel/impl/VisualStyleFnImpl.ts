@@ -31,6 +31,7 @@ import {
 
 import { getDefaultVisualStyle } from './DefaultVisualStyle'
 import { createNewNetworkView, updateNetworkView } from './compute-view-util'
+import { VisualStyleOptions } from '../VisualStyleOptions'
 
 const sortByDisplayName = (
   a: VisualProperty<VisualPropertyValueType>,
@@ -156,7 +157,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   )
 
   // group bypasses by visual property instead of by element
-  edgeBypasses?.nodeBypasses?.forEach(
+  edgeBypasses?.edgeBypasses?.forEach(
     (entry: { id: CXId; v: Record<string, object> }) => {
       const { id, v } = entry
       Object.keys(v).forEach((cxVPName) => {
@@ -180,7 +181,15 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
             )
             edgeBypassMap.set(vpName, entry)
           } else {
-            edgeBypassMap.set(vpName, new Map())
+            edgeBypassMap.set(
+              vpName,
+              new Map().set(
+                String(id),
+                cxVPConverter.valueConverter(
+                  v[cxVPName] as CXVisualPropertyValue,
+                ),
+              ),
+            )
           }
         }
       })
@@ -365,4 +374,8 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   })
 
   return visualStyle
+}
+
+export const createVisualStyleOptionsFromCx = (cx: Cx2): VisualStyleOptions => {
+  return cxUtil.getVisualEditorProperties(cx) ?? {}
 }

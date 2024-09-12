@@ -13,6 +13,7 @@ import { Ui } from '../../models/UiModel'
 import { applyMigrations } from './migrations'
 import { getNetworkViewId } from '../ViewModelStore'
 import { FilterConfig } from '../../models/FilterModel/FilterConfig'
+import { CyApp } from '../../models/AppModel/CyApp'
 
 const DB_NAME = 'cyweb-db'
 
@@ -32,6 +33,7 @@ class CyDB extends Dexie {
   uiState!: DxTable<any>
   timestamp!: DxTable<any>
   filters!: DxTable<any>
+  apps!: DxTable<CyApp>
 
   constructor(dbName: string) {
     super(dbName)
@@ -45,6 +47,7 @@ class CyDB extends Dexie {
       uiState: 'id',
       timestamp: 'id',
       filters: 'id',
+      apps: 'id',
     })
 
     applyMigrations(this).catch((err) => console.log(err))
@@ -71,6 +74,10 @@ export const initializeDb = async (): Promise<void> => {
 
 export const getDb = async (): Promise<CyDB> => {
   return await Promise.resolve(db)
+}
+
+export const closeDb = async (): Promise<void> => {
+  await db.close()
 }
 
 export const deleteDb = async (): Promise<void> => {
@@ -264,7 +271,7 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
 }
 
 // const DEF_WORKSPACE_ID = 'newWorkspace'
-const DEF_WORKSPACE_NAME = 'Test Workspace'
+const DEF_WORKSPACE_NAME = 'Untitled Workspace'
 
 const createWorkspace = (): Workspace => {
   return {
@@ -546,5 +553,30 @@ export const getFilterFromDb = async (
 export const deleteFilterFromDb = async (filterName: string): Promise<void> => {
   await db.transaction('rw', db.filters, async () => {
     await db.filters.delete(filterName)
+  })
+}
+
+/**
+ * Store CyApps metadata to DB
+ */
+export const putAppToDb = async (app: CyApp): Promise<void> => {
+  try {
+    await db.transaction('rw', db.apps, async () => {
+      await db.apps.put(app)
+    })
+  } catch (error) {
+    console.error('Failed to add app state to the database:', error)
+  }
+}
+
+export const getAppFromDb = async (
+  appId: string,
+): Promise<CyApp | undefined> => {
+  return await db.apps.get({ id: appId })
+}
+
+export const deleteAppFromDb = async (appId: string): Promise<void> => {
+  await db.transaction('rw', db.apps, async () => {
+    await db.apps.delete(appId)
   })
 }

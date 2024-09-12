@@ -42,7 +42,7 @@ import { useNetworkSummaryManager } from '../../store/hooks/useNetworkSummaryMan
 import { ChevronRight } from '@mui/icons-material'
 import { Panel } from '../../models/UiModel/Panel'
 import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
-import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
+import { LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
 import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
@@ -63,6 +63,7 @@ import {
 } from '../../models/FilterModel'
 import { GraphObjectType } from '../../models/NetworkModel'
 import { useFilterStore } from '../../store/FilterStore'
+import { useAppManager } from '../../store/hooks/useAppManager'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -73,6 +74,8 @@ const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
  */
 const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers to the stores
+  useAppManager() // Register dynamically loaded apps to the store
+
   useWorkspaceManager()
   useNetworkViewManager()
   useTableManager()
@@ -113,6 +116,11 @@ const WorkSpaceEditor = (): JSX.Element => {
   )
 
   const ui: Ui = useUiStateStore((state) => state.ui)
+
+  const setVisualStyleOptions = useUiStateStore(
+    (state) => state.setVisualStyleOptions,
+  )
+
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
@@ -222,15 +230,20 @@ const WorkSpaceEditor = (): JSX.Element => {
     setSummaries({ ...summaries, ...newSummaries })
 
     const loadedNetworks = Object.keys(newSummaries)
-    if(loadedNetworks.length !== networkIds.length){
-      const networksFailtoLoad = networkIds.filter(id => !loadedNetworks.includes(id))
+    if (loadedNetworks.length !== networkIds.length) {
+      const networksFailtoLoad = networkIds.filter(
+        (id) => !loadedNetworks.includes(id),
+      )
       const numOfNets = networksFailtoLoad.length
       const largestNum = 3
       const largeNum = numOfNets > largestNum
-      deleteNetwork(networksFailtoLoad)// remove the networks that the app fails to load from the workspace
-      addMessage({ // show a message to the user
-        message: `Failed to load ${networksFailtoLoad.length} network${largeNum?'s':''} with id${largeNum?'s':''}: ${
-          largeNum?(networksFailtoLoad.slice(0,largestNum).join(', ')+'...' ):networksFailtoLoad.join(', ')
+      deleteNetwork(networksFailtoLoad) // remove the networks that the app fails to load from the workspace
+      addMessage({
+        // show a message to the user
+        message: `Failed to load ${networksFailtoLoad.length} network${largeNum ? 's' : ''} with id${largeNum ? 's' : ''}: ${
+          largeNum
+            ? networksFailtoLoad.slice(0, largestNum).join(', ') + '...'
+            : networksFailtoLoad.join(', ')
         }`,
         duration: 5000,
       })
@@ -263,8 +276,16 @@ const WorkSpaceEditor = (): JSX.Element => {
     )
     const summary = summaryMap[networkId]
     const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
-    const { network, nodeTable, edgeTable, visualStyle, networkViews } = res
+    const {
+      network,
+      nodeTable,
+      edgeTable,
+      visualStyle,
+      networkViews,
+      visualStyleOptions,
+    } = res
 
+    setVisualStyleOptions(networkId, visualStyleOptions)
     addNewNetwork(network)
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
@@ -500,7 +521,9 @@ const WorkSpaceEditor = (): JSX.Element => {
   return (
     <Box
       sx={{
-        height: 'calc(100vh - 48px)',
+        height: '100%',
+        width: '100%',
+        overflow: 'hidden',
       }}
     >
       <Allotment>
@@ -537,25 +560,28 @@ const WorkSpaceEditor = (): JSX.Element => {
               ) : (
                 <Box
                   sx={{
-                    height: '100%',
                     width: '100%',
+                    height: '100%',
                     boxSizing: 'border-box',
                     display: 'flex',
                     flexDirection: 'column',
+                    overflow: 'hidden',
                   }}
                 >
-                  <div
-                    style={{
-                      flexGrow: 2,
-                      boxSizing: 'border-box',
-                      overflow: 'auto',
+                  <Box
+                    sx={{
+                      minHeight: '3em',
+                      flexGrow: 1,
+                      overflow: 'hidden',
                     }}
                   >
                     <NetworkBrowserPanel
                       allotmentDimensions={allotmentDimensions}
                     />
-                  </div>
-                  <LayoutToolsBasePanel />
+                  </Box>
+                  <Box sx={{ borderTop: '1px solid #AAAAAA' }}>
+                    <LayoutToolsBasePanel />
+                  </Box>
                 </Box>
               )}
             </Allotment.Pane>

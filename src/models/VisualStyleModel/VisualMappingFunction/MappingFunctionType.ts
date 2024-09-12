@@ -5,4 +5,4 @@ export const MappingFunctionType = {
 } as const
 
 export type MappingFunctionType =
-  typeof MappingFunctionType[keyof typeof MappingFunctionType]
+  (typeof MappingFunctionType)[keyof typeof MappingFunctionType]

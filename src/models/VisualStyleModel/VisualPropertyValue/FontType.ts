@@ -4,4 +4,4 @@ export const FontType = {
   Monospace: 'monospace',
 } as const
 
-export type FontType = typeof FontType[keyof typeof FontType]
+export type FontType = (typeof FontType)[keyof typeof FontType]

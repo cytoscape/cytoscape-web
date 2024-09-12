@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
-import { UpdateEventType, useNetworkStore } from '../NetworkStore'
+import { useNetworkStore } from '../NetworkStore'
 import { useTableStore } from '../TableStore'
+import { UpdateEventType } from '../../models/StoreModel/NetworkStoreModel'
 
 /**
  * Based on the changes in the workspace store, this hook will

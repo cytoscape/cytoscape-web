@@ -31,7 +31,7 @@ import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { ndexSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
 import { dateFormatter } from '../../../utils/date-format'
-import { KeycloakContext } from '../../..'
+import { KeycloakContext } from '../../../bootstrap'
 import { useMessageStore } from '../../../store/MessageStore'
 
 interface LoadFromNdexDialogProps {
@@ -199,7 +199,6 @@ export const LoadFromNdexDialog = (
         .catch((err) => {
           setErrorMessage(err.message)
           setLoading(false)
-          throw err
         })
     } else {
       setMyNetworks([])
@@ -215,7 +214,6 @@ export const LoadFromNdexDialog = (
       .catch((err) => {
         setErrorMessage(err.message)
         setLoading(false)
-        throw err
       })
   }, [])
 

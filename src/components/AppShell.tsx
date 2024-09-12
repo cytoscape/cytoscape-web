@@ -12,7 +12,6 @@ import {
   getUiStateFromDb,
   getWorkspaceFromDb,
   initializeDb,
-  putNetworkSummaryToDb,
 } from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
@@ -40,6 +39,7 @@ import { useNetworkStore } from '../store/NetworkStore'
 import { useTableStore } from '../store/TableStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
+import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 
 // This is a valid workspace ID for sharing
 const DUMMY_WS_ID = '0'
@@ -92,10 +92,15 @@ const AppShell = (): ReactElement => {
   }, [errorMessageInStore])
 
   const setUi = useUiStateStore((state) => state.setUi)
+  const setVisualStyleOptions = useUiStateStore(
+    (state) => state.setVisualStyleOptions,
+  )
   // const { showErrorDialog } = useUiStateStore((state) => state.ui)
   const setShowErrorDialog = useUiStateStore(
     (state) => state.setShowErrorDialog,
   )
+
+  const addSummary = useNetworkSummaryStore((state) => state.add)
 
   const addNewNetwork = useNetworkStore((state) => state.add)
 
@@ -338,11 +343,13 @@ const AppShell = (): ReactElement => {
             networkWithView
           const newNetworkId = network.id
 
-          await putNetworkSummaryToDb(summary)
+          addSummary(newNetworkId, summary)
 
           // TODO the db syncing logic in various stores assumes the updated network is the current network
           // therefore, as a temporary fix, the first operation that should be done is to set the
           // current network to be the new network id
+
+          setVisualStyleOptions(newNetworkId)
           setCurrentNetworkId(newNetworkId)
           addNewNetwork(network)
           setVisualStyle(newNetworkId, visualStyle)
@@ -376,9 +383,21 @@ const AppShell = (): ReactElement => {
   }, [id])
 
   return (
-    <Box sx={{ width: '100%', height: '100%' }}>
-      <ToolBar />
-      <Outlet />
+    <Box
+      sx={{
+        width: '100%',
+        height: '100vh',
+        display: 'flex',
+        boxSizing: 'border-box',
+        flexDirection: 'column',
+      }}
+    >
+      <Box sx={{ p: 0, margin: 0 }}>
+        <ToolBar />
+      </Box>
+      <Box sx={{ flexGrow: 1, height: '100%', p: 0, margin: 0 }}>
+        <Outlet />
+      </Box>
       <UpdateNetworkDialog
         open={showDialog}
         onClose={() => setShowDialog(false)}

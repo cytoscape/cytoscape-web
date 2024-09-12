@@ -17,4 +17,6 @@ export interface VisualProperty<T extends VisualPropertyValueType> {
   defaultValue: T
   mapping?: VisualMappingFunction
   bypassMap: Bypass<T>
+  tooltip?: string
+  maxVal?: number
 }

@@ -58,6 +58,10 @@ const CyjsRenderer = ({
     undefined,
   )
 
+  const [lastHoveredElement, setLastHoveredElement] = useState<
+    IdType | undefined
+  >(undefined)
+
   // Store sub-selection state. If show-hide mode is selected, then
   // the selected node will be highlighted and the others will be shown, too.
   const [subSelectedEdges, setSubSelectedEdges] = useState<IdType[]>([])
@@ -84,7 +88,9 @@ const CyjsRenderer = ({
   const setViewModel = useViewModelStore((state) => state.add)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
-
+  const visualEditorProperties = useUiStateStore(
+    (state) => state.ui.visualStyleOptions[id]?.visualEditorProperties,
+  )
   const tables = useTableStore((state) => state.tables)
   const getViewModel: (id: IdType) => NetworkView | undefined =
     useViewModelStore((state) => state.getViewModel)
@@ -177,7 +183,13 @@ const CyjsRenderer = ({
     const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
 
     const { nodeViews, edgeViews } = updatedNetworkView
-    addObjects(cy, Object.values(nodeViews), network.edges, edgeViews)
+    addObjects(
+      cy,
+      Object.values(nodeViews),
+      network.edges,
+      edgeViews,
+      visualEditorProperties,
+    )
 
     // Generate a new Cytoscape.js styles based on given visual style
     const newStyle = createCyjsDataMapper(vs)
@@ -209,7 +221,6 @@ const CyjsRenderer = ({
 
     // single selection listener
     cy.on('tap', (e: EventObject) => {
-      console.debug('handling TAP event: ', e)
       // Check for background click
       // This is necessary to access the latest value from closure
       const activeId: string = activeNetworkIdRef.current
@@ -310,7 +321,7 @@ const CyjsRenderer = ({
     }
     const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
     // Apply style from view model
-    applyViewModel(cy, updatedNetworkView)
+    applyViewModel(cy, updatedNetworkView, visualEditorProperties)
 
     cy.endBatch()
     if (cyStyle.length > 0) {
@@ -326,11 +337,22 @@ const CyjsRenderer = ({
     if (cy === null) {
       return
     }
+
     if (hoveredElement !== undefined) {
-      cy.elements().removeClass('hover')
+      // First, remove existing hovered effect by removing the class
+      if (lastHoveredElement !== undefined) {
+        // Remove hover class from the last hovered element
+        const lastEle = cy.getElementById(lastHoveredElement)
+        if (lastEle !== undefined) {
+          lastEle.removeClass('hover')
+        }
+      }
+      // Now select the new hovered element and apply hover class
       const ele = cy.getElementById(hoveredElement)
       if (ele !== undefined) {
         ele.addClass('hover')
+        // And then update the last hovered element
+        setLastHoveredElement(hoveredElement)
       }
     }
   }
@@ -351,7 +373,7 @@ const CyjsRenderer = ({
     () => (): void => {
       applyStyleUpdate()
     },
-    [vs, table],
+    [vs, table, visualEditorProperties],
   )
 
   // when the visual style model, table model, or edge/node views change re-render cy.js style
@@ -366,7 +388,7 @@ const CyjsRenderer = ({
     }
 
     applyUpdates()
-  }, [vs, table])
+  }, [vs, table, visualEditorProperties])
 
   // Apply layout when node positions are changed
   useEffect(() => {
@@ -632,10 +654,6 @@ const CyjsRenderer = ({
       renderNetwork()
     }
   }, [cy])
-
-  useEffect(() => {
-    console.log('New subselection edges: ', subSelectedEdges)
-  }, [subSelectedEdges])
 
   return (
     <>

@@ -8,6 +8,6 @@ export interface Status extends Aspect {
     {
       readonly error?: string
       readonly success: boolean
-    }
+    },
   ]
 }

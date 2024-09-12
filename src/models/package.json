@@ -1,0 +1,27 @@
+{
+  "name": "@cytoscape-web/types",
+  "version": "1.1.11",
+  "description": "Type definitions for Cytoscape Web data models",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "clean": "rm -rf ./dist && find . -name '*.d.ts' -not -path './node_modules/*' -delete",
+    "build": "npm run clean && tsc --project tsconfig.json",
+    "format": "prettier --config ../../.prettierrc.json --write .",
+    "test": "echo \"Error: Types only. No test specified\" && exit 1"
+  },
+  "keywords": [
+    "cytoscape",
+    "visualization",
+    "typescript",
+    "types"
+  ],
+  "author": "Keiichiro Ono",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  }
+}

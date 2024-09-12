@@ -16,119 +16,37 @@ import {
   deleteTablesFromDb,
   putTablesToDb,
 } from './persist/db'
-/** */
-export interface TableRecord {
-  nodeTable: Table
-  edgeTable: Table
-}
-
-/**
-//  * Table State manager based on zustand
-//  */
-interface TableState {
-  tables: Record<IdType, TableRecord>
-}
-
-export const TableType = {
-  NODE: 'node',
-  EDGE: 'edge',
-} as const
-
-export type TableType = (typeof TableType)[keyof typeof TableType]
-
-interface TableAction {
-  // Add a new table to the store
-  add: (networkId: IdType, nodeTable: Table, edgeTable: Table) => void
-
-  deleteColumn: (
-    networkId: IdType,
-    tableType: 'node' | 'edge',
-    columnName: string,
-  ) => void
-
-  applyValueToElements: (
-    networkId: IdType,
-    tableType: 'node' | 'edge',
-    columnName: string,
-    value: ValueType,
-    elementIds: IdType[] | undefined,
-  ) => void
-  createColumn: (
-    networkId: IdType,
-    tableType: 'node' | 'edge',
-    columnName: string,
-    dataType: ValueTypeName,
-    value: ValueType,
-  ) => void
-  setColumnName: (
-    networkId: IdType,
-    tableType: 'node' | 'edge',
-    currentColumnName: string,
-    newColumnName: string,
-  ) => void
-  moveColumn: (
-    networkId: IdType,
-    tableType: 'node' | 'edge',
-    columnIndex: number,
-    newColumnIndex: number,
-  ) => void
-  setValue: (
-    networkId: IdType,
-    tableType: TableType,
-    row: IdType,
-    column: string,
-    value: ValueType,
-  ) => void
-  columnValues: (
-    networkId: IdType,
-    tableType: TableType,
-    column: AttributeName,
-  ) => Set<ValueType>
-  duplicateColumn: (
-    networkId: IdType,
-    tableType: TableType,
-    column: AttributeName,
-  ) => void
-
-  setTable: (networkId: IdType, tableType: TableType, table: Table) => void
-
-  // Delete rows from the table. Should be called (via event) when nodes/edges are deleted
-  deleteRows: (networkId: IdType, rows: IdType[]) => void
-
-  // Create new
-  addRows: (networkId: IdType, rows: IdType[]) => void
-
-  delete: (networkId: IdType) => void
-  deleteAll: () => void
-}
-
-type TableStore = TableState & TableAction
+import {
+  TableRecord,
+  TableStore,
+  TableType,
+} from '../models/StoreModel/TableStoreModel'
 
 const persist =
   (config: StateCreator<TableStore>) =>
-    (
-      set: StoreApi<TableStore>['setState'],
-      get: StoreApi<TableStore>['getState'],
-      api: StoreApi<TableStore>,
-    ) =>
-      config(
-        async (args) => {
-          const currentNetworkId =
-            useWorkspaceStore.getState().workspace.currentNetworkId
-          set(args)
-          const updated = get().tables[currentNetworkId]
-          const deleted = updated === undefined
-          if (!deleted) {
-            await putTablesToDb(
-              currentNetworkId,
-              updated.nodeTable,
-              updated.edgeTable,
-            ).then(() => { })
-          }
-        },
-        get,
-        api,
-      )
+  (
+    set: StoreApi<TableStore>['setState'],
+    get: StoreApi<TableStore>['getState'],
+    api: StoreApi<TableStore>,
+  ) =>
+    config(
+      async (args) => {
+        const currentNetworkId =
+          useWorkspaceStore.getState().workspace.currentNetworkId
+        set(args)
+        const updated = get().tables[currentNetworkId]
+        const deleted = updated === undefined
+        if (!deleted) {
+          await putTablesToDb(
+            currentNetworkId,
+            updated.nodeTable,
+            updated.edgeTable,
+          ).then(() => {})
+        }
+      },
+      get,
+      api,
+    )
 
 export const useTableStore = create(
   immer<TableStore>(
@@ -235,7 +153,7 @@ export const useTableStore = create(
           const table = state.tables[networkId]
           const tableToUpdate =
             table[
-            tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
 
           if (elementIds != null) {
@@ -263,14 +181,14 @@ export const useTableStore = create(
           const table = state.tables[networkId]
           const tableToUpdate =
             table[
-            tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
 
           const columnIndex = tableToUpdate.columns.findIndex(
             (c) => c.name === columnName,
           )
           if (columnIndex !== -1) {
-            tableToUpdate.columns.splice(columnIndex)
+            tableToUpdate.columns.splice(columnIndex, 1)
           }
 
           const rows = tableToUpdate.rows.values()
@@ -293,7 +211,7 @@ export const useTableStore = create(
           const table = state.tables[networkId]
           const tableToUpdate =
             table[
-            tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             ]
 
           tableToUpdate.columns.unshift({

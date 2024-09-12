@@ -30,7 +30,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   nodeBorderLineType: {
     group: 'node',
     name: 'nodeBorderLineType',
-    displayName: 'Border Line',
+    displayName: 'Border Line Type',
     type: 'nodeBorderLine',
     defaultValue: 'solid',
     bypassMap: new Map(),
@@ -50,6 +50,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 1.0,
     bypassMap: new Map(),
+    maxVal: 1,
   },
   nodeHeight: {
     group: 'node',
@@ -114,6 +115,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 0,
     bypassMap: new Map(),
+    maxVal: 360,
   },
   nodeLabelOpacity: {
     group: 'node',
@@ -122,6 +124,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 1.0,
     bypassMap: new Map(),
+    maxVal: 1,
   },
   nodeLabelPosition: {
     group: 'node',
@@ -162,6 +165,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 1.0,
     bypassMap: new Map(),
+    maxVal: 1,
   },
   nodeVisibility: {
     group: 'node',
@@ -182,10 +186,11 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   nodeMaxLabelWidth: {
     group: 'node',
     name: 'nodeMaxLabelWidth',
-    displayName: 'Max Node Label Width',
+    displayName: 'Label Width',
     type: 'number',
     defaultValue: 100,
     bypassMap: new Map(),
+    tooltip: 'The maximum width of the node label',
   },
   nodeZOrder: {
     group: 'node',
@@ -198,7 +203,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   edgeLineColor: {
     group: 'edge',
     name: 'edgeLineColor',
-    displayName: 'Line Color',
+    displayName: 'Stroke Color',
     type: 'color',
     defaultValue: '#000000',
     bypassMap: new Map(),
@@ -218,6 +223,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 1.0,
     bypassMap: new Map(),
+    maxVal: 1,
   },
   edgeSourceArrowColor: {
     group: 'edge',
@@ -290,6 +296,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 0,
     bypassMap: new Map(),
+    maxVal: 360,
   },
   edgeLabelOpacity: {
     group: 'edge',
@@ -298,6 +305,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 1.0,
     type: 'number',
     bypassMap: new Map(),
+    maxVal: 1,
   },
   // edgeLabelAutoRotation: {
   //   group: 'edge',
@@ -334,10 +342,11 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   edgeMaxLabelWidth: {
     group: 'edge',
     name: 'edgeMaxLabelWidth',
-    displayName: 'Max Edge Label Width',
+    displayName: 'Label Width',
     type: 'number',
     defaultValue: 100,
     bypassMap: new Map(),
+    tooltip: 'The maximum width of the edge label',
   },
   edgeZOrder: {
     group: 'edge',

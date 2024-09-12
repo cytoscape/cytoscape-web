@@ -1,8 +1,18 @@
 import * as React from 'react'
-import { Box, Typography, Tabs, Tab, Divider, Tooltip } from '@mui/material'
-
+import {
+  Box,
+  Typography,
+  Tabs,
+  Tab,
+  Divider,
+  Tooltip,
+  IconButton,
+} from '@mui/material'
+import InfoIcon from '@mui/icons-material/Info'
 import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
+  EdgeVisualPropertyName,
+  NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyValueType,
   VisualStyle,
@@ -15,55 +25,157 @@ import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
+import { useUiStateStore } from '../../store/UiStateStore'
+import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
+import { useState } from 'react'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
   const { visualProperty, currentNetworkId } = props
+  const vpName = visualProperty.name
+  const edgeLineColorName = getDefaultVisualStyle()['edgeLineColor'].displayName
+  const heightName = getDefaultVisualStyle()['nodeHeight'].displayName
+  const [outerTooltipOpen, setOuterTooltipOpen] = useState(false)
+  const [innerTooltipOpen, setInnerTooltipOpen] = useState(false)
+
+  const handleOuterTooltipToggle = (open: boolean) => {
+    if (!innerTooltipOpen) {
+      setOuterTooltipOpen(open)
+    }
+  }
+
+  const handleInnerTooltipToggle = (open: boolean) => {
+    setInnerTooltipOpen(open)
+    if (open) {
+      setOuterTooltipOpen(false)
+    }
+  }
+  const nodeSizeLocked = useUiStateStore(
+    (state) =>
+      state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties
+        .nodeSizeLocked,
+  )
+  const arrowColorMatchesEdge = useUiStateStore(
+    (state) =>
+      state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties
+        .arrowColorMatchesEdge,
+  )
+
+  const widthDisabled =
+    nodeSizeLocked && NodeVisualPropertyName.NodeWidth === vpName
+  const arrowColorDisabled =
+    arrowColorMatchesEdge &&
+    (EdgeVisualPropertyName.EdgeSourceArrowColor === vpName ||
+      EdgeVisualPropertyName.EdgeTargetArrowColor === vpName)
+  const disabled = widthDisabled || arrowColorDisabled
+
+  let tooltip = ''
+  if (widthDisabled)
+    tooltip = `Node width and height are locked. Use the \'${heightName}\' property to adjust the node size, or uncheck \“Lock node width and height\” in \'${heightName}\' to enable editing of the Width.`
+  if (arrowColorDisabled)
+    tooltip = `Edge color to arrows is enabled. Use the \'${edgeLineColorName}\' property to adjust the arrow color, or uncheck \“Edge color to arrows\” in \'${edgeLineColorName}\' to enable editing of the arrow color.`
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        p: 0.25,
-      }}
+    <Tooltip
+      open={outerTooltipOpen}
+      onMouseEnter={() => handleOuterTooltipToggle(true)}
+      onMouseLeave={() => handleOuterTooltipToggle(false)}
+      placement="top"
+      arrow={true}
+      title={visualProperty.tooltip ?? tooltip}
     >
-      <DefaultValueForm
-        sx={{ mr: 1 }}
-        visualProperty={visualProperty}
-        currentNetworkId={currentNetworkId}
-      />
-      {visualProperty.group === VisualPropertyGroup.Network ? (
-        <>
-          <Tooltip title={'Mapping not available for network properties'}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          p: 0.25,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
+          {disabled ? (
             <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />
-          </Tooltip>
-          <Tooltip title={'Bypasses not available for network properties'}>
-            <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />
-          </Tooltip>
-        </>
-      ) : (
-        <>
-          <MappingForm
-            sx={{ mr: 1 }}
-            currentNetworkId={currentNetworkId}
-            visualProperty={visualProperty}
-          />
-          <BypassForm
-            sx={{ mr: 1 }}
-            currentNetworkId={currentNetworkId}
-            visualProperty={visualProperty}
-          />
-        </>
-      )}
+          ) : (
+            <DefaultValueForm
+              sx={{ mr: 1 }}
+              visualProperty={visualProperty}
+              currentNetworkId={currentNetworkId}
+            />
+          )}
+          {visualProperty.group === VisualPropertyGroup.Network || disabled ? (
+            <>
+              <Tooltip
+                title={
+                  disabled ? '' : 'Mapping not available for network properties'
+                }
+              >
+                <EmptyVisualPropertyViewBox
+                  sx={{ mr: 1, cursor: 'not-allowed' }}
+                />
+              </Tooltip>
+              <Tooltip
+                title={
+                  disabled
+                    ? ''
+                    : 'Bypasses not available for network properties'
+                }
+              >
+                <EmptyVisualPropertyViewBox
+                  sx={{ mr: 1, cursor: 'not-allowed' }}
+                />
+              </Tooltip>
+            </>
+          ) : (
+            <>
+              <MappingForm
+                sx={{ mr: 1 }}
+                currentNetworkId={currentNetworkId}
+                visualProperty={visualProperty}
+              />
+              <BypassForm
+                sx={{ mr: 1 }}
+                currentNetworkId={currentNetworkId}
+                visualProperty={visualProperty}
+              />
+            </>
+          )}
 
-      <Typography variant="body2" sx={{ ml: 1 }}>
-        {visualProperty.displayName}
-      </Typography>
-    </Box>
+          <Typography
+            variant="body2"
+            sx={{ ml: 1, color: disabled ? 'gray' : 'black' }}
+          >
+            {visualProperty.displayName}
+          </Typography>
+        </Box>
+
+        {disabled && (
+          <Tooltip
+            open={innerTooltipOpen}
+            onMouseEnter={() => handleInnerTooltipToggle(true)}
+            onMouseLeave={() => handleInnerTooltipToggle(false)}
+            placement="top"
+            title={visualProperty.tooltip ?? tooltip}
+            arrow={true}
+            sx={{
+              mr: 1,
+            }}
+          >
+            <IconButton sx={{ padding: 0.5 }}>
+              <InfoIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
+    </Tooltip>
   )
 }
 

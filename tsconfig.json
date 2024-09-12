@@ -1,15 +1,18 @@
 {
   "compilerOptions": {
+    "typeRoots": ["./node_modules/@types", "./src/types"],
     "allowSyntheticDefaultImports": true,
     "outDir": "./dist/",
     "noImplicitAny": true,
-    "module": "es2022",
-    "target": "es2022",
+    "module": "ESNext",
+    "target": "ES2020",
     "jsx": "react-jsx",
-    "allowJs": false,
+    "allowJs": true,
+    "esModuleInterop": true,
     "moduleResolution": "node",
     "sourceMap": true,
     "strictNullChecks": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": "."
   }
 }

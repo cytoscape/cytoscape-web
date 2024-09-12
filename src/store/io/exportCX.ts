@@ -38,6 +38,7 @@ import {
 } from '../../models/VisualStyleModel/VisualMappingFunction'
 
 import { deserializeValue } from '../../models/TableModel/impl/ValueTypeImpl'
+import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 
 export const exportNetworkToCx2 = (
   network: Network,
@@ -45,6 +46,7 @@ export const exportNetworkToCx2 = (
   summary: NdexNetworkSummary,
   nodeTable: Table,
   edgeTable: Table,
+  visualStyleOptions?: VisualStyleOptions, //visual editor properties
   networkView?: NetworkView,
   networkName?: string, // optional new name for the network
 ): any => {
@@ -205,10 +207,13 @@ export const exportNetworkToCx2 = (
     }
   })
 
+  const nodeSizeLocked = visualStyleOptions?.visualEditorProperties.nodeSizeLocked
+  const arrowColorMatchesEdge = visualStyleOptions?.visualEditorProperties.arrowColorMatchesEdge
   const visualEditorProperties = [
     {
       properties: {
-        nodeSizeLocked: false,
+        nodeSizeLocked: nodeSizeLocked ?? false,
+        arrowColorMatchesEdge: arrowColorMatchesEdge ?? false,
       },
     },
   ]

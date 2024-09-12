@@ -9,24 +9,16 @@ import {
   getTablesFromDb,
   getNetworkViewsFromDb,
   getVisualStyleFromDb,
+  getUiStateFromDb,
 } from '../store/persist/db'
 import { CachedData } from './CachedData'
 import { createNetworkAttributesFromCx } from '../models/TableModel/impl/NetworkAttributesImpl'
 import { Aspect } from '../models/CxModel/Cx2/Aspect'
 import { CoreAspectTag } from '../models/CxModel/Cx2/CoreAspectTag'
-
-/**
- * An utility interface to hold all the data needed to build a network view
- */
-export interface NetworkWithView {
-  network: Network
-  networkAttributes?: NetworkAttributes
-  nodeTable: Table
-  edgeTable: Table
-  visualStyle: VisualStyle
-  networkViews: NetworkView[]
-  otherAspects?: any[] // All other optional aspects found in the CX2 stream
-}
+import { NetworkWithView } from '../models/NetworkWithViewModel'
+import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
+import { Ui } from '../models/UiModel'
+import { IdType } from '../models/IdType'
 
 /**
  *
@@ -48,7 +40,8 @@ export const createNetworkViewFromCx2 = (
     uuid,
     cx2,
   )
-
+  const visualStyleOptions: VisualStyleOptions =
+    VisualStyleFn.createVisualStyleOptionsFromCx(cx2)
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cx2)
   const networkView: NetworkView = ViewModelFn.createViewModelFromCX(uuid, cx2)
   const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
@@ -62,23 +55,34 @@ export const createNetworkViewFromCx2 = (
     edgeTable,
     visualStyle,
     networkViews: [networkView],
+    visualStyleOptions,
     networkAttributes,
   }
 }
 
 export const getCachedData = async (id: string): Promise<CachedData> => {
-  const network = await getNetworkFromDb(id)
-  const tables = await getTablesFromDb(id)
-  const networkViews: NetworkView[] | undefined =
-    await getNetworkViewsFromDb(id)
-  const visualStyle = await getVisualStyleFromDb(id)
-
-  return {
-    network,
-    visualStyle,
-    nodeTable: tables !== undefined ? tables.nodeTable : undefined,
-    edgeTable: tables !== undefined ? tables.edgeTable : undefined,
-    networkViews: networkViews !== undefined ? networkViews : [],
+  try {
+    const network = await getNetworkFromDb(id)
+    const tables = await getTablesFromDb(id)
+    const networkViews: NetworkView[] | undefined =
+      await getNetworkViewsFromDb(id)
+    const visualStyle = await getVisualStyleFromDb(id)
+    const uiState: Ui | undefined = await getUiStateFromDb()
+    const vsOptions: Record<IdType, VisualStyleOptions> =
+      uiState?.visualStyleOptions ?? {}
+    // Fall back to an empty object if the visual style options are not found
+    const visualStyleOptions: VisualStyleOptions = vsOptions[id] ?? {}
+    return {
+      network,
+      visualStyle,
+      nodeTable: tables !== undefined ? tables.nodeTable : undefined,
+      edgeTable: tables !== undefined ? tables.edgeTable : undefined,
+      networkViews: networkViews ?? [],
+      visualStyleOptions: visualStyleOptions,
+    }
+  } catch (e) {
+    console.error('Failed to restore data from IndexedDB', e)
+    throw e
   }
 }
 
@@ -100,7 +104,8 @@ export const createDataFromCx = async (
     ndexNetworkId,
     cxData,
   )
-
+  const visualStyleOptions: VisualStyleOptions =
+    VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
   const otherAspects: Aspect[] = getOptionalAspects(cxData)
 
   return {
@@ -110,6 +115,7 @@ export const createDataFromCx = async (
     visualStyle,
     networkViews: [networkView],
     networkAttributes,
+    visualStyleOptions,
     otherAspects,
   }
 }

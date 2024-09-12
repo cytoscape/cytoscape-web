@@ -4,10 +4,10 @@ export const NodeShapeType = {
   Ellipse: 'ellipse',
   Hexagon: 'hexagon',
   Octagon: 'octagon',
-  Parallelogram: 'rhomboid',
+  Parallelogram: 'parallelogram',
   RoundRectangle: 'round-rectangle',
   Triangle: 'triangle',
   Vee: 'vee',
 } as const
 
-export type NodeShapeType = typeof NodeShapeType[keyof typeof NodeShapeType]
+export type NodeShapeType = (typeof NodeShapeType)[keyof typeof NodeShapeType]

@@ -5,6 +5,11 @@ import { SelectorType } from './SelectorType'
 export const SpecialPropertyName = {
   NodeLabelHorizontalAlign: 'nodeLabelHorizontalAlign',
   NodeLabelVerticalAlign: 'nodeLabelVerticalAlign',
+  NodeLabelMarginX: 'nodeLabelMarginX',
+  NodeLabelMarginY: 'nodeLabelMarginY',
+  NodeLabelJustification: 'nodeLabelJustification',
+  SourceArrowFill: 'sourceEdgeFill',
+  TargetArrowFill: 'targetEdgeFill',
 } as const
 
 export type SpecialPropertyName =
