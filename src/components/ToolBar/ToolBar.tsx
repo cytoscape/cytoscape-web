@@ -12,6 +12,7 @@ import { SearchBox } from './Search'
 import { AnalysisMenu } from './AnalysisMenu'
 import { ToolsMenu } from './ToolsMenu'
 import { HelpMenu } from './HelpMenu'
+import { AppMenu } from './AppMenu'
 
 export const ToolBar = (): JSX.Element => {
   return (
@@ -29,6 +30,7 @@ export const ToolBar = (): JSX.Element => {
             {/* <DropdownMenu label="Help" /> */}
             <AnalysisMenu label="Analysis" />
             <ToolsMenu label="Tools" />
+            <AppMenu label="Apps" />
             <HelpMenu label="Help" />
 
           </Box>
@@ -39,5 +41,6 @@ export const ToolBar = (): JSX.Element => {
         </Box>
       </Toolbar>
     </AppBar>
+    </Box>
   )
 }
