@@ -2,19 +2,12 @@ import NetworkFn, {
   NetworkAttributes,
   Node,
   Edge,
-} from '../models/NetworkModel'
-import {
-  getBaseSummary,
-  IdType,
   Network,
-  NetworkView,
-  Table,
-  VisualStyle,
-} from '../models'
+} from '../models/NetworkModel'
 import { v4 as uuidv4 } from 'uuid'
-import TableFn from '../models/TableModel'
-import ViewModelFn from '../models/ViewModel'
-import VisualStyleFn from '../models/VisualStyleModel'
+import TableFn, { Table } from '../models/TableModel'
+import ViewModelFn, { NetworkView } from '../models/ViewModel'
+import VisualStyleFn, { VisualStyle } from '../models/VisualStyleModel'
 import { NetworkWithView } from '../models/NetworkWithViewModel'
 import { useNetworkStore } from '../store/NetworkStore'
 import { useTableStore } from '../store/TableStore'
@@ -24,6 +17,8 @@ import { useCallback } from 'react'
 import { NetworkStore } from '../models/StoreModel/NetworkStoreModel'
 import { TableStore } from '../models/StoreModel/TableStoreModel'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
+import { getBaseSummary } from '../models/NetworkSummaryModel'
+import { IdType } from '../models'
 
 /**
  * Create an empty network object with generated ID
