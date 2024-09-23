@@ -161,149 +161,6 @@ const CyjsRenderer = ({
     exclusiveSelect(id, selectedNodes, selectedEdges)
   }
 
-  const renderNetwork = (): void => {
-    if (renderedId === id || cy === null) {
-      return
-    }
-
-    isViewCreated.current = false
-    // cy.unmount()
-    cy.removeAllListeners()
-    cy.startBatch()
-    cy.remove('*')
-
-    const data: NetworkViewSources = {
-      network,
-      networkView,
-      nodeTable: table.nodeTable,
-      edgeTable: table.edgeTable,
-      visualStyle: vs,
-    }
-
-    const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
-
-    const { nodeViews, edgeViews } = updatedNetworkView
-    addObjects(
-      cy,
-      Object.values(nodeViews),
-      network.edges,
-      edgeViews,
-      visualEditorProperties,
-    )
-
-    // Generate a new Cytoscape.js styles based on given visual style
-    const newStyle = createCyjsDataMapper(vs)
-    setCyStyle(newStyle)
-
-    // Restore selection state in Cyjs instance
-    const selectedNodes = networkView?.selectedNodes ?? []
-    const selectedEdges = networkView?.selectedEdges ?? []
-
-    cy.nodes()
-      .filter((ele: SingularElementArgument) => {
-        return selectedNodes.includes(ele.data('id'))
-      })
-      .select()
-    cy.edges()
-      .filter((ele: SingularElementArgument) => {
-        return selectedEdges.includes(ele.data('id'))
-      })
-      .select()
-
-    // Box selection listener
-    cy.on(
-      'boxend',
-      debounce((event: EventObject) => {
-        selectionHandler(event)
-      }),
-      100,
-    )
-
-    // single selection listener
-    cy.on('tap', (e: EventObject) => {
-      // Check for background click
-      // This is necessary to access the latest value from closure
-      const activeId: string = activeNetworkIdRef.current
-
-      if (
-        activeId !== undefined &&
-        activeId !== '' &&
-        id !== '' &&
-        id !== activeId
-      ) {
-        if (cy.autounselectify() === false) {
-          cy.autounselectify(true)
-        }
-        return
-      }
-
-      if (e.target === cy) {
-        // Background click
-        if (displayMode === DisplayMode.SELECT) {
-          exclusiveSelect(id, [], [])
-          // setSubSelectedEdges([])
-        } else {
-          // do nothing. Keep the selection as-is
-        }
-      } else if (e.target.isNode() || e.target.isEdge()) {
-        if (displayMode === DisplayMode.SHOW_HIDE) {
-          // Select nodes only
-          if (e.target.isNode()) {
-            const selectedNodes: IdType[] = []
-            selectedNodes.push(e.target.data('id'))
-            // Keep edges as-is
-            exclusiveSelect(id, selectedNodes, selectedEdges)
-          } else {
-            // Edge is clicked. Simply select it and handle sub-selection in
-            const newSelection = e.target.data('id')
-            exclusiveSelect(id, selectedNodes, [newSelection])
-            setClickSelection(true)
-          }
-        } else {
-          const selectedNodes: IdType[] = []
-          const selectedEdges: IdType[] = []
-          if (e.target.isNode()) {
-            selectedNodes.push(e.target.data('id'))
-          } else {
-            selectedEdges.push(e.target.data('id'))
-          }
-          exclusiveSelect(id, selectedNodes, selectedEdges)
-        }
-      }
-      cy.autounselectify(false)
-    })
-
-    // Moving nodes
-    cy.on('dragfree', 'node', (e: EventObject): void => {
-      // Enable flag to avoid unnecessary fit
-      setNodesMoved(true)
-
-      const targetNode = e.target
-      const nodeId: IdType = targetNode.data('id')
-      const position = targetNode.position()
-      setNodePosition(id, nodeId, [position.x, position.y])
-    })
-
-    cy.on('mouseover', 'node, edge', (e: EventObject): void => {
-      const targetNode = e.target
-      setHoveredElement(targetNode.data('id'))
-    })
-    cy.on('mouseout', 'node, edge', (e: EventObject): void => {
-      setHoveredElement(undefined)
-    })
-
-    cy.endBatch()
-
-    cy.style(newStyle)
-
-    cy.fit()
-
-    setVisualStyle(id, vs)
-    setTimeout(() => {
-      isViewCreated.current = true
-    }, 1000)
-  }
-
   const applyStyleUpdate = (): void => {
     if (cyStyle.length === 0) {
       return
@@ -363,6 +220,186 @@ const CyjsRenderer = ({
   useEffect(() => {
     if (id === '' || cy === null) {
       return
+    }
+    const renderNetwork = (): void => {
+      if (renderedId === id || cy === null) {
+        return
+      }
+
+      isViewCreated.current = false
+      // cy.unmount()
+      cy.removeAllListeners()
+      cy.startBatch()
+      cy.remove('*')
+
+      const data: NetworkViewSources = {
+        network,
+        networkView,
+        nodeTable: table.nodeTable,
+        edgeTable: table.edgeTable,
+        visualStyle: vs,
+      }
+
+      const updatedNetworkView: NetworkView =
+        VisualStyleFn.applyVisualStyle(data)
+
+      const { nodeViews, edgeViews } = updatedNetworkView
+      addObjects(
+        cy,
+        Object.values(nodeViews),
+        network.edges,
+        edgeViews,
+        visualEditorProperties,
+      )
+
+      // Generate a new Cytoscape.js styles based on given visual style
+      const newStyle = createCyjsDataMapper(vs)
+      setCyStyle(newStyle)
+
+      // Restore selection state in Cyjs instance
+      const selectedNodes = networkView?.selectedNodes ?? []
+      const selectedEdges = networkView?.selectedEdges ?? []
+
+      cy.nodes()
+        .filter((ele: SingularElementArgument) => {
+          return selectedNodes.includes(ele.data('id'))
+        })
+        .select()
+      cy.edges()
+        .filter((ele: SingularElementArgument) => {
+          return selectedEdges.includes(ele.data('id'))
+        })
+        .select()
+
+      // Box selection listener
+      cy.on(
+        'boxend',
+        debounce((event: EventObject) => {
+          selectionHandler(event)
+        }),
+        100,
+      )
+
+      // single selection listener
+      cy.on('tap', (e: EventObject) => {
+        // Check for background click
+        // This is necessary to access the latest value from closure
+        console.log(e.originalEvent)
+        const activeId: string = activeNetworkIdRef.current
+
+        if (
+          activeId !== undefined &&
+          activeId !== '' &&
+          id !== '' &&
+          id !== activeId
+        ) {
+          if (cy.autounselectify() === false) {
+            cy.autounselectify(true)
+          }
+          return
+        }
+
+        if (e.target === cy) {
+          // Background click
+          if (displayMode === DisplayMode.SELECT) {
+            exclusiveSelect(id, [], [])
+            // setSubSelectedEdges([])
+          } else {
+            // do nothing. Keep the selection as-is
+          }
+        } else if (e.target.isNode() || e.target.isEdge()) {
+          if (displayMode === DisplayMode.SHOW_HIDE) {
+            // Select nodes only
+            if (e.target.isNode()) {
+              const selectedNodes: IdType[] = []
+              selectedNodes.push(e.target.data('id'))
+              // Keep edges as-is
+              exclusiveSelect(id, selectedNodes, selectedEdges)
+            } else {
+              // Edge is clicked. Simply select it and handle sub-selection in
+              const newSelection = e.target.data('id')
+              exclusiveSelect(id, selectedNodes, [newSelection])
+              setClickSelection(true)
+            }
+          } else {
+            const selectedNodes: IdType[] =
+              networkView?.selectedNodes !== undefined
+                ? [...networkView?.selectedNodes]
+                : []
+            const selectedEdges: IdType[] =
+              networkView?.selectedEdges !== undefined
+                ? [...networkView?.selectedEdges]
+                : []
+            const isModifierKey =
+              e.originalEvent.ctrlKey ||
+              e.originalEvent.metaKey ||
+              e.originalEvent.shiftKey
+            const elementId = e.target.data('id')
+
+            if (e.target.isNode()) {
+              if (isModifierKey) {
+                // Toggle selection
+                const index = selectedNodes.indexOf(elementId)
+                if (index > -1) {
+                  selectedNodes.splice(index, 1) // Deselect if already selected
+                } else {
+                  selectedNodes.push(elementId) // Select if not selected
+                }
+              } else {
+                // Exclusive selection
+                selectedNodes.length = 0 // Clear all selections
+                selectedNodes.push(elementId) // Select the current element
+              }
+            } else {
+              if (isModifierKey) {
+                // Toggle selection
+                const index = selectedEdges.indexOf(elementId)
+                if (index > -1) {
+                  selectedEdges.splice(index, 1) // Deselect if already selected
+                } else {
+                  selectedEdges.push(elementId) // Select if not selected
+                }
+              } else {
+                // Exclusive selection
+                selectedEdges.length = 0 // Clear all selections
+                selectedEdges.push(elementId) // Select the current element
+              }
+            }
+            exclusiveSelect(id, selectedNodes, selectedEdges)
+          }
+        }
+        cy.autounselectify(false)
+      })
+
+      // Moving nodes
+      cy.on('dragfree', 'node', (e: EventObject): void => {
+        // Enable flag to avoid unnecessary fit
+        setNodesMoved(true)
+
+        const targetNode = e.target
+        const nodeId: IdType = targetNode.data('id')
+        const position = targetNode.position()
+        setNodePosition(id, nodeId, [position.x, position.y])
+      })
+
+      cy.on('mouseover', 'node, edge', (e: EventObject): void => {
+        const targetNode = e.target
+        setHoveredElement(targetNode.data('id'))
+      })
+      cy.on('mouseout', 'node, edge', (e: EventObject): void => {
+        setHoveredElement(undefined)
+      })
+
+      cy.endBatch()
+
+      cy.style(newStyle)
+
+      cy.fit()
+
+      setVisualStyle(id, vs)
+      setTimeout(() => {
+        isViewCreated.current = true
+      }, 1000)
     }
     isViewCreated.current = false
     renderNetwork()
@@ -650,10 +687,190 @@ const CyjsRenderer = ({
   }, [])
 
   useEffect(() => {
+    const renderNetwork = (): void => {
+      if (renderedId === id || cy === null) {
+        return
+      }
+
+      isViewCreated.current = false
+      // cy.unmount()
+      cy.removeAllListeners()
+      cy.startBatch()
+      cy.remove('*')
+
+      const data: NetworkViewSources = {
+        network,
+        networkView,
+        nodeTable: table.nodeTable,
+        edgeTable: table.edgeTable,
+        visualStyle: vs,
+      }
+
+      const updatedNetworkView: NetworkView =
+        VisualStyleFn.applyVisualStyle(data)
+
+      const { nodeViews, edgeViews } = updatedNetworkView
+      addObjects(
+        cy,
+        Object.values(nodeViews),
+        network.edges,
+        edgeViews,
+        visualEditorProperties,
+      )
+
+      // Generate a new Cytoscape.js styles based on given visual style
+      const newStyle = createCyjsDataMapper(vs)
+      setCyStyle(newStyle)
+
+      // Restore selection state in Cyjs instance
+      const selectedNodes = networkView?.selectedNodes ?? []
+      const selectedEdges = networkView?.selectedEdges ?? []
+
+      cy.nodes()
+        .filter((ele: SingularElementArgument) => {
+          return selectedNodes.includes(ele.data('id'))
+        })
+        .select()
+      cy.edges()
+        .filter((ele: SingularElementArgument) => {
+          return selectedEdges.includes(ele.data('id'))
+        })
+        .select()
+
+      // Box selection listener
+      cy.on(
+        'boxend',
+        debounce((event: EventObject) => {
+          selectionHandler(event)
+        }),
+        100,
+      )
+
+      // single selection listener
+      cy.on('tap', (e: EventObject) => {
+        // Check for background click
+        // This is necessary to access the latest value from closure
+        console.log(e.originalEvent)
+        const activeId: string = activeNetworkIdRef.current
+
+        if (
+          activeId !== undefined &&
+          activeId !== '' &&
+          id !== '' &&
+          id !== activeId
+        ) {
+          if (cy.autounselectify() === false) {
+            cy.autounselectify(true)
+          }
+          return
+        }
+
+        if (e.target === cy) {
+          // Background click
+          if (displayMode === DisplayMode.SELECT) {
+            exclusiveSelect(id, [], [])
+            // setSubSelectedEdges([])
+          } else {
+            // do nothing. Keep the selection as-is
+          }
+        } else if (e.target.isNode() || e.target.isEdge()) {
+          if (displayMode === DisplayMode.SHOW_HIDE) {
+            // Select nodes only
+            if (e.target.isNode()) {
+              const selectedNodes: IdType[] = []
+              selectedNodes.push(e.target.data('id'))
+              // Keep edges as-is
+              exclusiveSelect(id, selectedNodes, selectedEdges)
+            } else {
+              // Edge is clicked. Simply select it and handle sub-selection in
+              const newSelection = e.target.data('id')
+              exclusiveSelect(id, selectedNodes, [newSelection])
+              setClickSelection(true)
+            }
+          } else {
+            const selectedNodes: IdType[] =
+              networkView?.selectedNodes !== undefined
+                ? [...networkView?.selectedNodes]
+                : []
+            const selectedEdges: IdType[] =
+              networkView?.selectedEdges !== undefined
+                ? [...networkView?.selectedEdges]
+                : []
+            const isModifierKey =
+              e.originalEvent.ctrlKey ||
+              e.originalEvent.metaKey ||
+              e.originalEvent.shiftKey
+            const elementId = e.target.data('id')
+
+            if (e.target.isNode()) {
+              if (isModifierKey) {
+                // Toggle selection
+                const index = selectedNodes.indexOf(elementId)
+                if (index > -1) {
+                  selectedNodes.splice(index, 1) // Deselect if already selected
+                } else {
+                  selectedNodes.push(elementId) // Select if not selected
+                }
+              } else {
+                // Exclusive selection
+                selectedNodes.length = 0 // Clear all selections
+                selectedNodes.push(elementId) // Select the current element
+              }
+            } else {
+              if (isModifierKey) {
+                // Toggle selection
+                const index = selectedEdges.indexOf(elementId)
+                if (index > -1) {
+                  selectedEdges.splice(index, 1) // Deselect if already selected
+                } else {
+                  selectedEdges.push(elementId) // Select if not selected
+                }
+              } else {
+                // Exclusive selection
+                selectedEdges.length = 0 // Clear all selections
+                selectedEdges.push(elementId) // Select the current element
+              }
+            }
+            exclusiveSelect(id, selectedNodes, selectedEdges)
+          }
+        }
+        cy.autounselectify(false)
+      })
+
+      // Moving nodes
+      cy.on('dragfree', 'node', (e: EventObject): void => {
+        // Enable flag to avoid unnecessary fit
+        setNodesMoved(true)
+
+        const targetNode = e.target
+        const nodeId: IdType = targetNode.data('id')
+        const position = targetNode.position()
+        setNodePosition(id, nodeId, [position.x, position.y])
+      })
+
+      cy.on('mouseover', 'node, edge', (e: EventObject): void => {
+        const targetNode = e.target
+        setHoveredElement(targetNode.data('id'))
+      })
+      cy.on('mouseout', 'node, edge', (e: EventObject): void => {
+        setHoveredElement(undefined)
+      })
+
+      cy.endBatch()
+
+      cy.style(newStyle)
+
+      cy.fit()
+
+      setVisualStyle(id, vs)
+      setTimeout(() => {
+        isViewCreated.current = true
+      }, 1000)
+    }
     if (cy !== null) {
       renderNetwork()
     }
-  }, [cy])
+  }, [cy, networkView, displayMode])
 
   return (
     <>
