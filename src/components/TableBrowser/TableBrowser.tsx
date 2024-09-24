@@ -7,7 +7,7 @@ import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material'
 import { Button, ButtonGroup } from '@mui/material'
 import _ from 'lodash'
 import '../../assets/icons.css'
-import { SortAscIcon } from './Icon'
+import { SortAscIcon, SortDescIcon, RenameIcon } from './Icon'
 import {
   Table,
   ValueType,
@@ -487,7 +487,7 @@ export default function TableBrowser(props: {
                 }
               }}
             >
-              {' '}
+              <SortDescIcon />
             </Button>
             <Button
               onClick={() => {
@@ -504,7 +504,7 @@ export default function TableBrowser(props: {
               <span className="icon">&#47;</span>
             </Button>
             <Button onClick={() => setShowEditColumnForm(true)}>
-              Rename Column
+              <RenameIcon />
             </Button>
             <Button color="error" onClick={() => setShowDeleteColumnForm(true)}>
               <span className="icon">&#46;</span>
