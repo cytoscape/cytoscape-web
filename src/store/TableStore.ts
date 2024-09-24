@@ -282,7 +282,8 @@ export const useTableStore = create(
               ...columnToDuplicate,
               name: `${columnToDuplicate.name}_copy_${Date.now()}`,
             }
-            tableToUpdate?.columns.unshift(newColumn)
+            // Add the new column right after the column being duplicated
+            tableToUpdate?.columns.splice(columnIndex + 1, 0, newColumn);
 
             Array.from((tableToUpdate?.rows ?? new Map()).entries()).forEach(
               ([nodeId, nodeAttr]) => {

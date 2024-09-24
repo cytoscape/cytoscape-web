@@ -4,10 +4,16 @@ import Tab from '@mui/material/Tab'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material'
-import { Button, ButtonGroup } from '@mui/material'
-import _ from 'lodash'
+import { Button, ButtonGroup, Tooltip } from '@mui/material'
+import _, { set } from 'lodash'
 import '../../assets/icons.css'
-import { SortAscIcon, SortDescIcon, RenameIcon } from './Icon'
+import {
+  SortAscIcon,
+  SortDescIcon,
+  RenameIcon,
+  DuplicateIcon,
+  EditIcon,
+} from './Icon'
 import {
   Table,
   ValueType,
@@ -36,6 +42,8 @@ import {
   DataEditorRef,
   HeaderClickedEventArgs,
   GridColumn,
+  GridSelection,
+  CompactSelection,
 } from '@glideapps/glide-data-grid'
 
 import {
@@ -69,7 +77,8 @@ export interface TableColumn {
 }
 
 // Used for calculating proper height for the Data Grid
-const TOOLBAR_HEIGHT = 23
+const TOOLBAR_HEIGHT = 36
+const TABS_HEIGHT = 32
 
 // Adjust Data Grid size
 const GRID_GAP = TOOLBAR_HEIGHT * 2 - 1
@@ -145,13 +154,14 @@ export default function TableBrowser(props: {
     string | undefined
   >(undefined)
 
-  const [selectedColumnIndex, setSelectedColumnIndex] = React.useState<
-    number | undefined
-  >(undefined)
-
-  const [selectedCellXY, setSelectedCellXY] = React.useState<
-    [number, number] | undefined
-  >(undefined)
+  // use the built-in state to manage the selection sothat the state is synced with the data editor
+  const [selection, setSelection] = React.useState<GridSelection>({
+    columns: CompactSelection.empty(),
+    rows: CompactSelection.empty(),
+  })
+  const [selectedCellColumn, setSelectedCellColumn] = React.useState<
+    number | null
+  >(null)
 
   const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
   const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
@@ -409,24 +419,31 @@ export default function TableBrowser(props: {
     },
     [props.currentNetworkId, currentTable, tables, sort, rows],
   )
+
   const onHeaderClicked = React.useCallback(
     (col: number, event: HeaderClickedEventArgs): void => {
-      setSelectedColumnIndex(col)
-      setSelectedCellXY(undefined)
+      setSelection({
+        ...selection,
+        columns: CompactSelection.fromSingleSelection(col),
+      })
     },
-    [],
+    [selection],
   )
 
   const onCellClicked = React.useCallback(
     (cell: Item): void => {
-      setSelectedCellXY(cell as [number, number])
-      setSelectedColumnIndex(undefined)
+      setSelection({
+        ...selection,
+        rows: CompactSelection.fromSingleSelection(cell[1]),
+      })
+      setSelectedCellColumn(cell[0])
     },
-    [props.currentNetworkId, rows, currentTable, tables, sort],
+    [selection],
   )
 
   const selectedColumn =
-    selectedColumnIndex != null ? columns?.[selectedColumnIndex] : null
+    selection.columns.length > 0 ? columns[selection.columns.first()!] : null
+
   // scan the visual properties to see if the selected column name is used in any mappings
   const visualPropertiesDependentOnSelectedColumn = Object.values(
     visualStyle ?? {},
@@ -442,23 +459,12 @@ export default function TableBrowser(props: {
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
-            mt: 2,
-            mb: 2,
             bgColor: '#d9d9d9',
           }}
         >
-          <Box
-            sx={{
-              mr: 1,
-              width: 250,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            Selected Column: {selectedColumn.id}
-          </Box>
-          <ButtonGroup size="small">
+          <Tooltip title="Sort Ascending" placement="top">
             <Button
+              sx={{ mr: 1 }}
               onClick={() => {
                 if (selectedColumn != null) {
                   const columnKey = selectedColumn.id
@@ -474,7 +480,10 @@ export default function TableBrowser(props: {
             >
               <SortAscIcon />
             </Button>
+          </Tooltip>
+          <Tooltip title="Sort Descending" placement="top">
             <Button
+              sx={{ mr: 1 }}
               onClick={() => {
                 if (selectedColumn != null) {
                   const columnKey = selectedColumn.id
@@ -489,27 +498,45 @@ export default function TableBrowser(props: {
             >
               <SortDescIcon />
             </Button>
+          </Tooltip>
+          <Tooltip title="Duplicate column" placement="top">
             <Button
+              sx={{ mr: 1 }}
               onClick={() => {
-                if (selectedColumn != null) {
+                if (selectedColumn !== null) {
                   const columnKey = selectedColumn.id
                   duplicateColumn(
                     props.currentNetworkId,
                     currentTable === nodeTable ? 'node' : 'edge',
                     columnKey,
                   )
+                  setSelection({
+                    ...selection,
+                    columns: CompactSelection.fromSingleSelection(
+                      selectedColumn.index + 1, // select the newly created column
+                    ),
+                  })
                 }
               }}
             >
-              <span className="icon">&#47;</span>
+              <DuplicateIcon />
             </Button>
-            <Button onClick={() => setShowEditColumnForm(true)}>
-              <RenameIcon />
+          </Tooltip>
+          <Tooltip title="Rename column" placement="top">
+            <Button sx={{ mr: 1 }} onClick={() => setShowEditColumnForm(true)}>
+              <EditIcon />
             </Button>
-            <Button color="error" onClick={() => setShowDeleteColumnForm(true)}>
+          </Tooltip>
+          <Tooltip title="Delete column" placement="top">
+            <Button
+              color="error"
+              onClick={() => {
+                setShowDeleteColumnForm(true)
+              }}
+            >
               <span className="icon">&#46;</span>
             </Button>
-          </ButtonGroup>
+          </Tooltip>
         </Box>
         <EditTableColumnForm
           error={columnFormError}
@@ -549,7 +576,7 @@ export default function TableBrowser(props: {
                 })
               }
               setColumnFormError(undefined)
-              setSelectedColumnIndex(undefined)
+              setShowEditColumnForm(false)
             }
           }}
         />
@@ -573,14 +600,22 @@ export default function TableBrowser(props: {
                 setMapping(props.currentNetworkId, vp.name, undefined)
               })
             }
+            setShowDeleteColumnForm(false)
             setDeleteColumnFormError(undefined)
-            setSelectedColumnIndex(undefined)
+            setSelection({
+              columns: CompactSelection.empty(),
+              rows: CompactSelection.empty(),
+            })
           }}
         />
       </>
     ) : null
 
-  const selectedCell = selectedCellXY
+  const selectedCell =
+    selection.rows.length > 0 && selectedCellColumn !== null
+      ? [selectedCellColumn, selection.rows.first()!]
+      : null
+
   const selectedCellToolbar =
     selectedCell != null ? (
       <>
@@ -588,12 +623,10 @@ export default function TableBrowser(props: {
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
-            mt: 2,
-            mb: 2,
             bgColor: '#d9d9d9',
+            minWidth: '540px',
           }}
         >
-          <Box sx={{ mr: 1 }}>Selected cell actions</Box>
           <ButtonGroup size="small">
             <Button
               onClick={() => {
@@ -653,19 +686,25 @@ export default function TableBrowser(props: {
 
   const tableBrowserToolbar = (
     <Box sx={{ height: TOOLBAR_HEIGHT, display: 'flex', alignItems: 'center' }}>
-      <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
-        <span className="icon">&#82;</span>
-      </Button>
-      <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
-        <span className="icon">&#8209;</span>
-      </Button>
-      <Button
-        disabled={tables[props.currentNetworkId] === undefined}
-        sx={{ mr: 1 }}
-        onClick={() => showTableJoinForm(true)}
-      >
-        <span className="icon">&#44;</span>
-      </Button>
+      <Tooltip title="Search" placement="top">
+        <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
+          <span className="icon">&#82;</span>
+        </Button>
+      </Tooltip>
+      <Tooltip title="Insert New Column" placement="top">
+        <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
+          <span className="icon">&#8209;</span>
+        </Button>
+      </Tooltip>
+      <Tooltip title="Import Table from File ..." placement="top">
+        <Button
+          disabled={tables[props.currentNetworkId] === undefined}
+          sx={{ mr: 1 }}
+          onClick={() => showTableJoinForm(true)}
+        >
+          <span className="icon">&#44;</span>
+        </Button>
+      </Tooltip>
       <CreateTableColumnForm
         error={createColumnFormError}
         open={showCreateColumnForm}
@@ -699,8 +738,11 @@ export default function TableBrowser(props: {
                 dataType,
                 valueType,
               )
-              setSelectedColumnIndex(undefined)
               setCreateColumnFormError(undefined)
+              setSelection({
+                ...selection,
+                columns: CompactSelection.fromSingleSelection(0), // the new column is always placed at the most left side
+              })
               setShowCreateColumnForm(false)
             }
           }
@@ -738,15 +780,15 @@ export default function TableBrowser(props: {
           aria-label="tabs"
           TabIndicatorProps={{ sx: { backgroundColor: 'white' } }}
           sx={{
-            fontSize: 10,
+            fontSize: 12,
             '& button.Mui-selected': { color: 'white' },
             '& button': {
-              minHeight: TOOLBAR_HEIGHT,
-              height: TOOLBAR_HEIGHT,
+              minHeight: TABS_HEIGHT,
+              height: TABS_HEIGHT,
               width: 200,
             },
-            height: TOOLBAR_HEIGHT,
-            minHeight: TOOLBAR_HEIGHT,
+            height: TABS_HEIGHT,
+            minHeight: TABS_HEIGHT,
           }}
         >
           <Tab label={<Typography variant="caption">Nodes</Typography>} />
@@ -796,6 +838,8 @@ export default function TableBrowser(props: {
           onCellEdited={onCellEdited}
           columns={columns}
           rows={maxNodeId - minNodeId + 1}
+          gridSelection={selection}
+          onGridSelectionChange={setSelection}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
@@ -823,6 +867,8 @@ export default function TableBrowser(props: {
           onCellEdited={onCellEdited}
           columns={columns}
           rows={maxEdgeId - minEdgeId + 1}
+          gridSelection={selection}
+          onGridSelectionChange={setSelection}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={2}>
