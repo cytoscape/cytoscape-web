@@ -6,7 +6,8 @@ import Box from '@mui/material/Box'
 import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material'
 import { Button, ButtonGroup } from '@mui/material'
 import _ from 'lodash'
-
+import '../../assets/icons.css'
+import { SortAscIcon } from './Icon'
 import {
   Table,
   ValueType,
@@ -471,7 +472,7 @@ export default function TableBrowser(props: {
                 }
               }}
             >
-              Sort Asc.
+              <SortAscIcon />
             </Button>
             <Button
               onClick={() => {
@@ -487,7 +488,6 @@ export default function TableBrowser(props: {
               }}
             >
               {' '}
-              Sort Desc.
             </Button>
             <Button
               onClick={() => {
@@ -501,13 +501,13 @@ export default function TableBrowser(props: {
                 }
               }}
             >
-              Duplicate Column
+              <span className="icon">&#47;</span>
             </Button>
             <Button onClick={() => setShowEditColumnForm(true)}>
               Rename Column
             </Button>
             <Button color="error" onClick={() => setShowDeleteColumnForm(true)}>
-              Delete Column
+              <span className="icon">&#46;</span>
             </Button>
           </ButtonGroup>
         </Box>
@@ -654,17 +654,17 @@ export default function TableBrowser(props: {
   const tableBrowserToolbar = (
     <Box sx={{ height: TOOLBAR_HEIGHT, display: 'flex', alignItems: 'center' }}>
       <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
-        Search
+        <span className="icon">&#82;</span>
       </Button>
       <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
-        Create Column
+        <span className="icon">&#8209;</span>
       </Button>
       <Button
         disabled={tables[props.currentNetworkId] === undefined}
         sx={{ mr: 1 }}
         onClick={() => showTableJoinForm(true)}
       >
-        Import Table From File
+        <span className="icon">&#44;</span>
       </Button>
       <CreateTableColumnForm
         error={createColumnFormError}

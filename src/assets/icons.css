@@ -1,0 +1,14 @@
+@font-face {
+  font-family: 'CytoscapeIcons';
+  src:
+    url('./cytoscape-3-webfont.woff2') format('woff2'),
+    url('./cytoscape-3-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.icon {
+  font-family: 'CytoscapeIcons' !important;
+  font-size: 24px;
+  display: inline-block;
+}
