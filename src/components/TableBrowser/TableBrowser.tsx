@@ -612,7 +612,9 @@ export default function TableBrowser(props: {
     ) : null
 
   const selectedCell =
-    selection.rows.length > 0 && selectedCellColumn !== null
+    selection.rows.length > 0 &&
+    selectedCellColumn !== null &&
+    selectedCellColumn >= 0
       ? [selectedCellColumn, selection.rows.first()!]
       : null
 
