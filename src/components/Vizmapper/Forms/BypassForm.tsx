@@ -66,7 +66,7 @@ function BypassFormContent(props: {
   const [bypassValue, setBypassValue] = React.useState(
     visualProperty.defaultValue,
   )
-
+  const [isAccordionExpanded, setAccordionExpanded] = React.useState(false)
   const vpName = props.visualProperty.name
   const isSize =
     vpName === NodeVisualPropertyName.NodeHeight ||
@@ -92,6 +92,10 @@ function BypassFormContent(props: {
   const isNode = visualProperty.group === VisualPropertyGroup.Node
   const selectedElements: IdType[] = isNode ? selectedNodes : selectedEdges
   const selectedElementTable = isNode ? nodeTable : edgeTable
+
+  const handleAccordionToggle = () => {
+    setAccordionExpanded((prevExpanded) => !prevExpanded)
+  }
 
   const defaultColName = selectedElementTable.columns
     .map((col) => col.name.toLowerCase())
@@ -175,12 +179,17 @@ function BypassFormContent(props: {
       })
     })
 
-  if (selectedElements.length === 0 && elementsToRender.length > 0) {
-    additiveSelect(
-      currentNetworkId,
-      elementsToRender.map((e) => e.id),
-    )
-  }
+  //Select all elements for the use case: users want to know what elements have bypasses
+  React.useEffect(() => {
+    if (selectedElements.length === 0 && elementsToRender.length > 0) {
+      setAccordionExpanded(true)
+      additiveSelect(
+        currentNetworkId,
+        elementsToRender.map((e) => e.id),
+      )
+    }
+  }, [selectedElements.length, elementsToRender.length])
+
   const emptyBypassForm = (
     <>
       <Typography sx={{ m: 2 }}>
@@ -194,26 +203,24 @@ function BypassFormContent(props: {
       <Box
         sx={{
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          pt: 1,
+          flexDirection: 'column',
+          mt: 1,
+          mb: 1,
         }}
       >
-        <Box>
-          {isSize && <LockSizeCheckbox currentNetworkId={currentNetworkId} />}
-          {isEdgeLineColor && (
-            <LockColorCheckbox currentNetworkId={currentNetworkId} />
-          )}
-        </Box>
-        <Box sx={{ m: 1, mr: 0, display: 'flex', justifyContent: 'end' }}>
-          <VisualPropertyValueForm
-            visualProperty={visualProperty}
-            currentValue={bypassValue}
-            currentNetworkId={currentNetworkId}
-            onValueChange={(newBypassValue: VisualPropertyValueType): void =>
-              setBypassValue(newBypassValue)
-            }
-          />
+        <Box sx={{ m: 2, display: 'flex', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+            <Typography sx={{ mr: 1, pt: 0.25 }}>Bypass value:</Typography>
+            <VisualPropertyValueForm
+              visualProperty={visualProperty}
+              currentValue={bypassValue}
+              currentNetworkId={currentNetworkId}
+              onValueChange={(newBypassValue: VisualPropertyValueType): void =>
+                setBypassValue(newBypassValue)
+              }
+            />
+          </Box>
+
           <Button
             sx={{ ml: 1 }}
             size="small"
@@ -228,25 +235,37 @@ function BypassFormContent(props: {
               )
             }}
           >
-            Apply to all
+            Apply to Selected
           </Button>
         </Box>
+        <Box sx={{ ml: 2 }}>
+          {isSize && <LockSizeCheckbox currentNetworkId={currentNetworkId} />}
+          {isEdgeLineColor && (
+            <LockColorCheckbox currentNetworkId={currentNetworkId} />
+          )}
+        </Box>
       </Box>
-      <Accordion>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography>Advanced Options</Typography>
+      <Accordion sx={{ margin: '0 !important' }} expanded={isAccordionExpanded}>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          onClick={handleAccordionToggle}
+        >
+          <Typography>Bypass Details</Typography>
         </AccordionSummary>
-        <AccordionDetails>
-          <TableContainer sx={{ height: '400px', overflow: 'auto' }}>
+        <AccordionDetails sx={{ p: 1, maxHeight: '450px', overflow: 'auto' }}>
+          <TableContainer
+            sx={{ overflow: 'auto', maxHeight: '425px', maxWidth: '475px' }}
+          >
             <Table size={'small'} stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell>
+                  <TableCell sx={{ minWidth: 150 }}>
                     <Select
                       size="small"
                       labelId="label"
                       value={eleNameByCol}
                       onChange={handleEleNameChange}
+                      sx={{ maxWidth: 160 }}
                     >
                       {selectedElementTable.columns.map((col: Column) => {
                         return <MenuItem value={col.name}>{col.name}</MenuItem>
@@ -265,7 +284,7 @@ function BypassFormContent(props: {
                       </IconButton>
                     </Tooltip>
                   </TableCell>
-                  <TableCell>Remove</TableCell>
+                  <TableCell sx={{ minWidth: 85 }}>Remove</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody sx={{ overflow: 'auto' }}>
@@ -274,41 +293,54 @@ function BypassFormContent(props: {
                   const bypassValue = visualProperty.bypassMap?.get(id) ?? null
                   return (
                     <TableRow key={id}>
-                      <TableCell sx={{ maxWidth: 200, overflow: 'auto' }}>
-                        <div>
+                      <TableCell
+                        sx={{
+                          maxWidth: 185,
+                          overflow: 'auto',
+                        }}
+                      >
+                        <Box
+                          display="flex"
+                          justifyContent="flex-start"
+                          sx={{ pl: 1.75 }}
+                        >
                           {selectedElementTable.rows.get(id)?.[eleNameByCol] ??
                             ''}
-                        </div>
+                        </Box>
                       </TableCell>
 
-                      <TableCell>
-                        <VisualPropertyValueForm
-                          visualProperty={visualProperty}
-                          currentValue={bypassValue}
-                          currentNetworkId={currentNetworkId}
-                          onValueChange={(value) => {
-                            setBypass(
-                              currentNetworkId,
-                              visualProperty.name,
-                              [id],
-                              value,
-                            )
-                          }}
-                        />
+                      <TableCell sx={{ paddingLeft: '15%' }}>
+                        <Box display="flex" justifyContent="flex-start">
+                          <VisualPropertyValueForm
+                            visualProperty={visualProperty}
+                            currentValue={bypassValue}
+                            currentNetworkId={currentNetworkId}
+                            onValueChange={(value) => {
+                              setBypass(
+                                currentNetworkId,
+                                visualProperty.name,
+                                [id],
+                                value,
+                              )
+                            }}
+                          />
+                        </Box>
                       </TableCell>
-                      <TableCell>
-                        <IconButton
-                          onClick={() => {
-                            deleteBypass(
-                              currentNetworkId,
-                              visualProperty.name,
-                              [id],
-                            )
-                          }}
-                          disabled={!hasBypass}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        <Box display="flex" justifyContent="center">
+                          <IconButton
+                            onClick={() => {
+                              deleteBypass(
+                                currentNetworkId,
+                                visualProperty.name,
+                                [id],
+                              )
+                            }}
+                            disabled={!hasBypass}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   )
@@ -326,10 +358,8 @@ function BypassFormContent(props: {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        width: '400px',
-        height: '600px',
-        minWidth: '30vw',
-        minHeight: '30vh',
+        width: '500px',
+        maxHeight: '650px',
         overflow: 'hidden',
         pl: 1,
         pr: 1,
@@ -338,7 +368,7 @@ function BypassFormContent(props: {
       <Typography
         sx={{ m: 2, fontWeight: 'bold' }}
       >{`${visualProperty.displayName} Bypasses`}</Typography>
-      <Box>
+      <Box sx={{ pb: 2 }}>
         <Divider />
         {elementsToRender.length > 0 ? nonEmptyBypassForm : emptyBypassForm}
       </Box>
