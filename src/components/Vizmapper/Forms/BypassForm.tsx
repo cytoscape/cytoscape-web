@@ -61,8 +61,9 @@ import { Column } from 'src/models'
 function BypassFormContent(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
+  repositionPopover: () => void
 }): React.ReactElement {
-  const { visualProperty, currentNetworkId } = props
+  const { visualProperty, currentNetworkId, repositionPopover } = props
   const [bypassValue, setBypassValue] = React.useState(
     visualProperty.defaultValue,
   )
@@ -95,6 +96,7 @@ function BypassFormContent(props: {
 
   const handleAccordionToggle = () => {
     setAccordionExpanded((prevExpanded) => !prevExpanded)
+    repositionPopover()
   }
 
   const defaultColName = selectedElementTable.columns
@@ -125,7 +127,7 @@ function BypassFormContent(props: {
   }, [labelVp])
 
   const validElementsSelected =
-    selectedNodes.length > 0 &&
+    selectedElements.length > 0 &&
     (visualProperty.group === VisualPropertyGroup.Node ||
       visualProperty.group === VisualPropertyGroup.Edge)
 
@@ -133,62 +135,63 @@ function BypassFormContent(props: {
   // put all selected elements first (even if they have a bypass)
   // render all elements, if they don't have a bypass, leave it empty
   const bypassElementIds = new Set(
-    Array.from(visualProperty?.bypassMap?.keys()).map((k) => String(k)) ?? [],
+    visualProperty?.bypassMap
+      ? [...visualProperty.bypassMap.keys()].map(String)
+      : [],
   )
 
-  const elementsToRender: Array<{
+  let elementsWithByPass: Array<{
     id: IdType
-    selected: boolean
+    hasBypass: boolean
+  }> = []
+  let elementsWithOutByPass: Array<{
+    id: IdType
     hasBypass: boolean
   }> = []
 
-  let selectedElementsWithBypass = 0
-  selectedElements.forEach((id: IdType) => {
-    const hasBypass = visualProperty?.bypassMap.has(id)
-    elementsToRender.push({
-      id,
-      selected: true,
-      hasBypass: hasBypass ?? false,
-    })
-
-    if (hasBypass) {
-      selectedElementsWithBypass += 1
-    }
-
-    if (bypassElementIds.has(id)) {
-      bypassElementIds.delete(id)
-    }
-  })
-
-  const elements =
-    selectedElementsWithBypass > 0
-      ? selectedElements
-      : selectedElements.length === 0
-        ? isNode
-          ? Array.from(nodeTable.rows.keys())
-          : Array.from(edgeTable.rows.keys())
-        : selectedElements
-
-  elements
-    .filter((e) => bypassElementIds.has(e))
-    .forEach((e) => {
-      elementsToRender.push({
-        id: e,
-        selected: false,
-        hasBypass: true,
+  // Use Case I: users want to assign bypasses to selected elements
+  if (selectedElements.length > 0) {
+    elementsWithByPass = selectedElements
+      .filter((e) => bypassElementIds.has(e))
+      .map((id: IdType) => {
+        return {
+          id,
+          hasBypass: true,
+        }
       })
-    })
+    elementsWithOutByPass = selectedElements
+      .filter((e) => !bypassElementIds.has(e))
+      .map((id: IdType) => {
+        return {
+          id,
+          hasBypass: false,
+        }
+      })
+    // Use Case II: users want to know what elements have bypasses
+  } else {
+    const elements = isNode
+      ? Array.from(nodeTable.rows.keys())
+      : Array.from(edgeTable.rows.keys())
+    elementsWithByPass = elements
+      .filter((e) => bypassElementIds.has(e))
+      .map((e) => {
+        return {
+          id: e,
+          hasBypass: true,
+        }
+      })
+  }
 
   //Select all elements for the use case: users want to know what elements have bypasses
   React.useEffect(() => {
-    if (selectedElements.length === 0 && elementsToRender.length > 0) {
+    if (selectedElements.length === 0 && elementsWithByPass.length > 0) {
       setAccordionExpanded(true)
       additiveSelect(
         currentNetworkId,
-        elementsToRender.map((e) => e.id),
+        elementsWithByPass.map((e) => e.id),
       )
     }
-  }, [selectedElements.length, elementsToRender.length])
+  }, [selectedElements.length, elementsWithByPass.length])
 
   const emptyBypassForm = (
     <>
@@ -197,6 +200,54 @@ function BypassFormContent(props: {
       </Typography>
     </>
   )
+  const renderTableRow = (ele: { id: IdType; hasBypass: boolean }) => {
+    const bypassValue = visualProperty.bypassMap?.get(ele.id) ?? null
+    return (
+      <TableRow key={ele.id}>
+        <TableCell
+          sx={{
+            maxWidth: 185,
+            overflow: 'auto',
+          }}
+        >
+          <Box display="flex" justifyContent="flex-start" sx={{ pl: 1.75 }}>
+            {selectedElementTable.rows.get(ele.id)?.[eleNameByCol] ?? ''}
+          </Box>
+        </TableCell>
+
+        <TableCell sx={{ paddingLeft: '15%' }}>
+          <Box display="flex" justifyContent="flex-start">
+            <VisualPropertyValueForm
+              visualProperty={visualProperty}
+              currentValue={bypassValue}
+              currentNetworkId={currentNetworkId}
+              onValueChange={(value) => {
+                setBypass(
+                  currentNetworkId,
+                  visualProperty.name,
+                  [ele.id],
+                  value,
+                )
+              }}
+            />
+          </Box>
+        </TableCell>
+
+        <TableCell sx={{ textAlign: 'center' }}>
+          <Box display="flex" justifyContent="center">
+            <IconButton
+              onClick={() => {
+                deleteBypass(currentNetworkId, visualProperty.name, [ele.id])
+              }}
+              disabled={!ele.hasBypass}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Box>
+        </TableCell>
+      </TableRow>
+    )
+  }
 
   const nonEmptyBypassForm = (
     <>
@@ -210,7 +261,7 @@ function BypassFormContent(props: {
       >
         <Box sx={{ m: 2, display: 'flex', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-            <Typography sx={{ mr: 1, pt: 0.25 }}>Bypass value:</Typography>
+            <Typography sx={{ mr: 1, pt: 0.25 }}>Bypass Value:</Typography>
             <VisualPropertyValueForm
               visualProperty={visualProperty}
               currentValue={bypassValue}
@@ -245,16 +296,21 @@ function BypassFormContent(props: {
           )}
         </Box>
       </Box>
-      <Accordion sx={{ margin: '0 !important' }} expanded={isAccordionExpanded}>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          onClick={handleAccordionToggle}
-        >
+      <Accordion
+        sx={{ margin: '0 !important' }}
+        expanded={isAccordionExpanded}
+        onChange={handleAccordionToggle}
+        TransitionProps={{
+          onExited: repositionPopover, // When accordion collapses
+          onEntered: repositionPopover, // When accordion expands
+        }}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography>Bypass Details</Typography>
         </AccordionSummary>
-        <AccordionDetails sx={{ p: 1, maxHeight: '450px', overflow: 'auto' }}>
+        <AccordionDetails sx={{ p: 1, maxHeight: '350px', overflow: 'auto' }}>
           <TableContainer
-            sx={{ overflow: 'auto', maxHeight: '425px', maxWidth: '475px' }}
+            sx={{ overflow: 'auto', maxHeight: '325px', maxWidth: '475px' }}
           >
             <Table size={'small'} stickyHeader>
               <TableHead>
@@ -265,7 +321,7 @@ function BypassFormContent(props: {
                       labelId="label"
                       value={eleNameByCol}
                       onChange={handleEleNameChange}
-                      sx={{ maxWidth: 160 }}
+                      sx={{ maxWidth: 155 }}
                     >
                       {selectedElementTable.columns.map((col: Column) => {
                         return <MenuItem value={col.name}>{col.name}</MenuItem>
@@ -288,63 +344,16 @@ function BypassFormContent(props: {
                 </TableRow>
               </TableHead>
               <TableBody sx={{ overflow: 'auto' }}>
-                {elementsToRender.map((ele) => {
-                  const { id, selected, hasBypass } = ele
-                  const bypassValue = visualProperty.bypassMap?.get(id) ?? null
-                  return (
-                    <TableRow key={id}>
-                      <TableCell
-                        sx={{
-                          maxWidth: 185,
-                          overflow: 'auto',
-                        }}
-                      >
-                        <Box
-                          display="flex"
-                          justifyContent="flex-start"
-                          sx={{ pl: 1.75 }}
-                        >
-                          {selectedElementTable.rows.get(id)?.[eleNameByCol] ??
-                            ''}
-                        </Box>
-                      </TableCell>
-
-                      <TableCell sx={{ paddingLeft: '15%' }}>
-                        <Box display="flex" justifyContent="flex-start">
-                          <VisualPropertyValueForm
-                            visualProperty={visualProperty}
-                            currentValue={bypassValue}
-                            currentNetworkId={currentNetworkId}
-                            onValueChange={(value) => {
-                              setBypass(
-                                currentNetworkId,
-                                visualProperty.name,
-                                [id],
-                                value,
-                              )
-                            }}
-                          />
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'center' }}>
-                        <Box display="flex" justifyContent="center">
-                          <IconButton
-                            onClick={() => {
-                              deleteBypass(
-                                currentNetworkId,
-                                visualProperty.name,
-                                [id],
-                              )
-                            }}
-                            disabled={!hasBypass}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Box>
+                {elementsWithOutByPass.map(renderTableRow)}
+                {elementsWithByPass.length > 0 &&
+                  elementsWithOutByPass.length > 0 && (
+                    <TableRow>
+                      <TableCell colSpan={3}>
+                        <Divider />
                       </TableCell>
                     </TableRow>
-                  )
-                })}
+                  )}
+                {elementsWithByPass.map(renderTableRow)}
               </TableBody>
             </Table>
           </TableContainer>
@@ -359,7 +368,7 @@ function BypassFormContent(props: {
         display: 'flex',
         flexDirection: 'column',
         width: '500px',
-        maxHeight: '650px',
+        maxHeight: '600px',
         overflow: 'hidden',
         pl: 1,
         pr: 1,
@@ -370,7 +379,9 @@ function BypassFormContent(props: {
       >{`${visualProperty.displayName} Bypasses`}</Typography>
       <Box sx={{ pb: 2 }}>
         <Divider />
-        {elementsToRender.length > 0 ? nonEmptyBypassForm : emptyBypassForm}
+        {elementsWithByPass.length === 0 && elementsWithOutByPass.length === 0
+          ? emptyBypassForm
+          : nonEmptyBypassForm}
       </Box>
     </Box>
   )
@@ -382,6 +393,16 @@ export function BypassForm(props: {
   sx?: SxProps
 }): React.ReactElement {
   const [formAnchorEl, setFormAnchorEl] = React.useState<Element | null>(null)
+  const viewBoxRef = React.useRef<HTMLDivElement | null>(null)
+  // Force popover repositioning when accordion is expanded/collapsed
+  const repositionPopover = () => {
+    if (viewBoxRef.current) {
+      setFormAnchorEl(null)
+      setTimeout(() => {
+        setFormAnchorEl(viewBoxRef.current) // A hack to force a reposition
+      }, 0)
+    }
+  }
 
   const showForm = (value: Element | null): void => {
     setFormAnchorEl(value)
@@ -459,7 +480,14 @@ export function BypassForm(props: {
 
   return (
     <Box sx={props.sx ?? {}}>
-      <Box onClick={(e) => showForm(e.currentTarget)}>{viewBox}</Box>
+      <Box
+        ref={viewBoxRef}
+        onClick={(e) => {
+          showForm(e.currentTarget)
+        }}
+      >
+        {viewBox}
+      </Box>
       <Popover
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
@@ -467,8 +495,9 @@ export function BypassForm(props: {
           showForm(null)
         }}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
+        transformOrigin={{ vertical: 'top', horizontal: 55 }}
       >
-        <BypassFormContent {...props} />
+        <BypassFormContent {...props} repositionPopover={repositionPopover} />
       </Popover>
     </Box>
   )
