@@ -218,6 +218,7 @@ const CyjsRenderer = ({
     cy: any,
     networkView: NetworkView | undefined,
     displayMode: DisplayMode,
+    applyFit: boolean,
   ): void => {
     if (renderedId === id || cy === null) {
       return
@@ -389,7 +390,9 @@ const CyjsRenderer = ({
 
     cy.style(newStyle)
 
-    cy.fit()
+    if (applyFit) {
+      cy.fit()
+    }
 
     setVisualStyle(id, vs)
     setTimeout(() => {
@@ -405,7 +408,7 @@ const CyjsRenderer = ({
       return
     }
     isViewCreated.current = false
-    renderNetwork(cy, networkView, displayMode)
+    renderNetwork(cy, networkView, displayMode, true)
     setRenderedId(id)
   }, [network])
 
@@ -691,7 +694,7 @@ const CyjsRenderer = ({
 
   useEffect(() => {
     if (cy !== null) {
-      renderNetwork(cy, networkView, displayMode)
+      renderNetwork(cy, networkView, displayMode, false)
     }
   }, [cy, networkView, displayMode])
 
