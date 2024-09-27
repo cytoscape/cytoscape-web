@@ -26,7 +26,6 @@ import {
   Info as InfoIcon,
   ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material'
-import * as MapperFactory from '../../../models/VisualStyleModel/impl/MapperFactory'
 import { IdType } from '../../../models/IdType'
 import {
   EdgeVisualPropertyName,
@@ -56,7 +55,8 @@ import {
   LockSizeCheckbox,
 } from '../VisualPropertyRender/Checkbox'
 import { useState } from 'react'
-import { Column } from 'src/models'
+import { Column } from '../../../models'
+import { getKeybyAttribute } from '../../../features/MergeNetworks/utils/attributes-operations'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType
@@ -67,6 +67,12 @@ function BypassFormContent(props: {
   const [bypassValue, setBypassValue] = React.useState(
     visualProperty.defaultValue,
   )
+  const [elementsWithBypass, setElementsWithBypass] = React.useState<
+    Map<string, boolean>
+  >(new Map())
+  const [elementsWithoutBypass, setElementsWithoutBypass] = React.useState<
+    Map<string, boolean>
+  >(new Map())
   const [isAccordionExpanded, setAccordionExpanded] = React.useState(false)
   const vpName = props.visualProperty.name
   const isSize =
@@ -140,58 +146,47 @@ function BypassFormContent(props: {
       : [],
   )
 
-  let elementsWithByPass: Array<{
-    id: IdType
-    hasBypass: boolean
-  }> = []
-  let elementsWithOutByPass: Array<{
-    id: IdType
-    hasBypass: boolean
-  }> = []
+  React.useEffect(() => {
+    // Use Case I: users want to assign bypasses to selected elements
+    if (selectedElements.length > 0) {
+      const withBypass: Map<string, boolean> = new Map()
+      const withoutBypass: Map<string, boolean> = new Map()
 
-  // Use Case I: users want to assign bypasses to selected elements
-  if (selectedElements.length > 0) {
-    elementsWithByPass = selectedElements
-      .filter((e) => bypassElementIds.has(e))
-      .map((id: IdType) => {
-        return {
-          id,
-          hasBypass: true,
+      selectedElements.forEach((id) => {
+        if (bypassElementIds.has(id)) {
+          withBypass.set(id, true)
+        } else {
+          withoutBypass.set(id, false)
         }
       })
-    elementsWithOutByPass = selectedElements
-      .filter((e) => !bypassElementIds.has(e))
-      .map((id: IdType) => {
-        return {
-          id,
-          hasBypass: false,
-        }
-      })
+
+      setElementsWithBypass(withBypass)
+      setElementsWithoutBypass(withoutBypass)
+    }
     // Use Case II: users want to know what elements have bypasses
-  } else {
-    const elements = isNode
-      ? Array.from(nodeTable.rows.keys())
-      : Array.from(edgeTable.rows.keys())
-    elementsWithByPass = elements
-      .filter((e) => bypassElementIds.has(e))
-      .map((e) => {
-        return {
-          id: e,
-          hasBypass: true,
+    else {
+      const elements = isNode
+        ? Array.from(nodeTable.rows.keys())
+        : Array.from(edgeTable.rows.keys())
+
+      const withBypass: Map<string, boolean> = new Map()
+      elements.forEach((id) => {
+        if (bypassElementIds.has(id)) {
+          withBypass.set(id, true)
         }
       })
-  }
+
+      setElementsWithBypass(withBypass)
+    }
+  }, [])
 
   //Select all elements for the use case: users want to know what elements have bypasses
   React.useEffect(() => {
-    if (selectedElements.length === 0 && elementsWithByPass.length > 0) {
+    if (selectedElements.length === 0 && elementsWithBypass.size > 0) {
       setAccordionExpanded(true)
-      additiveSelect(
-        currentNetworkId,
-        elementsWithByPass.map((e) => e.id),
-      )
+      additiveSelect(currentNetworkId, Array.from(elementsWithBypass.keys()))
     }
-  }, [selectedElements.length, elementsWithByPass.length])
+  }, [selectedElements.length, elementsWithBypass.size])
 
   const emptyBypassForm = (
     <>
@@ -200,53 +195,88 @@ function BypassFormContent(props: {
       </Typography>
     </>
   )
-  const renderTableRow = (ele: { id: IdType; hasBypass: boolean }) => {
-    const bypassValue = visualProperty.bypassMap?.get(ele.id) ?? null
-    return (
-      <TableRow key={ele.id}>
-        <TableCell
+  const renderTableRows = (
+    elements: Map<string, boolean>,
+    hasBypass: boolean,
+  ) => {
+    const sortedElements = Array.from(elements.keys()).sort((idA, idB) => {
+      const nameA: string = getKeybyAttribute(
+        selectedElementTable.rows.get(idA)?.[eleNameByCol] ?? '',
+      ).toString()
+      const nameB: string = getKeybyAttribute(
+        selectedElementTable.rows.get(idB)?.[eleNameByCol] ?? '',
+      ).toString()
+      return nameA.localeCompare(nameB) // Sort alphabetically
+    })
+
+    return sortedElements.map((id) => {
+      const bypassValue = visualProperty.bypassMap?.get(id) ?? null
+      return (
+        <TableRow
+          key={id}
           sx={{
-            maxWidth: 185,
-            overflow: 'auto',
+            backgroundColor: elements.get(id)
+              ? 'rgba(233, 242, 249)'
+              : 'inherit',
           }}
         >
-          <Box display="flex" justifyContent="flex-start" sx={{ pl: 1.75 }}>
-            {selectedElementTable.rows.get(ele.id)?.[eleNameByCol] ?? ''}
-          </Box>
-        </TableCell>
+          <TableCell
+            sx={{
+              maxWidth: 185,
+              overflow: 'auto',
+            }}
+          >
+            <Box display="flex" justifyContent="flex-start" sx={{ pl: 1.75 }}>
+              {getKeybyAttribute(
+                selectedElementTable.rows.get(id)?.[eleNameByCol] ?? '',
+              ).toString()}
+            </Box>
+          </TableCell>
 
-        <TableCell sx={{ paddingLeft: '15%' }}>
-          <Box display="flex" justifyContent="flex-start">
-            <VisualPropertyValueForm
-              visualProperty={visualProperty}
-              currentValue={bypassValue}
-              currentNetworkId={currentNetworkId}
-              onValueChange={(value) => {
-                setBypass(
-                  currentNetworkId,
-                  visualProperty.name,
-                  [ele.id],
-                  value,
-                )
-              }}
-            />
-          </Box>
-        </TableCell>
+          <TableCell sx={{ paddingLeft: '15%' }}>
+            <Box display="flex" justifyContent="flex-start">
+              <VisualPropertyValueForm
+                visualProperty={visualProperty}
+                currentValue={bypassValue}
+                currentNetworkId={currentNetworkId}
+                onValueChange={(value) => {
+                  setBypass(currentNetworkId, visualProperty.name, [id], value)
+                  if (hasBypass) {
+                    setElementsWithBypass((prev) => new Map(prev).set(id, true))
+                  } else {
+                    setElementsWithoutBypass((prev) =>
+                      new Map(prev).set(id, true),
+                    )
+                  }
+                }}
+              />
+            </Box>
+          </TableCell>
 
-        <TableCell sx={{ textAlign: 'center' }}>
-          <Box display="flex" justifyContent="center">
-            <IconButton
-              onClick={() => {
-                deleteBypass(currentNetworkId, visualProperty.name, [ele.id])
-              }}
-              disabled={!ele.hasBypass}
-            >
-              <DeleteIcon />
-            </IconButton>
-          </Box>
-        </TableCell>
-      </TableRow>
-    )
+          <TableCell sx={{ textAlign: 'center' }}>
+            <Box display="flex" justifyContent="center">
+              <IconButton
+                onClick={() => {
+                  deleteBypass(currentNetworkId, visualProperty.name, [id])
+                  if (hasBypass) {
+                    setElementsWithBypass((prev) =>
+                      new Map(prev).set(id, false),
+                    )
+                  } else {
+                    setElementsWithoutBypass((prev) =>
+                      new Map(prev).set(id, false),
+                    )
+                  }
+                }}
+                disabled={!elements.get(id)}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          </TableCell>
+        </TableRow>
+      )
+    })
   }
 
   const nonEmptyBypassForm = (
@@ -306,7 +336,17 @@ function BypassFormContent(props: {
         }}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography>Bypass Details</Typography>
+          <Typography sx={{ pt: 0.5 }}>Bypass Details</Typography>
+          {elementsWithBypass.size > 0 && elementsWithoutBypass.size > 0 && (
+            <Tooltip title="The table below is divided into two sections: elements with bypasses and elements without bypasses, separated by a divider line.">
+              <IconButton
+                onClick={(e) => e.stopPropagation()}
+                sx={{ ml: '2px', p: '4px !important' }}
+              >
+                <InfoIcon sx={{ color: 'rgb(0,0,0,0.4)' }} />
+              </IconButton>
+            </Tooltip>
+          )}
         </AccordionSummary>
         <AccordionDetails sx={{ p: 1, maxHeight: '350px', overflow: 'auto' }}>
           <TableContainer
@@ -331,12 +371,11 @@ function BypassFormContent(props: {
                   <TableCell sx={{ minWidth: 180 }}>
                     Bypass/Overwrite
                     <Tooltip
-                      arrow={true}
-                      title="This is to overwrite "
+                      title="Bypass overrides default and mapped values for specific elements, ensuring custom settings take priority"
                       placement="top"
                     >
                       <IconButton sx={{ padding: 0.5, mb: 0.5 }}>
-                        <InfoIcon />
+                        <InfoIcon sx={{ color: 'rgb(0,0,0,0.4)' }} />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
@@ -344,16 +383,16 @@ function BypassFormContent(props: {
                 </TableRow>
               </TableHead>
               <TableBody sx={{ overflow: 'auto' }}>
-                {elementsWithOutByPass.map(renderTableRow)}
-                {elementsWithByPass.length > 0 &&
-                  elementsWithOutByPass.length > 0 && (
+                {renderTableRows(elementsWithBypass, true)}
+                {elementsWithBypass.size > 0 &&
+                  elementsWithoutBypass.size > 0 && (
                     <TableRow>
                       <TableCell colSpan={3}>
                         <Divider />
                       </TableCell>
                     </TableRow>
                   )}
-                {elementsWithByPass.map(renderTableRow)}
+                {renderTableRows(elementsWithoutBypass, false)}
               </TableBody>
             </Table>
           </TableContainer>
@@ -379,7 +418,7 @@ function BypassFormContent(props: {
       >{`${visualProperty.displayName} Bypasses`}</Typography>
       <Box sx={{ pb: 2 }}>
         <Divider />
-        {elementsWithByPass.length === 0 && elementsWithOutByPass.length === 0
+        {elementsWithBypass.size === 0 && elementsWithoutBypass.size === 0
           ? emptyBypassForm
           : nonEmptyBypassForm}
       </Box>
