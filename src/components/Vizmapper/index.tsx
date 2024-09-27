@@ -170,7 +170,7 @@ function VisualPropertyView(props: {
             }}
           >
             <IconButton sx={{ padding: 0.5 }}>
-              <InfoIcon />
+              <InfoIcon sx={{ color: 'rgb(0,0,0,0.4)' }} />
             </IconButton>
           </Tooltip>
         )}
