@@ -199,6 +199,7 @@ function BypassFormContent(props: {
     elements: Map<string, boolean>,
     hasBypass: boolean,
   ) => {
+    // Sort the elements alphabetically according to the selected column
     const sortedElements = Array.from(elements.keys()).sort((idA, idB) => {
       const nameA: string = getKeybyAttribute(
         selectedElementTable.rows.get(idA)?.[eleNameByCol] ?? '',
@@ -206,7 +207,9 @@ function BypassFormContent(props: {
       const nameB: string = getKeybyAttribute(
         selectedElementTable.rows.get(idB)?.[eleNameByCol] ?? '',
       ).toString()
-      return nameA.localeCompare(nameB) // Sort alphabetically
+      if (nameA === '' && nameB !== '') return 1
+      if (nameB === '' && nameA !== '') return -1
+      return nameA.localeCompare(nameB)
     })
 
     return sortedElements.map((id) => {

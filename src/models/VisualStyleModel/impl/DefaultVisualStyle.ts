@@ -350,7 +350,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   edgeZOrder: {
     group: 'edge',
-    name: 'nodeZOrder',
+    name: 'edgeZOrder',
     displayName: 'Z Order',
     type: 'number',
     defaultValue: 0,
