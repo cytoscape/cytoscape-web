@@ -2,7 +2,7 @@ import {
   CommunityDetectionAlgorithms,
   CommunityDetectionRequest,
   CommunityDetectionResult,
-  CommunityDetectionResultsStatus,
+  CommunityDetectionResultStatus,
   ErrorResponse,
   ServerStatus,
   ServiceMetaData,
@@ -105,7 +105,7 @@ export const fetchTaskRawResult = async (
 export const fetchTaskStatus = async (
   serviceUrl: string,
   taskId: string,
-): Promise<CommunityDetectionResultsStatus> => {
+): Promise<CommunityDetectionResultStatus> => {
   const response = await fetch(`${serviceUrl}/${taskId}/status`, {
     method: 'GET',
     headers: {
@@ -116,7 +116,7 @@ export const fetchTaskStatus = async (
     const errorResponse: ErrorResponse = await response.json()
     throw new Error(errorResponse.message)
   }
-  const status: CommunityDetectionResultsStatus = await response.json()
+  const status: CommunityDetectionResultStatus = await response.json()
   return status
 }
 

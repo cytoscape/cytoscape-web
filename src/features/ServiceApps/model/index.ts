@@ -138,7 +138,7 @@ export interface ServiceMetaData {
   outputDataFormat: string
 }
 
-export interface CommunityDetectionResultsStatus {
+export interface CommunityDetectionResultStatus {
   id: string
   status: string
   message: string
