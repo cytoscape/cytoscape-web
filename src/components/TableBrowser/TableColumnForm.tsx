@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { TableColumn } from './TableBrowser'
+import { TableColumn } from './TableBrowserOld'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
