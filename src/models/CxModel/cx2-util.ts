@@ -195,7 +195,7 @@ const getVisualEditorProperties = (cx2: Cx2): VisualStyleOptions => {
   )[0] as VisualEditorProperties
   return {
     visualEditorProperties: {
-      nodeSizeLocked: properties.nodeSizeLocked ?? false,
+      nodeSizeLocked: properties?.nodeSizeLocked ?? false,
       arrowColorMatchesEdge: properties.arrowColorMatchesEdge ?? false,
     },
   }

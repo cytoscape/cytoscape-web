@@ -8,7 +8,7 @@ export const LockSizeCheckbox = (props: { currentNetworkId: IdType }) => {
   const nodeSizeLocked = useUiStateStore(
     (state) =>
       state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties
-        .nodeSizeLocked,
+        ?.nodeSizeLocked,
   )
   const setNodeSizeLockedState = useUiStateStore(
     (state) => state.setNodeSizeLockedState,

@@ -55,12 +55,12 @@ function VisualPropertyView(props: {
   const nodeSizeLocked = useUiStateStore(
     (state) =>
       state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties
-        .nodeSizeLocked,
+        ?.nodeSizeLocked,
   )
   const arrowColorMatchesEdge = useUiStateStore(
     (state) =>
       state.ui.visualStyleOptions[currentNetworkId]?.visualEditorProperties
-        .arrowColorMatchesEdge,
+        ?.arrowColorMatchesEdge,
   )
 
   const widthDisabled =
