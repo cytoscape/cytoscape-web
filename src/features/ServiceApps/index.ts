@@ -6,10 +6,11 @@ import {
 } from './api'
 import {
   CommunityDetectionRequest,
-  CommunityDetectionResult,
-  CommunityDetectionResultStatus,
   JsonNode,
   Task,
+  TaskRequest,
+  TaskResult,
+  TaskStatus,
 } from './model'
 
 const POLL_INTERVAL = 500
@@ -19,9 +20,9 @@ export const runTask = async (
   algorithmName: string,
   data: JsonNode,
   customParameters?: { [key: string]: string },
-): Promise<CommunityDetectionResult> => {
+): Promise<TaskResult> => {
   // Prepare the task request with user-selected data
-  const taskRequest: CommunityDetectionRequest = {
+  const taskRequest: TaskRequest = {
     algorithm: algorithmName,
     data: data,
     ...(customParameters && { customParameters }),
@@ -34,15 +35,15 @@ export const runTask = async (
 
 export const submitAndProcessTask = async (
   serviceUrl: string,
-  task: CommunityDetectionRequest,
-): Promise<CommunityDetectionResult> => {
+  task: TaskRequest,
+): Promise<TaskResult> => {
   // Submit the task
   const taskResponse: Task = await submitTask(serviceUrl, task)
   const taskId = taskResponse.id
 
   // Poll the task status until it's done
   while (true) {
-    const status: CommunityDetectionResultStatus = await fetchTaskStatus(
+    const status: TaskStatus = await fetchTaskStatus(
       serviceUrl,
       taskId,
     )
@@ -56,7 +57,7 @@ export const submitAndProcessTask = async (
   }
 
   // Fetch the final task result
-  const taskResult: CommunityDetectionResult = await fetchTaskResult(
+  const taskResult: TaskResult = await fetchTaskResult(
     serviceUrl,
     taskId,
   )
