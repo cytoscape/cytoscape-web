@@ -102,7 +102,7 @@ export const ShareNetworkButton = (): JSX.Element => {
 
   useEffect(() => {
     setSelection(new URLSearchParams(search))
-  }, [selectedNodeCount, selectedEdgeCount])
+  }, [networkViewModel?.selectedNodes, networkViewModel?.selectedEdges])
 
   const [open, setOpen] = useState(false)
 
