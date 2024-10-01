@@ -98,29 +98,34 @@ const toRangeAndDomain = <T extends VisualPropertyValueType>(
 const getMapper = <T extends VisualPropertyValueType>(
   cm: ContinuousMappingFunction,
 ): Mapper => {
-  const { controlPoints, defaultValue } = cm
+  const { min, max, controlPoints, defaultValue } = cm
+  const minValue = min.value as number
+  const maxValue = max.value as number
+  const minVpValue = min.vpValue as T
+  const maxVpValue = max.vpValue as T
   const [domain, range] = toRangeAndDomain<T>(controlPoints)
   const d3Mapper = d3Scale.scaleLinear<T>().domain(domain).range(range)
   const mapper = (attrValue: ValueType): VisualPropertyValueType => {
     if (attrValue !== undefined) {
-      return d3Mapper(attrValue as number)
+      const numericAttrValue = attrValue as number
+      const isLessThanMin =
+        (min.inclusive ?? false)
+          ? numericAttrValue < minValue
+          : numericAttrValue <= minValue
+      const isGreaterThanMax =
+        (max.inclusive ?? false)
+          ? numericAttrValue > maxValue
+          : numericAttrValue >= maxValue
+      if (isGreaterThanMax) {
+        return maxVpValue
+      } else if (isLessThanMin) {
+        return minVpValue
+      } else {
+        return d3Mapper(numericAttrValue)
+      }
     }
     return defaultValue
   }
 
   return mapper
 }
-
-// const getColorMapper = (cm: ContinuousMappingFunction): Mapper => {
-//   const { controlPoints, defaultValue } = cm
-//   const [domain, range] = toRangeAndDomain<ColorType>(controlPoints)
-//   const colorMapper = d3Scale.scaleLinear<string>().domain(domain).range(range)
-//   const mapper = (attrValue: ValueType): VisualPropertyValueType => {
-//     if (attrValue !== undefined) {
-//       return colorMapper(attrValue as number) as ColorType
-//     }
-//     return defaultValue
-//   }
-
-//   return mapper
-// }
