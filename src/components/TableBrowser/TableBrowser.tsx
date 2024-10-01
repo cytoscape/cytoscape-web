@@ -689,12 +689,20 @@ export default function TableBrowser(props: {
   const tableBrowserToolbar = (
     <Box sx={{ height: TOOLBAR_HEIGHT, display: 'flex', alignItems: 'center' }}>
       <Tooltip title="Search" placement="top">
-        <Button sx={{ mr: 1 }} onClick={() => setShowSearch(!showSearch)}>
+        <Button
+          sx={{ mr: 1 }}
+          disabled={tables[props.currentNetworkId] === undefined}
+          onClick={() => setShowSearch(!showSearch)}
+        >
           <span className="icon">&#82;</span>
         </Button>
       </Tooltip>
       <Tooltip title="Insert New Column" placement="top">
-        <Button sx={{ mr: 1 }} onClick={() => setShowCreateColumnForm(true)}>
+        <Button
+          sx={{ mr: 1 }}
+          disabled={tables[props.currentNetworkId] === undefined}
+          onClick={() => setShowCreateColumnForm(true)}
+        >
           <span className="icon">&#8209;</span>
         </Button>
       </Tooltip>

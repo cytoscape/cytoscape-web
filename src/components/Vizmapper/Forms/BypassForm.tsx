@@ -294,33 +294,34 @@ function BypassFormContent(props: {
       >
         <Box sx={{ m: 2, display: 'flex', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-            <Typography sx={{ mr: 1, pt: 0.25 }}>Bypass Value:</Typography>
+            <Typography sx={{ mr: 1, pt: 0.25 }}>
+              {`Apply the bypass value to all selected ${isNode ? 'nodes' : 'edges'}:`}
+            </Typography>
             <VisualPropertyValueForm
               visualProperty={visualProperty}
               currentValue={bypassValue}
               currentNetworkId={currentNetworkId}
-              onValueChange={(newBypassValue: VisualPropertyValueType): void =>
+              onValueChange={(
+                newBypassValue: VisualPropertyValueType,
+              ): void => {
                 setBypassValue(newBypassValue)
-              }
+                setBypass(
+                  currentNetworkId,
+                  visualProperty.name,
+                  selectedElements,
+                  newBypassValue,
+                )
+                setElementsWithBypass(() => {
+                  const newMap = new Map()
+                  selectedElements.forEach((id) => {
+                    newMap.set(id, true)
+                  })
+                  return newMap
+                })
+                setElementsWithoutBypass(() => new Map())
+              }}
             />
           </Box>
-
-          <Button
-            sx={{ ml: 1 }}
-            size="small"
-            variant="contained"
-            disabled={!validElementsSelected}
-            onClick={() => {
-              setBypass(
-                currentNetworkId,
-                visualProperty.name,
-                selectedElements,
-                bypassValue,
-              )
-            }}
-          >
-            Apply to Selected
-          </Button>
         </Box>
         <Box sx={{ ml: 2 }}>
           {isSize && <LockSizeCheckbox currentNetworkId={currentNetworkId} />}
