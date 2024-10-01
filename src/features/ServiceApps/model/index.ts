@@ -15,29 +15,18 @@ enum ServerStatusType {
   error = 'error',
 }
 
-enum AlgorithmType{
-    value = 'value',
-    flag= 'flag',
+enum AlgorithmType {
+  value = 'value',
+  flag = 'flag',
 }
 
-enum AlgorithmValidationType{
-    number = 'number',
-    digits = 'digits',
-    string = 'string',
+enum AlgorithmValidationType {
+  number = 'number',
+  digits = 'digits',
+  string = 'string',
 }
 
-export interface CommunityDetectionAlgorithm {
-  name: string
-  displayName: string
-  description: string
-  version: string
-  dockerImage: string
-  inputDataFormat: string
-  outputDataFormat: string
-  rawResultContentType: string
-  binaryResult: boolean
-  customParameters: CustomParameter[]
-}
+export interface ServiceAlgorithm {}
 
 export interface CustomParameter {
   name: string
@@ -52,8 +41,8 @@ export interface CustomParameter {
   maxValue: number
 }
 
-export interface CommunityDetectionAlgorithms {
-  algorithms: { [key: string]: CommunityDetectionAlgorithm }
+export interface Algorithms {
+  algorithms: { [key: string]: Algorithm }
 }
 
 export interface ErrorResponse {
@@ -94,32 +83,28 @@ export interface Task {
   id: string
 }
 
-export interface CommunityDetectionRequest {
+export interface TaskRequest {
   algorithm: string
   data: JsonNode
   customParameters?: { [key: string]: string }
 }
 
-export interface CommunityDetectionResult {
-  id: string
-  status: string
-  message: string
+export interface TaskStatus {
   progress: number
-  wallTime: number
-  startTime: number
-  result: JsonNode
 }
 
+export interface TaskResult {}
+
 export interface AlgorithmCustomParameter {
-    displayName: string
-    description: string
-    type: AlgorithmType
-    defaultValue: string
-    validationType: AlgorithmValidationType
-    validationHelp: string
-    validationRegex: string
-    minValue: number
-    maxValue: number
+  displayName: string
+  description: string
+  type: AlgorithmType
+  defaultValue: string
+  validationType: AlgorithmValidationType
+  validationHelp: string
+  validationRegex: string
+  minValue: number
+  maxValue: number
 }
 
 export interface ServiceAlgorithm {
@@ -138,15 +123,6 @@ export interface ServiceMetaData {
   outputDataFormat: string
 }
 
-export interface CommunityDetectionResultStatus {
-  id: string
-  status: string
-  message: string
-  progress: number
-  wallTime: number
-  startTime: number
-}
-
 export interface ServerStatus {
   status: ServerStatusType
   pcDiskFull: number
@@ -155,4 +131,42 @@ export interface ServerStatus {
   completedTasks: number
   canceledTasks: number
   restVersion: string
+}
+
+export interface CommunityDetectionAlgorithm extends ServiceAlgorithm {
+  name: string
+  displayName: string
+  description: string
+  version: string
+  dockerImage: string
+  inputDataFormat: string
+  outputDataFormat: string
+  rawResultContentType: string
+  binaryResult: boolean
+  customParameters: CustomParameter[]
+}
+
+export interface CommunityDetectionRequest extends TaskRequest {
+  algorithm: string
+  data: JsonNode
+  customParameters?: { [key: string]: string }
+}
+
+export interface CommunityDetectionResult extends TaskResult {
+  id: string
+  status: string
+  message: string
+  progress: number
+  wallTime: number
+  startTime: number
+  result: JsonNode
+}
+
+export interface CommunityDetectionResultStatus extends TaskStatus {
+  id: string
+  status: string
+  message: string
+  progress: number
+  wallTime: number
+  startTime: number
 }

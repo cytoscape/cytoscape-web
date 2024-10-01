@@ -1,12 +1,12 @@
 import {
-  CommunityDetectionAlgorithms,
-  CommunityDetectionRequest,
-  CommunityDetectionResult,
-  CommunityDetectionResultStatus,
+  Algorithms,
   ErrorResponse,
   ServerStatus,
   ServiceMetaData,
   Task,
+  TaskRequest,
+  TaskResult,
+  TaskStatus,
 } from '../model'
 
 const serviceUrl = 'http://cd.ndexbio.org/cd/communitydetection/v1'
@@ -14,7 +14,7 @@ const serviceUrl = 'http://cd.ndexbio.org/cd/communitydetection/v1'
 // fetch algorithms function
 export const fetchAlgorithms = async (
   serviceUrl: string,
-): Promise<CommunityDetectionAlgorithms> => {
+): Promise<Algorithms> => {
   const response = await fetch(`${serviceUrl}/algorithms`, {
     method: 'GET',
     headers: {
@@ -27,7 +27,7 @@ export const fetchAlgorithms = async (
     throw new Error(errorResponse.message)
   }
 
-  const data: CommunityDetectionAlgorithms = await response.json()
+  const data: Algorithms = await response.json()
   return data
 }
 
@@ -47,7 +47,7 @@ export const deleteTask = async (
 // submit task function
 export const submitTask = async (
   serviceUrl: string,
-  task: CommunityDetectionRequest,
+  task: TaskRequest,
 ): Promise<Task> => {
   const response = await fetch(serviceUrl, {
     method: 'POST',
@@ -68,7 +68,7 @@ export const submitTask = async (
 export const fetchTaskResult = async (
   serviceUrl: string,
   taskId: string,
-): Promise<CommunityDetectionResult> => {
+): Promise<TaskResult> => {
   const response = await fetch(`${serviceUrl}/${taskId}`, {
     method: 'GET',
     headers: {
@@ -79,7 +79,7 @@ export const fetchTaskResult = async (
     const errorResponse: ErrorResponse = await response.json()
     throw new Error(errorResponse.message)
   }
-  const result: CommunityDetectionResult = await response.json()
+  const result: TaskResult = await response.json()
   return result
 }
 
@@ -105,7 +105,7 @@ export const fetchTaskRawResult = async (
 export const fetchTaskStatus = async (
   serviceUrl: string,
   taskId: string,
-): Promise<CommunityDetectionResultStatus> => {
+): Promise<TaskStatus> => {
   const response = await fetch(`${serviceUrl}/${taskId}/status`, {
     method: 'GET',
     headers: {
@@ -116,7 +116,7 @@ export const fetchTaskStatus = async (
     const errorResponse: ErrorResponse = await response.json()
     throw new Error(errorResponse.message)
   }
-  const status: CommunityDetectionResultStatus = await response.json()
+  const status: TaskStatus = await response.json()
   return status
 }
 
