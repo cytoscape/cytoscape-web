@@ -63,6 +63,7 @@ import { NetworkView } from '../../models/ViewModel'
 import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { useEffect, useRef } from 'react'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -129,7 +130,16 @@ export default function TableBrowser(props: {
     useUiStateStore((state) => state.setPanelState)
   const { panels } = ui
   const setUi = useUiStateStore((state) => state.setUi)
-  const workspace = useWorkspaceStore((state) => state.workspace)
+  const networkModified = useWorkspaceStore(
+    (state) => state.workspace.networkModified,
+  )
+  const networkModifiedRef = useRef(networkModified)
+
+  // Update the ref when networkModified changes
+  useEffect(() => {
+    networkModifiedRef.current = networkModified
+  }, [networkModified])
+
   const setCurrentTabIndex = (index: number): void => {
     const nextTableUi = { ...ui.tableUi, activeTabIndex: index }
 
@@ -221,10 +231,9 @@ export default function TableBrowser(props: {
         !_.isEqual(prev.nodeTable, next.nodeTable) ||
         !_.isEqual(prev.edgeTable, next.edgeTable)
 
-      const { networkModified } = workspace
       const currentNetworkIsNotModified =
-        (networkModified[networkId] === undefined &&
-          !(networkModified[networkId] ?? false)) ??
+        (networkModifiedRef.current[networkId] === undefined &&
+          !(networkModifiedRef.current[networkId] ?? false)) ??
         false
 
       // If table data changed and the network is not already marked as modified, set it to modified
