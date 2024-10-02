@@ -17,8 +17,12 @@
   },
   "action": "addNetworks",
   "rootMenu": {
-    "path": ["Apps", "Example", "Service"],
-    "gravity": [0, 0, 1]
+    "root": "Apps",
+    "path": [
+              {"name":"Example",
+               "gravity":0}, 
+              {"name":"Service",
+               "gravity": 1}]
   },
   "name": "Example Service",
   "description": "An Example Service",
