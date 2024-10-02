@@ -1,9 +1,8 @@
 {
-  "selectedData": {
+  "serviceInputDefinition": {
     "type": "nodes",
     "scope": "all",
-    "parameters": {
-      "columns": [
+    "inputColumns": [
         {
           "name": "name",
           "description": "Name",
@@ -13,10 +12,9 @@
           "columnName": "name"
         }
       ]
-    }
   },
-  "action": "addNetworks",
-  "rootMenu": {
+  "cyWebAction": "addNetworks",
+  "cyWebMenuItem": {
     "root": "Apps",
     "path": [
               {"name":"Example",
