@@ -108,7 +108,7 @@ export const getTaskStatus = async (
 }
 
 // get server status function
-export const fetchServerStatus = async (
+export const getServerStatus = async (
   serviceUrl: string,
 ): Promise<ServerStatus> => {
   const response = await fetch(`${serviceUrl}/status`, {
@@ -126,7 +126,7 @@ export const fetchServerStatus = async (
 }
 
 // get algorithm status function
-export const fetchServiceMetaData = async (
+export const getAlgorithmStatus = async (
   serviceUrl: string,
   algorithmName: string,
 ): Promise<ServerStatus> => {
