@@ -15,11 +15,11 @@ export const AboutCytoscapeWebMenuItem = (props: BaseMenuProps): React.ReactElem
     props.handleClose();
   };
 
-  const gitCommitHash = (typeof process !== 'undefined' && process.env.REACT_APP_GIT_COMMIT_HASH) || 'N/A';
-  const buildTimestamp = (typeof process !== 'undefined' && process.env.REACT_APP_BUILD_TIMESTAMP) || 'N/A';
-  
-  console.log("Git Commit Hash:", gitCommitHash);
-  console.log("Build Timestamp:", buildTimestamp);
+  const commitHash = process.env.REACT_APP_GIT_COMMIT
+  ? process.env.REACT_APP_GIT_COMMIT.substring(0, 7)
+  : 'N/A';  const buildDate = process.env.REACT_APP_BUILD_DATE
+  ? new Date(process.env.REACT_APP_BUILD_DATE).toLocaleString()
+  : 'N/A'; 
   
   return (
     <>
@@ -35,10 +35,10 @@ export const AboutCytoscapeWebMenuItem = (props: BaseMenuProps): React.ReactElem
             Version: {packageInfo.version}
           </Typography>
           <Typography variant="body1" gutterBottom>
-            Commit: {gitCommitHash}
+            Commit: {commitHash}
           </Typography>
           <Typography variant="body1" gutterBottom>
-            Date: {buildTimestamp}
+            Date: {buildDate}
           </Typography>
           <Typography variant="body2" color="textSecondary">
             A web-based network visualization and analysis platform
