@@ -1,50 +1,63 @@
+import { deleteTask, getTaskResult, getTaskStatus, submitTask } from './api'
 import {
-  deleteTask,
-  fetchTaskResult,
-  fetchTaskStatus,
-  submitTask,
-} from './api'
-import {
-  CommunityDetectionRequest,
+  CytoContainerRequest,
+  CytoContainerResult,
+  CytoContainerResultStatus,
+  InputColumn,
+  InputNetwork,
   JsonNode,
   Task,
-  TaskRequest,
-  TaskResult,
-  TaskStatus,
 } from './model'
 
 const POLL_INTERVAL = 500
+
+export const assemblInputData = async (
+  type: string,
+  scope: string,
+  inputColumns: InputColumn[],
+  inputNetwork: InputNetwork
+) => {
+  
+  return
+}
+
 
 export const runTask = async (
   serviceUrl: string,
   algorithmName: string,
   data: JsonNode,
   customParameters?: { [key: string]: string },
-): Promise<TaskResult> => {
+): Promise<CytoContainerResult> => {
   // Prepare the task request with user-selected data
-  const taskRequest: TaskRequest = {
+  const taskRequest: CytoContainerRequest = {
     algorithm: algorithmName,
     data: data,
     ...(customParameters && { customParameters }),
   }
 
   // Submit task and get the result
-  const result = await submitAndProcessTask(serviceUrl, taskRequest)
+  const result = await submitAndProcessTask(
+    serviceUrl,
+    algorithmName,
+    taskRequest,
+  )
   return result
 }
 
 export const submitAndProcessTask = async (
   serviceUrl: string,
-  task: TaskRequest,
-): Promise<TaskResult> => {
+  algorithmName: string,
+  task: CytoContainerRequest,
+): Promise<CytoContainerResult> => {
   // Submit the task
-  const taskResponse: Task = await submitTask(serviceUrl, task)
+  const taskResponse: Task = await submitTask(serviceUrl, algorithmName, task)
   const taskId = taskResponse.id
 
   // Poll the task status until it's done
   while (true) {
-    const status: TaskStatus = await fetchTaskStatus(
+    const status: CytoContainerResultStatus = await getTaskStatus(
       serviceUrl,
+      algorithmName,
       taskId,
     )
 
@@ -57,12 +70,13 @@ export const submitAndProcessTask = async (
   }
 
   // Fetch the final task result
-  const taskResult: TaskResult = await fetchTaskResult(
+  const taskResult: CytoContainerResult = await getTaskResult(
     serviceUrl,
+    algorithmName,
     taskId,
   )
   // Delete the task after fetching the result
-  await deleteTask(serviceUrl, taskId)
+  await deleteTask(serviceUrl, algorithmName, taskId)
 
   return taskResult
 }

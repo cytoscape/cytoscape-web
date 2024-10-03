@@ -14,6 +14,16 @@ enum AlgorithmValidationType {
   string = 'string',
 }
 
+enum inputNetworkModel{
+  network = 'network',
+  graph = 'graph'
+}
+
+enum inputNetworkFormat{
+  cx2 = 'cx2',
+  edgeList = 'edgeList',
+}
+
 export interface ErrorResponse {
   errorCode: string
   message: string
@@ -102,4 +112,19 @@ export interface ServerStatus {
   completedTasks: number
   canceledTasks: number
   version: string
+}
+
+
+export interface InputColumn{
+    name: string,
+    description: string,
+    dataType: string,
+    allowMultipleSelection: boolean,
+    defaultColumnName: string,
+    columnName: string
+}
+
+export interface InputNetwork{
+  model:inputNetworkModel
+  format:inputNetworkFormat
 }
