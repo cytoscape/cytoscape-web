@@ -1,6 +1,8 @@
 import { IconButton, Tooltip } from '@mui/material'
 import { ZoomOutMap } from '@mui/icons-material'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
+import { useUiStateStore } from '../../store/UiStateStore'
+import { IdType } from 'src/models'
 
 interface FitButtonProps {
   rendererId: string
@@ -13,8 +15,16 @@ export const FitButton = ({ rendererId }: FitButtonProps): JSX.Element => {
     (state) => state.getFunction,
   )
 
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+
   const handleClick = (): void => {
-    const fitFunction = getRendererFunction(rendererId, FIT_FUNCTION_NAME)
+    const fitFunction = getRendererFunction(
+      rendererId,
+      FIT_FUNCTION_NAME,
+      activeNetworkId,
+    )
     if (fitFunction !== undefined) {
       fitFunction()
       console.log('Fit function called for:', rendererId)
