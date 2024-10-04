@@ -14,6 +14,7 @@ import { applyMigrations } from './migrations'
 import { getNetworkViewId } from '../ViewModelStore'
 import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { CyApp } from '../../models/AppModel/CyApp'
+import { ServiceApp } from '../../models/AppModel/ServiceApp'
 
 const DB_NAME = 'cyweb-db'
 
@@ -34,6 +35,7 @@ class CyDB extends Dexie {
   timestamp!: DxTable<any>
   filters!: DxTable<any>
   apps!: DxTable<CyApp>
+  serviceApps!: DxTable<ServiceApp>
 
   constructor(dbName: string) {
     super(dbName)
@@ -48,6 +50,7 @@ class CyDB extends Dexie {
       timestamp: 'id',
       filters: 'id',
       apps: 'id',
+      serviceApps: 'url',
     })
 
     applyMigrations(this).catch((err) => console.log(err))
@@ -55,10 +58,17 @@ class CyDB extends Dexie {
 }
 
 // Initialize the DB
-let db = new CyDB(DB_NAME)
+let db: CyDB
+try {
+  db = new CyDB(DB_NAME)
+} catch (err) {
+  console.error('### Failed to initialize DB', err)
+  throw err
+}
 
 export const initializeDb = async (): Promise<void> => {
   applyMigrations(db).catch((err) => {
+    console.error('### Migration Failed', err)
     throw err
   })
   db.open()
@@ -578,5 +588,30 @@ export const getAppFromDb = async (
 export const deleteAppFromDb = async (appId: string): Promise<void> => {
   await db.transaction('rw', db.apps, async () => {
     await db.apps.delete(appId)
+  })
+}
+
+/**
+ * Store Service App URL to DB
+ */
+export const putServiceAppToDb = async (
+  serviceApp: ServiceApp,
+): Promise<void> => {
+  try {
+    await db.transaction('rw', db.serviceApps, async () => {
+      await db.serviceApps.put(serviceApp)
+    })
+  } catch (error) {
+    console.error('Failed to add service app state to the database:', error)
+  }
+}
+
+export const getAllServiceAppsFromDb = async (): Promise<ServiceApp[]> => {
+  return await db.serviceApps.toArray()
+}
+
+export const deleteServiceAppFromDb = async (url: string): Promise<void> => {
+  await db.transaction('rw', db.apps, async () => {
+    await db.serviceApps.delete(url)
   })
 }

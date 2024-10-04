@@ -94,7 +94,12 @@ export const AppMenu = (props: DropdownMenuProps) => {
             return <MenuComponent key={index} handleClose={handleClose} />
           })}
         </Suspense>
-        <MenuItem onClick={() => handleOpenDialog(true)}>App Settings</MenuItem>
+        <MenuItem onClick={() => handleOpenDialog(true)}>
+          App Settings...
+        </MenuItem>
+        <MenuItem onClick={() => handleOpenDialog(true)}>
+          External Service Settings...
+        </MenuItem>
       </Menu>
       <AppSettingsDialog
         openDialog={openDialog}
