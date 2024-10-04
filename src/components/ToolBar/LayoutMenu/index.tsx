@@ -1,7 +1,7 @@
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import { Divider, MenuItem, Tooltip } from '@mui/material'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { IdType } from '../../../models/IdType'
@@ -11,6 +11,9 @@ import { Network } from '../../../models/NetworkModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
 import { useUiStateStore } from '../../../store/UiStateStore'
+import { PrimeReactProvider } from 'primereact/api'
+import { OverlayPanel } from 'primereact/overlaypanel'
+import { TieredMenu } from 'primereact/tieredmenu'
 
 interface DropdownMenuProps {
   label: string
@@ -57,7 +60,10 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     setAnchorEl(event.currentTarget)
   }
 
+  const op = useRef(null)
+
   const handleClose = (): void => {
+    ;(op.current as any)?.hide()
     setAnchorEl(null)
   }
 
@@ -74,7 +80,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   }
 
   const getMenuItems = (): any => {
-    const menuItems: any[] = []
+    const layoutMenuItems: any[] = []
     layoutEngines.forEach((layoutEngine: LayoutEngine) => {
       const engineName: string = layoutEngine.name
       const names: string[] = Object.keys(layoutEngine.algorithms)
@@ -102,35 +108,52 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
           },
         }
 
-        menuItems.push(menuItem)
+        layoutMenuItems.push(menuItem)
       })
     })
 
-    return menuItems.map((menuItem: any) => {
-      return (
-        <Tooltip
-          arrow
-          placement={'right'}
-          title={menuItem.description}
-          key={menuItem.key}
-        >
-          <MenuItem
-            key={menuItem.key}
-            disabled={menuItem.disabled}
-            onClick={() => {
-              handleClose()
-              menuItem.onClick()
-            }}
-          >
-            {menuItem.label}
+    return [
+      ...layoutMenuItems.map((menuItem: any) => {
+        return {
+          label: menuItem.label,
+          template: (
+            <Tooltip
+              arrow
+              placement={'right'}
+              title={menuItem.description}
+              key={menuItem.key}
+            >
+              <MenuItem
+                key={menuItem.key}
+                disabled={menuItem.disabled}
+                onClick={() => {
+                  handleClose()
+                  menuItem.onClick()
+                }}
+              >
+                {menuItem.label}
+              </MenuItem>
+            </Tooltip>
+          ),
+        }
+      }),
+      {
+        label: '',
+        template: <Divider />,
+      },
+      {
+        label: 'Settings...',
+        template: (
+          <MenuItem onClick={() => handleOpenDialog(true)}>
+            Settings...
           </MenuItem>
-        </Tooltip>
-      )
-    })
+        ),
+      },
+    ]
   }
 
   return (
-    <div>
+    <PrimeReactProvider>
       <Button
         sx={{
           color: 'white',
@@ -140,28 +163,19 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
         aria-controls={open ? 'basic-menu' : undefined}
         aria-haspopup="true"
         aria-expanded={open ? 'true' : undefined}
-        onClick={handleOpenDropdownMenu}
+        onClick={(e) => (op.current as any)?.toggle(e)}
       >
         {label}
       </Button>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{
-          'aria-labelledby': label,
-        }}
-      >
-        {getMenuItems()}
-        <Divider />
-        <MenuItem onClick={() => handleOpenDialog(true)}>Settings...</MenuItem>
-      </Menu>
+      <OverlayPanel ref={op} unstyled>
+        <TieredMenu model={getMenuItems()} />
+      </OverlayPanel>
       <LayoutOptionDialog
         afterLayout={afterLayout}
         network={target}
         open={openDialog}
         setOpen={setOpenDialog}
       />
-    </div>
+    </PrimeReactProvider>
   )
 }

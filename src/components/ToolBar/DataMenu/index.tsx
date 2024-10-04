@@ -31,18 +31,12 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
-  const handleOpenDropdownMenu = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    setAnchorEl(event.currentTarget)
-  }
+  const op = useRef(null)
 
   const handleClose = (): void => {
     ;(op.current as any)?.hide()
     setAnchorEl(null)
   }
-
-  const op = useRef(null)
 
   const menuItems = [
     {
