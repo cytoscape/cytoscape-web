@@ -183,6 +183,8 @@ export default function VizmapperView(props: {
   networkId: IdType
   height: number
 }): React.ReactElement {
+  const TAB_ROTATE_DEGREE = 330
+  const TAB_TEXT_WIDTH = 34
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
   const visualStyles: Record<IdType, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
@@ -243,12 +245,12 @@ export default function VizmapperView(props: {
           backgroundColor: '#2F80ED',
           '& button.Mui-selected': { color: 'white' },
           '& button': {
-            minHeight: 30,
-            height: 30,
+            minHeight: 32,
+            height: 32,
             width: 30,
           },
-          height: 38,
-          minHeight: 30,
+          height: 32,
+          minHeight: 32,
         }}
         onChange={(e, nextTab) => setCurrentTabIndex(nextTab)}
       >
@@ -256,14 +258,39 @@ export default function VizmapperView(props: {
         <Tab label={<Typography variant="caption">Edges</Typography>} />
         <Tab label={<Typography variant="caption">Network</Typography>} />
       </Tabs>
-      <Box sx={{ display: 'flex', p: 0.5, ml: 1 }}>
-        <Box sx={{ width: 24, textAlign: 'center', mr: 1.5, fontSize: 12 }}>
-          Def.
+      <Box sx={{ display: 'flex', p: 0.5, ml: 1, minHeight: '36px' }}>
+        <Box
+          sx={{
+            width: TAB_TEXT_WIDTH,
+            textAlign: 'center',
+            mr: 1.5,
+            fontSize: 12,
+            transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
+          }}
+        >
+          Default
         </Box>
-        <Box sx={{ width: 24, textAlign: 'center', mr: 1.5, fontSize: 12 }}>
-          Map.
+        <Box
+          sx={{
+            width: TAB_TEXT_WIDTH,
+            textAlign: 'center',
+            mr: 1.5,
+            fontSize: 12,
+            transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
+          }}
+        >
+          Mapping
         </Box>
-        <Box sx={{ width: 24, textAlign: 'center', fontSize: 12 }}>Byp.</Box>
+        <Box
+          sx={{
+            width: TAB_TEXT_WIDTH,
+            textAlign: 'center',
+            fontSize: 12,
+            transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
+          }}
+        >
+          Bypass
+        </Box>
       </Box>
       <Divider />
       <div hidden={currentTabIndex !== 0}>
