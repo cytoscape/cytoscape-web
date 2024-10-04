@@ -694,9 +694,15 @@ const CyjsRenderer = ({
 
   useEffect(() => {
     if (cy !== null) {
+      renderNetwork(cy, networkView, displayMode, true)
+    }
+  }, [cy])
+
+  useEffect(() => {
+    if (cy !== null) {
       renderNetwork(cy, networkView, displayMode, false)
     }
-  }, [cy, networkView, displayMode])
+  }, [networkView, displayMode])
 
   return (
     <>

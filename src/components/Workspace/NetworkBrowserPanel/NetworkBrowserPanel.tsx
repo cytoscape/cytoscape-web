@@ -172,7 +172,9 @@ export const NetworkBrowserPanel = ({
         )}
       </Box>
       <Box hidden={currentTabIndex !== 2}>
-        {currentTabIndex === 2 && <LLMQueryResultPanel />}
+        {currentTabIndex === 2 && (
+          <LLMQueryResultPanel height={allotmentDimensions[0]} />
+        )}
       </Box>
     </Box>
   )
