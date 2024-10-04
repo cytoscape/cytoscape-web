@@ -1,3 +1,5 @@
+import { AttributeName, ValueType } from '../../../models'
+
 enum ServerStatusType {
   ok = 'ok',
   error = 'error',
@@ -14,14 +16,26 @@ enum AlgorithmValidationType {
   string = 'string',
 }
 
-enum inputNetworkModel{
+enum inputNetworkModel {
   network = 'network',
-  graph = 'graph'
+  graph = 'graph',
 }
 
-enum inputNetworkFormat{
+enum inputNetworkFormat {
   cx2 = 'cx2',
   edgeList = 'edgeList',
+}
+
+export enum ScopeType{
+  dynamic = 'dynamic',
+  selected = 'selected',
+  all = 'all',
+}
+
+export enum InputDataType {
+  nodes = 'nodes',
+  edges = 'edges',
+  network = 'network',
 }
 
 export interface ErrorResponse {
@@ -54,7 +68,7 @@ export interface AlgorithmParameter {
   validationRegex: string
   minValue: number
   maxValue: number
-  flag:string
+  flag: string
 }
 
 export interface SelectedData {
@@ -63,7 +77,7 @@ export interface SelectedData {
   scope: string
 }
 
-export interface SelectedDataParameter{
+export interface SelectedDataParameter {
   name: string
   format: string
   description: string
@@ -71,7 +85,7 @@ export interface SelectedDataParameter{
   model: string
 }
 
-export interface CytoContainerResult{
+export interface CytoContainerResult {
   id: string
   status: string
   message: string
@@ -81,7 +95,7 @@ export interface CytoContainerResult{
   result: JsonNode
 }
 
-export interface CytoContainerResultStatus{
+export interface CytoContainerResultStatus {
   id: string
   status: string
   message: string
@@ -91,7 +105,7 @@ export interface CytoContainerResultStatus{
 }
 
 export interface JsonNode {
-  [key: string]: any; 
+  [key: string]: any
 }
 
 export interface Task {
@@ -114,17 +128,26 @@ export interface ServerStatus {
   version: string
 }
 
-
-export interface InputColumn{
-    name: string,
-    description: string,
-    dataType: string,
-    allowMultipleSelection: boolean,
-    defaultColumnName: string,
-    columnName: string
+export interface InputColumn {
+  name: string
+  description: string
+  dataType: string
+  allowMultipleSelection: boolean
+  defaultColumnName: string
+  columnName: string
 }
 
-export interface InputNetwork{
-  model:inputNetworkModel
-  format:inputNetworkFormat
+export interface InputNetwork {
+  model: inputNetworkModel
+  format: inputNetworkFormat
+}
+
+interface ColumnForServer {
+  id: string
+  type: string
+}
+
+export interface TableDataObject {
+  columns: ColumnForServer[]
+  rows: Record<string, Record<AttributeName, ValueType>>
 }

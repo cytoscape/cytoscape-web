@@ -1,4 +1,13 @@
-import { Table, IdType } from '../../models'
+import { exportNetworkToCx2 } from '../../store/io/exportCX'
+import {
+  Table,
+  IdType,
+  AttributeName,
+  ValueType,
+  Network,
+  VisualStyle,
+  NdexNetworkSummary,
+} from '../../models'
 import { deleteTask, getTaskResult, getTaskStatus, submitTask } from './api'
 import {
   CytoContainerRequest,
@@ -6,60 +15,154 @@ import {
   CytoContainerResultStatus,
   InputColumn,
   InputNetwork,
+  TableDataObject,
   JsonNode,
   Task,
+  ScopeType,
+  InputDataType,
 } from './model'
+import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { NetworkView } from '../../models/ViewModel'
 
 const POLL_INTERVAL = 500 // 0.5 seconds
 
-export const createDataObject = async (
-  table:Table,
-  type: string,
-  scope: string,
-  inputColumns: InputColumn[],
+// export const createDataObject = async (
+//   table: Table,
+//   type: InputDataType,
+//   scope: ScopeType,
+//   inputColumns: InputColumn[],
+//   selectedNodeIds?: IdType[],
+// ) => {
+//   if (type === InputDataType.network) {
+//     return createNetworkDataObj()
+//   }
+//   return createTableDataObj(table, scope, selectedNodeIds ?? [], inputColumns)
+// }
+
+export const createNetworkDataObj = (
+  scope: ScopeType,
+  inputNetwork: InputNetwork,
+  network: Network,
+  visualStyle?: VisualStyle,
+  summary?: NdexNetworkSummary,
+  table?: TableRecord,
+  visualStyleOptions?: VisualStyleOptions,
+  viewModel?: NetworkView,
 ) => {
-  
-  return
+  if (inputNetwork.format === 'cx2') {
+    if (inputNetwork.model === 'graph') {
+      return exportGraphToCx2(network)
+    } else if (
+      inputNetwork.model === 'network' &&
+      visualStyle &&
+      summary &&
+      table
+    )
+      return exportNetworkToCx2(
+        network,
+        visualStyle,
+        summary,
+        table.nodeTable,
+        table.edgeTable,
+        visualStyleOptions,
+        viewModel,
+        summary.name,
+      )
+    else {
+      throw new Error('Illegal Input')
+    }
+  } else {
+    // output edgelist format
+    throw new Error('Not implemented')
+  }
 }
 
-const serializeColumns = (table: Table,columns: InputColumn[]): JsonNode => {
-  const serializedColumns = columns.map((column) => {
+const exportGraphToCx2 = (network: Network) => {
+
+}
+
+const createTableDataObj = (
+  table: Table,
+  scope: ScopeType,
+  selectedElementIds: IdType[],
+  columns: InputColumn[],
+): TableDataObject => {
+  let filterElements = true
+  const translatedColumns = columns.map((column) => {
     return {
       id: column.name,
       type: column.dataType,
     }
   })
 
-  const rows = table.rows.map((row) => {
-    return 
-  })
+  if (
+    scope === ScopeType.all ||
+    (scope === ScopeType.dynamic && selectedElementIds.length === 0)
+  ) {
+    filterElements = false
+  }
+
+  const filteredRows = filterTable(
+    table,
+    selectedElementIds,
+    columns.map((col) => col.name),
+    filterElements,
+  )
   return {
-    columns: {serializedColumns},
-    rows: {}
+    columns: translatedColumns,
+    rows: filteredRows,
   }
 }
-           
-function filterTable(
-  table: Table,
-  selectedNodeIds: IdType[],   // List of node IDs to filter
-  selectedColumns: AttributeName[] // List of columns to filter
-): Record<IdType,Record<AttributeName, ValueType>> {
-  // Step 1 & 2: Use reduce to filter both rows and columns
-  return selectedNodeIds.reduce((acc, nodeId) => {
-    const row = table.rows.get(nodeId);
-    if (row) {
-      // Filter the columns for the current row
-      const filteredRow = selectedColumns.reduce((colAcc, columnName) => {
-        if (row.hasOwnProperty(columnName)) {
-          colAcc[columnName] = row[columnName];
-        }
-        return colAcc;
-      }, {} as Partial<Record<AttributeName, ValueType>>);
 
-      acc[nodeId] = filteredRow;
-    }
-    return acc;
-  }, {} as Record<IdType, Partial<Record<AttributeName, ValueType>>>);
+const filterTable = (
+  table: Table,
+  selectedNodeIds: IdType[], // List of node IDs to filter
+  selectedColumns: AttributeName[], // List of columns to filter
+  filterElements: boolean = true,
+): Record<IdType, Record<AttributeName, ValueType>> => {
+  if (filterElements) {
+    return selectedNodeIds.reduce(
+      (acc, nodeId) => {
+        const row = table.rows.get(nodeId)
+        if (row) {
+          // Filter the columns for the current row
+          const filteredRow = selectedColumns.reduce(
+            (colAcc, columnName) => {
+              if (row.hasOwnProperty(columnName)) {
+                colAcc[columnName] = row[columnName]
+              }
+              return colAcc
+            },
+            {} as Record<AttributeName, ValueType>,
+          )
+
+          acc[nodeId] = filteredRow
+        }
+        return acc
+      },
+      {} as Record<IdType, Record<AttributeName, ValueType>>,
+    )
+  } else {
+    // only reduce on the selected columns
+    return Array.from(table.rows.entries()).reduce(
+      (acc, [nodeId, row]) => {
+        const filteredRow = selectedColumns.reduce(
+          (colAcc, columnName) => {
+            if (row.hasOwnProperty(columnName)) {
+              colAcc[columnName] = row[columnName]
+            }
+            return colAcc
+          },
+          {} as Record<AttributeName, ValueType>,
+        )
+
+        acc[nodeId] = filteredRow
+        return acc
+      },
+      {} as Record<IdType, Record<AttributeName, ValueType>>,
+    )
+  }
 }
 
 export const runTask = async (
@@ -90,7 +193,7 @@ export const submitAndProcessTask = async (
   task: CytoContainerRequest,
 ): Promise<CytoContainerResult> => {
   // Submit the task
-  const taskResponse: Task = await submitTask(serviceUrl, algorithmName, task)
+  const taskResponse: Task = await submitTask(serviceUrl, task)
   const taskId = taskResponse.id
 
   // Poll the task status until it's done
