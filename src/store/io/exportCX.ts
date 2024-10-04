@@ -207,8 +207,8 @@ export const exportNetworkToCx2 = (
     }
   })
 
-  const nodeSizeLocked = visualStyleOptions?.visualEditorProperties.nodeSizeLocked
-  const arrowColorMatchesEdge = visualStyleOptions?.visualEditorProperties.arrowColorMatchesEdge
+  const nodeSizeLocked = visualStyleOptions?.visualEditorProperties?.nodeSizeLocked
+  const arrowColorMatchesEdge = visualStyleOptions?.visualEditorProperties?.arrowColorMatchesEdge
   const visualEditorProperties = [
     {
       properties: {
