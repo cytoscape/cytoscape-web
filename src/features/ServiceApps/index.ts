@@ -1,4 +1,4 @@
-import { exportNetworkToCx2 } from '../../store/io/exportCX'
+import { exportNetworkToCx2, exportGraph } from '../../store/io/exportCX'
 import {
   Table,
   IdType,
@@ -27,19 +27,6 @@ import { NetworkView } from '../../models/ViewModel'
 
 const POLL_INTERVAL = 500 // 0.5 seconds
 
-// export const createDataObject = async (
-//   table: Table,
-//   type: InputDataType,
-//   scope: ScopeType,
-//   inputColumns: InputColumn[],
-//   selectedNodeIds?: IdType[],
-// ) => {
-//   if (type === InputDataType.network) {
-//     return createNetworkDataObj()
-//   }
-//   return createTableDataObj(table, scope, selectedNodeIds ?? [], inputColumns)
-// }
-
 export const createNetworkDataObj = (
   scope: ScopeType,
   inputNetwork: InputNetwork,
@@ -50,26 +37,46 @@ export const createNetworkDataObj = (
   visualStyleOptions?: VisualStyleOptions,
   viewModel?: NetworkView,
 ) => {
+  const selectedNodes = new Set(viewModel?.selectedNodes)
+  const selectedEdges = new Set(viewModel?.selectedEdges)
+
+  const filterElements = !(
+    scope === ScopeType.all ||
+    (scope === ScopeType.dynamic &&
+      selectedNodes.size === 0 &&
+      selectedEdges.size === 0)
+  )
+
+  const getFilteredNetwork = (): Network => ({
+    id: network.id,
+    nodes: network.nodes.filter((node) => selectedNodes.has(node.id)),
+    edges: network.edges.filter((edge) => selectedEdges.has(edge.id)),
+  })
+
   if (inputNetwork.format === 'cx2') {
     if (inputNetwork.model === 'graph') {
-      return exportGraphToCx2(network)
+      return exportGraph(filterElements ? getFilteredNetwork() : network);
     } else if (
       inputNetwork.model === 'network' &&
       visualStyle &&
       summary &&
       table
-    )
+    ) {
+      const filteredNetwork = filterElements ? getFilteredNetwork() : network;
+      const filteredSummary = filterElements
+        ? { ...summary, nodeCount: selectedNodes.size, edgeCount: selectedEdges.size }
+        : summary;
       return exportNetworkToCx2(
-        network,
+        filteredNetwork,
         visualStyle,
-        summary,
+        filteredSummary,
         table.nodeTable,
         table.edgeTable,
         visualStyleOptions,
         viewModel,
         summary.name,
       )
-    else {
+    } else {
       throw new Error('Illegal Input')
     }
   } else {
@@ -78,17 +85,12 @@ export const createNetworkDataObj = (
   }
 }
 
-const exportGraphToCx2 = (network: Network) => {
-
-}
-
-const createTableDataObj = (
+export const createTableDataObj = (
   table: Table,
   scope: ScopeType,
   selectedElementIds: IdType[],
   columns: InputColumn[],
 ): TableDataObject => {
-  let filterElements = true
   const translatedColumns = columns.map((column) => {
     return {
       id: column.name,
@@ -96,12 +98,10 @@ const createTableDataObj = (
     }
   })
 
-  if (
+  const filterElements = !(
     scope === ScopeType.all ||
     (scope === ScopeType.dynamic && selectedElementIds.length === 0)
-  ) {
-    filterElements = false
-  }
+  )
 
   const filteredRows = filterTable(
     table,

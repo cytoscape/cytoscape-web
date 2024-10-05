@@ -207,8 +207,10 @@ export const exportNetworkToCx2 = (
     }
   })
 
-  const nodeSizeLocked = visualStyleOptions?.visualEditorProperties?.nodeSizeLocked
-  const arrowColorMatchesEdge = visualStyleOptions?.visualEditorProperties?.arrowColorMatchesEdge
+  const nodeSizeLocked =
+    visualStyleOptions?.visualEditorProperties?.nodeSizeLocked
+  const arrowColorMatchesEdge =
+    visualStyleOptions?.visualEditorProperties?.arrowColorMatchesEdge
   const visualEditorProperties = [
     {
       properties: {
@@ -303,4 +305,29 @@ export const exportNetworkToCx2 = (
   ]
 
   return cx
+}
+
+export const exportGraph = (
+  network: Network
+) => {
+  const nodes = network.nodes.map((node) => {
+    return {
+      id: parseInt(node.id)
+    }
+  })
+  const edges = network.edges.map((edge) => {
+    const edgeId = parseInt(translateEdgeIdToCX(edge.id))
+    const source = parseInt(edge.s)
+    const target = parseInt(edge.t)
+
+    return {
+      id: edgeId,
+      s: source,
+      t: target,
+    }
+  })
+  return [
+    {'nodes': nodes},
+    {'edges': edges}
+  ]
 }

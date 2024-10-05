@@ -13,13 +13,20 @@ import { NetworkView } from '../../../models'
 import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
-import { createNetworkDataObj } from '../../../features/ServiceApps'
+import {
+  createNetworkDataObj,
+  createTableDataObj,
+} from '../../../features/ServiceApps'
 import {
   CytoContainerRequest,
   InputNetwork,
   ScopeType,
 } from '../../../features/ServiceApps/model'
 import { runTask } from '../../../features/ServiceApps'
+import {
+  getAlgorithmMetaData,
+  getServerStatus,
+} from '../../../features/ServiceApps/api'
 
 export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
@@ -46,7 +53,7 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
     state.networks.get(currentNetworkId),
   ) as Network
 
-  const onClick = (): void => {
+  const onClick = async (): Promise<void> => {
     const serviceUrl = 'https://cd.ndexbio.org/cy/cytocontainer/v1'
     const algorithmName = 'updatetablesexample'
     const networkDataObj = createNetworkDataObj(
@@ -62,8 +69,27 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
       visualStyleOptions,
       viewModel,
     )
-    console.log(networkDataObj)
-    const result = runTask(serviceUrl, algorithmName, networkDataObj)
+    const tableDataObj = createTableDataObj(
+      table.nodeTable,
+      ScopeType.all,
+      [],
+      [],
+    )
+    // console.log(networkDataObj)
+
+    // ----------------test get server status-------------------
+    const serverStatus = await getServerStatus(serviceUrl)
+    console.log(serverStatus)
+
+    // ----------------test get algorithm metaData-------------------
+    const algorithmMetaData = await getAlgorithmMetaData(
+      serviceUrl,
+      algorithmName,
+    )
+    console.log(algorithmMetaData)
+
+    // ------------------test run task---------------------
+    const result = await runTask(serviceUrl, algorithmName, networkDataObj)
     console.log(result)
     handleClose()
   }
