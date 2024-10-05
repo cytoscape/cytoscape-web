@@ -1,12 +1,15 @@
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 
 import {
   LLMQueryOptionsMenuItem,
   RunLLMQueryMenuItem,
 } from '../../../features/LLMQuery/components'
+import { PrimeReactProvider } from 'primereact/api'
+import { OverlayPanel } from 'primereact/overlaypanel'
+import { TieredMenu } from 'primereact/tieredmenu'
 
 export const AnalysisMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -15,18 +18,26 @@ export const AnalysisMenu: React.FC<DropdownMenuProps> = (
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
-  const handleOpenDropdownMenu = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    setAnchorEl(event.currentTarget)
-  }
-
   const handleClose = (): void => {
+    ;(op.current as any)?.hide()
     setAnchorEl(null)
   }
 
+  const op = useRef(null)
+
+  const menuItems = [
+    {
+      label: 'Run LLM Query',
+      template: <RunLLMQueryMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: 'LLM Query Options',
+      template: <LLMQueryOptionsMenuItem handleClose={handleClose} />,
+    },
+  ]
+
   return (
-    <div>
+    <PrimeReactProvider>
       <Button
         sx={{
           color: 'white',
@@ -36,21 +47,13 @@ export const AnalysisMenu: React.FC<DropdownMenuProps> = (
         aria-controls={open ? 'basic-menu' : undefined}
         aria-haspopup="true"
         aria-expanded={open ? 'true' : undefined}
-        onClick={handleOpenDropdownMenu}
+        onClick={(e) => (op.current as any)?.toggle(e)}
       >
         {label}
       </Button>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{
-          'aria-labelledby': label,
-        }}
-      >
-        <RunLLMQueryMenuItem handleClose={handleClose} />
-        <LLMQueryOptionsMenuItem handleClose={handleClose} />
-      </Menu>
-    </div>
+      <OverlayPanel ref={op} unstyled>
+        <TieredMenu model={menuItems} />
+      </OverlayPanel>
+    </PrimeReactProvider>
   )
 }
