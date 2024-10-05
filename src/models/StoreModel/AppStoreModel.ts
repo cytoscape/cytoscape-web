@@ -30,7 +30,7 @@ export interface AppAction {
    *
    * @param url - ServiceApp endpoint to be added
    */
-  addService: (url: string) => void
+  addService: (url: string) => Promise<void>
 
   /**
    * Remove an app from the store

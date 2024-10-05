@@ -1,4 +1,4 @@
-import { RootMenu } from './RootMenu'
+import { CyWebMenuItem } from './CyWebMenuItem'
 import { ServiceAppAction } from './ServiceAppAction'
 import { ServiceInputDefinition } from './ServiceInputDefinition'
 
@@ -14,7 +14,7 @@ export interface ServiceMetadata {
   version: string
   serviceInputDefinition?: ServiceInputDefinition
   cyWebAction: ServiceAppAction
-  cyWebMenuItem: RootMenu
+  cyWebMenuItem: CyWebMenuItem
 
   parameters: []
 }

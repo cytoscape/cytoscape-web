@@ -611,7 +611,7 @@ export const getAllServiceAppsFromDb = async (): Promise<ServiceApp[]> => {
 }
 
 export const deleteServiceAppFromDb = async (url: string): Promise<void> => {
-  await db.transaction('rw', db.apps, async () => {
+  await db.transaction('rw', db.serviceApps, async () => {
     await db.serviceApps.delete(url)
   })
 }

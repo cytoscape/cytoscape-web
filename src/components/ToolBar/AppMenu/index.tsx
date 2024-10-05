@@ -7,6 +7,7 @@ import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
 import { ComponentType, CyApp } from '../../../models/AppModel'
+import { ServiceSettingsDialog } from '../../AppManager/ServiceSettingsDialog'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   // Actual CyApp objects
@@ -15,7 +16,9 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
+
   const [openDialog, setOpenDialog] = useState<boolean>(false)
+  const [openServiceDialog, setOpenServiceDialog] = useState<boolean>(false)
 
   const [componentList, setComponentList] = useState<[string, string][]>([])
 
@@ -32,6 +35,11 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const handleOpenDialog = (isDialogOpen: boolean): void => {
     setAnchorEl(null)
     setOpenDialog(isDialogOpen)
+  }
+
+  const handleOpenServiceDialog = (isDialogOpen: boolean): void => {
+    setAnchorEl(null)
+    setOpenServiceDialog(isDialogOpen)
   }
 
   useEffect(() => {
@@ -97,13 +105,17 @@ export const AppMenu = (props: DropdownMenuProps) => {
         <MenuItem onClick={() => handleOpenDialog(true)}>
           App Settings...
         </MenuItem>
-        <MenuItem onClick={() => handleOpenDialog(true)}>
+        <MenuItem onClick={() => handleOpenServiceDialog(true)}>
           External Service Settings...
         </MenuItem>
       </Menu>
       <AppSettingsDialog
         openDialog={openDialog}
         setOpenDialog={setOpenDialog}
+      />
+      <ServiceSettingsDialog
+        openDialog={openServiceDialog}
+        setOpenDialog={setOpenServiceDialog}
       />
     </>
   )
