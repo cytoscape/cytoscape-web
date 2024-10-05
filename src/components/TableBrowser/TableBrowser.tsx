@@ -61,6 +61,9 @@ import { Ui } from '../../models/UiModel'
 import NetworkInfoPanel from './NetworkInfoPanel'
 import { NetworkView } from '../../models/ViewModel'
 import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
+import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { useEffect, useRef } from 'react'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -127,6 +130,15 @@ export default function TableBrowser(props: {
     useUiStateStore((state) => state.setPanelState)
   const { panels } = ui
   const setUi = useUiStateStore((state) => state.setUi)
+  const networkModified = useWorkspaceStore(
+    (state) => state.workspace.networkModified,
+  )
+  const networkModifiedRef = useRef(networkModified)
+
+  // Update the ref when networkModified changes
+  useEffect(() => {
+    networkModifiedRef.current = networkModified
+  }, [networkModified])
 
   const setCurrentTabIndex = (index: number): void => {
     const nextTableUi = { ...ui.tableUi, activeTabIndex: index }
@@ -202,6 +214,35 @@ export default function TableBrowser(props: {
     (state) => state.applyValueToElements,
   )
   const moveColumn = useTableStore((state) => state.moveColumn)
+
+  const setNetworkModified: (id: IdType, isModified: boolean) => void =
+    useWorkspaceStore((state) => state.setNetworkModified)
+
+  // set the network to 'modified' when the table data is modified
+  useTableStore.subscribe(
+    (state) => state.tables[networkId],
+    (prev: TableRecord, next: TableRecord) => {
+      if (prev === undefined || next === undefined) {
+        return
+      }
+
+      // Check if any table data has changed (excluding the selected rows/columns)
+      const tableDataChanged =
+        !_.isEqual(prev.nodeTable, next.nodeTable) ||
+        !_.isEqual(prev.edgeTable, next.edgeTable)
+
+      const currentNetworkIsNotModified =
+        (networkModifiedRef.current[networkId] === undefined &&
+          !(networkModifiedRef.current[networkId] ?? false)) ??
+        false
+
+      // If table data changed and the network is not already marked as modified, set it to modified
+      if (tableDataChanged && currentNetworkIsNotModified) {
+        setNetworkModified(networkId, true)
+      }
+    },
+  )
+
   const currentTabIndex = ui.tableUi.activeTabIndex
 
   const nodeTable = tables[networkId]?.nodeTable

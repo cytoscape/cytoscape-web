@@ -11,7 +11,9 @@ import { useUiStateStore } from '../../../store/UiStateStore'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
 
-export const LLMQueryResultPanel = (): ReactElement => {
+export const LLMQueryResultPanel = (props: {
+  height?: number
+}): ReactElement => {
   const geneQuery = useLLMQueryStore((state) => state.geneQuery)
   const [localQueryValue, setLocalQueryValue] = useState(geneQuery)
   const loading = useLLMQueryStore((state) => state.loading)
@@ -103,7 +105,14 @@ export const LLMQueryResultPanel = (): ReactElement => {
   )
 
   return (
-    <Box sx={{ overflow: 'auto', width: '100%', height: '100%', p: 1 }}>
+    <Box
+      sx={{
+        overflow: 'scroll',
+        width: '100%',
+        height: props.height === undefined ? '100%' : props.height - 100,
+        p: 1,
+      }}
+    >
       <Box>
         <Tooltip title="enter a comma space seperated list of gene names e.g. 'FOXA1, HNF1A, PDX1' ">
           <TextField
@@ -120,7 +129,7 @@ export const LLMQueryResultPanel = (): ReactElement => {
             justifyContent: 'space-between',
             alignItems: 'center',
             mt: 1,
-            mb: 1
+            mb: 1,
           }}
         >
           {regenerateResponseButton}

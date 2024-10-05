@@ -318,11 +318,11 @@ const CyjsRenderer = ({
             setClickSelection(true)
           }
         } else {
-          const selectedNodes: IdType[] =
+          let selectedNodes: IdType[] =
             networkView?.selectedNodes !== undefined
               ? [...networkView?.selectedNodes]
               : []
-          const selectedEdges: IdType[] =
+          let selectedEdges: IdType[] =
             networkView?.selectedEdges !== undefined
               ? [...networkView?.selectedEdges]
               : []
@@ -343,8 +343,8 @@ const CyjsRenderer = ({
               }
             } else {
               // Exclusive selection
-              selectedNodes.length = 0 // Clear all selections
-              selectedNodes.push(elementId) // Select the current element
+              selectedNodes = [elementId] // Select the current element
+              selectedEdges = [] // Deselect all edges
             }
           } else {
             if (isModifierKey) {
@@ -357,8 +357,8 @@ const CyjsRenderer = ({
               }
             } else {
               // Exclusive selection
-              selectedEdges.length = 0 // Clear all selections
-              selectedEdges.push(elementId) // Select the current element
+              selectedEdges = [elementId] // Select the current element
+              selectedNodes = [] // Deselect all nodes
             }
           }
           exclusiveSelect(id, selectedNodes, selectedEdges)
@@ -694,9 +694,15 @@ const CyjsRenderer = ({
 
   useEffect(() => {
     if (cy !== null) {
+      renderNetwork(cy, networkView, displayMode, true)
+    }
+  }, [cy])
+
+  useEffect(() => {
+    if (cy !== null) {
       renderNetwork(cy, networkView, displayMode, false)
     }
-  }, [cy, networkView, displayMode])
+  }, [networkView, displayMode])
 
   return (
     <>

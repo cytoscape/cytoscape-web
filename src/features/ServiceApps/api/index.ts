@@ -69,10 +69,9 @@ export const getAlgorithmMetaData = async (
 // submit task function
 export const submitTask = async (
   serviceUrl: string,
-  algorithmName: string,
   task: CytoContainerRequest,
 ): Promise<Task> => {
-  const response = await fetch(`${serviceUrl}/${algorithmName}`, {
+  const response = await fetch(`${serviceUrl}/${task.algorithm}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -101,26 +101,12 @@ const getMapper = <T extends VisualPropertyValueType>(
   const { controlPoints, defaultValue } = cm
   const [domain, range] = toRangeAndDomain<T>(controlPoints)
   const d3Mapper = d3Scale.scaleLinear<T>().domain(domain).range(range)
+  d3Mapper.clamp(true) // make sure the value outside the domain is clamped to the range
   const mapper = (attrValue: ValueType): VisualPropertyValueType => {
     if (attrValue !== undefined) {
       return d3Mapper(attrValue as number)
     }
     return defaultValue
   }
-
   return mapper
 }
-
-// const getColorMapper = (cm: ContinuousMappingFunction): Mapper => {
-//   const { controlPoints, defaultValue } = cm
-//   const [domain, range] = toRangeAndDomain<ColorType>(controlPoints)
-//   const colorMapper = d3Scale.scaleLinear<string>().domain(domain).range(range)
-//   const mapper = (attrValue: ValueType): VisualPropertyValueType => {
-//     if (attrValue !== undefined) {
-//       return colorMapper(attrValue as number) as ColorType
-//     }
-//     return defaultValue
-//   }
-
-//   return mapper
-// }

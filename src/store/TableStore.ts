@@ -5,7 +5,7 @@ import {
   ValueType,
   ValueTypeName,
 } from '../models/TableModel'
-
+import { subscribeWithSelector } from 'zustand/middleware'
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { columnValueSet } from '../models/TableModel/impl/InMemoryTable'
@@ -49,6 +49,7 @@ const persist =
     )
 
 export const useTableStore = create(
+  subscribeWithSelector(
   immer<TableStore>(
     persist((set, get) => ({
       tables: {},
@@ -371,4 +372,5 @@ export const useTableStore = create(
       },
     })),
   ),
+  )
 )
