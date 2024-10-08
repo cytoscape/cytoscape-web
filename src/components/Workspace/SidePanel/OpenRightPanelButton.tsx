@@ -19,7 +19,7 @@ const buttonStyleOpen = {
 
 const buttonStyleClose = {
   position: 'absolute',
-  top: '15px',
+  top: '8px',
   left: '5px',
   border: '1px solid #999999',
   zIndex: 1000,

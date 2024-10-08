@@ -41,7 +41,7 @@ export const WorkspaceNamePanel = () => {
     <Box
       sx={{
         width: '100%',
-        height: '3em',
+        height: '42px',
         backgroundColor: background,
         color: textColor,
         p: theme.spacing(1),
@@ -64,7 +64,9 @@ export const WorkspaceNamePanel = () => {
             width: '100%',
           }}
         >
-          <Typography variant="body1">Name:</Typography>
+          <Typography sx={{ ml: 0.5 }} variant="body1">
+            Name:
+          </Typography>
           {isEditing ? (
             <TextField
               value={workspace.name}
@@ -77,7 +79,15 @@ export const WorkspaceNamePanel = () => {
               sx={{
                 p: 0,
                 width: '100%',
-                paddingLeft: '1em',
+                paddingLeft: '0.6em',
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: background,
+                  color: textColor,
+                  padding: '0 8px', // Inner padding for text
+                },
+                '& .MuiOutlinedInput-input': {
+                  padding: '4px 0', // Adjust padding for a smaller height
+                },
               }}
               inputProps={{
                 style: {
