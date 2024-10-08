@@ -474,7 +474,7 @@ export const SubNetworkPanel = ({
           position: 'absolute',
           bottom: '0.5em',
           left: '0.5em',
-          zIndex: 3000,
+          zIndex: 100,
           backgroundColor: 'transparent',
         }}
         variant={'subtitle1'}
