@@ -1,4 +1,4 @@
-import { IconButton, Tooltip } from '@mui/material'
+import { Box, IconButton, Tooltip } from '@mui/material'
 import { Refresh } from '@mui/icons-material'
 import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
@@ -10,9 +10,11 @@ import { useWorkspaceStore } from '../../store/WorkspaceStore'
 
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType
+  disabled?: boolean
 }
 export const ApplyLayoutButton = ({
   targetNetworkId,
+  disabled = false,
 }: ApplyLayoutButtonProps): JSX.Element => {
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
@@ -63,20 +65,43 @@ export const ApplyLayoutButton = ({
     }
   }
 
-  return (
-    <Tooltip
-      title={`Apply default layout (${defaultLayout.engineName} - ${defaultLayout.name})`}
-      placement="top"
-      arrow
+  const innerButton = (
+    <IconButton
+      onClick={handleClick}
+      aria-label="apply-layout"
+      size="small"
+      disableFocusRipple={true}
     >
-      <IconButton
-        onClick={handleClick}
-        aria-label="apply-layout"
-        size="small"
-        disableFocusRipple={true}
-      >
-        <Refresh fontSize="inherit" />
-      </IconButton>
-    </Tooltip>
+      <Refresh fontSize="inherit" />
+    </IconButton>
   )
+
+  const innerButtonDisabled = (
+    <IconButton
+      onClick={handleClick}
+      aria-label="apply-layout"
+      size="small"
+      disableFocusRipple={true}
+      disabled={disabled}
+    >
+      <Refresh fontSize="inherit" />
+    </IconButton>
+  )
+  if (disabled) {
+    return (
+      <Tooltip title={'Layouts cannot be applied to the current network view'}>
+        <Box>{innerButtonDisabled}</Box>
+      </Tooltip>
+    )
+  } else {
+    return (
+      <Tooltip
+        title={`Apply default layout (${defaultLayout.engineName} - ${defaultLayout.name})`}
+        placement="top"
+        arrow
+      >
+        {innerButton}
+      </Tooltip>
+    )
+  }
 }
