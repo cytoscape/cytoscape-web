@@ -111,7 +111,7 @@ export const App = (): React.ReactElement => {
           setDeclineCookie={false}
           flipButtons 
           onDecline={removeAllCookies}
-          cookieName="myAppCookieConsent"
+          cookieName="cytoscapeWebCookieConsent"
           style={{ background: "#4F4F4F" }}
           buttonStyle={{ backgroundColor: "#0073B0", color: "#ffffff", fontSize: "13px" }}
           declineButtonStyle={{ color: "#ffffff", background: "#6c757d", fontSize: "13px" }}
