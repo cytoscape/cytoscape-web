@@ -29,17 +29,40 @@ export const SidePanel = (): JSX.Element => {
         padding: 0,
       }}
     >
-      <Tabs
-        value={value}
-        onChange={handleChange}
-        variant="scrollable"
-        scrollButtons="auto"
-        sx={{ margin: 0, paddingLeft: '2em' }}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          p: 0,
+          paddingLeft: '2.5em',
+          m: 0,
+        }}
       >
-        {tabContents.map((tabContent, index) => (
-          <Tab key={index} label={tabContent.props.label} />
-        ))}
-      </Tabs>
+        <Tabs
+          value={value}
+          onChange={handleChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            '& button': {
+              height: '2.5em',
+              minHeight: '2.5em',
+            },
+            height: '2.5em',
+            minHeight: '2.5em',
+            flexGrow: 1,
+            margin: 0,
+          }}
+        >
+          {tabContents.map((tabContent, index) => (
+            <Tab key={index} label={tabContent.props.label} />
+          ))}
+        </Tabs>
+      </Box>
+
       <Box
         sx={{
           width: '100%',

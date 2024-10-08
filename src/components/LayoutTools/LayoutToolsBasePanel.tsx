@@ -11,6 +11,15 @@ export const LayoutToolsBasePanel = (): JSX.Element => {
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         aria-controls="manual-layout"
+        sx={{
+          minHeight: '44px', // collapsed summary height
+          '&.Mui-expanded': {
+            minHeight: '44px', // expanded summary height
+          },
+          '.MuiAccordionSummary-content': {
+            margin: 0,
+          },
+        }}
       >
         <Typography>Layout Tools</Typography>
       </AccordionSummary>
