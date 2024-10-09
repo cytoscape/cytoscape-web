@@ -29,6 +29,9 @@ export const DEFAULT_UI_STATE = {
     activeTabIndex: 0,
   },
   visualStyleOptions: {},
+  networkViewUi: {
+    activeTabIndex: 0,
+  },
 }
 
 export const serializeColumnUIKey = (
@@ -111,6 +114,12 @@ export const useUiStateStore = create(
     setActiveTableBrowserIndex: (index: number) => {
       set((state) => {
         state.ui.tableUi.activeTabIndex = index
+        return state
+      })
+    },
+    setNetworkViewTabIndex: (index: number) => {
+      set((state) => {
+        state.ui.networkViewUi.activeTabIndex = index
         return state
       })
     },
