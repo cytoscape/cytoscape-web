@@ -1,4 +1,5 @@
 import { Transaction, Dexie } from 'dexie'
+import { ObjectStoreNames } from './db'
 
 export interface DexieMigration {
   version: number
@@ -20,10 +21,18 @@ export const migrations: DexieMigration[] = [
   // },
 ]
 
-export const applyMigrations = async (db: Dexie): Promise<void> => {
+export const applyMigrations = async (
+  db: Dexie,
+  versionNumber: number,
+): Promise<void> => {
   // needed for dexie observables to add it's tables
-  db.version(2).stores({})
-  migrations.forEach(async (migration) => {
-    await db.version(migration.version).upgrade(migration.upgradeFn)
-  })
+  db.version(versionNumber).upgrade(async (tx) => {})
+  // migrations.forEach(async (migration) => {
+  //   await db.version(migration.version).upgrade(migration.upgradeFn)
+  // })
+  // db.tables.forEach(function (table) {
+  //   console.log(
+  //     '!! Schema of ' + table.name + ': ' + JSON.stringify(table.schema),
+  //   )
+  // })
 }

@@ -16,7 +16,53 @@ import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 
-const DB_NAME = 'cyweb-db'
+// Fixed DB name for the application
+const DB_NAME: string = 'cyweb-db'
+
+const currentVersion: number = 3
+
+const objStoreV2 = {
+  workspace: 'id',
+  summaries: 'externalId',
+  cyNetworks: 'id',
+  cyTables: 'id',
+  cyVisualStyles: 'id',
+  cyNetworkViews: 'id',
+  uiState: 'id',
+  timestamp: 'id',
+  filters: 'id',
+  apps: 'id',
+}
+
+const currentStore = {
+  ...objStoreV2,
+  serviceApps: 'url',
+}
+
+/**
+ * Predefined object store names.
+ * Once this is updated, the upgrade / migration is needed
+ *
+ * If you need to add a new object store, you need to add the name here
+ *
+ * */
+export const ObjectStoreNames = {
+  Workspace: 'workspace',
+  Summaries: 'summaries',
+  CyNetworks: 'cyNetworks',
+  CyTables: 'cyTables',
+  CyVisualStyles: 'cyVisualStyles',
+  CyNetworkViews: 'cyNetworkViews',
+  UiState: 'uiState',
+  Timestamp: 'timestamp',
+  Filters: 'filters',
+  Apps: 'apps',
+  ServiceApps: 'serviceApps',
+} as const
+
+// The type derived from the names of object stores
+export type ObjectStoreNames =
+  (typeof ObjectStoreNames)[keyof typeof ObjectStoreNames]
 
 /**
  * TODO: we need a schema for indexes
@@ -25,7 +71,7 @@ const DB_NAME = 'cyweb-db'
  *  - description
  */
 class CyDB extends Dexie {
-  workspace!: DxTable<any>
+  [ObjectStoreNames.Workspace]!: DxTable<any>
   cyNetworks!: DxTable<Network>
   cyTables!: DxTable<any>
   cyVisualStyles!: DxTable<any>
@@ -39,7 +85,7 @@ class CyDB extends Dexie {
 
   constructor(dbName: string) {
     super(dbName)
-    this.version(1).stores({
+    this.version(currentVersion).stores({
       workspace: 'id',
       summaries: 'externalId',
       cyNetworks: 'id',
@@ -53,7 +99,7 @@ class CyDB extends Dexie {
       serviceApps: 'url',
     })
 
-    applyMigrations(this).catch((err) => console.log(err))
+    applyMigrations(this, currentVersion).catch((err) => console.log(err))
   }
 }
 
@@ -61,24 +107,32 @@ class CyDB extends Dexie {
 let db: CyDB
 try {
   db = new CyDB(DB_NAME)
+  console.log('### DB is initialized', db.verno)
 } catch (err) {
   console.error('### Failed to initialize DB', err)
   throw err
 }
 
 export const initializeDb = async (): Promise<void> => {
-  applyMigrations(db).catch((err) => {
-    console.error('### Migration Failed', err)
-    throw err
+  await db.open()
+  console.log('DB is opened')
+
+  // Check all object stores are available
+  const currentNames = new Set<string>(db.tables.map((table) => table.name))
+  Object.values(ObjectStoreNames).forEach((name) => {
+    if (!currentNames.has(name)) {
+      console.warn(`!!!!!!!!!!!!!! Object store ${name} is not found`)
+    } else {
+      console.log(`### Object store ${name} is found`)
+    }
   })
-  db.open()
-    .then(() => {})
-    .catch((err) => {
-      console.log(err)
-    })
 
   db.on('ready', () => {
     console.info('Indexed DB is ready')
+  })
+  db.on('versionchange', function (event) {
+    console.log('!!!!!!!!!! versionchange', event)
+    // window.location.reload()
   })
 }
 
@@ -94,7 +148,7 @@ export const deleteDb = async (): Promise<void> => {
   await Dexie.delete(DB_NAME)
   db = new CyDB(DB_NAME)
 
-  applyMigrations(db).catch((err) => {
+  applyMigrations(db, currentVersion).catch((err) => {
     throw err
   })
 }
@@ -607,10 +661,18 @@ export const putServiceAppToDb = async (
 }
 
 export const getAllServiceAppsFromDb = async (): Promise<ServiceApp[]> => {
-  return await db.serviceApps.toArray()
+  try {
+    // Fetch all entries as an array
+    const serviceList: ServiceApp[] = await db.serviceApps.toArray()
+    return serviceList
+  } catch (err) {
+    console.warn('### Failed to open DB or fetch data', err, db.serviceApps)
+    return []
+  }
 }
 
 export const deleteServiceAppFromDb = async (url: string): Promise<void> => {
+  // Check the db has the object store or not
   await db.transaction('rw', db.serviceApps, async () => {
     await db.serviceApps.delete(url)
   })
