@@ -24,11 +24,16 @@ export const FitButton = ({
   )
 
   const handleClick = (): void => {
-    const fitFunction = getRendererFunction(
+    const fitFunctionByRenderer = getRendererFunction(
+      rendererId,
+      FIT_FUNCTION_NAME,
+    )
+    const fitFunctionByNetworkId = getRendererFunction(
       rendererId,
       FIT_FUNCTION_NAME,
       activeNetworkId,
     )
+    const fitFunction = fitFunctionByNetworkId ?? fitFunctionByRenderer // network id functions given priority
     if (fitFunction !== undefined) {
       fitFunction()
       console.log('Fit function called for:', rendererId)
