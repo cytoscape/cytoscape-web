@@ -4,6 +4,7 @@ import { NetworkView } from '../../models/ViewModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkTab } from './NetworkTab'
 import { Network } from '../../models/NetworkModel'
+import { useUiStateStore } from '../../store/UiStateStore'
 
 interface NetworkTabsProps {
   network: Network
@@ -21,7 +22,10 @@ export const NetworkTabs = ({
   bgColor,
   handleClick,
 }: NetworkTabsProps) => {
-  const [selected, setSelected] = useState<number>(0)
+  const selected = useUiStateStore(
+    (state) => state.ui.networkViewUi.activeTabIndex,
+  )
+  const setSelected = useUiStateStore((state) => state.setNetworkViewTabIndex)
 
   const boxRef = useRef<HTMLDivElement>(null)
   const [boxSize, setBoxSize] = useState<{ w: number; h: number }>({

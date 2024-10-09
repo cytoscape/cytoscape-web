@@ -1,6 +1,6 @@
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
-import { Divider, MenuItem, Tooltip } from '@mui/material'
+import { Box, Divider, MenuItem, Tooltip } from '@mui/material'
 import { useRef, useState } from 'react'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { useViewModelStore } from '../../../store/ViewModelStore'
@@ -14,6 +14,8 @@ import { useUiStateStore } from '../../../store/UiStateStore'
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
+import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
+import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
 
 interface DropdownMenuProps {
   label: string
@@ -34,6 +36,9 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     (state) => state.workspace.currentNetworkId,
   )
 
+  const activeNetworkViewTabIndex =
+    useUiStateStore((state) => state.ui?.networkViewUi?.activeTabIndex) ?? 0
+
   const targetNetworkId: IdType =
     activeNetworkView === '' ? currentNetworkId : activeNetworkView
 
@@ -49,6 +54,18 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const target: Network = networks.get(targetNetworkId) ?? ({} as Network)
+
+  const summary = useNetworkSummaryStore(
+    (state) => state.summaries[currentNetworkId],
+  )
+
+  const cellViewIsSelected = activeNetworkViewTabIndex === 1
+
+  //disable layouts for cell view, meaning
+  const disabled =
+    isHCX(summary) && // the current network is a hierarchy
+    currentNetworkId === targetNetworkId && // the hierarchy network is the active view
+    cellViewIsSelected // the cell view tab is selected
 
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -152,21 +169,44 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     ]
   }
 
+  const innerButton = disabled ? (
+    <Tooltip title="Layouts cannot be applied to the current network view">
+      <Box>
+        <Button
+          sx={{
+            color: 'white',
+            textTransform: 'none',
+          }}
+          id={label}
+          aria-controls={open ? 'basic-menu' : undefined}
+          aria-haspopup="true"
+          aria-expanded={open ? 'true' : undefined}
+          onClick={(e) => (op.current as any)?.toggle(e)}
+          disabled
+        >
+          {label}
+        </Button>
+      </Box>
+    </Tooltip>
+  ) : (
+    <Button
+      sx={{
+        color: 'white',
+        textTransform: 'none',
+      }}
+      id={label}
+      aria-controls={open ? 'basic-menu' : undefined}
+      aria-haspopup="true"
+      aria-expanded={open ? 'true' : undefined}
+      onClick={(e) => (op.current as any)?.toggle(e)}
+    >
+      {label}
+    </Button>
+  )
+
   return (
     <PrimeReactProvider>
-      <Button
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={(e) => (op.current as any)?.toggle(e)}
-      >
-        {label}
-      </Button>
+      {innerButton}
       <OverlayPanel ref={op} unstyled>
         <TieredMenu model={getMenuItems()} />
       </OverlayPanel>
