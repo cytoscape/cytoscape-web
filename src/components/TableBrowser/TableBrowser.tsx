@@ -503,7 +503,20 @@ export default function TableBrowser(props: {
             bgColor: '#d9d9d9',
           }}
         >
-          <Tooltip title="Sort Ascending" placement="top">
+          <Tooltip
+            title="Sort Ascending"
+            placement="bottom"
+            PopperProps={{
+              modifiers: [
+                {
+                  name: 'offset',
+                  options: {
+                    offset: [0, -24],
+                  },
+                },
+              ],
+            }}
+          >
             <Button
               sx={{ mr: 1 }}
               onClick={() => {
@@ -522,7 +535,20 @@ export default function TableBrowser(props: {
               <SortAscIcon />
             </Button>
           </Tooltip>
-          <Tooltip title="Sort Descending" placement="top">
+          <Tooltip
+            title="Sort Descending"
+            placement="bottom"
+            PopperProps={{
+              modifiers: [
+                {
+                  name: 'offset',
+                  options: {
+                    offset: [0, -24],
+                  },
+                },
+              ],
+            }}
+          >
             <Button
               sx={{ mr: 1 }}
               onClick={() => {
@@ -540,7 +566,20 @@ export default function TableBrowser(props: {
               <SortDescIcon />
             </Button>
           </Tooltip>
-          <Tooltip title="Duplicate column" placement="top">
+          <Tooltip
+            title="Duplicate column"
+            placement="bottom"
+            PopperProps={{
+              modifiers: [
+                {
+                  name: 'offset',
+                  options: {
+                    offset: [0, -24],
+                  },
+                },
+              ],
+            }}
+          >
             <Button
               sx={{ mr: 1 }}
               onClick={() => {
@@ -563,12 +602,38 @@ export default function TableBrowser(props: {
               <DuplicateIcon />
             </Button>
           </Tooltip>
-          <Tooltip title="Rename column" placement="top">
+          <Tooltip
+            title="Rename column"
+            placement="bottom"
+            PopperProps={{
+              modifiers: [
+                {
+                  name: 'offset',
+                  options: {
+                    offset: [0, -24],
+                  },
+                },
+              ],
+            }}
+          >
             <Button sx={{ mr: 1 }} onClick={() => setShowEditColumnForm(true)}>
               <EditIcon />
             </Button>
           </Tooltip>
-          <Tooltip title="Delete column" placement="top">
+          <Tooltip
+            title="Delete column"
+            placement="bottom"
+            PopperProps={{
+              modifiers: [
+                {
+                  name: 'offset',
+                  options: {
+                    offset: [0, -24],
+                  },
+                },
+              ],
+            }}
+          >
             <Button
               color="error"
               onClick={() => {
@@ -729,7 +794,20 @@ export default function TableBrowser(props: {
 
   const tableBrowserToolbar = (
     <Box sx={{ height: TOOLBAR_HEIGHT, display: 'flex', alignItems: 'center' }}>
-      <Tooltip title="Search" placement="top">
+      <Tooltip
+        title="Search"
+        placement="bottom"
+        PopperProps={{
+          modifiers: [
+            {
+              name: 'offset',
+              options: {
+                offset: [0, -24],
+              },
+            },
+          ],
+        }}
+      >
         <Button
           sx={{ mr: 1 }}
           disabled={tables[props.currentNetworkId] === undefined}
@@ -738,7 +816,20 @@ export default function TableBrowser(props: {
           <span className="icon">&#82;</span>
         </Button>
       </Tooltip>
-      <Tooltip title="Insert New Column" placement="top">
+      <Tooltip
+        title="Insert New Column"
+        placement="bottom"
+        PopperProps={{
+          modifiers: [
+            {
+              name: 'offset',
+              options: {
+                offset: [0, -24],
+              },
+            },
+          ],
+        }}
+      >
         <Button
           sx={{ mr: 1 }}
           disabled={tables[props.currentNetworkId] === undefined}
@@ -747,7 +838,20 @@ export default function TableBrowser(props: {
           <span className="icon">&#8209;</span>
         </Button>
       </Tooltip>
-      <Tooltip title="Import Table from File ..." placement="top">
+      <Tooltip
+        title="Import Table from File ..."
+        placement="bottom"
+        PopperProps={{
+          modifiers: [
+            {
+              name: 'offset',
+              options: {
+                offset: [0, -24],
+              },
+            },
+          ],
+        }}
+      >
         <Button
           disabled={tables[props.currentNetworkId] === undefined}
           sx={{ mr: 1 }}
