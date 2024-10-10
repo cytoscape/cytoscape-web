@@ -16,12 +16,12 @@ import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 
-// Fixed DB name for the application
+// Unique, fixed DB name for the Cytoscape Web
 const DB_NAME: string = 'cyweb-db'
 
-// Current version of the DB.
+// Current version of the DB (integer only).
 // If older version is found, the migration
-// function will upgrade it to this version.
+// function will upgrade the existing data to this version.
 const currentVersion: number = 3
 
 /**
@@ -32,7 +32,6 @@ const currentVersion: number = 3
  *
  * */
 export const ObjectStoreNames = {
-  // Since V2
   Workspace: 'workspace',
   Summaries: 'summaries',
   CyNetworks: 'cyNetworks',
@@ -52,18 +51,25 @@ export const ObjectStoreNames = {
 export type ObjectStoreNames =
   (typeof ObjectStoreNames)[keyof typeof ObjectStoreNames]
 
+/**
+ * Object stores (for V3).
+ *
+ * This defines the primary key for each object store.
+ *
+ */
 const KeysV3 = {
   [ObjectStoreNames.Workspace]: 'id',
-  summaries: 'externalId',
-  cyNetworks: 'id',
-  cyTables: 'id',
-  cyVisualStyles: 'id',
-  cyNetworkViews: 'id',
-  uiState: 'id',
-  timestamp: 'id',
-  filters: 'id',
-  apps: 'id',
-  serviceApps: 'url',
+  [ObjectStoreNames.Summaries]: 'externalId',
+  [ObjectStoreNames.CyNetworks]: 'id',
+  [ObjectStoreNames.CyTables]: 'id',
+  [ObjectStoreNames.CyVisualStyles]: 'id',
+  [ObjectStoreNames.CyNetworkViews]: 'id',
+  [ObjectStoreNames.UiState]: 'id',
+  [ObjectStoreNames.Timestamp]: 'id',
+  [ObjectStoreNames.Filters]: 'id',
+  [ObjectStoreNames.Apps]: 'id',
+
+  [ObjectStoreNames.ServiceApps]: 'url',
 } as const
 
 /**
