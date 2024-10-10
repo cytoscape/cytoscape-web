@@ -19,25 +19,10 @@ import { ServiceApp } from '../../models/AppModel/ServiceApp'
 // Fixed DB name for the application
 const DB_NAME: string = 'cyweb-db'
 
+// Current version of the DB.
+// If older version is found, the migration
+// function will upgrade it to this version.
 const currentVersion: number = 3
-
-const objStoreV2 = {
-  workspace: 'id',
-  summaries: 'externalId',
-  cyNetworks: 'id',
-  cyTables: 'id',
-  cyVisualStyles: 'id',
-  cyNetworkViews: 'id',
-  uiState: 'id',
-  timestamp: 'id',
-  filters: 'id',
-  apps: 'id',
-}
-
-const currentStore = {
-  ...objStoreV2,
-  serviceApps: 'url',
-}
 
 /**
  * Predefined object store names.
@@ -47,6 +32,7 @@ const currentStore = {
  *
  * */
 export const ObjectStoreNames = {
+  // Since V2
   Workspace: 'workspace',
   Summaries: 'summaries',
   CyNetworks: 'cyNetworks',
@@ -57,6 +43,8 @@ export const ObjectStoreNames = {
   Timestamp: 'timestamp',
   Filters: 'filters',
   Apps: 'apps',
+
+  // From v3
   ServiceApps: 'serviceApps',
 } as const
 
@@ -64,41 +52,44 @@ export const ObjectStoreNames = {
 export type ObjectStoreNames =
   (typeof ObjectStoreNames)[keyof typeof ObjectStoreNames]
 
+const KeysV3 = {
+  [ObjectStoreNames.Workspace]: 'id',
+  summaries: 'externalId',
+  cyNetworks: 'id',
+  cyTables: 'id',
+  cyVisualStyles: 'id',
+  cyNetworkViews: 'id',
+  uiState: 'id',
+  timestamp: 'id',
+  filters: 'id',
+  apps: 'id',
+  serviceApps: 'url',
+} as const
+
 /**
- * TODO: we need a schema for indexes
- *  - name
- *  - n
- *  - description
+ * DB will be initialized to the current version.
  */
 class CyDB extends Dexie {
-  [ObjectStoreNames.Workspace]!: DxTable<any>
-  cyNetworks!: DxTable<Network>
-  cyTables!: DxTable<any>
-  cyVisualStyles!: DxTable<any>
-  summaries!: DxTable<any>
-  cyNetworkViews!: DxTable<any>
-  uiState!: DxTable<any>
-  timestamp!: DxTable<any>
-  filters!: DxTable<any>
-  apps!: DxTable<CyApp>
-  serviceApps!: DxTable<ServiceApp>
+  [ObjectStoreNames.Workspace]!: DxTable<any>;
+  [ObjectStoreNames.CyNetworks]!: DxTable<Network>;
+  [ObjectStoreNames.CyTables]!: DxTable<any>;
+  [ObjectStoreNames.CyVisualStyles]!: DxTable<any>;
+  [ObjectStoreNames.Summaries]!: DxTable<any>;
+  [ObjectStoreNames.CyNetworkViews]!: DxTable<any>;
+  [ObjectStoreNames.UiState]!: DxTable<any>;
+  [ObjectStoreNames.Timestamp]!: DxTable<any>;
+  [ObjectStoreNames.Filters]!: DxTable<any>;
+  [ObjectStoreNames.Apps]!: DxTable<CyApp>;
+
+  // From v3
+  [ObjectStoreNames.ServiceApps]!: DxTable<ServiceApp>
 
   constructor(dbName: string) {
     super(dbName)
-    this.version(currentVersion).stores({
-      workspace: 'id',
-      summaries: 'externalId',
-      cyNetworks: 'id',
-      cyTables: 'id',
-      cyVisualStyles: 'id',
-      cyNetworkViews: 'id',
-      uiState: 'id',
-      timestamp: 'id',
-      filters: 'id',
-      apps: 'id',
-      serviceApps: 'url',
-    })
+    this.version(currentVersion).stores(KeysV3)
 
+    // This will be applied only when the DB is created and should not be
+    // called multiple times
     applyMigrations(this, currentVersion).catch((err) => console.log(err))
   }
 }
@@ -107,32 +98,29 @@ class CyDB extends Dexie {
 let db: CyDB
 try {
   db = new CyDB(DB_NAME)
-  console.log('### DB is initialized', db.verno)
 } catch (err) {
-  console.error('### Failed to initialize DB', err)
+  console.error('Failed to create Dixie instance', err)
   throw err
 }
 
 export const initializeDb = async (): Promise<void> => {
   await db.open()
-  console.log('DB is opened')
+  console.log('IndexedDB is opened')
 
   // Check all object stores are available
   const currentNames = new Set<string>(db.tables.map((table) => table.name))
   Object.values(ObjectStoreNames).forEach((name) => {
     if (!currentNames.has(name)) {
-      console.warn(`!!!!!!!!!!!!!! Object store ${name} is not found`)
-    } else {
-      console.log(`### Object store ${name} is found`)
+      console.warn(`Object store ${name} is not found`)
     }
   })
 
   db.on('ready', () => {
-    console.info('Indexed DB is ready')
+    console.info(`Indexed DB version ${db.verno} is ready`)
   })
+
   db.on('versionchange', function (event) {
-    console.log('!!!!!!!!!! versionchange', event)
-    // window.location.reload()
+    console.log('IndexedDB version change has been detected.', event)
   })
 }
 

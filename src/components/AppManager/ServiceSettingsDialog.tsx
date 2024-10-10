@@ -28,6 +28,10 @@ interface ServiceSettingsDialogProps {
   setOpenDialog: (open: boolean) => void
 }
 
+const SAMPLE_SERVICE_1 = 'https://cd.ndexbio.org/cy/cytocontainer/v1/louvain'
+const SAMPLE_SERVICE_2 =
+  'https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample'
+
 export const ServiceSettingsDialog = ({
   openDialog,
   setOpenDialog,
