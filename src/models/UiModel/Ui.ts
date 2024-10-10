@@ -5,6 +5,7 @@ import { PanelState } from './PanelState'
 import { TableUIState } from './TableUi'
 import { NetworkBrowserPanelUIState } from './NetworkBrowserPanelState'
 import { VisualStyleOptions } from '../VisualStyleModel/VisualStyleOptions'
+import { NetworkViewUIState } from './NetworkViewUI'
 /**
  * User interface states shared as a global value
  */
@@ -31,4 +32,5 @@ export interface Ui {
 
   // Visual editor properties
   visualStyleOptions: Record<IdType, VisualStyleOptions>
+  networkViewUi: NetworkViewUIState
 }

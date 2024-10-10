@@ -103,10 +103,12 @@ function VisualPropertyView(props: {
           }}
         >
           {disabled ? (
-            <EmptyVisualPropertyViewBox sx={{ mr: 1, cursor: 'not-allowed' }} />
+            <EmptyVisualPropertyViewBox
+              sx={{ ml: 0.5, mr: 2.1, cursor: 'not-allowed' }}
+            />
           ) : (
             <DefaultValueForm
-              sx={{ mr: 1 }}
+              sx={{ ml: 0.5, mr: 2.1 }}
               visualProperty={visualProperty}
               currentNetworkId={currentNetworkId}
             />
@@ -119,7 +121,7 @@ function VisualPropertyView(props: {
                 }
               >
                 <EmptyVisualPropertyViewBox
-                  sx={{ mr: 1, cursor: 'not-allowed' }}
+                  sx={{ mr: 2.1, cursor: 'not-allowed' }}
                 />
               </Tooltip>
               <Tooltip
@@ -130,19 +132,19 @@ function VisualPropertyView(props: {
                 }
               >
                 <EmptyVisualPropertyViewBox
-                  sx={{ mr: 1, cursor: 'not-allowed' }}
+                  sx={{ mr: 2.1, cursor: 'not-allowed' }}
                 />
               </Tooltip>
             </>
           ) : (
             <>
               <MappingForm
-                sx={{ mr: 1 }}
+                sx={{ mr: 2.1 }}
                 currentNetworkId={currentNetworkId}
                 visualProperty={visualProperty}
               />
               <BypassForm
-                sx={{ mr: 1 }}
+                sx={{ mr: 2.1 }}
                 currentNetworkId={currentNetworkId}
                 visualProperty={visualProperty}
               />
@@ -151,7 +153,7 @@ function VisualPropertyView(props: {
 
           <Typography
             variant="body2"
-            sx={{ ml: 1, color: disabled ? 'gray' : 'black' }}
+            sx={{ color: disabled ? 'gray' : 'black' }}
           >
             {visualProperty.displayName}
           </Typography>
@@ -183,6 +185,9 @@ export default function VizmapperView(props: {
   networkId: IdType
   height: number
 }): React.ReactElement {
+  const TAB_ROTATE_DEGREE = 330
+  const TAB_TEXT_WIDTH = 34
+  const FONT_SIZE = 10
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
   const visualStyles: Record<IdType, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,
@@ -243,12 +248,12 @@ export default function VizmapperView(props: {
           backgroundColor: '#2F80ED',
           '& button.Mui-selected': { color: 'white' },
           '& button': {
-            minHeight: 30,
-            height: 30,
+            minHeight: 34,
+            height: 34,
             width: 30,
           },
-          height: 38,
-          minHeight: 30,
+          height: 34,
+          minHeight: 34,
         }}
         onChange={(e, nextTab) => setCurrentTabIndex(nextTab)}
       >
@@ -256,14 +261,39 @@ export default function VizmapperView(props: {
         <Tab label={<Typography variant="caption">Edges</Typography>} />
         <Tab label={<Typography variant="caption">Network</Typography>} />
       </Tabs>
-      <Box sx={{ display: 'flex', p: 0.5, ml: 1 }}>
-        <Box sx={{ width: 24, textAlign: 'center', mr: 1.5, fontSize: 12 }}>
-          Def.
+      <Box sx={{ display: 'flex', p: 1.5, ml: 0.5, minHeight: '40px' }}>
+        <Box
+          sx={{
+            width: TAB_TEXT_WIDTH,
+            textAlign: 'center',
+            mr: 1.5,
+            fontSize: FONT_SIZE,
+            transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
+          }}
+        >
+          Default
         </Box>
-        <Box sx={{ width: 24, textAlign: 'center', mr: 1.5, fontSize: 12 }}>
-          Map.
+        <Box
+          sx={{
+            width: TAB_TEXT_WIDTH,
+            textAlign: 'center',
+            mr: 1.5,
+            fontSize: FONT_SIZE,
+            transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
+          }}
+        >
+          Mapping
         </Box>
-        <Box sx={{ width: 24, textAlign: 'center', fontSize: 12 }}>Byp.</Box>
+        <Box
+          sx={{
+            width: TAB_TEXT_WIDTH,
+            textAlign: 'center',
+            fontSize: FONT_SIZE,
+            transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
+          }}
+        >
+          Bypass
+        </Box>
       </Box>
       <Divider />
       <div hidden={currentTabIndex !== 0}>

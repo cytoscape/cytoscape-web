@@ -19,6 +19,7 @@ export const FloatingToolBar = ({
   networkLabel,
   rendererId,
 }: FloatingToolBarProps): JSX.Element => {
+  const isCirclePackingRenderer = rendererId == 'circlePacking'
   return (
     <Box
       sx={{
@@ -34,7 +35,10 @@ export const FloatingToolBar = ({
       }}
     >
       <Divider orientation="vertical" flexItem />
-      <ApplyLayoutButton targetNetworkId={targetNetworkId} />
+      <ApplyLayoutButton
+        targetNetworkId={targetNetworkId}
+        disabled={isCirclePackingRenderer}
+      />
       <FitButton rendererId={rendererId} />
       <OpenInCytoscapeButton networkLabel={networkLabel} />
       <ShareNetworkButton />

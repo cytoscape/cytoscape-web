@@ -4,6 +4,7 @@ import { NetworkView } from '../../models/ViewModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkTab } from './NetworkTab'
 import { Network } from '../../models/NetworkModel'
+import { useUiStateStore } from '../../store/UiStateStore'
 
 interface NetworkTabsProps {
   network: Network
@@ -21,7 +22,10 @@ export const NetworkTabs = ({
   bgColor,
   handleClick,
 }: NetworkTabsProps) => {
-  const [selected, setSelected] = useState<number>(0)
+  const selected = useUiStateStore(
+    (state) => state.ui.networkViewUi.activeTabIndex,
+  )
+  const setSelected = useUiStateStore((state) => state.setNetworkViewTabIndex)
 
   const boxRef = useRef<HTMLDivElement>(null)
   const [boxSize, setBoxSize] = useState<{ w: number; h: number }>({
@@ -58,12 +62,37 @@ export const NetworkTabs = ({
         flexDirection: 'column',
       }}
     >
-      <Tabs value={selected} onChange={handleChange}>
-        {rendererList.map((renderer: Renderer, index: number) => {
-          return <Tab key={index} label={renderer.name} />
-        })}
-      </Tabs>
-
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          p: 0,
+          m: 0,
+        }}
+      >
+        <Tabs
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            '& button': {
+              height: '2.5em',
+              minHeight: '2.5em',
+            },
+            height: '2.5em',
+            minHeight: '2.5em',
+            flexGrow: 1,
+          }}
+          value={selected}
+          onChange={handleChange}
+        >
+          {rendererList.map((renderer: Renderer, index: number) => {
+            return (
+              <Tab sx={{ height: '40px' }} key={index} label={renderer.name} />
+            )
+          })}
+        </Tabs>
+      </Box>
       <Box ref={boxRef} sx={{ flexGrow: 1, width: '100%' }}>
         {rendererList.map((renderer: Renderer, index: number) => {
           return (

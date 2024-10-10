@@ -1,9 +1,10 @@
 import Button from '@mui/material/Button'
-import Menu from '@mui/material/Menu'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { MergeNetwork } from './MergeNetwork'
-import { TestButton } from './TestButton'
+import { PrimeReactProvider } from 'primereact/api'
+import { OverlayPanel } from 'primereact/overlaypanel'
+import { TieredMenu } from 'primereact/tieredmenu'
 
 export const ToolsMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -12,18 +13,21 @@ export const ToolsMenu: React.FC<DropdownMenuProps> = (
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
-  const handleOpenDropdownMenu = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    setAnchorEl(event.currentTarget)
-  }
-
   const handleClose = (): void => {
     setAnchorEl(null)
   }
 
+  const op = useRef(null)
+
+  const menuItems = [
+    {
+      label: 'Merge Networks',
+      template: <MergeNetwork handleClose={handleClose} />,
+    },
+  ]
+
   return (
-    <div>
+    <PrimeReactProvider>
       <Button
         sx={{
           color: 'white',
@@ -33,21 +37,13 @@ export const ToolsMenu: React.FC<DropdownMenuProps> = (
         aria-controls={open ? 'basic-menu' : undefined}
         aria-haspopup="true"
         aria-expanded={open ? 'true' : undefined}
-        onClick={handleOpenDropdownMenu}
+        onClick={(e) => (op.current as any)?.toggle(e)}
       >
         {label}
       </Button>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{
-          'aria-labelledby': label,
-        }}
-      >
-        <MergeNetwork handleClose={handleClose} />
-        <TestButton handleClose={handleClose} />
-      </Menu>
-    </div>
+      <OverlayPanel ref={op} unstyled>
+        <TieredMenu model={menuItems} />
+      </OverlayPanel>
+    </PrimeReactProvider>
   )
 }
