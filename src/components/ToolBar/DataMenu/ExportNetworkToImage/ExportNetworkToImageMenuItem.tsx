@@ -61,7 +61,7 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
       }}
       PaperProps={{
         sx: {
-          minHeight: 300,
+          height: 'auto',
         },
       }}
       fullWidth
@@ -97,8 +97,8 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
             }}
             InputLabelProps={{
               shrink: true,
-            }}>
-          </TextField>
+            }}
+          ></TextField>
         </Box>
         {currentExportForm}
       </DialogContent>

@@ -248,10 +248,15 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
     setZoom(newZoom)
   }
   return (
-    <Box sx={{
-      mt: 1, height: 500, display: 'flex',
-      flexDirection: 'column', justifyContent: 'space-between',
-    }}>
+    <Box
+      sx={{
+        mt: 1,
+        height: 425,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
       <Box>
         <Box sx={{ mb: 0.25 }}>
           <FormControlLabel
@@ -275,7 +280,7 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
             label="Transparent background"
           />
         </Box>
-        <Box sx={{ mb: 1 }} >
+        <Box sx={{ mb: 1 }}>
           <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
             File Type
           </Typography>
