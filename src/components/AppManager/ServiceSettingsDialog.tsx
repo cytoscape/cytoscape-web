@@ -21,21 +21,21 @@ import DeleteIcon from '@mui/icons-material/Delete'
 
 import { useAppStore } from '../../store/AppStore'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
-import { useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+
+import { AppConfig, AppConfigContext } from '../../AppConfigContext'
 
 interface ServiceSettingsDialogProps {
   openDialog: boolean
   setOpenDialog: (open: boolean) => void
 }
 
-const SAMPLE_SERVICE_1 = 'https://cd.ndexbio.org/cy/cytocontainer/v1/louvain'
-const SAMPLE_SERVICE_2 =
-  'https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample'
-
 export const ServiceSettingsDialog = ({
   openDialog,
   setOpenDialog,
 }: ServiceSettingsDialogProps) => {
+  const { defaultServices } = useContext<AppConfig>(AppConfigContext)
+
   const [newUrl, setNewUrl] = useState<string>('')
 
   const serviceApps: Record<string, ServiceApp> = useAppStore(
@@ -45,6 +45,19 @@ export const ServiceSettingsDialog = ({
   const removeService = useAppStore((state) => state.removeService)
 
   const addService = useAppStore((state) => state.addService)
+
+  useEffect(() => {
+    const currentServiceUrls = Object.values(serviceApps).map(
+      (serviceApp: ServiceApp) => serviceApp.url,
+    )
+    const urlSet = new Set(currentServiceUrls)
+
+    defaultServices.forEach((url: string) => {
+      if (!urlSet.has(url)) {
+        addService(url)
+      }
+    })
+  }, [])
 
   const handleAddServiceApp = async () => {
     if (newUrl.trim()) {
