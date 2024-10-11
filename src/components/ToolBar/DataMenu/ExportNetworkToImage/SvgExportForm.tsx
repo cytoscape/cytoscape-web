@@ -37,10 +37,15 @@ export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
   )
 
   return (
-    <Box sx={{
-      mt: 1, height: 500, display: 'flex',
-      flexDirection: 'column', justifyContent: 'space-between',
-    }}>
+    <Box
+      sx={{
+        mt: 1,
+        height: 425,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
       <Box>
         <Box>
           <FormControlLabel
