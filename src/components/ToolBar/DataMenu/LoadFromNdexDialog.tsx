@@ -87,6 +87,8 @@ export const NetworkSeachField = (props: {
 export const LoadFromNdexDialog = (
   props: LoadFromNdexDialogProps,
 ): ReactElement => {
+  const { open, handleClose } = props
+
   const { ndexBaseUrl, maxNetworkFileSize, maxNetworkElementsThreshold } =
     useContext(AppConfigContext)
 
@@ -206,6 +208,10 @@ export const LoadFromNdexDialog = (
   }, [authenticated])
 
   useEffect(() => {
+    if (!open) {
+      return
+    }
+
     setLoading(true)
     fetchSearchResults('')
       .then(() => {
@@ -215,7 +221,7 @@ export const LoadFromNdexDialog = (
         setErrorMessage(err.message)
         setLoading(false)
       })
-  }, [])
+  }, [open])
 
   const fetchSearchResults = async (searchValue: string): Promise<void> => {
     setLoading(true)
@@ -387,7 +393,6 @@ export const LoadFromNdexDialog = (
           ? emptyListMessageContent
           : networkListContent
 
-  const { open, handleClose } = props
   return (
     <Dialog
       onKeyDown={(e) => {

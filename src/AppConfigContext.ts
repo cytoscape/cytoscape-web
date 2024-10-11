@@ -46,7 +46,6 @@ export const defaultAppConfig: AppConfig = {
     'ab0eeef6-25bd-11e9-a05d-525400c25d22',
   ],
   defaultServices: [
-    'https://cd.ndexbio.org/cy/cytocontainer/v1/louvain',
     'https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample',
   ],
   urlBaseName: '',
