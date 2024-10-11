@@ -161,65 +161,7 @@ const CyjsRenderer = ({
     exclusiveSelect(id, selectedNodes, selectedEdges)
   }
 
-  const applyStyleUpdate = (): void => {
-    if (cyStyle.length === 0) {
-      return
-    }
-
-    const t1 = performance.now()
-    cy.startBatch()
-
-    const data: NetworkViewSources = {
-      network,
-      networkView,
-      nodeTable: table.nodeTable,
-      edgeTable: table.edgeTable,
-      visualStyle: vs,
-    }
-    const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
-    // Apply style from view model
-    applyViewModel(cy, updatedNetworkView, visualEditorProperties)
-
-    cy.endBatch()
-    if (cyStyle.length > 0) {
-      cy.style(cyStyle)
-    }
-
-    // Store the key-value pair in the local IndexedDB
-    setViewModel(id, updatedNetworkView)
-    console.log('#Time to  apply style: ', performance.now() - t1)
-  }
-
-  const applyHoverUpdate = (): void => {
-    if (cy === null) {
-      return
-    }
-
-    if (hoveredElement !== undefined) {
-      // First, remove existing hovered effect by removing the class
-      if (lastHoveredElement !== undefined) {
-        // Remove hover class from the last hovered element
-        const lastEle = cy.getElementById(lastHoveredElement)
-        if (lastEle !== undefined) {
-          lastEle.removeClass('hover')
-        }
-      }
-      // Now select the new hovered element and apply hover class
-      const ele = cy.getElementById(hoveredElement)
-      if (ele !== undefined) {
-        ele.addClass('hover')
-        // And then update the last hovered element
-        setLastHoveredElement(hoveredElement)
-      }
-    }
-  }
-
-  const renderNetwork = (
-    cy: any,
-    networkView: NetworkView | undefined,
-    displayMode: DisplayMode,
-    applyFit: boolean,
-  ): void => {
+  const renderNetwork = (): void => {
     if (renderedId === id || cy === null) {
       return
     }
@@ -318,48 +260,12 @@ const CyjsRenderer = ({
             setClickSelection(true)
           }
         } else {
-          let selectedNodes: IdType[] =
-            networkView?.selectedNodes !== undefined
-              ? [...networkView?.selectedNodes]
-              : []
-          let selectedEdges: IdType[] =
-            networkView?.selectedEdges !== undefined
-              ? [...networkView?.selectedEdges]
-              : []
-          const isModifierKey =
-            e.originalEvent.ctrlKey ||
-            e.originalEvent.metaKey ||
-            e.originalEvent.shiftKey
-          const elementId = e.target.data('id')
-
+          const selectedNodes: IdType[] = []
+          const selectedEdges: IdType[] = []
           if (e.target.isNode()) {
-            if (isModifierKey) {
-              // Toggle selection
-              const index = selectedNodes.indexOf(elementId)
-              if (index > -1) {
-                selectedNodes.splice(index, 1) // Deselect if already selected
-              } else {
-                selectedNodes.push(elementId) // Select if not selected
-              }
-            } else {
-              // Exclusive selection
-              selectedNodes = [elementId] // Select the current element
-              selectedEdges = [] // Deselect all edges
-            }
+            selectedNodes.push(e.target.data('id'))
           } else {
-            if (isModifierKey) {
-              // Toggle selection
-              const index = selectedEdges.indexOf(elementId)
-              if (index > -1) {
-                selectedEdges.splice(index, 1) // Deselect if already selected
-              } else {
-                selectedEdges.push(elementId) // Select if not selected
-              }
-            } else {
-              // Exclusive selection
-              selectedEdges = [elementId] // Select the current element
-              selectedNodes = [] // Deselect all nodes
-            }
+            selectedEdges.push(e.target.data('id'))
           }
           exclusiveSelect(id, selectedNodes, selectedEdges)
         }
@@ -390,14 +296,65 @@ const CyjsRenderer = ({
 
     cy.style(newStyle)
 
-    if (applyFit) {
-      cy.fit()
-    }
+    cy.fit()
 
     setVisualStyle(id, vs)
     setTimeout(() => {
       isViewCreated.current = true
     }, 1000)
+  }
+
+  const applyStyleUpdate = (): void => {
+    if (cyStyle.length === 0) {
+      return
+    }
+
+    const t1 = performance.now()
+    cy.startBatch()
+
+    const data: NetworkViewSources = {
+      network,
+      networkView,
+      nodeTable: table.nodeTable,
+      edgeTable: table.edgeTable,
+      visualStyle: vs,
+    }
+    const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
+    // Apply style from view model
+    applyViewModel(cy, updatedNetworkView, visualEditorProperties)
+
+    cy.endBatch()
+    if (cyStyle.length > 0) {
+      cy.style(cyStyle)
+    }
+
+    // Store the key-value pair in the local IndexedDB
+    setViewModel(id, updatedNetworkView)
+    console.log('#Time to  apply style: ', performance.now() - t1)
+  }
+
+  const applyHoverUpdate = (): void => {
+    if (cy === null) {
+      return
+    }
+
+    if (hoveredElement !== undefined) {
+      // First, remove existing hovered effect by removing the class
+      if (lastHoveredElement !== undefined) {
+        // Remove hover class from the last hovered element
+        const lastEle = cy.getElementById(lastHoveredElement)
+        if (lastEle !== undefined) {
+          lastEle.removeClass('hover')
+        }
+      }
+      // Now select the new hovered element and apply hover class
+      const ele = cy.getElementById(hoveredElement)
+      if (ele !== undefined) {
+        ele.addClass('hover')
+        // And then update the last hovered element
+        setLastHoveredElement(hoveredElement)
+      }
+    }
   }
 
   // when the id changes, reset the cyjs element by
@@ -408,7 +365,7 @@ const CyjsRenderer = ({
       return
     }
     isViewCreated.current = false
-    renderNetwork(cy, networkView, displayMode, true)
+    renderNetwork()
     setRenderedId(id)
   }, [network])
 
@@ -694,15 +651,9 @@ const CyjsRenderer = ({
 
   useEffect(() => {
     if (cy !== null) {
-      renderNetwork(cy, networkView, displayMode, true)
+      renderNetwork()
     }
   }, [cy])
-
-  useEffect(() => {
-    if (cy !== null) {
-      renderNetwork(cy, networkView, displayMode, false)
-    }
-  }, [networkView, displayMode])
 
   return (
     <>
