@@ -17,7 +17,7 @@ import {
   InputNetwork,
   TableDataObject,
   JsonNode,
-  Task,
+  CytoContainerRequestId,
   ScopeType,
   InputDataType,
 } from './model'
@@ -197,7 +197,7 @@ export const submitAndProcessTask = async (
   task: CytoContainerRequest,
 ): Promise<CytoContainerResult> => {
   // Submit the task
-  const taskResponse: Task = await submitTask(serviceUrl, task)
+  const taskResponse: CytoContainerRequestId = await submitTask(serviceUrl, task)
   const taskId = taskResponse.id
 
   // Poll the task status until it's done

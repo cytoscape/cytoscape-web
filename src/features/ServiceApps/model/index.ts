@@ -1,13 +1,8 @@
 import { AttributeName, ValueType } from '../../../models'
-
+import { ServiceAppAction } from '../../../models/AppModel/ServiceAppAction'
 enum ServerStatusType {
   ok = 'ok',
   error = 'error',
-}
-
-enum AlgorithmType {
-  value = 'value',
-  flag = 'flag',
 }
 
 enum AlgorithmValidationType {
@@ -23,7 +18,15 @@ enum inputNetworkModel {
 
 enum inputNetworkFormat {
   cx2 = 'cx2',
-  edgeList = 'edgeList',
+}
+
+enum AlgorithmParameterType {
+  text = 'text',
+  dropDown = 'dropDown',
+  radio = 'radio',
+  checkBox = 'checkBox',
+  nodeColumn = 'nodeColumn',
+  edgeColumn = 'edgeColumn',
 }
 
 export enum ScopeType{
@@ -51,16 +54,16 @@ export interface ServiceAlgorithm {
   name: string
   parameters: AlgorithmParameter[]
   version: string
-  action: string
-  rootMenu: string
+  cyWebAction: ServiceAppAction
+  cyWebMenuItem: CyWebMenuItem
   description: string
-  selectedData: SelectedData
+  serviceInputDefinition: ServiceInputDefinition
 }
 
-export interface AlgorithmParameter {
+interface AlgorithmParameter {
   displayName: string
   description: string
-  type: AlgorithmType
+  type: AlgorithmParameterType
   valueList: string[]
   defaultValue: string
   validationType: AlgorithmValidationType
@@ -68,21 +71,36 @@ export interface AlgorithmParameter {
   validationRegex: string
   minValue: number
   maxValue: number
-  flag: string
 }
 
-export interface SelectedData {
-  type: string
-  parameters: SelectedDataParameter[]
-  scope: string
+export interface CyWebMenuItem{
+  root: string,
+  path: CyWebMenuItemPath[]
 }
 
-export interface SelectedDataParameter {
+export interface CyWebMenuItemPath{
   name: string
-  format: string
+  gravity: number
+}
+
+export interface InputColumn{
+  name: string
   description: string
   dataType: string
-  model: string
+  columnName: string
+  defaultColumnName?: string
+}
+
+export interface InputNetwork {
+  model: inputNetworkModel
+  format: inputNetworkFormat
+}
+
+export interface ServiceInputDefinition{
+  type: string,
+  scope: string,
+  inputColumns: InputColumn[]
+  inputNetworks: InputNetwork[]
 }
 
 export interface CytoContainerResult {
@@ -108,14 +126,14 @@ export interface JsonNode {
   [key: string]: any
 }
 
-export interface Task {
+export interface CytoContainerRequestId {
   id: string
 }
 
 export interface CytoContainerRequest {
   algorithm: string
   data: JsonNode
-  customParameters?: { [key: string]: string }
+  parameters?: { [key: string]: string }
 }
 
 export interface ServerStatus {
@@ -126,20 +144,6 @@ export interface ServerStatus {
   completedTasks: number
   canceledTasks: number
   version: string
-}
-
-export interface InputColumn {
-  name: string
-  description: string
-  dataType: string
-  allowMultipleSelection: boolean
-  defaultColumnName: string
-  columnName: string
-}
-
-export interface InputNetwork {
-  model: inputNetworkModel
-  format: inputNetworkFormat
 }
 
 interface ColumnForServer {

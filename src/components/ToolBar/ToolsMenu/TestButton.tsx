@@ -55,7 +55,7 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
 
   const onClick = async (): Promise<void> => {
     const serviceUrl = 'https://cd.ndexbio.org/cy/cytocontainer/v1'
-    const algorithmName = 'updatetablesexample'
+    const algorithmName = 'addnetworksexample'
     const networkDataObj = createNetworkDataObj(
       ScopeType.all,
       {

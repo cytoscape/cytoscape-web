@@ -3,7 +3,7 @@ import {
   CytoContainerResult,
   ServiceAlgorithm,
   CytoContainerRequest,
-  Task,
+  CytoContainerRequestId,
   CytoContainerResultStatus,
   ServerStatus
 } from '../model'
@@ -70,7 +70,7 @@ export const getAlgorithmMetaData = async (
 export const submitTask = async (
   serviceUrl: string,
   task: CytoContainerRequest,
-): Promise<Task> => {
+): Promise<CytoContainerRequestId> => {
   const response = await fetch(`${serviceUrl}/${task.algorithm}`, {
     method: 'POST',
     headers: {
@@ -82,7 +82,7 @@ export const submitTask = async (
     const errorResponse: ErrorResponse = await response.json()
     throw new Error(errorResponse.message)
   }
-  const result: Task = await response.json()
+  const result: CytoContainerRequestId = await response.json()
   return result
 }
 
