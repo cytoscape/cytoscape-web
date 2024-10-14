@@ -14,6 +14,9 @@
     "529fb200-21c7-11ee-b3b9-005056aecf54",
     "c68c5c93-21c7-11ee-b3b9-005056aecf54"
   ],
+  "defaultServices": [
+    "https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample"
+  ],
   "maxNetworkElementsThreshold": 20000,
   "maxNetworkFileSize": 524288000,
   "urlBaseName": "/",

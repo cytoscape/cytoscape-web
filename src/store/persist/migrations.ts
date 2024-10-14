@@ -20,10 +20,29 @@ export const migrations: DexieMigration[] = [
   // },
 ]
 
-export const applyMigrations = async (db: Dexie): Promise<void> => {
+export const applyMigrations = async (
+  db: Dexie,
+  versionNumber: number,
+): Promise<void> => {
+  // Current version of the existing DB in user's browser.
+  // This is always an integer
+  const currentDbVersion: number = await db.verno
+
+  if (currentDbVersion >= versionNumber) {
+    console.log(
+      `IndexedDB is already at version ${currentDbVersion}, no migration needed`,
+    )
+    return
+  }
+
+  // Create the given version
+  db.version(versionNumber).upgrade(async (tx) => {})
+
   // needed for dexie observables to add it's tables
-  db.version(2).stores({})
   migrations.forEach(async (migration) => {
     await db.version(migration.version).upgrade(migration.upgradeFn)
   })
+
+  const version = await db.verno
+  console.log(`IndexedDB migrated to version ${version}`)
 }

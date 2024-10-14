@@ -2,12 +2,20 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { CyApp } from '../models/AppModel/CyApp'
 import { AppStore } from '../models/StoreModel/AppStoreModel'
-import { getAppFromDb, putAppToDb } from './persist/db'
+import {
+  deleteServiceAppFromDb,
+  getAllServiceAppsFromDb,
+  getAppFromDb,
+  putAppToDb,
+  putServiceAppToDb,
+} from './persist/db'
 import { AppStatus } from '../models/AppModel/AppStatus'
+import { serviceFetcher } from '../utils/service-fetcher'
 
 export const useAppStore = create(
   immer<AppStore>((set, get) => ({
     apps: {},
+    serviceApps: {},
 
     restore: async (appIds: string[]) => {
       const apps = await Promise.all(
@@ -17,12 +25,18 @@ export const useAppStore = create(
         }),
       )
 
+      const serviceApps = await getAllServiceAppsFromDb()
+
       set((state) => {
         apps.forEach(({ id, cached }) => {
           if (cached !== undefined) {
             state.apps[id] = cached
             console.log('* Restored from cached', cached)
           }
+        })
+
+        serviceApps.forEach((serviceApp) => {
+          state.serviceApps[serviceApp.url] = serviceApp
         })
       })
     },
@@ -43,6 +57,29 @@ export const useAppStore = create(
         }
       })
     },
+
+    addService: async (url: string) => {
+      try {
+        const serviceApp = await serviceFetcher(url)
+        await putServiceAppToDb(serviceApp)
+
+        set((state) => {
+          state.serviceApps[url] = serviceApp
+        })
+      } catch (error) {
+        console.error(`Failed to fetch service metadata from ${url}`, error)
+      }
+    },
+
+    removeService: (url: string) => {
+      set((state) => {
+        delete state.serviceApps[url]
+        deleteServiceAppFromDb(url).catch((error) => {
+          console.error(`Failed to delete service metadata from ${url}`, error)
+        })
+      })
+    },
+
     setStatus: (id: string, status: AppStatus) => {
       set((state) => {
         state.apps[id].status = status

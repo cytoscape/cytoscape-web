@@ -1,5 +1,4 @@
 import Button from '@mui/material/Button'
-import Menu from '@mui/material/Menu'
 import { useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { MergeNetwork } from './MergeNetwork'
@@ -14,12 +13,6 @@ export const ToolsMenu: React.FC<DropdownMenuProps> = (
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
-  const handleOpenDropdownMenu = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    ;(op.current as any)?.hide()
-    setAnchorEl(null)
-  }
   const handleClose = (): void => {
     setAnchorEl(null)
   }

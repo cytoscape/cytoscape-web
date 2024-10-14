@@ -10,6 +10,7 @@ export interface KeycloakConfig {
 export interface AppConfig {
   ndexBaseUrl: string
   options?: {}
+  defaultServices: string[]
   keycloakConfig: KeycloakConfig
   maxNetworkElementsThreshold: number
   maxNetworkFileSize: number
@@ -43,6 +44,9 @@ export const defaultAppConfig: AppConfig = {
     'f9ca49da-3055-11ec-94bf-525400c25d22',
     '8bd2797c-3056-11ec-94bf-525400c25d22',
     'ab0eeef6-25bd-11e9-a05d-525400c25d22',
+  ],
+  defaultServices: [
+    'https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample',
   ],
   urlBaseName: '',
   openAIAPIKey: '',

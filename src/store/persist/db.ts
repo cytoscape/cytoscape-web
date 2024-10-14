@@ -14,61 +14,119 @@ import { applyMigrations } from './migrations'
 import { getNetworkViewId } from '../ViewModelStore'
 import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { CyApp } from '../../models/AppModel/CyApp'
+import { ServiceApp } from '../../models/AppModel/ServiceApp'
 
-const DB_NAME = 'cyweb-db'
+// Unique, fixed DB name for the Cytoscape Web
+const DB_NAME: string = 'cyweb-db'
+
+// Current version of the DB (integer only).
+// If older version is found, the migration
+// function will upgrade the existing data to this version.
+const currentVersion: number = 3
 
 /**
- * TODO: we need a schema for indexes
- *  - name
- *  - n
- *  - description
+ * Predefined object store names.
+ * Once this is updated, the upgrade / migration is needed
+ *
+ * If you need to add a new object store, you need to add the name here
+ *
+ * */
+export const ObjectStoreNames = {
+  Workspace: 'workspace',
+  Summaries: 'summaries',
+  CyNetworks: 'cyNetworks',
+  CyTables: 'cyTables',
+  CyVisualStyles: 'cyVisualStyles',
+  CyNetworkViews: 'cyNetworkViews',
+  UiState: 'uiState',
+  Timestamp: 'timestamp',
+  Filters: 'filters',
+  Apps: 'apps',
+
+  // From v3
+  ServiceApps: 'serviceApps',
+} as const
+
+// The type derived from the names of object stores
+export type ObjectStoreNames =
+  (typeof ObjectStoreNames)[keyof typeof ObjectStoreNames]
+
+/**
+ * Object stores (for V3).
+ *
+ * This defines the primary key for each object store.
+ *
+ */
+const KeysV3 = {
+  [ObjectStoreNames.Workspace]: 'id',
+  [ObjectStoreNames.Summaries]: 'externalId',
+  [ObjectStoreNames.CyNetworks]: 'id',
+  [ObjectStoreNames.CyTables]: 'id',
+  [ObjectStoreNames.CyVisualStyles]: 'id',
+  [ObjectStoreNames.CyNetworkViews]: 'id',
+  [ObjectStoreNames.UiState]: 'id',
+  [ObjectStoreNames.Timestamp]: 'id',
+  [ObjectStoreNames.Filters]: 'id',
+  [ObjectStoreNames.Apps]: 'id',
+
+  [ObjectStoreNames.ServiceApps]: 'url',
+} as const
+
+/**
+ * DB will be initialized to the current version.
  */
 class CyDB extends Dexie {
-  workspace!: DxTable<any>
-  cyNetworks!: DxTable<Network>
-  cyTables!: DxTable<any>
-  cyVisualStyles!: DxTable<any>
-  summaries!: DxTable<any>
-  cyNetworkViews!: DxTable<any>
-  uiState!: DxTable<any>
-  timestamp!: DxTable<any>
-  filters!: DxTable<any>
-  apps!: DxTable<CyApp>
+  [ObjectStoreNames.Workspace]!: DxTable<any>;
+  [ObjectStoreNames.CyNetworks]!: DxTable<Network>;
+  [ObjectStoreNames.CyTables]!: DxTable<any>;
+  [ObjectStoreNames.CyVisualStyles]!: DxTable<any>;
+  [ObjectStoreNames.Summaries]!: DxTable<any>;
+  [ObjectStoreNames.CyNetworkViews]!: DxTable<any>;
+  [ObjectStoreNames.UiState]!: DxTable<any>;
+  [ObjectStoreNames.Timestamp]!: DxTable<any>;
+  [ObjectStoreNames.Filters]!: DxTable<any>;
+  [ObjectStoreNames.Apps]!: DxTable<CyApp>;
+
+  // From v3
+  [ObjectStoreNames.ServiceApps]!: DxTable<ServiceApp>
 
   constructor(dbName: string) {
     super(dbName)
-    this.version(1).stores({
-      workspace: 'id',
-      summaries: 'externalId',
-      cyNetworks: 'id',
-      cyTables: 'id',
-      cyVisualStyles: 'id',
-      cyNetworkViews: 'id',
-      uiState: 'id',
-      timestamp: 'id',
-      filters: 'id',
-      apps: 'id',
-    })
+    this.version(currentVersion).stores(KeysV3)
 
-    applyMigrations(this).catch((err) => console.log(err))
+    // This will be applied only when the DB is created and should not be
+    // called multiple times
+    applyMigrations(this, currentVersion).catch((err) => console.log(err))
   }
 }
 
 // Initialize the DB
-let db = new CyDB(DB_NAME)
+let db: CyDB
+try {
+  db = new CyDB(DB_NAME)
+} catch (err) {
+  console.error('Failed to create Dixie instance', err)
+  throw err
+}
 
 export const initializeDb = async (): Promise<void> => {
-  applyMigrations(db).catch((err) => {
-    throw err
+  await db.open()
+  console.log('IndexedDB is opened')
+
+  // Check all object stores are available
+  const currentNames = new Set<string>(db.tables.map((table) => table.name))
+  Object.values(ObjectStoreNames).forEach((name) => {
+    if (!currentNames.has(name)) {
+      console.warn(`Object store ${name} is not found`)
+    }
   })
-  db.open()
-    .then(() => {})
-    .catch((err) => {
-      console.log(err)
-    })
 
   db.on('ready', () => {
-    console.info('Indexed DB is ready')
+    console.info(`Indexed DB version ${db.verno} is ready`)
+  })
+
+  db.on('versionchange', function (event) {
+    console.log('IndexedDB version change has been detected.', event)
   })
 }
 
@@ -84,7 +142,7 @@ export const deleteDb = async (): Promise<void> => {
   await Dexie.delete(DB_NAME)
   db = new CyDB(DB_NAME)
 
-  applyMigrations(db).catch((err) => {
+  applyMigrations(db, currentVersion).catch((err) => {
     throw err
   })
 }
@@ -578,5 +636,38 @@ export const getAppFromDb = async (
 export const deleteAppFromDb = async (appId: string): Promise<void> => {
   await db.transaction('rw', db.apps, async () => {
     await db.apps.delete(appId)
+  })
+}
+
+/**
+ * Store Service App URL to DB
+ */
+export const putServiceAppToDb = async (
+  serviceApp: ServiceApp,
+): Promise<void> => {
+  try {
+    await db.transaction('rw', db.serviceApps, async () => {
+      await db.serviceApps.put(serviceApp)
+    })
+  } catch (error) {
+    console.error('Failed to add service app state to the database:', error)
+  }
+}
+
+export const getAllServiceAppsFromDb = async (): Promise<ServiceApp[]> => {
+  try {
+    // Fetch all entries as an array
+    const serviceList: ServiceApp[] = await db.serviceApps.toArray()
+    return serviceList
+  } catch (err) {
+    console.warn('### Failed to open DB or fetch data', err, db.serviceApps)
+    return []
+  }
+}
+
+export const deleteServiceAppFromDb = async (url: string): Promise<void> => {
+  // Check the db has the object store or not
+  await db.transaction('rw', db.serviceApps, async () => {
+    await db.serviceApps.delete(url)
   })
 }

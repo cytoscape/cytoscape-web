@@ -1,0 +1,102 @@
+{
+  "serviceInputDefinition": {
+    "type": "nodes",
+    "scope": "all",
+    "inputColumns": [
+        {
+          "name": "name",
+          "description": "Name",
+          "dataTye": "string",
+          "allowMultipleSelection": false,
+          "defaultColumn": "name",
+          "columnName": "name"
+        }
+      ]
+  },
+  "cyWebAction": "addNetworks",
+  "cyWebMenuItem": {
+    "root": "Apps",
+    "path": [
+              {"name":"Example",
+               "gravity":0}, 
+              {"name":"Service",
+               "gravity": 1}]
+  },
+  "name": "Example Service",
+  "description": "An Example Service",
+  "version": "1.0",
+  "parameters": [
+    {
+      "displayName": "Example String Text Parameter",
+      "description": "Text input description",
+      "type": "text",
+      "valueList": [],
+      "defaultValue": "louvain",
+      "validationType": "string",
+      "validationHelp": "Enter any string",
+      "validationRegex": null,
+      "minValue": null,
+      "maxValue": null
+    },
+    {
+      "displayName": "Example Dropdown Parameter",
+      "description": "Choose to use Louvain or newer Leiden algorithm",
+      "type": "dropDown",
+      "valueList": ["louvain", "leiden"],
+      "defaultValue": "louvain",
+      "validationType": "string",
+      "validationHelp": "Must be set to louvain or leiden",
+      "validationRegex": "louvain|leiden",
+      "minValue": null,
+      "maxValue": null
+    },
+    {
+      "displayName": "Example Radio Parameter",
+      "description": "Choose to use A, B or C",
+      "type": "radio",
+      "valueList": ["A", "B", "C"],
+      "defaultValue": "A",
+      "validationType": "string",
+      "validationHelp": "Must be set to A, B or C",
+      "validationRegex": "A|B|C",
+      "minValue": null,
+      "maxValue": null
+    },
+    {
+      "displayName": "Example CheckBox Parameter",
+      "description": "Choose true or false",
+      "type": "checkBox",
+      "valueList": [true, false],
+      "defaultValue": true,
+      "validationType": "boolean",
+      "validationHelp": "Must be set to true or false",
+      "validationRegex": null,
+      "minValue": null,
+      "maxValue": null
+    },
+    {
+      "displayName": "Example Node Column Parameter",
+      "description": "Choose a node column",
+      "type": "nodeColumn",
+      "valueList": "",
+      "defaultValue": "p-value",
+      "validationType": "double",
+      "validationHelp": "Must be a double number",
+      "validationRegex": "",
+      "minValue": 0.0,
+      "maxValue": 1.0
+    },
+    {
+      "displayName": "Example Edge Column Parameter",
+      "description": "Choose an edge column",
+      "type": "edgeColumn",
+      "valueList": "",
+      "defaultValue": "members",
+      "validationType": "list_of_string",
+      "validationHelp": "Must be a list of strings representing member lists",
+      "validationRegex": "",
+      "minValue": null,
+      "maxValue": null
+    }
+  ]
+}
