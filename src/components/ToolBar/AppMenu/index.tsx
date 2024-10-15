@@ -8,6 +8,9 @@ import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
 import { ComponentType, CyApp } from '../../../models/AppModel'
 import { ServiceSettingsDialog } from '../../AppManager/ServiceSettingsDialog'
+import { ServiceApp } from '../../../models/AppModel/ServiceApp'
+import { TieredMenu } from 'primereact/tieredmenu'
+import { createMenuItems } from './menu-factory'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   // Actual CyApp objects
@@ -22,6 +25,10 @@ export const AppMenu = (props: DropdownMenuProps) => {
 
   const [componentList, setComponentList] = useState<[string, string][]>([])
 
+  const serviceApps: Record<string, ServiceApp> = useAppStore(
+    (state) => state.serviceApps,
+  )
+  useEffect(() => {}, [serviceApps])
   const handleOpenDropdownMenu = (
     event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
