@@ -11,11 +11,13 @@ import {
 } from './persist/db'
 import { AppStatus } from '../models/AppModel/AppStatus'
 import { serviceFetcher } from '../utils/service-fetcher'
+import { ServiceAppTask } from '../models/AppModel/ServiceAppTask'
 
 export const useAppStore = create(
   immer<AppStore>((set, get) => ({
     apps: {},
     serviceApps: {},
+    currentTask: undefined,
 
     restore: async (appIds: string[]) => {
       const apps = await Promise.all(
@@ -87,6 +89,18 @@ export const useAppStore = create(
 
       const newAppState = { ...get().apps[id] }
       putAppToDb(newAppState)
+    },
+
+    setCurrentTask: (task: ServiceAppTask) => {
+      set((state) => {
+        state.currentTask = task
+      })
+    },
+
+    clearCurrentTask: () => {
+      set((state) => {
+        state.currentTask = undefined
+      })
     },
   })),
 )
