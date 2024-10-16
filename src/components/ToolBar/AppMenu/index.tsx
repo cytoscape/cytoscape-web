@@ -1,5 +1,5 @@
-import { Button, Menu, MenuItem } from '@mui/material'
-import { Suspense, useEffect, useState } from 'react'
+import { Button, Menu } from '@mui/material'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { useAppStore } from '../../../store/AppStore'
@@ -11,6 +11,8 @@ import { ServiceSettingsDialog } from '../../AppManager/ServiceSettingsDialog'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { TieredMenu } from 'primereact/tieredmenu'
 import { createMenuItems } from './menu-factory'
+import { MenuItem } from 'primereact/menuitem'
+import { OverlayPanel } from 'primereact/overlaypanel'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   // Actual CyApp objects
@@ -24,6 +26,9 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const [openServiceDialog, setOpenServiceDialog] = useState<boolean>(false)
 
   const [componentList, setComponentList] = useState<[string, string][]>([])
+  const [menuModel, setMenuModel] = useState<MenuItem[]>([])
+
+  const menuRef = useRef(null)
 
   const serviceApps: Record<string, ServiceApp> = useAppStore(
     (state) => state.serviceApps,
@@ -80,6 +85,24 @@ export const AppMenu = (props: DropdownMenuProps) => {
     setComponentList(componentList)
   }, [apps])
 
+  useEffect(() => {
+    // Create base menu items
+    const menuModel: MenuItem[] = [
+      {
+        label: 'App Settings...',
+        command: () => handleOpenDialog(true),
+      },
+      {
+        label: 'External Service Settings...',
+        command: () => handleOpenServiceDialog(true),
+      },
+    ]
+    setMenuModel(menuModel)
+
+    const menuRefCurrent = menuRef.current as any
+    menuRefCurrent.hide()
+  }, [])
+
   return (
     <>
       <Button
@@ -91,11 +114,17 @@ export const AppMenu = (props: DropdownMenuProps) => {
         aria-controls={open ? 'basic-menu' : undefined}
         aria-haspopup="true"
         aria-expanded={open ? 'true' : undefined}
-        onClick={handleOpenDropdownMenu}
+        onClick={(e) => {
+          if (menuRef.current === null) {
+            return
+          }
+          const menuRefCurrent = menuRef.current as any
+          menuRefCurrent.toggle(e)
+        }}
       >
         {label}
       </Button>
-      <Menu
+      {/* <Menu
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
@@ -109,13 +138,10 @@ export const AppMenu = (props: DropdownMenuProps) => {
             return <MenuComponent key={index} handleClose={handleClose} />
           })}
         </Suspense>
-        <MenuItem onClick={() => handleOpenDialog(true)}>
-          App Settings...
-        </MenuItem>
-        <MenuItem onClick={() => handleOpenServiceDialog(true)}>
-          External Service Settings...
-        </MenuItem>
-      </Menu>
+      </Menu> */}
+      <OverlayPanel ref={menuRef} unstyled>
+        <TieredMenu model={menuModel} />
+      </OverlayPanel>
       <AppSettingsDialog
         openDialog={openDialog}
         setOpenDialog={setOpenDialog}
