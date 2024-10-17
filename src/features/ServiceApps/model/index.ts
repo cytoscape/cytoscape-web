@@ -122,9 +122,9 @@ export interface CytoContainerResultStatus {
   startTime: number
 }
 
-export interface JsonNode {
-  [key: string]: any
-}
+export type JsonNode =
+  | { [key: string]: JsonNode }
+  | JsonNode[]
 
 export interface CytoContainerRequestId {
   id: string

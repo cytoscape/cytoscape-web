@@ -27,6 +27,7 @@ import {
   getAlgorithmMetaData,
   getServerStatus,
 } from '../../../features/ServiceApps/api'
+import { useServiceResultHandlerManager } from '../../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
 
 export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
@@ -53,9 +54,11 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
     state.networks.get(currentNetworkId),
   ) as Network
 
+  const { getHandler } = useServiceResultHandlerManager()
+
   const onClick = async (): Promise<void> => {
     const serviceUrl = 'https://cd.ndexbio.org/cy/cytocontainer/v1'
-    const algorithmName = 'addnetworksexample'
+    const algorithmName = 'updatetablesexample'
     const networkDataObj = createNetworkDataObj(
       ScopeType.all,
       {
@@ -77,20 +80,33 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
     )
     // console.log(networkDataObj)
 
-    // ----------------test get server status-------------------
+    // ------------------ test get server status ---------------------
     const serverStatus = await getServerStatus(serviceUrl)
     console.log(serverStatus)
 
-    // ----------------test get algorithm metaData-------------------
+    // ----------------- test get algorithm metaData -----------------
     const algorithmMetaData = await getAlgorithmMetaData(
       serviceUrl,
       algorithmName,
     )
     console.log(algorithmMetaData)
+    const { cyWebAction } = algorithmMetaData
 
-    // ------------------test run task---------------------
+    const actionHandler = getHandler(cyWebAction)
+    if (actionHandler === undefined) {
+      throw new Error(`Unsupported action: ${cyWebAction}`)
+    }
+
+    // ------------------------ test run task ------------------------
     const result = await runTask(serviceUrl, algorithmName, networkDataObj)
     console.log(result)
+
+    // ------------------- test handle the results -------------------
+    actionHandler({
+      responseObj: result.result,
+      networkId: currentNetworkId,
+    })
+
     handleClose()
   }
 

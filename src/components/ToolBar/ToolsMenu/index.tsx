@@ -5,6 +5,7 @@ import { MergeNetwork } from './MergeNetwork'
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
+import { TestButton } from './TestButton'
 
 export const ToolsMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -23,6 +24,10 @@ export const ToolsMenu: React.FC<DropdownMenuProps> = (
     {
       label: 'Merge Networks',
       template: <MergeNetwork handleClose={handleClose} />,
+    },
+    {
+      label: 'Test Community Detection',
+      template: <TestButton handleClose={handleClose} />,
     },
   ]
 
