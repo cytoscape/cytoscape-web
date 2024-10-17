@@ -17,7 +17,6 @@ import { LoadWorkspaceMenuItem } from './LoadWorkspaceMenuItem'
 
 import { useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
-import { CreateNetworkFromTableFileMenuItem } from '../../../features/TableDataLoader/components/CreateNetworkFromTable/ImportNetworkFromTableMenuItem'
 import { JoinTableToNetworkMenuItem } from '../../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
 import { TieredMenu } from 'primereact/tieredmenu'
 import { PrimeReactProvider } from 'primereact/api'
