@@ -155,21 +155,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
       >
         {label}
       </Button>
-      {/* <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{
-          'aria-labelledby': label,
-        }}
-      >
-        <Suspense fallback={<div>Loading...</div>}>
-          {componentList.map(([appId, componentId], index) => {
-            const MenuComponent = ExternalComponent(appId, './' + componentId)
-            return <MenuComponent key={index} handleClose={handleClose} />
-          })}
-        </Suspense>
-      </Menu> */}
       <OverlayPanel ref={menuRef} unstyled>
         <TieredMenu style={{ width: 350 }} model={menuModel} />
       </OverlayPanel>
