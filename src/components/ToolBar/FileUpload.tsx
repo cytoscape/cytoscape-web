@@ -321,7 +321,13 @@ export function FileUpload(props: FileUploadProps) {
                       Drag file here
                     </Text>
                     <Text size="sm" c="dimmed" inline mt={7}>
-                      Files under 5mb supported
+                      Supported file types: .csv, .txt, .tsv, .cx2.
+                    </Text>
+                    <Text size="sm" c="dimmed" inline>
+                      Microsoft Excel files are not supported.
+                    </Text>
+                    <Text size="sm" c="dimmed" inline mt={7}>
+                      Files under 5mb supported.
                     </Text>
                   </Stack>
                 </Group>
