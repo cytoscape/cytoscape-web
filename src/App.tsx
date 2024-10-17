@@ -1,7 +1,7 @@
 import React, { Suspense, useContext, useEffect } from 'react'
 import CssBaseline from '@mui/material/CssBaseline'
-import CookieConsent from 'react-cookie-consent';
-import Cookies from 'js-cookie';
+import CookieConsent from 'react-cookie-consent'
+import Cookies from 'js-cookie'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import './index.css'
 import { Error } from './Error'
@@ -84,19 +84,19 @@ const router = createBrowserRouter(
 )
 
 export const App = (): React.ReactElement => {
-  const client = useContext(KeycloakContext);
-  const setClient = useCredentialStore((state) => state.setClient);
+  const client = useContext(KeycloakContext)
+  const setClient = useCredentialStore((state) => state.setClient)
 
   useEffect(() => {
-    setClient(client);
-  }, [client, setClient]);
+    setClient(client)
+  }, [client, setClient])
 
   const removeAllCookies = () => {
-    const allCookies = Cookies.get();
+    const allCookies = Cookies.get()
     Object.keys(allCookies).forEach(cookieName => {
-      Cookies.remove(cookieName, { path: '/' });
-    });
-  };
+      Cookies.remove(cookieName, { path: '/' })
+    })
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -109,7 +109,7 @@ export const App = (): React.ReactElement => {
           declineButtonText="Decline"
           enableDeclineButton
           setDeclineCookie={false}
-          flipButtons 
+          flipButtons
           onDecline={removeAllCookies}
           cookieName="cytoscapeWebCookieConsent"
           style={{ background: "#4F4F4F" }}
@@ -122,5 +122,5 @@ export const App = (): React.ReactElement => {
         </CookieConsent>
       </ErrorBoundary>
     </ThemeProvider>
-  );
-};
+  )
+}
