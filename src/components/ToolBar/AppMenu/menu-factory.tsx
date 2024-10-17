@@ -2,11 +2,20 @@ import { MenuItem } from 'primereact/menuitem'
 import { MenuPathElement } from '../../../models/AppModel/MenuPathElement'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 
-const path2menu = (path: MenuPathElement[], command: () => void): MenuItem => {
+const path2menu = (path: MenuPathElement[], closeFn: () => void): MenuItem => {
   if (path.length === 0) {
     throw new Error('Menu path is empty')
   }
 
+  const command = (): void => {
+    // Call the function to open the modal parameter dialog here...
+    // open()
+    // Run the task from the Dialog...
+
+    // After the dialog is closed, close the parent menu
+    console.log('Task finished!')
+    closeFn()
+  }
   // Case 1: Single menu item
   if (path.length === 1) {
     const item: MenuPathElement = path[0]
@@ -46,7 +55,7 @@ const path2menu = (path: MenuPathElement[], command: () => void): MenuItem => {
 
 export const createMenuItems = (
   serviceApps: Record<string, ServiceApp>,
-  command: () => void,
+  closeFn: () => void,
 ): MenuItem[] => {
   let baseMenu: MenuItem = { label: 'No menu items', items: [] }
   const appIds: string[] = Object.keys(serviceApps)
@@ -63,7 +72,7 @@ export const createMenuItems = (
     const app: ServiceApp = serviceApps[appId]
     const { cyWebMenuItem } = app
     const { path } = cyWebMenuItem
-    baseMenu = path2menu(path, command)
+    baseMenu = path2menu(path, closeFn)
     appMenuItems.push(baseMenu)
   })
 
