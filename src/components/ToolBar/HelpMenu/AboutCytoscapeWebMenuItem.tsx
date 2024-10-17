@@ -2,6 +2,7 @@ import React from 'react';
 import { MenuItem, Dialog, DialogContent, DialogActions, Button, Typography } from '@mui/material';
 import { BaseMenuProps } from '../BaseMenuProps';
 import packageInfo from '../../../../package.json';
+import { getDatabaseVersion } from '../../../store/persist/db'
 
 export const AboutCytoscapeWebMenuItem = (props: BaseMenuProps): React.ReactElement => {
   const [open, setOpen] = React.useState(false);
@@ -39,6 +40,9 @@ export const AboutCytoscapeWebMenuItem = (props: BaseMenuProps): React.ReactElem
           </Typography>
           <Typography variant="body1" gutterBottom>
             Date: {buildDate}
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            IndexedDB Version: {getDatabaseVersion()}
           </Typography>
           <Typography variant="body2" color="textSecondary">
             A web-based network visualization and analysis platform

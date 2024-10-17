@@ -130,6 +130,11 @@ export const initializeDb = async (): Promise<void> => {
   })
 }
 
+export const getDatabaseVersion = (): number => {
+  return db.verno
+}
+
+
 export const getDb = async (): Promise<CyDB> => {
   return await Promise.resolve(db)
 }
