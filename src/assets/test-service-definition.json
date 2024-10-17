@@ -3,24 +3,23 @@
     "type": "nodes",
     "scope": "all",
     "inputColumns": [
-        {
-          "name": "name",
-          "description": "Name",
-          "dataTye": "string",
-          "allowMultipleSelection": false,
-          "defaultColumn": "name",
-          "columnName": "name"
-        }
-      ]
+      {
+        "name": "name",
+        "description": "Name",
+        "dataTye": "string",
+        "allowMultipleSelection": false,
+        "defaultColumn": "name",
+        "columnName": "name"
+      }
+    ]
   },
-  "cyWebAction": "addNetworks",
+  "cyWebActions": ["addNetworks"],
   "cyWebMenuItem": {
     "root": "Apps",
     "path": [
-              {"name":"Example",
-               "gravity":0}, 
-              {"name":"Service",
-               "gravity": 1}]
+      { "name": "Example", "gravity": 0 },
+      { "name": "Service", "gravity": 1 }
+    ]
   },
   "name": "Example Service",
   "description": "An Example Service",
