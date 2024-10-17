@@ -2,7 +2,7 @@ import { MenuItem } from 'primereact/menuitem'
 import { MenuPathElement } from '../../../models/AppModel/MenuPathElement'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 
-const path2menu = (path: MenuPathElement[]): MenuItem => {
+const path2menu = (path: MenuPathElement[], command: () => void): MenuItem => {
   if (path.length === 0) {
     throw new Error('Menu path is empty')
   }
@@ -13,6 +13,7 @@ const path2menu = (path: MenuPathElement[]): MenuItem => {
     const baseMenu: MenuItem = {
       label: item.name,
       items: [],
+      command,
     }
     return baseMenu
   }
@@ -31,6 +32,9 @@ const path2menu = (path: MenuPathElement[]): MenuItem => {
       label: item.name,
       items: [],
     }
+    if (path.length === i + 1) {
+      newMenuItem.command = command
+    }
     if (currentMenuItem.items === undefined) {
       currentMenuItem.items = []
     }
@@ -42,15 +46,26 @@ const path2menu = (path: MenuPathElement[]): MenuItem => {
 
 export const createMenuItems = (
   serviceApps: Record<string, ServiceApp>,
-): MenuItem => {
+  command: () => void,
+): MenuItem[] => {
   let baseMenu: MenuItem = { label: 'No menu items', items: [] }
   const appIds: string[] = Object.keys(serviceApps)
-  appIds.forEach((appId: string) => {
+
+  // Sort the appIds based on gravity of the top menu item
+  const sortedAppIds = appIds.sort((a, b) => {
+    const gravityA = serviceApps[a].cyWebMenuItem.path[0].gravity
+    const gravityB = serviceApps[b].cyWebMenuItem.path[0].gravity
+    return gravityA - gravityB
+  })
+
+  const appMenuItems: MenuItem[] = []
+  sortedAppIds.forEach((appId: string) => {
     const app: ServiceApp = serviceApps[appId]
     const { cyWebMenuItem } = app
     const { path } = cyWebMenuItem
-    baseMenu = path2menu(path)
+    baseMenu = path2menu(path, command)
+    appMenuItems.push(baseMenu)
   })
 
-  return baseMenu
+  return appMenuItems
 }

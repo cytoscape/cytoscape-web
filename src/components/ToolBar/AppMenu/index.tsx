@@ -1,4 +1,4 @@
-import { Button, Menu } from '@mui/material'
+import { Button, Divider, Menu } from '@mui/material'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import ExternalComponent from '../../AppManager/ExternalComponent'
@@ -26,6 +26,10 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const [openServiceDialog, setOpenServiceDialog] = useState<boolean>(false)
 
   const [componentList, setComponentList] = useState<[string, string][]>([])
+
+  /**
+   * Menu model for the nested menu
+   */
   const [menuModel, setMenuModel] = useState<MenuItem[]>([])
 
   const menuRef = useRef(null)
@@ -33,25 +37,25 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const serviceApps: Record<string, ServiceApp> = useAppStore(
     (state) => state.serviceApps,
   )
-  useEffect(() => {}, [serviceApps])
-  const handleOpenDropdownMenu = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const handleClose = (): void => {
-    setAnchorEl(null)
-  }
 
   const handleOpenDialog = (isDialogOpen: boolean): void => {
     setAnchorEl(null)
+    const menuRefCurrent = menuRef.current as any
+    menuRefCurrent.hide()
     setOpenDialog(isDialogOpen)
   }
 
   const handleOpenServiceDialog = (isDialogOpen: boolean): void => {
     setAnchorEl(null)
+    const menuRefCurrent = menuRef.current as any
+    menuRefCurrent.hide()
     setOpenServiceDialog(isDialogOpen)
+  }
+
+  const handleClose = (): void => {
+    setAnchorEl(null)
+    const menuRefCurrent = menuRef.current as any
+    menuRefCurrent.hide()
   }
 
   useEffect(() => {
@@ -85,23 +89,50 @@ export const AppMenu = (props: DropdownMenuProps) => {
     setComponentList(componentList)
   }, [apps])
 
-  useEffect(() => {
-    // Create base menu items
-    const menuModel: MenuItem[] = [
+  const getBaseMenu = (): MenuItem[] => {
+    return [
+      {
+        template: <Divider />,
+      },
       {
         label: 'App Settings...',
+        style: { height: '2.5em' },
         command: () => handleOpenDialog(true),
       },
       {
         label: 'External Service Settings...',
+        style: { height: '2.5em' },
         command: () => handleOpenServiceDialog(true),
       },
     ]
-    setMenuModel(menuModel)
+  }
 
+  useEffect(() => {
+    const appMenuItems: MenuItem[] = createAppMenu()
+    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleClose)
+    setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
+  }, [serviceApps, apps])
+
+  useEffect(() => {
+    // Create base menu items
+    setMenuModel(getBaseMenu())
     const menuRefCurrent = menuRef.current as any
     menuRefCurrent.hide()
   }, [])
+
+  const createAppMenu = (): MenuItem[] => {
+    const appMenuItems: MenuItem[] = componentList.map(
+      ([appId, componentId], index) => {
+        const MenuComponent = ExternalComponent(appId, './' + componentId)
+        const menuItem: MenuItem = {
+          template: <MenuComponent key={index} handleClose={handleClose} />,
+        }
+        return menuItem
+      },
+    )
+
+    return appMenuItems
+  }
 
   return (
     <>
@@ -140,7 +171,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
         </Suspense>
       </Menu> */}
       <OverlayPanel ref={menuRef} unstyled>
-        <TieredMenu model={menuModel} />
+        <TieredMenu style={{ width: 350 }} model={menuModel} />
       </OverlayPanel>
       <AppSettingsDialog
         openDialog={openDialog}
