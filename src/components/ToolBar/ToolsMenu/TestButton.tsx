@@ -57,15 +57,15 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
     state.networks.get(currentNetworkId),
   ) as Network
 
-  const setCurrentTask = useAppStore((state) => state.setCurrentTask)
   const serviceUrl =
     'https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample'
   const actionType = useAppStore(
-    (state) => state.serviceApps[serviceUrl]?.cyWebAction,
+    (state) => state.serviceApps[serviceUrl]?.cyWebActions,
   )
   const algorithmName = useAppStore(
     (state) => state.serviceApps[serviceUrl]?.name,
   )
+  const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
   const { getHandler } = useServiceResultHandlerManager()
   const { runTask } = useRunTask()
 
@@ -90,14 +90,6 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
         [],
         [],
       )
-
-      // --------------------- get the action handler ---------------------
-
-      const actionHandler = getHandler(actionType)
-      if (actionHandler === undefined) {
-        throw new Error(`Unsupported action: ${actionType}`)
-      }
-
       // -------------------------- test run task --------------------------
 
       const result = await runTask({
@@ -105,22 +97,25 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
         algorithmName,
         data: networkDataObj,
       })
-      setCurrentTask({
-        id: result.id,
-        status: result.status,
-        progress: result.progress,
-        message: result.message,
-      } as ServiceAppTask)
       console.log(result)
 
       // --------------------- test handle the results ---------------------
+
       if (result.status === ResultStatus.complete) {
-        actionHandler({
-          responseObj: result.result as JsonNode[],
-          networkId: currentNetworkId,
-        })
+        for (const { action, data } of result.result) {
+          const actionHandler = getHandler(action)
+          if (actionHandler === undefined) {
+            throw new Error(`Unsupported action: ${actionType}`)
+          }
+          actionHandler({
+            responseObj: data,
+            networkId: currentNetworkId,
+          })
+        }
       }
+      clearCurrentTask()
     } catch (error) {
+      clearCurrentTask()
       console.error(error)
     }
     handleClose()

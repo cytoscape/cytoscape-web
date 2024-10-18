@@ -20,10 +20,10 @@ export const useUpdateTables = (): (({
   responseObj,
   networkId,
 }: ActionHandlerProps) => void) => {
-  const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
   const setTable = useTableStore((state) => state.setTable)
   const updateTables = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
+      if (!Array.isArray(responseObj)) return
       for (const item of responseObj) {
         const updatedTable = item as Partial<UpdatedTable>
         if (
@@ -48,10 +48,9 @@ export const useUpdateTables = (): (({
             }),
             rows: rowMap,
           }
-          setTable(networkId, updatedTable.id, nextTable)
+          setTable(networkId, id, nextTable)
         }
       }
-      clearCurrentTask()
     },
     [],
   )

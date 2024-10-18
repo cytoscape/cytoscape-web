@@ -27,6 +27,7 @@ import { NetworkView } from '../../models/ViewModel'
 import { useCallback } from 'react'
 import { useAppStore } from '../../store/AppStore'
 import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
+import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
 
 const POLL_INTERVAL = 500 // 0.5 seconds
 
@@ -185,7 +186,7 @@ const filterTable = (
 }
 
 export const useRunTask = (): {
-  runTask:(props: RunTaskProps)=> Promise<CytoContainerResult>
+  runTask: (props: RunTaskProps) => Promise<CytoContainerResult>
 } => {
   const { submitAndProcessTask } = useSubmitAndProcessTask()
   const runTask = useCallback(
@@ -217,7 +218,7 @@ export const useRunTask = (): {
 export const useSubmitAndProcessTask = (): {
   submitAndProcessTask: (
     props: SubmitAndProcessTaskProps,
-  )=> Promise<CytoContainerResult>
+  ) => Promise<CytoContainerResult>
 } => {
   const setCurrentTask = useAppStore((state) => state.setCurrentTask)
   const submitAndProcessTask = useCallback(
@@ -236,7 +237,7 @@ export const useSubmitAndProcessTask = (): {
         status: ServiceStatus.Submitted,
         progress: 0,
         message: 'Submitted',
-      })
+      } as ServiceAppTask)
       // Poll the task status until it's done
       while (true) {
         const status: CytoContainerResultStatus = await getTaskStatus(
@@ -252,7 +253,7 @@ export const useSubmitAndProcessTask = (): {
           status: ServiceStatus.Processing,
           progress: status.progress,
           message: 'Processing',
-        })
+        } as ServiceAppTask)
         // Wait for the polling interval
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL))
       }
@@ -262,6 +263,14 @@ export const useSubmitAndProcessTask = (): {
         serviceUrl,
         taskId,
       )
+      
+      setCurrentTask({
+        id: taskId,
+        status: taskResult.status,
+        progress: taskResult.progress,
+        message: taskResult.message,
+      } as ServiceAppTask)
+
       // Delete the task after fetching the result
       await deleteTask(serviceUrl, taskId)
 

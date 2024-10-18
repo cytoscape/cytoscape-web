@@ -14,10 +14,10 @@ export const useUpdateLayouts = (): (({
   responseObj,
   networkId,
 }: ActionHandlerProps) => void) => {
-  const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
   const setNodePosition = useViewModelStore((state) => state.setNodePosition)
   const updateLayouts = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
+      if (!Array.isArray(responseObj)) return
       for (const item of responseObj) {
         const updatedPosition = item as Partial<UpdatedPosition>
         if (
@@ -30,7 +30,6 @@ export const useUpdateLayouts = (): (({
           setNodePosition(networkId, id, [x, y, z])
         }
       }
-      clearCurrentTask()
     },
     [],
   )

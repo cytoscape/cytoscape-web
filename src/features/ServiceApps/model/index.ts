@@ -1,5 +1,16 @@
 import { AttributeName, ValueType } from '../../../models'
 import { ServiceAppAction } from '../../../models/AppModel/ServiceAppAction'
+
+type JsonValue = string | number | boolean | JsonObject | JsonArray;
+
+interface JsonObject {
+  [key: string]: JsonValue;
+}
+
+interface JsonArray extends Array<JsonValue> {}
+
+export type JsonNode = JsonObject | JsonArray;
+
 enum ServerStatusType {
   ok = 'ok',
   error = 'error',
@@ -61,7 +72,7 @@ export interface ServiceAlgorithm {
   name: string
   parameters: AlgorithmParameter[]
   version: string
-  cyWebAction: ServiceAppAction
+  cyWebActions: ServiceAppAction[]
   cyWebMenuItem: CyWebMenuItem
   description: string
   serviceInputDefinition: ServiceInputDefinition
@@ -117,7 +128,12 @@ export interface CytoContainerResult {
   progress: number
   wallTime: number
   startTime: number
-  result: JsonNode
+  result: Action[]
+}
+
+export interface Action {
+  action: ServiceAppAction
+  data: JsonNode
 }
 
 export interface CytoContainerResultStatus {
@@ -128,10 +144,6 @@ export interface CytoContainerResultStatus {
   wallTime: number
   startTime: number
 }
-
-export type JsonNode =
-  | { [key: string]: JsonNode }
-  | JsonNode[]
 
 export interface CytoContainerRequestId {
   id: string

@@ -8,8 +8,6 @@ import {
   ServerStatus
 } from '../model'
 
-const serviceUrl = 'https://cd.ndexbio.org/cd/communitydetection/v1'
-
 // get task result function
 export const getTaskResult = async (
   serviceUrl: string,
@@ -28,6 +26,24 @@ export const getTaskResult = async (
   }
 
   const data: CytoContainerResult = await response.json()
+  return data
+}
+
+// get all algorithms offered by the service
+export const getAllAlgorithms = async (serviceUrl: string): Promise<ServiceAlgorithm[]> => {
+  const response = await fetch(serviceUrl, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+  if (!response.ok) {
+    const errorResponse: ErrorResponse = await response.json()
+    throw new Error(errorResponse.message)
+  }
+  const responseData = await response.json()
+  const data: ServiceAlgorithm[] = Object.values(responseData.algorithms)
+
   return data
 }
 
