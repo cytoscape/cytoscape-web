@@ -8,7 +8,7 @@ import { useUpdateSelections } from './updateSelections'
 import { useUpdateTables } from './updateTables'
 
 export interface ActionHandlerProps {
-  responseObj: any
+  responseObj: JsonNode[]
   networkId: string
 }
 

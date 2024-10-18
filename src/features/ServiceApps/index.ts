@@ -24,8 +24,23 @@ import {
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { NetworkView } from '../../models/ViewModel'
+import { useCallback } from 'react'
+import { useAppStore } from '../../store/AppStore'
+import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
 
 const POLL_INTERVAL = 500 // 0.5 seconds
+
+interface RunTaskProps {
+  serviceUrl: string
+  algorithmName: string
+  data: JsonNode
+  customParameters?: { [key: string]: string }
+}
+
+interface SubmitAndProcessTaskProps {
+  serviceUrl: string
+  task: CytoContainerRequest
+}
 
 export const createNetworkDataObj = (
   scope: ScopeType,
@@ -169,61 +184,90 @@ const filterTable = (
   }
 }
 
-export const runTask = async (
-  serviceUrl: string,
-  algorithmName: string,
-  data: JsonNode,
-  customParameters?: { [key: string]: string },
-): Promise<CytoContainerResult> => {
-  // Prepare the task request with user-selected data
-  const taskRequest: CytoContainerRequest = {
-    algorithm: algorithmName,
-    data: data,
-    ...(customParameters && { customParameters }),
-  }
-
-  // Submit task and get the result
-  const result = await submitAndProcessTask(
-    serviceUrl,
-    algorithmName,
-    taskRequest,
-  )
-  return result
-}
-
-export const submitAndProcessTask = async (
-  serviceUrl: string,
-  algorithmName: string,
-  task: CytoContainerRequest,
-): Promise<CytoContainerResult> => {
-  // Submit the task
-  const taskResponse: CytoContainerRequestId = await submitTask(serviceUrl, task)
-  const taskId = taskResponse.id
-
-  // Poll the task status until it's done
-  while (true) {
-    const status: CytoContainerResultStatus = await getTaskStatus(
+export const useRunTask = (): {
+  runTask:(props: RunTaskProps)=> Promise<CytoContainerResult>
+} => {
+  const { submitAndProcessTask } = useSubmitAndProcessTask()
+  const runTask = useCallback(
+    async ({
       serviceUrl,
       algorithmName,
-      taskId,
-    )
+      data,
+      customParameters,
+    }: RunTaskProps): Promise<CytoContainerResult> => {
+      // Prepare the task request with user-selected data
+      const taskRequest: CytoContainerRequest = {
+        algorithm: algorithmName,
+        data: data,
+        ...(customParameters && { customParameters }),
+      }
 
-    if (status.progress === 100) {
-      break
-    }
-
-    // Wait for the polling interval
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL))
-  }
-
-  // Fetch the final task result
-  const taskResult: CytoContainerResult = await getTaskResult(
-    serviceUrl,
-    algorithmName,
-    taskId,
+      // Submit task and get the result
+      const result = await submitAndProcessTask({
+        serviceUrl: serviceUrl,
+        task: taskRequest,
+      })
+      return result
+    },
+    [],
   )
-  // Delete the task after fetching the result
-  await deleteTask(serviceUrl, algorithmName, taskId)
+  return { runTask }
+}
 
-  return taskResult
+export const useSubmitAndProcessTask = (): {
+  submitAndProcessTask: (
+    props: SubmitAndProcessTaskProps,
+  )=> Promise<CytoContainerResult>
+} => {
+  const setCurrentTask = useAppStore((state) => state.setCurrentTask)
+  const submitAndProcessTask = useCallback(
+    async ({
+      serviceUrl,
+      task,
+    }: SubmitAndProcessTaskProps): Promise<CytoContainerResult> => {
+      // Submit the task
+      const taskResponse: CytoContainerRequestId = await submitTask(
+        serviceUrl,
+        task,
+      )
+      const taskId = taskResponse.id
+      setCurrentTask({
+        id: taskId,
+        status: ServiceStatus.Submitted,
+        progress: 0,
+        message: 'Submitted',
+      })
+      // Poll the task status until it's done
+      while (true) {
+        const status: CytoContainerResultStatus = await getTaskStatus(
+          serviceUrl,
+          taskId,
+        )
+
+        if (status.progress === 100) {
+          break
+        }
+        setCurrentTask({
+          id: taskId,
+          status: ServiceStatus.Processing,
+          progress: status.progress,
+          message: 'Processing',
+        })
+        // Wait for the polling interval
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL))
+      }
+
+      // Fetch the final task result
+      const taskResult: CytoContainerResult = await getTaskResult(
+        serviceUrl,
+        taskId,
+      )
+      // Delete the task after fetching the result
+      await deleteTask(serviceUrl, taskId)
+
+      return taskResult
+    },
+    [],
+  )
+  return { submitAndProcessTask }
 }

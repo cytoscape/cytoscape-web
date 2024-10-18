@@ -13,6 +13,7 @@ import { NetworkView } from '../../../models'
 import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
+import { useAppStore } from '../../../store/AppStore'
 import {
   createNetworkDataObj,
   createTableDataObj,
@@ -20,14 +21,16 @@ import {
 import {
   CytoContainerRequest,
   InputNetwork,
+  ResultStatus,
   ScopeType,
 } from '../../../features/ServiceApps/model'
-import { runTask } from '../../../features/ServiceApps'
+import { useRunTask } from '../../../features/ServiceApps'
 import {
   getAlgorithmMetaData,
   getServerStatus,
 } from '../../../features/ServiceApps/api'
 import { useServiceResultHandlerManager } from '../../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
+import { ServiceAppTask } from '../../../models/AppModel/ServiceAppTask'
 
 export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
@@ -54,59 +57,72 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
     state.networks.get(currentNetworkId),
   ) as Network
 
+  const setCurrentTask = useAppStore((state) => state.setCurrentTask)
+  const serviceUrl =
+    'https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample'
+  const actionType = useAppStore(
+    (state) => state.serviceApps[serviceUrl]?.cyWebAction,
+  )
+  const algorithmName = useAppStore(
+    (state) => state.serviceApps[serviceUrl]?.name,
+  )
   const { getHandler } = useServiceResultHandlerManager()
+  const { runTask } = useRunTask()
 
   const onClick = async (): Promise<void> => {
-    const serviceUrl = 'https://cd.ndexbio.org/cy/cytocontainer/v1'
-    const algorithmName = 'updatetablesexample'
-    const networkDataObj = createNetworkDataObj(
-      ScopeType.all,
-      {
-        model: 'network',
-        format: 'cx2',
-      } as InputNetwork,
-      network,
-      visualStyle,
-      summary,
-      table,
-      visualStyleOptions,
-      viewModel,
-    )
-    const tableDataObj = createTableDataObj(
-      table.nodeTable,
-      ScopeType.all,
-      [],
-      [],
-    )
-    // console.log(networkDataObj)
+    try {
+      const networkDataObj = createNetworkDataObj(
+        ScopeType.all,
+        {
+          model: 'network',
+          format: 'cx2',
+        } as InputNetwork,
+        network,
+        visualStyle,
+        summary,
+        table,
+        visualStyleOptions,
+        viewModel,
+      )
+      const tableDataObj = createTableDataObj(
+        table.nodeTable,
+        ScopeType.all,
+        [],
+        [],
+      )
 
-    // ------------------ test get server status ---------------------
-    const serverStatus = await getServerStatus(serviceUrl)
-    console.log(serverStatus)
+      // --------------------- get the action handler ---------------------
 
-    // ----------------- test get algorithm metaData -----------------
-    const algorithmMetaData = await getAlgorithmMetaData(
-      serviceUrl,
-      algorithmName,
-    )
-    console.log(algorithmMetaData)
-    const { cyWebAction } = algorithmMetaData
+      const actionHandler = getHandler(actionType)
+      if (actionHandler === undefined) {
+        throw new Error(`Unsupported action: ${actionType}`)
+      }
 
-    const actionHandler = getHandler(cyWebAction)
-    if (actionHandler === undefined) {
-      throw new Error(`Unsupported action: ${cyWebAction}`)
+      // -------------------------- test run task --------------------------
+
+      const result = await runTask({
+        serviceUrl,
+        algorithmName,
+        data: networkDataObj,
+      })
+      setCurrentTask({
+        id: result.id,
+        status: result.status,
+        progress: result.progress,
+        message: result.message,
+      } as ServiceAppTask)
+      console.log(result)
+
+      // --------------------- test handle the results ---------------------
+      if (result.status === ResultStatus.complete) {
+        actionHandler({
+          responseObj: result.result as JsonNode[],
+          networkId: currentNetworkId,
+        })
+      }
+    } catch (error) {
+      console.error(error)
     }
-
-    // ------------------------ test run task ------------------------
-    const result = await runTask(serviceUrl, algorithmName, networkDataObj)
-    console.log(result)
-
-    // ------------------- test handle the results -------------------
-    actionHandler({
-      responseObj: result.result,
-      networkId: currentNetworkId,
-    })
-
     handleClose()
   }
 

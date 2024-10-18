@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
+import { useAppStore } from '../../../store/AppStore'
 
 interface UpdatedPosition {
   id: string
@@ -13,17 +14,25 @@ export const useUpdateLayouts = (): (({
   responseObj,
   networkId,
 }: ActionHandlerProps) => void) => {
-  // get AppStore
+  const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
   const setNodePosition = useViewModelStore((state) => state.setNodePosition)
   const updateLayouts = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
-      for (const updatedPosition of responseObj) {
-        const { id, x, y, z } = updatedPosition as UpdatedPosition
-        setNodePosition(networkId, id, [x, y, z])
+      for (const item of responseObj) {
+        const updatedPosition = item as Partial<UpdatedPosition>
+        if (
+          updatedPosition &&
+          typeof updatedPosition.id === 'string' &&
+          typeof updatedPosition.x === 'number' &&
+          typeof updatedPosition.y === 'number'
+        ) {
+          const { id, x, y, z } = updatedPosition
+          setNodePosition(networkId, id, [x, y, z])
+        }
       }
+      clearCurrentTask()
     },
     [],
   )
-  // set the status as finished
   return updateLayouts
 }

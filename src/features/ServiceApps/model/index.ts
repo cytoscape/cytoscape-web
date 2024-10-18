@@ -41,6 +41,13 @@ export enum InputDataType {
   network = 'network',
 }
 
+export enum ResultStatus {
+  submitted= 'submitted',
+  processing = 'processing',
+  complete = 'complete',
+  failed = 'failed',
+}
+
 export interface ErrorResponse {
   errorCode: string
   message: string
@@ -105,7 +112,7 @@ export interface ServiceInputDefinition{
 
 export interface CytoContainerResult {
   id: string
-  status: string
+  status: ResultStatus
   message: string
   progress: number
   wallTime: number

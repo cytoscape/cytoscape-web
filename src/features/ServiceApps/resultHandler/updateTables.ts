@@ -2,7 +2,8 @@ import { useCallback } from 'react'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { useTableStore } from '../../../store/TableStore'
-import { Column, ValueType,Table } from '../../../models'
+import { Column, ValueType, Table } from '../../../models'
+import { useAppStore } from '../../../store/AppStore'
 
 interface UpdatedTable {
   id: TableType
@@ -19,13 +20,21 @@ export const useUpdateTables = (): (({
   responseObj,
   networkId,
 }: ActionHandlerProps) => void) => {
+  const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
   const setTable = useTableStore((state) => state.setTable)
   const updateTables = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
-      for (const updatedTable of responseObj) {
-        const { id, rows, columns } = updatedTable as UpdatedTable
-        const tableType = id.slice(0, 4)
-        if (tableType === TableType.EDGE || tableType === TableType.NODE) {
+      for (const item of responseObj) {
+        const updatedTable = item as Partial<UpdatedTable>
+        if (
+          updatedTable &&
+          typeof updatedTable.id === 'string' &&
+          (updatedTable.id === TableType.EDGE ||
+            updatedTable.id === TableType.NODE) &&
+          typeof updatedTable.rows === 'object' &&
+          Array.isArray(updatedTable.columns)
+        ) {
+          const { id, rows, columns } = updatedTable as UpdatedTable
           const rowMap = new Map(
             Object.entries(rows).map(([key, value]) => [
               key as string,
@@ -39,9 +48,10 @@ export const useUpdateTables = (): (({
             }),
             rows: rowMap,
           }
-          setTable(networkId, tableType, nextTable)
+          setTable(networkId, updatedTable.id, nextTable)
         }
       }
+      clearCurrentTask()
     },
     [],
   )
