@@ -25,12 +25,7 @@ import {
   ScopeType,
 } from '../../../features/ServiceApps/model'
 import { useRunTask } from '../../../features/ServiceApps'
-import {
-  getAlgorithmMetaData,
-  getServerStatus,
-} from '../../../features/ServiceApps/api'
 import { useServiceResultHandlerManager } from '../../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
-import { ServiceAppTask } from '../../../models/AppModel/ServiceAppTask'
 
 export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
@@ -60,7 +55,7 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
   const serviceUrl =
     'https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample'
   const actionType = useAppStore(
-    (state) => state.serviceApps[serviceUrl]?.cyWebActions,
+    (state) => state.serviceApps[serviceUrl]?.cyWebAction,
   )
   const algorithmName = useAppStore(
     (state) => state.serviceApps[serviceUrl]?.name,
