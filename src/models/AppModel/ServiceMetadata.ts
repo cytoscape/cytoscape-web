@@ -14,7 +14,7 @@ export interface ServiceMetadata {
   description?: string
   version: string
   serviceInputDefinition?: ServiceInputDefinition
-  cyWebActions: ServiceAppAction[]
+  cyWebAction: ServiceAppAction[]
   cyWebMenuItem: CyWebMenuItem
 
   parameters: ServiceAppParameter[]
