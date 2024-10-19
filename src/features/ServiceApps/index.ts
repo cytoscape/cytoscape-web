@@ -185,9 +185,9 @@ const filterTable = (
   }
 }
 
-export const useRunTask = (): {
-  runTask: (props: RunTaskProps) => Promise<CytoContainerResult>
-} => {
+export const useRunTask = (): ((
+  props: RunTaskProps,
+) => Promise<CytoContainerResult>) => {
   const { submitAndProcessTask } = useSubmitAndProcessTask()
   const runTask = useCallback(
     async ({
@@ -212,7 +212,7 @@ export const useRunTask = (): {
     },
     [],
   )
-  return { runTask }
+  return runTask
 }
 
 export const useSubmitAndProcessTask = (): {
@@ -263,7 +263,7 @@ export const useSubmitAndProcessTask = (): {
         serviceUrl,
         taskId,
       )
-      
+
       setCurrentTask({
         id: taskId,
         status: taskResult.status,
