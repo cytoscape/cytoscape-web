@@ -13,8 +13,10 @@ import { TieredMenu } from 'primereact/tieredmenu'
 import { createMenuItems } from './menu-factory'
 import { MenuItem } from 'primereact/menuitem'
 import { OverlayPanel } from 'primereact/overlaypanel'
+import { useServiceTaskRunner } from '../../../store/hooks/useServiceTaskRunner'
 
 export const AppMenu = (props: DropdownMenuProps) => {
+  const run = useServiceTaskRunner()
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
 
@@ -50,6 +52,15 @@ export const AppMenu = (props: DropdownMenuProps) => {
     const menuRefCurrent = menuRef.current as any
     menuRefCurrent.hide()
     setOpenServiceDialog(isDialogOpen)
+  }
+
+  const handleRun = async (url: string): Promise<void> => {
+    setAnchorEl(null)
+    const menuRefCurrent = menuRef.current as any
+    menuRefCurrent.hide()
+
+    // Now run the task
+    await run(url)
   }
 
   const handleClose = (): void => {
@@ -109,7 +120,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
 
   useEffect(() => {
     const appMenuItems: MenuItem[] = createAppMenu()
-    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleClose)
+    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
     setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
   }, [serviceApps, apps])
 

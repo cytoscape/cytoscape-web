@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { useAppStore } from '../AppStore'
@@ -28,11 +28,6 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
   // TODO: This need to be changed to include the data builder
   const runTask = useRunTask()
 
-  // This contains all available service apps
-  const serviceApps: Record<string, ServiceApp> = useAppStore(
-    (state) => state.serviceApps,
-  )
-
   const currentNetworkId: string = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -59,16 +54,39 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
     state.networks.get(currentNetworkId),
   )
 
+  const serviceApps: Record<string, ServiceApp> = useAppStore(
+    (state) => state.serviceApps,
+  )
+
   const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
   const { getHandler } = useServiceResultHandlerManager()
 
-  const run = useCallback(async (url: string): Promise<void> => {
+  // Create refs to store the latest values
+  const networkRef = useRef(network)
+  const visualStyleRef = useRef(visualStyle)
+  const summaryRef = useRef(summary)
+  const tableRef = useRef(table)
+  const visualStyleOptionsRef = useRef(visualStyleOptions)
+  const viewModelRef = useRef(viewModel)
+
+  // Update refs whenever the values change
+  useEffect(() => {
+    networkRef.current = network
+    visualStyleRef.current = visualStyle
+    summaryRef.current = summary
+    tableRef.current = table
+    visualStyleOptionsRef.current = visualStyleOptions
+    viewModelRef.current = viewModel
+  }, [network, visualStyle, summary, table, visualStyleOptions, viewModel])
+
+  const run = async (url: string): Promise<void> => {
+    // This contains all available service apps
     const serviceApp: ServiceApp = serviceApps[url]
     if (!serviceApp) {
       throw new Error(`Service not found for URL: ${url}`)
     }
 
-    if (network === undefined) {
+    if (networkRef.current === undefined) {
       throw new Error('Network not found')
     }
 
@@ -79,12 +97,12 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
         model: 'network',
         format: 'cx2',
       } as InputNetwork,
-      network,
-      visualStyle,
-      summary,
-      table,
-      visualStyleOptions,
-      viewModel,
+      networkRef.current,
+      visualStyleRef.current,
+      summaryRef.current,
+      tableRef.current,
+      visualStyleOptionsRef.current,
+      viewModelRef.current,
     )
 
     try {
@@ -94,6 +112,8 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
         algorithmName: serviceApp.name,
         data: networkDataObj, // This should be removed an computed in the runTask function
       })
+
+      console.log(`Got response:`, result)
 
       // Process the result to update the workspace state
       if (result.status === ServiceStatus.Complete) {
@@ -115,7 +135,7 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
     }
 
     console.log(`Task finished!`, serviceApp.name)
-  }, [])
+  }
 
   return run
 }
