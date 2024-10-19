@@ -14,9 +14,11 @@ import { createMenuItems } from './menu-factory'
 import { MenuItem } from 'primereact/menuitem'
 import { OverlayPanel } from 'primereact/overlaypanel'
 import { useServiceTaskRunner } from '../../../store/hooks/useServiceTaskRunner'
+import { TaskStatusDialog } from '../../Util/TaskStatusDialog'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   const run = useServiceTaskRunner()
+
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
 
@@ -24,8 +26,17 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
+  // For the app settings dialog
   const [openDialog, setOpenDialog] = useState<boolean>(false)
+
+  // For the service settings dialog
   const [openServiceDialog, setOpenServiceDialog] = useState<boolean>(false)
+
+  // For the task status dialog
+  const [openTaskDialog, setOpenTaskDialog] = useState<boolean>(false)
+
+  // Message to show in the task status dialog
+  const [taskTitle, setTaskTitle] = useState<string>('')
 
   const [componentList, setComponentList] = useState<[string, string][]>([])
 
@@ -60,7 +71,9 @@ export const AppMenu = (props: DropdownMenuProps) => {
     menuRefCurrent.hide()
 
     // Now run the task
+    setOpenTaskDialog(true)
     await run(url)
+    setOpenTaskDialog(false)
   }
 
   const handleClose = (): void => {
@@ -177,6 +190,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
         openDialog={openServiceDialog}
         setOpenDialog={setOpenServiceDialog}
       />
+      <TaskStatusDialog open={openTaskDialog} setOpen={setOpenTaskDialog} />
     </>
   )
 }

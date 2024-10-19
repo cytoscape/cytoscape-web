@@ -17,13 +17,11 @@ import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
  * A dialog to display the progress of the ServiceAppTask.
  */
 interface TaskStatusDialogProps {
-  url: string
   open: boolean
   setOpen: (open: boolean) => void
 }
 
 export const TaskStatusDialog = ({
-  url,
   open,
   setOpen,
 }: TaskStatusDialogProps): JSX.Element => {
@@ -49,10 +47,11 @@ export const TaskStatusDialog = ({
     >
       <DialogTitle id="confirmation-dialog-title">
         <Typography variant="h6">Running Remote Service...</Typography>
-        (ID: {currentTask.id})
+        <Typography variant="subtitle1">ID: {currentTask.id}</Typography>
       </DialogTitle>
       <DialogContent>
         <DialogContentText id="confirmation-dialog-description">
+          <Typography variant="body1">{currentTask.message}</Typography>
           Status: {taskStatus}
         </DialogContentText>
         <div

@@ -22,11 +22,7 @@ export const TestButton = ({ handleClose }: BaseMenuProps): ReactElement => {
   return (
     <>
       <MenuItem onClick={onClick}>Community Detection Test</MenuItem>
-      <TaskStatusDialog
-        open={openDialog}
-        setOpen={setOpenDialog}
-        url={serviceUrl}
-      />
+      <TaskStatusDialog open={openDialog} setOpen={setOpenDialog} />
     </>
   )
 }

@@ -11,49 +11,53 @@ import { useWorkspaceStore } from '../WorkspaceStore'
 import { useUiStateStore } from '../UiStateStore'
 import { NetworkView } from '../../models/ViewModel'
 import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
+import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
+import { VisualStyle } from '../../models/VisualStyleModel'
+import { Network } from '../../models/NetworkModel'
 
+// TODO: Move these from features to other folders
 import { createNetworkDataObj, useRunTask } from '../../features/ServiceApps'
 import { useServiceResultHandlerManager } from '../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
 
-// TODO: This should be removed and replaced with the official models
+// TODO: These old enums / interfaces should be removed and replaced with the official models
 import { InputNetwork, ScopeType } from '../../features/ServiceApps/model'
+import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 
 /**
  * Custom hook to provide a function to run a service task for a given URL
  *
- * @returns Function to run a service task
+ * @returns Function to run a service task for a given URL
  *
  */
 export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
   // TODO: This need to be changed to include the data builder
+  //       And also it should return the correct data type defined in the service app model
   const runTask = useRunTask()
 
+  // Data to be used for the service task
   const currentNetworkId: string = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
-
   const table: TableRecord = useTableStore(
     (state) => state.tables[currentNetworkId],
   )
-
-  const summary = useNetworkSummaryStore(
+  const summary: NdexNetworkSummary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
-
   const viewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
   )
-  const visualStyle = useVisualStyleStore(
+  const visualStyle: VisualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
   )
-  const visualStyleOptions = useUiStateStore(
+  const visualStyleOptions: VisualStyleOptions = useUiStateStore(
     (state) => state.ui.visualStyleOptions[currentNetworkId],
   )
-
-  const network = useNetworkStore((state) =>
+  const network: Network | undefined = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   )
 
+  // Registered service apps
   const serviceApps: Record<string, ServiceApp> = useAppStore(
     (state) => state.serviceApps,
   )
@@ -79,63 +83,66 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
     viewModelRef.current = viewModel
   }, [network, visualStyle, summary, table, visualStyleOptions, viewModel])
 
-  const run = async (url: string): Promise<void> => {
-    // This contains all available service apps
-    const serviceApp: ServiceApp = serviceApps[url]
-    if (!serviceApp) {
-      throw new Error(`Service not found for URL: ${url}`)
-    }
-
-    if (networkRef.current === undefined) {
-      throw new Error('Network not found')
-    }
-
-    // TODO: this should be part of runTask function.
-    const networkDataObj = createNetworkDataObj(
-      ScopeType.all, // This should be removed
-      {
-        model: 'network',
-        format: 'cx2',
-      } as InputNetwork,
-      networkRef.current,
-      visualStyleRef.current,
-      summaryRef.current,
-      tableRef.current,
-      visualStyleOptionsRef.current,
-      viewModelRef.current,
-    )
-
-    try {
-      // Run the task here..
-      const result = await runTask({
-        serviceUrl: url,
-        algorithmName: serviceApp.name,
-        data: networkDataObj, // This should be removed an computed in the runTask function
-      })
-
-      console.log(`Got response:`, result)
-
-      // Process the result to update the workspace state
-      if (result.status === ServiceStatus.Complete) {
-        for (const { action, data } of result.result) {
-          const actionHandler = getHandler(action)
-          if (actionHandler === undefined) {
-            throw new Error(`Unsupported action: ${action}`)
-          }
-          actionHandler({
-            responseObj: data,
-            networkId: currentNetworkId,
-          })
-        }
+  const run = useCallback(
+    async (url: string): Promise<void> => {
+      // This contains all available service apps
+      const serviceApp: ServiceApp = serviceApps[url]
+      if (!serviceApp) {
+        throw new Error(`Service not found for URL: ${url}`)
       }
-      clearCurrentTask()
-    } catch (e) {
-      clearCurrentTask()
-      console.error(`Failed to run the task: ${serviceApp.name}`, e)
-    }
 
-    console.log(`Task finished!`, serviceApp.name)
-  }
+      if (networkRef.current === undefined) {
+        throw new Error('Network not found')
+      }
+
+      // TODO: this should be part of runTask function.
+      const networkDataObj = createNetworkDataObj(
+        ScopeType.all, // TODO: This should be replaced
+        {
+          model: 'network',
+          format: 'cx2',
+        } as InputNetwork,
+        networkRef.current,
+        visualStyleRef.current,
+        summaryRef.current,
+        tableRef.current,
+        visualStyleOptionsRef.current,
+        viewModelRef.current,
+      )
+
+      try {
+        // Run the task here..
+        const result = await runTask({
+          serviceUrl: url,
+          algorithmName: serviceApp.name,
+          data: networkDataObj, // TODO: This should be removed
+        })
+
+        console.log(`Got response from service:`, result)
+
+        // Process the result to update the workspace state
+        if (result.status === ServiceStatus.Complete) {
+          for (const { action, data } of result.result) {
+            const actionHandler = getHandler(action)
+            if (actionHandler === undefined) {
+              throw new Error(`Unsupported action: ${action}`)
+            }
+            actionHandler({
+              responseObj: data,
+              networkId: currentNetworkId,
+            })
+          }
+        }
+      } catch (e) {
+        console.error(`Failed to run the task: ${serviceApp.name}`, e)
+      } finally {
+        clearCurrentTask()
+      }
+
+      console.log(`Task finished!`, serviceApp.name)
+    },
+    [serviceApps, runTask, getHandler, currentNetworkId, clearCurrentTask],
+  )
 
   return run
 }
