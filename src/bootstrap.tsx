@@ -5,7 +5,7 @@ import './data-grid.css'
 import appConfig from './assets/config.json'
 import { AppConfigContext } from './AppConfigContext'
 import { App } from './App'
-
+import { EmailVerificationModal } from './components/EmailVerification'
 import ReactGA from 'react-ga4'
 
 // this allows immer to work with Map and Set
@@ -43,6 +43,15 @@ loadingMessage.textContent = 'Initializing Cytoscape. Please wait...'
 document.body.appendChild(loadingMessage)
 
 const keycloak = new Keycloak(keycloakConfig)
+
+const handleVerify = () => {
+  window.location.reload()
+}
+
+const handleCancel = () => {
+  keycloak.logout()
+}
+
 keycloak
   .init({
     onLoad: 'check-sso',
@@ -50,7 +59,14 @@ keycloak
     silentCheckSsoRedirectUri:
       window.location.origin + urlBaseName + 'silent-check-sso.html',
   })
-  .then(() => {
+  .then((authenticated) => {
+    let emailUnverified = true
+    if (authenticated) {
+      // check the whether the email is verified
+      keycloak.loadUserProfile().then((profile) => {
+        if (profile.emailVerified) emailUnverified = false
+      })
+    }
     // Remove the loading message
     removeMessage(LOADING_MESSAGE_ID)
 
@@ -61,6 +77,11 @@ keycloak
             <KeycloakContext.Provider value={keycloak}>
               <ErrorBoundary>
                 <App />
+                <EmailVerificationModal
+                  open={authenticated && emailUnverified}
+                  onVerify={handleVerify}
+                  onCancel={handleCancel}
+                />
               </ErrorBoundary>
             </KeycloakContext.Provider>
           </React.StrictMode>
