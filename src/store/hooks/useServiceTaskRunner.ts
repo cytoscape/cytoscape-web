@@ -66,6 +66,7 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
   const { getHandler } = useServiceResultHandlerManager()
 
   // Create refs to store the latest values
+  const currentNetworkIdRef = useRef(currentNetworkId)
   const networkRef = useRef(network)
   const visualStyleRef = useRef(visualStyle)
   const summaryRef = useRef(summary)
@@ -75,13 +76,14 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
 
   // Update refs whenever the values change
   useEffect(() => {
+    currentNetworkIdRef.current = currentNetworkId
     networkRef.current = network
     visualStyleRef.current = visualStyle
     summaryRef.current = summary
     tableRef.current = table
     visualStyleOptionsRef.current = visualStyleOptions
     viewModelRef.current = viewModel
-  }, [network, visualStyle, summary, table, visualStyleOptions, viewModel])
+  }, [currentNetworkId,network, visualStyle, summary, table, visualStyleOptions, viewModel])
 
   const run = useCallback(
     async (url: string): Promise<void> => {
@@ -129,7 +131,7 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
             }
             actionHandler({
               responseObj: data,
-              networkId: currentNetworkId,
+              networkId: currentNetworkIdRef.current,
             })
           }
         }
@@ -141,7 +143,7 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
 
       console.log(`Task finished!`, serviceApp.name)
     },
-    [serviceApps, runTask, getHandler, currentNetworkId, clearCurrentTask],
+    [serviceApps, runTask, getHandler, clearCurrentTask],
   )
 
   return run
