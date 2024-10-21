@@ -47,8 +47,8 @@ export enum ScopeType{
 }
 
 export enum InputDataType {
-  nodes = 'nodes',
-  edges = 'edges',
+  node = 'node',
+  edge = 'edge',
   network = 'network',
 }
 
