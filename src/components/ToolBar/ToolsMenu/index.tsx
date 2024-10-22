@@ -25,10 +25,6 @@ export const ToolsMenu: React.FC<DropdownMenuProps> = (
       label: 'Merge Networks',
       template: <MergeNetwork handleClose={handleClose} />,
     },
-    {
-      label: 'Test Community Detection',
-      template: <TestButton handleClose={handleClose} />,
-    },
   ]
 
   return (
