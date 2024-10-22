@@ -12,6 +12,7 @@ import {
   RadioGroup,
   Select,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import { useState } from 'react'
@@ -56,116 +57,137 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
     useTableStore(
       (state) => state.tables?.[activeNetworkId]?.nodeTable?.columns,
     ) ?? []
+
   const renderParameter = (parameter: ServiceAppParameter) => {
     switch (parameter.type) {
       case ParameterUiType.Text:
         return (
-          <TextField
-            label={parameter.displayName}
-            value={parameter.value || ''}
-            onChange={(e) =>
-              updateServiceParameter(
-                app.url,
-                parameter.displayName,
-                e.target.value,
-              )
-            }
-            helperText={parameter.description}
-          />
+          <Tooltip title={parameter.description ?? ''}>
+            <TextField
+              label={parameter.displayName}
+              value={parameter.value ?? parameter.defaultValue ?? ''}
+              defaultValue={parameter.defaultValue ?? ''}
+              onChange={(e) =>
+                updateServiceParameter(
+                  app.url,
+                  parameter.displayName,
+                  e.target.value,
+                )
+              }
+            />
+          </Tooltip>
         )
       case ParameterUiType.DropDown:
         return (
-          <Select label={parameter.displayName} value={parameter.value || ''}>
-            {(parameter.valueList ?? []).map((value, i) => (
-              <MenuItem
-                key={i}
-                onClick={() =>
-                  updateServiceParameter(app.url, parameter.displayName, value)
-                }
-              >
-                {value}
-              </MenuItem>
-            ))}
-          </Select>
+          <Tooltip title={parameter.description ?? ''}>
+            <Select label={parameter.displayName} value={parameter.value || ''}>
+              {(parameter.valueList ?? []).map((value, i) => (
+                <MenuItem
+                  key={i}
+                  onClick={() =>
+                    updateServiceParameter(
+                      app.url,
+                      parameter.displayName,
+                      value,
+                    )
+                  }
+                >
+                  {value}
+                </MenuItem>
+              ))}
+            </Select>
+          </Tooltip>
         )
       case ParameterUiType.Radio:
         return (
-          <RadioGroup
-            value={parameter.value || ''}
-            onChange={(e) =>
-              updateServiceParameter(
-                app.url,
-                parameter.displayName,
-                e.target.value,
-              )
-            }
-          >
-            {(parameter.valueList ?? []).map((value, i) => (
-              <FormControlLabel
-                key={i}
-                value={value}
-                control={<Radio />}
-                label={value}
-              />
-            ))}
-          </RadioGroup>
+          <Tooltip title={parameter.description ?? ''}>
+            <RadioGroup
+              value={parameter.value || ''}
+              onChange={(e) =>
+                updateServiceParameter(
+                  app.url,
+                  parameter.displayName,
+                  e.target.value,
+                )
+              }
+            >
+              {(parameter.valueList ?? []).map((value, i) => (
+                <FormControlLabel
+                  key={i}
+                  value={value}
+                  control={<Radio />}
+                  label={value}
+                />
+              ))}
+            </RadioGroup>
+          </Tooltip>
         )
       case ParameterUiType.CheckBox:
         return (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={parameter.value === 'true' || false}
-                onChange={(e) =>
-                  updateServiceParameter(
-                    app.url,
-                    parameter.displayName,
-                    `${e.target.checked}`,
-                  )
-                }
-              />
-            }
-            label={parameter.displayName}
-          />
+          <Tooltip title={parameter.description ?? ''}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={
+                    parameter.value === 'true' ||
+                    parameter.defaultValue === 'true' ||
+                    false
+                  }
+                  onChange={(e) =>
+                    updateServiceParameter(
+                      app.url,
+                      parameter.displayName,
+                      `${e.target.checked}`,
+                    )
+                  }
+                />
+              }
+              label={parameter.displayName}
+            />
+          </Tooltip>
         )
 
       case ParameterUiType.NodeColumn:
         return (
-          <Select label={parameter.displayName} value={parameter.value || ''}>
-            {nodeColumns.map((column, i) => (
-              <MenuItem
-                key={i}
-                onClick={() =>
-                  updateServiceParameter(
-                    app.url,
-                    parameter.displayName,
-                    column.name,
-                  )
-                }
-              >
-                {column.name}
-              </MenuItem>
-            ))}
-          </Select>
+          <Tooltip title={parameter.description ?? ''}>
+            <Select label={parameter.displayName} value={parameter.value || ''}>
+              {nodeColumns.map((column, i) => (
+                <MenuItem
+                  key={i}
+                  onClick={() =>
+                    updateServiceParameter(
+                      app.url,
+                      parameter.displayName,
+                      column.name,
+                    )
+                  }
+                >
+                  {column.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </Tooltip>
         )
       case ParameterUiType.EdgeColumn:
         return (
-          <Select label={parameter.displayName} value={parameter.value || ''}>
-            {edgeColumns.map((column, i) => (
-              <MenuItem
-                key={i}
-                onClick={() =>
-                  updateServiceParameter(
-                    app.url,
-                    parameter.displayName,
-                    column.name,
-                  )
-                }
-              >
-                {column.name}
-              </MenuItem>
-            ))}
-          </Select>
+          <Tooltip title={parameter.description ?? ''}>
+            <Select label={parameter.displayName} value={parameter.value || ''}>
+              {edgeColumns.map((column, i) => (
+                <MenuItem
+                  key={i}
+                  onClick={() =>
+                    updateServiceParameter(
+                      app.url,
+                      parameter.displayName,
+                      column.name,
+                    )
+                  }
+                >
+                  {column.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </Tooltip>
         )
       default:
         return null
@@ -216,10 +238,10 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
         e.stopPropagation()
       }}
     >
-      <Box style={{ padding: '20px' }}>
-        <Typography>{app.name}</Typography>
+      <Box sx={{ p: 2 }}>
+        <Typography variant="h5">{app.name}</Typography>
         {inputDefinition}
-        <Box>
+        <Box sx={{ p: 1 }}>
           <Typography>Parameters</Typography>
           {app.parameters.map((parameter: ServiceAppParameter) => (
             <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
