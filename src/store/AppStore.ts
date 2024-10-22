@@ -131,7 +131,7 @@ export const useAppStore = create(
         })
     },
 
-    updateInputColumn(url, name, columnName) {
+    updateInputColumn(url: string, name: string, columnName: string) {
       set((state) => {
         // Get the target service app
         const serviceApp = state.serviceApps[url]
