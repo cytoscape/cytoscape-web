@@ -192,7 +192,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   const removeSummary = useNetworkSummaryStore((state) => state.delete)
   useNetworkSummaryManager()
 
-  const [tableBrowserHeight, setTableBrowserHeight] = useState(200)
+  const [tableBrowserHeight, setTableBrowserHeight] = useState(100)
   const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
   const [allotmentDimensions, setAllotmentDimensions] = useState<
     [number, number]
@@ -592,8 +592,11 @@ const WorkSpaceEditor = (): JSX.Element => {
           </Allotment>
           <Allotment.Pane
             minSize={28}
-            preferredSize={tableBrowserHeight}
-            maxSize={panels.bottom === PanelState.OPEN ? 450 : 18}
+            preferredSize={'20%'} // 20% of the total height is the default size
+            maxSize={
+              // Max size is determined by the window height
+              panels.bottom === PanelState.OPEN ? window.innerHeight * 0.9 : 18
+            }
           >
             <Suspense
               fallback={<div>{`Loading from NDEx`}</div>}
