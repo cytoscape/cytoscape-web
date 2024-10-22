@@ -12,7 +12,6 @@ import {
 import { AppStatus } from '../models/AppModel/AppStatus'
 import { serviceFetcher } from '../utils/service-fetcher'
 import { ServiceAppTask } from '../models/AppModel/ServiceAppTask'
-import { ServiceAppParameter } from '../models/AppModel/ServiceAppParameter'
 
 export const useAppStore = create(
   immer<AppStore>((set, get) => ({
@@ -131,9 +130,10 @@ export const useAppStore = create(
           throw new Error(`Service not found for URL: ${url}`)
         }
 
-        const inputColumn = serviceApp.serviceInputDefinition?.inputColumns.find(
-          (c) => c.name === name,
-        )
+        const inputColumn =
+          serviceApp.serviceInputDefinition?.inputColumns.find(
+            (c) => c.name === name,
+          )
         if (inputColumn === undefined) {
           throw new Error(`Input column not found for name: ${name}`)
         }
