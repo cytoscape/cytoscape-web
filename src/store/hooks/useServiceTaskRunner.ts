@@ -14,14 +14,11 @@ import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { Network } from '../../models/NetworkModel'
+import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 
 // TODO: Move these from features to other folders
-import { createNetworkDataObj, useRunTask } from '../../features/ServiceApps'
+import { useRunTask } from '../../features/ServiceApps'
 import { useServiceResultHandlerManager } from '../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
-
-// TODO: These old enums / interfaces should be removed and replaced with the official models
-import { InputNetwork, ScopeType } from '../../features/ServiceApps/model'
-import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 
 /**
  * Custom hook to provide a function to run a service task for a given URL
@@ -83,7 +80,15 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
     tableRef.current = table
     visualStyleOptionsRef.current = visualStyleOptions
     viewModelRef.current = viewModel
-  }, [currentNetworkId,network, visualStyle, summary, table, visualStyleOptions, viewModel])
+  }, [
+    currentNetworkId,
+    network,
+    visualStyle,
+    summary,
+    table,
+    visualStyleOptions,
+    viewModel,
+  ])
 
   const run = useCallback(
     async (url: string): Promise<void> => {
@@ -97,27 +102,26 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
         throw new Error('Network not found')
       }
 
-      // TODO: this should be part of runTask function.
-      const networkDataObj = createNetworkDataObj(
-        ScopeType.all, // TODO: This should be replaced
-        {
-          model: 'network',
-          format: 'cx2',
-        } as InputNetwork,
-        networkRef.current,
-        visualStyleRef.current,
-        summaryRef.current,
-        tableRef.current,
-        visualStyleOptionsRef.current,
-        viewModelRef.current,
-      )
-
       try {
+        const customParameters = serviceApp.parameters.reduce(
+          (acc, param) => {
+            acc[param.displayName] = param.value ?? param.defaultValue
+            return acc
+          },
+          {} as { [key: string]: string },
+        )
         // Run the task here..
         const result = await runTask({
           serviceUrl: url,
           algorithmName: serviceApp.name,
-          data: networkDataObj, // TODO: This should be removed
+          customParameters: customParameters,
+          network: networkRef.current,
+          table: tableRef.current,
+          visualStyle: visualStyleRef.current,
+          summary: summaryRef.current,
+          visualStyleOptions: visualStyleOptionsRef.current,
+          viewModel: viewModelRef.current,
+          serviceInputDefinition: serviceApp.serviceInputDefinition,
         })
 
         console.log(`Got response from service:`, result)

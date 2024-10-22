@@ -13,13 +13,8 @@ import {
   CytoContainerRequest,
   CytoContainerResult,
   CytoContainerResultStatus,
-  InputColumn,
-  InputNetwork,
-  TableDataObject,
   JsonNode,
   CytoContainerRequestId,
-  ScopeType,
-  InputDataType,
 } from './model'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
@@ -28,14 +23,29 @@ import { useCallback } from 'react'
 import { useAppStore } from '../../store/AppStore'
 import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
 import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
+import {
+  InputNetwork,
+  ServiceInputDefinition,
+  Model,
+  Format,
+  InputColumn,
+} from '../../models/AppModel/ServiceInputDefinition'
+import { SelectedDataScope } from '../../models/AppModel/SelectedDataScope'
+import { SelectedDataType } from '../../models/AppModel/SelectedDataType'
 
 const POLL_INTERVAL = 500 // 0.5 seconds
 
 interface RunTaskProps {
   serviceUrl: string
   algorithmName: string
-  data: JsonNode
-  customParameters?: { [key: string]: string }
+  customParameters: { [key: string]: string }
+  network: Network
+  table: TableRecord
+  visualStyle?: VisualStyle
+  summary?: NdexNetworkSummary
+  visualStyleOptions?: VisualStyleOptions
+  viewModel?: NetworkView
+  serviceInputDefinition?: ServiceInputDefinition
 }
 
 interface SubmitAndProcessTaskProps {
@@ -44,7 +54,7 @@ interface SubmitAndProcessTaskProps {
 }
 
 export const createNetworkDataObj = (
-  scope: ScopeType,
+  scope: SelectedDataScope,
   inputNetwork: InputNetwork,
   network: Network,
   visualStyle?: VisualStyle,
@@ -57,8 +67,8 @@ export const createNetworkDataObj = (
   const selectedEdges = new Set(viewModel?.selectedEdges)
 
   const filterElements = !(
-    scope === ScopeType.all ||
-    (scope === ScopeType.dynamic &&
+    scope === SelectedDataScope.all ||
+    (scope === SelectedDataScope.dynamic &&
       selectedNodes.size === 0 &&
       selectedEdges.size === 0)
   )
@@ -69,11 +79,11 @@ export const createNetworkDataObj = (
     edges: network.edges.filter((edge) => selectedEdges.has(edge.id)),
   })
 
-  if (inputNetwork.format === 'cx2') {
-    if (inputNetwork.model === 'graph') {
+  if (inputNetwork.format === Format.cx2) {
+    if (inputNetwork.model === Model.graph) {
       return exportGraph(filterElements ? getFilteredNetwork() : network)
     } else if (
-      inputNetwork.model === 'network' &&
+      inputNetwork.model === Model.network &&
       visualStyle &&
       summary &&
       table
@@ -107,26 +117,26 @@ export const createNetworkDataObj = (
 
 export const createTableDataObj = (
   table: Table,
-  scope: ScopeType,
+  scope: SelectedDataScope,
   selectedElementIds: IdType[],
   columns: InputColumn[],
-): TableDataObject => {
+) => {
   const translatedColumns = columns.map((column) => {
     return {
-      id: column.name,
+      id: column.columnName ?? column.defaultColumnName,
       type: column.dataType,
     }
   })
 
   const filterElements = !(
-    scope === ScopeType.all ||
-    (scope === ScopeType.dynamic && selectedElementIds.length === 0)
+    scope === SelectedDataScope.all ||
+    (scope === SelectedDataScope.dynamic && selectedElementIds.length === 0)
   )
 
   const filteredRows = filterTable(
     table,
     selectedElementIds,
-    columns.map((col) => col.name),
+    columns.map((col) => col.columnName ?? col.defaultColumnName),
     filterElements,
   )
   return {
@@ -193,14 +203,47 @@ export const useRunTask = (): ((
     async ({
       serviceUrl,
       algorithmName,
-      data,
       customParameters,
+      network,
+      visualStyle,
+      summary,
+      table,
+      visualStyleOptions,
+      viewModel,
+      serviceInputDefinition,
     }: RunTaskProps): Promise<CytoContainerResult> => {
       // Prepare the task request with user-selected data
+      let data: JsonNode = {}
+      if (serviceInputDefinition !== undefined) {
+        const { type, scope, inputNetwork, inputColumns } =
+          serviceInputDefinition
+        if (inputNetwork !== null) {
+          data = createNetworkDataObj(
+            scope,
+            inputNetwork,
+            network,
+            visualStyle,
+            summary,
+            table,
+            visualStyleOptions,
+            viewModel,
+          )
+        } else if (inputColumns !== null) {
+          data = createTableDataObj(
+            type === SelectedDataType.Node ? table.nodeTable : table.edgeTable,
+            scope,
+            (type === SelectedDataType.Node
+              ? viewModel?.selectedNodes
+              : viewModel?.selectedEdges) ?? [],
+            inputColumns,
+          )
+        }
+      }
+
       const taskRequest: CytoContainerRequest = {
         algorithm: algorithmName,
         data: data,
-        ...(customParameters && { customParameters }),
+        parameters: customParameters,
       }
 
       // Submit task and get the result

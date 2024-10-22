@@ -1,8 +1,9 @@
 import { SelectedDataType } from './SelectedDataType'
+import { SelectedDataScope } from '../AppModel/SelectedDataScope'
 
 export interface ServiceInputDefinition {
   type: SelectedDataType
-  scope: string
+  scope: SelectedDataScope
   inputColumns: InputColumn[]
   inputNetwork: InputNetwork
 }
@@ -16,7 +17,7 @@ export interface InputColumn {
   columnName: string
 }
 
-const Model = {
+export const Model = {
   // Full CX2 network.
   network: 'network',
 
@@ -24,9 +25,9 @@ const Model = {
   graph: 'graph',
 } as const
 
-export type Model = (typeof Model)[keyof typeof Model]
+export type ModelType = (typeof Model)[keyof typeof Model]
 
-const Format = {
+export const Format = {
   cx2: 'cx2',
 
   // The format of the edge list.
@@ -37,9 +38,9 @@ const Format = {
   edgeList: 'edgeList',
 } as const
 
-export type Format = (typeof Format)[keyof typeof Format]
+export type FormatType = (typeof Format)[keyof typeof Format]
 
 export interface InputNetwork {
-  model: Model
-  format: Format
+  model: ModelType
+  format: FormatType
 }

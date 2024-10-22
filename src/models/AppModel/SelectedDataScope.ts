@@ -10,3 +10,6 @@ export const SelectedDataScope = {
   // Send all elements to the service, regardless of selection.
   all: 'all',
 } as const
+
+export type SelectedDataScope =
+  (typeof SelectedDataScope)[keyof typeof SelectedDataScope]
