@@ -12,6 +12,7 @@ import {
 import { AppStatus } from '../models/AppModel/AppStatus'
 import { serviceFetcher } from '../utils/service-fetcher'
 import { ServiceAppTask } from '../models/AppModel/ServiceAppTask'
+import { ServiceAppParameter } from '../models/AppModel/ServiceAppParameter'
 
 export const useAppStore = create(
   immer<AppStore>((set, get) => ({
@@ -100,6 +101,44 @@ export const useAppStore = create(
     clearCurrentTask: () => {
       set((state) => {
         state.currentTask = undefined
+      })
+    },
+
+    updateServiceParameter(url: string, displayName: string, value: string) {
+      set((state) => {
+        // Get the target service app
+        const serviceApp = state.serviceApps[url]
+        if (serviceApp === undefined) {
+          throw new Error(`Service not found for URL: ${url}`)
+        }
+
+        const parameter = serviceApp.parameters.find(
+          (p) => p.displayName === displayName,
+        )
+        if (parameter === undefined) {
+          throw new Error(`Parameter not found for name: ${displayName}`)
+        }
+
+        parameter.value = value
+      })
+    },
+
+    updateInputColumn(url, name, columnName) {
+      set((state) => {
+        // Get the target service app
+        const serviceApp = state.serviceApps[url]
+        if (serviceApp === undefined) {
+          throw new Error(`Service not found for URL: ${url}`)
+        }
+
+        const inputColumn = serviceApp.serviceInputDefinition?.inputColumns.find(
+          (c) => c.name === name,
+        )
+        if (inputColumn === undefined) {
+          throw new Error(`Input column not found for name: ${name}`)
+        }
+
+        inputColumn.columnName = columnName
       })
     },
   })),

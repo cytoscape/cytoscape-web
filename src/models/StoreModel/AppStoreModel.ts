@@ -67,6 +67,27 @@ export interface AppAction {
    * @returns
    */
   clearCurrentTask: () => void
+
+  /**
+   * Update the parameters for the service call
+   *
+   */
+  updateServiceParameter: (
+    url: string,
+    displayName: string,
+    value: string,
+  ) => void
+
+  /**
+   * Update the input column (selected column in the table)
+   * name for the service call
+   *
+   * @param url - Service App ID
+   * @param name - Input column name (key)
+   * @param columnName - New column name to be used in the service call
+   *
+   */
+  updateInputColumn: (url: string, name: string, columnName: string) => void
 }
 
 export type AppStore = AppState & AppAction
