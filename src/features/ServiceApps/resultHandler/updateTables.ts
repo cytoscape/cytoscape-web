@@ -3,7 +3,6 @@ import { ActionHandlerProps } from './serviceResultHandlerManager'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { useTableStore } from '../../../store/TableStore'
 import { Column, ValueType, Table } from '../../../models'
-import { useAppStore } from '../../../store/AppStore'
 
 interface UpdatedTable {
   id: TableType
@@ -23,36 +22,66 @@ export const useUpdateTables = (): (({
   const setTable = useTableStore((state) => state.setTable)
   const updateTables = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
-      if (!Array.isArray(responseObj)) return
-      for (const item of responseObj) {
-        const updatedTable = item as Partial<UpdatedTable>
-        if (
-          updatedTable &&
-          typeof updatedTable.id === 'string' &&
-          (updatedTable.id === TableType.EDGE ||
-            updatedTable.id === TableType.NODE) &&
-          typeof updatedTable.rows === 'object' &&
-          Array.isArray(updatedTable.columns)
-        ) {
-          const { id, rows, columns } = updatedTable as UpdatedTable
-          const rowMap = new Map(
-            Object.entries(rows).map(([key, value]) => [
-              key as string,
-              value as Record<string, ValueType>,
-            ]),
-          )
-          const nextTable: Table = {
-            id: networkId,
-            columns: columns.map((col) => {
-              return { name: col.id, type: col.type } as Column
-            }),
-            rows: rowMap,
+      const updatedTable = responseObj as Partial<UpdatedTable>
+      if (
+        updatedTable &&
+        typeof updatedTable.id === 'string' &&
+        (updatedTable.id === TableType.EDGE ||
+          updatedTable.id === TableType.NODE) &&
+        typeof updatedTable.rows === 'object' &&
+        Array.isArray(updatedTable.columns)
+      ) {
+        const { id, rows, columns } = updatedTable as UpdatedTable
+        const tables = useTableStore.getState().tables[networkId]
+        const originalTable: Table =
+          id === TableType.NODE ? tables?.nodeTable : tables?.edgeTable
+
+        const originalColumnSet = new Set(
+          originalTable.columns.map((col) => `${col.name}|${col.type}`),
+        )
+
+        // update columns
+        const updatedColumns = [...originalTable.columns]
+        columns.forEach((newCol) => {
+          const columnSignature = `${newCol.id}|${newCol.type}`
+          if (!originalColumnSet.has(columnSignature)) {
+            updatedColumns.push({
+              name: newCol.id,
+              type: newCol.type,
+            } as Column)
           }
-          setTable(networkId, id, nextTable)
+        })
+
+        // update rows
+        const updatedRowMap = new Map(originalTable.rows)
+        Object.entries(rows).forEach(([key, newRow]) => {
+          const existingRow = updatedRowMap.get(key as string)
+
+          // If the row exists, update it; if not, add a new one
+          if (existingRow) {
+            const updatedRow = { ...existingRow };
+            updatedColumns.forEach((col) => {
+              if (newRow[col.name] !== undefined) {
+                updatedRow[col.name] = newRow[col.name]
+              }
+            })
+            updatedRowMap.set(key as string, updatedRow)
+          } else {
+            // New row, add it
+            updatedRowMap.set(key as string, newRow)
+          }
+        })
+
+        const nextTable: Table = {
+          id: networkId,
+          columns: updatedColumns, // Updated column list
+          rows: updatedRowMap, // Updated row map
         }
+
+        setTable(networkId, id, nextTable)
       }
     },
-    [],
+    [setTable],
   )
   return updateTables
 }
