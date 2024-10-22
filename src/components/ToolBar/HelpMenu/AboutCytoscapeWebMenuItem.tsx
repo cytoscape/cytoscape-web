@@ -59,7 +59,6 @@ export const AboutCytoscapeWebMenuItem = (props: BaseMenuProps): React.ReactElem
         </DialogContent>
         <DialogActions>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-
           <Button onClick={handleCopyInfo} color="primary">
             Copy
           </Button>
