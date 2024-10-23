@@ -19,7 +19,7 @@ export const RemoveAllNetworksMenuItem = (
 
   return (
     <>
-      <MenuItem onClick={() => setOpen(true)}>Remove all networks</MenuItem>
+      <MenuItem onClick={() => setOpen(true)}>Remove All Networks</MenuItem>
       <ConfirmationDialog
         title="Remove All Networks"
         message="Do you really want to delete all networks from this workspace?"

@@ -18,7 +18,7 @@ export const RemoveNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
 
   return (
     <>
-      <MenuItem onClick={() => setOpen(true)}>Remove current network</MenuItem>
+      <MenuItem onClick={() => setOpen(true)}>Remove Current Network</MenuItem>
       <ConfirmationDialog
         title="Remove Current Network"
         message="Do you really want to delete this network?"

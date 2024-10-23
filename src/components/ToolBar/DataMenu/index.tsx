@@ -47,68 +47,14 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
       template: <LoadWorkspaceMenuItem handleClose={handleClose} />,
     },
     {
-      label: '(Demo) Open sample networks',
+      label: 'Open sample networks',
       template: <LoadDemoNetworksMenuItem handleClose={handleClose} />,
-    },
-    {
-      label: '',
-      template: <Divider />,
-    },
-    {
-      label: 'Remove Current Network',
-      template: () => <RemoveNetworkMenuItem handleClose={handleClose} />,
-    },
-    {
-      label: 'Remove All Networks',
-      template: () => <RemoveAllNetworksMenuItem handleClose={handleClose} />,
-    },
-    {
-      label: '',
-      template: <Divider />,
-    },
-    {
-      label: 'Reset Local Workspace',
-      template: () => <ResetLocalWorkspaceMenuItem handleClose={handleClose} />,
-    },
-    {
-      label: '',
-      template: <Divider />,
-    },
-    {
-      label: 'Save Workspace to NDEx (overwrite)',
-      template: () => (
-        <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />
-      ),
-    },
-    {
-      label: 'Save Workspace to NDEx',
-      template: () => <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />,
-    },
-    {
-      label: 'Save to NDEx',
-      template: () => <SaveToNDExMenuItem handleClose={handleClose} />,
-    },
-    {
-      label: 'Copy to NDEx',
-      template: () => <CopyNetworkToNDExMenuItem handleClose={handleClose} />,
-    },
-    {
-      label: '',
-      template: <Divider />,
     },
     {
       label: 'Open in Cytoscape',
       template: () => (
         <OpenNetworkInCytoscapeMenuItem handleClose={handleClose} />
       ),
-    },
-    {
-      label: 'Download',
-      template: () => <DownloadNetworkMenuItem handleClose={handleClose} />,
-    },
-    {
-      label: '',
-      template: <Divider />,
     },
     {
       label: 'Import',
@@ -131,6 +77,32 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
       ],
     },
     {
+      label: '',
+      template: <Divider />,
+    },
+    {
+      label: 'Save to NDEx',
+      template: () => <SaveToNDExMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: 'Copy to NDEx',
+      template: () => <CopyNetworkToNDExMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: 'Download',
+      template: () => <DownloadNetworkMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: 'Save Workspace to NDEx (overwrite)',
+      template: () => (
+        <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />
+      ),
+    },
+    {
+      label: 'Save Workspace to NDEx',
+      template: () => <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />,
+    },
+    {
       label: 'Export',
       style: { height: 38 },
       items: [
@@ -139,6 +111,26 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
           template: <ExportImageMenuItem handleClose={handleClose} />,
         },
       ],
+    },
+    {
+      label: '',
+      template: <Divider />,
+    },
+    {
+      label: 'Remove Current Network',
+      template: () => <RemoveNetworkMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: 'Remove All Networks',
+      template: () => <RemoveAllNetworksMenuItem handleClose={handleClose} />,
+    },
+    {
+      label: '',
+      template: <Divider />,
+    },
+    {
+      label: 'Reset Local Workspace',
+      template: () => <ResetLocalWorkspaceMenuItem handleClose={handleClose} />,
     },
   ]
 
