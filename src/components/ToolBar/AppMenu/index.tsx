@@ -15,6 +15,8 @@ import { MenuItem } from 'primereact/menuitem'
 import { OverlayPanel } from 'primereact/overlaypanel'
 import { useServiceTaskRunner } from '../../../store/hooks/useServiceTaskRunner'
 import { TaskStatusDialog } from '../../Util/TaskStatusDialog'
+import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
+import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   const run = useServiceTaskRunner()
@@ -39,6 +41,13 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const [taskTitle, setTaskTitle] = useState<string>('')
 
   const [componentList, setComponentList] = useState<[string, string][]>([])
+
+  // For the notification dialog
+  const [notificationDialog, setNotificationDialog] = useState<boolean>(false)
+  const [notificationMessage, setNotificationMessage] = useState<string>('')
+
+  // Clear the current task status
+  const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
 
   /**
    * Menu model for the nested menu
@@ -72,7 +81,20 @@ export const AppMenu = (props: DropdownMenuProps) => {
 
     // Now run the task
     setOpenTaskDialog(true)
-    await run(url)
+    try {
+      const result = await run(url)
+      if (result.status !== ServiceStatus.Complete) {
+        setNotificationDialog(true)
+        setNotificationMessage(result.message)
+      }
+    } catch (e) {
+      setNotificationDialog(true)
+      setNotificationMessage(e.message)
+      console.error(`Failed to run the task:`, e)
+    } finally {
+      clearCurrentTask()
+    }
+
     setOpenTaskDialog(false)
   }
 
@@ -191,6 +213,13 @@ export const AppMenu = (props: DropdownMenuProps) => {
         setOpenDialog={setOpenServiceDialog}
       />
       <TaskStatusDialog open={openTaskDialog} setOpen={setOpenTaskDialog} />
+      <ConfirmationDialog
+        open={notificationDialog}
+        setOpen={setNotificationDialog}
+        title="Opps! Something went wrong..."
+        onConfirm={() => {}}
+        message={`Error message from service: ${notificationMessage}`}
+      />
     </>
   )
 }

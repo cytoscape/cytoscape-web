@@ -20,13 +20,19 @@ import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOpt
 import { useRunTask } from '../../features/ServiceApps'
 import { useServiceResultHandlerManager } from '../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
 
+export interface RunTaskResult {
+  status: ServiceStatus
+  algorithmName: string
+  message:string
+}
+
 /**
  * Custom hook to provide a function to run a service task for a given URL
  *
  * @returns Function to run a service task for a given URL
  *
  */
-export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
+export const useServiceTaskRunner = (): ((url: string) => Promise<RunTaskResult>) => {
   // TODO: This need to be changed to include the data builder
   //       And also it should return the correct data type defined in the service app model
   const runTask = useRunTask()
@@ -59,7 +65,6 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
     (state) => state.serviceApps,
   )
 
-  const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
   const { getHandler } = useServiceResultHandlerManager()
 
   // Create refs to store the latest values
@@ -91,7 +96,7 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
   ])
 
   const run = useCallback(
-    async (url: string): Promise<void> => {
+    async (url: string): Promise<RunTaskResult> => {
       // This contains all available service apps
       const serviceApp: ServiceApp = serviceApps[url]
       if (!serviceApp) {
@@ -102,52 +107,52 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<void>) => {
         throw new Error('Network not found')
       }
 
-      try {
-        const customParameters = serviceApp.parameters.reduce(
-          (acc, param) => {
-            acc[param.displayName] = param.value ?? param.defaultValue
-            return acc
-          },
-          {} as { [key: string]: string },
-        )
-        // Run the task here..
-        const result = await runTask({
-          serviceUrl: url,
-          algorithmName: serviceApp.name,
-          customParameters: customParameters,
-          network: networkRef.current,
-          table: tableRef.current,
-          visualStyle: visualStyleRef.current,
-          summary: summaryRef.current,
-          visualStyleOptions: visualStyleOptionsRef.current,
-          viewModel: viewModelRef.current,
-          serviceInputDefinition: serviceApp.serviceInputDefinition,
-        })
+      const customParameters = serviceApp.parameters?.reduce(
+        (acc, param) => {
+          acc[param.displayName] = param.value ?? param.defaultValue
+          return acc
+        },
+        {} as { [key: string]: string },
+      )??{}
+      // Run the task here..
+      const result = await runTask({
+        serviceUrl: url,
+        algorithmName: serviceApp.name,
+        customParameters: customParameters,
+        network: networkRef.current,
+        table: tableRef.current,
+        visualStyle: visualStyleRef.current,
+        summary: summaryRef.current,
+        visualStyleOptions: visualStyleOptionsRef.current,
+        viewModel: viewModelRef.current,
+        serviceInputDefinition: serviceApp.serviceInputDefinition,
+      })
 
-        console.log(`Got response from service:`, result)
+      console.log(`Got response from service:`, result)
 
-        // Process the result to update the workspace state
-        if (result.status === ServiceStatus.Complete) {
-          for (const { action, data } of result.result) {
-            const actionHandler = getHandler(action)
-            if (actionHandler === undefined) {
-              throw new Error(`Unsupported action: ${action}`)
-            }
-            actionHandler({
-              responseObj: data,
-              networkId: currentNetworkIdRef.current,
-            })
+      // Process the result to update the workspace state
+      if (result.status === ServiceStatus.Complete) {
+        for (const { action, data } of result.result) {
+          const actionHandler = getHandler(action)
+          if (actionHandler === undefined) {
+            throw new Error(`Unsupported action: ${action}`)
           }
+          actionHandler({
+            responseObj: data,
+            networkId: currentNetworkIdRef.current,
+          })
         }
-      } catch (e) {
-        console.error(`Failed to run the task: ${serviceApp.name}`, e)
-      } finally {
-        clearCurrentTask()
       }
-
+      
       console.log(`Task finished!`, serviceApp.name)
+
+      return {
+        status: result.status,
+        algorithmName: serviceApp.name,
+        message: result.message,
+      } as RunTaskResult 
     },
-    [serviceApps, runTask, getHandler, clearCurrentTask],
+    [serviceApps, runTask, getHandler],
   )
 
   return run

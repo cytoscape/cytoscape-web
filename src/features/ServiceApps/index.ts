@@ -295,7 +295,7 @@ export const useSubmitAndProcessTask = (): {
           id: taskId,
           status: ServiceStatus.Processing,
           progress: status.progress,
-          message: 'Processing',
+          message: status.message,
         } as ServiceAppTask)
         // Wait for the polling interval
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL))
