@@ -96,6 +96,7 @@ const CyjsRenderer = ({
     useViewModelStore((state) => state.getViewModel)
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+  const toggleSelected = useViewModelStore((state) => state.toggleSelected)
 
   const setNodePosition: (
     networkId: IdType,
@@ -225,6 +226,8 @@ const CyjsRenderer = ({
       // This is necessary to access the latest value from closure
       const activeId: string = activeNetworkIdRef.current
 
+      const shiftOrMetaKeyPressed = e.originalEvent.shiftKey || e.originalEvent.metaKey
+
       if (
         activeId !== undefined &&
         activeId !== '' &&
@@ -236,10 +239,10 @@ const CyjsRenderer = ({
         }
         return
       }
-
+      
       if (e.target === cy) {
         // Background click
-        if (displayMode === DisplayMode.SELECT) {
+        if (displayMode === DisplayMode.SELECT && shiftOrMetaKeyPressed === false) {
           exclusiveSelect(id, [], [])
           // setSubSelectedEdges([])
         } else {
@@ -260,14 +263,18 @@ const CyjsRenderer = ({
             setClickSelection(true)
           }
         } else {
-          const selectedNodes: IdType[] = []
-          const selectedEdges: IdType[] = []
-          if (e.target.isNode()) {
-            selectedNodes.push(e.target.data('id'))
+          if (shiftOrMetaKeyPressed){
+            toggleSelected(id, [e.target.data('id')])
           } else {
-            selectedEdges.push(e.target.data('id'))
+            const selectedNodes: IdType[] = []
+            const selectedEdges: IdType[] = []
+            if (e.target.isNode()) {
+              selectedNodes.push(e.target.data('id'))
+            } else {
+              selectedEdges.push(e.target.data('id'))
+            }
+            exclusiveSelect(id, selectedNodes, selectedEdges)
           }
-          exclusiveSelect(id, selectedNodes, selectedEdges)
         }
       }
       cy.autounselectify(false)
