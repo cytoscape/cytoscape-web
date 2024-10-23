@@ -61,6 +61,11 @@ export const useAppStore = create(
     },
 
     addService: async (url: string) => {
+      // Do not register the same service app multiple times
+      if (get().serviceApps[url] !== undefined) {
+        console.warn(`Service app already registered: ${url}`)
+        return
+      }
       try {
         const serviceApp = await serviceFetcher(url)
         await putServiceAppToDb(serviceApp)
