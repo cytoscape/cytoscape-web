@@ -51,12 +51,12 @@ export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
       >
         <AboutCytoscapeWebMenuItem handleClose={handleClose} />
         <Divider />
-        <TutorialMenuItem handleClose={handleClose} />
+        <TutorialMenuItem handleClose={handleClose}   />
         <DeveloperMenuItem handleClose={handleClose} />
+        <CodeRepositoryMenuItem handleClose={handleClose} />
         <Divider />
         <CitationMenuItem handleClose={handleClose} />
         <Divider />
-        <CodeRepositoryMenuItem handleClose={handleClose} />
         <BugReportMenuItem handleClose={handleClose} />
       </Menu>
     </div>
