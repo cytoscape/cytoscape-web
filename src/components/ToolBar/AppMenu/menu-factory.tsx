@@ -22,6 +22,7 @@ import { useTableStore } from '../../../store/TableStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { ParameterUiType } from '../../../models/AppModel/ParameterUiType'
 import { useAppStore } from '../../../store/AppStore'
+import { inputColumnFilterFn } from '../../../models/AppModel/impl'
 
 interface AppMenuItemProps {
   handleClose: () => void
@@ -199,8 +200,34 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
     handleClose()
   }
 
+  const serviceCanBeRun =
+    app.serviceInputDefinition?.inputColumns?.every((inputColumn) => {
+      const validColumns = (isNodeType ? nodeColumns : edgeColumns).filter(
+        (c) => inputColumnFilterFn(c, inputColumn),
+      )
+      return validColumns.length > 0
+    }) ?? false
+
   const inputColumnsRender = () => {
     return app.serviceInputDefinition?.inputColumns.map((inputColumn, i) => {
+      const validColumns = (isNodeType ? nodeColumns : edgeColumns).filter(
+        (c) => inputColumnFilterFn(c, inputColumn),
+      )
+
+      if (validColumns.length === 0) {
+        return (
+          <Tooltip
+            title={`The network needs to have a column that satisfies the data type ${inputColumn.dataType}`}
+          >
+            <Box>
+              <Select
+                label={inputColumn.name}
+                value={inputColumn.columnName}
+              ></Select>
+            </Box>
+          </Tooltip>
+        )
+      }
       return (
         <Select label={inputColumn.name} value={inputColumn.columnName}>
           {(isNodeType ? nodeColumns : edgeColumns).map((eleColumn, i) => {
@@ -227,6 +254,20 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
     </Box>
   ) : null
 
+  const submitButton = serviceCanBeRun ? (
+    <Tooltip
+      title={`Unable to run service.  The network doesn't have input columns that match the required data types from the service.`}
+    >
+      <Box>
+        <Button disabled>Submit</Button>
+      </Box>
+    </Tooltip>
+  ) : (
+    <Button onClick={handleSubmit} color="primary" variant="contained">
+      Submit
+    </Button>
+  )
+
   return (
     <Dialog
       open={open}
@@ -248,10 +289,8 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
               {renderParameter(parameter)}
             </Box>
           ))}
-          <Button onClick={handleSubmit} color="primary" variant="contained">
-            Submit
-          </Button>
         </Box>
+        {submitButton}
       </Box>
     </Dialog>
   )

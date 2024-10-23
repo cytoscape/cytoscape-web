@@ -1,5 +1,6 @@
 import { SelectedDataType } from './SelectedDataType'
 import { SelectedDataScope } from '../AppModel/SelectedDataScope'
+import { ValueTypeName } from '../TableModel'
 
 export interface ServiceInputDefinition {
   type: SelectedDataType
@@ -11,7 +12,13 @@ export interface ServiceInputDefinition {
 export interface InputColumn {
   name: string
   description?: string
-  dataType: string
+  dataType:
+    | ValueTypeName
+    | 'list'
+    | 'number'
+    | 'wholenumber'
+    | 'list_of_number'
+    | 'list_of_wholenumber'
   allowMultipleSelection: boolean
   defaultColumnName: string
   columnName: string
