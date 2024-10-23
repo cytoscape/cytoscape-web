@@ -282,7 +282,7 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
         </Box>
         <Box sx={{ mb: 1 }}>
           <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
-            File Type
+            Units
           </Typography>
           <Select
             size="small"
