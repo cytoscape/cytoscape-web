@@ -23,6 +23,7 @@ import { useUiStateStore } from '../../../store/UiStateStore'
 import { ParameterUiType } from '../../../models/AppModel/ParameterUiType'
 import { useAppStore } from '../../../store/AppStore'
 import { inputColumnFilterFn } from '../../../models/AppModel/impl'
+import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 
 interface AppMenuItemProps {
   handleClose: () => void
@@ -41,6 +42,8 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
   const isEdgeType = app.serviceInputDefinition?.type === 'edge'
   const inputTypeIsElement = (isNodeType || isEdgeType) ?? false
 
+  const workspace = useWorkspaceStore((state) => state.workspace)
+  const numNetworks = workspace.networkIds.length
   const updateServiceParameter = useAppStore(
     (state) => state.updateServiceParameter,
   )
@@ -65,6 +68,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
         return (
           <Tooltip title={parameter.description ?? ''}>
             <TextField
+              size="small"
               label={parameter.displayName}
               value={parameter.value ?? parameter.defaultValue ?? ''}
               defaultValue={parameter.defaultValue ?? ''}
@@ -81,7 +85,11 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
       case ParameterUiType.DropDown:
         return (
           <Tooltip title={parameter.description ?? ''}>
-            <Select label={parameter.displayName} value={parameter.value || ''}>
+            <Select
+              size="small"
+              label={parameter.displayName}
+              value={parameter.value || ''}
+            >
               {(parameter.valueList ?? []).map((value, i) => (
                 <MenuItem
                   key={i}
@@ -151,7 +159,11 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
       case ParameterUiType.NodeColumn:
         return (
           <Tooltip title={parameter.description ?? ''}>
-            <Select label={parameter.displayName} value={parameter.value || ''}>
+            <Select
+              size="small"
+              label={parameter.displayName}
+              value={parameter.value || ''}
+            >
               {nodeColumns.map((column, i) => (
                 <MenuItem
                   key={i}
@@ -172,7 +184,11 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
       case ParameterUiType.EdgeColumn:
         return (
           <Tooltip title={parameter.description ?? ''}>
-            <Select label={parameter.displayName} value={parameter.value || ''}>
+            <Select
+              size="small"
+              label={parameter.displayName}
+              value={parameter.value || ''}
+            >
               {edgeColumns.map((column, i) => (
                 <MenuItem
                   key={i}
@@ -200,13 +216,15 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
     handleClose()
   }
 
-  const serviceCanBeRun =
+  const networkHasProperInputColumns =
     app.serviceInputDefinition?.inputColumns?.every((inputColumn) => {
       const validColumns = (isNodeType ? nodeColumns : edgeColumns).filter(
         (c) => inputColumnFilterFn(c, inputColumn),
       )
       return validColumns.length > 0
     }) ?? false
+
+  const serviceCanBeRun = networkHasProperInputColumns && numNetworks > 0
 
   const inputColumnsRender = () => {
     return app.serviceInputDefinition?.inputColumns.map((inputColumn, i) => {
@@ -219,8 +237,10 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
           <Tooltip
             title={`The network needs to have a column that satisfies the data type ${inputColumn.dataType}`}
           >
-            <Box>
+            <Box sx={{ p: 1 }}>
               <Select
+                disabled
+                size="small"
                 label={inputColumn.name}
                 value={inputColumn.columnName}
               ></Select>
@@ -229,14 +249,19 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
         )
       }
       return (
-        <Select label={inputColumn.name} value={inputColumn.columnName}>
+        <Select
+          size="small"
+          sx={{ width: 200 }}
+          label={`${inputColumn.name}: ${inputColumn.dataType}`}
+          value={inputColumn.columnName}
+        >
           {(isNodeType ? nodeColumns : edgeColumns).map((eleColumn, i) => {
             return (
               <MenuItem
                 key={i}
-                onClick={() =>
+                onClick={() => {
                   updateInputColumn(app.url, inputColumn.name, eleColumn.name)
-                }
+                }}
               >
                 {eleColumn.name}
               </MenuItem>
@@ -249,7 +274,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
 
   const inputDefinition = inputTypeIsElement ? (
     <Box>
-      <Typography>Input Columns</Typography>
+      <Typography sx={{ mb: 1 }}>Input Columns</Typography>
       {inputColumnsRender()}
     </Box>
   ) : null
@@ -281,9 +306,9 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
     >
       <Box sx={{ p: 2 }}>
         <Typography variant="h5">{app.name}</Typography>
-        {inputDefinition}
+        <Box sx={{ p: 1 }}>{inputDefinition}</Box>
         <Box sx={{ p: 1 }}>
-          <Typography>Parameters</Typography>
+          <Typography sx={{ mb: 1 }}>Parameters</Typography>
           {app.parameters.map((parameter: ServiceAppParameter) => (
             <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
               {renderParameter(parameter)}
