@@ -5,7 +5,6 @@ import { MergeNetwork } from './MergeNetwork'
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
-import { TestButton } from './TestButton'
 
 export const ToolsMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
