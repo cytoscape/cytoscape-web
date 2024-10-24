@@ -7,11 +7,7 @@ import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { HcxMetaData } from '../model/HcxMetaData'
-import { getHcxProps } from '../utils/hierarchy-util'
-import {
-  NdexNetworkProperty,
-  NdexNetworkSummary,
-} from '../../../models/NetworkSummaryModel'
+import { getHcxMetadata } from '../utils/hierarchy-util'
 import { ValueType } from '../../../models/TableModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useTableStore } from '../../../store/TableStore'
@@ -28,7 +24,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import FilterPanel from './FilterPanel/FilterPanel'
 import { DuplicateNodeSeparator } from './CustomLayout/DataBuilderUtil'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
-import { set } from 'lodash'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -71,7 +66,6 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.summaries[currentNetworkId],
   )
   const addRenderer = useRendererStore((state) => state.add)
-  const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
 
   const setRootNetworkId = useSubNetworkStore((state) => state.setRootNetworkId)
@@ -98,38 +92,18 @@ export const MainPanel = (): JSX.Element => {
   }
 
   const checkDataType = (): void => {
-    // Check if the current network is a hierarchy
-    if (networkSummary === undefined) {
-      return
-    }
-    const summary: NdexNetworkSummary = networkSummary
-    const networkProps: NdexNetworkProperty[] = summary.properties
-    if (networkProps === undefined || networkProps.length === 0) {
-      setIsHierarchy(false)
-      setMetadata(undefined)
-      return
-    }
-
-    const networkPropObj: Record<string, ValueType> = networkProps.reduce<{
-      [key: string]: ValueType
-    }>((acc, prop) => {
-      acc[prop.predicateString] = prop.value
-      return acc
-    }, {})
-    const metadata: HcxMetaData | undefined = getHcxProps(networkPropObj)
+    const metadata: HcxMetaData | undefined = getHcxMetadata(networkSummary)
 
     if (metadata !== undefined) {
       setIsHierarchy(true)
       setMetadata(metadata)
+      // Add the CP renderer if it does not exist
       if (renderers.circlePacking === undefined) {
         addRenderer(CirclePackingRenderer)
       }
     } else {
       setIsHierarchy(false)
       setMetadata(undefined)
-      if (renderers.circlePacking !== undefined) {
-        deleteRenderer(renderers.circlePacking.id)
-      }
     }
   }
 
