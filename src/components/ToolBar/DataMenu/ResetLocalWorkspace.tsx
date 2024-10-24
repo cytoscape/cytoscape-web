@@ -22,7 +22,7 @@ export const ResetLocalWorkspaceMenuItem = (
 
   return (
     <>
-      <MenuItem onClick={() => setOpen(true)}>Clear local database</MenuItem>
+      <MenuItem onClick={() => setOpen(true)}>Clear Local Database</MenuItem>
       <ConfirmationDialog
         title="Reset Local Workspace (for developers)"
         message="Are you sure you want to reset all workspace data? (This deletes all of the local cache)"

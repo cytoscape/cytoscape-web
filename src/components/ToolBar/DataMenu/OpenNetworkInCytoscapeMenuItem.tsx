@@ -72,7 +72,7 @@ export const OpenNetworkInCytoscapeMenuItem = (
 
   const menuItem = (
     <MenuItem onClick={handleOpenNetworkInCytoscape}>
-      Open copy of current network in Cytoscape
+      Open Copy of Current Network in Cytoscape
     </MenuItem>
   )
 

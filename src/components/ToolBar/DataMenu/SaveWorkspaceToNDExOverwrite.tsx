@@ -181,7 +181,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       disabled={!authenticated}
       onClick={handleSaveCurrentNetworkToNDEx}
     >
-      Save workspace
+      Save Workspace
     </MenuItem>
   )
 
