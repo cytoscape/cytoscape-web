@@ -33,7 +33,7 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
   const [fullBg, setFullBg] = useState(true)
   const [customWidth, setCustomWidth] = useState<number>(0)
   const [customHeight, setCustomHeight] = useState<number>(0)
-  const [zoom, setZoom] = useState<number>(2)
+  const [zoom, setZoom] = useState<number>(1)
   const [unit, setUnit] = useState<UnitType>('pixels')
   const [dpi, setDpi] = useState<number>(72)
 
