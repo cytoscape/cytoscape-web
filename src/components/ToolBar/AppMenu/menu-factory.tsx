@@ -24,6 +24,7 @@ import { ParameterUiType } from '../../../models/AppModel/ParameterUiType'
 import { useAppStore } from '../../../store/AppStore'
 import { inputColumnFilterFn } from '../../../models/AppModel/impl'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
+import React from 'react'
 
 interface AppMenuItemProps {
   handleClose: () => void
@@ -32,12 +33,99 @@ interface AppMenuItemProps {
   open: boolean
 }
 
-export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
-  handleClose,
-  handleConfirm,
-  app,
-  open,
-}) => {
+export const InputColumns = (props: AppMenuItemProps) => {
+  const { app } = props
+  const isNodeType = app.serviceInputDefinition?.type === 'node'
+  const isEdgeType = app.serviceInputDefinition?.type === 'edge'
+  const inputTypeIsElement = (isNodeType || isEdgeType) ?? false
+
+  const updateInputColumn = useAppStore((state) => state.updateInputColumn)
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+  const nodeColumns =
+    useTableStore(
+      (state) => state.tables?.[activeNetworkId]?.nodeTable?.columns,
+    ) ?? []
+
+  const edgeColumns =
+    useTableStore(
+      (state) => state.tables?.[activeNetworkId]?.nodeTable?.columns,
+    ) ?? []
+
+  React.useEffect(() => {
+    app.serviceInputDefinition?.inputColumns.forEach((inputColumn) => {
+      const validColumns = (isNodeType ? nodeColumns : edgeColumns).filter(
+        (c) => inputColumnFilterFn(c, inputColumn),
+      )
+      if (validColumns.length > 0) {
+        updateInputColumn(app.url, inputColumn.name, validColumns[0].name)
+      }
+    })
+  }, [])
+
+  return app.serviceInputDefinition?.inputColumns.map((inputColumn, i) => {
+    const validColumns = (isNodeType ? nodeColumns : edgeColumns).filter((c) =>
+      inputColumnFilterFn(c, inputColumn),
+    )
+
+    if (validColumns.length === 0) {
+      return (
+        <Tooltip
+          title={`The network needs to have a column that satisfies the data type ${inputColumn.dataType}`}
+        >
+          <Box sx={{ p: 1 }}>
+            <Select
+              disabled
+              size="small"
+              label={inputColumn.name}
+              value={inputColumn.columnName}
+            ></Select>
+          </Box>
+        </Tooltip>
+      )
+    }
+    console.log(validColumns, inputColumn)
+
+    console.log(
+      'V',
+      inputColumn.columnName ??
+        (isNodeType ? nodeColumns?.[0] : edgeColumns?.[0]) ??
+        inputColumn.defaultColumnName,
+    )
+    const columnsToDisplay = isNodeType ? nodeColumns : edgeColumns
+
+    return (
+      <Box>
+        <Typography>{`${inputColumn.name}: ${inputColumn.dataType}`}</Typography>
+        <Select
+          displayEmpty
+          size="small"
+          sx={{ width: 200 }}
+          value={
+            inputColumn.columnName ??
+            (isNodeType ? nodeColumns?.[0] : edgeColumns?.[0]) ??
+            inputColumn.defaultColumnName
+          }
+          onChange={(e) => {
+            updateInputColumn(app.url, inputColumn.name, e.target.value)
+          }}
+        >
+          {columnsToDisplay.map((eleColumn, i) => {
+            return (
+              <MenuItem key={i} value={eleColumn.name}>
+                {eleColumn.name}
+              </MenuItem>
+            )
+          })}
+        </Select>
+      </Box>
+    )
+  })
+}
+
+export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
+  const { handleClose, handleConfirm, app, open } = props
   const isNodeType = app.serviceInputDefinition?.type === 'node'
   const isEdgeType = app.serviceInputDefinition?.type === 'edge'
   const inputTypeIsElement = (isNodeType || isEdgeType) ?? false
@@ -48,7 +136,6 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
     (state) => state.updateServiceParameter,
   )
 
-  const updateInputColumn = useAppStore((state) => state.updateInputColumn)
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
@@ -226,60 +313,14 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = ({
 
   const serviceCanBeRun = networkHasProperInputColumns && numNetworks > 0
 
-  const inputColumnsRender = () => {
-    return app.serviceInputDefinition?.inputColumns.map((inputColumn, i) => {
-      const validColumns = (isNodeType ? nodeColumns : edgeColumns).filter(
-        (c) => inputColumnFilterFn(c, inputColumn),
-      )
-
-      if (validColumns.length === 0) {
-        return (
-          <Tooltip
-            title={`The network needs to have a column that satisfies the data type ${inputColumn.dataType}`}
-          >
-            <Box sx={{ p: 1 }}>
-              <Select
-                disabled
-                size="small"
-                label={inputColumn.name}
-                value={inputColumn.columnName}
-              ></Select>
-            </Box>
-          </Tooltip>
-        )
-      }
-      return (
-        <Select
-          size="small"
-          sx={{ width: 200 }}
-          label={`${inputColumn.name}: ${inputColumn.dataType}`}
-          value={inputColumn.columnName}
-        >
-          {(isNodeType ? nodeColumns : edgeColumns).map((eleColumn, i) => {
-            return (
-              <MenuItem
-                key={i}
-                onClick={() => {
-                  updateInputColumn(app.url, inputColumn.name, eleColumn.name)
-                }}
-              >
-                {eleColumn.name}
-              </MenuItem>
-            )
-          })}
-        </Select>
-      )
-    })
-  }
-
   const inputDefinition = inputTypeIsElement ? (
     <Box>
       <Typography sx={{ mb: 1 }}>Input Columns</Typography>
-      {inputColumnsRender()}
+      <InputColumns {...props} />
     </Box>
   ) : null
 
-  const submitButton = serviceCanBeRun ? (
+  const submitButton = !serviceCanBeRun ? (
     <Tooltip
       title={`Unable to run service.  The network doesn't have input columns that match the required data types from the service.`}
     >
