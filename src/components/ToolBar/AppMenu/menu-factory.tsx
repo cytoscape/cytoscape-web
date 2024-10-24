@@ -85,19 +85,17 @@ export const InputColumns = (props: AppMenuItemProps) => {
         </Tooltip>
       )
     }
-    console.log(validColumns, inputColumn)
-
-    console.log(
-      'V',
-      inputColumn.columnName ??
-        (isNodeType ? nodeColumns?.[0] : edgeColumns?.[0]) ??
-        inputColumn.defaultColumnName,
-    )
     const columnsToDisplay = isNodeType ? nodeColumns : edgeColumns
 
     return (
-      <Box>
-        <Typography>{`${inputColumn.name}: ${inputColumn.dataType}`}</Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Typography>{`${inputColumn.name}`}</Typography>
         <Select
           displayEmpty
           size="small"
@@ -154,68 +152,95 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
       case ParameterUiType.Text:
         return (
           <Tooltip title={parameter.description ?? ''}>
-            <TextField
-              size="small"
-              label={parameter.displayName}
-              value={parameter.value ?? parameter.defaultValue ?? ''}
-              defaultValue={parameter.defaultValue ?? ''}
-              onChange={(e) =>
-                updateServiceParameter(
-                  app.url,
-                  parameter.displayName,
-                  e.target.value,
-                )
-              }
-            />
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Typography>{parameter.displayName}</Typography>
+              <TextField
+                size="small"
+                label={parameter.displayName}
+                value={parameter.value ?? parameter.defaultValue ?? ''}
+                defaultValue={parameter.defaultValue ?? ''}
+                onChange={(e) =>
+                  updateServiceParameter(
+                    app.url,
+                    parameter.displayName,
+                    e.target.value,
+                  )
+                }
+              />
+            </Box>
           </Tooltip>
         )
       case ParameterUiType.DropDown:
         return (
           <Tooltip title={parameter.description ?? ''}>
-            <Select
-              size="small"
-              label={parameter.displayName}
-              value={parameter.value || ''}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
             >
-              {(parameter.valueList ?? []).map((value, i) => (
-                <MenuItem
-                  key={i}
-                  onClick={() =>
-                    updateServiceParameter(
-                      app.url,
-                      parameter.displayName,
-                      value,
-                    )
-                  }
-                >
-                  {value}
-                </MenuItem>
-              ))}
-            </Select>
+              <Typography>{parameter.displayName}</Typography>
+              <Select
+                size="small"
+                label={parameter.displayName}
+                value={parameter.value || ''}
+              >
+                {(parameter.valueList ?? []).map((value, i) => (
+                  <MenuItem
+                    key={i}
+                    onClick={() =>
+                      updateServiceParameter(
+                        app.url,
+                        parameter.displayName,
+                        value,
+                      )
+                    }
+                  >
+                    {value}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
           </Tooltip>
         )
       case ParameterUiType.Radio:
         return (
           <Tooltip title={parameter.description ?? ''}>
-            <RadioGroup
-              value={parameter.value || ''}
-              onChange={(e) =>
-                updateServiceParameter(
-                  app.url,
-                  parameter.displayName,
-                  e.target.value,
-                )
-              }
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
             >
-              {(parameter.valueList ?? []).map((value, i) => (
-                <FormControlLabel
-                  key={i}
-                  value={value}
-                  control={<Radio />}
-                  label={value}
-                />
-              ))}
-            </RadioGroup>
+              <Typography>{parameter.displayName}</Typography>
+              <RadioGroup
+                value={parameter.value || ''}
+                onChange={(e) =>
+                  updateServiceParameter(
+                    app.url,
+                    parameter.displayName,
+                    e.target.value,
+                  )
+                }
+              >
+                {(parameter.valueList ?? []).map((value, i) => (
+                  <FormControlLabel
+                    key={i}
+                    value={value}
+                    control={<Radio />}
+                    label={value}
+                  />
+                ))}
+              </RadioGroup>
+            </Box>
           </Tooltip>
         )
       case ParameterUiType.CheckBox:
@@ -239,6 +264,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
                 />
               }
               label={parameter.displayName}
+              labelPlacement="start"
             />
           </Tooltip>
         )
@@ -246,51 +272,69 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
       case ParameterUiType.NodeColumn:
         return (
           <Tooltip title={parameter.description ?? ''}>
-            <Select
-              size="small"
-              label={parameter.displayName}
-              value={parameter.value || ''}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
             >
-              {nodeColumns.map((column, i) => (
-                <MenuItem
-                  key={i}
-                  onClick={() =>
-                    updateServiceParameter(
-                      app.url,
-                      parameter.displayName,
-                      column.name,
-                    )
-                  }
-                >
-                  {column.name}
-                </MenuItem>
-              ))}
-            </Select>
+              <Typography>{parameter.displayName}</Typography>
+              <Select
+                size="small"
+                label={parameter.displayName}
+                value={parameter.value || ''}
+              >
+                {nodeColumns.map((column, i) => (
+                  <MenuItem
+                    key={i}
+                    onClick={() =>
+                      updateServiceParameter(
+                        app.url,
+                        parameter.displayName,
+                        column.name,
+                      )
+                    }
+                  >
+                    {column.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
           </Tooltip>
         )
       case ParameterUiType.EdgeColumn:
         return (
           <Tooltip title={parameter.description ?? ''}>
-            <Select
-              size="small"
-              label={parameter.displayName}
-              value={parameter.value || ''}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
             >
-              {edgeColumns.map((column, i) => (
-                <MenuItem
-                  key={i}
-                  onClick={() =>
-                    updateServiceParameter(
-                      app.url,
-                      parameter.displayName,
-                      column.name,
-                    )
-                  }
-                >
-                  {column.name}
-                </MenuItem>
-              ))}
-            </Select>
+              <Typography>{parameter.displayName}</Typography>
+              <Select
+                size="small"
+                label={parameter.displayName}
+                value={parameter.value || ''}
+              >
+                {edgeColumns.map((column, i) => (
+                  <MenuItem
+                    key={i}
+                    onClick={() =>
+                      updateServiceParameter(
+                        app.url,
+                        parameter.displayName,
+                        column.name,
+                      )
+                    }
+                  >
+                    {column.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
           </Tooltip>
         )
       default:
@@ -315,7 +359,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
 
   const inputDefinition = inputTypeIsElement ? (
     <Box>
-      <Typography sx={{ mb: 1 }}>Input Columns</Typography>
+      <Typography sx={{ mb: 1, ml: -2 }}>Input Columns</Typography>
       <InputColumns {...props} />
     </Box>
   ) : null
@@ -336,6 +380,8 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
 
   return (
     <Dialog
+      maxWidth="sm"
+      fullWidth
       open={open}
       onClose={handleClose}
       onKeyDown={(e) => {
@@ -347,9 +393,9 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
     >
       <Box sx={{ p: 2 }}>
         <Typography variant="h5">{app.name}</Typography>
-        <Box sx={{ p: 1 }}>{inputDefinition}</Box>
-        <Box sx={{ p: 1 }}>
-          <Typography sx={{ mb: 1 }}>Parameters</Typography>
+        <Box sx={{ p: 3 }}>{inputDefinition}</Box>
+        <Box sx={{ p: 3 }}>
+          <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
           {app.parameters.map((parameter: ServiceAppParameter) => (
             <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
               {renderParameter(parameter)}
