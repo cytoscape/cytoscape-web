@@ -265,6 +265,12 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
               }
               label={parameter.displayName}
               labelPlacement="start"
+              sx={{
+                marginLeft: '0px !important',
+                display: 'flex',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}
             />
           </Tooltip>
         )
@@ -358,24 +364,53 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
   const serviceCanBeRun = networkHasProperInputColumns && numNetworks > 0
 
   const inputDefinition = inputTypeIsElement ? (
-    <Box>
-      <Typography sx={{ mb: 1, ml: -2 }}>Input Columns</Typography>
-      <InputColumns {...props} />
+    <Box sx={{ p: 3 }}>
+      <Box>
+        <Typography sx={{ mb: 1, ml: -2 }}>Input Columns</Typography>
+        <InputColumns {...props} />
+      </Box>
     </Box>
   ) : null
+
+  const parametersSection = app.parameters ? (
+    <Box sx={{ p: 3 }}>
+      <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
+      {app.parameters?.map((parameter: ServiceAppParameter) => (
+        <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
+          {renderParameter(parameter)}
+        </Box>
+      ))}
+    </Box>
+  ) : null
+
+  const shouldAddMarginTop = !inputDefinition && !parametersSection
 
   const submitButton = !serviceCanBeRun ? (
     <Tooltip
       title={`Unable to run service.  The network doesn't have input columns that match the required data types from the service.`}
     >
-      <Box>
+      <Box
+        display="flex"
+        justifyContent="flex-end"
+        sx={{
+          marginTop: shouldAddMarginTop ? '20px' : 0,
+        }}
+      >
         <Button disabled>Submit</Button>
       </Box>
     </Tooltip>
   ) : (
-    <Button onClick={handleSubmit} color="primary" variant="contained">
-      Submit
-    </Button>
+    <Box
+      display="flex"
+      justifyContent="flex-end"
+      sx={{
+        marginTop: shouldAddMarginTop ? '20px' : 0,
+      }}
+    >
+      <Button onClick={handleSubmit} color="primary" variant="contained">
+        Submit
+      </Button>
+    </Box>
   )
 
   return (
@@ -391,17 +426,10 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
         e.stopPropagation()
       }}
     >
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 3.5 }}>
         <Typography variant="h5">{app.name}</Typography>
-        <Box sx={{ p: 3 }}>{inputDefinition}</Box>
-        <Box sx={{ p: 3 }}>
-          <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
-          {app.parameters.map((parameter: ServiceAppParameter) => (
-            <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
-              {renderParameter(parameter)}
-            </Box>
-          ))}
-        </Box>
+        {inputDefinition}
+        {parametersSection}
         {submitButton}
       </Box>
     </Dialog>
