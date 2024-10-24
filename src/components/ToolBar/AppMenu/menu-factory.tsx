@@ -353,7 +353,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
         (c) => inputColumnFilterFn(c, inputColumn),
       )
       return validColumns.length > 0
-    }) ?? false
+    }) ?? true
 
   const serviceCanBeRun = networkHasProperInputColumns && numNetworks > 0
 
