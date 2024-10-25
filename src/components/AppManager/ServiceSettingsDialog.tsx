@@ -16,6 +16,8 @@ import {
   Box,
   Link,
   Divider,
+  useTheme,
+  Theme,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 
@@ -34,9 +36,15 @@ export const ServiceSettingsDialog = ({
   openDialog,
   setOpenDialog,
 }: ServiceSettingsDialogProps) => {
+  const theme: Theme = useTheme()
+
   const { defaultServices } = useContext<AppConfig>(AppConfigContext)
 
   const [newUrl, setNewUrl] = useState<string>('')
+
+  // Warning message to display when the user tries to add
+  // a service that is already registered
+  const [warningMessage, setWarningMessage] = useState<string>('')
 
   const serviceApps: Record<string, ServiceApp> = useAppStore(
     (state) => state.serviceApps,
@@ -60,11 +68,20 @@ export const ServiceSettingsDialog = ({
   }, [])
 
   const handleAddServiceApp = async () => {
-    if (newUrl.trim()) {
-      if (newUrl !== '') {
-        await addService(newUrl)
-        setNewUrl('')
+    let trimmedUrl: string = newUrl.trim()
+    if (trimmedUrl.endsWith('/')) {
+      trimmedUrl = trimmedUrl.slice(0, -1) // Remove the last character if it is '/'
+    }
+
+    if (trimmedUrl !== '') {
+      const serviceApp = serviceApps[trimmedUrl]
+      if (serviceApp !== undefined) {
+        setWarningMessage(`The service already registered: ${trimmedUrl}`)
+        return
       }
+      await addService(trimmedUrl)
+      setNewUrl('')
+      setWarningMessage('')
     }
   }
 
@@ -72,10 +89,20 @@ export const ServiceSettingsDialog = ({
     removeService(url)
   }
 
+  const handleClearUrl = () => {
+    setNewUrl('')
+    setWarningMessage('')
+  }
+
   return (
     <Dialog open={openDialog}>
       <DialogTitle>External Services</DialogTitle>
       <DialogContent>
+        {warningMessage && (
+          <Typography color="error" variant="body2">
+            {warningMessage}
+          </Typography>
+        )}
         <List>
           {Object.values(serviceApps).map((serviceApp: ServiceApp) => (
             <ListItem key={serviceApp.url}>
@@ -136,15 +163,25 @@ export const ServiceSettingsDialog = ({
             label="Enter new external service URL"
             value={newUrl}
             onChange={(e) => setNewUrl(e.target.value)}
-            style={{ marginRight: '8px' }}
+            style={{ marginRight: theme.spacing(1) }}
             size="small"
             sx={{ flexGrow: 1 }}
           />
           <Button
-            variant="contained"
+            variant="outlined"
+            color="inherit"
+            onClick={handleClearUrl}
+            disabled={newUrl.trim() === ''}
+            sx={{ marginRight: theme.spacing(1), width: '4em' }}
+          >
+            Clear
+          </Button>
+          <Button
+            variant="outlined"
             color="primary"
             onClick={handleAddServiceApp}
             disabled={newUrl.trim() === ''}
+            sx={{ width: '4em' }}
           >
             Add
           </Button>

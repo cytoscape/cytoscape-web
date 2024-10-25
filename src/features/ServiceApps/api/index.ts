@@ -3,20 +3,17 @@ import {
   CytoContainerResult,
   ServiceAlgorithm,
   CytoContainerRequest,
-  Task,
+  CytoContainerRequestId,
   CytoContainerResultStatus,
   ServerStatus
 } from '../model'
 
-const serviceUrl = 'https://cd.ndexbio.org/cd/communitydetection/v1'
-
 // get task result function
 export const getTaskResult = async (
   serviceUrl: string,
-  algorithmName: string,
   taskId: string,
 ): Promise<CytoContainerResult> => {
-  const response = await fetch(`${serviceUrl}/${algorithmName}/${taskId}`, {
+  const response = await fetch(`${serviceUrl}/${taskId}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -32,13 +29,30 @@ export const getTaskResult = async (
   return data
 }
 
+// get all algorithms offered by the service
+export const getAllAlgorithms = async (serviceUrl: string): Promise<ServiceAlgorithm[]> => {
+  const response = await fetch(serviceUrl, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+  if (!response.ok) {
+    const errorResponse: ErrorResponse = await response.json()
+    throw new Error(errorResponse.message)
+  }
+  const responseData = await response.json()
+  const data: ServiceAlgorithm[] = Object.values(responseData.algorithms)
+
+  return data
+}
+
 // delete task function
 export const deleteTask = async (
   serviceUrl: string,
-  algorithmName: string,
   taskId: string,
 ): Promise<void> => {
-  const response = await fetch(`${serviceUrl}/${algorithmName}/${taskId}`, {
+  const response = await fetch(`${serviceUrl}/${taskId}`, {
     method: 'DELETE',
   })
   if (!response.ok) {
@@ -50,9 +64,8 @@ export const deleteTask = async (
 // get meta data about this service algorithm
 export const getAlgorithmMetaData = async (
   serviceUrl: string,
-  algorithmName: string,
 ): Promise<ServiceAlgorithm> => {
-  const response = await fetch(`${serviceUrl}/${algorithmName}`, {
+  const response = await fetch(serviceUrl, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -70,8 +83,8 @@ export const getAlgorithmMetaData = async (
 export const submitTask = async (
   serviceUrl: string,
   task: CytoContainerRequest,
-): Promise<Task> => {
-  const response = await fetch(`${serviceUrl}/${task.algorithm}`, {
+): Promise<CytoContainerRequestId> => {
+  const response = await fetch(serviceUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -82,17 +95,16 @@ export const submitTask = async (
     const errorResponse: ErrorResponse = await response.json()
     throw new Error(errorResponse.message)
   }
-  const result: Task = await response.json()
+  const result: CytoContainerRequestId = await response.json()
   return result
 }
 
 // get task status function
 export const getTaskStatus = async (
   serviceUrl: string,
-  algorithmName: string,
   taskId: string,
 ): Promise<CytoContainerResultStatus> => {
-  const response = await fetch(`${serviceUrl}/${algorithmName}/${taskId}/status`, {
+  const response = await fetch(`${serviceUrl}/${taskId}/status`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -108,9 +120,9 @@ export const getTaskStatus = async (
 
 // get server status function
 export const getServerStatus = async (
-  serviceUrl: string,
+  serverUrl: string,
 ): Promise<ServerStatus> => {
-  const response = await fetch(`${serviceUrl}/status`, {
+  const response = await fetch(`${serverUrl}/status`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -127,9 +139,8 @@ export const getServerStatus = async (
 // get algorithm status function
 export const getAlgorithmStatus = async (
   serviceUrl: string,
-  algorithmName: string,
 ): Promise<ServerStatus> => {
-  const response = await fetch(`${serviceUrl}/${algorithmName}/status`, {
+  const response = await fetch(`${serviceUrl}/status`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
