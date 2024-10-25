@@ -44,7 +44,8 @@ document.body.appendChild(loadingMessage)
 
 const keycloak = new Keycloak(keycloakConfig)
 
-const handleVerify = () => {
+const handleVerify = async () => {
+  await keycloak.loadUserProfile()
   window.location.reload()
 }
 
@@ -59,13 +60,12 @@ keycloak
     silentCheckSsoRedirectUri:
       window.location.origin + urlBaseName + 'silent-check-sso.html',
   })
-  .then((authenticated) => {
+  .then(async (authenticated) => {
     let emailUnverified = true
     if (authenticated) {
       // check the whether the email is verified
-      keycloak.loadUserProfile().then((profile) => {
-        if (profile.emailVerified) emailUnverified = false
-      })
+      keycloak.loadUserInfo()
+      if (profile.emailVerified) emailUnverified = false
     }
     // Remove the loading message
     removeMessage(LOADING_MESSAGE_ID)
