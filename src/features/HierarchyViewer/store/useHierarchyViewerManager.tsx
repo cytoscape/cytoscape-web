@@ -20,6 +20,7 @@ import {
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
 } from '../../../store/persist/db'
+import { useRendererStore } from '../../../store/RendererStore'
 
 /**
  *  Switch the panel state based on the network meta data
@@ -39,6 +40,9 @@ export const useHierarchyViewerManager = (): void => {
   const activeNetworkView = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
+
+  const deleteRenderer = useRendererStore((state) => state.delete)
+  const renderers = useRendererStore((state) => state.renderers)
 
   useEffect(() => {
     const deleteChildren = async (parentId: IdType): Promise<void> => {
@@ -117,6 +121,10 @@ export const useHierarchyViewerManager = (): void => {
       enablePopup(true)
     } else {
       enablePopup(false)
+      // Delete the CP renderer if it exists
+      if (renderers.circlePacking !== undefined) {
+        deleteRenderer(renderers.circlePacking.id)
+      }
     }
   }, [summary])
 
