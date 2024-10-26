@@ -1,50 +1,63 @@
 import React from 'react'
-import { Modal, Box, Button, Typography } from '@mui/material'
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
 
 interface EmailVerificationModalProps {
   open: boolean
   onVerify: () => void
   onCancel: () => void
+  userName: string
+  userEmail: string
 }
 
 export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   open,
   onVerify,
   onCancel,
+  userName,
+  userEmail,
 }) => {
   return (
-    <Modal
+    <Dialog
       open={open}
-      aria-labelledby="email-verification-modal"
+      aria-labelledby="email-verification-title"
       aria-describedby="email-verification-description"
     >
-      <Box
-        sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-        }}
-      >
-        <Typography id="email-verification-modal" variant="h6" component="h2">
-          Email Verification Required0
-        </Typography>
-        <Typography id="email-verification-description" sx={{ mt: 2 }}>
-          Your email is not verified. Please verify your email or log out.
-        </Typography>
-        <Box mt={3}>
-          <Button variant="contained" onClick={onVerify} sx={{ mr: 2 }}>
-            Already Verified
-          </Button>
-          <Button variant="outlined" onClick={onCancel}>
-            Cancel
-          </Button>
-        </Box>
-      </Box>
-    </Modal>
+      <DialogTitle id="email-verification-title">
+        {'Email Verification Required' +
+          (userName ? ' for User: ' + userName : '')}
+      </DialogTitle>
+      <DialogContent>
+        <DialogContentText
+          id="email-verification-description-1"
+          sx={{
+            display: 'block',
+            width: '100%',
+            textAlign: 'justify',
+            marginBottom: 1,
+          }}
+        >
+          {'Please check the email address ' +
+            (userEmail ? userEmail : 'associated with your username') +
+            ' to verify your account.'}
+        </DialogContentText>
+        <DialogContentText
+          id="email-verification-description-2"
+          sx={{ display: 'block', width: '100%', textAlign: 'justify' }}
+        >
+          Refresh the page once verified. Alternatively, logout and browse NDEx
+          as a anonymous user.
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onVerify}>Already Verified</Button>
+        <Button onClick={onCancel}>Log Out</Button>
+      </DialogActions>
+    </Dialog>
   )
 }
 

@@ -5,6 +5,8 @@ import './data-grid.css'
 import appConfig from './assets/config.json'
 import { AppConfigContext } from './AppConfigContext'
 import { App } from './App'
+// @ts-expect-error-next-line
+import { NDEx } from '@js4cytoscape/ndex-client'
 import { EmailVerificationModal } from './components/EmailVerification'
 import ReactGA from 'react-ga4'
 
@@ -14,6 +16,11 @@ import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
 import ErrorBoundary from './ErrorBoundary'
 enableMapSet()
+
+interface UserInfo {
+  preferred_username: string
+  email: string
+}
 
 console.log('-----------BS start')
 
@@ -53,6 +60,34 @@ const handleCancel = () => {
   keycloak.logout()
 }
 
+// Function to check if the user's email is verified
+const checkUserVerification = async () => {
+  try {
+    const ndexClient = new NDEx(appConfig.ndexBaseUrl)
+    ndexClient.setAuthToken(keycloak.token)
+    await ndexClient.getSignedInUser()
+    return {
+      isVerified: true,
+    }
+  } catch (e) {
+    // If response contains the verification error, trigger verification modal
+    if (
+      e.status === 401 &&
+      e.response?.data?.errorCode === 'NDEx_User_Account_Not_Verified'
+    ) {
+      const userInfo: UserInfo = (await keycloak.loadUserInfo()) as UserInfo
+      return {
+        isVerified: false,
+        userName: userInfo.preferred_username,
+        userEmail: userInfo.email,
+      }
+    }
+    return {
+      isVerified: true,
+    }
+  }
+}
+
 keycloak
   .init({
     onLoad: 'check-sso',
@@ -62,11 +97,15 @@ keycloak
   })
   .then(async (authenticated) => {
     let emailUnverified = true
+    let userName = ''
+    let userEmail = ''
     if (authenticated) {
-      // check the whether the email is verified
-      keycloak.loadUserInfo()
-      if (profile.emailVerified) emailUnverified = false
+      const verificationStatus = await checkUserVerification()
+      emailUnverified = !verificationStatus.isVerified
+      userName = verificationStatus.userName ?? ''
+      userEmail = verificationStatus.userEmail ?? ''
     }
+
     // Remove the loading message
     removeMessage(LOADING_MESSAGE_ID)
 
@@ -81,6 +120,8 @@ keycloak
                   open={authenticated && emailUnverified}
                   onVerify={handleVerify}
                   onCancel={handleCancel}
+                  userName={userName}
+                  userEmail={userEmail}
                 />
               </ErrorBoundary>
             </KeycloakContext.Provider>
