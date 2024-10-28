@@ -57,7 +57,7 @@ const handleVerify = async () => {
 }
 
 const handleCancel = () => {
-  keycloak.logout()
+  keycloak.logout({ redirectUri: window.location.origin + urlBaseName })
 }
 
 // Function to check if the user's email is verified

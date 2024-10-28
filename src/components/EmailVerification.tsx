@@ -49,8 +49,8 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
           id="email-verification-description-2"
           sx={{ display: 'block', width: '100%', textAlign: 'justify' }}
         >
-          Refresh the page once verified. Alternatively, logout and browse NDEx
-          as a anonymous user.
+          Refresh the page once verified. Alternatively, logout and browse
+          Cytoscape-Web as a anonymous user.
         </DialogContentText>
       </DialogContent>
       <DialogActions>
