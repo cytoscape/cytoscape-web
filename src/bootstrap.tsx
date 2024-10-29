@@ -5,7 +5,9 @@ import './data-grid.css'
 import appConfig from './assets/config.json'
 import { AppConfigContext } from './AppConfigContext'
 import { App } from './App'
-
+// @ts-expect-error-next-line
+import { NDEx } from '@js4cytoscape/ndex-client'
+import { EmailVerificationModal } from './components/EmailVerification'
 import ReactGA from 'react-ga4'
 
 // this allows immer to work with Map and Set
@@ -14,6 +16,11 @@ import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
 import ErrorBoundary from './ErrorBoundary'
 enableMapSet()
+
+interface UserInfo {
+  preferred_username: string
+  email: string
+}
 
 console.log('-----------BS start')
 
@@ -43,6 +50,44 @@ loadingMessage.textContent = 'Initializing Cytoscape. Please wait...'
 document.body.appendChild(loadingMessage)
 
 const keycloak = new Keycloak(keycloakConfig)
+
+const handleVerify = async () => {
+  await keycloak.loadUserProfile()
+  window.location.reload()
+}
+
+const handleCancel = () => {
+  keycloak.logout({ redirectUri: window.location.origin + urlBaseName })
+}
+
+// Function to check if the user's email is verified
+const checkUserVerification = async () => {
+  try {
+    const ndexClient = new NDEx(appConfig.ndexBaseUrl)
+    ndexClient.setAuthToken(keycloak.token)
+    await ndexClient.getSignedInUser()
+    return {
+      isVerified: true,
+    }
+  } catch (e) {
+    // If response contains the verification error, trigger verification modal
+    if (
+      e.status === 401 &&
+      e.response?.data?.errorCode === 'NDEx_User_Account_Not_Verified'
+    ) {
+      const userInfo: UserInfo = (await keycloak.loadUserInfo()) as UserInfo
+      return {
+        isVerified: false,
+        userName: userInfo.preferred_username,
+        userEmail: userInfo.email,
+      }
+    }
+    return {
+      isVerified: true,
+    }
+  }
+}
+
 keycloak
   .init({
     onLoad: 'check-sso',
@@ -50,7 +95,17 @@ keycloak
     silentCheckSsoRedirectUri:
       window.location.origin + urlBaseName + 'silent-check-sso.html',
   })
-  .then(() => {
+  .then(async (authenticated) => {
+    let emailUnverified = true
+    let userName = ''
+    let userEmail = ''
+    if (authenticated) {
+      const verificationStatus = await checkUserVerification()
+      emailUnverified = !verificationStatus.isVerified
+      userName = verificationStatus.userName ?? ''
+      userEmail = verificationStatus.userEmail ?? ''
+    }
+
     // Remove the loading message
     removeMessage(LOADING_MESSAGE_ID)
 
@@ -61,6 +116,13 @@ keycloak
             <KeycloakContext.Provider value={keycloak}>
               <ErrorBoundary>
                 <App />
+                <EmailVerificationModal
+                  open={authenticated && emailUnverified}
+                  onVerify={handleVerify}
+                  onCancel={handleCancel}
+                  userName={userName}
+                  userEmail={userEmail}
+                />
               </ErrorBoundary>
             </KeycloakContext.Provider>
           </React.StrictMode>

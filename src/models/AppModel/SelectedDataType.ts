@@ -1,14 +1,14 @@
 /**
  * The data types that the service apps process as input
  *
- * Nodes: The app processes the selected nodes as input data
- * Edges: The app processes the selected edges as input data
- * Networks: The app processes the entire network(s) as input data
+ * Node: The app processes the selected nodes as input data
+ * Edge: The app processes the selected edges as input data
+ * Network: The app processes the entire network(s) as input data
  */
 export const SelectedDataType = {
-  Nodes: 'nodes',
-  Edges: 'edges',
-  Networks: 'networks',
+  Node: 'node',
+  Edge: 'edge',
+  Networks: 'network',
 } as const
 
 export type SelectedDataType =

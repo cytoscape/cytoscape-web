@@ -122,16 +122,18 @@ export const NetworkPropertyPanel = ({
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Chip
-                color={summary.isNdex ? 'primary' : 'success'}
-                size="small"
-                sx={{ mr: 1, opacity: 0.8 }}
-                label={
-                  <Typography sx={{ fontSize: 10 }} variant="caption">
-                    {summary.isNdex ? 'NDEx' : 'Local'}
-                  </Typography>
-                }
-              />
+              <Tooltip title={summary.isNdex ? 'A network stored in the NDEx database (ndexbio.org)' : 'A network stored on your local machine'}>
+                <Chip
+                  color={summary.isNdex ? 'primary' : 'success'}
+                  size="small"
+                  sx={{ mr: 1, opacity: 0.8 }}
+                  label={
+                    <Typography sx={{ fontSize: 10 }} variant="caption">
+                      {summary.isNdex ? 'NDEx' : 'Local'}
+                    </Typography>
+                  }
+                />
+              </Tooltip>
               <Typography variant={'body2'}>{summary.name}</Typography>
             </Box>
             {networkModifiedIcon}

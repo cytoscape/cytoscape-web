@@ -61,6 +61,11 @@ export const useAppStore = create(
     },
 
     addService: async (url: string) => {
+      // Do not register the same service app multiple times
+      if (get().serviceApps[url] !== undefined) {
+        console.warn(`Service app already registered: ${url}`)
+        return
+      }
       try {
         const serviceApp = await serviceFetcher(url)
         await putServiceAppToDb(serviceApp)
@@ -101,6 +106,63 @@ export const useAppStore = create(
       set((state) => {
         state.currentTask = undefined
       })
+    },
+
+    updateServiceParameter(url: string, displayName: string, value: string) {
+      set((state) => {
+        // Get the target service app
+        const serviceApp = state.serviceApps[url]
+        if (serviceApp === undefined) {
+          throw new Error(`Service not found for URL: ${url}`)
+        }
+
+        const parameter = serviceApp.parameters.find(
+          (p) => p.displayName === displayName,
+        )
+        if (parameter === undefined) {
+          throw new Error(`Parameter not found for name: ${displayName}`)
+        }
+
+        parameter.value = value
+      })
+
+      // Update the cached service app
+      putServiceAppToDb({ ...get().serviceApps[url] })
+        .then(() => {
+          console.info(`Target column updated for service app: ${url}`)
+        })
+        .catch((error) => {
+          console.error(`Failed to update service app`, error)
+        })
+    },
+
+    updateInputColumn(url: string, name: string, columnName: string) {
+      set((state) => {
+        // Get the target service app
+        const serviceApp = state.serviceApps[url]
+        if (serviceApp === undefined) {
+          throw new Error(`Service not found for URL: ${url}`)
+        }
+
+        const inputColumn =
+          serviceApp.serviceInputDefinition?.inputColumns.find(
+            (c) => c.name === name,
+          )
+        if (inputColumn === undefined) {
+          throw new Error(`Input column not found for name: ${name}`)
+        }
+
+        inputColumn.columnName = columnName
+      })
+
+      // Update the cached service app
+      putServiceAppToDb({ ...get().serviceApps[url] })
+        .then(() => {
+          console.info(`Target column updated for service app: ${url}`)
+        })
+        .catch((error) => {
+          console.error(`Failed to update service app`, error)
+        })
     },
   })),
 )

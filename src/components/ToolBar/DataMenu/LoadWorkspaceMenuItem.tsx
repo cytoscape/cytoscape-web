@@ -23,7 +23,7 @@ export const LoadWorkspaceMenuItem = (props: BaseMenuProps): ReactElement => {
       <Tooltip title={authenticated ? '' : 'Login to see your own workspace'}>
         <Box>
           <MenuItem disabled={!authenticated} onClick={handleOpenDialog}>
-            Open workspace from NDEx...
+            Open Workspace from NDEx...
           </MenuItem>
         </Box>
       </Tooltip>

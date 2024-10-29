@@ -1,6 +1,6 @@
 {
   "serviceInputDefinition": {
-    "type": "nodes",
+    "type": "node",
     "scope": "all",
     "inputColumns": [
       {

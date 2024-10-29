@@ -13,22 +13,48 @@ import {
   CytoContainerRequest,
   CytoContainerResult,
   CytoContainerResultStatus,
-  InputColumn,
-  InputNetwork,
-  TableDataObject,
   JsonNode,
-  Task,
-  ScopeType,
-  InputDataType,
+  CytoContainerRequestId,
 } from './model'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { NetworkView } from '../../models/ViewModel'
+import { useCallback } from 'react'
+import { useAppStore } from '../../store/AppStore'
+import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
+import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
+import {
+  InputNetwork,
+  ServiceInputDefinition,
+  Model,
+  Format,
+  InputColumn,
+} from '../../models/AppModel/ServiceInputDefinition'
+import { SelectedDataScope } from '../../models/AppModel/SelectedDataScope'
+import { SelectedDataType } from '../../models/AppModel/SelectedDataType'
 
 const POLL_INTERVAL = 500 // 0.5 seconds
 
+interface RunTaskProps {
+  serviceUrl: string
+  algorithmName: string
+  customParameters: { [key: string]: string }
+  network: Network
+  table: TableRecord
+  visualStyle?: VisualStyle
+  summary?: NdexNetworkSummary
+  visualStyleOptions?: VisualStyleOptions
+  viewModel?: NetworkView
+  serviceInputDefinition?: ServiceInputDefinition
+}
+
+interface SubmitAndProcessTaskProps {
+  serviceUrl: string
+  task: CytoContainerRequest
+}
+
 export const createNetworkDataObj = (
-  scope: ScopeType,
+  scope: SelectedDataScope,
   inputNetwork: InputNetwork,
   network: Network,
   visualStyle?: VisualStyle,
@@ -41,8 +67,8 @@ export const createNetworkDataObj = (
   const selectedEdges = new Set(viewModel?.selectedEdges)
 
   const filterElements = !(
-    scope === ScopeType.all ||
-    (scope === ScopeType.dynamic &&
+    scope === SelectedDataScope.all ||
+    (scope === SelectedDataScope.dynamic &&
       selectedNodes.size === 0 &&
       selectedEdges.size === 0)
   )
@@ -53,11 +79,11 @@ export const createNetworkDataObj = (
     edges: network.edges.filter((edge) => selectedEdges.has(edge.id)),
   })
 
-  if (inputNetwork.format === 'cx2') {
-    if (inputNetwork.model === 'graph') {
+  if (inputNetwork.format === Format.cx2) {
+    if (inputNetwork.model === Model.graph) {
       return exportGraph(filterElements ? getFilteredNetwork() : network)
     } else if (
-      inputNetwork.model === 'network' &&
+      inputNetwork.model === Model.network &&
       visualStyle &&
       summary &&
       table
@@ -91,26 +117,26 @@ export const createNetworkDataObj = (
 
 export const createTableDataObj = (
   table: Table,
-  scope: ScopeType,
+  scope: SelectedDataScope,
   selectedElementIds: IdType[],
   columns: InputColumn[],
-): TableDataObject => {
+) => {
   const translatedColumns = columns.map((column) => {
     return {
-      id: column.name,
+      id: column.columnName ?? column.defaultColumnName,
       type: column.dataType,
     }
   })
 
   const filterElements = !(
-    scope === ScopeType.all ||
-    (scope === ScopeType.dynamic && selectedElementIds.length === 0)
+    scope === SelectedDataScope.all ||
+    (scope === SelectedDataScope.dynamic && selectedElementIds.length === 0)
   )
 
   const filteredRows = filterTable(
     table,
     selectedElementIds,
-    columns.map((col) => col.name),
+    columns.map((col) => col.columnName ?? col.defaultColumnName),
     filterElements,
   )
   return {
@@ -169,61 +195,131 @@ const filterTable = (
   }
 }
 
-export const runTask = async (
-  serviceUrl: string,
-  algorithmName: string,
-  data: JsonNode,
-  customParameters?: { [key: string]: string },
-): Promise<CytoContainerResult> => {
-  // Prepare the task request with user-selected data
-  const taskRequest: CytoContainerRequest = {
-    algorithm: algorithmName,
-    data: data,
-    ...(customParameters && { customParameters }),
-  }
-
-  // Submit task and get the result
-  const result = await submitAndProcessTask(
-    serviceUrl,
-    algorithmName,
-    taskRequest,
-  )
-  return result
-}
-
-export const submitAndProcessTask = async (
-  serviceUrl: string,
-  algorithmName: string,
-  task: CytoContainerRequest,
-): Promise<CytoContainerResult> => {
-  // Submit the task
-  const taskResponse: Task = await submitTask(serviceUrl, task)
-  const taskId = taskResponse.id
-
-  // Poll the task status until it's done
-  while (true) {
-    const status: CytoContainerResultStatus = await getTaskStatus(
+export const useRunTask = (): ((
+  props: RunTaskProps,
+) => Promise<CytoContainerResult>) => {
+  const { submitAndProcessTask } = useSubmitAndProcessTask()
+  const runTask = useCallback(
+    async ({
       serviceUrl,
       algorithmName,
-      taskId,
-    )
+      customParameters,
+      network,
+      visualStyle,
+      summary,
+      table,
+      visualStyleOptions,
+      viewModel,
+      serviceInputDefinition,
+    }: RunTaskProps): Promise<CytoContainerResult> => {
+      // Prepare the task request with user-selected data
+      let data: JsonNode = {}
+      if (serviceInputDefinition !== undefined) {
+        const { type, scope, inputNetwork, inputColumns } =
+          serviceInputDefinition
+        if (inputNetwork !== null) {
+          data = createNetworkDataObj(
+            scope,
+            inputNetwork,
+            network,
+            visualStyle,
+            summary,
+            table,
+            visualStyleOptions,
+            viewModel,
+          )
+        } else if (inputColumns !== null) {
+          data = createTableDataObj(
+            type === SelectedDataType.Node ? table.nodeTable : table.edgeTable,
+            scope,
+            (type === SelectedDataType.Node
+              ? viewModel?.selectedNodes
+              : viewModel?.selectedEdges) ?? [],
+            inputColumns,
+          )
+        }
+      }
 
-    if (status.progress === 100) {
-      break
-    }
+      const taskRequest: CytoContainerRequest = {
+        algorithm: algorithmName,
+        data: data,
+        parameters: customParameters,
+      }
 
-    // Wait for the polling interval
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL))
-  }
-
-  // Fetch the final task result
-  const taskResult: CytoContainerResult = await getTaskResult(
-    serviceUrl,
-    algorithmName,
-    taskId,
+      // Submit task and get the result
+      const result = await submitAndProcessTask({
+        serviceUrl: serviceUrl,
+        task: taskRequest,
+      })
+      return result
+    },
+    [],
   )
-  // Delete the task after fetching the result
-  await deleteTask(serviceUrl, algorithmName, taskId)
+  return runTask
+}
 
-  return taskResult
+export const useSubmitAndProcessTask = (): {
+  submitAndProcessTask: (
+    props: SubmitAndProcessTaskProps,
+  ) => Promise<CytoContainerResult>
+} => {
+  const setCurrentTask = useAppStore((state) => state.setCurrentTask)
+  const submitAndProcessTask = useCallback(
+    async ({
+      serviceUrl,
+      task,
+    }: SubmitAndProcessTaskProps): Promise<CytoContainerResult> => {
+      // Submit the task
+      const taskResponse: CytoContainerRequestId = await submitTask(
+        serviceUrl,
+        task,
+      )
+      const taskId = taskResponse.id
+      setCurrentTask({
+        id: taskId,
+        status: ServiceStatus.Submitted,
+        progress: 0,
+        message: 'Submitted',
+      } as ServiceAppTask)
+      // Poll the task status until it's done
+      while (true) {
+        const status: CytoContainerResultStatus = await getTaskStatus(
+          serviceUrl,
+          taskId,
+        )
+
+        if (status.progress === 100) {
+          break
+        }
+        setCurrentTask({
+          id: taskId,
+          status: ServiceStatus.Processing,
+          progress: status.progress,
+          message: status.message,
+        } as ServiceAppTask)
+        // Wait for the polling interval
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL))
+      }
+
+      // Fetch the final task result
+      const taskResult: CytoContainerResult = await getTaskResult(
+        serviceUrl,
+        taskId,
+      )
+
+      setCurrentTask({
+        id: taskId,
+        status: taskResult.status,
+        progress: taskResult.progress,
+        message: taskResult.message,
+      } as ServiceAppTask)
+
+      // Delete the task after fetching the result
+      await deleteTask(serviceUrl, taskId)
+
+      return taskResult
+    },
+    [],
+  )
+  return { submitAndProcessTask }
 }

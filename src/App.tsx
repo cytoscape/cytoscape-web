@@ -93,7 +93,7 @@ export const App = (): React.ReactElement => {
 
   const removeAllCookies = () => {
     const allCookies = Cookies.get()
-    Object.keys(allCookies).forEach(cookieName => {
+    Object.keys(allCookies).forEach((cookieName) => {
       Cookies.remove(cookieName, { path: '/' })
     })
   }
@@ -112,13 +112,28 @@ export const App = (): React.ReactElement => {
           flipButtons
           onDecline={removeAllCookies}
           cookieName="cytoscapeWebCookieConsent"
-          style={{ background: "#4F4F4F" }}
-          buttonStyle={{ backgroundColor: "#0073B0", color: "#ffffff", fontSize: "13px" }}
-          declineButtonStyle={{ color: "#ffffff", background: "#6c757d", fontSize: "13px" }}
+          style={{ background: '#4F4F4F' }}
+          buttonStyle={{
+            backgroundColor: '#0073B0',
+            color: '#ffffff',
+            fontSize: '13px',
+          }}
+          declineButtonStyle={{
+            color: '#ffffff',
+            background: '#6c757d',
+            fontSize: '13px',
+          }}
           expires={150}
         >
-          This site uses cookies to support Cytoscape Web’s network visualization tools and improve your experience. By accepting, you consent to our data practices.{" "}
-          <a href="https://github.com/cytoscape/cytoscape-web/blob/development/privacy-policy.md" style={{ color: "#e0e0e0" }}>Learn more</a>
+          This site uses cookies to support Cytoscape Web’s network
+          visualization tools and improve your experience. By accepting, you
+          consent to our data practices.{' '}
+          <a
+            href="https://github.com/cytoscape/cytoscape-web/blob/development/privacy-policy.md"
+            style={{ color: '#e0e0e0' }}
+          >
+            Learn more
+          </a>
         </CookieConsent>
       </ErrorBoundary>
     </ThemeProvider>

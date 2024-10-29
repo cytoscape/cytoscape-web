@@ -9,9 +9,9 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material'
-import { ReactElement, useContext, useState } from 'react'
+import { ReactElement, useContext, useEffect, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
-
+import { PermissionType } from '../../../models/NetworkModel/AccessPermission'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 
@@ -38,7 +38,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
   const [showHcxValidationDialog, setShowHcxValidationDialog] =
     useState<boolean>(false)
-
+  const [editPermission, setEditPermission] = useState<boolean>(false)
+  const [tooltipText, setTooltipText] = useState<string>('')
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -58,11 +59,16 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     (state) => state.visualStyles[currentNetworkId],
   )
   const visualStyleOptions = useUiStateStore(
-    (state) => state.ui.visualStyleOptions[currentNetworkId]
+    (state) => state.ui.visualStyleOptions[currentNetworkId],
   )
   const network = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   ) as Network
+
+  const isModified =
+    useWorkspaceStore(
+      (state) => state.workspace.networkModified[currentNetworkId],
+    ) ?? false
 
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
@@ -83,6 +89,39 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
+
+  useEffect(() => {
+    const fetchPermission = async () => {
+      if (authenticated && currentNetworkId) {
+        const ndexClient = new NDEx(ndexBaseUrl)
+        try {
+          const accessToken = await getToken()
+          ndexClient.setAuthToken(accessToken)
+          const permission = (
+            await ndexClient.getNetworkPermissionsByUUIDs([currentNetworkId])
+          )?.[currentNetworkId]
+          setEditPermission(
+            permission === PermissionType.ADMIN ||
+              permission === PermissionType.WRITE,
+          )
+        } catch (e) {
+          console.error('Error fetching permissions:', e)
+          setEditPermission(false)
+        }
+      }
+    }
+    fetchPermission()
+  }, [authenticated, currentNetworkId, ndexBaseUrl, getToken])
+
+  useEffect(() => {
+    if (!summary?.isNdex) {
+      setTooltipText('This network is not on NDEx')
+    } else if (!editPermission) {
+      setTooltipText('Sorry, you do not have edit permission to this network')
+    } else if (!isModified) {
+      setTooltipText('This network has not been modified since the last save')
+    }
+  }, [isModified, editPermission, summary?.isNdex])
 
   const overwriteNDExNetwork = async (): Promise<void> => {
     if (viewModel === undefined) {
@@ -143,15 +182,17 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       setCurrentNetworkId(uuid as IdType)
 
       addMessage({
-        message: `Saved a copy of the current network to NDEx with new uuid ${uuid as string
-          }`,
+        message: `Saved a copy of the current network to NDEx with new uuid ${
+          uuid as string
+        }`,
         duration: 3000,
       })
     } catch (e) {
       console.log(e)
       addMessage({
-        message: `Error: Could not save a copy of the current network to NDEx. ${e.message as string
-          }`,
+        message: `Error: Could not save a copy of the current network to NDEx. ${
+          e.message as string
+        }`,
         duration: 3000,
       })
     }
@@ -193,8 +234,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         console.log(e)
 
         addMessage({
-          message: `Error: Could not overwrite the current network to NDEx. ${e.message as string
-            }`,
+          message: `Error: Could not overwrite the current network to NDEx. ${
+            e.message as string
+          }`,
           duration: 3000,
         })
       }
@@ -211,10 +253,10 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     >
       <MenuItem
         sx={{ flexBasis: '100%', flexGrow: 3 }}
-        disabled={!authenticated || !summary?.isNdex}
+        disabled={!isModified || !editPermission || !summary?.isNdex}
         onClick={handleClick}
       >
-        Save the current network to NDEx (overwrite)
+        Save Current Network to NDEx (Update)
       </MenuItem>
     </Box>
   )
@@ -244,7 +286,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     </Dialog>
   )
 
-  if (authenticated) {
+  if (isModified && editPermission && summary?.isNdex) {
     return (
       <>
         {menuItem}
@@ -259,7 +301,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     )
   } else {
     return (
-      <Tooltip title="Login to save network to NDEx">
+      <Tooltip title={tooltipText}>
         <Box>{menuItem}</Box>
       </Tooltip>
     )

@@ -14,12 +14,7 @@ import {
 } from '@mui/material'
 import { ReactElement, useRef, useState } from 'react'
 import { BaseMenuProps } from '../../BaseMenuProps'
-//@ts-expect-error
-import { saveAs } from 'file-saver'
-
-import { useRendererStore } from '../../../../store/RendererStore'
-import { Renderer } from '../../../../models/RendererModel/Renderer'
-import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
+import { useNetworkSummaryStore } from '../../../../store/NetworkSummaryStore'
 import { PdfExportForm } from './PdfExportForm'
 import { PngExportForm } from './PngExportForm'
 import { SvgExportForm } from './SvgExportForm'
@@ -37,8 +32,17 @@ export interface ExportImageFormatProps {
 
 type FileType = 'png' | 'pdf' | 'svg'
 export const ExportImage = (props: ExportImageProps): ReactElement => {
+  const currentNetworkId = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+  const currentNetworkName = useNetworkSummaryStore(
+    (state) => state.summaries[currentNetworkId]?.name,
+  )
   const [fileType, setFileType] = useState<FileType>('png')
-  const [fileName, setFileName] = useState<string>('network')
+  const [fileName, setFileName] = useState<string>(
+    currentNetworkName ?? 'network',
+  )
+
   const handleChange = (event: any) => {
     setFileType(event.target.value as 'png' | 'pdf' | 'svg')
   }
@@ -98,6 +102,7 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
             InputLabelProps={{
               shrink: true,
             }}
+            sx={{ width: 300 }}
           ></TextField>
         </Box>
         {currentExportForm}

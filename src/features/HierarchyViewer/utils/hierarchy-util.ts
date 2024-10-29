@@ -1,6 +1,9 @@
 import { HierarchyNode } from 'd3-hierarchy'
 import { Visibility } from '../../../models/CxModel/NetworkSummary/Visibility'
-import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
+import {
+  NdexNetworkProperty,
+  NdexNetworkSummary,
+} from '../../../models/NetworkSummaryModel'
 import { Table, ValueType } from '../../../models/TableModel'
 import { D3TreeNode } from '../components/CustomLayout/D3TreeNode'
 import { HcxMetaData } from '../model/HcxMetaData'
@@ -202,4 +205,39 @@ export const applyCpLayout = (
   })
 
   return positionMap
+}
+
+/**
+ * Check if the current network is a hierarchy or not
+ * based on the network summary
+ *
+ * @param summary - network summary
+ *
+ * @returns HCX metadata if the network is a hierarchy, otherwise undefined
+ *
+ */
+export const getHcxMetadata = (
+  summary: NdexNetworkSummary,
+): HcxMetaData | undefined => {
+  if (summary === undefined) {
+    return undefined
+  }
+  const networkProps: NdexNetworkProperty[] = summary.properties
+  if (networkProps === undefined || networkProps.length === 0) {
+    return undefined
+  }
+
+  const networkPropObj: Record<string, ValueType> = networkProps.reduce<{
+    [key: string]: ValueType
+  }>((acc, prop) => {
+    acc[prop.predicateString] = prop.value
+    return acc
+  }, {})
+  const metadata: HcxMetaData | undefined = getHcxProps(networkPropObj)
+
+  if (metadata !== undefined) {
+    return metadata
+  } else {
+    return undefined
+  }
 }
