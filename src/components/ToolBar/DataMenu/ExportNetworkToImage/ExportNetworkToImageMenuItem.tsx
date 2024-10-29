@@ -102,7 +102,7 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
             InputLabelProps={{
               shrink: true,
             }}
-            sx={{ width: 200 }}
+            sx={{ width: 300 }}
           ></TextField>
         </Box>
         {currentExportForm}
