@@ -341,18 +341,23 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
                   shrink: true,
                 }}
               />
-              <Select
-                size="small"
-                label="DPI"
-                value={dpi}
-                onChange={handleDpiChange}
-              >
-                <MenuItem value={72}>72</MenuItem>
-                <MenuItem value={100}>100</MenuItem>
-                <MenuItem value={150}>150</MenuItem>
-                <MenuItem value={300}>300</MenuItem>
-                <MenuItem value={600}>600</MenuItem>
-              </Select>
+              <FormControl sx={{ ml: 1 }}>
+                <InputLabel id="dpi-label">DPI</InputLabel>
+                <Select
+                  defaultValue={72}
+                  labelId="dpi-label"
+                  label="DPI"
+                  sx={{ width: 100 }}
+                  size="small"
+                  onChange={handleDpiChange}
+                >
+                  <MenuItem value={72}>72</MenuItem>
+                  <MenuItem value={100}>100</MenuItem>
+                  <MenuItem value={150}>150</MenuItem>
+                  <MenuItem value={300}>300</MenuItem>
+                  <MenuItem value={600}>600</MenuItem>
+                </Select>
+              </FormControl>
             </Box>
           )}
         </Box>
