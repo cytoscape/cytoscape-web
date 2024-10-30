@@ -88,6 +88,7 @@ export const InputColumns = (props: AppMenuItemProps) => {
     const columnsToDisplay = isNodeType ? nodeColumns : edgeColumns
 
     return (
+      <Tooltip title={inputColumn.description ?? ''}>
       <Box
         sx={{
           display: 'flex',
@@ -118,6 +119,7 @@ export const InputColumns = (props: AppMenuItemProps) => {
           })}
         </Select>
       </Box>
+      </Tooltip>
     )
   })
 }
