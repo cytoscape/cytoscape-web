@@ -7,7 +7,6 @@ import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
 
 interface EmailVerificationModalProps {
-  open: boolean
   onVerify: () => void
   onCancel: () => void
   userName: string
@@ -15,7 +14,6 @@ interface EmailVerificationModalProps {
 }
 
 export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
-  open,
   onVerify,
   onCancel,
   userName,
@@ -23,7 +21,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 }) => {
   return (
     <Dialog
-      open={open}
+      open={true}
       aria-labelledby="email-verification-title"
       aria-describedby="email-verification-description"
     >
