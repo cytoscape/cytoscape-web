@@ -110,6 +110,8 @@ export const SearchBox = (): JSX.Element => {
       edgesToBeSelected = runSearch(edgeIndex, query, operator)
     }
 
+    console.log('Edges selected:', edgesToBeSelected);
+
     exclusiveSelect(currentNetworkId, nodesToBeSelected, edgesToBeSelected)
     setSearchState(SearchState.DONE)
   }

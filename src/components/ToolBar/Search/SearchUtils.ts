@@ -22,12 +22,12 @@ export const createFuseIndex = (
 
   const { rows, columns } = table
 
-  // Pick only string columns
+  // Pick string columns and list_string columns
   const keySet = new Set<string>()
   // keySet.add('id')
   columns.forEach((column: Column) => {
     const { name, type } = column
-    if (type === ValueTypeName.String) {
+    if (type === ValueTypeName.String || type === ValueTypeName.ListString) {
       keySet.add(name)
     }
   })
