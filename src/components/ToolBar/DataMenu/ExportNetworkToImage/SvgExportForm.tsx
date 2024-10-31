@@ -67,7 +67,7 @@ export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
           disabled={loading}
           onClick={async () => {
             setLoading(true)
-            const result = await svgFunction?.()
+            const result = await svgFunction?.(fullBg)
             const blob = new Blob([result], { type: 'image/svg+xml' })
             saveAs(blob, `${props.fileName}.svg`)
             setLoading(false)

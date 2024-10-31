@@ -609,12 +609,12 @@ const CyjsRenderer = ({
         }
       }
 
-      const exportSvgFunction = (): Blob => {
+      const exportSvgFunction = (fullBg: boolean): Blob => {
         if (cy !== null) {
           // @ts-expect-error-next-line
           const result = cy.svg({
             scale: 1,
-            full: true,
+            full: fullBg,
             background: 'white',
           })
 
