@@ -160,6 +160,9 @@ const WorkSpaceEditor = (): JSX.Element => {
       if (prev === undefined || next === undefined) {
         return
       }
+
+      // primitive compare fn that does not take into account the selection/hover state
+      // this leads to the network having a 'modified' state even though nothing was modified
       const viewModelChanged =
         prev !== undefined &&
         next !== undefined &&
@@ -169,13 +172,11 @@ const WorkSpaceEditor = (): JSX.Element => {
           _.omit(next, ['selectedNodes', 'selectedEdges']),
         )
 
-      // primitive compare fn that does not take into account the selection/hover state
-      // this leads to the network having a 'modified' state even though nothing was modified
       const { networkModified } = workspace
+
       const currentNetworkIsNotModified =
-        (networkModified[currentNetworkId] === undefined &&
-          !(networkModified[currentNetworkId] ?? false)) ??
-        false
+        networkModified[currentNetworkId] === undefined ||
+        networkModified[currentNetworkId] === false
 
       if (viewModelChanged && currentNetworkIsNotModified) {
         setNetworkModified(currentNetworkId, true)
