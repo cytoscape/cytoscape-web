@@ -74,10 +74,10 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
     if (widthFunction && heightFunction) {
       setCustomWidth(Math.round(widthFunction() * zoom))
       setCustomHeight(Math.round(heightFunction() * zoom))
-      setWidthInches(parseFloat(Math.round(widthFunction() / dpi).toFixed(2)))
-      setHeightInches(parseFloat(Math.round(heightFunction() / dpi).toFixed(2)))
+      setWidthInches(parseFloat((widthFunction() / dpi).toFixed(2)))
+      setHeightInches(parseFloat((heightFunction() / dpi).toFixed(2)))
     }
-  }, [widthFunction, heightFunction, zoom, dpi])
+  }, [widthFunction, heightFunction])
 
   const handleUnitChange = (e: any) => {
     setUnit(e.target.value)
