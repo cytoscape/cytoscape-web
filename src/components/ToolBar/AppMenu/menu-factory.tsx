@@ -467,11 +467,11 @@ export const AppMenuItem: React.FC<{
     </>
   )
 }
-
 const path2menu = (
   app: ServiceApp,
   path: MenuPathElement[],
   commandFn: (url: string) => Promise<void>,
+  existingMenuItems: Record<string, NestedMenuItem> = {},
 ): NestedMenuItem => {
   const { url } = app
   if (path.length === 0) {
@@ -479,11 +479,6 @@ const path2menu = (
   }
 
   const command = async (): Promise<void> => {
-    // Call the function to open the modal parameter dialog here...
-    // open()
-    // Run the task from the Dialog...
-
-    // After the dialog is closed, close the parent menu
     await commandFn(url)
     console.log('## Task finished!')
   }
@@ -491,19 +486,18 @@ const path2menu = (
   // Case 1: Single menu item
   if (path.length === 1) {
     const item: MenuPathElement = path[0]
-    const baseMenu: NestedMenuItem = {
+    const baseMenu: NestedMenuItem = existingMenuItems[item.name] || {
       label: item.name,
       items: [],
-      template: (
-        <AppMenuItem handleConfirm={command} handleClose={() => {}} app={app} />
-      ),
     }
+    baseMenu.template = (
+      <AppMenuItem handleConfirm={command} handleClose={() => {}} app={app} />
+    )
     return baseMenu
   }
 
   // Case 2: Depth > 1
-
-  const baseMenu: NestedMenuItem = {
+  const baseMenu: NestedMenuItem = existingMenuItems[path[0].name] || {
     label: path[0].name,
     items: [],
   }
@@ -511,7 +505,7 @@ const path2menu = (
   let currentMenuItem: NestedMenuItem = baseMenu
   for (let i = 1; i < path.length; i++) {
     const item: MenuPathElement = path[i]
-    const newMenuItem: NestedMenuItem = {
+    const newMenuItem: NestedMenuItem = existingMenuItems[item.name] || {
       label: item.name,
       items: [],
     }
@@ -523,7 +517,7 @@ const path2menu = (
     if (currentMenuItem.items === undefined) {
       currentMenuItem.items = []
     }
-    currentMenuItem.items = [newMenuItem]
+    currentMenuItem.items.push(newMenuItem as any)
     currentMenuItem = newMenuItem
   }
   return baseMenu
@@ -533,7 +527,6 @@ export const createMenuItems = (
   serviceApps: Record<string, ServiceApp>,
   commandFn: (url: string) => Promise<void>,
 ): NestedMenuItem[] => {
-  let baseMenu: NestedMenuItem = { label: 'No menu items', items: [] }
   const appIds: string[] = Object.keys(serviceApps)
 
   // Sort the appIds based on gravity of the top menu item
@@ -544,12 +537,18 @@ export const createMenuItems = (
   })
 
   const appMenuItems: NestedMenuItem[] = []
+  const existingMenuItems: Record<string, NestedMenuItem> = {}
+
   sortedAppIds.forEach((appId: string) => {
     const app: ServiceApp = serviceApps[appId]
     const { cyWebMenuItem } = app
     const { path } = cyWebMenuItem
-    baseMenu = path2menu(app, path, commandFn)
-    appMenuItems.push(baseMenu)
+    const baseMenu = path2menu(app, path, commandFn, existingMenuItems)
+    existingMenuItems[baseMenu.label as string] = baseMenu
+  })
+
+  Object.values(existingMenuItems).forEach((menuItem) => {
+    appMenuItems.push(menuItem)
   })
 
   return appMenuItems
