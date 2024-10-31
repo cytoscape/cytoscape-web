@@ -1,10 +1,12 @@
 import React from 'react'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
-import DialogTitle from '@mui/material/DialogTitle'
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+} from '@mui/material'
 
 interface EmailVerificationModalProps {
   onVerify: () => void
@@ -52,8 +54,12 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onVerify}>Already Verified</Button>
-        <Button onClick={onCancel}>Log Out</Button>
+        <Button onClick={onVerify} color="primary">
+          Already Verified
+        </Button>
+        <Button onClick={onCancel} color="error">
+          Log Out
+        </Button>
       </DialogActions>
     </Dialog>
   )
