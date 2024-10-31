@@ -22,12 +22,12 @@ export const createFuseIndex = (
 
   const { rows, columns } = table
 
-  // Pick only string columns
+  // Pick string columns and list_string columns
   const keySet = new Set<string>()
   // keySet.add('id')
   columns.forEach((column: Column) => {
     const { name, type } = column
-    if (type === ValueTypeName.String) {
+    if (type === ValueTypeName.String || type === ValueTypeName.ListString) {
       keySet.add(name)
     }
   })
@@ -78,42 +78,48 @@ export const runSearch = (
   operator: Operator,
   exact?: boolean,
 ): string[] => {
-  let modifiedQuery: any = query
-  let toBeSelected: string[] = []
+  let toBeSelected: string[] = [];
 
-  if (operator === 'AND') {
-    // AND search
-    // TODO: For and operations, space-separated words
-    // return correct result, but is this always correct?
-    const tokens: string[] = query.split(/\s+/g)
-    const results: string[][] = []
-    tokens.forEach((token: string) => {
-      if (token !== '') {
-        // First, run search for each token
-        const res = index.search(token)
-        const ids: string[] = []
-        res.forEach((r: any) => {
-          const objectId: string = r.item.id as string
-          ids.push(objectId)
-        })
-        // And add up the results
-        results.push(ids)
-      }
-    })
+  const exactOptions = {
+    threshold: 0,          // Only exact matches
+    distance: 0,           // Match only if the entire string matches exactly
+    useExtendedSearch: true, // Enables strict search modifiers
+    limit: 1000,           // Set a high limit for maximum results
+  };
 
-    // Find the intersection of all results (means AND)
-    toBeSelected = _.intersection(...results)
-  } else {
-    // OR search
-    modifiedQuery = query.replace(/\s+/g, '|')
-    // Switch between AND or OR search operators
-    const result = index.search(modifiedQuery)
-
-    result.forEach((r: any) => {
-      const objectId: string = r.item.id as string
-      toBeSelected.push(objectId)
-    })
+  if (exact) {
+    query = `="${query}"`;
   }
 
-  return toBeSelected
-}
+  if (operator === 'AND') {
+    // Split tokens unless exact is true
+    const tokens: string[] = exact ? [query] : query.split(/\s+/g);
+    const results: string[][] = [];
+
+    tokens.forEach((token: string) => {
+      if (token !== '') {
+        // Run search with exact options if exact is enabled
+        const res = index.search(token, exact ? exactOptions : undefined);
+        const ids: string[] = [];
+        res.forEach((r: any) => {
+          const objectId: string = r.item.id as string;
+          ids.push(objectId);
+        });
+        results.push(ids);
+      }
+    });
+
+    // Find the intersection of all results (AND search)
+    toBeSelected = _.intersection(...results);
+  } else {
+    // OR search
+    const result = index.search(query, exact ? exactOptions : undefined);
+
+    result.forEach((r: any) => {
+      const objectId: string = r.item.id as string;
+      toBeSelected.push(objectId);
+    });
+  }
+
+  return toBeSelected;
+};
