@@ -110,18 +110,24 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         }
       }
     }
+    if (!authenticated) {
+      setEditPermission(false)
+      return
+    }
     fetchPermission()
   }, [authenticated, currentNetworkId, ndexBaseUrl, getToken])
 
   useEffect(() => {
-    if (!summary?.isNdex) {
+    if (!authenticated) {
+      setTooltipText('Login to save network to NDEx')
+    } else if (!summary?.isNdex) {
       setTooltipText('This network is not on NDEx')
     } else if (!editPermission) {
       setTooltipText('Sorry, you do not have edit permission to this network')
     } else if (!isModified) {
       setTooltipText('This network has not been modified since the last save')
     }
-  }, [isModified, editPermission, summary?.isNdex])
+  }, [isModified, authenticated, editPermission, summary?.isNdex])
 
   const overwriteNDExNetwork = async (): Promise<void> => {
     if (viewModel === undefined) {
