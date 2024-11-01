@@ -52,7 +52,6 @@ document.body.appendChild(loadingMessage)
 const keycloak = new Keycloak(keycloakConfig)
 
 const handleVerify = async () => {
-  await keycloak.loadUserProfile()
   window.location.reload()
 }
 
@@ -60,12 +59,26 @@ const handleCancel = () => {
   keycloak.logout({ redirectUri: window.location.origin + urlBaseName })
 }
 
+// Function to parse the error message to get the user information
+const parseMessage = (
+  message: string,
+): { userName: string; userEmail: string } | null => {
+  const pattern = /NDEx user account ([\w.]+) <([\w.]+@[\w.]+)>/
+  const match = message.match(pattern)
+
+  if (match) {
+    const userName = match[1]
+    const userEmail = match[2]
+    return { userName, userEmail }
+  }
+  return null
+}
+
 // Function to check if the user's email is verified
 const checkUserVerification = async () => {
   try {
     const ndexClient = new NDEx(appConfig.ndexBaseUrl)
-    ndexClient.setAuthToken(keycloak.token)
-    await ndexClient.getSignedInUser()
+    const userObj = await ndexClient.signInFromIdToken(keycloak.token)
     return {
       isVerified: true,
     }
@@ -75,11 +88,11 @@ const checkUserVerification = async () => {
       e.status === 401 &&
       e.response?.data?.errorCode === 'NDEx_User_Account_Not_Verified'
     ) {
-      const userInfo: UserInfo = (await keycloak.loadUserInfo()) as UserInfo
+      const userInfo = parseMessage(e.response?.data?.message)
       return {
         isVerified: false,
-        userName: userInfo.preferred_username,
-        userEmail: userInfo.email,
+        userName: userInfo?.userName,
+        userEmail: userInfo?.userEmail,
       }
     }
     return {
@@ -110,24 +123,36 @@ keycloak
     removeMessage(LOADING_MESSAGE_ID)
 
     if (rootElement !== null) {
-      ReactDOM.createRoot(rootElement).render(
-        <AppConfigContext.Provider value={appConfig}>
-          <React.StrictMode>
-            <KeycloakContext.Provider value={keycloak}>
-              <ErrorBoundary>
-                <App />
-                <EmailVerificationModal
-                  open={authenticated && emailUnverified}
-                  onVerify={handleVerify}
-                  onCancel={handleCancel}
-                  userName={userName}
-                  userEmail={userEmail}
-                />
-              </ErrorBoundary>
-            </KeycloakContext.Provider>
-          </React.StrictMode>
-        </AppConfigContext.Provider>,
-      )
+      if (authenticated && emailUnverified) {
+        ReactDOM.createRoot(rootElement).render(
+          <AppConfigContext.Provider value={appConfig}>
+            <React.StrictMode>
+              <KeycloakContext.Provider value={keycloak}>
+                <ErrorBoundary>
+                  <EmailVerificationModal
+                    userName={userName}
+                    userEmail={userEmail}
+                    onVerify={handleVerify}
+                    onCancel={handleCancel}
+                  />
+                </ErrorBoundary>
+              </KeycloakContext.Provider>
+            </React.StrictMode>
+          </AppConfigContext.Provider>,
+        )
+      } else {
+        ReactDOM.createRoot(rootElement).render(
+          <AppConfigContext.Provider value={appConfig}>
+            <React.StrictMode>
+              <KeycloakContext.Provider value={keycloak}>
+                <ErrorBoundary>
+                  <App />
+                </ErrorBoundary>
+              </KeycloakContext.Provider>
+            </React.StrictMode>
+          </AppConfigContext.Provider>,
+        )
+      }
     } else {
       throw new Error('Cannot initialize app: Root element not found')
     }
