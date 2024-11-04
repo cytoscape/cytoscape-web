@@ -139,6 +139,11 @@ export const PngExportForm = (props: ExportImageFormatProps): ReactElement => {
       ).toFixed(2),
     )
 
+    const newWidth = Math.round(newWidthInches * newDpi)
+    const newHeight = Math.round(newHeightInches * newDpi)
+
+    setCustomWidth(newWidth)
+    setCustomHeight(newHeight)
     setWidthInches(newWidthInches)
     setHeightInches(newHeightInches)
     setDpi(newDpi)
