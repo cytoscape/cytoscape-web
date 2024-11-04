@@ -11,7 +11,7 @@ export interface LLMTemplate {
 export const templates: LLMTemplate[] = [
   {
     name: 'Default one-shot',
-    description: 'Default one-shot template for gene set analysis',
+    description: 'Default one-shot prompt for gene set analysis',
     fn: defaultTemplate.templateFn,
     rawText: defaultTemplate.rawText,
   },
