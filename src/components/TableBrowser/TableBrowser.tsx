@@ -974,7 +974,9 @@ export default function TableBrowser(props: {
           ref={nodeDataEditorRef}
           onCellClicked={onCellClicked}
           onCellContextMenu={onCellContextMenu}
+          rowSelect={'multi'}
           rowMarkers={'checkbox'}
+          rowMarkerWidth={1}
           rowMarkerStartIndex={minNodeId}
           showSearch={showSearch}
           keybindings={{ search: true }}
@@ -1003,7 +1005,9 @@ export default function TableBrowser(props: {
           ref={edgeDataEditorRef}
           onCellClicked={onCellClicked}
           onCellContextMenu={onCellContextMenu}
+          rowSelect={'multi'}
           rowMarkers={'checkbox'}
+          rowMarkerWidth={1}
           rowMarkerStartIndex={minEdgeId}
           showSearch={showSearch}
           keybindings={{ search: true }}
