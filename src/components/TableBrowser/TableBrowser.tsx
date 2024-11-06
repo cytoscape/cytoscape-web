@@ -171,6 +171,14 @@ export default function TableBrowser(props: {
     columns: CompactSelection.empty(),
     rows: CompactSelection.empty(),
   })
+
+  // Reset selection after switching table tabs
+  useEffect(() => {
+    setSelection({
+      columns: CompactSelection.empty(),
+      rows: CompactSelection.empty(),
+    })
+  }, [ui.tableUi.activeTabIndex])
   const [selectedCellColumn, setSelectedCellColumn] = React.useState<
     number | null
   >(null)
@@ -472,12 +480,36 @@ export default function TableBrowser(props: {
   )
 
   const onCellClicked = React.useCallback(
-    (cell: Item): void => {
-      setSelection({
-        ...selection,
-        rows: CompactSelection.fromSingleSelection(cell[1]),
-      })
-      setSelectedCellColumn(cell[0])
+    (cell: Item, event: CellClickedEventArgs): void => {
+      const rowIndex = cell[1]
+      const columnIndex = cell[0]
+
+      if (event.shiftKey) {
+        // Handle shift-click for range selection
+        const start = Math.min(selection.rows.first() ?? 0, rowIndex)
+        const end = Math.max(selection.rows.last() ?? 0, rowIndex)
+        setSelection({
+          ...selection,
+          rows: CompactSelection.fromSingleSelection(start).add([start, end]),
+        })
+      } else if (event.ctrlKey || event.metaKey) {
+        // Handle ctrl/cmd-click for toggle selection
+        const newRows = selection.rows.hasIndex(rowIndex)
+          ? selection.rows.remove(rowIndex)
+          : selection.rows.add(rowIndex)
+        setSelection({
+          ...selection,
+          rows: newRows,
+        })
+      } else {
+        // Handle single row selection
+        setSelection({
+          ...selection,
+          rows: CompactSelection.fromSingleSelection(rowIndex),
+        })
+      }
+
+      setSelectedCellColumn(columnIndex)
     },
     [selection],
   )
@@ -778,11 +810,19 @@ export default function TableBrowser(props: {
             </Button>
             <Button
               onClick={() => {
-                const rowIndex = selectedCell[1]
-                const rowData = rows?.[rowIndex]
-                if (rowData?.id !== undefined) {
-                  exclusiveSelect(props.currentNetworkId, [rowData.id], [])
+                const rowsToSelect = selection.rows.toArray()
+                const rowIds = rowsToSelect
+                  .map((r) => rows?.[r].id)
+                  .filter((id) => id !== undefined)
+                if (currentTable === nodeTable) {
+                  exclusiveSelect(props.currentNetworkId, rowIds, [])
+                } else {
+                  exclusiveSelect(props.currentNetworkId, [], rowIds)
                 }
+                setSelection({
+                  ...selection,
+                  rows: CompactSelection.empty(),
+                })
               }}
             >
               {`Select ${currentTable === nodeTable ? 'nodes' : 'edges'}`}{' '}
@@ -973,7 +1013,6 @@ export default function TableBrowser(props: {
         <DataEditor
           ref={nodeDataEditorRef}
           onCellClicked={onCellClicked}
-          onCellContextMenu={onCellContextMenu}
           rowSelect={'multi'}
           rowMarkers={'checkbox'}
           rowMarkerWidth={1}
@@ -996,7 +1035,6 @@ export default function TableBrowser(props: {
           columns={columns}
           rows={maxNodeId - minNodeId + 1}
           gridSelection={selection}
-          onGridSelectionChange={setSelection}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
@@ -1004,7 +1042,6 @@ export default function TableBrowser(props: {
         <DataEditor
           ref={edgeDataEditorRef}
           onCellClicked={onCellClicked}
-          onCellContextMenu={onCellContextMenu}
           rowSelect={'multi'}
           rowMarkers={'checkbox'}
           rowMarkerWidth={1}
@@ -1027,7 +1064,6 @@ export default function TableBrowser(props: {
           columns={columns}
           rows={maxEdgeId - minEdgeId + 1}
           gridSelection={selection}
-          onGridSelectionChange={setSelection}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={2}>
