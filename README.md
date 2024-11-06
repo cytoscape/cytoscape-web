@@ -8,17 +8,10 @@ Install `node` and `npm`. The easiest way is to download both from [offical webs
 
 After installation, run `node -v` and `npm -v` to check.
 
-The next step is to install yarn. Run `npm install --global yarn`
-
-- yarn 1.22.11 or later version is required.
-
-Check that Yarn is installed by running:
-
-`yarn --version`
 
 ### Build instructions
 
-Run a command using `yarn <command>`.  Run `yarn install` before using other commands.
+Run a command using `npm <command>`.  Run `npm install` before using other commands.
 
 - `dev`: run a dev server that watches code changes, open `localhost:5500` in your web browser. By default this app points to [NDEx dev server] (https://dev.ndexbio.org), please create an account on the NDEx dev server with a email that links to your Google account before trying to setup your own dev environment for Cytoscape Web.
 - `build`: build the app for production
@@ -67,7 +60,7 @@ For Windows users, environment variables need to be set differently. Follow thes
     After setting the environment variables, run:
 
     ```
-     yarn dev
+     npm dev
     ```
     
 ## Deploy on Netlify
