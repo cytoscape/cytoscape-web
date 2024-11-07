@@ -130,6 +130,8 @@ export default function TableBrowser(props: {
     useUiStateStore((state) => state.setPanelState)
   const { panels } = ui
   const setUi = useUiStateStore((state) => state.setUi)
+  const currentTabIndex = ui.tableUi.activeTabIndex
+
   const networkModified = useWorkspaceStore(
     (state) => state.workspace.networkModified,
   )
@@ -166,19 +168,20 @@ export default function TableBrowser(props: {
     string | undefined
   >(undefined)
 
-  // use the built-in state to manage the selection sothat the state is synced with the data editor
-  const [selection, setSelection] = React.useState<GridSelection>({
+  const [nodeSelection, setNodeSelection] = React.useState<GridSelection>({
     columns: CompactSelection.empty(),
     rows: CompactSelection.empty(),
   })
 
-  // Reset selection after switching table tabs
-  useEffect(() => {
-    setSelection({
-      columns: CompactSelection.empty(),
-      rows: CompactSelection.empty(),
-    })
-  }, [ui.tableUi.activeTabIndex])
+  const [edgeSelection, setEdgeSelection] = React.useState<GridSelection>({
+    columns: CompactSelection.empty(),
+    rows: CompactSelection.empty(),
+  })
+
+  const selection = currentTabIndex === 0 ? nodeSelection : edgeSelection
+  const setSelection =
+    currentTabIndex === 0 ? setNodeSelection : setEdgeSelection
+
   const [selectedCellColumn, setSelectedCellColumn] = React.useState<
     number | null
   >(null)
@@ -250,8 +253,6 @@ export default function TableBrowser(props: {
       }
     },
   )
-
-  const currentTabIndex = ui.tableUi.activeTabIndex
 
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
