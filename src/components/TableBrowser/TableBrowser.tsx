@@ -490,7 +490,10 @@ export default function TableBrowser(props: {
         const end = Math.max(selection.rows.last() ?? 0, rowIndex)
         setSelection({
           ...selection,
-          rows: CompactSelection.fromSingleSelection(start).add([start, end]),
+          rows: CompactSelection.fromSingleSelection(start).add([
+            start,
+            end + 1,
+          ]),
         })
       } else if (event.ctrlKey || event.metaKey) {
         // Handle ctrl/cmd-click for toggle selection
@@ -504,8 +507,18 @@ export default function TableBrowser(props: {
       } else {
         // Handle single row selection
         setSelection({
-          ...selection,
-          rows: CompactSelection.fromSingleSelection(rowIndex),
+          rows: CompactSelection.fromSingleSelection(cell[1]),
+          columns: CompactSelection.empty(),
+          current: {
+            cell,
+            range: {
+              x: cell[0],
+              y: cell[1],
+              width: 1,
+              height: 1,
+            },
+            rangeStack: [],
+          },
         })
       }
 
@@ -1011,6 +1024,7 @@ export default function TableBrowser(props: {
       <TabPanel value={currentTabIndex} index={0}>
         {tableBrowserToolbar}
         <DataEditor
+          // rowSelectionBlending="mixed"
           ref={nodeDataEditorRef}
           onCellClicked={onCellClicked}
           rowSelect={'multi'}
@@ -1040,6 +1054,7 @@ export default function TableBrowser(props: {
       <TabPanel value={currentTabIndex} index={1}>
         {tableBrowserToolbar}
         <DataEditor
+          // rowSelectionBlending="mixed"
           ref={edgeDataEditorRef}
           onCellClicked={onCellClicked}
           rowSelect={'multi'}
