@@ -130,6 +130,17 @@ export default function TableBrowser(props: {
     useUiStateStore((state) => state.setPanelState)
   const { panels } = ui
   const setUi = useUiStateStore((state) => state.setUi)
+  const currentTabIndex = ui.tableUi.activeTabIndex
+
+  const networkModified = useWorkspaceStore(
+    (state) => state.workspace.networkModified,
+  )
+  const networkModifiedRef = useRef(networkModified)
+
+  // Update the ref when networkModified changes
+  useEffect(() => {
+    networkModifiedRef.current = networkModified
+  }, [networkModified])
 
   const setCurrentTabIndex = (index: number): void => {
     const nextTableUi = { ...ui.tableUi, activeTabIndex: index }
@@ -157,11 +168,20 @@ export default function TableBrowser(props: {
     string | undefined
   >(undefined)
 
-  // use the built-in state to manage the selection sothat the state is synced with the data editor
-  const [selection, setSelection] = React.useState<GridSelection>({
+  const [nodeSelection, setNodeSelection] = React.useState<GridSelection>({
     columns: CompactSelection.empty(),
     rows: CompactSelection.empty(),
   })
+
+  const [edgeSelection, setEdgeSelection] = React.useState<GridSelection>({
+    columns: CompactSelection.empty(),
+    rows: CompactSelection.empty(),
+  })
+
+  const selection = currentTabIndex === 0 ? nodeSelection : edgeSelection
+  const setSelection =
+    currentTabIndex === 0 ? setNodeSelection : setEdgeSelection
+
   const [selectedCellColumn, setSelectedCellColumn] = React.useState<
     number | null
   >(null)
@@ -235,8 +255,6 @@ export default function TableBrowser(props: {
       }
     },
   )
-
-  const currentTabIndex = ui.tableUi.activeTabIndex
 
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
@@ -465,12 +483,49 @@ export default function TableBrowser(props: {
   )
 
   const onCellClicked = React.useCallback(
-    (cell: Item): void => {
-      setSelection({
-        ...selection,
-        rows: CompactSelection.fromSingleSelection(cell[1]),
-      })
-      setSelectedCellColumn(cell[0])
+    (cell: Item, event: CellClickedEventArgs): void => {
+      const rowIndex = cell[1]
+      const columnIndex = cell[0]
+
+      if (event.shiftKey) {
+        // Handle shift-click for range selection
+        const start = Math.min(selection.rows.first() ?? 0, rowIndex)
+        const end = Math.max(selection.rows.last() ?? 0, rowIndex)
+        setSelection({
+          ...selection,
+          rows: CompactSelection.fromSingleSelection(start).add([
+            start,
+            end + 1,
+          ]),
+        })
+      } else if (event.ctrlKey || event.metaKey) {
+        // Handle ctrl/cmd-click for toggle selection
+        const newRows = selection.rows.hasIndex(rowIndex)
+          ? selection.rows.remove(rowIndex)
+          : selection.rows.add(rowIndex)
+        setSelection({
+          ...selection,
+          rows: newRows,
+        })
+      } else {
+        // Handle single row selection
+        setSelection({
+          rows: CompactSelection.fromSingleSelection(cell[1]),
+          columns: CompactSelection.empty(),
+          current: {
+            cell,
+            range: {
+              x: cell[0],
+              y: cell[1],
+              width: 1,
+              height: 1,
+            },
+            rangeStack: [],
+          },
+        })
+      }
+
+      setSelectedCellColumn(columnIndex)
     },
     [selection],
   )
@@ -771,11 +826,19 @@ export default function TableBrowser(props: {
             </Button>
             <Button
               onClick={() => {
-                const rowIndex = selectedCell[1]
-                const rowData = rows?.[rowIndex]
-                if (rowData?.id !== undefined) {
-                  exclusiveSelect(props.currentNetworkId, [rowData.id], [])
+                const rowsToSelect = selection.rows.toArray()
+                const rowIds = rowsToSelect
+                  .map((r) => rows?.[r].id)
+                  .filter((id) => id !== undefined)
+                if (currentTable === nodeTable) {
+                  exclusiveSelect(props.currentNetworkId, rowIds, [])
+                } else {
+                  exclusiveSelect(props.currentNetworkId, [], rowIds)
                 }
+                setSelection({
+                  ...selection,
+                  rows: CompactSelection.empty(),
+                })
               }}
             >
               {`Select ${currentTable === nodeTable ? 'nodes' : 'edges'}`}{' '}
@@ -964,10 +1027,12 @@ export default function TableBrowser(props: {
       <TabPanel value={currentTabIndex} index={0}>
         {tableBrowserToolbar}
         <DataEditor
+          // rowSelectionBlending="mixed"
           ref={nodeDataEditorRef}
           onCellClicked={onCellClicked}
-          onCellContextMenu={onCellContextMenu}
+          rowSelect={'multi'}
           rowMarkers={'checkbox'}
+          rowMarkerWidth={1}
           rowMarkerStartIndex={minNodeId}
           showSearch={showSearch}
           keybindings={{ search: true }}
@@ -987,16 +1052,17 @@ export default function TableBrowser(props: {
           columns={columns}
           rows={maxNodeId - minNodeId + 1}
           gridSelection={selection}
-          onGridSelectionChange={setSelection}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
         {tableBrowserToolbar}
         <DataEditor
+          // rowSelectionBlending="mixed"
           ref={edgeDataEditorRef}
           onCellClicked={onCellClicked}
-          onCellContextMenu={onCellContextMenu}
+          rowSelect={'multi'}
           rowMarkers={'checkbox'}
+          rowMarkerWidth={1}
           rowMarkerStartIndex={minEdgeId}
           showSearch={showSearch}
           keybindings={{ search: true }}
@@ -1016,7 +1082,6 @@ export default function TableBrowser(props: {
           columns={columns}
           rows={maxEdgeId - minEdgeId + 1}
           gridSelection={selection}
-          onGridSelectionChange={setSelection}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={2}>
