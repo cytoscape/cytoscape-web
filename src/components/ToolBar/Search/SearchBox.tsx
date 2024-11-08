@@ -104,10 +104,10 @@ export const SearchBox = (): JSX.Element => {
     let edgesToBeSelected: IdType[] = []
 
     if (searchTargets[GraphObjectType.NODE]) {
-      nodesToBeSelected = runSearch(nodeIndex, query, operator)
+      nodesToBeSelected = runSearch(nodeIndex, query, operator, exact)
     }
     if (searchTargets[GraphObjectType.EDGE]) {
-      edgesToBeSelected = runSearch(edgeIndex, query, operator)
+      edgesToBeSelected = runSearch(edgeIndex, query, operator, exact)
     }
 
     exclusiveSelect(currentNetworkId, nodesToBeSelected, edgesToBeSelected)

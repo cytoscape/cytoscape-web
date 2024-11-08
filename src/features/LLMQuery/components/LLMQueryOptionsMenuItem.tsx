@@ -55,7 +55,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
   const handleCopyTemplateClick = (): void => {
     void copyTextToClipboard(localLLMTemplate.rawText).then(() => {
       addMessage({
-        message: `LLM template copied to clipboard`,
+        message: `LLM prompt copied to clipboard`,
         duration: 6000,
       })
     })
@@ -99,11 +99,11 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
           <FormControl fullWidth>
-            <InputLabel>Template</InputLabel>
+            <InputLabel>Prompt</InputLabel>
             <Select
               size="small"
               value={localLLMTemplate.name}
-              label="Template"
+              label="Prompt"
               onChange={(e) => {
                 const nextTemplate = templates.find(
                   (t) => t.name === e.target.value,
@@ -123,7 +123,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
             </Select>
           </FormControl>
           <ButtonGroup size="small" variant="contained" sx={{ ml: 1 }}>
-            <Tooltip title="Preview selected template">
+            <Tooltip title="Preview selected prompt">
               <IconButton
                 sx={{
                   color: showTemplatePreview ? 'primary.main' : 'inherit',
@@ -136,7 +136,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
                 <Preview />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Copy selected template text">
+            <Tooltip title="Copy selected prompt text">
               <IconButton aria-label="copy" onClick={handleCopyTemplateClick}>
                 <ContentCopy />
               </IconButton>

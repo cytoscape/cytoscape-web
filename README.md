@@ -8,17 +8,10 @@ Install `node` and `npm`. The easiest way is to download both from [offical webs
 
 After installation, run `node -v` and `npm -v` to check.
 
-The next step is to install yarn. Run `npm install --global yarn`
-
-- yarn 1.22.11 or later version is required.
-
-Check that Yarn is installed by running:
-
-`yarn --version`
 
 ### Build instructions
 
-Run a command using `yarn <command>`.  Run `yarn install` before using other commands.
+Run a command using `npm <command>`.  Run `npm install` before using other commands.
 
 - `dev`: run a dev server that watches code changes, open `localhost:5500` in your web browser. By default this app points to [NDEx dev server] (https://dev.ndexbio.org), please create an account on the NDEx dev server with a email that links to your Google account before trying to setup your own dev environment for Cytoscape Web.
 - `build`: build the app for production
@@ -26,6 +19,50 @@ Run a command using `yarn <command>`.  Run `yarn install` before using other com
 - `format`: format source code according to eslint and prettier configs
 - `test`: run tests
 
+### Windows-Specific Setup Instructions
+For Windows users, environment variables need to be set differently. Follow these steps to run the development server.
+
+1.  **Modify `package.json` scripts**
+    Update the `dev` and `buid` scripts in `package.json` like this
+
+    ```
+     "build": "set \"REACT_APP_GIT_COMMIT=%COMMIT_HASH%\" && set \"REACT_APP_BUILD_TIMESTAMP=%BUILD_TIMESTAMP%\" && webpack --mode production",
+     "dev": "set \"REACT_APP_GIT_COMMIT=%COMMIT_HASH%\" && set \"REACT_APP_BUILD_TIMESTAMP=%BUILD_TIMESTAMP%\" && webpack serve --open --mode development",
+    ```
+2.  **Manually set environment variables in the terminal**
+
+    Run the Git commands manually to get your commit hash, these values will be used in `.env` file:
+    
+    ```bash
+      git rev-parse HEAD
+    ```
+
+    ```bash
+      git show -s --format=%cI HEAD
+    ```
+
+    Copy the output of the commands and update in `.env` file as follow :
+    
+    ```env
+      REACT_APP_GIT_COMMIT=<your_commit_hash>
+      REACT_APP_BUILD_TIMESTAMP=<your_build_timestamp>
+    ```
+
+    For example, if your Git commit hash is `abc1234` and the timestamp is `2024-10-24T10:00:00`, your `.env` would look like this:
+
+    ```env
+      REACT_APP_GIT_COMMIT=abc1234
+      REACT_APP_BUILD_TIMESTAMP=2024-10-24T10:00:00
+    ```
+
+3.  **Start the development server**
+
+    After setting the environment variables, run:
+
+    ```
+     npm dev
+    ```
+    
 ## Deploy on Netlify
 All branches will have deploy previews automatically once changes pushed to github. The url is:
 `branch name`--incredible-meringue-aa83b1.netlify.app  

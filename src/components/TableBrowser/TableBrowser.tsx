@@ -226,6 +226,7 @@ export default function TableBrowser(props: {
   )
   const moveColumn = useTableStore((state) => state.moveColumn)
 
+  const workspace = useWorkspaceStore((state) => state.workspace)
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
 
@@ -242,10 +243,11 @@ export default function TableBrowser(props: {
         !_.isEqual(prev.nodeTable, next.nodeTable) ||
         !_.isEqual(prev.edgeTable, next.edgeTable)
 
+      const { networkModified } = workspace
+
       const currentNetworkIsNotModified =
-        (networkModifiedRef.current[networkId] === undefined &&
-          !(networkModifiedRef.current[networkId] ?? false)) ??
-        false
+        networkModified[networkId] === undefined ||
+        networkModified[networkId] === false
 
       // If table data changed and the network is not already marked as modified, set it to modified
       if (tableDataChanged && currentNetworkIsNotModified) {
