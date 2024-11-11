@@ -3,19 +3,17 @@
   "version": "1.0.0-beta.1",
   "private": true,
   "license": "MIT",
-  
   "scripts": {
     "clean": "rm -rf dist",
     "test": "npm run test:playwright && npm run test:unit",
     "test:unit": "jest unittest",
     "test:playwright": "npx playwright test --trace on",
-    "build": "REACT_APP_GIT_COMMIT=$(git rev-parse HEAD) REACT_APP_BUILD_TIMESTAMP=$(git show -s --format=%cI HEAD) webpack --mode production",
+    "build": "set \"REACT_APP_GIT_COMMIT=%COMMIT_HASH%\" && set \"REACT_APP_BUILD_TIMESTAMP=%BUILD_TIMESTAMP%\" && webpack --mode production",
     "build:netlify": "BUILD=netlify REACT_APP_GIT_COMMIT=$(git rev-parse HEAD) REACT_APP_BUILD_TIMESTAMP=$(git show -s --format=%cI HEAD) webpack --mode production",
-    "dev": "REACT_APP_GIT_COMMIT=$(git rev-parse --short HEAD) REACT_APP_BUILD_TIMESTAMP=$(git show -s --format=%cI HEAD) webpack serve --open --mode development",
+    "dev": "set \"REACT_APP_GIT_COMMIT=%COMMIT_HASH%\" && set \"REACT_APP_BUILD_TIMESTAMP=%BUILD_TIMESTAMP%\" && webpack serve --open --mode development",
     "lint": "eslint --ext .js,.ts,.jsx,.tsx src",
     "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'"
   },
-  
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/plugin-transform-modules-commonjs": "^7.24.8",
@@ -28,6 +26,7 @@
     "@testing-library/react": "^16.0.0",
     "@types/chroma-js": "^2.1.4",
     "@types/cytoscape": "^3.19.9",
+    "@types/d3": "^7.4.3",
     "@types/d3-array": "^3.0.4",
     "@types/d3-color": "^3.1.0",
     "@types/d3-hierarchy": "^3.1.3",
@@ -110,11 +109,13 @@
     "cytoscape": "^3.28.1",
     "cytoscape-pdf-export": "^0.0.2",
     "cytoscape-svg": "^0.4.0",
+    "d3": "^7.9.0",
     "d3-array": "^3.2.4",
     "d3-color": "^3.1.0",
     "d3-hierarchy": "^3.1.2",
     "d3-scale": "^4.0.2",
     "d3-selection": "^3.0.0",
+    "d3-transition": "^3.0.1",
     "d3-zoom": "^3.0.0",
     "dexie": "^3.2.4",
     "dexie-observable": "^4.0.1-beta.13",

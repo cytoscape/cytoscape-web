@@ -2,6 +2,7 @@ import { Tooltip } from '@mui/material'
 import * as d3Hierarchy from 'd3-hierarchy'
 import * as d3Selection from 'd3-selection'
 import * as d3Zoom from 'd3-zoom'
+import * as d3 from 'd3';
 import { useContext, useEffect, useRef, useState } from 'react'
 import { Network } from '../../../../models/NetworkModel'
 import {
@@ -223,8 +224,8 @@ export const CirclePackingPanel = ({
   }
 
   const handleZoom = (e: any): void => {
-    const selectedArea = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
-    selectedArea.attr('transform', e.transform)
+    const selectedArea = d3.select(`g.${CP_WRAPPER_CLASS}`)
+    selectedArea.transition().duration(300).ease(d3.easeCubic).attr('transform', e.transform)
     const currentZoomLevel = e.transform.k
     const maxDepth = Math.ceil(currentZoomLevel)
 
@@ -235,6 +236,7 @@ export const CirclePackingPanel = ({
       updateForZoom(maxDepth)
     }
   }
+
   useEffect(() => {
     if (zoomRef.current !== null && ref.current !== null) {
       const selection = d3Selection.select(ref.current)
