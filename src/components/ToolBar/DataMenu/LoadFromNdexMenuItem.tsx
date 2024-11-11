@@ -1,7 +1,7 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
-import { LoadFromNdexDialog } from './LoadFromNdexDialog'
+import LoadFromNdexDialog from './LoadFromNdexDialog'
 
 export const LoadFromNdexMenuItem = (props: BaseMenuProps): ReactElement => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
