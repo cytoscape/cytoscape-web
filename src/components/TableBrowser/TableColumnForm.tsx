@@ -133,12 +133,23 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
         ) : null}
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => props.onSubmit(value, mappingSyncSetting)}>
-          Confirm
-        </Button>
-
-        <Button color="error" onClick={props.onClose}>
+        <Button color="primary" onClick={props.onClose}>
           Cancel
+        </Button>
+        <Button
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
+          onClick={() => props.onSubmit(value, mappingSyncSetting)}
+        >
+          Confirm
         </Button>
       </DialogActions>
     </Dialog>
@@ -210,11 +221,24 @@ export function DeleteTableColumnForm(
         ) : null}
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => props.onSubmit(mappingSyncSetting)}>
-          Confirm
-        </Button>
-        <Button color="error" onClick={props.onClose}>
+        <Button color="primary" onClick={props.onClose}>
           Cancel
+        </Button>
+        <Button
+          sx={{
+            color: '#F50157',
+            backgroundColor: 'transparent',
+            '&:hover': {
+              color: '#FFFFFF',
+              backgroundColor: '#fc266f',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
+          onClick={() => props.onSubmit(mappingSyncSetting)}
+        >
+          Confirm
         </Button>
       </DialogActions>
     </Dialog>
@@ -239,6 +263,16 @@ export function CreateTableColumnForm(
     </Tooltip>
   ) : (
     <Button
+      sx={{
+        color: '#FFFFFF',
+        backgroundColor: '#337ab7',
+        '&:hover': {
+          backgroundColor: '#285a9b',
+        },
+        '&:disabled': {
+          backgroundColor: 'transparent',
+        },
+      }}
       disabled={columnName === ''}
       onClick={() => props.onSubmit(columnName, valueTypeName, defaultValue)}
     >
@@ -292,10 +326,10 @@ export function CreateTableColumnForm(
       </DialogContent>
 
       <DialogActions>
-        {submitButton}
-        <Button color="error" onClick={props.onClose}>
+        <Button color="primary" onClick={props.onClose}>
           Cancel
         </Button>
+        {submitButton}
       </DialogActions>
     </Dialog>
   )

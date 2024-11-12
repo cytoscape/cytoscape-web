@@ -45,7 +45,9 @@ export const HcxValidationWarningsDialog = (
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => onClose()}>Close</Button>
+        <Button color="primary" onClick={() => onClose()}>
+          Close
+        </Button>
       </DialogActions>
     </Dialog>
   )

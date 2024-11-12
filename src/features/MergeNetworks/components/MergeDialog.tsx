@@ -882,19 +882,26 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         onConfirm={() => setShowError(false)}
       />
       <DialogActions>
-        <Button onClick={handleClose} color="secondary">
+        <Button onClick={handleClose} color="primary">
           Cancel
         </Button>
         {mergeTooltipIsOpen ? (
           <Tooltip title={mergeTooltipText} placement="top" arrow>
             <span>
-              <Button color="primary" disabled={true}>
-                Merge
-              </Button>
+              <Button disabled={true}>Merge</Button>
             </span>
           </Tooltip>
         ) : (
-          <Button onClick={handleMerge} color="primary">
+          <Button
+            onClick={handleMerge}
+            sx={{
+              color: '#FFFFFF',
+              backgroundColor: '#337ab7',
+              '&:hover': {
+                backgroundColor: '#285a9b',
+              },
+            }}
+          >
             Merge
           </Button>
         )}

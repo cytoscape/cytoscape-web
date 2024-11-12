@@ -25,7 +25,7 @@ export function StringInput(props: {
       </TextField>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
         <Button
-          color="error"
+          color="primary"
           onClick={() => {
             props.closePopover('cancel')
             setLocalValue(currentValue ?? '')
@@ -34,6 +34,13 @@ export function StringInput(props: {
           Cancel
         </Button>
         <Button
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+          }}
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

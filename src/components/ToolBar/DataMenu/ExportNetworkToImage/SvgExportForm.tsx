@@ -60,10 +60,20 @@ export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
         </Box>
       </Box>
       <DialogActions sx={{ pr: 1 }}>
-        <Button color="error" onClick={props.handleClose}>
+        <Button color="primary" onClick={props.handleClose}>
           Cancel
         </Button>
         <Button
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
           disabled={loading}
           onClick={async () => {
             setLoading(true)
