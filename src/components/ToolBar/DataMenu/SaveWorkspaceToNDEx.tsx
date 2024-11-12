@@ -177,8 +177,24 @@ export const SaveWorkspaceToNDExMenuItem = (
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleCloseDialog}>Cancel</Button>
-        <Button onClick={saveWorkspaceToNDEx}>Save</Button>
+        <Button onClick={handleCloseDialog} color="primary">
+          Cancel
+        </Button>
+        <Button
+          onClick={saveWorkspaceToNDEx}
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
+        >
+          Save
+        </Button>
       </DialogActions>
     </Dialog>
   )

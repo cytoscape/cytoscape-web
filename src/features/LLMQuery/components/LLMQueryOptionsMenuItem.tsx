@@ -63,6 +63,12 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const dialog = (
     <Dialog
+      onKeyDown={(e) => {
+        e.stopPropagation()
+      }}
+      onClick={(e) => {
+        e.stopPropagation()
+      }}
       maxWidth="sm"
       fullWidth={true}
       open={showDialog}
@@ -147,7 +153,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
           sx={{
             mt: 2,
             maxHeight: 300,
-            overflowY: 'scroll',
+            overflowY: 'auto',
             p: 2,
             whiteSpace: 'pre-line',
           }}
@@ -156,7 +162,20 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
         </Box>
       </DialogContent>
       <DialogActions>
+        <Button color="primary" onClick={props.handleClose}>
+          Cancel
+        </Button>
         <Button
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
           onClick={() => {
             setShowDialog(false)
             setLLMModel(localLLMModel)
@@ -168,9 +187,6 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
           }}
         >
           Confirm
-        </Button>
-        <Button color="error" onClick={props.handleClose}>
-          Cancel
         </Button>
       </DialogActions>
     </Dialog>

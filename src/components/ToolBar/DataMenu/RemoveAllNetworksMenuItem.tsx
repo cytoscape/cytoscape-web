@@ -27,6 +27,7 @@ export const RemoveAllNetworksMenuItem = (
         open={open}
         setOpen={setOpen}
         buttonTitle="Yes (cannot be undone)"
+        isAlert={true}
       />
     </>
   )

@@ -185,11 +185,21 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
         </Box>
       </Box>
       <DialogActions sx={{ pr: 1 }}>
-        <Button color="error" onClick={props.handleClose}>
+        <Button color="primary" onClick={props.handleClose}>
           Cancel
         </Button>
         <Button
           disabled={loading}
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
           onClick={async () => {
             setLoading(true)
             const result = await pdfFunction?.(

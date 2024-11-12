@@ -64,9 +64,7 @@ export const NetworkPropertyPanel = ({
   const networkModified =
     useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
 
-  const deleteNetwork = useWorkspaceStore(
-    (state) => state.deleteNetwork,
-  )
+  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
 
   const onClickDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
@@ -76,15 +74,15 @@ export const NetworkPropertyPanel = ({
   }
 
   const onConfirmDelete = () => {
-    deleteNetwork(id);
+    deleteNetwork(id)
     if (lastOpenedNetworkId && lastOpenedNetworkId !== id) {
-      setCurrentNetworkId(lastOpenedNetworkId);
+      setCurrentNetworkId(lastOpenedNetworkId)
     }
   }
 
   const onCancelDelete = () => {
     if (lastOpenedNetworkId && lastOpenedNetworkId !== id) {
-      setCurrentNetworkId(lastOpenedNetworkId);
+      setCurrentNetworkId(lastOpenedNetworkId)
     }
   }
 
@@ -122,7 +120,13 @@ export const NetworkPropertyPanel = ({
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Tooltip title={summary.isNdex ? 'A network stored in the NDEx database (ndexbio.org)' : 'A network stored on your local machine'}>
+              <Tooltip
+                title={
+                  summary.isNdex
+                    ? 'A network stored in the NDEx database (ndexbio.org)'
+                    : 'A network stored on your local machine'
+                }
+              >
                 <Chip
                   color={summary.isNdex ? 'primary' : 'success'}
                   size="small"
@@ -149,8 +153,9 @@ export const NetworkPropertyPanel = ({
               variant={'subtitle2'}
               sx={{ width: '100%', color: theme.palette.text.secondary }}
             >
-              {`N: ${nodeCount} (${networkViewModel?.selectedNodes.length ?? 0
-                }) /
+              {`N: ${nodeCount} (${
+                networkViewModel?.selectedNodes.length ?? 0
+              }) /
           E: ${edgeCount} (${networkViewModel?.selectedEdges.length ?? 0})`}
             </Typography>
 
@@ -171,7 +176,9 @@ export const NetworkPropertyPanel = ({
               <IconButton
                 size="small"
                 sx={{ width: 25, height: 25 }}
-                onClick={(e) => { onClickDelete(e) }}
+                onClick={(e) => {
+                  onClickDelete(e)
+                }}
               >
                 <DeleteIcon sx={{ fontSize: 18 }} />
               </IconButton>
@@ -191,8 +198,9 @@ export const NetworkPropertyPanel = ({
           open={openConfirmation}
           setOpen={setOpenConfirmation}
           buttonTitle="Yes (cannot be undone)"
+          isAlert={true}
         />
-      </Box >
+      </Box>
     </>
   )
 }

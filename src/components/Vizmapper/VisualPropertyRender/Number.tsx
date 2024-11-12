@@ -86,7 +86,7 @@ export function NumberInput(props: {
         }}
       >
         <Button
-          color="error"
+          color="primary"
           onClick={() => {
             setValue(String(currentValue ?? 0))
             setValueIsValid(strValueIsValid(String(currentValue ?? 0)))
@@ -96,6 +96,13 @@ export function NumberInput(props: {
           Cancel
         </Button>
         <Button
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+          }}
           disabled={!isValid}
           onClick={() => {
             const nextValue = Number(Number(value).toFixed(4))

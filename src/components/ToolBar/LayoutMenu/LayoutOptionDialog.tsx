@@ -158,16 +158,18 @@ export const LayoutOptionDialog = ({
       PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
-      <DialogTitle
-        sx={{
-          padding: 1,
-        }}
-      >
-        Layout Option Editor
-      </DialogTitle>
+      <DialogTitle>Layout Option Editor</DialogTitle>
       <Divider />
 
-      <DialogContent sx={{ margin: 0, padding: 1, paddingTop: 0 }}>
+      <DialogContent
+        sx={{
+          margin: 1.5,
+          padding: 1,
+          paddingTop: 0,
+          marginTop: 0.5,
+          overflowY: 'clip',
+        }}
+      >
         <Grid container spacing={0} alignItems={'center'}>
           <Grid item md={12}>
             <LayoutSelector
@@ -176,7 +178,7 @@ export const LayoutOptionDialog = ({
               setSelected={setSelectedAlgorithm}
             />
           </Grid>
-          <Grid>
+          <Grid sx={{ paddingTop: '8px' }}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -186,6 +188,7 @@ export const LayoutOptionDialog = ({
                 />
               }
               label="Set as default"
+              labelPlacement="start"
             />
           </Grid>
         </Grid>
@@ -214,10 +217,23 @@ export const LayoutOptionDialog = ({
         </List>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} color="info">
+        <Button onClick={handleClose} color="primary">
           Close
         </Button>
-        <Button disabled={disabled} onClick={handleApply} color="secondary">
+        <Button
+          disabled={disabled}
+          onClick={handleApply}
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
+        >
           Apply Layout
         </Button>
       </DialogActions>

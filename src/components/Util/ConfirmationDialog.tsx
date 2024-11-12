@@ -13,11 +13,23 @@ interface ConfirmationDialogProps {
   buttonTitle?: string
   onConfirm: () => void
   onCancel?: () => void
+  isAlert?: boolean
+  confirmDisabled?: boolean
 }
 export const ConfirmationDialog = (
   props: ConfirmationDialogProps,
 ): JSX.Element => {
-  const { open, setOpen, message, title, buttonTitle, onConfirm, onCancel } = props
+  const {
+    open,
+    setOpen,
+    message,
+    title,
+    buttonTitle,
+    onConfirm,
+    onCancel,
+    isAlert,
+    confirmDisabled,
+  } = props
 
   const handleCancel = (e: React.MouseEvent<HTMLButtonElement>): void => {
     e.stopPropagation()
@@ -45,8 +57,25 @@ export const ConfirmationDialog = (
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleCancel}>Cancel</Button>
-        <Button onClick={handleConfirm} autoFocus>
+        <Button onClick={handleCancel} color="primary">
+          Cancel
+        </Button>
+        <Button
+          onClick={handleConfirm}
+          disabled={confirmDisabled ?? false}
+          autoFocus
+          sx={{
+            color: isAlert ? '#F50157' : '#FFFFFF',
+            backgroundColor: isAlert ? 'transparent' : '#337ab7',
+            '&:hover': {
+              color: '#FFFFFF',
+              backgroundColor: isAlert ? '#fc266f' : '#285a9b',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
+        >
           {buttonTitle === undefined || buttonTitle === '' ? 'OK' : buttonTitle}
         </Button>
       </DialogActions>
