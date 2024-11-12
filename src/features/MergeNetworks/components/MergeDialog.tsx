@@ -540,6 +540,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
 
   return (
     <Dialog
+      onKeyDown={(e) => {
+        e.stopPropagation()
+      }}
+      onClick={(e) => {
+        e.stopPropagation()
+      }}
       fullScreen={fullScreen}
       maxWidth="md"
       fullWidth={true}
@@ -620,7 +626,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             </FormLabel>
             <RadioGroup
               aria-label="node removal policy"
-              value={strictRemoveMode}
+              value={strictRemoveMode.toString()}
               onChange={handleStrictRemoveModeChange}
               name="node-removal-options"
               style={{ marginLeft: '20px' }}
@@ -845,7 +851,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                 control={
                   <Checkbox
                     checked={mergeWithinNetwork}
-                    onChange={() => setMergeWithinNetwork(!mergeWithinNetwork)}
+                    onChange={(e) => setMergeWithinNetwork(e.target.checked)}
                     name="mergeWithinNetwork"
                     color="primary"
                   />
@@ -861,7 +867,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                   control={
                     <Checkbox
                       checked={mergeOnlyNodes}
-                      onChange={() => setMergeOnlyNodes(!mergeOnlyNodes)}
+                      onChange={(e) => setMergeOnlyNodes(e.target.checked)}
                       name="mergeOnlyNodes"
                       color="primary"
                       disabled={MergeType.intersection !== mergeOpType}
