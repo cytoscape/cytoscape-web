@@ -105,6 +105,7 @@ export const NetworkTabs = ({
               handleClick={handleClick}
               selected={index === selected}
               boxSize={boxSize}
+              hasTab={true}
             />
           )
         })}

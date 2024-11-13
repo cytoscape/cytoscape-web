@@ -12,6 +12,7 @@ interface NetworkTabProps {
   handleClick?: () => void
   selected: boolean
   boxSize?: { w: number; h: number }
+  hasTab?: boolean
 }
 
 export const NetworkTab = ({
@@ -22,8 +23,14 @@ export const NetworkTab = ({
   isActive,
   selected,
   boxSize,
+  hasTab,
 }: NetworkTabProps): ReactElement => {
-  const rendererComponent = renderer.getComponent(network, boxSize, selected)
+  const rendererComponent = renderer.getComponent(
+    network,
+    boxSize,
+    selected,
+    hasTab,
+  )
 
   return (
     <Box
