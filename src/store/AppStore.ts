@@ -66,16 +66,12 @@ export const useAppStore = create(
         console.warn(`Service app already registered: ${url}`)
         return
       }
-      try {
-        const serviceApp = await serviceFetcher(url)
-        await putServiceAppToDb(serviceApp)
+      const serviceApp = await serviceFetcher(url)
+      await putServiceAppToDb(serviceApp)
 
-        set((state) => {
-          state.serviceApps[url] = serviceApp
-        })
-      } catch (error) {
-        console.error(`Failed to fetch service metadata from ${url}`, error)
-      }
+      set((state) => {
+        state.serviceApps[url] = serviceApp
+      })
     },
 
     removeService: (url: string) => {

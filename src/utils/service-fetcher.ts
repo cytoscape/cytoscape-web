@@ -12,6 +12,9 @@ export const serviceFetcher = async (url: string): Promise<ServiceApp> => {
       'Content-Type': 'application/json',
     },
   })
+  if (!response.ok) {
+    throw new Error("Failed to fetch the service metadata.")
+  }
 
   const metadata: ServiceMetadata = await response.json()
   const serviceApp: ServiceApp = {
