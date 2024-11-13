@@ -5,6 +5,7 @@ import {
   ArrowDownward as ArrowDownwardIcon,
   ExpandMore as ExpandMoreIcon,
   Star as StarIcon,
+  Info as InfoIcon,
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
 } from '@mui/icons-material'
@@ -576,7 +577,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           </IconButton>
         </Tooltip>
       </Box>
-      <DialogContent>
+      <DialogContent sx={{ paddingTop: 0 }}>
         <Box className="toggleButtonGroup">
           <ToggleButtonGroup
             value={mergeOpType}
@@ -609,6 +610,31 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               <DifferenceIcon /> Difference
             </ToggleButton>
           </ToggleButtonGroup>
+          <Tooltip
+            title={
+              <Box sx={{ maxWidth: '220px' }}>
+                <p>
+                  <strong>UNION:</strong> Adds the subsequent network(s) to the
+                  base network, merging any common nodes and edges.
+                </p>
+                <p>
+                  <strong>INTERSECTION:</strong> Creates a network containing
+                  only the nodes and edges that are common across all selected
+                  networks.
+                </p>
+                <p>
+                  <strong>DIFFERENCE:</strong> Subtracts the base network from
+                  the second network according to the specified node removal
+                  rule.
+                </p>
+              </Box>
+            }
+            placement="right"
+          >
+            <Box>
+              <InfoIcon sx={{ color: 'rgb(0,0,0,0.4)' }} />
+            </Box>
+          </Tooltip>
         </Box>
 
         {mergeOpType === MergeType.difference && (
@@ -646,7 +672,26 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           </FormControl>
         )}
 
-        <Typography variant="h6" style={{ margin: '20px 0' }}>
+        <Typography variant="h6" style={{ margin: '10px 0' }}>
+          Merged Network Name:
+        </Typography>
+        <TextField
+          label="Enter merged network name"
+          value={mergedNetworkName}
+          onChange={handleNameChange}
+          fullWidth
+          margin="normal"
+          InputProps={{
+            style: { color: isNameDuplicate ? 'orange' : 'inherit' },
+          }}
+        />
+        {isNameDuplicate && (
+          <Typography color="orange">
+            Warning: A network with this name already exists in your workspace.
+          </Typography>
+        )}
+
+        <Typography variant="h6" style={{ margin: '10px 0' }}>
           Select Networks to Merge:
         </Typography>
 
@@ -763,25 +808,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             <Typography>Advanced Options</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography variant="h6" style={{ margin: '5px 0 5px 0' }}>
-              Merged Network Name:
-            </Typography>
-            <TextField
-              label="Enter merged network name"
-              value={mergedNetworkName}
-              onChange={handleNameChange}
-              fullWidth
-              margin="normal"
-              InputProps={{
-                style: { color: isNameDuplicate ? 'orange' : 'inherit' },
-              }}
-            />
-            {isNameDuplicate && (
-              <Typography color="orange">
-                Warning: A network with this name already exists in your
-                workspace.
-              </Typography>
-            )}
             <Typography variant="h6" style={{ margin: '5px 0 10px 0' }}>
               Matching columns:
             </Typography>
