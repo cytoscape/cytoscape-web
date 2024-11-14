@@ -165,15 +165,15 @@ export const convertContinuousMappingToCX = (
         {
           max: min.value as number,
           maxVPValue: vpToCX(vp.name, ltMinVpValue),
-          includeMax: min.inclusive ?? true,
-          includeMin: true, // dummy value, not actually used here
+          includeMax: min.inclusive ?? false,
+          includeMin: false, // dummy value, not actually used here
         },
         ...intervals,
         {
           min: max.value as number,
           minVPValue: vpToCX(vp.name, gtMaxVpValue),
-          includeMin: max.inclusive ?? true,
-          includeMax: true, // dummy value, not actually used here
+          includeMin: max.inclusive ?? false,
+          includeMax: false, // dummy value, not actually used here
         },
       ],
       attribute,
