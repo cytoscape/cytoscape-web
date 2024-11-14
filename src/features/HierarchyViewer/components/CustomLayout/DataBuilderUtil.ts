@@ -67,7 +67,7 @@ export const cyNetDag2tree2 = (
   visited: Record<string, number>,
   treeElements: any[],
   members: Set<string>,
-  rootMemberMap: Map<string, string>,
+  rootMemberMap: Map<string | number, string>,
 ): void => {
   // CUrrent node ID
   const nodeId = node.id()
