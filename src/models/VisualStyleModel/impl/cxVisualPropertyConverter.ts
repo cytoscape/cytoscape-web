@@ -137,7 +137,8 @@ export const convertContinuousMappingToCX = (
   vp: VisualProperty<VisualPropertyValueType>,
   mapping: ContinuousMappingFunction,
 ): CXContinuousMappingFunction<CXVisualPropertyValue> => {
-  const { min, max, controlPoints, attribute } = mapping
+  const { min, max, controlPoints, attribute, ltMinVpValue, gtMaxVpValue } =
+    mapping
 
   const intervals = []
 
@@ -163,14 +164,14 @@ export const convertContinuousMappingToCX = (
       map: [
         {
           max: min.value as number,
-          maxVPValue: vpToCX(vp.name, min.vpValue),
+          maxVPValue: vpToCX(vp.name, ltMinVpValue),
           includeMax: min.inclusive ?? true,
           includeMin: true, // dummy value, not actually used here
         },
         ...intervals,
         {
           min: max.value as number,
-          minVPValue: vpToCX(vp.name, max.vpValue),
+          minVPValue: vpToCX(vp.name, gtMaxVpValue),
           includeMin: max.inclusive ?? true,
           includeMax: true, // dummy value, not actually used here
         },

@@ -52,6 +52,8 @@ export interface UpdateVisualStyleAction {
     min: ContinuousFunctionControlPoint,
     max: ContinuousFunctionControlPoint,
     controlPoints: ContinuousFunctionControlPoint[],
+    ltMinVpValue: VisualPropertyValueType,
+    gtMaxVpValue: VisualPropertyValueType,
   ) => void
   setMapping: (
     networkId: IdType,

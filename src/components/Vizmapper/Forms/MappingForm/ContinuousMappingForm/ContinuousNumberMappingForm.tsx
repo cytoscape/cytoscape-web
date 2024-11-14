@@ -32,6 +32,7 @@ import { useVisualStyleStore } from '../../../../../store/VisualStyleStore'
 
 import { Handle, addHandle, removeHandle, editHandle } from './Handle'
 import { LineChart } from './LineChart'
+import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
 
 export function ContinuousNumberMappingForm(props: {
   currentNetworkId: IdType
@@ -147,6 +148,8 @@ export function ContinuousNumberMappingForm(props: {
           min: ContinuousFunctionControlPoint,
           max: ContinuousFunctionControlPoint,
           handles: Handle[],
+          ltMinVpValue: VisualPropertyValueType,
+          gtMaxVpValue: VisualPropertyValueType,
         ) => {
           setContinuousMappingValues(
             props.currentNetworkId,
@@ -159,6 +162,8 @@ export function ContinuousNumberMappingForm(props: {
                 vpValue: h.vpValue,
               }
             }),
+            ltMinVpValue,
+            gtMaxVpValue,
           )
         },
         200,
@@ -195,19 +200,37 @@ export function ContinuousNumberMappingForm(props: {
     const newHandles = addHandle(handles, value, vpValue)
 
     setHandles(newHandles)
-    updateContinuousMapping(min, max, newHandles)
+    updateContinuousMapping(
+      min,
+      max,
+      newHandles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }
 
   const deleteHandle = (id: number): void => {
     const newHandles = removeHandle(handles, id)
     setHandles(newHandles)
-    updateContinuousMapping(minState, maxState, newHandles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      newHandles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }
 
   const setHandle = (id: number, value: number, vpValue: number): void => {
     const newHandles = editHandle(handles, id, value, vpValue)
     setHandles(newHandles)
-    updateContinuousMapping(minState, maxState, newHandles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      newHandles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }
 
   // when someone changes a handle, the new handle values may contain a new min/max value
@@ -241,7 +264,13 @@ export function ContinuousNumberMappingForm(props: {
     })
     setHandles(newHandles)
 
-    updateContinuousMapping(minState, maxState, handles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      handles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }, [minState])
 
   // anytime someone changes the max value, make sure all handle values are less than the max
@@ -254,7 +283,13 @@ export function ContinuousNumberMappingForm(props: {
     })
     setHandles(newHandles)
 
-    updateContinuousMapping(minState, maxState, handles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      handles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }, [maxState])
 
   return (
@@ -277,7 +312,7 @@ export function ContinuousNumberMappingForm(props: {
         >
           <Tooltip
             title="Drag handles or change the handle values to edit the mapping"
-            placement="bottom"
+            placement="right"
           >
             <Box
               sx={{
@@ -499,6 +534,66 @@ export function ContinuousNumberMappingForm(props: {
                   </Draggable>
                 )
               })}
+              <Tooltip title="Set number value for values under the minimum.">
+                <Box
+                  sx={{
+                    width: 2,
+                    height: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    position: 'relative',
+                    bottom: -LINE_CHART_HEIGHT + 50,
+                    right: LINE_CHART_WIDTH - 25,
+                    zIndex: 1000,
+                  }}
+                >
+                  <VisualPropertyValueForm
+                    currentValue={m.ltMinVpValue}
+                    visualProperty={props.visualProperty}
+                    currentNetworkId={props.currentNetworkId}
+                    onValueChange={(newValue) => {
+                      updateContinuousMapping(
+                        min,
+                        max,
+                        handles,
+                        newValue,
+                        m.gtMaxVpValue,
+                      )
+                    }}
+                  />
+                </Box>
+              </Tooltip>
+              <Tooltip title="Set number value for values over the maximum.">
+                <Box
+                  sx={{
+                    width: 2,
+                    height: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    position: 'relative',
+                    bottom: -LINE_CHART_HEIGHT + 50,
+                    right: 25,
+                    zIndex: 1000,
+                  }}
+                >
+                  <VisualPropertyValueForm
+                    currentValue={m.gtMaxVpValue}
+                    visualProperty={props.visualProperty}
+                    currentNetworkId={props.currentNetworkId}
+                    onValueChange={(newValue) => {
+                      updateContinuousMapping(
+                        min,
+                        max,
+                        handles,
+                        m.ltMinVpValue,
+                        newValue,
+                      )
+                    }}
+                  />
+                </Box>
+              </Tooltip>
             </Box>
           </Tooltip>
         </Paper>
