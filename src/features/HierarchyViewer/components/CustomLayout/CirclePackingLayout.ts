@@ -65,11 +65,15 @@ export const createTreeLayout = async ({
   const allMembers = new Set<string>()
 
   // Create ID to readable name map only when it is necessary
-  const rootMembers: string[] = getMembers(root.id(), nodeTable)
+  const rootMembers: string[] | number[] = getMembers(root.id(), nodeTable)
   // test the first ID is a number or not
   const firstMember: string = rootMembers[0]
-  const id2name: Map<string, string> = new Map<string, string>()
+  const id2name: Map<string | number, string> = new Map<
+    string | number,
+    string
+  >()
   if (Number.parseInt(firstMember)) {
+    // Member list is a list of numbers
     try {
       const names = await getNames(
         rootNetworkHostUrl,
@@ -77,8 +81,10 @@ export const createTreeLayout = async ({
         rootNetworkId,
         rootMembers,
       )
-      rootMembers.forEach((member: string, index: number) => {
-        id2name.set(member, names[index])
+      rootMembers.forEach((member: string) => {
+        const memberId: number = Number.parseInt(member)
+        const memberName: string = names[memberId]
+        id2name.set(memberId, memberName)
       })
     } catch (e) {
       console.warn('Failed to convert to ID to node names', e)
