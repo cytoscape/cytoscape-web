@@ -62,7 +62,11 @@ export const ServiceSettingsDialog = ({
 
     defaultServices.forEach((url: string) => {
       if (!urlSet.has(url)) {
-        addService(url)
+        try {
+          addService(url)
+        } catch (e) {
+          console.error(`Failed to add the service from ${url}. ${e}`)
+        }
       }
     })
   }, [])
@@ -76,12 +80,19 @@ export const ServiceSettingsDialog = ({
     if (trimmedUrl !== '') {
       const serviceApp = serviceApps[trimmedUrl]
       if (serviceApp !== undefined) {
-        setWarningMessage(`The service already registered: ${trimmedUrl}`)
+        setWarningMessage(`The service already registered: \"${trimmedUrl}\".`)
         return
       }
-      await addService(trimmedUrl)
+      try {
+        await addService(trimmedUrl)
+        setWarningMessage('')
+      } catch (e) {
+        setWarningMessage(
+          `Failed to add the service at \"${trimmedUrl}\" due to: ${e.message}.`,
+        )
+        console.error(`Failed to add the service from ${trimmedUrl}. ${e}`)
+      }
       setNewUrl('')
-      setWarningMessage('')
     }
   }
 
