@@ -116,6 +116,17 @@ export default function NetworkInfoPanel(props: {
       <Divider />
       <Box sx={{ p: 1 }}>
         <Box>
+          {networkInfo?.isNdex && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Typography
+                sx={{ fontSize: 14, fontWeight: 'bold' }}
+                variant="subtitle1"
+              >
+                UUID:
+              </Typography>
+              <Typography variant="body2">{currentNetworkId}</Typography>
+            </div>
+          )}
           <Typography
             sx={{ fontSize: 14, fontWeight: 'bold' }}
             variant="subtitle1"
@@ -142,7 +153,7 @@ export default function NetworkInfoPanel(props: {
                 }
 
                 return (
-                  <div key={index}>
+                  <div key={index} style={{ margin: '4px 0px' }}>
                     <span style={{ fontWeight: 'bold' }}>
                       {capitalizeFirstLetter(prop.predicateString)}:
                     </span>{' '}
