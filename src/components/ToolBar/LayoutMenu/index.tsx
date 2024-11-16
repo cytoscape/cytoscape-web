@@ -63,9 +63,10 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
   //disable layouts for cell view, meaning
   const disabled =
-    isHCX(summary) && // the current network is a hierarchy
-    currentNetworkId === targetNetworkId && // the hierarchy network is the active view
-    cellViewIsSelected // the cell view tab is selected
+    (isHCX(summary) && // the current network is a hierarchy
+      currentNetworkId === targetNetworkId && // the hierarchy network is the active view
+      cellViewIsSelected) || // the cell view tab is selected
+    targetNetworkId === '' // no network is selected
 
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
