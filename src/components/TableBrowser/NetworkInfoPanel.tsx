@@ -81,10 +81,10 @@ export default function NetworkInfoPanel(props: {
     <Box sx={{ height: props.height, overflow: 'auto', pl: 1, pr: 1 }}>
       <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
         <Typography variant="h6">{networkInfo?.name ?? ''}</Typography>
-        {networkInfo?.visibility != null ? (
+        {networkInfo?.visibility ? (
           <Chip sx={{ ml: 1 }} size="small" label={networkInfo?.visibility} />
         ) : null}
-        {networkInfo?.version != null ? (
+        {networkInfo?.version ? (
           <Chip
             sx={{ ml: 1 }}
             size="small"
@@ -107,26 +107,20 @@ export default function NetworkInfoPanel(props: {
           {`Created: ${networkInfo?.creationTime.toLocaleString()}`}
         </Typography>
         <Typography
-          sx={{ mr: 1, fontSize: 14, color: 'gray' }}
+          sx={{ mr: 4, fontSize: 14, color: 'gray' }}
           variant="subtitle1"
         >
           {`Modified: ${networkInfo?.modificationTime.toLocaleString()}`}
         </Typography>
+        {networkInfo?.isNdex && (
+          <Typography sx={{ mr: 1, fontSize: 14, color: 'gray' }}>
+            UUID: {currentNetworkId}
+          </Typography>
+        )}
       </Box>
       <Divider />
       <Box sx={{ p: 1 }}>
         <Box>
-          {networkInfo?.isNdex && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Typography
-                sx={{ fontSize: 14, fontWeight: 'bold' }}
-                variant="subtitle1"
-              >
-                UUID:
-              </Typography>
-              <Typography variant="body2">{currentNetworkId}</Typography>
-            </div>
-          )}
           <Typography
             sx={{ fontSize: 14, fontWeight: 'bold' }}
             variant="subtitle1"
