@@ -717,6 +717,7 @@ export function ContinuousColorMappingForm(props: {
                     }}
                   >
                     <Box
+                      onClick={() => setlastDraggedHandleId(h.id)}
                       sx={{
                         width: 2,
                         height: 1,
