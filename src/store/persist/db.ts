@@ -22,7 +22,7 @@ const DB_NAME: string = 'cyweb-db'
 // Current version of the DB (integer only).
 // If older version is found, the migration
 // function will upgrade the existing data to this version.
-const currentVersion: number = 3
+const currentVersion: number = 4
 
 /**
  * Predefined object store names.
@@ -45,6 +45,9 @@ export const ObjectStoreNames = {
 
   // From v3
   ServiceApps: 'serviceApps',
+
+  // From V4
+  OpaqueAspects: 'opaqueAspects',
 } as const
 
 // The type derived from the names of object stores
@@ -70,6 +73,8 @@ const KeysV3 = {
   [ObjectStoreNames.Apps]: 'id',
 
   [ObjectStoreNames.ServiceApps]: 'url',
+
+  [ObjectStoreNames.OpaqueAspects]: 'id',
 } as const
 
 /**
@@ -88,7 +93,10 @@ class CyDB extends Dexie {
   [ObjectStoreNames.Apps]!: DxTable<CyApp>;
 
   // From v3
-  [ObjectStoreNames.ServiceApps]!: DxTable<ServiceApp>
+  [ObjectStoreNames.ServiceApps]!: DxTable<ServiceApp>;
+
+  // From v4
+  [ObjectStoreNames.OpaqueAspects]!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
@@ -133,7 +141,6 @@ export const initializeDb = async (): Promise<void> => {
 export const getDatabaseVersion = (): number => {
   return db.verno
 }
-
 
 export const getDb = async (): Promise<CyDB> => {
   return await Promise.resolve(db)
@@ -674,5 +681,32 @@ export const deleteServiceAppFromDb = async (url: string): Promise<void> => {
   // Check the db has the object store or not
   await db.transaction('rw', db.serviceApps, async () => {
     await db.serviceApps.delete(url)
+  })
+}
+
+export const putOpaqueAspectsToDb = async (
+  networkId: IdType,
+  aspects: Record<string, any[]>,
+): Promise<void> => {
+  await db.transaction('rw', db.opaqueAspects, async () => {
+    await db.opaqueAspects.put({ id: networkId, aspects })
+  })
+}
+
+export const getOpaqueAspectsFromDb = async (
+  networkId: IdType,
+): Promise<Record<string, any[]> | undefined> => {
+  return await db.opaqueAspects.get({ id: networkId })
+}
+
+export const deleteOpaqueAspectsFromDb = async (
+  networkId: IdType,
+): Promise<void> => {
+  await db.opaqueAspects.delete(networkId)
+}
+
+export const clearOpaqueAspectsFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.opaqueAspects, async () => {
+    await db.opaqueAspects.clear()
   })
 }
