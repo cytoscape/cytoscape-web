@@ -5,10 +5,8 @@ import {
   Typography,
   Paper,
   Popover,
-  TextField,
   IconButton,
   Tooltip,
-  ButtonBase,
 } from '@mui/material'
 import { scaleLinear } from '@visx/scale'
 import { extent } from 'd3-array'
@@ -52,121 +50,7 @@ import { Handle, addHandle, editHandle, removeHandle } from './Handle'
 import FormGroup from '@mui/material/FormGroup'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Checkbox from '@mui/material/Checkbox'
-import { MantineProvider, NumberInput } from '@mantine/core'
-
-// A button that displays a number input value, the user can click this button to open up a dropdown form that allows the user to input a number and cancel/confirm
-function ExpandableNumberInput(props: {
-  value: number
-  onConfirm: (value: number) => void
-  // setHandle: (id: number, value: number, vpValue: string) => void
-  min?: number
-  max?: number
-}): React.ReactElement {
-  const { value, onConfirm } = props
-  const [localValue, setLocalValue] = React.useState<number>(value as number)
-  const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null)
-
-  React.useEffect(() => {
-    setLocalValue(value as number)
-  }, [value])
-
-  const handleCancel = () => {
-    setLocalValue(value as number)
-    hidePopover()
-  }
-
-  const handleConfirm = () => {
-    onConfirm(localValue)
-    hidePopover()
-  }
-
-  const showPopover = (event: React.MouseEvent<HTMLButtonElement>): void => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const hidePopover = (): void => {
-    setAnchorEl(null)
-  }
-
-  const isValid = (value: number): boolean => {
-    if (props.min != null && value < props.min) {
-      return false
-    }
-    if (props.max != null && value > props.max) {
-      return false
-    }
-    return true
-  }
-
-  return (
-    <>
-      <ButtonBase onClick={(e) => showPopover(e)}>
-        <Box
-          sx={{
-            width: 50,
-            zIndex: 4,
-            mt: 1,
-            '&:hover': {
-              pointer: 'cursor',
-            },
-            overflow: 'hidden',
-            border: '1px solid #d6d6d6',
-            borderRadius: '4px',
-          }}
-        >
-          {value}
-        </Box>
-      </ButtonBase>
-
-      <Popover
-        open={anchorEl != null}
-        anchorEl={anchorEl}
-        onClose={hidePopover}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-      >
-        <NumberInput
-          error={
-            !isValid(localValue)
-              ? `Value must be between ${props.min} and ${props.max}`
-              : null
-          }
-          min={props.min}
-          max={props.max}
-          value={localValue as number}
-          decimalScale={2}
-          onChange={(newValue) => {
-            if (typeof newValue === 'string') {
-              setLocalValue(0)
-            } else {
-              setLocalValue(newValue)
-            }
-          }}
-        />
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Button color="error" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button disabled={!isValid(localValue)} onClick={handleConfirm}>
-            Confirm
-          </Button>
-        </Box>
-      </Popover>
-    </>
-  )
-}
+import { ExpandableNumberInput } from './ExpandableNumberInput'
 
 // color mapping form for now
 export function ContinuousColorMappingForm(props: {
@@ -493,413 +377,412 @@ export function ContinuousColorMappingForm(props: {
   }, [maxState])
 
   return (
-    <MantineProvider>
-      <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2, pt: 2 }}>
-        <Paper
-          sx={{
-            display: 'flex',
-            p: 1,
-            m: 1,
-            ml: 3,
-            mr: 3,
-            justifyContent: 'center',
-            backgroundColor: '#fcfffc',
-            color: '#595858',
+    <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2, pt: 2 }}>
+      <Paper
+        sx={{
+          display: 'flex',
+          p: 1,
+          m: 1,
+          ml: 3,
+          mr: 3,
+          justifyContent: 'center',
+          backgroundColor: '#fcfffc',
+          color: '#595858',
+        }}
+      >
+        Current Palette:&ensp;
+        <Button
+          onClick={showColorPickerMenu}
+          variant="outlined"
+          sx={{ color: '#63a5e8' }}
+          size="small"
+          startIcon={<Palette />}
+        >
+          {buttonText}
+        </Button>
+        <Popover
+          open={createColorPickerAnchorEl != null}
+          anchorEl={createColorPickerAnchorEl}
+          onClose={hideColorPickerMenu}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
           }}
         >
-          Current Palette:&ensp;
-          <Button
-            onClick={showColorPickerMenu}
-            variant="outlined"
-            sx={{ color: '#63a5e8' }}
-            size="small"
-            startIcon={<Palette />}
+          <Typography align={'center'} sx={{ p: 1 }}>
+            Set Palette
+          </Typography>
+          <ToggleButtonGroup
+            value={colorPalette}
+            onChange={handleColorPalette}
+            orientation="horizontal"
+            exclusive
+            fullWidth={true}
           >
-            {buttonText}
-          </Button>
-          <Popover
-            open={createColorPickerAnchorEl != null}
-            anchorEl={createColorPickerAnchorEl}
-            onClose={hideColorPickerMenu}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'center',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'center',
-            }}
-          >
-            <Typography align={'center'} sx={{ p: 1 }}>
-              Set Palette
-            </Typography>
-            <ToggleButtonGroup
-              value={colorPalette}
-              onChange={handleColorPalette}
-              orientation="horizontal"
-              exclusive
-              fullWidth={true}
+            <ToggleButton
+              value="rdbu"
+              aria-label="RdBu"
+              onClick={() => {
+                setMinPalette('#b2182b')
+                setMiddlePalette('#f7f7f7')
+                setMaxPalette('#2166ac')
+                setTextPalette('Red-Blue')
+              }}
             >
+              <Tooltip title="Red-Blue" placement="right">
+                <img src={RdBu} width="15" height="150" />
+              </Tooltip>
+            </ToggleButton>
+
+            <ToggleButton
+              value="puor"
+              aria-label="PuOr"
+              onClick={() => {
+                setMinPalette('#542788')
+                setMiddlePalette('#f7f7f7')
+                setMaxPalette('#b35806')
+                setTextPalette('Purple-Orange')
+              }}
+            >
+              <Tooltip title="Purple-Orange" placement="right">
+                <img src={PuOr} width="15" height="150" />
+              </Tooltip>
+            </ToggleButton>
+
+            <ToggleButton
+              value="prgn"
+              aria-label="PRGn"
+              onClick={() => {
+                setMinPalette('#762a83')
+                setMiddlePalette('#f7f7f7')
+                setMaxPalette('#1b7837')
+                setTextPalette('Purple-Red-Green')
+              }}
+            >
+              <Tooltip title="Purple-Red-Green" placement="right">
+                <img src={PRGn} width="15" height="150" />
+              </Tooltip>
+            </ToggleButton>
+
+            {!isColorBlindChecked && (
               <ToggleButton
-                value="rdbu"
-                aria-label="RdBu"
+                value="spectral"
+                aria-label="Spectral"
                 onClick={() => {
-                  setMinPalette('#b2182b')
-                  setMiddlePalette('#f7f7f7')
-                  setMaxPalette('#2166ac')
-                  setTextPalette('Red-Blue')
+                  setMinPalette('#d53e4f')
+                  setMiddlePalette('#ffffbf')
+                  setMaxPalette('#3288bd')
+                  setTextPalette('Spectral Colors')
                 }}
               >
-                <Tooltip title="Red-Blue" placement="right">
-                  <img src={RdBu} width="15" height="150" />
+                <Tooltip title="Spectral Colors" placement="right">
+                  <img src={Spectral} width="15" height="150" />
                 </Tooltip>
               </ToggleButton>
+            )}
 
+            <ToggleButton
+              value="brbg"
+              aria-label="BrBG"
+              onClick={() => {
+                setMinPalette('#8c510a')
+                setMiddlePalette('#f5f5f5')
+                setMaxPalette('#01665e')
+                setTextPalette('Brown-Blue-Green')
+              }}
+            >
+              <Tooltip title="Brown-Blue-Green" placement="right">
+                <img src={BrBG} width="15" height="150" />
+              </Tooltip>
+            </ToggleButton>
+
+            {!isColorBlindChecked && (
               <ToggleButton
-                value="puor"
-                aria-label="PuOr"
-                onClick={() => {
-                  setMinPalette('#542788')
-                  setMiddlePalette('#f7f7f7')
-                  setMaxPalette('#b35806')
-                  setTextPalette('Purple-Orange')
-                }}
-              >
-                <Tooltip title="Purple-Orange" placement="right">
-                  <img src={PuOr} width="15" height="150" />
-                </Tooltip>
-              </ToggleButton>
-
-              <ToggleButton
-                value="prgn"
-                aria-label="PRGn"
-                onClick={() => {
-                  setMinPalette('#762a83')
-                  setMiddlePalette('#f7f7f7')
-                  setMaxPalette('#1b7837')
-                  setTextPalette('Purple-Red-Green')
-                }}
-              >
-                <Tooltip title="Purple-Red-Green" placement="right">
-                  <img src={PRGn} width="15" height="150" />
-                </Tooltip>
-              </ToggleButton>
-
-              {!isColorBlindChecked && (
-                <ToggleButton
-                  value="spectral"
-                  aria-label="Spectral"
-                  onClick={() => {
-                    setMinPalette('#d53e4f')
-                    setMiddlePalette('#ffffbf')
-                    setMaxPalette('#3288bd')
-                    setTextPalette('Spectral Colors')
-                  }}
-                >
-                  <Tooltip title="Spectral Colors" placement="right">
-                    <img src={Spectral} width="15" height="150" />
-                  </Tooltip>
-                </ToggleButton>
-              )}
-
-              <ToggleButton
-                value="brbg"
-                aria-label="BrBG"
-                onClick={() => {
-                  setMinPalette('#8c510a')
-                  setMiddlePalette('#f5f5f5')
-                  setMaxPalette('#01665e')
-                  setTextPalette('Brown-Blue-Green')
-                }}
-              >
-                <Tooltip title="Brown-Blue-Green" placement="right">
-                  <img src={BrBG} width="15" height="150" />
-                </Tooltip>
-              </ToggleButton>
-
-              {!isColorBlindChecked && (
-                <ToggleButton
-                  value="rdylgn"
-                  aria-label="RdYlGn"
-                  onClick={() => {
-                    setMinPalette('#d73027')
-                    setMiddlePalette('#ffffbf')
-                    setMaxPalette('#1a9850')
-                    setTextPalette('Red-Yellow-Green')
-                  }}
-                >
-                  <Tooltip title="Red-Yellow-Green" placement="right">
-                    <img src={RdYlGn} width="15" height="150" />
-                  </Tooltip>
-                </ToggleButton>
-              )}
-
-              <ToggleButton
-                value="piyg"
-                aria-label="PiYG"
-                onClick={() => {
-                  setMinPalette('#c51b7d')
-                  setMiddlePalette('#f7f7f7')
-                  setMaxPalette('#4d9221')
-                  setTextPalette('Magenta-Yellow-Green')
-                }}
-              >
-                <Tooltip title="Magenta-Yellow-Green" placement="right">
-                  <img src={PiYG} width="15" height="150" />
-                </Tooltip>
-              </ToggleButton>
-
-              {!isColorBlindChecked && (
-                <ToggleButton
-                  value="rdgy"
-                  aria-label="RdGy"
-                  onClick={() => {
-                    setMinPalette('#b2182b')
-                    setMiddlePalette('#ffffff')
-                    setMaxPalette('#4d4d4d')
-                    setTextPalette('Red-Grey')
-                  }}
-                >
-                  <Tooltip title="Red-Grey" placement="right">
-                    <img src={RdGy} width="15" height="150" />
-                  </Tooltip>
-                </ToggleButton>
-              )}
-
-              <ToggleButton
-                value="rdylbu"
-                aria-label="RdYlBu"
+                value="rdylgn"
+                aria-label="RdYlGn"
                 onClick={() => {
                   setMinPalette('#d73027')
                   setMiddlePalette('#ffffbf')
-                  setMaxPalette('#4575b4')
-                  setTextPalette('Red-Yellow-Blue')
+                  setMaxPalette('#1a9850')
+                  setTextPalette('Red-Yellow-Green')
                 }}
               >
-                <Tooltip title="Red-Yellow-Blue" placement="right">
-                  <img src={RdYlBu} width="15" height="150" />
+                <Tooltip title="Red-Yellow-Green" placement="right">
+                  <img src={RdYlGn} width="15" height="150" />
                 </Tooltip>
               </ToggleButton>
-            </ToggleButtonGroup>
+            )}
 
-            <Paper
-              sx={{
-                display: 'flex',
-                p: 1,
-                m: 1,
-                ml: 3,
-                mr: 3,
-                justifyContent: 'space-evenly',
-                backgroundColor: '#fcfffc',
-                color: '#595858',
+            <ToggleButton
+              value="piyg"
+              aria-label="PiYG"
+              onClick={() => {
+                setMinPalette('#c51b7d')
+                setMiddlePalette('#f7f7f7')
+                setMaxPalette('#4d9221')
+                setTextPalette('Magenta-Yellow-Green')
               }}
             >
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={isReverseColorChecked}
-                      onChange={handleReverseColorCheckboxChange}
-                    />
-                  }
-                  label="reverse colors"
-                />
-              </FormGroup>
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={isColorBlindChecked}
-                      onChange={handleColorBlindCheckboxChange}
-                    />
-                  }
-                  label="colorblind-friendly"
-                />
-              </FormGroup>
-            </Paper>
-            <Paper
-              sx={{
-                display: 'flex',
-                p: 1,
-                m: 1,
-                ml: 3,
-                mr: 3,
-                justifyContent: 'space-evenly',
-                backgroundColor: '#fcfffc',
-                color: '#595858',
+              <Tooltip title="Magenta-Yellow-Green" placement="right">
+                <img src={PiYG} width="15" height="150" />
+              </Tooltip>
+            </ToggleButton>
+
+            {!isColorBlindChecked && (
+              <ToggleButton
+                value="rdgy"
+                aria-label="RdGy"
+                onClick={() => {
+                  setMinPalette('#b2182b')
+                  setMiddlePalette('#ffffff')
+                  setMaxPalette('#4d4d4d')
+                  setTextPalette('Red-Grey')
+                }}
+              >
+                <Tooltip title="Red-Grey" placement="right">
+                  <img src={RdGy} width="15" height="150" />
+                </Tooltip>
+              </ToggleButton>
+            )}
+
+            <ToggleButton
+              value="rdylbu"
+              aria-label="RdYlBu"
+              onClick={() => {
+                setMinPalette('#d73027')
+                setMiddlePalette('#ffffbf')
+                setMaxPalette('#4575b4')
+                setTextPalette('Red-Yellow-Blue')
               }}
             >
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  handleColorPicker()
-                }}
-                size="small"
-              >
-                Ok
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  hideColorPickerMenu()
-                }}
-                size="small"
-              >
-                Cancel
-              </Button>
-            </Paper>
-          </Popover>
-        </Paper>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            pt: 11.5,
-            mb: 3,
-            justifyContent: 'center',
-          }}
-        >
+              <Tooltip title="Red-Yellow-Blue" placement="right">
+                <img src={RdYlBu} width="15" height="150" />
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
+
           <Paper
             sx={{
               display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              position: 'relative',
-              userSelect: 'none',
-              pb: 6,
+              p: 1,
+              m: 1,
+              ml: 3,
+              mr: 3,
+              justifyContent: 'space-evenly',
+              backgroundColor: '#fcfffc',
+              color: '#595858',
             }}
-            elevation={4}
           >
-            <Box sx={{ p: 1.5 }}>
-              <Tooltip
-                title="Click to add new handle"
-                placement="top"
-                followCursor
+            <FormGroup>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isReverseColorChecked}
+                    onChange={handleReverseColorCheckboxChange}
+                  />
+                }
+                label="reverse colors"
+              />
+            </FormGroup>
+            <FormGroup>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isColorBlindChecked}
+                    onChange={handleColorBlindCheckboxChange}
+                  />
+                }
+                label="colorblind-friendly"
+              />
+            </FormGroup>
+          </Paper>
+          <Paper
+            sx={{
+              display: 'flex',
+              p: 1,
+              m: 1,
+              ml: 3,
+              mr: 3,
+              justifyContent: 'space-evenly',
+              backgroundColor: '#fcfffc',
+              color: '#595858',
+            }}
+          >
+            <Button
+              variant="outlined"
+              onClick={() => {
+                handleColorPicker()
+              }}
+              size="small"
+            >
+              Ok
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                hideColorPickerMenu()
+              }}
+              size="small"
+            >
+              Cancel
+            </Button>
+          </Paper>
+        </Popover>
+      </Paper>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          pt: 11.5,
+          mb: 3,
+          justifyContent: 'center',
+        }}
+      >
+        <Paper
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            position: 'relative',
+            userSelect: 'none',
+            pb: 6,
+          }}
+          elevation={4}
+        >
+          <Box sx={{ p: 1.5 }}>
+            <Tooltip
+              title="Click to add new handle"
+              placement="top"
+              followCursor
+            >
+              <Paper
+                sx={{
+                  display: 'flex',
+                  position: 'relative',
+                  '&:hover': { cursor: 'copy' },
+                }}
+                onClickCapture={(e) => {
+                  const gradientPositionX =
+                    e.clientX - e.currentTarget.getBoundingClientRect().x
+
+                  const newHandleValue =
+                    valuePixelScale.invert(gradientPositionX)
+                  const newHandleVpValue =
+                    color(colorScale(newHandleValue))?.formatHex() ?? '#000000'
+
+                  createHandle(newHandleValue, newHandleVpValue)
+                }}
               >
-                <Paper
-                  sx={{
-                    display: 'flex',
-                    position: 'relative',
-                    '&:hover': { cursor: 'copy' },
+                <ColorGradient
+                  numSteps={NUM_GRADIENT_STEPS}
+                  stepWidth={GRADIENT_STEP_WIDTH}
+                  height={GRADIENT_HEIGHT}
+                  domainLabel={m.attribute}
+                  axisOffsetLeft={GRADIENT_AXIS_OFFSET_LEFT}
+                  horizontalPadding={GRADIENT_AXIS_HORIZONTAL_PADDING}
+                  verticalPadding={GRADIENT_AXIS_VERTICAL_PADDING}
+                  valuePixelScale={valuePixelScale}
+                  colorScale={colorScale}
+                  cm={m}
+                />
+              </Paper>
+            </Tooltip>
+            {handles.map((h) => {
+              return (
+                <Draggable
+                  key={h.id}
+                  bounds="parent"
+                  axis="x"
+                  handle=".handle"
+                  onStart={(e) => {
+                    setlastDraggedHandleId(h.id)
                   }}
-                  onClickCapture={(e) => {
-                    const gradientPositionX =
-                      e.clientX - e.currentTarget.getBoundingClientRect().x
-
-                    const newHandleValue =
-                      valuePixelScale.invert(gradientPositionX)
-                    const newHandleVpValue =
-                      color(colorScale(newHandleValue))?.formatHex() ??
-                      '#000000'
-
-                    createHandle(newHandleValue, newHandleVpValue)
+                  onStop={(e) => {
+                    setlastDraggedHandleId(h.id)
+                  }}
+                  onDrag={(e, data) => {
+                    const newValue = valuePixelScale.invert(data.x)
+                    setHandle(h.id, newValue, h.vpValue as string)
+                  }}
+                  position={{
+                    x: valuePixelScale(h.value as number),
+                    y: 0,
                   }}
                 >
-                  <ColorGradient
-                    numSteps={NUM_GRADIENT_STEPS}
-                    stepWidth={GRADIENT_STEP_WIDTH}
-                    height={GRADIENT_HEIGHT}
-                    domainLabel={m.attribute}
-                    axisOffsetLeft={GRADIENT_AXIS_OFFSET_LEFT}
-                    horizontalPadding={GRADIENT_AXIS_HORIZONTAL_PADDING}
-                    verticalPadding={GRADIENT_AXIS_VERTICAL_PADDING}
-                    valuePixelScale={valuePixelScale}
-                    colorScale={colorScale}
-                    cm={m}
-                  />
-                </Paper>
-              </Tooltip>
-              {handles.map((h) => {
-                return (
-                  <Draggable
-                    key={h.id}
-                    bounds="parent"
-                    axis="x"
-                    handle=".handle"
-                    onStart={(e) => {
-                      setlastDraggedHandleId(h.id)
-                    }}
-                    onStop={(e) => {
-                      setlastDraggedHandleId(h.id)
-                    }}
-                    onDrag={(e, data) => {
-                      const newValue = valuePixelScale.invert(data.x)
-                      setHandle(h.id, newValue, h.vpValue as string)
-                    }}
-                    position={{
-                      x: valuePixelScale(h.value as number),
-                      y: 0,
+                  <Box
+                    onClick={() => setlastDraggedHandleId(h.id)}
+                    sx={{
+                      width: 2,
+                      height: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      position: 'absolute',
+                      zIndex: lastDraggedHandleId === h.id ? 3 : 1,
                     }}
                   >
-                    <Box
-                      onClick={() => setlastDraggedHandleId(h.id)}
+                    <Paper
+                      elevation={4}
                       sx={{
-                        width: 2,
-                        height: 1,
+                        p: 0.5,
+                        position: 'relative',
+                        top: -195,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        position: 'absolute',
+                        border: '0.5px solid #03082d',
                         zIndex: lastDraggedHandleId === h.id ? 3 : 1,
                       }}
                     >
-                      <Paper
-                        elevation={4}
-                        sx={{
-                          p: 0.5,
-                          position: 'relative',
-                          top: -195,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          border: '0.5px solid #03082d',
-                          zIndex: lastDraggedHandleId === h.id ? 3 : 1,
-                        }}
-                      >
-                        {handles.length >= 3 ? (
-                          <Delete
-                            onClick={() => {
-                              deleteHandle(h.id)
-                            }}
-                            sx={{
-                              position: 'absolute',
-                              top: -10,
-                              right: -10,
-                              color: '#03082d',
-                              fontSize: 22,
-                              '&:hover': {
-                                cursor: 'pointer',
-                                color: '#3d0303',
-                              },
-                            }}
-                          />
-                        ) : (
-                          <Delete
-                            sx={{
-                              position: 'absolute',
-                              top: -10,
-                              right: -10,
-                              color: 'rgba(0, 0, 0, 0.3)',
-                              fontSize: 22,
-                              pointerEvents: 'none',
-                            }}
-                          />
-                        )}
+                      {handles.length >= 3 ? (
+                        <Delete
+                          onClick={() => {
+                            deleteHandle(h.id)
+                          }}
+                          sx={{
+                            position: 'absolute',
+                            top: -10,
+                            right: -10,
+                            color: '#03082d',
+                            fontSize: 22,
+                            '&:hover': {
+                              cursor: 'pointer',
+                              color: '#3d0303',
+                            },
+                          }}
+                        />
+                      ) : (
+                        <Delete
+                          sx={{
+                            position: 'absolute',
+                            top: -10,
+                            right: -10,
+                            color: 'rgba(0, 0, 0, 0.3)',
+                            fontSize: 22,
+                            pointerEvents: 'none',
+                          }}
+                        />
+                      )}
 
-                        <Box sx={{ pl: 1.8, pr: 1.8 }}>
-                          <VisualPropertyValueForm
-                            currentValue={h.vpValue ?? null}
-                            visualProperty={props.visualProperty}
-                            currentNetworkId={props.currentNetworkId}
-                            onValueChange={(newValue) => {
-                              setHandle(
-                                h.id,
-                                h.value as number,
-                                newValue as string,
-                              )
-                            }}
-                          />
-                        </Box>
+                      <Box sx={{ pl: 1.8, pr: 1.8, mb: 1 }}>
+                        <VisualPropertyValueForm
+                          currentValue={h.vpValue ?? null}
+                          visualProperty={props.visualProperty}
+                          currentNetworkId={props.currentNetworkId}
+                          onValueChange={(newValue) => {
+                            setHandle(
+                              h.id,
+                              h.value as number,
+                              newValue as string,
+                            )
+                          }}
+                        />
+                      </Box>
+                      <Box sx={{ mb: 1 }}>
                         <ExpandableNumberInput
                           value={h.value as number}
                           onConfirm={(newValue) => {
@@ -908,237 +791,235 @@ export function ContinuousColorMappingForm(props: {
                           min={minState.value as number}
                           max={maxState.value as number}
                         />
-                      </Paper>
-                      <IconButton
-                        className="handle"
-                        size="large"
-                        sx={{
-                          position: 'relative',
-                          top: -220,
-                          '&:hover': { cursor: 'col-resize' },
-                        }}
-                      >
-                        <ArrowDropDownIcon
-                          sx={{ fontSize: '40px', color: '#03082d', zIndex: 3 }}
-                        />
-                      </IconButton>
-                    </Box>
-                  </Draggable>
-                )
-              })}
-              <Tooltip title="Set color value for values under the minimum.">
-                <Box
-                  sx={{
-                    width: 2,
-                    height: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    position: 'relative',
-                    top: -65,
-                    left: -20,
+                      </Box>
+                    </Paper>
+                    <IconButton
+                      className="handle"
+                      size="large"
+                      sx={{
+                        position: 'relative',
+                        top: -220,
+                        '&:hover': { cursor: 'col-resize' },
+                      }}
+                    >
+                      <ArrowDropDownIcon
+                        sx={{ fontSize: '40px', color: '#03082d', zIndex: 3 }}
+                      />
+                    </IconButton>
+                  </Box>
+                </Draggable>
+              )
+            })}
+            <Tooltip title="Set color value for values under the minimum.">
+              <Box
+                sx={{
+                  width: 2,
+                  height: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  position: 'relative',
+                  top: -65,
+                  left: -20,
+                }}
+              >
+                <VisualPropertyValueForm
+                  currentValue={m.ltMinVpValue}
+                  visualProperty={props.visualProperty}
+                  currentNetworkId={props.currentNetworkId}
+                  onValueChange={(newValue) => {
+                    updateContinuousMapping(
+                      min,
+                      max,
+                      handles,
+                      newValue,
+                      m.gtMaxVpValue,
+                    )
                   }}
-                >
-                  <VisualPropertyValueForm
-                    currentValue={m.ltMinVpValue}
-                    visualProperty={props.visualProperty}
-                    currentNetworkId={props.currentNetworkId}
-                    onValueChange={(newValue) => {
-                      updateContinuousMapping(
-                        min,
-                        max,
-                        handles,
-                        newValue,
-                        m.gtMaxVpValue,
-                      )
-                    }}
-                  />
-                </Box>
-              </Tooltip>
-              <Tooltip title="Set color value for values over the maximum.">
-                <Box
-                  sx={{
-                    width: 2,
-                    height: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    position: 'relative',
-                    top: -95,
-                    left: 580,
+                />
+              </Box>
+            </Tooltip>
+            <Tooltip title="Set color value for values over the maximum.">
+              <Box
+                sx={{
+                  width: 2,
+                  height: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  position: 'relative',
+                  top: -95,
+                  left: 580,
+                }}
+              >
+                <VisualPropertyValueForm
+                  currentValue={m.gtMaxVpValue}
+                  visualProperty={props.visualProperty}
+                  currentNetworkId={props.currentNetworkId}
+                  onValueChange={(newValue) => {
+                    updateContinuousMapping(
+                      min,
+                      max,
+                      handles,
+                      m.ltMinVpValue,
+                      newValue,
+                    )
                   }}
-                >
-                  <VisualPropertyValueForm
-                    currentValue={m.gtMaxVpValue}
-                    visualProperty={props.visualProperty}
-                    currentNetworkId={props.currentNetworkId}
-                    onValueChange={(newValue) => {
-                      updateContinuousMapping(
-                        min,
-                        max,
-                        handles,
-                        m.ltMinVpValue,
-                        newValue,
-                      )
-                    }}
-                  />
-                </Box>
-              </Tooltip>
-            </Box>
-          </Paper>
-        </Box>
+                />
+              </Box>
+            </Tooltip>
+          </Box>
+        </Paper>
+      </Box>
 
-        <Paper
-          sx={{
-            display: 'flex',
-            p: 1,
-            m: 1,
-            ml: 3,
-            mr: 3,
-            justifyContent: 'space-evenly',
-            backgroundColor: '#fcfffc',
-            color: '#595858',
+      <Paper
+        sx={{
+          display: 'flex',
+          p: 1,
+          m: 1,
+          ml: 3,
+          mr: 3,
+          justifyContent: 'space-evenly',
+          backgroundColor: '#fcfffc',
+          color: '#595858',
+        }}
+      >
+        <Button
+          onClick={showCreateHandleMenu}
+          variant="outlined"
+          sx={{ color: '#63a5e8' }}
+          size="small"
+          startIcon={<AddCircleIcon />}
+        >
+          New Handle
+        </Button>
+        <Popover
+          open={createHandleAnchorEl != null}
+          anchorEl={createHandleAnchorEl}
+          onClose={hideCreateHandleMenu}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
           }}
         >
-          <Button
-            onClick={showCreateHandleMenu}
-            variant="outlined"
-            sx={{ color: '#63a5e8' }}
-            size="small"
-            startIcon={<AddCircleIcon />}
-          >
-            New Handle
-          </Button>
-          <Popover
-            open={createHandleAnchorEl != null}
-            anchorEl={createHandleAnchorEl}
-            onClose={hideCreateHandleMenu}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'center',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'center',
+          <Box
+            sx={{
+              p: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              width: 180,
             }}
           >
-            <Box
-              sx={{
-                p: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                width: 180,
-              }}
-            >
-              <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  {m.attribute}
-                  <ExpandableNumberInput
-                    value={addHandleFormValue}
-                    onConfirm={(newValue) => setAddHandleFormValue(newValue)}
-                    min={minState.value as number}
-                    max={maxState.value as number}
-                  ></ExpandableNumberInput>
-                </Box>
-                <Box
-                  sx={{
-                    mt: 1,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  {props.visualProperty.displayName}
-                  <VisualPropertyValueForm
-                    currentValue={addHandleFormVpValue}
-                    visualProperty={props.visualProperty}
-                    currentNetworkId={props.currentNetworkId}
-                    onValueChange={(newValue) => {
-                      setAddHandleFormVpValue(newValue as string)
-                    }}
-                  />
-                </Box>
-              </Box>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  createHandle(
-                    addHandleFormValue,
-                    addHandleFormVpValue as string,
-                  )
-                  hideCreateHandleMenu()
+            <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}
-                size="small"
               >
-                Add Handle
-              </Button>
-            </Box>
-          </Popover>
-          <Button
-            onClick={showMinMaxMenu}
-            sx={{ color: '#63a5e8' }}
-            variant="outlined"
-            size="small"
-            startIcon={<EditIcon />}
-          >
-            Set Min and Max
-          </Button>
-          <Popover
-            open={editMinMaxAnchorEl != null}
-            onClose={hideMinMaxMenu}
-            anchorEl={editMinMaxAnchorEl}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'center',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'center',
-            }}
-          >
-            <Box sx={{ p: 1 }}>
-              <Box>
-                <Typography variant="body1">{m.attribute}</Typography>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
+                {m.attribute}
+                <ExpandableNumberInput
+                  value={addHandleFormValue}
+                  onConfirm={(newValue) => setAddHandleFormValue(newValue)}
+                  min={minState.value as number}
+                  max={maxState.value as number}
+                ></ExpandableNumberInput>
+              </Box>
+              <Box
+                sx={{
+                  mt: 1,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                }}
+              >
+                {props.visualProperty.displayName}
+                <VisualPropertyValueForm
+                  currentValue={addHandleFormVpValue}
+                  visualProperty={props.visualProperty}
+                  currentNetworkId={props.currentNetworkId}
+                  onValueChange={(newValue) => {
+                    setAddHandleFormVpValue(newValue as string)
                   }}
-                >
-                  {'Minimum Value'}
-                  <ExpandableNumberInput
-                    value={minState.value as number}
-                    onConfirm={(newValue) =>
-                      setMinState({ ...minState, value: newValue })
-                    }
-                  ></ExpandableNumberInput>
-                </Box>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  {'Maximum Value'}
-                  <ExpandableNumberInput
-                    value={maxState.value as number}
-                    onConfirm={(newValue) =>
-                      setMaxState({ ...maxState, value: newValue })
-                    }
-                  ></ExpandableNumberInput>
-                </Box>
+                />
               </Box>
             </Box>
-          </Popover>
-        </Paper>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                createHandle(addHandleFormValue, addHandleFormVpValue as string)
+                hideCreateHandleMenu()
+              }}
+              size="small"
+            >
+              Add Handle
+            </Button>
+          </Box>
+        </Popover>
+        <Button
+          onClick={showMinMaxMenu}
+          sx={{ color: '#63a5e8' }}
+          variant="outlined"
+          size="small"
+          startIcon={<EditIcon />}
+        >
+          Set Min and Max
+        </Button>
+        <Popover
+          open={editMinMaxAnchorEl != null}
+          onClose={hideMinMaxMenu}
+          anchorEl={editMinMaxAnchorEl}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+        >
+          <Box sx={{ p: 1 }}>
+            <Box>
+              <Typography variant="body1">{m.attribute}</Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                {'Minimum Value'}
+                <ExpandableNumberInput
+                  value={minState.value as number}
+                  onConfirm={(newValue) =>
+                    setMinState({ ...minState, value: newValue })
+                  }
+                ></ExpandableNumberInput>
+              </Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mt: 1,
+                }}
+              >
+                {'Maximum Value'}
+                <ExpandableNumberInput
+                  value={maxState.value as number}
+                  onConfirm={(newValue) =>
+                    setMaxState({ ...maxState, value: newValue })
+                  }
+                ></ExpandableNumberInput>
+              </Box>
+            </Box>
+          </Box>
+        </Popover>
       </Paper>
-    </MantineProvider>
+    </Paper>
   )
 }
