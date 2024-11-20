@@ -1,4 +1,5 @@
 import { MenuItem, Tooltip, Box } from '@mui/material'
+import { Menu } from 'primereact/menu'
 import { ReactElement, useContext } from 'react'
 import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
 import { IdType } from '../../../models/IdType'
@@ -188,7 +189,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
         ? 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
         : 'LLM query is only available for HCX networks'
     return (
-      <Tooltip title={tooltipTitle}>
+      <Tooltip arrow title={tooltipTitle} placement="right">
         <Box>{menuItem}</Box>
       </Tooltip>
     )

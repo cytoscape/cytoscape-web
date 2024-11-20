@@ -613,22 +613,28 @@ export function ContinuousColorMappingForm(props: {
             }}
           >
             <Button
-              variant="outlined"
-              onClick={() => {
-                handleColorPicker()
-              }}
-              size="small"
-            >
-              Ok
-            </Button>
-            <Button
-              variant="outlined"
+              color="primary"
               onClick={() => {
                 hideColorPickerMenu()
               }}
               size="small"
             >
               Cancel
+            </Button>
+            <Button
+              sx={{
+                color: '#FFFFFF',
+                backgroundColor: '#337ab7',
+                '&:hover': {
+                  backgroundColor: '#285a9b',
+                },
+              }}
+              onClick={() => {
+                handleColorPicker()
+              }}
+              size="small"
+            >
+              Confirm
             </Button>
           </Paper>
         </Popover>

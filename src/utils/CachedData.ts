@@ -11,4 +11,5 @@ export interface CachedData {
   visualStyle?: VisualStyle
   networkViews?: NetworkView[]
   visualStyleOptions?: VisualStyleOptions
+  otherAspects?: any[]
 }

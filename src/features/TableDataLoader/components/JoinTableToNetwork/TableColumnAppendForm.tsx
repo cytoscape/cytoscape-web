@@ -496,7 +496,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
           <Button
             disabled={loading}
             variant="default"
-            color="red"
+            color="primary"
             onClick={() => handleCancel()}
           >
             Cancel
@@ -506,6 +506,15 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
             label="All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
           >
             <Button
+              styles={(theme) => ({
+                root: {
+                  color: '#FFFFFF',
+                  backgroundColor: '#337ab7',
+                  '&:hover': {
+                    backgroundColor: '#285a9b',
+                  },
+                },
+              })}
               loading={loading}
               disabled={submitDisabled}
               onClick={() => handleConfirm()}

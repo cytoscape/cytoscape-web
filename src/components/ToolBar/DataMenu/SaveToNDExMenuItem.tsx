@@ -284,9 +284,36 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={saveCopyToNDEx}>Yes, create copy to NDEx</Button>
-        <Button onClick={overwriteNDExNetwork} color="error">
+        <Button
+          onClick={overwriteNDExNetwork}
+          sx={{
+            color: '#F50157',
+            backgroundColor: 'transparent',
+            '&:hover': {
+              color: '#FFFFFF',
+              backgroundColor: '#fc266f',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
+        >
           No, overwrite the network in NDEx
+        </Button>
+        <Button
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
+          onClick={saveCopyToNDEx}
+        >
+          Yes, create copy to NDEx
         </Button>
       </DialogActions>
     </Dialog>

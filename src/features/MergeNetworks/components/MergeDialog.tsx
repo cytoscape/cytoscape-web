@@ -5,6 +5,7 @@ import {
   ArrowDownward as ArrowDownwardIcon,
   ExpandMore as ExpandMoreIcon,
   Star as StarIcon,
+  Info as InfoIcon,
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
 } from '@mui/icons-material'
@@ -540,6 +541,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
 
   return (
     <Dialog
+      onKeyDown={(e) => {
+        e.stopPropagation()
+      }}
+      onClick={(e) => {
+        e.stopPropagation()
+      }}
       fullScreen={fullScreen}
       maxWidth="md"
       fullWidth={true}
@@ -570,7 +577,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           </IconButton>
         </Tooltip>
       </Box>
-      <DialogContent>
+      <DialogContent sx={{ paddingTop: 0 }}>
         <Box className="toggleButtonGroup">
           <ToggleButtonGroup
             value={mergeOpType}
@@ -603,6 +610,31 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               <DifferenceIcon /> Difference
             </ToggleButton>
           </ToggleButtonGroup>
+          <Tooltip
+            title={
+              <Box sx={{ maxWidth: '220px' }}>
+                <p>
+                  <strong>UNION:</strong> Adds the subsequent network(s) to the
+                  base network, merging any common nodes and edges.
+                </p>
+                <p>
+                  <strong>INTERSECTION:</strong> Creates a network containing
+                  only the nodes and edges that are common across all selected
+                  networks.
+                </p>
+                <p>
+                  <strong>DIFFERENCE:</strong> Subtracts the base network from
+                  the second network according to the specified node removal
+                  rule.
+                </p>
+              </Box>
+            }
+            placement="right"
+          >
+            <Box>
+              <InfoIcon sx={{ color: 'rgb(0,0,0,0.4)' }} />
+            </Box>
+          </Tooltip>
         </Box>
 
         {mergeOpType === MergeType.difference && (
@@ -620,7 +652,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             </FormLabel>
             <RadioGroup
               aria-label="node removal policy"
-              value={strictRemoveMode}
+              value={strictRemoveMode.toString()}
               onChange={handleStrictRemoveModeChange}
               name="node-removal-options"
               style={{ marginLeft: '20px' }}
@@ -640,7 +672,26 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           </FormControl>
         )}
 
-        <Typography variant="h6" style={{ margin: '20px 0' }}>
+        <Typography variant="h6" style={{ margin: '10px 0' }}>
+          Merged Network Name:
+        </Typography>
+        <TextField
+          label="Enter merged network name"
+          value={mergedNetworkName}
+          onChange={handleNameChange}
+          fullWidth
+          margin="normal"
+          InputProps={{
+            style: { color: isNameDuplicate ? 'orange' : 'inherit' },
+          }}
+        />
+        {isNameDuplicate && (
+          <Typography color="orange">
+            Warning: A network with this name already exists in your workspace.
+          </Typography>
+        )}
+
+        <Typography variant="h6" style={{ margin: '10px 0' }}>
           Select Networks to Merge:
         </Typography>
 
@@ -757,25 +808,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             <Typography>Advanced Options</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography variant="h6" style={{ margin: '5px 0 5px 0' }}>
-              Merged Network Name:
-            </Typography>
-            <TextField
-              label="Enter merged network name"
-              value={mergedNetworkName}
-              onChange={handleNameChange}
-              fullWidth
-              margin="normal"
-              InputProps={{
-                style: { color: isNameDuplicate ? 'orange' : 'inherit' },
-              }}
-            />
-            {isNameDuplicate && (
-              <Typography color="orange">
-                Warning: A network with this name already exists in your
-                workspace.
-              </Typography>
-            )}
             <Typography variant="h6" style={{ margin: '5px 0 10px 0' }}>
               Matching columns:
             </Typography>
@@ -845,7 +877,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                 control={
                   <Checkbox
                     checked={mergeWithinNetwork}
-                    onChange={() => setMergeWithinNetwork(!mergeWithinNetwork)}
+                    onChange={(e) => setMergeWithinNetwork(e.target.checked)}
                     name="mergeWithinNetwork"
                     color="primary"
                   />
@@ -861,7 +893,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                   control={
                     <Checkbox
                       checked={mergeOnlyNodes}
-                      onChange={() => setMergeOnlyNodes(!mergeOnlyNodes)}
+                      onChange={(e) => setMergeOnlyNodes(e.target.checked)}
                       name="mergeOnlyNodes"
                       color="primary"
                       disabled={MergeType.intersection !== mergeOpType}
@@ -882,19 +914,26 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         onConfirm={() => setShowError(false)}
       />
       <DialogActions>
-        <Button onClick={handleClose} color="secondary">
+        <Button onClick={handleClose} color="primary">
           Cancel
         </Button>
         {mergeTooltipIsOpen ? (
           <Tooltip title={mergeTooltipText} placement="top" arrow>
             <span>
-              <Button color="primary" disabled={true}>
-                Merge
-              </Button>
+              <Button disabled={true}>Merge</Button>
             </span>
           </Tooltip>
         ) : (
-          <Button onClick={handleMerge} color="primary">
+          <Button
+            onClick={handleMerge}
+            sx={{
+              color: '#FFFFFF',
+              backgroundColor: '#337ab7',
+              '&:hover': {
+                backgroundColor: '#285a9b',
+              },
+            }}
+          >
             Merge
           </Button>
         )}

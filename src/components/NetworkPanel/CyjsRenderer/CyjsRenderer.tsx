@@ -44,6 +44,8 @@ interface NetworkRendererProps {
    * the others will be hidden.
    */
   displayMode?: DisplayMode
+
+  hasTab?: boolean
 }
 
 /**
@@ -53,6 +55,7 @@ interface NetworkRendererProps {
 const CyjsRenderer = ({
   network,
   displayMode = DisplayMode.SELECT,
+  hasTab = false,
 }: NetworkRendererProps): ReactElement => {
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
@@ -226,7 +229,8 @@ const CyjsRenderer = ({
       // This is necessary to access the latest value from closure
       const activeId: string = activeNetworkIdRef.current
 
-      const shiftOrMetaKeyPressed = e.originalEvent.shiftKey || e.originalEvent.metaKey
+      const shiftOrMetaKeyPressed =
+        e.originalEvent.shiftKey || e.originalEvent.metaKey
 
       if (
         activeId !== undefined &&
@@ -239,10 +243,13 @@ const CyjsRenderer = ({
         }
         return
       }
-      
+
       if (e.target === cy) {
         // Background click
-        if (displayMode === DisplayMode.SELECT && shiftOrMetaKeyPressed === false) {
+        if (
+          displayMode === DisplayMode.SELECT &&
+          shiftOrMetaKeyPressed === false
+        ) {
           exclusiveSelect(id, [], [])
           // setSubSelectedEdges([])
         } else {
@@ -263,7 +270,7 @@ const CyjsRenderer = ({
             setClickSelection(true)
           }
         } else {
-          if (shiftOrMetaKeyPressed){
+          if (shiftOrMetaKeyPressed) {
             toggleSelected(id, [e.target.data('id')])
           } else {
             const selectedNodes: IdType[] = []
@@ -670,7 +677,7 @@ const CyjsRenderer = ({
             display: 'flex',
             position: 'absolute',
             alignItems: 'center',
-            top: '1em',
+            top: hasTab ? '4em' : '1em',
             left: '1em',
             zIndex: 2000,
           }}

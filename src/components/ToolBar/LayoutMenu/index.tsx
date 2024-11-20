@@ -1,6 +1,5 @@
 import Button from '@mui/material/Button'
-import Menu from '@mui/material/Menu'
-import { Box, Divider, MenuItem, Tooltip } from '@mui/material'
+import { Box, Divider, Tooltip, MenuItem } from '@mui/material'
 import { useRef, useState } from 'react'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { useViewModelStore } from '../../../store/ViewModelStore'
@@ -61,31 +60,29 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
   const cellViewIsSelected = activeNetworkViewTabIndex === 1
 
-  //disable layouts for cell view, meaning
-  const disabled =
-    isHCX(summary) && // the current network is a hierarchy
-    currentNetworkId === targetNetworkId && // the hierarchy network is the active view
-    cellViewIsSelected // the cell view tab is selected
+  //disable all the layout menu items
+  const allDisabled =
+    (isHCX(summary) && // the current network is a hierarchy
+      currentNetworkId === targetNetworkId && // the hierarchy network is the active view
+      cellViewIsSelected) || // the cell view tab is selected
+    targetNetworkId === '' // no network is selected
 
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
-  const handleOpenDropdownMenu = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const op = useRef(null)
+  const menuRef = useRef(null)
 
   const handleClose = (): void => {
-    ;(op.current as any)?.hide()
     setAnchorEl(null)
+    const menuRefCurrent = menuRef.current as any
+    menuRefCurrent.hide()
   }
 
   const handleOpenDialog = (open: boolean): void => {
     setAnchorEl(null)
+    const menuRefCurrent = menuRef.current as any
+    menuRefCurrent.hide()
     setOpenDialog(open)
   }
 
@@ -130,30 +127,53 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     })
 
     return [
-      ...layoutMenuItems.map((menuItem: any) => {
-        return {
-          label: menuItem.label,
-          template: (
-            <Tooltip
-              arrow
-              placement={'right'}
-              title={menuItem.description}
-              key={menuItem.key}
-            >
-              <MenuItem
+      ...(allDisabled
+        ? [
+            {
+              label: '',
+              template: (
+                <Tooltip
+                  arrow
+                  placement="right"
+                  title={
+                    targetNetworkId === ''
+                      ? 'Layouts are disabled since the network view is empty'
+                      : 'Layouts cannot be applied to the current network view'
+                  }
+                >
+                  <Box>
+                    {layoutMenuItems.map((menuItem: any) => (
+                      <MenuItem key={menuItem.key} disabled={true}>
+                        {menuItem.label}
+                      </MenuItem>
+                    ))}
+                  </Box>
+                </Tooltip>
+              ),
+            },
+          ]
+        : layoutMenuItems.map((menuItem: any) => ({
+            label: menuItem.label,
+            template: (
+              <Tooltip
+                arrow
+                placement={'right'}
+                title={menuItem.description}
                 key={menuItem.key}
-                disabled={menuItem.disabled}
-                onClick={() => {
-                  handleClose()
-                  menuItem.onClick()
-                }}
               >
-                {menuItem.label}
-              </MenuItem>
-            </Tooltip>
-          ),
-        }
-      }),
+                <MenuItem
+                  key={menuItem.key}
+                  disabled={menuItem.disabled}
+                  onClick={() => {
+                    handleClose()
+                    menuItem.onClick()
+                  }}
+                >
+                  {menuItem.label}
+                </MenuItem>
+              </Tooltip>
+            ),
+          }))),
       {
         label: '',
         template: <Divider />,
@@ -161,7 +181,12 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       {
         label: 'Settings...',
         template: (
-          <MenuItem onClick={() => handleOpenDialog(true)}>
+          <MenuItem
+            onClick={() => {
+              handleClose()
+              handleOpenDialog(true)
+            }}
+          >
             Settings...
           </MenuItem>
         ),
@@ -169,45 +194,28 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     ]
   }
 
-  const innerButton = disabled ? (
-    <Tooltip title="Layouts cannot be applied to the current network view">
-      <Box>
-        <Button
-          sx={{
-            color: 'white',
-            textTransform: 'none',
-          }}
-          id={label}
-          aria-controls={open ? 'basic-menu' : undefined}
-          aria-haspopup="true"
-          aria-expanded={open ? 'true' : undefined}
-          onClick={(e) => (op.current as any)?.toggle(e)}
-          disabled
-        >
-          {label}
-        </Button>
-      </Box>
-    </Tooltip>
-  ) : (
-    <Button
-      sx={{
-        color: 'white',
-        textTransform: 'none',
-      }}
-      id={label}
-      aria-controls={open ? 'basic-menu' : undefined}
-      aria-haspopup="true"
-      aria-expanded={open ? 'true' : undefined}
-      onClick={(e) => (op.current as any)?.toggle(e)}
-    >
-      {label}
-    </Button>
-  )
-
   return (
     <PrimeReactProvider>
-      {innerButton}
-      <OverlayPanel ref={op} unstyled>
+      <Button
+        sx={{
+          color: 'white',
+          textTransform: 'none',
+        }}
+        id={label}
+        aria-controls={open ? 'basic-menu' : undefined}
+        aria-haspopup="true"
+        aria-expanded={open ? 'true' : undefined}
+        onClick={(e) => {
+          if (menuRef.current === null) {
+            return
+          }
+          const menuRefCurrent = menuRef.current as any
+          menuRefCurrent.toggle(e)
+        }}
+      >
+        {label}
+      </Button>
+      <OverlayPanel ref={menuRef} unstyled>
         <TieredMenu model={getMenuItems()} />
       </OverlayPanel>
       <LayoutOptionDialog
@@ -215,6 +223,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
         network={target}
         open={openDialog}
         setOpen={setOpenDialog}
+        allDisabled={allDisabled}
       />
     </PrimeReactProvider>
   )

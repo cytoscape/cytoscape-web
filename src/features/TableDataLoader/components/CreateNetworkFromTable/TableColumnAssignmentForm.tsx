@@ -117,7 +117,9 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   )
 
   const ui = useUiStateStore((state) => state.ui)
-  const setVisualStyleOptions = useUiStateStore((state) => state.setVisualStyleOptions)
+  const setVisualStyleOptions = useUiStateStore(
+    (state) => state.setVisualStyleOptions,
+  )
 
   const addNewNetwork = useNetworkStore((state) => state.add)
 
@@ -220,7 +222,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     // therefore, as a temporary fix, the first operation that should be done is to set the
     // current network to be the new network id
     setCurrentNetworkId(newNetworkId)
-    setVisualStyleOptions(newNetworkId);
+    setVisualStyleOptions(newNetworkId)
     addNewNetwork(network)
     setVisualStyle(newNetworkId, visualStyle)
     setTables(newNetworkId, nodeTable, edgeTable)
@@ -457,7 +459,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           <Button
             disabled={loading}
             variant="default"
-            color="red"
+            color="primary"
             onClick={() => handleCancel()}
           >
             Cancel
@@ -468,6 +470,15 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
             label="All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
           >
             <Button
+              styles={(theme) => ({
+                root: {
+                  color: '#FFFFFF',
+                  backgroundColor: '#337ab7',
+                  '&:hover': {
+                    backgroundColor: '#285a9b',
+                  },
+                },
+              })}
               loading={loading}
               disabled={submitDisabled}
               onClick={() => handleConfirm()}

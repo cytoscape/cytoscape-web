@@ -12,14 +12,25 @@ export const CancelConfirmButtonGroup = (
   return (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
       <Button
-        color="error"
+        color="primary"
         onClick={() => {
           closePopover('cancel')
         }}
       >
         Cancel
       </Button>
-      <Button onClick={() => closePopover('confirm')}>Confirm</Button>
+      <Button
+        sx={{
+          color: '#FFFFFF',
+          backgroundColor: '#337ab7',
+          '&:hover': {
+            backgroundColor: '#285a9b',
+          },
+        }}
+        onClick={() => closePopover('confirm')}
+      >
+        Confirm
+      </Button>
     </Box>
   )
 }

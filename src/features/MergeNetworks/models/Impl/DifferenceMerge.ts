@@ -99,7 +99,7 @@ export function differenceMerge(fromNetworks: IdType[], toNetworkId: IdType, net
         }    
     })
 
-    if (strictRemoveMode) { // subtract the node as long as it exists in the seco
+    if (strictRemoveMode) { // subtract the node as long as it exists in the second network
         for(const nodeId of unmatchedNodes){
             NetworkFn.addNode(mergedNetwork, nodeId);
         }

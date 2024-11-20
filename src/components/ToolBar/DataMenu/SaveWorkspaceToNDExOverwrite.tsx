@@ -1,14 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react'
-import {
-  MenuItem,
-  Box,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-} from '@mui/material'
+import { MenuItem, Box, Tooltip } from '@mui/material'
 import { BaseMenuProps } from '../BaseMenuProps'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
@@ -29,6 +20,7 @@ import {
   saveAllNetworks,
   ndexDuplicateKeyErrorMessage,
 } from '../../../utils/ndex-utils'
+import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
   props: BaseMenuProps,
@@ -161,21 +153,6 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
     handleOpenDialog()
   }
 
-  const dialog = (
-    <Dialog open={openDialog} onClose={handleCloseDialog}>
-      <DialogTitle>
-        Do you want to save (overwrite) the current workspace?
-      </DialogTitle>
-      <DialogContent></DialogContent>
-      <DialogActions>
-        <Button onClick={handleCloseDialog}>Cancel</Button>
-        <Button disabled={isLoading} onClick={saveWorkspaceToNDEx}>
-          Save
-        </Button>
-      </DialogActions>
-    </Dialog>
-  )
-
   const menuItem = (
     <MenuItem
       disabled={!authenticated}
@@ -194,7 +171,16 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
           <Box>{menuItem}</Box>
         </Tooltip>
       )}
-      {dialog}
+      <ConfirmationDialog
+        title="Save Workspace to NDEx"
+        message="Do you want to save/overwrite the current workspace to NDEx?"
+        onConfirm={saveWorkspaceToNDEx}
+        open={openDialog}
+        setOpen={setOpenDialog}
+        buttonTitle="Save"
+        isAlert={true}
+        confirmDisabled={isLoading}
+      />
     </>
   )
 }

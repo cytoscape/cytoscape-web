@@ -109,15 +109,27 @@ export const LoadWorkspaceDialog: React.FC<{
       } else {
         alert('Selected workspace not found')
       }
+      await fetchMyWorkspaces(ndexBaseUrl, getToken)
+        .then(setMyWorkspaces)
+        .catch((err) => {
+          console.log(err)
+        })
+      setSelectedWorkspaceId(null)
     } else {
       alert('No workspace selected')
     }
-    handleClose()
     setOpenDialog(false)
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="lg">
+    <Dialog
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="lg"
+    >
       <DialogTitle>My Workspaces</DialogTitle>
       <DialogContent>
         {myWorkspaces.length === 0 ? (
@@ -177,17 +189,37 @@ export const LoadWorkspaceDialog: React.FC<{
           }}
         >
           <Button
-            color="error"
+            sx={{
+              color: '#F50157',
+              backgroundColor: 'transparent',
+              '&:hover': {
+                color: '#FFFFFF',
+                backgroundColor: '#fc266f',
+              },
+              '&:disabled': {
+                backgroundColor: 'transparent',
+              },
+            }}
             onClick={handleDeleteWorkspaceClick}
             disabled={selectedWorkspaceId == null}
           >
             Delete Workspace
           </Button>
           <Box sx={{ display: 'flex' }}>
-            <Button color="error" onClick={handleClose} sx={{ mr: 2 }}>
+            <Button color="primary" onClick={handleClose} sx={{ mr: 2 }}>
               Cancel
             </Button>
             <Button
+              sx={{
+                color: '#FFFFFF',
+                backgroundColor: '#337ab7',
+                '&:hover': {
+                  backgroundColor: '#285a9b',
+                },
+                '&:disabled': {
+                  backgroundColor: 'transparent',
+                },
+              }}
               onClick={handleOpenWorkspace}
               disabled={selectedWorkspaceId == null}
             >
@@ -204,7 +236,20 @@ export const LoadWorkspaceDialog: React.FC<{
             </DialogContent>
             <DialogActions>
               <Button onClick={handleCloseDialog}>Cancel</Button>
-              <Button color="error" onClick={handleConfirmDelete}>
+              <Button
+                sx={{
+                  color: '#F50157',
+                  backgroundColor: 'transparent',
+                  '&:hover': {
+                    color: '#FFFFFF',
+                    backgroundColor: '#fc266f',
+                  },
+                  '&:disabled': {
+                    backgroundColor: 'transparent',
+                  },
+                }}
+                onClick={handleConfirmDelete}
+              >
                 Delete
               </Button>
             </DialogActions>

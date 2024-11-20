@@ -14,6 +14,7 @@ export const ToolsMenu: React.FC<DropdownMenuProps> = (
   const open = Boolean(anchorEl)
 
   const handleClose = (): void => {
+    ;(op.current as any)?.hide()
     setAnchorEl(null)
   }
 

@@ -445,23 +445,33 @@ export const LoadFromNdexDialog = (
       >
         <Box sx={{ pl: 2 }}>{successMessage ?? errorMessage ?? ''}</Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Button color="error" onClick={handleClose} sx={{ mr: 7 }}>
+          <Button color="primary" onClick={handleClose} sx={{ mr: 1 }}>
             Cancel
           </Button>
           <Button
+            sx={{
+              color: '#FFFFFF',
+              backgroundColor: '#337ab7',
+              '&:hover': {
+                backgroundColor: '#285a9b',
+              },
+              '&:disabled': {
+                backgroundColor: 'transparent',
+              },
+            }}
             disabled={selectedNetworks.length === 0}
             onClick={() => {
               setErrorMessage(undefined)
               setSuccessMessage(undefined)
               addMessage({
-                message: `Loading ${selectedNetworks.length} network(s) from NDEx`,
+                message: `Loading ${selectedNetworks.length} network${selectedNetworks.length > 1 ? 's' : ''} from NDEx`,
                 duration: 3000,
               })
               void addNDExNetworksToWorkspace(selectedNetworks)
               handleClose()
             }}
           >
-            {`Open ${selectedNetworks.length} Network(s)`}
+            {`Open ${selectedNetworks.length} Network${selectedNetworks.length > 1 ? 's' : ''}`}
           </Button>
           {/* </Box> */}
         </Box>

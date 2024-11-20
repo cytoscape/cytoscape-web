@@ -110,8 +110,8 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
         ) {
           // Adjust the original node position based on the current scaling factor
           originalPositions?.set(nodeId, [
-            nv.x / scalingFactor,
-            nv.y / scalingFactor,
+            nv.x / (scalingType === 'height' ? 1.0 : scalingFactor),
+            nv.y / (scalingType === 'width' ? 1.0 : scalingFactor),
             nv.z ?? 0 / scalingFactor,
           ])
         }
@@ -224,7 +224,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
         <IconButton
           aria-label="refresh"
           size="large"
-          sx={{ paddingBottom: theme.spacing(4) }}
+          sx={{ marginBottom: theme.spacing(4) }}
           onClick={reset}
         >
           <RefreshIcon fontSize="large" />
