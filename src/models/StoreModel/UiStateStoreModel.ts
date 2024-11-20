@@ -34,6 +34,8 @@ export interface UiStateAction {
     arrowColorMatchesEdge: boolean,
   ) => void
   setNetworkViewTabIndex: (index: number) => void
+
+  setCustomNetworkTabName: (rendererId: IdType, name: string) => void
 }
 
 export type UiStateStore = UiState & UiStateAction
