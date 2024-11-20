@@ -94,7 +94,7 @@ const toRangeAndDomain = <T extends VisualPropertyValueType>(
 
   return [domain, range]
 }
-const getMapper = <T extends VisualPropertyValueType>(
+export const getMapper = <T extends VisualPropertyValueType>(
   cm: ContinuousMappingFunction,
 ): Mapper => {
   const { min, max, controlPoints, defaultValue, ltMinVpValue, gtMaxVpValue } =
