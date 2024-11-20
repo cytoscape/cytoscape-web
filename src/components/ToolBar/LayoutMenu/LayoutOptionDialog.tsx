@@ -39,6 +39,7 @@ interface LayoutOptionDialogProps {
   network: Network
   open: boolean
   setOpen: (open: boolean) => void
+  allDisabled: boolean
 }
 
 export const LayoutOptionDialog = ({
@@ -46,6 +47,7 @@ export const LayoutOptionDialog = ({
   afterLayout,
   open,
   setOpen,
+  allDisabled,
 }: LayoutOptionDialogProps): JSX.Element => {
   const preferredLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredLayout,
@@ -153,6 +155,8 @@ export const LayoutOptionDialog = ({
 
   return (
     <Dialog
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
       open={open}
       onClose={handleClose}
       PaperComponent={DraggablePaper}
@@ -221,7 +225,7 @@ export const LayoutOptionDialog = ({
           Close
         </Button>
         <Button
-          disabled={disabled}
+          disabled={allDisabled || disabled}
           onClick={handleApply}
           sx={{
             color: '#FFFFFF',
