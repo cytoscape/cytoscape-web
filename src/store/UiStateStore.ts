@@ -238,5 +238,14 @@ export const useUiStateStore = create(
         return state
       })
     },
+    setCustomNetworkTabName: (rendererId: IdType, name: string) => {
+      set((state) => {
+        if (!state.ui.customNetworkTabName) {
+          state.ui.customNetworkTabName = {}
+        }
+        state.ui.customNetworkTabName[rendererId] = name
+        return state
+      })
+    },
   })),
 )
