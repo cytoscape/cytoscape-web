@@ -60,7 +60,7 @@ export type ObjectStoreNames =
  * This defines the primary key for each object store.
  *
  */
-const KeysV3 = {
+const Keys = {
   [ObjectStoreNames.Workspace]: 'id',
   [ObjectStoreNames.Summaries]: 'externalId',
   [ObjectStoreNames.CyNetworks]: 'id',
@@ -100,7 +100,7 @@ class CyDB extends Dexie {
 
   constructor(dbName: string) {
     super(dbName)
-    this.version(currentVersion).stores(KeysV3)
+    this.version(currentVersion).stores(Keys)
 
     // This will be applied only when the DB is created and should not be
     // called multiple times
@@ -150,13 +150,26 @@ export const closeDb = async (): Promise<void> => {
   await db.close()
 }
 
+/**
+ * Delete the current DB and create a new one
+ *
+ * - This should create the completely new DB with no data.
+ *
+ */
 export const deleteDb = async (): Promise<void> => {
-  await Dexie.delete(DB_NAME)
-  db = new CyDB(DB_NAME)
-
-  applyMigrations(db, currentVersion).catch((err) => {
-    throw err
-  })
+  try {
+    if (db) {
+      db.close()
+      console.log('DB is closed')
+    }
+    await Dexie.delete(DB_NAME)
+    console.log(`${DB_NAME} is deleted`)
+    db = new CyDB(DB_NAME)
+    await db.open()
+    console.log(`${DB_NAME} is opened and ready to use`)
+  } catch (err) {
+    console.error('! Failed to reset DB', err)
+  }
 }
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {
   return (await db.cyNetworks.toCollection().primaryKeys()) as IdType[]
