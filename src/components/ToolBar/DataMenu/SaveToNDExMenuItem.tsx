@@ -32,6 +32,7 @@ import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/Hc
 import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
+import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -64,6 +65,10 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const network = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   ) as Network
+
+  const opaqueAspects = useOpaqueAspectStore(
+    (state) => state.opaqueAspects[currentNetworkId],
+  )
 
   const isModified =
     useWorkspaceStore(
@@ -145,6 +150,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       table.edgeTable,
       visualStyleOptions,
       viewModel,
+      undefined, // Skip network name
+      opaqueAspects,
     )
 
     // overwrite the current network on NDEx
@@ -180,6 +187,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       visualStyleOptions,
       viewModel,
       `Copy of ${summary.name}`,
+      opaqueAspects,
     )
 
     try {

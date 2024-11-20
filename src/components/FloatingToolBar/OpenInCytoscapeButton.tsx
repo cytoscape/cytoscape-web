@@ -15,6 +15,7 @@ import { exportNetworkToCx2 } from '../../store/io/exportCX'
 import { Network } from '../../models/NetworkModel'
 import { useEffect, useState } from 'react'
 import { useUiStateStore } from '../../store/UiStateStore'
+import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 
 interface OpenInCytoscapeButtonProps {
   networkLabel?: string
@@ -75,12 +76,16 @@ export const OpenInCytoscapeButton = ({
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[targetNetworkId],
   )
-  const visualStyleOptions = useUiStateStore((state) =>
-    state.ui.visualStyleOptions[targetNetworkId],
+  const visualStyleOptions = useUiStateStore(
+    (state) => state.ui.visualStyleOptions[targetNetworkId],
   )
   const network = useNetworkStore((state) =>
     state.networks.get(targetNetworkId),
   ) as Network
+
+  const opaqueAspects = useOpaqueAspectStore(
+    (state) => state.opaqueAspects[targetNetworkId],
+  )
 
   const openNetworkInCytoscape = async (): Promise<void> => {
     if (viewModel === undefined) {
@@ -108,6 +113,7 @@ export const OpenInCytoscapeButton = ({
       visualStyleOptions,
       viewModel,
       targetSummary.name,
+      opaqueAspects,
     )
     try {
       handleMessageOpen('Sending this network to Cytoscape Desktop...')

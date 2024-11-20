@@ -14,6 +14,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { useMessageStore } from '../../../store/MessageStore'
+import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 
 export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
@@ -41,6 +42,10 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
     state.networks.get(currentNetworkId),
   ) as Network
 
+  const opaqueAspects = useOpaqueAspectStore(
+    (state) => state.opaqueAspects[currentNetworkId],
+  )
+
   const saveNetworkToFile = async (): Promise<void> => {
     if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
@@ -54,6 +59,7 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
       visualStyleOptions,
       viewModel,
       summary.name,
+      opaqueAspects,
     )
     const link = document.createElement('a')
     link.download = `${summary.name}.cx2`

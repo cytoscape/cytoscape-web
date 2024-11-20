@@ -16,6 +16,8 @@ import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 
+import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
+
 export const OpenNetworkInCytoscapeMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
@@ -37,11 +39,15 @@ export const OpenNetworkInCytoscapeMenuItem = (
     (state) => state.visualStyles[currentNetworkId],
   )
   const visualStyleOptions = useUiStateStore(
-    (state) => state.ui.visualStyleOptions[currentNetworkId]
+    (state) => state.ui.visualStyleOptions[currentNetworkId],
   )
   const network = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   ) as Network
+
+  const opaqueAspects = useOpaqueAspectStore(
+    (state) => state.opaqueAspects[currentNetworkId],
+  )
 
   const openNetworkInCytoscape = async (): Promise<void> => {
     if (viewModel === undefined) {
@@ -56,6 +62,7 @@ export const OpenNetworkInCytoscapeMenuItem = (
       visualStyleOptions,
       viewModel,
       `Copy of ${summary.name}`,
+      opaqueAspects,
     )
     try {
       await cyndex.postCX2NetworkToCytoscape(cx)

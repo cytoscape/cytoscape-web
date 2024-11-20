@@ -20,7 +20,8 @@ export const useNdexNetwork = async (
       cache.edgeTable === undefined ||
       cache.visualStyle === undefined ||
       cache.networkViews === undefined ||
-      cache.visualStyleOptions === undefined
+      cache.visualStyleOptions === undefined ||
+      cache.otherAspects === undefined
     ) {
       const cxData: Cx2 = await ndexNetworkFetcher(
         ndexNetworkId,

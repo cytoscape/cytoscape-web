@@ -22,6 +22,7 @@ import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/Hc
 import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
+import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
@@ -53,11 +54,15 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.visualStyles[currentNetworkId],
   )
   const visualStyleOptions = useUiStateStore(
-    (state) => state.ui.visualStyleOptions[currentNetworkId]
+    (state) => state.ui.visualStyleOptions[currentNetworkId],
   )
   const network = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   ) as Network
+
+  const opaqueAspects = useOpaqueAspectStore(
+    (state) => state.opaqueAspects[currentNetworkId],
+  )
 
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
@@ -87,6 +92,7 @@ export const CopyNetworkToNDExMenuItem = (
       visualStyleOptions,
       viewModel,
       summary.isNdex ? `Copy of ${summary.name}` : summary.name,
+      opaqueAspects,
     )
     try {
       const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
@@ -94,16 +100,18 @@ export const CopyNetworkToNDExMenuItem = (
       setCurrentNetworkId(uuid as IdType)
 
       addMessage({
-        message: `Saved a copy of the current network to NDEx with new uuid ${uuid as string
-          }`,
+        message: `Saved a copy of the current network to NDEx with new uuid ${
+          uuid as string
+        }`,
         duration: 3000,
       })
     } catch (e) {
       console.log(e)
 
       addMessage({
-        message: `Error: Could not save a copy of the current network to NDEx. ${e.message as string
-          }`,
+        message: `Error: Could not save a copy of the current network to NDEx. ${
+          e.message as string
+        }`,
         duration: 3000,
       })
     }

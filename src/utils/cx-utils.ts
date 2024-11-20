@@ -129,7 +129,7 @@ const CoreAspectTagValueSet = new Set<string>(
  * @param cx2
  * @returns Array of optional Aspects
  */
-const getOptionalAspects = (cx2: Cx2): Aspect[] => {
+export const getOptionalAspects = (cx2: Cx2): Aspect[] => {
   const optionalAspects: Aspect[] = []
   for (const entry of cx2) {
     if (entry !== undefined) {
