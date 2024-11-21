@@ -6,6 +6,7 @@ import {
   useRouteError,
 } from 'react-router-dom'
 import { useWorkspaceStore } from './store/WorkspaceStore'
+import { debounce } from 'lodash'
 
 export const Error = (): ReactElement => {
   const error: any = useRouteError()
@@ -19,8 +20,10 @@ export const Error = (): ReactElement => {
 
   const handleReset = (): void => {
     resetWorkspace().then(() => {
-      navigate('/')
-      navigate(0)
+      debounce(() => {
+        navigate('/')
+        navigate(0)
+      }, 1500)()
     })
   }
 
