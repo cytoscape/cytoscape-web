@@ -26,6 +26,7 @@ export const RemoveNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
         open={open}
         setOpen={setOpen}
         buttonTitle="Yes (cannot be undone)"
+        isAlert={true}
       />
     </>
   )

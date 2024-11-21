@@ -27,6 +27,10 @@ export const NetworkTabs = ({
   )
   const setSelected = useUiStateStore((state) => state.setNetworkViewTabIndex)
 
+  const customNetworkTabName = useUiStateStore(
+    (state) => state.ui.customNetworkTabName,
+  )
+
   const boxRef = useRef<HTMLDivElement>(null)
   const [boxSize, setBoxSize] = useState<{ w: number; h: number }>({
     w: 0,
@@ -87,9 +91,16 @@ export const NetworkTabs = ({
           onChange={handleChange}
         >
           {rendererList.map((renderer: Renderer, index: number) => {
-            return (
-              <Tab sx={{ height: '40px' }} key={index} label={renderer.name} />
-            )
+            let label: string = renderer.name ?? 'Renderer'
+            if (customNetworkTabName !== undefined) {
+              if (
+                customNetworkTabName[renderer.id] !== undefined &&
+                customNetworkTabName[renderer.id] !== ''
+              ) {
+                label = customNetworkTabName[renderer.id]
+              }
+            }
+            return <Tab sx={{ height: '40px' }} key={index} label={label} />
           })}
         </Tabs>
       </Box>
@@ -105,6 +116,7 @@ export const NetworkTabs = ({
               handleClick={handleClick}
               selected={index === selected}
               boxSize={boxSize}
+              hasTab={true}
             />
           )
         })}

@@ -8,6 +8,7 @@ import { useVisualStyleStore } from '../VisualStyleStore'
 import { useWorkspaceStore } from '../WorkspaceStore'
 import { useUiStateStore } from '../UiStateStore'
 import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
+import { useOpaqueAspectStore } from '../OpaqueAspectStore'
 
 /**
  * Based on the changes in the workspace store, this hook will
@@ -28,6 +29,7 @@ export const useWorkspaceManager = (): void => {
   const deleteAllViews = useViewModelStore((state) => state.deleteAll)
   const deleteAllVisualStyles = useVisualStyleStore((state) => state.deleteAll)
   const deleteAllTables = useTableStore((state) => state.deleteAll)
+  const deleteAspects = useOpaqueAspectStore((state) => state.delete)
   const deleteNetworkModifiedStatus = useWorkspaceStore(
     (state) => state.deleteNetworkModifiedStatus,
   )
@@ -59,6 +61,7 @@ export const useWorkspaceManager = (): void => {
     deleteVisualStyle(deleted)
     deleteTables(deleted)
     deleteNetworkModifiedStatus(deleted)
+    deleteAspects(deleted)
 
     if (activeNetworkView === deleted) {
       setActiveNetworkView('')

@@ -66,7 +66,6 @@ import {
 } from '../VisualPropertyRender/NodeLabelPosition'
 import { IdType } from '../../../models/IdType'
 import { LockColorCheckbox } from '../VisualPropertyRender/Checkbox'
-import { CancelConfirmButtonGroup } from '../VisualPropertyRender/CancelConfirmButtonGroup'
 
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,

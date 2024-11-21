@@ -60,8 +60,25 @@ export const UpdateNetworkDialog = (props: {
       </DialogContent>
       <DialogActions>
         {loading && <CircularProgress />}
+        <Button
+          variant="outlined"
+          disabled={loading}
+          onClick={() => {
+            props.onClose()
+          }}
+          color="primary"
+        >
+          Cancel
+        </Button>
         {!authenticated ? (
           <Button
+            sx={{
+              color: '#FFFFFF',
+              backgroundColor: '#337ab7',
+              '&:hover': {
+                backgroundColor: '#285a9b',
+              },
+            }}
             onClick={() => {
               client
                 ?.login()
@@ -78,7 +95,13 @@ export const UpdateNetworkDialog = (props: {
         ) : (
           <>
             <Button
-              variant="outlined"
+              sx={{
+                color: '#FFFFFF',
+                backgroundColor: '#337ab7',
+                '&:hover': {
+                  backgroundColor: '#285a9b',
+                },
+              }}
               disabled={!authenticated || loading}
               onClick={async () => {
                 const parsed = parsePathName(location.pathname)
@@ -102,16 +125,6 @@ export const UpdateNetworkDialog = (props: {
             </Button>
           </>
         )}
-        <Button
-          variant="outlined"
-          disabled={loading}
-          onClick={() => {
-            props.onClose()
-          }}
-          color="error"
-        >
-          Cancel
-        </Button>
       </DialogActions>
     </Dialog>
   )

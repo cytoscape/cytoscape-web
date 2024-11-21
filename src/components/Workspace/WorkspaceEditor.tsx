@@ -64,6 +64,8 @@ import {
 import { GraphObjectType } from '../../models/NetworkModel'
 import { useFilterStore } from '../../store/FilterStore'
 import { useAppManager } from '../../store/hooks/useAppManager'
+import { NetworkWithView } from '../../models'
+import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -215,6 +217,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addTable = useTableStore((state) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
+  const addAllOpaqueAspects = useOpaqueAspectStore((state) => state.addAll)
   const updateNodePositions: (
     networkId: IdType,
     positions: Map<IdType, [number, number, number?]>,
@@ -276,7 +279,11 @@ const WorkSpaceEditor = (): JSX.Element => {
       currentToken,
     )
     const summary = summaryMap[networkId]
-    const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
+    const res: NetworkWithView = await useNdexNetwork(
+      networkId,
+      ndexBaseUrl,
+      currentToken,
+    )
     const {
       network,
       nodeTable,
@@ -284,6 +291,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       visualStyle,
       networkViews,
       visualStyleOptions,
+      otherAspects,
     } = res
 
     setVisualStyleOptions(networkId, visualStyleOptions)
@@ -291,6 +299,9 @@ const WorkSpaceEditor = (): JSX.Element => {
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
     addViewModel(networkId, networkViews[0])
+    if (otherAspects !== undefined) {
+      addAllOpaqueAspects(networkId, otherAspects)
+    }
 
     if (isHCX(summary)) {
       const version =

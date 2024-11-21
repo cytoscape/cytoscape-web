@@ -51,7 +51,7 @@ export function OpacitySlider(props: {
       </Stack>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
         <Button
-          color="error"
+          color="primary"
           onClick={() => {
             props.closePopover('cancel')
             setLocalOpacityValue(currentValue ?? 0)
@@ -60,6 +60,13 @@ export function OpacitySlider(props: {
           Cancel
         </Button>
         <Button
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+          }}
           onClick={() => {
             props.onValueChange(localOpacityValue)
             props.closePopover('confirm')

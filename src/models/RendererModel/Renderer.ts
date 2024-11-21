@@ -44,5 +44,7 @@ export interface Renderer {
      * (Optional) Visibility of the renderer component
      */
     visible?: boolean,
+    
+    hasTab?: boolean,
   ) => ReactElement
 }

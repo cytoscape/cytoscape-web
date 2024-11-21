@@ -36,6 +36,7 @@ export const useNdexNetwork = async (
         visualStyle: cache.visualStyle,
         networkViews: cache.networkViews,
         visualStyleOptions: cache.visualStyleOptions,
+        otherAspects: cache.otherAspects,
       }
     }
   } catch (error) {

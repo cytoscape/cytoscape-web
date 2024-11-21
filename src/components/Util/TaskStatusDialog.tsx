@@ -70,7 +70,9 @@ export const TaskStatusDialog = ({
         </div>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleClose} color="primary">
+          Cancel
+        </Button>
       </DialogActions>
     </Dialog>
   )

@@ -49,10 +49,24 @@ export const HcxValidationSaveDialog = (
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button color="error" onClick={() => onClose()}>
+        <Button color="primary" onClick={() => onClose()}>
           Cancel
         </Button>
-        <Button onClick={() => onSubmit()}>Save To NDEx</Button>
+        <Button
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
+          onClick={() => onSubmit()}
+        >
+          Save To NDEx
+        </Button>
       </DialogActions>
     </Dialog>
   )

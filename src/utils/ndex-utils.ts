@@ -2,13 +2,21 @@ import { IdType } from '../models/IdType'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { getNdexClient } from './fetchers'
-import { Message, NdexNetworkSummary, Network, NetworkView, Table, VisualStyle } from '../models'
+import {
+  Message,
+  NdexNetworkSummary,
+  Network,
+  NetworkView,
+  Table,
+  VisualStyle,
+} from '../models'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { exportNetworkToCx2 } from '../store/io/exportCX'
 import { TableRecord } from 'src/models/StoreModel/TableStoreModel'
 import { useNdexNetwork } from '../store/hooks/useNdexNetwork'
 
-export const ndexDuplicateKeyErrorMessage = 'duplicate key value violates unique constraint'
+export const ndexDuplicateKeyErrorMessage =
+  'duplicate key value violates unique constraint'
 
 export const translateMemberIds = async ({
   networkUUID,
@@ -38,11 +46,13 @@ export const translateMemberIds = async ({
   const geneNames = Object.values(geneNameMap).map(
     (o: { name: string }) => o.name,
   )
-
   return geneNames
 }
 
-export const fetchMyWorkspaces = async (ndexBaseUrl:string,getToken:()=> Promise<string>): Promise<any> => {
+export const fetchMyWorkspaces = async (
+  ndexBaseUrl: string,
+  getToken: () => Promise<string>,
+): Promise<any> => {
   const ndexClient = new NDEx(ndexBaseUrl)
   const token = await getToken()
   ndexClient.setAuthToken(token)
@@ -51,8 +61,8 @@ export const fetchMyWorkspaces = async (ndexBaseUrl:string,getToken:()=> Promise
 }
 
 export const saveCopyToNDEx = async (
-  ndexBaseUrl:string,
-  getToken:()=> Promise<string>,
+  ndexBaseUrl: string,
+  getToken: () => Promise<string>,
   addNetworkToWorkspace: (ids: string | string[]) => void,
   network: Network,
   visualStyle: VisualStyle,
@@ -80,9 +90,9 @@ export const saveCopyToNDEx = async (
 }
 
 export const saveNetworkToNDEx = async (
-  ndexBaseUrl:string,
-  getToken:()=> Promise<string>,
-  updateSummary:(id: string, summary: Partial<NdexNetworkSummary>) => void,
+  ndexBaseUrl: string,
+  getToken: () => Promise<string>,
+  updateSummary: (id: string, summary: Partial<NdexNetworkSummary>) => void,
   networkId: string,
   network: Network,
   visualStyle: VisualStyle,
@@ -113,12 +123,12 @@ export const saveNetworkToNDEx = async (
 }
 
 export const saveAllNetworks = async (
-  getToken:()=> Promise<string>,
+  getToken: () => Promise<string>,
   allNetworkId: string[],
-  ndexBaseUrl:string,
+  ndexBaseUrl: string,
   addNetworkToWorkspace: (ids: string | string[]) => void,
   networkModifiedStatus: Record<string, boolean | undefined>,
-  updateSummary:(id: string, summary: Partial<NdexNetworkSummary>) => void,
+  updateSummary: (id: string, summary: Partial<NdexNetworkSummary>) => void,
   deleteNetworkModifiedStatus: (networkId: string) => void,
   addMessage: (message: Message) => void,
   networks: Map<string, Network>,

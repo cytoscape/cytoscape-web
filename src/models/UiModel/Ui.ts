@@ -33,4 +33,7 @@ export interface Ui {
   // Visual editor properties
   visualStyleOptions: Record<IdType, VisualStyleOptions>
   networkViewUi: NetworkViewUIState
+
+  // Custom network tab name
+  customNetworkTabName?: Record<string, string>
 }

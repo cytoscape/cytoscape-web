@@ -30,6 +30,7 @@ export const ResetLocalWorkspaceMenuItem = (
         open={open}
         setOpen={setOpen}
         buttonTitle="Reset Workspace (cannot be undone)"
+        isAlert={true}
       />
     </>
   )
