@@ -118,11 +118,11 @@ export function DiscreteMappingForm(props: {
   const someSelected = selectedDiscreteMappingEntries.size > 0
   return (
     <Box>
-      <TableContainer sx={{ height: 390, overflow: 'auto' }}>
+      <TableContainer sx={{ width: '460px', height: '400px' }}>
         <Table size={'small'} stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell padding="checkbox">
+              <TableCell sx={{ maxWidth: '55px' }} padding="checkbox">
                 <Checkbox
                   checked={allSelected}
                   indeterminate={someSelected && !allSelected}
@@ -137,61 +137,103 @@ export function DiscreteMappingForm(props: {
                   }}
                 />
               </TableCell>
-              <TableCell>{mapping?.attribute}</TableCell>
-              <TableCell>{props.visualProperty.displayName}</TableCell>
-              <TableCell padding={'none'}></TableCell>
+              <TableCell
+                sx={{
+                  maxWidth: '205px',
+                }}
+              >
+                <Box
+                  sx={{
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {mapping?.attribute}
+                </Box>
+              </TableCell>
+              <TableCell sx={{ minWidth: '100px' }} align="center">
+                <Box>{props.visualProperty.displayName}</Box>
+              </TableCell>
+              <TableCell sx={{ maxWidth: '85px' }} align="center">
+                <Box>Remove</Box>
+              </TableCell>
             </TableRow>
           </TableHead>
-          <TableBody sx={{ overflow: 'scroll' }}>
+          <TableBody sx={{ overflowY: 'auto' }}>
             {elementsToRender.map(({ key, inColumn }, index) => {
               const value = mapping?.vpValueMap?.get(key) ?? null
               const selected = selectedDiscreteMappingEntries.has(key)
               return (
                 <TableRow key={index} hover={true} selected={false}>
-                  <TableCell padding="checkbox">
+                  <TableCell sx={{ maxWidth: '55px' }} padding="checkbox">
                     <Checkbox
                       onClick={() => toggleSelected(key, selected)}
                       checked={selected}
                     />
                   </TableCell>
-                  <TableCell sx={{ maxWidth: 150, overflow: 'scroll' }}>
-                    <Box>
-                      {!inColumn ? (
+                  <TableCell sx={{ maxWidth: '205px' }}>
+                    {!inColumn ? (
+                      <Box
+                        sx={{
+                          maxWidth: '220px',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                        }}
+                      >
                         <Tooltip
                           title={`Value '${String(
                             key,
-                          )}' is not found in the column '${mapping?.attribute ?? ''
-                            }'.  You will not be able to re-edit this entry if you delete this value from the discrete mapping. `}
+                          )}' is not found in the column '${
+                            mapping?.attribute ?? ''
+                          }'.  You will not be able to re-edit this entry if you delete this value from the discrete mapping. `}
                         >
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <WarningAmberIcon
-                              sx={{ color: '#f0ad4e', mr: 1 }}
-                            />
-
-                            <Typography variant="body2">{key}</Typography>
-                          </Box>
+                          <WarningAmberIcon sx={{ color: '#f0ad4e', mr: 1 }} />
                         </Tooltip>
-                      ) : (
-                        <Typography variant="body2">{`${key}`}</Typography>
-                      )}
+                        <Box
+                          sx={{
+                            mt: 0.2,
+                            maxWidth: '180px',
+                            overflowX: 'auto',
+                          }}
+                        >
+                          {key}
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Box
+                        sx={{
+                          maxWidth: '220px',
+                          overflowX: 'auto',
+                        }}
+                        display="flex"
+                        justifyContent="flex-start"
+                      >{`${key}`}</Box>
+                    )}
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{
+                      minWidth: '100px',
+                    }}
+                  >
+                    <Box display="flex" justifyContent="center">
+                      <VisualPropertyValueForm
+                        visualProperty={props.visualProperty}
+                        currentValue={value}
+                        currentNetworkId={props.currentNetworkId}
+                        onValueChange={(newValue) => {
+                          setDiscreteMappingValue(
+                            props.currentNetworkId,
+                            props.visualProperty.name,
+                            [key],
+                            newValue,
+                          )
+                        }}
+                      />
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <VisualPropertyValueForm
-                      visualProperty={props.visualProperty}
-                      currentValue={value}
-                      currentNetworkId={props.currentNetworkId}
-                      onValueChange={(newValue) => {
-                        setDiscreteMappingValue(
-                          props.currentNetworkId,
-                          props.visualProperty.name,
-                          [key],
-                          newValue,
-                        )
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell align="right">
+                  <TableCell sx={{ maxWidth: '85px' }} align="center">
                     <IconButton
                       disabled={value == null}
                       onClick={() => {
@@ -219,13 +261,23 @@ export function DiscreteMappingForm(props: {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          mt: 1,
+          mt: 2.2,
         }}
       >
         <Box>
           <Button
             size="small"
-            color="error"
+            sx={{
+              color: '#F50157',
+              backgroundColor: 'transparent',
+              '&:hover': {
+                color: '#FFFFFF',
+                backgroundColor: '#F50157',
+              },
+              '&:disabled': {
+                backgroundColor: 'transparent',
+              },
+            }}
             disabled={selectedDiscreteMappingEntries.size === 0}
             onClick={() =>
               deleteDiscreteMappingValue(
@@ -238,7 +290,7 @@ export function DiscreteMappingForm(props: {
             Remove selected
           </Button>
         </Box>
-        <Box sx={{ m: 1, mr: 0, display: 'flex', justifyContent: 'end' }}>
+        <Box sx={{ m: 0, display: 'flex', justifyContent: 'end' }}>
           <VisualPropertyValueForm
             visualProperty={props.visualProperty}
             currentValue={currentDiscreteMappingformVPValue}
