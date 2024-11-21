@@ -349,6 +349,12 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                   controlPoints: sortedCtrlPts,
                   visualPropertyType: vp.type,
                   defaultValue: vp.defaultValue,
+                  gtMaxVpValue: converter.valueConverter(
+                    max.vpValue as CXVisualPropertyValue,
+                  ),
+                  ltMinVpValue: converter.valueConverter(
+                    min.vpValue as CXVisualPropertyValue,
+                  ),
                 }
                 visualStyle[vpName].mapping = m
               } else {

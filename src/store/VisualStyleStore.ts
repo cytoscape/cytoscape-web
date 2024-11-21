@@ -31,27 +31,27 @@ import { VisualStyleStore } from '../models/StoreModel/VisualStyleStoreModel'
  */
 const persist =
   (config: StateCreator<VisualStyleStore>) =>
-    (
-      set: StoreApi<VisualStyleStore>['setState'],
-      get: StoreApi<VisualStyleStore>['getState'],
-      api: StoreApi<VisualStyleStore>,
-    ) =>
-      config(
-        async (args) => {
-          const currentNetworkId =
-            useWorkspaceStore.getState().workspace.currentNetworkId
+  (
+    set: StoreApi<VisualStyleStore>['setState'],
+    get: StoreApi<VisualStyleStore>['getState'],
+    api: StoreApi<VisualStyleStore>,
+  ) =>
+    config(
+      async (args) => {
+        const currentNetworkId =
+          useWorkspaceStore.getState().workspace.currentNetworkId
 
-          set(args)
-          const updated = get().visualStyles[currentNetworkId]
-          const deleted = updated === undefined
+        set(args)
+        const updated = get().visualStyles[currentNetworkId]
+        const deleted = updated === undefined
 
-          if (!deleted) {
-            await putVisualStyleToDb(currentNetworkId, updated).then(() => { })
-          }
-        },
-        get,
-        api,
-      )
+        if (!deleted) {
+          await putVisualStyleToDb(currentNetworkId, updated).then(() => {})
+        }
+      },
+      get,
+      api,
+    )
 
 export const useVisualStyleStore = create(
   immer<VisualStyleStore>(
@@ -142,6 +142,8 @@ export const useVisualStyleStore = create(
         min,
         max,
         controlPoints,
+        ltMinVpValue,
+        gtMaxVpValue,
       ) => {
         set((state) => {
           const mapping = state.visualStyles[networkId][vpName]
@@ -150,6 +152,8 @@ export const useVisualStyleStore = create(
             mapping.min = min
             mapping.max = max
             mapping.controlPoints = controlPoints
+            mapping.ltMinVpValue = ltMinVpValue
+            mapping.gtMaxVpValue = gtMaxVpValue
           }
           return state
         })
@@ -194,13 +198,13 @@ export const useVisualStyleStore = create(
             const min = {
               value: attributeValues[0],
               vpValue: DEFAULT_COLOR_SCHEME[0],
-              inclusive: true,
+              inclusive: false,
             }
 
             const max = {
               value: attributeValues[attributeValues.length - 1],
               vpValue: DEFAULT_COLOR_SCHEME[2],
-              inclusive: true,
+              inclusive: false,
             }
 
             const ctrlPts = [
@@ -229,13 +233,13 @@ export const useVisualStyleStore = create(
             const min = {
               value: attributeValues[0],
               vpValue: DEFAULT_NUMBER_RANGE[0],
-              inclusive: true,
+              inclusive: false,
             }
 
             const max = {
               value: attributeValues[attributeValues.length - 1],
               vpValue: DEFAULT_NUMBER_RANGE[1],
-              inclusive: true,
+              inclusive: false,
             }
 
             const ctrlPts = [
@@ -263,6 +267,8 @@ export const useVisualStyleStore = create(
               controlPoints: ctrlPts,
               visualPropertyType: type,
               defaultValue,
+              ltMinVpValue: DEFAULT_COLOR_SCHEME[0],
+              gtMaxVpValue: DEFAULT_COLOR_SCHEME[2],
             }
             // void putVisualStyleToDb(
             //   networkId,
@@ -280,6 +286,8 @@ export const useVisualStyleStore = create(
               controlPoints: ctrlPts,
               visualPropertyType: type,
               defaultValue,
+              ltMinVpValue: DEFAULT_NUMBER_RANGE[0],
+              gtMaxVpValue: DEFAULT_NUMBER_RANGE[1],
             }
             state.visualStyles[networkId][vpName].mapping = continuousMapping
           } else {

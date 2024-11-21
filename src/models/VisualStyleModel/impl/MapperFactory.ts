@@ -94,15 +94,13 @@ const toRangeAndDomain = <T extends VisualPropertyValueType>(
 
   return [domain, range]
 }
-
-const getMapper = <T extends VisualPropertyValueType>(
+export const getMapper = <T extends VisualPropertyValueType>(
   cm: ContinuousMappingFunction,
 ): Mapper => {
-  const { min, max, controlPoints, defaultValue } = cm
+  const { min, max, controlPoints, defaultValue, ltMinVpValue, gtMaxVpValue } =
+    cm
   const minValue = min.value as number
   const maxValue = max.value as number
-  const minVpValue = min.vpValue as T
-  const maxVpValue = max.vpValue as T
   const [domain, range] = toRangeAndDomain<T>(controlPoints)
   const d3Mapper = d3Scale.scaleLinear<T>().domain(domain).range(range)
   d3Mapper.clamp(true)
@@ -118,9 +116,9 @@ const getMapper = <T extends VisualPropertyValueType>(
           ? numericAttrValue >= maxValue
           : numericAttrValue > maxValue
       if (isGreaterThanMax) {
-        return maxVpValue
+        return gtMaxVpValue ?? max.vpValue
       } else if (isLessThanMin) {
-        return minVpValue
+        return ltMinVpValue ?? min.vpValue
       } else {
         return d3Mapper(numericAttrValue)
       }

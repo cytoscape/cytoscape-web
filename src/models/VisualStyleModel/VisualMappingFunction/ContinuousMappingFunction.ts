@@ -13,4 +13,6 @@ export interface ContinuousMappingFunction extends VisualMappingFunction {
   min: ContinuousFunctionControlPoint
   max: ContinuousFunctionControlPoint
   controlPoints: ContinuousFunctionControlPoint[]
+  gtMaxVpValue: VisualPropertyValueType
+  ltMinVpValue: VisualPropertyValueType
 }

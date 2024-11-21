@@ -5,7 +5,6 @@ import {
   Typography,
   Paper,
   Popover,
-  TextField,
   IconButton,
   Tooltip,
 } from '@mui/material'
@@ -32,7 +31,7 @@ import RdYlBu from '../../../../../assets/RdYlBu.png'
 
 import { color } from 'd3-color'
 import Draggable from 'react-draggable'
-import { debounce } from 'lodash'
+import { debounce, isError, set } from 'lodash'
 
 import { IdType } from '../../../../../models/IdType'
 import {
@@ -51,6 +50,7 @@ import { Handle, addHandle, editHandle, removeHandle } from './Handle'
 import FormGroup from '@mui/material/FormGroup'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Checkbox from '@mui/material/Checkbox'
+import { ExpandableNumberInput } from './ExpandableNumberInput'
 
 // color mapping form for now
 export function ContinuousColorMappingForm(props: {
@@ -221,6 +221,8 @@ export function ContinuousColorMappingForm(props: {
           min: ContinuousFunctionControlPoint,
           max: ContinuousFunctionControlPoint,
           handles: Handle[],
+          ltMinVpValue: VisualPropertyValueType,
+          gtMaxVpValue: VisualPropertyValueType,
         ) => {
           setContinuousMappingValues(
             props.currentNetworkId,
@@ -233,6 +235,8 @@ export function ContinuousColorMappingForm(props: {
                 vpValue: h.vpValue,
               }
             }),
+            ltMinVpValue,
+            gtMaxVpValue,
           )
         },
         200,
@@ -269,19 +273,37 @@ export function ContinuousColorMappingForm(props: {
   const createHandle = (value: number, vpValue: string): void => {
     const newHandles = addHandle(handles, value, vpValue)
     setHandles(newHandles)
-    updateContinuousMapping(min, max, newHandles)
+    updateContinuousMapping(
+      min,
+      max,
+      newHandles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }
 
   const deleteHandle = (id: number): void => {
     const newHandles = removeHandle(handles, id)
     setHandles(newHandles)
-    updateContinuousMapping(minState, maxState, newHandles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      newHandles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }
 
   const setHandle = (id: number, value: number, vpValue: string): void => {
     const newHandles = editHandle(handles, id, value, vpValue)
     setHandles(newHandles)
-    updateContinuousMapping(minState, maxState, newHandles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      newHandles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }
 
   const [colorPalette, setColorPalette] = React.useState('')
@@ -326,7 +348,13 @@ export function ContinuousColorMappingForm(props: {
     })
     setHandles(newHandles)
 
-    updateContinuousMapping(minState, maxState, handles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      handles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }, [minState])
 
   // anytime someone changes the max value, make sure all handle values are less than the max
@@ -339,11 +367,17 @@ export function ContinuousColorMappingForm(props: {
     })
     setHandles(newHandles)
 
-    updateContinuousMapping(minState, maxState, handles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      handles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }, [maxState])
 
   return (
-    <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2 }}>
+    <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2, pt: 2 }}>
       <Paper
         sx={{
           display: 'flex',
@@ -641,8 +675,13 @@ export function ContinuousColorMappingForm(props: {
                   const gradientPositionX =
                     e.clientX - e.currentTarget.getBoundingClientRect().x
 
-                  const newHandleValue =
-                    valuePixelScale.invert(gradientPositionX)
+                  const newHandleValue = Math.max(
+                    minState.value as number,
+                    Math.min(
+                      valuePixelScale.invert(gradientPositionX),
+                      maxState.value as number,
+                    ),
+                  )
                   const newHandleVpValue =
                     color(colorScale(newHandleValue))?.formatHex() ?? '#000000'
 
@@ -659,6 +698,7 @@ export function ContinuousColorMappingForm(props: {
                   verticalPadding={GRADIENT_AXIS_VERTICAL_PADDING}
                   valuePixelScale={valuePixelScale}
                   colorScale={colorScale}
+                  cm={m}
                 />
               </Paper>
             </Tooltip>
@@ -685,6 +725,7 @@ export function ContinuousColorMappingForm(props: {
                   }}
                 >
                   <Box
+                    onClick={() => setlastDraggedHandleId(h.id)}
                     sx={{
                       width: 2,
                       height: 1,
@@ -738,7 +779,7 @@ export function ContinuousColorMappingForm(props: {
                         />
                       )}
 
-                      <Box sx={{ pl: 1.8, pr: 1.8 }}>
+                      <Box sx={{ pl: 1.8, pr: 1.8, mb: 1 }}>
                         <VisualPropertyValueForm
                           currentValue={h.vpValue ?? null}
                           visualProperty={props.visualProperty}
@@ -752,23 +793,16 @@ export function ContinuousColorMappingForm(props: {
                           }}
                         />
                       </Box>
-                      <TextField
-                        sx={{ width: 50, mt: 1 }}
-                        inputProps={{
-                          sx: { p: 0.5, fontSize: 14, width: 50 },
-                          inputMode: 'numeric',
-                          pattern: '[0-9]*',
-                          step: 0.1,
-                        }}
-                        onChange={(e) => {
-                          const newVal = Number(e.target.value)
-
-                          if (!isNaN(newVal)) {
-                            setHandle(h.id, newVal, h.vpValue as string)
-                          }
-                        }}
-                        value={h.value as number}
-                      />
+                      <Box sx={{ mb: 1 }}>
+                        <ExpandableNumberInput
+                          value={h.value as number}
+                          onConfirm={(newValue) => {
+                            setHandle(h.id, newValue, h.vpValue as string)
+                          }}
+                          min={minState.value as number}
+                          max={maxState.value as number}
+                        />
+                      </Box>
                     </Paper>
                     <IconButton
                       className="handle"
@@ -787,6 +821,64 @@ export function ContinuousColorMappingForm(props: {
                 </Draggable>
               )
             })}
+            <Tooltip title="Set color value for values under the minimum.">
+              <Box
+                sx={{
+                  width: 2,
+                  height: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  position: 'relative',
+                  top: -65,
+                  left: -20,
+                }}
+              >
+                <VisualPropertyValueForm
+                  currentValue={m.ltMinVpValue}
+                  visualProperty={props.visualProperty}
+                  currentNetworkId={props.currentNetworkId}
+                  onValueChange={(newValue) => {
+                    updateContinuousMapping(
+                      min,
+                      max,
+                      handles,
+                      newValue,
+                      m.gtMaxVpValue,
+                    )
+                  }}
+                />
+              </Box>
+            </Tooltip>
+            <Tooltip title="Set color value for values over the maximum.">
+              <Box
+                sx={{
+                  width: 2,
+                  height: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  position: 'relative',
+                  top: -95,
+                  left: 580,
+                }}
+              >
+                <VisualPropertyValueForm
+                  currentValue={m.gtMaxVpValue}
+                  visualProperty={props.visualProperty}
+                  currentNetworkId={props.currentNetworkId}
+                  onValueChange={(newValue) => {
+                    updateContinuousMapping(
+                      min,
+                      max,
+                      handles,
+                      m.ltMinVpValue,
+                      newValue,
+                    )
+                  }}
+                />
+              </Box>
+            </Tooltip>
           </Box>
         </Paper>
       </Box>
@@ -834,37 +926,38 @@ export function ContinuousColorMappingForm(props: {
             }}
           >
             <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
-              <TextField
-                sx={{ mb: 1 }}
-                variant="outlined"
-                size="small"
-                label={m.attribute}
-                inputProps={{
-                  inputMode: 'numeric',
-                  pattern: '[0-9]*',
-                  step: 0.1,
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}
-                onChange={(e) => {
-                  const newValue = Number(e.target.value)
-                  if (!isNaN(newValue)) {
-                    setAddHandleFormValue(newValue)
-                  }
-                }}
-                value={addHandleFormValue}
-              />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2">
-                  {props.visualProperty.displayName}
-                </Typography>
+              >
+                {m.attribute}
+                <ExpandableNumberInput
+                  value={addHandleFormValue}
+                  onConfirm={(newValue) => setAddHandleFormValue(newValue)}
+                  min={minState.value as number}
+                  max={maxState.value as number}
+                ></ExpandableNumberInput>
               </Box>
-              <VisualPropertyValueForm
-                currentValue={addHandleFormVpValue}
-                visualProperty={props.visualProperty}
-                currentNetworkId={props.currentNetworkId}
-                onValueChange={(newValue) => {
-                  setAddHandleFormVpValue(newValue as string)
+              <Box
+                sx={{
+                  mt: 1,
+                  display: 'flex',
+                  justifyContent: 'space-between',
                 }}
-              />
+              >
+                {props.visualProperty.displayName}
+                <VisualPropertyValueForm
+                  currentValue={addHandleFormVpValue}
+                  visualProperty={props.visualProperty}
+                  currentNetworkId={props.currentNetworkId}
+                  onValueChange={(newValue) => {
+                    setAddHandleFormVpValue(newValue as string)
+                  }}
+                />
+              </Box>
             </Box>
             <Button
               variant="outlined"
@@ -903,49 +996,36 @@ export function ContinuousColorMappingForm(props: {
           <Box sx={{ p: 1 }}>
             <Box>
               <Typography variant="body1">{m.attribute}</Typography>
-
-              <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
-                <TextField
-                  sx={{ mb: 1 }}
-                  variant="outlined"
-                  size="small"
-                  label="Min"
-                  inputProps={{
-                    inputMode: 'numeric',
-                    pattern: '[0-9]*',
-                    step: 0.1,
-                  }}
-                  onChange={(e) => {
-                    const newValue = Number(e.target.value)
-                    if (!isNaN(newValue)) {
-                      setMinState({
-                        ...minState,
-                        value: newValue,
-                      })
-                    }
-                  }}
-                  value={minState.value}
-                />
-                <TextField
-                  value={maxState.value}
-                  variant="outlined"
-                  size="small"
-                  label="Max"
-                  inputProps={{
-                    inputMode: 'numeric',
-                    pattern: '[0-9]*',
-                    step: 0.1,
-                  }}
-                  onChange={(e) => {
-                    const newValue = Number(e.target.value)
-                    if (!isNaN(newValue)) {
-                      setMaxState({
-                        ...maxState,
-                        value: newValue,
-                      })
-                    }
-                  }}
-                />
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                {'Minimum Value'}
+                <ExpandableNumberInput
+                  value={minState.value as number}
+                  onConfirm={(newValue) =>
+                    setMinState({ ...minState, value: newValue })
+                  }
+                ></ExpandableNumberInput>
+              </Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mt: 1,
+                }}
+              >
+                {'Maximum Value'}
+                <ExpandableNumberInput
+                  value={maxState.value as number}
+                  onConfirm={(newValue) =>
+                    setMaxState({ ...maxState, value: newValue })
+                  }
+                ></ExpandableNumberInput>
               </Box>
             </Box>
           </Box>

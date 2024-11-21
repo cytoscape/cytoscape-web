@@ -32,6 +32,8 @@ import { useVisualStyleStore } from '../../../../../store/VisualStyleStore'
 
 import { Handle, addHandle, removeHandle, editHandle } from './Handle'
 import { LineChart } from './LineChart'
+import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
+import { ExpandableNumberInput } from './ExpandableNumberInput'
 
 export function ContinuousNumberMappingForm(props: {
   currentNetworkId: IdType
@@ -147,6 +149,8 @@ export function ContinuousNumberMappingForm(props: {
           min: ContinuousFunctionControlPoint,
           max: ContinuousFunctionControlPoint,
           handles: Handle[],
+          ltMinVpValue: VisualPropertyValueType,
+          gtMaxVpValue: VisualPropertyValueType,
         ) => {
           setContinuousMappingValues(
             props.currentNetworkId,
@@ -159,6 +163,8 @@ export function ContinuousNumberMappingForm(props: {
                 vpValue: h.vpValue,
               }
             }),
+            ltMinVpValue,
+            gtMaxVpValue,
           )
         },
         200,
@@ -195,19 +201,37 @@ export function ContinuousNumberMappingForm(props: {
     const newHandles = addHandle(handles, value, vpValue)
 
     setHandles(newHandles)
-    updateContinuousMapping(min, max, newHandles)
+    updateContinuousMapping(
+      min,
+      max,
+      newHandles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }
 
   const deleteHandle = (id: number): void => {
     const newHandles = removeHandle(handles, id)
     setHandles(newHandles)
-    updateContinuousMapping(minState, maxState, newHandles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      newHandles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }
 
   const setHandle = (id: number, value: number, vpValue: number): void => {
     const newHandles = editHandle(handles, id, value, vpValue)
     setHandles(newHandles)
-    updateContinuousMapping(minState, maxState, newHandles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      newHandles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }
 
   // when someone changes a handle, the new handle values may contain a new min/max value
@@ -241,7 +265,13 @@ export function ContinuousNumberMappingForm(props: {
     })
     setHandles(newHandles)
 
-    updateContinuousMapping(minState, maxState, handles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      handles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }, [minState])
 
   // anytime someone changes the max value, make sure all handle values are less than the max
@@ -254,7 +284,13 @@ export function ContinuousNumberMappingForm(props: {
     })
     setHandles(newHandles)
 
-    updateContinuousMapping(minState, maxState, handles)
+    updateContinuousMapping(
+      minState,
+      maxState,
+      handles,
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }, [maxState])
 
   return (
@@ -277,7 +313,7 @@ export function ContinuousNumberMappingForm(props: {
         >
           <Tooltip
             title="Drag handles or change the handle values to edit the mapping"
-            placement="bottom"
+            placement="right"
           >
             <Box
               sx={{
@@ -345,6 +381,7 @@ export function ContinuousNumberMappingForm(props: {
                     }}
                   >
                     <Box
+                      onClick={() => setlastDraggedHandleId(h.id)}
                       sx={{
                         width: 2,
                         height: 1,
@@ -358,7 +395,7 @@ export function ContinuousNumberMappingForm(props: {
                       <Paper
                         elevation={4}
                         sx={{
-                          p: 0.5,
+                          p: 1,
                           position: 'relative',
                           top: -HANDLE_VERTICAL_OFFSET - pixelPositionY,
                           zIndex: lastDraggedHandleId === h.id ? 3 : 1,
@@ -408,26 +445,12 @@ export function ContinuousNumberMappingForm(props: {
                             >
                               {props.visualProperty.displayName}
                             </Typography>
-                            <TextField
-                              sx={{ width: 50, ml: 0.5 }}
-                              inputProps={{
-                                sx: {
-                                  p: 0.5,
-                                  fontSize: 14,
-                                  width: 50,
-                                },
-                                inputMode: 'numeric',
-                                pattern: '[0-9]*',
-                                step: 0.1,
-                              }}
-                              onChange={(e) => {
-                                const newVal = Number(
-                                  Number(e.target.value).toFixed(2),
-                                )
+                            <ExpandableNumberInput
+                              value={h.vpValue as number}
+                              onConfirm={(newVal) => {
                                 setHandle(h.id, h.value as number, newVal)
                               }}
-                              value={h.vpValue as number}
-                            />
+                            ></ExpandableNumberInput>
                           </Box>
                           <Box
                             sx={{
@@ -450,29 +473,13 @@ export function ContinuousNumberMappingForm(props: {
                             >
                               {m.attribute}
                             </Typography>
-
-                            <TextField
-                              sx={{ width: 50, ml: 0.5 }}
-                              inputProps={{
-                                sx: {
-                                  p: 0.5,
-                                  fontSize: 14,
-                                  width: 50,
-                                },
-                                inputMode: 'numeric',
-                                pattern: '[0-9]*',
-                                step: 0.1,
-                              }}
-                              onChange={(e) => {
-                                const newVal = Number(
-                                  Number(e.target.value).toFixed(2),
-                                )
-
-                                if (!isNaN(newVal)) {
-                                  setHandle(h.id, newVal, h.vpValue as number)
-                                }
-                              }}
+                            <ExpandableNumberInput
+                              min={minState.value as number}
+                              max={maxState.value as number}
                               value={h.value as number}
+                              onConfirm={(newVal) => {
+                                setHandle(h.id, newVal, h.vpValue as number)
+                              }}
                             />
                           </Box>
                         </Box>
@@ -499,6 +506,66 @@ export function ContinuousNumberMappingForm(props: {
                   </Draggable>
                 )
               })}
+              <Tooltip title="Set number value for values under the minimum.">
+                <Box
+                  sx={{
+                    width: 2,
+                    height: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    position: 'relative',
+                    bottom: -LINE_CHART_HEIGHT + 50,
+                    right: LINE_CHART_WIDTH - 25,
+                    zIndex: 1000,
+                  }}
+                >
+                  <VisualPropertyValueForm
+                    currentValue={m.ltMinVpValue}
+                    visualProperty={props.visualProperty}
+                    currentNetworkId={props.currentNetworkId}
+                    onValueChange={(newValue) => {
+                      updateContinuousMapping(
+                        min,
+                        max,
+                        handles,
+                        newValue,
+                        m.gtMaxVpValue,
+                      )
+                    }}
+                  />
+                </Box>
+              </Tooltip>
+              <Tooltip title="Set number value for values over the maximum.">
+                <Box
+                  sx={{
+                    width: 2,
+                    height: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    position: 'relative',
+                    bottom: -LINE_CHART_HEIGHT + 50,
+                    right: 25,
+                    zIndex: 1000,
+                  }}
+                >
+                  <VisualPropertyValueForm
+                    currentValue={m.gtMaxVpValue}
+                    visualProperty={props.visualProperty}
+                    currentNetworkId={props.currentNetworkId}
+                    onValueChange={(newValue) => {
+                      updateContinuousMapping(
+                        min,
+                        max,
+                        handles,
+                        m.ltMinVpValue,
+                        newValue,
+                      )
+                    }}
+                  />
+                </Box>
+              </Tooltip>
             </Box>
           </Tooltip>
         </Paper>
@@ -546,42 +613,39 @@ export function ContinuousNumberMappingForm(props: {
             }}
           >
             <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
-              <TextField
-                sx={{ mb: 1 }}
-                variant="outlined"
-                size="small"
-                label={m.attribute}
-                inputProps={{
-                  inputMode: 'numeric',
-                  pattern: '[0-9]*',
-                  step: 0.1,
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}
-                onChange={(e) => {
-                  const newValue = Number(e.target.value)
-                  if (!isNaN(newValue)) {
-                    setAddHandleFormValue(newValue)
-                  }
-                }}
-                value={addHandleFormValue}
-              />
+              >
+                {m.attribute}
+                <ExpandableNumberInput
+                  min={minState.value as number}
+                  max={maxState.value as number}
+                  value={addHandleFormValue}
+                  onConfirm={(newVal) => {
+                    setAddHandleFormValue(newVal)
+                  }}
+                ></ExpandableNumberInput>
+              </Box>
 
-              <TextField
-                variant="outlined"
-                size="small"
-                label={props.visualProperty.displayName}
-                inputProps={{
-                  inputMode: 'numeric',
-                  pattern: '[0-9]*',
-                  step: 0.1,
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}
-                onChange={(e) => {
-                  const newValue = Number(e.target.value)
-                  if (!isNaN(newValue)) {
-                    setAddHandleFormVpValue(newValue)
-                  }
-                }}
-                value={addHandleFormVpValue}
-              />
+              >
+                {props.visualProperty.displayName}
+                <ExpandableNumberInput
+                  value={addHandleFormVpValue}
+                  onConfirm={(newVal) => {
+                    setAddHandleFormVpValue(newVal)
+                  }}
+                ></ExpandableNumberInput>
+              </Box>
             </Box>
             <Button
               variant="outlined"
@@ -617,52 +681,48 @@ export function ContinuousNumberMappingForm(props: {
             horizontal: 'center',
           }}
         >
-          <Box sx={{ p: 1 }}>
+          <Box sx={{ p: 1, width: 200 }}>
             <Box>
               <Typography variant="body1">{m.attribute}</Typography>
-
-              <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
-                <TextField
-                  sx={{ mb: 1 }}
-                  variant="outlined"
-                  size="small"
-                  label="Min"
-                  inputProps={{
-                    inputMode: 'numeric',
-                    pattern: '[0-9]*',
-                    step: 0.1,
+              <Box sx={{ p: 1 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}
-                  onChange={(e) => {
-                    const newValue = Number(e.target.value)
-                    if (!isNaN(newValue)) {
+                >
+                  <Typography variant="body2">Minimum Value</Typography>
+
+                  <ExpandableNumberInput
+                    value={minState.value as number}
+                    onConfirm={(newVal) => {
                       setMinState({
                         ...minState,
-                        value: newValue,
+                        value: newVal,
                       })
-                    }
+                    }}
+                  ></ExpandableNumberInput>
+                </Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}
-                  value={minState.value}
-                />
-                <TextField
-                  value={maxState.value}
-                  variant="outlined"
-                  size="small"
-                  label="Max"
-                  inputProps={{
-                    inputMode: 'numeric',
-                    pattern: '[0-9]*',
-                    step: 0.1,
-                  }}
-                  onChange={(e) => {
-                    const newValue = Number(e.target.value)
-                    if (!isNaN(newValue)) {
+                >
+                  <Typography variant="body2">Maximum Value</Typography>
+
+                  <ExpandableNumberInput
+                    value={maxState.value as number}
+                    onConfirm={(newVal) => {
                       setMaxState({
                         ...maxState,
-                        value: newValue,
+                        value: newVal,
                       })
-                    }
-                  }}
-                />
+                    }}
+                  ></ExpandableNumberInput>
+                </Box>
               </Box>
             </Box>
           </Box>
@@ -689,25 +749,13 @@ export function ContinuousNumberMappingForm(props: {
                 }}
               >
                 <Typography variant="body2">{m.attribute}:</Typography>
-                <TextField
-                  sx={{ width: 40, ml: 0.5, mr: 0.5 }}
-                  inputProps={{
-                    sx: {
-                      p: 0.5,
-                      fontSize: 12,
-                      width: 50,
-                    },
-                    inputMode: 'numeric',
-                    pattern: '[0-9]*',
-                    step: 0.1,
-                  }}
-                  onChange={(e) => {
-                    const newValue = Number(e.target.value)
-                    if (!isNaN(newValue)) {
-                      setAddHandleFormValue(newValue)
-                    }
-                  }}
+                <ExpandableNumberInput
                   value={addHandleFormValue}
+                  min={minState.value as number}
+                  max={maxState.value as number}
+                  onConfirm={(newVal) => {
+                    setAddHandleFormValue(newVal)
+                  }}
                 />
               </Box>
               <Box
@@ -722,25 +770,11 @@ export function ContinuousNumberMappingForm(props: {
                 <Typography variant="body2">
                   {props.visualProperty.displayName}:
                 </Typography>
-                <TextField
-                  sx={{ width: 40, ml: 0.5, mr: 0.5 }}
-                  inputProps={{
-                    sx: {
-                      p: 0.5,
-                      fontSize: 12,
-                      width: 50,
-                    },
-                    inputMode: 'numeric',
-                    pattern: '[0-9]*',
-                    step: 0.1,
-                  }}
-                  onChange={(e) => {
-                    const newValue = Number(e.target.value)
-                    if (!isNaN(newValue)) {
-                      setAddHandleFormVpValue(newValue)
-                    }
-                  }}
+                <ExpandableNumberInput
                   value={addHandleFormVpValue}
+                  onConfirm={(newVal) => {
+                    setAddHandleFormVpValue(newVal)
+                  }}
                 />
               </Box>
             </Box>
@@ -759,50 +793,22 @@ export function ContinuousNumberMappingForm(props: {
             <Box>
               <Typography variant="body2">{m.attribute}:</Typography>
               <Box sx={{ display: 'flex' }}>
-                <TextField
-                  sx={{ width: 40, ml: 0.5, mr: 0.5 }}
-                  inputProps={{
-                    sx: {
-                      p: 0.5,
-                      fontSize: 12,
-                      width: 50,
-                    },
-                    inputMode: 'numeric',
-                    pattern: '[0-9]*',
-                    step: 0.1,
+                <ExpandableNumberInput
+                  value={minState.value as number}
+                  onConfirm={(newValue) => {
+                    setMinState({
+                      ...minState,
+                      value: newValue,
+                    })
                   }}
-                  onChange={(e) => {
-                    const newValue = Number(e.target.value)
-                    if (!isNaN(newValue)) {
-                      setMinState({
-                        ...minState,
-                        value: newValue,
-                      })
-                    }
-                  }}
-                  value={minState.value}
                 />
-                <TextField
-                  value={maxState.value}
-                  sx={{ width: 40, ml: 0.5, mr: 0.5 }}
-                  inputProps={{
-                    sx: {
-                      p: 0.5,
-                      fontSize: 12,
-                      width: 50,
-                    },
-                    inputMode: 'numeric',
-                    pattern: '[0-9]*',
-                    step: 0.1,
-                  }}
-                  onChange={(e) => {
-                    const newValue = Number(e.target.value)
-                    if (!isNaN(newValue)) {
-                      setMaxState({
-                        ...maxState,
-                        value: newValue,
-                      })
-                    }
+                <ExpandableNumberInput
+                  value={maxState.value as number}
+                  onConfirm={(newValue) => {
+                    setMaxState({
+                      ...maxState,
+                      value: newValue,
+                    })
                   }}
                 />
               </Box>
