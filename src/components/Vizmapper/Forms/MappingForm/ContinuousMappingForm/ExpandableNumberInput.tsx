@@ -91,7 +91,7 @@ export function ExpandableNumberInput(props: {
           min={props.min}
           max={props.max}
           value={localValue as number}
-          decimalScale={2}
+          // decimalScale={2}
           onChange={(newValue) => {
             if (typeof newValue === 'string') {
               setLocalValue(0)

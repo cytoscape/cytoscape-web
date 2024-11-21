@@ -198,13 +198,13 @@ export const useVisualStyleStore = create(
             const min = {
               value: attributeValues[0],
               vpValue: DEFAULT_COLOR_SCHEME[0],
-              inclusive: true,
+              inclusive: false,
             }
 
             const max = {
               value: attributeValues[attributeValues.length - 1],
               vpValue: DEFAULT_COLOR_SCHEME[2],
-              inclusive: true,
+              inclusive: false,
             }
 
             const ctrlPts = [
@@ -233,13 +233,13 @@ export const useVisualStyleStore = create(
             const min = {
               value: attributeValues[0],
               vpValue: DEFAULT_NUMBER_RANGE[0],
-              inclusive: true,
+              inclusive: false,
             }
 
             const max = {
               value: attributeValues[attributeValues.length - 1],
               vpValue: DEFAULT_NUMBER_RANGE[1],
-              inclusive: true,
+              inclusive: false,
             }
 
             const ctrlPts = [

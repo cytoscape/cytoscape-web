@@ -669,8 +669,13 @@ export function ContinuousColorMappingForm(props: {
                   const gradientPositionX =
                     e.clientX - e.currentTarget.getBoundingClientRect().x
 
-                  const newHandleValue =
-                    valuePixelScale.invert(gradientPositionX)
+                  const newHandleValue = Math.max(
+                    minState.value as number,
+                    Math.min(
+                      valuePixelScale.invert(gradientPositionX),
+                      maxState.value as number,
+                    ),
+                  )
                   const newHandleVpValue =
                     color(colorScale(newHandleValue))?.formatHex() ?? '#000000'
 
