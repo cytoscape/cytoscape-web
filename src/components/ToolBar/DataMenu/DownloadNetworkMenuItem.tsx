@@ -67,7 +67,7 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const menuItem = (
     <MenuItem onClick={handleSaveCurrentNetworkToFile}>
-      Download Current network (.cx2)
+      Download Current Network as File (.cx2)
     </MenuItem>
   )
   return <>{menuItem}</>
