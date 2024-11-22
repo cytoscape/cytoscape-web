@@ -8,6 +8,7 @@ export function ExpandableNumberInput(props: {
   onConfirm: (value: number) => void
   min?: number
   max?: number
+  disabled?: boolean
 }): React.ReactElement {
   const { value, onConfirm } = props
   const [localValue, setLocalValue] = React.useState<number>(value as number)
@@ -47,7 +48,7 @@ export function ExpandableNumberInput(props: {
 
   return (
     <MantineProvider>
-      <ButtonBase onClick={(e) => showPopover(e)}>
+      <ButtonBase disabled={props.disabled} onClick={(e) => showPopover(e)}>
         <Box
           sx={{
             width: 45,
@@ -58,7 +59,7 @@ export function ExpandableNumberInput(props: {
               pointer: 'cursor',
             },
             overflow: 'hidden',
-            border: '1px solid #d6d6d6',
+            border: props.disabled ? 'none' : '1px solid #d6d6d6',
             borderRadius: '4px',
             display: 'flex',
             justifyContent: 'center',

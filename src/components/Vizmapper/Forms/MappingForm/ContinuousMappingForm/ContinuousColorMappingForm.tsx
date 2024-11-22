@@ -340,12 +340,16 @@ export function ContinuousColorMappingForm(props: {
 
   // anytime someone changes the min value, make sure all handle values are greater than the min
   React.useEffect(() => {
-    const newHandles = [...handles].map((h) => {
-      return {
-        ...h,
-        value: Math.max(h.value as number, minState.value as number),
-      }
-    })
+    const newHandles = [...handles]
+      .map((h) => {
+        return {
+          ...h,
+          value: Math.max(h.value as number, minState.value as number),
+        }
+      })
+      .sort((a, b) => (a.value as number) - (b.value as number))
+
+    newHandles[0].value = minState.value as number
     setHandles(newHandles)
 
     updateContinuousMapping(
@@ -359,12 +363,16 @@ export function ContinuousColorMappingForm(props: {
 
   // anytime someone changes the max value, make sure all handle values are less than the max
   React.useEffect(() => {
-    const newHandles = [...handles].map((h) => {
-      return {
-        ...h,
-        value: Math.min(h.value as number, maxState.value as number),
-      }
-    })
+    const newHandles = [...handles]
+      .map((h) => {
+        return {
+          ...h,
+          value: Math.min(h.value as number, maxState.value as number),
+        }
+      })
+      .sort((a, b) => (a.value as number) - (b.value as number))
+
+    newHandles[newHandles.length - 1].value = maxState.value as number
     setHandles(newHandles)
 
     updateContinuousMapping(
@@ -702,10 +710,16 @@ export function ContinuousColorMappingForm(props: {
                 />
               </Paper>
             </Tooltip>
-            {handles.map((h) => {
+            {handles.map((h, index) => {
+              // the first and last handles are special, they can't be dragged and their domain values are immutable
+              const isEndHandle = index === 0 || index === handles.length - 1
+              const isMinHandle = index === 0
+              const isMaxHandle = index === handles.length - 1
+
               return (
                 <Draggable
                   key={h.id}
+                  disabled={isEndHandle}
                   bounds="parent"
                   axis="x"
                   handle=".handle"
@@ -733,7 +747,8 @@ export function ContinuousColorMappingForm(props: {
                       flexDirection: 'column',
                       alignItems: 'center',
                       position: 'absolute',
-                      zIndex: lastDraggedHandleId === h.id ? 3 : 1,
+                      zIndex:
+                        lastDraggedHandleId === h.id ? 3 : isEndHandle ? 1 : 2,
                     }}
                   >
                     <Paper
@@ -746,10 +761,15 @@ export function ContinuousColorMappingForm(props: {
                         flexDirection: 'column',
                         alignItems: 'center',
                         border: '0.5px solid #03082d',
-                        zIndex: lastDraggedHandleId === h.id ? 3 : 1,
+                        zIndex:
+                          lastDraggedHandleId === h.id
+                            ? 3
+                            : isEndHandle
+                              ? 1
+                              : 2,
                       }}
                     >
-                      {handles.length >= 3 ? (
+                      {handles.length >= 3 && !isEndHandle ? (
                         <Delete
                           onClick={() => {
                             deleteHandle(h.id)
@@ -766,7 +786,7 @@ export function ContinuousColorMappingForm(props: {
                             },
                           }}
                         />
-                      ) : (
+                      ) : !isEndHandle ? (
                         <Delete
                           sx={{
                             position: 'absolute',
@@ -777,7 +797,7 @@ export function ContinuousColorMappingForm(props: {
                             pointerEvents: 'none',
                           }}
                         />
-                      )}
+                      ) : null}
 
                       <Box sx={{ pl: 1.8, pr: 1.8, mb: 1 }}>
                         <VisualPropertyValueForm
@@ -797,14 +817,26 @@ export function ContinuousColorMappingForm(props: {
                         <ExpandableNumberInput
                           value={h.value as number}
                           onConfirm={(newValue) => {
-                            setHandle(h.id, newValue, h.vpValue as string)
+                            if (isMinHandle) {
+                              setMinState({ ...minState, value: newValue })
+                            } else if (isMaxHandle) {
+                              setMaxState({ ...maxState, value: newValue })
+                            } else {
+                              setHandle(h.id, newValue, h.vpValue as string)
+                            }
                           }}
-                          min={minState.value as number}
-                          max={maxState.value as number}
+                          min={
+                            isMinHandle ? undefined : (minState.value as number)
+                          }
+                          max={
+                            isMaxHandle ? undefined : (maxState.value as number)
+                          }
                         />
                       </Box>
                     </Paper>
+
                     <IconButton
+                      disabled={isEndHandle}
                       className="handle"
                       size="large"
                       sx={{
@@ -814,7 +846,11 @@ export function ContinuousColorMappingForm(props: {
                       }}
                     >
                       <ArrowDropDownIcon
-                        sx={{ fontSize: '40px', color: '#03082d', zIndex: 3 }}
+                        sx={{
+                          fontSize: '40px',
+                          color: isEndHandle ? '#D9D9D9' : '#03082d',
+                          zIndex: 3,
+                        }}
                       />
                     </IconButton>
                   </Box>
