@@ -4,6 +4,7 @@ import { BaseMenuProps } from '../BaseMenuProps'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useNavigate } from 'react-router-dom'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
+import { debounce } from 'lodash'
 
 export const ResetLocalWorkspaceMenuItem = (
   props: BaseMenuProps,
@@ -14,10 +15,18 @@ export const ResetLocalWorkspaceMenuItem = (
 
   const handleReset = (): void => {
     props.handleClose()
-    resetWorkspace().then(() => {
-      navigate('/')
-      navigate(0)
-    })
+    resetWorkspace()
+      .then(() => {
+        // For safety: debounce the navigation to prevent any potential timing issues
+        debounce(() => {
+          navigate('/')
+          navigate(0)
+        }, 1500)()
+      })
+      .catch((error) => {
+        console.error('Failed to reset workspace:', error)
+        alert('Failed to reset workspace. Please try again.')
+      })
   }
 
   return (

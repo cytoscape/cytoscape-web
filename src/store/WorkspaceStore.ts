@@ -29,7 +29,7 @@ const persist =
         set(args)
         const newWorkspace = get().workspace
         // const deleted = updated === undefined
-        if (lastWorkspace !== newWorkspace) {
+        if (lastWorkspace !== newWorkspace && newWorkspace.id !== '') {
           void putWorkspaceToDb(newWorkspace).then(() => {})
         }
       },
@@ -121,10 +121,10 @@ export const useWorkspaceStore = create(
         },
         resetWorkspace: async () => {
           await deleteDb()
-          console.log('Workspace cache has been reset')
+          console.log('IndexedDB cleared (Workspace cache has been reset)')
           set((state) => {
             console.log('Now creating a new workspace')
-            state.workspace = { ...EMPTY_WORKSPACE }
+            state.workspace = EMPTY_WORKSPACE
             return state
           })
         },
