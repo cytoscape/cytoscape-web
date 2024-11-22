@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   Box,
   Popover,
@@ -47,7 +47,10 @@ import {
 import { DiscreteMappingForm } from './DiscreteMappingForm'
 import { ContinuousMappingForm } from './ContinuousMappingForm'
 import { VisualPropertyGroup } from '../../../../models/VisualStyleModel/VisualPropertyGroup'
-import { LockColorCheckbox, LockSizeCheckbox } from '../../VisualPropertyRender/Checkbox'
+import {
+  LockColorCheckbox,
+  LockSizeCheckbox,
+} from '../../VisualPropertyRender/Checkbox'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   [MappingFunctionType.Passthrough]: <PassthroughMappingFunctionIcon />,
@@ -58,13 +61,14 @@ const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
 function MappingFormContent(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
+  repositionPopover: () => void
 }): React.ReactElement {
   const [column, setColumn] = useState<AttributeName | ''>(
     props.visualProperty.mapping?.attribute ?? '',
   )
-  const [mappingType, setMappingType] = useState<
-    MappingFunctionType | ''
-  >(props.visualProperty.mapping?.type ?? '')
+  const [mappingType, setMappingType] = useState<MappingFunctionType | ''>(
+    props.visualProperty.mapping?.type ?? '',
+  )
 
   const { columnValues, tables } = useTableStore((state) => ({
     columnValues: state.columnValues,
@@ -175,6 +179,7 @@ function MappingFormContent(props: {
     } else {
       setMappingType(nextMapping)
     }
+    props.repositionPopover()
   }
 
   const handleColumnChange = (nextAttribute: AttributeName): void => {
@@ -209,12 +214,12 @@ function MappingFormContent(props: {
   const validColumns =
     mappingType !== ''
       ? columns.filter((c) => {
-        return typesCanBeMapped(
-          mappingType,
-          c.type,
-          props.visualProperty.type,
-        )
-      })
+          return typesCanBeMapped(
+            mappingType,
+            c.type,
+            props.visualProperty.type,
+          )
+        })
       : columns
   const validColumnNames = validColumns.map((c) => c.name)
 
@@ -239,12 +244,12 @@ function MappingFormContent(props: {
   )
 
   const mappingDimensions: Record<MappingFunctionType | '', [string, string]> =
-  {
-    [MappingFunctionType.Discrete]: ['400px', '600px'],
-    [MappingFunctionType.Continuous]: ['650px', 'auto'],
-    [MappingFunctionType.Passthrough]: ['400px', 'auto'],
-    '': ['400px', '200px'],
-  }
+    {
+      [MappingFunctionType.Discrete]: ['500px', '600px'],
+      [MappingFunctionType.Continuous]: ['650px', 'auto'],
+      [MappingFunctionType.Passthrough]: ['500px', 'auto'],
+      '': ['500px', '150px'],
+    }
   return (
     <Box
       sx={{
@@ -253,7 +258,7 @@ function MappingFormContent(props: {
         width: mappingDimensions[mappingType][0],
         height: mappingDimensions[mappingType][1],
         overflow: 'hidden',
-        p: 1,
+        p: 2,
       }}
     >
       <Box
@@ -263,20 +268,33 @@ function MappingFormContent(props: {
           alignItems: 'center',
         }}
       >
-        <Typography>{`${props.visualProperty.displayName} mapping`}</Typography>
+        <Typography
+          sx={{ m: 0.5, fontWeight: 'bold' }}
+        >{`${props.visualProperty.displayName} mapping`}</Typography>
         <Button
+          sx={{
+            color: '#F50157',
+            backgroundColor: 'transparent',
+            '&:hover': {
+              color: '#FFFFFF',
+              backgroundColor: '#F50157',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
           disabled={props.visualProperty.mapping == null}
           size="small"
-          color="error"
-          onClick={() =>
+          onClick={() => {
             removeMapping(props.currentNetworkId, props.visualProperty.name)
-          }
+            props.repositionPopover()
+          }}
         >
           Remove Mapping
         </Button>
       </Box>
       <Box>
-        <Divider sx={{ mt: 2, mb: 2 }} />
+        <Divider sx={{ mt: 1.5, mb: 2 }} />
         <Box
           sx={{
             display: 'flex',
@@ -286,7 +304,7 @@ function MappingFormContent(props: {
           }}
         >
           <FormControl
-            sx={{ minWidth: '150px', maxWidth: '200px' }}
+            sx={{ minWidth: '150px', maxWidth: '250px' }}
             size="small"
           >
             <InputLabel>Column</InputLabel>
@@ -303,8 +321,20 @@ function MappingFormContent(props: {
                     key={c.name}
                     value={c.name}
                   >
-                    <Tooltip title={`Data type: ${c.type}`}>
-                      <Box>{c.name}</Box>
+                    <Tooltip
+                      arrow
+                      title={`Data type: ${c.type}`}
+                      placement="right"
+                    >
+                      <Box
+                        sx={{
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {c.name}
+                      </Box>
                     </Tooltip>
                   </MenuItem>
                 )
@@ -312,13 +342,28 @@ function MappingFormContent(props: {
                 if (validColumnNames.includes(c.name)) {
                   return columnMenuItem
                 } else {
-                  const invalidColumnTooltipStr = `${mappingType} mapping functions${c.name !== '' ? ` on column '${c.name}' ` : ' '
-                    }cannot be applied to property ${props.visualProperty.displayName
-                    }`
+                  const invalidColumnTooltipStr = `${mappingType} mapping functions${
+                    c.name !== '' ? ` on column '${c.name}' ` : ' '
+                  }cannot be applied to property ${
+                    props.visualProperty.displayName
+                  }`
 
                   return (
-                    <Tooltip key={c.name} title={invalidColumnTooltipStr}>
-                      <Box>{columnMenuItem}</Box>
+                    <Tooltip
+                      arrow
+                      key={c.name}
+                      title={invalidColumnTooltipStr}
+                      placement="right"
+                    >
+                      <Box
+                        sx={{
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {columnMenuItem}
+                      </Box>
                     </Tooltip>
                   )
                 }
@@ -350,11 +395,15 @@ function MappingFormContent(props: {
                 if (validMappings.includes(mappingFnType)) {
                   return mappingFnMenuItem
                 } else {
-                  const invalidMappingTooltipStr = `${mappingFnType} mapping functions${column !== '' ? ` on column '${column}' ` : ' '
-                    }cannot be applied to property ${props.visualProperty.displayName
-                    }`
+                  const invalidMappingTooltipStr = `${mappingFnType} mapping functions${
+                    column !== '' ? ` on column '${column}' ` : ' '
+                  }cannot be applied to property ${
+                    props.visualProperty.displayName
+                  }`
                   return (
                     <Tooltip
+                      arrow
+                      placement="right"
                       key={mappingFnType}
                       title={invalidMappingTooltipStr}
                     >
@@ -378,12 +427,24 @@ export function MappingForm(props: {
   sx?: SxProps
 }): React.ReactElement {
   const [formAnchorEl, setFormAnchorEl] = useState<Element | null>(null)
+  const viewBoxRef = useRef<HTMLDivElement | null>(null)
   const vpName = props.visualProperty.name
-  const isSize = vpName === NodeVisualPropertyName.NodeHeight || vpName === NodeVisualPropertyName.NodeWidth
-  const isEdgeLineColor = vpName === EdgeVisualPropertyName.EdgeLineColor || vpName === EdgeVisualPropertyName.EdgeTargetArrowColor || vpName === EdgeVisualPropertyName.EdgeSourceArrowColor;
+  const isSize =
+    vpName === NodeVisualPropertyName.NodeHeight ||
+    vpName === NodeVisualPropertyName.NodeWidth
+  const isEdgeLineColor =
+    vpName === EdgeVisualPropertyName.EdgeLineColor ||
+    vpName === EdgeVisualPropertyName.EdgeTargetArrowColor ||
+    vpName === EdgeVisualPropertyName.EdgeSourceArrowColor
 
-  const isHeight = vpName === NodeVisualPropertyName.NodeHeight
-
+  const repositionPopover = () => {
+    if (viewBoxRef.current) {
+      setFormAnchorEl(null)
+      setTimeout(() => {
+        setFormAnchorEl(viewBoxRef.current) // A hack to force a reposition
+      }, 0)
+    }
+  }
   const showForm = (value: Element | null): void => {
     setFormAnchorEl(value)
   }
@@ -402,17 +463,28 @@ export function MappingForm(props: {
 
   return (
     <Box sx={props.sx ?? {}}>
-      {viewBox}
+      <Box ref={viewBoxRef}>{viewBox}</Box>
       <Popover
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
         onClose={() => showForm(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
-        <MappingFormContent {...props} />
-        <Divider />
-        {isSize && <LockSizeCheckbox currentNetworkId={props.currentNetworkId} />}
-        {isEdgeLineColor && <LockColorCheckbox currentNetworkId={props.currentNetworkId} />}
+        <MappingFormContent {...props} repositionPopover={repositionPopover} />
+
+        {(isSize || isEdgeLineColor) && (
+          <Box sx={{ pl: 2, pr: 2 }}>
+            <Divider />
+            <Box sx={{ mt: 1, mb: 1, ml: 1.5, mr: 1.5 }}>
+              {isSize && (
+                <LockSizeCheckbox currentNetworkId={props.currentNetworkId} />
+              )}
+              {isEdgeLineColor && (
+                <LockColorCheckbox currentNetworkId={props.currentNetworkId} />
+              )}
+            </Box>
+          </Box>
+        )}
       </Popover>
     </Box>
   )
