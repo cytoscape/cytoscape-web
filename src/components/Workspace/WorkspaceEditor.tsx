@@ -64,7 +64,7 @@ import {
 import { GraphObjectType } from '../../models/NetworkModel'
 import { useFilterStore } from '../../store/FilterStore'
 import { useAppManager } from '../../store/hooks/useAppManager'
-import { NetworkWithView } from '../../models'
+import { NetworkWithView, VisualStyle } from '../../models'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
@@ -158,21 +158,18 @@ const WorkSpaceEditor = (): JSX.Element => {
   // assume that if the view model change, the network has been modified and set the networkModified flag to true
   useViewModelStore.subscribe(
     (state) => state.getViewModel(currentNetworkId),
-    (prev: NetworkView, next: NetworkView) => {
+    (next: NetworkView, prev: NetworkView) => {
       if (prev === undefined || next === undefined) {
         return
       }
 
       // primitive compare fn that does not take into account the selection/hover state
       // this leads to the network having a 'modified' state even though nothing was modified
-      const viewModelChanged =
-        prev !== undefined &&
-        next !== undefined &&
-        !_.isEqual(
-          // omit selection state and hovered element changes as valid viewModel changes
-          _.omit(prev, ['selectedNodes', 'selectedEdges']),
-          _.omit(next, ['selectedNodes', 'selectedEdges']),
-        )
+      const viewModelChanged = !_.isEqual(
+        // omit selection state and hovered element changes as valid viewModel changes
+        _.omit(prev, ['selectedNodes', 'selectedEdges']),
+        _.omit(next, ['selectedNodes', 'selectedEdges']),
+      )
 
       const { networkModified } = workspace
 
@@ -185,6 +182,26 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
     },
   )
+  // listen to visual style changes
+  useVisualStyleStore.subscribe((next, prev) => {
+    const nextVisualStyle = next.visualStyles[currentNetworkId] as VisualStyle
+    const prevVisualStyle = prev.visualStyles[currentNetworkId] as VisualStyle
+    if (prevVisualStyle === undefined || nextVisualStyle === undefined) {
+      return
+    }
+
+    const visualStyleChanged = !_.isEqual(prevVisualStyle, nextVisualStyle)
+
+    const { networkModified } = workspace
+
+    const currentNetworkIsNotModified =
+      networkModified[currentNetworkId] === undefined ||
+      networkModified[currentNetworkId] === false
+
+    if (visualStyleChanged && currentNetworkIsNotModified) {
+      setNetworkModified(currentNetworkId, true)
+    }
+  })
 
   // Network Summaries
   const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
