@@ -233,7 +233,7 @@ export default function TableBrowser(props: {
   // set the network to 'modified' when the table data is modified
   useTableStore.subscribe(
     (state) => state.tables[networkId],
-    (prev: TableRecord, next: TableRecord) => {
+    (next: TableRecord, prev: TableRecord) => {
       if (prev === undefined || next === undefined) {
         return
       }
