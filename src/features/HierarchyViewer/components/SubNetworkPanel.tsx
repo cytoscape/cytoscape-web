@@ -73,11 +73,6 @@ export const SubNetworkPanel = ({
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
 
-  const filterConfig: FilterConfig | undefined =
-    filterConfigs[DEFAULT_FILTER_NAME]
-
-  const displayMode: DisplayMode =
-    filterConfig?.displayMode ?? DisplayMode.SELECT
 
   // All networks in the main store
   const networks: Map<string, Network> = useNetworkStore(
@@ -455,6 +450,12 @@ export const SubNetworkPanel = ({
   if (queryNetwork === undefined) {
     return <MessagePanel message={`Select a subsystem`} />
   }
+  
+  const filterConfig: FilterConfig | undefined =
+    filterConfigs[queryNetwork.id]
+
+  const displayMode: DisplayMode =
+    filterConfig?.displayMode ?? DisplayMode.SELECT
 
   return (
     <Box
