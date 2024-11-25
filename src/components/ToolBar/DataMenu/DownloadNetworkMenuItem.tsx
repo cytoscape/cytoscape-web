@@ -19,20 +19,21 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
     (state) => state.workspace.currentNetworkId,
   )
 
+  const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
   const table = useTableStore((state) => state.tables[currentNetworkId])
 
   const summary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
   )
   const visualStyleOptions = useUiStateStore(
-    (state) => state.ui.visualStyleOptions[currentNetworkId]
+    (state) => state.ui.visualStyleOptions[currentNetworkId],
   ) as VisualStyleOptions
 
   const network = useNetworkStore((state) =>
@@ -51,7 +52,7 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
       table.edgeTable,
       visualStyleOptions,
       viewModel,
-      `Copy of ${summary.name}`,
+      summary.name,
     )
     const link = document.createElement('a')
     link.download = `${summary.name}.cx2`
@@ -62,7 +63,12 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const handleSaveCurrentNetworkToFile = async (): Promise<void> => {
-    await saveNetworkToFile()
+    try {
+      await saveNetworkToFile()
+    } catch (error) {
+      console.error('Failed to download the current network as file:', error)
+      setErrorMessage('Failed to download the current network as file.')
+    }
   }
 
   const menuItem = (
