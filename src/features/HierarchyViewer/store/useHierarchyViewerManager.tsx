@@ -21,6 +21,7 @@ import {
   getAllNetworkKeys,
 } from '../../../store/persist/db'
 import { useRendererStore } from '../../../store/RendererStore'
+import { DEFAULT_RENDERER_ID } from '../../../store/DefaultRenderer'
 
 /**
  *  Switch the panel state based on the network meta data
@@ -33,6 +34,19 @@ export const useHierarchyViewerManager = (): void => {
   const networkIds: IdType[] = useWorkspaceStore(
     (state) => state.workspace.networkIds,
   )
+
+  // For managing tab name for HCX
+  const setCustomNetworkTabName = useUiStateStore(
+    (state) => state.setCustomNetworkTabName,
+  )
+
+  useEffect(() => {
+    setCustomNetworkTabName(DEFAULT_RENDERER_ID, 'Tree View')
+    // clear the name when the component is unmounted
+    return () => {
+      setCustomNetworkTabName(DEFAULT_RENDERER_ID, '')
+    }
+  }, [])
 
   const setActiveNetworkView = useUiStateStore(
     (state) => state.setActiveNetworkView,

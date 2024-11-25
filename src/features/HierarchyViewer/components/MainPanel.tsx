@@ -24,9 +24,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import FilterPanel from './FilterPanel/FilterPanel'
 import { DuplicateNodeSeparator } from './CustomLayout/DataBuilderUtil'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
-import { useUiStateStore } from '../../../store/UiStateStore'
-import { use } from 'cytoscape'
-import { DEFAULT_RENDERER_ID } from '../../../store/DefaultRenderer'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -75,17 +72,6 @@ export const MainPanel = (): JSX.Element => {
   const setRootNetworkHost = useSubNetworkStore(
     (state) => state.setRootNetworkHost,
   )
-  const setCustomNetworkTabName = useUiStateStore(
-    (state) => state.setCustomNetworkTabName,
-  )
-
-  useEffect(() => {
-    setCustomNetworkTabName(DEFAULT_RENDERER_ID, 'Tree View')
-    // clear the name when the component is unmounted
-    return () => {
-      setCustomNetworkTabName(DEFAULT_RENDERER_ID, '')
-    }
-  }, [])
 
   const CirclePackingRenderer: Renderer = {
     id: CP_RENDERER_ID,
