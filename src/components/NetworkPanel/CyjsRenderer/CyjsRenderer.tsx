@@ -502,6 +502,7 @@ const CyjsRenderer = ({
     } else {
       // At least one edge is selected.
       if (displayMode === DisplayMode.SHOW_HIDE) {
+        // TODO: design a better way to show / hide edges, including multiple selection
         cy.edges().hide()
       } else {
         cy.edges().show()
