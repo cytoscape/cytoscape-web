@@ -46,6 +46,22 @@ export function ExpandableNumberInput(props: {
     return true
   }
 
+  const errorMsg = (value: number): string | null => {
+    if (!isValid(value)) {
+      if (props.min != null && props.max != null) {
+        return `Value must be between ${props.min} and ${props.max}`
+      }
+      if (props.min != null) {
+        return `Value must be greater than ${props.min}`
+      }
+      if (props.max != null) {
+        return `Value must be less than ${props.max}`
+      }
+    }
+
+    return null
+  }
+
   return (
     <MantineProvider>
       <ButtonBase disabled={props.disabled} onClick={(e) => showPopover(e)}>
@@ -84,11 +100,7 @@ export function ExpandableNumberInput(props: {
         }}
       >
         <NumberInput
-          error={
-            !isValid(localValue)
-              ? `Value must be between ${props.min} and ${props.max}`
-              : null
-          }
+          error={errorMsg(localValue)}
           min={props.min}
           max={props.max}
           value={localValue as number}

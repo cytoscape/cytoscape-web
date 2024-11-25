@@ -71,10 +71,17 @@ export function ContinuousColorMappingForm(props: {
     return [...controlPoints]
       .sort((a, b) => (a.value as number) - (b.value as number))
       .map((pt, index) => {
-        return {
+        const handle = {
           ...pt,
           id: index,
         }
+        if (index === 0) {
+          handle.value = min.value
+        }
+        if (index === controlPoints.length - 1) {
+          handle.value = max.value
+        }
+        return handle
       })
   })
 
@@ -359,6 +366,7 @@ export function ContinuousColorMappingForm(props: {
       m.ltMinVpValue,
       m.gtMaxVpValue,
     )
+    setAddHandleFormValue(minState.value as number)
   }, [minState])
 
   // anytime someone changes the max value, make sure all handle values are less than the max
@@ -382,6 +390,7 @@ export function ContinuousColorMappingForm(props: {
       m.ltMinVpValue,
       m.gtMaxVpValue,
     )
+    setAddHandleFormValue(minState.value as number)
   }, [maxState])
 
   return (
@@ -995,8 +1004,24 @@ export function ContinuousColorMappingForm(props: {
                 />
               </Box>
             </Box>
+            {!(
+              addHandleFormValue < (maxState.value as number) &&
+              addHandleFormValue > (minState.value as number)
+            ) ? (
+              <Typography color="error" variant="caption">
+                {`Handle value must be between ${min.value as number} and ${
+                  max.value as number
+                }`}
+              </Typography>
+            ) : null}
             <Button
               variant="outlined"
+              disabled={
+                !(
+                  addHandleFormValue < (maxState.value as number) &&
+                  addHandleFormValue > (minState.value as number)
+                )
+              }
               onClick={() => {
                 createHandle(addHandleFormValue, addHandleFormVpValue as string)
                 hideCreateHandleMenu()
@@ -1041,6 +1066,7 @@ export function ContinuousColorMappingForm(props: {
               >
                 {'Minimum Value'}
                 <ExpandableNumberInput
+                  max={maxState.value as number}
                   value={minState.value as number}
                   onConfirm={(newValue) =>
                     setMinState({ ...minState, value: newValue })
@@ -1057,6 +1083,7 @@ export function ContinuousColorMappingForm(props: {
               >
                 {'Maximum Value'}
                 <ExpandableNumberInput
+                  min={minState.value as number}
                   value={maxState.value as number}
                   onConfirm={(newValue) =>
                     setMaxState({ ...maxState, value: newValue })
