@@ -66,4 +66,3 @@ We may update this Privacy Policy from time to time to reflect changes in our pr
 ### 9. Contact Us
 
 If you have any questions or concerns about this Privacy Policy, please reach out to us by email at [support@cytoscape.org](mailto:support@cytoscape.org).
-policy of that service.
