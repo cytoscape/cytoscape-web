@@ -96,10 +96,17 @@ export function ContinuousNumberMappingForm(props: {
     return [...controlPoints]
       .sort((a, b) => (a.value as number) - (b.value as number))
       .map((pt, index) => {
-        return {
+        const handle = {
           ...pt,
           id: index,
         }
+        if (index === 0) {
+          handle.value = min.value
+        }
+        if (index === controlPoints.length - 1) {
+          handle.value = max.value
+        }
+        return handle
       })
   })
 
@@ -257,12 +264,16 @@ export function ContinuousNumberMappingForm(props: {
 
   // anytime someone changes the min value, make sure all handle values are greater than the min
   React.useEffect(() => {
-    const newHandles = [...handles].map((h) => {
-      return {
-        ...h,
-        value: Math.max(h.value as number, minState.value as number),
-      }
-    })
+    const newHandles = [...handles]
+      .map((h) => {
+        return {
+          ...h,
+          value: Math.max(h.value as number, minState.value as number),
+        }
+      })
+      .sort((a, b) => (a.value as number) - (b.value as number))
+
+    newHandles[0].value = minState.value as number
     setHandles(newHandles)
 
     updateContinuousMapping(
@@ -272,16 +283,22 @@ export function ContinuousNumberMappingForm(props: {
       m.ltMinVpValue,
       m.gtMaxVpValue,
     )
+
+    setAddHandleFormValue(minState.value as number)
   }, [minState])
 
   // anytime someone changes the max value, make sure all handle values are less than the max
   React.useEffect(() => {
-    const newHandles = [...handles].map((h) => {
-      return {
-        ...h,
-        value: Math.min(h.value as number, maxState.value as number),
-      }
-    })
+    const newHandles = [...handles]
+      .map((h) => {
+        return {
+          ...h,
+          value: Math.min(h.value as number, maxState.value as number),
+        }
+      })
+      .sort((a, b) => (a.value as number) - (b.value as number))
+
+    newHandles[newHandles.length - 1].value = maxState.value as number
     setHandles(newHandles)
 
     updateContinuousMapping(
@@ -291,6 +308,8 @@ export function ContinuousNumberMappingForm(props: {
       m.ltMinVpValue,
       m.gtMaxVpValue,
     )
+
+    setAddHandleFormValue(minState.value as number)
   }, [maxState])
 
   return (
@@ -337,7 +356,11 @@ export function ContinuousNumberMappingForm(props: {
                 domainLabel={m.attribute}
                 rangeLabel={props.visualProperty.displayName}
               />
-              {handles.map((h) => {
+              {handles.map((h, index) => {
+                const isEndHandle = index === 0 || index === handles.length - 1
+                const isMinHandle = index === 0
+                const isMaxHandle = index === handles.length - 1
+
                 const pixelPositionX =
                   xMapper([h.value as number, h.vpValue as number]) +
                   LINE_CHART_MARGIN_LEFT
@@ -347,6 +370,7 @@ export function ContinuousNumberMappingForm(props: {
 
                 return (
                   <Draggable
+                    disabled={isEndHandle}
                     key={h.id}
                     bounds={{
                       left: LINE_CHART_MARGIN_LEFT,
@@ -389,7 +413,12 @@ export function ContinuousNumberMappingForm(props: {
                         flexDirection: 'column',
                         alignItems: 'center',
                         position: 'absolute',
-                        zIndex: lastDraggedHandleId === h.id ? 3 : 1,
+                        zIndex:
+                          lastDraggedHandleId === h.id
+                            ? 3
+                            : isEndHandle
+                              ? 1
+                              : 2,
                       }}
                     >
                       <Paper
@@ -398,7 +427,12 @@ export function ContinuousNumberMappingForm(props: {
                           p: 1,
                           position: 'relative',
                           top: -HANDLE_VERTICAL_OFFSET - pixelPositionY,
-                          zIndex: lastDraggedHandleId === h.id ? 3 : 1,
+                          zIndex:
+                            lastDraggedHandleId === h.id
+                              ? 3
+                              : isEndHandle
+                                ? 1
+                                : 2,
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -412,23 +446,43 @@ export function ContinuousNumberMappingForm(props: {
                             width: 2,
                             top: HANDLE_VERTICAL_OFFSET,
                             height: pixelPositionY,
-                            backgroundColor: '#03082d',
+                            backgroundColor: isEndHandle
+                              ? '#D9D9D9'
+                              : '#03082d',
                             '&:hover': {
                               cursor: 'move',
                             },
                           }}
                         ></Box>
 
-                        <IconButton
-                          sx={{
-                            position: 'absolute',
-                            top: -20,
-                            right: -20,
-                          }}
-                          onClick={() => deleteHandle(h.id)}
-                        >
-                          <Close sx={{ color: '#03082d' }} />
-                        </IconButton>
+                        {handles.length >= 3 && !isEndHandle ? (
+                          <IconButton
+                            sx={{
+                              position: 'absolute',
+                              top: -20,
+                              right: -20,
+                            }}
+                            onClick={() => deleteHandle(h.id)}
+                          >
+                            <Close sx={{ color: '#03082d' }} />
+                          </IconButton>
+                        ) : !isEndHandle ? (
+                          <IconButton
+                            sx={{
+                              position: 'absolute',
+                              top: -20,
+                              right: -20,
+                            }}
+                            onClick={() => deleteHandle(h.id)}
+                          >
+                            <Close
+                              sx={{
+                                color: 'rgba(0, 0, 0, 0.3)',
+                                pointerEvents: 'none',
+                              }}
+                            />
+                          </IconButton>
+                        ) : null}
                         <Box>
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <Typography
@@ -474,17 +528,32 @@ export function ContinuousNumberMappingForm(props: {
                               {m.attribute}
                             </Typography>
                             <ExpandableNumberInput
-                              min={minState.value as number}
-                              max={maxState.value as number}
                               value={h.value as number}
-                              onConfirm={(newVal) => {
-                                setHandle(h.id, newVal, h.vpValue as number)
+                              onConfirm={(newValue) => {
+                                if (isMinHandle) {
+                                  setMinState({ ...minState, value: newValue })
+                                } else if (isMaxHandle) {
+                                  setMaxState({ ...maxState, value: newValue })
+                                } else {
+                                  setHandle(h.id, newValue, h.vpValue as number)
+                                }
                               }}
+                              min={
+                                isMinHandle
+                                  ? undefined
+                                  : (minState.value as number)
+                              }
+                              max={
+                                isMaxHandle
+                                  ? undefined
+                                  : (maxState.value as number)
+                              }
                             />
                           </Box>
                         </Box>
                       </Paper>
                       <IconButton
+                        disabled={isEndHandle}
                         className="handle"
                         size="large"
                         sx={{
@@ -498,7 +567,7 @@ export function ContinuousNumberMappingForm(props: {
                             fontSize: '60px',
                             opacity: 1,
                             zIndex: 3,
-                            color: '#03082d',
+                            color: isEndHandle ? '#D9D9D9' : '#03082d',
                           }}
                         />
                       </IconButton>
@@ -647,8 +716,24 @@ export function ContinuousNumberMappingForm(props: {
                 ></ExpandableNumberInput>
               </Box>
             </Box>
+            {!(
+              addHandleFormValue < (maxState.value as number) &&
+              addHandleFormValue > (minState.value as number)
+            ) ? (
+              <Typography color="error" variant="caption">
+                {`Handle value must be between ${min.value as number} and ${
+                  max.value as number
+                }`}
+              </Typography>
+            ) : null}
             <Button
               variant="outlined"
+              disabled={
+                !(
+                  addHandleFormValue < (maxState.value as number) &&
+                  addHandleFormValue > (minState.value as number)
+                )
+              }
               onClick={() => {
                 createHandle(addHandleFormValue, addHandleFormVpValue)
                 hideCreateHandleMenu()
@@ -696,6 +781,7 @@ export function ContinuousNumberMappingForm(props: {
 
                   <ExpandableNumberInput
                     value={minState.value as number}
+                    max={maxState.value as number}
                     onConfirm={(newVal) => {
                       setMinState({
                         ...minState,
@@ -715,6 +801,7 @@ export function ContinuousNumberMappingForm(props: {
 
                   <ExpandableNumberInput
                     value={maxState.value as number}
+                    min={minState.value as number}
                     onConfirm={(newVal) => {
                       setMaxState({
                         ...maxState,
@@ -727,94 +814,6 @@ export function ContinuousNumberMappingForm(props: {
             </Box>
           </Box>
         </Popover>
-
-        <Box sx={{ display: 'none' }}>
-          <Box
-            sx={{
-              p: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              width: 180,
-            }}
-          >
-            <Typography variant="body2">Add handle</Typography>
-            <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  pt: 1,
-                  pb: 1,
-                }}
-              >
-                <Typography variant="body2">{m.attribute}:</Typography>
-                <ExpandableNumberInput
-                  value={addHandleFormValue}
-                  min={minState.value as number}
-                  max={maxState.value as number}
-                  onConfirm={(newVal) => {
-                    setAddHandleFormValue(newVal)
-                  }}
-                />
-              </Box>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  pt: 1,
-                  pb: 1,
-                }}
-              >
-                <Typography variant="body2">
-                  {props.visualProperty.displayName}:
-                </Typography>
-                <ExpandableNumberInput
-                  value={addHandleFormVpValue}
-                  onConfirm={(newVal) => {
-                    setAddHandleFormVpValue(newVal)
-                  }}
-                />
-              </Box>
-            </Box>
-            <Button
-              variant="text"
-              onClick={() =>
-                createHandle(addHandleFormValue, addHandleFormVpValue)
-              }
-              size="small"
-            >
-              Add Handle
-            </Button>
-          </Box>
-
-          <Box sx={{ p: 1, backgroundColor: '#fcfffc', color: '#595858' }}>
-            <Box>
-              <Typography variant="body2">{m.attribute}:</Typography>
-              <Box sx={{ display: 'flex' }}>
-                <ExpandableNumberInput
-                  value={minState.value as number}
-                  onConfirm={(newValue) => {
-                    setMinState({
-                      ...minState,
-                      value: newValue,
-                    })
-                  }}
-                />
-                <ExpandableNumberInput
-                  value={maxState.value as number}
-                  onConfirm={(newValue) => {
-                    setMaxState({
-                      ...maxState,
-                      value: newValue,
-                    })
-                  }}
-                />
-              </Box>
-            </Box>
-          </Box>
-        </Box>
       </Paper>
     </Paper>
   )

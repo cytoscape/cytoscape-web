@@ -8,6 +8,7 @@ export function ExpandableNumberInput(props: {
   onConfirm: (value: number) => void
   min?: number
   max?: number
+  disabled?: boolean
 }): React.ReactElement {
   const { value, onConfirm } = props
   const [localValue, setLocalValue] = React.useState<number>(value as number)
@@ -45,9 +46,25 @@ export function ExpandableNumberInput(props: {
     return true
   }
 
+  const errorMsg = (value: number): string | null => {
+    if (!isValid(value)) {
+      if (props.min != null && props.max != null) {
+        return `Value must be between ${props.min} and ${props.max}`
+      }
+      if (props.min != null) {
+        return `Value must be greater than ${props.min}`
+      }
+      if (props.max != null) {
+        return `Value must be less than ${props.max}`
+      }
+    }
+
+    return null
+  }
+
   return (
     <MantineProvider>
-      <ButtonBase onClick={(e) => showPopover(e)}>
+      <ButtonBase disabled={props.disabled} onClick={(e) => showPopover(e)}>
         <Box
           sx={{
             width: 45,
@@ -58,7 +75,7 @@ export function ExpandableNumberInput(props: {
               pointer: 'cursor',
             },
             overflow: 'hidden',
-            border: '1px solid #d6d6d6',
+            border: props.disabled ? 'none' : '1px solid #d6d6d6',
             borderRadius: '4px',
             display: 'flex',
             justifyContent: 'center',
@@ -83,11 +100,7 @@ export function ExpandableNumberInput(props: {
         }}
       >
         <NumberInput
-          error={
-            !isValid(localValue)
-              ? `Value must be between ${props.min} and ${props.max}`
-              : null
-          }
+          error={errorMsg(localValue)}
           min={props.min}
           max={props.max}
           value={localValue as number}

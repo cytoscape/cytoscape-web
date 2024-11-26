@@ -248,6 +248,11 @@ export const useVisualStyleStore = create(
                 vpValue: DEFAULT_NUMBER_RANGE[0],
               },
               {
+                value: attributeValues[Math.floor(attributeValues.length / 2)], // TODO compute median instead of just the middle value
+                vpValue:
+                  (DEFAULT_NUMBER_RANGE[0] + DEFAULT_NUMBER_RANGE[1]) / 2,
+              },
+              {
                 value: attributeValues[attributeValues.length - 1],
                 vpValue: DEFAULT_NUMBER_RANGE[1],
               },
