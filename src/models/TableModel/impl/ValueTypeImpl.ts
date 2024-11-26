@@ -68,7 +68,7 @@ export const getDefaultValue = (dataType: ValueTypeName): ValueType => {
 // e.g. '1, 2, 3' -> [1, 2, 3]
 export const deserializeValueList = (
   type: ValueTypeName,
-  value: string | string[], // Accept both string and array
+  value: string,
 ): ValueType => {
   const deserializeFnMap: Record<ValueTypeName, (value: string) => ValueType> =
     {
@@ -89,24 +89,9 @@ export const deserializeValueList = (
       [ValueTypeName.Double]: (value: string) => +value,
     }
 
-  if (Array.isArray(value)) {
-    switch (type) {
-      case ValueTypeName.ListString:
-        return value as string[]; 
-      case ValueTypeName.ListLong:
-      case ValueTypeName.ListInteger:
-      case ValueTypeName.ListDouble:
-        return value.map((v) => +v) as ValueType; 
-      case ValueTypeName.ListBoolean:
-        return value.map((v) => v === 'true') as ValueType; 
-      default:
-        throw new Error(`Unsupported array type for deserialization: ${type}`);
-    }
-  }
-
-  const v = deserializeFnMap[type](value as string) as ListOfValueType;
-  return v;
-};
+  const v = deserializeFnMap[type](value as string) as ListOfValueType
+  return v
+}
 
 // deserializeValueList also handles single values
 export const deserializeValue = deserializeValueList

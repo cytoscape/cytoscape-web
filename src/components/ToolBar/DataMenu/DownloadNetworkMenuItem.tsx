@@ -1,5 +1,5 @@
 import { MenuItem } from '@mui/material'
-import { ReactElement } from 'react'
+import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
@@ -13,13 +13,14 @@ import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import { useMessageStore } from '../../../store/MessageStore'
 
 export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
 
-  const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
+  const addMessage = useMessageStore((state) => state.addMessage)
   const table = useTableStore((state) => state.tables[currentNetworkId])
 
   const summary = useNetworkSummaryStore(
@@ -65,9 +66,16 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const handleSaveCurrentNetworkToFile = async (): Promise<void> => {
     try {
       await saveNetworkToFile()
+      addMessage({
+        message: 'The current network is dowloaded successfully!',
+        duration: 3000,
+      })
     } catch (error) {
       console.error('Failed to download the current network as file:', error)
-      setErrorMessage('Failed to download the current network as file.')
+      addMessage({
+        message: 'Failed to download the current network as file.',
+        duration: 5000,
+      })
     }
   }
 
