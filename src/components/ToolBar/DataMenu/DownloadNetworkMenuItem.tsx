@@ -67,7 +67,7 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
     try {
       await saveNetworkToFile()
       addMessage({
-        message: 'The current network is dowloaded successfully!',
+        message: 'Downloaded the current network successfully.',
         duration: 3000,
       })
     } catch (error) {
