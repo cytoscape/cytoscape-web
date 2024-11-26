@@ -89,7 +89,7 @@ export const deserializeValueList = (
       [ValueTypeName.Double]: (value: string) => +value,
     }
 
-  const v = deserializeFnMap[type](value) as ListOfValueType
+  const v = deserializeFnMap[type](value as string) as ListOfValueType
   return v
 }
 

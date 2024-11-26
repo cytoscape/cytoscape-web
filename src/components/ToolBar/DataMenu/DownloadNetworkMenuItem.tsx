@@ -1,5 +1,5 @@
 import { MenuItem } from '@mui/material'
-import { ReactElement } from 'react'
+import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
@@ -13,26 +13,28 @@ import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import { useMessageStore } from '../../../store/MessageStore'
 
 export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
 
+  const addMessage = useMessageStore((state) => state.addMessage)
   const table = useTableStore((state) => state.tables[currentNetworkId])
 
   const summary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
   const visualStyle = useVisualStyleStore(
     (state) => state.visualStyles[currentNetworkId],
   )
   const visualStyleOptions = useUiStateStore(
-    (state) => state.ui.visualStyleOptions[currentNetworkId]
+    (state) => state.ui.visualStyleOptions[currentNetworkId],
   ) as VisualStyleOptions
 
   const network = useNetworkStore((state) =>
@@ -51,7 +53,7 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
       table.edgeTable,
       visualStyleOptions,
       viewModel,
-      `Copy of ${summary.name}`,
+      summary.name,
     )
     const link = document.createElement('a')
     link.download = `${summary.name}.cx2`
@@ -62,7 +64,19 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const handleSaveCurrentNetworkToFile = async (): Promise<void> => {
-    await saveNetworkToFile()
+    try {
+      await saveNetworkToFile()
+      addMessage({
+        message: 'Downloaded the current network successfully.',
+        duration: 3000,
+      })
+    } catch (error) {
+      console.error('Failed to download the current network as file:', error)
+      addMessage({
+        message: 'Failed to download the current network as file.',
+        duration: 5000,
+      })
+    }
   }
 
   const menuItem = (
