@@ -210,7 +210,7 @@ export const SaveWorkspaceToNDExMenuItem = (
       {authenticated ? (
         menuItem
       ) : (
-        <Tooltip title="Login to save a copy of the current network to NDEx">
+        <Tooltip title="Login to save a copy of the current workspace to NDEx">
           <Box>{menuItem}</Box>
         </Tooltip>
       )}

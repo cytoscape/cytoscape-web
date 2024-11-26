@@ -167,7 +167,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       {authenticated ? (
         menuItem
       ) : (
-        <Tooltip title="Login to save the current network in NDEx">
+        <Tooltip title="Login to save/overwrite the current workspace to NDEx">
           <Box>{menuItem}</Box>
         </Tooltip>
       )}
