@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import {
   MenuItem,
   Box,
@@ -9,8 +9,9 @@ import {
   DialogActions,
   TextField,
   Button,
+  Typography,
 } from '@mui/material'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { WorkspaceMenuProps } from '../BaseMenuProps'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useCredentialStore } from '../../../store/CredentialStore'
@@ -31,8 +32,13 @@ import {
 } from '../../../utils/ndex-utils'
 
 export const SaveWorkspaceToNDExMenuItem = (
-  props: BaseMenuProps,
+  props: WorkspaceMenuProps,
 ): React.ReactElement => {
+  const [warningMessage, setWarningMessage] = useState<string>('')
+  const [showWarning, setShowWarning] = useState<boolean>(false)
+  const existingWorkspaceNames = props.existingWorkspace.map(
+    (workspace) => workspace.name,
+  )
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
   const getToken = useCredentialStore((state) => state.getToken)
@@ -84,7 +90,15 @@ export const SaveWorkspaceToNDExMenuItem = (
 
   const saveWorkspaceToNDEx = async (): Promise<void> => {
     if (workspaceName.trim().length === 0) {
-      alert('Please enter a workspace name')
+      setWarningMessage('Please enter a workspace name')
+      setShowWarning(true)
+      return
+    }
+    if (existingWorkspaceNames.includes(workspaceName)) {
+      setWarningMessage(
+        'This workspace name already exists. Please enter a unique workspace name',
+      )
+      setShowWarning(true)
       return
     }
     try {
@@ -121,7 +135,7 @@ export const SaveWorkspaceToNDExMenuItem = (
       console.log(modificationTime)
 
       addMessage({
-        message: `Saved workspace to NDEx.`,
+        message: `Saved workspace to NDEx successfully.`,
         duration: 3000,
       })
     } catch (e) {
@@ -129,12 +143,12 @@ export const SaveWorkspaceToNDExMenuItem = (
         addMessage({
           message:
             'This workspace name already exists. Please enter a unique workspace name',
-          duration: 3000,
+          duration: 5000,
         })
       } else {
         addMessage({
           message: `Error: Could not save workspace to NDEx. ${e.message as string}`,
-          duration: 3000,
+          duration: 5000,
         })
       }
     }
@@ -159,11 +173,10 @@ export const SaveWorkspaceToNDExMenuItem = (
       open={openDialog}
       onClose={handleCloseDialog}
     >
-      <DialogTitle>Save Workspace As...</DialogTitle>
-      <DialogContent>
+      <DialogTitle>Save Workspace as...</DialogTitle>
+      <DialogContent sx={{ width: '300px' }}>
         <TextField
           autoFocus
-          margin="dense"
           id="name"
           label="Unique Workspace Name"
           type="text"
@@ -173,8 +186,14 @@ export const SaveWorkspaceToNDExMenuItem = (
           onChange={handleNameChange}
           onKeyDown={(e) => {
             e.stopPropagation()
+            setShowWarning(false)
           }}
         />
+        {showWarning && (
+          <Typography color="error" variant="body2">
+            {warningMessage}
+          </Typography>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleCloseDialog} color="primary">

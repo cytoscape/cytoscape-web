@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react'
 import { MenuItem, Box, Tooltip } from '@mui/material'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { WorkspaceMenuProps } from '../BaseMenuProps'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useCredentialStore } from '../../../store/CredentialStore'
@@ -23,19 +23,20 @@ import {
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
-  props: BaseMenuProps,
+  props: WorkspaceMenuProps,
 ): React.ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
-  const [isLoading, setIsLoading] = useState(true)
   const [openDialog, setOpenDialog] = useState<boolean>(false)
   const updateSummary = useNetworkSummaryStore((state) => state.update)
   const setId = useWorkspaceStore((state) => state.setId)
   const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
-  const [hasWorkspace, setHasWorkspace] = useState(false)
+  const hasWorkspace = props.existingWorkspace
+    .map((workspace) => workspace.workspaceId)
+    .includes(currentWorkspaceId)
 
   // data from store
   const networkModifiedStatus = useWorkspaceStore(
@@ -65,27 +66,6 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
-
-  useEffect(() => {
-    if (authenticated) {
-      setIsLoading(true)
-      fetchMyWorkspaces(ndexBaseUrl, getToken)
-        .then(function (resultArray) {
-          const workspaceIds = resultArray.map(
-            (item: { workspaceId: any }) => item.workspaceId,
-          )
-          const savedWorkspace = workspaceIds.includes(currentWorkspaceId)
-          setHasWorkspace(savedWorkspace)
-          setIsLoading(false)
-        })
-        .catch(function (error) {
-          console.error('Error:', error)
-          setIsLoading(false)
-        })
-    } else {
-      setIsLoading(false)
-    }
-  }, [])
 
   const saveWorkspaceToNDEx = async (): Promise<void> => {
     try {
@@ -127,7 +107,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       }
 
       addMessage({
-        message: `Saved workspace to NDEx.`,
+        message: `Saved workspace to NDEx successfully.`,
         duration: 3000,
       })
     } catch (e) {
@@ -135,12 +115,12 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         addMessage({
           message:
             'This workspace name already exists. Please enter a unique workspace name',
-          duration: 3000,
+          duration: 5000,
         })
       } else {
         addMessage({
           message: `Error: Could not save workspace to NDEx. ${e.message as string}`,
-          duration: 3000,
+          duration: 5000,
         })
       }
     }
@@ -179,7 +159,6 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         setOpen={setOpenDialog}
         buttonTitle="Save"
         isAlert={true}
-        confirmDisabled={isLoading}
       />
     </>
   )
