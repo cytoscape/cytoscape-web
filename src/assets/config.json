@@ -18,7 +18,7 @@
     "https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample",
     "https://cd.ndexbio.org/cy/cytocontainer/v1/iqueryenrichment"
   ],
-  "maxNetworkElementsThreshold": 20000,
+  "maxNetworkElementsThreshold": 26000,
   "maxEdgeCountThreshold": 20000,
   "maxNetworkFileSize": 524288000,
   "urlBaseName": "/",
