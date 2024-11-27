@@ -19,6 +19,7 @@
     "https://cd.ndexbio.org/cy/cytocontainer/v1/iqueryenrichment"
   ],
   "maxNetworkElementsThreshold": 20000,
+  "maxEdgeCountThreshold": 20000,
   "maxNetworkFileSize": 524288000,
   "urlBaseName": "/",
   "openAIAPIKey": "",

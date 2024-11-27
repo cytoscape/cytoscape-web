@@ -13,6 +13,7 @@ export interface AppConfig {
   defaultServices: string[]
   keycloakConfig: KeycloakConfig
   maxNetworkElementsThreshold: number
+  maxEdgeCountThreshold: number
   maxNetworkFileSize: number
   testNetworks: IdType[]
   urlBaseName: string
@@ -27,6 +28,7 @@ export const defaultAppConfig: AppConfig = {
     realm: 'ndex',
     clientId: 'localtestclient',
   },
+  maxEdgeCountThreshold: 20000,
   maxNetworkElementsThreshold: 20000, // max number of elements (nodes + edges) that can be rendered with cy.js
   maxNetworkFileSize: 524288000, // 500MB in bytes file size limit in mb that a user can upload
   testNetworks: [

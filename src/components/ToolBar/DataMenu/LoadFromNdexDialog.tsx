@@ -89,8 +89,12 @@ export const LoadFromNdexDialog = (
 ): ReactElement => {
   const { open, handleClose } = props
 
-  const { ndexBaseUrl, maxNetworkFileSize, maxNetworkElementsThreshold } =
-    useContext(AppConfigContext)
+  const {
+    ndexBaseUrl,
+    maxNetworkFileSize,
+    maxNetworkElementsThreshold,
+    maxEdgeCountThreshold,
+  } = useContext(AppConfigContext)
 
   const client = useContext(KeycloakContext)
 
@@ -144,6 +148,18 @@ export const LoadFromNdexDialog = (
     }
   }
 
+  const networkPassesSizeThreshold = (
+    nodeCount: number,
+    edgeCount: number,
+    cx2FileSize: number,
+  ): boolean => {
+    return (
+      edgeCount <= maxEdgeCountThreshold ||
+      (+nodeCount + +edgeCount < maxNetworkElementsThreshold &&
+        cx2FileSize < maxNetworkFileSize)
+    )
+  }
+
   const addNDExNetworksToWorkspace = async (
     networkIds: IdType[],
   ): Promise<void> => {
@@ -156,10 +172,13 @@ export const LoadFromNdexDialog = (
 
       summaries.forEach((summary) => {
         if (summary !== undefined) {
-          const networkSizeTooLarge = summary.cx2FileSize > maxNetworkFileSize
-          const tooManyNetworkElements =
-            summary.nodeCount + summary.edgeCount > maxNetworkElementsThreshold
-          if (networkSizeTooLarge || tooManyNetworkElements) {
+          const networkCanBeSelected = networkPassesSizeThreshold(
+            summary.nodeCount,
+            summary.edgeCount,
+            summary.cx2FileSize,
+          )
+
+          if (!networkCanBeSelected) {
             invalidNetworkIds.push(summary.externalId)
           } else {
             validNetworkIds.push(summary.externalId)
@@ -270,12 +289,13 @@ export const LoadFromNdexDialog = (
               } = network
               const selected = selectedNetworks.includes(externalId)
               const networkAlreadyLoaded = networkIds.includes(externalId)
-              const networkIsSmallEnough =
-                +nodeCount + +edgeCount < maxNetworkElementsThreshold &&
-                cx2FileSize < maxNetworkFileSize
               const networkCanBeSelected =
                 !networkAlreadyLoaded &&
-                networkIsSmallEnough &&
+                networkPassesSizeThreshold(
+                  +nodeCount,
+                  +edgeCount,
+                  cx2FileSize,
+                ) &&
                 subnetworkIds.length === 0
 
               const dateDisplay = dateFormatter(modificationTime)
@@ -368,9 +388,7 @@ export const LoadFromNdexDialog = (
                   ? 'Network already loaded in the workspace'
                   : subnetworkIds.length > 0
                     ? 'Collections cannot be imported into Cytoscape Web'
-                    : `Networks must be smaller than ${formatBytes(
-                        maxNetworkFileSize,
-                      )} and contain less than ${maxNetworkElementsThreshold} nodes/edges.`
+                    : `Networks is too large to be loaded into Cytoscape Web.`
 
                 return (
                   <Tooltip key={externalId} title={tooltipMessage}>
