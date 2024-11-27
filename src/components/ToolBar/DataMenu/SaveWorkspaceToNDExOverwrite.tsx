@@ -21,7 +21,7 @@ import {
   ndexDuplicateKeyErrorMessage,
 } from '../../../utils/ndex-utils'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
-import { useOpaqueAspectStore } from 'src/store/OpaqueAspectStore'
+import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
   props: WorkspaceMenuProps,

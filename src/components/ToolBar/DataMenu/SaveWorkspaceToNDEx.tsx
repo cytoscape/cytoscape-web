@@ -30,7 +30,7 @@ import {
   ndexDuplicateKeyErrorMessage,
   saveAllNetworks,
 } from '../../../utils/ndex-utils'
-import { useOpaqueAspectStore } from 'src/store/OpaqueAspectStore'
+import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 
 export const SaveWorkspaceToNDExMenuItem = (
   props: WorkspaceMenuProps,
