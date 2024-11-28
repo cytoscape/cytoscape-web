@@ -1,5 +1,5 @@
-import { Button, Divider, Menu } from '@mui/material'
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Button, Divider } from '@mui/material'
+import { useEffect, useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { useAppStore } from '../../../store/AppStore'
@@ -7,7 +7,6 @@ import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
 import { ComponentType, CyApp } from '../../../models/AppModel'
-import { ServiceSettingsDialog } from '../../AppManager/ServiceSettingsDialog'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { TieredMenu } from 'primereact/tieredmenu'
 import { createMenuItems } from './menu-factory'
@@ -31,14 +30,8 @@ export const AppMenu = (props: DropdownMenuProps) => {
   // For the app settings dialog
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
-  // For the service settings dialog
-  const [openServiceDialog, setOpenServiceDialog] = useState<boolean>(false)
-
   // For the task status dialog
   const [openTaskDialog, setOpenTaskDialog] = useState<boolean>(false)
-
-  // Message to show in the task status dialog
-  const [taskTitle, setTaskTitle] = useState<string>('')
 
   const [componentList, setComponentList] = useState<[string, string][]>([])
 
@@ -65,13 +58,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
     const menuRefCurrent = menuRef.current as any
     menuRefCurrent.hide()
     setOpenDialog(isDialogOpen)
-  }
-
-  const handleOpenServiceDialog = (isDialogOpen: boolean): void => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
-    setOpenServiceDialog(isDialogOpen)
   }
 
   const handleRun = async (url: string): Promise<void> => {
@@ -145,11 +131,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
         style: { height: '2.5em' },
         command: () => handleOpenDialog(true),
       },
-      {
-        label: 'External Service Settings...',
-        style: { height: '2.5em' },
-        command: () => handleOpenServiceDialog(true),
-      },
     ]
   }
 
@@ -208,15 +189,11 @@ export const AppMenu = (props: DropdownMenuProps) => {
         openDialog={openDialog}
         setOpenDialog={setOpenDialog}
       />
-      <ServiceSettingsDialog
-        openDialog={openServiceDialog}
-        setOpenDialog={setOpenServiceDialog}
-      />
       <TaskStatusDialog open={openTaskDialog} setOpen={setOpenTaskDialog} />
       <ConfirmationDialog
         open={notificationDialog}
         setOpen={setNotificationDialog}
-        title="Opps! Something went wrong..."
+        title="Oops! Something went wrong..."
         onConfirm={() => {}}
         message={`Error message from service: ${notificationMessage}`}
       />
