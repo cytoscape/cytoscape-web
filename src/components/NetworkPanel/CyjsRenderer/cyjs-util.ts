@@ -21,47 +21,88 @@ import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualS
 import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 import { NodeShapeMapping } from './cyjs-factory'
 
-function updateEdgeArrowShape(obj: SingularElementArgument, key: VisualPropertyName, value: any, view: View, arrowFillProperty: SpecialPropertyName) {
-  const arrowFillValue = view.values.get(arrowFillProperty as VisualPropertyName);
-  obj.data(key, value);
-  obj.data(arrowFillProperty, arrowFillValue);
+function updateEdgeArrowShape(
+  obj: SingularElementArgument,
+  key: VisualPropertyName,
+  value: any,
+  view: View,
+  arrowFillProperty: SpecialPropertyName,
+) {
+  const arrowFillValue = view.values.get(
+    arrowFillProperty as VisualPropertyName,
+  )
+  obj.data(key, value)
+  obj.data(arrowFillProperty, arrowFillValue)
   if (obj.data(key) === EdgeArrowShapeType.Arrow) {
-    obj.data(key, EdgeArrowShapeType.Triangle);
+    obj.data(key, EdgeArrowShapeType.Triangle)
   }
 }
 
-const vpHandlers = new Map<VisualPropertyName, (obj: SingularElementArgument, key: VisualPropertyName, value: any, view: View) => void>();
+const vpHandlers = new Map<
+  VisualPropertyName,
+  (
+    obj: SingularElementArgument,
+    key: VisualPropertyName,
+    value: any,
+    view: View,
+  ) => void
+>()
 
-vpHandlers.set(VisualPropertyName.NodeLabelPosition, (obj, key, value, view) => {
-  const { horizontalAlign, verticalAlign } = computeNodeLabelPosition(value);
-  obj.data(SpecialPropertyName.NodeLabelHorizontalAlign, horizontalAlign);
-  obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign);
-  obj.data(SpecialPropertyName.NodeLabelMarginX, value.MARGIN_X);
-  obj.data(SpecialPropertyName.NodeLabelMarginY, value.MARGIN_Y);
-  obj.data(SpecialPropertyName.NodeLabelJustification, value.JUSTIFICATION);
-});
+vpHandlers.set(
+  VisualPropertyName.NodeLabelPosition,
+  (obj, key, value, view) => {
+    const { horizontalAlign, verticalAlign } = computeNodeLabelPosition(value)
+    obj.data(SpecialPropertyName.NodeLabelHorizontalAlign, horizontalAlign)
+    obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
+    obj.data(SpecialPropertyName.NodeLabelMarginX, value.MARGIN_X)
+    obj.data(SpecialPropertyName.NodeLabelMarginY, value.MARGIN_Y)
+    obj.data(SpecialPropertyName.NodeLabelJustification, value.JUSTIFICATION)
+  },
+)
 
-vpHandlers.set(VisualPropertyName.EdgeTargetArrowShape, (obj, key, value, view) => {
-  updateEdgeArrowShape(obj, key, value, view, SpecialPropertyName.TargetArrowFill);
-});
+vpHandlers.set(
+  VisualPropertyName.EdgeTargetArrowShape,
+  (obj, key, value, view) => {
+    updateEdgeArrowShape(
+      obj,
+      key,
+      value,
+      view,
+      SpecialPropertyName.TargetArrowFill,
+    )
+  },
+)
 
-vpHandlers.set(VisualPropertyName.EdgeSourceArrowShape, (obj, key, value, view) => {
-  updateEdgeArrowShape(obj, key, value, view, SpecialPropertyName.SourceArrowFill);
-  
-});
+vpHandlers.set(
+  VisualPropertyName.EdgeSourceArrowShape,
+  (obj, key, value, view) => {
+    updateEdgeArrowShape(
+      obj,
+      key,
+      value,
+      view,
+      SpecialPropertyName.SourceArrowFill,
+    )
+  },
+)
 
 vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value, view) => {
-  obj.data(key, NodeShapeMapping[value as NodeShapeType]);
-});
+  obj.data(key, NodeShapeMapping[value as NodeShapeType])
+})
 
-vpHandlers.set(VisualPropertyName.NodeLabelRotation, (obj, key, value, view) => {
-  obj.data(key, (value * Math.PI) / 180);
-});
+vpHandlers.set(
+  VisualPropertyName.NodeLabelRotation,
+  (obj, key, value, view) => {
+    obj.data(key, (value * Math.PI) / 180)
+  },
+)
 
-vpHandlers.set(VisualPropertyName.EdgeLabelRotation, (obj, key, value, view) => {
-  obj.data(key, (value * Math.PI) / 180);
-});
-
+vpHandlers.set(
+  VisualPropertyName.EdgeLabelRotation,
+  (obj, key, value, view) => {
+    obj.data(key, (value * Math.PI) / 180)
+  },
+)
 
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
@@ -149,19 +190,28 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
       }
     }
   })
+
+  /**
+   * Create edge style model
+   *
+   * Since order of edge style is important, we need to add higher priority element later
+   * e.g., selected color should be the last element
+   *
+   */
+
+  let edgeSelectedPaintMapping = {}
   edgeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
     const cyjsVpName = getCyjsVpName(vp.name)
     if (cyjsVpName !== undefined) {
       // Special case: selection is a special state in Cytoscape.js and
       // irregular handling is required
       if (vp.name === 'edgeSelectedPaint') {
-        const selectedNodeMapping = {
+        edgeSelectedPaintMapping = {
           selector: 'edge:selected',
           style: {
             [cyjsVpName]: `data(${vp.name})`,
           },
         }
-        cyStyle.push(selectedNodeMapping as CyjsDirectMapper)
       } else if (
         vp.name === VisualPropertyName.EdgeSourceArrowShape ||
         vp.name === VisualPropertyName.EdgeTargetArrowShape
@@ -200,6 +250,9 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     }
   })
 
+  // Edge selection color should be the last element in the style
+  cyStyle.push(edgeSelectedPaintMapping as CyjsDirectMapper)
+
   // Need to add special class to handle mouse hover
   // This is not the part of current style object, and defined here
   // TODO: Define type for this
@@ -207,8 +260,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     selector: `.hover`,
     style: {
       'underlay-color': 'lightblue',
-      'underlay-padding': 12,
-      'underlay-opacity': 0.7,
+      'underlay-padding': 10,
+      'underlay-opacity': 0.6,
       'underlay-shape': 'roundrectangle',
     },
   }
@@ -238,13 +291,13 @@ const updateCyObjects = <T extends View>(
     const view: View = views[cyId]
     if (view !== undefined) {
       view.values.forEach((value, key) => {
-        const vpHandler = vpHandlers.get(key);
+        const vpHandler = vpHandlers.get(key)
         if (vpHandler) {
-          vpHandler(obj, key, value, view);
+          vpHandler(obj, key, value, view)
         } else {
-          obj.data(key, value);
+          obj.data(key, value)
         }
-      });
+      })
 
       if (visualEditorProperties?.nodeSizeLocked) {
         obj.data(
