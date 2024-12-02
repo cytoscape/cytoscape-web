@@ -22,9 +22,12 @@ export const AppListPanel = () => {
         variant="h6"
         color="text.primary"
       >
+        Status of Apps
+      </Typography>
+      <Typography variant="body1">
         {Object.keys(apps).length === 0
-          ? '(No Apps Available)'
-          : 'Status of Apps'}
+          ? '(No Apps are currently registered)'
+          : ''}
       </Typography>
 
       <List>

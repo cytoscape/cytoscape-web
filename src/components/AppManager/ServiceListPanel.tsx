@@ -94,9 +94,12 @@ export const ServiceListPanel = () => {
         variant="h6"
         color="text.primary"
       >
+        Status of External Service Apps
+      </Typography>
+      <Typography variant="body1">
         {Object.keys(serviceApps).length === 0
-          ? '(No Registered Services)'
-          : 'Status of External Service Apps'}
+          ? '(No services are currently registered)'
+          : ''}
       </Typography>
       {warningMessage && (
         <Typography color="error" variant="body2">
