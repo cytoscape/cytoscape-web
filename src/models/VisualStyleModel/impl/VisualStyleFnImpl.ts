@@ -32,6 +32,7 @@ import {
 import { getDefaultVisualStyle } from './DefaultVisualStyle'
 import { createNewNetworkView, updateNetworkView } from './compute-view-util'
 import { VisualStyleOptions } from '../VisualStyleOptions'
+import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
 
 const sortByDisplayName = (
   a: VisualProperty<VisualPropertyValueType>,
@@ -174,7 +175,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           if (edgeBypassMap.has(vpName)) {
             const entry = edgeBypassMap.get(vpName) ?? new Map()
             entry.set(
-              String(id),
+              translateCXEdgeId(String(id)),
               cxVPConverter.valueConverter(
                 v[cxVPName] as CXVisualPropertyValue,
               ),
@@ -184,7 +185,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
             edgeBypassMap.set(
               vpName,
               new Map().set(
-                String(id),
+                translateCXEdgeId(String(id)),
                 cxVPConverter.valueConverter(
                   v[cxVPName] as CXVisualPropertyValue,
                 ),
