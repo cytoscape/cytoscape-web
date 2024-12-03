@@ -30,6 +30,7 @@ import {
   ndexDuplicateKeyErrorMessage,
   saveAllNetworks,
 } from '../../../utils/ndex-utils'
+import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 
 export const SaveWorkspaceToNDExMenuItem = (
   props: WorkspaceMenuProps,
@@ -62,6 +63,7 @@ export const SaveWorkspaceToNDExMenuItem = (
   const networkVisualStyleOpt = useUiStateStore(
     (state) => state.ui.visualStyleOptions,
   )
+  const opaqueAspects = useOpaqueAspectStore((state) => state.opaqueAspects)
 
   const [workspaceName, setWorkspaceName] = useState<string>('')
   const [openDialog, setOpenDialog] = useState<boolean>(false)
@@ -117,6 +119,7 @@ export const SaveWorkspaceToNDExMenuItem = (
         tables,
         viewModels,
         networkVisualStyleOpt,
+        opaqueAspects,
       )
       const ndexClient = new NDEx(ndexBaseUrl)
       const accessToken = await getToken()

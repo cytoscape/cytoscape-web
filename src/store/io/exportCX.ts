@@ -37,8 +37,12 @@ import {
   PassthroughMappingFunction,
 } from '../../models/VisualStyleModel/VisualMappingFunction'
 
-import { deserializeValue, isListType } from '../../models/TableModel/impl/ValueTypeImpl'
+import {
+  deserializeValue,
+  isListType,
+} from '../../models/TableModel/impl/ValueTypeImpl'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 
 export const exportNetworkToCx2 = (
   network: Network,
@@ -49,6 +53,7 @@ export const exportNetworkToCx2 = (
   visualStyleOptions?: VisualStyleOptions, //visual editor properties
   networkView?: NetworkView,
   networkName?: string, // optional new name for the network
+  opaqueAspects?: OpaqueAspects,
 ): any => {
   // accumulate node/edge attributes into a object
   const attributesAccumulator = (
@@ -176,10 +181,13 @@ export const exportNetworkToCx2 = (
   }
 
   summary.properties.forEach((property) => {
-    networkAttributes[0][property.predicateString] = (isListType(property.dataType) && (!Array.isArray(property.value))) ? deserializeValue(
-      networkAttributeDeclarations[property.predicateString].d,
-      property.value as string,
-    ) : property.value
+    networkAttributes[0][property.predicateString] =
+      isListType(property.dataType) && !Array.isArray(property.value)
+        ? deserializeValue(
+            networkAttributeDeclarations[property.predicateString].d,
+            property.value as string,
+          )
+        : property.value
   })
 
   const nodes = network.nodes.map((node) => {
@@ -281,7 +289,11 @@ export const exportNetworkToCx2 = (
     { key: 'nodeBypasses', aspect: nodeBypasses },
     { key: 'edgeBypasses', aspect: edgeBypasses },
     { key: 'visualEditorProperties', aspect: visualEditorProperties },
-  ]
+  ].concat(
+    Object.entries(opaqueAspects ?? {}).map(([key, aspect]) => {
+      return { key, aspect }
+    }),
+  )
 
   const status = [
     {
@@ -306,13 +318,10 @@ export const exportNetworkToCx2 = (
 
   return cx
 }
-
-export const exportGraph = (
-  network: Network
-) => {
+export const exportGraph = (network: Network) => {
   const nodes = network.nodes.map((node) => {
     return {
-      id: parseInt(node.id)
+      id: parseInt(node.id),
     }
   })
   const edges = network.edges.map((edge) => {
@@ -326,8 +335,5 @@ export const exportGraph = (
       t: target,
     }
   })
-  return [
-    {'nodes': nodes},
-    {'edges': edges}
-  ]
+  return [{ nodes: nodes }, { edges: edges }]
 }

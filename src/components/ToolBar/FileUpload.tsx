@@ -48,6 +48,9 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/network-utils'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { useUiStateStore } from '../../store/UiStateStore'
+import { Aspect } from '../../models/CxModel/Cx2/Aspect'
+import { getOptionalAspects } from '../../utils/cx-utils'
+import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 
 interface FileUploadProps {
   show: boolean
@@ -62,6 +65,7 @@ export function FileUpload(props: FileUploadProps) {
     visualStyle: VisualStyle
     networkView: NetworkView
     visualStyleOptions: VisualStyleOptions
+    otherAspects: Aspect[]
   }
 
   const setCurrentNetworkId = useWorkspaceStore(
@@ -84,6 +88,9 @@ export function FileUpload(props: FileUploadProps) {
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
+
+  const addAllOpaqueAspects = useOpaqueAspectStore((state) => state.addAll)
+
   const createDataFromLocalCx2 = async (
     LocalNetworkId: string,
     cxData: Cx2,
@@ -109,6 +116,8 @@ export function FileUpload(props: FileUploadProps) {
     const visualStyleOptions: VisualStyleOptions =
       VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
 
+    const otherAspects: Aspect[] = getOptionalAspects(cxData)
+
     return {
       network,
       nodeTable,
@@ -116,6 +125,7 @@ export function FileUpload(props: FileUploadProps) {
       visualStyle,
       networkView,
       visualStyleOptions,
+      otherAspects,
     }
   }
 
@@ -167,6 +177,7 @@ export function FileUpload(props: FileUploadProps) {
         visualStyle,
         networkView,
         visualStyleOptions,
+        otherAspects,
       } = res
 
       const localNodeCount = network.nodes.length
@@ -209,6 +220,9 @@ export function FileUpload(props: FileUploadProps) {
       setVisualStyle(localUuid, visualStyle)
       setTables(localUuid, nodeTable, edgeTable)
       setViewModel(localUuid, networkView)
+      if (otherAspects !== undefined) {
+        addAllOpaqueAspects(localUuid, otherAspects)
+      }
       props.handleClose()
     } catch (error) {
       console.error(error)

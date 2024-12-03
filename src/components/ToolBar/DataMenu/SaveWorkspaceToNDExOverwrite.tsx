@@ -21,6 +21,7 @@ import {
   ndexDuplicateKeyErrorMessage,
 } from '../../../utils/ndex-utils'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
+import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
   props: WorkspaceMenuProps,
@@ -67,6 +68,8 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
     (state) => state.addNetworkIds,
   )
 
+  const opaqueAspects = useOpaqueAspectStore((state) => state.opaqueAspects)
+
   const saveWorkspaceToNDEx = async (): Promise<void> => {
     try {
       await saveAllNetworks(
@@ -84,6 +87,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         tables,
         viewModels,
         networkVisualStyleOpt,
+        opaqueAspects,
       )
       const ndexClient = new NDEx(ndexBaseUrl)
       const accessToken = await getToken()

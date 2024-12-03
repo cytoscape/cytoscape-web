@@ -19,11 +19,13 @@ import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOpt
 // TODO: Move these from features to other folders
 import { useRunTask } from '../../features/ServiceApps'
 import { useServiceResultHandlerManager } from '../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
+import { useOpaqueAspectStore } from '../OpaqueAspectStore'
+import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
 
 export interface RunTaskResult {
   status: ServiceStatus
   algorithmName: string
-  message:string
+  message: string
 }
 
 /**
@@ -32,7 +34,9 @@ export interface RunTaskResult {
  * @returns Function to run a service task for a given URL
  *
  */
-export const useServiceTaskRunner = (): ((url: string) => Promise<RunTaskResult>) => {
+export const useServiceTaskRunner = (): ((
+  url: string,
+) => Promise<RunTaskResult>) => {
   // TODO: This need to be changed to include the data builder
   //       And also it should return the correct data type defined in the service app model
   const runTask = useRunTask()
@@ -60,6 +64,10 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<RunTaskResult>
     state.networks.get(currentNetworkId),
   )
 
+  const opaqueAspect: OpaqueAspects = useOpaqueAspectStore(
+    (state) => state.opaqueAspects[currentNetworkId],
+  )
+
   // Registered service apps
   const serviceApps: Record<string, ServiceApp> = useAppStore(
     (state) => state.serviceApps,
@@ -75,6 +83,7 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<RunTaskResult>
   const tableRef = useRef(table)
   const visualStyleOptionsRef = useRef(visualStyleOptions)
   const viewModelRef = useRef(viewModel)
+  const opaqueAspectRef = useRef(opaqueAspect)
 
   // Update refs whenever the values change
   useEffect(() => {
@@ -85,6 +94,7 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<RunTaskResult>
     tableRef.current = table
     visualStyleOptionsRef.current = visualStyleOptions
     viewModelRef.current = viewModel
+    opaqueAspectRef.current = opaqueAspect
   }, [
     currentNetworkId,
     network,
@@ -93,6 +103,7 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<RunTaskResult>
     table,
     visualStyleOptions,
     viewModel,
+    opaqueAspect,
   ])
 
   const run = useCallback(
@@ -107,13 +118,14 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<RunTaskResult>
         throw new Error('Network not found')
       }
 
-      const customParameters = serviceApp.parameters?.reduce(
-        (acc, param) => {
-          acc[param.displayName] = param.value ?? param.defaultValue
-          return acc
-        },
-        {} as { [key: string]: string },
-      )??{}
+      const customParameters =
+        serviceApp.parameters?.reduce(
+          (acc, param) => {
+            acc[param.displayName] = param.value ?? param.defaultValue
+            return acc
+          },
+          {} as { [key: string]: string },
+        ) ?? {}
       // Run the task here..
       const result = await runTask({
         serviceUrl: url,
@@ -126,6 +138,7 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<RunTaskResult>
         visualStyleOptions: visualStyleOptionsRef.current,
         viewModel: viewModelRef.current,
         serviceInputDefinition: serviceApp.serviceInputDefinition,
+        opaqueAspect: opaqueAspectRef.current,
       })
 
       console.log(`Got response from service:`, result)
@@ -143,14 +156,14 @@ export const useServiceTaskRunner = (): ((url: string) => Promise<RunTaskResult>
           })
         }
       }
-      
+
       console.log(`Task finished!`, serviceApp.name)
 
       return {
         status: result.status,
         algorithmName: serviceApp.name,
         message: result.message,
-      } as RunTaskResult 
+      } as RunTaskResult
     },
     [serviceApps, runTask, getHandler],
   )

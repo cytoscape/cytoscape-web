@@ -32,6 +32,7 @@ import {
 } from '../../models/AppModel/ServiceInputDefinition'
 import { SelectedDataScope } from '../../models/AppModel/SelectedDataScope'
 import { SelectedDataType } from '../../models/AppModel/SelectedDataType'
+import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
 
 const POLL_INTERVAL = 500 // 0.5 seconds
 
@@ -45,6 +46,7 @@ interface RunTaskProps {
   summary?: NdexNetworkSummary
   visualStyleOptions?: VisualStyleOptions
   viewModel?: NetworkView
+  opaqueAspect?: OpaqueAspects
   serviceInputDefinition?: ServiceInputDefinition
 }
 
@@ -62,6 +64,7 @@ export const createNetworkDataObj = (
   table?: TableRecord,
   visualStyleOptions?: VisualStyleOptions,
   viewModel?: NetworkView,
+  opaqueAspect?: OpaqueAspects,
 ) => {
   const selectedNodes = new Set(viewModel?.selectedNodes)
   const selectedEdges = new Set(viewModel?.selectedEdges)
@@ -105,6 +108,7 @@ export const createNetworkDataObj = (
         visualStyleOptions,
         viewModel,
         summary.name,
+        opaqueAspect,
       )
     } else {
       throw new Error('Illegal Input')
@@ -211,6 +215,7 @@ export const useRunTask = (): ((
       visualStyleOptions,
       viewModel,
       serviceInputDefinition,
+      opaqueAspect,
     }: RunTaskProps): Promise<CytoContainerResult> => {
       // Prepare the task request with user-selected data
       let data: JsonNode = {}
@@ -227,6 +232,7 @@ export const useRunTask = (): ((
             table,
             visualStyleOptions,
             viewModel,
+            opaqueAspect,
           )
         } else if (inputColumns !== null) {
           data = createTableDataObj(

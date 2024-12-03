@@ -15,6 +15,7 @@ import { exportNetworkToCx2 } from '../../store/io/exportCX'
 import { Network } from '../../models/NetworkModel'
 import { useState } from 'react'
 import { useUiStateStore } from '../../store/UiStateStore'
+import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { IdType } from '../../models'
 
 interface OpenInCytoscapeButtonProps {
@@ -67,6 +68,10 @@ export const OpenInCytoscapeButton = ({
     state.networks.get(networkId),
   ) as Network
 
+  const opaqueAspects = useOpaqueAspectStore(
+    (state) => state.opaqueAspects[targetNetworkId],
+  )
+
   const openNetworkInCytoscape = async (): Promise<void> => {
     if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
@@ -93,6 +98,7 @@ export const OpenInCytoscapeButton = ({
       visualStyleOptions,
       viewModel,
       targetSummary.name,
+      opaqueAspects,
     )
     try {
       handleMessageOpen('Sending this network to Cytoscape Desktop...')

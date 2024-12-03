@@ -14,6 +14,8 @@ import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOption
 import { exportNetworkToCx2 } from '../store/io/exportCX'
 import { TableRecord } from 'src/models/StoreModel/TableStoreModel'
 import { useNdexNetwork } from '../store/hooks/useNdexNetwork'
+import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
+import { Aspect } from 'src/models/CxModel/Cx2/Aspect'
 
 export const ndexDuplicateKeyErrorMessage =
   'duplicate key value violates unique constraint'
@@ -71,6 +73,7 @@ export const saveCopyToNDEx = async (
   edgeTable: Table,
   viewModel: NetworkView,
   visualStyleOptions?: VisualStyleOptions,
+  opaqueAspect?: OpaqueAspects,
 ): Promise<void> => {
   const ndexClient = new NDEx(ndexBaseUrl)
   const accessToken = await getToken()
@@ -84,6 +87,7 @@ export const saveCopyToNDEx = async (
     visualStyleOptions,
     viewModel,
     `Copy of ${summary.name}`,
+    opaqueAspect,
   )
   const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
   addNetworkToWorkspace(uuid as IdType)
@@ -101,6 +105,7 @@ export const saveNetworkToNDEx = async (
   edgeTable: Table,
   viewModel: NetworkView,
   visualStyleOptions?: VisualStyleOptions,
+  opaqueAspect?: OpaqueAspects,
 ): Promise<void> => {
   const ndexClient = new NDEx(ndexBaseUrl)
   const accessToken = await getToken()
@@ -113,6 +118,8 @@ export const saveNetworkToNDEx = async (
     edgeTable,
     visualStyleOptions,
     viewModel,
+    undefined,
+    opaqueAspect,
   )
   await ndexClient.updateNetworkFromRawCX2(networkId, cx)
   const ndexSummary = await ndexClient.getNetworkSummary(networkId)
@@ -137,6 +144,7 @@ export const saveAllNetworks = async (
   tables: Record<string, TableRecord>,
   viewModels: Record<string, NetworkView[]>,
   networkVisualStyleOpt: Record<string, VisualStyleOptions>,
+  opaqueAspects: Record<string, OpaqueAspects>,
 ): Promise<void> => {
   for (const networkId of allNetworkId) {
     let network = networks.get(networkId) as Network
@@ -147,6 +155,8 @@ export const saveAllNetworks = async (
     let networkViews: NetworkView[] = viewModels[networkId]
     let visualStyleOptions: VisualStyleOptions | undefined =
       networkVisualStyleOpt[networkId]
+
+    let opaqueAspect = opaqueAspects[networkId]
 
     if (!network || !visualStyle || !nodeTable || !edgeTable) {
       const currentToken = await getToken()
@@ -160,6 +170,18 @@ export const saveAllNetworks = async (
         networkViews,
         visualStyleOptions,
       } = res)
+
+      if (res.otherAspects) {
+        opaqueAspect = res.otherAspects.reduce(
+          (acc: OpaqueAspects, aspect: Aspect) => {
+            const [aspectName, aspectData] = Object.entries(aspect)[0]
+            acc[aspectName] = aspectData
+          },
+          {},
+        )
+      } else {
+        opaqueAspect = {}
+      }
     }
     if (summary.isNdex === false) {
       await saveCopyToNDEx(
@@ -173,6 +195,7 @@ export const saveAllNetworks = async (
         edgeTable,
         networkViews?.[0],
         visualStyleOptions,
+        opaqueAspect,
       )
       continue
     }
