@@ -303,6 +303,8 @@ const CyjsRenderer = ({
       setHoveredElement(targetNode.data('id'))
     })
     cy.on('mouseout', 'node, edge', (e: EventObject): void => {
+      const target = e.target
+      target.removeClass('hover')
       setHoveredElement(undefined)
     })
 
