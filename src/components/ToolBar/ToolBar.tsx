@@ -13,6 +13,7 @@ import { AnalysisMenu } from './AnalysisMenu'
 import { ToolsMenu } from './ToolsMenu'
 import { HelpMenu } from './HelpMenu'
 import { AppMenu } from './AppMenu'
+import { LicenseMenu } from './LicenseMenu'
 
 export const ToolBar = (): JSX.Element => {
   return (
@@ -32,15 +33,15 @@ export const ToolBar = (): JSX.Element => {
             <ToolsMenu label="Tools" />
             <AppMenu label="Apps" />
             <HelpMenu label="Help" />
-
+            <LicenseMenu label="License" />
           </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <SearchBox />
-          <LoginButton />
-        </Box>
-      </Toolbar>
-    </AppBar>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <SearchBox />
+            <LoginButton />
+          </Box>
+        </Toolbar>
+      </AppBar>
     </Box>
   )
 }
