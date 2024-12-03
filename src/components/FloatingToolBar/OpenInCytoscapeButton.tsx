@@ -68,9 +68,8 @@ export const OpenInCytoscapeButton = ({
     state.networks.get(networkId),
   ) as Network
 
-  const opaqueAspects = useOpaqueAspectStore(
-    (state) => state.opaqueAspects[targetNetworkId],
-  )
+  const allOpaqueAspects = useOpaqueAspectStore((state) => state.opaqueAspects)
+  const opaqueAspects = targetNetworkId !== undefined ? allOpaqueAspects[targetNetworkId] : undefined
 
   const openNetworkInCytoscape = async (): Promise<void> => {
     if (viewModel === undefined) {
