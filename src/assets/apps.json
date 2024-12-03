@@ -1,17 +1,17 @@
 [
   {
     "name": "hello",
-    "url": "http://localhost:2222/remoteEntry.js",
+    "url": "https://cytoscape.org/cytoscape-web-app-examples/hello-world/remoteEntry.js",
     "entryPoint": "HelloApp"
   },
   {
     "name": "simpleMenu",
-    "url": "http://localhost:3333/remoteEntry.js",
+    "url": "https://cytoscape.org/cytoscape-web-app-examples/simple-menu/remoteEntry.js",
     "entryPoint": "SimpleMenuApp"
   },
   {
     "name": "simplePanel",
-    "url": "http://localhost:4001/remoteEntry.js",
+    "url": "https://cytoscape.org/cytoscape-web-app-examples/simple-panel/remoteEntry.js",
     "entryPoint": "SimplePanelApp"
   }
 ]
