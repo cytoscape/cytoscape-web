@@ -7,6 +7,7 @@ import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
+import { IdType } from '../../models'
 
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300
@@ -19,12 +20,18 @@ export const SelectionStates = {
 export type SelectionState =
   (typeof SelectionStates)[keyof typeof SelectionStates]
 
+interface ShareNetworkButtonProps {
+  targetNetworkId?: IdType
+}
+
 /**
  * Button to copy the sharable URL to clipboard
  *
  * This component watches the UI and Selection states and encode them as URL search params
  */
-export const ShareNetworkButton = (): JSX.Element => {
+export const ShareNetworkButton = ({
+  targetNetworkId,
+}: ShareNetworkButtonProps): JSX.Element => {
   // Use this as the staring point for the sharable URL
   const wsId = useWorkspaceStore((state) => state.workspace.id)
 
@@ -36,7 +43,7 @@ export const ShareNetworkButton = (): JSX.Element => {
   const [search, setSearch] = useSearchParams()
 
   const ui: Ui = useUiStateStore((state) => state.ui)
-  const { panels, activeNetworkView } = ui
+  const { panels } = ui
 
   // This will be used to watch the selection state
   const networkViewModel: NetworkView | undefined = useViewModelStore((state) =>
@@ -55,8 +62,8 @@ export const ShareNetworkButton = (): JSX.Element => {
       ...panelObj,
       activeTableBrowserTab: `${ui.tableUi.activeTabIndex}`,
     }
-    if (activeNetworkView !== currentNetworkId) {
-      searchObj.activeNetworkView = activeNetworkView
+    if (targetNetworkId) {
+      searchObj.activeNetworkView = targetNetworkId
     }
     const searchStr = new URLSearchParams(searchObj).toString()
     return searchStr

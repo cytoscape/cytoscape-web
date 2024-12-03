@@ -13,23 +13,27 @@ import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../store/io/exportCX'
 import { Network } from '../../models/NetworkModel'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useUiStateStore } from '../../store/UiStateStore'
+import { IdType } from '../../models'
 
 interface OpenInCytoscapeButtonProps {
+  targetNetworkId?: IdType
   networkLabel?: string
 }
 
 export const OpenInCytoscapeButton = ({
+  targetNetworkId,
   networkLabel,
 }: OpenInCytoscapeButtonProps): JSX.Element => {
   const [open, setOpen] = useState<boolean>(false)
   const [message, setMessage] = useState<string>('')
 
-  const ui = useUiStateStore((state) => state.ui)
-  const { activeNetworkView } = ui
+  const currentNetworkId: IdType = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
 
-  const [targetNetworkId, setTargetNetworkId] = useState<string>('')
+  const networkId: IdType = targetNetworkId ?? currentNetworkId
 
   const handleMessageOpen = (newMessage: string): void => {
     setMessage(newMessage)
@@ -47,39 +51,20 @@ export const OpenInCytoscapeButton = ({
   }
 
   const cyndex = new CyNDEx()
-  const currentNetworkId = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
 
-  useEffect(() => {
-    if (
-      activeNetworkView !== undefined &&
-      activeNetworkView !== null &&
-      activeNetworkView !== ''
-    ) {
-      setTargetNetworkId(activeNetworkView)
-    } else {
-      setTargetNetworkId(currentNetworkId)
-    }
-  }, [currentNetworkId, activeNetworkView])
+  const table = useTableStore((state) => state.tables[networkId])
 
-  const table = useTableStore((state) => state.tables[targetNetworkId])
+  const summary = useNetworkSummaryStore((state) => state.summaries[networkId])
 
-  const summary = useNetworkSummaryStore(
-    (state) => state.summaries[targetNetworkId],
-  )
-
-  const viewModel = useViewModelStore((state) =>
-    state.getViewModel(targetNetworkId),
-  )
+  const viewModel = useViewModelStore((state) => state.getViewModel(networkId))
   const visualStyle = useVisualStyleStore(
-    (state) => state.visualStyles[targetNetworkId],
+    (state) => state.visualStyles[networkId],
   )
-  const visualStyleOptions = useUiStateStore((state) =>
-    state.ui.visualStyleOptions[targetNetworkId],
+  const visualStyleOptions = useUiStateStore(
+    (state) => state.ui.visualStyleOptions[networkId],
   )
   const network = useNetworkStore((state) =>
-    state.networks.get(targetNetworkId),
+    state.networks.get(networkId),
   ) as Network
 
   const openNetworkInCytoscape = async (): Promise<void> => {
