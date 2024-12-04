@@ -51,6 +51,7 @@ import { useUiStateStore } from '../../store/UiStateStore'
 import { Aspect } from '../../models/CxModel/Cx2/Aspect'
 import { getOptionalAspects } from '../../utils/cx-utils'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
+import { useMessageStore } from '../../store/MessageStore'
 
 interface FileUploadProps {
   show: boolean
@@ -230,18 +231,17 @@ export function FileUpload(props: FileUploadProps) {
   }
 
   const summaries = useNetworkSummaryStore((state) => state.summaries)
+  const addMessage = useMessageStore((state) => state.addMessage)
 
   const setFile = useCreateNetworkFromTableStore((state) => state.setFile)
   const setShow = useCreateNetworkFromTableStore((state) => state.setShow)
   const goToStep = useCreateNetworkFromTableStore((state) => state.goToStep)
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
   const setName = useCreateNetworkFromTableStore((state) => state.setName)
-  const onFileError = () => {
-    notifications.show({
-      color: 'red',
-      title: 'Error uploading file',
-      message: 'The uploaded file is not valid',
-      autoClose: 5000,
+  const onFileError = (files: any) => {
+    addMessage({
+      duration: 5000,
+      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. ${files?.[0]?.errors?.[0]?.message ?? ''}`,
     })
   }
 
@@ -294,11 +294,12 @@ export function FileUpload(props: FileUploadProps) {
               }
             >
               <Dropzone
+                accept={['.csv', '.txt', '.tsv', '.cx2']}
                 onDrop={(files: any) => {
                   onFileDrop(files[0])
                 }}
                 onReject={(files: any) => {
-                  onFileError()
+                  onFileError(files)
                 }}
                 // maxSize={}
               >
