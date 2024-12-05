@@ -115,7 +115,7 @@ export const OpenInCytoscapeButton = ({
 
   return (
     <>
-      <Tooltip title={`Open this network in Cytoscape`} placement="top" arrow>
+      <Tooltip title={`Open network in Cytoscape Desktop (useful for high performance computing)`} placement="top" arrow>
         <IconButton
           onClick={handleClick}
           aria-label="fit"
