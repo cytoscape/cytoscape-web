@@ -51,6 +51,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 1.0,
     bypassMap: new Map(),
     maxVal: 1,
+    tooltip: 'The transparency of the node border. 100% is fully opaque, 0% is fully transparent.', 
   },
   nodeHeight: {
     group: 'node',
@@ -116,6 +117,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 0,
     bypassMap: new Map(),
     maxVal: 360,
+    tooltip: 'The rotation angle of the node label in degrees(from 0 to 360).',
   },
   nodeLabelOpacity: {
     group: 'node',
@@ -125,6 +127,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 1.0,
     bypassMap: new Map(),
     maxVal: 1,
+    tooltip: 'The transparency of the node label. 100% is fully opaque, 0% is fully transparent.',
   },
   nodeLabelPosition: {
     group: 'node',
@@ -166,6 +169,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 1.0,
     bypassMap: new Map(),
     maxVal: 1,
+    tooltip: 'The transparency of the node fill. 100% is fully opaque, 0% is fully transparent.',
   },
   nodeVisibility: {
     group: 'node',
@@ -174,6 +178,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'visibility',
     defaultValue: 'element',
     bypassMap: new Map(),
+    tooltip:'The flag to show or hide the node.',
   },
   nodeSelectedPaint: {
     group: 'node',
@@ -190,7 +195,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 100,
     bypassMap: new Map(),
-    tooltip: 'The maximum width of the node label',
+    tooltip: 'The maximum width of the node label.',
   },
   nodeZOrder: {
     group: 'node',
@@ -199,6 +204,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 0,
     bypassMap: new Map(),
+    tooltip: 'The stacking order of nodes on the canvas. Higher values are drawn on top.'
   },
   edgeLineColor: {
     group: 'edge',
@@ -207,6 +213,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'color',
     defaultValue: '#000000',
     bypassMap: new Map(),
+    tooltip: 'The fill color of the edge line when not selected.',
   },
   edgeLineType: {
     group: 'edge',
@@ -224,6 +231,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 1.0,
     bypassMap: new Map(),
     maxVal: 1,
+    tooltip: 'The transparency of the edge. 100% is fully opaque, 0% is fully transparent.',
   },
   edgeSourceArrowColor: {
     group: 'edge',
@@ -232,6 +240,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'color',
     defaultValue: '#000000',
     bypassMap: new Map(),
+    tooltip: 'The color of the edge source arrow when not selected.',
   },
   edgeSourceArrowShape: {
     group: 'edge',
@@ -248,6 +257,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'color',
     defaultValue: '#000000',
     bypassMap: new Map(),
+    tooltip: 'The color of the edge target arrow when not selected.',
   },
   edgeTargetArrowShape: {
     group: 'edge',
@@ -297,6 +307,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 0,
     bypassMap: new Map(),
     maxVal: 360,
+    tooltip: 'The rotation angle of the edge label in degrees(from 0 to 360).',
   },
   edgeLabelOpacity: {
     group: 'edge',
@@ -306,6 +317,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     bypassMap: new Map(),
     maxVal: 1,
+    tooltip: 'The transparency of the edge label. 100% is fully opaque, 0% is fully transparent.',
   },
   // edgeLabelAutoRotation: {
   //   group: 'edge',
@@ -330,6 +342,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'visibility',
     defaultValue: 'element',
     bypassMap: new Map(),
+    tooltip:'The flag to show or hide the edge.',
   },
   edgeSelectedPaint: {
     group: 'edge',
@@ -346,7 +359,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 100,
     bypassMap: new Map(),
-    tooltip: 'The maximum width of the edge label',
+    tooltip: 'The maximum width of the edge label.',
   },
   edgeZOrder: {
     group: 'edge',
@@ -355,6 +368,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 0,
     bypassMap: new Map(),
+    tooltip: 'The stacking order of edges on the canvas. Higher values are drawn on top.'
   },
 
   networkBackgroundColor: {

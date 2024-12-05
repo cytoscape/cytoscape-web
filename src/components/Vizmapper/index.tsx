@@ -57,7 +57,7 @@ function VisualPropertyView(props: {
       EdgeVisualPropertyName.EdgeTargetArrowColor === vpName)
   const disabled = widthDisabled || arrowColorDisabled
 
-  let tooltip = ''
+  let tooltip: string | undefined
   if (widthDisabled)
     tooltip = `Node width and height are locked. Use the \'${heightName}\' property to adjust the node size, or uncheck \“Lock node width and height\” in \'${heightName}\' to enable editing of the Width.`
   if (arrowColorDisabled)
@@ -133,7 +133,7 @@ function VisualPropertyView(props: {
         <Tooltip
           placement="top"
           arrow={true}
-          title={visualProperty.tooltip ?? tooltip}
+          title={tooltip ?? visualProperty.tooltip}
         >
           <Typography
             variant="body2"
@@ -147,7 +147,7 @@ function VisualPropertyView(props: {
       {disabled && (
         <Tooltip
           placement="top"
-          title={visualProperty.tooltip ?? tooltip}
+          title={tooltip ?? visualProperty.tooltip}
           arrow={true}
           sx={{
             mr: 1,
