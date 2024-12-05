@@ -13,7 +13,7 @@ import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../store/io/exportCX'
 import { Network } from '../../models/NetworkModel'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { IdType } from '../../models'
@@ -23,12 +23,23 @@ interface OpenInCytoscapeButtonProps {
   networkLabel?: string
 }
 
+const isSafari = (): boolean => {
+  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+}
+
 export const OpenInCytoscapeButton = ({
   targetNetworkId,
   networkLabel,
 }: OpenInCytoscapeButtonProps): JSX.Element => {
   const [open, setOpen] = useState<boolean>(false)
   const [message, setMessage] = useState<string>('')
+  const [isSafariBrowser, setIsSafariBrowser] = useState<boolean>(false)
+
+  useEffect(() => {
+    if (isSafari()) {
+      setIsSafariBrowser(true)
+    }
+  }, [])
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -105,7 +116,7 @@ export const OpenInCytoscapeButton = ({
       handleMessageOpen('Network opened in Cytoscape Desktop')
     } catch (e) {
       console.warn('Could not open the network in Cytoscape Desktop!', e)
-      handleMessageOpen('Failed to open network in Cytoscape Desktop!')
+      handleMessageOpen('To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed')
     }
   }
 
@@ -121,6 +132,7 @@ export const OpenInCytoscapeButton = ({
           aria-label="fit"
           size="small"
           disableFocusRipple={true}
+          disabled={isSafariBrowser}
         >
           <OpenInNew fontSize="inherit" />
         </IconButton>
