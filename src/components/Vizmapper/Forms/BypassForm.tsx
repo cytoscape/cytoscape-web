@@ -132,11 +132,6 @@ function BypassFormContent(props: {
     }
   }, [labelVp])
 
-  const validElementsSelected =
-    selectedElements.length > 0 &&
-    (visualProperty.group === VisualPropertyGroup.Node ||
-      visualProperty.group === VisualPropertyGroup.Edge)
-
   // get union of selected elements and bypass elements
   // put all selected elements first (even if they have a bypass)
   // render all elements, if they don't have a bypass, leave it empty
@@ -288,11 +283,11 @@ function BypassFormContent(props: {
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          mt: 1,
-          mb: 1,
+          m: 2,
+          mb: 1.5,
         }}
       >
-        <Box sx={{ m: 2, display: 'flex', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', flexDirection: 'row' }}>
             <Typography sx={{ mr: 1, pt: 0.25 }}>
               {`Apply the bypass value to all selected ${isNode ? 'nodes' : 'edges'}:`}
@@ -323,7 +318,7 @@ function BypassFormContent(props: {
             />
           </Box>
         </Box>
-        <Box sx={{ ml: 2 }}>
+        <Box sx={{ mt: 1 }}>
           {isSize && <LockSizeCheckbox currentNetworkId={currentNetworkId} />}
           {isEdgeLineColor && (
             <LockColorCheckbox currentNetworkId={currentNetworkId} />
@@ -413,15 +408,62 @@ function BypassFormContent(props: {
         width: '500px',
         maxHeight: '600px',
         overflow: 'hidden',
-        pl: 1,
-        pr: 1,
+        p: 2,
       }}
     >
-      <Typography
-        sx={{ m: 2, fontWeight: 'bold' }}
-      >{`${visualProperty.displayName} Bypasses`}</Typography>
-      <Box sx={{ pb: 2 }}>
-        <Divider />
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Typography
+          sx={{ m: 0.5, fontWeight: 'bold' }}
+        >{`${visualProperty.displayName} Bypasses`}</Typography>
+        <Button
+          sx={{
+            color: '#F50157',
+            backgroundColor: 'transparent',
+            '&:hover': {
+              color: '#FFFFFF',
+              backgroundColor: '#F50157',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
+          size="small"
+          onClick={() => {
+            deleteBypass(
+              currentNetworkId,
+              visualProperty.name,
+              Array.from(elementsWithBypass.keys()),
+            )
+            deleteBypass(
+              currentNetworkId,
+              visualProperty.name,
+              Array.from(elementsWithoutBypass.keys()),
+            )
+            setElementsWithBypass(() => new Map())
+            setElementsWithoutBypass(() => {
+              return new Map(
+                Array.from(elementsWithBypass.keys())
+                  .concat(Array.from(elementsWithoutBypass.keys()))
+                  .map((id) => [id, false]),
+              )
+            })
+          }}
+          disabled={
+            Array.from(elementsWithBypass.values()).every((e) => e === false) &&
+            Array.from(elementsWithoutBypass.values()).every((e) => e === false)
+          }
+        >
+          Remove All Bypasses
+        </Button>
+      </Box>
+      <Divider sx={{ mt: 1.5 }} />
+      <Box>
         {elementsWithBypass.size === 0 && elementsWithoutBypass.size === 0
           ? emptyBypassForm
           : nonEmptyBypassForm}
