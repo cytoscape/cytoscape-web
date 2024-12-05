@@ -21,17 +21,18 @@ import {
   useJoinTableToNetworkStore,
   JoinTableToNetworkStep,
 } from '../../store/joinTableToNetworkStore'
+import { useMessageStore } from '../../../../store/MessageStore'
 
 export function TableUpload(props: BaseMenuProps) {
   const setFile = useJoinTableToNetworkStore((state) => state.setFile)
   const goToStep = useJoinTableToNetworkStore((state) => state.goToStep)
   const setRawText = useJoinTableToNetworkStore((state) => state.setRawText)
-  const onFileError = () => {
-    notifications.show({
-      color: 'red',
-      title: 'Error uploading file',
-      message: 'The uploaded file is not valid',
-      autoClose: 5000,
+  const addMessage = useMessageStore((state) => state.addMessage)
+
+  const onFileError = (files: any) => {
+    addMessage({
+      duration: 5000,
+      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. ${files?.[0]?.errors?.[0]?.message ?? ''}`,
     })
   }
 
@@ -82,10 +83,10 @@ export function TableUpload(props: BaseMenuProps) {
           onFileDrop(files[0])
         }}
         onReject={(files: any) => {
-          onFileError()
+          onFileError(files)
         }}
         // maxSize={}
-        accept={['text/*']}
+        accept={['.txt', '.csv', '.tsv']}
       >
         <Group
           justify="center"

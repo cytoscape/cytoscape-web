@@ -27,6 +27,7 @@ export const SnackbarMessageList = (): React.ReactElement => {
 
   return (
     <Snackbar
+      sx={{ zIndex: 9999999 }}
       open={open}
       onClose={handleSnackbarClose}
       autoHideDuration={messages[currentMessageIndex]?.duration ?? 5000}
