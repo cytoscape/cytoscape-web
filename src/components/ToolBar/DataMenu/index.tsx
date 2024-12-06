@@ -27,6 +27,8 @@ import { ExportImageMenuItem } from './ExportNetworkToImage/ExportNetworkToImage
 import { fetchMyWorkspaces } from '../../../utils/ndex-utils'
 import { useCredentialStore } from '../../../store/CredentialStore'
 
+import './menuItem.css'
+
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
 ) => {
@@ -85,7 +87,6 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     },
     {
       label: 'Import',
-      style: { height: 38 },
       items: [
         {
           label: 'From File',
@@ -141,7 +142,6 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     },
     {
       label: 'Export',
-      style: { height: 38 },
       items: [
         {
           label: 'Network to Image...',
