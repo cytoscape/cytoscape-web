@@ -30,9 +30,24 @@ export const ScalingTypeSelector = ({
         value={scalingType}
         onChange={handleChange}
       >
-        <FormControlLabel value="width" control={<Radio />} label="Width" />
-        <FormControlLabel value="height" control={<Radio />} label="Height" />
-        <FormControlLabel value="both" control={<Radio />} label="Both" />
+        <FormControlLabel
+          key={'width'}
+          value="width"
+          control={<Radio />}
+          label="Width"
+        />
+        <FormControlLabel
+          key={'height'}
+          value="height"
+          control={<Radio />}
+          label="Height"
+        />
+        <FormControlLabel
+          key={'both'}
+          value="both"
+          control={<Radio />}
+          label="Both"
+        />
       </RadioGroup>
     </FormControl>
   )
