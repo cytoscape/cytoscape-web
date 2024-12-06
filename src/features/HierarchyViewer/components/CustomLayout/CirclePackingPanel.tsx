@@ -408,6 +408,7 @@ export const CirclePackingPanel = ({
 
           // Clear the selection in leafs in the selected node
           setSelectedLeaf('')
+          setSelectedNodes([])
         } else {
           // This is a leaf node
 
