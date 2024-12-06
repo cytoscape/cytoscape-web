@@ -44,6 +44,7 @@ export const useNetworkStore = create(
     immer<NetworkStore>(
       persist((set, get) => ({
         networks: new Map<IdType, Network>(),
+        failedNetworks: new Set<IdType>(),
         lastModified: undefined,
 
         addNode: (networkId: IdType, nodeId: IdType) => {
@@ -184,6 +185,14 @@ export const useNetworkStore = create(
 
             return { ...state, networks: new Map<IdType, Network>() }
           }),
+        addFailedNetwork: (networkId: IdType) => set((state)=>{
+          state.failedNetworks.add(networkId)
+          return state
+        }),
+        deleteFailedNetwork: (networkId: IdType) => set((state)=>{
+          state.failedNetworks.delete(networkId)
+          return state
+        }),
       })),
     ),
   ),

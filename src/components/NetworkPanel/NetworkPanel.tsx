@@ -58,9 +58,17 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
     (state) => state.networks,
   )
 
+  const failedToLoadNetworks: Set<IdType> = useNetworkStore(
+    (state) => state.failedNetworks,
+  )
+
   const networkViews: Record<string, NetworkView[]> = useViewModelStore(
     (state) => state.viewModels,
   )
+
+  if (failedToLoadNetworks.has(networkId)) {
+    return <MessagePanel message="Failed to load network data" />
+  }
 
   if (networks.size === 0) {
     return <MessagePanel message="No network selected" />

@@ -17,6 +17,7 @@ export interface NetworkUpdatedEvent {
 
 export interface NetworkState {
   networks: Map<IdType, Network>
+  failedNetworks: Set<IdType>
   // Wil be set by this store when a network topology is updated
   lastUpdated?: NetworkUpdatedEvent
 }
@@ -50,6 +51,9 @@ export interface NetworkActions {
 
   // Delete all networks from the store
   deleteAll: () => void
+
+  addFailedNetwork: (networkId: IdType) => void
+  deleteFailedNetwork: (networkId: IdType) => void
 }
 
 export type NetworkStore = NetworkState & NetworkActions & UpdateActions

@@ -231,6 +231,10 @@ const WorkSpaceEditor = (): JSX.Element => {
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
   const addNewNetwork = useNetworkStore((state) => state.add)
+  const addFailedNetwork = useNetworkStore((state) => state.addFailedNetwork)
+  const deleteFailedNetwork = useNetworkStore(
+    (state) => state.deleteFailedNetwork,
+  )
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addTable = useTableStore((state) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
@@ -288,86 +292,92 @@ const WorkSpaceEditor = (): JSX.Element => {
   }, [])
 
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
-    const currentToken = await getToken()
+    try {
+      const currentToken = await getToken()
 
-    const summaryMap = await useNdexNetworkSummary(
-      [networkId],
-      ndexBaseUrl,
-      currentToken,
-    )
-    const summary = summaryMap[networkId]
-    const res: NetworkWithView = await useNdexNetwork(
-      networkId,
-      ndexBaseUrl,
-      currentToken,
-    )
-    const {
-      network,
-      nodeTable,
-      edgeTable,
-      visualStyle,
-      networkViews,
-      visualStyleOptions,
-      otherAspects,
-    } = res
-
-    setVisualStyleOptions(networkId, visualStyleOptions)
-    addNewNetwork(network)
-    addVisualStyle(networkId, visualStyle)
-    addTable(networkId, nodeTable, edgeTable)
-    addViewModel(networkId, networkViews[0])
-    if (otherAspects !== undefined) {
-      addAllOpaqueAspects(networkId, otherAspects)
-    }
-
-    if (isHCX(summary)) {
-      const version =
-        summary.properties.find(
-          (p) => p.predicateString === HcxMetaTag.ndexSchema,
-        )?.value ?? ''
-      const validationRes = validateHcx(version as string, summary, nodeTable)
-
-      if (!validationRes.isValid) {
-        addMessage({
-          message: `This network is not a valid HCX network.  Some features may not work properly.`,
-          duration: 8000,
-        })
-      }
-      setValidationResult(networkId, validationRes)
-    }
-
-    if (!summary.hasLayout) {
-      const defaultLayout = getDefaultLayout(
-        summary,
-        network.nodes.length + network.edges.length,
-        maxNetworkElementsThreshold,
+      const summaryMap = await useNdexNetworkSummary(
+        [networkId],
+        ndexBaseUrl,
+        currentToken,
       )
+      const summary = summaryMap[networkId]
+      const res: NetworkWithView = await useNdexNetwork(
+        networkId,
+        ndexBaseUrl,
+        currentToken,
+      )
+      const {
+        network,
+        nodeTable,
+        edgeTable,
+        visualStyle,
+        networkViews,
+        visualStyleOptions,
+        otherAspects,
+      } = res
 
-      if (defaultLayout !== undefined) {
-        const engine: LayoutEngine | undefined = layoutEngines.find(
-          (engine) => engine.name === defaultLayout.engineName,
+      setVisualStyleOptions(networkId, visualStyleOptions)
+      addNewNetwork(network)
+      addVisualStyle(networkId, visualStyle)
+      addTable(networkId, nodeTable, edgeTable)
+      addViewModel(networkId, networkViews[0])
+      if (otherAspects !== undefined) {
+        addAllOpaqueAspects(networkId, otherAspects)
+      }
+
+      if (isHCX(summary)) {
+        const version =
+          summary.properties.find(
+            (p) => p.predicateString === HcxMetaTag.ndexSchema,
+          )?.value ?? ''
+        const validationRes = validateHcx(version as string, summary, nodeTable)
+
+        if (!validationRes.isValid) {
+          addMessage({
+            message: `This network is not a valid HCX network.  Some features may not work properly.`,
+            duration: 8000,
+          })
+        }
+        setValidationResult(networkId, validationRes)
+      }
+
+      if (!summary.hasLayout) {
+        const defaultLayout = getDefaultLayout(
+          summary,
+          network.nodes.length + network.edges.length,
+          maxNetworkElementsThreshold,
         )
 
-        if (engine !== undefined) {
-          const nextSummary = { ...summary, hasLayout: true }
-
-          setIsRunning(true)
-          const afterLayout = (
-            positionMap: Map<IdType, [number, number]>,
-          ): void => {
-            updateNodePositions(networkId, positionMap)
-            updateSummary(networkId, nextSummary)
-            setIsRunning(false)
-          }
-
-          engine.apply(
-            network.nodes,
-            network.edges,
-            afterLayout,
-            engine.algorithms[defaultLayout.algorithmName],
+        if (defaultLayout !== undefined) {
+          const engine: LayoutEngine | undefined = layoutEngines.find(
+            (engine) => engine.name === defaultLayout.engineName,
           )
+
+          if (engine !== undefined) {
+            const nextSummary = { ...summary, hasLayout: true }
+
+            setIsRunning(true)
+            const afterLayout = (
+              positionMap: Map<IdType, [number, number]>,
+            ): void => {
+              updateNodePositions(networkId, positionMap)
+              updateSummary(networkId, nextSummary)
+              setIsRunning(false)
+            }
+
+            engine.apply(
+              network.nodes,
+              network.edges,
+              afterLayout,
+              engine.algorithms[defaultLayout.algorithmName],
+            )
+          }
         }
       }
+      deleteFailedNetwork(networkId)
+    } catch (e) {
+      addFailedNetwork(networkId)
+      console.error(e)
     }
   }
 
