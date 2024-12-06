@@ -1,0 +1,6 @@
+.p-tieredmenu .p-menuitem .p-menuitem-content .p-menuitem-link {
+    padding: 0.375rem 1rem !important; 
+  }
+  .p-tieredmenu .p-menuitem .p-menuitem-content .p-menuitem-link .p-menuitem-text {
+    line-height: 1.5rem !important;
+  }
