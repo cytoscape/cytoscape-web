@@ -184,7 +184,7 @@ export const useVisualStyleStore = create(
         attributeValues,
       ) {
         set((state) => {
-          const DEFAULT_COLOR_SCHEME = ['red', 'white', 'blue']
+          const DEFAULT_COLOR_SCHEME = ['blue', 'white', 'red']
           const DEFAULT_NUMBER_RANGE =
             !vpName.includes('Opacity') && !vpName.includes('opacity')
               ? [1, 100]
@@ -213,7 +213,7 @@ export const useVisualStyleStore = create(
                 vpValue: DEFAULT_COLOR_SCHEME[0],
               },
               {
-                value: attributeValues[Math.floor(attributeValues.length / 2)], // TODO compute median instead of just the middle value
+                value: ((max.value as number) + (min.value as number)) / 2,
                 vpValue: DEFAULT_COLOR_SCHEME[1],
               },
               {
@@ -248,7 +248,7 @@ export const useVisualStyleStore = create(
                 vpValue: DEFAULT_NUMBER_RANGE[0],
               },
               {
-                value: attributeValues[Math.floor(attributeValues.length / 2)], // TODO compute median instead of just the middle value
+                value: ((max.value as number) + (min.value as number)) / 2,
                 vpValue:
                   (DEFAULT_NUMBER_RANGE[0] + DEFAULT_NUMBER_RANGE[1]) / 2,
               },
