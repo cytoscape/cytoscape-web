@@ -173,6 +173,10 @@ export function ContinuousColorMappingForm(props: {
       newHandles[0].vpValue = maxPalette
       newHandles[handles.length - 1].vpValue = minPalette
 
+      if (newHandles.length >= 3) {
+        newHandles[1].vpValue = middlePalette
+      }
+
       updateContinuousMapping(
         nextMinState,
         nextMaxState,
@@ -196,13 +200,16 @@ export function ContinuousColorMappingForm(props: {
       const newHandles = [...handles]
       newHandles[0].vpValue = minPalette
       newHandles[handles.length - 1].vpValue = maxPalette
+      if (newHandles.length >= 3) {
+        newHandles[1].vpValue = middlePalette
+      }
 
       updateContinuousMapping(
         nextMinState,
         nextMaxState,
         newHandles,
-        maxPalette,
         minPalette,
+        maxPalette,
       )
       changeButtonText(textPalette)
       hideColorPickerMenu()
