@@ -85,35 +85,40 @@ export const BugReportMenuItem = ({
 
   useEffect(() => {
     if (open) {
-      setIsLoading(true)
+      setIsLoading(true);
       // Initialize Atlassian issue collector when dialog is opened
-      ;(window as any).ATL_JQ_PAGE_PROPS = {
+      (window as any).ATL_JQ_PAGE_PROPS = {
         triggerFunction: function (showCollectorDialog: () => void) {
-          const triggerElement = document.getElementById('myCustomTrigger')
-          if (triggerElement) {
-            triggerElement.addEventListener('click', (e: Event) => {
-              e.preventDefault()
-              showCollectorDialog()
-            })
-            setIsLoading(false)
+          if (triggerRef.current) {
+            triggerRef.current.onclick = (e: Event) => {
+              e.preventDefault();
+              showCollectorDialog();
+              setIsLoading(false);
+            };
           }
         },
-        // {{ edit_1 }} Adding fieldValues for the issue collector
+        // Adding fieldValues for the issue collector
         fieldValues: {
           summary: '',
           description:
             'How to reproduce the bug in Cytoscape Web:\n\n' +
             getIssueEnvironment(),
         },
-      }
+      };
 
-      const script = document.createElement('script')
+      const script = document.createElement('script');
       script.src =
-        'https://cytoscape.atlassian.net/s/d41d8cd98f00b204e9800998ecf8427e-T/o2joag/b/24/a44af77267a987a660377e5c46e0fb64/_/download/batch/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector.js?locale=en-US&collectorId=45488c8f'
-      script.async = true
-      document.body.appendChild(script)
+        'https://cytoscape.atlassian.net/s/d41d8cd98f00b204e9800998ecf8427e-T/o2joag/b/24/a44af77267a987a660377e5c46e0fb64/_/download/batch/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector.js?locale=en-US&collectorId=45488c8f';
+      script.async = true;
+      document.body.appendChild(script);
+
+      return () => {
+        if (triggerRef.current) {
+          triggerRef.current.onclick = null;
+        }
+      };
     }
-  }, [open])
+  }, [open]);
 
   return (
     <>
