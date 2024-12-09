@@ -246,7 +246,7 @@ function MappingFormContent(props: {
   const mappingDimensions: Record<MappingFunctionType | '', [string, string]> =
     {
       [MappingFunctionType.Discrete]: ['500px', '600px'],
-      [MappingFunctionType.Continuous]: ['650px', 'auto'],
+      [MappingFunctionType.Continuous]: ['780px', 'auto'],
       [MappingFunctionType.Passthrough]: ['500px', 'auto'],
       '': ['500px', '150px'],
     }
