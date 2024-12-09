@@ -10,7 +10,7 @@ import {
   Alert,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import { ReactElement, useState, useEffect } from 'react'
+import { ReactElement, useState, useEffect, useRef } from 'react'
 import packageInfo from '../../../../package.json'
 
 function getIssueEnvironment(): string {
@@ -68,8 +68,9 @@ interface BugReportMenuItemProps {
 export const BugReportMenuItem = ({
   handleClose,
 }: BugReportMenuItemProps): ReactElement => {
-  const [open, setOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const triggerRef = useRef<HTMLDivElement>(null);
 
   const handleOpen = () => {
     setOpen(true)
