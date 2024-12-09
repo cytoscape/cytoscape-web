@@ -159,31 +159,51 @@ export function ContinuousColorMappingForm(props: {
 
   const handleColorPicker = (): void => {
     if (!isReverseColorChecked) {
-      setMinState({
+      const nextMinState = {
         ...minState,
         vpValue: maxPalette,
-      })
-      setMaxState({
+      }
+
+      const nextMaxState = {
         ...maxState,
         vpValue: minPalette,
-      })
-      setHandle(0, min.value as number, maxPalette as string)
-      setHandle(1, controlPoints[1].value as number, middlePalette as string)
-      setHandle(2, max.value as number, minPalette as string)
+      }
+
+      const newHandles = [...handles]
+      newHandles[0].vpValue = maxPalette
+      newHandles[handles.length - 1].vpValue = minPalette
+
+      updateContinuousMapping(
+        nextMinState,
+        nextMaxState,
+        newHandles,
+        maxPalette,
+        minPalette,
+      )
       changeButtonText(textPalette)
       hideColorPickerMenu()
     } else {
-      setMinState({
+      const nextMinState = {
         ...minState,
         vpValue: minPalette,
-      })
-      setMaxState({
+      }
+
+      const nextMaxState = {
         ...maxState,
         vpValue: maxPalette,
-      })
-      setHandle(0, min.value as number, minPalette as string)
-      setHandle(1, controlPoints[1].value as number, middlePalette as string)
-      setHandle(2, max.value as number, maxPalette as string)
+      }
+
+      const newHandles = [...handles]
+      newHandles[0].vpValue = minPalette
+      newHandles[handles.length - 1].vpValue = maxPalette
+
+      updateContinuousMapping(
+        nextMinState,
+        nextMaxState,
+        newHandles,
+        maxPalette,
+        minPalette,
+      )
       changeButtonText(textPalette)
       hideColorPickerMenu()
     }
