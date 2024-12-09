@@ -51,6 +51,12 @@ export const G6Layout: LayoutEngine = {
 }
 
 const transform = (nodes: Node[], edges: Edge[]): GraphData => {
+  // Check if nodes and edges are available, if not, return empty graph data
+  if(!nodes || !edges) {
+    alert('Please open a network first!')
+    return { nodes: [], edges: [] };
+  }
+
   const nodeConfigs: NodeConfig[] = nodes.map((node: Node) => ({ id: node.id }))
   const edgeConfigs: EdgeConfig[] = edges.map((edge: Edge) => ({
     source: edge.s,

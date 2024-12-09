@@ -22,6 +22,12 @@ export const CosmosLayout: LayoutEngine = {
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
     algorithm: LayoutAlgorithm,
   ): void => {
+    // Check if nodes and edges are available, if not, return empty graph data
+    if (!nodes || !edges) {
+      alert('Please open a network first!')
+      return;
+    }
+
     const config = CosmosAlgorithms.cosmos.parameters
     const graph = new Graph(dummyContainer, config)
 
