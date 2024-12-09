@@ -10,6 +10,7 @@ import {
   getNetworkViewsFromDb,
   getVisualStyleFromDb,
   getUiStateFromDb,
+  getOpaqueAspectsFromDb,
 } from '../store/persist/db'
 import { CachedData } from './CachedData'
 import { createNetworkAttributesFromCx } from '../models/TableModel/impl/NetworkAttributesImpl'
@@ -72,6 +73,7 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
       uiState?.visualStyleOptions ?? {}
     // Fall back to an empty object if the visual style options are not found
     const visualStyleOptions: VisualStyleOptions = vsOptions[id] ?? {}
+    const otherAspects:  any[] | undefined = await getOpaqueAspectsFromDb(id) 
     return {
       network,
       visualStyle,
@@ -79,6 +81,7 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
       edgeTable: tables !== undefined ? tables.edgeTable : undefined,
       networkViews: networkViews ?? [],
       visualStyleOptions: visualStyleOptions,
+      otherAspects: otherAspects,
     }
   } catch (e) {
     console.error('Failed to restore data from IndexedDB', e)

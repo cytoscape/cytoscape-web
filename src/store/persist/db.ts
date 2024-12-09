@@ -708,7 +708,7 @@ export const putOpaqueAspectsToDb = async (
 
 export const getOpaqueAspectsFromDb = async (
   networkId: IdType,
-): Promise<Record<string, any[]> | undefined> => {
+): Promise< any[] | undefined> => {
   return await db.opaqueAspects.get({ id: networkId })
 }
 
