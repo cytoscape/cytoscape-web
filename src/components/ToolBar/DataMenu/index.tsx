@@ -1,5 +1,6 @@
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import Button from '@mui/material/Button'
-import { Divider } from '@mui/material'
+import { Divider, Snackbar, Alert } from '@mui/material'
 import { KeycloakContext } from '../../../bootstrap'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
@@ -11,13 +12,10 @@ import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
 import { UploadNetworkMenuItem } from './ImportNetworkFromFileMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
 import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
-
 import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
 import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
 import { LoadWorkspaceMenuItem } from './LoadWorkspaceMenuItem'
-
-import { useContext, useEffect, useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { JoinTableToNetworkMenuItem } from '../../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
 import { TieredMenu } from 'primereact/tieredmenu'
@@ -29,9 +27,7 @@ import { useCredentialStore } from '../../../store/CredentialStore'
 
 import './menuItem.css'
 
-export const DataMenu: React.FC<DropdownMenuProps> = (
-  props: DropdownMenuProps,
-) => {
+export const DataMenu: React.FC<DropdownMenuProps> = (props: DropdownMenuProps) => {
   const { label } = props
   const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true)
   const [existingWorkspace, setExistingWorkspace] = useState<any[]>([])
@@ -39,26 +35,40 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
   const client = useContext(KeycloakContext)
   const authenticated: boolean = client?.authenticated ?? false
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const getToken = useCredentialStore((state) => state.getToken)
-  const open = Boolean(anchorEl)
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState('')
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'info' | 'success' | 'error'>('info')
 
+  const getToken = useCredentialStore((state) => state.getToken)
   const op = useRef(null)
+  const open = Boolean(anchorEl)
 
   const handleClose = (): void => {
     ;(op.current as any)?.hide()
     setAnchorEl(null)
   }
 
+  const handleSnackbarOpen = (message: string, severity: 'info' | 'success' | 'error' = 'info') => {
+    setSnackbarMessage(message)
+    setSnackbarSeverity(severity)
+    setSnackbarOpen(true)
+  }
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false)
+  }
+
   useEffect(() => {
     if (authenticated) {
       setIsLoadingWorkspace(true)
       fetchMyWorkspaces(ndexBaseUrl, getToken)
-        .then(function (resultArray) {
+        .then((resultArray) => {
           setExistingWorkspace(resultArray)
           setIsLoadingWorkspace(false)
         })
-        .catch(function (error) {
+        .catch((error) => {
           console.error('Error:', error)
+          handleSnackbarOpen('Failed to fetch workspaces from NDEx', 'error')
           setIsLoadingWorkspace(false)
         })
     } else {
@@ -68,7 +78,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
 
   const menuItems = [
     {
-      label: 'Open network(s)From NDEx...',
+      label: 'Open network(s) From NDEx...',
       template: <LoadFromNdexMenuItem handleClose={handleClose} />,
     },
     {
@@ -82,7 +92,10 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     {
       label: 'Open in Cytoscape',
       template: () => (
-        <OpenNetworkInCytoscapeMenuItem handleClose={handleClose} />
+        <OpenNetworkInCytoscapeMenuItem
+          handleClose={handleClose}
+          onSnackbarOpen={handleSnackbarOpen} // Pass Snackbar handler
+        />
       ),
     },
     {
@@ -189,6 +202,21 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
       <OverlayPanel ref={op} unstyled>
         <TieredMenu style={{ width: 350 }} model={menuItems} />
       </OverlayPanel>
+      {/* Snackbar for feedback */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={5000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbarSeverity}
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </PrimeReactProvider>
   )
 }
