@@ -1,4 +1,4 @@
-import { AttributeName } from '../../TableModel'
+import { AttributeName, ValueTypeName } from '../../TableModel'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import { MappingFunctionType } from './MappingFunctionType'
@@ -8,4 +8,5 @@ export interface VisualMappingFunction {
   attribute: AttributeName
   visualPropertyType: VisualPropertyValueTypeName
   defaultValue: VisualPropertyValueType
+  attributeType?: ValueTypeName 
 }

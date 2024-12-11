@@ -18,6 +18,7 @@ import {
   VisualProperty,
   VisualStyle,
 } from '..'
+import { ValueTypeName } from '../../TableModel'
 
 type CXLabelPositionValueType = 'center' | 'top' | 'bottom' | 'left' | 'right'
 export interface CXLabelPositionType {
@@ -50,6 +51,7 @@ export interface CXDiscreteMappingFunction<T> {
       v: CxValue
       vp: T
     }>
+    type?: ValueTypeName
   }
 }
 
@@ -57,6 +59,7 @@ export interface CXPassthroughMappingFunction {
   type: 'PASSTHROUGH'
   definition: {
     attribute: string
+    type?: ValueTypeName
   }
 }
 
@@ -72,6 +75,7 @@ export interface CXContinuousMappingFunction<T> {
       includeMax: boolean
       includeMin: boolean
     }>
+    type?: ValueTypeName
   }
 }
 
@@ -110,6 +114,7 @@ export const convertPassthroughMappingToCX = (
     type: 'PASSTHROUGH',
     definition: {
       attribute,
+      type:mapping.attributeType
     },
   }
 }
@@ -129,6 +134,7 @@ export const convertDiscreteMappingToCX = (
         v: value,
         vp: vpToCX(vp.name, vpValue),
       })),
+      type:mapping.attributeType
     },
   }
 }
@@ -177,6 +183,7 @@ export const convertContinuousMappingToCX = (
         },
       ],
       attribute,
+      type:mapping.attributeType // must be number type
     },
   }
 }
