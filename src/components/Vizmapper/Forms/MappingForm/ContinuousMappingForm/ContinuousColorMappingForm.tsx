@@ -51,6 +51,8 @@ import FormGroup from '@mui/material/FormGroup'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Checkbox from '@mui/material/Checkbox'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
+import ArrowRightIcon from '@mui/icons-material/ArrowRight'
 
 // color mapping form for now
 export function ContinuousColorMappingForm(props: {
@@ -157,31 +159,58 @@ export function ContinuousColorMappingForm(props: {
 
   const handleColorPicker = (): void => {
     if (!isReverseColorChecked) {
-      setMinState({
+      const nextMinState = {
         ...minState,
-        vpValue: minPalette,
-      })
-      setMaxState({
-        ...maxState,
         vpValue: maxPalette,
-      })
-      setHandle(0, min.value as number, minPalette as string)
-      setHandle(1, controlPoints[1].value as number, middlePalette as string)
-      setHandle(2, max.value as number, maxPalette as string)
+      }
+
+      const nextMaxState = {
+        ...maxState,
+        vpValue: minPalette,
+      }
+
+      const newHandles = [...handles]
+      newHandles[0].vpValue = maxPalette
+      newHandles[handles.length - 1].vpValue = minPalette
+
+      if (newHandles.length >= 3) {
+        newHandles[1].vpValue = middlePalette
+      }
+
+      updateContinuousMapping(
+        nextMinState,
+        nextMaxState,
+        newHandles,
+        maxPalette,
+        minPalette,
+      )
       changeButtonText(textPalette)
       hideColorPickerMenu()
     } else {
-      setMinState({
+      const nextMinState = {
         ...minState,
-        vpValue: maxPalette,
-      })
-      setMaxState({
-        ...maxState,
         vpValue: minPalette,
-      })
-      setHandle(0, min.value as number, maxPalette as string)
-      setHandle(1, controlPoints[1].value as number, middlePalette as string)
-      setHandle(2, max.value as number, minPalette as string)
+      }
+
+      const nextMaxState = {
+        ...maxState,
+        vpValue: maxPalette,
+      }
+
+      const newHandles = [...handles]
+      newHandles[0].vpValue = minPalette
+      newHandles[handles.length - 1].vpValue = maxPalette
+      if (newHandles.length >= 3) {
+        newHandles[1].vpValue = middlePalette
+      }
+
+      updateContinuousMapping(
+        nextMinState,
+        nextMaxState,
+        newHandles,
+        minPalette,
+        maxPalette,
+      )
       changeButtonText(textPalette)
       hideColorPickerMenu()
     }
@@ -394,7 +423,7 @@ export function ContinuousColorMappingForm(props: {
   }, [maxState])
 
   return (
-    <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2, pt: 2 }}>
+    <Paper sx={{ backgroundColor: '#D9D9D9', p: 2, pr: 8, pl: 8 }}>
       <Paper
         sx={{
           display: 'flex',
@@ -672,7 +701,6 @@ export function ContinuousColorMappingForm(props: {
             alignItems: 'center',
             position: 'relative',
             userSelect: 'none',
-            pb: 6,
           }}
           elevation={4}
         >
@@ -866,19 +894,24 @@ export function ContinuousColorMappingForm(props: {
                 </Draggable>
               )
             })}
-            <Tooltip title="Set color value for values under the minimum.">
-              <Box
+            <Tooltip
+              title={`${m.attribute} values less than the min (${minState.value}) will be mapped to this color.`}
+            >
+              <Paper
                 sx={{
-                  width: 2,
-                  height: 1,
+                  width: 50,
+                  height: 50,
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   position: 'relative',
-                  top: -65,
-                  left: -20,
+                  top: -70,
+                  left: -70,
                 }}
               >
+                <ArrowLeftIcon
+                  sx={{ fontSize: 40, position: 'absolute', left: -25 }}
+                />
                 <VisualPropertyValueForm
                   currentValue={m.ltMinVpValue}
                   visualProperty={props.visualProperty}
@@ -893,21 +926,27 @@ export function ContinuousColorMappingForm(props: {
                     )
                   }}
                 />
-              </Box>
+              </Paper>
             </Tooltip>
-            <Tooltip title="Set color value for values over the maximum.">
-              <Box
+            <Tooltip
+              title={`${m.attribute} values greater than the max (${maxState.value}) will be mapped to this color.`}
+            >
+              <Paper
                 sx={{
-                  width: 2,
-                  height: 1,
+                  width: 50,
+                  height: 50,
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
+                  justifyContent: 'center',
+
                   position: 'relative',
-                  top: -95,
+                  top: -120,
                   left: 580,
                 }}
               >
+                <ArrowRightIcon
+                  sx={{ fontSize: 40, position: 'absolute', left: 35 }}
+                />
                 <VisualPropertyValueForm
                   currentValue={m.gtMaxVpValue}
                   visualProperty={props.visualProperty}
@@ -922,7 +961,7 @@ export function ContinuousColorMappingForm(props: {
                     )
                   }}
                 />
-              </Box>
+              </Paper>
             </Tooltip>
           </Box>
         </Paper>
@@ -1009,8 +1048,8 @@ export function ContinuousColorMappingForm(props: {
               addHandleFormValue > (minState.value as number)
             ) ? (
               <Typography color="error" variant="caption">
-                {`Handle value must be between ${min.value as number} and ${
-                  max.value as number
+                {`Handle value must be between ${minState.value as number} and ${
+                  maxState.value as number
                 }`}
               </Typography>
             ) : null}

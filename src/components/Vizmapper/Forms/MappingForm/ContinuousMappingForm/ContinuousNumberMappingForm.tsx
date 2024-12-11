@@ -34,6 +34,8 @@ import { Handle, addHandle, removeHandle, editHandle } from './Handle'
 import { LineChart } from './LineChart'
 import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
+import ArrowRightIcon from '@mui/icons-material/ArrowRight'
 
 export function ContinuousNumberMappingForm(props: {
   currentNetworkId: IdType
@@ -575,67 +577,78 @@ export function ContinuousNumberMappingForm(props: {
                   </Draggable>
                 )
               })}
-              <Tooltip title="Set number value for values under the minimum.">
-                <Box
-                  sx={{
-                    width: 2,
-                    height: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    position: 'relative',
-                    bottom: -LINE_CHART_HEIGHT + 50,
-                    right: LINE_CHART_WIDTH - 25,
-                    zIndex: 1000,
-                  }}
-                >
-                  <VisualPropertyValueForm
-                    currentValue={m.ltMinVpValue}
-                    visualProperty={props.visualProperty}
-                    currentNetworkId={props.currentNetworkId}
-                    onValueChange={(newValue) => {
-                      updateContinuousMapping(
-                        min,
-                        max,
-                        handles,
-                        newValue,
-                        m.gtMaxVpValue,
-                      )
-                    }}
-                  />
-                </Box>
-              </Tooltip>
-              <Tooltip title="Set number value for values over the maximum.">
-                <Box
-                  sx={{
-                    width: 2,
-                    height: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    position: 'relative',
-                    bottom: -LINE_CHART_HEIGHT + 50,
-                    right: 25,
-                    zIndex: 1000,
-                  }}
-                >
-                  <VisualPropertyValueForm
-                    currentValue={m.gtMaxVpValue}
-                    visualProperty={props.visualProperty}
-                    currentNetworkId={props.currentNetworkId}
-                    onValueChange={(newValue) => {
-                      updateContinuousMapping(
-                        min,
-                        max,
-                        handles,
-                        m.ltMinVpValue,
-                        newValue,
-                      )
-                    }}
-                  />
-                </Box>
-              </Tooltip>
             </Box>
+          </Tooltip>
+          <Tooltip
+            placement="top"
+            title={`${m.attribute} values less than the minmum (${minState.value}) will be mapped to this height value (${m.ltMinVpValue}).`}
+          >
+            <Paper
+              sx={{
+                width: 50,
+                height: 50,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'absolute',
+                bottom: '130px',
+                right: '610px',
+              }}
+            >
+              <ArrowLeftIcon
+                sx={{ fontSize: 40, position: 'absolute', left: -25 }}
+              />
+              <VisualPropertyValueForm
+                currentValue={m.ltMinVpValue}
+                visualProperty={props.visualProperty}
+                currentNetworkId={props.currentNetworkId}
+                onValueChange={(newValue) => {
+                  updateContinuousMapping(
+                    min,
+                    max,
+                    handles,
+                    newValue,
+                    m.gtMaxVpValue,
+                  )
+                }}
+              />
+            </Paper>
+          </Tooltip>
+
+          <Tooltip
+            placement="top"
+            title={`${m.attribute} values greater than the maximum (${maxState.value}) will be mapped to this height value (${m.gtMaxVpValue}).`}
+          >
+            <Paper
+              sx={{
+                width: 50,
+                height: 50,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'absolute',
+                bottom: '130px',
+                right: '-60px',
+              }}
+            >
+              <ArrowRightIcon
+                sx={{ fontSize: 40, position: 'absolute', left: 35 }}
+              />
+              <VisualPropertyValueForm
+                currentValue={m.gtMaxVpValue}
+                visualProperty={props.visualProperty}
+                currentNetworkId={props.currentNetworkId}
+                onValueChange={(newValue) => {
+                  updateContinuousMapping(
+                    min,
+                    max,
+                    handles,
+                    m.ltMinVpValue,
+                    newValue,
+                  )
+                }}
+              />
+            </Paper>
           </Tooltip>
         </Paper>
       </Box>
