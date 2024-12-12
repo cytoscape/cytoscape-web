@@ -18,9 +18,14 @@ import { useUiStateStore } from '../../../store/UiStateStore'
 
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 
-export const OpenNetworkInCytoscapeMenuItem = (
-  props: BaseMenuProps,
-): ReactElement => {
+interface OpenNetworkInCytoscapeMenuItemProps extends BaseMenuProps {
+  onSnackbarOpen: (message: string, severity?: 'info' | 'success' | 'error') => void
+}
+
+export const OpenNetworkInCytoscapeMenuItem = ({
+  handleClose,
+  onSnackbarOpen,
+}: OpenNetworkInCytoscapeMenuItemProps): ReactElement => {
   const cyndex = new CyNDEx()
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -51,7 +56,8 @@ export const OpenNetworkInCytoscapeMenuItem = (
 
   const openNetworkInCytoscape = async (): Promise<void> => {
     if (viewModel === undefined) {
-      throw new Error('Could not find the current network view model.')
+      onSnackbarOpen('Could not find the current network view model.', 'error')
+      return
     }
     const cx = exportNetworkToCx2(
       network,
@@ -65,12 +71,17 @@ export const OpenNetworkInCytoscapeMenuItem = (
       opaqueAspects,
     )
     try {
+      onSnackbarOpen('Sending this network to Cytoscape Desktop...', 'info')
       await cyndex.postCX2NetworkToCytoscape(cx)
+      onSnackbarOpen('Network successfully opened in Cytoscape Desktop.', 'success')
     } catch (e) {
-      console.log(e)
-      console.log('Cannot find Cytoscape!')
+      onSnackbarOpen(
+        'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed.',
+        'error',
+      )
+      console.error('Cannot find Cytoscape!', e)
     }
-    props.handleClose()
+    handleClose()
   }
 
   const handleOpenNetworkInCytoscape = async (): Promise<void> => {
