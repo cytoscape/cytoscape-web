@@ -104,15 +104,10 @@ export const SaveWorkspaceToNDExMenuItem = (
       return
     }
     try {
-      const accessToken = await getToken()
-      const ndexClient = new NDEx(ndexBaseUrl)
-      ndexClient.setAuthToken(accessToken)
-
       await saveAllNetworks(
-        accessToken,
-        ndexBaseUrl,
-        ndexClient,
+        getToken,
         allNetworkId,
+        ndexBaseUrl,
         addNetworkToWorkspace,
         networkModifiedStatus,
         updateSummary,
@@ -126,6 +121,9 @@ export const SaveWorkspaceToNDExMenuItem = (
         networkVisualStyleOpt,
         opaqueAspects,
       )
+      const ndexClient = new NDEx(ndexBaseUrl)
+      const accessToken = await getToken()
+      ndexClient.setAuthToken(accessToken)
 
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
       const response = await ndexClient.createCyWebWorkspace({

@@ -12,10 +12,10 @@ import {
 } from '../models'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { exportNetworkToCx2 } from '../store/io/exportCX'
-import { TableRecord } from '../models/StoreModel/TableStoreModel'
+import { TableRecord } from 'src/models/StoreModel/TableStoreModel'
 import { useNdexNetwork } from '../store/hooks/useNdexNetwork'
-import { OpaqueAspects } from '../models/OpaqueAspectModel'
-import { ndexSummaryFetcher } from '../store/hooks/useNdexNetworkSummary'
+import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
+import { Aspect } from 'src/models/CxModel/Cx2/Aspect'
 
 export const ndexDuplicateKeyErrorMessage =
   'duplicate key value violates unique constraint'
@@ -62,35 +62,22 @@ export const fetchMyWorkspaces = async (
   return myWorkspaces
 }
 
-export const rejectedByNDEx = async (uuid:string, baseUrl:string, accessToken:string):Promise<boolean> =>{
-  const newSummary = await ndexSummaryFetcher(
-    uuid,
-    baseUrl,
-    accessToken,
-  )
-  if(newSummary[0].completed === false || newSummary[0].errorMessage){
-    return true
-  }
-  return false
-}
-
 export const saveCopyToNDEx = async (
-  ndexBaseUrl:string,
-  accessToken:string,
-  ndexClient: NDEx,
+  ndexBaseUrl: string,
+  getToken: () => Promise<string>,
   addNetworkToWorkspace: (ids: string | string[]) => void,
   network: Network,
   visualStyle: VisualStyle,
   summary: NdexNetworkSummary,
   nodeTable: Table,
   edgeTable: Table,
-  viewModel?: NetworkView,
+  viewModel: NetworkView,
   visualStyleOptions?: VisualStyleOptions,
   opaqueAspect?: OpaqueAspects,
-): Promise<string> => {
-  if (viewModel === undefined) {
-    throw new Error('Could not find the current network view model.')
-  }
+): Promise<void> => {
+  const ndexClient = new NDEx(ndexBaseUrl)
+  const accessToken = await getToken()
+  ndexClient.setAuthToken(accessToken)
   const cx = exportNetworkToCx2(
     network,
     visualStyle,
@@ -103,20 +90,12 @@ export const saveCopyToNDEx = async (
     opaqueAspect,
   )
   const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
-  const rejected = await rejectedByNDEx(
-    uuid as string,
-    ndexBaseUrl,
-    accessToken,
-  )
-  if (rejected) {
-    throw new Error('The network is rejected by NDEx')
-  }
   addNetworkToWorkspace(uuid as IdType)
-  return uuid
 }
 
 export const saveNetworkToNDEx = async (
-  ndexClient: NDEx,
+  ndexBaseUrl: string,
+  getToken: () => Promise<string>,
   updateSummary: (id: string, summary: Partial<NdexNetworkSummary>) => void,
   networkId: string,
   network: Network,
@@ -124,13 +103,13 @@ export const saveNetworkToNDEx = async (
   summary: NdexNetworkSummary,
   nodeTable: Table,
   edgeTable: Table,
-  viewModel?: NetworkView,
+  viewModel: NetworkView,
   visualStyleOptions?: VisualStyleOptions,
   opaqueAspect?: OpaqueAspects,
 ): Promise<void> => {
-  if (viewModel === undefined) {
-    throw new Error('Could not find the current network view model.')
-  }
+  const ndexClient = new NDEx(ndexBaseUrl)
+  const accessToken = await getToken()
+  ndexClient.setAuthToken(accessToken)
   const cx = exportNetworkToCx2(
     network,
     visualStyle,
@@ -144,9 +123,6 @@ export const saveNetworkToNDEx = async (
   )
   await ndexClient.updateNetworkFromRawCX2(networkId, cx)
   const ndexSummary = await ndexClient.getNetworkSummary(networkId)
-  if(ndexSummary.completed === false || ndexSummary.errorMessage){
-    throw new Error('The network is rejected by NDEx')
-  }
   const newNdexModificationTime = ndexSummary.modificationTime
   updateSummary(networkId, {
     modificationTime: newNdexModificationTime,
@@ -154,10 +130,9 @@ export const saveNetworkToNDEx = async (
 }
 
 export const saveAllNetworks = async (
-  accessToken: string,
-  ndexBaseUrl: string,
-  ndexClient: NDEx,
+  getToken: () => Promise<string>,
   allNetworkId: string[],
+  ndexBaseUrl: string,
   addNetworkToWorkspace: (ids: string | string[]) => void,
   networkModifiedStatus: Record<string, boolean | undefined>,
   updateSummary: (id: string, summary: Partial<NdexNetworkSummary>) => void,
@@ -184,7 +159,8 @@ export const saveAllNetworks = async (
     let opaqueAspect = opaqueAspects[networkId]
 
     if (!network || !visualStyle || !nodeTable || !edgeTable) {
-      const res = await useNdexNetwork(networkId, ndexBaseUrl, accessToken)
+      const currentToken = await getToken()
+      const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
       // Using parentheses to perform destructuring assignment correctly
       ;({
         network,
@@ -197,12 +173,11 @@ export const saveAllNetworks = async (
 
       if (res.otherAspects) {
         opaqueAspect = res.otherAspects.reduce(
-          (acc: OpaqueAspects, aspect: OpaqueAspects) => {
+          (acc: OpaqueAspects, aspect: Aspect) => {
             const [aspectName, aspectData] = Object.entries(aspect)[0]
             acc[aspectName] = aspectData
-            return acc
           },
-          {} as OpaqueAspects,
+          {},
         )
       } else {
         opaqueAspect = {}
@@ -211,8 +186,7 @@ export const saveAllNetworks = async (
     if (summary.isNdex === false) {
       await saveCopyToNDEx(
         ndexBaseUrl,
-        accessToken,
-        ndexClient,
+        getToken,
         addNetworkToWorkspace,
         network,
         visualStyle,
@@ -228,7 +202,8 @@ export const saveAllNetworks = async (
     if (networkModifiedStatus[networkId] === true) {
       try {
         await saveNetworkToNDEx(
-          ndexClient,
+          ndexBaseUrl,
+          getToken,
           updateSummary,
           networkId,
           network,
@@ -238,15 +213,13 @@ export const saveAllNetworks = async (
           edgeTable,
           networkViews?.[0],
           visualStyleOptions,
-          opaqueAspect
         )
         deleteNetworkModifiedStatus(networkId)
       } catch (e) {
         try {
           await saveCopyToNDEx(
             ndexBaseUrl,
-            accessToken,
-            ndexClient,
+            getToken,
             addNetworkToWorkspace,
             network,
             visualStyle,
@@ -255,7 +228,6 @@ export const saveAllNetworks = async (
             edgeTable,
             networkViews?.[0],
             visualStyleOptions,
-            opaqueAspect
           )
           addMessage({
             message: `Unable to save the modified network to NDEx. Instead, saved its copy to NDEx. Error: ${e.message as string}`,
