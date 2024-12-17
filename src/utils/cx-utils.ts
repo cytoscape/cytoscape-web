@@ -11,6 +11,7 @@ import {
   getVisualStyleFromDb,
   getUiStateFromDb,
   getOpaqueAspectsFromDb,
+  OpaqueAspectsDB,
 } from '../store/persist/db'
 import { CachedData } from './CachedData'
 import { createNetworkAttributesFromCx } from '../models/TableModel/impl/NetworkAttributesImpl'
@@ -20,6 +21,7 @@ import { NetworkWithView } from '../models/NetworkWithViewModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { Ui } from '../models/UiModel'
 import { IdType } from '../models/IdType'
+import { OpaqueAspects } from '../models/OpaqueAspectModel'
 
 /**
  *
@@ -73,7 +75,10 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
       uiState?.visualStyleOptions ?? {}
     // Fall back to an empty object if the visual style options are not found
     const visualStyleOptions: VisualStyleOptions = vsOptions[id] ?? {}
-    const otherAspects:  any[] | undefined = await getOpaqueAspectsFromDb(id) 
+    const opaqueAspects: OpaqueAspectsDB|undefined = await getOpaqueAspectsFromDb(id)
+    const otherAspects: OpaqueAspects[] = opaqueAspects
+      ? Object.entries(opaqueAspects.aspects).map(([key, value]) => ({ [key]: value }))
+      : []
     return {
       network,
       visualStyle,
@@ -109,7 +114,7 @@ export const createDataFromCx = async (
   )
   const visualStyleOptions: VisualStyleOptions =
     VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
-  const otherAspects: Aspect[] = getOptionalAspects(cxData)
+  const otherAspects: OpaqueAspects[] = getOptionalAspects(cxData)
 
   return {
     network,
@@ -132,8 +137,8 @@ const CoreAspectTagValueSet = new Set<string>(
  * @param cx2
  * @returns Array of optional Aspects
  */
-export const getOptionalAspects = (cx2: Cx2): Aspect[] => {
-  const optionalAspects: Aspect[] = []
+export const getOptionalAspects = (cx2: Cx2): OpaqueAspects[] => {
+  const optionalAspects: OpaqueAspects[] = []
   for (const entry of cx2) {
     if (entry !== undefined) {
       const key = Object.keys(entry)[0]
@@ -142,7 +147,7 @@ export const getOptionalAspects = (cx2: Cx2): Aspect[] => {
         key !== 'status' &&
         key !== 'CXVersion'
       ) {
-        optionalAspects.push(entry as Aspect)
+        optionalAspects.push(entry as OpaqueAspects)
       }
     }
   }

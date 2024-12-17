@@ -3,6 +3,7 @@ import { Table } from '../models/TableModel'
 import { NetworkView } from '../models/ViewModel'
 import { VisualStyle } from '../models/VisualStyleModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
+import { OpaqueAspects } from '../models/OpaqueAspectModel'
 
 export interface CachedData {
   network?: Network
@@ -11,5 +12,5 @@ export interface CachedData {
   visualStyle?: VisualStyle
   networkViews?: NetworkView[]
   visualStyleOptions?: VisualStyleOptions
-  otherAspects?: any[]
+  otherAspects?: OpaqueAspects[]
 }

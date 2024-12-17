@@ -107,6 +107,7 @@ export const convertPassthroughMappingToCX = (
   vs: VisualStyle,
   vp: VisualProperty<VisualPropertyValueType>,
   mapping: PassthroughMappingFunction,
+  isNameInTable: boolean,
 ): CXPassthroughMappingFunction => {
   const { attribute } = mapping
 
@@ -114,7 +115,7 @@ export const convertPassthroughMappingToCX = (
     type: 'PASSTHROUGH',
     definition: {
       attribute,
-      type:mapping.attributeType
+      ...(isNameInTable ? {} : { type: mapping.attributeType }),
     },
   }
 }
@@ -123,6 +124,7 @@ export const convertDiscreteMappingToCX = (
   vs: VisualStyle,
   vp: VisualProperty<VisualPropertyValueType>,
   mapping: DiscreteMappingFunction,
+  isNameInTable: boolean,
 ): CXDiscreteMappingFunction<CXVisualPropertyValue> => {
   const { vpValueMap, attribute } = mapping
 
@@ -134,7 +136,7 @@ export const convertDiscreteMappingToCX = (
         v: value,
         vp: vpToCX(vp.name, vpValue),
       })),
-      type:mapping.attributeType
+      ...(isNameInTable ? {} : { type: mapping.attributeType }),
     },
   }
 }
@@ -142,6 +144,7 @@ export const convertContinuousMappingToCX = (
   vs: VisualStyle,
   vp: VisualProperty<VisualPropertyValueType>,
   mapping: ContinuousMappingFunction,
+  isNameInTable: boolean,
 ): CXContinuousMappingFunction<CXVisualPropertyValue> => {
   const { min, max, controlPoints, attribute, ltMinVpValue, gtMaxVpValue } =
     mapping
@@ -183,7 +186,7 @@ export const convertContinuousMappingToCX = (
         },
       ],
       attribute,
-      type:mapping.attributeType // must be number type
+      ...(isNameInTable ? {} : { type: mapping.attributeType }),
     },
   }
 }

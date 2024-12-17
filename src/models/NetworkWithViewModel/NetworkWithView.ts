@@ -3,6 +3,7 @@ import { Table } from '../TableModel'
 import { NetworkView } from '../ViewModel'
 import { VisualStyle } from '../VisualStyleModel'
 import { VisualStyleOptions } from '../VisualStyleModel/VisualStyleOptions'
+import { OpaqueAspects } from '../OpaqueAspectModel'
 
 /**
  * An utility interface to hold all the data needed to build a network view
@@ -15,5 +16,5 @@ export interface NetworkWithView {
   visualStyle: VisualStyle
   networkViews: NetworkView[]
   visualStyleOptions?: VisualStyleOptions
-  otherAspects?: any[] // All other optional aspects found in the CX2 stream
+  otherAspects?: OpaqueAspects[] // All other optional aspects found in the CX2 stream
 }

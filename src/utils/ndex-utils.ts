@@ -15,7 +15,6 @@ import { exportNetworkToCx2 } from '../store/io/exportCX'
 import { TableRecord } from '../models/StoreModel/TableStoreModel'
 import { useNdexNetwork } from '../store/hooks/useNdexNetwork'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
-import { Aspect } from '../models/CxModel/Cx2/Aspect'
 import { ndexSummaryFetcher } from '../store/hooks/useNdexNetworkSummary'
 
 export const ndexDuplicateKeyErrorMessage =
@@ -145,6 +144,9 @@ export const saveNetworkToNDEx = async (
   )
   await ndexClient.updateNetworkFromRawCX2(networkId, cx)
   const ndexSummary = await ndexClient.getNetworkSummary(networkId)
+  if(ndexSummary.completed === false || ndexSummary.errorMessage){
+    throw new Error('The network is rejected by NDEx')
+  }
   const newNdexModificationTime = ndexSummary.modificationTime
   updateSummary(networkId, {
     modificationTime: newNdexModificationTime,
@@ -195,11 +197,12 @@ export const saveAllNetworks = async (
 
       if (res.otherAspects) {
         opaqueAspect = res.otherAspects.reduce(
-          (acc: OpaqueAspects, aspect: Aspect) => {
+          (acc: OpaqueAspects, aspect: OpaqueAspects) => {
             const [aspectName, aspectData] = Object.entries(aspect)[0]
             acc[aspectName] = aspectData
+            return acc
           },
-          {},
+          {} as OpaqueAspects,
         )
       } else {
         opaqueAspect = {}
