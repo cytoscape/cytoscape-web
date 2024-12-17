@@ -255,7 +255,6 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 visualPropertyType: vp.type,
                 attribute: cxMapping.definition.attribute,
                 defaultValue: vp.defaultValue,
-                attributeType: cxMapping.definition.type,
               }
               visualStyle[vpName].mapping = m
               break
@@ -272,7 +271,6 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 vpValueMap,
                 visualPropertyType: vp.type,
                 defaultValue: vp.defaultValue,
-                attributeType: cxMapping.definition.type,
               }
               visualStyle[vpName].mapping = m
               break
@@ -358,7 +356,6 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                   ltMinVpValue: converter.valueConverter(
                     min.vpValue as CXVisualPropertyValue,
                   ),
-                  attributeType: cxMapping.definition.type,
                 }
                 visualStyle[vpName].mapping = m
               } else {

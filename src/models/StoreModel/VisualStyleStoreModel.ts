@@ -1,5 +1,5 @@
 import { IdType } from '../IdType'
-import { ValueType, AttributeName, ValueTypeName } from '../TableModel'
+import { ValueType, AttributeName } from '../TableModel'
 import {
   VisualStyle,
   VisualPropertyName,
@@ -70,19 +70,16 @@ export interface UpdateVisualStyleAction {
     vpType: VisualPropertyValueTypeName,
     attribute: AttributeName,
     attributeValues: ValueType[],
-    attributeType: ValueTypeName
   ) => void
   createDiscreteMapping: (
     networkId: IdType,
     vpName: VisualPropertyName,
     attribute: AttributeName,
-    attributeType: ValueTypeName
   ) => void
   createPassthroughMapping: (
     networkId: IdType,
     vpName: VisualPropertyName,
     attribute: AttributeName,
-    attributeType: ValueTypeName
   ) => void
   removeMapping: (networkId: IdType, vpName: VisualPropertyName) => void
   // setMapping: () // TODO

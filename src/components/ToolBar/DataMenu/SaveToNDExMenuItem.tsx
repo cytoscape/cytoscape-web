@@ -33,10 +33,6 @@ import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/compo
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
-import {
-  saveNetworkToNDEx as saveNetworkOverwrite,
-  saveCopyToNDEx as saveNetworkCopy,
-} from '../../../utils/ndex-utils'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -139,23 +135,34 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   }, [isModified, authenticated, editPermission, summary?.isNdex])
 
   const overwriteNDExNetwork = async (): Promise<void> => {
+    if (viewModel === undefined) {
+      throw new Error('Could not find the current network view model.')
+    }
+
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
-
-    saveNetworkOverwrite(
-      ndexClient,
-      updateSummary,
-      currentNetworkId,
+    const cx = exportNetworkToCx2(
       network,
       visualStyle,
       summary,
       table.nodeTable,
       table.edgeTable,
-      viewModel,
       visualStyleOptions,
+      viewModel,
+      undefined, // Skip network name
       opaqueAspects,
     )
+
+    // overwrite the current network on NDEx
+    await ndexClient.updateNetworkFromRawCX2(currentNetworkId, cx)
+
+    // update the network summary with the newest modification time
+    const ndexSummary = await ndexClient.getNetworkSummary(currentNetworkId)
+    const newNdexModificationTime = ndexSummary.modificationTime
+    updateSummary(currentNetworkId, {
+      modificationTime: newNdexModificationTime,
+    })
 
     setNetworkModified(currentNetworkId, false)
     setCurrentNetworkId(currentNetworkId)
@@ -165,25 +172,27 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const saveCopyToNDEx = async (): Promise<void> => {
+    if (viewModel === undefined) {
+      throw new Error('Could not find the current network view model.')
+    }
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
+    const cx = exportNetworkToCx2(
+      network,
+      visualStyle,
+      summary,
+      table.nodeTable,
+      table.edgeTable,
+      visualStyleOptions,
+      viewModel,
+      `Copy of ${summary.name}`,
+      opaqueAspects,
+    )
 
     try {
-      const uuid = await saveNetworkCopy(
-        ndexBaseUrl,
-        accessToken,
-        ndexClient,
-        addNetworkToWorkspace,
-        network,
-        visualStyle,
-        summary,
-        table.nodeTable,
-        table.edgeTable,
-        viewModel,
-        visualStyleOptions,
-        opaqueAspects,
-      )
+      const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
+      addNetworkToWorkspace(uuid as IdType)
       setCurrentNetworkId(uuid as IdType)
 
       addMessage({
