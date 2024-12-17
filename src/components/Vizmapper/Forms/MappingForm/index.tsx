@@ -105,51 +105,54 @@ function MappingFormContent(props: {
     mappingType: MappingFunctionType,
     attribute: AttributeName,
   ): void => {
-    switch (mappingType) {
-      case MappingFunctionType.Discrete: {
-        createDiscreteMapping(
-          props.currentNetworkId,
-          props.visualProperty.name,
-          attribute,
-        )
-        break
-      }
-      case MappingFunctionType.Continuous: {
-        const attributeDataType = currentTable.columns.find(
-          (c) => c.name === attribute,
-        )?.type
-
-        if (
-          attributeDataType != null &&
-          (attributeDataType === ValueTypeName.Integer ||
-            attributeDataType === ValueTypeName.Long ||
-            attributeDataType === ValueTypeName.Double)
-        ) {
-          const attributeValues = Array.from(
-            columnValues(
-              props.currentNetworkId,
-              props.visualProperty.group as 'node' | 'edge',
-              attribute,
-            ),
-          ).sort((a, b) => (a as number) - (b as number))
-
-          createContinuousMapping(
+    const attributeDataType = currentTable.columns.find(
+      (c) => c.name === attribute,
+    )?.type
+    if (attributeDataType != null) {
+      switch (mappingType) {
+        case MappingFunctionType.Discrete: {
+          createDiscreteMapping(
             props.currentNetworkId,
             props.visualProperty.name,
-            props.visualProperty.type,
             attribute,
-            attributeValues,
+            attributeDataType,
           )
+          break
         }
-        break
-      }
-      case MappingFunctionType.Passthrough: {
-        createPassthroughMapping(
-          props.currentNetworkId,
-          props.visualProperty.name,
-          attribute,
-        )
-        break
+        case MappingFunctionType.Continuous: {
+          if (
+            attributeDataType === ValueTypeName.Integer ||
+            attributeDataType === ValueTypeName.Long ||
+            attributeDataType === ValueTypeName.Double
+          ) {
+            const attributeValues = Array.from(
+              columnValues(
+                props.currentNetworkId,
+                props.visualProperty.group as 'node' | 'edge',
+                attribute,
+              ),
+            ).sort((a, b) => (a as number) - (b as number))
+
+            createContinuousMapping(
+              props.currentNetworkId,
+              props.visualProperty.name,
+              props.visualProperty.type,
+              attribute,
+              attributeValues,
+              attributeDataType,
+            )
+          }
+          break
+        }
+        case MappingFunctionType.Passthrough: {
+          createPassthroughMapping(
+            props.currentNetworkId,
+            props.visualProperty.name,
+            attribute,
+            attributeDataType,
+          )
+          break
+        }
       }
     }
   }
