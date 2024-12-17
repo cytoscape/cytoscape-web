@@ -48,10 +48,10 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/network-utils'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { useUiStateStore } from '../../store/UiStateStore'
+import { Aspect } from '../../models/CxModel/Cx2/Aspect'
 import { getOptionalAspects } from '../../utils/cx-utils'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { useMessageStore } from '../../store/MessageStore'
-import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 
 interface FileUploadProps {
   show: boolean
@@ -66,7 +66,7 @@ export function FileUpload(props: FileUploadProps) {
     visualStyle: VisualStyle
     networkView: NetworkView
     visualStyleOptions: VisualStyleOptions
-    otherAspects: OpaqueAspects[]
+    otherAspects: Aspect[]
   }
 
   const setCurrentNetworkId = useWorkspaceStore(
@@ -117,7 +117,7 @@ export function FileUpload(props: FileUploadProps) {
     const visualStyleOptions: VisualStyleOptions =
       VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
 
-    const otherAspects: OpaqueAspects[] = getOptionalAspects(cxData)
+    const otherAspects: Aspect[] = getOptionalAspects(cxData)
 
     return {
       network,
