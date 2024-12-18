@@ -16,6 +16,7 @@ import { TableRecord } from '../models/StoreModel/TableStoreModel'
 import { useNdexNetwork } from '../store/hooks/useNdexNetwork'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { ndexSummaryFetcher } from '../store/hooks/useNdexNetworkSummary'
+import { waitSeconds } from './wait-seconds'
 
 export const ndexDuplicateKeyErrorMessage =
   'duplicate key value violates unique constraint'
@@ -62,21 +63,45 @@ export const fetchMyWorkspaces = async (
   return myWorkspaces
 }
 
-export const rejectedByNDEx = async (uuid:string, baseUrl:string, accessToken:string):Promise<boolean> =>{
-  const newSummary = await ndexSummaryFetcher(
-    uuid,
-    baseUrl,
-    accessToken,
-  )
-  if(newSummary[0].completed === false || newSummary[0].errorMessage){
-    return true
+export const getNDExSummaryStatus = async (
+  uuid: string,
+  baseUrl: string,
+  accessToken: string,
+): Promise<{ rejected: boolean; modificationTime?: Date }> => {
+  const MAX_TRIES = 5
+  let interval = 0.5
+  let tries = 0
+
+  await waitSeconds(0.2)
+
+  while (tries < MAX_TRIES) {
+    tries += 1
+    const newSummary = await ndexSummaryFetcher(uuid, baseUrl, accessToken)
+
+    if (newSummary[0].completed === true) {
+      if (newSummary[0].errorMessage) {
+        return {
+          rejected: true,
+        }
+      }
+      return {
+        rejected: false,
+        modificationTime: newSummary[0].modificationTime,
+      }
+    }
+    if (tries >= 3) {
+      interval = 1
+    }
+    await waitSeconds(interval)
   }
-  return false
+  return {
+    rejected: true,
+  }
 }
 
 export const saveCopyToNDEx = async (
-  ndexBaseUrl:string,
-  accessToken:string,
+  ndexBaseUrl: string,
+  accessToken: string,
   ndexClient: NDEx,
   addNetworkToWorkspace: (ids: string | string[]) => void,
   network: Network,
@@ -103,12 +128,12 @@ export const saveCopyToNDEx = async (
     opaqueAspect,
   )
   const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
-  const rejected = await rejectedByNDEx(
+  const summaryStatus = await getNDExSummaryStatus(
     uuid as string,
     ndexBaseUrl,
     accessToken,
   )
-  if (rejected) {
+  if (summaryStatus.rejected) {
     throw new Error('The network is rejected by NDEx')
   }
   addNetworkToWorkspace(uuid as IdType)
@@ -116,6 +141,8 @@ export const saveCopyToNDEx = async (
 }
 
 export const saveNetworkToNDEx = async (
+  ndexBaseUrl: string,
+  accessToken: string,
   ndexClient: NDEx,
   updateSummary: (id: string, summary: Partial<NdexNetworkSummary>) => void,
   networkId: string,
@@ -143,13 +170,17 @@ export const saveNetworkToNDEx = async (
     opaqueAspect,
   )
   await ndexClient.updateNetworkFromRawCX2(networkId, cx)
-  const ndexSummary = await ndexClient.getNetworkSummary(networkId)
-  if(ndexSummary.completed === false || ndexSummary.errorMessage){
+  const summaryStatus = await getNDExSummaryStatus(
+    networkId as string,
+    ndexBaseUrl,
+    accessToken,
+  )
+  if (summaryStatus.rejected) {
     throw new Error('The network is rejected by NDEx')
   }
-  const newNdexModificationTime = ndexSummary.modificationTime
+
   updateSummary(networkId, {
-    modificationTime: newNdexModificationTime,
+    modificationTime: summaryStatus.modificationTime,
   })
 }
 
@@ -228,6 +259,8 @@ export const saveAllNetworks = async (
     if (networkModifiedStatus[networkId] === true) {
       try {
         await saveNetworkToNDEx(
+          ndexBaseUrl,
+          accessToken,
           ndexClient,
           updateSummary,
           networkId,
@@ -238,7 +271,7 @@ export const saveAllNetworks = async (
           edgeTable,
           networkViews?.[0],
           visualStyleOptions,
-          opaqueAspect
+          opaqueAspect,
         )
         deleteNetworkModifiedStatus(networkId)
       } catch (e) {
@@ -255,7 +288,7 @@ export const saveAllNetworks = async (
             edgeTable,
             networkViews?.[0],
             visualStyleOptions,
-            opaqueAspect
+            opaqueAspect,
           )
           addMessage({
             message: `Unable to save the modified network to NDEx. Instead, saved its copy to NDEx. Error: ${e.message as string}`,

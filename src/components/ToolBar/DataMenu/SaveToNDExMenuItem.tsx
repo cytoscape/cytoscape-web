@@ -144,6 +144,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     ndexClient.setAuthToken(accessToken)
 
     saveNetworkOverwrite(
+      ndexBaseUrl,
+      accessToken,
       ndexClient,
       updateSummary,
       currentNetworkId,

@@ -4,6 +4,7 @@ import { OpaqueAspectStoreModel } from '../models/StoreModel/OpaqueAspectStoreMo
 import { IdType } from '../models'
 import { deleteOpaqueAspectsFromDb, putOpaqueAspectsToDb } from './persist/db'
 import { clear } from 'idb-keyval'
+import { OpaqueAspects } from '../models/OpaqueAspectModel'
 
 export const useOpaqueAspectStore = create(
   immer<OpaqueAspectStoreModel>((set) => ({
@@ -14,10 +15,8 @@ export const useOpaqueAspectStore = create(
           state.opaqueAspects[networkId] = {}
         }
         state.opaqueAspects[networkId][aspectName] = aspectData
-        void putOpaqueAspectsToDb(
-          networkId,
-          state.opaqueAspects[networkId],
-        ).then(() => {
+        const updatedOpaqueAspects = { ...state.opaqueAspects[networkId] }
+        void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(() => {
           console.debug(
             'DB Update: opaque aspects store',
             state.opaqueAspects[networkId],
@@ -26,7 +25,7 @@ export const useOpaqueAspectStore = create(
         return state
       })
     },
-    addAll: (networkId: IdType, aspects: Record<string, any[]>[]) => {
+    addAll: (networkId: IdType, aspects: OpaqueAspects[]) => {
       set((state) => {
         if (!state.opaqueAspects[networkId]) {
           state.opaqueAspects[networkId] = {}
@@ -35,10 +34,8 @@ export const useOpaqueAspectStore = create(
           const [aspectName, aspectData] = Object.entries(aspect)[0]
           state.opaqueAspects[networkId][aspectName] = aspectData
         })
-        void putOpaqueAspectsToDb(
-          networkId,
-          state.opaqueAspects[networkId],
-        ).then(() => {
+        const updatedOpaqueAspects = { ...state.opaqueAspects[networkId] }
+        void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(() => {
           console.debug('DB Update: opaque aspects store')
         })
         return state
@@ -61,10 +58,8 @@ export const useOpaqueAspectStore = create(
         if (state.opaqueAspects[networkId]) {
           delete state.opaqueAspects[networkId][aspectName]
         }
-        void putOpaqueAspectsToDb(
-          networkId,
-          state.opaqueAspects[networkId],
-        ).then(() => {
+        const updatedOpaqueAspects = { ...state.opaqueAspects[networkId] }
+        void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(() => {
           console.debug('DB Update: opaque aspects store')
         })
         return state
@@ -94,10 +89,8 @@ export const useOpaqueAspectStore = create(
           state.opaqueAspects[networkId] = {}
         }
         state.opaqueAspects[networkId][aspectName] = [...aspectData]
-        void putOpaqueAspectsToDb(
-          networkId,
-          state.opaqueAspects[networkId],
-        ).then(() => {
+        const updatedOpaqueAspects = { ...state.opaqueAspects[networkId] }
+        void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(() => {
           console.debug('DB Update: opaque aspects updated for ', networkId)
         })
         return state
