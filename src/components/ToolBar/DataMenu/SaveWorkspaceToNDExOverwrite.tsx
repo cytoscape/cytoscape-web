@@ -16,7 +16,6 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { KeycloakContext } from '../../../bootstrap'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import {
-  fetchMyWorkspaces,
   saveAllNetworks,
   ndexDuplicateKeyErrorMessage,
 } from '../../../utils/ndex-utils'
@@ -72,10 +71,15 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
 
   const saveWorkspaceToNDEx = async (): Promise<void> => {
     try {
+      const accessToken = await getToken()
+      const ndexClient = new NDEx(ndexBaseUrl)
+      ndexClient.setAuthToken(accessToken)
+
       await saveAllNetworks(
-        getToken,
-        allNetworkId,
+        accessToken,
         ndexBaseUrl,
+        ndexClient,
+        allNetworkId,
         addNetworkToWorkspace,
         networkModifiedStatus,
         updateSummary,
@@ -89,9 +93,6 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         networkVisualStyleOpt,
         opaqueAspects,
       )
-      const ndexClient = new NDEx(ndexBaseUrl)
-      const accessToken = await getToken()
-      ndexClient.setAuthToken(accessToken)
 
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
       if (hasWorkspace) {

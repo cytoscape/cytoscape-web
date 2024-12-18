@@ -15,6 +15,7 @@ import VisualStyleFn, {
   VisualPropertyName,
   VisualProperty,
   VisualPropertyValueType,
+  NodeVisualPropertyName,
 } from '../../models/VisualStyleModel'
 
 import { translateEdgeIdToCX } from '../../models/NetworkModel/impl/CyNetwork'
@@ -96,6 +97,12 @@ export const exportNetworkToCx2 = (
   ): { [key: CXVPName]: CXVisualMappingFunction<CXVisualPropertyValue> } => {
     const { name, mapping } = vp
     const cxVPName = vpNameToCXName(name)
+    const attributeName = mapping?.attribute
+    // whether attributeName is in nodeTable or edgeTable
+    let isNameInTable = false
+    if(attributeName){
+      isNameInTable = Object.values(NodeVisualPropertyName).includes(name as NodeVisualPropertyName) ? nodeTable.columns.map((col)=>col.name).includes(attributeName) : edgeTable.columns.map((col)=>col.name).includes(attributeName)  
+    }
 
     if (mapping != null) {
       switch (mapping.type) {
@@ -104,6 +111,7 @@ export const exportNetworkToCx2 = (
             vs,
             vp,
             mapping as ContinuousMappingFunction,
+            isNameInTable
           )
           mappings[cxVPName] = convertedMapping
           break
@@ -113,6 +121,7 @@ export const exportNetworkToCx2 = (
             vs,
             vp,
             mapping as DiscreteMappingFunction,
+            isNameInTable
           )
           mappings[cxVPName] = convertedMapping
           break
@@ -122,6 +131,7 @@ export const exportNetworkToCx2 = (
             vs,
             vp,
             mapping as PassthroughMappingFunction,
+            isNameInTable
           )
           mappings[cxVPName] = convertedMapping
           break
