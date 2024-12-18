@@ -23,6 +23,7 @@ import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/compo
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
+import { saveCopyToNDEx as saveNetworkCopy } from '../../../utils/ndex-utils'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
@@ -76,29 +77,26 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.setCurrentNetworkId,
   )
   const saveCopyToNDEx = async (): Promise<void> => {
-    if (viewModel === undefined) {
-      throw new Error('Could not find the current network view model.')
-    }
-
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
     ndexClient.setAuthToken(accessToken)
-    const cx = exportNetworkToCx2(
-      network,
-      visualStyle,
-      summary,
-      table.nodeTable,
-      table.edgeTable,
-      visualStyleOptions,
-      viewModel,
-      summary.isNdex ? `Copy of ${summary.name}` : summary.name,
-      opaqueAspects,
-    )
-    try {
-      const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
-      addNetworkToWorkspace(uuid as IdType)
-      setCurrentNetworkId(uuid as IdType)
 
+    try {
+      const uuid = await saveNetworkCopy(
+        ndexBaseUrl,
+        accessToken,
+        ndexClient,
+        addNetworkToWorkspace,
+        network,
+        visualStyle,
+        summary,
+        table.nodeTable,
+        table.edgeTable,
+        viewModel,
+        visualStyleOptions,
+        opaqueAspects,
+      )
+      setCurrentNetworkId(uuid as IdType)
       addMessage({
         message: `Saved a copy of the current network to NDEx with new uuid ${
           uuid as string

@@ -697,6 +697,12 @@ export const deleteServiceAppFromDb = async (url: string): Promise<void> => {
   })
 }
 
+// opaque aspects
+export interface OpaqueAspectsDB {
+  id: IdType
+  aspects: Record<string, any[]>
+}
+
 export const putOpaqueAspectsToDb = async (
   networkId: IdType,
   aspects: Record<string, any[]>,
@@ -708,7 +714,7 @@ export const putOpaqueAspectsToDb = async (
 
 export const getOpaqueAspectsFromDb = async (
   networkId: IdType,
-): Promise<Record<string, any[]> | undefined> => {
+): Promise< OpaqueAspectsDB | undefined> => {
   return await db.opaqueAspects.get({ id: networkId })
 }
 

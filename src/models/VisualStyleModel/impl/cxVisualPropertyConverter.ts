@@ -18,6 +18,7 @@ import {
   VisualProperty,
   VisualStyle,
 } from '..'
+import { ValueTypeName } from '../../TableModel'
 
 type CXLabelPositionValueType = 'center' | 'top' | 'bottom' | 'left' | 'right'
 export interface CXLabelPositionType {
@@ -50,6 +51,7 @@ export interface CXDiscreteMappingFunction<T> {
       v: CxValue
       vp: T
     }>
+    type?: ValueTypeName
   }
 }
 
@@ -57,6 +59,7 @@ export interface CXPassthroughMappingFunction {
   type: 'PASSTHROUGH'
   definition: {
     attribute: string
+    type?: ValueTypeName
   }
 }
 
@@ -72,6 +75,7 @@ export interface CXContinuousMappingFunction<T> {
       includeMax: boolean
       includeMin: boolean
     }>
+    type?: ValueTypeName
   }
 }
 
@@ -103,6 +107,7 @@ export const convertPassthroughMappingToCX = (
   vs: VisualStyle,
   vp: VisualProperty<VisualPropertyValueType>,
   mapping: PassthroughMappingFunction,
+  isNameInTable: boolean,
 ): CXPassthroughMappingFunction => {
   const { attribute } = mapping
 
@@ -110,6 +115,7 @@ export const convertPassthroughMappingToCX = (
     type: 'PASSTHROUGH',
     definition: {
       attribute,
+      ...(isNameInTable ? {} : { type: mapping.attributeType }),
     },
   }
 }
@@ -118,6 +124,7 @@ export const convertDiscreteMappingToCX = (
   vs: VisualStyle,
   vp: VisualProperty<VisualPropertyValueType>,
   mapping: DiscreteMappingFunction,
+  isNameInTable: boolean,
 ): CXDiscreteMappingFunction<CXVisualPropertyValue> => {
   const { vpValueMap, attribute } = mapping
 
@@ -129,6 +136,7 @@ export const convertDiscreteMappingToCX = (
         v: value,
         vp: vpToCX(vp.name, vpValue),
       })),
+      ...(isNameInTable ? {} : { type: mapping.attributeType }),
     },
   }
 }
@@ -136,6 +144,7 @@ export const convertContinuousMappingToCX = (
   vs: VisualStyle,
   vp: VisualProperty<VisualPropertyValueType>,
   mapping: ContinuousMappingFunction,
+  isNameInTable: boolean,
 ): CXContinuousMappingFunction<CXVisualPropertyValue> => {
   const { min, max, controlPoints, attribute, ltMinVpValue, gtMaxVpValue } =
     mapping
@@ -177,6 +186,7 @@ export const convertContinuousMappingToCX = (
         },
       ],
       attribute,
+      ...(isNameInTable ? {} : { type: mapping.attributeType }),
     },
   }
 }

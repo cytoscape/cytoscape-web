@@ -26,7 +26,7 @@ import { OverlayPanel } from 'primereact/overlaypanel'
 import { ExportImageMenuItem } from './ExportNetworkToImage/ExportNetworkToImageMenuItem'
 import { fetchMyWorkspaces } from '../../../utils/ndex-utils'
 import { useCredentialStore } from '../../../store/CredentialStore'
-
+import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import './menuItem.css'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
@@ -35,6 +35,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
   const { label } = props
   const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true)
   const [existingWorkspace, setExistingWorkspace] = useState<any[]>([])
+  const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
   const authenticated: boolean = client?.authenticated ?? false
@@ -64,7 +65,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     } else {
       setIsLoadingWorkspace(false)
     }
-  }, [])
+  }, [currentWorkspaceId])
 
   const menuItems = [
     {
