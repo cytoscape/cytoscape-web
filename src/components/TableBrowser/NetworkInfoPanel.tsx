@@ -1,69 +1,46 @@
+import React, { useState } from 'react'
 import {
   Typography,
   Box,
-  Paper,
+  Grid,
   Table,
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow,
-  Chip,
+  Card,
+  CardContent,
   Divider,
+  Chip,
+  Paper,
+  useMediaQuery,
+  useTheme,
+  TextField,
 } from '@mui/material'
-
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import parse from 'html-react-parser'
-import React from 'react'
 
-export function NetworkPropertyTable(): React.ReactElement {
-  const currentNetworkId = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
-  const networkInfo = useNetworkSummaryStore(
-    (state) => state.summaries[currentNetworkId],
-  )
-  const properties = networkInfo?.properties ?? []
-  return (
-    <TableContainer component={Paper} sx={{ height: 200, overflow: 'scroll' }}>
-      <Table sx={{ minWidth: 650 }} size="small" aria-label="simple table">
-        <TableHead>
-          <TableRow>
-            <TableCell>Key</TableCell>
-            <TableCell>Value</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {properties.map((row) => (
-            <TableRow
-              key={row.predicateString}
-              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-            >
-              <TableCell>{row.predicateString}</TableCell>
-              <TableCell>{row.value}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  )
+type NdexNetworkProperty = {
+  predicateString: string
+  value: string | number | boolean | string[] | number[] | boolean[]
 }
+
 export default function NetworkInfoPanel(props: {
   height: number
 }): React.ReactElement {
+  const [searchQuery, setSearchQuery] = useState('')
+  const theme = useTheme()
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')) // Check if screen is small
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
   const networkInfo = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
-  const properties = networkInfo?.properties ?? []
+  const properties: NdexNetworkProperty[] = networkInfo?.properties ?? []
 
-  const containsHtmlAnchor = (text: string) => {
-    return /<a\s+href=/i.test(text)
-  }
-
+  const containsHtmlAnchor = (text: string) => /<a\s+href=/i.test(text)
   const linkifyPlainTextUrls = (text: string) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g
     return text.replace(
@@ -73,121 +50,191 @@ export default function NetworkInfoPanel(props: {
     )
   }
 
-  const capitalizeFirstLetter = (string: string): string => {
-    return string.charAt(0).toUpperCase() + string.slice(1)
-  }
+  const capitalizeFirstLetter = (string: string): string =>
+    string.charAt(0).toUpperCase() + string.slice(1)
+
+  const renderTable = (data: NdexNetworkProperty[]) => (
+    <TableContainer
+      sx={{
+        maxHeight: isSmallScreen ? 200 : 'none',
+        backgroundColor: '#fafafa',
+        borderRadius: 2,
+      }}
+    >
+      <Table>
+        <TableBody>
+          {data.map((row, index) => (
+            <TableRow
+              key={index}
+              sx={{
+                '&:nth-of-type(odd)': { backgroundColor: '#f9f9f9' },
+                '&:hover': { backgroundColor: '#e0e0e0' },
+              }}
+            >
+              <TableCell>
+                <Typography sx={{ fontWeight: 'bold', fontSize: 14 }}>
+                  {capitalizeFirstLetter(row.predicateString)}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography sx={{ fontSize: 14 }}>
+                  {containsHtmlAnchor(row.value.toString())
+                    ? parse(row.value.toString())
+                    : parse(linkifyPlainTextUrls(row.value.toString()))}
+                </Typography>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  )
+
+  // Filter logic updated to include both predicateString and value
+  const filteredProperties = properties.filter((prop) => {
+    const query = searchQuery.toLowerCase()
+    const predicateMatch = prop.predicateString.toLowerCase().includes(query)
+    const valueMatch = prop.value.toString().toLowerCase().includes(query)
+    return predicateMatch || valueMatch
+  })
 
   return (
-    <Box sx={{ height: props.height, overflow: 'auto', pl: 1, pr: 1 }}>
-      <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-        <Typography variant="h6">{networkInfo?.name ?? ''}</Typography>
-        {networkInfo?.visibility != null ? (
-          <Chip sx={{ ml: 1 }} size="small" label={networkInfo?.visibility} />
-        ) : null}
-        {networkInfo?.version != null ? (
-          <Chip
-            sx={{ ml: 1 }}
+    <Box
+      sx={{
+        height: props.height,
+        overflow: 'auto',
+        px: 2,
+        backgroundColor: '#f4f4f4',
+      }}
+    >
+      {/* Header Section */}
+      <Grid container alignItems="center" spacing={2} sx={{ mt: 2 }}>
+        {/* Network Name */}
+        <Grid item>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 'bold', textTransform: 'uppercase' }}
+          >
+            {networkInfo?.name ?? ''}
+          </Typography>
+        </Grid>
+
+        {/* Visibility Chip */}
+        {networkInfo?.visibility && (
+          <Grid item>
+            <Chip
+              sx={{
+                backgroundColor:
+                  networkInfo?.visibility === 'PUBLIC' ? '#4caf50' : '#f44336',
+                color: 'white',
+              }}
+              size="small"
+              label={networkInfo?.visibility}
+            />
+          </Grid>
+        )}
+
+        {/* Version Chip */}
+        {networkInfo?.version && (
+          <Grid item>
+            <Chip size="small" label={`Version: ${networkInfo?.version}`} />
+          </Grid>
+        )}
+
+        {/* Spacer to push search bar to the end */}
+        <Grid item xs />
+
+        {/* Search Bar */}
+        <Grid item xs={12} sm={6} md={4}>
+          <TextField
+            fullWidth
+            variant="outlined"
             size="small"
-            label={`Version: ${networkInfo?.version}`}
+            placeholder="Search properties or values..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              backgroundColor: '#fff',
+              borderRadius: 1,
+              boxShadow: 1,
+            }}
           />
-        ) : null}
-      </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Typography
-          sx={{ ml: 1, mr: 4, fontSize: 14, color: 'gray' }}
-          variant="subtitle1"
-        >
-          {`Owner: ${networkInfo?.owner}`}
-        </Typography>
+        </Grid>
+      </Grid>
+      <Divider sx={{ my: 2 }} />
 
-        <Typography
-          sx={{ mr: 4, fontSize: 14, color: 'gray' }}
-          variant="subtitle1"
-        >
-          {`Created: ${networkInfo?.creationTime.toLocaleString()}`}
-        </Typography>
-        <Typography
-          sx={{ mr: 1, fontSize: 14, color: 'gray' }}
-          variant="subtitle1"
-        >
-          {`Modified: ${networkInfo?.modificationTime.toLocaleString()}`}
-        </Typography>
-      </Box>
-      <Divider />
-      <Box sx={{ p: 1 }}>
-        <Box>
+      {/* Info Section */}
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={4}>
           <Typography
-            sx={{ fontSize: 14, fontWeight: 'bold' }}
-            variant="subtitle1"
-          >
-            Description:
+            sx={{ fontSize: 14, color: 'text.secondary' }}
+          >{`Owner: ${networkInfo?.owner}`}</Typography>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+            {`Created: ${networkInfo?.creationTime.toLocaleString()}`}
           </Typography>
-          <Typography variant="body2">
-            {parse(networkInfo?.description ?? '')}
-            {properties
-              .filter(
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+            {`Modified: ${networkInfo?.modificationTime.toLocaleString()}`}
+          </Typography>
+        </Grid>
+      </Grid>
+      <Box sx={{ mt: 3 }}>
+        {/* Description Section */}
+        <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1 }}>
+          <CardContent>
+            <Typography
+              sx={{
+                fontSize: 16,
+                fontWeight: 'bold',
+                mb: 2,
+                textTransform: 'uppercase',
+              }}
+            >
+              Description
+            </Typography>
+            <Paper elevation={1} sx={{ p: 2, backgroundColor: '#fff' }}>
+              {parse(networkInfo?.description ?? '')}
+            </Paper>
+            {renderTable(
+              filteredProperties.filter((prop) =>
+                ['rights', 'rightsHolder', 'reference', 'description'].includes(
+                  prop.predicateString,
+                ),
+              ),
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Properties Section */}
+        <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
+          <CardContent>
+            <Typography
+              sx={{
+                fontSize: 16,
+                fontWeight: 'bold',
+                mb: 2,
+                textTransform: 'uppercase',
+              }}
+            >
+              Properties
+            </Typography>
+            {renderTable(
+              filteredProperties.filter(
                 (prop) =>
-                  prop.predicateString.startsWith('rights') ||
-                  prop.predicateString.startsWith('reference'),
-              )
-              .map((prop, index) => {
-                let displayValue: React.ReactNode
-
-                const valueString = prop.value.toString()
-
-                if (containsHtmlAnchor(valueString)) {
-                  displayValue = parse(valueString)
-                } else {
-                  displayValue = parse(linkifyPlainTextUrls(valueString))
-                }
-
-                return (
-                  <div key={index}>
-                    <span style={{ fontWeight: 'bold' }}>
-                      {capitalizeFirstLetter(prop.predicateString)}:
-                    </span>{' '}
-                    {displayValue}
-                  </div>
-                )
-              })}
-          </Typography>
-
-          <Typography
-            sx={{ fontSize: 14, fontWeight: 'bold' }}
-            variant="subtitle1"
-          >
-            Properties:
-          </Typography>
-          <Typography variant="body2" component="div">
-            {properties
-              .filter(
-                (prop) =>
-                  !prop.predicateString.startsWith('__') &&
-                  prop.predicateString !== 'description' &&
-                  prop.predicateString !== 'reference' &&
-                  prop.predicateString !== 'rights' &&
-                  prop.predicateString !== 'rightsHolder',
-              )
-              .map((prop, index) => {
-                let displayValue: React.ReactNode
-
-                const valueString = prop.value.toString()
-
-                if (containsHtmlAnchor(valueString)) {
-                  displayValue = parse(valueString)
-                } else {
-                  displayValue = parse(linkifyPlainTextUrls(valueString))
-                }
-
-                return (
-                  <div key={index}>
-                    {capitalizeFirstLetter(prop.predicateString)}:{' '}
-                    {displayValue}
-                  </div>
-                )
-              })}
-          </Typography>
-        </Box>
+                  ![
+                    'rights',
+                    'rightsHolder',
+                    'reference',
+                    'description',
+                  ].includes(prop.predicateString) &&
+                  !prop.predicateString.startsWith('__'),
+              ),
+            )}
+          </CardContent>
+        </Card>
       </Box>
     </Box>
   )
