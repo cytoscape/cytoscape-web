@@ -128,16 +128,15 @@ export const SaveWorkspaceToNDExMenuItem = (
       )
 
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
+      const onlyNdexNetworkIds = workspace.networkIds.filter(id => summaries[id]?.isNdex !== false);
       const response = await ndexClient.createCyWebWorkspace({
         name: workspaceName,
         options: { currentNetwork: workspace.currentNetworkId },
-        networkIDs: workspace.networkIds,
+        networkIDs: onlyNdexNetworkIds,
       })
       const { uuid, modificationTime } = response
       setId(uuid)
       renameWorkspace(workspaceName)
-
-      console.log(modificationTime)
 
       addMessage({
         message: `Saved workspace to NDEx successfully.`,
