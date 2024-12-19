@@ -1,5 +1,5 @@
 import { MenuItem, Tooltip, Box } from '@mui/material'
-import { ReactElement } from 'react'
+import { ReactElement, useMemo } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 // @ts-expect-error-next-line
@@ -15,7 +15,6 @@ import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
-
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 
 interface OpenNetworkInCytoscapeMenuItemProps extends BaseMenuProps {
@@ -32,27 +31,14 @@ export const OpenNetworkInCytoscapeMenuItem = ({
   )
 
   const table = useTableStore((state) => state.tables[currentNetworkId])
-
-  const summary = useNetworkSummaryStore(
-    (state) => state.summaries[currentNetworkId],
-  )
-
+  const summary = useNetworkSummaryStore((state) => state.summaries[currentNetworkId])
   const viewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
   )
-  const visualStyle = useVisualStyleStore(
-    (state) => state.visualStyles[currentNetworkId],
-  )
-  const visualStyleOptions = useUiStateStore(
-    (state) => state.ui.visualStyleOptions[currentNetworkId],
-  )
-  const network = useNetworkStore((state) =>
-    state.networks.get(currentNetworkId),
-  ) as Network
-
-  const opaqueAspects = useOpaqueAspectStore(
-    (state) => state.opaqueAspects[currentNetworkId],
-  )
+  const visualStyle = useVisualStyleStore((state) => state.visualStyles[currentNetworkId])
+  const visualStyleOptions = useUiStateStore((state) => state.ui.visualStyleOptions[currentNetworkId])
+  const network = useNetworkStore((state) => state.networks.get(currentNetworkId)) as Network
+  const opaqueAspects = useOpaqueAspectStore((state) => state.opaqueAspects[currentNetworkId])
 
   const openNetworkInCytoscape = async (): Promise<void> => {
     if (viewModel === undefined) {
@@ -88,14 +74,19 @@ export const OpenNetworkInCytoscapeMenuItem = ({
     await openNetworkInCytoscape()
   }
 
+  const isSafari = useMemo(() => {
+    const ua = navigator.userAgent.toLowerCase()
+    return ua.includes('safari') && !ua.includes('chrome')
+  }, [])
+
   const menuItem = (
-    <MenuItem onClick={handleOpenNetworkInCytoscape}>
+    <MenuItem onClick={handleOpenNetworkInCytoscape} disabled={isSafari}>
       Open Copy of Current Network in Cytoscape
     </MenuItem>
   )
 
   return (
-    <Tooltip title="Download and open Cytoscape to open network">
+    <Tooltip title={isSafari ? "This feature is not available on Safari" : "Download and open Cytoscape to open network"}>
       <Box>{menuItem}</Box>
     </Tooltip>
   )
