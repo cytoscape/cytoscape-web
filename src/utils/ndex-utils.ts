@@ -18,7 +18,10 @@ import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { ndexSummaryFetcher } from '../store/hooks/useNdexNetworkSummary'
 import { waitSeconds } from './wait-seconds'
 
-export const ndexDuplicateKeyErrorMessage =
+export const TimeOutErrorMessage =
+  'You network has been saved in NDEx, but the server is under heavy load right now. Please use the “Open Networks from NDEx” menu to manually open this network from your account later.'
+export const TimeOutErrorIndicator = 'NDEx_TIMEOUT_ERROR'
+export const NdexDuplicateKeyErrorMessage =
   'duplicate key value violates unique constraint'
 
 export const translateMemberIds = async ({
@@ -68,12 +71,11 @@ export const getNDExSummaryStatus = async (
   baseUrl: string,
   accessToken: string,
 ): Promise<{ rejected: boolean; modificationTime?: Date }> => {
-  const MAX_TRIES = 5
+  const MAX_TRIES = 13
   let interval = 0.5
   let tries = 0
 
-  await waitSeconds(0.2)
-
+  await waitSeconds(0.2) // initial wait
   while (tries < MAX_TRIES) {
     tries += 1
     const newSummary = await ndexSummaryFetcher(uuid, baseUrl, accessToken)
@@ -89,14 +91,16 @@ export const getNDExSummaryStatus = async (
         modificationTime: newSummary[0].modificationTime,
       }
     }
-    if (tries >= 3) {
+    if (tries >= 10) {
+      // after 10 tries, increase the interval to 5 seconds
+      interval = 5
+    } else if (tries >= 3) {
+      // after 3 tries, increase the interval to 1 second
       interval = 1
     }
     await waitSeconds(interval)
   }
-  return {
-    rejected: true,
-  }
+  throw new Error('NDEx_TIMEOUT_ERROR')
 }
 
 export const saveCopyToNDEx = async (
@@ -240,20 +244,37 @@ export const saveAllNetworks = async (
       }
     }
     if (summary.isNdex === false) {
-      await saveCopyToNDEx(
-        ndexBaseUrl,
-        accessToken,
-        ndexClient,
-        addNetworkToWorkspace,
-        network,
-        visualStyle,
-        summary,
-        nodeTable,
-        edgeTable,
-        networkViews?.[0],
-        visualStyleOptions,
-        opaqueAspect,
-      )
+      try {
+        await saveCopyToNDEx(
+          ndexBaseUrl,
+          accessToken,
+          ndexClient,
+          addNetworkToWorkspace,
+          network,
+          visualStyle,
+          summary,
+          nodeTable,
+          edgeTable,
+          networkViews?.[0],
+          visualStyleOptions,
+          opaqueAspect,
+        )
+      } catch (e) {
+        if (e.message.includes(TimeOutErrorIndicator)) {
+          addMessage({
+            message: TimeOutErrorMessage,
+            duration: 6000,
+          })
+        } else {
+          addMessage({
+            message: `Error: Could not save a copy of the local network to NDEx. ${
+              e.message as string
+            }`,
+            duration: 3000,
+          })
+        }
+        throw e
+      }
       continue
     }
     if (networkModifiedStatus[networkId] === true) {
@@ -275,6 +296,14 @@ export const saveAllNetworks = async (
         )
         deleteNetworkModifiedStatus(networkId)
       } catch (e) {
+        //Todo: is it proper to directly fall back to saveCopyToNDEx if it fails to save the network to NDEx?
+        if (e.message.includes(TimeOutErrorIndicator)) {
+          addMessage({
+            message: TimeOutErrorMessage,
+            duration: 6000,
+          })
+          throw e
+        }
         try {
           await saveCopyToNDEx(
             ndexBaseUrl,
@@ -291,14 +320,21 @@ export const saveAllNetworks = async (
             opaqueAspect,
           )
           addMessage({
-            message: `Unable to save the modified network to NDEx. Instead, saved its copy to NDEx. Error: ${e.message as string}`,
+            message: `Unable to save the modified network to NDEx caused by error: ${e.message as string}. Instead, saved its copy to NDEx.`,
             duration: 3000,
           })
         } catch (e) {
-          addMessage({
-            message: `Unable to save the network or its copy to NDEx. Error: ${e.message as string}`,
-            duration: 3000,
-          })
+          if (e.message.includes(TimeOutErrorIndicator)) {
+            addMessage({
+              message: TimeOutErrorMessage,
+              duration: 6000,
+            })
+          } else {
+            addMessage({
+              message: `Unable to save the network or its copy to NDEx. Error: ${e.message as string}`,
+              duration: 3000,
+            })
+          }
           throw e
         }
       }

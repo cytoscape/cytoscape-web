@@ -23,7 +23,11 @@ import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/compo
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
-import { saveCopyToNDEx as saveNetworkCopy } from '../../../utils/ndex-utils'
+import {
+  saveCopyToNDEx as saveNetworkCopy,
+  TimeOutErrorIndicator,
+  TimeOutErrorMessage,
+} from '../../../utils/ndex-utils'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
@@ -105,13 +109,19 @@ export const CopyNetworkToNDExMenuItem = (
       })
     } catch (e) {
       console.log(e)
-
-      addMessage({
-        message: `Error: Could not save a copy of the current network to NDEx. ${
-          e.message as string
-        }`,
-        duration: 3000,
-      })
+      if (e.message.includes(TimeOutErrorIndicator)) {
+        addMessage({
+          message: TimeOutErrorMessage,
+          duration: 6000,
+        })
+      } else {
+        addMessage({
+          message: `Error: Could not save a copy of the current network to NDEx. ${
+            e.message as string
+          }`,
+          duration: 3000,
+        })
+      }
     }
 
     props.handleClose()
