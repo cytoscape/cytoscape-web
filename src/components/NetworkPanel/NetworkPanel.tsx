@@ -15,6 +15,7 @@ import { useRendererStore } from '../../store/RendererStore'
 
 interface NetworkPanelProps {
   networkId: IdType
+  failedToLoad?: boolean
 }
 
 /**
@@ -23,7 +24,10 @@ interface NetworkPanelProps {
  * @param networkId - the ID of the network model to display
  *
  */
-const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
+const NetworkPanel = ({
+  networkId,
+  failedToLoad = false,
+}: NetworkPanelProps): ReactElement => {
   const [isActive, setIsActive] = useState<boolean>(false)
 
   const ui = useUiStateStore((state) => state.ui)
@@ -61,6 +65,10 @@ const NetworkPanel = ({ networkId }: NetworkPanelProps): ReactElement => {
   const networkViews: Record<string, NetworkView[]> = useViewModelStore(
     (state) => state.viewModels,
   )
+
+  if (failedToLoad) {
+    return <MessagePanel message="Failed to load network data" />
+  }
 
   if (networks.size === 0) {
     return <MessagePanel message="No network selected" />
