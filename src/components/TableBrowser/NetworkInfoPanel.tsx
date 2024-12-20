@@ -31,7 +31,7 @@ export default function NetworkInfoPanel(props: {
 }): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState('')
   const theme = useTheme()
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')) // Check if screen is small
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')) 
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -90,7 +90,6 @@ export default function NetworkInfoPanel(props: {
     </TableContainer>
   )
 
-  // Filter logic updated to include both predicateString and value
   const filteredProperties = properties.filter((prop) => {
     const query = searchQuery.toLowerCase()
     const predicateMatch = prop.predicateString.toLowerCase().includes(query)
@@ -107,9 +106,7 @@ export default function NetworkInfoPanel(props: {
         backgroundColor: '#f4f4f4',
       }}
     >
-      {/* Header Section */}
       <Grid container alignItems="center" spacing={2} sx={{ mt: 2 }}>
-        {/* Network Name */}
         <Grid item>
           <Typography
             variant="h6"
@@ -119,7 +116,6 @@ export default function NetworkInfoPanel(props: {
           </Typography>
         </Grid>
 
-        {/* Visibility Chip */}
         {networkInfo?.visibility && (
           <Grid item>
             <Chip
@@ -134,17 +130,14 @@ export default function NetworkInfoPanel(props: {
           </Grid>
         )}
 
-        {/* Version Chip */}
         {networkInfo?.version && (
           <Grid item>
             <Chip size="small" label={`Version: ${networkInfo?.version}`} />
           </Grid>
         )}
 
-        {/* Spacer to push search bar to the end */}
         <Grid item xs />
 
-        {/* Search Bar */}
         <Grid item xs={12} sm={6} md={4}>
           <TextField
             fullWidth
@@ -163,7 +156,6 @@ export default function NetworkInfoPanel(props: {
       </Grid>
       <Divider sx={{ my: 2 }} />
 
-      {/* Info Section */}
       <Grid container spacing={2}>
         <Grid item xs={12} sm={4}>
           <Typography
@@ -182,7 +174,6 @@ export default function NetworkInfoPanel(props: {
         </Grid>
       </Grid>
       <Box sx={{ mt: 3 }}>
-        {/* Description Section */}
         <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1 }}>
           <CardContent>
             <Typography
@@ -208,7 +199,6 @@ export default function NetworkInfoPanel(props: {
           </CardContent>
         </Card>
 
-        {/* Properties Section */}
         <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
           <CardContent>
             <Typography
