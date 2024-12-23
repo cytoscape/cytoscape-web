@@ -98,6 +98,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
       (id) => apps[id].status === AppStatus.Active,
     )
     if (activeIds.length === 0) {
+      setComponentList([])
       return
     }
 
@@ -110,7 +111,10 @@ export const AppMenu = (props: DropdownMenuProps) => {
         components.forEach((component: ComponentMetadata) => {
           const componentId: string = component.id
           const componentType: string = component.type
-          if (componentType === ComponentType.Menu) {
+          if (
+            componentType === ComponentType.Menu &&
+            app.status === AppStatus.Active
+          ) {
             // Add menu only
             componentList.push([appId, componentId])
           }

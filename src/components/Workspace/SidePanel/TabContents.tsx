@@ -8,6 +8,7 @@ import {
 } from '../../../models/AppModel'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
 import ExternalComponent from '../../../components/AppManager/ExternalComponent'
+import { AppStatus } from '../../../models/AppModel/AppStatus'
 
 /**
  * Actual contents of the side panel
@@ -26,7 +27,10 @@ export const getTabContents = (selectedIndex: number): JSX.Element[] => {
       if (components === undefined) return
 
       components.forEach((component: ComponentMetadata) => {
-        if (component.type === AppComponentType.Panel) {
+        if (
+          component.type === AppComponentType.Panel &&
+          app.status === AppStatus.Active
+        ) {
           const PanelComponent: any = ExternalComponent(
             app.id,
             './' + component.id,
@@ -58,6 +62,7 @@ export const getTabContents = (selectedIndex: number): JSX.Element[] => {
       },
     )
   }
+
   return [
     <TabPanel
       label="Sub Network Viewer"
