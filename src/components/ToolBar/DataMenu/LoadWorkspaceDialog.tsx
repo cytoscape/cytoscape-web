@@ -75,7 +75,6 @@ export const LoadWorkspaceDialog: React.FC<{
         (workspace) => workspace.workspaceId === selectedWorkspaceId,
       )
       if (selectedWorkspace) {
-        deleteAllNetworks()
         resetWorksapce().then(() => {
           setWorkSpace({
             name: selectedWorkspace.name,
