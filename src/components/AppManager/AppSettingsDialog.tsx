@@ -14,18 +14,20 @@ import { AppListPanel } from './AppListPanel'
 interface AppSettingsDialogProps {
   openDialog: boolean
   setOpenDialog: (open: boolean) => void
+  setAppStateUpdated: (updated: boolean) => void
 }
 
 export const AppSettingsDialog = ({
   openDialog,
   setOpenDialog,
+  setAppStateUpdated,
 }: AppSettingsDialogProps) => {
   const theme: Theme = useTheme()
   return (
     <Dialog open={openDialog}>
       <DialogTitle></DialogTitle>
       <DialogContent>
-        <AppListPanel />
+        <AppListPanel setAppStateUpdated={setAppStateUpdated} />
         <Divider sx={{ marginBottom: theme.spacing(1) }} />
         <ServiceListPanel />
       </DialogContent>

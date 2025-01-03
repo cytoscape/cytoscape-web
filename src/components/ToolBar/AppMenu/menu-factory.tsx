@@ -72,6 +72,7 @@ export const InputColumns = (props: AppMenuItemProps) => {
     if (validColumns.length === 0) {
       return (
         <Tooltip
+          key={i}
           title={`The network needs to have a column that satisfies the data type ${inputColumn.dataType}`}
         >
           <Box sx={{ p: 1 }}>
@@ -88,37 +89,37 @@ export const InputColumns = (props: AppMenuItemProps) => {
     const columnsToDisplay = isNodeType ? nodeColumns : edgeColumns
 
     return (
-      <Tooltip title={inputColumn.description ?? ''}>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <Typography>{`${inputColumn.name}`}</Typography>
-        <Select
-          displayEmpty
-          size="small"
-          sx={{ width: 200 }}
-          value={
-            inputColumn.columnName ??
-            (isNodeType ? nodeColumns?.[0] : edgeColumns?.[0]) ??
-            inputColumn.defaultColumnName
-          }
-          onChange={(e) => {
-            updateInputColumn(app.url, inputColumn.name, e.target.value)
+      <Tooltip key={i} title={inputColumn.description ?? ''}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
           }}
         >
-          {columnsToDisplay.map((eleColumn, i) => {
-            return (
-              <MenuItem key={i} value={eleColumn.name}>
-                {eleColumn.name}
-              </MenuItem>
-            )
-          })}
-        </Select>
-      </Box>
+          <Typography>{`${inputColumn.name}`}</Typography>
+          <Select
+            displayEmpty
+            size="small"
+            sx={{ width: 200 }}
+            value={
+              inputColumn.columnName ??
+              (isNodeType ? nodeColumns?.[0] : edgeColumns?.[0]) ??
+              inputColumn.defaultColumnName
+            }
+            onChange={(e) => {
+              updateInputColumn(app.url, inputColumn.name, e.target.value)
+            }}
+          >
+            {columnsToDisplay.map((eleColumn, i) => {
+              return (
+                <MenuItem key={i} value={eleColumn.name}>
+                  {eleColumn.name}
+                </MenuItem>
+              )
+            })}
+          </Select>
+        </Box>
       </Tooltip>
     )
   })
