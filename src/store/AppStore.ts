@@ -44,19 +44,27 @@ export const useAppStore = create(
     },
 
     add: (app: CyApp) => {
-      set((state) => {
-        const { id } = app
-
-        // Add app only when it is not already present
-        if (state.apps[app.id] === undefined) {
-          state.apps[id] = app
-          // Will be inactive by default
-          state.apps[id].status = AppStatus.Inactive
-          console.info(`App registered: ${app.id}`)
-          putAppToDb(app)
-        } else {
-          console.info(`App already registered: ${app.id}`)
-        }
+      const { id } = app
+      getAppFromDb(id).then((cachedApp: CyApp) => {
+        set((state) => {
+          // Add app only when it is not already present
+          if (state.apps[id] === undefined) {
+            // Try DB first
+            if (cachedApp !== undefined) {
+              state.apps[id] = cachedApp
+              console.log('* App Restored from cached', cachedApp)
+              return
+            } else {
+              state.apps[id] = app
+              // Will be inactive by default
+              state.apps[id].status = app.status || AppStatus.Inactive
+              console.info(`App registered: ${app.id}`)
+              putAppToDb(app)
+            }
+          } else {
+            console.info(`App already registered: ${app.id}`)
+          }
+        })
       })
     },
 

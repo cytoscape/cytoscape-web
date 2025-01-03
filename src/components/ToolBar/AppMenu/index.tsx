@@ -23,6 +23,8 @@ export const AppMenu = (props: DropdownMenuProps) => {
 
   const run = useServiceTaskRunner()
 
+  const [isInitialClick, setIsInitialClick] = useState<boolean>(false)
+
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const [appStateUpdated, setAppStateUpdated] = useState<boolean>(false)
@@ -163,7 +165,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
     ]
   }
 
-  
   useEffect(() => {
     const appMenuItems: MenuItem[] = createAppMenu()
     const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
@@ -205,6 +206,13 @@ export const AppMenu = (props: DropdownMenuProps) => {
     if (Object.keys(serviceApps).length === 0) {
       addDefaultServices()
     }
+    if (!isInitialClick) {
+      setIsInitialClick(true)
+      const appMenuItems: MenuItem[] = createAppMenu()
+      const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
+      setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
+    }
+
     const menuRefCurrent = menuRef.current as any
     menuRefCurrent.toggle(e)
   }
