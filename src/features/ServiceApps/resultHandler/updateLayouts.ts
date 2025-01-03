@@ -4,7 +4,7 @@ import { ActionHandlerProps } from './serviceResultHandlerManager'
 import { useAppStore } from '../../../store/AppStore'
 
 interface UpdatedPosition {
-  id: string
+  id: number
   x: number
   y: number
   z?: number
@@ -15,23 +15,32 @@ export const useUpdateLayouts = (): (({
   networkId,
 }: ActionHandlerProps) => void) => {
   const setNodePosition = useViewModelStore((state) => state.setNodePosition)
+  const isValidUpdatedPosition = (obj: any): obj is UpdatedPosition => {
+    return (
+      obj &&
+      typeof obj.id === 'number' &&
+      typeof obj.x === 'number' &&
+      typeof obj.y === 'number' &&
+      (obj.z === undefined || typeof obj.z === 'number')
+    )
+  }
   const updateLayouts = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
-      if (!Array.isArray(responseObj)) return
+      if (!Array.isArray(responseObj)) {
+        console.warn('Invalid layout update response: Expected an array', responseObj)
+        return
+      }
+
       for (const item of responseObj) {
-        const updatedPosition = item as Partial<UpdatedPosition>
-        if (
-          updatedPosition &&
-          typeof updatedPosition.id === 'string' &&
-          typeof updatedPosition.x === 'number' &&
-          typeof updatedPosition.y === 'number'
-        ) {
-          const { id, x, y, z } = updatedPosition
-          setNodePosition(networkId, id, [x, y, z])
+        if (isValidUpdatedPosition(item)) {
+          const { id, x, y, z } = item
+          setNodePosition(networkId, String(id), [x, y, z])
+        } else {
+          console.warn('Invalid UpdatedPosition item:', item)
         }
       }
     },
-    [],
+    [setNodePosition],
   )
   return updateLayouts
 }

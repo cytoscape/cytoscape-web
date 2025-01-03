@@ -17,7 +17,7 @@ export const ServiceAppAction = {
   AddTables: 'addTables',
   UpdateTables: 'updateTables',
   UpdateLayouts: 'updateLayouts',
-  UpdateSelections: 'updateSelections',
+  UpdateSelections: 'updateSelection',
 } as const
 
 export type ServiceAppAction =
