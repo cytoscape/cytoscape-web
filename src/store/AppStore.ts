@@ -52,13 +52,11 @@ export const useAppStore = create(
             // Try DB first
             if (cachedApp !== undefined) {
               state.apps[id] = cachedApp
-              console.log('* App Restored from cached', cachedApp)
               return
             } else {
               state.apps[id] = app
               // Will be inactive by default
               state.apps[id].status = app.status || AppStatus.Inactive
-              console.info(`App registered: ${app.id}`)
               putAppToDb(app)
             }
           } else {
