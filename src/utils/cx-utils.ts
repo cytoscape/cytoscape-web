@@ -23,6 +23,16 @@ import { Ui } from '../models/UiModel'
 import { IdType } from '../models/IdType'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 
+interface FullNetworkData {
+  network: Network
+  nodeTable: Table
+  edgeTable: Table
+  visualStyle: VisualStyle
+  networkView: NetworkView
+  visualStyleOptions: VisualStyleOptions
+  otherAspects: OpaqueAspects[]
+}
+
 /**
  *
  * Utility function to create a full network view from CX2
@@ -152,4 +162,38 @@ export const getOptionalAspects = (cx2: Cx2): OpaqueAspects[] => {
     }
   }
   return optionalAspects
+}
+
+export const createDataFromLocalCx2 = async (
+  LocalNetworkId: string,
+  cxData: Cx2,
+): Promise<FullNetworkData> => {
+  const network: Network = NetworkFn.createNetworkFromCx(LocalNetworkId, cxData)
+
+  const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
+    LocalNetworkId,
+    cxData,
+  )
+
+  const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
+
+  const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
+    LocalNetworkId,
+    cxData,
+  )
+
+  const visualStyleOptions: VisualStyleOptions =
+    VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
+
+  const otherAspects: OpaqueAspects[] = getOptionalAspects(cxData)
+
+  return {
+    network,
+    nodeTable,
+    edgeTable,
+    visualStyle,
+    networkView,
+    visualStyleOptions,
+    otherAspects,
+  }
 }
