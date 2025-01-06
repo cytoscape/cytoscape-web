@@ -23,6 +23,7 @@ import { Cx2 } from '../../models/CxModel/Cx2'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
+  getNodes,
 } from '../../models/CxModel/cx2-util'
 import NetworkFn, { Network } from '../../models/NetworkModel'
 import { NdexNetworkProperty } from '../../models/NetworkSummaryModel'
@@ -130,33 +131,22 @@ export function FileUpload(props: FileUploadProps) {
     }
   }
 
-  const handleCX2File = async (jsonStr: string) => {
+  const handleCX2File = async (file: File, jsonStr: string) => {
     try {
       const json = JSON.parse(jsonStr)
-      let localName: string = ''
-      for (const item of json) {
-        if (
-          Boolean(item.networkAttributes) &&
-          typeof item.networkAttributes[0].name === 'string'
-        ) {
-          localName = item.networkAttributes[0].name
-          break
-        }
-      }
-      let localDescription: string = ''
-      for (const item of json) {
-        if (
-          Boolean(item.networkAttributes) &&
-          typeof item.networkAttributes[0].name === 'string'
-        ) {
-          localDescription = item.networkAttributes[0].description
-          break
-        }
-      }
       const networkAttributeDeclarations =
-        getAttributeDeclarations(json).attributeDeclarations[0]
-          .networkAttributes
-      const networkAttributes = getNetworkAttributes(json)[0]
+        getAttributeDeclarations(json)?.attributeDeclarations?.[0]
+          ?.networkAttributes ?? {}
+      const networkAttributes = getNetworkAttributes(json)?.[0] ?? {}
+
+      const name =
+        networkAttributes.name ??
+        generateUniqueName(
+          Object.values(summaries).map((s) => s.name),
+          file.name,
+        )
+
+      const description = networkAttributes.description ?? ''
 
       const localProperties: NdexNetworkProperty[] = Object.entries(
         networkAttributes,
@@ -164,7 +154,8 @@ export function FileUpload(props: FileUploadProps) {
         return {
           predicateString: key,
           value: value as ValueType,
-          dataType: networkAttributeDeclarations[key].d ?? ValueTypeName.String,
+          dataType:
+            networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
           subNetworkId: null,
         }
       })
@@ -181,12 +172,17 @@ export function FileUpload(props: FileUploadProps) {
         otherAspects,
       } = res
 
+      const nodesAspect = getNodes(json)
+      const anyNodeHasPosition = nodesAspect.some(
+        (n) => n.x !== undefined && n.y !== undefined,
+      )
+
       const localNodeCount = network.nodes.length
       const localEdgeCount = network.edges.length
       await putNetworkSummaryToDb({
         isNdex: false,
         ownerUUID: localUuid,
-        name: localName,
+        name,
         isReadOnly: false,
         subnetworkIds: [],
         isValid: false,
@@ -194,7 +190,7 @@ export function FileUpload(props: FileUploadProps) {
         isShowcase: false,
         isCertified: false,
         indexLevel: '',
-        hasLayout: true,
+        hasLayout: anyNodeHasPosition,
         hasSample: false,
         cxFileSize: 0,
         cx2FileSize: 0,
@@ -205,7 +201,7 @@ export function FileUpload(props: FileUploadProps) {
         visibility: 'PUBLIC',
         nodeCount: localNodeCount,
         edgeCount: localEdgeCount,
-        description: localDescription,
+        description,
         creationTime: new Date(Date.now()),
         externalId: localUuid,
         isDeleted: false,
@@ -269,7 +265,7 @@ export function FileUpload(props: FileUploadProps) {
 
       const fileExtension = file.name.split('.').pop()
       if (fileExtension === 'cx2') {
-        handleCX2File(text)
+        handleCX2File(file, text)
       } else {
         handleTableFile(file, text)
       }
