@@ -23,9 +23,9 @@ import DeleteIcon from '@mui/icons-material/Delete'
 
 import { useAppStore } from '../../store/AppStore'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
-import { useContext, useEffect, useState } from 'react'
+import { useState } from 'react'
 
-import { AppConfig, AppConfigContext } from '../../AppConfigContext'
+// import { AppConfig, AppConfigContext } from '../../AppConfigContext'
 
 interface ServiceSettingsDialogProps {
   openDialog: boolean
@@ -38,8 +38,6 @@ export const ServiceSettingsDialog = ({
 }: ServiceSettingsDialogProps) => {
   const theme: Theme = useTheme()
 
-  const { defaultServices } = useContext<AppConfig>(AppConfigContext)
-
   const [newUrl, setNewUrl] = useState<string>('')
 
   // Warning message to display when the user tries to add
@@ -51,25 +49,7 @@ export const ServiceSettingsDialog = ({
   )
 
   const removeService = useAppStore((state) => state.removeService)
-
   const addService = useAppStore((state) => state.addService)
-
-  useEffect(() => {
-    const currentServiceUrls = Object.values(serviceApps).map(
-      (serviceApp: ServiceApp) => serviceApp.url,
-    )
-    const urlSet = new Set(currentServiceUrls)
-
-    defaultServices.forEach((url: string) => {
-      if (!urlSet.has(url)) {
-        try {
-          addService(url)
-        } catch (e) {
-          console.error(`Failed to add the service from ${url}. ${e}`)
-        }
-      }
-    })
-  }, [])
 
   const handleAddServiceApp = async () => {
     let trimmedUrl: string = newUrl.trim()
@@ -80,7 +60,7 @@ export const ServiceSettingsDialog = ({
     if (trimmedUrl !== '') {
       const serviceApp = serviceApps[trimmedUrl]
       if (serviceApp !== undefined) {
-        setWarningMessage(`The service already registered: \"${trimmedUrl}\".`)
+        setWarningMessage(`The service already registered: "${trimmedUrl}".`)
         return
       }
       try {
@@ -88,7 +68,7 @@ export const ServiceSettingsDialog = ({
         setWarningMessage('')
       } catch (e) {
         setWarningMessage(
-          `Failed to add the service at \"${trimmedUrl}\" due to: ${e.message}.`,
+          `Failed to add the service at "${trimmedUrl}" due to: ${e.message}.`,
         )
         console.error(`Failed to add the service from ${trimmedUrl}. ${e}`)
       }

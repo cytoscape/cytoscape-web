@@ -35,22 +35,22 @@ export const ServiceListPanel = () => {
 
   const addService = useAppStore((state) => state.addService)
 
-  useEffect(() => {
-    const currentServiceUrls = Object.values(serviceApps).map(
-      (serviceApp: ServiceApp) => serviceApp.url,
-    )
-    const urlSet = new Set(currentServiceUrls)
+  // useEffect(() => {
+  //   const currentServiceUrls = Object.values(serviceApps).map(
+  //     (serviceApp: ServiceApp) => serviceApp.url,
+  //   )
+  //   const urlSet = new Set(currentServiceUrls)
 
-    defaultServices.forEach((url: string) => {
-      if (!urlSet.has(url)) {
-        try {
-          addService(url)
-        } catch (e) {
-          console.error(`Failed to add the service from ${url}. ${e}`)
-        }
-      }
-    })
-  }, [])
+  //   defaultServices.forEach((url: string) => {
+  //     if (!urlSet.has(url)) {
+  //       try {
+  //         addService(url)
+  //       } catch (e) {
+  //         console.error(`Failed to add the service from ${url}. ${e}`)
+  //       }
+  //     }
+  //   })
+  // }, [])
 
   const handleDeleteServiceApp = (url: string) => {
     removeService(url)

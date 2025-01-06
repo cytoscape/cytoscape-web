@@ -10,7 +10,11 @@ import { CyApp } from '../../models/AppModel'
 import { useAppStore } from '../../store/AppStore'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 
-export const AppListPanel = () => {
+interface AppListPanelProps {
+  setAppStateUpdated: (updated: boolean) => void
+}
+
+export const AppListPanel = ({ setAppStateUpdated }: AppListPanelProps) => {
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const setStatus = useAppStore((state) => state.setStatus)
 
@@ -37,12 +41,14 @@ export const AppListPanel = () => {
             secondaryAction={
               <Checkbox
                 edge="end"
-                onChange={(e) =>
+                onChange={(e) => {
+                  // Tell parents that the app state has been changed
+                  setAppStateUpdated(true)
                   setStatus(
                     app.id,
                     e.target.checked ? AppStatus.Active : AppStatus.Inactive,
                   )
-                }
+                }}
                 disabled={app.status === AppStatus.Error}
                 checked={app.status === AppStatus.Active}
               />

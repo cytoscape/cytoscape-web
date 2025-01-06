@@ -1,5 +1,5 @@
-import { Button, Divider } from '@mui/material'
-import { useEffect, useRef, useState } from 'react'
+import { Button, Divider, useTheme } from '@mui/material'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { useAppStore } from '../../../store/AppStore'
@@ -16,12 +16,18 @@ import { useServiceTaskRunner } from '../../../store/hooks/useServiceTaskRunner'
 import { TaskStatusDialog } from '../../Util/TaskStatusDialog'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
+import { AppConfig, AppConfigContext } from '../../../AppConfigContext'
 
 export const AppMenu = (props: DropdownMenuProps) => {
+  const theme = useTheme()
+
   const run = useServiceTaskRunner()
+
+  const [isInitialClick, setIsInitialClick] = useState<boolean>(false)
 
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
+  const [appStateUpdated, setAppStateUpdated] = useState<boolean>(false)
 
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -42,6 +48,8 @@ export const AppMenu = (props: DropdownMenuProps) => {
   // Clear the current task status
   const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
 
+  const { defaultServices } = useContext<AppConfig>(AppConfigContext)
+
   /**
    * Menu model for the nested menu
    */
@@ -52,6 +60,25 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const serviceApps: Record<string, ServiceApp> = useAppStore(
     (state) => state.serviceApps,
   )
+
+  const addService = useAppStore((state) => state.addService)
+
+  const addDefaultServices = (): void => {
+    const currentServiceUrls = Object.values(serviceApps).map(
+      (serviceApp: ServiceApp) => serviceApp.url,
+    )
+    const urlSet = new Set(currentServiceUrls)
+
+    defaultServices.forEach((url: string) => {
+      if (!urlSet.has(url)) {
+        try {
+          addService(url)
+        } catch (e) {
+          console.error(`Failed to add the service from ${url}. ${e}`)
+        }
+      }
+    })
+  }
 
   const handleOpenDialog = (isDialogOpen: boolean): void => {
     setAnchorEl(null)
@@ -145,6 +172,13 @@ export const AppMenu = (props: DropdownMenuProps) => {
   }, [serviceApps, apps])
 
   useEffect(() => {
+    const appMenuItems: MenuItem[] = createAppMenu()
+    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
+    setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
+    setAppStateUpdated(false)
+  }, [appStateUpdated])
+
+  useEffect(() => {
     // Create base menu items
     setMenuModel(getBaseMenu())
     const menuRefCurrent = menuRef.current as any
@@ -165,24 +199,45 @@ export const AppMenu = (props: DropdownMenuProps) => {
     return appMenuItems
   }
 
+  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+    if (menuRef.current === null) {
+      return
+    }
+    if (Object.keys(serviceApps).length === 0) {
+      addDefaultServices()
+    }
+    if (!isInitialClick) {
+      setIsInitialClick(true)
+      const appMenuItems: MenuItem[] = createAppMenu()
+      const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
+      setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
+    }
+
+    const menuRefCurrent = menuRef.current as any
+    menuRefCurrent.toggle(e)
+  }
+
   return (
     <>
       <Button
         sx={{
           color: 'white',
           textTransform: 'none',
+          '&.Mui-disabled': {
+            color: theme.palette.grey[400],
+          },
         }}
         id={label}
         aria-controls={open ? 'basic-menu' : undefined}
         aria-haspopup="true"
         aria-expanded={open ? 'true' : undefined}
         onClick={(e) => {
-          if (menuRef.current === null) {
-            return
-          }
-          const menuRefCurrent = menuRef.current as any
-          menuRefCurrent.toggle(e)
+          handleClick(e)
         }}
+        disabled={
+          Object.keys(apps).length === 0 &&
+          Object.keys(serviceApps).length === 0
+        }
       >
         {label}
       </Button>
@@ -192,6 +247,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
       <AppSettingsDialog
         openDialog={openDialog}
         setOpenDialog={setOpenDialog}
+        setAppStateUpdated={setAppStateUpdated}
       />
       <TaskStatusDialog open={openTaskDialog} setOpen={setOpenTaskDialog} />
       <ConfirmationDialog
