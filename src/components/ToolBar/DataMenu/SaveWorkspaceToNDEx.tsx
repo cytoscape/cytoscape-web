@@ -27,7 +27,7 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { KeycloakContext } from '../../../bootstrap'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import {
-  ndexDuplicateKeyErrorMessage,
+  NdexDuplicateKeyErrorMessage,
   saveAllNetworks,
 } from '../../../utils/ndex-utils'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
@@ -144,7 +144,7 @@ export const SaveWorkspaceToNDExMenuItem = (
         duration: 3000,
       })
     } catch (e) {
-      if (e.response?.data?.message?.includes(ndexDuplicateKeyErrorMessage)) {
+      if (e.response?.data?.message?.includes(NdexDuplicateKeyErrorMessage)) {
         addMessage({
           message:
             'This workspace name already exists. Please enter a unique workspace name',
@@ -152,7 +152,7 @@ export const SaveWorkspaceToNDExMenuItem = (
         })
       } else {
         addMessage({
-          message: `Error: Could not save workspace to NDEx. ${e.message as string}`,
+          message: `Error: Could not save workspace to NDEx.`,
           duration: 5000,
         })
       }

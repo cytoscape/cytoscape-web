@@ -9,10 +9,23 @@ export const SnackbarMessageList = (): React.ReactElement => {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
 
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && currentMessageIndex < messages.length) {
       setOpen(true)
+    } else {
+      setOpen(false)
     }
-  }, [messages])
+  }, [messages, currentMessageIndex])
+
+  useEffect(() => {
+    if (!open && currentMessageIndex < messages.length - 1) {
+      const timer = setTimeout(() => {
+        setCurrentMessageIndex((prev) => prev + 1)
+        setOpen(true)
+      }, 300)
+
+      return () => clearTimeout(timer)
+    }
+  }, [open, currentMessageIndex, messages.length])
 
   const handleSnackbarClose = (
     event: React.SyntheticEvent,
