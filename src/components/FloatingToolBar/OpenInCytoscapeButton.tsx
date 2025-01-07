@@ -126,16 +126,18 @@ export const OpenInCytoscapeButton = ({
 
   return (
     <>
-      <Tooltip title={`Open network in Cytoscape Desktop (useful for high performance computing)`} placement="top" arrow>
-        <IconButton
-          onClick={handleClick}
-          aria-label="fit"
-          size="small"
-          disableFocusRipple={true}
-          disabled={isSafariBrowser}
-        >
-          <OpenInNew fontSize="inherit" />
-        </IconButton>
+      <Tooltip title={isSafariBrowser ? "This feature is not available on Safari" : "Open network in Cytoscape Desktop (useful for high performance computing)"} placement="top" arrow>
+        <span>
+          <IconButton
+            onClick={handleClick}
+            aria-label="fit"
+            size="small"
+            disableFocusRipple={true}
+            disabled={isSafariBrowser}
+          >
+            <OpenInNew fontSize="inherit" />
+          </IconButton>
+        </span>
       </Tooltip>
       <Snackbar
         anchorOrigin={{
