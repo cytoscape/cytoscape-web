@@ -1,4 +1,9 @@
-import { IconButton, Snackbar, Tooltip } from '@mui/material'
+import { 
+  IconButton, 
+  Snackbar, 
+  Tooltip, 
+  Alert,
+} from '@mui/material'
 import { OpenInNew } from '@mui/icons-material'
 import CloseIcon from '@mui/icons-material/Close'
 
@@ -33,6 +38,8 @@ export const OpenInCytoscapeButton = ({
 }: OpenInCytoscapeButtonProps): JSX.Element => {
   const [open, setOpen] = useState<boolean>(false)
   const [message, setMessage] = useState<string>('')
+  const [severity, setSeverity] = useState<'info' | 'success' | 'error' | undefined>(undefined)
+
   const [isSafariBrowser, setIsSafariBrowser] = useState<boolean>(false)
 
   useEffect(() => {
@@ -47,8 +54,12 @@ export const OpenInCytoscapeButton = ({
 
   const networkId: IdType = targetNetworkId ?? currentNetworkId
 
-  const handleMessageOpen = (newMessage: string): void => {
+  const handleMessageOpen = (
+    newMessage: string,
+    newSeverity?: 'info' | 'success' | 'error'
+  ): void => {
     setMessage(newMessage)
+    setSeverity(newSeverity)
     setOpen(true)
   }
 
@@ -65,7 +76,6 @@ export const OpenInCytoscapeButton = ({
   const cyndex = new CyNDEx()
 
   const table = useTableStore((state) => state.tables[networkId])
-
   const summary = useNetworkSummaryStore((state) => state.summaries[networkId])
 
   const viewModel = useViewModelStore((state) => state.getViewModel(networkId))
@@ -80,7 +90,8 @@ export const OpenInCytoscapeButton = ({
   ) as Network
 
   const allOpaqueAspects = useOpaqueAspectStore((state) => state.opaqueAspects)
-  const opaqueAspects = targetNetworkId !== undefined ? allOpaqueAspects[targetNetworkId] : undefined
+  const opaqueAspects =
+    targetNetworkId !== undefined ? allOpaqueAspects[targetNetworkId] : undefined
 
   const openNetworkInCytoscape = async (): Promise<void> => {
     if (viewModel === undefined) {
@@ -111,12 +122,15 @@ export const OpenInCytoscapeButton = ({
       opaqueAspects,
     )
     try {
-      handleMessageOpen('Sending this network to Cytoscape Desktop...')
+      handleMessageOpen('Sending this network to Cytoscape Desktop...', 'info')
       await cyndex.postCX2NetworkToCytoscape(cx)
-      handleMessageOpen('Network opened in Cytoscape Desktop')
+      handleMessageOpen('Network successfully opened in Cytoscape Desktop.', 'success')
     } catch (e) {
       console.warn('Could not open the network in Cytoscape Desktop!', e)
-      handleMessageOpen('To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed')
+      handleMessageOpen(
+        'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed',
+        'error'
+      )
     }
   }
 
@@ -126,17 +140,20 @@ export const OpenInCytoscapeButton = ({
 
   return (
     <>
-      <Tooltip title={`Open network in Cytoscape Desktop (useful for high performance computing)`} placement="top" arrow>
-        <IconButton
-          onClick={handleClick}
-          aria-label="fit"
-          size="small"
-          disableFocusRipple={true}
-          disabled={isSafariBrowser}
-        >
-          <OpenInNew fontSize="inherit" />
-        </IconButton>
+      <Tooltip title={isSafariBrowser ? "This feature is not available on Safari" : "Open network in Cytoscape Desktop (useful for high performance computing)"} placement="top" arrow>
+        <span>
+          <IconButton
+            onClick={handleClick}
+            aria-label="fit"
+            size="small"
+            disableFocusRipple={true}
+            disabled={isSafariBrowser}
+          >
+            <OpenInNew fontSize="inherit" />
+          </IconButton>
+        </span>
       </Tooltip>
+
       <Snackbar
         anchorOrigin={{
           vertical: 'bottom',
@@ -145,18 +162,26 @@ export const OpenInCytoscapeButton = ({
         open={open}
         autoHideDuration={3000}
         onClose={handleMessageClose}
-        message={message}
-        action={
-          <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleMessageClose}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
-      />
+      >
+        <Alert
+          onClose={handleMessageClose}
+          severity={severity}
+          variant="standard"
+          sx={{ width: '100%' }}
+          action={
+            <IconButton
+              size="small"
+              aria-label="close"
+              color="inherit"
+              onClick={handleMessageClose}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          }
+        >
+          {message}
+        </Alert>
+      </Snackbar>
     </>
   )
 }
