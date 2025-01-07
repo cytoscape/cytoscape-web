@@ -95,11 +95,12 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       )
 
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
+      const onlyNdexNetworkIds = workspace.networkIds.filter(id => summaries[id]?.isNdex ===true);
       if (hasWorkspace) {
         await ndexClient.updateCyWebWorkspace(workspace.id, {
           name: workspace.name,
           options: { currentNetwork: workspace.currentNetworkId },
-          networkIDs: workspace.networkIds,
+          networkIDs: onlyNdexNetworkIds,
         })
       } else {
         const response = await ndexClient.createCyWebWorkspace({
