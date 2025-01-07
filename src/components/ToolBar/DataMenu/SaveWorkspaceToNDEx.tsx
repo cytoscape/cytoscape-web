@@ -128,7 +128,7 @@ export const SaveWorkspaceToNDExMenuItem = (
       )
 
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
-      const onlyNdexNetworkIds = workspace.networkIds.filter(id => summaries[id]?.isNdex !== false);
+      const onlyNdexNetworkIds = workspace.networkIds.filter(id => summaries[id]?.isNdex ===true);
       const response = await ndexClient.createCyWebWorkspace({
         name: workspaceName,
         options: { currentNetwork: workspace.currentNetworkId },
