@@ -58,7 +58,6 @@ export const useTableStore = create(
         set((state) => {
           if (state.tables[networkId] !== undefined) {
             console.warn('Table already exists for network', networkId)
-            return state
           }
           state.tables[networkId] = { nodeTable, edgeTable }
           void putTablesToDb(networkId, nodeTable, edgeTable)

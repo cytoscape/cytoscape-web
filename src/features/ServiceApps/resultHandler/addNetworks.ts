@@ -5,12 +5,14 @@ import { IdType } from '../../../models/IdType'
 import { useNetworkStore } from '../../../store/NetworkStore'
 import { putNetworkSummaryToDb } from '../../../store/persist/db'
 import { v4 as uuidv4 } from 'uuid'
-import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
 import { NdexNetworkProperty } from '../../../models/NetworkSummaryModel'
 import { Cx2 } from '../../../models/CxModel/Cx2'
-import { createDataFromLocalCx2 } from '../../../utils/cx-utils'
+import {
+  createDataFromLocalCx2,
+  isValidCx2Network,
+} from '../../../utils/cx-utils'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
@@ -35,62 +37,6 @@ export const useAddNetworks = (): (({
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
-  const isValidNetworkAttributes = (aspect: Aspect): boolean => {
-    return (
-      Array.isArray(aspect.networkAttributes) &&
-      aspect.networkAttributes.every(
-        (attr: any) =>
-          typeof attr === 'object' &&
-          typeof attr.name === 'string' &&
-          (attr.description === undefined ||
-            typeof attr.description === 'string'),
-      )
-    )
-  }
-
-  const isValidNodes = (aspect: Aspect): boolean => {
-    return (
-      Array.isArray(aspect.nodes) &&
-      aspect.nodes.every(
-        (node: any) => typeof node === 'object' && typeof node.id === 'number',
-      )
-    )
-  }
-
-  const isValidEdges = (aspect: Aspect): boolean => {
-    return (
-      Array.isArray(aspect.edges) &&
-      aspect.edges.every(
-        (edge: any) =>
-          typeof edge === 'object' &&
-          typeof edge.id === 'number' &&
-          typeof edge.s === 'number' &&
-          typeof edge.t === 'number',
-      )
-    )
-  }
-
-  const isValidCx2Network = (obj: any): boolean => {
-    if (!Array.isArray(obj)) {
-      console.warn('Invalid Cx2Network: Expected an array of aspects', obj)
-      return false
-    }
-
-    let hasValidNetworkAttributes = false
-    let hasValidNodes = false
-    let hasValidEdges = false
-
-    for (const aspect of obj) {
-      if (aspect.networkAttributes && isValidNetworkAttributes(aspect)) {
-        hasValidNetworkAttributes = true
-      } else if (aspect.nodes && isValidNodes(aspect)) {
-        hasValidNodes = true
-      } else if (aspect.edges && isValidEdges(aspect)) {
-        hasValidEdges = true
-      }
-    }
-    return hasValidNetworkAttributes && hasValidNodes && hasValidEdges
-  }
 
   const addNetworks = useCallback(
     async ({ responseObj, networkId }: ActionHandlerProps) => {

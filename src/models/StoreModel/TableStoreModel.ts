@@ -75,6 +75,7 @@ export interface TableAction {
     column: AttributeName,
   ) => void
 
+  // update table(s)
   setTable: (networkId: IdType, tableType: TableType, table: Table) => void
 
   // Delete rows from the table. Should be called (via event) when nodes/edges are deleted

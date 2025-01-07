@@ -7,7 +7,7 @@ interface UpdatedSelection {
   edges: number[]
 }
 
-export const useUpdateSelections = (): (({
+export const useUpdateSelection = (): (({
   responseObj,
   networkId,
 }: ActionHandlerProps) => void) => {
@@ -19,7 +19,7 @@ export const useUpdateSelections = (): (({
   Array.isArray(obj.edges) &&
   obj.edges.every((id: any) => typeof id === 'number')
 
-  const updateSelections = useCallback(
+  const updateSelection = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
       if (!isValidUpdatedSelection(responseObj)) {
         console.warn('Invalid selection update response:', responseObj)
@@ -35,5 +35,5 @@ export const useUpdateSelections = (): (({
     },
     [exclusiveSelect],
   )
-  return updateSelections
+  return updateSelection
 }

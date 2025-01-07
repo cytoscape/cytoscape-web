@@ -147,7 +147,6 @@ export const useNetworkStore = create(
           set((state) => {
             if (state.networks.has(network.id)) {
               console.warn('Network already exists in store', network.id)
-              return state
             }
 
             const newNetworkMap = new Map(state.networks).set(
