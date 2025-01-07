@@ -65,7 +65,7 @@ export const OpenNetworkInCytoscapeMenuItem = ({
         'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed.',
         'error',
       )
-      console.error('Cannot find Cytoscape!', e)
+      console.error('Could not open the network in Cytoscape Desktop!', e)
     }
     handleClose()
   }
