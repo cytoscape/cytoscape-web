@@ -964,6 +964,50 @@ export default function TableBrowser(props: {
     </Box>
   )
 
+  const onKeyDown = (key: string) => {
+    let nextCell: Item = [0, 0]
+    switch (key) {
+      case 'ArrowUp':
+        nextCell = [
+          selection.current?.cell?.[0] ?? 0,
+          Math.max(0, (selection.current?.cell?.[1] ?? 0) - 1),
+        ]
+        break
+      case 'ArrowDown':
+        nextCell = [
+          selection.current?.cell?.[0] ?? 0,
+          Math.min((selection.current?.cell?.[1] ?? 0) + 1, rows.length - 1),
+        ]
+        break
+      case 'ArrowLeft':
+        nextCell = [
+          Math.max(0, (selection.current?.cell?.[0] ?? 0) - 1),
+          selection.current?.cell?.[1] ?? 0,
+        ]
+        break
+      case 'ArrowRight':
+        nextCell = [
+          Math.min((selection.current?.cell?.[0] ?? 0) + 1, columns.length - 1),
+          selection.current?.cell?.[1] ?? 0,
+        ]
+        break
+    }
+    setSelection({
+      rows: CompactSelection.empty(),
+      columns: CompactSelection.empty(),
+      current: {
+        cell: nextCell,
+        range: {
+          x: nextCell[0],
+          y: nextCell[1],
+          width: 1,
+          height: 1,
+        },
+        rangeStack: [],
+      },
+    })
+  }
+
   return (
     <Box
       sx={{
@@ -1027,6 +1071,7 @@ export default function TableBrowser(props: {
       <TabPanel value={currentTabIndex} index={0}>
         {tableBrowserToolbar}
         <DataEditor
+          onKeyDown={(e) => onKeyDown(e.key)}
           // rowSelectionBlending="mixed"
           ref={nodeDataEditorRef}
           onCellClicked={onCellClicked}
@@ -1057,6 +1102,7 @@ export default function TableBrowser(props: {
       <TabPanel value={currentTabIndex} index={1}>
         {tableBrowserToolbar}
         <DataEditor
+          onKeyDown={(e) => onKeyDown(e.key)}
           // rowSelectionBlending="mixed"
           ref={edgeDataEditorRef}
           onCellClicked={onCellClicked}
