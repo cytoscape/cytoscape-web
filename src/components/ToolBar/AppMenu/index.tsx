@@ -158,7 +158,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
         template: <Divider />,
       },
       {
-        label: 'App Settings...',
+        label: 'Manage Apps...',
         style: { height: '2.5em' },
         command: () => handleOpenDialog(true),
       },
