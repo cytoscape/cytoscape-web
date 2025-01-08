@@ -23,7 +23,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
 
   const run = useServiceTaskRunner()
 
-  const [isInitialClick, setIsInitialClick] = useState<boolean>(false)
+  const [isInitialClick, setIsInitialClick] = useState<boolean>(true)
 
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
@@ -203,11 +203,11 @@ export const AppMenu = (props: DropdownMenuProps) => {
     if (menuRef.current === null) {
       return
     }
-    if (Object.keys(serviceApps).length === 0) {
+    if (Object.keys(serviceApps).length === 0 && isInitialClick) {
       addDefaultServices()
     }
-    if (!isInitialClick) {
-      setIsInitialClick(true)
+    if (isInitialClick) {
+      setIsInitialClick(false)
       const appMenuItems: MenuItem[] = createAppMenu()
       const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
       setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
