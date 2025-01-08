@@ -5,7 +5,7 @@ import { CyApp } from '../../../models'
 
 interface URLData {
   url: string
-  target: string
+  target?: string
 }
 
 export const useOpenURL = (): (({
@@ -14,7 +14,11 @@ export const useOpenURL = (): (({
 }: ActionHandlerProps) => void) => {
   const addApp = useAppStore((state) => state.add)
   const isValidURLData = (obj: any): obj is URLData => {
-    return obj && typeof obj.url === 'string' && typeof obj.target === 'string'
+    return (
+      obj &&
+      typeof obj.url === 'string' &&
+      (obj.target === null || typeof obj.target === 'string')
+    )
   }
   const openURL = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
@@ -25,13 +29,9 @@ export const useOpenURL = (): (({
       const { url, target } = responseObj
 
       // If target is empty string, blank or null open in a new tab
-      // if(target === '' || target === null) {
-      //   window.open(url, '_blank')
-      // }
-      // else {
-        //
-      // }
-      
+      if (target === null) {
+        window.open(url, '_blank')
+      }
     },
     [addApp],
   )

@@ -29,6 +29,7 @@ export const useUpdateNetwork = (): (({
   )
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const setViewModel = useViewModelStore((state) => state.add)
+  const deleteViewModel = useViewModelStore((state) => state.delete)
 
   const setTables = useTableStore((state) => state.add)
   const addAllOpaqueAspects = useOpaqueAspectStore((state) => state.addAll)
@@ -90,7 +91,8 @@ export const useUpdateNetwork = (): (({
         } = res
         const localNodeCount = network.nodes.length
         const localEdgeCount = network.edges.length
-
+        
+        deleteViewModel(networkId)
         setNetwork(network)
         updateNetworkSummary(networkId, {
           name: localName,
@@ -119,6 +121,7 @@ export const useUpdateNetwork = (): (({
       setVisualStyleOptions,
       setVisualStyle,
       setViewModel,
+      deleteViewModel,
       setTables,
       addAllOpaqueAspects,
       setNetworkModified,
