@@ -16,6 +16,12 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { useNetworkStore } from '../../../store/NetworkStore'
+import { generateUniqueName } from '../../../utils/network-utils'
+import {
+  getAttributeDeclarations,
+  getNetworkAttributes,
+  getNodes,
+} from '../../../models/CxModel/cx2-util'
 
 export const useUpdateNetwork = (): (({
   responseObj,
@@ -43,30 +49,21 @@ export const useUpdateNetwork = (): (({
         return
       }
       try {
-        let localName = summaries[networkId]?.name ?? 'Untitled Network'
-        let localDescription = summaries[networkId]?.description ?? ''
-        const NetworkAttributesAspect = CoreAspectTag.NetworkAttributes
-        const AttributeDeclarationsAspect = CoreAspectTag.AttributeDeclarations
-        const networkAttributes = Array.isArray(responseObj)
-          ? responseObj
-              .filter((aspect: any) =>
-                aspect.hasOwnProperty(NetworkAttributesAspect),
-              )
-              .map((aspect: any) => aspect[NetworkAttributesAspect])[0][0]
-          : {}
-        localName = networkAttributes.name ?? localName
-        localDescription = networkAttributes.description ?? localDescription
+        let localName = 'Untitled Network'
+        let localDescription = ''
+        const networkAttributeDeclarations =
+          getAttributeDeclarations(responseObj as Cx2)
+            ?.attributeDeclarations?.[0]?.networkAttributes ?? {}
+        const networkAttributes =
+          getNetworkAttributes(responseObj as Cx2)?.[0] ?? {}
 
-        const attributeDeclarations = Array.isArray(responseObj)
-          ? responseObj
-              .filter((aspect: any) =>
-                aspect.hasOwnProperty(AttributeDeclarationsAspect),
-              )
-              .map((aspect: any) => aspect[AttributeDeclarationsAspect])[0][0]
-          : {}
-
-        const networkAttributeDeclarations = (attributeDeclarations as any)
-          ?.networkAttributes
+        localName =
+          networkAttributes.name ??
+          generateUniqueName(
+            Object.values(summaries).map((s) => s.name),
+            localName,
+          )
+        localDescription = networkAttributes.description ?? summaries[networkId].description
 
         const localProperties: NdexNetworkProperty[] = Object.entries(
           networkAttributes,
@@ -79,6 +76,11 @@ export const useUpdateNetwork = (): (({
             subNetworkId: null,
           }
         })
+
+        const nodesAspect = getNodes(responseObj as Cx2)
+        const anyNodeHasPosition = nodesAspect.some(
+          (n) => n.x !== undefined && n.y !== undefined,
+        )
         const res = await createDataFromLocalCx2(networkId, responseObj as Cx2)
         const {
           network,
@@ -91,12 +93,13 @@ export const useUpdateNetwork = (): (({
         } = res
         const localNodeCount = network.nodes.length
         const localEdgeCount = network.edges.length
-        
+
         deleteViewModel(networkId)
         setNetwork(network)
         updateNetworkSummary(networkId, {
           name: localName,
           properties: localProperties,
+          hasLayout: anyNodeHasPosition,
           description: localDescription,
           nodeCount: localNodeCount,
           edgeCount: localEdgeCount,

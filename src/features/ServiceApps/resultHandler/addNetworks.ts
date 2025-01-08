@@ -18,11 +18,19 @@ import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
+import { generateUniqueName } from '../../../utils/network-utils'
+import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
+import {
+  getAttributeDeclarations,
+  getNetworkAttributes,
+  getNodes,
+} from '../../../models/CxModel/cx2-util'
 
 export const useAddNetworks = (): (({
   responseObj,
   networkId,
 }: ActionHandlerProps) => void) => {
+  const summaries = useNetworkSummaryStore((state) => state.summaries)
   const addNetworksToWorkspace: (ids: IdType | IdType[]) => void =
     useWorkspaceStore((state) => state.addNetworkIds)
   const addNewNetwork = useNetworkStore((state) => state.add)
@@ -54,31 +62,19 @@ export const useAddNetworks = (): (({
           try {
             let localName = 'Untitled Network'
             let localDescription = ''
-            const NetworkAttributesAspect = CoreAspectTag.NetworkAttributes
-            const AttributeDeclarationsAspect =
-              CoreAspectTag.AttributeDeclarations
-            const networkAttributes = Array.isArray(item)
-              ? item
-                  .filter((aspect: any) =>
-                    aspect.hasOwnProperty(NetworkAttributesAspect),
-                  )
-                  .map((aspect: any) => aspect[NetworkAttributesAspect])[0][0]
-              : {}
-            localName = networkAttributes.name ?? localName
+            const networkAttributeDeclarations =
+              getAttributeDeclarations(item as Cx2)?.attributeDeclarations?.[0]
+                ?.networkAttributes ?? {}
+            const networkAttributes =
+              getNetworkAttributes(item as Cx2)?.[0] ?? {}
+
+            localName =
+              networkAttributes.name ??
+              generateUniqueName(
+                Object.values(summaries).map((s) => s.name),
+                localName,
+              )
             localDescription = networkAttributes.description ?? localDescription
-
-            const attributeDeclarations = Array.isArray(item)
-              ? item
-                  .filter((aspect: any) =>
-                    aspect.hasOwnProperty(AttributeDeclarationsAspect),
-                  )
-                  .map(
-                    (aspect: any) => aspect[AttributeDeclarationsAspect],
-                  )[0][0]
-              : {}
-
-            const networkAttributeDeclarations = (attributeDeclarations as any)
-              ?.networkAttributes
 
             const localProperties: NdexNetworkProperty[] = Object.entries(
               networkAttributes,
@@ -91,6 +87,11 @@ export const useAddNetworks = (): (({
                 subNetworkId: null,
               }
             })
+
+            const nodesAspect = getNodes(item as Cx2)
+            const anyNodeHasPosition = nodesAspect.some(
+              (n) => n.x !== undefined && n.y !== undefined,
+            )
             const localUuid = uuidv4()
 
             const res = await createDataFromLocalCx2(localUuid, item as Cx2)
@@ -117,7 +118,7 @@ export const useAddNetworks = (): (({
               isShowcase: false,
               isCertified: false,
               indexLevel: '',
-              hasLayout: true,
+              hasLayout: anyNodeHasPosition,
               hasSample: false,
               cxFileSize: 0,
               cx2FileSize: 0,
@@ -158,6 +159,7 @@ export const useAddNetworks = (): (({
       }
     },
     [
+      summaries,
       addNetworksToWorkspace,
       addNewNetwork,
       setVisualStyleOptions,
