@@ -221,11 +221,8 @@ export const AppMenu = (props: DropdownMenuProps) => {
     <>
       <Button
         sx={{
-          color: 'white',
+          color: theme.palette.common.white,
           textTransform: 'none',
-          '&.Mui-disabled': {
-            color: theme.palette.grey[400],
-          },
         }}
         id={label}
         aria-controls={open ? 'basic-menu' : undefined}
@@ -234,10 +231,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
         onClick={(e) => {
           handleClick(e)
         }}
-        disabled={
-          Object.keys(apps).length === 0 &&
-          Object.keys(serviceApps).length === 0
-        }
       >
         {label}
       </Button>
