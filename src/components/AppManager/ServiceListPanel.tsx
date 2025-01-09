@@ -1,25 +1,19 @@
 import {
   Typography,
-  List,
-  ListItem,
-  ListItemText,
   Box,
-  IconButton,
   TextField,
   Button,
   useTheme,
   Theme,
-  Link,
 } from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
-import { useContext, useEffect, useState } from 'react'
-import { AppConfig, AppConfigContext } from '../../AppConfigContext'
+import { useState } from 'react'
 import { useAppStore } from '../../store/AppStore'
+import { ServiceList } from './ServiceList'
+import { ExampleServicePanel } from './ExampleServicePanel'
 
 export const ServiceListPanel = () => {
   const theme: Theme = useTheme()
-  const { defaultServices } = useContext<AppConfig>(AppConfigContext)
 
   const [newUrl, setNewUrl] = useState<string>('')
 
@@ -31,30 +25,7 @@ export const ServiceListPanel = () => {
     (state) => state.serviceApps,
   )
 
-  const removeService = useAppStore((state) => state.removeService)
-
   const addService = useAppStore((state) => state.addService)
-
-  // useEffect(() => {
-  //   const currentServiceUrls = Object.values(serviceApps).map(
-  //     (serviceApp: ServiceApp) => serviceApp.url,
-  //   )
-  //   const urlSet = new Set(currentServiceUrls)
-
-  //   defaultServices.forEach((url: string) => {
-  //     if (!urlSet.has(url)) {
-  //       try {
-  //         addService(url)
-  //       } catch (e) {
-  //         console.error(`Failed to add the service from ${url}. ${e}`)
-  //       }
-  //     }
-  //   })
-  // }, [])
-
-  const handleDeleteServiceApp = (url: string) => {
-    removeService(url)
-  }
 
   const handleClearUrl = () => {
     setNewUrl('')
@@ -96,64 +67,24 @@ export const ServiceListPanel = () => {
       >
         Status of External Service Apps
       </Typography>
-      <Typography variant="body1">
-        {Object.keys(serviceApps).length === 0
-          ? '(No services are currently registered)'
-          : ''}
-      </Typography>
       {warningMessage && (
         <Typography color="error" variant="body2">
           {warningMessage}
         </Typography>
       )}
-      <List>
-        {Object.values(serviceApps).map((serviceApp: ServiceApp) => (
-          <ListItem key={serviceApp.url}>
-            <ListItemText
-              primary={<Typography variant="h6">{serviceApp.name}</Typography>}
-              secondary={
-                <>
-                  <Typography
-                    sx={{ display: 'inline' }}
-                    component="span"
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    Endpoint: &nbsp;
-                    <Link href={serviceApp.url} target="_blank" rel="noopener">
-                      {serviceApp.url}
-                    </Link>
-                  </Typography>
-                  <Box>
-                    <Typography
-                      sx={{ display: 'inline' }}
-                      component="span"
-                      variant="body1"
-                      color="text.primary"
-                    >
-                      {serviceApp.description}
-                    </Typography>
-                  </Box>
-                </>
-              }
-            />
-            <IconButton
-              edge="end"
-              aria-label="delete"
-              onClick={() => handleDeleteServiceApp(serviceApp.url)}
-            >
-              <DeleteIcon />
-            </IconButton>
-          </ListItem>
-        ))}
-      </List>
+      {Object.keys(serviceApps).length === 0 ? (
+        <ExampleServicePanel />
+      ) : (
+        <ServiceList />
+      )}
       <Box
         style={{
           width: '100%',
           display: 'flex',
           alignItems: 'center',
-          margin: 0,
+          marginLeft: '1em',
           padding: 0,
+          paddingRight: '2em',
         }}
       >
         <TextField

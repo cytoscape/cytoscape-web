@@ -31,8 +31,11 @@ export const AppSettingsDialog = ({
         <Divider sx={{ marginBottom: theme.spacing(1) }} />
         <ServiceListPanel />
       </DialogContent>
+      <Divider sx={{ margin: 0 }} />
       <DialogActions>
-        <Button onClick={() => setOpenDialog(false)}>Close</Button>
+        <Button variant="contained" onClick={() => setOpenDialog(false)}>
+          Close
+        </Button>
       </DialogActions>
     </Dialog>
   )
