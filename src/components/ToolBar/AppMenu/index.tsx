@@ -203,9 +203,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
     if (menuRef.current === null) {
       return
     }
-    if (Object.keys(serviceApps).length === 0) {
-      addDefaultServices()
-    }
     if (!isInitialClick) {
       setIsInitialClick(true)
       const appMenuItems: MenuItem[] = createAppMenu()

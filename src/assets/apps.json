@@ -1,10 +1,5 @@
 [
   {
-    "name": "hello",
-    "url": "https://cytoscape.org/cytoscape-web-app-examples/hello-world/remoteEntry.js",
-    "entryPoint": "HelloApp"
-  },
-  {
     "name": "simpleMenu",
     "url": "https://cytoscape.org/cytoscape-web-app-examples/simple-menu/remoteEntry.js",
     "entryPoint": "SimpleMenuApp"
