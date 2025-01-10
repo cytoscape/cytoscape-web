@@ -17,6 +17,7 @@ import { useNdexNetwork } from '../store/hooks/useNdexNetwork'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { ndexSummaryFetcher } from '../store/hooks/useNdexNetworkSummary'
 import { waitSeconds } from './wait-seconds'
+import { useWorkspaceStore } from '../store/WorkspaceStore'
 
 export const ndexDuplicateKeyErrorMessage =
   'duplicate key value violates unique constraint'
@@ -116,6 +117,8 @@ export const saveCopyToNDEx = async (
   if (viewModel === undefined) {
     throw new Error('Could not find the current network view model.')
   }
+  const { deleteNetwork } = useWorkspaceStore.getState();
+  
   const cx = exportNetworkToCx2(
     network,
     visualStyle,
@@ -127,6 +130,7 @@ export const saveCopyToNDEx = async (
     `Copy of ${summary.name}`,
     opaqueAspect,
   )
+  deleteNetwork(network.id);
   const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
   const summaryStatus = await getNDExSummaryStatus(
     uuid as string,
