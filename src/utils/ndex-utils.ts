@@ -134,7 +134,6 @@ export const saveCopyToNDEx = async (
     `Copy of ${summary.name}`,
     opaqueAspect,
   )
-  deleteNetwork(network.id);
   const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
   const summaryStatus = await getNDExSummaryStatus(
     uuid as string,

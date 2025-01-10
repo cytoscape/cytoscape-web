@@ -55,6 +55,7 @@ export const SaveWorkspaceToNDExMenuItem = (
   const deleteNetworkModifiedStatus = useWorkspaceStore(
     (state) => state.deleteNetworkModifiedStatus,
   )
+  
   const networks = useNetworkStore((state) => state.networks)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const summaries = useNetworkSummaryStore((state) => state.summaries)
@@ -85,7 +86,6 @@ export const SaveWorkspaceToNDExMenuItem = (
   ): void => {
     setWorkspaceName(event.target.value)
   }
-  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
 
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
@@ -130,14 +130,27 @@ export const SaveWorkspaceToNDExMenuItem = (
 
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
 
+      const fetchMyNetworks = async (): Promise<any> => {
+        const ndexClient = new NDEx(ndexBaseUrl)
+        const token = await getToken()
+        ndexClient.setAuthToken(token)
+        const myNetworks = await ndexClient.getAccountPageNetworks(0, 1000)
+        return myNetworks
+      }
+      
+      const myNetworks = await fetchMyNetworks();
+      const onlyNdexNetworkIds = myNetworks.filter((network: { externalId: string }) =>
+        workspace.networkIds.includes(network.externalId)
+      );
       const response = await ndexClient.createCyWebWorkspace({
         name: workspaceName,
-        options: { currentNetwork: workspace.currentNetworkId },
-        networkIDs: workspace.networkIds,
+        networkIDs: onlyNdexNetworkIds.map((id: { externalId: string }) => id.externalId),
       })
+      
       const { uuid, modificationTime } = response
       setId(uuid)
       renameWorkspace(workspaceName)
+      
 
       addMessage({
         message: `Saved workspace to NDEx successfully.`,
