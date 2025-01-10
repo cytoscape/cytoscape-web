@@ -97,18 +97,28 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       )
 
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
-      const onlyNdexNetworkIds = workspace.networkIds.filter(id => summaries[id]?.isNdex ===true);
+      const fetchMyNetworks = async (): Promise<any> => {
+              const ndexClient = new NDEx(ndexBaseUrl)
+              const token = await getToken()
+              ndexClient.setAuthToken(token)
+              const myNetworks = await ndexClient.getAccountPageNetworks(0, 1000)
+              return myNetworks
+            }
+      const myNetworks = await fetchMyNetworks();
+      const onlyNdexNetworkIds = myNetworks.filter((network: { externalId: string }) =>
+              workspace.networkIds.includes(network.externalId)
+            );
       if (hasWorkspace) {
         await ndexClient.updateCyWebWorkspace(workspace.id, {
           name: workspace.name,
           options: { currentNetwork: workspace.currentNetworkId },
-          networkIDs: onlyNdexNetworkIds,
+          networkIDs: onlyNdexNetworkIds.map((id: { externalId: string }) => id.externalId),
         })
       } else {
         const response = await ndexClient.createCyWebWorkspace({
           name: workspace.name,
           options: { currentNetwork: workspace.currentNetworkId },
-          networkIDs: workspace.networkIds,
+          networkIDs: onlyNdexNetworkIds.map((id: { externalId: string }) => id.externalId),
         })
         const { uuid, modificationTime } = response
         setId(uuid)
