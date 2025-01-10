@@ -1,6 +1,6 @@
 {
   "name": "@cytoscape-web/types",
-  "version": "1.1.13",
+  "version": "1.1.15",
   "description": "Type definitions for Cytoscape Web data models",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

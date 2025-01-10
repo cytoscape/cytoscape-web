@@ -25,4 +25,4 @@ export interface OpaqueAspectActions {
   update: (networkId: IdType, aspectName: string, aspectData: any[]) => void
 }
 
-export type OpaqueAspectStoreModel = OpaqueAspectState & OpaqueAspectActions
+export type OpaqueAspectStore = OpaqueAspectState & OpaqueAspectActions

@@ -7,10 +7,10 @@ import {
   deleteNetworkSummaryFromDb,
   putNetworkSummaryToDb,
 } from './persist/db'
-import { NetworkSummaryStoreModel } from '../models/StoreModel/NetworkSummaryStoreModel'
+import { NetworkSummaryStore } from '../models/StoreModel/NetworkSummaryStoreModel'
 
 export const useNetworkSummaryStore = create(
-  immer<NetworkSummaryStoreModel>((set, get) => ({
+  immer<NetworkSummaryStore>((set, get) => ({
     summaries: {},
     add: (networkId: IdType, summary: NdexNetworkSummary) => {
       set((state) => {

@@ -1,7 +1,7 @@
 import { IdType } from '../IdType'
 import { NdexNetworkSummary } from '../NetworkSummaryModel'
 
-export interface NetworkSummaryStore {
+export interface NetworkSummaryState {
   summaries: Record<IdType, NdexNetworkSummary>
 }
 
@@ -22,5 +22,4 @@ export interface NetworkSummaryActions {
   deleteAll: () => void
 }
 
-export type NetworkSummaryStoreModel = NetworkSummaryStore &
-  NetworkSummaryActions
+export type NetworkSummaryStore = NetworkSummaryState & NetworkSummaryActions

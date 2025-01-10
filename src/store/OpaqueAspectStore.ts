@@ -1,13 +1,13 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { OpaqueAspectStoreModel } from '../models/StoreModel/OpaqueAspectStoreModel'
+import { OpaqueAspectStore } from '../models/StoreModel/OpaqueAspectStoreModel'
 import { IdType } from '../models'
 import { deleteOpaqueAspectsFromDb, putOpaqueAspectsToDb } from './persist/db'
 import { clear } from 'idb-keyval'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 
 export const useOpaqueAspectStore = create(
-  immer<OpaqueAspectStoreModel>((set) => ({
+  immer<OpaqueAspectStore>((set) => ({
     opaqueAspects: {},
     add: (networkId: IdType, aspectName: string, aspectData: any[]) => {
       set((state) => {

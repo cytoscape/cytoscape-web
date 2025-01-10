@@ -19,4 +19,4 @@ export interface LayoutAction {
   setIsRunning: (isRunning: boolean) => void
 }
 
-export type LayoutStoreModel = LayoutState & LayoutAction
+export type LayoutStore = LayoutState & LayoutAction

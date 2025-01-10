@@ -1,6 +1,6 @@
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
 
-export interface CredentialStore {
+export interface CredentialState {
   client: Keycloak
 }
 
@@ -10,4 +10,4 @@ export interface CredentialActions {
   getParsedToken: () => Promise<KeycloakTokenParsed>
 }
 
-export type CredentialStoreModel = CredentialStore & CredentialActions
+export type CredentialStore = CredentialState & CredentialActions
