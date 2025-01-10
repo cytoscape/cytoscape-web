@@ -45,6 +45,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   const deleteNetworkModifiedStatus = useWorkspaceStore(
     (state) => state.deleteNetworkModifiedStatus,
   )
+
   const networks = useNetworkStore((state) => state.networks)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
   const summaries = useNetworkSummaryStore((state) => state.summaries)
@@ -95,12 +96,12 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       )
 
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
-      const onlyNdexNetworkIds = workspace.networkIds.filter(id => summaries[id]?.isNdex ===true);
+
       if (hasWorkspace) {
         await ndexClient.updateCyWebWorkspace(workspace.id, {
           name: workspace.name,
           options: { currentNetwork: workspace.currentNetworkId },
-          networkIDs: onlyNdexNetworkIds,
+          networkIDs: workspace.networkIds,
         })
       } else {
         const response = await ndexClient.createCyWebWorkspace({

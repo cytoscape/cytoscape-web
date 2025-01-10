@@ -85,6 +85,7 @@ export const SaveWorkspaceToNDExMenuItem = (
   ): void => {
     setWorkspaceName(event.target.value)
   }
+  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
 
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
@@ -128,11 +129,11 @@ export const SaveWorkspaceToNDExMenuItem = (
       )
 
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
-      const onlyNdexNetworkIds = workspace.networkIds.filter(id => summaries[id]?.isNdex ===true);
+
       const response = await ndexClient.createCyWebWorkspace({
         name: workspaceName,
         options: { currentNetwork: workspace.currentNetworkId },
-        networkIDs: onlyNdexNetworkIds,
+        networkIDs: workspace.networkIds,
       })
       const { uuid, modificationTime } = response
       setId(uuid)
