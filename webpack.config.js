@@ -102,8 +102,7 @@ module.exports = {
       filename: 'remoteEntry.js',
       remotes: externalAppsConfig,
       exposes: {
-        // Data models to be used by other apps
-        // './useDataStore': './src/components/AppManager/useDataStore.tsx',
+        // Core data models exposed to other Apps
         './CredentialStore': './src/store/CredentialStore.ts',
         './LayoutStore': './src/store/LayoutStore.ts',
         './MessageStore': './src/store/MessageStore.ts',
@@ -111,8 +110,8 @@ module.exports = {
         './NetworkSummaryStore': './src/store/NetworkSummaryStore.ts',
         './OpaqueAspectStore': './src/store/OpaqueAspectStore.ts',
         './RendererStore': './src/store/RendererStore.ts',
-        './UiStateStore': './src/store/UiStateStore.ts',
         './TableStore': './src/store/TableStore.ts',
+        './UiStateStore': './src/store/UiStateStore.ts',
         './ViewModelStore': './src/store/ViewModelStore.ts',
         './VisualStyleStore': './src/store/VisualStyleStore.ts',
         './WorkspaceStore': './src/store/WorkspaceStore.ts',
