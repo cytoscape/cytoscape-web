@@ -101,6 +101,7 @@ export const CopyNetworkToNDExMenuItem = (
         opaqueAspects,
       )
       setCurrentNetworkId(uuid as IdType)
+      
       addMessage({
         message: `Saved a copy of the current network to NDEx with new uuid ${
           uuid as string

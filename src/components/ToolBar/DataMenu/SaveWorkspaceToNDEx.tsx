@@ -79,6 +79,8 @@ export const SaveWorkspaceToNDExMenuItem = (
     props.handleClose()
   }
 
+  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
+
   const allNetworkId = useWorkspaceStore((state) => state.workspace.networkIds)
 
   const handleNameChange = (
@@ -146,11 +148,16 @@ export const SaveWorkspaceToNDExMenuItem = (
         name: workspaceName,
         networkIDs: onlyNdexNetworkIds.map((id: { externalId: string }) => id.externalId),
       })
-      
+
       const { uuid, modificationTime } = response
       setId(uuid)
       renameWorkspace(workspaceName)
+
+      const onlyLocalNetworks = workspace.networkIds.filter((id) =>
+        !myNetworks.some((network: { externalId: string }) => network.externalId === id)
+      );
       
+      deleteNetwork(onlyLocalNetworks)
 
       addMessage({
         message: `Saved workspace to NDEx successfully.`,

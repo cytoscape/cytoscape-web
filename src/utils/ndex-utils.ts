@@ -121,7 +121,6 @@ export const saveCopyToNDEx = async (
   if (viewModel === undefined) {
     throw new Error('Could not find the current network view model.')
   }
-  const { deleteNetwork } = useWorkspaceStore.getState();
   
   const cx = exportNetworkToCx2(
     network,
@@ -134,6 +133,7 @@ export const saveCopyToNDEx = async (
     `Copy of ${summary.name}`,
     opaqueAspect,
   )
+
   const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
   const summaryStatus = await getNDExSummaryStatus(
     uuid as string,

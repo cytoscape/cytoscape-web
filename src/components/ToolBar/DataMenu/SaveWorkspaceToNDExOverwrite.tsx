@@ -63,6 +63,9 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   const handleCloseDialog = (): void => {
     setOpenDialog(false)
   }
+
+  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
+  
   const allNetworkId = useWorkspaceStore((state) => state.workspace.networkIds)
 
   const addNetworkToWorkspace = useWorkspaceStore(
@@ -123,7 +126,13 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         const { uuid, modificationTime } = response
         setId(uuid)
       }
-
+      
+      const onlyLocalNetworks = workspace.networkIds.filter((id) =>
+        !myNetworks.some((network: { externalId: string }) => network.externalId === id)
+      );
+      
+      deleteNetwork(onlyLocalNetworks)
+  
       addMessage({
         message: `Saved workspace to NDEx successfully.`,
         duration: 3000,
