@@ -67,6 +67,7 @@ export const validColumnAssignmentTypes = (
       return Object.values(ColumnAssignmentType)
     case ValueTypeName.Long:
     case ValueTypeName.Integer:
+    case ValueTypeName.Double:
       return Object.values(ColumnAssignmentType).filter(
         (cat) => cat !== ColumnAssignmentType.InteractionType,
       )
@@ -239,7 +240,7 @@ export function createNetworkFromTableData(
 
       const nodeData: Record<string, ValueType> = !nodeExists
         ? { name: nodeName }
-        : nodeTable.rows.get(`${nodeIdMap.get(nodeName)}`) ?? {}
+        : (nodeTable.rows.get(`${nodeIdMap.get(nodeName)}`) ?? {})
       srcNodeId = !nodeExists
         ? nodeIdIndex++
         : (nodeIdMap.get(nodeName) as number)
@@ -264,7 +265,7 @@ export function createNetworkFromTableData(
 
       const nodeData: Record<string, ValueType> = !nodeExists
         ? { name: nodeName }
-        : nodeTable.rows.get(`${nodeIdMap.get(nodeName)}`) ?? {}
+        : (nodeTable.rows.get(`${nodeIdMap.get(nodeName)}`) ?? {})
       tgtNodeId = !nodeExists
         ? nodeIdIndex++
         : (nodeIdMap.get(nodeName) as number)
