@@ -21,6 +21,7 @@ import { useLLMQueryStore } from '../store'
 import { LLMTemplate, templates } from '../model/LLMTemplate'
 import { ContentCopy, Preview } from '@mui/icons-material'
 import { useMessageStore } from '../../../store/MessageStore'
+import { MessageSeverity } from '../../../models/MessageModel'
 
 export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
   const [showTemplatePreview, setShowTemplatePreview] = useState(false)
@@ -56,7 +57,8 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
     void copyTextToClipboard(localLLMTemplate.rawText).then(() => {
       addMessage({
         message: `LLM prompt copied to clipboard`,
-        duration: 6000,
+        duration: 4000,
+        severity: MessageSeverity.INFO,
       })
     })
   }

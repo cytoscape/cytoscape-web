@@ -17,6 +17,7 @@ import { useNdexNetwork } from '../store/hooks/useNdexNetwork'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { ndexSummaryFetcher } from '../store/hooks/useNdexNetworkSummary'
 import { waitSeconds } from './wait-seconds'
+import { MessageSeverity } from '../models/MessageModel'
 
 export const TimeOutErrorMessage =
   'You network has been saved in NDEx, but the server is under heavy load right now. Please use the “Open Networks from NDEx” menu to manually open this network from your account later.'
@@ -264,18 +265,20 @@ export const saveAllNetworks = async (
           addMessage({
             message: TimeOutErrorMessage,
             duration: 6000,
+            severity: MessageSeverity.ERROR
           })
         } else {
           addMessage({
             message: `Error: Could not save a copy of the local network to NDEx. ${
               e.message as string
             }`,
-            duration: 3000,
+            duration: 5000,
+            severity: MessageSeverity.ERROR
           })
         }
         throw e
       }
-      continue
+      return
     }
     if (networkModifiedStatus[networkId] === true) {
       try {
@@ -301,6 +304,7 @@ export const saveAllNetworks = async (
           addMessage({
             message: TimeOutErrorMessage,
             duration: 6000,
+            severity: MessageSeverity.ERROR
           })
           throw e
         }
@@ -322,17 +326,20 @@ export const saveAllNetworks = async (
           addMessage({
             message: `Unable to save the modified network to NDEx caused by error: ${e.message as string}. Instead, saved its copy to NDEx.`,
             duration: 3000,
+            severity: 'info'
           })
         } catch (e) {
           if (e.message.includes(TimeOutErrorIndicator)) {
             addMessage({
               message: TimeOutErrorMessage,
               duration: 6000,
+              severity: MessageSeverity.ERROR
             })
           } else {
             addMessage({
               message: `Unable to save the network or its copy to NDEx. Error: ${e.message as string}`,
-              duration: 3000,
+              duration: 5000,
+              severity: MessageSeverity.ERROR
             })
           }
           throw e

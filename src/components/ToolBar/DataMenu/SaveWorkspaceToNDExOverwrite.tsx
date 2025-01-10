@@ -21,6 +21,7 @@ import {
 } from '../../../utils/ndex-utils'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
+import { MessageSeverity } from '../../../models/MessageModel'
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
   props: WorkspaceMenuProps,
@@ -114,6 +115,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       addMessage({
         message: `Saved workspace to NDEx successfully.`,
         duration: 3000,
+        severity: MessageSeverity.SUCCESS,
       })
     } catch (e) {
       if (e.response?.data?.message?.includes(NdexDuplicateKeyErrorMessage)) {
@@ -121,11 +123,13 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
           message:
             'This workspace name already exists. Please enter a unique workspace name',
           duration: 5000,
+          severity: MessageSeverity.ERROR,
         })
       } else {
         addMessage({
           message: `Error: Could not save workspace to NDEx.`,
           duration: 5000,
+          severity: MessageSeverity.ERROR,
         })
       }
     }

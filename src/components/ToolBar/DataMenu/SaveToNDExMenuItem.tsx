@@ -39,6 +39,7 @@ import {
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
 } from '../../../utils/ndex-utils'
+import { MessageSeverity } from '../../../models/MessageModel'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -165,6 +166,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       addMessage({
         message: `Saved network to NDEx`,
         duration: 3000,
+        severity: MessageSeverity.SUCCESS,
       })
     } catch (e) {
       console.log(e)
@@ -172,6 +174,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         addMessage({
           message: TimeOutErrorMessage,
           duration: 6000,
+          severity: MessageSeverity.ERROR,
         })
       } else {
         addMessage({
@@ -179,6 +182,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
             e.message as string
           }`,
           duration: 3000,
+          severity: MessageSeverity.ERROR,
         })
       }
     }
@@ -213,6 +217,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
           uuid as string
         }`,
         duration: 3000,
+        severity: MessageSeverity.SUCCESS,
       })
     } catch (e) {
       console.log(e)
@@ -220,6 +225,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         addMessage({
           message: TimeOutErrorMessage,
           duration: 6000,
+          severity: MessageSeverity.ERROR,
         })
       } else {
         addMessage({
@@ -227,6 +233,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
             e.message as string
           }`,
           duration: 3000,
+          severity: MessageSeverity.ERROR,
         })
       }
     }

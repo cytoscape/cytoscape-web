@@ -1,11 +1,5 @@
-import { 
-  IconButton, 
-  Snackbar, 
-  Tooltip, 
-  Alert,
-} from '@mui/material'
+import { IconButton, Tooltip, Alert } from '@mui/material'
 import { OpenInNew } from '@mui/icons-material'
-import CloseIcon from '@mui/icons-material/Close'
 
 // @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
@@ -18,34 +12,25 @@ import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../store/io/exportCX'
 import { Network } from '../../models/NetworkModel'
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { IdType } from '../../models'
+import { useMessageStore } from '../../store/MessageStore'
+import { MessageSeverity } from '../../models/MessageModel'
 
 interface OpenInCytoscapeButtonProps {
   targetNetworkId?: IdType
   networkLabel?: string
 }
 
-const isSafari = (): boolean => {
-  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-}
-
 export const OpenInCytoscapeButton = ({
   targetNetworkId,
   networkLabel,
 }: OpenInCytoscapeButtonProps): JSX.Element => {
-  const [open, setOpen] = useState<boolean>(false)
-  const [message, setMessage] = useState<string>('')
-  const [severity, setSeverity] = useState<'info' | 'success' | 'error' | undefined>(undefined)
-
-  const [isSafariBrowser, setIsSafariBrowser] = useState<boolean>(false)
-
-  useEffect(() => {
-    if (isSafari()) {
-      setIsSafariBrowser(true)
-    }
+  const isSafari = useMemo(() => {
+    const ua = navigator.userAgent.toLowerCase()
+    return ua.includes('safari') && !ua.includes('chrome')
   }, [])
 
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -54,27 +39,9 @@ export const OpenInCytoscapeButton = ({
 
   const networkId: IdType = targetNetworkId ?? currentNetworkId
 
-  const handleMessageOpen = (
-    newMessage: string,
-    newSeverity?: 'info' | 'success' | 'error'
-  ): void => {
-    setMessage(newMessage)
-    setSeverity(newSeverity)
-    setOpen(true)
-  }
-
-  const handleMessageClose = (
-    event: React.SyntheticEvent | Event,
-    reason?: string,
-  ) => {
-    if (reason === 'clickaway') {
-      return
-    }
-    setOpen(false)
-  }
-
   const cyndex = new CyNDEx()
 
+  const addMessage = useMessageStore((state) => state.addMessage)
   const table = useTableStore((state) => state.tables[networkId])
   const summary = useNetworkSummaryStore((state) => state.summaries[networkId])
 
@@ -91,7 +58,9 @@ export const OpenInCytoscapeButton = ({
 
   const allOpaqueAspects = useOpaqueAspectStore((state) => state.opaqueAspects)
   const opaqueAspects =
-    targetNetworkId !== undefined ? allOpaqueAspects[targetNetworkId] : undefined
+    targetNetworkId !== undefined
+      ? allOpaqueAspects[targetNetworkId]
+      : undefined
 
   const openNetworkInCytoscape = async (): Promise<void> => {
     if (viewModel === undefined) {
@@ -122,15 +91,25 @@ export const OpenInCytoscapeButton = ({
       opaqueAspects,
     )
     try {
-      handleMessageOpen('Sending this network to Cytoscape Desktop...', 'info')
+      addMessage({
+        message: 'Sending this network to Cytoscape Desktop...',
+        duration: 3000,
+        severity: MessageSeverity.INFO,
+      })
       await cyndex.postCX2NetworkToCytoscape(cx)
-      handleMessageOpen('Network successfully opened in Cytoscape Desktop.', 'success')
+      addMessage({
+        message: 'Network successfully opened in Cytoscape Desktop.',
+        duration: 3000,
+        severity: MessageSeverity.SUCCESS,
+      })
     } catch (e) {
       console.warn('Could not open the network in Cytoscape Desktop!', e)
-      handleMessageOpen(
-        'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed',
-        'error'
-      )
+      addMessage({
+        message:
+          'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed',
+        duration: 3000,
+        severity: MessageSeverity.ERROR,
+      })
     }
   }
 
@@ -140,48 +119,27 @@ export const OpenInCytoscapeButton = ({
 
   return (
     <>
-      <Tooltip title={isSafariBrowser ? "This feature is not available on Safari" : "Open network in Cytoscape Desktop (useful for high performance computing)"} placement="top" arrow>
+      <Tooltip
+        title={
+          isSafari
+            ? 'This feature is not available on Safari'
+            : 'Open network in Cytoscape Desktop (useful for high performance computing)'
+        }
+        placement="top"
+        arrow
+      >
         <span>
           <IconButton
             onClick={handleClick}
             aria-label="fit"
             size="small"
             disableFocusRipple={true}
-            disabled={isSafariBrowser}
+            disabled={isSafari}
           >
             <OpenInNew fontSize="inherit" />
           </IconButton>
         </span>
       </Tooltip>
-
-      <Snackbar
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        open={open}
-        autoHideDuration={3000}
-        onClose={handleMessageClose}
-      >
-        <Alert
-          onClose={handleMessageClose}
-          severity={severity}
-          variant="standard"
-          sx={{ width: '100%' }}
-          action={
-            <IconButton
-              size="small"
-              aria-label="close"
-              color="inherit"
-              onClick={handleMessageClose}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          }
-        >
-          {message}
-        </Alert>
-      </Snackbar>
     </>
   )
 }

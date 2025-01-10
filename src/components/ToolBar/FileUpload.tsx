@@ -1,22 +1,17 @@
 import {
-  List,
   Stack,
-  Center,
   Button,
   Title,
   Group,
   Text,
   rem,
-  Space,
   MantineProvider,
   Modal,
   Paper,
 } from '@mantine/core'
 import { IconUpload, IconX } from '@tabler/icons-react'
 import { Dropzone } from '@mantine/dropzone'
-import { notifications } from '@mantine/notifications'
-import Papa from 'papaparse'
-import { ModalsProvider, modals } from '@mantine/modals'
+import { ModalsProvider } from '@mantine/modals'
 import { v4 as uuidv4 } from 'uuid'
 
 import { Cx2 } from '../../models/CxModel/Cx2'
@@ -53,7 +48,7 @@ import { getOptionalAspects } from '../../utils/cx-utils'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { useMessageStore } from '../../store/MessageStore'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
-
+import { MessageSeverity } from '../../models/MessageModel'
 interface FileUploadProps {
   show: boolean
   handleClose: () => void
@@ -238,6 +233,7 @@ export function FileUpload(props: FileUploadProps) {
     addMessage({
       duration: 5000,
       message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. ${files?.[0]?.errors?.[0]?.message ?? ''}`,
+      severity: MessageSeverity.ERROR,
     })
   }
 

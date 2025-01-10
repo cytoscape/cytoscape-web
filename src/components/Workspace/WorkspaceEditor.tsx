@@ -66,6 +66,7 @@ import { useFilterStore } from '../../store/FilterStore'
 import { useAppManager } from '../../store/hooks/useAppManager'
 import { NetworkWithView, VisualStyle } from '../../models'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
+import { MessageSeverity } from '../../models/MessageModel'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -268,6 +269,7 @@ const WorkSpaceEditor = (): JSX.Element => {
             : networksFailtoLoad.join(', ')
         }`,
         duration: 5000,
+        severity: MessageSeverity.ERROR,
       })
     }
   }
@@ -332,7 +334,8 @@ const WorkSpaceEditor = (): JSX.Element => {
         if (!validationRes.isValid) {
           addMessage({
             message: `This network is not a valid HCX network.  Some features may not work properly.`,
-            duration: 8000,
+            duration: 5000,
+            severity: MessageSeverity.WARNING,
           })
         }
         setValidationResult(networkId, validationRes)

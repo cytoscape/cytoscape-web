@@ -33,7 +33,7 @@ import { Workspace } from '../models/WorkspaceModel'
 import { SyncTabsAction } from './SyncTabs'
 
 import { useMessageStore } from '../store/MessageStore'
-
+import { MessageSeverity } from '../models/MessageModel'
 import { fetchUrlCx } from '../models/CxModel/fetch-url-cx-util'
 import { useNetworkStore } from '../store/NetworkStore'
 import { useTableStore } from '../store/TableStore'
@@ -360,6 +360,7 @@ const AppShell = (): ReactElement => {
           addMessage({
             message: `Failed to import network from url: ${value}`,
             duration: 5000,
+            severity: MessageSeverity.ERROR,
           })
         }
       }

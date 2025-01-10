@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Snackbar, SnackbarCloseReason } from '@mui/material'
+import { Alert, Snackbar, SnackbarCloseReason } from '@mui/material'
 
 import { useMessageStore } from '../../store/MessageStore'
 
@@ -44,9 +44,15 @@ export const SnackbarMessageList = (): React.ReactElement => {
       open={open}
       onClose={handleSnackbarClose}
       autoHideDuration={messages[currentMessageIndex]?.duration ?? 5000}
-      message={messages[currentMessageIndex]?.message}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-    />
+    >
+      <Alert
+        severity={messages[currentMessageIndex]?.severity ?? 'info'}
+        sx={{ width: '100%' }}
+      >
+        {messages[currentMessageIndex]?.message}
+      </Alert>
+    </Snackbar>
   )
 }
 

@@ -22,6 +22,7 @@ import {
   JoinTableToNetworkStep,
 } from '../../store/joinTableToNetworkStore'
 import { useMessageStore } from '../../../../store/MessageStore'
+import { MessageSeverity } from '../../../../models/MessageModel'
 
 export function TableUpload(props: BaseMenuProps) {
   const setFile = useJoinTableToNetworkStore((state) => state.setFile)
@@ -33,6 +34,7 @@ export function TableUpload(props: BaseMenuProps) {
     addMessage({
       duration: 5000,
       message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. ${files?.[0]?.errors?.[0]?.message ?? ''}`,
+      severity: MessageSeverity.ERROR,
     })
   }
 
