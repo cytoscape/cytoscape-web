@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
+import { DEF_VIEW_TYPE, useViewModelStore } from '../../../store/ViewModelStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 import {
@@ -63,7 +63,10 @@ export const useUpdateNetwork = (): (({
             Object.values(summaries).map((s) => s.name),
             localName,
           )
-        localDescription = networkAttributes.description ?? summaries[networkId].description
+        localDescription =
+          networkAttributes.description ??
+          summaries[networkId]?.description ??
+          localDescription
 
         const localProperties: NdexNetworkProperty[] = Object.entries(
           networkAttributes,
@@ -81,6 +84,9 @@ export const useUpdateNetwork = (): (({
         const anyNodeHasPosition = nodesAspect.some(
           (n) => n.x !== undefined && n.y !== undefined,
         )
+
+        // Delete the old view model
+        deleteViewModel(networkId)
         const res = await createDataFromLocalCx2(networkId, responseObj as Cx2)
         const {
           network,
@@ -94,7 +100,6 @@ export const useUpdateNetwork = (): (({
         const localNodeCount = network.nodes.length
         const localEdgeCount = network.edges.length
 
-        deleteViewModel(networkId)
         setNetwork(network)
         updateNetworkSummary(networkId, {
           name: localName,
@@ -111,7 +116,11 @@ export const useUpdateNetwork = (): (({
         if (otherAspects !== undefined) {
           addAllOpaqueAspects(networkId, otherAspects, true)
         }
-        setViewModel(networkId, networkView)
+        setViewModel(networkId, {
+          ...networkView,
+          type: networkView.type ?? DEF_VIEW_TYPE,
+          viewId: `${networkId}-${networkView.type ?? DEF_VIEW_TYPE}-updatedByService`,
+        })
         setNetworkModified(networkId, true)
       } catch (e) {
         console.warn('Failed to update the current network. ', e)

@@ -14,7 +14,7 @@ import { useWorkspaceStore } from './WorkspaceStore'
 import { ViewModelStore } from '../models/StoreModel/ViewModelStoreModel'
 
 // Default view type (a node-link diagram)
-const DEF_VIEW_TYPE = 'nodeLink'
+export const DEF_VIEW_TYPE = 'nodeLink'
 
 /**
  * Create a new view ID for a network view.

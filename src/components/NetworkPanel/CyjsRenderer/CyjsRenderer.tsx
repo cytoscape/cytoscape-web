@@ -166,7 +166,12 @@ const CyjsRenderer = ({
   }
 
   const renderNetwork = (): void => {
-    if (renderedId === id || cy === null) {
+    if (
+      cy === null ||
+      (renderedId === id &&
+        cy.nodes().length === networkView?.nodeViews.length &&
+        cy.edges().length === networkView?.edgeViews.length)
+    ) {
       return
     }
 
@@ -389,13 +394,7 @@ const CyjsRenderer = ({
     () => (): void => {
       applyStyleUpdate()
     },
-    [
-      vs,
-      table,
-      visualEditorProperties,
-      networkView?.nodeViews.length,
-      networkView?.edgeViews.length,
-    ],
+    [vs, table, visualEditorProperties],
   )
 
   // when the visual style model, table model, or edge/node views change re-render cy.js style
@@ -410,13 +409,7 @@ const CyjsRenderer = ({
     }
 
     applyUpdates()
-  }, [
-    vs,
-    table,
-    visualEditorProperties,
-    networkView?.nodeViews.length,
-    networkView?.edgeViews.length,
-  ])
+  }, [vs, table, visualEditorProperties])
 
   // Apply layout when node positions are changed
   useEffect(() => {

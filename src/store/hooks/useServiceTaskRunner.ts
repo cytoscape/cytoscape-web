@@ -20,7 +20,10 @@ import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOpt
 import { useRunTask } from '../../features/ServiceApps'
 import { useServiceResultHandlerManager } from '../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
 import { useOpaqueAspectStore } from '../OpaqueAspectStore'
-import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
+import { OpaqueAspects } from '../../models/OpaqueAspectModel'
+import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
+import { ServiceAppAction } from '../../models/AppModel/ServiceAppAction'
+import { useMessageStore } from '../MessageStore'
 
 export interface RunTaskResult {
   status: ServiceStatus
@@ -63,6 +66,7 @@ export const useServiceTaskRunner = (): ((
   const network: Network | undefined = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   )
+  const addMessage = useMessageStore((state) => state.addMessage)
 
   const opaqueAspect: OpaqueAspects = useOpaqueAspectStore(
     (state) => state.opaqueAspects[currentNetworkId],
@@ -146,6 +150,18 @@ export const useServiceTaskRunner = (): ((
       // Process the result to update the workspace state
       if (result.status === ServiceStatus.Complete) {
         for (const { action, data } of result.result) {
+          // Currently, HCX network is blocked for updateNetwork actions
+          // In the future, if there are more limitations, we can turn these checker into a function
+          if (
+            isHCX(summaryRef.current) &&
+            action === ServiceAppAction.UpdateNetwork
+          ) {
+            addMessage({
+              message: `Update network action is not supported for HCX networks`,
+              duration: 4000,
+            })
+            continue
+          }
           const actionHandler = getHandler(action)
           if (actionHandler === undefined) {
             throw new Error(`Unsupported action: ${action}`)
