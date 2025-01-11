@@ -10,5 +10,5 @@ export type MessageSeverityType = (typeof MessageSeverity)[keyof typeof MessageS
 export interface Message {
   message: string
   duration: number
-  severity: MessageSeverityType
+  severity?: MessageSeverityType
 }

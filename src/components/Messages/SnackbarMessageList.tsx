@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Alert, Snackbar, SnackbarCloseReason } from '@mui/material'
 
 import { useMessageStore } from '../../store/MessageStore'
+import { MessageSeverity } from '../../models/MessageModel'
 
 export const SnackbarMessageList = (): React.ReactElement => {
   const [open, setOpen] = useState(false)
@@ -47,7 +48,9 @@ export const SnackbarMessageList = (): React.ReactElement => {
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
     >
       <Alert
-        severity={messages[currentMessageIndex]?.severity ?? 'info'}
+        severity={
+          messages[currentMessageIndex]?.severity ?? MessageSeverity.INFO
+        }
         sx={{ width: '100%' }}
       >
         {messages[currentMessageIndex]?.message}
