@@ -185,11 +185,6 @@ export const exportNetworkToCx2 = (
 
   const networkAttributes: any = [{}]
 
-  if (networkName != null || summary.name != null) {
-    networkAttributeDeclarations.name = { d: 'string' }
-    networkAttributes[0].name = networkName ?? summary.name
-  }
-
   summary.properties.forEach((property) => {
     networkAttributes[0][property.predicateString] =
       isListType(property.dataType) && !Array.isArray(property.value)
@@ -200,6 +195,11 @@ export const exportNetworkToCx2 = (
         : property.value
   })
 
+  if (networkName != null || summary.name != null) {
+    networkAttributeDeclarations.name = { d: 'string' }
+    networkAttributes[0].name = networkName ?? summary.name
+  }
+  
   const nodes = network.nodes.map((node) => {
     const nodeRow = nodeTable.rows.get(node.id)
 

@@ -78,6 +78,9 @@ export const CopyNetworkToNDExMenuItem = (
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
+  const deleteNetworksFromWorkspace = useWorkspaceStore(
+    (state) => state.deleteNetwork,
+  )
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
@@ -92,6 +95,7 @@ export const CopyNetworkToNDExMenuItem = (
         accessToken,
         ndexClient,
         addNetworkToWorkspace,
+        deleteNetworksFromWorkspace,
         network,
         visualStyle,
         summary,
@@ -100,6 +104,7 @@ export const CopyNetworkToNDExMenuItem = (
         viewModel,
         visualStyleOptions,
         opaqueAspects,
+        true,
       )
       setCurrentNetworkId(uuid as IdType)
       addMessage({

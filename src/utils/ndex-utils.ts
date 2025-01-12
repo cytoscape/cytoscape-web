@@ -109,6 +109,7 @@ export const saveCopyToNDEx = async (
   accessToken: string,
   ndexClient: NDEx,
   addNetworkToWorkspace: (ids: string | string[]) => void,
+  deleteNetworkFromWorkspace: (ids: string | string[]) => void,
   network: Network,
   visualStyle: VisualStyle,
   summary: NdexNetworkSummary,
@@ -117,6 +118,7 @@ export const saveCopyToNDEx = async (
   viewModel?: NetworkView,
   visualStyleOptions?: VisualStyleOptions,
   opaqueAspect?: OpaqueAspects,
+  deleteOriginal?: boolean,
 ): Promise<string> => {
   if (viewModel === undefined) {
     throw new Error('Could not find the current network view model.')
@@ -129,7 +131,7 @@ export const saveCopyToNDEx = async (
     edgeTable,
     visualStyleOptions,
     viewModel,
-    `Copy of ${summary.name}`,
+    deleteOriginal ? summary.name : `Copy of ${summary.name}`,
     opaqueAspect,
   )
   const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
@@ -142,6 +144,9 @@ export const saveCopyToNDEx = async (
     throw new Error('The network is rejected by NDEx')
   }
   addNetworkToWorkspace(uuid as IdType)
+  if(deleteOriginal === true){
+    deleteNetworkFromWorkspace(network.id)
+  }
   return uuid
 }
 
@@ -195,6 +200,7 @@ export const saveAllNetworks = async (
   ndexClient: NDEx,
   allNetworkId: string[],
   addNetworkToWorkspace: (ids: string | string[]) => void,
+  deleteNetworkFromWorkspace: (ids: string | string[]) => void,
   networkModifiedStatus: Record<string, boolean | undefined>,
   updateSummary: (id: string, summary: Partial<NdexNetworkSummary>) => void,
   deleteNetworkModifiedStatus: (networkId: string) => void,
@@ -251,6 +257,7 @@ export const saveAllNetworks = async (
           accessToken,
           ndexClient,
           addNetworkToWorkspace,
+          deleteNetworkFromWorkspace,
           network,
           visualStyle,
           summary,
@@ -259,6 +266,7 @@ export const saveAllNetworks = async (
           networkViews?.[0],
           visualStyleOptions,
           opaqueAspect,
+          true
         )
       } catch (e) {
         if (e.message.includes(TimeOutErrorIndicator)) {
@@ -314,6 +322,7 @@ export const saveAllNetworks = async (
             accessToken,
             ndexClient,
             addNetworkToWorkspace,
+            deleteNetworkFromWorkspace,
             network,
             visualStyle,
             summary,

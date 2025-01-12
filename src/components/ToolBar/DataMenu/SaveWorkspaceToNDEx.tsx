@@ -90,6 +90,9 @@ export const SaveWorkspaceToNDExMenuItem = (
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
+  const deleteNetworksFromWorkspace = useWorkspaceStore(
+    (state) => state.deleteNetwork,
+  )
 
   const saveWorkspaceToNDEx = async (): Promise<void> => {
     if (workspaceName.trim().length === 0) {
@@ -115,6 +118,7 @@ export const SaveWorkspaceToNDExMenuItem = (
         ndexClient,
         allNetworkId,
         addNetworkToWorkspace,
+        deleteNetworksFromWorkspace,
         networkModifiedStatus,
         updateSummary,
         deleteNetworkModifiedStatus,
