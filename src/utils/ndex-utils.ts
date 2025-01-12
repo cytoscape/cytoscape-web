@@ -278,7 +278,7 @@ export const saveAllNetworks = async (
         }
         throw e
       }
-      return
+      continue
     }
     if (networkModifiedStatus[networkId] === true) {
       try {
