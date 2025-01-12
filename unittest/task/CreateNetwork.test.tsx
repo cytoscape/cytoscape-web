@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, act } from '@testing-library/react'
 import {
-  createEmptyNetwork,
+  createNetworkFromEdgeList,
   useCreateNetworkWithView,
 } from '../../src/task/CreateNetwork'
 import { NetworkWithView } from '../../src/models/NetworkWithViewModel'
@@ -12,6 +12,7 @@ import { useViewModelStore } from '../../src/store/ViewModelStore'
 import { useVisualStyleStore } from '../../src/store/VisualStyleStore'
 import { v4 as uuidv4 } from 'uuid'
 import { Network } from 'src/models'
+import { createNetwork } from '../../src/models/NetworkModel/impl/CyNetwork'
 
 const mockId = 'mocked-uuid'
 
@@ -37,7 +38,11 @@ const TestComponent = ({ onCreate }: TestComponentProps) => {
   const createNetworkWithView = useCreateNetworkWithView()
 
   React.useEffect(() => {
-    const data = createNetworkWithView({ name: 'Test Network' })
+    const data = createNetworkWithView({
+      name: 'Test Network',
+      description: 'Test network description',
+      edgeList: [],
+    })
     onCreate(data)
   }, [createNetworkWithView, onCreate])
 
@@ -52,7 +57,7 @@ describe('createEmptyNetwork', () => {
       edges: [],
     }
 
-    const newNetwork = createEmptyNetwork()
+    const newNetwork = createNetworkFromEdgeList([])
 
     console.log('Empty network', newNetwork)
 

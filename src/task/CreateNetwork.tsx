@@ -5,8 +5,7 @@ import NetworkFn, {
   Network,
 } from '../models/NetworkModel'
 import { v4 as uuidv4 } from 'uuid'
-import TableFn, { Table } from '../models/TableModel'
-import ViewModelFn, { NetworkView } from '../models/ViewModel'
+import TableFn, { AttributeName, Table, ValueType } from '../models/TableModel'
 import VisualStyleFn, { VisualStyle } from '../models/VisualStyleModel'
 import { NetworkWithView } from '../models/NetworkWithViewModel'
 import { useNetworkStore } from '../store/NetworkStore'
@@ -15,21 +14,11 @@ import { useViewModelStore } from '../store/ViewModelStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useCallback } from 'react'
 import { NetworkStore } from '../models/StoreModel/NetworkStoreModel'
-import { TableStore } from '../models/StoreModel/TableStoreModel'
+import { TableRecord, TableStore } from '../models/StoreModel/TableStoreModel'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { getBaseSummary } from '../models/NetworkSummaryModel'
 import { IdType } from '../models'
-
-/**
- * Create an empty network object with generated ID
- *
- * @returns Network object
- *
- */
-export const createEmptyNetwork = (): Network => {
-  const id: IdType = uuidv4()
-  return NetworkFn.createNetworkFromLists(id, [], [])
-}
+import { createViewModelFromNetwork } from '../models/ViewModel/impl/ViewModelImpl'
 
 const toNode = (id: IdType): Node => {
   return {
@@ -45,15 +34,59 @@ const toEdge = (edge: [IdType, IdType]): Edge => {
   }
 }
 
-const createNetworkFromEdgeList = (
-  edgeList: Array<[IdType, IdType]>,
+/**
+ * Create a network object from the given edge list
+ *
+ * @param edgeList List of edges in the form of [source, target, edge type?]
+ *
+ * @returns Network object
+ */
+export const createNetworkFromEdgeList = (
+  edgeList: Array<[IdType, IdType, string?]>,
 ): Network => {
+  // Generate a new UUID for the network
   const id: IdType = uuidv4()
 
-  const nodeSet: Set<IdType> = new Set(edgeList.flat())
+  // Get unique nodes from the edge list
+  const nodeSet = new Set<IdType>(
+    edgeList.flatMap((edge) => [edge[0], edge[1]]),
+  )
   const nodes: Node[] = Array.from(nodeSet).map(toNode)
   const edges: Edge[] = edgeList.map(toEdge)
   return NetworkFn.createNetworkFromLists(id, nodes, edges)
+}
+
+/**
+ * Create a table data object for the given network
+ *  with minimal columns (e.g., name for nodes, interaction for edges)
+ *
+ * @param network
+ * @returns
+ */
+const createTableData = (network: Network): TableRecord => {
+  const networkId: IdType = network.id
+  const nodeTableData = new Map<IdType, Record<AttributeName, ValueType>>()
+  const edgeTableData = new Map<IdType, Record<AttributeName, ValueType>>()
+  network.nodes.forEach((node) => {
+    nodeTableData.set(node.id, { name: node.id })
+  })
+  network.edges.forEach((edge) => {
+    edgeTableData.set(edge.id, { interaction: edge.id })
+  })
+
+  // Add base columns (e.g., name)
+  const nodeTable: Table = TableFn.createTable(
+    networkId,
+    [{ name: 'name', type: 'string' }],
+    nodeTableData,
+  )
+  const edgeTable: Table = TableFn.createTable(
+    networkId,
+    [{ name: 'interaction', type: 'string' }],
+    edgeTableData,
+  )
+
+  return { nodeTable, edgeTable }
 }
 
 /**
@@ -65,12 +98,9 @@ const createNetworkFromEdgeList = (
  */
 export const createViewForNetwork = (network: Network): NetworkWithView => {
   const networkId: IdType = network.id
-
-  // Add base columns (e.g., name)
-  const nodeTable: Table = TableFn.createTable(networkId)
-  const edgeTable: Table = TableFn.createTable(networkId)
+  const networkView = createViewModelFromNetwork(networkId, network)
+  const { nodeTable, edgeTable } = createTableData(network)
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
-  const networkView: NetworkView = ViewModelFn.createViewModel(network)
   const networkAttributes: NetworkAttributes = {
     id: networkId,
     attributes: {},
@@ -89,8 +119,9 @@ export const createViewForNetwork = (network: Network): NetworkWithView => {
 }
 
 interface CreateNetworkWithViewProps {
-  name?: string
+  name: string
   description?: string
+  edgeList: Array<[IdType, IdType, string?]>
 }
 
 /**
@@ -100,6 +131,7 @@ interface CreateNetworkWithViewProps {
 export const useCreateNetworkWithView = (): (({
   name,
   description,
+  edgeList,
 }: CreateNetworkWithViewProps) => NetworkWithView) => {
   const addNetwork = useNetworkStore((state: NetworkStore) => state.add)
   const addTable = useTableStore((state: TableStore) => state.add)
@@ -108,13 +140,16 @@ export const useCreateNetworkWithView = (): (({
   const addSummary = useNetworkSummaryStore((state) => state.add)
 
   const createNetworkWithView = useCallback(
-    ({ name, description }: CreateNetworkWithViewProps) => {
-      const network: Network = createEmptyNetwork()
+    ({ name, description, edgeList }: CreateNetworkWithViewProps) => {
+      // Create a simple network object from source-target edge list
+      const network: Network = createNetworkFromEdgeList(edgeList)
+
+      // Add all required objects to the network
       const withView: NetworkWithView = createViewForNetwork(network)
       const summary = getBaseSummary({
         uuid: network.id,
         name: name || '',
-        description: description || '',
+        description: description || '(N/A)',
       })
       addNetwork(network)
       addVisualStyle(network.id, withView.visualStyle)
