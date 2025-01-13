@@ -3,9 +3,10 @@ import { JsonNode } from '../model'
 import { useAddNetworks } from './addNetworks'
 import { useAddTables } from './addTables'
 import { useUpdateLayouts } from './updateLayouts'
-import { useUpdateNetworks } from './updateNetworks'
-import { useUpdateSelections } from './updateSelections'
+import { useUpdateNetwork } from './updateNetwork'
+import { useUpdateSelection } from './updateSelection'
 import { useUpdateTables } from './updateTables'
+import { useOpenURL } from './openURL'
 
 export interface ActionHandlerProps {
   responseObj: JsonNode
@@ -16,9 +17,10 @@ export const useServiceResultHandlerManager = () => {
   const addNetworks = useAddNetworks()
   const addTables = useAddTables()
   const updateLayouts = useUpdateLayouts()
-  const updateNetworks = useUpdateNetworks()
-  const updateSelections = useUpdateSelections()
+  const updateNetwork = useUpdateNetwork()
+  const updateSelection = useUpdateSelection()
   const updateTables = useUpdateTables()
+  const openURL = useOpenURL()
   const getHandler = (action: ServiceAppAction) => {
     switch (action) {
       case ServiceAppAction.AddNetworks:
@@ -27,12 +29,14 @@ export const useServiceResultHandlerManager = () => {
         return addTables
       case ServiceAppAction.UpdateLayouts:
         return updateLayouts
-      case ServiceAppAction.UpdateNetworks:
-        return updateNetworks
-      case ServiceAppAction.UpdateSelections:
-        return updateSelections
+      case ServiceAppAction.UpdateNetwork:
+        return updateNetwork
+      case ServiceAppAction.UpdateSelection:
+        return updateSelection
       case ServiceAppAction.UpdateTables:
         return updateTables
+      case ServiceAppAction.OpenURL:
+        return openURL
       default:
         return undefined
     }

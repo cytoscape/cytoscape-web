@@ -10,14 +10,16 @@
  *  - UpdateTables: Update the existing tables in the current workspace
  *  - UpdateLayouts: Update the layouts of the networks in the current workspace
  *  - UpdateSelection: Update the selection states of nodes and edges
+ *  - openURL: Open the given URL in a new tab
  */
 export const ServiceAppAction = {
   AddNetworks: 'addNetworks',
-  UpdateNetworks: 'updateNetworks',
+  UpdateNetwork: 'updateNetwork',
   AddTables: 'addTables',
   UpdateTables: 'updateTables',
   UpdateLayouts: 'updateLayouts',
-  UpdateSelections: 'updateSelections',
+  UpdateSelection: 'updateSelection',
+  OpenURL: 'openURL',
 } as const
 
 export type ServiceAppAction =

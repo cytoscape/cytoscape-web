@@ -16,6 +16,8 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import parse from 'html-react-parser'
 import React from 'react'
+import { IdType, NdexNetworkSummary } from '../../models'
+import _ from 'lodash'
 
 export function NetworkPropertyTable(): React.ReactElement {
   const currentNetworkId = useWorkspaceStore(
@@ -58,6 +60,10 @@ export default function NetworkInfoPanel(props: {
   const networkInfo = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
+  const workspace = useWorkspaceStore((state) => state.workspace)
+  const setNetworkModified: (id: IdType, isModified: boolean) => void =
+    useWorkspaceStore((state) => state.setNetworkModified)
+
   const properties = networkInfo?.properties ?? []
 
   const containsHtmlAnchor = (text: string) => {
@@ -76,7 +82,24 @@ export default function NetworkInfoPanel(props: {
   const capitalizeFirstLetter = (string: string): string => {
     return string.charAt(0).toUpperCase() + string.slice(1)
   }
+  useNetworkSummaryStore.subscribe((next, prev) => {
+    const prevSummary = prev.summaries[currentNetworkId]
+    const nextSummary = next.summaries[currentNetworkId]
+    if (prevSummary === undefined || nextSummary === undefined) {
+      return
+    }
+    const summaryDataChanged = !_.isEqual(prevSummary, nextSummary)
+    const { networkModified } = workspace
 
+    const currentNetworkIsNotModified =
+      networkModified[currentNetworkId] === undefined ||
+      networkModified[currentNetworkId] === false
+
+    // If table data changed and the network is not already marked as modified, set it to modified
+    if (summaryDataChanged && currentNetworkIsNotModified) {
+      setNetworkModified(currentNetworkId, true)
+    }
+  })
   return (
     <Box sx={{ height: props.height, overflow: 'auto', pl: 1, pr: 1 }}>
       <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>

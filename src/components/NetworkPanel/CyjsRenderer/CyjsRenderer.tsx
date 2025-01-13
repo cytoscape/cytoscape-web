@@ -166,7 +166,12 @@ const CyjsRenderer = ({
   }
 
   const renderNetwork = (): void => {
-    if (renderedId === id || cy === null) {
+    if (
+      cy === null ||
+      (renderedId === id &&
+        cy.nodes().length === networkView?.nodeViews.length &&
+        cy.edges().length === networkView?.edgeViews.length)
+    ) {
       return
     }
 
