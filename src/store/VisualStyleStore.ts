@@ -62,7 +62,6 @@ export const useVisualStyleStore = create(
         set((state) => {
           if (state.visualStyles[networkId] !== undefined) {
             console.warn(`Visual Style already exists for network ${networkId}`)
-            return state
           }
           state.visualStyles[networkId] = visualStyle
           void putVisualStyleToDb(networkId, visualStyle)
@@ -74,7 +73,7 @@ export const useVisualStyleStore = create(
             })
           return state
         })
-      },
+      },   
 
       setDefault: (
         networkId: IdType,

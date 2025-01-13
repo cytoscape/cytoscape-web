@@ -3,7 +3,7 @@ import { ServiceAppAction } from '../../../models/AppModel/ServiceAppAction'
 
 type JsonValue = string | number | boolean | JsonObject | JsonArray;
 
-interface JsonObject {
+export interface JsonObject {
   [key: string]: JsonValue;
 }
 

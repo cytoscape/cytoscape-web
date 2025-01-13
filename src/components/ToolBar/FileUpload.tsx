@@ -14,26 +14,20 @@ import {
 } from '@mantine/core'
 import { IconUpload, IconX } from '@tabler/icons-react'
 import { Dropzone } from '@mantine/dropzone'
-import { notifications } from '@mantine/notifications'
-import Papa from 'papaparse'
 import { ModalsProvider, modals } from '@mantine/modals'
 import { v4 as uuidv4 } from 'uuid'
 
-import { Cx2 } from '../../models/CxModel/Cx2'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
 } from '../../models/CxModel/cx2-util'
-import NetworkFn, { Network } from '../../models/NetworkModel'
 import { NdexNetworkProperty } from '../../models/NetworkSummaryModel'
 import TableFn, {
   Table,
   ValueType,
   ValueTypeName,
 } from '../../models/TableModel'
-import ViewModelFn, { NetworkView } from '../../models/ViewModel'
-import VisualStyleFn, { VisualStyle } from '../../models/VisualStyleModel'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
@@ -49,7 +43,10 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/network-utils'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { useUiStateStore } from '../../store/UiStateStore'
-import { getOptionalAspects } from '../../utils/cx-utils'
+import {
+  createDataFromLocalCx2,
+  getOptionalAspects,
+} from '../../utils/cx-utils'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { useMessageStore } from '../../store/MessageStore'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
@@ -60,16 +57,6 @@ interface FileUploadProps {
 }
 
 export function FileUpload(props: FileUploadProps) {
-  interface FullNetworkData {
-    network: Network
-    nodeTable: Table
-    edgeTable: Table
-    visualStyle: VisualStyle
-    networkView: NetworkView
-    visualStyleOptions: VisualStyleOptions
-    otherAspects: OpaqueAspects[]
-  }
-
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
@@ -92,44 +79,6 @@ export function FileUpload(props: FileUploadProps) {
   )
 
   const addAllOpaqueAspects = useOpaqueAspectStore((state) => state.addAll)
-
-  const createDataFromLocalCx2 = async (
-    LocalNetworkId: string,
-    cxData: Cx2,
-  ): Promise<FullNetworkData> => {
-    const network: Network = NetworkFn.createNetworkFromCx(
-      LocalNetworkId,
-      cxData,
-    )
-
-    const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
-      LocalNetworkId,
-      cxData,
-    )
-
-    const visualStyle: VisualStyle =
-      VisualStyleFn.createVisualStyleFromCx(cxData)
-
-    const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
-      LocalNetworkId,
-      cxData,
-    )
-
-    const visualStyleOptions: VisualStyleOptions =
-      VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
-
-    const otherAspects: OpaqueAspects[] = getOptionalAspects(cxData)
-
-    return {
-      network,
-      nodeTable,
-      edgeTable,
-      visualStyle,
-      networkView,
-      visualStyleOptions,
-      otherAspects,
-    }
-  }
 
   const handleCX2File = async (file: File, jsonStr: string) => {
     try {

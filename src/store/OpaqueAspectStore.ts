@@ -25,9 +25,9 @@ export const useOpaqueAspectStore = create(
         return state
       })
     },
-    addAll: (networkId: IdType, aspects: OpaqueAspects[]) => {
+    addAll: (networkId: IdType, aspects: OpaqueAspects[], isUpdate: boolean = false) => {
       set((state) => {
-        if (!state.opaqueAspects[networkId]) {
+        if (!state.opaqueAspects[networkId] || isUpdate) {
           state.opaqueAspects[networkId] = {}
         }
         aspects.forEach((aspect) => {
