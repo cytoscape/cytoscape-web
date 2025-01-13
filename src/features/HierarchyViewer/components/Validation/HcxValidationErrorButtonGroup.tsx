@@ -17,6 +17,7 @@ import { validateHcx } from '../../model/impl/hcxValidators'
 import { useTableStore } from '../../../../store/TableStore'
 import { useMessageStore } from '../../../../store/MessageStore'
 import { HcxValidationWarningsDialog } from './HcxValidationWarningsDialog'
+import { MessageSeverity } from '../../../../models'
 
 export interface HcxValidationButtonGroupProps {
   id: IdType
@@ -53,7 +54,8 @@ export const HcxValidationButtonGroup = (
     if (!validationRes.isValid) {
       addMessage({
         message: `This network is not a valid HCX network.  Some features may not work properly.`,
-        duration: 10000,
+        duration: 5000,
+        severity: MessageSeverity.WARNING,
       })
     } else {
       setShowValidationSuccess(true)

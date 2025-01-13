@@ -1,13 +1,15 @@
-import { Alert, IconButton, Snackbar, Tooltip } from '@mui/material'
+import { IconButton, Tooltip } from '@mui/material'
 import { Share } from '@mui/icons-material'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models'
+import { useMessageStore } from '../../store/MessageStore'
+import { MessageSeverity } from '../../models/MessageModel'
 
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300
@@ -49,6 +51,8 @@ export const ShareNetworkButton = ({
   const networkViewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
   )
+
+  const addMessage = useMessageStore((state) => state.addMessage)
 
   const { selectedNodes, selectedEdges } = networkViewModel ?? {}
   const selectedNodeCount: number = selectedNodes?.length ?? 0
@@ -111,8 +115,6 @@ export const ShareNetworkButton = ({
     setSelection(new URLSearchParams(search))
   }, [networkViewModel?.selectedNodes, networkViewModel?.selectedEdges])
 
-  const [open, setOpen] = useState(false)
-
   const copyTextToClipboard = async (text: string): Promise<void> => {
     if ('clipboard' in navigator) {
       return await navigator.clipboard.writeText(text)
@@ -135,19 +137,12 @@ export const ShareNetworkButton = ({
       `${baseUrl}0/networks/${currentNetworkId}?${query}`,
     ).then(() => {
       // Notify user that the sharable URL has been copied to clipboard
-      setOpen(true)
+      addMessage({
+        message: 'URL for sharing this network has been copied!',
+        duration: 3000,
+        severity: MessageSeverity.SUCCESS,
+      })
     })
-  }
-
-  const handleClose = (
-    event?: React.SyntheticEvent | Event,
-    reason?: string,
-  ): void => {
-    if (reason === 'clickaway') {
-      return
-    }
-
-    setOpen(false)
   }
 
   return (
@@ -166,16 +161,6 @@ export const ShareNetworkButton = ({
           <Share fontSize="inherit" />
         </IconButton>
       </Tooltip>
-      <Snackbar
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        open={open}
-        autoHideDuration={3000}
-        onClose={handleClose}
-      >
-        <Alert onClose={handleClose} severity="success" sx={{ width: '100%' }}>
-          URL for sharing this network has been copied!
-        </Alert>
-      </Snackbar>
     </>
   )
 }

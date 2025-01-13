@@ -16,33 +16,44 @@ import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
-
-interface OpenNetworkInCytoscapeMenuItemProps extends BaseMenuProps {
-  onSnackbarOpen: (message: string, severity?: 'info' | 'success' | 'error') => void
-}
+import { useMessageStore } from '../../../store/MessageStore'
+import { MessageSeverity } from '../../../models/MessageModel'
 
 export const OpenNetworkInCytoscapeMenuItem = ({
   handleClose,
-  onSnackbarOpen,
-}: OpenNetworkInCytoscapeMenuItemProps): ReactElement => {
+}: BaseMenuProps): ReactElement => {
   const cyndex = new CyNDEx()
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
-
+  const addMessage = useMessageStore((state) => state.addMessage)
   const table = useTableStore((state) => state.tables[currentNetworkId])
-  const summary = useNetworkSummaryStore((state) => state.summaries[currentNetworkId])
+  const summary = useNetworkSummaryStore(
+    (state) => state.summaries[currentNetworkId],
+  )
   const viewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
   )
-  const visualStyle = useVisualStyleStore((state) => state.visualStyles[currentNetworkId])
-  const visualStyleOptions = useUiStateStore((state) => state.ui.visualStyleOptions[currentNetworkId])
-  const network = useNetworkStore((state) => state.networks.get(currentNetworkId)) as Network
-  const opaqueAspects = useOpaqueAspectStore((state) => state.opaqueAspects[currentNetworkId])
+  const visualStyle = useVisualStyleStore(
+    (state) => state.visualStyles[currentNetworkId],
+  )
+  const visualStyleOptions = useUiStateStore(
+    (state) => state.ui.visualStyleOptions[currentNetworkId],
+  )
+  const network = useNetworkStore((state) =>
+    state.networks.get(currentNetworkId),
+  ) as Network
+  const opaqueAspects = useOpaqueAspectStore(
+    (state) => state.opaqueAspects[currentNetworkId],
+  )
 
   const openNetworkInCytoscape = async (): Promise<void> => {
     if (viewModel === undefined) {
-      onSnackbarOpen('Could not find the current network view model.', 'error')
+      addMessage({
+        message: 'Could not find the current network view model.',
+        duration: 4000,
+        severity: MessageSeverity.WARNING,
+      })
       return
     }
     const cx = exportNetworkToCx2(
@@ -57,14 +68,25 @@ export const OpenNetworkInCytoscapeMenuItem = ({
       opaqueAspects,
     )
     try {
-      onSnackbarOpen('Sending this network to Cytoscape Desktop...', 'info')
+      addMessage({
+        message: 'Sending this network to Cytoscape Desktop...',
+        duration: 3000,
+        severity: MessageSeverity.INFO,
+      })
+
       await cyndex.postCX2NetworkToCytoscape(cx)
-      onSnackbarOpen('Network successfully opened in Cytoscape Desktop.', 'success')
+      addMessage({
+        message: 'Network successfully opened in Cytoscape Desktop.',
+        duration: 4000,
+        severity: MessageSeverity.SUCCESS,
+      })
     } catch (e) {
-      onSnackbarOpen(
-        'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed.',
-        'error',
-      )
+      addMessage({
+        message:
+          'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed.',
+        duration: 6000,
+        severity: MessageSeverity.ERROR,
+      })
       console.error('Could not open the network in Cytoscape Desktop!', e)
     }
     handleClose()
@@ -86,7 +108,13 @@ export const OpenNetworkInCytoscapeMenuItem = ({
   )
 
   return (
-    <Tooltip title={isSafari ? "This feature is not available on Safari" : "Download and open Cytoscape to open network"}>
+    <Tooltip
+      title={
+        isSafari
+          ? 'This feature is not available on Safari'
+          : 'Download and open Cytoscape to open network'
+      }
+    >
       <Box>{menuItem}</Box>
     </Tooltip>
   )

@@ -21,6 +21,7 @@ import { useLLMQueryStore } from '../store'
 import { NetworkView } from '../../../models/ViewModel'
 import { translateMemberIds } from '../../../utils/ndex-utils'
 import { AppConfigContext } from '../../../AppConfigContext'
+import { MessageSeverity } from '../../../models/MessageModel'
 
 export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -130,6 +131,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
           e.message as string
         }`,
         duration: 8000,
+        severity: MessageSeverity.ERROR,
       })
       setLoading(false)
       setLLMResult('')
@@ -140,6 +142,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
       addMessage({
         message: `No gene symbols found for the selected subsystem nodes.  Make sure the ${SubsystemTag.members} or ${SubsystemTag.memberNames} column is defined for the selected nodes.`,
         duration: 8000,
+        severity: MessageSeverity.WARNING,
       })
       setLoading(false)
       setLLMResult('')
@@ -151,6 +154,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     addMessage({
       message: `Running LLM query...`,
       duration: 6000,
+      severity: MessageSeverity.INFO,
     })
     props.handleClose()
 
@@ -168,6 +172,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
       addMessage({
         message: `Error querying LLM model: ${e.message as string}`,
         duration: 10000,
+        severity: MessageSeverity.ERROR,
       })
 
       setLLMResult('')

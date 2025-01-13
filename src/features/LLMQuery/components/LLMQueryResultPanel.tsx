@@ -10,6 +10,7 @@ import { useMessageStore } from '../../../store/MessageStore'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
+import { MessageSeverity } from '../../../models/MessageModel'
 
 export const LLMQueryResultPanel = (props: {
   height?: number
@@ -46,7 +47,8 @@ export const LLMQueryResultPanel = (props: {
     if (localQueryValue === '') {
       addMessage({
         message: `Unable to send query to the LLM model.  The query string is empty.`,
-        duration: 8000,
+        duration: 5000,
+        severity: MessageSeverity.WARNING,
       })
       setLLMResult('')
       setLoading(false)
@@ -55,7 +57,8 @@ export const LLMQueryResultPanel = (props: {
     try {
       addMessage({
         message: `Running LLM query...`,
-        duration: 6000,
+        duration: 3000,
+        severity: MessageSeverity.INFO,
       })
       const message = LLMTemplate.fn(localQueryValue)
       const LLMResponse = await analyzeSubsystemGeneSet(
@@ -69,7 +72,8 @@ export const LLMQueryResultPanel = (props: {
     } catch (e) {
       addMessage({
         message: `Error querying LLM model: ${e.message as string}`,
-        duration: 10000,
+        duration: 6000,
+        severity: MessageSeverity.ERROR,
       })
 
       setLLMResult('')

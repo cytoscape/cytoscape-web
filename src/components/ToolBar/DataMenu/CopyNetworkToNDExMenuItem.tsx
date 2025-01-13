@@ -28,6 +28,7 @@ import {
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
 } from '../../../utils/ndex-utils'
+import { MessageSeverity } from '../../../models/MessageModel'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
@@ -106,6 +107,7 @@ export const CopyNetworkToNDExMenuItem = (
           uuid as string
         }`,
         duration: 3000,
+        severity: MessageSeverity.SUCCESS,
       })
     } catch (e) {
       console.log(e)
@@ -113,13 +115,15 @@ export const CopyNetworkToNDExMenuItem = (
         addMessage({
           message: TimeOutErrorMessage,
           duration: 6000,
+          severity: MessageSeverity.ERROR,
         })
       } else {
         addMessage({
           message: `Error: Could not save a copy of the current network to NDEx. ${
             e.message as string
           }`,
-          duration: 3000,
+          duration: 5000,
+          severity: MessageSeverity.ERROR,
         })
       }
     }
@@ -154,7 +158,7 @@ export const CopyNetworkToNDExMenuItem = (
         disabled={!authenticated}
         onClick={handleClick}
       >
-        {'Save Current Network to NDEx As...'}
+        {'Save Current Network to NDEx as...'}
       </MenuItem>
     </Box>
   )

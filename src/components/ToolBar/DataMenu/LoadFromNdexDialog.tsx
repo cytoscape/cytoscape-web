@@ -33,6 +33,7 @@ import { ndexSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
 import { dateFormatter } from '../../../utils/date-format'
 import { KeycloakContext } from '../../../bootstrap'
 import { useMessageStore } from '../../../store/MessageStore'
+import { MessageSeverity } from '../../../models/MessageModel'
 
 interface LoadFromNdexDialogProps {
   open: boolean
@@ -484,6 +485,7 @@ export const LoadFromNdexDialog = (
               addMessage({
                 message: `Loading ${selectedNetworks.length} network${selectedNetworks.length > 1 ? 's' : ''} from NDEx`,
                 duration: 3000,
+                severity: MessageSeverity.INFO,
               })
               void addNDExNetworksToWorkspace(selectedNetworks)
               handleClose()

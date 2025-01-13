@@ -26,19 +26,21 @@ import { fetchMyWorkspaces } from '../../../utils/ndex-utils'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import './menuItem.css'
+import { useMessageStore } from '../../../store/MessageStore'
+import { MessageSeverity } from '../../../models/MessageModel'
 
-export const DataMenu: React.FC<DropdownMenuProps> = (props: DropdownMenuProps) => {
+export const DataMenu: React.FC<DropdownMenuProps> = (
+  props: DropdownMenuProps,
+) => {
   const { label } = props
   const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true)
   const [existingWorkspace, setExistingWorkspace] = useState<any[]>([])
   const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
+  const addMessage = useMessageStore((state) => state.addMessage)
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
   const authenticated: boolean = client?.authenticated ?? false
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [snackbarOpen, setSnackbarOpen] = useState(false)
-  const [snackbarMessage, setSnackbarMessage] = useState('')
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'info' | 'success' | 'error'>('info')
 
   const getToken = useCredentialStore((state) => state.getToken)
   const op = useRef(null)
@@ -47,16 +49,6 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props: DropdownMenuProps) 
   const handleClose = (): void => {
     ;(op.current as any)?.hide()
     setAnchorEl(null)
-  }
-
-  const handleSnackbarOpen = (message: string, severity: 'info' | 'success' | 'error' = 'info') => {
-    setSnackbarMessage(message)
-    setSnackbarSeverity(severity)
-    setSnackbarOpen(true)
-  }
-
-  const handleSnackbarClose = () => {
-    setSnackbarOpen(false)
   }
 
   useEffect(() => {
@@ -69,7 +61,11 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props: DropdownMenuProps) 
         })
         .catch((error) => {
           console.error('Error:', error)
-          handleSnackbarOpen('Failed to fetch workspaces from NDEx', 'error')
+          addMessage({
+            message: 'Failed to fetch workspaces from NDEx',
+            duration: 4000,
+            severity: MessageSeverity.ERROR,
+          })
           setIsLoadingWorkspace(false)
         })
     } else {
@@ -79,7 +75,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props: DropdownMenuProps) 
 
   const menuItems = [
     {
-      label: 'Open network(s) From NDEx...',
+      label: 'Open network(s) from NDEx...',
       template: <LoadFromNdexMenuItem handleClose={handleClose} />,
     },
     {
@@ -87,16 +83,13 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props: DropdownMenuProps) 
       template: <LoadWorkspaceMenuItem handleClose={handleClose} />,
     },
     {
-      label: 'Open sample networks',
+      label: 'Open Sample Networks',
       template: <LoadDemoNetworksMenuItem handleClose={handleClose} />,
     },
     {
       label: 'Open in Cytoscape',
       template: () => (
-        <OpenNetworkInCytoscapeMenuItem
-          handleClose={handleClose}
-          onSnackbarOpen={handleSnackbarOpen} // Pass Snackbar handler
-        />
+        <OpenNetworkInCytoscapeMenuItem handleClose={handleClose} />
       ),
     },
     {
@@ -203,21 +196,6 @@ export const DataMenu: React.FC<DropdownMenuProps> = (props: DropdownMenuProps) 
       <OverlayPanel ref={op} unstyled>
         <TieredMenu style={{ width: 350 }} model={menuItems} />
       </OverlayPanel>
-      {/* Snackbar for feedback */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={5000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbarSeverity}
-          sx={{ width: '100%' }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
     </PrimeReactProvider>
   )
 }
