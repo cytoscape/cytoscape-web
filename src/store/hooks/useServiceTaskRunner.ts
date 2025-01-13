@@ -24,6 +24,7 @@ import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
 import { ServiceAppAction } from '../../models/AppModel/ServiceAppAction'
 import { useMessageStore } from '../MessageStore'
+import { MessageSeverity } from '../../models/MessageModel'
 
 export interface RunTaskResult {
   status: ServiceStatus
@@ -159,6 +160,7 @@ export const useServiceTaskRunner = (): ((
             addMessage({
               message: `Update network action is not supported for HCX networks`,
               duration: 4000,
+              severity: MessageSeverity.WARNING,
             })
             continue
           }

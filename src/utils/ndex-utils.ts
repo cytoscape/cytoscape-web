@@ -101,7 +101,7 @@ export const getNDExSummaryStatus = async (
     }
     await waitSeconds(interval)
   }
-  throw new Error('NDEx_TIMEOUT_ERROR')
+  throw new Error(TimeOutErrorIndicator)
 }
 
 export const saveCopyToNDEx = async (
@@ -143,9 +143,9 @@ export const saveCopyToNDEx = async (
   if (summaryStatus.rejected) {
     throw new Error('The network is rejected by NDEx')
   }
-  addNetworkToWorkspace(uuid as IdType)
-  if(deleteOriginal === true){
-    deleteNetworkFromWorkspace(network.id)
+  addNetworkToWorkspace(uuid as IdType) // add the new network to the workspace
+  if (deleteOriginal === true) {
+    deleteNetworkFromWorkspace(network.id) // delete the original network from the workspace
   }
   return uuid
 }
@@ -225,33 +225,33 @@ export const saveAllNetworks = async (
 
     let opaqueAspect = opaqueAspects[networkId]
 
-    if (!network || !visualStyle || !nodeTable || !edgeTable) {
-      const res = await useNdexNetwork(networkId, ndexBaseUrl, accessToken)
-      // Using parentheses to perform destructuring assignment correctly
-      ;({
-        network,
-        nodeTable,
-        edgeTable,
-        visualStyle,
-        networkViews,
-        visualStyleOptions,
-      } = res)
+    try {
+      if (!network || !visualStyle || !nodeTable || !edgeTable) {
+        const res = await useNdexNetwork(networkId, ndexBaseUrl, accessToken)
+        // Using parentheses to perform destructuring assignment correctly
+        ;({
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkViews,
+          visualStyleOptions,
+        } = res)
 
-      if (res.otherAspects) {
-        opaqueAspect = res.otherAspects.reduce(
-          (acc: OpaqueAspects, aspect: OpaqueAspects) => {
-            const [aspectName, aspectData] = Object.entries(aspect)[0]
-            acc[aspectName] = aspectData
-            return acc
-          },
-          {} as OpaqueAspects,
-        )
-      } else {
-        opaqueAspect = {}
+        if (res.otherAspects) {
+          opaqueAspect = res.otherAspects.reduce(
+            (acc: OpaqueAspects, aspect: OpaqueAspects) => {
+              const [aspectName, aspectData] = Object.entries(aspect)[0]
+              acc[aspectName] = aspectData
+              return acc
+            },
+            {} as OpaqueAspects,
+          )
+        } else {
+          opaqueAspect = {}
+        }
       }
-    }
-    if (summary.isNdex === false) {
-      try {
+      if (summary.isNdex === false) {
         await saveCopyToNDEx(
           ndexBaseUrl,
           accessToken,
@@ -266,30 +266,12 @@ export const saveAllNetworks = async (
           networkViews?.[0],
           visualStyleOptions,
           opaqueAspect,
-          true
+          true,
         )
-      } catch (e) {
-        if (e.message.includes(TimeOutErrorIndicator)) {
-          addMessage({
-            message: TimeOutErrorMessage,
-            duration: 6000,
-            severity: MessageSeverity.ERROR
-          })
-        } else {
-          addMessage({
-            message: `Error: Could not save a copy of the local network to NDEx. ${
-              e.message as string
-            }`,
-            duration: 5000,
-            severity: MessageSeverity.ERROR
-          })
-        }
-        throw e
+        continue
       }
-      continue
-    }
-    if (networkModifiedStatus[networkId] === true) {
-      try {
+
+      if (networkModifiedStatus[networkId] === true) {
         await saveNetworkToNDEx(
           ndexBaseUrl,
           accessToken,
@@ -306,54 +288,24 @@ export const saveAllNetworks = async (
           opaqueAspect,
         )
         deleteNetworkModifiedStatus(networkId)
-      } catch (e) {
-        //Todo: is it proper to directly fall back to saveCopyToNDEx if it fails to save the network to NDEx?
-        if (e.message.includes(TimeOutErrorIndicator)) {
-          addMessage({
-            message: TimeOutErrorMessage,
-            duration: 6000,
-            severity: MessageSeverity.ERROR
-          })
-          throw e
-        }
-        try {
-          await saveCopyToNDEx(
-            ndexBaseUrl,
-            accessToken,
-            ndexClient,
-            addNetworkToWorkspace,
-            deleteNetworkFromWorkspace,
-            network,
-            visualStyle,
-            summary,
-            nodeTable,
-            edgeTable,
-            networkViews?.[0],
-            visualStyleOptions,
-            opaqueAspect,
-          )
-          addMessage({
-            message: `Unable to save the modified network to NDEx caused by error: ${e.message as string}. Instead, saved its copy to NDEx.`,
-            duration: 3000,
-            severity: 'info'
-          })
-        } catch (e) {
-          if (e.message.includes(TimeOutErrorIndicator)) {
-            addMessage({
-              message: TimeOutErrorMessage,
-              duration: 6000,
-              severity: MessageSeverity.ERROR
-            })
-          } else {
-            addMessage({
-              message: `Unable to save the network or its copy to NDEx. Error: ${e.message as string}`,
-              duration: 5000,
-              severity: MessageSeverity.ERROR
-            })
-          }
-          throw e
-        }
       }
+    } catch (e) {
+      if (e.message.includes(TimeOutErrorIndicator)) {
+        addMessage({
+          message: TimeOutErrorMessage,
+          duration: 6000,
+          severity: MessageSeverity.ERROR,
+        })
+      } else {
+        addMessage({
+          message: `Error: ${summary.isNdex ? 'Unable to save the network to NDEx.' : 'Could not save a copy of the local network to NDEx.'} ${
+            e.message as string
+          }`,
+          duration: 5000,
+          severity: MessageSeverity.ERROR,
+        })
+      }
+      console.error(e)
     }
   }
 }

@@ -237,7 +237,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
           message: `Error: Could not save a copy of the current network to NDEx. ${
             e.message as string
           }`,
-          duration: 3000,
+          duration: 5000,
           severity: MessageSeverity.ERROR,
         })
       }
