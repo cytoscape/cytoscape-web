@@ -6,7 +6,11 @@ import NetworkFn, {
 } from '../models/NetworkModel'
 import { v4 as uuidv4 } from 'uuid'
 import TableFn, { AttributeName, Table, ValueType } from '../models/TableModel'
-import VisualStyleFn, { VisualStyle } from '../models/VisualStyleModel'
+import VisualStyleFn, {
+  VisualPropertyName,
+  VisualPropertyValueTypeName,
+  VisualStyle,
+} from '../models/VisualStyleModel'
 import { NetworkWithView } from '../models/NetworkWithViewModel'
 import { useNetworkStore } from '../store/NetworkStore'
 import { useTableStore } from '../store/TableStore'
@@ -16,9 +20,13 @@ import { useCallback } from 'react'
 import { NetworkStore } from '../models/StoreModel/NetworkStoreModel'
 import { TableRecord, TableStore } from '../models/StoreModel/TableStoreModel'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
-import { getBaseSummary } from '../models/NetworkSummaryModel'
+import {
+  getBaseSummary,
+  NdexNetworkSummary,
+} from '../models/NetworkSummaryModel'
 import { IdType } from '../models'
 import { createViewModelFromNetwork } from '../models/ViewModel/impl/ViewModelImpl'
+import { ValueTypeName } from '../models/dist/TableModel'
 
 const toNode = (id: IdType): Node => {
   return {
@@ -139,6 +147,10 @@ export const useCreateNetworkWithView = (): (({
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addSummary = useNetworkSummaryStore((state) => state.add)
 
+  const createPassthroughMapping = useVisualStyleStore(
+    (state) => state.createPassthroughMapping,
+  )
+
   const createNetworkWithView = useCallback(
     ({ name, description, edgeList }: CreateNetworkWithViewProps) => {
       // Create a simple network object from source-target edge list
@@ -146,16 +158,25 @@ export const useCreateNetworkWithView = (): (({
 
       // Add all required objects to the network
       const withView: NetworkWithView = createViewForNetwork(network)
-      const summary = getBaseSummary({
-        uuid: network.id,
-        name: name || '',
-        description: description || '(N/A)',
+      const summary: NdexNetworkSummary = getBaseSummary({
+        name: name || `CyWeb Network (${network.id})`,
+        network,
+        description,
       })
+
       addNetwork(network)
       addVisualStyle(network.id, withView.visualStyle)
       addTable(network.id, withView.nodeTable, withView.edgeTable)
       addViewModel(network.id, withView.networkViews[0])
       addSummary(network.id, summary)
+
+      // Update the Visual Style with minimal settings
+      createPassthroughMapping(
+        network.id,
+        VisualPropertyName.NodeLabel,
+        'name',
+        ValueTypeName.String,
+      )
 
       return withView
     },
