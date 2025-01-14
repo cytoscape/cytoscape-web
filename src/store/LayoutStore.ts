@@ -11,13 +11,13 @@ import {
   defHierarchicalAlgorithm,
   getLayout,
 } from '../models/LayoutModel/impl/layoutSelection'
-import { LayoutStoreModel } from '../models/StoreModel/LayoutStoreModel'
+import { LayoutStore } from '../models/StoreModel/LayoutStoreModel'
 
 /**
  * Store for layout parameters
  */
 export const useLayoutStore = create(
-  immer<LayoutStoreModel>((set) => ({
+  immer<LayoutStore>((set) => ({
     layoutEngines: LayoutEngines,
     preferredLayout: defAlgorithm,
     preferredHierarchicalLayout: defHierarchicalAlgorithm,

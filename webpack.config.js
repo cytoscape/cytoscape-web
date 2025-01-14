@@ -12,8 +12,8 @@ const BundleAnalyzerPlugin =
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const exp = require('constants')
 
-const webpack = require('webpack');
-const { execSync } = require('child_process');
+const webpack = require('webpack')
+const { execSync } = require('child_process')
 
 const ModuleFederationPlugin =
   require('webpack').container.ModuleFederationPlugin
@@ -102,16 +102,16 @@ module.exports = {
       filename: 'remoteEntry.js',
       remotes: externalAppsConfig,
       exposes: {
-        // Data models to be used by other apps
-        // './useDataStore': './src/components/AppManager/useDataStore.tsx',
+        // Core data models exposed to other Apps
         './CredentialStore': './src/store/CredentialStore.ts',
         './LayoutStore': './src/store/LayoutStore.ts',
         './MessageStore': './src/store/MessageStore.ts',
         './NetworkStore': './src/store/NetworkStore.ts',
         './NetworkSummaryStore': './src/store/NetworkSummaryStore.ts',
+        './OpaqueAspectStore': './src/store/OpaqueAspectStore.ts',
         './RendererStore': './src/store/RendererStore.ts',
-        './UiStateStore': './src/store/UiStateStore.ts',
         './TableStore': './src/store/TableStore.ts',
+        './UiStateStore': './src/store/UiStateStore.ts',
         './ViewModelStore': './src/store/ViewModelStore.ts',
         './VisualStyleStore': './src/store/VisualStyleStore.ts',
         './WorkspaceStore': './src/store/WorkspaceStore.ts',
@@ -119,7 +119,7 @@ module.exports = {
         // Tasks
         './CreateNetwork': './src/task/CreateNetwork.tsx',
       },
-      
+
       shared: {
         react: { singleton: true, requiredVersion: deps.react },
         'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
@@ -158,8 +158,12 @@ module.exports = {
 
     new webpack.DefinePlugin({
       // Inject Git commit and build date into process.env variables
-      'process.env.REACT_APP_GIT_COMMIT': JSON.stringify(execSync('git rev-parse --short HEAD').toString().trim()),
-      'process.env.REACT_APP_BUILD_DATE': JSON.stringify(execSync('git show -s --format=%cI HEAD').toString().trim()),  // Use commit date instead of current date
+      'process.env.REACT_APP_GIT_COMMIT': JSON.stringify(
+        execSync('git rev-parse --short HEAD').toString().trim(),
+      ),
+      'process.env.REACT_APP_BUILD_DATE': JSON.stringify(
+        execSync('git show -s --format=%cI HEAD').toString().trim(),
+      ), // Use commit date instead of current date
     }),
   ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other

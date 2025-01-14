@@ -13,4 +13,4 @@ export interface RendererAction {
   delete: (rendererId: string) => void
 }
 
-export type RendererStoreModel = RendererState & RendererAction
+export type RendererStore = RendererState & RendererAction

@@ -146,7 +146,7 @@ export interface ViewModelAction {
   deleteAll: () => void
 }
 
-export interface UpdateActions {
+export interface ViewModelUpdateActions {
   // Add node view (s) to a network
   addNodeView: (networkId: IdType, nodeView: NodeView) => void
   addNodeViews: (networkId: IdType, nodeIds: NodeView[]) => void
@@ -160,4 +160,6 @@ export interface UpdateActions {
   deleteEdgeViews: (networkId: IdType, edgeIds: IdType[]) => void
 }
 
-export type ViewModelStore = ViewModelState & ViewModelAction & UpdateActions
+export type ViewModelStore = ViewModelState &
+  ViewModelAction &
+  ViewModelUpdateActions

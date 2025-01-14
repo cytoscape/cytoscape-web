@@ -1,12 +1,12 @@
 import Keycloak from 'keycloak-js'
-import { CredentialStoreModel } from '../models/StoreModel/CredentialStoreModel'
+import { CredentialStore } from '../models/StoreModel/CredentialStoreModel'
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 const REFRESH_MIN: number = 60 // Refresh if token expires in 1 minute
 
 export const useCredentialStore = create(
-  immer<CredentialStoreModel>((set, get) => ({
+  immer<CredentialStore>((set, get) => ({
     client: new Keycloak(),
     setClient: (client: Keycloak) => {
       set((state) => {

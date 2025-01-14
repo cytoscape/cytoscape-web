@@ -6,10 +6,10 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { Renderer } from '../models/RendererModel/Renderer'
 import { DefaultRenderer } from './DefaultRenderer'
-import { RendererStoreModel } from '../models/StoreModel/RendererStoreModel'
+import { RendererStore } from '../models/StoreModel/RendererStoreModel'
 
 export const useRendererStore = create(
-  immer<RendererStoreModel>((set) => ({
+  immer<RendererStore>((set) => ({
     // Initialize with the default renderer, which is the Cytoscape.js renderer
     renderers: { [DefaultRenderer.id]: DefaultRenderer },
     defaultRendererName: DefaultRenderer.id,

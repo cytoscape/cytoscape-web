@@ -24,7 +24,7 @@ export interface NetworkState {
 /**
  * Actions to mutate (update) network topology
  */
-export interface UpdateActions {
+export interface NetworkUpdateActions {
   // Add node(s) to a network
   addNode: (networkId: IdType, nodeId: IdType) => void
   addNodes: (networkId: IdType, nodeIds: IdType[]) => void
@@ -52,4 +52,4 @@ export interface NetworkActions {
   deleteAll: () => void
 }
 
-export type NetworkStore = NetworkState & NetworkActions & UpdateActions
+export type NetworkStore = NetworkState & NetworkActions & NetworkUpdateActions
