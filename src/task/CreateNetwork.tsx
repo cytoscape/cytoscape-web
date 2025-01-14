@@ -5,7 +5,12 @@ import NetworkFn, {
   Network,
 } from '../models/NetworkModel'
 import { v4 as uuidv4 } from 'uuid'
-import TableFn, { AttributeName, Table, ValueType, ValueTypeName } from '../models/TableModel'
+import TableFn, {
+  AttributeName,
+  Table,
+  ValueType,
+  ValueTypeName,
+} from '../models/TableModel'
 import VisualStyleFn, {
   VisualPropertyName,
   VisualStyle,
@@ -47,7 +52,7 @@ const toEdge = (edge: [IdType, IdType]): Edge => {
  *
  * @returns Network object
  */
-export const createNetworkFromEdgeList = (
+const createNetworkFromEdgeList = (
   edgeList: Array<[IdType, IdType, string?]>,
 ): Network => {
   // Generate a new UUID for the network
@@ -102,7 +107,7 @@ const createTableData = (network: Network): TableRecord => {
  *
  * @returns NetworkWithView object
  */
-export const createViewForNetwork = (network: Network): NetworkWithView => {
+const createViewForNetwork = (network: Network): NetworkWithView => {
   const networkId: IdType = network.id
   const networkView = createViewModelFromNetwork(networkId, network)
   const { nodeTable, edgeTable } = createTableData(network)
