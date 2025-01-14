@@ -5,10 +5,9 @@ import NetworkFn, {
   Network,
 } from '../models/NetworkModel'
 import { v4 as uuidv4 } from 'uuid'
-import TableFn, { AttributeName, Table, ValueType } from '../models/TableModel'
+import TableFn, { AttributeName, Table, ValueType, ValueTypeName } from '../models/TableModel'
 import VisualStyleFn, {
   VisualPropertyName,
-  VisualPropertyValueTypeName,
   VisualStyle,
 } from '../models/VisualStyleModel'
 import { NetworkWithView } from '../models/NetworkWithViewModel'
@@ -26,7 +25,6 @@ import {
 } from '../models/NetworkSummaryModel'
 import { IdType } from '../models'
 import { createViewModelFromNetwork } from '../models/ViewModel/impl/ViewModelImpl'
-import { ValueTypeName } from '../models/dist/TableModel'
 
 const toNode = (id: IdType): Node => {
   return {
