@@ -67,7 +67,9 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
-
+  const deleteNetworksFromWorkspace = useWorkspaceStore(
+    (state) => state.deleteNetwork,
+  )
   const opaqueAspects = useOpaqueAspectStore((state) => state.opaqueAspects)
 
   const saveWorkspaceToNDEx = async (): Promise<void> => {
@@ -82,6 +84,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         ndexClient,
         allNetworkId,
         addNetworkToWorkspace,
+        deleteNetworksFromWorkspace,
         networkModifiedStatus,
         updateSummary,
         deleteNetworkModifiedStatus,

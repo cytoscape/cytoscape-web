@@ -85,6 +85,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
+  const deleteNetworksFromWorkspace = useWorkspaceStore(
+    (state) => state.deleteNetwork,
+  )
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
@@ -201,6 +204,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         accessToken,
         ndexClient,
         addNetworkToWorkspace,
+        deleteNetworksFromWorkspace,
         network,
         visualStyle,
         summary,
@@ -209,6 +213,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         viewModel,
         visualStyleOptions,
         opaqueAspects,
+        true,
       )
       setCurrentNetworkId(uuid as IdType)
 
@@ -232,7 +237,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
           message: `Error: Could not save a copy of the current network to NDEx. ${
             e.message as string
           }`,
-          duration: 3000,
+          duration: 5000,
           severity: MessageSeverity.ERROR,
         })
       }
