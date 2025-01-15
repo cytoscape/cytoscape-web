@@ -25,6 +25,7 @@ import { removePTags } from '../../utils/remove-p-tags'
 import { ReactElement } from 'react'
 import { MantineProvider } from '@mantine/core'
 import '@mantine/tiptap/styles.css'
+import { useWorkspaceStore } from '../../store/WorkspaceStore'
 
 interface NetworkPropertyEditorProps {
   anchorEl?: HTMLElement
@@ -36,12 +37,17 @@ export const NetworkPropertyEditor = (
 ): ReactElement => {
   const { anchorEl, onClose, summary } = props
   const open = anchorEl !== undefined
+  const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
+  const setNetworkModified = useWorkspaceStore(
+    (state) => state.setNetworkModified,
+  )
 
   const editor = useEditor({
     onUpdate: debounce(({ editor }) => {
       updateNetworkSummary(summary.externalId, {
         description: editor.getHTML(),
       })
+      setNetworkModified(summary.externalId, true)
     }, 200),
     extensions: [
       StarterKit,
@@ -55,7 +61,6 @@ export const NetworkPropertyEditor = (
     content: removePTags(summary.description ?? ''),
   })
 
-  const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
   return (
     <Popover
       open={open}
@@ -91,6 +96,7 @@ export const NetworkPropertyEditor = (
               updateNetworkSummary(summary.externalId, {
                 name: e.target.value,
               })
+              setNetworkModified(summary.externalId, true)
             }}
           ></TextField>
           <TextField
@@ -98,11 +104,12 @@ export const NetworkPropertyEditor = (
             label="Version"
             sx={{ width: '20%', fontSize: 12 }}
             value={summary.version}
-            onChange={(e) =>
+            onChange={(e) => {
               updateNetworkSummary(summary.externalId, {
                 version: e.target.value,
               })
-            }
+              setNetworkModified(summary.externalId, true)
+            }}
           />
         </Box>
 
