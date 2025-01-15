@@ -37,12 +37,22 @@ const toNode = (id: IdType): Node => {
   }
 }
 
-const toEdge = (edge: [IdType, IdType]): Edge => {
+const toEdge = (edge: [IdType, IdType], index: number): Edge => {
   return {
-    id: edge[0] + '-' + edge[1],
+    id: 'e' + index,
     s: edge[0],
     t: edge[1],
   }
+}
+
+const createNodeIdMap = (nodeIdSet: Set<IdType>): Map<IdType, IdType> => {
+  const idMap = new Map<string, IdType>()
+  let nodeCount = 0
+  nodeIdSet.forEach((id: IdType) => {
+    idMap.set(id, nodeCount.toString())
+    nodeCount++
+  })
+  return idMap
 }
 
 /**
@@ -52,18 +62,28 @@ const toEdge = (edge: [IdType, IdType]): Edge => {
  *
  * @returns Network object
  */
-const createNetworkFromEdgeList = (
+export const createNetworkFromEdgeList = (
   edgeList: Array<[IdType, IdType, string?]>,
+  nodeIdMap: Map<IdType, IdType>,
 ): Network => {
   // Generate a new UUID for the network
   const id: IdType = uuidv4()
 
-  // Get unique nodes from the edge list
-  const nodeSet = new Set<IdType>(
-    edgeList.flatMap((edge) => [edge[0], edge[1]]),
+  const nodes: Node[] = Array.from(nodeIdMap.values()).map(toNode)
+
+  let edgeIndex = 0
+  const edges: Edge[] = edgeList.map(
+    (edge: [IdType, IdType, string?]): Edge => {
+      const source = nodeIdMap.get(edge[0])
+      const target = nodeIdMap.get(edge[1])
+      if (source && target) {
+        return toEdge([source, target], edgeIndex++)
+      } else {
+        // Skip the edge if source or target is not found
+        throw new Error(`Node not found for edge: ${edge}`)
+      }
+    },
   )
-  const nodes: Node[] = Array.from(nodeSet).map(toNode)
-  const edges: Edge[] = edgeList.map(toEdge)
   return NetworkFn.createNetworkFromLists(id, nodes, edges)
 }
 
@@ -74,15 +94,18 @@ const createNetworkFromEdgeList = (
  * @param network
  * @returns
  */
-const createTableData = (network: Network): TableRecord => {
+const createTableData = (
+  network: Network,
+  nodeIdMap: Map<IdType, IdType>,
+): TableRecord => {
   const networkId: IdType = network.id
   const nodeTableData = new Map<IdType, Record<AttributeName, ValueType>>()
   const edgeTableData = new Map<IdType, Record<AttributeName, ValueType>>()
   network.nodes.forEach((node) => {
-    nodeTableData.set(node.id, { name: node.id })
-  })
-  network.edges.forEach((edge) => {
-    edgeTableData.set(edge.id, { interaction: edge.id })
+    const nodeName = nodeIdMap.get(node.id)
+    if (nodeName) {
+      nodeTableData.set(node.id, { name: nodeName })
+    }
   })
 
   // Add base columns (e.g., name)
@@ -91,11 +114,7 @@ const createTableData = (network: Network): TableRecord => {
     [{ name: 'name', type: 'string' }],
     nodeTableData,
   )
-  const edgeTable: Table = TableFn.createTable(
-    networkId,
-    [{ name: 'interaction', type: 'string' }],
-    edgeTableData,
-  )
+  const edgeTable: Table = TableFn.createTable(networkId, [], edgeTableData)
 
   return { nodeTable, edgeTable }
 }
@@ -107,10 +126,13 @@ const createTableData = (network: Network): TableRecord => {
  *
  * @returns NetworkWithView object
  */
-const createViewForNetwork = (network: Network): NetworkWithView => {
+const createViewForNetwork = (
+  network: Network,
+  nodeIdMap: Map<IdType, IdType>,
+): NetworkWithView => {
   const networkId: IdType = network.id
   const networkView = createViewModelFromNetwork(networkId, network)
-  const { nodeTable, edgeTable } = createTableData(network)
+  const { nodeTable, edgeTable } = createTableData(network, nodeIdMap)
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
   const networkAttributes: NetworkAttributes = {
     id: networkId,
@@ -136,7 +158,14 @@ interface CreateNetworkWithViewProps {
 }
 
 /**
- * Register all of the objects in the given networkWithView object
+ * Return a function to create a network with view and style
+ * for the given edge list.
+ *
+ * Network-unique IDs will be assigned to nodes and edges
+ * automatically and values in the edge list will be used as
+ * names for nodes and interactions for edges.
+ *
+ * After network creation, tables keeps the map of IDs to names.
  *
  */
 export const useCreateNetworkWithView = (): (({
@@ -156,11 +185,18 @@ export const useCreateNetworkWithView = (): (({
 
   const createNetworkWithView = useCallback(
     ({ name, description, edgeList }: CreateNetworkWithViewProps) => {
+      // Replace original IDs with integer-based IDs
+      // Get unique nodes from the edge list
+      const nodeSet = new Set<IdType>(
+        edgeList.flatMap((edge) => [edge[0], edge[1]]),
+      )
+      const nodeIdMap: Map<IdType, IdType> = createNodeIdMap(nodeSet)
+
       // Create a simple network object from source-target edge list
-      const network: Network = createNetworkFromEdgeList(edgeList)
+      const network: Network = createNetworkFromEdgeList(edgeList, nodeIdMap)
 
       // Add all required objects to the network
-      const withView: NetworkWithView = createViewForNetwork(network)
+      const withView: NetworkWithView = createViewForNetwork(network, nodeIdMap)
       const summary: NdexNetworkSummary = getBaseSummary({
         name: name || `CyWeb Network (${network.id})`,
         network,

@@ -57,7 +57,7 @@ describe('createEmptyNetwork', () => {
       edges: [],
     }
 
-    const newNetwork = createNetworkFromEdgeList([])
+    const newNetwork = createNetworkFromEdgeList([], new Map())
 
     console.log('Empty network', newNetwork)
 
