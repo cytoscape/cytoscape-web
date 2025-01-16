@@ -27,7 +27,7 @@ export const JoinTableToNetworkMenuItem = (
           setShow(true)
         }}
       >
-        Table from File
+        Table from File...
       </MenuItem>
     </>
   )

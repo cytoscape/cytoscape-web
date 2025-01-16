@@ -101,17 +101,22 @@ export const OpenNetworkInCytoscapeMenuItem = ({
     return ua.includes('safari') && !ua.includes('chrome')
   }, [])
 
+  const disabled = isSafari || currentNetworkId === ''
   const menuItem = (
-    <MenuItem onClick={handleOpenNetworkInCytoscape} disabled={isSafari}>
-      Open Copy of Current Network in Cytoscape
+    <MenuItem onClick={handleOpenNetworkInCytoscape} disabled={disabled}>
+      Open Network in Cytoscape Desktop
     </MenuItem>
   )
 
   return (
     <Tooltip
+      arrow
+      placement="right"
       title={
-        isSafari
-          ? 'This feature is not available on Safari'
+        disabled
+          ? isSafari && currentNetworkId !== ''
+            ? 'This feature is not available on Safari'
+            : ''
           : 'Download and open Cytoscape to open network'
       }
     >

@@ -134,7 +134,11 @@ export const LoadFromNdexDialog = (
   const myNetworksTab = authenticated ? (
     <Tab label={<Typography>My Networks</Typography>}></Tab>
   ) : (
-    <Tooltip title="Login to NDEx to access your networks">
+    <Tooltip
+      arrow
+      placement="right"
+      title="Login to NDEx to access your networks"
+    >
       <Box>
         <Tab disabled label={<Typography>My Networks</Typography>}></Tab>
       </Box>

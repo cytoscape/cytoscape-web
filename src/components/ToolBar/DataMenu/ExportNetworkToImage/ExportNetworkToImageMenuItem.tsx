@@ -114,10 +114,10 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
 export const ExportImageMenuItem = (props: BaseMenuProps): ReactElement => {
   const [show, setShow] = useState(false)
 
-  const workspace = useWorkspaceStore((state) => state.workspace)
+  const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
   const menuItem = (
     <MenuItem
-      disabled={workspace.networkIds.length === 0}
+      disabled={networkIds.length === 0}
       component="label"
       onClick={() => setShow(true)}
     >
