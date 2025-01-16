@@ -3,7 +3,6 @@ import { IdType } from '../models/IdType'
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { getNdexClient } from './fetchers'
 import {
-  Message,
   NdexNetworkSummary,
   Network,
   NetworkView,
@@ -17,7 +16,7 @@ import { useNdexNetwork } from '../store/hooks/useNdexNetwork'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { ndexSummaryFetcher } from '../store/hooks/useNdexNetworkSummary'
 import { waitSeconds } from './wait-seconds'
-import { MessageSeverity } from '../models/MessageModel'
+import { Message, MessageSeverity } from '../models/MessageModel'
 
 export const TimeOutErrorMessage =
   'You network has been saved in NDEx, but the server is under heavy load right now. Please use the “Open Networks from NDEx” menu to manually open this network from your account later.'

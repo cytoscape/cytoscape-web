@@ -118,6 +118,7 @@ module.exports = {
 
         // Tasks
         './CreateNetwork': './src/task/CreateNetwork.tsx',
+        './CreateNetworkFromCx2': './src/task/CreateNetworkFromCx2.tsx',
       },
 
       shared: {

@@ -74,10 +74,10 @@ export const createNetworkFromEdgeList = (
   let edgeIndex = 0
   const edges: Edge[] = edgeList.map(
     (edge: [IdType, IdType, string?]): Edge => {
-      const source = nodeIdMap.get(edge[0])
-      const target = nodeIdMap.get(edge[1])
-      if (source && target) {
-        return toEdge([source, target], edgeIndex++)
+      const sourceId = nodeIdMap.get(edge[0])
+      const targetId = nodeIdMap.get(edge[1])
+      if (sourceId && targetId) {
+        return toEdge([sourceId, targetId], edgeIndex++)
       } else {
         // Skip the edge if source or target is not found
         throw new Error(`Node not found for edge: ${edge}`)
@@ -101,10 +101,11 @@ const createTableData = (
   const networkId: IdType = network.id
   const nodeTableData = new Map<IdType, Record<AttributeName, ValueType>>()
   const edgeTableData = new Map<IdType, Record<AttributeName, ValueType>>()
-  network.nodes.forEach((node) => {
-    const nodeName = nodeIdMap.get(node.id)
-    if (nodeName) {
-      nodeTableData.set(node.id, { name: nodeName })
+  const nodeNames = Array.from(nodeIdMap.keys())
+  nodeNames.forEach((nodeName: string) => {
+    const nodeId = nodeIdMap.get(nodeName)
+    if (nodeId) {
+      nodeTableData.set(nodeId, { name: nodeName })
     }
   })
 
