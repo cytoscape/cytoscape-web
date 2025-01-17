@@ -1,5 +1,5 @@
 import { Button, Divider, useTheme } from '@mui/material'
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { useAppStore } from '../../../store/AppStore'
@@ -16,7 +16,6 @@ import { useServiceTaskRunner } from '../../../store/hooks/useServiceTaskRunner'
 import { TaskStatusDialog } from '../../Util/TaskStatusDialog'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
-import { AppConfig, AppConfigContext } from '../../../AppConfigContext'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   const theme = useTheme()
@@ -48,8 +47,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
   // Clear the current task status
   const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
 
-  const { defaultServices } = useContext<AppConfig>(AppConfigContext)
-
   /**
    * Menu model for the nested menu
    */
@@ -60,25 +57,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const serviceApps: Record<string, ServiceApp> = useAppStore(
     (state) => state.serviceApps,
   )
-
-  const addService = useAppStore((state) => state.addService)
-
-  const addDefaultServices = (): void => {
-    const currentServiceUrls = Object.values(serviceApps).map(
-      (serviceApp: ServiceApp) => serviceApp.url,
-    )
-    const urlSet = new Set(currentServiceUrls)
-
-    defaultServices.forEach((url: string) => {
-      if (!urlSet.has(url)) {
-        try {
-          addService(url)
-        } catch (e) {
-          console.error(`Failed to add the service from ${url}. ${e}`)
-        }
-      }
-    })
-  }
 
   const handleOpenDialog = (isDialogOpen: boolean): void => {
     setAnchorEl(null)

@@ -12,6 +12,7 @@ import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { createNetworkViewFromCx2 } from '../utils/cx-utils'
 import { v4 as uuidv4 } from 'uuid'
+import { useWorkspaceStore } from '../store/WorkspaceStore'
 
 /**
  * Props for creating a network with a view from a CX2 object.
@@ -36,6 +37,14 @@ export const useCreateNetworkFromCx2 = (): ((
   const addViewModel = useViewModelStore((state) => state.add)
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addSummary = useNetworkSummaryStore((state) => state.add)
+
+  const addNetworkIds: (networkId: string) => void = useWorkspaceStore(
+    (state) => state.addNetworkIds,
+  )
+
+  const setCurrentNetworkId: (networkId: string) => void = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
 
   const createNetworkFromCx = useCallback(
     ({ cxData }: CreateNetworkFromCx2Props) => {
@@ -83,6 +92,12 @@ export const useCreateNetworkFromCx2 = (): ((
       addTable(network.id, nodeTable, edgeTable)
       addViewModel(network.id, networkViews[0]) // For now, just store the first view
       addSummary(network.id, summary)
+
+      // Add network to workspace
+      addNetworkIds(network.id)
+
+      // Select it as the current network
+      setCurrentNetworkId(network.id)
 
       return withView
     },

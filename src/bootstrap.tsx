@@ -17,12 +17,8 @@ import Keycloak from 'keycloak-js'
 import ErrorBoundary from './ErrorBoundary'
 enableMapSet()
 
-interface UserInfo {
-  preferred_username: string
-  email: string
-}
-
-console.log('-----------BS start')
+// Window name of this instance
+window.name = 'cytoscape-web-v1'
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
