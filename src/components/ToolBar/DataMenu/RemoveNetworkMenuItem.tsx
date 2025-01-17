@@ -6,7 +6,7 @@ import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 
 export const RemoveNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const [open, setOpen] = useState<boolean>(false)
-
+  const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
   const deleteCurrentNetwork = useWorkspaceStore(
     (state) => state.deleteCurrentNetwork,
   )
@@ -18,7 +18,12 @@ export const RemoveNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
 
   return (
     <>
-      <MenuItem onClick={() => setOpen(true)}>Remove Current Network</MenuItem>
+      <MenuItem
+        disabled={networkIds.length === 0}
+        onClick={() => setOpen(true)}
+      >
+        Remove Current Network
+      </MenuItem>
       <ConfirmationDialog
         title="Remove Current Network"
         message="Do you really want to delete this network?"

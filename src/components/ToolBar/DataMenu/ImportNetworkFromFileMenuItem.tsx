@@ -9,7 +9,7 @@ export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const menuItem = (
     <MenuItem component="label" onClick={() => setShow(true)}>
-      Network from File
+      Network from File...
     </MenuItem>
   )
 
