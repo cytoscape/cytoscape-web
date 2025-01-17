@@ -145,37 +145,42 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
     handleOpenDialog()
   }
 
+  const enabled = authenticated && allNetworkId.length > 0
+
   const menuItem = (
-    <MenuItem
-      disabled={!authenticated}
-      onClick={handleSaveCurrentNetworkToNDEx}
-    >
+    <MenuItem disabled={!enabled} onClick={handleSaveCurrentNetworkToNDEx}>
       Save Workspace
     </MenuItem>
   )
 
   return (
     <>
-      {authenticated ? (
-        menuItem
+      {enabled ? (
+        <>
+          {menuItem}
+          <ConfirmationDialog
+            title="Save Workspace to NDEx"
+            message="Do you want to save/overwrite the current workspace to NDEx?"
+            onConfirm={saveWorkspaceToNDEx}
+            open={openDialog}
+            setOpen={setOpenDialog}
+            buttonTitle="Save"
+            isAlert={true}
+          />
+        </>
       ) : (
         <Tooltip
           arrow
           placement="right"
-          title="Login to save/overwrite the current workspace to NDEx"
+          title={
+            allNetworkId.length > 0
+              ? 'Login to save/overwrite the current workspace to NDEx'
+              : ''
+          }
         >
           <Box>{menuItem}</Box>
         </Tooltip>
       )}
-      <ConfirmationDialog
-        title="Save Workspace to NDEx"
-        message="Do you want to save/overwrite the current workspace to NDEx?"
-        onConfirm={saveWorkspaceToNDEx}
-        open={openDialog}
-        setOpen={setOpenDialog}
-        buttonTitle="Save"
-        isAlert={true}
-      />
     </>
   )
 }

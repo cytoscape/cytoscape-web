@@ -231,21 +231,27 @@ export const SaveWorkspaceToNDExMenuItem = (
     </Dialog>
   )
 
+  const enabled = authenticated && allNetworkId.length > 0
+
   const menuItem = (
-    <MenuItem disabled={!authenticated} onClick={handleSaveWorkspaceToNDEx}>
+    <MenuItem disabled={!enabled} onClick={handleSaveWorkspaceToNDEx}>
       Save Workspace as...
     </MenuItem>
   )
 
   return (
     <>
-      {authenticated ? (
+      {enabled ? (
         menuItem
       ) : (
         <Tooltip
           arrow
           placement="right"
-          title="Login to save a copy of the current workspace to NDEx"
+          title={
+            allNetworkId.length > 0
+              ? 'Login to save a copy of the current workspace to NDEx'
+              : ''
+          }
         >
           <Box>{menuItem}</Box>
         </Tooltip>
