@@ -46,24 +46,27 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   const nodeAttributeTranslationMap: Record<string, string> = {}
   const edgeAttributeTranslationMap: Record<string, string> = {}
 
-  Object.entries(attrDefs.nodes).forEach(([attrName, attrDef]) => {
-    const columnDef: Column = {
-      type: attrDef.d as ValueTypeName,
-      name: attrName,
-    }
+  const nodeAttrDefs = attrDefs.nodes
+  if (nodeAttrDefs !== undefined) {
+    Object.entries(nodeAttrDefs).forEach(([attrName, attrDef]) => {
+      const columnDef: Column = {
+        type: attrDef.d as ValueTypeName,
+        name: attrName,
+      }
 
-    if (attrDef.a != null) {
-      nodeAttributeTranslationMap[attrDef.a] = attrName
-    }
+      if (attrDef.a != null) {
+        nodeAttributeTranslationMap[attrDef.a] = attrName
+      }
 
-    nodeTable.columns.push(columnDef)
-  })
+      nodeTable.columns.push(columnDef)
+    })
+  }
 
   nodeTable.columns.sort((a, b) => a.name.localeCompare(b.name))
 
   const edgeAttrDefs = attrDefs.edges
   if (edgeAttrDefs !== undefined) {
-    Object.entries(attrDefs.edges).forEach(([attrName, attrDef]) => {
+    Object.entries(edgeAttrDefs).forEach(([attrName, attrDef]) => {
       const columnDef = {
         type: attrDef.d as ValueTypeName,
         name: attrName,
@@ -82,7 +85,7 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   nodeAttr.forEach((attr, nodeId) => {
     const processedAttributes: Record<AttributeName, ValueType> = {}
 
-    Object.entries(attrDefs.nodes).forEach(([key, value]) => {
+    Object.entries(nodeAttrDefs).forEach(([key, value]) => {
       if (value.v != null) {
         processedAttributes[key] = value.v as ValueType
       }
@@ -111,7 +114,7 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     const processedAttributes: Record<string, ValueType> = {}
     const translatedEdgeId = translateCXEdgeId(edgeId)
 
-    Object.entries(attrDefs.edges).forEach(([key, value]) => {
+    Object.entries(edgeAttrDefs).forEach(([key, value]) => {
       if (value.v != null) {
         processedAttributes[key] = value.v as ValueType
       }
