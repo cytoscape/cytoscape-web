@@ -61,25 +61,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
     (state) => state.serviceApps,
   )
 
-  const addService = useAppStore((state) => state.addService)
-
-  const addDefaultServices = (): void => {
-    const currentServiceUrls = Object.values(serviceApps).map(
-      (serviceApp: ServiceApp) => serviceApp.url,
-    )
-    const urlSet = new Set(currentServiceUrls)
-
-    defaultServices.forEach((url: string) => {
-      if (!urlSet.has(url)) {
-        try {
-          addService(url)
-        } catch (e) {
-          console.error(`Failed to add the service from ${url}. ${e}`)
-        }
-      }
-    })
-  }
-
   const handleOpenDialog = (isDialogOpen: boolean): void => {
     setAnchorEl(null)
     const menuRefCurrent = menuRef.current as any
@@ -155,9 +136,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const getBaseMenu = (): MenuItem[] => {
     return [
       {
-        template: <Divider />,
-      },
-      {
         label: 'Manage Apps...',
         style: { height: '2.5em' },
         command: () => handleOpenDialog(true),
@@ -168,7 +146,11 @@ export const AppMenu = (props: DropdownMenuProps) => {
   useEffect(() => {
     const appMenuItems: MenuItem[] = createAppMenu()
     const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
-    setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
+    const divider: MenuItem[] =
+      menuModel.length > 0 || appMenuItems.length > 0
+        ? [{ template: <Divider /> }]
+        : []
+    setMenuModel([...appMenuItems, ...menuModel, ...divider, ...getBaseMenu()])
   }, [serviceApps, apps])
 
   useEffect(() => {

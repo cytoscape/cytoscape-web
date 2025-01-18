@@ -32,6 +32,8 @@ import {
 } from '../../../utils/ndex-utils'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { useAppStore } from '../../../store/AppStore'
+import { AppStatus } from '../../../models/AppModel/AppStatus'
 
 export const SaveWorkspaceToNDExMenuItem = (
   props: WorkspaceMenuProps,
@@ -50,6 +52,8 @@ export const SaveWorkspaceToNDExMenuItem = (
   const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
   const renameWorkspace = useWorkspaceStore((state) => state.setName)
   // data from store
+  const apps = useAppStore((state) => state.apps)
+  const serviceApps = useAppStore((state) => state.serviceApps)
   const networkModifiedStatus = useWorkspaceStore(
     (state) => state.workspace.networkModified,
   )
@@ -135,7 +139,13 @@ export const SaveWorkspaceToNDExMenuItem = (
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
       const response = await ndexClient.createCyWebWorkspace({
         name: workspaceName,
-        options: { currentNetwork: workspace.currentNetworkId },
+        options: {
+          currentNetwork: workspace.currentNetworkId,
+          activeApps: Object.keys(apps).filter(
+            (key) => apps[key].status === AppStatus.Active,
+          ),
+          serviceApps: Object.keys(serviceApps),
+        },
         networkIDs: workspace.networkIds,
       })
       const { uuid, modificationTime } = response
