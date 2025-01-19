@@ -12,12 +12,13 @@ import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { exportNetworkToCx2 } from '../../store/io/exportCX'
 import { Network } from '../../models/NetworkModel'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { IdType } from '../../models'
 import { useMessageStore } from '../../store/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
+import { useFeatureAvailability } from '../FeatureAvailability'
 
 interface OpenInCytoscapeButtonProps {
   targetNetworkId?: IdType
@@ -28,10 +29,7 @@ export const OpenInCytoscapeButton = ({
   targetNetworkId,
   networkLabel,
 }: OpenInCytoscapeButtonProps): JSX.Element => {
-  const isSafari = useMemo(() => {
-    const ua = navigator.userAgent.toLowerCase()
-    return ua.includes('safari') && !ua.includes('chrome')
-  }, [])
+  const featureAvailabilityState = useFeatureAvailability()
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -119,22 +117,16 @@ export const OpenInCytoscapeButton = ({
 
   return (
     <>
-      <Tooltip
-        title={
-          isSafari
-            ? 'This feature is not available on Safari'
-            : 'Open network in Cytoscape Desktop (useful for high performance computing)'
-        }
-        placement="top"
-        arrow
-      >
+      <Tooltip title={featureAvailabilityState.tooltip} placement="top" arrow>
         <span>
           <IconButton
             onClick={handleClick}
             aria-label="fit"
             size="small"
             disableFocusRipple={true}
-            disabled={isSafari}
+            disabled={
+              featureAvailabilityState.state.isCyDeskAvailable === false
+            }
           >
             <OpenInNew fontSize="inherit" />
           </IconButton>

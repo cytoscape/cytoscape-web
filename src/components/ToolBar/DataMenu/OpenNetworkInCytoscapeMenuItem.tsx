@@ -1,5 +1,5 @@
 import { MenuItem, Tooltip, Box } from '@mui/material'
-import { ReactElement, useMemo } from 'react'
+import { ReactElement, useEffect, useMemo, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 // @ts-expect-error-next-line
@@ -18,11 +18,13 @@ import { useUiStateStore } from '../../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 import { useMessageStore } from '../../../store/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { useFeatureAvailability } from '../../FeatureAvailability'
 
 export const OpenNetworkInCytoscapeMenuItem = ({
   handleClose,
 }: BaseMenuProps): ReactElement => {
   const cyndex = new CyNDEx()
+  const featureAvailabilityState = useFeatureAvailability()
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -96,12 +98,10 @@ export const OpenNetworkInCytoscapeMenuItem = ({
     await openNetworkInCytoscape()
   }
 
-  const isSafari = useMemo(() => {
-    const ua = navigator.userAgent.toLowerCase()
-    return ua.includes('safari') && !ua.includes('chrome')
-  }, [])
+  const disabled =
+    featureAvailabilityState.state.isCyDeskAvailable === false ||
+    currentNetworkId === ''
 
-  const disabled = isSafari || currentNetworkId === ''
   const menuItem = (
     <MenuItem onClick={handleOpenNetworkInCytoscape} disabled={disabled}>
       Open Network in Cytoscape Desktop
@@ -112,13 +112,7 @@ export const OpenNetworkInCytoscapeMenuItem = ({
     <Tooltip
       arrow
       placement="right"
-      title={
-        disabled
-          ? isSafari && currentNetworkId !== ''
-            ? 'This feature is not available on Safari'
-            : ''
-          : 'Download and open Cytoscape to open network'
-      }
+      title={currentNetworkId === '' ? '' : featureAvailabilityState.tooltip}
     >
       <Box>{menuItem}</Box>
     </Tooltip>
