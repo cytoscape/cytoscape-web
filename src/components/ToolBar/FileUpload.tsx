@@ -166,9 +166,15 @@ export function FileUpload(props: FileUploadProps) {
       if (otherAspects !== undefined) {
         addAllOpaqueAspects(localUuid, otherAspects)
       }
-      props.handleClose()
     } catch (error) {
       console.error(error)
+      addMessage({
+        duration: 5000,
+        message: 'Failed to parse CX2 file',
+        severity: MessageSeverity.ERROR,
+      })
+    } finally {
+      props.handleClose()
     }
   }
 

@@ -157,7 +157,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             template: (
               <Tooltip
                 arrow
-                placement={'right'}
+                placement="right"
                 title={menuItem.description}
                 key={menuItem.key}
               >

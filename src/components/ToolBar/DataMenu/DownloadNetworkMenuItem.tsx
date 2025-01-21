@@ -21,7 +21,6 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
-
   const addMessage = useMessageStore((state) => state.addMessage)
   const table = useTableStore((state) => state.tables[currentNetworkId])
 
@@ -89,8 +88,11 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const menuItem = (
-    <MenuItem onClick={handleSaveCurrentNetworkToFile}>
-      Download Current Network as File (.cx2)
+    <MenuItem
+      disabled={currentNetworkId === ''}
+      onClick={handleSaveCurrentNetworkToFile}
+    >
+      Download Network as File (.cx2)
     </MenuItem>
   )
   return <>{menuItem}</>

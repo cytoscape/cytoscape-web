@@ -118,6 +118,7 @@ export const saveCopyToNDEx = async (
   visualStyleOptions?: VisualStyleOptions,
   opaqueAspect?: OpaqueAspects,
   deleteOriginal?: boolean,
+  setCurrentNetworkId?: (id: string) => void,
 ): Promise<string> => {
   if (viewModel === undefined) {
     throw new Error('Could not find the current network view model.')
@@ -143,7 +144,8 @@ export const saveCopyToNDEx = async (
     throw new Error('The network is rejected by NDEx')
   }
   addNetworkToWorkspace(uuid as IdType) // add the new network to the workspace
-  if (deleteOriginal === true) {
+  if(setCurrentNetworkId) setCurrentNetworkId(uuid as string)
+  if (deleteOriginal === true) {  
     deleteNetworkFromWorkspace(network.id) // delete the original network from the workspace
   }
   return uuid

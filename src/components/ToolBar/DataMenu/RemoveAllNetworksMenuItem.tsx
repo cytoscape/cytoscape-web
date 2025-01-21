@@ -8,6 +8,7 @@ export const RemoveAllNetworksMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
   const [open, setOpen] = useState(false)
+  const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
   const deleteAllNetworks = useWorkspaceStore(
     (state) => state.deleteAllNetworks,
   )
@@ -19,7 +20,12 @@ export const RemoveAllNetworksMenuItem = (
 
   return (
     <>
-      <MenuItem onClick={() => setOpen(true)}>Remove All Networks</MenuItem>
+      <MenuItem
+        disabled={networkIds.length === 0}
+        onClick={() => setOpen(true)}
+      >
+        Remove All Networks
+      </MenuItem>
       <ConfirmationDialog
         title="Remove All Networks"
         message="Do you really want to delete all networks from this workspace?"

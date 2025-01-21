@@ -104,7 +104,7 @@ export const CopyNetworkToNDExMenuItem = (
         viewModel,
         visualStyleOptions,
         opaqueAspects,
-        true,
+        false, // keep the original network
       )
       setCurrentNetworkId(uuid as IdType)
       addMessage({
@@ -150,6 +150,7 @@ export const CopyNetworkToNDExMenuItem = (
     }
   }
 
+  const enabled = authenticated && currentNetworkId !== ''
   const menuItem = (
     <Box
       sx={{
@@ -160,15 +161,15 @@ export const CopyNetworkToNDExMenuItem = (
     >
       <MenuItem
         sx={{ flexBasis: '100%', flexGrow: 3 }}
-        disabled={!authenticated}
+        disabled={!enabled}
         onClick={handleClick}
       >
-        {'Save Current Network to NDEx as...'}
+        Save Copy to NDEx
       </MenuItem>
     </Box>
   )
 
-  if (authenticated) {
+  if (enabled) {
     return (
       <>
         {menuItem}
@@ -182,8 +183,16 @@ export const CopyNetworkToNDExMenuItem = (
     )
   } else {
     return (
-      <Tooltip title="Login to save a copy of the current network to NDEx">
-        <Box>{menuItem}</Box>
+      <Tooltip
+        arrow
+        placement="right"
+        title={
+          currentNetworkId !== ''
+            ? 'Login to save a copy of the current network to NDEx'
+            : ''
+        }
+      >
+        {menuItem}
       </Tooltip>
     )
   }
