@@ -1,5 +1,5 @@
 import { MenuItem, Tooltip, Box } from '@mui/material'
-import { ReactElement, useEffect, useMemo, useState } from 'react'
+import { ReactElement } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 // @ts-expect-error-next-line
@@ -11,24 +11,22 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
-import { useMessageStore } from '../../../store/MessageStore'
-import { MessageSeverity } from '../../../models/MessageModel'
 import { useFeatureAvailability } from '../../FeatureAvailability'
+import { useOpenNetworkInCytoscape } from '../../../store/hooks/useOpenInCytoscapeDesktop'
 
 export const OpenNetworkInCytoscapeMenuItem = ({
   handleClose,
 }: BaseMenuProps): ReactElement => {
   const cyndex = new CyNDEx()
+  const openNetworkInCytoscape = useOpenNetworkInCytoscape()
   const featureAvailabilityState = useFeatureAvailability()
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
-  const addMessage = useMessageStore((state) => state.addMessage)
   const table = useTableStore((state) => state.tables[currentNetworkId])
   const summary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
@@ -49,53 +47,18 @@ export const OpenNetworkInCytoscapeMenuItem = ({
     (state) => state.opaqueAspects[currentNetworkId],
   )
 
-  const openNetworkInCytoscape = async (): Promise<void> => {
-    if (viewModel === undefined) {
-      addMessage({
-        message: 'Could not find the current network view model.',
-        duration: 4000,
-        severity: MessageSeverity.WARNING,
-      })
-      return
-    }
-    const cx = exportNetworkToCx2(
+  const handleOpenNetworkInCytoscape = async (): Promise<void> => {
+    await openNetworkInCytoscape(
       network,
       visualStyle,
       summary,
-      table.nodeTable,
-      table.edgeTable,
+      table,
       visualStyleOptions,
       viewModel,
-      `Copy of ${summary.name}`,
       opaqueAspects,
+      cyndex,
     )
-    try {
-      addMessage({
-        message: 'Sending this network to Cytoscape Desktop...',
-        duration: 3000,
-        severity: MessageSeverity.INFO,
-      })
-
-      await cyndex.postCX2NetworkToCytoscape(cx)
-      addMessage({
-        message: 'Network successfully opened in Cytoscape Desktop.',
-        duration: 4000,
-        severity: MessageSeverity.SUCCESS,
-      })
-    } catch (e) {
-      addMessage({
-        message:
-          'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed.',
-        duration: 6000,
-        severity: MessageSeverity.ERROR,
-      })
-      console.error('Could not open the network in Cytoscape Desktop!', e)
-    }
     handleClose()
-  }
-
-  const handleOpenNetworkInCytoscape = async (): Promise<void> => {
-    await openNetworkInCytoscape()
   }
 
   const disabled =
