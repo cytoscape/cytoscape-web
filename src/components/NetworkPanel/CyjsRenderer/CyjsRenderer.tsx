@@ -35,7 +35,8 @@ import {
   PaperSize,
 } from '../../ToolBar/DataMenu/ExportNetworkToImage/PdfExportForm'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { CX_ANNOTATIONS_KEY } from './annotations/CyAnnotation'
+
+import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
 
 registerCyExtensions()
 interface NetworkRendererProps {
