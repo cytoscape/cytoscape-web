@@ -395,7 +395,9 @@ export function ContinuousColorMappingForm(props: {
       m.ltMinVpValue,
       m.gtMaxVpValue,
     )
-    setAddHandleFormValue(minState.value as number)
+    setAddHandleFormValue(
+      ((minState.value as number) + (maxState.value as number)) / 2,
+    )
   }, [minState])
 
   // anytime someone changes the max value, make sure all handle values are less than the max
@@ -419,7 +421,9 @@ export function ContinuousColorMappingForm(props: {
       m.ltMinVpValue,
       m.gtMaxVpValue,
     )
-    setAddHandleFormValue(minState.value as number)
+    setAddHandleFormValue(
+      ((minState.value as number) + (maxState.value as number)) / 2,
+    )
   }, [maxState])
 
   return (
@@ -1017,7 +1021,9 @@ export function ContinuousColorMappingForm(props: {
                   alignItems: 'center',
                 }}
               >
-                {m.attribute}
+                <Box sx={{ maxWidth: 80, overflow: 'hidden' }}>
+                  {m.attribute}
+                </Box>
                 <ExpandableNumberInput
                   value={addHandleFormValue}
                   onConfirm={(newValue) => setAddHandleFormValue(newValue)}
@@ -1032,7 +1038,9 @@ export function ContinuousColorMappingForm(props: {
                   justifyContent: 'space-between',
                 }}
               >
-                {props.visualProperty.displayName}
+                <Box sx={{ maxWidth: 80, overflow: 'hidden' }}>
+                  {props.visualProperty.displayName}
+                </Box>
                 <VisualPropertyValueForm
                   currentValue={addHandleFormVpValue}
                   visualProperty={props.visualProperty}

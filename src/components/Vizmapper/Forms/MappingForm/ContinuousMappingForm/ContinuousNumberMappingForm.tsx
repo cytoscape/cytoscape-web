@@ -286,7 +286,9 @@ export function ContinuousNumberMappingForm(props: {
       m.gtMaxVpValue,
     )
 
-    setAddHandleFormValue(minState.value as number)
+    setAddHandleFormValue(
+      ((minState.value as number) + (maxState.value as number)) / 2,
+    )
   }, [minState])
 
   // anytime someone changes the max value, make sure all handle values are less than the max
@@ -310,8 +312,9 @@ export function ContinuousNumberMappingForm(props: {
       m.ltMinVpValue,
       m.gtMaxVpValue,
     )
-
-    setAddHandleFormValue(minState.value as number)
+    setAddHandleFormValue(
+      ((minState.value as number) + (maxState.value as number)) / 2,
+    )
   }, [maxState])
 
   return (
@@ -372,7 +375,8 @@ export function ContinuousNumberMappingForm(props: {
 
                 return (
                   <Draggable
-                    disabled={isEndHandle}
+                    // disabled={isEndHandle}
+                    axis={isEndHandle ? 'y' : 'both'}
                     key={h.id}
                     bounds={{
                       left: LINE_CHART_MARGIN_LEFT,
@@ -399,7 +403,11 @@ export function ContinuousNumberMappingForm(props: {
                           .toFixed(4),
                       )
 
-                      setHandle(h.id, newValue, newVpValue)
+                      if (isEndHandle) {
+                        setHandle(h.id, h.value as number, newVpValue)
+                      } else {
+                        setHandle(h.id, newValue, newVpValue)
+                      }
                     }}
                     position={{
                       x: pixelPositionX,
@@ -448,11 +456,9 @@ export function ContinuousNumberMappingForm(props: {
                             width: 2,
                             top: HANDLE_VERTICAL_OFFSET,
                             height: pixelPositionY,
-                            backgroundColor: isEndHandle
-                              ? '#D9D9D9'
-                              : '#03082d',
+                            backgroundColor: '#03082d',
                             '&:hover': {
-                              cursor: 'move',
+                              cursor: isEndHandle ? 'ns-resize' : 'move',
                             },
                           }}
                         ></Box>
@@ -555,13 +561,14 @@ export function ContinuousNumberMappingForm(props: {
                         </Box>
                       </Paper>
                       <IconButton
-                        disabled={isEndHandle}
                         className="handle"
                         size="large"
                         sx={{
                           position: 'relative',
                           top: -114,
-                          '&:hover': { cursor: 'move' },
+                          '&:hover': {
+                            cursor: isEndHandle ? 'ns-resize' : 'move',
+                          },
                         }}
                       >
                         <ArrowDropDownIcon
@@ -569,7 +576,7 @@ export function ContinuousNumberMappingForm(props: {
                             fontSize: '60px',
                             opacity: 1,
                             zIndex: 3,
-                            color: isEndHandle ? '#D9D9D9' : '#03082d',
+                            color: '#03082d',
                           }}
                         />
                       </IconButton>
@@ -702,7 +709,9 @@ export function ContinuousNumberMappingForm(props: {
                   alignItems: 'center',
                 }}
               >
-                {m.attribute}
+                <Box sx={{ maxWidth: 80, overflow: 'hidden' }}>
+                  {m.attribute}
+                </Box>
                 <ExpandableNumberInput
                   min={minState.value as number}
                   max={maxState.value as number}
@@ -720,7 +729,9 @@ export function ContinuousNumberMappingForm(props: {
                   alignItems: 'center',
                 }}
               >
-                {props.visualProperty.displayName}
+                <Box sx={{ maxWidth: 80, overflow: 'hidden' }}>
+                  {props.visualProperty.displayName}
+                </Box>
                 <ExpandableNumberInput
                   value={addHandleFormVpValue}
                   onConfirm={(newVal) => {
