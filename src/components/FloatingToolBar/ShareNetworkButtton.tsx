@@ -10,6 +10,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models'
 import { useMessageStore } from '../../store/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
+import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300
@@ -51,6 +52,14 @@ export const ShareNetworkButton = ({
   const networkViewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
   )
+
+  const networkInfo = useNetworkSummaryStore(
+    (state) => state.summaries[currentNetworkId],
+  )
+  // If networkInfo is undefined or null, this becomes `false`
+  const isNdex = networkInfo?.isNdex;
+
+  const isNotNdex = isNdex === false;
 
   const addMessage = useMessageStore((state) => state.addMessage)
 
@@ -148,18 +157,25 @@ export const ShareNetworkButton = ({
   return (
     <>
       <Tooltip
-        title={`Share this network (copy URL to clipboard)`}
+        title={
+          isNotNdex
+            ? 'Save this network to NDEx first to generate a shareable URL.'
+            : 'Share this network (copy URL to clipboard)'
+        }
         placement="top"
         arrow
       >
-        <IconButton
-          onClick={handleClick}
-          aria-label="share"
-          size="small"
-          disableFocusRipple={true}
-        >
-          <Share fontSize="inherit" />
-        </IconButton>
+        <span>
+          <IconButton
+            onClick={isNotNdex ? undefined : handleClick}
+            aria-label="share"
+            size="small"
+            disableFocusRipple
+            disabled={isNotNdex}
+          >
+            <Share fontSize="inherit" />
+          </IconButton>
+        </span>
       </Tooltip>
     </>
   )
