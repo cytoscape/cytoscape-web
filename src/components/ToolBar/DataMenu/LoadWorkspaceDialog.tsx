@@ -22,7 +22,10 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { fetchMyWorkspaces } from '../../../utils/ndex-utils'
-import { Workspace } from '../../../models'
+import { MessageSeverity, Workspace } from '../../../models'
+import { useAppStore } from '../../../store/AppStore'
+import { useMessageStore } from '../../../store/MessageStore'
+import { AppStatus } from '../../../models/AppModel/AppStatus'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
@@ -35,10 +38,13 @@ export const LoadWorkspaceDialog: React.FC<{
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const setWorkSpace = useWorkspaceStore((state) => state.set)
-  const deleteAllNetworks = useWorkspaceStore(
-    (state) => state.deleteAllNetworks,
-  )
   const resetWorksapce = useWorkspaceStore((state) => state.resetWorkspace)
+  const addMessage = useMessageStore((state) => state.addMessage)
+  const apps = useAppStore((state) => state.apps)
+  const serviceApps = useAppStore((state) => state.serviceApps)
+  const addServiceApp = useAppStore((state) => state.addService)
+  const removeServiceApp = useAppStore((state) => state.removeService)
+  const setAppStatus = useAppStore((state) => state.setStatus)
   const dateFormatter = (timestamp: string | number | Date): string => {
     return new Date(timestamp).toLocaleString()
   }
@@ -70,11 +76,11 @@ export const LoadWorkspaceDialog: React.FC<{
   }
 
   const handleOpenWorkspace = async (): Promise<void> => {
-    if (selectedWorkspaceId !== null) {
-      const selectedWorkspace = myWorkspaces.find(
-        (workspace) => workspace.workspaceId === selectedWorkspaceId,
-      )
-      if (selectedWorkspace) {
+    const selectedWorkspace = myWorkspaces.find(
+      (workspace) => workspace.workspaceId === selectedWorkspaceId,
+    )
+    if (selectedWorkspace) {
+      try {
         resetWorksapce().then(() => {
           setWorkSpace({
             name: selectedWorkspace.name,
@@ -85,14 +91,56 @@ export const LoadWorkspaceDialog: React.FC<{
             creationTime: selectedWorkspace.creationTime,
             networkModified: {},
           } as Workspace)
+          // Add apps
+          const activeApps = new Set(
+            selectedWorkspace.options?.activeApps ?? [],
+          )
+          const currentApps = new Set(
+            Object.keys(apps).filter(
+              (key) => apps[key].status === AppStatus.Active,
+            ),
+          )
+          currentApps.forEach((appKey) => {
+            if (!activeApps.has(appKey)) {
+              setAppStatus(appKey, AppStatus.Inactive)
+            }
+          })
+          activeApps.forEach((appKey) => {
+            if (!currentApps.has(appKey as string)) {
+              setAppStatus(appKey as string, AppStatus.Active)
+            }
+          })
+          // Add service apps
+          const activeServiceApps = new Set(
+            selectedWorkspace.options?.serviceApps ?? [],
+          )
+          const currentServiceApps = new Set(Object.keys(serviceApps))
+          currentServiceApps.forEach((serviceAppKey) => {
+            if (!activeServiceApps.has(serviceAppKey)) {
+              removeServiceApp(serviceAppKey)
+            }
+          })
+          activeServiceApps.forEach((serviceAppKey) => {
+            if (!currentServiceApps.has(serviceAppKey as string)) {
+              addServiceApp(serviceAppKey as string)
+            }
+          })
         })
-      } else {
-        alert('Selected workspace not found')
+        handleClose()
+      } catch (e) {
+        addMessage({
+          message: 'Failed to open workspace',
+          duration: 4000,
+          severity: MessageSeverity.ERROR,
+        })
       }
     } else {
-      alert('No workspace selected')
+      addMessage({
+        message: 'Selected workspace not found',
+        duration: 4000,
+        severity: MessageSeverity.WARNING,
+      })
     }
-    handleClose()
   }
 
   const handleConfirmDelete = async (): Promise<void> => {
