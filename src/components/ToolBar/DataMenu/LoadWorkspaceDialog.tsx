@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React, { ReactElement, useState, useEffect, useContext } from 'react'
+import { v4 as uuidv4 } from 'uuid'
 import {
   Dialog,
   DialogTitle,
@@ -32,6 +33,10 @@ export const LoadWorkspaceDialog: React.FC<{
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
     null,
   )
+  const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
+
+  const setId = useWorkspaceStore((state) => state.setId)
+
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const setWorkSpace = useWorkspaceStore((state) => state.set)
@@ -105,6 +110,9 @@ export const LoadWorkspaceDialog: React.FC<{
         const token = await getToken()
         ndexClient.setAuthToken(token)
         await ndexClient.deleteCyWebWorkspace(selectedWorkspace.workspaceId)
+        if (currentWorkspaceId === selectedWorkspace.workspaceId) {
+          setId(uuidv4())
+        }
       } else {
         alert('Selected workspace not found')
       }
