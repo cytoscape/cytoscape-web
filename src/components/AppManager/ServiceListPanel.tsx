@@ -65,7 +65,7 @@ export const ServiceListPanel = () => {
         variant="h6"
         color="text.primary"
       >
-        Status of External Service Apps
+        Service Apps Manager
       </Typography>
       {warningMessage && (
         <Typography color="error" variant="body2">

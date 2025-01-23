@@ -26,7 +26,7 @@ export const AppListPanel = ({ setAppStateUpdated }: AppListPanelProps) => {
         variant="h6"
         color="text.primary"
       >
-        Status of Apps
+        Apps Manager
       </Typography>
       <Typography variant="body1">
         {Object.keys(apps).length === 0
