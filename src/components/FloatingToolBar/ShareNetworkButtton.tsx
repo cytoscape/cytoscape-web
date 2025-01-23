@@ -53,19 +53,13 @@ export const ShareNetworkButton = ({
     state.getViewModel(currentNetworkId),
   )
 
-  const networkInfo = useNetworkSummaryStore(
+  const networkSummary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
-  // If networkInfo is undefined or null, this becomes `false`
-  const isNdex = networkInfo?.isNdex;
 
-  const isNotNdex = isNdex === false;
+  const isLocal = networkSummary?.isNdex !== true
 
   const addMessage = useMessageStore((state) => state.addMessage)
-
-  const { selectedNodes, selectedEdges } = networkViewModel ?? {}
-  const selectedNodeCount: number = selectedNodes?.length ?? 0
-  const selectedEdgeCount: number = selectedEdges?.length ?? 0
 
   const getQueryString = (): string => {
     const panelParams = new URLSearchParams(panels)
@@ -158,7 +152,7 @@ export const ShareNetworkButton = ({
     <>
       <Tooltip
         title={
-          isNotNdex
+          isLocal
             ? 'Save this network to NDEx first to generate a shareable URL.'
             : 'Share this network (copy URL to clipboard)'
         }
@@ -167,11 +161,11 @@ export const ShareNetworkButton = ({
       >
         <span>
           <IconButton
-            onClick={isNotNdex ? undefined : handleClick}
+            onClick={isLocal ? undefined : handleClick}
             aria-label="share"
             size="small"
             disableFocusRipple
-            disabled={isNotNdex}
+            disabled={isLocal}
           >
             <Share fontSize="inherit" />
           </IconButton>
