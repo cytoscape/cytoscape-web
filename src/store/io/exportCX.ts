@@ -100,8 +100,12 @@ export const exportNetworkToCx2 = (
     const attributeName = mapping?.attribute
     // whether attributeName is in nodeTable or edgeTable
     let isNameInTable = false
-    if(attributeName){
-      isNameInTable = Object.values(NodeVisualPropertyName).includes(name as NodeVisualPropertyName) ? nodeTable.columns.map((col)=>col.name).includes(attributeName) : edgeTable.columns.map((col)=>col.name).includes(attributeName)  
+    if (attributeName) {
+      isNameInTable = Object.values(NodeVisualPropertyName).includes(
+        name as NodeVisualPropertyName,
+      )
+        ? nodeTable.columns.map((col) => col.name).includes(attributeName)
+        : edgeTable.columns.map((col) => col.name).includes(attributeName)
     }
 
     if (mapping != null) {
@@ -111,7 +115,7 @@ export const exportNetworkToCx2 = (
             vs,
             vp,
             mapping as ContinuousMappingFunction,
-            isNameInTable
+            isNameInTable,
           )
           mappings[cxVPName] = convertedMapping
           break
@@ -121,7 +125,7 @@ export const exportNetworkToCx2 = (
             vs,
             vp,
             mapping as DiscreteMappingFunction,
-            isNameInTable
+            isNameInTable,
           )
           mappings[cxVPName] = convertedMapping
           break
@@ -131,7 +135,7 @@ export const exportNetworkToCx2 = (
             vs,
             vp,
             mapping as PassthroughMappingFunction,
-            isNameInTable
+            isNameInTable,
           )
           mappings[cxVPName] = convertedMapping
           break
@@ -162,12 +166,36 @@ export const exportNetworkToCx2 = (
   const networkAttributeDeclarations: {
     [key: string]: { d: ValueTypeName }
   } = {}
+  const networkAttributes: any = [{}]
 
   summary.properties.forEach((property) => {
     networkAttributeDeclarations[property.predicateString] = {
       d: property.dataType,
     }
   })
+
+  summary.properties.forEach((property) => {
+    networkAttributes[0][property.predicateString] =
+      isListType(property.dataType) && !Array.isArray(property.value)
+        ? deserializeValue(
+            networkAttributeDeclarations[property.predicateString].d,
+            property.value as string,
+          )
+        : property.value
+  })
+  
+  if (networkName || summary.name !== '') {
+    networkAttributeDeclarations.name = { d: 'string' }
+    networkAttributes[0].name = networkName ?? summary.name
+  }
+  if (summary.description !== '') {
+    networkAttributeDeclarations.description = { d: 'string' }
+    networkAttributes[0].description = summary.description
+  }
+  if (summary.version !== '') {
+    networkAttributeDeclarations.version = { d: 'string' }
+    networkAttributes[0].version = summary.version
+  }
 
   const attributeDeclarations = [
     {
@@ -183,23 +211,6 @@ export const exportNetworkToCx2 = (
     },
   ]
 
-  const networkAttributes: any = [{}]
-
-  summary.properties.forEach((property) => {
-    networkAttributes[0][property.predicateString] =
-      isListType(property.dataType) && !Array.isArray(property.value)
-        ? deserializeValue(
-            networkAttributeDeclarations[property.predicateString].d,
-            property.value as string,
-          )
-        : property.value
-  })
-
-  if (networkName != null || summary.name != null) {
-    networkAttributeDeclarations.name = { d: 'string' }
-    networkAttributes[0].name = networkName ?? summary.name
-  }
-  
   const nodes = network.nodes.map((node) => {
     const nodeRow = nodeTable.rows.get(node.id)
 
