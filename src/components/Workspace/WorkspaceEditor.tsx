@@ -363,6 +363,7 @@ const WorkSpaceEditor = (): JSX.Element => {
               updateNodePositions(networkId, positionMap)
               updateSummary(networkId, nextSummary)
               setIsRunning(false)
+              setNetworkModified(networkId, false)
             }
 
             engine.apply(
