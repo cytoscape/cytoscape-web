@@ -64,7 +64,9 @@ export const useUpdateTables = (): (({
       // update rows
       const updatedRowMap = new Map(originalTable.rows)
       Object.entries(rows).forEach(([key, newRow]) => {
-        const existingRow = updatedRowMap.get(key as string)
+        const translatedId =
+          id === TableType.NODE ? key : translateElementId(key)
+        const existingRow = updatedRowMap.get(translatedId as string)
 
         // If the row exists, update it; if not, add a new one
         if (existingRow) {
@@ -74,10 +76,10 @@ export const useUpdateTables = (): (({
               updatedRow[col.name] = newRow[col.name]
             }
           })
-          updatedRowMap.set(key as string, updatedRow)
+          updatedRowMap.set(translatedId as string, updatedRow)
         } else {
           // New row, add it
-          updatedRowMap.set(key as string, newRow)
+          updatedRowMap.set(translatedId as string, newRow)
         }
       })
 
@@ -92,4 +94,11 @@ export const useUpdateTables = (): (({
     [setTable],
   )
   return updateTables
+}
+
+const translateElementId = (id: string): string => {
+  if (id.startsWith('e')) {
+    return id
+  }
+  return `e${id}`
 }
