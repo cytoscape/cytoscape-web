@@ -1021,7 +1021,14 @@ export function ContinuousColorMappingForm(props: {
                   alignItems: 'center',
                 }}
               >
-                <Box sx={{ maxWidth: 80, overflow: 'hidden' }}>
+                <Box
+                  sx={{
+                    maxWidth: 80,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {m.attribute}
                 </Box>
                 <ExpandableNumberInput
@@ -1038,7 +1045,14 @@ export function ContinuousColorMappingForm(props: {
                   justifyContent: 'space-between',
                 }}
               >
-                <Box sx={{ maxWidth: 80, overflow: 'hidden' }}>
+                <Box
+                  sx={{
+                    maxWidth: 80,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {props.visualProperty.displayName}
                 </Box>
                 <VisualPropertyValueForm
