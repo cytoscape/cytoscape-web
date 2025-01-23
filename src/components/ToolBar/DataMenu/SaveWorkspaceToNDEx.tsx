@@ -196,7 +196,7 @@ export const SaveWorkspaceToNDExMenuItem = (
       open={openDialog}
       onClose={handleCloseDialog}
     >
-      <DialogTitle>Save Workspace as...</DialogTitle>
+      <DialogTitle>Save Workspace As...</DialogTitle>
       <DialogContent sx={{ width: '300px' }}>
         <TextField
           autoFocus
