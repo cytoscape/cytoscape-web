@@ -806,7 +806,17 @@ export function ContinuousNumberMappingForm(props: {
         >
           <Box sx={{ p: 1, width: 200 }}>
             <Box>
-              <Typography variant="body1">{m.attribute}</Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  maxWidth: 180,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {m.attribute}
+              </Typography>
               <Box sx={{ p: 1 }}>
                 <Box
                   sx={{
