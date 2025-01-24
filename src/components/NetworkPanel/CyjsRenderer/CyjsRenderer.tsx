@@ -7,6 +7,10 @@ import Cytoscape, {
   NodeSingular,
   SingularElementArgument,
 } from 'cytoscape'
+// @ts-expect-error-next-line
+import { CxToCyCanvas } from '@js4cytoscape/cyannotation-cx2js'
+// @ts-expect-error-next-line
+import { CyNetworkUtils, CxToJs } from '@js4cytoscape/cx2js'
 
 import { registerCyExtensions } from './register-cy-extensions'
 
@@ -30,9 +34,11 @@ import {
   Orientation,
   PaperSize,
 } from '../../ToolBar/DataMenu/ExportNetworkToImage/PdfExportForm'
+import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
+
+import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
 
 registerCyExtensions()
-
 interface NetworkRendererProps {
   network?: Network
 
@@ -65,6 +71,16 @@ const CyjsRenderer = ({
     IdType | undefined
   >(undefined)
 
+  // const [annotationRenderer, setAnnotationRenderer] = useState<any>(() => {
+  //   const cxNetworkUtils = new CyNetworkUtils()
+  //   const cyService = new CxToJs(cxNetworkUtils)
+  //   return new CxToCyCanvas(cyService)
+  // })
+
+  // Canvas layer state that we need to keep track of so that we can clear the previous network layers if any
+  // before rendering the next network.
+  const [annotationLayers, setAnnotationLayers] = useState<any[]>([])
+
   // Store sub-selection state. If show-hide mode is selected, then
   // the selected node will be highlighted and the others will be shown, too.
   const [subSelectedEdges, setSubSelectedEdges] = useState<IdType[]>([])
@@ -95,6 +111,7 @@ const CyjsRenderer = ({
     (state) => state.ui.visualStyleOptions[id]?.visualEditorProperties,
   )
   const tables = useTableStore((state) => state.tables)
+  const summaries = useNetworkSummaryStore((state) => state.summaries)
   const getViewModel: (id: IdType) => NetworkView | undefined =
     useViewModelStore((state) => state.getViewModel)
 
@@ -130,6 +147,7 @@ const CyjsRenderer = ({
   }, [vs, isRunning])
 
   const table = tables[id]
+  const summary = summaries[id]
 
   const [cy, setCy] = useState<any>(null)
   const cyContainer = useRef(null)
@@ -312,6 +330,42 @@ const CyjsRenderer = ({
       target.removeClass('hover')
       setHoveredElement(undefined)
     })
+
+    const annotations = (summary?.properties ?? []).filter(
+      (p) => p.predicateString === CX_ANNOTATIONS_KEY,
+    )
+
+    const niceCXForCyAnnotationRendering = {
+      networkAttributes: {
+        elements: annotations.map((a) => {
+          return {
+            n: CX_ANNOTATIONS_KEY,
+            v: a.value,
+          }
+        }),
+      },
+    }
+
+    annotationLayers.forEach((layer) => {
+      const ctx = layer?.getCanvas()?.getContext('2d')
+      if (ctx !== undefined) {
+        layer.clear(ctx)
+      }
+    })
+
+    const cxNetworkUtils = new CyNetworkUtils()
+    const cyService = new CxToJs(cxNetworkUtils)
+    const annotationRenderer = new CxToCyCanvas(cyService)
+
+    if (annotations.length > 0) {
+      const result = annotationRenderer.drawAnnotationsFromNiceCX(
+        cy,
+        niceCXForCyAnnotationRendering,
+      )
+      setAnnotationLayers([result.topLayer, result.bottomLayer])
+    } else {
+      setAnnotationLayers([])
+    }
 
     cy.endBatch()
 
