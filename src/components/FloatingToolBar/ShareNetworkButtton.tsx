@@ -10,6 +10,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models'
 import { useMessageStore } from '../../store/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
+import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300
@@ -52,11 +53,13 @@ export const ShareNetworkButton = ({
     state.getViewModel(currentNetworkId),
   )
 
-  const addMessage = useMessageStore((state) => state.addMessage)
+  const networkSummary = useNetworkSummaryStore(
+    (state) => state.summaries[currentNetworkId],
+  )
 
-  const { selectedNodes, selectedEdges } = networkViewModel ?? {}
-  const selectedNodeCount: number = selectedNodes?.length ?? 0
-  const selectedEdgeCount: number = selectedEdges?.length ?? 0
+  const isLocal = networkSummary?.isNdex !== true
+
+  const addMessage = useMessageStore((state) => state.addMessage)
 
   const getQueryString = (): string => {
     const panelParams = new URLSearchParams(panels)
@@ -148,18 +151,25 @@ export const ShareNetworkButton = ({
   return (
     <>
       <Tooltip
-        title={`Share this network (copy URL to clipboard)`}
+        title={
+          isLocal
+            ? 'Save this network to NDEx first to generate a shareable URL.'
+            : 'Share this network (copy URL to clipboard)'
+        }
         placement="top"
         arrow
       >
-        <IconButton
-          onClick={handleClick}
-          aria-label="share"
-          size="small"
-          disableFocusRipple={true}
-        >
-          <Share fontSize="inherit" />
-        </IconButton>
+        <span>
+          <IconButton
+            onClick={isLocal ? undefined : handleClick}
+            aria-label="share"
+            size="small"
+            disableFocusRipple
+            disabled={isLocal}
+          >
+            <Share fontSize="inherit" />
+          </IconButton>
+        </span>
       </Tooltip>
     </>
   )

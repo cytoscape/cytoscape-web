@@ -36,8 +36,6 @@ interface AppMenuItemProps {
 export const InputColumns = (props: AppMenuItemProps) => {
   const { app } = props
   const isNodeType = app.serviceInputDefinition?.type === 'node'
-  const isEdgeType = app.serviceInputDefinition?.type === 'edge'
-  const inputTypeIsElement = (isNodeType || isEdgeType) ?? false
 
   const updateInputColumn = useAppStore((state) => state.updateInputColumn)
   const activeNetworkId: IdType = useUiStateStore(
@@ -127,8 +125,9 @@ export const InputColumns = (props: AppMenuItemProps) => {
 
 export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
   const { handleClose, handleConfirm, app, open } = props
-  const isNodeType = app.serviceInputDefinition?.type === 'node'
-  const isEdgeType = app.serviceInputDefinition?.type === 'edge'
+  const serviceInputDefinition = app.serviceInputDefinition
+  const isNodeType = serviceInputDefinition?.type === 'node'
+  const isEdgeType = serviceInputDefinition?.type === 'edge'
   const inputTypeIsElement = (isNodeType || isEdgeType) ?? false
 
   const workspace = useWorkspaceStore((state) => state.workspace)
@@ -357,14 +356,26 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
   }
 
   const networkHasProperInputColumns =
-    app.serviceInputDefinition?.inputColumns?.every((inputColumn) => {
+    serviceInputDefinition?.inputColumns?.every((inputColumn) => {
       const validColumns = (isNodeType ? nodeColumns : edgeColumns).filter(
         (c) => inputColumnFilterFn(c, inputColumn),
       )
       return validColumns.length > 0
     }) ?? true
 
-  const serviceCanBeRun = networkHasProperInputColumns && numNetworks > 0
+  let serviceCanBeRun = true
+  let submitTooltip = ''
+  if ((serviceInputDefinition?.inputColumns?.length ?? 0) > 0) {
+    serviceCanBeRun =
+      serviceCanBeRun && numNetworks > 0 && networkHasProperInputColumns
+    submitTooltip =
+      "Unable to run service.  The network doesn't have input columns that match the required data types from the service."
+  }
+
+  if (serviceInputDefinition?.inputNetwork) {
+    serviceCanBeRun = serviceCanBeRun && numNetworks > 0
+    submitTooltip = "Unable to run service. There isn't an active network."
+  }
 
   const inputDefinition = inputTypeIsElement ? (
     <Box sx={{ p: 3 }}>
@@ -389,9 +400,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
   const shouldAddMarginTop = !inputDefinition && !parametersSection
 
   const submitButton = !serviceCanBeRun ? (
-    <Tooltip
-      title={`Unable to run service.  The network doesn't have input columns that match the required data types from the service.`}
-    >
+    <Tooltip title={submitTooltip}>
       <Box
         display="flex"
         justifyContent="flex-end"

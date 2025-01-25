@@ -23,6 +23,8 @@ import {
   VisualStyleOptions,
 } from '../VisualStyleModel/VisualStyleOptions'
 
+export const CX_ANNOTATIONS_KEY = '__Annotations'
+
 const isAspect = (aspect: Aspect | CxDescriptor): boolean => {
   const keys = Object.keys(aspect)
   if (keys.length === 1) {

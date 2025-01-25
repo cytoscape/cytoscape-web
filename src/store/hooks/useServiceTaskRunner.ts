@@ -119,8 +119,12 @@ export const useServiceTaskRunner = (): ((
         throw new Error(`Service not found for URL: ${url}`)
       }
 
-      if (networkRef.current === undefined) {
+      if (serviceApp.serviceInputDefinition?.inputNetwork && networkRef.current === undefined) {
         throw new Error('Network not found')
+      }
+
+      if (serviceApp.serviceInputDefinition?.inputColumns && tableRef.current === undefined) {
+        throw new Error('Table not found')
       }
 
       const customParameters =

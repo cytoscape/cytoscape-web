@@ -3,7 +3,6 @@
   "version": "1.0.0-beta.1",
   "private": true,
   "license": "MIT",
-  
   "scripts": {
     "clean": "rm -rf dist",
     "test": "npm run test:playwright && npm run test:unit",
@@ -15,7 +14,6 @@
     "lint": "eslint --ext .js,.ts,.jsx,.tsx src",
     "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'"
   },
-  
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/plugin-transform-modules-commonjs": "^7.24.8",
@@ -80,6 +78,8 @@
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
     "@glideapps/glide-data-grid": "^5.2.1",
+    "@js4cytoscape/cx2js": "^0.6.11",
+    "@js4cytoscape/cyannotation-cx2js": "^0.8.7-alpha.3",
     "@js4cytoscape/ndex-client": "^0.4.3-alpha.12",
     "@mantine/core": "^7.6.2",
     "@mantine/dropzone": "^7.6.2",
@@ -108,6 +108,7 @@
     "allotment": "1.18.1",
     "chroma-js": "^2.4.2",
     "cytoscape": "^3.28.1",
+    "cytoscape-canvas": "^3.0.1",
     "cytoscape-pdf-export": "^0.0.2",
     "cytoscape-svg": "^0.4.0",
     "d3-array": "^3.2.4",

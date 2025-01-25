@@ -40,8 +40,8 @@ interface RunTaskProps {
   serviceUrl: string
   algorithmName: string
   customParameters: { [key: string]: string }
-  network: Network
-  table: TableRecord
+  network?: Network
+  table?: TableRecord
   visualStyle?: VisualStyle
   summary?: NdexNetworkSummary
   visualStyleOptions?: VisualStyleOptions
@@ -222,7 +222,7 @@ export const useRunTask = (): ((
       if (serviceInputDefinition !== undefined) {
         const { type, scope, inputNetwork, inputColumns } =
           serviceInputDefinition
-        if (inputNetwork !== null) {
+        if (inputNetwork !== null && network !== undefined) {
           data = createNetworkDataObj(
             scope,
             inputNetwork,
@@ -234,7 +234,7 @@ export const useRunTask = (): ((
             viewModel,
             opaqueAspect,
           )
-        } else if (inputColumns !== null) {
+        } else if (inputColumns !== null && table !== undefined) {
           data = createTableDataObj(
             type === SelectedDataType.Node ? table.nodeTable : table.edgeTable,
             scope,

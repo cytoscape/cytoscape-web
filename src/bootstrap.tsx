@@ -4,6 +4,7 @@ import './split-pane.css'
 import './data-grid.css'
 import appConfig from './assets/config.json'
 import { AppConfigContext } from './AppConfigContext'
+import { FeatureAvailabilityProvider } from './components/FeatureAvailability'
 import { App } from './App'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
@@ -141,9 +142,11 @@ keycloak
           <AppConfigContext.Provider value={appConfig}>
             <React.StrictMode>
               <KeycloakContext.Provider value={keycloak}>
-                <ErrorBoundary>
-                  <App />
-                </ErrorBoundary>
+                <FeatureAvailabilityProvider>
+                  <ErrorBoundary>
+                    <App />
+                  </ErrorBoundary>
+                </FeatureAvailabilityProvider>
               </KeycloakContext.Provider>
             </React.StrictMode>
           </AppConfigContext.Provider>,

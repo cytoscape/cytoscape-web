@@ -22,6 +22,8 @@ import {
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { useAppStore } from '../../../store/AppStore'
+import { AppStatus } from '../../../models/AppModel/AppStatus'
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
   props: WorkspaceMenuProps,
@@ -40,6 +42,8 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
     .includes(currentWorkspaceId)
 
   // data from store
+  const apps = useAppStore((state) => state.apps)
+  const serviceApps = useAppStore((state) => state.serviceApps)
   const networkModifiedStatus = useWorkspaceStore(
     (state) => state.workspace.networkModified,
   )
@@ -102,7 +106,13 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       if (hasWorkspace) {
         await ndexClient.updateCyWebWorkspace(workspace.id, {
           name: workspace.name,
-          options: { currentNetwork: workspace.currentNetworkId },
+          options: {
+            currentNetwork: workspace.currentNetworkId,
+            activeApps: Object.keys(apps).filter(
+              (key) => apps[key].status === AppStatus.Active,
+            ),
+            serviceApps: Object.keys(serviceApps),
+          },
           networkIDs: workspace.networkIds,
         })
       } else {
