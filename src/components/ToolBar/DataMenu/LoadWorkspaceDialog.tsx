@@ -22,10 +22,11 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { fetchMyWorkspaces } from '../../../utils/ndex-utils'
-import { MessageSeverity, Workspace } from '../../../models'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { useAppStore } from '../../../store/AppStore'
 import { useMessageStore } from '../../../store/MessageStore'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { Workspace } from '../../../models/WorkspaceModel'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean

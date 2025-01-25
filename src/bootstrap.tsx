@@ -16,10 +16,12 @@ import { enableMapSet } from 'immer'
 import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
 import ErrorBoundary from './ErrorBoundary'
+import { initTabManager } from './tab-manager'
 enableMapSet()
 
-// Window name of this instance
-window.name = 'cytoscape-web-v1'
+// Window name of this instance based on the current time
+window.name = initTabManager()
+console.log('Cytoscape Window name initialized', window.name)
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
