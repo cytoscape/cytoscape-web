@@ -245,7 +245,7 @@ export const SaveWorkspaceToNDExMenuItem = (
 
   const menuItem = (
     <MenuItem disabled={!enabled} onClick={handleSaveWorkspaceToNDEx}>
-      Save Workspace as...
+      Save Workspace As...
     </MenuItem>
   )
 
