@@ -27,6 +27,7 @@ import { MessageSeverity, Workspace } from '../../../models'
 import { useAppStore } from '../../../store/AppStore'
 import { useMessageStore } from '../../../store/MessageStore'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { dateFormatter } from '../../../utils/date-format'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
@@ -50,9 +51,6 @@ export const LoadWorkspaceDialog: React.FC<{
   const addServiceApp = useAppStore((state) => state.addService)
   const removeServiceApp = useAppStore((state) => state.removeService)
   const setAppStatus = useAppStore((state) => state.setStatus)
-  const dateFormatter = (timestamp: string | number | Date): string => {
-    return new Date(timestamp).toLocaleString()
-  }
 
   const [openDialog, setOpenDialog] = useState(false)
 

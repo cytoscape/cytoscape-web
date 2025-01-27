@@ -16,6 +16,7 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import parse from 'html-react-parser'
 import React from 'react'
+import { dateFormatter } from '../../utils/date-format'
 
 export function NetworkPropertyTable(): React.ReactElement {
   const currentNetworkId = useWorkspaceStore(
@@ -104,13 +105,13 @@ export default function NetworkInfoPanel(props: {
           sx={{ mr: 4, fontSize: 14, color: 'gray' }}
           variant="subtitle1"
         >
-          {`Created: ${networkInfo?.creationTime.toLocaleString()}`}
+          {`Created: ${dateFormatter(networkInfo?.creationTime ?? '')}`}
         </Typography>
         <Typography
           sx={{ mr: 4, fontSize: 14, color: 'gray' }}
           variant="subtitle1"
         >
-          {`Modified: ${networkInfo?.modificationTime.toLocaleString()}`}
+          {`Modified: ${dateFormatter(networkInfo?.modificationTime ?? '')}`}
         </Typography>
         {networkInfo?.isNdex && (
           <Typography sx={{ mr: 1, fontSize: 14, color: 'gray' }}>
