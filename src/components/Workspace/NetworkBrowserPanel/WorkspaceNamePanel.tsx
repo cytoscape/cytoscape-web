@@ -11,6 +11,7 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { Workspace } from '../../../models'
 import EditIcon from '@mui/icons-material/Edit'
 import { useState } from 'react'
+import { dateFormatter } from '../../../utils/date-format'
 
 export const WorkspaceNamePanel = () => {
   const theme: Theme = useTheme()
@@ -52,7 +53,7 @@ export const WorkspaceNamePanel = () => {
       }}
     >
       <Tooltip
-        title={`This workspace was created at ${workspace.creationTime.toLocaleString()}`}
+        title={`This workspace was created at ${dateFormatter(workspace.creationTime)}`}
         placement="bottom"
         sx={{ flexGrow: 1, width: '100%' }}
       >
