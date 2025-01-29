@@ -1,5 +1,13 @@
 /**
+ * This is an experimental module to manage multiple instances
+ * of Cytoscape Web in different tabs.
+ *
+ * Currently, just manages the tab IDs for external applications
+ */
+
+/**
  * Generates a channel name based on the current hostname and port
+ *
  * @returns a name for the channel based on the current hostname and port
  */
 const generateChannelName = (): string => {
@@ -13,10 +21,12 @@ const generateChannelName = (): string => {
 }
 
 const CHANNEL_NAME: string = generateChannelName()
-console.log('Cytoscape Web active channel name', CHANNEL_NAME)
+console.log(
+  "Cytoscape Web's current active broadcast channel name:",
+  CHANNEL_NAME,
+)
 
 const CYWEB_PREFIX: string = 'cyweb'
-const TAB_ID_KEY: string = `${CYWEB_PREFIX}-current-id`
 
 const TabMessageType = {
   CREATED: `${CYWEB_PREFIX}-tab-created`,
@@ -35,19 +45,22 @@ interface TabMessage {
   tabId: string
 }
 
+/**
+ * Basic tab manager for Cytoscape Web
+ *
+ * @param channelName the name of the broadcast channel for the given domain
+ *
+ * @returns the tab ID for the current tab
+ */
 export const initTabManager = (channelName: string = CHANNEL_NAME): string => {
-  // const previousId = sessionStorage.getItem(TAB_ID_KEY)
   // Check window.name for the tab ID
   const windowName = window.name
   let tabId = `${CYWEB_PREFIX}-${Date.now()}`
+
+  // Reuse the tab ID if it's already set by Cytoscape Web
   if (windowName && windowName.startsWith(CYWEB_PREFIX + '-')) {
-    console.log('Last Cytoscape Web tab ID', windowName)
     tabId = windowName
   }
-
-  console.log('Cytoscape Web tab ID', tabId)
-
-  // sessionStorage.setItem(TAB_ID_KEY, tabId)
 
   const activeTabs = new Set<string>()
   const channel = new BroadcastChannel(channelName)
@@ -63,15 +76,12 @@ export const initTabManager = (channelName: string = CHANNEL_NAME): string => {
     // Tell others that this tab is closing / reloading
     const message: TabMessage = { type: TabMessageType.RELOAD, tabId }
     channel.postMessage(message)
-
-    // Set this tab ID for the new tab after reload
-    // sessionStorage.setItem(TAB_ID_KEY, tabId)
   })
 
   document.addEventListener('visibilitychange', () => {
     const isVisible = !document.hidden
-    console.log('## tab focus changed', tabId, isVisible)
     if (isVisible) {
+      console.log('Current Cytoscape Instance:', tabId, isVisible)
       channel.postMessage({ type: TabMessageType.ACTIVE, tabId })
     } else {
       channel.postMessage({ type: TabMessageType.INACTIVE, tabId })
@@ -90,7 +100,6 @@ export const initTabManager = (channelName: string = CHANNEL_NAME): string => {
         break
       case TabMessageType.ACTIVE:
         activeTabs.add(message.tabId)
-        console.log('Tab active', message.tabId)
         break
       case TabMessageType.ALIVE:
         activeTabs.add(message.tabId)
@@ -99,7 +108,6 @@ export const initTabManager = (channelName: string = CHANNEL_NAME): string => {
         activeTabs.delete(message.tabId)
         break
     }
-    console.log('Current instances', activeTabs)
   }
 
   return tabId

@@ -21,7 +21,11 @@ enableMapSet()
 
 // Window name of this instance based on the current time
 window.name = initTabManager()
-console.log('Cytoscape Window name initialized', window.name)
+console.log(
+  'Cytoscape window name initialized. ',
+  'Use this as the target when you open this tab again.',
+  window.name,
+)
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
