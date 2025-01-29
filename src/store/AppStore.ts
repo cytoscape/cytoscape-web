@@ -33,7 +33,6 @@ export const useAppStore = create(
         apps.forEach(({ id, cached }) => {
           if (cached !== undefined) {
             state.apps[id] = cached
-            console.log('* Restored from cached', cached)
           }
         })
 
@@ -59,8 +58,6 @@ export const useAppStore = create(
               state.apps[id].status = app.status || AppStatus.Inactive
               putAppToDb(app)
             }
-          } else {
-            console.info(`App already registered: ${app.id}`)
           }
         })
       })
