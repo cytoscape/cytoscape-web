@@ -262,7 +262,8 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
             }
             case 'DISCRETE': {
               const vpValueMap = new Map()
-              cxMapping.definition.map.forEach((mapEntry) => {
+              const mapEntries = cxMapping?.definition?.map ?? []
+              mapEntries.forEach((mapEntry) => {
                 const { v, vp } = mapEntry
                 vpValueMap.set(v, converter.valueConverter(vp))
               })
@@ -278,7 +279,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
               break
             }
             case 'CONTINUOUS': {
-              const numMapEntries = cxMapping.definition.map.length
+              const numMapEntries = cxMapping?.definition?.map?.length ?? 0
               if (numMapEntries < 2) {
                 visualStyle[vpName].mapping = undefined
                 break
