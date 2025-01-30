@@ -5,7 +5,7 @@ import { CyApp } from '../../models/AppModel/CyApp'
 import { appImportMap } from '../../assets/app-definition'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 
-console.log('[AppManager] App config loaded: ', appConfig)
+console.log('[AppManager] App config file loaded: ', appConfig)
 
 // appConfig contains reference list of available apps.
 const appNameMap = new Map<string, string>()
@@ -34,7 +34,7 @@ const loadModules = async () => {
           const externalAppModule = importFunc()
             .then((module: any) => module)
             .catch((e: any) => {
-              console.warn(`## Error loading external module ${moduleName}:`, e)
+              console.warn(`! Error loading external module ${moduleName}:`, e)
             })
           return [moduleName, externalAppModule]
         } catch (e) {
@@ -60,7 +60,7 @@ const loadModules = async () => {
           console.log('Status set to error', entryName)
         }
       } catch (err) {
-        console.warn(`* Failed to load a remote app: ${entryName}`, err)
+        console.warn(`! Failed to load a remote app: ${entryName}`, err)
       }
     }),
   )
@@ -71,8 +71,6 @@ const loadModules = async () => {
 // This contains only active remote apps
 const loadedApps = await loadModules()
 const activatedAppIdSet = new Set<string>(loadedApps.map((app) => app.id))
-
-console.log('### Activated remote apps:', loadedApps)
 
 export const useAppManager = (): void => {
   const initRef = useRef<boolean>(false)
@@ -92,12 +90,11 @@ export const useAppManager = (): void => {
     }
 
     return () => {
-      console.log('App Manager unmounted')
+      // console.log('App Manager unmounted')
     }
   }, [])
 
   useEffect(() => {
-    console.log('App Store updating:', apps)
     appIds.forEach((appId: string) => {
       if (!apps[appId] && activatedAppIdSet.has(appId)) {
         //

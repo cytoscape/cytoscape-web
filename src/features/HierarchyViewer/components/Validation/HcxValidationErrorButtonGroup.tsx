@@ -17,7 +17,7 @@ import { validateHcx } from '../../model/impl/hcxValidators'
 import { useTableStore } from '../../../../store/TableStore'
 import { useMessageStore } from '../../../../store/MessageStore'
 import { HcxValidationWarningsDialog } from './HcxValidationWarningsDialog'
-import { MessageSeverity } from '../../../../models'
+import { MessageSeverity } from '../../../../models/MessageModel'
 
 export interface HcxValidationButtonGroupProps {
   id: IdType
