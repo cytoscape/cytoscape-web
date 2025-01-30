@@ -1,8 +1,25 @@
 {
   "name": "cytoscape-web",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0",
   "private": true,
   "license": "MIT",
+  "keywords": [
+    "cytoscape",
+    "graph",
+    "network",
+    "visualization",
+    "bioinformatics"
+  ],
+  "description": "Cytoscape Web: A web-based network visualization tool for modern web browsers",
+  "author": {
+    "name": "The Cytoscape Consortium",
+    "url": "https://cytoscape.org"
+  },
+  "homepage": "http://web.cytoscape.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cytoscape/cytoscape-web.git"
+  },
   "scripts": {
     "clean": "rm -rf dist",
     "test": "npm run test:playwright && npm run test:unit",

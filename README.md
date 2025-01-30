@@ -21,16 +21,30 @@ The production version is available here:
 
 Cytoscape Web is designed to expand with two types of **Apps**. We are actively researching and developing examples. Please visit the following pages for more details:
 
-- https://github.com/cytoscape/cytoscape-web-app-examples
+- [App examples](https://github.com/cytoscape/cytoscape-web-app-examples)
 - [Service-based app developer guide](<https://github.com/cytoscape/cytoscape-web/wiki/Specification-for-Service-App-in-Cytoscape-Web-(draft-v2)>)
 
 # Developer's Guide
 
 (TBA)
 
-! The following section is not finished yet.
+## Quick Start
+
+Cytoscape Web is designed to have minimum dependency to the backend services,
+so you can easily run your own instance locally only with an HTTP server.
+
+To run Cytoscape Web locally with development http server, checkout this repository and run the following:
+
+```
+npm install
+npm run dev
+```
+
+This will start a local test server and opens a new browser tab.
 
 ---
+
+! The following section is not finished yet.
 
 ### Build dependencies
 
