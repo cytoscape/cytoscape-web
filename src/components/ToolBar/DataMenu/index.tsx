@@ -1,8 +1,6 @@
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import Button from '@mui/material/Button'
-import { Divider, Snackbar, Alert } from '@mui/material'
-import { KeycloakContext } from '../../../bootstrap'
-import { AppConfigContext } from '../../../AppConfigContext'
+import { Divider } from '@mui/material'
 import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
 import { RemoveNetworkMenuItem } from './RemoveNetworkMenuItem'
 import { LoadDemoNetworksMenuItem } from './LoadDemoNetworksMenuItem'
@@ -22,27 +20,13 @@ import { TieredMenu } from 'primereact/tieredmenu'
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
 import { ExportImageMenuItem } from './ExportNetworkToImage/ExportNetworkToImageMenuItem'
-import { fetchMyWorkspaces } from '../../../utils/ndex-utils'
-import { useCredentialStore } from '../../../store/CredentialStore'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import './menuItem.css'
-import { useMessageStore } from '../../../store/MessageStore'
-import { MessageSeverity } from '../../../models/MessageModel'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
 ) => {
   const { label } = props
-  const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true)
-  const [existingWorkspace, setExistingWorkspace] = useState<any[]>([])
-  const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
-  const addMessage = useMessageStore((state) => state.addMessage)
-  const { ndexBaseUrl } = useContext(AppConfigContext)
-  const client = useContext(KeycloakContext)
-  const authenticated: boolean = client?.authenticated ?? false
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-
-  const getToken = useCredentialStore((state) => state.getToken)
   const op = useRef(null)
   const open = Boolean(anchorEl)
 
@@ -50,28 +34,6 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     ;(op.current as any)?.hide()
     setAnchorEl(null)
   }
-
-  useEffect(() => {
-    if (authenticated) {
-      setIsLoadingWorkspace(true)
-      fetchMyWorkspaces(ndexBaseUrl, getToken)
-        .then((resultArray) => {
-          setExistingWorkspace(resultArray)
-          setIsLoadingWorkspace(false)
-        })
-        .catch((error) => {
-          console.error('Error:', error)
-          addMessage({
-            message: 'Failed to fetch workspaces from NDEx',
-            duration: 4000,
-            severity: MessageSeverity.ERROR,
-          })
-          setIsLoadingWorkspace(false)
-        })
-    } else {
-      setIsLoadingWorkspace(false)
-    }
-  }, [currentWorkspaceId])
 
   const menuItems = [
     {
@@ -129,23 +91,13 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
     },
     {
       label: 'Save Workspace to NDEx (overwrite)',
-      disabled: isLoadingWorkspace,
       template: () => (
-        <SaveWorkspaceToNDExOverwriteMenuItem
-          handleClose={handleClose}
-          existingWorkspace={existingWorkspace}
-        />
+        <SaveWorkspaceToNDExOverwriteMenuItem handleClose={handleClose} />
       ),
     },
     {
       label: 'Save Workspace to NDEx',
-      disabled: isLoadingWorkspace,
-      template: () => (
-        <SaveWorkspaceToNDExMenuItem
-          handleClose={handleClose}
-          existingWorkspace={existingWorkspace}
-        />
-      ),
+      template: () => <SaveWorkspaceToNDExMenuItem handleClose={handleClose} />,
     },
     {
       label: 'Export',

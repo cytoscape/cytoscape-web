@@ -12,7 +12,6 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 import { AppConfigContext } from '../../../AppConfigContext'
@@ -24,7 +23,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 import {
-  saveCopyToNDEx as saveNetworkCopy,
+  useSaveCopyToNDEx,
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
 } from '../../../utils/ndex-utils'
@@ -75,15 +74,10 @@ export const CopyNetworkToNDExMenuItem = (
 
   const addMessage = useMessageStore((state) => state.addMessage)
 
-  const addNetworkToWorkspace = useWorkspaceStore(
-    (state) => state.addNetworkIds,
-  )
-  const deleteNetworksFromWorkspace = useWorkspaceStore(
-    (state) => state.deleteNetwork,
-  )
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
+  const saveNetworkCopy = useSaveCopyToNDEx()
   const saveCopyToNDEx = async (): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
@@ -94,8 +88,6 @@ export const CopyNetworkToNDExMenuItem = (
         ndexBaseUrl,
         accessToken,
         ndexClient,
-        addNetworkToWorkspace,
-        deleteNetworksFromWorkspace,
         network,
         visualStyle,
         summary,

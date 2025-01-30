@@ -1,98 +1,59 @@
-import React, { useState, useContext, useEffect } from 'react'
+import React, { useState, useContext } from 'react'
 import { MenuItem, Box, Tooltip } from '@mui/material'
-import { WorkspaceMenuProps } from '../BaseMenuProps'
+import { BaseMenuProps } from '../BaseMenuProps'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useCredentialStore } from '../../../store/CredentialStore'
-import { getWorkspaceFromDb } from '../../../store/persist/db'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../store/MessageStore'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { useNetworkStore } from '../../../store/NetworkStore'
-import { useTableStore } from '../../../store/TableStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
 import { KeycloakContext } from '../../../bootstrap'
-import { useUiStateStore } from '../../../store/UiStateStore'
-import {
-  saveAllNetworks,
-  NdexDuplicateKeyErrorMessage,
-} from '../../../utils/ndex-utils'
+import { useSaveWorkspace } from '../../../utils/ndex-utils'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
-import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 import { MessageSeverity } from '../../../models/MessageModel'
-import { useAppStore } from '../../../store/AppStore'
-import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
+import { useWorkspaceData } from '../../../store/hooks/useWorkspaceData'
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
-  props: WorkspaceMenuProps,
+  props: BaseMenuProps,
 ): React.ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
-  const [openDialog, setOpenDialog] = useState<boolean>(false)
-  const updateSummary = useNetworkSummaryStore((state) => state.update)
-  const setId = useWorkspaceStore((state) => state.setId)
-  const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
-  const hasWorkspace = props.existingWorkspace
-    .map((workspace) => workspace.workspaceId)
-    .includes(currentWorkspaceId)
+  const [openConfirmDialog, setOpenConfirmDialog] = useState<boolean>(false)
+  const [openNamingDialog, setOpenNamingDialog] = useState<boolean>(false)
 
-  // data from store
-  const apps = useAppStore((state) => state.apps)
-  const serviceApps = useAppStore((state) => state.serviceApps)
-  const networkModifiedStatus = useWorkspaceStore(
-    (state) => state.workspace.networkModified,
-  )
-  const deleteNetworkModifiedStatus = useWorkspaceStore(
-    (state) => state.deleteNetworkModifiedStatus,
-  )
-  const networks = useNetworkStore((state) => state.networks)
-  const visualStyles = useVisualStyleStore((state) => state.visualStyles)
-  const summaries = useNetworkSummaryStore((state) => state.summaries)
-  const tables = useTableStore((state) => state.tables)
-  const viewModels = useViewModelStore((state) => state.viewModels)
-  const networkVisualStyleOpt = useUiStateStore(
-    (state) => state.ui.visualStyleOptions,
-  )
+  const {
+    apps,
+    serviceApps,
+    networks,
+    visualStyles,
+    summaries,
+    tables,
+    viewModels,
+    networkVisualStyleOpt,
+    opaqueAspects,
+    allNetworkId,
+    currentNetworkId,
+    workspaceId,
+    currentWorkspaceName,
+    networkModifiedStatus,
+    isRemoteWorkspace,
+  } = useWorkspaceData()
 
-  const handleOpenDialog = (): void => {
-    setOpenDialog(true)
-  }
-
-  const handleCloseDialog = (): void => {
-    setOpenDialog(false)
-  }
-  const allNetworkId = useWorkspaceStore((state) => state.workspace.networkIds)
-
-  const addNetworkToWorkspace = useWorkspaceStore(
-    (state) => state.addNetworkIds,
-  )
-  const deleteNetworksFromWorkspace = useWorkspaceStore(
-    (state) => state.deleteNetwork,
-  )
-  const opaqueAspects = useOpaqueAspectStore((state) => state.opaqueAspects)
+  const saveWorkspace = useSaveWorkspace()
 
   const saveWorkspaceToNDEx = async (): Promise<void> => {
     try {
       const accessToken = await getToken()
       const ndexClient = new NDEx(ndexBaseUrl)
-      ndexClient.setAuthToken(accessToken)
-
-      await saveAllNetworks(
+      await saveWorkspace(
         accessToken,
         ndexBaseUrl,
         ndexClient,
         allNetworkId,
-        addNetworkToWorkspace,
-        deleteNetworksFromWorkspace,
         networkModifiedStatus,
-        updateSummary,
-        deleteNetworkModifiedStatus,
-        addMessage,
         networks,
         visualStyles,
         summaries,
@@ -100,65 +61,41 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         viewModels,
         networkVisualStyleOpt,
         opaqueAspects,
+        true,
+        currentWorkspaceName,
+        workspaceId,
+        apps,
+        serviceApps,
+        currentNetworkId,
       )
-
-      const workspace = await getWorkspaceFromDb(currentWorkspaceId)
-      if (hasWorkspace) {
-        await ndexClient.updateCyWebWorkspace(workspace.id, {
-          name: workspace.name,
-          options: {
-            currentNetwork: workspace.currentNetworkId,
-            activeApps: Object.keys(apps).filter(
-              (key) => apps[key].status === AppStatus.Active,
-            ),
-            serviceApps: Object.keys(serviceApps),
-          },
-          networkIDs: workspace.networkIds,
-        })
-      } else {
-        const response = await ndexClient.createCyWebWorkspace({
-          name: workspace.name,
-          options: { currentNetwork: workspace.currentNetworkId },
-          networkIDs: workspace.networkIds,
-        })
-        const { uuid, modificationTime } = response
-        setId(uuid)
-      }
-
-      addMessage({
-        message: `Saved workspace to NDEx successfully.`,
-        duration: 3000,
-        severity: MessageSeverity.SUCCESS,
-      })
     } catch (e) {
-      if (e.response?.data?.message?.includes(NdexDuplicateKeyErrorMessage)) {
-        addMessage({
-          message:
-            'This workspace name already exists. Please enter a unique workspace name',
-          duration: 5000,
-          severity: MessageSeverity.ERROR,
-        })
-      } else {
-        addMessage({
-          message: `Error: Could not save workspace to NDEx.`,
-          duration: 5000,
-          severity: MessageSeverity.ERROR,
-        })
-      }
+      addMessage({
+        message: `Failed to update workspace to NDEx.`,
+        duration: 5000,
+        severity: MessageSeverity.ERROR,
+      })
     }
 
-    handleCloseDialog()
+    setOpenConfirmDialog(false)
     props.handleClose()
   }
 
-  const handleSaveCurrentNetworkToNDEx = async (): Promise<void> => {
-    handleOpenDialog()
+  const handleSaveWorkspaceToNDEx = async (): Promise<void> => {
+    if (isRemoteWorkspace) {
+      setOpenConfirmDialog(true)
+    } else {
+      setOpenNamingDialog(true)
+    }
   }
 
+  const onCloseWorkspaceNamingDialog = () => {
+    setOpenNamingDialog(false)
+    props.handleClose()
+  }
   const enabled = authenticated && allNetworkId.length > 0
 
   const menuItem = (
-    <MenuItem disabled={!enabled} onClick={handleSaveCurrentNetworkToNDEx}>
+    <MenuItem disabled={!enabled} onClick={handleSaveWorkspaceToNDEx}>
       Save Workspace
     </MenuItem>
   )
@@ -172,10 +109,16 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
             title="Save Workspace to NDEx"
             message="Do you want to save/overwrite the current workspace to NDEx?"
             onConfirm={saveWorkspaceToNDEx}
-            open={openDialog}
-            setOpen={setOpenDialog}
+            open={openConfirmDialog}
+            setOpen={setOpenConfirmDialog}
             buttonTitle="Save"
             isAlert={true}
+          />
+          <WorkspaceNamingDialog
+            openDialog={openNamingDialog}
+            onClose={onCloseWorkspaceNamingDialog}
+            ndexBaseUrl={ndexBaseUrl}
+            getToken={getToken}
           />
         </>
       ) : (

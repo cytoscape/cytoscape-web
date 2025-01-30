@@ -22,10 +22,8 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { exportNetworkToCx2 } from '../../../store/io/exportCX'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
-import { IdType } from '../../../models/IdType'
 import { useMessageStore } from '../../../store/MessageStore'
 import { KeycloakContext } from '../../../bootstrap'
 import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
@@ -34,8 +32,8 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 import {
-  saveNetworkToNDEx as saveNetworkOverwrite,
-  saveCopyToNDEx as saveNetworkCopy,
+  useSaveNetworkToNDEx,
+  useSaveCopyToNDEx,
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
 } from '../../../utils/ndex-utils'
@@ -57,8 +55,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const summary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
-
-  const updateSummary = useNetworkSummaryStore((state) => state.update)
 
   const viewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
@@ -82,12 +78,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       (state) => state.workspace.networkModified[currentNetworkId],
     ) ?? false
 
-  const addNetworkToWorkspace = useWorkspaceStore(
-    (state) => state.addNetworkIds,
-  )
-  const deleteNetworksFromWorkspace = useWorkspaceStore(
-    (state) => state.deleteNetwork,
-  )
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
@@ -104,6 +94,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
+
+  const saveNetworkOverwrite = useSaveNetworkToNDEx()
+  const saveNetworkCopy = useSaveCopyToNDEx()
 
   useEffect(() => {
     const fetchPermission = async () => {
@@ -164,7 +157,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       ndexBaseUrl,
       accessToken,
       ndexClient,
-      updateSummary,
       currentNetworkId,
       network,
       visualStyle,
@@ -197,8 +189,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         ndexBaseUrl,
         accessToken,
         ndexClient,
-        addNetworkToWorkspace,
-        deleteNetworksFromWorkspace,
         network,
         visualStyle,
         summary,
@@ -208,7 +198,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         visualStyleOptions,
         opaqueAspects,
         deleteOriginal,
-        setCurrentNetworkId,
       )
       addMessage({
         message: `Saved a copy of the current network to NDEx with new uuid ${

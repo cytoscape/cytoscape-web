@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React, { ReactElement, useState, useEffect, useContext } from 'react'
-import { v4 as uuidv4 } from 'uuid'
 import {
   Dialog,
   DialogTitle,
@@ -39,9 +38,7 @@ export const LoadWorkspaceDialog: React.FC<{
     null,
   )
   const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
-
-  const setId = useWorkspaceStore((state) => state.setId)
-
+  const setWorkspaceIsRemote = useWorkspaceStore((state) => state.setIsRemote)
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const setWorkSpace = useWorkspaceStore((state) => state.set)
@@ -67,8 +64,13 @@ export const LoadWorkspaceDialog: React.FC<{
     if (open) {
       void fetchMyWorkspaces(ndexBaseUrl, getToken)
         .then(setMyWorkspaces)
-        .catch((err) => {
-          console.log(err)
+        .catch((error) => {
+          console.error('Error:', error)
+          addMessage({
+            message: 'Failed to fetch workspaces from NDEx',
+            duration: 4000,
+            severity: MessageSeverity.ERROR,
+          })
         })
     }
   }, [open, ndexBaseUrl, getToken])
@@ -94,6 +96,7 @@ export const LoadWorkspaceDialog: React.FC<{
             localModificationTime: selectedWorkspace.modificationTime,
             creationTime: selectedWorkspace.creationTime,
             networkModified: {},
+            isRemote: true,
           } as Workspace)
           // Add apps
           const activeApps = new Set(
@@ -158,7 +161,7 @@ export const LoadWorkspaceDialog: React.FC<{
         ndexClient.setAuthToken(token)
         await ndexClient.deleteCyWebWorkspace(selectedWorkspace.workspaceId)
         if (currentWorkspaceId === selectedWorkspace.workspaceId) {
-          setId(uuidv4())
+          setWorkspaceIsRemote(false) //If user wants to delete the current workspace, then mark it as ‘local’
         }
       } else {
         alert('Selected workspace not found')
