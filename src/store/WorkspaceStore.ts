@@ -9,6 +9,7 @@ import { WorkspaceStore } from '../models/StoreModel/WorkspaceStoreModel'
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
   name: '',
+  isRemote: false,
   networkIds: [],
   networkModified: {},
   creationTime: new Date(),
@@ -63,6 +64,12 @@ export const useWorkspaceStore = create(
         setName: (name: string) => {
           set((state) => {
             state.workspace.name = name
+            return state
+          })
+        },
+        setIsRemote: (isRemote: boolean) => {
+          set((state) => {
+            state.workspace.isRemote = isRemote
             return state
           })
         },

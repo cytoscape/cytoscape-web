@@ -22,7 +22,7 @@ const DB_NAME: string = 'cyweb-db'
 // Current version of the DB (integer only).
 // If older version is found, the migration
 // function will upgrade the existing data to this version.
-const currentVersion: number = 4
+const currentVersion: number = 5
 
 /**
  * Predefined object store names.
@@ -365,6 +365,7 @@ const createWorkspace = (): Workspace => {
     creationTime: new Date(),
     localModificationTime: new Date(),
     currentNetworkId: '',
+    isRemote: false,
   }
 }
 

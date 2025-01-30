@@ -11,6 +11,8 @@ export interface WorkspaceActions {
 
   setId: (id: IdType) => void
   setName: (name: string) => void
+  setIsRemote: (isRemote: boolean) => void
+
   setCurrentNetworkId: (id: IdType) => void
 
   addNetworkIds: (ids: IdType | IdType[]) => void
