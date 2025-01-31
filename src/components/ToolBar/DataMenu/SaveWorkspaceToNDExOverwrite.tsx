@@ -21,7 +21,6 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
-  const [openConfirmDialog, setOpenConfirmDialog] = useState<boolean>(false)
   const [openNamingDialog, setOpenNamingDialog] = useState<boolean>(false)
 
   const {
@@ -70,19 +69,17 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
       )
     } catch (e) {
       addMessage({
-        message: `Failed to update workspace to NDEx.`,
-        duration: 5000,
+        message: `Failed to update the workspace to NDEx.`,
+        duration: 4000,
         severity: MessageSeverity.ERROR,
       })
     }
-
-    setOpenConfirmDialog(false)
     props.handleClose()
   }
 
   const handleSaveWorkspaceToNDEx = async (): Promise<void> => {
     if (isRemoteWorkspace) {
-      setOpenConfirmDialog(true)
+      await saveWorkspaceToNDEx()
     } else {
       setOpenNamingDialog(true)
     }
@@ -104,16 +101,17 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
     <>
       {enabled ? (
         <>
-          {menuItem}
-          <ConfirmationDialog
-            title="Save Workspace to NDEx"
-            message="Do you want to save/overwrite the current workspace to NDEx?"
-            onConfirm={saveWorkspaceToNDEx}
-            open={openConfirmDialog}
-            setOpen={setOpenConfirmDialog}
-            buttonTitle="Save"
-            isAlert={true}
-          />
+          <Tooltip
+            arrow
+            placement="right"
+            title={
+              isRemoteWorkspace
+                ? 'Overwrite workspace to NDEx'
+                : 'Save workspace to NDEx'
+            }
+          >
+            <Box>{menuItem}</Box>
+          </Tooltip>
           <WorkspaceNamingDialog
             openDialog={openNamingDialog}
             onClose={onCloseWorkspaceNamingDialog}

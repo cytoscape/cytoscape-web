@@ -223,6 +223,7 @@ export const useSaveWorkspace = () => {
   const saveCopyToNDEx = useSaveCopyToNDEx()
   const setId = useWorkspaceStore((state) => state.setId)
   const renameWorkspace = useWorkspaceStore((state) => state.setName)
+  const setIsRemote = useWorkspaceStore((state) => state.setIsRemote)
 
   const saveWorkspace = async (
     accessToken: string,
@@ -324,15 +325,15 @@ export const useSaveWorkspace = () => {
         if (e.message.includes(TimeOutErrorIndicator)) {
           addMessage({
             message: TimeOutErrorMessage,
-            duration: 6000,
+            duration: 3000,
             severity: MessageSeverity.ERROR,
           })
         } else {
           addMessage({
-            message: `Error: ${summary.isNdex ? 'Unable to save the network to NDEx.' : 'Could not save a copy of the local network to NDEx.'} ${
+            message: `Error: Unable to save ${summary.isNdex ? 'the network' : 'a copy of the local network'}(${summary.name}) to NDEx: ${
               e.message as string
             }`,
-            duration: 5000,
+            duration: 3000,
             severity: MessageSeverity.ERROR,
           })
         }
@@ -376,9 +377,10 @@ export const useSaveWorkspace = () => {
       const { uuid } = response
       setId(uuid)
     }
+    setIsRemote(true)
     renameWorkspace(workspaceName)
     addMessage({
-      message: `Saved workspace to NDEx successfully.`,
+      message: 'Saved workspace to NDEx successfully.',
       duration: 3000,
       severity: MessageSeverity.SUCCESS,
     })
