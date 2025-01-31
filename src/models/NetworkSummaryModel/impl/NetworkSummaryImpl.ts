@@ -1,5 +1,6 @@
 import { Network } from '../../NetworkModel/Network'
 import { NdexNetworkSummary } from '../NdexNetworkSummary'
+import { Visibility } from '../Visibility'
 
 interface BaseSummaryProps {
   name: string
@@ -33,7 +34,7 @@ export const getBaseSummary = ({
     owner: '',
     version: '1.0.0',
     completed: false,
-    visibility: 'PUBLIC',
+    visibility: Visibility.PUBLIC,
     nodeCount: network.nodes.length,
     edgeCount: network.edges.length,
     description: description || 'Created by Cytoscape Web.',

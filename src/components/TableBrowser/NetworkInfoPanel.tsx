@@ -94,29 +94,37 @@ export default function NetworkInfoPanel(props: {
         ) : null}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Typography
-          sx={{ ml: 1, mr: 4, fontSize: 14, color: 'gray' }}
-          variant="subtitle1"
-        >
-          {`Owner: ${networkInfo?.owner}`}
-        </Typography>
-
-        <Typography
-          sx={{ mr: 4, fontSize: 14, color: 'gray' }}
-          variant="subtitle1"
-        >
-          {`Created: ${dateFormatter(networkInfo?.creationTime ?? '')}`}
-        </Typography>
-        <Typography
-          sx={{ mr: 4, fontSize: 14, color: 'gray' }}
-          variant="subtitle1"
-        >
-          {`Modified: ${dateFormatter(networkInfo?.modificationTime ?? '')}`}
-        </Typography>
-        {networkInfo?.isNdex && (
-          <Typography sx={{ mr: 1, fontSize: 14, color: 'gray' }}>
-            UUID: {currentNetworkId}
+        {networkInfo?.isNdex === false ? (
+          <Typography
+            sx={{ ml: 1, mr: 4, fontSize: 14, color: 'gray' }}
+            variant="subtitle1"
+          >
+            {`Imported: ${dateFormatter(networkInfo?.creationTime ?? '')}`}
           </Typography>
+        ) : (
+          <>
+            <Typography
+              sx={{ ml: 1, mr: 4, fontSize: 14, color: 'gray' }}
+              variant="subtitle1"
+            >
+              {`Owner: ${networkInfo?.owner}`}
+            </Typography>
+            <Typography
+              sx={{ mr: 4, fontSize: 14, color: 'gray' }}
+              variant="subtitle1"
+            >
+              {`Created: ${dateFormatter(networkInfo?.creationTime ?? '')}`}
+            </Typography>
+            <Typography
+              sx={{ mr: 4, fontSize: 14, color: 'gray' }}
+              variant="subtitle1"
+            >
+              {`Modified: ${dateFormatter(networkInfo?.modificationTime ?? '')}`}
+            </Typography>
+            <Typography sx={{ mr: 1, fontSize: 14, color: 'gray' }}>
+              UUID: {currentNetworkId}
+            </Typography>
+          </>
         )}
       </Box>
       <Divider />
