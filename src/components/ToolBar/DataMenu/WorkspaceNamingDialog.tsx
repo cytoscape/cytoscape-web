@@ -15,7 +15,6 @@ import { fetchMyWorkspaces, useSaveWorkspace } from '../../../utils/ndex-utils'
 import { useMessageStore } from '../../../store/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { useWorkspaceData } from '../../../store/hooks/useWorkspaceData'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 
 interface WorkspaceNamingDialogProps {
@@ -47,14 +46,13 @@ export const WorkspaceNamingDialog = ({
     currentWorkspaceName,
     networkModifiedStatus,
   } = useWorkspaceData()
-  const [workspaceName, setWorkspaceName] = useState(currentWorkspaceName)
+  const [workspaceName, setWorkspaceName] = useState('')
   const [showWarning, setShowWarning] = useState(false)
   const [warningMessage, setWarningMessage] = useState('')
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [workspaceIdToBeOverwritten, setWorkspaceIdToBeOverwritten] = useState<
     string | undefined
   >(undefined)
-  const setIsRemote = useWorkspaceStore((state) => state.setIsRemote)
   const saveWorkspace = useSaveWorkspace()
   const ndexClient = new NDEx(ndexBaseUrl)
 
@@ -88,10 +86,9 @@ export const WorkspaceNamingDialog = ({
         currentNetworkId,
         workspaceIdToBeOverwritten,
       )
-      setIsRemote(true)
     } catch (e) {
       addMessage({
-        duration: 5000,
+        duration: 4000,
         message: 'Failed to overwrite the workspace in NDEx',
         severity: MessageSeverity.ERROR,
       })
@@ -138,13 +135,12 @@ export const WorkspaceNamingDialog = ({
           apps,
           serviceApps,
         )
-        setIsRemote(true)
       }
     } catch (e) {
       console.error(e)
       addMessage({
-        duration: 5000,
-        message: 'Failed to save workspace to NDEx',
+        duration: 4000,
+        message: 'Failed to save the workspace to NDEx',
         severity: MessageSeverity.ERROR,
       })
     }
@@ -177,6 +173,7 @@ export const WorkspaceNamingDialog = ({
             fullWidth
             variant="standard"
             value={workspaceName}
+            placeholder={currentWorkspaceName}
             onChange={handleNameChange}
             onKeyDown={(e) => {
               e.stopPropagation()
@@ -194,6 +191,7 @@ export const WorkspaceNamingDialog = ({
             Cancel
           </Button>
           <Button
+            disabled={workspaceName.trim().length === 0}
             onClick={onSave}
             sx={{
               color: '#FFFFFF',
@@ -212,8 +210,7 @@ export const WorkspaceNamingDialog = ({
       </Dialog>
       <ConfirmationDialog
         title="Confirm Workspace Overwrite"
-        message="A workspace with this name already exists. Do you want to overwrite
-            it?"
+        message="A workspace with the same name already exists in NDEx. Do you want to overwrite it?"
         onConfirm={handleConfirmSave}
         open={showConfirmDialog}
         setOpen={setShowConfirmDialog}

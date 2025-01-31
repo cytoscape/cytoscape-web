@@ -139,7 +139,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     } else if (!isModified) {
       setTooltipText('This network has not been modified since the last save')
     } else {
-      setTooltipText('')
+      setTooltipText('Overwrite network to NDEx')
     }
   }, [
     isModified,
@@ -211,7 +211,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       if (e.message.includes(TimeOutErrorIndicator)) {
         addMessage({
           message: TimeOutErrorMessage,
-          duration: 6000,
+          duration: 4000,
           severity: MessageSeverity.ERROR,
         })
       } else {
@@ -219,7 +219,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
           message: `Error: Could not save a copy of the current network to NDEx. ${
             e.message as string
           }`,
-          duration: 5000,
+          duration: 4000,
           severity: MessageSeverity.ERROR,
         })
       }
@@ -265,7 +265,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       if (e.message.includes(TimeOutErrorIndicator)) {
         addMessage({
           message: TimeOutErrorMessage,
-          duration: 6000,
+          duration: 4000,
           severity: MessageSeverity.ERROR,
         })
       } else {
@@ -273,7 +273,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
           message: `Error: Could not overwrite the current network to NDEx. ${
             e.message as string
           }`,
-          duration: 3000,
+          duration: 4000,
           severity: MessageSeverity.ERROR,
         })
       }

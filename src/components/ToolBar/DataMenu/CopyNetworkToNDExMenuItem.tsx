@@ -111,7 +111,7 @@ export const CopyNetworkToNDExMenuItem = (
       if (e.message.includes(TimeOutErrorIndicator)) {
         addMessage({
           message: TimeOutErrorMessage,
-          duration: 6000,
+          duration: 4000,
           severity: MessageSeverity.ERROR,
         })
       } else {
@@ -119,7 +119,7 @@ export const CopyNetworkToNDExMenuItem = (
           message: `Error: Could not save a copy of the current network to NDEx. ${
             e.message as string
           }`,
-          duration: 5000,
+          duration: 4000,
           severity: MessageSeverity.ERROR,
         })
       }
