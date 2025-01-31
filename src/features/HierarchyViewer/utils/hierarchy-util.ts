@@ -1,8 +1,8 @@
 import { HierarchyNode } from 'd3-hierarchy'
-import { Visibility } from '../../../models/CxModel/NetworkSummary/Visibility'
 import {
   NdexNetworkProperty,
   NdexNetworkSummary,
+  Visibility,
 } from '../../../models/NetworkSummaryModel'
 import { Table, ValueType } from '../../../models/TableModel'
 import { D3TreeNode } from '../components/CustomLayout/D3TreeNode'

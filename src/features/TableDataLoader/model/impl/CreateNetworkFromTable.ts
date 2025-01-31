@@ -329,7 +329,7 @@ export function createNetworkFromTableData(
     owner: '',
     version: '',
     completed: false,
-    visibility: 'PUBLIC' as Visibility,
+    visibility: Visibility.PUBLIC,
     nodeCount: network.nodes.length,
     edgeCount: network.edges.length,
     description: 'test',

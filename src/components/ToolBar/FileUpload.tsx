@@ -19,7 +19,10 @@ import {
   getNetworkAttributes,
   getNodes,
 } from '../../models/CxModel/cx2-util'
-import { NdexNetworkProperty } from '../../models/NetworkSummaryModel'
+import {
+  NdexNetworkProperty,
+  Visibility,
+} from '../../models/NetworkSummaryModel'
 import TableFn, {
   Table,
   ValueType,
@@ -144,7 +147,7 @@ export function FileUpload(props: FileUploadProps) {
         owner: '',
         version: '',
         completed: false,
-        visibility: 'PUBLIC',
+        visibility: Visibility.LOCAL,
         nodeCount: localNodeCount,
         edgeCount: localEdgeCount,
         description,

@@ -7,7 +7,7 @@ import { putNetworkSummaryToDb } from '../../../store/persist/db'
 import { v4 as uuidv4 } from 'uuid'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
-import { NdexNetworkProperty } from '../../../models/NetworkSummaryModel'
+import { NdexNetworkProperty, Visibility } from '../../../models/NetworkSummaryModel'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import {
   createDataFromLocalCx2,
@@ -126,7 +126,7 @@ export const useAddNetworks = (): (({
               owner: '',
               version: '',
               completed: false,
-              visibility: 'PUBLIC',
+              visibility: Visibility.PUBLIC,
               nodeCount: localNodeCount,
               edgeCount: localEdgeCount,
               description: localDescription,

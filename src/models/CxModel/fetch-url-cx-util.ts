@@ -60,7 +60,7 @@ export const fetchUrlCx = async (
       owner: '',
       version: '',
       completed: false,
-      visibility: 'PUBLIC' as Visibility,
+      visibility: Visibility.PUBLIC,
       nodeCount: network.network.nodes.length,
       edgeCount: network.network.edges.length,
       description: 'test',
