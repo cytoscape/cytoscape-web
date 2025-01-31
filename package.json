@@ -1,11 +1,12 @@
 {
   "name": "cytoscape-web",
-  "version": "1.1.0",
+  "version": "1.0.1",
   "private": true,
   "license": "MIT",
   "keywords": [
     "cytoscape",
     "graph",
+    "graph drawing",
     "network",
     "visualization",
     "bioinformatics"
