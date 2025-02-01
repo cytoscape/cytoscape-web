@@ -11,5 +11,10 @@ export const useMessageStore = create(
         state.messages.push(message)
       })
     },
+    resetMessages: () => {
+      set((state) => {
+        state.messages = []
+      })
+    },
   })),
 )
