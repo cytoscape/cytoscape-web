@@ -61,6 +61,7 @@ const AppShell = (): ReactElement => {
   const [search, setSearch] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
+  const resetMessage = useMessageStore((state) => state.resetMessages)
 
   const initializedRef = useRef(false)
 
@@ -232,6 +233,9 @@ const AppShell = (): ReactElement => {
   }, [])
 
   const redirect = async (): Promise<void> => {
+    // clear all messages
+    resetMessage()
+
     if (!initializedRef.current || id === '') return
 
     // const parsed = parsePathName(location.pathname)
