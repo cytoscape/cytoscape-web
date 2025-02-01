@@ -31,27 +31,27 @@ import { VisualStyleStore } from '../models/StoreModel/VisualStyleStoreModel'
  */
 const persist =
   (config: StateCreator<VisualStyleStore>) =>
-  (
-    set: StoreApi<VisualStyleStore>['setState'],
-    get: StoreApi<VisualStyleStore>['getState'],
-    api: StoreApi<VisualStyleStore>,
-  ) =>
-    config(
-      async (args) => {
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
+    (
+      set: StoreApi<VisualStyleStore>['setState'],
+      get: StoreApi<VisualStyleStore>['getState'],
+      api: StoreApi<VisualStyleStore>,
+    ) =>
+      config(
+        async (args) => {
+          const currentNetworkId =
+            useWorkspaceStore.getState().workspace.currentNetworkId
 
-        set(args)
-        const updated = get().visualStyles[currentNetworkId]
-        const deleted = updated === undefined
+          set(args)
+          const updated = get().visualStyles[currentNetworkId]
+          const deleted = updated === undefined
 
-        if (!deleted) {
-          await putVisualStyleToDb(currentNetworkId, updated).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+          if (!deleted) {
+            await putVisualStyleToDb(currentNetworkId, updated).then(() => { })
+          }
+        },
+        get,
+        api,
+      )
 
 export const useVisualStyleStore = create(
   immer<VisualStyleStore>(
@@ -186,32 +186,82 @@ export const useVisualStyleStore = create(
         attributeValues,
       ) {
         set((state) => {
-          const DEFAULT_COLOR_SCHEME = ['blue', 'white', 'red']
+          const DEFAULT_COLOR_SCHEME = ['#b2182b', 'white', '#2166ac']
           const DEFAULT_NUMBER_RANGE =
             !vpName.includes('Opacity') && !vpName.includes('opacity')
               ? [1, 100]
               : [0, 1]
+
+          const mean = (data: number[]): number => {
+            return data.reduce((a, b) => a + b) / data.length;
+          };
+
+          const standardDeviation = (data: number[]): number => {
+            const dataMean = mean(data);
+            const sqDiff = data.map(n => Math.pow(n - dataMean, 2));
+            const avgSqDiff = mean(sqDiff);
+            return Math.sqrt(avgSqDiff);
+          };
+          // Function to calculate the CDF of the t-distribution
+          const tDistributionCDF = (t: number, df: number): number => {
+            const x = df / (df + t * t);
+            const a = 0.5 * df;
+            const b = 0.5;
+            const betacdf = (x: number, a: number, b: number): number => {
+              const bt = Math.exp(
+                a * Math.log(x) + b * Math.log(1 - x) - Math.log(a) - Math.log(b)
+              );
+              return bt;
+            };
+            return 1 - 0.5 * betacdf(x, a, b);
+          };
+
+          // Function to perform two-tailed t-test
+          const twoTailedTTest = (data: number[], populationMean: number): number => {
+            const dataMean = mean(data);
+            const dataStdDev = standardDeviation(data);
+            const n = data.length;
+            const tStatistic = (dataMean - populationMean) / (dataStdDev / Math.sqrt(n));
+
+            // Calculate degrees of freedom
+            const degreesOfFreedom = n - 1;
+
+            // Calculate p-value for two-tailed test
+            const pValue = 2 * (1 - tDistributionCDF(Math.abs(tStatistic), degreesOfFreedom));
+
+            return pValue;
+          };
+
+
 
           const createColorMapping = (): {
             min: ContinuousFunctionControlPoint
             max: ContinuousFunctionControlPoint
             ctrlPts: ContinuousFunctionControlPoint[]
           } => {
+            let minValue = attributeValues[0]
+            let maxValue = attributeValues[attributeValues.length - 1]
+            if (twoTailedTTest(attributeValues as number[], 0) < 0.05) {
+              const absoluteMax = Math.max(...attributeValues.map(Math.abs))
+              minValue = -absoluteMax
+              maxValue = absoluteMax
+            }
+
             const min = {
-              value: attributeValues[0],
+              value: minValue,
               vpValue: DEFAULT_COLOR_SCHEME[0],
               inclusive: false,
             }
 
             const max = {
-              value: attributeValues[attributeValues.length - 1],
+              value: maxValue,
               vpValue: DEFAULT_COLOR_SCHEME[2],
               inclusive: false,
             }
 
             const ctrlPts = [
               {
-                value: attributeValues[0],
+                value: minValue,
                 vpValue: DEFAULT_COLOR_SCHEME[0],
               },
               {
@@ -219,7 +269,7 @@ export const useVisualStyleStore = create(
                 vpValue: DEFAULT_COLOR_SCHEME[1],
               },
               {
-                value: attributeValues[attributeValues.length - 1],
+                value: maxValue,
                 vpValue: DEFAULT_COLOR_SCHEME[2],
               },
             ]
