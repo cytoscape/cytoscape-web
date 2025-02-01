@@ -268,7 +268,7 @@ const AppShell = (): ReactElement => {
         navigate(
           `/${id}/networks/${currentNetworkId}${location.search.toString()}`,
         )
-      } else {
+      } else if (networkIds.includes(networkId)) {
         // the user is trying to load a network that is already in the workspace
         // check that if they have an outdated version of the network by comparing modification times
         // of the local copy and the ndex summary
