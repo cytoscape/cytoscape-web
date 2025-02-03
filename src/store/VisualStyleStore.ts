@@ -186,7 +186,7 @@ export const useVisualStyleStore = create(
         attributeValues,
       ) {
         set((state) => {
-          const DEFAULT_COLOR_SCHEME = ['#b2182b', 'white', '#2166ac']
+          const DEFAULT_COLOR_SCHEME = ['#2166ac', 'white', '#b2182b']
           const DEFAULT_NUMBER_RANGE =
             !vpName.includes('Opacity') && !vpName.includes('opacity')
               ? [1, 100]
