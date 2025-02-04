@@ -70,7 +70,7 @@ export const BugReportMenuItem = ({ handleClose }: BugReportMenuItemProps): Reac
         },
         // {{ edit_1 }} Adding fieldValues for the issue collector
         fieldValues: {
-          summary: "",
+          summary: "CyWeb: ",
           description: "How to reproduce the bug in Cytoscape Web:\n\n" + getIssueEnvironment()
         }
       }
