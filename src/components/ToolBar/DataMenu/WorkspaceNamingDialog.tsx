@@ -41,7 +41,6 @@ export const WorkspaceNamingDialog = ({
     networkVisualStyleOpt,
     opaqueAspects,
     allNetworkId,
-    currentNetworkId,
     workspaceId,
     currentWorkspaceName,
     networkModifiedStatus,
@@ -83,7 +82,6 @@ export const WorkspaceNamingDialog = ({
         workspaceId,
         apps,
         serviceApps,
-        currentNetworkId,
         workspaceIdToBeOverwritten,
       )
     } catch (e) {

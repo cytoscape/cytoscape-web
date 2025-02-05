@@ -34,7 +34,6 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
     networkVisualStyleOpt,
     opaqueAspects,
     allNetworkId,
-    currentNetworkId,
     workspaceId,
     currentWorkspaceName,
     networkModifiedStatus,
@@ -65,7 +64,6 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         workspaceId,
         apps,
         serviceApps,
-        currentNetworkId,
       )
     } catch (e) {
       addMessage({

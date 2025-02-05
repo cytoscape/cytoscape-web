@@ -243,7 +243,6 @@ export const useSaveWorkspace = () => {
     currentWorkspaceId: string,
     apps: Record<string, CyApp>,
     serviceApps: Record<string, ServiceApp>,
-    currentNetworkId?: string,
     workspaceToBeOverwritten?: string,
   ): Promise<void> => {
     ndexClient.setAuthToken(accessToken)
@@ -346,25 +345,24 @@ export const useSaveWorkspace = () => {
       (key) => apps[key].status === AppStatus.Active,
     )
     const serviceAppNames = Object.keys(serviceApps)
-
+    const workspace = await getWorkspaceFromDb(currentWorkspaceId)
     if (isUpdate) {
       await ndexClient.updateCyWebWorkspace(
         workspaceToBeOverwritten ?? currentWorkspaceId, 
         {
           name: workspaceName,
           options: {
-            currentNetwork: currentNetworkId ?? '',
+            currentNetwork: workspace.currentNetworkId,
             activeApps: activeApps,
             serviceApps: serviceAppNames,
           },
-          networkIDs: allNetworkId,
+          networkIDs: workspace.networkIds,
         },
       )
       if (workspaceToBeOverwritten) {
         setId(workspaceToBeOverwritten)
       }
     } else {
-      const workspace = await getWorkspaceFromDb(currentWorkspaceId)
       const response = await ndexClient.createCyWebWorkspace({
         name: workspaceName,
         options: {
