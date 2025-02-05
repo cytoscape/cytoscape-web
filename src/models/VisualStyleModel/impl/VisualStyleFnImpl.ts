@@ -362,8 +362,6 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                   attributeType: cxMapping.definition.type,
                 }
                 visualStyle[vpName].mapping = m
-              } else {
-                // visualStyle[vpName].mapping = undefined
               }
               break
             }
@@ -380,8 +378,41 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
       }
     })
 
-    // some cx properties are probably not handled in this conversion,
-    // we should find a way to store them and then restore them when we round trip
+    // **** CUSTOM EXTENSION FOR PIE CHARTS ****
+    // Look for custom graphics in the node defaults that specify a chart.
+    // In our CX file, a pie chart is indicated by a property with "type": "chart"
+    // and "name": "org.cytoscape.PieChart". We store this information on the visualStyle
+    // so that our Cytoscape.js custom renderer can later use it.
+    Object.entries(defaultNodeProperties).forEach(([propKey, propValue]) => {
+      if (
+        propKey.startsWith("NODE_CUSTOMGRAPHICS") &&
+        propValue &&
+        typeof propValue === "object"
+      ) {
+        const customGraphic = propValue as { [key: string]: any }
+        if (
+          customGraphic.type === "chart" &&
+          customGraphic.name === "org.cytoscape.PieChart"
+        ) {
+          // Use a type assertion to add a custom property to the visualStyle.
+          (visualStyle as any)["pieChart"] = {
+            // Store the chart type (in this case, always 'chart')
+            type: customGraphic.type,
+            // Optionally, store the chart name
+            chartName: customGraphic.name,
+            // Store chart-specific properties from the CX custom graphic.
+            // These properties can be used by your custom Cytoscape.js renderer.
+            dataColumns: customGraphic.properties?.cy_dataColumns ?? [],
+            colorScheme: customGraphic.properties?.cy_colorScheme ?? '',
+            colors: customGraphic.properties?.cy_colors ?? [],
+            range: customGraphic.properties?.cy_range ?? [],
+          }
+          console.log(visualStyle)
+        }
+      }
+    })
+    // **** END OF CUSTOM PIE CHART HANDLING ****
+
   })
 
   return visualStyle
