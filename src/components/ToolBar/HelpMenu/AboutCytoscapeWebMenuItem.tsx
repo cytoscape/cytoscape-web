@@ -12,6 +12,21 @@ import { BaseMenuProps } from '../BaseMenuProps'
 import packageInfo from '../../../../package.json'
 import { getDatabaseVersion } from '../../../store/persist/db'
 
+const formatDateForHash = (dateString: string): string => {
+  const date = new Date(dateString)
+
+  const pad = (num: number) => String(num).padStart(2, '0')
+
+  const month = pad(date.getMonth() + 1) // Months are zero-based
+  const day = pad(date.getDate())
+  const year = date.getFullYear()
+  const hours = pad(date.getHours())
+  const minutes = pad(date.getMinutes())
+  const seconds = pad(date.getSeconds())
+
+  return `${month}-${day}-${year}-${hours}-${minutes}-${seconds}`
+}
+
 export const AboutCytoscapeWebMenuItem = (
   props: BaseMenuProps,
 ): React.ReactElement => {
@@ -33,11 +48,15 @@ export const AboutCytoscapeWebMenuItem = (
     props.handleClose()
   }
 
-  const commitHash = process.env.REACT_APP_GIT_COMMIT
-    ? process.env.REACT_APP_GIT_COMMIT.substring(0, 7)
-    : 'N/A'
-  const buildDate = process.env.REACT_APP_BUILD_DATE
-    ? new Date(process.env.REACT_APP_BUILD_DATE).toLocaleString()
+  const commitHash =
+    process.env.REACT_APP_GIT_COMMIT && process.env.REACT_APP_LAST_COMMIT_TIME
+      ? process.env.REACT_APP_GIT_COMMIT.substring(0, 7) +
+        '-' +
+        formatDateForHash(process.env.REACT_APP_LAST_COMMIT_TIME)
+      : 'N/A'
+
+  const buildDate = process.env.REACT_APP_BUILD_TIME
+    ? new Date(process.env.REACT_APP_BUILD_TIME).toLocaleString()
     : 'N/A'
 
   return (
