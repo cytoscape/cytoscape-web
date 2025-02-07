@@ -240,6 +240,10 @@ const AppShell = (): ReactElement => {
 
     // const parsed = parsePathName(location.pathname)
     const parsedNetworkId = urlNetIdRef.current
+    // Clear it only after the network ID has been used for redirection
+    setTimeout(() => {
+      urlNetIdRef.current = ''
+    }, 0)
 
     // At this point, workspace ID is always available
     if (currentNetworkId === '' || currentNetworkId === undefined) {
