@@ -17,8 +17,10 @@ import { waitSeconds } from '../utils/wait-seconds'
 
 export const UpdateNetworkDialog = (props: {
   open: boolean
+  networkId: string
   onClose: () => void
 }): ReactElement => {
+  const { networkId } = props
   const [loading, setLoading] = useState<boolean>(false)
   const navigate = useNavigate()
   const workspace = useWorkspaceStore((state) => state.workspace)
@@ -32,11 +34,9 @@ export const UpdateNetworkDialog = (props: {
 
   const authenticated = client?.authenticated ?? false
 
-  const { id, currentNetworkId } = workspace
+  const { id } = workspace
 
-  const summary = useNetworkSummaryStore(
-    (state) => state.summaries[currentNetworkId],
-  )
+  const summary = useNetworkSummaryStore((state) => state.summaries[networkId])
 
   const deleteNetworkModifiedStatus = useWorkspaceStore(
     (state) => state.deleteNetworkModifiedStatus,
@@ -59,7 +59,7 @@ export const UpdateNetworkDialog = (props: {
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        {loading && <CircularProgress />}
+        {loading && <CircularProgress size={30} />}
         <Button
           variant="outlined"
           disabled={loading}
@@ -70,61 +70,33 @@ export const UpdateNetworkDialog = (props: {
         >
           Cancel
         </Button>
-        {!authenticated ? (
-          <Button
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-            }}
-            onClick={() => {
-              client
-                ?.login()
-                .then((result) => {
-                  console.log('* Login success', result)
-                })
-                .catch((error: any) => {
-                  console.warn('Failed to login', error)
-                })
-            }}
-          >
-            Sign in to create a copy to NDEx
-          </Button>
-        ) : (
-          <>
-            <Button
-              sx={{
-                color: '#FFFFFF',
-                backgroundColor: '#337ab7',
-                '&:hover': {
-                  backgroundColor: '#285a9b',
-                },
-              }}
-              disabled={!authenticated || loading}
-              onClick={async () => {
-                const parsed = parsePathName(location.pathname)
-                const { networkId } = parsed
-                setLoading(true)
-                deleteNetwork(networkId)
-                await waitSeconds(2)
-                addNetworkIds(networkId)
-                await waitSeconds(2)
-                setCurrentNetworkId(networkId)
-                await waitSeconds(2)
-                deleteNetworkModifiedStatus(networkId)
-                navigate(
-                  `/${id}/networks/${networkId}${location.search.toString()}`,
-                )
-                setLoading(false)
-                props.onClose()
-              }}
-            >
-              Update
-            </Button>
-          </>
-        )}
+        <Button
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+          }}
+          disabled={!authenticated || loading}
+          onClick={async () => {
+            setLoading(true)
+            deleteNetwork(networkId)
+            await waitSeconds(1)
+            addNetworkIds(networkId)
+            await waitSeconds(1)
+            setCurrentNetworkId(networkId)
+            await waitSeconds(1)
+            deleteNetworkModifiedStatus(networkId)
+            navigate(
+              `/${id}/networks/${networkId}${location.search.toString()}`,
+            )
+            setLoading(false)
+            props.onClose()
+          }}
+        >
+          Update
+        </Button>
       </DialogActions>
     </Dialog>
   )

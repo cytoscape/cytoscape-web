@@ -58,6 +58,7 @@ const AppShell = (): ReactElement => {
 
   // This is necessary to prevent creating a new workspace on every render
   const [showDialog, setShowDialog] = useState<boolean>(false)
+  const [targetNetworkId, setTargetNetworkId] = useState<string>('')
   const [search, setSearch] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -250,6 +251,7 @@ const AppShell = (): ReactElement => {
       // ID from the URL parameter
       if (parsedNetworkId !== '' && parsedNetworkId !== undefined) {
         addNetworkIds(parsedNetworkId)
+        await waitSeconds(1)
         setCurrentNetworkId(parsedNetworkId)
         navigate(
           `/${id}/networks/${parsedNetworkId}${location.search.toString()}`,
@@ -300,16 +302,17 @@ const AppShell = (): ReactElement => {
             if (localNetworkModified && authenticated) {
               // local network and ndex network have been modified and the user is authenticated
               // ask the user what they want to do
+              setTargetNetworkId(networkId)
               setShowDialog(true)
             } else {
               // the local network has not been modified but it has been modified on NDEx
               // update the network silently
               deleteNetwork(networkId)
-              await waitSeconds(2)
+              await waitSeconds(1)
               addNetworkIds(networkId)
-              await waitSeconds(2)
+              await waitSeconds(1)
               setCurrentNetworkId(networkId)
-              await waitSeconds(2)
+              await waitSeconds(1)
               deleteNetworkModifiedStatus(networkId)
 
               navigate(
@@ -318,6 +321,7 @@ const AppShell = (): ReactElement => {
             }
           } else {
             addNetworkIds(networkId)
+            await waitSeconds(1)
             setCurrentNetworkId(networkId)
             navigate(
               `/${id}/networks/${networkId}${location.search.toString()}`,
@@ -409,6 +413,7 @@ const AppShell = (): ReactElement => {
       </Box>
       <UpdateNetworkDialog
         open={showDialog}
+        networkId={targetNetworkId}
         onClose={() => setShowDialog(false)}
       />
       <WarningDialog
