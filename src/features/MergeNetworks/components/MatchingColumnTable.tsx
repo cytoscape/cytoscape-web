@@ -14,6 +14,8 @@ import {
 } from '@mui/material'
 import useMatchingColumnsStore from '../store/matchingColumnStore'
 import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
+import useNodesDuplicationStore from '../store/nodesDuplicationStore'
+import { checkDuplication } from '../utils/helper-functions'
 
 interface MatchingTableProps {
   networkRecords: Record<string, NetworkRecord>
@@ -34,6 +36,9 @@ export const MatchingColumnTable = React.memo(
     const updateNodeMatchingTable = useNodeMatchingTableStore(
       (state) => state.updateRow,
     )
+    const setHasDuplication = useNodesDuplicationStore(
+      (state) => state.setHasDuplication,
+    )
     // Handler for the 'Matching Columns' dropdown changes
     const handleSetMatchingCols =
       (networkId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,6 +50,13 @@ export const MatchingColumnTable = React.memo(
         const newCol: Column = { name: event.target.value, type: colType }
         setMatchingCols({ [networkId]: newCol })
         updateNodeMatchingTable(0, networkId, newCol)
+        setHasDuplication(
+          networkId,
+          checkDuplication(
+            networkRecords[networkId]?.nodeTable,
+            event.target.value,
+          ),
+        )
       }
 
     return (
