@@ -827,6 +827,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                 netLst={toMergeNetworksList}
                 tableView={tableView}
                 mergeOpType={mergeOpType}
+                mergeWithinNetwork={mergeWithinNetwork}
               />
             )}
 

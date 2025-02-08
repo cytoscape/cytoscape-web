@@ -34,10 +34,17 @@ interface MatchingTableProps {
   netLst: Pair<string, string>[]
   tableView: TableView
   mergeOpType: MergeType
+  mergeWithinNetwork: boolean
 }
 
 export const MatchingTableComp = React.memo(
-  ({ networkRecords, netLst, tableView, mergeOpType }: MatchingTableProps) => {
+  ({
+    networkRecords,
+    netLst,
+    tableView,
+    mergeOpType,
+    mergeWithinNetwork,
+  }: MatchingTableProps) => {
     const tableData =
       tableView === TableView.node
         ? useNodeMatchingTableStore((state) => state.rows)
@@ -98,7 +105,19 @@ export const MatchingTableComp = React.memo(
             'Merge is disabled because some network attribute names are empty. Please provide a name for each attribute.',
           )
         }
-        if (mergeOpType === MergeType.intersection && netLst.length < 2) {
+        if (
+          mergeOpType === MergeType.union &&
+          netLst.length < 2 &&
+          !mergeWithinNetwork
+        ) {
+          isReady = false
+          setMergeTooltipText(
+            'Merge is disabled because only one network is selected and merge elements within network is disabled. Please select at least two networks in the "Networks to Merge" list or enable merge elements within network.',
+          )
+        } else if (
+          mergeOpType === MergeType.intersection &&
+          netLst.length < 2
+        ) {
           isReady = false
           setMergeTooltipText(
             "Merge is disabled because intersection merge operation must take two or more networks. Please select at least two networks in the 'Networks to Merge' list.",
