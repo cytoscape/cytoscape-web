@@ -26,9 +26,9 @@
     "test": "npm run test:playwright && npm run test:unit",
     "test:unit": "jest unittest",
     "test:playwright": "npx playwright test --trace on",
-    "build": "REACT_APP_GIT_COMMIT=$(git rev-parse HEAD) REACT_APP_BUILD_TIMESTAMP=$(git show -s --format=%cI HEAD) webpack --mode production",
-    "build:netlify": "BUILD=netlify REACT_APP_GIT_COMMIT=$(git rev-parse HEAD) REACT_APP_BUILD_TIMESTAMP=$(git show -s --format=%cI HEAD) webpack --mode production",
-    "dev": "REACT_APP_GIT_COMMIT=$(git rev-parse --short HEAD) REACT_APP_BUILD_TIMESTAMP=$(git show -s --format=%cI HEAD) webpack serve --open --mode development",
+    "build": "webpack --mode production",
+    "build:netlify": "BUILD=netlify webpack --mode production",
+    "dev": "webpack serve --open --mode development",
     "lint": "eslint --ext .js,.ts,.jsx,.tsx src",
     "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'"
   },
