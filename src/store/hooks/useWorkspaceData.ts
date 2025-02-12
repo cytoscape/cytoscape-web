@@ -24,9 +24,6 @@ export const useWorkspaceData = () => {
   )
   const opaqueAspects = useOpaqueAspectStore((state) => state.opaqueAspects)
   const allNetworkId = useWorkspaceStore((state) => state.workspace.networkIds)
-  const currentNetworkId = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
   const currentWorkspaceName = useWorkspaceStore((state) => state.workspace.name)
   const workspaceId = useWorkspaceStore((state) => state.workspace.id)
   const isRemoteWorkspace = useWorkspaceStore((state) => state.workspace.isRemote)
@@ -43,7 +40,6 @@ export const useWorkspaceData = () => {
     networkVisualStyleOpt,
     opaqueAspects,
     allNetworkId,
-    currentNetworkId,
     workspaceId,
     currentWorkspaceName,
     networkModifiedStatus,
