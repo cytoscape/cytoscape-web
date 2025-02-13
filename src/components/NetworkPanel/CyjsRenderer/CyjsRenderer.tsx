@@ -340,7 +340,7 @@ const CyjsRenderer = ({
         elements: annotations.map((a) => {
           return {
             n: CX_ANNOTATIONS_KEY,
-            v: a.value,
+            v: !Array.isArray(a.value) ? [a.value] : a.value,
           }
         }),
       },
