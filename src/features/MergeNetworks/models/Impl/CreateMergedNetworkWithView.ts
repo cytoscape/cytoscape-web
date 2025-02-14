@@ -118,7 +118,7 @@ export const createMergedNetworkWithView = async (
     owner: '',
     version: mergedNetSummary.mergedVersion,
     completed: false,
-    visibility: Visibility.PUBLIC,
+    visibility: Visibility.LOCAL,
     nodeCount: newNetwork.nodes.length,
     edgeCount: newNetwork.edges.length,
     description: mergedNetSummary.mergedDescription,

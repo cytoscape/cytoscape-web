@@ -10,6 +10,8 @@ import useMatchingColumnsStore from '../store/matchingColumnStore'
 import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
 import useNetMatchingTableStore from '../store/netMatchingTableStore'
+import useNodesDuplicationStore from '../store/nodesDuplicationStore'
+import { checkDuplication } from '../utils/helper-functions'
 
 interface netAttDropDownTemplateProps {
   networkRecords: Record<IdType, NetworkRecord>
@@ -54,6 +56,9 @@ export const NetAttDropDownTemplate = React.memo(
     const setMatchingCols = useMatchingColumnsStore(
       (state) => state.setMatchingCols,
     )
+    const setHasDuplication = useNodesDuplicationStore(
+      (state) => state.setHasDuplication,
+    )
     const setMatchingTable =
       type === TableView.node
         ? useNodeMatchingTableStore((state) => state.setRow)
@@ -90,6 +95,10 @@ export const NetAttDropDownTemplate = React.memo(
       }
       if (tableType === TableView.node && rowData.id === 0) {
         setMatchingCols({ [field]: { name: newName, type: newType } as Column })
+        setHasDuplication(
+          field,
+          checkDuplication(networkRecords[field]?.nodeTable, newName),
+        )
       }
       setMatchingTable(rowIndex, updatedRow)
     }

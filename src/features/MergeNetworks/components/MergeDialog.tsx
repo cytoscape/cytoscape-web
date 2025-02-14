@@ -713,7 +713,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           }}
         />
         {isNameDuplicate && (
-          <Typography color="orange">
+          <Typography sx={{ color: 'orange', ml: 1, mr: 1 }}>
             Warning: A network with this name already exists in your workspace.
           </Typography>
         )}
@@ -781,27 +781,33 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                 >
                   <ListItemText
                     primary={
-                      <>
-                        {network[0]}
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        <Box>{network[0]}</Box>
                         {index === 0 && (
                           <Tooltip
-                            title={`This is the base network`}
+                            title="This is the base network"
                             placement="top"
                             arrow
                           >
                             <StarIcon
-                              viewBox="0 -3.5 24 24"
-                              style={{ color: 'gold' }}
+                              viewBox="0 1 24 24"
+                              sx={{ color: 'gold' }}
                             />
                           </Tooltip>
                         )}
                         {nodesDuplication[network[1]] && (
-                          <ReportGmailerrorredIcon
-                            viewBox="0 -3 24 24"
-                            color="disabled"
-                          />
+                          <Tooltip
+                            title={`The node values under the chosen matching column '${matchingCols[network[1]].name}' are not all unique`}
+                            placement="top"
+                            arrow
+                          >
+                            <ReportGmailerrorredIcon
+                              viewBox="0 0.5 24 24"
+                              sx={{ color: 'orange' }}
+                            />
+                          </Tooltip>
                         )}
-                      </>
+                      </Box>
                     }
                   />
                 </ListItem>
@@ -837,11 +843,16 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         </Box>
 
         {Object.values(nodesDuplication).some((v) => v === true) && (
-          <Box display="flex" alignItems="center" gap={1}>
-            <ReportGmailerrorredIcon viewBox="0 0 24 24" color="disabled" />
-            <Typography color="orange">
-              indicates that some nodes in this network have duplicate values
-              under the 'Matching Column'.
+          <Box display="flex" alignItems="center" gap={1} sx={{ ml: 1, mr: 1 }}>
+            <ReportGmailerrorredIcon
+              viewBox="0 0 24 24"
+              sx={{ color: 'orange' }}
+            />
+            <Typography sx={{ color: 'orange' }}>
+              Some nodes have duplicate values under the 'Matching Column'.
+              Hover over the warning icon or check 'Advanced Options' for
+              details. Enabling 'Merge nodes/edges in the same network' might
+              also be an option.
             </Typography>
           </Box>
         )}
