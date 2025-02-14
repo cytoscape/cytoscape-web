@@ -24,6 +24,7 @@ import { ParameterUiType } from '../../../models/AppModel/ParameterUiType'
 import { useAppStore } from '../../../store/AppStore'
 import { inputColumnFilterFn } from '../../../models/AppModel/impl'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
+import { getDomain } from '../../../utils/url-util'
 import React from 'react'
 
 interface AppMenuItemProps {
@@ -31,6 +32,7 @@ interface AppMenuItemProps {
   handleConfirm: () => Promise<void>
   app: ServiceApp
   open: boolean
+  showTooltip?: boolean
 }
 
 export const InputColumns = (props: AppMenuItemProps) => {
@@ -452,10 +454,11 @@ export const AppMenuItem: React.FC<{
   handleClose: () => void
   handleConfirm: () => Promise<void>
   app: ServiceApp
+  showTooltip?: boolean
 }> = (props: AppMenuItemProps) => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
-  const { handleClose, app } = props
+  const { handleClose, app, showTooltip } = props
   const handleOpenDialog = (): void => {
     setOpenDialog(true)
   }
@@ -467,7 +470,32 @@ export const AppMenuItem: React.FC<{
 
   return (
     <>
-      <MenuItem onClick={() => handleOpenDialog()}>{app.name}</MenuItem>
+      <Tooltip
+        title={
+          showTooltip ? (
+            <Box sx={{ maxWidth: '220px' }}>
+              <div>
+                <strong>Hosted at: </strong>
+                {getDomain(app.url)}
+              </div>
+              <div>
+                <strong>Version: </strong>
+                {app.version}
+              </div>
+              <div>
+                <strong>Author: </strong>
+                {app.author}
+              </div>
+            </Box>
+          ) : (
+            ''
+          )
+        }
+        arrow
+        placement="right"
+      >
+        <MenuItem onClick={() => handleOpenDialog()}>{app.name}</MenuItem>
+      </Tooltip>
       <AppMenuItemDialog
         handleConfirm={props.handleConfirm}
         open={openDialog}
@@ -514,18 +542,65 @@ const path2menu = (
 
   let currentMenuItem: NestedMenuItem = baseMenu
   for (let i = 1; i < path.length; i++) {
-    const item: MenuPathElement = path[i]
-    const newMenuItem: NestedMenuItem = existingMenuItems[item.name] || {
-      label: item.name,
+    const itemName = path[i].name
+    const isLastItem = i === path.length - 1
+
+    const newMenuItem: NestedMenuItem = {
+      label: itemName,
       items: [],
-    }
-    if (path.length === i + 1) {
-      newMenuItem.template = (
+      template: isLastItem ? (
         <AppMenuItem handleClose={() => {}} app={app} handleConfirm={command} />
-      )
+      ) : undefined,
     }
     if (currentMenuItem.items === undefined) {
       currentMenuItem.items = []
+    }
+    const existingDupMenuItems = currentMenuItem.items.filter(
+      (item) => (item as any).label === itemName,
+    ) as NestedMenuItem[]
+
+    const isNameDuplicated = existingDupMenuItems.length > 0
+    if (isNameDuplicated) {
+      if (isLastItem) {
+        // add tooltip for the menu item to be added
+        newMenuItem.template = (
+          <AppMenuItem
+            handleClose={() => {}}
+            app={app}
+            handleConfirm={command}
+            showTooltip={true}
+          />
+        )
+        // add tooltip for the existing duplicated menu item
+        existingDupMenuItems.forEach((item) => {
+          // Ensure item.template is a valid ReactElement before modifying it
+          if (item.template && React.isValidElement(item.template)) {
+            const { app, handleConfirm } = item.template
+              .props as AppMenuItemProps
+            item.template = (
+              <AppMenuItem
+                handleClose={() => {}}
+                app={app}
+                handleConfirm={handleConfirm}
+                showTooltip={true}
+              />
+            )
+          }
+        })
+        currentMenuItem.items.push(newMenuItem as any)
+        break
+      }
+      // Find the duplicated menu item (which is not the last item in original path)
+      // and follow that path
+      const intermediateItem = existingDupMenuItems.filter(
+        (item) =>
+          !item.hasOwnProperty('template') || item.template === undefined,
+      ) as NestedMenuItem[]
+
+      if (intermediateItem.length > 0) {
+        currentMenuItem = intermediateItem[0]
+        continue
+      }
     }
     currentMenuItem.items.push(newMenuItem as any)
     currentMenuItem = newMenuItem
