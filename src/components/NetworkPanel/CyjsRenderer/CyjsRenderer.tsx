@@ -340,7 +340,7 @@ const CyjsRenderer = ({
         elements: annotations.map((a) => {
           return {
             n: CX_ANNOTATIONS_KEY,
-            v: a.value,
+            v: !Array.isArray(a.value) ? [a.value] : a.value,
           }
         }),
       },
@@ -362,6 +362,8 @@ const CyjsRenderer = ({
         cy,
         niceCXForCyAnnotationRendering,
       )
+      annotationRenderer.drawBackground(cy, bgColor)
+
       setAnnotationLayers([result.topLayer, result.bottomLayer])
     } else {
       setAnnotationLayers([])
@@ -754,7 +756,9 @@ const CyjsRenderer = ({
         sx={{
           width: '100%',
           height: '100%',
-          backgroundColor: bgColor,
+          backgroundColor: 'rgba(0,0,0,0)',
+          zIndex: 0
+
         }}
         id="cy-container"
         ref={cyContainer}
