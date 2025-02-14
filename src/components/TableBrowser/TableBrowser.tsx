@@ -25,7 +25,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 
-import { isValidUrl } from '../../utils/is-url'
+import { isValidUrl } from '../../utils/url-util'
 import {
   EditTableColumnForm,
   CreateTableColumnForm,
