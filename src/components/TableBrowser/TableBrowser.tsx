@@ -349,6 +349,10 @@ export default function TableBrowser(props: {
       const cellType = getCellKind(column.type)
       const processedCellValue = valueDisplay(cellValue, column.type)
 
+      // These cells generally prevent users from inputting mismatched data types
+      // e.g. a user can't but a boolean in a number, a string in a number, etc.
+      // The exception is that users can still input floats into integer columns
+      // Extra validation for this logic is done in onCellEdited
       if (cellType === GridCellKind.Boolean) {
         return {
           allowOverlay: false,
@@ -454,10 +458,7 @@ export default function TableBrowser(props: {
         data = deserializeValueList(column.type, data as string)
       }
 
-      const newDataIsValid = true
-
-      // TODO validate the new data
-      if (newDataIsValid) {
+      if (column.type !== ValueTypeName.Integer) {
         setCellValue(
           props.currentNetworkId,
           currentTable === nodeTable ? 'node' : 'edge',
@@ -466,7 +467,18 @@ export default function TableBrowser(props: {
           data as ValueType,
         )
       } else {
-        // dont edit the value or do something else
+        if (Number.isInteger(data)) {
+          setCellValue(
+            props.currentNetworkId,
+            currentTable === nodeTable ? 'node' : 'edge',
+            `${cxId}`,
+            columnKey,
+            parseFloat(data as string),
+          )
+
+        } else {
+          // the user is trying to assign a double value to a integer column.  Ignore this value.
+        }
       }
     },
     [props.currentNetworkId, currentTable, tables, sort, rows],
@@ -767,8 +779,8 @@ export default function TableBrowser(props: {
 
   const selectedCell =
     selection.rows.length > 0 &&
-    selectedCellColumn !== null &&
-    selectedCellColumn >= 0
+      selectedCellColumn !== null &&
+      selectedCellColumn >= 0
       ? [selectedCellColumn, selection.rows.first()!]
       : null
 
@@ -820,9 +832,8 @@ export default function TableBrowser(props: {
                 )
               }}
             >
-              {`Apply value to selected ${
-                currentTable === nodeTable ? 'nodes' : 'edges'
-              }`}
+              {`Apply value to selected ${currentTable === nodeTable ? 'nodes' : 'edges'
+                }`}
             </Button>
             <Button
               onClick={() => {
