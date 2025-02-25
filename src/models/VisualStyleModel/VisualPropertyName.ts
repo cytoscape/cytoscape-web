@@ -19,6 +19,10 @@ export const NodeVisualPropertyName = {
   NodeMaxLabelWidth: 'nodeMaxLabelWidth',
   NodeZOrder: 'nodeZOrder',
   NodeLabelPosition: 'nodeLabelPosition',
+  PieSize: 'pieSize',
+  PieBackgroundColor: 'pieBackgroundColor',
+  PieBackgroundSize: 'pieBackgroundSize',
+  PieBackgroundOpacity: 'pieBackgroundOpacity'
 } as const
 
 export type NodeVisualPropertyName =

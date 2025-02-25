@@ -370,7 +370,42 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     bypassMap: new Map(),
     tooltip: 'The stacking order of edges on the canvas. Higher values are drawn on top.'
   },
-
+  pieSize: {
+  group: 'node',
+  name: 'pieSize',
+  displayName: 'Pie Size',
+  type: 'number',
+  defaultValue: 80, // example: matching your "80%" in the stylesheet (you might store it as a percentage or number)
+  bypassMap: new Map(),
+  tooltip: 'The percentage of the node to use for the pie chart.'
+},
+  pieBackgroundColor: {
+    group: 'node',
+    name: 'pieBackgroundColor',
+    displayName: 'Pie Background Color',
+    type: 'string', // colors are typically strings
+  defaultValue: '#E8747C', // example default color
+  bypassMap: new Map(),
+  tooltip: 'The color of the pie slice.'
+},
+  pieBackgroundSize: {
+    group: 'node',
+    name: 'pieBackgroundSize',
+    displayName: 'Pie Background Size',
+    type: 'number',
+    defaultValue: 10, // adjust as needed
+    bypassMap: new Map(),
+    tooltip: 'Determines the size of the pie slice (can be mapped from data).'
+  },
+  pieBackgroundOpacity: {
+    group: 'node',
+    name: 'pieBackgroundOpacity',
+    displayName: 'Pie Background Opacity',
+    type: 'number',
+    defaultValue: 0,
+    bypassMap: new Map(),
+    tooltip: ''
+  },
   networkBackgroundColor: {
     group: 'network',
     name: 'networkBackgroundColor',

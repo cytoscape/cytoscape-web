@@ -334,6 +334,11 @@ export const cxVisualPropertyConverter: Record<
   nodeMaxLabelWidth: VPNumberConverter('NODE_LABEL_MAX_WIDTH'),
   nodeZOrder: VPNumberConverter('NODE_Z_LOCATION'),
 
+  pieSize: VPNumberConverter('CUSTOM_GRAPHICS'),
+  pieBackgroundColor: VPNumberConverter('CUSTOM_GRAPHICS'),
+  pieBackgroundSize: VPNumberConverter('CUSTOM_GRAPHICS'),
+  pieBackgroundOpacity: VPNumberConverter('CUSTOM_GRAPHICS'),
+
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),
   edgeWidth: VPNumberConverter('EDGE_WIDTH'),
