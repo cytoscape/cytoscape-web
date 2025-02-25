@@ -15,6 +15,8 @@ import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { useUndoStack } from '../../../task/ApplyVisualStyle'
 
 interface DropdownMenuProps {
   label: string
@@ -45,6 +47,10 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
   )
+
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
+  const networkView = getViewModel(targetNetworkId)
+  const { postEdit} = useUndoStack()
 
   const updateNodePositions: (
     networkId: IdType,
@@ -87,8 +93,16 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   }
 
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
+    const prevPositions = new Map<IdType, [number, number]>()
+
+    Object.entries(networkView?.nodeViews ?? {}).forEach(([nodeId, nodeView]) => {
+      prevPositions.set(nodeId, [nodeView.x, nodeView.y])
+    })
+
+
     // Update node positions in the view model
     updateNodePositions(targetNetworkId, positionMap)
+    postEdit(UndoCommandType.APPLY_LAYOUT, [targetNetworkId, prevPositions])
     setIsRunning(false)
     console.log('Finished layout')
   }

@@ -9,6 +9,8 @@ import { IdType } from '../../../models/IdType'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 
 import { VisualPropertyValueForm } from './VisualPropertyValueForm'
+import { useUndoStack } from '../../../task/ApplyVisualStyle'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 
 export function DefaultValueForm(props: {
   visualProperty: VisualProperty<VisualPropertyValueType>
@@ -17,6 +19,7 @@ export function DefaultValueForm(props: {
 }): React.ReactElement {
   const { visualProperty, currentNetworkId } = props
   const setDefault = useVisualStyleStore((state) => state.setDefault)
+  const { postEdit } = useUndoStack()
 
   return (
     <Box sx={props.sx ?? {}}>
@@ -26,8 +29,10 @@ export function DefaultValueForm(props: {
         currentValue={visualProperty.defaultValue}
         currentNetworkId={currentNetworkId}
         showCheckbox={true}
-        onValueChange={(newValue) =>
+        onValueChange={(newValue) => {
           setDefault(currentNetworkId, visualProperty.name, newValue)
+          postEdit(UndoCommandType.SET_DEFAULT_VP_VALUE, [currentNetworkId, visualProperty.name, visualProperty.defaultValue])
+        }
         }
       />
     </Box>
