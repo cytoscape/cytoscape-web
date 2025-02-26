@@ -20,9 +20,12 @@ export const NodeVisualPropertyName = {
   NodeZOrder: 'nodeZOrder',
   NodeLabelPosition: 'nodeLabelPosition',
   PieSize: 'pieSize',
-  PieBackgroundColor: 'pieBackgroundColor',
-  PieBackgroundSize: 'pieBackgroundSize',
-  PieBackgroundOpacity: 'pieBackgroundOpacity'
+  Pie1BackgroundColor: 'pie1BackgroundColor',
+  Pie1BackgroundSize: 'pie1BackgroundSize',
+  Pie1BackgroundOpacity: 'pie1BackgroundOpacity',
+  Pie2BackgroundColor: 'pie2BackgroundColor',
+  Pie2BackgroundSize: 'pie2BackgroundSize',
+  Pie2BackgroundOpacity: 'pie2BackgroundOpacity'
 } as const
 
 export type NodeVisualPropertyName =

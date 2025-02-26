@@ -335,9 +335,12 @@ export const cxVisualPropertyConverter: Record<
   nodeZOrder: VPNumberConverter('NODE_Z_LOCATION'), 
 
   pieSize: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
-  pieBackgroundColor: VPColorConverter('NODE_BORDER_COLOR'),
-  pieBackgroundSize: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
-  pieBackgroundOpacity: VPNumberConverter('EDGE_LABEL_ROTATION'),
+  pie1BackgroundColor: VPColorConverter('NODE_BORDER_COLOR'),
+  pie1BackgroundSize: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
+  pie1BackgroundOpacity: VPNumberConverter('EDGE_LABEL_ROTATION'),
+  pie2BackgroundColor: VPColorConverter('NODE_LABEL_COLOR'),
+  pie2BackgroundSize: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
+  pie2BackgroundOpacity: VPNumberConverter('EDGE_LABEL_ROTATION'),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),
