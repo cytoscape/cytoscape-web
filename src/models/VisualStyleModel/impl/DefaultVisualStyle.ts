@@ -114,7 +114,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeLabelRotation',
     displayName: 'Label Rotation',
     type: 'number',
-    defaultValue: 0,
+    defaultValue: 90,
     bypassMap: new Map(),
     maxVal: 360,
     tooltip: 'The rotation angle of the node label in degrees(from 0 to 360).',
@@ -375,7 +375,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   name: 'pieSize',
   displayName: 'Pie Size',
   type: 'number',
-  defaultValue: 80, // example: matching your "80%" in the stylesheet (you might store it as a percentage or number)
+  defaultValue: 100, // example: matching your "80%" in the stylesheet (you might store it as a percentage or number)
   bypassMap: new Map(),
   tooltip: 'The percentage of the node to use for the pie chart.'
 },
@@ -384,7 +384,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'pieBackgroundColor',
     displayName: 'Pie Background Color',
     type: 'string', // colors are typically strings
-  defaultValue: '#E8747C', // example default color
+  defaultValue: '#FFFFFF', // example default color
   bypassMap: new Map(),
   tooltip: 'The color of the pie slice.'
 },
@@ -393,7 +393,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'pieBackgroundSize',
     displayName: 'Pie Background Size',
     type: 'number',
-    defaultValue: 10, // adjust as needed
+    defaultValue: 100,
     bypassMap: new Map(),
     tooltip: 'Determines the size of the pie slice (can be mapped from data).'
   },
