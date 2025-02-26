@@ -93,7 +93,7 @@ export const createVisualStyle = (): VisualStyle => {
   return getDefaultVisualStyle()
 }
 
-// convert cx visual properties to app visual style model
+// convert CX visual properties to app visual style model
 export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   const visualStyle: VisualStyle = createVisualStyle()
   const visualProperties = cxUtil.getVisualProperties(cx)
@@ -117,7 +117,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     Bypass<VisualPropertyValueType>
   > = new Map()
 
-  // group bypasses by visual property instead of by element
+  // Group node bypasses by visual property instead of by element.
   nodeBypasses?.nodeBypasses?.forEach(
     (entry: { id: CXId; v: Record<string, object> }) => {
       const { id, v } = entry
@@ -133,14 +133,14 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           ]
 
           if (nodeBypassMap.has(vpName)) {
-            const entry = nodeBypassMap.get(vpName) ?? new Map()
-            entry.set(
+            const existing = nodeBypassMap.get(vpName) ?? new Map()
+            existing.set(
               String(id),
               cxVPConverter.valueConverter(
                 v[cxVPName] as CXVisualPropertyValue,
               ),
             )
-            nodeBypassMap.set(vpName, entry)
+            nodeBypassMap.set(vpName, existing)
           } else {
             nodeBypassMap.set(
               vpName,
@@ -157,7 +157,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     },
   )
 
-  // group bypasses by visual property instead of by element
+  // Group edge bypasses by visual property instead of by element.
   edgeBypasses?.edgeBypasses?.forEach(
     (entry: { id: CXId; v: Record<string, object> }) => {
       const { id, v } = entry
@@ -173,14 +173,14 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           ]
 
           if (edgeBypassMap.has(vpName)) {
-            const entry = edgeBypassMap.get(vpName) ?? new Map()
-            entry.set(
+            const existing = edgeBypassMap.get(vpName) ?? new Map()
+            existing.set(
               translateCXEdgeId(String(id)),
               cxVPConverter.valueConverter(
                 v[cxVPName] as CXVisualPropertyValue,
               ),
             )
-            edgeBypassMap.set(vpName, entry)
+            edgeBypassMap.set(vpName, existing)
           } else {
             edgeBypassMap.set(
               vpName,
@@ -197,6 +197,9 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     },
   )
 
+  // The following vpGroups array covers Node, Edge, and Network visual properties.
+  // Note that pie chart properties (e.g., pieSize, pie1BackgroundColor, etc.)
+  // are part of the Node group and will be processed just like other node properties.
   const vpGroups = [
     {
       vps: nodeVisualProperties(visualStyle),
@@ -320,7 +323,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
               const controlPoints: ContinuousFunctionControlPoint[] = []
 
               // only iterate through the middle entries of the map
-              // i.e. exclue min and max
+              // i.e. exclude min and max
               for (let i = 1; i <= numMapEntries - 2; i++) {
                 const mapEntry = cxMapping.definition.map[i]
                 if (mapEntry.minVPValue != null && mapEntry.min != null) {
@@ -372,47 +375,10 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
 
         visualStyle[vpName].bypassMap = cxBypass.get(vpName) ?? new Map()
       } else {
-        // property is not found in cx, in theory all cytoscape web properties should be in
-        // cx, if this happens, it is a bug
+        // Property is not found in CX. In theory all Cytoscape Web properties should be in CX.
         console.error(`Property ${vpName} not found in CX`)
       }
     })
-
-    // **** CUSTOM EXTENSION FOR PIE CHARTS ****
-    // Look for custom graphics in the node defaults that specify a chart.
-    // In our CX file, a pie chart is indicated by a property with "type": "chart"
-    // and "name": "org.cytoscape.PieChart". We store this information on the visualStyle
-    // so that our Cytoscape.js custom renderer can later use it.
-    Object.entries(defaultNodeProperties).forEach(([propKey, propValue]) => {
-      if (
-        propKey.startsWith("NODE_CUSTOMGRAPHICS") &&
-        propValue &&
-        typeof propValue === "object"
-      ) {
-        const customGraphic = propValue as { [key: string]: any }
-        if (
-          customGraphic.type === "chart" &&
-          customGraphic.name === "org.cytoscape.PieChart"
-        ) {
-          // Use a type assertion to add a custom property to the visualStyle.
-          (visualStyle as any)["pieChart"] = {
-            // Store the chart type (in this case, always 'chart')
-            type: customGraphic.type,
-            // Optionally, store the chart name
-            chartName: customGraphic.name,
-            // Store chart-specific properties from the CX custom graphic.
-            // These properties can be used by your custom Cytoscape.js renderer.
-            dataColumns: customGraphic.properties?.cy_dataColumns ?? [],
-            colorScheme: customGraphic.properties?.cy_colorScheme ?? '',
-            colors: customGraphic.properties?.cy_colors ?? [],
-            range: customGraphic.properties?.cy_range ?? [],
-          }
-          console.log(visualStyle)
-        }
-      }
-    })
-    // **** END OF CUSTOM PIE CHART HANDLING ****
-
   })
 
   return visualStyle

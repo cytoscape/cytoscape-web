@@ -323,7 +323,7 @@ export const cxVisualPropertyConverter: Record<
   nodeLabelFontSize: VPNumberConverter('NODE_LABEL_FONT_SIZE'),
   nodeLabelFont: VPFontTypeConverter('NODE_LABEL_FONT_FACE'),
   nodeLabelPosition: VPNodeLabelPositionConverter('NODE_LABEL_POSITION'),
-  nodeLabelRotation: VPNumberConverter('90'),
+  nodeLabelRotation: VPNumberConverter('NODE_LABEL_ROTATION'),
   nodeLabelOpacity: VPNumberConverter('NODE_LABEL_OPACITY'),
   // nodePositionX: VPNumberConverter('NODE_X_LOCATION'),
   // nodePositionY: VPNumberConverter('NODE_Y_LOCATION'),

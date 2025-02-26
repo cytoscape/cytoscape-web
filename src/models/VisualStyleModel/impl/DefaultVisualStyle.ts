@@ -114,7 +114,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeLabelRotation',
     displayName: 'Label Rotation',
     type: 'number',
-    defaultValue: 90,
+    defaultValue: 360,
     bypassMap: new Map(),
     maxVal: 360,
     tooltip: 'The rotation angle of the node label in degrees(from 0 to 360).',
@@ -371,40 +371,41 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     tooltip: 'The stacking order of edges on the canvas. Higher values are drawn on top.'
   },
   pieSize: {
-  group: 'node',
-  name: 'pieSize',
-  displayName: 'Pie Size',
-  type: 'number',
-  defaultValue: 100, // example: matching your "80%" in the stylesheet (you might store it as a percentage or number)
-  bypassMap: new Map(),
-  tooltip: 'The percentage of the node to use for the pie chart.'
-},
-  pieBackgroundColor: {
     group: 'node',
-    name: 'pieBackgroundColor',
-    displayName: 'Pie Background Color',
-    type: 'string', // colors are typically strings
-  defaultValue: '#FFFFFF', // example default color
-  bypassMap: new Map(),
-  tooltip: 'The color of the pie slice.'
-},
-  pieBackgroundSize: {
-    group: 'node',
-    name: 'pieBackgroundSize',
-    displayName: 'Pie Background Size',
+    name: 'pieSize',
+    displayName: 'Pie Size',
     type: 'number',
     defaultValue: 100,
     bypassMap: new Map(),
-    tooltip: 'Determines the size of the pie slice (can be mapped from data).'
+    tooltip: 'The diameter of the pie chart as a percentage of the node size (or an absolute value).',
+  },
+  pieBackgroundColor: {
+    group: 'node',
+    name: 'pieBackgroundColor',
+    displayName: 'Pie Slice 1 Color',
+    type: 'color',
+    defaultValue: '#FF0000',
+    bypassMap: new Map(),
+    tooltip: 'The color for pie slice 1.',
+  },
+  pieBackgroundSize: {
+    group: 'node',
+    name: 'pieBackgroundSize',
+    displayName: 'Pie Slice 1 Size',
+    type: 'number',
+    defaultValue: 50,
+    bypassMap: new Map(),
+    tooltip: 'The size of pie slice 1 as a percentage of the pie size.',
   },
   pieBackgroundOpacity: {
     group: 'node',
     name: 'pieBackgroundOpacity',
-    displayName: 'Pie Background Opacity',
+    displayName: 'Pie Slice 1 Opacity',
     type: 'number',
-    defaultValue: 0,
+    defaultValue: 1.0,
     bypassMap: new Map(),
-    tooltip: ''
+    maxVal: 1,
+    tooltip: 'The opacity of pie slice 1.',
   },
   networkBackgroundColor: {
     group: 'network',
