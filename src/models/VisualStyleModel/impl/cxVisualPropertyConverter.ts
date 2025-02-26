@@ -341,6 +341,9 @@ export const cxVisualPropertyConverter: Record<
   pie2BackgroundColor: VPColorConverter('NODE_LABEL_COLOR'),
   pie2BackgroundSize: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
   pie2BackgroundOpacity: VPNumberConverter('EDGE_LABEL_ROTATION'),
+  pie3BackgroundColor: VPColorConverter('NODE_LABEL_COLOR'),
+  pie3BackgroundSize: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
+  pie3BackgroundOpacity: VPNumberConverter('EDGE_LABEL_ROTATION'),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),
