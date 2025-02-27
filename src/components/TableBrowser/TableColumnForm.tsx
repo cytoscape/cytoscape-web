@@ -274,7 +274,12 @@ export function CreateTableColumnForm(
         },
       }}
       disabled={columnName === ''}
-      onClick={() => props.onSubmit(columnName, valueTypeName, defaultValue)}
+      onClick={() => {
+        props.onSubmit(columnName, valueTypeName, defaultValue)
+        setColumnName('')
+        setDefaultValue('')
+        setValueTypeName(ValueTypeName.String)
+      }}
     >
       Confirm
     </Button>
@@ -326,7 +331,15 @@ export function CreateTableColumnForm(
       </DialogContent>
 
       <DialogActions>
-        <Button color="primary" onClick={props.onClose}>
+        <Button
+          color="primary"
+          onClick={() => {
+            setColumnName('')
+            setDefaultValue('')
+            setValueTypeName(ValueTypeName.String)
+            props.onClose()
+          }}
+        >
           Cancel
         </Button>
         {submitButton}
