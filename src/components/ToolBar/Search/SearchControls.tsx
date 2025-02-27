@@ -22,6 +22,7 @@ const baseStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  fontSize: '0.875rem'
 }
 
 export const SearchControls = ({
@@ -38,25 +39,25 @@ export const SearchControls = ({
 
   return (
     <>
-      <Box sx={baseStyle}>
-        {searchTerm !== '' ? (
-          <DeleteIcon sx={{ cursor: 'pointer' }} onClick={clearSearch} />
-        ) : null}
+      <Box sx={{ ...baseStyle, fontSize: '0.875rem' }}>
+      {searchTerm !== '' ? (
+        <DeleteIcon sx={{ cursor: 'pointer' }} onClick={clearSearch} />
+      ) : null}
 
-        <IconButton color="inherit" onClick={startSearch}>
-          <SearchIcon />
-        </IconButton>
-        <IconButton color="inherit" onClick={handleOpenSettings}>
-          <TuneIcon />
-        </IconButton>
+      <IconButton color="inherit" onClick={startSearch}>
+        <SearchIcon />
+      </IconButton>
+      <IconButton color="inherit" onClick={handleOpenSettings}>
+        <TuneIcon />
+      </IconButton>
       </Box>
       <Settings
-        open={open}
-        anchorEl={anchorEl}
-        setAnchorEl={setAnchorEl}
-        startSearch={startSearch}
-        searchTargets={searchTargets}
-        setSearchTargets={setSearchTargets}
+      open={open}
+      anchorEl={anchorEl}
+      setAnchorEl={setAnchorEl}
+      startSearch={startSearch}
+      searchTargets={searchTargets}
+      setSearchTargets={setSearchTargets}
       />
     </>
   )

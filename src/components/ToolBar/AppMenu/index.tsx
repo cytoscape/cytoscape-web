@@ -1,4 +1,4 @@
-import { Button, Divider, useTheme } from '@mui/material'
+import { Box, Button, Divider, useTheme } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import ExternalComponent from '../../AppManager/ExternalComponent'
@@ -208,7 +208,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
           handleClick(e)
         }}
       >
-        {label}
+        <Box sx={{ fontSize: '0.875rem' }}>{label}</Box>
       </Button>
       <OverlayPanel ref={menuRef} unstyled>
         <TieredMenu style={{ width: 350 }} model={menuModel} />

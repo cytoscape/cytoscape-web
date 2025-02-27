@@ -5,6 +5,11 @@ import FormControl from '@mui/material/FormControl'
 import FormLabel from '@mui/material/FormLabel'
 import { Operator, SearchOptions } from '../../../models/FilterModel/Search'
 import { useFilterStore } from '../../../store/FilterStore'
+import { styled } from '@mui/material/styles'
+
+const StyledFormControlLabel = styled(FormControlLabel)({
+  fontSize: '0.875rem',
+})
 
 export const SearchOperatorSelector = (): JSX.Element => {
   const options: SearchOptions = useFilterStore((state) => state.search.options)
@@ -19,7 +24,9 @@ export const SearchOperatorSelector = (): JSX.Element => {
 
   return (
     <FormControl>
-      <FormLabel id="operator-selector-label">Operator</FormLabel>
+      <FormLabel id="operator-selector-label" style={{ fontSize: '0.875rem' }}>
+        Operator
+      </FormLabel>
       <RadioGroup
         row
         aria-labelledby="operator-selector-label"
@@ -27,8 +34,8 @@ export const SearchOperatorSelector = (): JSX.Element => {
         value={options.operator}
         onChange={handleChange}
       >
-        <FormControlLabel value="AND" control={<Radio />} label="AND" />
-        <FormControlLabel value="OR" control={<Radio />} label="OR" />
+        <StyledFormControlLabel value="AND" control={<Radio />} label="AND" />
+        <StyledFormControlLabel value="OR" control={<Radio />} label="OR" />
       </RadioGroup>
     </FormControl>
   )

@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
+import { Box } from '@mui/material'
 
 export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
   const { label } = props
@@ -34,7 +35,7 @@ export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
         aria-expanded={open ? 'true' : undefined}
         onClick={handleOpenDropdownMenu}
       >
-        {label}
+        <Box sx={{ fontSize: '0.875rem' }}>{label}</Box>
       </Button>
       <Menu
         anchorEl={anchorEl}

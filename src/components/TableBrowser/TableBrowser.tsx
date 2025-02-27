@@ -1046,9 +1046,12 @@ export default function TableBrowser(props: {
             minHeight: TABS_HEIGHT,
           }}
         >
-          <Tab label={<Typography variant="caption">Nodes</Typography>} />
-          <Tab label={<Typography variant="caption">Edges</Typography>} />
-          <Tab label={<Typography variant="caption">Network</Typography>} />
+          <Tab label={<Typography         sx={{ fontSize: '0.875rem' }}
+ variant="caption">Nodes</Typography>} />
+          <Tab label={<Typography         sx={{ fontSize: '0.875rem' }}
+variant="caption">Edges</Typography>} />
+          <Tab label={<Typography         sx={{ fontSize: '0.875rem' }}
+variant="caption">Network</Typography>} />
         </Tabs>
         {panels[Panel.BOTTOM] === PanelState.CLOSED ? (
           <KeyboardArrowUp

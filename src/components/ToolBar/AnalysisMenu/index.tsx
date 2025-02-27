@@ -10,6 +10,7 @@ import {
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
+import { Box } from '@mui/material'
 
 export const AnalysisMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -49,7 +50,7 @@ export const AnalysisMenu: React.FC<DropdownMenuProps> = (
         aria-expanded={open ? 'true' : undefined}
         onClick={(e) => (op.current as any)?.toggle(e)}
       >
-        {label}
+        <Box sx={{ fontSize: '0.875rem' }}>{label}</Box>
       </Button>
       <OverlayPanel ref={op} unstyled>
         <TieredMenu model={menuItems} />

@@ -13,4 +13,5 @@ export const Search = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  fontSize: '0.875rem',
 }))

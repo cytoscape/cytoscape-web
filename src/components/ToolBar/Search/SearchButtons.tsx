@@ -23,6 +23,7 @@ export const SearchButtons = ({
         gap: theme.spacing(1),
         padding: 0,
         margin: 0,
+        fontSize: '0.875rem',
       }}
     >
       <Button color="inherit" onClick={handleClose}>

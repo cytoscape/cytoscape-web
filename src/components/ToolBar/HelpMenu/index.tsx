@@ -1,7 +1,7 @@
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 
-import { Divider } from '@mui/material'
+import { Box, Divider } from '@mui/material'
 import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { BugReportMenuItem } from './BugReportMenuItem'
@@ -39,7 +39,7 @@ export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
         aria-expanded={open ? 'true' : undefined}
         onClick={handleOpenDropdownMenu}
       >
-        {label}
+        <Box sx={{ fontSize: '0.875rem' }}>{label}</Box>
       </Button>
       <Menu
         anchorEl={anchorEl}
@@ -51,7 +51,7 @@ export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
       >
         <AboutCytoscapeWebMenuItem handleClose={handleClose} />
         <Divider />
-        <TutorialMenuItem handleClose={handleClose}   />
+        <TutorialMenuItem handleClose={handleClose} />
         <DeveloperMenuItem handleClose={handleClose} />
         <CodeRepositoryMenuItem handleClose={handleClose} />
         <Divider />

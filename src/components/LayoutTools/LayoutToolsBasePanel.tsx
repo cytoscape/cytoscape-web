@@ -21,7 +21,7 @@ export const LayoutToolsBasePanel = (): JSX.Element => {
           },
         }}
       >
-        <Typography>Layout Tools</Typography>
+        <Typography sx={{fontSize: '0.875rem'}}>Layout Tools</Typography>
       </AccordionSummary>
       <AccordionDetails>
         <LayoutToolsPanel />

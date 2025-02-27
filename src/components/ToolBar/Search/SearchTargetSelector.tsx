@@ -22,7 +22,9 @@ export const SearchTargetSelector = ({
 
   return (
     <FormControl component="fieldset" variant="standard">
-      <FormLabel component="legend">Search Target</FormLabel>
+      <FormLabel component="legend" style={{ fontSize: '0.875rem' }}>
+        Search Target
+      </FormLabel>
       <FormGroup row>
         <FormControlLabel
           control={
@@ -33,6 +35,7 @@ export const SearchTargetSelector = ({
             />
           }
           label="Nodes"
+          style={{ fontSize: '0.875rem' }}
         />
         <FormControlLabel
           control={
@@ -43,6 +46,7 @@ export const SearchTargetSelector = ({
             />
           }
           label="Edges"
+          style={{ fontSize: '0.875rem' }}
         />
       </FormGroup>
     </FormControl>

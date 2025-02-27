@@ -213,7 +213,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
           menuRefCurrent.toggle(e)
         }}
       >
-        {label}
+        <Box sx={{ fontSize: '0.875rem' }}>{label}</Box>
       </Button>
       <OverlayPanel ref={menuRef} unstyled>
         <TieredMenu model={getMenuItems()} />

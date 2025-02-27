@@ -48,6 +48,7 @@ export const Settings = ({
           flexDirection: 'column',
           padding: theme.spacing(2),
           width: '30vw',
+          fontSize: '0.875rem',
         }}
       >
         <Grid container xs={12}>

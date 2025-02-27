@@ -180,7 +180,7 @@ export const SearchBox = (): JSX.Element => {
     <Search ref={baseRef}>
       <StyledInputBase
         placeholder="Search current network"
-        inputProps={{ 'aria-label': 'search' }}
+        inputProps={{ 'aria-label': 'search', sx: { fontSize: '0.875rem' } }}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}

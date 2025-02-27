@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { PrimeReactProvider } from 'primereact/api'
 import { LicenseDialog } from './LicenseDialog'
+import { Box } from '@mui/material'
 
 export const LicenseMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
@@ -24,7 +25,7 @@ export const LicenseMenu: React.FC<DropdownMenuProps> = (
           setOpen(true)
         }}
       >
-        {label}
+        <Box sx={{ fontSize: '0.875rem' }}>{label}</Box>
       </Button>
       <LicenseDialog open={open} setOpen={setOpen} />
     </PrimeReactProvider>

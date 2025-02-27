@@ -10,6 +10,7 @@ export const StyledInputBase = styled(InputBase)(({ theme }) => ({
     transition: theme.transitions.create('width'),
     height: '100%',
     width: '100%',
+    fontSize: '0.875rem',
   },
   flexGrow: 1,
 }))

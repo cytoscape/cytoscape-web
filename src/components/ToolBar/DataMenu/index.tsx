@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 import Button from '@mui/material/Button'
-import { Divider } from '@mui/material'
+import { Box, Divider } from '@mui/material'
 import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
 import { RemoveNetworkMenuItem } from './RemoveNetworkMenuItem'
 import { LoadDemoNetworksMenuItem } from './LoadDemoNetworksMenuItem'
@@ -143,7 +143,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
         aria-expanded={open ? 'true' : undefined}
         onClick={(e) => (op.current as any)?.toggle(e)}
       >
-        {label}
+        <Box sx={{ fontSize: '0.875rem' }}>{label}</Box>
       </Button>
       <OverlayPanel ref={op} unstyled>
         <TieredMenu style={{ width: 350 }} model={menuItems} />

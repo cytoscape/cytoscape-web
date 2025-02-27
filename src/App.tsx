@@ -36,6 +36,9 @@ const theme = createTheme({
       main: '#f50057',
     },
   },
+  typography: {
+    fontSize: 14,
+  },
 })
 
 const routerOpts: any = {}

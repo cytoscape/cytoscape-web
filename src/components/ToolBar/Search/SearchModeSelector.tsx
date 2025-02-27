@@ -12,15 +12,17 @@ export const SearchModeSelector = (): JSX.Element => {
   }
 
   return (
-    <FormControl>
-      <FormLabel id="operator-selector-label">Search Mode</FormLabel>
+    <FormControl sx={{ fontSize: '0.875rem' }}>
+      <FormLabel id="operator-selector-label" sx={{ fontSize: '0.875rem' }}>
+        Search Mode
+      </FormLabel>
       <FormControlLabel
         control={
           <Switch color="primary" checked={exact} onChange={handleChange} />
         }
         label="Exact match"
         labelPlacement="start"
-        onChange={handleChange}
+        sx={{ fontSize: '0.875rem' }}
       />
     </FormControl>
   )
