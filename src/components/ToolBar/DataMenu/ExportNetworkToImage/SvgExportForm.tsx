@@ -3,50 +3,57 @@ import {
   Button,
   FormControlLabel,
   Checkbox,
-  TextField,
   DialogActions,
-  Typography,
 } from '@mui/material'
-import { ReactElement, useState } from 'react'
+import { forwardRef, useImperativeHandle, useState } from 'react'
 //@ts-expect-error
 import { saveAs } from 'file-saver'
-import { ExportImageFormatProps } from './ExportNetworkToImageMenuItem'
+import {
+  ExportFormRef,
+  ExportImageFormatProps,
+} from './ExportNetworkToImageMenuItem'
 import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
 import { IdType } from '../../../../models/IdType'
 import { useUiStateStore } from '../../../../store/UiStateStore'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 
-export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
-  const [loading, setLoading] = useState(false)
-  const [fullBg, setFullBg] = useState(true)
+export const SvgExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
+  (props, ref) => {
+    const [fullBg, setFullBg] = useState(true)
 
-  const activeNetworkId: IdType = useUiStateStore(
-    (state) => state.ui.activeNetworkView,
-  )
-  const currentNetworkId: IdType = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
+    const activeNetworkId: IdType = useUiStateStore(
+      (state) => state.ui.activeNetworkView,
+    )
+    const currentNetworkId: IdType = useWorkspaceStore(
+      (state) => state.workspace.currentNetworkId,
+    )
 
-  const targetNetworkId: IdType =
-    activeNetworkId === undefined || activeNetworkId === ''
-      ? currentNetworkId
-      : activeNetworkId
+    const targetNetworkId: IdType =
+      activeNetworkId === undefined || activeNetworkId === ''
+        ? currentNetworkId
+        : activeNetworkId
 
-  const svgFunction = useRendererFunctionStore((state) =>
-    state.getFunction('cyjs', 'exportSvg', targetNetworkId),
-  )
+    const svgFunction = useRendererFunctionStore((state) =>
+      state.getFunction('cyjs', 'exportSvg', targetNetworkId),
+    )
 
-  return (
-    <Box
-      sx={{
-        mt: 1,
-        height: 425,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-      }}
-    >
-      <Box>
+    useImperativeHandle(ref, () => ({
+      save: async () => {
+        const result = await svgFunction?.(fullBg)
+        const blob = new Blob([result], { type: 'image/svg+xml' })
+        saveAs(blob, `${props.fileName}.svg`)
+      },
+    }))
+
+    return (
+      <Box
+        sx={{
+          mt: 1,
+          height: 425,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         <Box>
           <FormControlLabel
             control={
@@ -59,34 +66,6 @@ export const SvgExportForm = (props: ExportImageFormatProps): ReactElement => {
           />
         </Box>
       </Box>
-      <DialogActions sx={{ pr: 1 }}>
-        <Button color="primary" onClick={props.handleClose}>
-          Cancel
-        </Button>
-        <Button
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
-          disabled={loading}
-          onClick={async () => {
-            setLoading(true)
-            const result = await svgFunction?.(fullBg)
-            const blob = new Blob([result], { type: 'image/svg+xml' })
-            saveAs(blob, `${props.fileName}.svg`)
-            setLoading(false)
-            props.handleClose()
-          }}
-        >
-          Confirm
-        </Button>
-      </DialogActions>
-    </Box>
-  )
-}
+    )
+  },
+)

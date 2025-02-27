@@ -26,12 +26,23 @@ interface ExportImageProps {
 }
 
 export interface ExportImageFormatProps {
-  handleClose: () => void
   fileName: string
 }
 
-type FileType = 'png' | 'pdf' | 'svg'
+export interface ExportFormRef {
+  save: () => Promise<void>
+}
+
+const FileTypes = {
+  PNG: 'png',
+  PDF: 'pdf',
+  SVG: 'svg',
+} as const
+
+type FileType = (typeof FileTypes)[keyof typeof FileTypes]
+
 export const ExportImage = (props: ExportImageProps): ReactElement => {
+  const [loading, setLoading] = useState(false)
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -43,14 +54,35 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
     currentNetworkName ?? 'network',
   )
 
+  const pngFormRef = useRef<ExportFormRef>(null)
+  const pdfFormRef = useRef<ExportFormRef>(null)
+  const svgFormRef = useRef<ExportFormRef>(null)
+
   const handleChange = (event: any) => {
-    setFileType(event.target.value as 'png' | 'pdf' | 'svg')
+    setFileType(event.target.value as FileType)
+  }
+
+  const handleConfirm = async () => {
+    setLoading(true)
+    try {
+      // Call the appropriate save function based on file type
+      if (fileType === FileTypes.PNG && pngFormRef.current) {
+        await pngFormRef.current.save()
+      } else if (fileType === FileTypes.PDF && pdfFormRef.current) {
+        await pdfFormRef.current.save()
+      } else if (fileType === FileTypes.SVG && svgFormRef.current) {
+        await svgFormRef.current.save()
+      }
+    } finally {
+      setLoading(false)
+      props.handleClose()
+    }
   }
 
   const imageExportContentMap = {
-    png: <PngExportForm handleClose={props.handleClose} fileName={fileName} />,
-    pdf: <PdfExportForm handleClose={props.handleClose} fileName={fileName} />,
-    svg: <SvgExportForm handleClose={props.handleClose} fileName={fileName} />,
+    png: <PngExportForm ref={pngFormRef} fileName={fileName} />,
+    pdf: <PdfExportForm ref={pdfFormRef} fileName={fileName} />,
+    svg: <SvgExportForm ref={svgFormRef} fileName={fileName} />,
   }
 
   const currentExportForm = imageExportContentMap[fileType]
@@ -107,6 +139,27 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
         </Box>
         {currentExportForm}
       </DialogContent>
+      <DialogActions sx={{ pr: 1 }}>
+        <Button color="primary" onClick={props.handleClose}>
+          Cancel
+        </Button>
+        <Button
+          sx={{
+            color: '#FFFFFF',
+            backgroundColor: '#337ab7',
+            '&:hover': {
+              backgroundColor: '#285a9b',
+            },
+            '&:disabled': {
+              backgroundColor: 'transparent',
+            },
+          }}
+          disabled={loading}
+          onClick={handleConfirm}
+        >
+          Confirm
+        </Button>
+      </DialogActions>
     </Dialog>
   )
 }
