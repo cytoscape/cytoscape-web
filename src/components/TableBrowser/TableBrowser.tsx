@@ -458,7 +458,10 @@ export default function TableBrowser(props: {
         data = deserializeValueList(column.type, data as string)
       }
 
-      if (column.type !== ValueTypeName.Integer) {
+      if (
+        column.type !== ValueTypeName.Integer &&
+        column.type !== ValueTypeName.Long
+      ) {
         setCellValue(
           props.currentNetworkId,
           currentTable === nodeTable ? 'node' : 'edge',
@@ -475,7 +478,6 @@ export default function TableBrowser(props: {
             columnKey,
             parseFloat(data as string),
           )
-
         } else {
           // the user is trying to assign a double value to a integer column.  Ignore this value.
         }
@@ -779,8 +781,8 @@ export default function TableBrowser(props: {
 
   const selectedCell =
     selection.rows.length > 0 &&
-      selectedCellColumn !== null &&
-      selectedCellColumn >= 0
+    selectedCellColumn !== null &&
+    selectedCellColumn >= 0
       ? [selectedCellColumn, selection.rows.first()!]
       : null
 
@@ -832,8 +834,9 @@ export default function TableBrowser(props: {
                 )
               }}
             >
-              {`Apply value to selected ${currentTable === nodeTable ? 'nodes' : 'edges'
-                }`}
+              {`Apply value to selected ${
+                currentTable === nodeTable ? 'nodes' : 'edges'
+              }`}
             </Button>
             <Button
               onClick={() => {
