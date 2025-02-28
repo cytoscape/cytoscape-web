@@ -455,31 +455,40 @@ export default function TableBrowser(props: {
         return
 
       if (isListType(column.type)) {
-        data = deserializeValueList(column.type, data as string)
-      }
-
-      if (
-        column.type !== ValueTypeName.Integer &&
-        column.type !== ValueTypeName.Long
-      ) {
-        setCellValue(
-          props.currentNetworkId,
-          currentTable === nodeTable ? 'node' : 'edge',
-          `${cxId}`,
-          columnKey,
-          data as ValueType,
-        )
-      } else {
-        if (Number.isInteger(data)) {
+        if (serializedStringIsValid(column.type, data as string)) {
+          data = deserializeValueList(column.type, data as string)
           setCellValue(
             props.currentNetworkId,
             currentTable === nodeTable ? 'node' : 'edge',
             `${cxId}`,
             columnKey,
-            parseFloat(data as string),
+            data as ValueType,
+          )
+        }
+      } else {
+        if (
+          column.type !== ValueTypeName.Integer &&
+          column.type !== ValueTypeName.Long
+        ) {
+          setCellValue(
+            props.currentNetworkId,
+            currentTable === nodeTable ? 'node' : 'edge',
+            `${cxId}`,
+            columnKey,
+            data as ValueType,
           )
         } else {
-          // the user is trying to assign a double value to a integer column.  Ignore this value.
+          if (Number.isInteger(data)) {
+            setCellValue(
+              props.currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge',
+              `${cxId}`,
+              columnKey,
+              parseFloat(data as string),
+            )
+          } else {
+            // the user is trying to assign a double value to a integer column.  Ignore this value.
+          }
         }
       }
     },
