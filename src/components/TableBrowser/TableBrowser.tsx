@@ -65,6 +65,9 @@ import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { useEffect, useRef } from 'react'
 
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { useUndoStack } from '../../task/ApplyVisualStyle'
+
 interface TabPanelProps {
   children?: React.ReactNode
   index: number
@@ -125,6 +128,7 @@ export default function TableBrowser(props: {
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
+  const { postEdit } = useUndoStack()
   const ui: Ui = useUiStateStore((state) => state.ui)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
@@ -708,6 +712,12 @@ export default function TableBrowser(props: {
                 `${newColumnName} already exists.  Please enter a new unique column name`,
               )
             } else {
+              postEdit(UndoCommandType.RENAME_COLUMN, [
+                props.currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                newColumnName,
+                selectedColumn.id,
+              ])
               setColumnName(
                 props.currentNetworkId,
                 currentTable === nodeTable ? 'node' : 'edge',
@@ -744,6 +754,11 @@ export default function TableBrowser(props: {
             setDeleteColumnFormError(undefined)
           }}
           onSubmit={(mappingUpdateType) => {
+            postEdit(UndoCommandType.DELETE_COLUMN, [
+              props.currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge',
+              currentTable,
+            ])
             deleteColumn(
               props.currentNetworkId,
               currentTable === nodeTable ? 'node' : 'edge',

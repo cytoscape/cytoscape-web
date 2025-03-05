@@ -7,6 +7,8 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { useUndoStack } from '../../task/ApplyVisualStyle'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType
@@ -30,6 +32,10 @@ export const ApplyLayoutButton = ({
 
   const network: Network | undefined = networks.get(networkId)
 
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
+  const networkView = getViewModel(networkId ?? '')
+  const { postEdit } = useUndoStack()
+
   const defaultLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredLayout,
   )
@@ -52,7 +58,16 @@ export const ApplyLayoutButton = ({
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
+    const prevPositions = new Map<IdType, [number, number]>()
+
+    Object.entries(networkView?.nodeViews ?? {}).forEach(
+      ([nodeId, nodeView]) => {
+        prevPositions.set(nodeId, [nodeView.x, nodeView.y])
+      },
+    )
+    // Update node positions in the view model
     updateNodePositions(networkId, positionMap)
+    postEdit(UndoCommandType.APPLY_LAYOUT, [networkId, prevPositions])
     setIsRunning(false)
   }
 

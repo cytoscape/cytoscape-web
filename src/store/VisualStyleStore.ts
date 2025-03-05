@@ -31,27 +31,27 @@ import { VisualStyleStore } from '../models/StoreModel/VisualStyleStoreModel'
  */
 const persist =
   (config: StateCreator<VisualStyleStore>) =>
-    (
-      set: StoreApi<VisualStyleStore>['setState'],
-      get: StoreApi<VisualStyleStore>['getState'],
-      api: StoreApi<VisualStyleStore>,
-    ) =>
-      config(
-        async (args) => {
-          const currentNetworkId =
-            useWorkspaceStore.getState().workspace.currentNetworkId
+  (
+    set: StoreApi<VisualStyleStore>['setState'],
+    get: StoreApi<VisualStyleStore>['getState'],
+    api: StoreApi<VisualStyleStore>,
+  ) =>
+    config(
+      async (args) => {
+        const currentNetworkId =
+          useWorkspaceStore.getState().workspace.currentNetworkId
 
-          set(args)
-          const updated = get().visualStyles[currentNetworkId]
-          const deleted = updated === undefined
+        set(args)
+        const updated = get().visualStyles[currentNetworkId]
+        const deleted = updated === undefined
 
-          if (!deleted) {
-            await putVisualStyleToDb(currentNetworkId, updated).then(() => { })
-          }
-        },
-        get,
-        api,
-      )
+        if (!deleted) {
+          await putVisualStyleToDb(currentNetworkId, updated).then(() => {})
+        }
+      },
+      get,
+      api,
+    )
 
 export const useVisualStyleStore = create(
   immer<VisualStyleStore>(
@@ -111,6 +111,12 @@ export const useVisualStyleStore = create(
             bypassMap.delete(eleId)
           })
 
+          return state
+        })
+      },
+      setBypassMap(networkId, vpName, elementMap) {
+        set((state) => {
+          state.visualStyles[networkId][vpName].bypassMap = elementMap
           return state
         })
       },
@@ -193,46 +199,52 @@ export const useVisualStyleStore = create(
               : [0, 1]
 
           const mean = (data: number[]): number => {
-            return data.reduce((a, b) => a + b) / data.length;
-          };
+            return data.reduce((a, b) => a + b) / data.length
+          }
 
           const standardDeviation = (data: number[]): number => {
-            const dataMean = mean(data);
-            const sqDiff = data.map(n => Math.pow(n - dataMean, 2));
-            const avgSqDiff = mean(sqDiff);
-            return Math.sqrt(avgSqDiff);
-          };
+            const dataMean = mean(data)
+            const sqDiff = data.map((n) => Math.pow(n - dataMean, 2))
+            const avgSqDiff = mean(sqDiff)
+            return Math.sqrt(avgSqDiff)
+          }
           // Function to calculate the CDF of the t-distribution
           const tDistributionCDF = (t: number, df: number): number => {
-            const x = df / (df + t * t);
-            const a = 0.5 * df;
-            const b = 0.5;
+            const x = df / (df + t * t)
+            const a = 0.5 * df
+            const b = 0.5
             const betacdf = (x: number, a: number, b: number): number => {
               const bt = Math.exp(
-                a * Math.log(x) + b * Math.log(1 - x) - Math.log(a) - Math.log(b)
-              );
-              return bt;
-            };
-            return 1 - 0.5 * betacdf(x, a, b);
-          };
+                a * Math.log(x) +
+                  b * Math.log(1 - x) -
+                  Math.log(a) -
+                  Math.log(b),
+              )
+              return bt
+            }
+            return 1 - 0.5 * betacdf(x, a, b)
+          }
 
           // Function to perform two-tailed t-test
-          const twoTailedTTest = (data: number[], populationMean: number): number => {
-            const dataMean = mean(data);
-            const dataStdDev = standardDeviation(data);
-            const n = data.length;
-            const tStatistic = (dataMean - populationMean) / (dataStdDev / Math.sqrt(n));
+          const twoTailedTTest = (
+            data: number[],
+            populationMean: number,
+          ): number => {
+            const dataMean = mean(data)
+            const dataStdDev = standardDeviation(data)
+            const n = data.length
+            const tStatistic =
+              (dataMean - populationMean) / (dataStdDev / Math.sqrt(n))
 
             // Calculate degrees of freedom
-            const degreesOfFreedom = n - 1;
+            const degreesOfFreedom = n - 1
 
             // Calculate p-value for two-tailed test
-            const pValue = 2 * (1 - tDistributionCDF(Math.abs(tStatistic), degreesOfFreedom));
+            const pValue =
+              2 * (1 - tDistributionCDF(Math.abs(tStatistic), degreesOfFreedom))
 
-            return pValue;
-          };
-
-
+            return pValue
+          }
 
           const createColorMapping = (): {
             min: ContinuousFunctionControlPoint

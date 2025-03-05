@@ -1,13 +1,11 @@
-
-
 export interface UndoState {
-    undoStack: Edit[]
-    redoStack: Edit[]
+  undoStack: Edit[]
+  redoStack: Edit[]
 }
 
 export interface UndoAction {
-    setUndoStack: (undoStack: Edit[]) => void
-    setRedoStack: (redoStack: Edit[]) => void
+  setUndoStack: (undoStack: Edit[]) => void
+  setRedoStack: (redoStack: Edit[]) => void
 }
 
 export type UndoStore = UndoState & UndoAction
@@ -21,8 +19,11 @@ export const UndoCommandType = {
   SET_DEFAULT_VP_VALUE: 'SET_DEFAULT_VP_VALUE',
   SET_MAPPING_TYPE: 'SET_MAPPING_TYPE',
   SET_DISCRETE_VALUE: 'SET_DISCRETE_VALUE',
+  SET_DISCRETE_VALUE_MAP: 'SET_DISCRETE_VALUE_MAP',
   SET_MAPPING_COLUMN: 'SET_MAPPING_COLUMN',
   SET_BYPASS: 'SET_BYPASS',
+  SET_BYPASS_MAP: 'SET_BYPASS_MAP',
+  REMOVE_MAPPING: 'REMOVE_MAPPING',
   RENAME_COLUMN: 'RENAME_COLUMN',
   DELETE_COLUMN: 'DELETE_COLUMN',
   MOVE_NODES: 'MOVE_NODES',
@@ -33,4 +34,5 @@ export const UndoCommandType = {
   FIT_CONTENT: 'FIT_CONTENT',
 } as const
 
-export type UndoCommandType = (typeof UndoCommandType)[keyof typeof UndoCommandType]
+export type UndoCommandType =
+  (typeof UndoCommandType)[keyof typeof UndoCommandType]

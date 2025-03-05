@@ -51,6 +51,8 @@ import {
   LockColorCheckbox,
   LockSizeCheckbox,
 } from '../../VisualPropertyRender/Checkbox'
+import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
+import { useUndoStack } from '../../../../task/ApplyVisualStyle'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   [MappingFunctionType.Passthrough]: <PassthroughMappingFunctionIcon />,
@@ -63,6 +65,7 @@ function MappingFormContent(props: {
   visualProperty: VisualProperty<VisualPropertyValueType>
   repositionPopover: () => void
 }): React.ReactElement {
+  const { postEdit } = useUndoStack()
   const [column, setColumn] = useState<AttributeName | ''>(
     props.visualProperty.mapping?.attribute ?? '',
   )
@@ -168,15 +171,27 @@ function MappingFormContent(props: {
       (c) => c.name === column,
     )?.type
     if (nextMapping !== '' && column !== '' && attributeType != null) {
-      // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
-
       if (
         typesCanBeMapped(nextMapping, attributeType, props.visualProperty.type)
       ) {
+        if (props.visualProperty.mapping !== undefined) {
+          postEdit(UndoCommandType.SET_MAPPING_TYPE, [
+            props.currentNetworkId,
+            props.visualProperty.name,
+            props.visualProperty.mapping,
+          ])
+        }
         createMapping(nextMapping, column)
         setMappingType(nextMapping)
       } else {
+        // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
+        postEdit(UndoCommandType.REMOVE_MAPPING, [
+          props.currentNetworkId,
+          props.visualProperty.name,
+          props.visualProperty.mapping,
+        ])
         removeMapping(props.currentNetworkId, props.visualProperty.name)
+
         setMappingType('')
       }
     } else {
@@ -203,9 +218,22 @@ function MappingFormContent(props: {
           props.visualProperty.type,
         )
       ) {
+        if (props.visualProperty.mapping !== undefined) {
+          postEdit(UndoCommandType.SET_MAPPING_COLUMN, [
+            props.currentNetworkId,
+            props.visualProperty.name,
+            props.visualProperty.mapping,
+          ])
+        }
         createMapping(mappingType, nextAttribute)
         setColumn(nextAttribute)
       } else {
+        // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
+        postEdit(UndoCommandType.REMOVE_MAPPING, [
+          props.currentNetworkId,
+          props.visualProperty.name,
+          props.visualProperty.mapping,
+        ])
         removeMapping(props.currentNetworkId, props.visualProperty.name)
         setColumn('')
       }
@@ -289,6 +317,11 @@ function MappingFormContent(props: {
           disabled={props.visualProperty.mapping == null}
           size="small"
           onClick={() => {
+            postEdit(UndoCommandType.REMOVE_MAPPING, [
+              props.currentNetworkId,
+              props.visualProperty.name,
+              props.visualProperty.mapping,
+            ])
             removeMapping(props.currentNetworkId, props.visualProperty.name)
             props.repositionPopover()
           }}

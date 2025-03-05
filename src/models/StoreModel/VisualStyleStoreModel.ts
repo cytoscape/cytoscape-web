@@ -9,6 +9,7 @@ import {
   ContinuousMappingFunction,
   PassthroughMappingFunction,
   VisualPropertyValueTypeName,
+  Bypass,
 } from '../VisualStyleModel'
 
 export interface VisualStyleState {
@@ -29,6 +30,11 @@ export interface UpdateVisualStyleAction {
     vpName: VisualPropertyName,
     elementIds: IdType[],
     vpValue: VisualPropertyValueType,
+  ) => void
+  setBypassMap: (
+    networkId: IdType,
+    vpName: VisualPropertyName,
+    elementMap: Bypass<VisualPropertyValueType>,
   ) => void
   deleteBypass: (
     networkId: IdType,
@@ -70,19 +76,19 @@ export interface UpdateVisualStyleAction {
     vpType: VisualPropertyValueTypeName,
     attribute: AttributeName,
     attributeValues: ValueType[],
-    attributeType: ValueTypeName
+    attributeType: ValueTypeName,
   ) => void
   createDiscreteMapping: (
     networkId: IdType,
     vpName: VisualPropertyName,
     attribute: AttributeName,
-    attributeType: ValueTypeName
+    attributeType: ValueTypeName,
   ) => void
   createPassthroughMapping: (
     networkId: IdType,
     vpName: VisualPropertyName,
     attribute: AttributeName,
-    attributeType: ValueTypeName
+    attributeType: ValueTypeName,
   ) => void
   removeMapping: (networkId: IdType, vpName: VisualPropertyName) => void
   // setMapping: () // TODO

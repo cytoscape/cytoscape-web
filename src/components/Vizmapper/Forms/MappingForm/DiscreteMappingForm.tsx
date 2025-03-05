@@ -30,11 +30,15 @@ import { DiscreteMappingFunction } from '../../../../models/VisualStyleModel/Vis
 
 import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
 import { VisualPropertyGroup } from '../../../../models/VisualStyleModel/VisualPropertyGroup'
+import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
+import { useUndoStack } from '../../../../task/ApplyVisualStyle'
 
 export function DiscreteMappingForm(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
+  const { postEdit } = useUndoStack()
+
   const mapping = props.visualProperty.mapping as DiscreteMappingFunction
 
   const [selectedDiscreteMappingEntries, setSelectedDiscreteMappingEntries] =
@@ -223,6 +227,13 @@ export function DiscreteMappingForm(props: {
                         currentValue={value}
                         currentNetworkId={props.currentNetworkId}
                         onValueChange={(newValue) => {
+                          const prevMap = mapping?.vpValueMap ?? new Map()
+                          postEdit(UndoCommandType.SET_DISCRETE_VALUE, [
+                            props.currentNetworkId,
+                            props.visualProperty.name,
+                            [key],
+                            prevMap.get(key),
+                          ])
                           setDiscreteMappingValue(
                             props.currentNetworkId,
                             props.visualProperty.name,
@@ -237,6 +248,13 @@ export function DiscreteMappingForm(props: {
                     <IconButton
                       disabled={value == null}
                       onClick={() => {
+                        const prevMap = mapping?.vpValueMap ?? new Map()
+                        postEdit(UndoCommandType.SET_DISCRETE_VALUE, [
+                          props.currentNetworkId,
+                          props.visualProperty.name,
+                          [key],
+                          prevMap.get(key),
+                        ])
                         deleteDiscreteMappingValue(
                           props.currentNetworkId,
                           props.visualProperty.name,
@@ -279,13 +297,18 @@ export function DiscreteMappingForm(props: {
               },
             }}
             disabled={selectedDiscreteMappingEntries.size === 0}
-            onClick={() =>
+            onClick={() => {
+              postEdit(UndoCommandType.SET_DISCRETE_VALUE_MAP, [
+                props.currentNetworkId,
+                props.visualProperty.name,
+                props.visualProperty.mapping,
+              ])
               deleteDiscreteMappingValue(
                 props.currentNetworkId,
                 props.visualProperty.name,
                 Array.from(selectedDiscreteMappingEntries) as ValueType[],
               )
-            }
+            }}
           >
             Remove selected
           </Button>
@@ -305,6 +328,11 @@ export function DiscreteMappingForm(props: {
             variant="contained"
             disabled={selectedDiscreteMappingEntries.size === 0}
             onClick={() => {
+              postEdit(UndoCommandType.SET_DISCRETE_VALUE_MAP, [
+                props.currentNetworkId,
+                props.visualProperty.name,
+                props.visualProperty.mapping,
+              ])
               setDiscreteMappingValue(
                 props.currentNetworkId,
                 props.visualProperty.name,
