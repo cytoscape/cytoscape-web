@@ -375,7 +375,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'pieSize',
     displayName: 'Pie Size',
     type: 'number',
-    defaultValue: 100,
+    defaultValue: '100%',
     bypassMap: new Map(),
     tooltip: 'The diameter of the pie chart as a percentage of the node size (or an absolute value).',
   },

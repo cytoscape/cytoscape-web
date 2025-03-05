@@ -305,6 +305,37 @@ export const VPNodeLabelPositionConverter = (
   }
 }
 
+export const VPPieSizeConverter = (): CXVisualPropertyConverter<string> => {
+  return {
+    cxVPName: "VPPrecentageConverter",
+    valueConverter: (): string => "100%",
+  }
+}
+
+export const VPPieOpacityConverter = (): CXVisualPropertyConverter<string> => {
+  return {
+    cxVPName: "VPPieOpacityConverter",
+    valueConverter: (): string => "1",
+  }
+}
+
+
+export const VPPieBackgroundColorConverter = (
+  colorIndex: number,
+): CXVisualPropertyConverter<ColorType> => {
+  return {
+    cxVPName: "NODE_CUSTOMGRAPHICS_1",
+    valueConverter: (cxVPValue: CXVisualPropertyValue): ColorType => {
+      const customGraphics = cxVPValue as unknown as { properties?: { cy_colors?: ColorType[] } };
+      
+      if (customGraphics.properties && Array.isArray(customGraphics.properties.cy_colors)) {
+        return customGraphics.properties.cy_colors[colorIndex] || "#000000" as ColorType;
+      }
+      return "#000000" as ColorType;
+    },
+  }
+}
+
 // lookup table of visual style property names to cx property names
 export const cxVisualPropertyConverter: Record<
   VisualPropertyName,
@@ -334,16 +365,16 @@ export const cxVisualPropertyConverter: Record<
   nodeMaxLabelWidth: VPNumberConverter('NODE_LABEL_MAX_WIDTH'),
   nodeZOrder: VPNumberConverter('NODE_Z_LOCATION'), 
 
-  pieSize: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
-  pie1BackgroundColor: VPColorConverter('NODE_BORDER_COLOR'),
+  pieSize: VPPieSizeConverter(),
+  pie1BackgroundColor: VPPieBackgroundColorConverter(0),
   pie1BackgroundSize: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
-  pie1BackgroundOpacity: VPNumberConverter('EDGE_LABEL_ROTATION'),
-  pie2BackgroundColor: VPColorConverter('NODE_LABEL_COLOR'),
+  pie1BackgroundOpacity: VPPieOpacityConverter(),
+  pie2BackgroundColor: VPPieBackgroundColorConverter(1),
   pie2BackgroundSize: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
-  pie2BackgroundOpacity: VPNumberConverter('EDGE_LABEL_ROTATION'),
-  pie3BackgroundColor: VPColorConverter('NODE_LABEL_COLOR'),
-  pie3BackgroundSize: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
-  pie3BackgroundOpacity: VPNumberConverter('EDGE_LABEL_ROTATION'),
+  pie2BackgroundOpacity: VPPieOpacityConverter(),
+  pie3BackgroundColor: VPPieBackgroundColorConverter(2),
+  pie3BackgroundSize:VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
+  pie3BackgroundOpacity: VPPieOpacityConverter(),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),
