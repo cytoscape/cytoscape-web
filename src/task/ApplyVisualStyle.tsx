@@ -7,6 +7,7 @@ import { useUndoStore } from '../store/UndoStore'
 import { UndoCommandType } from '../models/StoreModel/UndoStoreModel'
 import { useViewModelStore } from '../store/ViewModelStore'
 import { useTableStore } from '../store/TableStore'
+import { useNetworkStore } from '../store/NetworkStore'
 
 /**
  * A custom hook that returns a function to apply a Visual Style
@@ -60,13 +61,15 @@ export const useUndoStack = () => {
   const setMapping = useVisualStyleStore((state) => state.setMapping)
   const setTable = useTableStore((state) => state.setTable)
   const setColumnName = useTableStore((state) => state.setColumnName)
+  const addNodes = useNetworkStore((state) => state.addNodes)
+  const addEdges = useNetworkStore((state) => state.addEdges)
+  const editRows = useTableStore((state) => state.editRows)
+  const setNetwork = useNetworkStore((state) => state.setNetwork)
+  const addNodesAndEdges = useNetworkStore((state) => state.addNodesAndEdges)
 
   const postEdit = useCallback(
     (undoCommand: UndoCommandType, params: any[]) => {
       const nextUndoStack = [...undoStack, { undoCommand, params }]
-
-      console.log('before UNDO', undoStack)
-      console.log('NEW UNDO', nextUndoStack)
       setUndoStack(nextUndoStack)
       setRedoStack([]) // Clear redo stack on new edit
     },
@@ -94,8 +97,21 @@ export const useUndoStack = () => {
       [UndoCommandType.RENAME_COLUMN]: (params: any[]) => {
         setColumnName(params[0], params[1], params[2], params[3])
       },
-      [UndoCommandType.DELETE_EDGES]: (params: any[]) => {},
-      [UndoCommandType.DELETE_NODES]: (params: any[]) => {},
+      [UndoCommandType.DELETE_EDGES]: (params: any[]) => {
+        addEdges(params[0], params[1])
+        editRows(params[0], params[1], params[2])
+      },
+      [UndoCommandType.DELETE_NODES]: (params: any[]) => {
+        // console.log('PARAMS', params)
+        // setNetwork(params[0], params[1])
+        // setTable(params[0], 'node', params[2])
+        // setTable(params[0], 'edge', params[3])
+        addNodesAndEdges(params[0], params[1], params[3])
+        // addNodes(params[0], params[1])
+        editRows(params[0], 'node', params[2])
+        // addEdges(params[0], params[3])
+        editRows(params[0], 'edge', params[4])
+      },
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
         setNodePosition(params[0], params[1], params[2])
       },
@@ -124,11 +140,9 @@ export const useUndoStack = () => {
 
     const lastEdit = undoStack[undoStack.length - 1]
     const nextUndoStack = undoStack.slice(0, undoStack.length - 1)
-    console.log('AFTER POP', nextUndoStack, undoStack)
     if (lastEdit) {
       const undoCommand = commandMap[lastEdit.undoCommand]
       undoCommand(lastEdit.params)
-      console.log('UNDO', lastEdit)
       setRedoStack([...redoStack, lastEdit])
       setUndoStack(nextUndoStack)
     }
@@ -145,6 +159,10 @@ export const useUndoStack = () => {
     setBypassMap,
     setTable,
     setColumnName,
+    addEdges,
+    addNodes,
+    editRows,
+    setNetwork,
   ])
 
   // const postEdit = useCallback((networkId: IdType, undo: () => void) => {
@@ -191,5 +209,5 @@ export const useUndoStack = () => {
     setRedoStack([])
   }, [])
 
-  return { postEdit, undoLastEdit, redoLastEdit, clearStack }
+  return { undoStack, postEdit, undoLastEdit, redoLastEdit, clearStack }
 }

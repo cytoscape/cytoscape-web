@@ -106,7 +106,7 @@ const CyjsRenderer = ({
 
   let isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
-  const { postEdit } = useUndoStack()
+  const { postEdit, undoStack } = useUndoStack()
   const setViewModel = useViewModelStore((state) => state.add)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
@@ -324,8 +324,11 @@ const CyjsRenderer = ({
       const prevPos = networkView?.nodeViews[nodeId]
 
       setNodePosition(id, nodeId, [position.x, position.y])
-      console.log(nodeId, position.x, position.y, prevPos)
-      postEdit(UndoCommandType.MOVE_NODES, [id, nodeId, [prevPos?.x,prevPos?.y]])
+      postEdit(UndoCommandType.MOVE_NODES, [
+        id,
+        nodeId,
+        [prevPos?.x, prevPos?.y],
+      ])
     })
 
     cy.on('mouseover', 'node, edge', (e: EventObject): void => {
@@ -453,27 +456,9 @@ const CyjsRenderer = ({
     setRenderedId(id)
   }, [network])
 
-    useEffect(() => {
-      renderNetwork()
-    // const data: NetworkViewSources = {
-    //   network,
-    //   networkView,
-    //   nodeTable: table.nodeTable,
-    //   edgeTable: table.edgeTable,
-    //   visualStyle: vs,
-    // }
-
-    // const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
-
-    // const { nodeViews, edgeViews } = updatedNetworkView
-    // addObjects(
-    //   cy,
-    //   Object.values(nodeViews),
-    //   network.edges,
-    //   edgeViews,
-    //   visualEditorProperties,
-    // )
-  }, [networkView])
+  useEffect(() => {
+    renderNetwork()
+  }, [networkView, undoStack])
   const applyUpdates = useMemo(
     () => (): void => {
       applyStyleUpdate()
@@ -759,7 +744,7 @@ const CyjsRenderer = ({
     if (cy !== null) {
       renderNetwork()
     }
-  }, [cy])
+  }, [cy, networkView])
 
   return (
     <>
@@ -785,8 +770,7 @@ const CyjsRenderer = ({
           width: '100%',
           height: '100%',
           backgroundColor: 'rgba(0,0,0,0)',
-          zIndex: 0
-
+          zIndex: 0,
         }}
         id="cy-container"
         ref={cyContainer}

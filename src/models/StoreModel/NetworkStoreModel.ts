@@ -29,6 +29,8 @@ export interface NetworkUpdateActions {
   addNode: (networkId: IdType, nodeId: IdType) => void
   addNodes: (networkId: IdType, nodeIds: IdType[]) => void
 
+  addNodesAndEdges: (networkId: IdType, nodes: IdType[], edges: Edge[]) => void
+
   // Add edge(s) to a network
   addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => void
   addEdges: (networkId: IdType, edges: Edge[]) => void
@@ -47,6 +49,8 @@ export interface NetworkActions {
 
   // Delete a network
   delete: (networkId: IdType) => void
+
+  setNetwork: (networkId: IdType, network: Network) => void
 
   // Delete all networks from the store
   deleteAll: () => void

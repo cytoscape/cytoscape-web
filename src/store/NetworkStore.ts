@@ -46,6 +46,13 @@ export const useNetworkStore = create(
         networks: new Map<IdType, Network>(),
         lastModified: undefined,
 
+        setNetwork: (networkId: IdType, network: Network) => {
+          set((state) => {
+            state.networks.set(networkId, network)
+            return state
+          })
+        },
+
         addNode: (networkId: IdType, nodeId: IdType) => {
           set((state) => {
             const network = state.networks.get(networkId)
@@ -60,6 +67,23 @@ export const useNetworkStore = create(
             const network = state.networks.get(networkId)
             if (network !== undefined) {
               NetworkFn.addNodes(network, nodeIds)
+            }
+            return {
+              networks: { ...state.networks },
+            }
+          })
+        },
+
+        addNodesAndEdges: (
+          networkId: IdType,
+          nodeIds: IdType[],
+          edges: Edge[],
+        ) => {
+          set((state) => {
+            const network = state.networks.get(networkId)
+            if (network !== undefined) {
+              NetworkFn.addNodes(network, nodeIds)
+              NetworkFn.addEdges(network, edges)
             }
             return {
               networks: { ...state.networks },

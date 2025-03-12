@@ -74,6 +74,11 @@ export interface TableAction {
     tableType: TableType,
     column: AttributeName,
   ) => void
+  editRows: (
+    networkId: IdType,
+    tableType: TableType,
+    rows: Map<IdType, Record<AttributeName, ValueType>>,
+  ) => void
 
   // update table(s)
   setTable: (networkId: IdType, tableType: TableType, table: Table) => void
