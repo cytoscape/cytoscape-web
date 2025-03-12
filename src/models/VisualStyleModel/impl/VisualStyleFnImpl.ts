@@ -381,113 +381,142 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     // **** CUSTOM EXTENSION FOR PIE CHARTS ****
     // Look for custom graphics in the node defaults that specify a chart.
   })
-  // --- PIE CHART EXTRACTION AND PER-NODE SIZE CALCULATION ---
-// --- PIE CHART EXTRACTION AND PER-NODE SIZE CALCULATION ---
-// --- PIE CHART EXTRACTION AND PER-NODE SIZE CALCULATION ---
-if (defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"]) {
-  let pieChartConfig: any;
-  // Cast to any so that TS lets us call string methods
-  const pieValue = defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"] as any;
-  
-  if (typeof pieValue === "string") {
-    // Legacy string format: extract the JSON portion.
-    const match = pieValue.match(/{.*}/);
-    if (match) {
-      try {
-        pieChartConfig = JSON.parse(match[0]);
-      } catch (e) {
-        console.error("Failed to parse pie chart config from string", e);
+  if (defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"]) {
+    let pieChartConfig: any;
+    const pieValue = defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"] as any;
+    
+    if (typeof pieValue === "string") {
+      const match = pieValue.match(/{.*}/);
+      if (match) {
+        try {
+          pieChartConfig = JSON.parse(match[0]);
+        } catch (e) {
+          console.error("Failed to parse pie chart config from string", e);
+        }
+      }
+    } else if (typeof pieValue === "object") {
+      pieChartConfig = pieValue.properties;
+    }
+    
+    if (pieChartConfig) {
+      (visualStyle as any).pieChartConfig = pieChartConfig;
+      
+      // Get nodes from the CX.
+      const nodesArray = cxUtil.getNodes(cx);
+      if (nodesArray && nodesArray.length > 0) {
+        // Assume these are the columns used for computing the pie slices.
+        const columns: string[] = pieChartConfig.cy_dataColumns; // e.g. ["degree.layout", "Degree", "Eccentricity"]
+        
+        // Compute percentages for each node.
+        nodesArray.forEach((node: any) => {
+          const data = node.v ?? {};
+          let totalSum = 0;
+          columns.forEach((col: string) => {
+            const val = data[col];
+            if (typeof val === "number" && val > 0) {
+              totalSum += val;
+            }
+          });
+          const computedSizes: number[] = columns.map((col: string) => {
+            const val = data[col];
+            if (typeof val !== "number" || val <= 0) {
+              return 0;
+            }
+            return totalSum > 0 ? (100 * val) / totalSum : 0;
+          });
+          // Store computed percentages in node.v.
+          data["pie-1-background-size"] = computedSizes[0] || 0;
+          data["pie-2-background-size"] = computedSizes[1] || 0;
+          data["pie-3-background-size"] = computedSizes[2] || 0;
+          node.v = data;
+          
+          // Bridge: If your network view uses a Map (node.values), update that too.
+          if (node.values instanceof Map) {
+            node.values.set("pie-1-background-size", computedSizes[0] || 0);
+            node.values.set("pie-2-background-size", computedSizes[1] || 0);
+            node.values.set("pie-3-background-size", computedSizes[2] || 0);
+          } else {
+            node.values = { ...node.values, 
+              "pie-1-background-size": computedSizes[0] || 0,
+              "pie-2-background-size": computedSizes[1] || 0,
+              "pie-3-background-size": computedSizes[2] || 0,
+            };
+          }
+          console.log("Updated node:", node);
+        });
+        
+        // Create discrete mapping properties for each pie slice.
+        // For each mapping, the key will come from the raw attribute value (from columns)
+        // and the mapped value will be the computed percentage stored in node.v.
+        const updateOrCreateVP = (
+          vpName: string,
+          displayName: string,
+          tooltip: string,
+          attributeName: string  // the underlying CX attribute (e.g. "degree.layout")
+        ) => {
+          const vpValueMap = new Map();
+          nodesArray.forEach((node: any) => {
+            // The raw attribute value from the node.
+            const rawAttrVal = Number(node.v[attributeName]);
+            // The computed percentage for this pie slice.
+            const computedVal = Number(node.v[vpName]);
+            if (!isNaN(rawAttrVal) && !isNaN(computedVal)) {
+              // Map the raw attribute value to the computed percentage.
+              if (!vpValueMap.has(rawAttrVal)) {
+                vpValueMap.set(rawAttrVal, computedVal);
+              }
+            }
+          });
+          let fallback: number = 0;
+          if (nodesArray[0]?.v) {
+            const sampleData = nodesArray[0].v;
+            // Use the raw attribute from the first node to decide a fallback,
+            // then look up its computed percentage.
+            const sampleRaw = Number(sampleData[attributeName]);
+            const sampleComputed = Number(sampleData[vpName]);
+            fallback = !isNaN(sampleComputed) ? sampleComputed : 0;
+          }
+          (visualStyle as any)[vpName] = {
+            group: "node",
+            name: vpName,
+            displayName,
+            type: "number",
+            defaultValue: fallback,
+            bypassMap: new Map(),
+            tooltip,
+            mapping: {
+              type: "discrete",
+              attribute: attributeName, // use the underlying CX column as the attribute
+              vpValueMap: vpValueMap,
+              visualPropertyType: "number",
+              defaultValue: fallback,
+              attributeType: "number",
+            },
+          };
+        };
+        
+        // For each pie slice, assign the corresponding underlying attribute:
+        updateOrCreateVP(
+          "pie-1-background-size",
+          "Pie Slice 1 Size",
+          "The size of pie slice 1 as a percentage of the pie size.",
+          columns[0]  // e.g., "degree.layout"
+        );
+        updateOrCreateVP(
+          "pie-2-background-size",
+          "Pie Slice 2 Size",
+          "The size of pie slice 2 as a percentage of the pie size.",
+          columns[1]  // e.g., "Degree"
+        );
+        updateOrCreateVP(
+          "pie-3-background-size",
+          "Pie Slice 3 Size",
+          "The size of pie slice 3 as a percentage of the pie size.",
+          columns[2]  // e.g., "Eccentricity"
+        );
       }
     }
-  } else if (typeof pieValue === "object") {
-    // New CX format: the object should have a "properties" field.
-    pieChartConfig = pieValue.properties;
   }
-  
-  if (pieChartConfig) {
-    // Save the pie chart configuration in the visual style for later use.
-    (visualStyle as any).pieChartConfig = pieChartConfig;
-    
-    // Now, instead of using only the first node as a sample,
-    // iterate over all nodes in the CX and compute each node's pie slice percentages.
-    const nodesArray = cxUtil.getNodes(cx);
-    if (nodesArray && nodesArray.length > 0) {
-      // The configuration defines the pie slices via the "cy_dataColumns" array.
-      const columns: string[] = pieChartConfig.cy_dataColumns;
-      
-      nodesArray.forEach((node: any) => {
-        // Guard against missing node data.
-        const data = node.v ?? {};
-        let totalSum = 0;
-        columns.forEach((col: string) => {
-          const val = data[col];
-          if (typeof val === "number" && val > 0) {
-            totalSum += val;
-          }
-        });
-        // Compute the percentage for each column (slice) for this node.
-        const computedSizes: number[] = columns.map((col: string) => {
-          const val = data[col];
-          if (typeof val !== "number" || val <= 0) {
-            return 0;
-          }
-          return totalSum > 0 ? (100 * val) / totalSum : 0;
-        });
-        // Store the computed percentages in the node's data.
-        // These properties will be used by the Cytoscape style's passthrough mapping.
-        data["pie-1-background-size"] = computedSizes[0] || 0;
-        data["pie-2-background-size"] = computedSizes[1] || 0;
-        data["pie-3-background-size"] = computedSizes[2] || 0;
-        console.log(node)
-        node.v = data;
-      });
-      
-      // Optionally, update the default visual style properties to reflect a reasonable fallback.
-      // Here we create VisualProperty objects for each pie slice.
-      const updateOrCreateVP = (
-        vpName: string,
-        displayName: string,
-        tooltip: string,
-      ) => {
-        let fallback: number = 0;
-        if (nodesArray[0]?.v) {
-          const sampleData = nodesArray[0].v;
-          const rawVal = sampleData[vpName];
-          if (typeof rawVal === "number") {
-            fallback = rawVal;
-          } else {
-            fallback = Number(rawVal) || 0;
-          }
-        }
-        (visualStyle as any)[vpName] = {
-          group: "node",
-          name: vpName,
-          displayName,
-          type: "number",
-          defaultValue: fallback,
-          bypassMap: new Map(),
-          tooltip,
-        };
-      };
-      
-      updateOrCreateVP(
-        "pie-1-background-size",
-        "Pie Slice 1 Size",
-        "The size of pie slice 1 as a percentage of the pie size."
-      );
-      updateOrCreateVP(
-        "pie-2-background-size",
-        "Pie Slice 2 Size",
-        "The size of pie slice 2 as a percentage of the pie size."
-      );
-      updateOrCreateVP(
-        "pie-3-background-size",
-        "Pie Slice 3 Size",
-        "The size of pie slice 3 as a percentage of the pie size."
-      );
-    }
-  }
-}
   console.log(visualStyle)
   return visualStyle
 }
