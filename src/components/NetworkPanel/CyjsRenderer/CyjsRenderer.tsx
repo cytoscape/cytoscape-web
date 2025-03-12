@@ -219,7 +219,26 @@ const CyjsRenderer = ({
     )
 
     // Generate a new Cytoscape.js styles based on given visual style
-    const newStyle = createCyjsDataMapper(vs)
+    const newStyle = createCyjsDataMapper(vs);
+    newStyle.push({
+      selector: 'node' as any,
+      style: {
+        'pie-1-background-size': ((ele: any): number => {
+          console.log(ele.data('pie-1-background-size'))
+          const val = ele.data('pie-1-background-size');
+          return typeof val === 'number' ? val : 0;
+        }) as any,
+        'pie-2-background-size': ((ele: any): number => {
+          const val = ele.data('pie-2-background-size');
+          return typeof val === 'number' ? val : 0;
+        }) as any,
+        'pie-3-background-size': ((ele: any): number => {
+          const val = ele.data('pie-3-background-size');
+          return typeof val === 'number' ? val : 0;
+        }) as any,
+      }
+    });
+    console.log(newStyle)
     setCyStyle(newStyle)
 
     // Restore selection state in Cyjs instance

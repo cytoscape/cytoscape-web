@@ -375,7 +375,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'pieSize',
     displayName: 'Pie Size',
     type: 'number',
-    defaultValue: '100%',
+    defaultValue: '80%',
     bypassMap: new Map(),
     tooltip: 'The diameter of the pie chart as a percentage of the node size (or an absolute value).',
   },
@@ -393,7 +393,14 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'pie1BackgroundSize',
     displayName: 'Pie Slice 1 Size',
     type: 'number',
-    defaultValue: 50,
+    defaultValue: 0,
+    mapping: {
+      type: 'passthrough',
+      attribute: 'pie1BackgroundSize', // <-- changed to match existing selector
+      attributeType: 'double',
+      visualPropertyType: 'number',
+      defaultValue: 0,
+    },
     bypassMap: new Map(),
     tooltip: 'The size of pie slice 1 as a percentage of the pie size.',
   },
@@ -418,12 +425,19 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   pie2BackgroundSize: {
     group: 'node',
-    name: 'pie2BackgroundSize',
-    displayName: 'Pie Slice 1 Size',
+    name: 'pie1BackgroundSize',
+    displayName: 'Pie Slice 2 Size',
     type: 'number',
-    defaultValue: 50,
+    defaultValue: 0,
+    mapping: {
+      type: 'passthrough',
+      attribute: 'pie1BackgroundSize', // <-- changed to match existing selector
+      attributeType: 'double',
+      visualPropertyType: 'number',
+      defaultValue: 0,
+    },
     bypassMap: new Map(),
-    tooltip: 'The size of pie slice 1 as a percentage of the pie size.',
+    tooltip: 'The size of pie slice 2 as a percentage of the pie size.',
   },
   pie2BackgroundOpacity: {
     group: 'node',
@@ -446,12 +460,19 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   pie3BackgroundSize: {
     group: 'node',
-    name: 'pie3BackgroundSize',
-    displayName: 'Pie Slice 1 Size',
+    name: 'pie1BackgroundSize',
+    displayName: 'Pie Slice 3 Size',
     type: 'number',
-    defaultValue: 50,
+    defaultValue: 0,
+    mapping: {
+      type: 'passthrough',
+      attribute: 'pie3BackgroundSize', // <-- changed to match existing selector
+      attributeType: 'double',
+      visualPropertyType: 'number',
+      defaultValue: 0,
+    },
     bypassMap: new Map(),
-    tooltip: 'The size of pie slice 1 as a percentage of the pie size.',
+    tooltip: 'The size of pie slice 3 as a percentage of the pie size.',
   },
   pie3BackgroundOpacity: {
     group: 'node',

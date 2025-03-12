@@ -93,7 +93,7 @@ export const createVisualStyle = (): VisualStyle => {
   return getDefaultVisualStyle()
 }
 
-// convert CX visual properties to app visual style model
+// convert cx visual properties to app visual style model
 export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   const visualStyle: VisualStyle = createVisualStyle()
   const visualProperties = cxUtil.getVisualProperties(cx)
@@ -117,7 +117,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     Bypass<VisualPropertyValueType>
   > = new Map()
 
-  // Group node bypasses by visual property instead of by element.
+  // group bypasses by visual property instead of by element
   nodeBypasses?.nodeBypasses?.forEach(
     (entry: { id: CXId; v: Record<string, object> }) => {
       const { id, v } = entry
@@ -133,14 +133,14 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           ]
 
           if (nodeBypassMap.has(vpName)) {
-            const existing = nodeBypassMap.get(vpName) ?? new Map()
-            existing.set(
+            const entry = nodeBypassMap.get(vpName) ?? new Map()
+            entry.set(
               String(id),
               cxVPConverter.valueConverter(
                 v[cxVPName] as CXVisualPropertyValue,
               ),
             )
-            nodeBypassMap.set(vpName, existing)
+            nodeBypassMap.set(vpName, entry)
           } else {
             nodeBypassMap.set(
               vpName,
@@ -157,7 +157,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     },
   )
 
-  // Group edge bypasses by visual property instead of by element.
+  // group bypasses by visual property instead of by element
   edgeBypasses?.edgeBypasses?.forEach(
     (entry: { id: CXId; v: Record<string, object> }) => {
       const { id, v } = entry
@@ -173,14 +173,14 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           ]
 
           if (edgeBypassMap.has(vpName)) {
-            const existing = edgeBypassMap.get(vpName) ?? new Map()
-            existing.set(
+            const entry = edgeBypassMap.get(vpName) ?? new Map()
+            entry.set(
               translateCXEdgeId(String(id)),
               cxVPConverter.valueConverter(
                 v[cxVPName] as CXVisualPropertyValue,
               ),
             )
-            edgeBypassMap.set(vpName, existing)
+            edgeBypassMap.set(vpName, entry)
           } else {
             edgeBypassMap.set(
               vpName,
@@ -197,9 +197,6 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     },
   )
 
-  // The following vpGroups array covers Node, Edge, and Network visual properties.
-  // Note that pie chart properties (e.g., pieSize, pie1BackgroundColor, etc.)
-  // are part of the Node group and will be processed just like other node properties.
   const vpGroups = [
     {
       vps: nodeVisualProperties(visualStyle),
@@ -323,7 +320,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
               const controlPoints: ContinuousFunctionControlPoint[] = []
 
               // only iterate through the middle entries of the map
-              // i.e. exclude min and max
+              // i.e. exclue min and max
               for (let i = 1; i <= numMapEntries - 2; i++) {
                 const mapEntry = cxMapping.definition.map[i]
                 if (mapEntry.minVPValue != null && mapEntry.min != null) {
@@ -375,11 +372,122 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
 
         visualStyle[vpName].bypassMap = cxBypass.get(vpName) ?? new Map()
       } else {
-        // Property is not found in CX. In theory all Cytoscape Web properties should be in CX.
+        // property is not found in cx, in theory all cytoscape web properties should be in
+        // cx, if this happens, it is a bug
         console.error(`Property ${vpName} not found in CX`)
       }
     })
+
+    // **** CUSTOM EXTENSION FOR PIE CHARTS ****
+    // Look for custom graphics in the node defaults that specify a chart.
   })
+  // --- PIE CHART EXTRACTION AND PER-NODE SIZE CALCULATION ---
+// --- PIE CHART EXTRACTION AND PER-NODE SIZE CALCULATION ---
+// --- PIE CHART EXTRACTION AND PER-NODE SIZE CALCULATION ---
+if (defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"]) {
+  let pieChartConfig: any;
+  // Cast to any so that TS lets us call string methods
+  const pieValue = defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"] as any;
+  
+  if (typeof pieValue === "string") {
+    // Legacy string format: extract the JSON portion.
+    const match = pieValue.match(/{.*}/);
+    if (match) {
+      try {
+        pieChartConfig = JSON.parse(match[0]);
+      } catch (e) {
+        console.error("Failed to parse pie chart config from string", e);
+      }
+    }
+  } else if (typeof pieValue === "object") {
+    // New CX format: the object should have a "properties" field.
+    pieChartConfig = pieValue.properties;
+  }
+  
+  if (pieChartConfig) {
+    // Save the pie chart configuration in the visual style for later use.
+    (visualStyle as any).pieChartConfig = pieChartConfig;
+    
+    // Now, instead of using only the first node as a sample,
+    // iterate over all nodes in the CX and compute each node's pie slice percentages.
+    const nodesArray = cxUtil.getNodes(cx);
+    if (nodesArray && nodesArray.length > 0) {
+      // The configuration defines the pie slices via the "cy_dataColumns" array.
+      const columns: string[] = pieChartConfig.cy_dataColumns;
+      
+      nodesArray.forEach((node: any) => {
+        // Guard against missing node data.
+        const data = node.v ?? {};
+        let totalSum = 0;
+        columns.forEach((col: string) => {
+          const val = data[col];
+          if (typeof val === "number" && val > 0) {
+            totalSum += val;
+          }
+        });
+        // Compute the percentage for each column (slice) for this node.
+        const computedSizes: number[] = columns.map((col: string) => {
+          const val = data[col];
+          if (typeof val !== "number" || val <= 0) {
+            return 0;
+          }
+          return totalSum > 0 ? (100 * val) / totalSum : 0;
+        });
+        // Store the computed percentages in the node's data.
+        // These properties will be used by the Cytoscape style's passthrough mapping.
+        data["pie-1-background-size"] = computedSizes[0] || 0;
+        data["pie-2-background-size"] = computedSizes[1] || 0;
+        data["pie-3-background-size"] = computedSizes[2] || 0;
+        console.log(data)
+        node.v = data;
+      });
+      
+      // Optionally, update the default visual style properties to reflect a reasonable fallback.
+      // Here we create VisualProperty objects for each pie slice.
+      const updateOrCreateVP = (
+        vpName: string,
+        displayName: string,
+        tooltip: string,
+      ) => {
+        let fallback: number = 0;
+        if (nodesArray[0]?.v) {
+          const sampleData = nodesArray[0].v;
+          const rawVal = sampleData[vpName];
+          if (typeof rawVal === "number") {
+            fallback = rawVal;
+          } else {
+            fallback = Number(rawVal) || 0;
+          }
+        }
+        (visualStyle as any)[vpName] = {
+          group: "node",
+          name: vpName,
+          displayName,
+          type: "number",
+          defaultValue: fallback,
+          bypassMap: new Map(),
+          tooltip,
+        };
+      };
+      
+      updateOrCreateVP(
+        "pie-1-background-size",
+        "Pie Slice 1 Size",
+        "The size of pie slice 1 as a percentage of the pie size."
+      );
+      updateOrCreateVP(
+        "pie-2-background-size",
+        "Pie Slice 2 Size",
+        "The size of pie slice 2 as a percentage of the pie size."
+      );
+      updateOrCreateVP(
+        "pie-3-background-size",
+        "Pie Slice 3 Size",
+        "The size of pie slice 3 as a percentage of the pie size."
+      );
+    }
+  }
+}
   console.log(visualStyle)
   return visualStyle
 }
