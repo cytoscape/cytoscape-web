@@ -438,7 +438,7 @@ if (defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"]) {
         data["pie-1-background-size"] = computedSizes[0] || 0;
         data["pie-2-background-size"] = computedSizes[1] || 0;
         data["pie-3-background-size"] = computedSizes[2] || 0;
-        console.log(data)
+        console.log(node)
         node.v = data;
       });
       

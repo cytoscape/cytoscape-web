@@ -366,13 +366,10 @@ export const cxVisualPropertyConverter: Record<
 
   pieSize: VPPieSizeConverter(),
   pie1BackgroundColor: VPPieBackgroundColorConverter(0),
-  pie1BackgroundSize: VPNumberConverter('EDGE_SOURCE_ARROW_SIZE'),
   pie1BackgroundOpacity: VPPieOpacityConverter(),
   pie2BackgroundColor: VPPieBackgroundColorConverter(1),
-  pie2BackgroundSize: VPNumberConverter('EDGE_SOURCE_ARROW_SIZE'),
   pie2BackgroundOpacity: VPPieOpacityConverter(),
   pie3BackgroundColor: VPPieBackgroundColorConverter(2),
-  pie3BackgroundSize:VPNumberConverter('EDGE_SOURCE_ARROW_SIZE'),
   pie3BackgroundOpacity: VPPieOpacityConverter(),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),

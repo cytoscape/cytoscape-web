@@ -238,7 +238,6 @@ const CyjsRenderer = ({
         }) as any,
       }
     });
-    console.log(newStyle)
     setCyStyle(newStyle)
 
     // Restore selection state in Cyjs instance

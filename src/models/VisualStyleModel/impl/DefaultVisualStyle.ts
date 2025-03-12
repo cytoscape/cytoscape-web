@@ -388,22 +388,6 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     bypassMap: new Map(),
     tooltip: 'The color for pie slice 1.',
   },
-  pie1BackgroundSize: {
-    group: 'node',
-    name: 'pie1BackgroundSize',
-    displayName: 'Pie Slice 1 Size',
-    type: 'number',
-    defaultValue: 0,
-    mapping: {
-      type: 'passthrough',
-      attribute: 'pie1BackgroundSize', // <-- changed to match existing selector
-      attributeType: 'double',
-      visualPropertyType: 'number',
-      defaultValue: 0,
-    },
-    bypassMap: new Map(),
-    tooltip: 'The size of pie slice 1 as a percentage of the pie size.',
-  },
   pie1BackgroundOpacity: {
     group: 'node',
     name: 'pie1BackgroundOpacity',
@@ -423,22 +407,6 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     bypassMap: new Map(),
     tooltip: 'The color for pie slice 1.',
   },
-  pie2BackgroundSize: {
-    group: 'node',
-    name: 'pie1BackgroundSize',
-    displayName: 'Pie Slice 2 Size',
-    type: 'number',
-    defaultValue: 0,
-    mapping: {
-      type: 'passthrough',
-      attribute: 'pie1BackgroundSize', // <-- changed to match existing selector
-      attributeType: 'double',
-      visualPropertyType: 'number',
-      defaultValue: 0,
-    },
-    bypassMap: new Map(),
-    tooltip: 'The size of pie slice 2 as a percentage of the pie size.',
-  },
   pie2BackgroundOpacity: {
     group: 'node',
     name: 'pie2BackgroundOpacity',
@@ -457,22 +425,6 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: '#FFFFFF',
     bypassMap: new Map(),
     tooltip: 'The color for pie slice 1.',
-  },
-  pie3BackgroundSize: {
-    group: 'node',
-    name: 'pie1BackgroundSize',
-    displayName: 'Pie Slice 3 Size',
-    type: 'number',
-    defaultValue: 0,
-    mapping: {
-      type: 'passthrough',
-      attribute: 'pie3BackgroundSize', // <-- changed to match existing selector
-      attributeType: 'double',
-      visualPropertyType: 'number',
-      defaultValue: 0,
-    },
-    bypassMap: new Map(),
-    tooltip: 'The size of pie slice 3 as a percentage of the pie size.',
   },
   pie3BackgroundOpacity: {
     group: 'node',
