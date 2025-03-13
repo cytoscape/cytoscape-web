@@ -224,17 +224,29 @@ const CyjsRenderer = ({
       selector: 'node' as any,
       style: {
         'pie-1-background-size': ((ele: any): number => {
-          console.log(ele.data('pie-1-background-size'))
-          const val = ele.data('pie-1-background-size');
-          return typeof val === 'number' ? val : 0;
+          const d1 = Number(ele.data('pie-1-background-size')) || 0;
+          const d2 = Number(ele.data('pie-2-background-size')) || 0;
+          const d3 = Number(ele.data('pie-3-background-size')) || 0;
+          const total = d1 + d2 + d3;
+          console.log(ele.data())
+          // Return the percentage of the first attribute.
+          return total ? (100 * d1) / total : 0;
         }) as any,
         'pie-2-background-size': ((ele: any): number => {
-          const val = ele.data('pie-2-background-size');
-          return typeof val === 'number' ? val : 0;
+          const d1 = Number(ele.data('pie-1-background-size')) || 0;
+          const d2 = Number(ele.data('pie-2-background-size')) || 0;
+          const d3 = Number(ele.data('pie-3-background-size')) || 0;
+          const total = d1 + d2 + d3;
+          // Return the percentage of the second attribute.
+          return total ? (100 * d2) / total : 0;
         }) as any,
         'pie-3-background-size': ((ele: any): number => {
-          const val = ele.data('pie-3-background-size');
-          return typeof val === 'number' ? val : 0;
+          const d1 = Number(ele.data('pie-1-background-size')) || 0;
+          const d2 = Number(ele.data('pie-2-background-size')) || 0;
+          const d3 = Number(ele.data('pie-3-background-size')) || 0;
+          const total = d1 + d2 + d3;
+          // Return the percentage of the second attribute.
+          return total ? (100 * d3) / total : 0;
         }) as any,
       }
     });

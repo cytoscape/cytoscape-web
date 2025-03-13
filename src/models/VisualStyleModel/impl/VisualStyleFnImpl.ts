@@ -384,7 +384,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   if (defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"]) {
     let pieChartConfig: any;
     const pieValue = defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"] as any;
-    
+  
     if (typeof pieValue === "string") {
       const match = pieValue.match(/{.*}/);
       if (match) {
@@ -397,122 +397,117 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     } else if (typeof pieValue === "object") {
       pieChartConfig = pieValue.properties;
     }
-    
+  
     if (pieChartConfig) {
       (visualStyle as any).pieChartConfig = pieChartConfig;
-      
+  
       // Get nodes from the CX.
       const nodesArray = cxUtil.getNodes(cx);
       if (nodesArray && nodesArray.length > 0) {
-        // Assume these are the columns used for computing the pie slices.
-        const columns: string[] = pieChartConfig.cy_dataColumns; // e.g. ["degree.layout", "Degree", "Eccentricity"]
-        
-        // Compute percentages for each node.
+        // The configuration defines the pie slices via the "cy_dataColumns" array.
+        // For example: ["degree.layout", "Degree", "Eccentricity"]
+        const columns: string[] = pieChartConfig.cy_dataColumns;
+  
+        // Process each node.
         nodesArray.forEach((node: any) => {
+          // Get the raw data.
           const data = node.v ?? {};
           let totalSum = 0;
+          // Sum all values from the three columns.
           columns.forEach((col: string) => {
-            const val = data[col];
-            if (typeof val === "number" && val > 0) {
-              totalSum += val;
+            const raw = data[col];
+            if (typeof raw === "number" && raw > 0) {
+              totalSum += raw;
             }
           });
+          // Compute percentages for each column.
           const computedSizes: number[] = columns.map((col: string) => {
-            const val = data[col];
-            if (typeof val !== "number" || val <= 0) {
+            const raw = data[col];
+            if (typeof raw !== "number" || raw <= 0) {
               return 0;
             }
-            return totalSum > 0 ? (100 * val) / totalSum : 0;
+            return totalSum > 0 ? (100 * raw) / totalSum : 0;
           });
-          // Store computed percentages in node.v.
+          // Overwrite the raw attribute values with computed percentages.
+          // For pie-1, use the first column, etc.
+          data[columns[0]] = computedSizes[0] || 0;
+          data[columns[1]] = computedSizes[1] || 0;
+          data[columns[2]] = computedSizes[2] || 0;
+  
+          // Also, for convenience, you may still store them under new keys.
           data["pie-1-background-size"] = computedSizes[0] || 0;
           data["pie-2-background-size"] = computedSizes[1] || 0;
           data["pie-3-background-size"] = computedSizes[2] || 0;
+  
+          // Ensure the node's unique id is also in data.
+          data["id"] = node.id;
           node.v = data;
-          
-          // Bridge: If your network view uses a Map (node.values), update that too.
+  
+          // Update node.values if used downstream.
           if (node.values instanceof Map) {
-            node.values.set("pie-1-background-size", computedSizes[0] || 0);
-            node.values.set("pie-2-background-size", computedSizes[1] || 0);
-            node.values.set("pie-3-background-size", computedSizes[2] || 0);
+            node.values.set(columns[0], computedSizes[0] || 0);
+            node.values.set(columns[1], computedSizes[1] || 0);
+            node.values.set(columns[2], computedSizes[2] || 0);
+            node.values.set("id", node.id);
           } else {
-            node.values = { ...node.values, 
-              "pie-1-background-size": computedSizes[0] || 0,
-              "pie-2-background-size": computedSizes[1] || 0,
-              "pie-3-background-size": computedSizes[2] || 0,
+            node.values = {
+              ...node.values,
+              [columns[0]]: computedSizes[0] || 0,
+              [columns[1]]: computedSizes[1] || 0,
+              [columns[2]]: computedSizes[2] || 0,
+              "id": node.id,
             };
           }
           console.log("Updated node:", node);
         });
-        
-        // Create discrete mapping properties for each pie slice.
-        // For each mapping, the key will come from the raw attribute value (from columns)
-        // and the mapped value will be the computed percentage stored in node.v.
-        const updateOrCreateVP = (
+  
+        // Copy node.v into node.data so that ele.data() returns the computed values.
+        nodesArray.forEach((node: any) => {
+          node.data = { ...node.v };
+        });
+  
+        // Create passthrough mapping properties using the original attribute names.
+        // Now each node’s computed percentage is stored under, for example, "degree.layout".
+        const updateOrCreatePassthroughVP = (
           vpName: string,
           displayName: string,
           tooltip: string,
-          attributeName: string  // the underlying CX attribute (e.g. "degree.layout")
+          attributeName: string // raw attribute name to use
         ) => {
-          const vpValueMap = new Map();
-          nodesArray.forEach((node: any) => {
-            // The raw attribute value from the node.
-            const rawAttrVal = Number(node.v[attributeName]);
-            // The computed percentage for this pie slice.
-            const computedVal = Number(node.v[vpName]);
-            if (!isNaN(rawAttrVal) && !isNaN(computedVal)) {
-              // Map the raw attribute value to the computed percentage.
-              if (!vpValueMap.has(rawAttrVal)) {
-                vpValueMap.set(rawAttrVal, computedVal);
-              }
-            }
-          });
-          let fallback: number = 0;
-          if (nodesArray[0]?.v) {
-            const sampleData = nodesArray[0].v;
-            // Use the raw attribute from the first node to decide a fallback,
-            // then look up its computed percentage.
-            const sampleRaw = Number(sampleData[attributeName]);
-            const sampleComputed = Number(sampleData[vpName]);
-            fallback = !isNaN(sampleComputed) ? sampleComputed : 0;
-          }
           (visualStyle as any)[vpName] = {
             group: "node",
             name: vpName,
             displayName,
             type: "number",
-            defaultValue: fallback,
+            defaultValue: 0, // fallback
             bypassMap: new Map(),
             tooltip,
             mapping: {
-              type: "discrete",
-              attribute: attributeName, // use the underlying CX column as the attribute
-              vpValueMap: vpValueMap,
-              visualPropertyType: "number",
-              defaultValue: fallback,
-              attributeType: "number",
-            },
+              type: "passthrough",
+              attribute: attributeName,
+              visualPropertyType: "number"
+            }
           };
         };
-        
-        // For each pie slice, assign the corresponding underlying attribute:
-        updateOrCreateVP(
+  
+        // For pie slices, use the corresponding CX column names.
+        updateOrCreatePassthroughVP(
           "pie-1-background-size",
           "Pie Slice 1 Size",
           "The size of pie slice 1 as a percentage of the pie size.",
-          columns[0]  // e.g., "degree.layout"
+          columns[0] // e.g., "degree.layout"
         );
-        updateOrCreateVP(
+        updateOrCreatePassthroughVP(
           "pie-2-background-size",
           "Pie Slice 2 Size",
           "The size of pie slice 2 as a percentage of the pie size.",
-          columns[1]  // e.g., "Degree"
+          columns[1] // e.g., "Degree"
         );
-        updateOrCreateVP(
+        updateOrCreatePassthroughVP(
           "pie-3-background-size",
           "Pie Slice 3 Size",
           "The size of pie slice 3 as a percentage of the pie size.",
-          columns[2]  // e.g., "Eccentricity"
+          columns[2] // e.g., "Eccentricity"
         );
       }
     }
