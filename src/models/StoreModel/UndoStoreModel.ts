@@ -15,6 +15,24 @@ export interface Edit {
   params: any[]
 }
 
+export interface Edit2 {
+  undoCommand: UndoCommandType
+  undo: () => void
+  redo: () => void
+}
+
+export interface UndoState2 {
+  undoStack: Edit2[]
+  redoStack: Edit2[]
+}
+
+export interface UndoAction2 {
+  setUndoStack: (undoStack: Edit2[]) => void
+  setRedoStack: (redoStack: Edit2[]) => void
+}
+
+export type UndoStore2 = UndoState2 & UndoAction2
+
 export const UndoCommandType = {
   SET_DEFAULT_VP_VALUE: 'SET_DEFAULT_VP_VALUE',
   SET_MAPPING_TYPE: 'SET_MAPPING_TYPE',

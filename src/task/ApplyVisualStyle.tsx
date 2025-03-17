@@ -3,7 +3,7 @@ import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { IdType, ValueTypeName } from '../models'
 import { VisualPropertyName, VisualStyle } from '../models/VisualStyleModel'
 
-import { useUndoStore } from '../store/UndoStore'
+import { useUndoStore, useUndoStore2 } from '../store/UndoStore'
 import { UndoCommandType } from '../models/StoreModel/UndoStoreModel'
 import { useViewModelStore } from '../store/ViewModelStore'
 import { useTableStore } from '../store/TableStore'
@@ -171,6 +171,74 @@ export const useUndoStack = () => {
   //   setRedoStack([]) // Clear redo stack on new edit
   //   console.log(undoStack)
   // }, [])
+
+  // const undoLastEdit = useCallback(() => {
+  //   const lastEdit = undoStack.pop()
+  //   if (lastEdit) {
+  //     lastEdit.undo()
+  //     setUndoStack((prevUndoStack) => [...prevUndoStack, lastEdit])
+  //   }
+  //   // setUndoStack((prevStack) => {
+  //   //   const lastEdit = prevStack.pop()
+  //   //   if (lastEdit) {
+  //   //     lastEdit.undo()
+  //   //     setRedoStack((prevRedoStack) => [...prevRedoStack, lastEdit])
+  //   //   }
+  //   //   return [...prevStack]
+  //   // })
+  // }, [])
+
+  const redoLastEdit = useCallback(() => {
+    // const lastEdit = undoStack.pop()
+    // if (lastEdit) {
+    //   lastEdit.undo()
+    //   setUndoStack((prevUndoStack) => [...prevUndoStack, lastEdit])
+    // }
+    // setRedoStack((prevStack) => {
+    //   // const lastEdit = prevStack.pop()
+    //   // if (lastEdit) {
+    //   //   lastEdit.undo() // Assuming undo function can be used to redo as well
+    //   //   setUndoStack((prevUndoStack) => [...prevUndoStack, lastEdit])
+    //   // }
+    //   // return [...prevStack]
+    // })
+  }, [])
+
+  const clearStack = useCallback(() => {
+    setUndoStack([])
+    setRedoStack([])
+  }, [])
+
+  return { undoStack, postEdit, undoLastEdit, redoLastEdit, clearStack }
+}
+
+export const useUndoStack2 = () => {
+  // const [undoStack, setUndoStack] = useState<Edit[]>([])
+  // const [redoStack, setRedoStack] = useState<Edit[]>([])
+  const undoStack = useUndoStore2((state) => state.undoStack)
+  const redoStack = useUndoStore2((state) => state.redoStack)
+  const setUndoStack = useUndoStore2((state) => state.setUndoStack)
+  const setRedoStack = useUndoStore2((state) => state.setRedoStack)
+
+  const postEdit = useCallback(
+    (undoCommand: UndoCommandType, undo: () => void, redo: () => void) => {
+      const nextUndoStack = [...undoStack, { undoCommand, undo, redo }]
+      setUndoStack(nextUndoStack)
+      setRedoStack([]) // Clear redo stack on new edit
+    },
+    [setUndoStack, undoStack, redoStack, setRedoStack],
+  )
+
+  const undoLastEdit = useCallback(() => {
+    const lastEdit = undoStack[undoStack.length - 1]
+    const nextUndoStack = undoStack.slice(0, undoStack.length - 1)
+    if (lastEdit) {
+      const undoCommand = lastEdit.undo
+      undoCommand()
+      setRedoStack([...redoStack, lastEdit])
+      setUndoStack(nextUndoStack)
+    }
+  }, [])
 
   // const undoLastEdit = useCallback(() => {
   //   const lastEdit = undoStack.pop()

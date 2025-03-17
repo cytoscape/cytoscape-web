@@ -6,35 +6,53 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../task/ApplyVisualStyle'
+import { useUndoStack, useUndoStack2 } from '../../../task/ApplyVisualStyle'
 import { useTableStore } from '../../../store/TableStore'
 import NetworkFn from '../../../models/NetworkModel'
 import { Node, Edge } from '../../../models/NetworkModel'
 import { Core } from 'cytoscape'
 import _ from 'lodash'
+import { useUiStateStore } from '../../../store/UiStateStore'
 
 export const DeleteSelectedNodesMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
-  const { postEdit } = useUndoStack()
+  const { postEdit } = useUndoStack2()
 
   const [disabled, setDisabled] = useState<boolean>(true)
   const deleteSelectedNodes = useNetworkStore((state) => state.deleteNodes)
 
+  const activeNetworkView: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+
+  const activeNetworkViewTabIndex =
+    useUiStateStore((state) => state.ui?.networkViewUi?.activeTabIndex) ?? 0
+
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const targetNetworkId: IdType =
+    activeNetworkView === '' ? currentNetworkId : activeNetworkView
 
-  const viewModel = useViewModelStore((state) =>
-    state.getViewModel(currentNetworkId),
+  const networkView = useViewModelStore((state) =>
+    state.getViewModel(targetNetworkId),
   )
 
   const selectedNodes: IdType[] =
-    viewModel !== undefined ? viewModel.selectedNodes : []
+    networkView !== undefined ? networkView.selectedNodes : []
 
   const network = useNetworkStore((state) =>
     state.networks.get(currentNetworkId),
   )
+
+  const addNodesAndEdges = useNetworkStore((state) => state.addNodesAndEdges)
+
+  const editRows = useTableStore((state) => state.editRows)
+  const updateNodePositions: (
+    networkId: IdType,
+    positions: Map<IdType, [number, number, number?]>,
+  ) => void = useViewModelStore((state) => state.updateNodePositions)
 
   const cyNet: Core = NetworkFn.getInternalNetworkDataStore(
     network ?? {
@@ -68,9 +86,10 @@ export const DeleteSelectedNodesMenuItem = (
         prevNodeRows.set(nodeId, rowData)
       }
     })
-    const prevNodeIds = network?.nodes
-      .filter((n) => selectedNodes.includes(n.id))
-      .map((n) => n.id)
+    const prevNodeIds =
+      network?.nodes
+        .filter((n) => selectedNodes.includes(n.id))
+        .map((n) => n.id) ?? []
     const prevEdges = network?.edges.filter((e) =>
       connectedEdges.map((edge) => edge.id()).includes(e.id),
     )
@@ -81,16 +100,39 @@ export const DeleteSelectedNodesMenuItem = (
         prevEdgeRows.set(edge.id(), rowData)
       }
     })
-    postEdit(UndoCommandType.DELETE_NODES, [
-      currentNetworkId,
-      prevNodeIds,
-      prevNodeRows,
-      prevEdges,
-      prevEdgeRows,
-    ])
+
+    const prevPositions = new Map<IdType, [number, number]>()
+
+    Object.entries(networkView?.nodeViews ?? {})
+      .filter(([n, nodeView]) => prevNodeIds.includes(n))
+      .forEach(([nodeId, nodeView]) => {
+        prevPositions.set(nodeId, [nodeView.x, nodeView.y])
+      })
+
+    console.log('UNDO', prevPositions, networkView, prevNodeIds)
+
+    postEdit(
+      UndoCommandType.DELETE_NODES,
+      () => {
+        addNodesAndEdges(currentNetworkId, prevNodeIds ?? [], prevEdges ?? [])
+        editRows(currentNetworkId, 'node', prevNodeRows)
+        editRows(currentNetworkId, 'edge', prevEdgeRows)
+        updateNodePositions(targetNetworkId, prevPositions)
+      },
+      () => {
+        deleteSelectedNodes(currentNetworkId, selectedNodes)
+      },
+    )
+    // postEdit(UndoCommandType.DELETE_NODES, [
+    //   currentNetworkId,
+    //   prevNodeIds,
+    //   prevNodeRows,
+    //   prevEdges,
+    //   prevEdgeRows,
+    // ])
+    deleteSelectedNodes(currentNetworkId, selectedNodes)
 
     props.handleClose()
-    deleteSelectedNodes(currentNetworkId, selectedNodes)
   }
 
   // const handleDeleteNodes = (): void => {

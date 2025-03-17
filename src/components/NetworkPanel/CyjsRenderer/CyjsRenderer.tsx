@@ -19,7 +19,14 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { Network } from '../../../models/NetworkModel'
-import { ReactElement, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ReactElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { NetworkView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
@@ -38,7 +45,7 @@ import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 
 import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../task/ApplyVisualStyle'
+import { useUndoStack, useUndoStack2 } from '../../../task/ApplyVisualStyle'
 
 registerCyExtensions()
 interface NetworkRendererProps {
@@ -106,7 +113,7 @@ const CyjsRenderer = ({
 
   let isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
-  const { postEdit, undoStack } = useUndoStack()
+  const { postEdit, undoStack } = useUndoStack2()
   const setViewModel = useViewModelStore((state) => state.add)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
@@ -186,7 +193,7 @@ const CyjsRenderer = ({
     exclusiveSelect(id, selectedNodes, selectedEdges)
   }
 
-  const renderNetwork = (): void => {
+  const renderNetwork = useCallback((): void => {
     if (
       cy === null ||
       (renderedId === id &&
@@ -323,12 +330,19 @@ const CyjsRenderer = ({
       const position = targetNode.position()
       const prevPos = networkView?.nodeViews[nodeId]
 
+      // postEdit(UndoCommandType.MOVE_NODES, [
+      //   id,
+      //   nodeId,
+      //   [prevPos?.x, prevPos?.y],
+      // ])
+
+      postEdit(
+        UndoCommandType.MOVE_NODES,
+        () => setNodePosition(id, nodeId, [prevPos?.x ?? 0, prevPos?.y ?? 0]),
+        () => setNodePosition(id, nodeId, [position.x, position.y]),
+      )
+
       setNodePosition(id, nodeId, [position.x, position.y])
-      postEdit(UndoCommandType.MOVE_NODES, [
-        id,
-        nodeId,
-        [prevPos?.x, prevPos?.y],
-      ])
     })
 
     cy.on('mouseover', 'node, edge', (e: EventObject): void => {
@@ -389,7 +403,8 @@ const CyjsRenderer = ({
     setTimeout(() => {
       isViewCreated.current = true
     }, 1000)
-  }
+    // }, [cy, undoStack, networkView, table, vs, visualEditorProperties, network, ])
+  }, [cy, undoStack])
 
   const applyStyleUpdate = (): void => {
     if (cyStyle.length === 0) {
@@ -456,9 +471,6 @@ const CyjsRenderer = ({
     setRenderedId(id)
   }, [network])
 
-  useEffect(() => {
-    renderNetwork()
-  }, [networkView, undoStack])
   const applyUpdates = useMemo(
     () => (): void => {
       applyStyleUpdate()
@@ -744,7 +756,7 @@ const CyjsRenderer = ({
     if (cy !== null) {
       renderNetwork()
     }
-  }, [cy, networkView])
+  }, [cy])
 
   return (
     <>

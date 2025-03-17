@@ -9,7 +9,7 @@ import { IdType } from '../../../models/IdType'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 
 import { VisualPropertyValueForm } from './VisualPropertyValueForm'
-import { useUndoStack } from '../../../task/ApplyVisualStyle'
+import { useUndoStack, useUndoStack2 } from '../../../task/ApplyVisualStyle'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 
 export function DefaultValueForm(props: {
@@ -19,7 +19,7 @@ export function DefaultValueForm(props: {
 }): React.ReactElement {
   const { visualProperty, currentNetworkId } = props
   const setDefault = useVisualStyleStore((state) => state.setDefault)
-  const { postEdit } = useUndoStack()
+  const { postEdit } = useUndoStack2()
 
   return (
     <Box sx={props.sx ?? {}}>
@@ -31,9 +31,18 @@ export function DefaultValueForm(props: {
         showCheckbox={true}
         onValueChange={(newValue) => {
           setDefault(currentNetworkId, visualProperty.name, newValue)
-          postEdit(UndoCommandType.SET_DEFAULT_VP_VALUE, [currentNetworkId, visualProperty.name, visualProperty.defaultValue])
-        }
-        }
+          // postEdit(UndoCommandType.SET_DEFAULT_VP_VALUE,  [currentNetworkId, visualProperty.name, visualProperty.defaultValue])
+          postEdit(
+            UndoCommandType.SET_DEFAULT_VP_VALUE,
+            () =>
+              setDefault(
+                currentNetworkId,
+                visualProperty.name,
+                visualProperty.defaultValue,
+              ),
+            () => setDefault(currentNetworkId, visualProperty.name, newValue),
+          )
+        }}
       />
     </Box>
   )
