@@ -69,8 +69,9 @@ export const exportNetworkToCx2 = (
   }
 
   const vpNameToCXName = (vpName: VisualPropertyName): string => {
-    return cxVisualPropertyConverter[vpName].cxVPName
-  }
+    const converter = cxVisualPropertyConverter[vpName];
+    return converter && converter.cxVPName ? converter.cxVPName : vpName;
+  };
 
   // TODO flesh out CX vp types
   type CXVPName = string

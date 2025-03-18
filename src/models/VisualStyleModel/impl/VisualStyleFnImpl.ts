@@ -377,10 +377,31 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
         console.error(`Property ${vpName} not found in CX`)
       }
     })
-
-    // **** CUSTOM EXTENSION FOR PIE CHARTS ****
-    // Look for custom graphics in the node defaults that specify a chart.
   })
+
+const updateOrCreatePassthroughVP = (
+  vpName: string,
+  displayName: string,
+  tooltip: string,
+  attributeName: string
+) => {
+  (visualStyle as any)[vpName] = {
+    group: "node",
+    name: vpName,
+    displayName,
+    type: "number",
+    defaultValue: 0,
+    bypassMap: new Map(),
+    tooltip,
+    cxVPName: vpName, // explicitly set it here
+    mapping: {
+      type: "passthrough",
+      attribute: attributeName,
+      visualPropertyType: "number"
+    }
+  };
+};
+  
   if (defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"]) {
     let pieChartConfig: any;
     const pieValue = defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"] as any;
@@ -400,119 +421,20 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   
     if (pieChartConfig) {
       (visualStyle as any).pieChartConfig = pieChartConfig;
-  
-      // Get nodes from the CX.
       const nodesArray = cxUtil.getNodes(cx);
       if (nodesArray && nodesArray.length > 0) {
-        // The configuration defines the pie slices via the "cy_dataColumns" array.
-        // For example: ["degree.layout", "Degree", "Eccentricity"]
         const columns: string[] = pieChartConfig.cy_dataColumns;
-  
-        // Process each node.
-        nodesArray.forEach((node: any) => {
-          // Get the raw data.
-          const data = node.v ?? {};
-          let totalSum = 0;
-          // Sum all values from the three columns.
-          columns.forEach((col: string) => {
-            const raw = data[col];
-            if (typeof raw === "number" && raw > 0) {
-              totalSum += raw;
-            }
-          });
-          // Compute percentages for each column.
-          const computedSizes: number[] = columns.map((col: string) => {
-            const raw = data[col];
-            if (typeof raw !== "number" || raw <= 0) {
-              return 0;
-            }
-            return totalSum > 0 ? (100 * raw) / totalSum : 0;
-          });
-          // Overwrite the raw attribute values with computed percentages.
-          // For pie-1, use the first column, etc.
-          data[columns[0]] = computedSizes[0] || 0;
-          data[columns[1]] = computedSizes[1] || 0;
-          data[columns[2]] = computedSizes[2] || 0;
-  
-          // Also, for convenience, you may still store them under new keys.
-          data["pie-1-background-size"] = computedSizes[0] || 0;
-          data["pie-2-background-size"] = computedSizes[1] || 0;
-          data["pie-3-background-size"] = computedSizes[2] || 0;
-  
-          // Ensure the node's unique id is also in data.
-          data["id"] = node.id;
-          node.v = data;
-  
-          // Update node.values if used downstream.
-          if (node.values instanceof Map) {
-            node.values.set(columns[0], computedSizes[0] || 0);
-            node.values.set(columns[1], computedSizes[1] || 0);
-            node.values.set(columns[2], computedSizes[2] || 0);
-            node.values.set("id", node.id);
-          } else {
-            node.values = {
-              ...node.values,
-              [columns[0]]: computedSizes[0] || 0,
-              [columns[1]]: computedSizes[1] || 0,
-              [columns[2]]: computedSizes[2] || 0,
-              "id": node.id,
-            };
-          }
-          console.log("Updated node:", node);
+        
+        columns.forEach((col, i) => {
+          const vpName = `pie-${i+1}-background-size`;
+          const displayName = `Pie Slice ${i+1} Size`;
+          const tooltip = `The size of pie slice ${i+1} as a percentage of the pie size.`;
+          updateOrCreatePassthroughVP(vpName, displayName, tooltip, col);
         });
-  
-        // Copy node.v into node.data so that ele.data() returns the computed values.
-        nodesArray.forEach((node: any) => {
-          node.data = { ...node.v };
-        });
-  
-        // Create passthrough mapping properties using the original attribute names.
-        // Now each node’s computed percentage is stored under, for example, "degree.layout".
-        const updateOrCreatePassthroughVP = (
-          vpName: string,
-          displayName: string,
-          tooltip: string,
-          attributeName: string // raw attribute name to use
-        ) => {
-          (visualStyle as any)[vpName] = {
-            group: "node",
-            name: vpName,
-            displayName,
-            type: "number",
-            defaultValue: 0, // fallback
-            bypassMap: new Map(),
-            tooltip,
-            mapping: {
-              type: "passthrough",
-              attribute: attributeName,
-              visualPropertyType: "number"
-            }
-          };
-        };
-  
-        // For pie slices, use the corresponding CX column names.
-        updateOrCreatePassthroughVP(
-          "pie-1-background-size",
-          "Pie Slice 1 Size",
-          "The size of pie slice 1 as a percentage of the pie size.",
-          columns[0] // e.g., "degree.layout"
-        );
-        updateOrCreatePassthroughVP(
-          "pie-2-background-size",
-          "Pie Slice 2 Size",
-          "The size of pie slice 2 as a percentage of the pie size.",
-          columns[1] // e.g., "Degree"
-        );
-        updateOrCreatePassthroughVP(
-          "pie-3-background-size",
-          "Pie Slice 3 Size",
-          "The size of pie slice 3 as a percentage of the pie size.",
-          columns[2] // e.g., "Eccentricity"
-        );
       }
     }
   }
-  console.log(visualStyle)
+  
   return visualStyle
 }
 

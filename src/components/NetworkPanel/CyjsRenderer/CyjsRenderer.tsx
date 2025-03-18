@@ -218,41 +218,30 @@ const CyjsRenderer = ({
       visualEditorProperties,
     )
 
-    // Generate a new Cytoscape.js styles based on given visual style
+  
     const newStyle = createCyjsDataMapper(vs);
-    newStyle.push({
-      selector: 'node' as any,
-      style: {
-        'pie-1-background-size': ((ele: any): number => {
-          const d1 = Number(ele.data('pie-1-background-size')) || 0;
-          const d2 = Number(ele.data('pie-2-background-size')) || 0;
-          const d3 = Number(ele.data('pie-3-background-size')) || 0;
-          const total = d1 + d2 + d3;
-          console.log(ele.data())
-          // Return the percentage of the first attribute.
-          return total ? (100 * d1) / total : 0;
-        }) as any,
-        'pie-2-background-size': ((ele: any): number => {
-          const d1 = Number(ele.data('pie-1-background-size')) || 0;
-          const d2 = Number(ele.data('pie-2-background-size')) || 0;
-          const d3 = Number(ele.data('pie-3-background-size')) || 0;
-          const total = d1 + d2 + d3;
-          // Return the percentage of the second attribute.
-          return total ? (100 * d2) / total : 0;
-        }) as any,
-        'pie-3-background-size': ((ele: any): number => {
-          const d1 = Number(ele.data('pie-1-background-size')) || 0;
-          const d2 = Number(ele.data('pie-2-background-size')) || 0;
-          const d3 = Number(ele.data('pie-3-background-size')) || 0;
-          const total = d1 + d2 + d3;
-          // Return the percentage of the second attribute.
-          return total ? (100 * d3) / total : 0;
-        }) as any,
-      }
-    });
-    setCyStyle(newStyle)
+    const nodes = cy.nodes();
+    if (nodes.length > 0) {
+      const pieKeys = Object.keys(nodes[0].data()).filter(key =>
+        /^pie-\d+-background-size$/.test(key)
+      );
+      pieKeys.forEach(key => {
+        newStyle.push({
+          selector: 'node' as any,
+          style: {
+            [key]: (ele: any): number => {
+              const data = ele.data();
+              const total = pieKeys.reduce((sum, k) => sum + (Number(data[k]) || 0), 0);
+              const current = Number(data[key]) || 0;
+              return total ? (100 * current) / total : 0;
+            }
+          } as any
+        });
+      });
+    }
+    
+    setCyStyle(newStyle);
 
-    // Restore selection state in Cyjs instance
     const selectedNodes = networkView?.selectedNodes ?? []
     const selectedEdges = networkView?.selectedEdges ?? []
 

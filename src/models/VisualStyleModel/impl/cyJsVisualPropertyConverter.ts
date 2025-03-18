@@ -34,11 +34,8 @@ const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
 
   pieSize: CyVpName.PieSize,
   pie1BackgroundColor: CyVpName.Pie1BackgroundColor,
-  pie1BackgroundOpacity: CyVpName.Pie1BackgroundOpacity,
   pie2BackgroundColor: CyVpName.Pie2BackgroundColor,
-  pie2BackgroundOpacity: CyVpName.Pie2BackgroundOpacity,
   pie3BackgroundColor: CyVpName.Pie3BackgroundColor,
-  pie3BackgroundOpacity: CyVpName.Pie3BackgroundOpacity,
 
   edgeLineType: CyVpName.LineStyle,
   edgeLineColor: CyVpName.LineColor,

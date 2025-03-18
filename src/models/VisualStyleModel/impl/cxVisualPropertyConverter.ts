@@ -312,14 +312,6 @@ export const VPPieSizeConverter = (): CXVisualPropertyConverter<string> => {
   }
 }
 
-export const VPPieOpacityConverter = (): CXVisualPropertyConverter<string> => {
-  return {
-    cxVPName: "VPPieOpacityConverter",
-    valueConverter: (): string => "1",
-  }
-}
-
-
 export const VPPieBackgroundColorConverter = (
   colorIndex: number,
 ): CXVisualPropertyConverter<ColorType> => {
@@ -366,11 +358,8 @@ export const cxVisualPropertyConverter: Record<
 
   pieSize: VPPieSizeConverter(),
   pie1BackgroundColor: VPPieBackgroundColorConverter(0),
-  pie1BackgroundOpacity: VPPieOpacityConverter(),
   pie2BackgroundColor: VPPieBackgroundColorConverter(1),
-  pie2BackgroundOpacity: VPPieOpacityConverter(),
   pie3BackgroundColor: VPPieBackgroundColorConverter(2),
-  pie3BackgroundOpacity: VPPieOpacityConverter(),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),
