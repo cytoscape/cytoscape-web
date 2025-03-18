@@ -379,62 +379,82 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     })
   })
 
-const updateOrCreatePassthroughVP = (
-  vpName: string,
-  displayName: string,
-  tooltip: string,
-  attributeName: string
-) => {
-  (visualStyle as any)[vpName] = {
-    group: "node",
-    name: vpName,
-    displayName,
-    type: "number",
-    defaultValue: 0,
-    bypassMap: new Map(),
-    tooltip,
-    cxVPName: vpName, // explicitly set it here
-    mapping: {
-      type: "passthrough",
-      attribute: attributeName,
-      visualPropertyType: "number"
-    }
-  };
-};
-  
-  if (defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"]) {
-    let pieChartConfig: any;
-    const pieValue = defaultNodeProperties["NODE_CUSTOMGRAPHICS_1"] as any;
-  
-    if (typeof pieValue === "string") {
-      const match = pieValue.match(/{.*}/);
-      if (match) {
-        try {
-          pieChartConfig = JSON.parse(match[0]);
-        } catch (e) {
-          console.error("Failed to parse pie chart config from string", e);
-        }
-      }
-    } else if (typeof pieValue === "object") {
-      pieChartConfig = pieValue.properties;
-    }
-  
-    if (pieChartConfig) {
-      (visualStyle as any).pieChartConfig = pieChartConfig;
-      const nodesArray = cxUtil.getNodes(cx);
-      if (nodesArray && nodesArray.length > 0) {
-        const columns: string[] = pieChartConfig.cy_dataColumns;
-        
-        columns.forEach((col, i) => {
-          const vpName = `pie-${i+1}-background-size`;
-          const displayName = `Pie Slice ${i+1} Size`;
-          const tooltip = `The size of pie slice ${i+1} as a percentage of the pie size.`;
-          updateOrCreatePassthroughVP(vpName, displayName, tooltip, col);
-        });
-      }
+  const updateOrCreatePassthroughVP = (
+    vpName: string,
+    displayName: string,
+    tooltip: string,
+    attributeName: string,
+  ) => {
+    ;(visualStyle as any)[vpName] = {
+      group: 'node',
+      name: vpName,
+      displayName,
+      type: 'number',
+      defaultValue: 0,
+      bypassMap: new Map(),
+      tooltip,
+      cxVPName: vpName,
+      mapping: {
+        type: 'passthrough',
+        attribute: attributeName,
+        visualPropertyType: 'number',
+      },
     }
   }
-  
+
+  if (defaultNodeProperties['NODE_CUSTOMGRAPHICS_1']) {
+    let pieChartConfig: any
+    const pieValue = defaultNodeProperties['NODE_CUSTOMGRAPHICS_1'] as any
+
+    if (typeof pieValue === 'string') {
+      const match = pieValue.match(/{.*}/)
+      if (match) {
+        try {
+          pieChartConfig = JSON.parse(match[0])
+        } catch (e) {
+          console.error('Failed to parse pie chart config from string', e)
+        }
+      }
+    } else if (typeof pieValue === 'object') {
+      pieChartConfig = pieValue.properties
+    }
+
+    if (pieChartConfig) {
+      ;(visualStyle as any).pieChartConfig = pieChartConfig
+      const nodesArray = cxUtil.getNodes(cx)
+      if (nodesArray && nodesArray.length > 0) {
+        const columns: string[] = pieChartConfig.cy_dataColumns
+
+        columns.forEach((col, i) => {
+          const vpName = `pie-${i + 1}-background-size`
+          const displayName = `Pie Slice ${i + 1} Size`
+          const tooltip = `The size of pie slice ${i + 1} as a percentage of the pie size.`
+          updateOrCreatePassthroughVP(vpName, displayName, tooltip, col)
+        })
+      }
+    }
+    if (
+      pieChartConfig &&
+      pieChartConfig.cy_colors &&
+      Array.isArray(pieChartConfig.cy_colors)
+    ) {
+      pieChartConfig.cy_colors.forEach((color: string, i: number) => {
+        const vpName = `pie-${i + 1}-background-color`
+        const displayName = `Pie Slice ${i + 1} Background Color`
+        const tooltip = `The background color for pie slice ${i + 1}.`
+        ;(visualStyle as any)[vpName] = {
+          group: 'node',
+          name: vpName,
+          displayName,
+          type: 'string',
+          defaultValue: color,
+          bypassMap: new Map(),
+          tooltip,
+        }
+      })
+    }
+  }
+  console.log(visualStyle)
   return visualStyle
 }
 

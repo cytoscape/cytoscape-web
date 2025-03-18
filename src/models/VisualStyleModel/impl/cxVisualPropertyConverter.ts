@@ -307,26 +307,11 @@ export const VPNodeLabelPositionConverter = (
 
 export const VPPieSizeConverter = (): CXVisualPropertyConverter<string> => {
   return {
-    cxVPName: "VPPrecentageConverter",
-    valueConverter: (): string => "80%",
+    cxVPName: 'VPPrecentageConverter',
+    valueConverter: (): string => '80%',
   }
 }
 
-export const VPPieBackgroundColorConverter = (
-  colorIndex: number,
-): CXVisualPropertyConverter<ColorType> => {
-  return {
-    cxVPName: "NODE_CUSTOMGRAPHICS_1",
-    valueConverter: (cxVPValue: CXVisualPropertyValue): ColorType => {
-      const customGraphics = cxVPValue as unknown as { properties?: { cy_colors?: ColorType[] } };
-      
-      if (customGraphics.properties && Array.isArray(customGraphics.properties.cy_colors)) {
-        return customGraphics.properties.cy_colors[colorIndex] || "#000000" as ColorType;
-      }
-      return "#000000" as ColorType;
-    },
-  }
-}
 // lookup table of visual style property names to cx property names
 export const cxVisualPropertyConverter: Record<
   VisualPropertyName,
@@ -354,12 +339,9 @@ export const cxVisualPropertyConverter: Record<
   nodeVisibility: VPVisibilityTypeConverter('NODE_VISIBILITY'),
   nodeSelectedPaint: VPColorConverter('NODE_SELECTED_PAINT'),
   nodeMaxLabelWidth: VPNumberConverter('NODE_LABEL_MAX_WIDTH'),
-  nodeZOrder: VPNumberConverter('NODE_Z_LOCATION'), 
+  nodeZOrder: VPNumberConverter('NODE_Z_LOCATION'),
 
   pieSize: VPPieSizeConverter(),
-  pie1BackgroundColor: VPPieBackgroundColorConverter(0),
-  pie2BackgroundColor: VPPieBackgroundColorConverter(1),
-  pie3BackgroundColor: VPPieBackgroundColorConverter(2),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),

@@ -51,7 +51,8 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 1.0,
     bypassMap: new Map(),
     maxVal: 1,
-    tooltip: 'The transparency of the node border. 100% is fully opaque, 0% is fully transparent.', 
+    tooltip:
+      'The transparency of the node border. 100% is fully opaque, 0% is fully transparent.',
   },
   nodeHeight: {
     group: 'node',
@@ -127,7 +128,8 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 1.0,
     bypassMap: new Map(),
     maxVal: 1,
-    tooltip: 'The transparency of the node label. 100% is fully opaque, 0% is fully transparent.',
+    tooltip:
+      'The transparency of the node label. 100% is fully opaque, 0% is fully transparent.',
   },
   nodeLabelPosition: {
     group: 'node',
@@ -169,7 +171,8 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 1.0,
     bypassMap: new Map(),
     maxVal: 1,
-    tooltip: 'The transparency of the node fill. 100% is fully opaque, 0% is fully transparent.',
+    tooltip:
+      'The transparency of the node fill. 100% is fully opaque, 0% is fully transparent.',
   },
   nodeVisibility: {
     group: 'node',
@@ -178,7 +181,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'visibility',
     defaultValue: 'element',
     bypassMap: new Map(),
-    tooltip:'The flag to show or hide the node.',
+    tooltip: 'The flag to show or hide the node.',
   },
   nodeSelectedPaint: {
     group: 'node',
@@ -204,7 +207,8 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 0,
     bypassMap: new Map(),
-    tooltip: 'The stacking order of nodes on the canvas. Higher values are drawn on top.'
+    tooltip:
+      'The stacking order of nodes on the canvas. Higher values are drawn on top.',
   },
   edgeLineColor: {
     group: 'edge',
@@ -231,7 +235,8 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 1.0,
     bypassMap: new Map(),
     maxVal: 1,
-    tooltip: 'The transparency of the edge. 100% is fully opaque, 0% is fully transparent.',
+    tooltip:
+      'The transparency of the edge. 100% is fully opaque, 0% is fully transparent.',
   },
   edgeSourceArrowColor: {
     group: 'edge',
@@ -317,7 +322,8 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     bypassMap: new Map(),
     maxVal: 1,
-    tooltip: 'The transparency of the edge label. 100% is fully opaque, 0% is fully transparent.',
+    tooltip:
+      'The transparency of the edge label. 100% is fully opaque, 0% is fully transparent.',
   },
   // edgeLabelAutoRotation: {
   //   group: 'edge',
@@ -342,7 +348,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'visibility',
     defaultValue: 'element',
     bypassMap: new Map(),
-    tooltip:'The flag to show or hide the edge.',
+    tooltip: 'The flag to show or hide the edge.',
   },
   edgeSelectedPaint: {
     group: 'edge',
@@ -368,7 +374,8 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: 0,
     bypassMap: new Map(),
-    tooltip: 'The stacking order of edges on the canvas. Higher values are drawn on top.'
+    tooltip:
+      'The stacking order of edges on the canvas. Higher values are drawn on top.',
   },
   pieSize: {
     group: 'node',
@@ -377,34 +384,8 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'number',
     defaultValue: '80%',
     bypassMap: new Map(),
-    tooltip: 'The diameter of the pie chart as a percentage of the node size (or an absolute value).',
-  },
-  pie1BackgroundColor: {
-    group: 'node',
-    name: 'pie1BackgroundColor',
-    displayName: 'Pie Slice 1 Color',
-    type: 'color',
-    defaultValue: '#FFFFFF',
-    bypassMap: new Map(),
-    tooltip: 'The color for pie slice 1.',
-  },
-  pie2BackgroundColor: {
-    group: 'node',
-    name: 'pie2BackgroundColor',
-    displayName: 'Pie Slice 1 Color',
-    type: 'color',
-    defaultValue: '#FFFFFF',
-    bypassMap: new Map(),
-    tooltip: 'The color for pie slice 1.',
-  },
-  pie3BackgroundColor: {
-    group: 'node',
-    name: 'pie3BackgroundColor',
-    displayName: 'Pie Slice 1 Color',
-    type: 'color',
-    defaultValue: '#FFFFFF',
-    bypassMap: new Map(),
-    tooltip: 'The color for pie slice 1.',
+    tooltip:
+      'The diameter of the pie chart as a percentage of the node size (or an absolute value).',
   },
   networkBackgroundColor: {
     group: 'network',
