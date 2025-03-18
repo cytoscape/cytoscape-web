@@ -231,14 +231,15 @@ const CyjsRenderer = ({
           style: {
             [key]: (ele: any): number => {
               const data = ele.data();
-              const total = pieKeys.reduce((sum, k) => sum + (Number(data[k]) || 0), 0);
-              const current = Number(data[key]) || 0;
+              const total = pieKeys.reduce((sum, k) => sum + Math.max(Number(data[k]) || 0, 0), 0);
+              const current = Math.max(Number(data[key]) || 0, 0);
               return total ? (100 * current) / total : 0;
             }
           } as any
         });
       });
     }
+
     if (nodes.length > 0) {
       const pieColorKeys = Object.keys(nodes[0].data()).filter(key =>
         /^pie-\d+-background-color$/.test(key)

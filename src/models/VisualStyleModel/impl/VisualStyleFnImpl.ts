@@ -454,7 +454,6 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
       })
     }
   }
-  console.log(visualStyle)
   return visualStyle
 }
 
