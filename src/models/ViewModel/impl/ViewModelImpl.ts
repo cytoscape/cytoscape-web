@@ -15,21 +15,6 @@ import {
 } from '../../VisualStyleModel/VisualPropertyName'
 import { Network } from '../../NetworkModel'
 
-export const createEmptyViewModel = (id: IdType): NetworkView => {
-  const nodeViews: Record<IdType, NodeView> = {}
-  const edgeViews: Record<IdType, EdgeView> = {}
-  const networkView: NetworkView = {
-    id,
-    nodeViews,
-    edgeViews,
-    selectedNodes: [],
-    selectedEdges: [],
-    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>(),
-  }
-
-  return networkView
-}
-
 export const createViewModel = (network: Network): NetworkView => {
   const nodeViews: Record<IdType, NodeView> = {}
   const edgeViews: Record<IdType, EdgeView> = {}
