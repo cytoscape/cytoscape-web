@@ -203,6 +203,8 @@ const CyjsRenderer = ({
       return
     }
 
+    console.log('BLAH', networkView, network)
+
     isViewCreated.current = false
     // cy.unmount()
     cy.removeAllListeners()

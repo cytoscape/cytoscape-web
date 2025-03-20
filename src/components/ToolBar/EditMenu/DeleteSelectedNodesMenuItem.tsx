@@ -109,15 +109,32 @@ export const DeleteSelectedNodesMenuItem = (
         prevPositions.set(nodeId, [nodeView.x, nodeView.y])
       })
 
-    console.log('UNDO', prevPositions, networkView, prevNodeIds)
+    console.log(
+      'UNDO',
+      targetNetworkId,
+      prevNodeIds,
+      prevEdges,
+      prevNodeRows,
+      prevEdgeRows,
+      prevPositions,
+    )
 
     postEdit(
       UndoCommandType.DELETE_NODES,
       () => {
-        addNodesAndEdges(currentNetworkId, prevNodeIds ?? [], prevEdges ?? [])
-        editRows(currentNetworkId, 'node', prevNodeRows)
-        editRows(currentNetworkId, 'edge', prevEdgeRows)
+        addNodesAndEdges(targetNetworkId, prevNodeIds ?? [], prevEdges ?? [])
+        editRows(targetNetworkId, 'node', prevNodeRows)
+        editRows(targetNetworkId, 'edge', prevEdgeRows)
         updateNodePositions(targetNetworkId, prevPositions)
+        console.log(
+          'UNDO',
+          targetNetworkId,
+          prevNodeIds,
+          prevEdges,
+          prevNodeRows,
+          prevEdgeRows,
+          prevPositions,
+        )
       },
       () => {
         deleteSelectedNodes(currentNetworkId, selectedNodes)

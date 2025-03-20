@@ -43,6 +43,8 @@ export const AddNodesAndEdgesMenuItem = (
     state.networks.get(currentNetworkId),
   )
 
+  const addNodeView = useViewModelStore((state) => state.addNodeView)
+  const addEdgeView = useViewModelStore((state) => state.addEdgeView)
   const addNodesAndEdges = useNetworkStore((state) => state.addNodesAndEdges)
 
   const editRows = useTableStore((state) => state.editRows)
@@ -55,9 +57,24 @@ export const AddNodesAndEdgesMenuItem = (
     // TODO: ask user to confirm deletion
     const nodeId = selectedNodes[0] ?? '1'
     const edges: Edge[] = [{ id: 'e999', s: '9999', t: nodeId }]
+    const nodeView = {
+      id: '9999',
+      values: new Map(),
+      x: 500,
+      y: 500,
+    }
+
+    const edgeView = {
+      id: 'e999',
+      source: '9999',
+      target: nodeId,
+      values: new Map(),
+    }
 
     addNodesAndEdges(targetNetworkId, ['9999'], edges)
     updateNodePositions(targetNetworkId, new Map([['9999', [500, 500]]]))
+    addNodeView(targetNetworkId, nodeView)
+    addEdgeView(targetNetworkId, edgeView)
 
     props.handleClose()
   }
