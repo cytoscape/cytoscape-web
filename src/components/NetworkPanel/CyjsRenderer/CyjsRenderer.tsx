@@ -193,7 +193,7 @@ const CyjsRenderer = ({
     exclusiveSelect(id, selectedNodes, selectedEdges)
   }
 
-  const renderNetwork = useCallback((): void => {
+  const renderNetwork = (): void => {
     if (
       cy === null ||
       (renderedId === id &&
@@ -330,19 +330,16 @@ const CyjsRenderer = ({
       const targetNode = e.target
       const nodeId: IdType = targetNode.data('id')
       const position = targetNode.position()
-      const prevPos = networkView?.nodeViews[nodeId]
 
-      // postEdit(UndoCommandType.MOVE_NODES, [
-      //   id,
-      //   nodeId,
-      //   [prevPos?.x, prevPos?.y],
-      // ])
+      // TODO - Implement undo/redo for node movement
+      // This current implementation breaks the undo stack
+      // const prevPos = networkView?.nodeViews[nodeId]
 
-      postEdit(
-        UndoCommandType.MOVE_NODES,
-        () => setNodePosition(id, nodeId, [prevPos?.x ?? 0, prevPos?.y ?? 0]),
-        () => setNodePosition(id, nodeId, [position.x, position.y]),
-      )
+      // postEdit(
+      //   UndoCommandType.MOVE_NODES,
+      //   () => setNodePosition(id, nodeId, [prevPos?.x ?? 0, prevPos?.y ?? 0]),
+      //   () => setNodePosition(id, nodeId, [position.x, position.y]),
+      // )
 
       setNodePosition(id, nodeId, [position.x, position.y])
     })
@@ -405,8 +402,7 @@ const CyjsRenderer = ({
     setTimeout(() => {
       isViewCreated.current = true
     }, 1000)
-    // }, [cy, undoStack, networkView, table, vs, visualEditorProperties, network, ])
-  }, [cy, undoStack])
+  }
 
   const applyStyleUpdate = (): void => {
     if (cyStyle.length === 0) {

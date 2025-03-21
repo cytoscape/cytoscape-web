@@ -212,21 +212,27 @@ export const useUndoStack = () => {
   return { undoStack, postEdit, undoLastEdit, redoLastEdit, clearStack }
 }
 
+const stackLimit = 20
 export const useUndoStack2 = () => {
-  // const [undoStack, setUndoStack] = useState<Edit[]>([])
-  // const [redoStack, setRedoStack] = useState<Edit[]>([])
   const undoStack = useUndoStore2((state) => state.undoStack)
   const redoStack = useUndoStore2((state) => state.redoStack)
   const setUndoStack = useUndoStore2((state) => state.setUndoStack)
   const setRedoStack = useUndoStore2((state) => state.setRedoStack)
 
   const postEdit = useCallback(
-    (undoCommand: UndoCommandType, undo: () => void, redo: () => void) => {
-      const nextUndoStack = [...undoStack, { undoCommand, undo, redo }]
+    (
+      undoCommand: UndoCommandType,
+      undo: () => void,
+      redo: () => void,
+      description: string,
+    ) => {
+      const nextUndoStack = [
+        ...undoStack,
+        { description, undoCommand, undo, redo },
+      ].slice(-stackLimit)
       setUndoStack(nextUndoStack)
-      setRedoStack([]) // Clear redo stack on new edit
     },
-    [setUndoStack, undoStack, redoStack, setRedoStack],
+    [setUndoStack, undoStack, redoStack, setRedoStack, stackLimit],
   )
 
   const undoLastEdit = useCallback(() => {
@@ -235,47 +241,46 @@ export const useUndoStack2 = () => {
     if (lastEdit) {
       const undoCommand = lastEdit.undo
       undoCommand()
-      setRedoStack([...redoStack, lastEdit])
+      setRedoStack(
+        [
+          ...redoStack,
+          {
+            description: lastEdit.description,
+            undoCommand: lastEdit.undoCommand,
+            undo: lastEdit.redo,
+            redo: lastEdit.undo,
+          },
+        ].slice(-stackLimit),
+      )
       setUndoStack(nextUndoStack)
     }
-  }, [])
-
-  // const undoLastEdit = useCallback(() => {
-  //   const lastEdit = undoStack.pop()
-  //   if (lastEdit) {
-  //     lastEdit.undo()
-  //     setUndoStack((prevUndoStack) => [...prevUndoStack, lastEdit])
-  //   }
-  //   // setUndoStack((prevStack) => {
-  //   //   const lastEdit = prevStack.pop()
-  //   //   if (lastEdit) {
-  //   //     lastEdit.undo()
-  //   //     setRedoStack((prevRedoStack) => [...prevRedoStack, lastEdit])
-  //   //   }
-  //   //   return [...prevStack]
-  //   // })
-  // }, [])
+  }, [undoStack, redoStack, setUndoStack, setRedoStack, stackLimit])
 
   const redoLastEdit = useCallback(() => {
-    // const lastEdit = undoStack.pop()
-    // if (lastEdit) {
-    //   lastEdit.undo()
-    //   setUndoStack((prevUndoStack) => [...prevUndoStack, lastEdit])
-    // }
-    // setRedoStack((prevStack) => {
-    //   // const lastEdit = prevStack.pop()
-    //   // if (lastEdit) {
-    //   //   lastEdit.undo() // Assuming undo function can be used to redo as well
-    //   //   setUndoStack((prevUndoStack) => [...prevUndoStack, lastEdit])
-    //   // }
-    //   // return [...prevStack]
-    // })
-  }, [])
+    const lastRedo = redoStack[redoStack.length - 1]
+    const nextRedoStack = redoStack.slice(0, redoStack.length - 1)
+    if (lastRedo) {
+      const redoCommand = lastRedo.redo
+      redoCommand()
+      setUndoStack(
+        [
+          ...undoStack,
+          {
+            description: lastRedo.description,
+            undoCommand: lastRedo.undoCommand,
+            undo: lastRedo.redo,
+            redo: lastRedo.undo,
+          },
+        ].slice(-stackLimit),
+      )
+      setRedoStack(nextRedoStack)
+    }
+  }, [undoStack, redoStack, setUndoStack, setRedoStack, stackLimit])
 
   const clearStack = useCallback(() => {
     setUndoStack([])
     setRedoStack([])
-  }, [])
+  }, [setUndoStack, setRedoStack])
 
   return { undoStack, postEdit, undoLastEdit, redoLastEdit, clearStack }
 }

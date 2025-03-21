@@ -42,129 +42,122 @@ export const DeleteSelectedNodesMenuItem = (
   const selectedNodes: IdType[] =
     networkView !== undefined ? networkView.selectedNodes : []
 
-  const network = useNetworkStore((state) =>
-    state.networks.get(currentNetworkId),
-  )
+  // const network = useNetworkStore((state) =>
+  //   state.networks.get(currentNetworkId),
+  // )
 
-  const addNodesAndEdges = useNetworkStore((state) => state.addNodesAndEdges)
+  // const addNodesAndEdges = useNetworkStore((state) => state.addNodesAndEdges)
 
-  const editRows = useTableStore((state) => state.editRows)
-  const updateNodePositions: (
-    networkId: IdType,
-    positions: Map<IdType, [number, number, number?]>,
-  ) => void = useViewModelStore((state) => state.updateNodePositions)
+  // const editRows = useTableStore((state) => state.editRows)
+  // const updateNodePositions: (
+  //   networkId: IdType,
+  //   positions: Map<IdType, [number, number, number?]>,
+  // ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  const cyNet: Core = NetworkFn.getInternalNetworkDataStore(
-    network ?? {
-      id: '',
-      nodes: [] as Node[],
-      edges: [] as Edge[],
-    },
-  ) as Core
+  // const cyNet: Core = NetworkFn.getInternalNetworkDataStore(
+  //   network ?? {
+  //     id: '',
+  //     nodes: [] as Node[],
+  //     edges: [] as Edge[],
+  //   },
+  // ) as Core
 
-  const table = useTableStore((state) => state.tables[currentNetworkId])
-  const edgeTable = table?.edgeTable
-  const nodeTable = table?.nodeTable
-  useEffect(() => {
-    if (selectedNodes.length > 0) {
-      setDisabled(false)
-    } else {
-      setDisabled(true)
-    }
-  }, [selectedNodes])
-
-  const handleDeleteNodes = (): void => {
-    // TODO: ask user to confirm deletion
-    const connectedEdges = cyNet
-      .nodes()
-      .filter((node) => selectedNodes.includes(node.id()))
-      .connectedEdges()
-    const prevNodeRows = new Map()
-    selectedNodes.forEach((nodeId) => {
-      const rowData = nodeTable?.rows.get(nodeId)
-      if (rowData) {
-        prevNodeRows.set(nodeId, rowData)
-      }
-    })
-    const prevNodeIds =
-      network?.nodes
-        .filter((n) => selectedNodes.includes(n.id))
-        .map((n) => n.id) ?? []
-    const prevEdges = network?.edges.filter((e) =>
-      connectedEdges.map((edge) => edge.id()).includes(e.id),
-    )
-    const prevEdgeRows = new Map()
-    connectedEdges.forEach((edge) => {
-      const rowData = edgeTable?.rows.get(edge.id())
-      if (rowData) {
-        prevEdgeRows.set(edge.id(), rowData)
-      }
-    })
-
-    const prevPositions = new Map<IdType, [number, number]>()
-
-    Object.entries(networkView?.nodeViews ?? {})
-      .filter(([n, nodeView]) => prevNodeIds.includes(n))
-      .forEach(([nodeId, nodeView]) => {
-        prevPositions.set(nodeId, [nodeView.x, nodeView.y])
-      })
-
-    console.log(
-      'UNDO',
-      targetNetworkId,
-      prevNodeIds,
-      prevEdges,
-      prevNodeRows,
-      prevEdgeRows,
-      prevPositions,
-    )
-
-    postEdit(
-      UndoCommandType.DELETE_NODES,
-      () => {
-        addNodesAndEdges(targetNetworkId, prevNodeIds ?? [], prevEdges ?? [])
-        editRows(targetNetworkId, 'node', prevNodeRows)
-        editRows(targetNetworkId, 'edge', prevEdgeRows)
-        updateNodePositions(targetNetworkId, prevPositions)
-        console.log(
-          'UNDO',
-          targetNetworkId,
-          prevNodeIds,
-          prevEdges,
-          prevNodeRows,
-          prevEdgeRows,
-          prevPositions,
-        )
-      },
-      () => {
-        deleteSelectedNodes(currentNetworkId, selectedNodes)
-      },
-    )
-    // postEdit(UndoCommandType.DELETE_NODES, [
-    //   currentNetworkId,
-    //   prevNodeIds,
-    //   prevNodeRows,
-    //   prevEdges,
-    //   prevEdgeRows,
-    // ])
-    deleteSelectedNodes(currentNetworkId, selectedNodes)
-
-    props.handleClose()
-  }
+  // const table = useTableStore((state) => state.tables[currentNetworkId])
+  // const edgeTable = table?.edgeTable
+  // const nodeTable = table?.nodeTable
+  // useEffect(() => {
+  //   if (selectedNodes.length > 0) {
+  //     setDisabled(false)
+  //   } else {
+  //     setDisabled(true)
+  //   }
+  // }, [selectedNodes])
 
   // const handleDeleteNodes = (): void => {
   //   // TODO: ask user to confirm deletion
-  //   const networkCopy = _.cloneDeep(network)
-  //   postEdit(UndoCommandType.DELETE_NODES, [
-  //     currentNetworkId,
-  //     networkCopy,
-  //     nodeTable,
-  //     edgeTable,
-  //   ])
+  //   const connectedEdges = cyNet
+  //     .nodes()
+  //     .filter((node) => selectedNodes.includes(node.id()))
+  //     .connectedEdges()
+  //   const prevNodeRows = new Map()
+  //   selectedNodes.forEach((nodeId) => {
+  //     const rowData = nodeTable?.rows.get(nodeId)
+  //     if (rowData) {
+  //       prevNodeRows.set(nodeId, rowData)
+  //     }
+  //   })
+  //   const prevNodeIds =
+  //     network?.nodes
+  //       .filter((n) => selectedNodes.includes(n.id))
+  //       .map((n) => n.id) ?? []
+  //   const prevEdges = network?.edges.filter((e) =>
+  //     connectedEdges.map((edge) => edge.id()).includes(e.id),
+  //   )
+  //   const prevEdgeRows = new Map()
+  //   connectedEdges.forEach((edge) => {
+  //     const rowData = edgeTable?.rows.get(edge.id())
+  //     if (rowData) {
+  //       prevEdgeRows.set(edge.id(), rowData)
+  //     }
+  //   })
+
+  //   const prevPositions = new Map<IdType, [number, number]>()
+
+  //   Object.entries(networkView?.nodeViews ?? {})
+  //     .filter(([n, nodeView]) => prevNodeIds.includes(n))
+  //     .forEach(([nodeId, nodeView]) => {
+  //       prevPositions.set(nodeId, [nodeView.x, nodeView.y])
+  //     })
+
+  //   console.log(
+  //     'UNDO',
+  //     targetNetworkId,
+  //     prevNodeIds,
+  //     prevEdges,
+  //     prevNodeRows,
+  //     prevEdgeRows,
+  //     prevPositions,
+  //   )
+
+  //   postEdit(
+  //     UndoCommandType.DELETE_NODES,
+  //     () => {
+  //       addNodesAndEdges(targetNetworkId, prevNodeIds ?? [], prevEdges ?? [])
+  //       editRows(targetNetworkId, 'node', prevNodeRows)
+  //       editRows(targetNetworkId, 'edge', prevEdgeRows)
+  //       updateNodePositions(targetNetworkId, prevPositions)
+  //       console.log(
+  //         'UNDO',
+  //         targetNetworkId,
+  //         prevNodeIds,
+  //         prevEdges,
+  //         prevNodeRows,
+  //         prevEdgeRows,
+  //         prevPositions,
+  //       )
+  //     },
+  //     () => {
+  //       deleteSelectedNodes(currentNetworkId, selectedNodes)
+  //     },
+  //   )
+  //   // postEdit(UndoCommandType.DELETE_NODES, [
+  //   //   currentNetworkId,
+  //   //   prevNodeIds,
+  //   //   prevNodeRows,
+  //   //   prevEdges,
+  //   //   prevEdgeRows,
+  //   // ])
+  //   deleteSelectedNodes(currentNetworkId, selectedNodes)
 
   //   props.handleClose()
-  //   deleteSelectedNodes(currentNetworkId, selectedNodes)
   // }
+
+  const handleDeleteNodes = (): void => {
+    // TODO: ask user to confirm deletion
+
+    props.handleClose()
+    deleteSelectedNodes(currentNetworkId, selectedNodes)
+  }
 
   return (
     <MenuItem disabled={disabled} onClick={handleDeleteNodes}>

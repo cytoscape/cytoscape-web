@@ -17,6 +17,7 @@ export interface Edit {
 
 export interface Edit2 {
   undoCommand: UndoCommandType
+  description: string
   undo: () => void
   redo: () => void
 }
