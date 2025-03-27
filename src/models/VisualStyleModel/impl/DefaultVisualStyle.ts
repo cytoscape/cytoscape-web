@@ -381,7 +381,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     group: 'node',
     name: 'pieSize',
     displayName: 'Pie Size',
-    type: 'number',
+    type: 'string',
     defaultValue: '80%',
     bypassMap: new Map(),
     tooltip:
