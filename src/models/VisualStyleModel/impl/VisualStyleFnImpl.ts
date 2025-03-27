@@ -447,7 +447,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           name: vpName,
           displayName,
           type: 'color',
-          defaultValue: '#000000',
+          defaultValue: color,
           bypassMap: new Map(),
           tooltip,
         }
