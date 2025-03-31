@@ -1,10 +1,12 @@
 import { ValueTypeName } from '../../../../TableModel'
-import { LayoutAlgorithm } from '../../../LayoutAlgorithm'
+import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const dagre: LayoutAlgorithm = {
   name: 'dagre',
   engineName: 'G6',
+  displayName: 'Hierarchical Layout (DAGRE)',
   description: 'DAGRE layout, for DAGs and trees',
+  type: LayoutAlgorithmType.hierarchical,
   parameters: {
     type: 'dagre',
     rankdir: 'TB', // The center of the graph by default

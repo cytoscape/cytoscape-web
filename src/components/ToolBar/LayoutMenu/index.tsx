@@ -15,6 +15,7 @@ import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
+import { LayoutAlgorithm } from '../../../models'
 
 interface DropdownMenuProps {
   label: string
@@ -95,15 +96,18 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
   const getMenuItems = (): any => {
     const layoutMenuItems: any[] = []
+
     layoutEngines.forEach((layoutEngine: LayoutEngine) => {
       const engineName: string = layoutEngine.name
       const names: string[] = Object.keys(layoutEngine.algorithms)
+
       names.forEach((name: string) => {
-        const algorithm = layoutEngine.algorithms[name]
+        const algorithm: LayoutAlgorithm = layoutEngine.algorithms[name]
         const menuItem = {
           key: `${engineName}-${name}`,
-          label: `${engineName}: ${name}`,
+          label: algorithm.displayName,
           description: algorithm.description ?? name,
+          type: algorithm.type, // Make sure to include the type for sorting
           disabled:
             algorithm.threshold === undefined
               ? false
@@ -126,6 +130,43 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       })
     })
 
+    // Group by type and then sort each group alphabetically
+    const typeGroups: Record<string, any[]> = {}
+
+    // Group items by their type
+    layoutMenuItems.forEach((item) => {
+      const type = item.type || 'OTHER'
+      if (!typeGroups[type]) {
+        typeGroups[type] = []
+      }
+      typeGroups[type].push(item)
+    })
+
+    // Sort each group alphabetically by label
+    Object.keys(typeGroups).forEach((type) => {
+      typeGroups[type].sort((a, b) => a.label.localeCompare(b.label))
+    })
+
+    // Sort the types (groups) alphabetically
+    const sortedTypes = Object.keys(typeGroups).sort()
+
+    // Create a new array with dividers between groups
+    const sortedMenuItemsWithDividers: any[] = []
+    sortedTypes.forEach((type, index) => {
+      // Add group items
+      sortedMenuItemsWithDividers.push(...typeGroups[type])
+
+      // Add divider after each group (except the last one)
+      if (index < sortedTypes.length - 1) {
+        sortedMenuItemsWithDividers.push({
+          key: `divider-${type}`,
+          type: 'divider',
+          isDivider: true, // Flag to identify dividers
+        })
+      }
+    })
+
+    // Use the new array with dividers in the return value
     return [
       ...(allDisabled
         ? [
@@ -142,38 +183,61 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
                   }
                 >
                   <Box>
-                    {layoutMenuItems.map((menuItem: any) => (
-                      <MenuItem key={menuItem.key} disabled={true}>
-                        {menuItem.label}
-                      </MenuItem>
-                    ))}
+                    {sortedMenuItemsWithDividers.map((menuItem: any) => {
+                      // Render divider
+                      if (menuItem.isDivider) {
+                        return <Divider key={menuItem.key} />
+                      }
+                      return (
+                        <MenuItem key={menuItem.key} disabled={true}>
+                          {menuItem.label}
+                        </MenuItem>
+                      )
+                    })}
                   </Box>
                 </Tooltip>
               ),
             },
           ]
-        : layoutMenuItems.map((menuItem: any) => ({
-            label: menuItem.label,
-            template: (
-              <Tooltip
-                arrow
-                placement="right"
-                title={menuItem.description}
-                key={menuItem.key}
-              >
-                <MenuItem
+        : sortedMenuItemsWithDividers.map((menuItem: any) => {
+            // Render divider
+            if (menuItem.isDivider) {
+              return {
+                label: '',
+                template: <Divider key={menuItem.key} />,
+              }
+            }
+
+            // Render normal menu item
+            return {
+              label: menuItem.label,
+              template: (
+                <Tooltip
+                  arrow
+                  placement="right"
+                  title={menuItem.description}
                   key={menuItem.key}
-                  disabled={menuItem.disabled}
-                  onClick={() => {
-                    handleClose()
-                    menuItem.onClick()
-                  }}
                 >
-                  {menuItem.label}
-                </MenuItem>
-              </Tooltip>
-            ),
-          }))),
+                  <MenuItem
+                    key={menuItem.key}
+                    disabled={menuItem.disabled}
+                    onClick={() => {
+                      handleClose()
+                      menuItem.onClick()
+                    }}
+                    style={{
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      lineHeight: '1.2',
+                      padding: '8px 16px',
+                    }}
+                  >
+                    {menuItem.label}
+                  </MenuItem>
+                </Tooltip>
+              ),
+            }
+          })),
       {
         label: '',
         template: <Divider />,
@@ -215,8 +279,12 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       >
         {label}
       </Button>
-      <OverlayPanel ref={menuRef} unstyled>
-        <TieredMenu model={getMenuItems()} />
+      <OverlayPanel
+        ref={menuRef}
+        unstyled
+        style={{ minWidth: '25em', maxWidth: '25em' }}
+      >
+        <TieredMenu model={getMenuItems()} style={{ width: '100%' }} />
       </OverlayPanel>
       <LayoutOptionDialog
         afterLayout={afterLayout}
