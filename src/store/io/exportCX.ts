@@ -51,12 +51,12 @@ export const exportNetworkToCx2 = (
   summary: NdexNetworkSummary,
   nodeTable: Table,
   edgeTable: Table,
-  visualStyleOptions?: VisualStyleOptions, //visual editor properties
+  visualStyleOptions?: VisualStyleOptions, // visual editor properties
   networkView?: NetworkView,
   networkName?: string, // optional new name for the network
   opaqueAspects?: OpaqueAspects,
 ): any => {
-  // accumulate node/edge attributes into a object
+  // accumulate node/edge attributes into an object
   const attributesAccumulator = (
     attributes: { [key: AttributeName]: { d: ValueTypeName; v?: ValueType } },
     column: Column,
@@ -64,14 +64,13 @@ export const exportNetworkToCx2 = (
     attributes[column.name] = {
       d: column.type,
     }
-
     return attributes
   }
 
   const vpNameToCXName = (vpName: VisualPropertyName): string => {
-    const converter = cxVisualPropertyConverter[vpName];
-    return converter && converter.cxVPName ? converter.cxVPName : vpName;
-  };
+    const converter = cxVisualPropertyConverter[vpName]
+    return converter && converter.cxVPName ? converter.cxVPName : vpName
+  }
 
   // TODO flesh out CX vp types
   type CXVPName = string
@@ -83,9 +82,7 @@ export const exportNetworkToCx2 = (
   ): { [key: CXVPName]: CXVisualPropertyValue } => {
     const { name, defaultValue } = vp
     const cxVPName = vpNameToCXName(name)
-
     defaults[cxVPName] = vpToCX(vp.name, defaultValue)
-
     return defaults
   }
 
@@ -108,7 +105,6 @@ export const exportNetworkToCx2 = (
         ? nodeTable.columns.map((col) => col.name).includes(attributeName)
         : edgeTable.columns.map((col) => col.name).includes(attributeName)
     }
-
     if (mapping != null) {
       switch (mapping.type) {
         case MappingFunctionType.Continuous: {
@@ -153,14 +149,12 @@ export const exportNetworkToCx2 = (
   ): { [key: IdType]: { [key: CXVPName]: CXVisualPropertyValue } } => {
     const { name, bypassMap } = vp
     const cxVPName = vpNameToCXName(name)
-
     bypassMap.forEach((value, id) => {
       if (bypasses[id] == null) {
         bypasses[id] = {}
       }
       bypasses[id][cxVPName] = vpToCX(vp.name, value)
     })
-
     return bypasses
   }
 
@@ -184,7 +178,7 @@ export const exportNetworkToCx2 = (
           )
         : property.value
   })
-  
+
   if (networkName || summary.name !== '') {
     networkAttributeDeclarations.name = { d: 'string' }
     networkAttributes[0].name = networkName ?? summary.name
@@ -214,7 +208,6 @@ export const exportNetworkToCx2 = (
 
   const nodes = network.nodes.map((node) => {
     const nodeRow = nodeTable.rows.get(node.id)
-
     return {
       id: parseInt(node.id),
       x: networkView?.nodeViews[node.id].x ?? 0,
@@ -228,7 +221,6 @@ export const exportNetworkToCx2 = (
     const edgeId = parseInt(translateEdgeIdToCX(edge.id))
     const source = parseInt(edge.s)
     const target = parseInt(edge.t)
-
     return {
       id: edgeId,
       s: source,
@@ -250,6 +242,55 @@ export const exportNetworkToCx2 = (
     },
   ]
 
+  const nodeDefaults = VisualStyleFn.nodeVisualProperties(vs).reduce(
+    vpDefaultsAccumulator,
+    {},
+  )
+  const nodeMappings = VisualStyleFn.nodeVisualProperties(vs)
+    .filter((vp) => vp.mapping != null)
+    .reduce(vpMappingsAccumulator, {})
+
+  const pieColorKeys = Object.keys(nodeDefaults).filter((key) =>
+    /^pie-\d+-background-color$/.test(key),
+  )
+  const pieMappingKeys = Object.keys(nodeMappings).filter((key) =>
+    /^pie-\d+-background-size$/.test(key),
+  )
+
+  if (pieColorKeys.length > 0) {
+    pieColorKeys.sort(
+      (a, b) => parseInt(a.match(/\d+/)![0]) - parseInt(b.match(/\d+/)![0]),
+    )
+    pieMappingKeys.sort(
+      (a, b) => parseInt(a.match(/\d+/)![0]) - parseInt(b.match(/\d+/)![0]),
+    )
+
+    const pieColors = pieColorKeys.map((key) => nodeDefaults[key])
+    const pieDataColumns = pieMappingKeys.map(
+      (key) => nodeMappings[key]?.definition?.attribute || '',
+    )
+
+    const cyRange = [0, 0]
+    const cyColorScheme = ''
+
+    const customGraphics = {
+      type: 'chart',
+      name: 'org.cytoscape.PieChart',
+      properties: {
+        cy_range: cyRange,
+        cy_colorScheme: cyColorScheme,
+        cy_colors: pieColors,
+        cy_dataColumns: pieDataColumns,
+      },
+    }
+
+    pieColorKeys.forEach((key) => delete nodeDefaults[key])
+    pieMappingKeys.forEach((key) => delete nodeMappings[key])
+
+    nodeDefaults['NODE_CUSTOMGRAPHICS_1'] =
+      customGraphics as unknown as CXVisualPropertyValue
+  }
+
   const visualProperties = [
     {
       default: {
@@ -261,14 +302,9 @@ export const exportNetworkToCx2 = (
           vpDefaultsAccumulator,
           {},
         ),
-        node: VisualStyleFn.nodeVisualProperties(vs).reduce(
-          vpDefaultsAccumulator,
-          {},
-        ),
+        node: nodeDefaults,
       },
-      nodeMapping: VisualStyleFn.nodeVisualProperties(vs)
-        .filter((vp) => vp.mapping != null)
-        .reduce(vpMappingsAccumulator, {}),
+      nodeMapping: nodeMappings,
       edgeMapping: VisualStyleFn.edgeVisualProperties(vs)
         .filter((vp) => vp.mapping != null)
         .reduce(vpMappingsAccumulator, {}),
@@ -340,6 +376,7 @@ export const exportNetworkToCx2 = (
 
   return cx
 }
+
 export const exportGraph = (network: Network) => {
   const nodes = network.nodes.map((node) => {
     return {
@@ -350,7 +387,6 @@ export const exportGraph = (network: Network) => {
     const edgeId = parseInt(translateEdgeIdToCX(edge.id))
     const source = parseInt(edge.s)
     const target = parseInt(edge.t)
-
     return {
       id: edgeId,
       s: source,

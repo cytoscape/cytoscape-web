@@ -467,6 +467,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
       break;
     }
   }
+  console.log(visualStyle)
   return visualStyle
 }
 
