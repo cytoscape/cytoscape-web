@@ -270,15 +270,11 @@ export const exportNetworkToCx2 = (
       (key) => nodeMappings[key]?.definition?.attribute || '',
     )
 
-    const cyRange = [0, 0]
-    const cyColorScheme = ''
 
     const customGraphics = {
       type: 'chart',
       name: 'org.cytoscape.PieChart',
       properties: {
-        cy_range: cyRange,
-        cy_colorScheme: cyColorScheme,
         cy_colors: pieColors,
         cy_dataColumns: pieDataColumns,
       },
