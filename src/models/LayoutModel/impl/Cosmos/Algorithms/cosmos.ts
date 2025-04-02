@@ -5,7 +5,8 @@ export const cosmos: LayoutAlgorithm = {
   name: 'cosmos',
   engineName: 'Cosmos',
   displayName: 'Cosmos (GPU-based, nondeterministic layout)',
-  description: 'Cosmos Layout: GPU-powered force-directed layout',
+  description:
+    'Cosmos Layout: GPU-powered force-directed layout (nondeterministic, best for large graphs)',
   type: LayoutAlgorithmType.force,
   parameters: {
     linkArrows: false,
