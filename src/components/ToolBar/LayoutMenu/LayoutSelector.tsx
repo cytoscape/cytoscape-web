@@ -1,7 +1,7 @@
 import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
-import { LayoutEngine } from '../../../models/LayoutModel'
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { ReactElement, useEffect, useState } from 'react'
 
@@ -24,7 +24,9 @@ export const LayoutSelector = ({
   )
 
   // List of engine-algorithm name pairs
-  const [layoutList, setLayoutList] = useState<Array<[string, string]>>([])
+  const [layoutList, setLayoutList] = useState<Array<[string, string, string]>>(
+    [],
+  )
 
   const handleChange = (event: SelectChangeEvent): void => {
     const [engine, algorithm] = event.target.value.split('-')
@@ -32,10 +34,13 @@ export const LayoutSelector = ({
   }
 
   useEffect(() => {
-    const layouts: Array<[string, string]> = []
+    const layouts: Array<[string, string, string]> = []
     layoutEngines.forEach((engine: LayoutEngine) => {
-      Object.keys(engine.algorithms).forEach((algorithmName: string) => {
-        layouts.push([engine.name, algorithmName])
+      const { algorithms } = engine
+      const algorithmNames = Object.keys(algorithms)
+      algorithmNames.forEach((algorithmName: string) => {
+        const algorithm: LayoutAlgorithm = algorithms[algorithmName]
+        layouts.push([engine.name, algorithm.name, algorithm.displayName])
       })
     })
     setLayoutList(layouts)
@@ -50,11 +55,11 @@ export const LayoutSelector = ({
         label="Layout"
         onChange={handleChange}
       >
-        {layoutList.map(([engine, algorithm]) => {
+        {layoutList.map(([engine, algorithm, displayName]) => {
           const val = getListItem(engine, algorithm)
           return (
             <MenuItem key={val} value={val}>
-              {`${engine}: ${algorithm}`}
+              {displayName}
             </MenuItem>
           )
         })}

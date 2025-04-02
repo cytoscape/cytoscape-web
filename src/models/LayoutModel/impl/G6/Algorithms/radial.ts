@@ -1,10 +1,12 @@
 import { ValueTypeName } from '../../../../TableModel'
-import { LayoutAlgorithm } from '../../../LayoutAlgorithm'
+import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const radial: LayoutAlgorithm = {
   name: 'radial',
   engineName: 'G6',
+  displayName: 'Radial Layout (Concentric Layout by G6)',
   description: 'Radial layout',
+  type: LayoutAlgorithmType.geometric,
   parameters: {
     type: 'radial',
     center: [200, 200], // The center of the graph by default

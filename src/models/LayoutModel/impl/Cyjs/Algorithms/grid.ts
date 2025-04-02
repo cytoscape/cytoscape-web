@@ -1,10 +1,13 @@
 import { LayoutAlgorithm } from '../../..'
 import { ValueTypeName } from '../../../../TableModel'
+import { LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const grid: LayoutAlgorithm = {
   name: 'grid',
   engineName: 'Cytoscape.js',
+  displayName: 'Grid Layout',
   description: 'Grid Layout: A simple grid layout',
+  type: LayoutAlgorithmType.geometric,
   parameters: {
     name: 'grid',
     boundingBox: { x1: 0, y1: 0, w: 1000, h: 1000 },

@@ -1,6 +1,6 @@
 import { LayoutAlgorithm } from '../../../LayoutAlgorithm'
 import { circle } from './circle'
-import { concentric } from './cocentric'
+import { concentric } from './concentric'
 import { cose } from './cose'
 import { grid } from './grid'
 

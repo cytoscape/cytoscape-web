@@ -1,10 +1,12 @@
 import { ValueTypeName } from '../../../../TableModel'
-import { LayoutAlgorithm } from '../../../LayoutAlgorithm'
+import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const gForce: LayoutAlgorithm = {
   name: 'gForce',
   engineName: 'G6',
+  displayName: 'gForce Layout (GPU-based force-directed)',
   description: 'Force-directed layout with GPU acceleration',
+  type: LayoutAlgorithmType.force,
   parameters: {
     type: 'gForce',
     maxIteration: 400,
