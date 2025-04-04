@@ -7,7 +7,7 @@ import {
 
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { ValueType } from '../models/TableModel'
+import { AttributeName, ValueType, ValueTypeName } from '../models/TableModel'
 import {
   DiscreteMappingFunction,
   MappingFunctionType,
@@ -55,7 +55,7 @@ const persist =
 
 export const useVisualStyleStore = create(
   immer<VisualStyleStore>(
-    persist((set) => ({
+    persist((set, get) => ({
       visualStyles: {},
 
       add: (networkId: IdType, visualStyle: VisualStyle) => {
@@ -380,6 +380,53 @@ export const useVisualStyleStore = create(
           state.visualStyles[networkId][vpName].mapping = passthroughMapping
           return state
         })
+      },
+      createMapping(
+        networkId: IdType,
+        vpName: VisualPropertyName,
+        vpType: VisualPropertyValueTypeName,
+        mappingType: MappingFunctionType,
+        attribute: AttributeName,
+        attributeDataType: ValueTypeName,
+        attributeValues: ValueType[],
+      ) {
+        switch (mappingType) {
+          case MappingFunctionType.Discrete: {
+            get().createDiscreteMapping(
+              networkId,
+              vpName,
+              attribute,
+              attributeDataType,
+            )
+            break
+          }
+          case MappingFunctionType.Continuous: {
+            if (
+              attributeDataType === ValueTypeName.Integer ||
+              attributeDataType === ValueTypeName.Long ||
+              attributeDataType === ValueTypeName.Double
+            ) {
+              get().createContinuousMapping(
+                networkId,
+                vpName,
+                vpType,
+                attribute,
+                attributeValues,
+                attributeDataType,
+              )
+            }
+            break
+          }
+          case MappingFunctionType.Passthrough: {
+            get().createPassthroughMapping(
+              networkId,
+              vpName,
+              attribute,
+              attributeDataType,
+            )
+            break
+          }
+        }
       },
       removeMapping(networkId, vpName) {
         set((state) => {

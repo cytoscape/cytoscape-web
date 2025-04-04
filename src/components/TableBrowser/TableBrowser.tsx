@@ -712,12 +712,22 @@ export default function TableBrowser(props: {
                 `${newColumnName} already exists.  Please enter a new unique column name`,
               )
             } else {
-              postEdit(UndoCommandType.RENAME_COLUMN, [
-                props.currentNetworkId,
-                currentTable === nodeTable ? 'node' : 'edge',
-                newColumnName,
-                selectedColumn.id,
-              ])
+              postEdit(
+                UndoCommandType.RENAME_COLUMN,
+                `Rename column '${selectedColumn.title}' to '${newColumnName}'`,
+                [
+                  props.currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  newColumnName,
+                  selectedColumn.id,
+                ],
+                [
+                  props.currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  selectedColumn.id,
+                  newColumnName,
+                ],
+              )
               setColumnName(
                 props.currentNetworkId,
                 currentTable === nodeTable ? 'node' : 'edge',
@@ -754,11 +764,22 @@ export default function TableBrowser(props: {
             setDeleteColumnFormError(undefined)
           }}
           onSubmit={(mappingUpdateType) => {
-            postEdit(UndoCommandType.DELETE_COLUMN, [
-              props.currentNetworkId,
-              currentTable === nodeTable ? 'node' : 'edge',
-              currentTable,
-            ])
+            postEdit(
+              UndoCommandType.DELETE_COLUMN,
+              `Delete ${currentTable === nodeTable ? 'node' : 'edge'} column ${selectedColumn.title}`,
+              [
+                props.currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                currentTable,
+                selectedColumn,
+              ],
+              [
+                props.currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                currentTable,
+                selectedColumn,
+              ],
+            )
             deleteColumn(
               props.currentNetworkId,
               currentTable === nodeTable ? 'node' : 'edge',

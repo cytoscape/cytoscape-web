@@ -31,9 +31,17 @@ export function DefaultValueForm(props: {
         showCheckbox={true}
         onValueChange={(newValue) => {
           setDefault(currentNetworkId, visualProperty.name, newValue)
-          postEdit(UndoCommandType.SET_DEFAULT_VP_VALUE, [currentNetworkId, visualProperty.name, visualProperty.defaultValue])
-        }
-        }
+          postEdit(
+            UndoCommandType.SET_DEFAULT_VP_VALUE,
+            `Set default ${visualProperty.displayName}`,
+            [
+              currentNetworkId,
+              visualProperty.name,
+              visualProperty.defaultValue,
+            ],
+            [currentNetworkId, visualProperty.name, newValue],
+          )
+        }}
       />
     </Box>
   )

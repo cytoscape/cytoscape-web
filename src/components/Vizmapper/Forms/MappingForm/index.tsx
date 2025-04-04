@@ -82,11 +82,13 @@ function MappingFormContent(props: {
     createContinuousMapping,
     createDiscreteMapping,
     createPassthroughMapping,
+    createMapping,
   } = useVisualStyleStore((state) => ({
     removeMapping: state.removeMapping,
     createContinuousMapping: state.createContinuousMapping,
     createDiscreteMapping: state.createDiscreteMapping,
     createPassthroughMapping: state.createPassthroughMapping,
+    createMapping: state.createMapping,
   }))
 
   const nodeTable = tables[props.currentNetworkId]?.nodeTable
@@ -104,62 +106,6 @@ function MappingFormContent(props: {
     '': <Box></Box>,
   }
 
-  const createMapping = (
-    mappingType: MappingFunctionType,
-    attribute: AttributeName,
-  ): void => {
-    const attributeDataType = currentTable.columns.find(
-      (c) => c.name === attribute,
-    )?.type
-    if (attributeDataType != null) {
-      switch (mappingType) {
-        case MappingFunctionType.Discrete: {
-          createDiscreteMapping(
-            props.currentNetworkId,
-            props.visualProperty.name,
-            attribute,
-            attributeDataType,
-          )
-          break
-        }
-        case MappingFunctionType.Continuous: {
-          if (
-            attributeDataType === ValueTypeName.Integer ||
-            attributeDataType === ValueTypeName.Long ||
-            attributeDataType === ValueTypeName.Double
-          ) {
-            const attributeValues = Array.from(
-              columnValues(
-                props.currentNetworkId,
-                props.visualProperty.group as 'node' | 'edge',
-                attribute,
-              ),
-            ).sort((a, b) => (a as number) - (b as number))
-
-            createContinuousMapping(
-              props.currentNetworkId,
-              props.visualProperty.name,
-              props.visualProperty.type,
-              attribute,
-              attributeValues,
-              attributeDataType,
-            )
-          }
-          break
-        }
-        case MappingFunctionType.Passthrough: {
-          createPassthroughMapping(
-            props.currentNetworkId,
-            props.visualProperty.name,
-            attribute,
-            attributeDataType,
-          )
-          break
-        }
-      }
-    }
-  }
-
   useEffect(() => {
     setMappingType(props.visualProperty.mapping?.type ?? '')
   }, [props.visualProperty.mapping])
@@ -174,22 +120,60 @@ function MappingFormContent(props: {
       if (
         typesCanBeMapped(nextMapping, attributeType, props.visualProperty.type)
       ) {
-        if (props.visualProperty.mapping !== undefined) {
-          postEdit(UndoCommandType.SET_MAPPING_TYPE, [
+        const attributeDataType = currentTable.columns.find(
+          (c) => c.name === column,
+        )?.type
+        const attributeValues = Array.from(
+          columnValues(
+            props.currentNetworkId,
+            props.visualProperty.group as 'node' | 'edge',
+            column,
+          ),
+        ).sort((a, b) => (a as number) - (b as number))
+
+        if (attributeDataType != null) {
+          createMapping(
             props.currentNetworkId,
             props.visualProperty.name,
-            props.visualProperty.mapping,
-          ])
+            props.visualProperty.type,
+            nextMapping,
+            column,
+            attributeDataType,
+            attributeValues,
+          )
+          postEdit(
+            UndoCommandType.CREATE_MAPPING,
+            `Create mapping for ${props.visualProperty.displayName} on attribute ${column}`,
+            [props.currentNetworkId, props.visualProperty.name],
+            [
+              props.currentNetworkId,
+              props.visualProperty.name,
+              props.visualProperty.type,
+              nextMapping,
+              column,
+              attributeDataType,
+              attributeValues,
+            ],
+          )
         }
-        createMapping(nextMapping, column)
+
         setMappingType(nextMapping)
       } else {
         // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
-        postEdit(UndoCommandType.REMOVE_MAPPING, [
-          props.currentNetworkId,
-          props.visualProperty.name,
-          props.visualProperty.mapping,
-        ])
+        postEdit(
+          UndoCommandType.REMOVE_MAPPING,
+          `Remove mapping for ${props.visualProperty.displayName}`,
+          [
+            props.currentNetworkId,
+            props.visualProperty.name,
+            props.visualProperty.mapping,
+          ],
+          [
+            props.currentNetworkId,
+            props.visualProperty.name,
+            props.visualProperty.mapping,
+          ],
+        )
         removeMapping(props.currentNetworkId, props.visualProperty.name)
 
         setMappingType('')
@@ -219,21 +203,73 @@ function MappingFormContent(props: {
         )
       ) {
         if (props.visualProperty.mapping !== undefined) {
-          postEdit(UndoCommandType.SET_MAPPING_COLUMN, [
+          postEdit(
+            UndoCommandType.CREATE_MAPPING,
+            `Set ${props.visualProperty.displayName} mapping column to ${
+              nextAttribute
+            }`,
+            [
+              props.currentNetworkId,
+              props.visualProperty.name,
+              props.visualProperty.mapping,
+            ],
+            [props.currentNetworkId, props.visualProperty.name],
+          )
+        }
+
+        const attributeDataType = currentTable.columns.find(
+          (c) => c.name === nextAttribute,
+        )?.type
+        const attributeValues = Array.from(
+          columnValues(
+            props.currentNetworkId,
+            props.visualProperty.group as 'node' | 'edge',
+            nextAttribute,
+          ),
+        ).sort((a, b) => (a as number) - (b as number))
+
+        if (attributeDataType != null) {
+          createMapping(
             props.currentNetworkId,
             props.visualProperty.name,
-            props.visualProperty.mapping,
-          ])
+            props.visualProperty.type,
+            mappingType,
+            nextAttribute,
+            attributeDataType,
+            attributeValues,
+          )
+          postEdit(
+            UndoCommandType.CREATE_MAPPING,
+            `Create mapping for ${props.visualProperty.displayName} on attribute ${column}`,
+            [props.currentNetworkId, props.visualProperty.name],
+            [
+              props.currentNetworkId,
+              props.visualProperty.name,
+              props.visualProperty.type,
+              mappingType,
+              nextAttribute,
+              attributeDataType,
+              attributeValues,
+            ],
+          )
         }
-        createMapping(mappingType, nextAttribute)
         setColumn(nextAttribute)
       } else {
         // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
-        postEdit(UndoCommandType.REMOVE_MAPPING, [
-          props.currentNetworkId,
-          props.visualProperty.name,
-          props.visualProperty.mapping,
-        ])
+        postEdit(
+          UndoCommandType.REMOVE_MAPPING,
+          `Remove mapping for ${props.visualProperty.displayName}`,
+          [
+            props.currentNetworkId,
+            props.visualProperty.name,
+            props.visualProperty.mapping,
+          ],
+          [
+            props.currentNetworkId,
+            props.visualProperty.name,
+            props.visualProperty.mapping,
+          ],
+        )
         removeMapping(props.currentNetworkId, props.visualProperty.name)
         setColumn('')
       }
@@ -317,11 +353,20 @@ function MappingFormContent(props: {
           disabled={props.visualProperty.mapping == null}
           size="small"
           onClick={() => {
-            postEdit(UndoCommandType.REMOVE_MAPPING, [
-              props.currentNetworkId,
-              props.visualProperty.name,
-              props.visualProperty.mapping,
-            ])
+            postEdit(
+              UndoCommandType.REMOVE_MAPPING,
+              `Remove mapping for ${props.visualProperty.displayName}`,
+              [
+                props.currentNetworkId,
+                props.visualProperty.name,
+                props.visualProperty.mapping,
+              ],
+              [
+                props.currentNetworkId,
+                props.visualProperty.name,
+                props.visualProperty.mapping,
+              ],
+            )
             removeMapping(props.currentNetworkId, props.visualProperty.name)
             props.repositionPopover()
           }}

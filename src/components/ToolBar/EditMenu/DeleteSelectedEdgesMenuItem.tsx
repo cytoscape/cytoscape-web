@@ -13,7 +13,6 @@ import { useTableStore } from '../../../store/TableStore'
 export const DeleteSelectedEdgesMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
-  const { postEdit } = useUndoStack()
   const [disabled, setDisabled] = useState<boolean>(true)
 
   const deleteSelectedEdges = useNetworkStore((state) => state.deleteEdges)
@@ -28,12 +27,6 @@ export const DeleteSelectedEdgesMenuItem = (
   const selectedEdges: IdType[] =
     viewModel !== undefined ? viewModel.selectedEdges : []
 
-  const network = useNetworkStore((state) =>
-    state.networks.get(currentNetworkId),
-  )
-  const table = useTableStore((state) => state.tables[currentNetworkId])
-  const edgeTable = table?.edgeTable
-
   useEffect(() => {
     if (selectedEdges.length > 0) {
       setDisabled(false)
@@ -43,20 +36,20 @@ export const DeleteSelectedEdgesMenuItem = (
   }, [selectedEdges])
 
   const handleDeleteEdges = (): void => {
-    // TODO: ask user to confirm deletion
-    const prevEdgeRows = new Map()
-    selectedEdges.forEach((edgeId) => {
-      const rowData = edgeTable?.rows.get(edgeId)
-      if (rowData) {
-        prevEdgeRows.set(edgeId, rowData)
-      }
-    })
-    const prevEdges = network?.edges.filter((e) => selectedEdges.includes(e.id))
-    postEdit(UndoCommandType.DELETE_EDGES, [
-      currentNetworkId,
-      prevEdges,
-      prevEdgeRows,
-    ])
+    // TODO continue work on undo deletion after adding nodes/edges works properly
+    // const prevEdgeRows = new Map()
+    // selectedEdges.forEach((edgeId) => {
+    //   const rowData = edgeTable?.rows.get(edgeId)
+    //   if (rowData) {
+    //     prevEdgeRows.set(edgeId, rowData)
+    //   }
+    // })
+    // const prevEdges = network?.edges.filter((e) => selectedEdges.includes(e.id))
+    // postEdit(UndoCommandType.DELETE_EDGES, [
+    //   currentNetworkId,
+    //   prevEdges,
+    //   prevEdgeRows,
+    // ])
 
     deleteSelectedEdges(currentNetworkId, selectedEdges)
     props.handleClose()

@@ -23,5 +23,6 @@
   "maxNetworkFileSize": 524288000,
   "urlBaseName": "/",
   "openAIAPIKey": "",
-  "googleAnalyticsId": "G-B3X9SFXC2P"
+  "googleAnalyticsId": "G-B3X9SFXC2P",
+  "undoStackSize": 20
 }

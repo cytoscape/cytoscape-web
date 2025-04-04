@@ -10,6 +10,7 @@ import {
   PassthroughMappingFunction,
   VisualPropertyValueTypeName,
   Bypass,
+  MappingFunctionType,
 } from '../VisualStyleModel'
 
 export interface VisualStyleState {
@@ -60,6 +61,15 @@ export interface UpdateVisualStyleAction {
     controlPoints: ContinuousFunctionControlPoint[],
     ltMinVpValue: VisualPropertyValueType,
     gtMaxVpValue: VisualPropertyValueType,
+  ) => void
+  createMapping: (
+    networkId: IdType,
+    vpName: VisualPropertyName,
+    vpType: VisualPropertyValueTypeName,
+    mappingType: MappingFunctionType,
+    attribute: AttributeName,
+    attributeDataType: ValueTypeName,
+    attributeValues: ValueType[],
   ) => void
   setMapping: (
     networkId: IdType,

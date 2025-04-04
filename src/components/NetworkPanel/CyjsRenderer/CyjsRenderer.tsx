@@ -37,8 +37,6 @@ import {
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 
 import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
-import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../task/ApplyVisualStyle'
 
 registerCyExtensions()
 interface NetworkRendererProps {
@@ -106,7 +104,6 @@ const CyjsRenderer = ({
 
   let isRunning: boolean = useLayoutStore((state) => state.isRunning)
 
-  const { postEdit, undoStack } = useUndoStack()
   const setViewModel = useViewModelStore((state) => state.add)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
@@ -324,11 +321,13 @@ const CyjsRenderer = ({
       const prevPos = networkView?.nodeViews[nodeId]
 
       setNodePosition(id, nodeId, [position.x, position.y])
-      postEdit(UndoCommandType.MOVE_NODES, [
-        id,
-        nodeId,
-        [prevPos?.x, prevPos?.y],
-      ])
+
+      // TODO moving nodes breaks the undo stack
+      // postEdit(UndoCommandType.MOVE_NODES, [
+      //   id,
+      //   nodeId,
+      //   [prevPos?.x, prevPos?.y],
+      // ])
     })
 
     cy.on('mouseover', 'node, edge', (e: EventObject): void => {
@@ -458,7 +457,7 @@ const CyjsRenderer = ({
 
   useEffect(() => {
     renderNetwork()
-  }, [networkView, undoStack])
+  }, [networkView])
   const applyUpdates = useMemo(
     () => (): void => {
       applyStyleUpdate()

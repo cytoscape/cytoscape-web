@@ -241,11 +241,16 @@ function BypassFormContent(props: {
                 currentValue={bypassValue}
                 currentNetworkId={currentNetworkId}
                 onValueChange={(value) => {
-                  postEdit(UndoCommandType.SET_BYPASS_MAP, [
-                    currentNetworkId,
-                    visualProperty.name,
-                    visualProperty?.bypassMap ?? new Map(),
-                  ])
+                  postEdit(
+                    UndoCommandType.SET_BYPASS,
+                    `Set ${visualProperty.name} bypass`,
+                    [
+                      currentNetworkId,
+                      visualProperty.name,
+                      visualProperty?.bypassMap ?? new Map(),
+                    ],
+                    [currentNetworkId, visualProperty.name, [id], value],
+                  )
                   setBypass(currentNetworkId, visualProperty.name, [id], value)
                   if (hasBypass) {
                     setElementsWithBypass((prev) => new Map(prev).set(id, true))
@@ -263,11 +268,17 @@ function BypassFormContent(props: {
             <Box display="flex" justifyContent="center">
               <IconButton
                 onClick={() => {
-                  postEdit(UndoCommandType.SET_BYPASS_MAP, [
-                    currentNetworkId,
-                    visualProperty.name,
-                    visualProperty?.bypassMap ?? new Map(),
-                  ])
+                  postEdit(
+                    UndoCommandType.DELETE_BYPASS,
+                    `Delete ${visualProperty.name} bypass`,
+                    [
+                      currentNetworkId,
+                      visualProperty.name,
+                      [id],
+                      visualProperty?.bypassMap.get(id) ?? null,
+                    ],
+                    [currentNetworkId, visualProperty.name, [id]],
+                  )
                   deleteBypass(currentNetworkId, visualProperty.name, [id])
                   if (hasBypass) {
                     setElementsWithBypass((prev) =>
@@ -312,11 +323,21 @@ function BypassFormContent(props: {
               onValueChange={(
                 newBypassValue: VisualPropertyValueType,
               ): void => {
-                postEdit(UndoCommandType.SET_BYPASS_MAP, [
-                  currentNetworkId,
-                  visualProperty.name,
-                  visualProperty?.bypassMap ?? new Map(),
-                ])
+                postEdit(
+                  UndoCommandType.SET_BYPASS_MAP,
+                  `Set ${visualProperty.name} bypass for selected elements`,
+                  [
+                    currentNetworkId,
+                    visualProperty.name,
+                    visualProperty?.bypassMap ?? new Map(),
+                  ],
+                  [
+                    currentNetworkId,
+                    visualProperty.name,
+                    selectedElements,
+                    newBypassValue,
+                  ],
+                )
                 setBypassValue(newBypassValue)
                 setBypass(
                   currentNetworkId,
@@ -453,11 +474,20 @@ function BypassFormContent(props: {
           }}
           size="small"
           onClick={() => {
-            postEdit(UndoCommandType.SET_BYPASS_MAP, [
-              currentNetworkId,
-              visualProperty.name,
-              visualProperty?.bypassMap ?? new Map(),
-            ])
+            postEdit(
+              UndoCommandType.DELETE_BYPASS_MAP,
+              `Remove all ${visualProperty.displayName} bypasses`,
+              [
+                currentNetworkId,
+                visualProperty.name,
+                visualProperty?.bypassMap ?? new Map(),
+              ],
+              [
+                currentNetworkId,
+                visualProperty.name,
+                visualProperty?.bypassMap ?? new Map(),
+              ],
+            )
             deleteBypass(
               currentNetworkId,
               visualProperty.name,

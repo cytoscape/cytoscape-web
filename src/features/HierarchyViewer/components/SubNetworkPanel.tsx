@@ -33,6 +33,7 @@ import { CirclePackingType } from './CustomLayout/CirclePackingLayout'
 import { CirclePackingView } from '../model/CirclePackingView'
 import { applyCpLayout } from '../utils/hierarchy-util'
 import { DefaultRenderer } from '../../../store/DefaultRenderer'
+import { useUndoStore } from '../../../store/UndoStore'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -73,7 +74,6 @@ export const SubNetworkPanel = ({
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
 
-
   // All networks in the main store
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
@@ -93,6 +93,7 @@ export const SubNetworkPanel = ({
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+  const addStack = useUndoStore((state) => state.addStack)
 
   // For converting node names to node ids
   const tables = useTableStore((state) => state.tables)
@@ -333,6 +334,10 @@ export const SubNetworkPanel = ({
     const newNetworkId: string = network.id
     addNewNetwork(network)
     addTable(newNetworkId, nodeTable, edgeTable)
+    addStack(newNetworkId, {
+      undoStack: [],
+      redoStack: [],
+    })
 
     const newPositions = applyCpLayout(
       getCpViewModel() as CirclePackingView,
@@ -450,9 +455,8 @@ export const SubNetworkPanel = ({
   if (queryNetwork === undefined) {
     return <MessagePanel message={`Select a subsystem`} />
   }
-  
-  const filterConfig: FilterConfig | undefined =
-    filterConfigs[queryNetwork.id]
+
+  const filterConfig: FilterConfig | undefined = filterConfigs[queryNetwork.id]
 
   const displayMode: DisplayMode =
     filterConfig?.displayMode ?? DisplayMode.SELECT

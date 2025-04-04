@@ -228,12 +228,22 @@ export function DiscreteMappingForm(props: {
                         currentNetworkId={props.currentNetworkId}
                         onValueChange={(newValue) => {
                           const prevMap = mapping?.vpValueMap ?? new Map()
-                          postEdit(UndoCommandType.SET_DISCRETE_VALUE, [
-                            props.currentNetworkId,
-                            props.visualProperty.name,
-                            [key],
-                            prevMap.get(key),
-                          ])
+                          postEdit(
+                            UndoCommandType.SET_DISCRETE_VALUE,
+                            'Set discrete value',
+                            [
+                              props.currentNetworkId,
+                              props.visualProperty.name,
+                              [key],
+                              prevMap.get(key),
+                            ],
+                            [
+                              props.currentNetworkId,
+                              props.visualProperty.name,
+                              [key],
+                              newValue,
+                            ],
+                          )
                           setDiscreteMappingValue(
                             props.currentNetworkId,
                             props.visualProperty.name,
@@ -249,12 +259,22 @@ export function DiscreteMappingForm(props: {
                       disabled={value == null}
                       onClick={() => {
                         const prevMap = mapping?.vpValueMap ?? new Map()
-                        postEdit(UndoCommandType.SET_DISCRETE_VALUE, [
-                          props.currentNetworkId,
-                          props.visualProperty.name,
-                          [key],
-                          prevMap.get(key),
-                        ])
+                        postEdit(
+                          UndoCommandType.DELETE_DISCRETE_VALUE,
+                          'Delete discrete value',
+                          [
+                            props.currentNetworkId,
+                            props.visualProperty.name,
+                            [key],
+                            prevMap.get(key),
+                          ],
+                          [
+                            props.currentNetworkId,
+                            props.visualProperty.name,
+                            [key],
+                            mapping?.vpValueMap?.get(key),
+                          ],
+                        )
                         deleteDiscreteMappingValue(
                           props.currentNetworkId,
                           props.visualProperty.name,
@@ -298,11 +318,20 @@ export function DiscreteMappingForm(props: {
             }}
             disabled={selectedDiscreteMappingEntries.size === 0}
             onClick={() => {
-              postEdit(UndoCommandType.SET_DISCRETE_VALUE_MAP, [
-                props.currentNetworkId,
-                props.visualProperty.name,
-                props.visualProperty.mapping,
-              ])
+              postEdit(
+                UndoCommandType.DELETE_DISCRETE_VALUE_MAP,
+                'Remove selected discrete values',
+                [
+                  props.currentNetworkId,
+                  props.visualProperty.name,
+                  props.visualProperty.mapping,
+                ],
+                [
+                  props.currentNetworkId,
+                  props.visualProperty.name,
+                  Array.from(selectedDiscreteMappingEntries) as ValueType[],
+                ],
+              )
               deleteDiscreteMappingValue(
                 props.currentNetworkId,
                 props.visualProperty.name,
@@ -328,11 +357,21 @@ export function DiscreteMappingForm(props: {
             variant="contained"
             disabled={selectedDiscreteMappingEntries.size === 0}
             onClick={() => {
-              postEdit(UndoCommandType.SET_DISCRETE_VALUE_MAP, [
-                props.currentNetworkId,
-                props.visualProperty.name,
-                props.visualProperty.mapping,
-              ])
+              postEdit(
+                UndoCommandType.SET_DISCRETE_VALUE_MAP,
+                'Apply to selected discrete values',
+                [
+                  props.currentNetworkId,
+                  props.visualProperty.name,
+                  props.visualProperty.mapping,
+                ],
+                [
+                  props.currentNetworkId,
+                  props.visualProperty.name,
+                  Array.from(selectedDiscreteMappingEntries) as ValueType[],
+                  currentDiscreteMappingformVPValue,
+                ],
+              )
               setDiscreteMappingValue(
                 props.currentNetworkId,
                 props.visualProperty.name,

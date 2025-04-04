@@ -9,6 +9,7 @@ import { useNetworkStore } from '../../store/NetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useUndoStack } from '../../task/ApplyVisualStyle'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { useState } from 'react'
 
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType
@@ -18,6 +19,9 @@ export const ApplyLayoutButton = ({
   targetNetworkId,
   disabled = false,
 }: ApplyLayoutButtonProps): JSX.Element => {
+  const [layoutInfo, setLayoutInfo] = useState<[string, string] | undefined>(
+    undefined,
+  )
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
   )
@@ -67,13 +71,19 @@ export const ApplyLayoutButton = ({
     )
     // Update node positions in the view model
     updateNodePositions(networkId, positionMap)
-    postEdit(UndoCommandType.APPLY_LAYOUT, [networkId, prevPositions])
+    postEdit(
+      UndoCommandType.APPLY_LAYOUT,
+      `Apply ${`${layoutInfo?.[0] ?? ''} - ${layoutInfo?.[1]} ?? ''`} Layout`,
+      [networkId, prevPositions],
+      [networkId, positionMap],
+    )
     setIsRunning(false)
   }
 
   const handleClick = (): void => {
     if (network !== undefined && engine !== undefined) {
       setIsRunning(true)
+      setLayoutInfo([engine.name, defaultLayout.name])
       engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
     } else {
       console.log('Fit function not available')

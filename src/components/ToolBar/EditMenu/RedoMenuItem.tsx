@@ -7,8 +7,8 @@ import { IdType } from '../../../models'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 
-export const UndoMenuItem = (props: BaseMenuProps): ReactElement => {
-  const { undoLastEdit } = useUndoStack()
+export const RedoMenuItem = (props: BaseMenuProps): ReactElement => {
+  const { redoLastEdit } = useUndoStack()
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
@@ -25,20 +25,20 @@ export const UndoMenuItem = (props: BaseMenuProps): ReactElement => {
     (state) => state.undoRedoStacks[targetNetworkId],
   ) ?? { undoStack: [], redoStack: [] }
 
-  const handleUndo = (): void => {
+  const handleRedo = (): void => {
     // TODO: ask user to confirm deletion
-    undoLastEdit()
+    redoLastEdit()
     props.handleClose()
   }
 
-  const disabled = (undoRedoStack?.undoStack ?? []).length === 0
+  const disabled = (undoRedoStack?.redoStack ?? []).length === 0
   const description =
-    undoRedoStack?.undoStack?.[undoRedoStack.undoStack.length - 1]
+    undoRedoStack?.redoStack?.[undoRedoStack.redoStack.length - 1]
       ?.description ?? ''
 
   return (
-    <MenuItem disabled={disabled} onClick={handleUndo}>
-      {`Undo ${description}`}
+    <MenuItem disabled={disabled} onClick={handleRedo}>
+      {`Redo ${description}`}
     </MenuItem>
   )
 }

@@ -23,8 +23,16 @@ interface DropdownMenuProps {
   children?: React.ReactNode
 }
 
+interface LayoutInfo {
+  engine: string
+  algorithm: string
+}
+
 export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
+  const [layoutInfo, setLayoutInfo] = useState<LayoutInfo | undefined>(
+    undefined,
+  )
 
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
@@ -50,7 +58,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const networkView = getViewModel(targetNetworkId)
-  const { postEdit} = useUndoStack()
+  const { postEdit } = useUndoStack()
 
   const updateNodePositions: (
     networkId: IdType,
@@ -95,14 +103,20 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
     const prevPositions = new Map<IdType, [number, number]>()
 
-    Object.entries(networkView?.nodeViews ?? {}).forEach(([nodeId, nodeView]) => {
-      prevPositions.set(nodeId, [nodeView.x, nodeView.y])
-    })
-
+    Object.entries(networkView?.nodeViews ?? {}).forEach(
+      ([nodeId, nodeView]) => {
+        prevPositions.set(nodeId, [nodeView.x, nodeView.y])
+      },
+    )
 
     // Update node positions in the view model
     updateNodePositions(targetNetworkId, positionMap)
-    postEdit(UndoCommandType.APPLY_LAYOUT, [targetNetworkId, prevPositions])
+    postEdit(
+      UndoCommandType.APPLY_LAYOUT,
+      `Apply layout ${layoutInfo?.engine} - ${layoutInfo?.algorithm}`,
+      [targetNetworkId, prevPositions],
+      [targetNetworkId, positionMap],
+    )
     setIsRunning(false)
     console.log('Finished layout')
   }
@@ -132,6 +146,10 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             ) as LayoutEngine
             const { nodes, edges } = target
             setIsRunning(true)
+            setLayoutInfo({
+              engine: engineName,
+              algorithm: name,
+            })
             engine.apply(nodes, edges, afterLayout, engine.algorithms[name])
           },
         }
