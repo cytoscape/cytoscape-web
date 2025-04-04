@@ -5,7 +5,6 @@ import { useNetworkStore } from '../../../store/NetworkStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import { useUndoStack } from '../../../task/ApplyVisualStyle'
 import _ from 'lodash'
 
 export const DeleteSelectedNodesMenuItem = (

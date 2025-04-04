@@ -52,7 +52,7 @@ import {
   LockSizeCheckbox,
 } from '../../VisualPropertyRender/Checkbox'
 import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../../task/ApplyVisualStyle'
+import { useUndoStack } from '../../../../task/UndoStack'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   [MappingFunctionType.Passthrough]: <PassthroughMappingFunctionIcon />,

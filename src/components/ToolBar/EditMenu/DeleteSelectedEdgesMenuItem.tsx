@@ -6,9 +6,6 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import { NetworkView } from '../../../models/ViewModel'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../task/ApplyVisualStyle'
-import { useTableStore } from '../../../store/TableStore'
 
 export const DeleteSelectedEdgesMenuItem = (
   props: BaseMenuProps,

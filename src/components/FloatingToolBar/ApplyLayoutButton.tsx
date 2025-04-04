@@ -7,7 +7,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import { useUndoStack } from '../../task/ApplyVisualStyle'
+import { useUndoStack } from '../../task/UndoStack'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { useState } from 'react'
 

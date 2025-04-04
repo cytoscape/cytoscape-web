@@ -16,7 +16,7 @@ import { TieredMenu } from 'primereact/tieredmenu'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../task/ApplyVisualStyle'
+import { useUndoStack } from '../../../task/UndoStack'
 
 interface DropdownMenuProps {
   label: string

@@ -66,7 +66,7 @@ import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { useEffect, useRef } from 'react'
 
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../task/ApplyVisualStyle'
+import { useUndoStack } from '../../task/UndoStack'
 
 interface TabPanelProps {
   children?: React.ReactNode
