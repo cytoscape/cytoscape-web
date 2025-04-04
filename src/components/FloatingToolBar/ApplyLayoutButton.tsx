@@ -121,7 +121,7 @@ export const ApplyLayoutButton = ({
   } else {
     return (
       <Tooltip
-        title={`Apply default layout (${defaultLayout.engineName} - ${defaultLayout.name})`}
+        title={`Apply default layout - ${defaultLayout.displayName}`}
         placement="top"
         arrow
       >

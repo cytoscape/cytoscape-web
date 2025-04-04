@@ -1,22 +1,21 @@
 import {
   Box,
-  Button,
   FormControl,
   FormControlLabel,
-  InputLabel,
   MenuItem,
   Select,
-  Switch,
   Checkbox,
   TextField,
-  DialogActions,
   Typography,
 } from '@mui/material'
-import { ReactElement, useState } from 'react'
+import { forwardRef, useImperativeHandle, useState } from 'react'
 //@ts-expect-error
 import { saveAs } from 'file-saver'
 import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
-import { ExportImageFormatProps } from './ExportNetworkToImageMenuItem'
+import {
+  ExportFormRef,
+  ExportImageFormatProps,
+} from './ExportNetworkToImageMenuItem'
 import { IdType } from '../../../../models/IdType'
 import { useUiStateStore } from '../../../../store/UiStateStore'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
@@ -42,52 +41,64 @@ export const Orientation = {
 } as const
 export type Orientation = (typeof Orientation)[keyof typeof Orientation]
 
-export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
-  const [loading, setLoading] = useState(false)
-  const [fullBg, setFullBg] = useState(true)
-  const [paperSize, setPaperSize] = useState<PaperSize>(PaperSize.LETTER)
-  const [orientation, setOrientation] = useState<Orientation>(
-    Orientation.PORTRAIT,
-  )
-  const [customWidth, setCustomWidth] = useState<number>(0)
-  const [customHeight, setCustomHeight] = useState<number>(0)
-  const [margin, setMargin] = useState<number>(52)
+export const PdfExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
+  (props, ref) => {
+    const [fullBg, setFullBg] = useState(true)
+    const [paperSize, setPaperSize] = useState<PaperSize>(PaperSize.LETTER)
+    const [orientation, setOrientation] = useState<Orientation>(
+      Orientation.PORTRAIT,
+    )
+    const [customWidth, setCustomWidth] = useState<number>(0)
+    const [customHeight, setCustomHeight] = useState<number>(0)
+    const [margin, setMargin] = useState<number>(52)
 
-  const handlePaperSizeChange = (event: any) => {
-    setPaperSize(event.target.value)
-  }
+    const handlePaperSizeChange = (event: any) => {
+      setPaperSize(event.target.value)
+    }
 
-  const handleOrientationChange = (event: any) => {
-    setOrientation(event.target.value)
-  }
+    const handleOrientationChange = (event: any) => {
+      setOrientation(event.target.value)
+    }
 
-  const activeNetworkId: IdType = useUiStateStore(
-    (state) => state.ui.activeNetworkView,
-  )
-  const currentNetworkId: IdType = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
+    const activeNetworkId: IdType = useUiStateStore(
+      (state) => state.ui.activeNetworkView,
+    )
+    const currentNetworkId: IdType = useWorkspaceStore(
+      (state) => state.workspace.currentNetworkId,
+    )
 
-  const targetNetworkId: IdType =
-    activeNetworkId === undefined || activeNetworkId === ''
-      ? currentNetworkId
-      : activeNetworkId
+    const targetNetworkId: IdType =
+      activeNetworkId === undefined || activeNetworkId === ''
+        ? currentNetworkId
+        : activeNetworkId
 
-  const pdfFunction = useRendererFunctionStore((state) =>
-    state.getFunction('cyjs', 'exportPdf', targetNetworkId),
-  )
+    const pdfFunction = useRendererFunctionStore((state) =>
+      state.getFunction('cyjs', 'exportPdf', targetNetworkId),
+    )
 
-  return (
-    <Box
-      sx={{
-        mt: 1,
-        height: 425,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-      }}
-    >
-      <Box>
+    useImperativeHandle(ref, () => ({
+      save: async () => {
+        const result = await pdfFunction?.(
+          fullBg,
+          paperSize,
+          orientation,
+          margin,
+          paperSize === PaperSize.CUSTOM ? customWidth : undefined,
+          paperSize === PaperSize.CUSTOM ? customHeight : undefined,
+        )
+        saveAs(result, `${props.fileName}.pdf`)
+      },
+    }))
+
+    return (
+      <Box
+        sx={{
+          mt: 1,
+          height: 425,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         <Box sx={{ mb: 1 }}>
           <FormControlLabel
             control={
@@ -184,40 +195,6 @@ export const PdfExportForm = (props: ExportImageFormatProps): ReactElement => {
           />
         </Box>
       </Box>
-      <DialogActions sx={{ pr: 1 }}>
-        <Button color="primary" onClick={props.handleClose}>
-          Cancel
-        </Button>
-        <Button
-          disabled={loading}
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
-          onClick={async () => {
-            setLoading(true)
-            const result = await pdfFunction?.(
-              fullBg,
-              paperSize,
-              orientation,
-              margin,
-              paperSize === PaperSize.CUSTOM ? customWidth : undefined,
-              paperSize === PaperSize.CUSTOM ? customHeight : undefined,
-            )
-            saveAs(result, `${props.fileName}.pdf`)
-            setLoading(false)
-            props.handleClose()
-          }}
-        >
-          Confirm
-        </Button>
-      </DialogActions>
-    </Box>
-  )
-}
+    )
+  },
+)

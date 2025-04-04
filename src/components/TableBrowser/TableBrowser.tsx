@@ -353,6 +353,10 @@ export default function TableBrowser(props: {
       const cellType = getCellKind(column.type)
       const processedCellValue = valueDisplay(cellValue, column.type)
 
+      // These cells generally prevent users from inputting mismatched data types
+      // e.g. a user can't but a boolean in a number, a string in a number, etc.
+      // The exception is that users can still input floats into integer columns
+      // Extra validation for this logic is done in onCellEdited
       if (cellType === GridCellKind.Boolean) {
         return {
           allowOverlay: false,
@@ -455,22 +459,41 @@ export default function TableBrowser(props: {
         return
 
       if (isListType(column.type)) {
-        data = deserializeValueList(column.type, data as string)
-      }
-
-      const newDataIsValid = true
-
-      // TODO validate the new data
-      if (newDataIsValid) {
-        setCellValue(
-          props.currentNetworkId,
-          currentTable === nodeTable ? 'node' : 'edge',
-          `${cxId}`,
-          columnKey,
-          data as ValueType,
-        )
+        if (serializedStringIsValid(column.type, data as string)) {
+          data = deserializeValueList(column.type, data as string)
+          setCellValue(
+            props.currentNetworkId,
+            currentTable === nodeTable ? 'node' : 'edge',
+            `${cxId}`,
+            columnKey,
+            data as ValueType,
+          )
+        }
       } else {
-        // dont edit the value or do something else
+        if (
+          column.type !== ValueTypeName.Integer &&
+          column.type !== ValueTypeName.Long
+        ) {
+          setCellValue(
+            props.currentNetworkId,
+            currentTable === nodeTable ? 'node' : 'edge',
+            `${cxId}`,
+            columnKey,
+            data as ValueType,
+          )
+        } else {
+          if (Number.isInteger(data)) {
+            setCellValue(
+              props.currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge',
+              `${cxId}`,
+              columnKey,
+              parseFloat(data as string),
+            )
+          } else {
+            // the user is trying to assign a double value to a integer column.  Ignore this value.
+          }
+        }
       }
     },
     [props.currentNetworkId, currentTable, tables, sort, rows],

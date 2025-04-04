@@ -1,10 +1,13 @@
 import { ValueTypeName } from '../../../../TableModel'
-import { LayoutAlgorithm } from '../../../LayoutAlgorithm'
+import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const cosmos: LayoutAlgorithm = {
   name: 'cosmos',
   engineName: 'Cosmos',
-  description: 'Cosmos Layout: GPU-powered force-directed layout',
+  displayName: 'Cosmos (GPU-based, nondeterministic layout)',
+  description:
+    'Cosmos Layout: GPU-powered force-directed layout (nondeterministic, best for large graphs)',
+  type: LayoutAlgorithmType.force,
   parameters: {
     linkArrows: false,
     linkColor: (link: any) => link.color,
