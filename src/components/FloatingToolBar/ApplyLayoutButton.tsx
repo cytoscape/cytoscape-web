@@ -19,9 +19,7 @@ export const ApplyLayoutButton = ({
   targetNetworkId,
   disabled = false,
 }: ApplyLayoutButtonProps): JSX.Element => {
-  const [layoutInfo, setLayoutInfo] = useState<[string, string] | undefined>(
-    undefined,
-  )
+  const [layoutInfo, setLayoutInfo] = useState<string | undefined>(undefined)
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
   )
@@ -73,7 +71,7 @@ export const ApplyLayoutButton = ({
     updateNodePositions(networkId, positionMap)
     postEdit(
       UndoCommandType.APPLY_LAYOUT,
-      `Apply ${`${layoutInfo?.[0] ?? ''} - ${layoutInfo?.[1]} ?? ''`} Layout`,
+      `Apply ${layoutInfo} Layout`,
       [networkId, prevPositions],
       [networkId, positionMap],
     )
@@ -83,7 +81,7 @@ export const ApplyLayoutButton = ({
   const handleClick = (): void => {
     if (network !== undefined && engine !== undefined) {
       setIsRunning(true)
-      setLayoutInfo([engine.name, defaultLayout.name])
+      setLayoutInfo(defaultLayout.displayName)
       engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
     } else {
       console.log('Fit function not available')

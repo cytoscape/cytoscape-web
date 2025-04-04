@@ -24,16 +24,9 @@ interface DropdownMenuProps {
   children?: React.ReactNode
 }
 
-interface LayoutInfo {
-  engine: string
-  algorithm: string
-}
-
 export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
-  const [layoutInfo, setLayoutInfo] = useState<LayoutInfo | undefined>(
-    undefined,
-  )
+  const [layoutInfo, setLayoutInfo] = useState<string | undefined>(undefined)
 
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
@@ -114,7 +107,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     updateNodePositions(targetNetworkId, positionMap)
     postEdit(
       UndoCommandType.APPLY_LAYOUT,
-      `Apply layout ${layoutInfo?.engine} - ${layoutInfo?.algorithm}`,
+      `Apply ${layoutInfo} layout`,
       [targetNetworkId, prevPositions],
       [targetNetworkId, positionMap],
     )
@@ -150,10 +143,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             ) as LayoutEngine
             const { nodes, edges } = target
             setIsRunning(true)
-            setLayoutInfo({
-              engine: engineName,
-              algorithm: name,
-            })
+            setLayoutInfo(engine.algorithms[name].displayName)
             engine.apply(nodes, edges, afterLayout, engine.algorithms[name])
           },
         }
