@@ -455,9 +455,6 @@ const CyjsRenderer = ({
     setRenderedId(id)
   }, [network])
 
-  useEffect(() => {
-    renderNetwork()
-  }, [networkView])
   const applyUpdates = useMemo(
     () => (): void => {
       applyStyleUpdate()
@@ -743,7 +740,7 @@ const CyjsRenderer = ({
     if (cy !== null) {
       renderNetwork()
     }
-  }, [cy, networkView])
+  }, [cy])
 
   return (
     <>
