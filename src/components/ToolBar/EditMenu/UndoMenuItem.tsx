@@ -38,7 +38,7 @@ export const UndoMenuItem = (props: BaseMenuProps): ReactElement => {
 
   return (
     <MenuItem disabled={disabled} onClick={handleUndo}>
-      {`Undo ${description}`}
+      {`Undo - ${description}`}
     </MenuItem>
   )
 }

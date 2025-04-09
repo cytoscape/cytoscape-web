@@ -38,7 +38,7 @@ export const RedoMenuItem = (props: BaseMenuProps): ReactElement => {
 
   return (
     <MenuItem disabled={disabled} onClick={handleRedo}>
-      {`Redo ${description}`}
+      {`Redo - ${description}`}
     </MenuItem>
   )
 }
