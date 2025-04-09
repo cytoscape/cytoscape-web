@@ -72,7 +72,15 @@ export const SubNetworkPanel = ({
 }: SubNetworkPanelProps): ReactElement => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
+  const [isProcessing, setIsProcessing] = useState<boolean>(false)
+  // Add state for tracking processing progress
+  const [processingProgress, setProcessingProgress] = useState<number>(0)
+  const [processingStage, setProcessingStage] = useState<string>('')
 
+  // Helper function to allow UI updates during processing
+  const yieldToUI = async (): Promise<void> => {
+    return new Promise((resolve) => setTimeout(resolve, 0))
+  }
 
   // All networks in the main store
   const networks: Map<string, Network> = useNetworkStore(
@@ -323,48 +331,7 @@ export const SubNetworkPanel = ({
     return newUuid
   }
 
-  const registerNetwork = (
-    network: Network,
-    networkView: NetworkView,
-    nodeTable: Table,
-    edgeTable: Table,
-  ): void => {
-    // Register new networks to the store if not cached
-    const newNetworkId: string = network.id
-    addNewNetwork(network)
-    addTable(newNetworkId, nodeTable, edgeTable)
-
-    const newPositions = applyCpLayout(
-      getCpViewModel() as CirclePackingView,
-      subsystemNodeId,
-      newNetworkId,
-      nodeTable,
-      networkView.nodeViews,
-    )
-
-    newPositions.forEach((position: [number, number], nodeId: IdType) => {
-      const [x, y] = position
-      networkView.nodeViews[nodeId].x = x
-      networkView.nodeViews[nodeId].y = y
-    })
-    addViewModel(newNetworkId, networkView)
-
-    if (interactionNetworkId === undefined || interactionNetworkId === '') {
-      // Apply default layout for the first time
-      const afterLayout = (
-        positionMap: Map<IdType, [number, number]>,
-      ): void => {
-        updateNodePositions(network.id, positionMap)
-        setIsRunning(false)
-      }
-
-      if (network !== undefined && engine !== undefined) {
-        setIsRunning(true)
-        engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
-      }
-    }
-  }
-
+  // Re-add the missing getCpViewModel function
   const getCpViewModel = (): CirclePackingView | undefined => {
     if (cpViewId === '' || hierarchyViewModels === undefined) {
       return
@@ -382,58 +349,283 @@ export const SubNetworkPanel = ({
     return cpViewModel as CirclePackingView
   }
 
+  const registerNetwork = async (
+    network: Network,
+    networkView: NetworkView,
+    nodeTable: Table,
+    edgeTable: Table,
+  ): Promise<void> => {
+    // Register new networks to the store if not cached
+    const newNetworkId: string = network.id
+
+    // Step 1: Add network to store
+    setProcessingStage('Adding network data...')
+    setProcessingProgress(45)
+    addNewNetwork(network)
+    await yieldToUI()
+
+    // Step 2: Add table data
+    setProcessingStage('Adding table data...')
+    setProcessingProgress(50)
+    addTable(newNetworkId, nodeTable, edgeTable)
+    await yieldToUI()
+
+    // Step 3: Calculate layout positions using Web Worker (heaviest operation)
+    setProcessingStage('Calculating node positions...')
+    setProcessingProgress(55)
+    await yieldToUI()
+
+    const cpViewModel = getCpViewModel() as CirclePackingView
+
+    // Create a promise that will resolve when the worker completes
+    const calculatePositions = (): Promise<Map<IdType, [number, number]>> => {
+      return new Promise((resolve, reject) => {
+        try {
+          // Create worker
+          const worker = new Worker(
+            new URL('../workers/cpLayoutWorker.ts', import.meta.url),
+            { type: 'module' },
+          )
+
+          // Handle worker response
+          worker.onmessage = (event) => {
+            if (event.data.success) {
+              // Convert array back to Map
+              const positionsMap = new Map<IdType, [number, number]>()
+              // Add explicit type annotations to fix the type error
+              event.data.positions.forEach(
+                (entry: [IdType, [number, number]]) => {
+                  const [id, pos] = entry
+                  positionsMap.set(id, [pos[0], pos[1]])
+                },
+              )
+              resolve(positionsMap)
+              worker.terminate()
+            } else {
+              reject(new Error(event.data.error || 'Worker calculation failed'))
+              worker.terminate()
+            }
+          }
+
+          // Handle worker error
+          worker.onerror = (error) => {
+            console.error('Worker error:', error)
+            reject(new Error('Worker error'))
+            worker.terminate()
+          }
+
+          // Start the worker with necessary data
+          worker.postMessage({
+            cpViewModel,
+            subsystemNodeId,
+            networkId: newNetworkId,
+            nodeTable,
+            nodeViews: networkView.nodeViews,
+          })
+
+          // Update progress while worker is running
+          let progressInterval = setInterval(() => {
+            setProcessingProgress((prev) => {
+              const newProgress = Math.min(74, prev + 1)
+              if (newProgress >= 74) {
+                clearInterval(progressInterval)
+              }
+              return newProgress
+            })
+          }, 200)
+        } catch (error) {
+          // Fallback to synchronous calculation if worker fails
+          console.warn(
+            'Web Worker failed, falling back to synchronous calculation:',
+            error,
+          )
+          const newPositions = applyCpLayout(
+            cpViewModel,
+            subsystemNodeId,
+            newNetworkId,
+            nodeTable,
+            networkView.nodeViews,
+          )
+          resolve(newPositions)
+        }
+      })
+    }
+
+    // Execute worker and wait for result
+    const newPositions = await calculatePositions()
+
+    setProcessingProgress(75)
+    await yieldToUI()
+
+    // Step 4: Update node positions with the results from the worker
+    setProcessingStage('Updating node positions...')
+    setProcessingProgress(80)
+
+    // Process positions in batches to prevent UI freezing
+    const positionEntries = Array.from(newPositions.entries())
+    const batchSize = 100 // Adjust based on performance
+
+    for (let i = 0; i < positionEntries.length; i += batchSize) {
+      const batch = positionEntries.slice(i, i + batchSize)
+      batch.forEach(([nodeId, position]) => {
+        const [x, y] = position
+        networkView.nodeViews[nodeId].x = x
+        networkView.nodeViews[nodeId].y = y
+      })
+
+      // Update progress proportionally
+      const progress =
+        80 + Math.min(15, Math.floor((i / positionEntries.length) * 15))
+      setProcessingProgress(progress)
+      await yieldToUI()
+    }
+
+    // Step 5: Add view model
+    setProcessingStage('Finalizing network view...')
+    setProcessingProgress(95)
+    addViewModel(newNetworkId, networkView)
+    await yieldToUI()
+
+    // Step 6: Apply default layout if needed
+    if (interactionNetworkId === undefined || interactionNetworkId === '') {
+      setProcessingStage('Applying layout...')
+
+      // Make layout application async
+      const applyLayoutAsync = (): Promise<void> => {
+        return new Promise((resolve) => {
+          const afterLayout = (
+            positionMap: Map<IdType, [number, number]>,
+          ): void => {
+            updateNodePositions(network.id, positionMap)
+            setIsRunning(false)
+            resolve()
+          }
+
+          if (network !== undefined && engine !== undefined) {
+            setIsRunning(true)
+            engine.apply(
+              network.nodes,
+              network.edges,
+              afterLayout,
+              defaultLayout,
+            )
+          } else {
+            resolve()
+          }
+        })
+      }
+
+      await applyLayoutAsync()
+    }
+
+    setProcessingProgress(100)
+  }
+
   useEffect(() => {
     if (data === undefined) {
       return
     }
 
-    const { network, otherAspects, nodeTable, edgeTable } = data
-    // Check optional data
-    if (otherAspects !== undefined && otherAspects.length > 0) {
-      // Check filter config is available or not
-      const filterConfigAspect = otherAspects.find(
-        (aspect: Aspect) => aspect[FILTER_ASPECT_TAG],
-      )
-      if (filterConfigAspect !== undefined) {
-        const filterAspects: FilterAspects =
-          filterConfigAspect[FILTER_ASPECT_TAG]
+    // Define an async function for processing data
+    const processData = async () => {
+      try {
+        setIsProcessing(true)
+        setProcessingProgress(0)
+        setProcessingStage('Initializing...')
 
-        const sourceNetworkId: IdType = network.id
-        const filterConfigs: FilterConfig[] = createFilterFromAspect(
-          sourceNetworkId,
-          filterAspects,
-          nodeTable,
-          edgeTable,
-        )
-        filterConfigs.forEach((filterConfig: FilterConfig) => {
-          addFilterConfig(filterConfig)
-        })
+        const { network, otherAspects, nodeTable, edgeTable } = data
+
+        await yieldToUI()
+        setProcessingProgress(10)
+        setProcessingStage('Processing filter configuration...')
+
+        // Check optional data
+        if (otherAspects !== undefined && otherAspects.length > 0) {
+          const filterConfigAspect = otherAspects.find(
+            (aspect: Aspect) => aspect[FILTER_ASPECT_TAG],
+          )
+          if (filterConfigAspect !== undefined) {
+            const filterAspects: FilterAspects =
+              filterConfigAspect[FILTER_ASPECT_TAG]
+
+            const sourceNetworkId: IdType = network.id
+            const filterConfigs: FilterConfig[] = createFilterFromAspect(
+              sourceNetworkId,
+              filterAspects,
+              nodeTable,
+              edgeTable,
+            )
+
+            // Process filters in chunks to avoid UI blocking
+            const batchSize = 5
+            for (let i = 0; i < filterConfigs.length; i += batchSize) {
+              const batch = filterConfigs.slice(i, i + batchSize)
+              batch.forEach((filterConfig: FilterConfig) => {
+                addFilterConfig(filterConfig)
+              })
+
+              await yieldToUI()
+            }
+          }
+        }
+
+        setProcessingProgress(40)
+        setProcessingStage('Registering network...')
+        await yieldToUI()
+
+        // Check if the network is already in the store
+        const newUuid: string = network.id.toString()
+        const queryNetwork: Network | undefined = networks.get(newUuid)
+        if (queryNetwork === undefined) {
+          // Call the async version of registerNetwork
+          await registerNetwork(
+            network,
+            data.networkViews[0],
+            data.nodeTable,
+            data.edgeTable,
+          )
+        }
+
+        setProcessingProgress(80)
+        setProcessingStage('Finalizing...')
+        await yieldToUI()
+
+        if (queryNetworkId === newUuid) {
+          setProcessingProgress(100)
+          setProcessingStage('Complete')
+          await yieldToUI()
+          setIsProcessing(false)
+          return
+        }
+
+        updateNetworkView()
+
+        setProcessingProgress(100)
+        setProcessingStage('Complete')
+        await yieldToUI()
+      } finally {
+        setIsProcessing(false)
       }
     }
-    // Check if the network is already in the store
-    const newUuid: string = network.id.toString()
-    const queryNetwork: Network | undefined = networks.get(newUuid)
-    if (queryNetwork === undefined) {
-      registerNetwork(
-        network,
-        data.networkViews[0],
-        data.nodeTable,
-        data.edgeTable,
-      )
-    }
 
-    if (queryNetworkId === newUuid) {
-      return
-    }
+    // Start the async processing
+    processData()
 
-    updateNetworkView()
+    // Cleanup function if the component unmounts during processing
+    return () => {
+      setIsProcessing(false)
+    }
   }, [data])
 
-  if (isFetching) {
+  if (isFetching || isProcessing) {
     return (
       <MessagePanel
-        message={`Loading network: ${queryNetworkId}`}
-        showProgress={true}
+        message={
+          isProcessing
+            ? `Rendering network: (${processingProgress}%)`
+            : `Loading network: ${queryNetworkId}`
+        }
+        showProgress={isProcessing}
       />
     )
   }
@@ -450,9 +642,8 @@ export const SubNetworkPanel = ({
   if (queryNetwork === undefined) {
     return <MessagePanel message={`Select a subsystem`} />
   }
-  
-  const filterConfig: FilterConfig | undefined =
-    filterConfigs[queryNetwork.id]
+
+  const filterConfig: FilterConfig | undefined = filterConfigs[queryNetwork.id]
 
   const displayMode: DisplayMode =
     filterConfig?.displayMode ?? DisplayMode.SELECT
