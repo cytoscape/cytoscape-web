@@ -24,7 +24,6 @@ import { useQuery } from '@tanstack/react-query'
 import { Table, ValueType } from '../../../models/TableModel'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { useFilterStore } from '../../../store/FilterStore'
-import { DEFAULT_FILTER_NAME } from './FilterPanel/FilterPanel'
 import { FilterConfig } from '../../../models/FilterModel'
 import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
 import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
@@ -73,11 +72,19 @@ export const SubNetworkPanel = ({
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
-  // Add state for tracking processing progress
+
+  // Tracking processing progress
   const [processingProgress, setProcessingProgress] = useState<number>(0)
+
+  // Message to show during processing
   const [processingStage, setProcessingStage] = useState<string>('')
 
-  // Helper function to allow UI updates during processing
+  /**
+   * Helper function to yield control back to the UI thread
+   *
+   *  This will be used to prevent blocking the UI during
+   * long-running CPU-bound operations.
+   */
   const yieldToUI = async (): Promise<void> => {
     return new Promise((resolve) => setTimeout(resolve, 0))
   }
@@ -371,7 +378,9 @@ export const SubNetworkPanel = ({
     await yieldToUI()
 
     // Step 3: Calculate layout positions using Web Worker (heaviest operation)
-    setProcessingStage('Calculating node positions...')
+    setProcessingStage(
+      'Applying layout (this may take a while for the first time)...',
+    )
     setProcessingProgress(55)
     await yieldToUI()
 
@@ -381,7 +390,7 @@ export const SubNetworkPanel = ({
     const calculatePositions = (): Promise<Map<IdType, [number, number]>> => {
       return new Promise((resolve, reject) => {
         try {
-          // Create worker
+          // Create web worker
           const worker = new Worker(
             new URL('../workers/cpLayoutWorker.ts', import.meta.url),
             { type: 'module' },
@@ -414,7 +423,7 @@ export const SubNetworkPanel = ({
             worker.terminate()
           }
 
-          // Start the worker with necessary data
+          // Start the worker with necessary data to apply the layout
           worker.postMessage({
             cpViewModel,
             subsystemNodeId,
@@ -424,7 +433,7 @@ export const SubNetworkPanel = ({
           })
 
           // Update progress while worker is running
-          let progressInterval = setInterval(() => {
+          const progressInterval = setInterval(() => {
             setProcessingProgress((prev) => {
               const newProgress = Math.min(74, prev + 1)
               if (newProgress >= 74) {
@@ -590,13 +599,13 @@ export const SubNetworkPanel = ({
         setProcessingStage('Finalizing...')
         await yieldToUI()
 
-        if (queryNetworkId === newUuid) {
-          setProcessingProgress(100)
-          setProcessingStage('Complete')
-          await yieldToUI()
-          setIsProcessing(false)
-          return
-        }
+        // if (queryNetworkId === newUuid) {
+        //   setProcessingProgress(100)
+        //   setProcessingStage('Complete')
+        //   await yieldToUI()
+        //   setIsProcessing(false)
+        //   return
+        // }
 
         updateNetworkView()
 
@@ -623,8 +632,9 @@ export const SubNetworkPanel = ({
         message={
           isProcessing
             ? `Rendering network: (${processingProgress}%)`
-            : `Loading network: ${queryNetworkId}`
+            : `Loading network data:`
         }
+        subMessage={isProcessing ? `${processingStage}` : `(${queryNetworkId})`}
         showProgress={isProcessing}
       />
     )

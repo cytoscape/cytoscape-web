@@ -1,3 +1,4 @@
+import { IdType } from '../../../models'
 import { applyCpLayout } from '../utils/hierarchy-util'
 
 // Set up the worker context
@@ -6,8 +7,8 @@ self.onmessage = (event) => {
     event.data
 
   try {
-    // Execute the heavy calculation
-    const positions = applyCpLayout(
+    // Execute the heavy layoput calculation
+    const positions: Map<IdType, [number, number]> = applyCpLayout(
       cpViewModel,
       subsystemNodeId,
       networkId,
