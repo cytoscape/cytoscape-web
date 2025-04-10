@@ -231,30 +231,31 @@ export default function TableBrowser(props: {
     useWorkspaceStore((state) => state.setNetworkModified)
 
   // set the network to 'modified' when the table data is modified
-  useTableStore.subscribe(
-    (state) => state.tables[networkId],
-    (next: TableRecord, prev: TableRecord) => {
-      if (prev === undefined || next === undefined) {
-        return
-      }
+  // useTableStore.subscribe(
+  //   (state) => state.tables[networkId],
+  //   (next: TableRecord, prev: TableRecord) => {
+  //     if (prev === undefined || next === undefined) {
+  //       return
+  //     }
 
-      // Check if any table data has changed (excluding the selected rows/columns)
-      const tableDataChanged =
-        !_.isEqual(prev.nodeTable, next.nodeTable) ||
-        !_.isEqual(prev.edgeTable, next.edgeTable)
+  //     console.log('Table data changed', prev, next)
+  //     // Check if any table data has changed (excluding the selected rows/columns)
+  //     const tableDataChanged =
+  //       !_.isEqual(prev.nodeTable, next.nodeTable) ||
+  //       !_.isEqual(prev.edgeTable, next.edgeTable)
 
-      const { networkModified } = workspace
+  //     const { networkModified } = workspace
 
-      const currentNetworkIsNotModified =
-        networkModified[networkId] === undefined ||
-        networkModified[networkId] === false
+  //     const currentNetworkIsNotModified =
+  //       networkModified[networkId] === undefined ||
+  //       networkModified[networkId] === false
 
-      // If table data changed and the network is not already marked as modified, set it to modified
-      if (tableDataChanged && currentNetworkIsNotModified) {
-        setNetworkModified(networkId, true)
-      }
-    },
-  )
+  //     // If table data changed and the network is not already marked as modified, set it to modified
+  //     if (tableDataChanged && currentNetworkIsNotModified) {
+  //       setNetworkModified(networkId, true)
+  //     }
+  //   },
+  // )
 
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
@@ -464,6 +465,7 @@ export default function TableBrowser(props: {
             columnKey,
             data as ValueType,
           )
+          setNetworkModified(networkId, true)
         }
       } else {
         if (
@@ -477,6 +479,7 @@ export default function TableBrowser(props: {
             columnKey,
             data as ValueType,
           )
+          setNetworkModified(networkId, true)
         } else {
           if (Number.isInteger(data)) {
             setCellValue(
@@ -486,6 +489,7 @@ export default function TableBrowser(props: {
               columnKey,
               parseFloat(data as string),
             )
+            setNetworkModified(networkId, true)
           } else {
             // the user is trying to assign a double value to a integer column.  Ignore this value.
           }
@@ -661,6 +665,8 @@ export default function TableBrowser(props: {
                     currentTable === nodeTable ? 'node' : 'edge',
                     columnKey,
                   )
+                  setNetworkModified(networkId, true)
+
                   setSelection({
                     ...selection,
                     columns: CompactSelection.fromSingleSelection(
@@ -737,6 +743,7 @@ export default function TableBrowser(props: {
                 selectedColumn.id,
                 newColumnName,
               )
+              setNetworkModified(networkId, true)
 
               if (mappingUpdateType === 'rename') {
                 visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
@@ -772,6 +779,8 @@ export default function TableBrowser(props: {
               currentTable === nodeTable ? 'node' : 'edge',
               selectedColumn.id,
             )
+            setNetworkModified(networkId, true)
+
             if (mappingUpdateType === 'delete') {
               visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
                 setMapping(props.currentNetworkId, vp.name, undefined)
@@ -822,6 +831,7 @@ export default function TableBrowser(props: {
                   cellValue,
                   undefined,
                 )
+                setNetworkModified(networkId, true)
               }}
             >
               Apply value to column
@@ -841,6 +851,7 @@ export default function TableBrowser(props: {
                   cellValue,
                   rows.map((r) => r.id),
                 )
+                setNetworkModified(networkId, true)
               }}
             >
               {`Apply value to selected ${
@@ -972,6 +983,8 @@ export default function TableBrowser(props: {
                 dataType,
                 valueType,
               )
+              setNetworkModified(networkId, true)
+
               setCreateColumnFormError(undefined)
               setSelection({
                 ...selection,
