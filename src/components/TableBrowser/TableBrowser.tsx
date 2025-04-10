@@ -230,6 +230,7 @@ export default function TableBrowser(props: {
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
 
+  // TODO reenable this when we figure out why this sometimes blocks the UI when switching to/from a hcx network
   // set the network to 'modified' when the table data is modified
   // useTableStore.subscribe(
   //   (state) => state.tables[networkId],
