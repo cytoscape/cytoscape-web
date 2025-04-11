@@ -242,10 +242,26 @@ export const useUndoStack = () => {
         deleteDiscreteMappingValue(params[0], params[1], params[2])
       },
       [UndoCommandType.SET_MAPPING_COLUMN]: (params: any[]) => {
-        setMapping(params[0], params[1], params[2])
+        createMapping(
+          params[0],
+          params[1],
+          params[2],
+          params[3],
+          params[4],
+          params[5],
+          params[6],
+        )
       },
       [UndoCommandType.SET_MAPPING_TYPE]: (params: any[]) => {
-        setMapping(params[0], params[1], params[2])
+        createMapping(
+          params[0],
+          params[1],
+          params[2],
+          params[3],
+          params[4],
+          params[5],
+          params[6],
+        )
       },
       [UndoCommandType.REMOVE_MAPPING]: (params: any[]) => {
         setMapping(params[0], params[1], undefined)

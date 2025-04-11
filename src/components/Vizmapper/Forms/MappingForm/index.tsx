@@ -132,6 +132,42 @@ function MappingFormContent(props: {
         ).sort((a, b) => (a as number) - (b as number))
 
         if (attributeDataType != null) {
+          if (props.visualProperty.mapping !== undefined) {
+            postEdit(
+              UndoCommandType.SET_MAPPING_TYPE,
+              `Set ${props.visualProperty.displayName} mapping type to ${nextMapping}`,
+              [
+                props.currentNetworkId,
+                props.visualProperty.name,
+                props.visualProperty.mapping,
+              ],
+              [
+                props.currentNetworkId,
+                props.visualProperty.name,
+                props.visualProperty.type,
+                nextMapping,
+                column,
+                attributeDataType,
+                attributeValues,
+              ],
+            )
+          } else {
+            postEdit(
+              UndoCommandType.CREATE_MAPPING,
+              `Create mapping for ${props.visualProperty.displayName} on attribute ${column}`,
+              [props.currentNetworkId, props.visualProperty.name],
+              [
+                props.currentNetworkId,
+                props.visualProperty.name,
+                props.visualProperty.type,
+                nextMapping,
+                column,
+                attributeDataType,
+                attributeValues,
+              ],
+            )
+          }
+
           createMapping(
             props.currentNetworkId,
             props.visualProperty.name,
@@ -140,20 +176,6 @@ function MappingFormContent(props: {
             column,
             attributeDataType,
             attributeValues,
-          )
-          postEdit(
-            UndoCommandType.CREATE_MAPPING,
-            `Create mapping for ${props.visualProperty.displayName} on attribute ${column}`,
-            [props.currentNetworkId, props.visualProperty.name],
-            [
-              props.currentNetworkId,
-              props.visualProperty.name,
-              props.visualProperty.type,
-              nextMapping,
-              column,
-              attributeDataType,
-              attributeValues,
-            ],
           )
         }
 
@@ -202,21 +224,6 @@ function MappingFormContent(props: {
           props.visualProperty.type,
         )
       ) {
-        if (props.visualProperty.mapping !== undefined) {
-          postEdit(
-            UndoCommandType.CREATE_MAPPING,
-            `Set ${props.visualProperty.displayName} mapping column to ${
-              nextAttribute
-            }`,
-            [
-              props.currentNetworkId,
-              props.visualProperty.name,
-              props.visualProperty.mapping,
-            ],
-            [props.currentNetworkId, props.visualProperty.name],
-          )
-        }
-
         const attributeDataType = currentTable.columns.find(
           (c) => c.name === nextAttribute,
         )?.type
@@ -229,6 +236,41 @@ function MappingFormContent(props: {
         ).sort((a, b) => (a as number) - (b as number))
 
         if (attributeDataType != null) {
+          if (props.visualProperty.mapping !== undefined) {
+            postEdit(
+              UndoCommandType.SET_MAPPING_COLUMN,
+              `Set ${props.visualProperty.displayName} mapping attribute to ${nextAttribute}`,
+              [
+                props.currentNetworkId,
+                props.visualProperty.name,
+                props.visualProperty.mapping,
+              ],
+              [
+                props.currentNetworkId,
+                props.visualProperty.name,
+                props.visualProperty.type,
+                mappingType,
+                nextAttribute,
+                attributeDataType,
+                attributeValues,
+              ],
+            )
+          } else {
+            postEdit(
+              UndoCommandType.CREATE_MAPPING,
+              `Create mapping for ${props.visualProperty.displayName} on attribute ${column}`,
+              [props.currentNetworkId, props.visualProperty.name],
+              [
+                props.currentNetworkId,
+                props.visualProperty.name,
+                props.visualProperty.type,
+                mappingType,
+                nextAttribute,
+                attributeDataType,
+                attributeValues,
+              ],
+            )
+          }
           createMapping(
             props.currentNetworkId,
             props.visualProperty.name,
@@ -238,21 +280,8 @@ function MappingFormContent(props: {
             attributeDataType,
             attributeValues,
           )
-          postEdit(
-            UndoCommandType.CREATE_MAPPING,
-            `Create mapping for ${props.visualProperty.displayName} on attribute ${column}`,
-            [props.currentNetworkId, props.visualProperty.name],
-            [
-              props.currentNetworkId,
-              props.visualProperty.name,
-              props.visualProperty.type,
-              mappingType,
-              nextAttribute,
-              attributeDataType,
-              attributeValues,
-            ],
-          )
         }
+
         setColumn(nextAttribute)
       } else {
         // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
