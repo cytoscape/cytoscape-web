@@ -32,6 +32,7 @@ import { CirclePackingType } from './CustomLayout/CirclePackingLayout'
 import { CirclePackingView } from '../model/CirclePackingView'
 import { applyCpLayout } from '../utils/hierarchy-util'
 import { DefaultRenderer } from '../../../store/DefaultRenderer'
+import { useUndoStore } from '../../../store/UndoStore'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -73,6 +74,7 @@ export const SubNetworkPanel = ({
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
 
+
   // Tracking processing progress
   const [processingProgress, setProcessingProgress] = useState<number>(0)
 
@@ -108,6 +110,7 @@ export const SubNetworkPanel = ({
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+  const addStack = useUndoStore((state) => state.addStack)
 
   // For converting node names to node ids
   const tables = useTableStore((state) => state.tables)
@@ -375,6 +378,10 @@ export const SubNetworkPanel = ({
     setProcessingStage('Adding table data...')
     setProcessingProgress(50)
     addTable(newNetworkId, nodeTable, edgeTable)
+    addStack(newNetworkId, {
+      undoStack: [],
+      redoStack: [],
+    })
     await yieldToUI()
 
     // Step 3: Calculate layout positions using Web Worker (heaviest operation)

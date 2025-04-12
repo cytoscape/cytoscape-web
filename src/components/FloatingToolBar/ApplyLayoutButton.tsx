@@ -7,6 +7,9 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { Network } from '../../models/NetworkModel'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { useUndoStack } from '../../task/UndoStack'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { useState } from 'react'
 
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType
@@ -16,6 +19,7 @@ export const ApplyLayoutButton = ({
   targetNetworkId,
   disabled = false,
 }: ApplyLayoutButtonProps): JSX.Element => {
+  const [layoutInfo, setLayoutInfo] = useState<string | undefined>(undefined)
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
   )
@@ -29,6 +33,10 @@ export const ApplyLayoutButton = ({
   const networkId: IdType = targetNetworkId ?? currentNetworkId
 
   const network: Network | undefined = networks.get(networkId)
+
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
+  const networkView = getViewModel(networkId ?? '')
+  const { postEdit } = useUndoStack()
 
   const defaultLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredLayout,
@@ -52,13 +60,28 @@ export const ApplyLayoutButton = ({
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
+    const prevPositions = new Map<IdType, [number, number]>()
+
+    Object.entries(networkView?.nodeViews ?? {}).forEach(
+      ([nodeId, nodeView]) => {
+        prevPositions.set(nodeId, [nodeView.x, nodeView.y])
+      },
+    )
+    // Update node positions in the view model
     updateNodePositions(networkId, positionMap)
+    postEdit(
+      UndoCommandType.APPLY_LAYOUT,
+      `Apply ${layoutInfo} Layout`,
+      [networkId, prevPositions],
+      [networkId, positionMap],
+    )
     setIsRunning(false)
   }
 
   const handleClick = (): void => {
     if (network !== undefined && engine !== undefined) {
       setIsRunning(true)
+      setLayoutInfo(defaultLayout.displayName)
       engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
     } else {
       console.log('Fit function not available')

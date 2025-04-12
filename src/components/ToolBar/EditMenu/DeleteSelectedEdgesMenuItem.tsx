@@ -17,8 +17,8 @@ export const DeleteSelectedEdgesMenuItem = (
     (state) => state.workspace.currentNetworkId,
   )
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
 
   const selectedEdges: IdType[] =
@@ -33,10 +33,23 @@ export const DeleteSelectedEdgesMenuItem = (
   }, [selectedEdges])
 
   const handleDeleteEdges = (): void => {
-    // TODO: ask user to confirm deletion
+    // TODO continue work on undo deletion after adding nodes/edges works properly
+    // const prevEdgeRows = new Map()
+    // selectedEdges.forEach((edgeId) => {
+    //   const rowData = edgeTable?.rows.get(edgeId)
+    //   if (rowData) {
+    //     prevEdgeRows.set(edgeId, rowData)
+    //   }
+    // })
+    // const prevEdges = network?.edges.filter((e) => selectedEdges.includes(e.id))
+    // postEdit(UndoCommandType.DELETE_EDGES, [
+    //   currentNetworkId,
+    //   prevEdges,
+    //   prevEdgeRows,
+    // ])
 
-    props.handleClose()
     deleteSelectedEdges(currentNetworkId, selectedEdges)
+    props.handleClose()
   }
 
   return (

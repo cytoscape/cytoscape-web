@@ -8,6 +8,8 @@ import { NetworkView, NodeView } from '../../models/ViewModel'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { ScalingType, ScalingTypeSelector } from './ScalingTypeSelector'
 import { calcScale } from './scaling-util'
+import { useUndoStack } from '../../task/UndoStack'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 
 const marks = [
   {
@@ -38,6 +40,7 @@ interface ScalingProps {
 
 export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   const theme: Theme = useTheme()
+  const { postEdit } = useUndoStack()
 
   // Check initialization state
   const initRef: MutableRefObject<boolean> = useRef<boolean>(true)
@@ -151,6 +154,13 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
 
     const scaleX: number = scalingType === 'height' ? 1.0 : scalingFactor
     const scaleY: number = scalingType === 'width' ? 1.0 : scalingFactor
+    const prevPositions = new Map<IdType, [number, number]>()
+
+    Object.entries(networkView?.nodeViews ?? {}).forEach(
+      ([nodeId, nodeView]) => {
+        prevPositions.set(nodeId, [nodeView.x, nodeView.y])
+      },
+    )
 
     nodeIds.forEach((nodeId: IdType) => {
       const position = originalPositions.get(nodeId) ?? [0, 0, 0]
@@ -160,6 +170,12 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
         position[2] ?? 0 * scalingFactor,
       ])
     })
+    postEdit(
+      UndoCommandType.APPLY_LAYOUT,
+      `Apply layout scale`,
+      [networkId, prevPositions],
+      [networkId, positions],
+    )
     updateNodePositions(networkId, positions)
 
     // Finished

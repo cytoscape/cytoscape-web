@@ -318,7 +318,16 @@ const CyjsRenderer = ({
       const targetNode = e.target
       const nodeId: IdType = targetNode.data('id')
       const position = targetNode.position()
+      const prevPos = networkView?.nodeViews[nodeId]
+
       setNodePosition(id, nodeId, [position.x, position.y])
+
+      // TODO moving nodes breaks the undo stack
+      // postEdit(UndoCommandType.MOVE_NODES, [
+      //   id,
+      //   nodeId,
+      //   [prevPos?.x, prevPos?.y],
+      // ])
     })
 
     cy.on('mouseover', 'node, edge', (e: EventObject): void => {
@@ -757,8 +766,7 @@ const CyjsRenderer = ({
           width: '100%',
           height: '100%',
           backgroundColor: 'rgba(0,0,0,0)',
-          zIndex: 0
-
+          zIndex: 0,
         }}
         id="cy-container"
         ref={cyContainer}

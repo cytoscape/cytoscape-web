@@ -15,6 +15,7 @@ import { getNetworkViewId } from '../ViewModelStore'
 import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
+import { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
 
 // Unique, fixed DB name for the Cytoscape Web
 const DB_NAME: string = 'cyweb-db'
@@ -48,6 +49,8 @@ export const ObjectStoreNames = {
 
   // From V4
   OpaqueAspects: 'opaqueAspects',
+
+  UndoStacks: 'undoStacks',
 } as const
 
 // The type derived from the names of object stores
@@ -75,6 +78,8 @@ const Keys = {
   [ObjectStoreNames.ServiceApps]: 'url',
 
   [ObjectStoreNames.OpaqueAspects]: 'id',
+
+  [ObjectStoreNames.UndoStacks]: 'id',
 } as const
 
 /**
@@ -96,7 +101,9 @@ class CyDB extends Dexie {
   [ObjectStoreNames.ServiceApps]!: DxTable<ServiceApp>;
 
   // From v4
-  [ObjectStoreNames.OpaqueAspects]!: DxTable<any>
+  [ObjectStoreNames.OpaqueAspects]!: DxTable<any>;
+
+  [ObjectStoreNames.UndoStacks]!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
@@ -715,7 +722,7 @@ export const putOpaqueAspectsToDb = async (
 
 export const getOpaqueAspectsFromDb = async (
   networkId: IdType,
-): Promise< OpaqueAspectsDB | undefined> => {
+): Promise<OpaqueAspectsDB | undefined> => {
   return await db.opaqueAspects.get({ id: networkId })
 }
 
@@ -728,5 +735,38 @@ export const deleteOpaqueAspectsFromDb = async (
 export const clearOpaqueAspectsFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.opaqueAspects, async () => {
     await db.opaqueAspects.clear()
+  })
+}
+
+export interface UndoRedoStackDB {
+  id: IdType
+  undoRedoStack: UndoRedoStack
+}
+
+export const putUndoRedoStackToDb = async (
+  networkId: IdType,
+  undoRedoStack: UndoRedoStack,
+): Promise<void> => {
+  await db.transaction('rw', db.undoStacks, async () => {
+    await db.undoStacks.put({ id: networkId, undoRedoStack })
+  })
+}
+
+export const getUndoRedoStackFromDb = async (
+  networkId: IdType,
+): Promise<UndoRedoStackDB | undefined> => {
+  const result = await db.undoStacks.get({ id: networkId })
+  return result
+}
+
+export const deleteUndoRedoStackFromDb = async (
+  networkId: IdType,
+): Promise<void> => {
+  await db.undoStacks.delete(networkId)
+}
+
+export const clearUndoRedoStackFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.undoStacks, async () => {
+    await db.undoStacks.clear()
   })
 }

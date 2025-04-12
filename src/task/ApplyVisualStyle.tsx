@@ -1,7 +1,16 @@
-import { useCallback } from 'react'
+import { useCallback, useContext } from 'react'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { IdType, ValueTypeName } from '../models'
 import { VisualPropertyName, VisualStyle } from '../models/VisualStyleModel'
+
+import { useUndoStore } from '../store/UndoStore'
+import { UndoCommandType } from '../models/StoreModel/UndoStoreModel'
+import { useViewModelStore } from '../store/ViewModelStore'
+import { useTableStore } from '../store/TableStore'
+import { useNetworkStore } from '../store/NetworkStore'
+import { useUiStateStore } from '../store/UiStateStore'
+import { useWorkspaceStore } from '../store/WorkspaceStore'
+import { AppConfigContext } from '../AppConfigContext'
 
 /**
  * A custom hook that returns a function to apply a Visual Style

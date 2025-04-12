@@ -5,6 +5,7 @@ import { useNetworkStore } from '../../../store/NetworkStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import { useViewModelStore } from '../../../store/ViewModelStore'
+import _ from 'lodash'
 
 export const DeleteSelectedNodesMenuItem = (
   props: BaseMenuProps,
@@ -16,8 +17,8 @@ export const DeleteSelectedNodesMenuItem = (
     (state) => state.workspace.currentNetworkId,
   )
 
-  const viewModel = useViewModelStore(
-    (state) => state.getViewModel(currentNetworkId),
+  const viewModel = useViewModelStore((state) =>
+    state.getViewModel(currentNetworkId),
   )
 
   const selectedNodes: IdType[] =
@@ -31,9 +32,46 @@ export const DeleteSelectedNodesMenuItem = (
     }
   }, [selectedNodes])
 
-  const handleDeleteNodes = (): void => {
-    // TODO: ask user to confirm deletion
+  // TODO continue work on undo deletion after adding nodes/edges works properly
+  // const handleDeleteNodes = (): void => {
+  //   // TODO: ask user to confirm deletion
+  //   const connectedEdges = cyNet
+  //     .nodes()
+  //     .filter((node) => selectedNodes.includes(node.id()))
+  //     .connectedEdges()
+  //   const prevNodeRows = new Map()
+  //   selectedNodes.forEach((nodeId) => {
+  //     const rowData = nodeTable?.rows.get(nodeId)
+  //     if (rowData) {
+  //       prevNodeRows.set(nodeId, rowData)
+  //     }
+  //   })
+  //   const prevNodeIds = network?.nodes
+  //     .filter((n) => selectedNodes.includes(n.id))
+  //     .map((n) => n.id)
+  //   const prevEdges = network?.edges.filter((e) =>
+  //     connectedEdges.map((edge) => edge.id()).includes(e.id),
+  //   )
+  //   const prevEdgeRows = new Map()
+  //   connectedEdges.forEach((edge) => {
+  //     const rowData = edgeTable?.rows.get(edge.id())
+  //     if (rowData) {
+  //       prevEdgeRows.set(edge.id(), rowData)
+  //     }
+  //   })
+  //   postEdit(UndoCommandType.DELETE_NODES, [
+  //     currentNetworkId,
+  //     prevNodeIds,
+  //     prevNodeRows,
+  //     prevEdges,
+  //     prevEdgeRows,
+  //   ])
 
+  //   props.handleClose()
+  //   deleteSelectedNodes(currentNetworkId, selectedNodes)
+  // }
+
+  const handleDeleteNodes = (): void => {
     props.handleClose()
     deleteSelectedNodes(currentNetworkId, selectedNodes)
   }
