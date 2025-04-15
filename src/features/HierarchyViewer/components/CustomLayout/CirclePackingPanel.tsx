@@ -638,8 +638,8 @@ export const CirclePackingPanel = ({
 
     // Expand circles to the level of the selected node and zoom in to that circle
     if (selectedNodes.length > 0) {
-      // updateForZoom(9)
-      // lastZoomLevelRef.current = 9
+      updateForZoom(4)
+      lastZoomLevelRef.current = 4
     }
   }, [selectedNodes, selectedLeaf])
 

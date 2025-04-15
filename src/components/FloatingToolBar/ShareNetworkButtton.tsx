@@ -1,7 +1,7 @@
 import { IconButton, Tooltip } from '@mui/material'
 import { Share } from '@mui/icons-material'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'
@@ -44,6 +44,9 @@ export const ShareNetworkButton = ({
 
   // Encode UI states as URL search params
   const [search, setSearch] = useSearchParams()
+
+  // selectedNodes from the URL
+  const selectedNodesUrlRef = useRef<string | null>(null)
 
   const ui: Ui = useUiStateStore((state) => state.ui)
   const { panels } = ui
@@ -113,6 +116,23 @@ export const ShareNetworkButton = ({
       setSearch(params)
     }, 200)
   }
+
+  useEffect(() => {
+    const selectedInURL = search.get(SelectionStates.SelectedNodes)
+    if (selectedInURL !== null && selectedNodesUrlRef.current === null) {
+      selectedNodesUrlRef.current = selectedInURL
+    }
+    if (
+      selectedInURL !== null &&
+      selectedNodesUrlRef.current !== null &&
+      selectedInURL !== selectedNodesUrlRef.current
+    ) {
+      // Set the selected nodes in the URL
+      const params = new URLSearchParams(search)
+      params.set(SelectionStates.SelectedNodes, selectedInURL)
+      setSelection(new URLSearchParams(search))
+    }
+  }, [])
 
   useEffect(() => {
     setSelection(new URLSearchParams(search))
