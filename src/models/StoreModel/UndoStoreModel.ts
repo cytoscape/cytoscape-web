@@ -1,6 +1,7 @@
 import { IdType } from '../IdType'
 
 export const UndoCommandType = {
+  SET_CELL_VALUE: 'SET_CELL_VALUE',
   SET_DEFAULT_VP_VALUE: 'SET_DEFAULT_VP_VALUE',
   CREATE_MAPPING: 'CREATE_MAPPING',
   REMOVE_MAPPING: 'REMOVE_MAPPING',

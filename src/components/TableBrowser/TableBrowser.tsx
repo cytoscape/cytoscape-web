@@ -457,10 +457,29 @@ export default function TableBrowser(props: {
 
       if (rowData == null || cxId == null || column == null || data == null)
         return
+      const prevCellValue = (rowData as any)?.[columnKey]
 
       if (isListType(column.type)) {
         if (serializedStringIsValid(column.type, data as string)) {
           data = deserializeValueList(column.type, data as string)
+          postEdit(
+            UndoCommandType.SET_CELL_VALUE,
+            'Set cell value',
+            [
+              props.currentNetworkId,
+              currentTable == nodeTable ? 'node' : 'edge',
+              cxId,
+              columnKey,
+              prevCellValue,
+            ],
+            [
+              props.currentNetworkId,
+              currentTable == nodeTable ? 'node' : 'edge',
+              cxId,
+              columnKey,
+              data as ValueType,
+            ],
+          )
           setCellValue(
             props.currentNetworkId,
             currentTable === nodeTable ? 'node' : 'edge',
@@ -474,6 +493,24 @@ export default function TableBrowser(props: {
           column.type !== ValueTypeName.Integer &&
           column.type !== ValueTypeName.Long
         ) {
+          postEdit(
+            UndoCommandType.SET_CELL_VALUE,
+            'Set cell value',
+            [
+              props.currentNetworkId,
+              currentTable == nodeTable ? 'node' : 'edge',
+              cxId,
+              columnKey,
+              prevCellValue,
+            ],
+            [
+              props.currentNetworkId,
+              currentTable == nodeTable ? 'node' : 'edge',
+              cxId,
+              columnKey,
+              data as ValueType,
+            ],
+          )
           setCellValue(
             props.currentNetworkId,
             currentTable === nodeTable ? 'node' : 'edge',
@@ -483,6 +520,24 @@ export default function TableBrowser(props: {
           )
         } else {
           if (Number.isInteger(data)) {
+            postEdit(
+              UndoCommandType.SET_CELL_VALUE,
+              'Set cell value',
+              [
+                props.currentNetworkId,
+                currentTable == nodeTable ? 'node' : 'edge',
+                cxId,
+                columnKey,
+                prevCellValue,
+              ],
+              [
+                props.currentNetworkId,
+                currentTable == nodeTable ? 'node' : 'edge',
+                cxId,
+                columnKey,
+                parseFloat(data as string),
+              ],
+            )
             setCellValue(
               props.currentNetworkId,
               currentTable === nodeTable ? 'node' : 'edge',

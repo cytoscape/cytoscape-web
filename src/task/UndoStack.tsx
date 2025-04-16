@@ -13,6 +13,7 @@ import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { AppConfigContext } from '../AppConfigContext'
 
 export const useUndoStack = () => {
+  const setCellValue = useTableStore((state) => state.setValue)
   const setUndoStack = useUndoStore((state) => state.setUndoStack)
   const setRedoStack = useUndoStore((state) => state.setRedoStack)
   const setDefault = useVisualStyleStore((state) => state.setDefault)
@@ -88,6 +89,9 @@ export const useUndoStack = () => {
 
   const undoLastEdit = useCallback(() => {
     const commandMap = {
+      [UndoCommandType.SET_CELL_VALUE]: (params: any[]) => {
+        setCellValue(params[0], params[1], params[2], params[3], params[4])
+      },
       [UndoCommandType.SET_DEFAULT_VP_VALUE]: (params: any[]) => {
         setDefault(params[0], params[1], params[2])
       },
@@ -171,6 +175,7 @@ export const useUndoStack = () => {
     }
   }, [
     targetNetworkId,
+    setCellValue,
     setDefault,
     undoStack,
     redoStack,
@@ -193,6 +198,9 @@ export const useUndoStack = () => {
 
   const redoLastEdit = useCallback(() => {
     const commandMap = {
+      [UndoCommandType.SET_CELL_VALUE]: (params: any[]) => {
+        setCellValue(params[0], params[1], params[2], params[3], params[4])
+      },
       [UndoCommandType.SET_DEFAULT_VP_VALUE]: (params: any[]) => {
         setDefault(params[0], params[1], params[2])
       },
@@ -304,6 +312,7 @@ export const useUndoStack = () => {
     redoStack,
     undoStack,
     targetNetworkId,
+    setCellValue,
     setDefault,
     setUndoStack,
     setRedoStack,
