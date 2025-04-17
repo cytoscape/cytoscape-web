@@ -1,7 +1,7 @@
 import { IconButton, Tooltip } from '@mui/material'
 import { Share } from '@mui/icons-material'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'

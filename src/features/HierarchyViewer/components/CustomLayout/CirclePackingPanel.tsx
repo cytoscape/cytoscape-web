@@ -33,7 +33,6 @@ import { useFilterStore } from '../../../../store/FilterStore'
 import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
 import { useCredentialStore } from '../../../../store/CredentialStore'
 import { AppConfigContext } from '../../../../AppConfigContext'
-import { set } from 'lodash'
 
 interface CirclePackingPanelProps {
   rendererId: string
