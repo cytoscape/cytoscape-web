@@ -33,6 +33,7 @@ import { useFilterStore } from '../../../../store/FilterStore'
 import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
 import { useCredentialStore } from '../../../../store/CredentialStore'
 import { AppConfigContext } from '../../../../AppConfigContext'
+import { set } from 'lodash'
 
 interface CirclePackingPanelProps {
   rendererId: string
@@ -76,6 +77,8 @@ export const CirclePackingPanel = ({
   const searchState: SearchState = useFilterStore((state) => state.search.state)
 
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
+
+  const [networkSwitched, setNetworkSwitched] = useState<boolean>(false)
 
   // Expand all circles if the search result is shown
   const [expandAll, setExpandAll] = useState<boolean>(false)
@@ -149,23 +152,15 @@ export const CirclePackingPanel = ({
 
     if (selectedNodes.length > 0) {
       const targetNode: IdType = selectedNodes[0]
-      const rootNode =
-        circlePackingView.hierarchy as d3Hierarchy.HierarchyCircularNode<D3TreeNode>
-      const circleNode = findHierarchyNode(targetNode, rootNode)
-      if (circleNode === undefined) {
-        console.warn(
-          'Node selected in primary view is not found in Circle Packing view',
-        )
-        return
-      }
-
-      const depth: number = circleNode.depth
-      selectedDepthRef.current = depth
-      updateForZoom(depth)
-      lastZoomLevelRef.current = depth
+      expandSelectedCircle(targetNode)
     }
 
     // Move to center
+    fitRoot()
+    setNetworkSwitched(true)
+  }, [visible])
+
+  const fitRoot = (): void => {
     const fitFunction = getRendererFunction(rendererId, 'fit')
     if (fitFunction === undefined) {
       console.log('Registering fit function for CP renderer')
@@ -174,7 +169,25 @@ export const CirclePackingPanel = ({
     if (initialSize !== undefined && initialSize.w > 0 && initialSize.h > 0) {
       fitCircle()
     }
-  }, [visible])
+  }
+
+  const expandSelectedCircle = (selectedNodeId: IdType) => {
+    const rootNode =
+      circlePackingView.hierarchy as d3Hierarchy.HierarchyCircularNode<D3TreeNode>
+    const circleNode = findHierarchyNode(selectedNodeId, rootNode)
+    if (circleNode === undefined) {
+      console.warn(
+        'Node selected in primary view is not found in Circle Packing view',
+      )
+      return
+    }
+
+    const depth: number = circleNode.depth
+
+    selectedDepthRef.current = depth
+    updateForZoom(depth)
+    lastZoomLevelRef.current = depth
+  }
 
   /**
    * Fit the circle to the view port
@@ -637,9 +650,11 @@ export const CirclePackingPanel = ({
     displaySelectedNodes(selectedNodeSet, selectedLeaf)
 
     // Expand circles to the level of the selected node and zoom in to that circle
-    if (selectedNodes.length > 0) {
-      updateForZoom(4)
-      lastZoomLevelRef.current = 4
+    if (selectedNodes.length > 0 && networkSwitched) {
+      // updateForZoom(4)
+      // lastZoomLevelRef.current = 4
+      setNetworkSwitched(false)
+      expandSelectedCircle(selectedNodes[0])
     }
   }, [selectedNodes, selectedLeaf])
 
