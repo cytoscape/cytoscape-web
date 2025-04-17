@@ -974,7 +974,7 @@ export default function TableBrowser(props: {
 
                 postEdit(
                   UndoCommandType.APPLY_VALUE_TO_SELECTED,
-                  'Apply value to column',
+                  'Apply value to selected elements',
                   [
                     props.currentNetworkId,
                     currentTable === nodeTable ? 'node' : 'edge',
