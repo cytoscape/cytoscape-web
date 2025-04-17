@@ -41,6 +41,7 @@ export const useUndoStack = () => {
   const setNetwork = useNetworkStore((state) => state.setNetwork)
   const deleteColumn = useTableStore((state) => state.deleteColumn)
   const addNodesAndEdges = useNetworkStore((state) => state.addNodesAndEdges)
+  const setValues = useTableStore((state) => state.setValues)
   const { undoStackSize } = useContext(AppConfigContext)
 
   const activeNetworkView: IdType = useUiStateStore(
@@ -91,6 +92,12 @@ export const useUndoStack = () => {
     const commandMap = {
       [UndoCommandType.SET_CELL_VALUE]: (params: any[]) => {
         setCellValue(params[0], params[1], params[2], params[3], params[4])
+      },
+      [UndoCommandType.APPLY_VALUE_TO_COLUMN]: (params: any[]) => {
+        setValues(params[0], params[1], params[2])
+      },
+      [UndoCommandType.APPLY_VALUE_TO_SELECTED]: (params: any[]) => {
+        setValues(params[0], params[1], params[2])
       },
       [UndoCommandType.SET_DEFAULT_VP_VALUE]: (params: any[]) => {
         setDefault(params[0], params[1], params[2])
@@ -175,6 +182,7 @@ export const useUndoStack = () => {
     }
   }, [
     targetNetworkId,
+    setValues,
     setCellValue,
     setDefault,
     undoStack,
@@ -200,6 +208,12 @@ export const useUndoStack = () => {
     const commandMap = {
       [UndoCommandType.SET_CELL_VALUE]: (params: any[]) => {
         setCellValue(params[0], params[1], params[2], params[3], params[4])
+      },
+      [UndoCommandType.APPLY_VALUE_TO_COLUMN]: (params: any[]) => {
+        setValues(params[0], params[1], params[2])
+      },
+      [UndoCommandType.APPLY_VALUE_TO_SELECTED]: (params: any[]) => {
+        setValues(params[0], params[1], params[2])
       },
       [UndoCommandType.SET_DEFAULT_VP_VALUE]: (params: any[]) => {
         setDefault(params[0], params[1], params[2])
@@ -312,6 +326,7 @@ export const useUndoStack = () => {
     redoStack,
     undoStack,
     targetNetworkId,
+    setValues,
     setCellValue,
     setDefault,
     setUndoStack,

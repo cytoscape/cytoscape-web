@@ -62,7 +62,7 @@ import NetworkInfoPanel from './NetworkInfoPanel'
 import { NetworkView } from '../../models/ViewModel'
 import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import { TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { CellEdit, TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { useEffect, useRef } from 'react'
 
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
@@ -906,6 +906,35 @@ export default function TableBrowser(props: {
                 const column = columns?.[columnIndex]
                 const columnKey = column.id
                 const cellValue = (rowData as any)?.[columnKey]
+                const cellEdits: CellEdit[] = []
+                const prevColumnValues: CellEdit[] = []
+                Array.from(currentTable.rows.entries()).map(([k, v]) => {
+                  cellEdits.push({
+                    row: k,
+                    column: columnKey,
+                    value: cellValue,
+                  })
+
+                  prevColumnValues.push({
+                    row: k,
+                    column: columnKey,
+                    value: (v as any)?.[columnKey] as ValueType,
+                  })
+                })
+                postEdit(
+                  UndoCommandType.APPLY_VALUE_TO_COLUMN,
+                  'Apply value to column',
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    prevColumnValues,
+                  ],
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    cellEdits,
+                  ],
+                )
                 applyValueToElemenets(
                   props.currentNetworkId,
                   currentTable === nodeTable ? 'node' : 'edge',
@@ -925,6 +954,38 @@ export default function TableBrowser(props: {
                 const column = columns?.[columnIndex]
                 const columnKey = column.id
                 const cellValue = (rowData as any)?.[columnKey]
+                const cellEdits: CellEdit[] = []
+                const prevColumnValues: CellEdit[] = []
+
+                rows.forEach((r) => {
+                  const rowId = r.id
+                  cellEdits.push({
+                    row: rowId,
+                    column: columnKey,
+                    value: cellValue,
+                  })
+
+                  prevColumnValues.push({
+                    row: rowId,
+                    column: columnKey,
+                    value: (r as any)?.[columnKey] as ValueType,
+                  })
+                })
+
+                postEdit(
+                  UndoCommandType.APPLY_VALUE_TO_SELECTED,
+                  'Apply value to column',
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    prevColumnValues,
+                  ],
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    cellEdits,
+                  ],
+                )
                 applyValueToElemenets(
                   props.currentNetworkId,
                   currentTable === nodeTable ? 'node' : 'edge',
