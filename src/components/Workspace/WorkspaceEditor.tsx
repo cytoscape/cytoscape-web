@@ -526,7 +526,13 @@ const WorkSpaceEditor = (): JSX.Element => {
     } else {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
+          restoreSelectionStates()
+
           restoreTableBrowserTabState()
+          setTimeout(() => {
+            restoreActiveNetworkView()
+          }, 1000)
+
           navigate(
             `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
           )
