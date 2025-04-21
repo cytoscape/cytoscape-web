@@ -17,6 +17,7 @@ import {
   putTablesToDb,
 } from './persist/db'
 import {
+  CellEdit,
   TableRecord,
   TableStore,
   TableType,
@@ -252,6 +253,24 @@ export const useTableStore = create(
             if (row != null) {
               row[column] = value
             }
+            return state
+          })
+        },
+        setValues: (
+          networkId: IdType,
+          tableType: 'node' | 'edge',
+          cellEdits: CellEdit[],
+        ) => {
+          set((state) => {
+            const table = state.tables[networkId]
+            const tableToUpdate =
+              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            cellEdits.forEach((cellEdit) => {
+              const row = table[tableToUpdate]?.rows.get(cellEdit.row)
+              if (row != null) {
+                row[cellEdit.column] = cellEdit.value
+              }
+            })
             return state
           })
         },
