@@ -128,10 +128,15 @@ export const useUndoStack = () => {
         // // addEdges(params[0], params[3])
         // editRows(params[0], 'edge', params[4])
       },
+
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
-        // TODO
-        // setNodePosition(params[0], params[1], params[2])
+        const networkId: IdType = params[0]
+        const nodeId: IdType = params[1]
+        const nodePositions: [number, number] = params[2]
+        console.log('UNDO MOVE', params)
+        setNodePosition(networkId, nodeId, nodePositions)
       },
+
       [UndoCommandType.SET_BYPASS]: (params: any[]) => {
         setBypassMap(params[0], params[1], params[2])
       },
@@ -245,8 +250,10 @@ export const useUndoStack = () => {
         // editRows(params[0], 'edge', params[4])
       },
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
-        // TODO
-        // setNodePosition(params[0], params[1], params[2])
+        const networkId: IdType = params[0]
+        const nodeId: IdType = params[1]
+        const nodePositions: [number, number] = params[2]
+        setNodePosition(networkId, nodeId, nodePositions)
       },
       [UndoCommandType.SET_BYPASS]: (params: any[]) => {
         setBypass(params[0], params[1], params[2], params[3])

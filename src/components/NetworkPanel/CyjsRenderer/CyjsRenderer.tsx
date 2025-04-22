@@ -20,7 +20,7 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { Network } from '../../../models/NetworkModel'
 import { ReactElement, useEffect, useMemo, useRef, useState } from 'react'
-import { NetworkView } from '../../../models/ViewModel'
+import { NetworkView, NodeView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
@@ -37,6 +37,9 @@ import {
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 
 import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
+
+import { useUndoStack } from '../../../task/UndoStack'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 
 registerCyExtensions()
 interface NetworkRendererProps {
@@ -63,6 +66,15 @@ const CyjsRenderer = ({
   displayMode = DisplayMode.SELECT,
   hasTab = false,
 }: NetworkRendererProps): ReactElement => {
+  // For Undo functionality
+  const { postEdit } = useUndoStack()
+
+  // This is used to store the drag start position of the node
+  // when the user starts dragging the node
+  const dragStartPosition = useRef<Map<IdType, { x: number; y: number }>>(
+    new Map(),
+  )
+
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
   )
@@ -311,6 +323,18 @@ const CyjsRenderer = ({
     })
 
     // Moving nodes
+    cy.on('grab', 'node', (e: EventObject): void => {
+      const targetNode = e.target
+
+      // Check if the target is a node
+      if (!targetNode.isNode()) return
+
+      const nodeId = targetNode.data('id')
+
+      // Store the original position of the node when dragging starts
+      dragStartPosition.current.set(nodeId, { ...targetNode.position() })
+    })
+
     cy.on('dragfree', 'node', (e: EventObject): void => {
       // Enable flag to avoid unnecessary fit
       setNodesMoved(true)
@@ -318,16 +342,30 @@ const CyjsRenderer = ({
       const targetNode = e.target
       const nodeId: IdType = targetNode.data('id')
       const position = targetNode.position()
-      const prevPos = networkView?.nodeViews[nodeId]
+
+      const startPos = dragStartPosition.current.get(nodeId)
+      const undoPosition = startPos ? [startPos.x, startPos.y] : [0, 0] // Fallback to (0, 0) if not found
+
+      // Delete the original position of the node when dragging ends
+      dragStartPosition.current.delete(nodeId)
+      // let prevPos: NodeView = { id: nodeId, x: 0, y: 0, values: new Map() }
+      // const last = networkView?.nodeViews[nodeId]
+      // if (last !== undefined) {
+      //   prevPos = last
+      // }
 
       setNodePosition(id, nodeId, [position.x, position.y])
 
-      // TODO moving nodes breaks the undo stack
-      // postEdit(UndoCommandType.MOVE_NODES, [
-      //   id,
-      //   nodeId,
-      //   [prevPos?.x, prevPos?.y],
-      // ])
+      console.log(
+        `@@@original Node moved---- (${undoPosition[0]}, ${undoPosition[1]})`,
+      )
+      console.log(`@@@new Node pos---- (${position.x}, ${position.y})`)
+      postEdit(
+        UndoCommandType.MOVE_NODES,
+        `Move Nodes`,
+        [id, nodeId, undoPosition],
+        [id, nodeId, [position.x, position.y]],
+      )
     })
 
     cy.on('mouseover', 'node, edge', (e: EventObject): void => {
