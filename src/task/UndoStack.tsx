@@ -335,6 +335,7 @@ export const useUndoStack = () => {
     redoStack,
     undoStack,
     targetNetworkId,
+    updateNetworkSummary,
     setValues,
     setCellValue,
     setDefault,
