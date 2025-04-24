@@ -186,8 +186,8 @@ export const NetworkPropertyPanel = ({
           </Box>
         </Box>
         <NetworkPropertyEditor
+          networkId={summary.externalId}
           anchorEl={editNetworkSummaryAnchorEl}
-          summary={summary}
           onClose={hideEditNetworkSummaryForm}
         />
         <ConfirmationDialog

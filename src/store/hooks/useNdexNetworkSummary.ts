@@ -4,7 +4,7 @@ import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { IdType } from '../../models/IdType'
 import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from '../persist/db'
 import { ValueType } from '../../models/TableModel/ValueType'
-import { ValueTypeName} from '../../models/TableModel/ValueTypeName'
+import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 // check the local cache for ndex network summaries and fetch from NDEx if not found
 export const useNdexNetworkSummary = async (
   ndexNetworkId: IdType | IdType[],
@@ -81,56 +81,63 @@ export const ndexSummaryFetcher = async (
 // Utility function to process the network summary
 // in the future, we may change to getNetworkSummariesV3ByUUIDs
 // and discard/update this function
-const processSummary = (summaries: NdexNetworkSummary[]): NdexNetworkSummary[] => {
+const processSummary = (
+  summaries: NdexNetworkSummary[],
+): NdexNetworkSummary[] => {
   return summaries.map((summary) => {
     const updatedProperties = summary.properties.map((property) => {
-      let updatedValue: ValueType;
+      let updatedValue: ValueType
 
       switch (property.dataType) {
         case ValueTypeName.String:
-          updatedValue = String(property.value);
-          break;
+          updatedValue = String(property.value)
+          break
 
         case ValueTypeName.Integer:
         case ValueTypeName.Long:
         case ValueTypeName.Double:
-          updatedValue = Number(property.value); 
-          break;
+          updatedValue = Number(property.value)
+          break
 
         case ValueTypeName.Boolean:
-          updatedValue = property.value === "true"; 
-          break;
+          updatedValue = property.value === 'true'
+          break
 
         case ValueTypeName.ListString:
-            updatedValue = JSON.parse(property.value as string);
-          break;
+          updatedValue = JSON.parse(property.value as string)
+          break
 
         case ValueTypeName.ListInteger:
         case ValueTypeName.ListLong:
         case ValueTypeName.ListDouble:
-          updatedValue = JSON.parse(property.value as string).map(Number);
-          break;
-        
+          updatedValue = JSON.parse(property.value as string).map(Number)
+          break
+
         case ValueTypeName.ListBoolean:
-          updatedValue = JSON.parse(property.value as string).map((v: string) => v === 'true');
-          break;
+          updatedValue = JSON.parse(property.value as string).map(
+            (v: string) => v === 'true',
+          )
+          break
 
         default:
-          updatedValue = property.value;
+          updatedValue = property.value
       }
 
       return {
         ...property,
-        value: updatedValue, 
-      };
-    });
+        value: updatedValue,
+      }
+    })
 
     return {
       ...summary,
       properties: updatedProperties,
       isNdex: true,
+      version: summary.version ?? '',
+      description: summary.description ?? '',
+      name: summary.name ?? '',
       creationTime: new Date(summary.creationTime),
       modificationTime: new Date(summary.modificationTime),
-    };
-  });
-};
+    }
+  })
+}

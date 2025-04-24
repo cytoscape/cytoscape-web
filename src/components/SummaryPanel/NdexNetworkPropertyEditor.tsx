@@ -20,8 +20,6 @@ import TextAlign from '@tiptap/extension-text-align'
 import Superscript from '@tiptap/extension-superscript'
 import SubScript from '@tiptap/extension-subscript'
 
-import debounce from 'lodash.debounce'
-
 import { removePTags } from '../../utils/remove-p-tags'
 import { ReactElement, useEffect, useState } from 'react'
 import { MantineProvider } from '@mantine/core'
@@ -29,22 +27,24 @@ import '@mantine/tiptap/styles.css'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useUndoStack } from '../../task/UndoStack'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import _ from 'lodash'
+import { IdType } from '../../models'
 
 interface NetworkPropertyEditorProps {
   anchorEl?: HTMLElement
   onClose: (event: any) => void
-  summary: NdexNetworkSummary
+  networkId: IdType
 }
 export const NetworkPropertyEditor = (
   props: NetworkPropertyEditorProps,
 ): ReactElement => {
   const { postEdit } = useUndoStack()
-  const { anchorEl, onClose, summary } = props
+  const { anchorEl, onClose } = props
+  const summary = useNetworkSummaryStore(
+    (state) => state.summaries[props.networkId],
+  )
   const [localSummaryState, setLocalSummaryState] = useState(summary)
 
-  useEffect(() => {
-    setLocalSummaryState(summary)
-  }, [summary])
   const open = anchorEl !== undefined
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
   const setNetworkModified = useWorkspaceStore(
@@ -52,12 +52,12 @@ export const NetworkPropertyEditor = (
   )
 
   const editor = useEditor({
-    onUpdate: debounce(({ editor }) => {
+    onUpdate: ({ editor }) => {
       setLocalSummaryState({
         ...localSummaryState,
         description: editor.getHTML(),
       })
-    }, 200),
+    },
     extensions: [
       StarterKit,
       Underline,
@@ -69,6 +69,11 @@ export const NetworkPropertyEditor = (
     ],
     content: removePTags(localSummaryState.description ?? ''),
   })
+
+  useEffect(() => {
+    setLocalSummaryState(summary)
+    editor?.commands?.setContent(removePTags(summary.description ?? ''))
+  }, [summary])
 
   return (
     <Popover
@@ -116,7 +121,7 @@ export const NetworkPropertyEditor = (
             size="small"
             label="Version"
             sx={{ width: '20%', fontSize: 12 }}
-            value={localSummaryState.version}
+            value={localSummaryState.version ?? ''}
             onChange={(e) => {
               setLocalSummaryState({
                 ...localSummaryState,
@@ -209,18 +214,22 @@ export const NetworkPropertyEditor = (
               },
             }}
             onClick={(e) => {
-              postEdit(
-                UndoCommandType.SET_NETWORK_SUMMARY,
-                'Update network summary',
-                [localSummaryState.externalId, props.summary],
-                [localSummaryState.externalId, localSummaryState],
-              )
-              updateNetworkSummary(
-                localSummaryState.externalId,
-                localSummaryState,
-              )
-              setNetworkModified(localSummaryState.externalId, true)
-              onClose(e)
+              if (_.isEqual(localSummaryState, summary)) {
+                onClose(e)
+              } else {
+                postEdit(
+                  UndoCommandType.SET_NETWORK_SUMMARY,
+                  'Update network summary',
+                  [localSummaryState.externalId, summary],
+                  [localSummaryState.externalId, localSummaryState],
+                )
+                updateNetworkSummary(
+                  localSummaryState.externalId,
+                  localSummaryState,
+                )
+                setNetworkModified(localSummaryState.externalId, true)
+                onClose(e)
+              }
             }}
           >
             Confirm
