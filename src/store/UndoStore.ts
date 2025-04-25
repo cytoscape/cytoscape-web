@@ -1,10 +1,14 @@
-import { subscribeWithSelector } from 'zustand/middleware'
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import { UndoRedoStack, UndoStore } from '../models/StoreModel/UndoStoreModel'
+import {
+  Edit,
+  UndoRedoStack,
+  UndoStore,
+} from '../models/StoreModel/UndoStoreModel'
 import { putUndoRedoStackToDb } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
+import { IdType } from '../models'
 
 const persist =
   (config: StateCreator<UndoStore>) =>
@@ -32,21 +36,35 @@ const persist =
 
 export const useUndoStore = create(
   immer<UndoStore>(
-    persist((set, get) => ({
+    persist((set) => ({
       undoRedoStacks: {},
-      addStack: (networkId, undoRedoStack: UndoRedoStack) => {
+      addStack: (networkId: IdType, undoRedoStack: UndoRedoStack) => {
         set((state) => {
           state.undoRedoStacks[networkId] = undoRedoStack
           return state
         })
       },
-      setUndoStack: (networkId, undoStack) =>
+      setUndoStack: (networkId: IdType, undoStack: Edit[]) =>
         set((state) => {
+          // For safety, check if the stack exists before modifying it
+          if (!state.undoRedoStacks[networkId]) {
+            state.undoRedoStacks[networkId] = {
+              undoStack: [],
+              redoStack: [],
+            }
+          }
           state.undoRedoStacks[networkId].undoStack = undoStack
           return state
         }),
-      setRedoStack: (networkId, redoStack) =>
+      setRedoStack: (networkId: IdType, redoStack: Edit[]) =>
         set((state) => {
+          // For safety, check if the stack exists before modifying it
+          if (!state.undoRedoStacks[networkId]) {
+            state.undoRedoStacks[networkId] = {
+              undoStack: [],
+              redoStack: [],
+            }
+          }
           state.undoRedoStacks[networkId].redoStack = redoStack
           return state
         }),

@@ -323,16 +323,34 @@ const CyjsRenderer = ({
     })
 
     // Moving nodes
+
+    // This captures the drag start position of the node
+    // when the user starts dragging the node
     cy.on('grab', 'node', (e: EventObject): void => {
       const targetNode = e.target
 
       // Check if the target is a node
       if (!targetNode.isNode()) return
 
-      const nodeId = targetNode.data('id')
-
-      // Store the original position of the node when dragging starts
-      dragStartPosition.current.set(nodeId, { ...targetNode.position() })
+      const nodeId: IdType = targetNode.data('id')
+      const position = targetNode.position()
+      const nodeView: NodeView | undefined = networkView?.nodeViews[nodeId]
+      if (nodeView !== undefined) {
+        const nodeViewPosition = [nodeView.x, nodeView.y]
+        // Check if the node is already in the correct position
+        if (
+          nodeViewPosition[0] === position.x &&
+          nodeViewPosition[1] === position.y
+        ) {
+          // Store the original position of the node when dragging starts
+          // dragStartPosition.current.set(nodeId, { ...position })
+        } else {
+          console.log('%%set start  node position', nodeId, position)
+          // setNodePosition(id, nodeId, [position.x, position.y])
+        }
+        // Store the original position of the node when dragging starts
+        dragStartPosition.current.set(nodeId, { ...position })
+      }
     })
 
     cy.on('dragfree', 'node', (e: EventObject): void => {
@@ -348,18 +366,11 @@ const CyjsRenderer = ({
 
       // Delete the original position of the node when dragging ends
       dragStartPosition.current.delete(nodeId)
-      // let prevPos: NodeView = { id: nodeId, x: 0, y: 0, values: new Map() }
-      // const last = networkView?.nodeViews[nodeId]
-      // if (last !== undefined) {
-      //   prevPos = last
-      // }
 
       setNodePosition(id, nodeId, [position.x, position.y])
 
-      console.log(
-        `@@@original Node moved---- (${undoPosition[0]}, ${undoPosition[1]})`,
-      )
-      console.log(`@@@new Node pos---- (${position.x}, ${position.y})`)
+      console.log(`@0 (${undoPosition[0]}, ${undoPosition[1]})`)
+      console.log(`@1 (${position.x}, ${position.y})`)
       postEdit(
         UndoCommandType.MOVE_NODES,
         `Move Nodes`,
