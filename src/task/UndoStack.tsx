@@ -11,8 +11,10 @@ import { useNetworkStore } from '../store/NetworkStore'
 import { useUiStateStore } from '../store/UiStateStore'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { AppConfigContext } from '../AppConfigContext'
+import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 
 export const useUndoStack = () => {
+  const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
   const setCellValue = useTableStore((state) => state.setValue)
   const setUndoStack = useUndoStore((state) => state.setUndoStack)
   const setRedoStack = useUndoStore((state) => state.setRedoStack)
@@ -90,6 +92,9 @@ export const useUndoStack = () => {
 
   const undoLastEdit = useCallback(() => {
     const commandMap = {
+      [UndoCommandType.SET_NETWORK_SUMMARY]: (params: any[]) => {
+        updateNetworkSummary(params[0], params[1])
+      },
       [UndoCommandType.SET_CELL_VALUE]: (params: any[]) => {
         setCellValue(params[0], params[1], params[2], params[3], params[4])
       },
@@ -182,6 +187,7 @@ export const useUndoStack = () => {
     }
   }, [
     targetNetworkId,
+    updateNetworkSummary,
     setValues,
     setCellValue,
     setDefault,
@@ -206,6 +212,9 @@ export const useUndoStack = () => {
 
   const redoLastEdit = useCallback(() => {
     const commandMap = {
+      [UndoCommandType.SET_NETWORK_SUMMARY]: (params: any[]) => {
+        updateNetworkSummary(params[0], params[1])
+      },
       [UndoCommandType.SET_CELL_VALUE]: (params: any[]) => {
         setCellValue(params[0], params[1], params[2], params[3], params[4])
       },
@@ -326,6 +335,7 @@ export const useUndoStack = () => {
     redoStack,
     undoStack,
     targetNetworkId,
+    updateNetworkSummary,
     setValues,
     setCellValue,
     setDefault,

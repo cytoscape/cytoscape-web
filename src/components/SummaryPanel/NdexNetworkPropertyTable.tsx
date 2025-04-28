@@ -27,22 +27,24 @@ interface NdexNetworkPropertyState extends NdexNetworkProperty {
   valueIsValid: boolean
 }
 
-const NdexNetworkPropertyTable = (): React.ReactElement => {
+const NdexNetworkPropertyTable = (props: {
+  networkProperties: NdexNetworkProperty[]
+  setNetworkProperties: (properties: NdexNetworkProperty[]) => void
+}): React.ReactElement => {
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
-  const networkProperties = useNetworkSummaryStore(
-    (state) => state.summaries[currentNetworkId].properties,
-  )
+  const { networkProperties, setNetworkProperties } = props
 
   const [localNetworkProperties, setLocalNetworkProperties] = React.useState<
     NdexNetworkPropertyState[]
   >(networkProperties.map((p) => ({ ...p, valueIsValid: true })))
 
-  const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
-  const setNetworkModified = useWorkspaceStore(
-    (state) => state.setNetworkModified,
-  )
+  React.useEffect(() => {
+    setLocalNetworkProperties(
+      networkProperties.map((p) => ({ ...p, valueIsValid: true })),
+    )
+  }, [networkProperties])
 
   const updateNetworkPropertyType = (
     index: number,
@@ -58,12 +60,11 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
     nextProperties[index] = nextProperty
 
     setLocalNetworkProperties(nextProperties)
-    updateNetworkSummary(currentNetworkId, {
-      properties: nextProperties.map(
+    setNetworkProperties(
+      nextProperties.map(
         ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
       ),
-    })
-    setNetworkModified(currentNetworkId, true)
+    )
   }
 
   const updateNetworkPropertyName = (index: number, name: string): void => {
@@ -74,12 +75,11 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
 
     nextProperties[index] = nextProperty
     setLocalNetworkProperties(nextProperties)
-    updateNetworkSummary(currentNetworkId, {
-      properties: nextProperties.map(
+    setNetworkProperties(
+      nextProperties.map(
         ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
       ),
-    })
-    setNetworkModified(currentNetworkId, true)
+    )
   }
 
   const updateNetworkPropertyValue = (
@@ -105,12 +105,11 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
     setLocalNetworkProperties(nextProperties)
 
     if (nextValueIsValid) {
-      updateNetworkSummary(currentNetworkId, {
-        properties: nextProperties.map(
+      setNetworkProperties(
+        nextProperties.map(
           ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
         ),
-      })
-      setNetworkModified(currentNetworkId, true)
+      )
     }
   }
 
@@ -136,12 +135,11 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
     const nextProperties = [...localNetworkProperties, defaultNewProperty]
 
     setLocalNetworkProperties(nextProperties)
-    updateNetworkSummary(currentNetworkId, {
-      properties: nextProperties.map(
+    setNetworkProperties(
+      nextProperties.map(
         ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
       ),
-    })
-    setNetworkModified(currentNetworkId, true)
+    )
   }
 
   const deleteNetworkProperty = (index: number): void => {
@@ -150,12 +148,11 @@ const NdexNetworkPropertyTable = (): React.ReactElement => {
 
     setLocalNetworkProperties(nextProperties)
 
-    updateNetworkSummary(currentNetworkId, {
-      properties: nextProperties.map(
+    setNetworkProperties(
+      nextProperties.map(
         ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
       ),
-    })
-    setNetworkModified(currentNetworkId, true)
+    )
   }
 
   return (
