@@ -1,6 +1,14 @@
 import { useCallback, useContext } from 'react'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
-import { Edge, IdType, ValueTypeName } from '../models'
+import {
+  Edge,
+  EdgeView,
+  IdType,
+  NodeView,
+  TableType,
+  ValueType,
+  ValueTypeName,
+} from '../models'
 import { VisualPropertyName, VisualStyle } from '../models/VisualStyleModel'
 
 import { useUndoStore } from '../store/UndoStore'
@@ -21,6 +29,9 @@ export const useUndoStack = () => {
   const updateNodePositions = useViewModelStore(
     (state) => state.updateNodePositions,
   )
+
+  const addNodeViews = useViewModelStore((state) => state.addNodeViews)
+  const addEdgeViews = useViewModelStore((state) => state.addEdgeViews)
 
   const deleteNodes = useNetworkStore((state) => state.deleteNodes)
 
@@ -136,9 +147,38 @@ export const useUndoStack = () => {
         const networkId: IdType = params[0]
         const nodeIds: IdType[] = params[1]
         const deletedEdges: Edge[] = params[2]
+        const deletedNodeViewModels: NodeView[] = params[3]
+        const deletedEdgeViewModels: EdgeView[] = params[4]
+        const deletedNodeRows: Map<
+          IdType,
+          Record<string, ValueType>
+        > = params[5]
+        const deletedEdgeRows: Map<
+          IdType,
+          Record<string, ValueType>
+        > = params[6]
+        // const deletedBypasses: Record<VisualPropertyName, Map<IdType, ValueType>> = params[7]
 
+        // 1. Add back the deleted nodes and connected edges
         addNodesAndEdges(networkId, nodeIds, deletedEdges)
-        console.log('Nodes added', params)
+        console.log('Nodes and edges added', nodeIds, deletedEdges)
+
+        // 2. Restore table rows
+        if (deletedNodeRows.size > 0) {
+          editRows(networkId, TableType.NODE, deletedNodeRows)
+        }
+        if (deletedEdgeRows.size > 0) {
+          editRows(networkId, TableType.EDGE, deletedEdgeRows)
+        }
+
+        // 3. Restore view models
+        if (deletedNodeViewModels.length > 0) {
+          addNodeViews(networkId, deletedNodeViewModels)
+        }
+        if (deletedEdgeViewModels.length > 0) {
+          addEdgeViews(networkId, deletedEdgeViewModels)
+        }
+
         // editRows(params[0], 'node', params[2])
         // editRows(params[0], 'edge', params[4])
       },
