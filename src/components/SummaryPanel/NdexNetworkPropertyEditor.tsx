@@ -6,6 +6,7 @@ import {
   Box,
   TextField,
   Divider,
+  Button,
 } from '@mui/material'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
@@ -19,23 +20,31 @@ import TextAlign from '@tiptap/extension-text-align'
 import Superscript from '@tiptap/extension-superscript'
 import SubScript from '@tiptap/extension-subscript'
 
-import debounce from 'lodash.debounce'
-
 import { removePTags } from '../../utils/remove-p-tags'
-import { ReactElement } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 import { MantineProvider } from '@mantine/core'
 import '@mantine/tiptap/styles.css'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { useUndoStack } from '../../task/UndoStack'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import _ from 'lodash'
+import { IdType } from '../../models'
 
 interface NetworkPropertyEditorProps {
   anchorEl?: HTMLElement
   onClose: (event: any) => void
-  summary: NdexNetworkSummary
+  networkId: IdType
 }
 export const NetworkPropertyEditor = (
   props: NetworkPropertyEditorProps,
 ): ReactElement => {
-  const { anchorEl, onClose, summary } = props
+  const { postEdit } = useUndoStack()
+  const { anchorEl, onClose } = props
+  const summary = useNetworkSummaryStore(
+    (state) => state.summaries[props.networkId],
+  )
+  const [localSummaryState, setLocalSummaryState] = useState(summary)
+
   const open = anchorEl !== undefined
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
   const setNetworkModified = useWorkspaceStore(
@@ -43,12 +52,12 @@ export const NetworkPropertyEditor = (
   )
 
   const editor = useEditor({
-    onUpdate: debounce(({ editor }) => {
-      updateNetworkSummary(summary.externalId, {
+    onUpdate: ({ editor }) => {
+      setLocalSummaryState({
+        ...localSummaryState,
         description: editor.getHTML(),
       })
-      setNetworkModified(summary.externalId, true)
-    }, 200),
+    },
     extensions: [
       StarterKit,
       Underline,
@@ -58,13 +67,20 @@ export const NetworkPropertyEditor = (
       Highlight,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
-    content: removePTags(summary.description ?? ''),
+    content: removePTags(localSummaryState.description ?? ''),
   })
+
+  useEffect(() => {
+    setLocalSummaryState(summary)
+    editor?.commands?.setContent(removePTags(summary.description ?? ''))
+  }, [summary])
 
   return (
     <Popover
       open={open}
       anchorEl={anchorEl}
+      disableEscapeKeyDown={true}
+      hideBackdrop={true}
       onClose={(e) => onClose(e)}
       anchorOrigin={{
         vertical: 'top',
@@ -83,7 +99,9 @@ export const NetworkPropertyEditor = (
           sx={{ p: 1, mb: 2 }}
           size="small"
           label={
-            <Typography variant="caption">{summary.visibility}</Typography>
+            <Typography variant="caption">
+              {localSummaryState.visibility}
+            </Typography>
           }
         />
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -91,24 +109,24 @@ export const NetworkPropertyEditor = (
             size="small"
             label="Name"
             sx={{ width: '60%', mr: 1, fontSize: 12 }}
-            value={summary.name}
+            value={localSummaryState.name}
             onChange={(e) => {
-              updateNetworkSummary(summary.externalId, {
+              setLocalSummaryState({
+                ...localSummaryState,
                 name: e.target.value,
               })
-              setNetworkModified(summary.externalId, true)
             }}
           ></TextField>
           <TextField
             size="small"
             label="Version"
             sx={{ width: '20%', fontSize: 12 }}
-            value={summary.version}
+            value={localSummaryState.version ?? ''}
             onChange={(e) => {
-              updateNetworkSummary(summary.externalId, {
+              setLocalSummaryState({
+                ...localSummaryState,
                 version: e.target.value,
               })
-              setNetworkModified(summary.externalId, true)
             }}
           />
         </Box>
@@ -163,7 +181,60 @@ export const NetworkPropertyEditor = (
         </MantineProvider>
 
         <Divider sx={{ mt: 2, mb: 1 }} />
-        <NdexNetworkPropertyTable />
+        <NdexNetworkPropertyTable
+          networkProperties={localSummaryState.properties}
+          setNetworkProperties={(nextProperties) => {
+            setLocalSummaryState({
+              ...localSummaryState,
+              properties: nextProperties,
+            })
+          }}
+        />
+        <Divider sx={{ mt: 2, mb: 1 }} />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Button
+            color="primary"
+            onClick={(e) => {
+              setLocalSummaryState(summary)
+              onClose(e)
+            }}
+            sx={{ mr: 1 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            sx={{
+              color: '#FFFFFF',
+              backgroundColor: '#337ab7',
+              '&:hover': {
+                backgroundColor: '#285a9b',
+              },
+              '&:disabled': {
+                backgroundColor: 'transparent',
+              },
+            }}
+            onClick={(e) => {
+              if (_.isEqual(localSummaryState, summary)) {
+                onClose(e)
+              } else {
+                postEdit(
+                  UndoCommandType.SET_NETWORK_SUMMARY,
+                  'Update network summary',
+                  [localSummaryState.externalId, summary],
+                  [localSummaryState.externalId, localSummaryState],
+                )
+                updateNetworkSummary(
+                  localSummaryState.externalId,
+                  localSummaryState,
+                )
+                setNetworkModified(localSummaryState.externalId, true)
+                onClose(e)
+              }
+            }}
+          >
+            Confirm
+          </Button>
+        </Box>
       </Paper>
     </Popover>
   )
