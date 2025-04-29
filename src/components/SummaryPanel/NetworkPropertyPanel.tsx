@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react'
+import { ReactElement, useState } from 'react'
 import {
   Tooltip,
   IconButton,
@@ -22,6 +22,8 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { NetworkPropertyEditor } from './NdexNetworkPropertyEditor'
 import { HcxValidationButtonGroup } from '../../features/HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
 import { ConfirmationDialog } from '../Util/ConfirmationDialog'
+import { useNetworkStore } from '../../store/NetworkStore'
+import { Network } from '../../models'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
@@ -31,10 +33,17 @@ export const NetworkPropertyPanel = ({
   summary,
 }: NetworkPropertyPanelProps): ReactElement => {
   const theme: Theme = useTheme()
-  const { nodeCount, edgeCount } = summary
+
   const [openConfirmation, setOpenConfirmation] = useState<boolean>(false)
+
   // Need to use ID from the summary since it is different from the currentNetworkId
   const id: IdType = summary.externalId
+
+  // Get the network model from the store to grab the node and edge counts
+  const networkModels = useNetworkStore((state) => state.networks)
+  const networkModel: Network | undefined = networkModels.get(id)
+  const nodeCount: number = networkModel?.nodes.length ?? 0
+  const edgeCount: number = networkModel?.edges.length ?? 0
 
   const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
     HTMLButtonElement | undefined

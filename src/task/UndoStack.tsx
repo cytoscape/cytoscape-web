@@ -145,10 +145,7 @@ export const useUndoStack = () => {
         // editRows(params[0], params[1], params[2])
       },
       [UndoCommandType.DELETE_NODES]: (params: any[]) => {
-        console.log('Delete nodes PARAMS', params)
-        // setNetwork(params[0], params[1])
-        // setTable(params[0], 'node', params[2])
-        // setTable(params[0], 'edge', params[3])
+        console.log('Undo Delete nodes PARAMS', params)
         const networkId: IdType = params[0]
         const nodeIds: IdType[] = params[1]
         const deletedEdges: Edge[] = params[2]
@@ -183,9 +180,6 @@ export const useUndoStack = () => {
         if (deletedEdgeViewModels.length > 0) {
           addEdgeViews(networkId, deletedEdgeViewModels)
         }
-
-        // editRows(params[0], 'node', params[2])
-        // editRows(params[0], 'edge', params[4])
       },
 
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
@@ -301,22 +295,10 @@ export const useUndoStack = () => {
         // editRows(params[0], params[1], params[2])
       },
       [UndoCommandType.DELETE_NODES]: (params: any[]) => {
-        // TODO
-        // // console.log('PARAMS', params)
-        // // setNetwork(params[0], params[1])
-        // // setTable(params[0], 'node', params[2])
-        // // setTable(params[0], 'edge', params[3])
-        // addNodesAndEdges(params[0], params[1], params[3])
-        // // addNodes(params[0], params[1])
-        // editRows(params[0], 'node', params[2])
-        // // addEdges(params[0], params[3])
-        // editRows(params[0], 'edge', params[4])
-
-        // Redo means we need to delete the nodes again
         const networkId: IdType = params[0]
         const nodeIds: IdType[] = params[1]
-        // const deletedEdges: Edge[] = params[2]
 
+        // Redo means we need to delete the nodes again
         deleteNodes(networkId, nodeIds)
       },
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
