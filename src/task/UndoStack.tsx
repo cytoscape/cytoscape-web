@@ -20,6 +20,7 @@ import { useUiStateStore } from '../store/UiStateStore'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { AppConfigContext } from '../AppConfigContext'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
+import { deleteEdges } from '../models/NetworkModel/impl/CyNetwork'
 
 export const useUndoStack = () => {
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
@@ -36,6 +37,7 @@ export const useUndoStack = () => {
   const addEdgeViews = useViewModelStore((state) => state.addEdgeViews)
 
   const deleteNodes = useNetworkStore((state) => state.deleteNodes)
+  const deleteEdges = useNetworkStore((state) => state.deleteEdges)
 
   const setDiscreteMappingValue = useVisualStyleStore(
     (state) => state.setDiscreteMappingValue,
@@ -102,15 +104,7 @@ export const useUndoStack = () => {
       setUndoStack(targetNetworkId, nextUndoStack)
       setRedoStack(targetNetworkId, [])
     },
-    [
-      targetNetworkId,
-      setUndoStack,
-      // undoStack,
-      setRedoStack,
-      // setDefault,
-      // setNodePosition,
-      // updateNodePositions,
-    ],
+    [targetNetworkId, setUndoStack, setRedoStack],
   )
 
   const undoLastEdit = useCallback(() => {
@@ -140,12 +134,29 @@ export const useUndoStack = () => {
         setColumnName(params[0], params[1], params[2], params[3])
       },
       [UndoCommandType.DELETE_EDGES]: (params: any[]) => {
-        //TODO
-        // addEdges(params[0], params[1])
-        // editRows(params[0], params[1], params[2])
+        // Undo function for deleting edges
+        const networkId: IdType = params[0]
+        const deletedEdges: Edge[] = params[1]
+        const deletedEdgeViewModels: EdgeView[] = params[2]
+        const deletedEdgeRows: Map<
+          IdType,
+          Record<string, ValueType>
+        > = params[3]
+
+        // 1. Add back the deleted edges
+        addEdges(networkId, deletedEdges)
+
+        // 2. Restore table rows
+        if (deletedEdgeRows.size > 0) {
+          editRows(networkId, TableType.EDGE, deletedEdgeRows)
+        }
+
+        // 3. Restore view models
+        if (deletedEdgeViewModels.length > 0) {
+          addEdgeViews(networkId, deletedEdgeViewModels)
+        }
       },
       [UndoCommandType.DELETE_NODES]: (params: any[]) => {
-        console.log('Undo Delete nodes PARAMS', params)
         const networkId: IdType = params[0]
         const nodeIds: IdType[] = params[1]
         const deletedEdges: Edge[] = params[2]
@@ -159,11 +170,9 @@ export const useUndoStack = () => {
           IdType,
           Record<string, ValueType>
         > = params[6]
-        // const deletedBypasses: Record<VisualPropertyName, Map<IdType, ValueType>> = params[7]
 
         // 1. Add back the deleted nodes and connected edges
         addNodesAndEdges(networkId, nodeIds, deletedEdges)
-        console.log('Nodes and edges added', nodeIds, deletedEdges)
 
         // 2. Restore table rows
         if (deletedNodeRows.size > 0) {
@@ -186,7 +195,6 @@ export const useUndoStack = () => {
         const networkId: IdType = params[0]
         const nodeId: IdType = params[1]
         const nodePositions: [number, number] = params[2]
-        console.log('UNDO MOVE', params)
         setNodePosition(networkId, nodeId, nodePositions)
       },
 
@@ -290,9 +298,11 @@ export const useUndoStack = () => {
         setColumnName(params[0], params[1], params[2], params[3])
       },
       [UndoCommandType.DELETE_EDGES]: (params: any[]) => {
-        //TODO
-        // addEdges(params[0], params[1])
-        // editRows(params[0], params[1], params[2])
+        // Delete the edges again
+        const networkId: IdType = params[0]
+        const selectedEdgeIds: IdType[] = params[1]
+
+        deleteEdges(networkId, selectedEdgeIds)
       },
       [UndoCommandType.DELETE_NODES]: (params: any[]) => {
         const networkId: IdType = params[0]

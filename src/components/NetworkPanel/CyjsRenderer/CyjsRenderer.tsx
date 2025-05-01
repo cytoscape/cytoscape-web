@@ -40,6 +40,7 @@ import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
 
 import { useUndoStack } from '../../../task/UndoStack'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { render } from '@testing-library/react'
 
 registerCyExtensions()
 interface NetworkRendererProps {
@@ -195,7 +196,7 @@ const CyjsRenderer = ({
     exclusiveSelect(id, selectedNodes, selectedEdges)
   }
 
-  const renderNetwork = (): void => {
+  const renderNetwork = (forceFit: boolean = true): void => {
     if (
       cy === null ||
       (renderedId === id &&
@@ -336,19 +337,6 @@ const CyjsRenderer = ({
       const position = targetNode.position()
       const nodeView: NodeView | undefined = networkView?.nodeViews[nodeId]
       if (nodeView !== undefined) {
-        const nodeViewPosition = [nodeView.x, nodeView.y]
-        // Check if the node is already in the correct position
-        if (
-          nodeViewPosition[0] === position.x &&
-          nodeViewPosition[1] === position.y
-        ) {
-          // Store the original position of the node when dragging starts
-          // dragStartPosition.current.set(nodeId, { ...position })
-        } else {
-          console.log('%%set start  node position', nodeId, position)
-          // setNodePosition(id, nodeId, [position.x, position.y])
-        }
-        // Store the original position of the node when dragging starts
         dragStartPosition.current.set(nodeId, { ...position })
       }
     })
@@ -366,11 +354,8 @@ const CyjsRenderer = ({
 
       // Delete the original position of the node when dragging ends
       dragStartPosition.current.delete(nodeId)
-
       setNodePosition(id, nodeId, [position.x, position.y])
 
-      console.log(`@0 (${undoPosition[0]}, ${undoPosition[1]})`)
-      console.log(`@1 (${position.x}, ${position.y})`)
       postEdit(
         UndoCommandType.MOVE_NODES,
         `Move Nodes`,
@@ -431,7 +416,9 @@ const CyjsRenderer = ({
 
     cy.style(newStyle)
 
-    cy.fit()
+    if (forceFit) {
+      cy.fit()
+    }
 
     setVisualStyle(id, vs)
     setTimeout(() => {
@@ -444,7 +431,6 @@ const CyjsRenderer = ({
       return
     }
 
-    const t1 = performance.now()
     cy.startBatch()
 
     const data: NetworkViewSources = {
@@ -465,7 +451,6 @@ const CyjsRenderer = ({
 
     // Store the key-value pair in the local IndexedDB
     setViewModel(id, updatedNetworkView)
-    console.log('#Time to  apply style: ', performance.now() - t1)
   }
 
   const applyHoverUpdate = (): void => {
@@ -510,6 +495,27 @@ const CyjsRenderer = ({
     },
     [vs, table, visualEditorProperties],
   )
+
+  useEffect(() => {
+    if (id === '' || cy === null) {
+      return
+    }
+    // This is only for redrawing the network
+    // when the network structure is updated
+    const cyNodeCount: number = cy.nodes().length
+    const cyEdgeCount: number = cy.edges().length
+    const modelNodeCount: number = network.nodes.length
+    const modelEdgeCount: number = network.edges.length
+
+    if (!isViewCreated.current) {
+      return
+    }
+
+    // Render only when adding new nodes or edges (and avoid fitting)
+    if (modelNodeCount > cyNodeCount || modelEdgeCount > cyEdgeCount) {
+      renderNetwork(false)
+    }
+  }, [network.nodes.length, network.edges.length])
 
   // when the visual style model, table model, or edge/node views change re-render cy.js style
   useEffect(() => {

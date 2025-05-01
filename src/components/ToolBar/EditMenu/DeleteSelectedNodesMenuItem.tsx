@@ -16,7 +16,6 @@ import {
   ValueType,
 } from '../../../models'
 import { useTableStore } from '../../../store/TableStore'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 
 export const DeleteSelectedNodesMenuItem = (
   props: BaseMenuProps,
@@ -34,10 +33,7 @@ export const DeleteSelectedNodesMenuItem = (
     state.getViewModel(currentNetworkId),
   )
 
-  const tableRecord = useTableStore((state) => state.tables[currentNetworkId]) // Get table record
-  const visualStyle = useVisualStyleStore(
-    (state) => state.visualStyles[currentNetworkId],
-  ) // Get visual style for this network
+  const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
   const selectedNodes: IdType[] =
     viewModel !== undefined ? viewModel.selectedNodes : []
@@ -94,15 +90,8 @@ export const DeleteSelectedNodesMenuItem = (
       })
     }
 
-    console.log(
-      '!!!!!!!!!deleted objects:',
-      deletedEdges,
-      deletedNodeViewModels,
-      deletedEdgeViewModels,
-      deletedNodeRows,
-      deletedEdgeRows,
-      // deletedBypasses,
-    )
+    // TODO: Need to record the deleted bypasses??
+
     postEdit(
       UndoCommandType.DELETE_NODES,
       'Delete Nodes',
@@ -115,28 +104,11 @@ export const DeleteSelectedNodesMenuItem = (
         deletedEdgeViewModels,
         deletedNodeRows,
         deletedEdgeRows,
-        // deletedBypasses,
       ],
 
-      // This is for removing the deleted nodes and edges again
+      // Redo means removing the deleted nodes and edges again
       [currentNetworkId, selectedNodes],
     )
-
-    // console.log(
-    //   '!!!!!!!!!deleted objects:',
-    //   deletedEdges,
-    //   deletedNodeViewModels,
-    //   deletedEdgeViewModels,
-    // )
-    // postEdit(
-    //   UndoCommandType.DELETE_NODES,
-    //   'Delete Nodes',
-    //   // This is for adding back the deleted nodes and edges
-    //   [currentNetworkId, selectedNodes, deletedEdges, deletedNodeViewModels],
-
-    //   // This is for removing the deleted nodes and edges again
-    //   [currentNetworkId, selectedNodes],
-    // )
   }
 
   return (

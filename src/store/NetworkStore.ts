@@ -85,10 +85,6 @@ export const useNetworkStore = create(
               NetworkFn.addNodes(network, nodeIds)
               NetworkFn.addEdges(network, edges)
             }
-            const allNodes = network?.nodes
-            console.log('Now network nodes are', allNodes)
-            const allEdges = network?.edges
-            console.log('Now network edges are', allEdges)
             return {
               networks: { ...state.networks },
             }
