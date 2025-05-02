@@ -41,7 +41,6 @@ import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
 
 import { useUndoStack } from '../../../task/UndoStack'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { render } from '@testing-library/react'
 
 registerCyExtensions()
 interface NetworkRendererProps {
