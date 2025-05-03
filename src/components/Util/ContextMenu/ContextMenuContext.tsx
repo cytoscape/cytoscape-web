@@ -16,7 +16,7 @@ interface ContextMenuState {
 }
 
 interface ContextMenuContextProps {
-  showContextMenu: (event: React.MouseEvent, items: ContextMenuItem[]) => void
+  showContextMenu: (event: any, items: ContextMenuItem[]) => void
   hideContextMenu: () => void
 }
 
@@ -37,12 +37,11 @@ export const ContextMenuProvider = ({ children }: ContextMenuProviderProps) => {
   })
 
   const showContextMenu = useCallback(
-    (event: React.MouseEvent, items: ContextMenuItem[]) => {
-      event.preventDefault()
+    (event: any, items: ContextMenuItem[]) => {
       setContextMenuState({
         open: true,
-        mouseX: event.clientX - 2, // Small offset for better positioning
-        mouseY: event.clientY - 4, // Small offset for better positioning
+        mouseX: (event.clientX ?? 0) - 2, // Small offset for better positioning
+        mouseY: (event.clientY ?? 0) - 4, // Small offset for better positioning
         items: items,
       })
     },

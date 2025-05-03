@@ -24,6 +24,10 @@ const ContextMenu = ({
 
   return (
     <Menu
+      onContextMenu={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      }}
       open={open}
       onClose={onClose}
       anchorReference="anchorPosition"
@@ -34,6 +38,10 @@ const ContextMenu = ({
           <MenuItem
             key={index}
             onClick={() => handleItemClick(item.action)}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
             disabled={item.disabled ?? false}
           >
             {item.label}

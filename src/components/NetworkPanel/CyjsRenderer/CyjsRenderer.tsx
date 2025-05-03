@@ -38,11 +38,11 @@ import {
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 
 import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
-import { useContextMenu } from '../../../context/ContextMenuContext'
-import { ContextMenuItem } from '../../Util/ContextMenu/ContextMenuItem' // Import ContextMenuItem
 
 import { useUndoStack } from '../../../task/UndoStack'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { useContextMenu } from '../../Util/ContextMenu/ContextMenuContext'
+import { ContextMenuItem } from '../../Util/ContextMenu/ContextMenuItem'
 
 registerCyExtensions()
 interface NetworkRendererProps {
@@ -198,7 +198,7 @@ const CyjsRenderer = ({
     exclusiveSelect(id, selectedNodes, selectedEdges)
   }
 
-  const { showContextMenu, hideContextMenu } = useContextMenu() // Correct hook usage
+  const { showContextMenu, hideContextMenu } = useContextMenu()
 
   const renderNetwork = (forceFit: boolean = true): void => {
     if (
@@ -408,62 +408,34 @@ const CyjsRenderer = ({
       const target = e.target
       const position = e.renderedPosition // Use rendered position for menu coordinates
 
-      let menuItems: ContextMenuItem[] = []
-
       if (target === cy) {
-        // Background right-click
-        menuItems = [
-          {
-            label: 'Background Action 1',
-            action: () => console.log('Background Action 1'),
-          },
-          {
-            label: 'Background Action 2',
-            action: () => console.log('Background Action 2'),
-          },
-        ]
-      } else if (target.isNode()) {
-        // Node right-click
-        const nodeId = target.data('id')
-        menuItems = [
-          {
-            label: `Node ${nodeId} Action 1`,
-            action: () => console.log(`Node ${nodeId} Action 1`),
-          },
-          {
-            label: `Node ${nodeId} Action 2`,
-            action: () => console.log(`Node ${nodeId} Action 2`),
-          },
-          // Add more node-specific actions
-        ]
-      } else if (target.isEdge()) {
-        // Edge right-click
-        const edgeId = target.data('id')
-        menuItems = [
-          {
-            label: `Edge ${edgeId} Action 1`,
-            action: () => console.log(`Edge ${edgeId} Action 1`),
-          },
-          {
-            label: `Edge ${edgeId} Action 2`,
-            action: () => console.log(`Edge ${edgeId} Action 2`),
-          },
-          // Add more edge-specific actions
-        ]
+        // Background click
+        hideContextMenu()
+        return
       }
 
-      // Synthesize a React-like event object for positioning
-      const syntheticEvent = {
-        preventDefault: () => e.originalEvent.preventDefault(),
-        clientX: position.x, // Use rendered position
-        clientY: position.y, // Use rendered position
-      } as unknown as React.MouseEvent // Cast to satisfy type, use carefully
-
-      if (menuItems.length > 0) {
-        showContextMenu(syntheticEvent, menuItems)
-      } else {
-        hideContextMenu() // Hide if no items or click outside
+      // Display context menu only if the target is a node or edge
+      if (target.isNode() || target.isEdge()) {
+        // Create context menu items
+        const items: ContextMenuItem[] = [
+          {
+            label: 'Test Menu Item 1',
+            action: () => {
+              console.log('Test Menu Item 1 clicked')
+            },
+          },
+          {
+            label: 'Test Menu Item 2',
+            action: () => {
+              console.log('Test Menu Item 2 clicked')
+            },
+          },
+        ]
+        // Show context menu
+        showContextMenu(e, items)
       }
+      console.log('Context menu position:', position)
+      console.log('Context menu target:', target)
     })
 
     const annotations = (summary?.properties ?? []).filter(
@@ -917,6 +889,7 @@ const CyjsRenderer = ({
         }}
         id="cy-container"
         ref={cyContainer}
+        onContextMenu={(e) => e.preventDefault()}
       />
     </>
   )

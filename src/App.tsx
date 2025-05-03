@@ -19,7 +19,7 @@ import { KeycloakContext } from './bootstrap'
 import { useCredentialStore } from './store/CredentialStore'
 import { RedirectPanel } from './RedirectPanel'
 import ErrorBoundary from './ErrorBoundary'
-import { ContextMenuProvider } from './context/ContextMenuContext' // Import the provider
+import { ContextMenuProvider } from './components/Util/ContextMenu/ContextMenuContext'
 
 enableMapSet()
 
