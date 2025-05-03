@@ -74,15 +74,6 @@ export const useNetworkViewManager = (): void => {
       }
 
       exclusiveSelect(networkId, newNodeSelection, newEdgeSelection)
-
-      // Check selection
-      console.log(
-        '* Network view model and selection updated',
-        lastUpdated,
-        newNodeSelection,
-        newEdgeSelection,
-      )
-
       deleteViewObjects(networkId, payload)
     }
   }, [lastUpdated])

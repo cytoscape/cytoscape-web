@@ -10,7 +10,6 @@ import {
 } from '@mui/material'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { RichTextEditor, Link } from '@mantine/tiptap'
 import { useEditor } from '@tiptap/react'
 import Highlight from '@tiptap/extension-highlight'
