@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { ReactElement } from 'react'
+import React, { ReactElement } from 'react'
 import { FloatingToolBar } from '../FloatingToolBar'
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
@@ -40,10 +40,7 @@ export const NetworkTab = ({
         width: '100%',
         backgroundColor: bgColor !== undefined ? bgColor : '#FFFFFF',
         border: isActive ? '3px solid orange' : '3px solid transparent',
-        // Adjust the hidden bottom border to be 4px
         borderBottom: isActive ? '4px solid orange' : '4px solid transparent',
-
-        // Mount all components in the background but display only the selected one
         display: selected ? 'block' : 'none',
       }}
       onClick={handleClick}

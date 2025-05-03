@@ -19,6 +19,7 @@ import { KeycloakContext } from './bootstrap'
 import { useCredentialStore } from './store/CredentialStore'
 import { RedirectPanel } from './RedirectPanel'
 import ErrorBoundary from './ErrorBoundary'
+import { ContextMenuProvider } from './context/ContextMenuContext' // Import the provider
 
 enableMapSet()
 
@@ -102,39 +103,41 @@ export const App = (): React.ReactElement => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <ErrorBoundary>
-        <RouterProvider router={router} />
-        <CookieConsent
-          location="bottom"
-          buttonText="Accept"
-          declineButtonText="Decline"
-          enableDeclineButton
-          setDeclineCookie={false}
-          flipButtons
-          onDecline={removeAllCookies}
-          cookieName="cytoscapeWebCookieConsent"
-          style={{ background: '#4F4F4F' }}
-          buttonStyle={{
-            backgroundColor: '#0073B0',
-            color: '#ffffff',
-            fontSize: '13px',
-          }}
-          declineButtonStyle={{
-            color: '#ffffff',
-            background: '#6c757d',
-            fontSize: '13px',
-          }}
-          expires={150}
-        >
-          This site uses cookies to support Cytoscape Web’s network
-          visualization tools and improve your experience. By accepting, you
-          consent to our data practices.{' '}
-          <a
-            href="https://github.com/cytoscape/cytoscape-web/blob/development/privacy-policy.md"
-            style={{ color: '#e0e0e0' }}
+        <ContextMenuProvider>
+          <RouterProvider router={router} />
+          <CookieConsent
+            location="bottom"
+            buttonText="Accept"
+            declineButtonText="Decline"
+            enableDeclineButton
+            setDeclineCookie={false}
+            flipButtons
+            onDecline={removeAllCookies}
+            cookieName="cytoscapeWebCookieConsent"
+            style={{ background: '#4F4F4F' }}
+            buttonStyle={{
+              backgroundColor: '#0073B0',
+              color: '#ffffff',
+              fontSize: '13px',
+            }}
+            declineButtonStyle={{
+              color: '#ffffff',
+              background: '#6c757d',
+              fontSize: '13px',
+            }}
+            expires={150}
           >
-            Learn more
-          </a>
-        </CookieConsent>
+            This site uses cookies to support Cytoscape Web’s network
+            visualization tools and improve your experience. By accepting, you
+            consent to our data practices.{' '}
+            <a
+              href="https://github.com/cytoscape/cytoscape-web/blob/development/privacy-policy.md"
+              style={{ color: '#e0e0e0' }}
+            >
+              Learn more
+            </a>
+          </CookieConsent>
+        </ContextMenuProvider>
       </ErrorBoundary>
     </ThemeProvider>
   )
