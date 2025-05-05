@@ -69,7 +69,7 @@ export const exportNetworkToCx2 = (
 
   const vpNameToCXName = (vpName: VisualPropertyName): string => {
     const converter = cxVisualPropertyConverter[vpName]
-    return converter && converter.cxVPName ? converter.cxVPName : vpName
+    return converter.cxVPName
   }
 
   // TODO flesh out CX vp types
@@ -250,42 +250,41 @@ export const exportNetworkToCx2 = (
     .filter((vp) => vp.mapping != null)
     .reduce(vpMappingsAccumulator, {})
 
-  const pieColorKeys = Object.keys(nodeDefaults).filter((key) =>
-    /^pie-\d+-background-color$/.test(key),
-  )
-  const pieMappingKeys = Object.keys(nodeMappings).filter((key) =>
-    /^pie-\d+-background-size$/.test(key),
-  )
+  // const pieColorKeys = Object.keys(nodeDefaults).filter((key) =>
+  //   /^pie-\d+-background-color$/.test(key),
+  // )
+  // const pieMappingKeys = Object.keys(nodeMappings).filter((key) =>
+  //   /^pie-\d+-background-size$/.test(key),
+  // )
 
-  if (pieColorKeys.length > 0) {
-    pieColorKeys.sort(
-      (a, b) => parseInt(a.match(/\d+/)![0]) - parseInt(b.match(/\d+/)![0]),
-    )
-    pieMappingKeys.sort(
-      (a, b) => parseInt(a.match(/\d+/)![0]) - parseInt(b.match(/\d+/)![0]),
-    )
+  // if (pieColorKeys.length > 0) {
+  //   pieColorKeys.sort(
+  //     (a, b) => parseInt(a.match(/\d+/)![0]) - parseInt(b.match(/\d+/)![0]),
+  //   )
+  //   pieMappingKeys.sort(
+  //     (a, b) => parseInt(a.match(/\d+/)![0]) - parseInt(b.match(/\d+/)![0]),
+  //   )
 
-    const pieColors = pieColorKeys.map((key) => nodeDefaults[key])
-    const pieDataColumns = pieMappingKeys.map(
-      (key) => nodeMappings[key]?.definition?.attribute || '',
-    )
+  //   const pieColors = pieColorKeys.map((key) => nodeDefaults[key])
+  //   const pieDataColumns = pieMappingKeys.map(
+  //     (key) => nodeMappings[key]?.definition?.attribute || '',
+  //   )
 
+  //   const customGraphics = {
+  //     type: 'chart',
+  //     name: 'org.cytoscape.PieChart',
+  //     properties: {
+  //       cy_colors: pieColors,
+  //       cy_dataColumns: pieDataColumns,
+  //     },
+  //   }
 
-    const customGraphics = {
-      type: 'chart',
-      name: 'org.cytoscape.PieChart',
-      properties: {
-        cy_colors: pieColors,
-        cy_dataColumns: pieDataColumns,
-      },
-    }
+  //   pieColorKeys.forEach((key) => delete nodeDefaults[key])
+  //   pieMappingKeys.forEach((key) => delete nodeMappings[key])
 
-    pieColorKeys.forEach((key) => delete nodeDefaults[key])
-    pieMappingKeys.forEach((key) => delete nodeMappings[key])
-
-    nodeDefaults['NODE_CUSTOMGRAPHICS_1'] =
-      customGraphics as unknown as CXVisualPropertyValue
-  }
+  //   nodeDefaults['NODE_CUSTOMGRAPHICS_1'] =
+  //     customGraphics as unknown as CXVisualPropertyValue
+  // }
 
   const visualProperties = [
     {
@@ -298,9 +297,14 @@ export const exportNetworkToCx2 = (
           vpDefaultsAccumulator,
           {},
         ),
-        node: nodeDefaults,
+        node: VisualStyleFn.nodeVisualProperties(vs).reduce(
+          vpDefaultsAccumulator,
+          {},
+        ),
       },
-      nodeMapping: nodeMappings,
+      nodeMapping: VisualStyleFn.nodeVisualProperties(vs)
+        .filter((vp) => vp.mapping != null)
+        .reduce(vpMappingsAccumulator, {}),
       edgeMapping: VisualStyleFn.edgeVisualProperties(vs)
         .filter((vp) => vp.mapping != null)
         .reduce(vpMappingsAccumulator, {}),

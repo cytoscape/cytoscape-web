@@ -19,9 +19,11 @@ import {
   ContinuousMappingFunction,
   PassthroughMappingFunction,
   MappingFunctionType,
+  CustomGraphicsType,
 } from '..'
 
 import {
+  CXCustomGraphicsType,
   CXId,
   CXVisualMappingFunction,
   cxVisualPropertyConverter,
@@ -29,10 +31,15 @@ import {
   CXVisualPropertyValue,
 } from './cxVisualPropertyConverter'
 
-import { getDefaultVisualStyle } from './DefaultVisualStyle'
+import {
+  getDefaultVisualStyle,
+  DEFAULT_CUSTOM_GRAPHICS,
+  DEFAULT_CUSTOM_GRAPHICS_POSITION,
+} from './DefaultVisualStyle'
 import { createNewNetworkView, updateNetworkView } from './compute-view-util'
 import { VisualStyleOptions } from '../VisualStyleOptions'
 import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
+import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
 
 const sortByDisplayName = (
   a: VisualProperty<VisualPropertyValueType>,
@@ -379,94 +386,101 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     })
   })
 
-  const updateOrCreatePassthroughVP = (
-    vpName: string,
-    displayName: string,
-    tooltip: string,
-    attributeName: string,
-  ) => {
-    ;(visualStyle as any)[vpName] = {
-      group: 'node',
-      name: vpName,
-      displayName,
-      type: 'number',
-      defaultValue: 0,
-      bypassMap: new Map(),
-      tooltip,
-      cxVPName: vpName,
-      mapping: {
-        type: 'passthrough',
-        attribute: attributeName,
-        visualPropertyType: 'number',
-      },
-    }
-  }
+  // const updateOrCreatePassthroughVP = (
+  //   vpName: string,
+  //   displayName: string,
+  //   tooltip: string,
+  //   attributeName: string,
+  // ) => {
+  //   ;(visualStyle as any)[vpName] = {
+  //     group: 'node',
+  //     name: vpName,
+  //     displayName,
+  //     type: 'number',
+  //     defaultValue: 0,
+  //     bypassMap: new Map(),
+  //     tooltip,
+  //     cxVPName: vpName,
+  //     mapping: {
+  //       type: 'passthrough',
+  //       attribute: attributeName,
+  //       visualPropertyType: 'number',
+  //     },
+  //   }
+  // }
 
-  for (let i = 1; i <= 9; i++) {
-    const customKey = `NODE_CUSTOMGRAPHICS_${i}`;
-    const customValue = defaultNodeProperties[customKey];
-    
-    if (!customValue) continue;
-  
-    let pieChartConfig: any;
-    const pieValue = customValue as any;
-  
-    if (typeof pieValue === 'string') {
-      const match = pieValue.match(/{.*}/);
-      if (match) {
-        try {
-          const parsedObj = JSON.parse(match[0]);
-          if (parsedObj.name !== 'org.cytoscape.PieChart') {
-            console.error(`Config name is not org.cytoscape.PieChart for ${customKey}`);
-            continue;
-          }
-          pieChartConfig = parsedObj.properties;
-        } catch (e) {
-          console.error(`Failed to parse pie chart config from string for ${customKey}`, e);
-        }
-      }
-    } else if (typeof pieValue === 'object') {
-      if (pieValue.name !== 'org.cytoscape.PieChart') {
-        console.error(`Config name is not org.cytoscape.PieChart for ${customKey}`);
-        continue;
-      }
-      pieChartConfig = pieValue.properties;
-    }
-  
-    if (pieChartConfig) {
-      (visualStyle as any).pieChartConfig = pieChartConfig;
-      const nodesArray = cxUtil.getNodes(cx);
-      if (nodesArray && nodesArray.length > 0) {
-        const columns: string[] = pieChartConfig.cy_dataColumns;
-        columns.forEach((col, j) => {
-          const vpName = `pie-${j + 1}-background-size`;
-          const displayName = `Pie Slice ${j + 1} Size`;
-          const tooltip = `The size of pie slice ${j + 1} as a percentage of the pie size.`;
-          updateOrCreatePassthroughVP(vpName, displayName, tooltip, col);
-        });
-      }
-  
-      if (pieChartConfig.cy_colors && Array.isArray(pieChartConfig.cy_colors)) {
-        pieChartConfig.cy_colors.forEach((color: string, j: number) => {
-          const vpName = `pie-${j + 1}-background-color`;
-          const displayName = `Pie Slice ${j + 1} Background Color`;
-          const tooltip = `The background color for pie slice ${j + 1}.`;
-          (visualStyle as any)[vpName] = {
-            group: 'node',
-            name: vpName,
-            displayName,
-            type: 'color',
-            defaultValue: color,
-            bypassMap: new Map(),
-            tooltip,
-          };
-        });
-      }
-  
-      // Process only the first encountered valid custom graphic
-      break;
-    }
-  }
+  // for (let i = 1; i <= 9; i++) {
+  //   const customKey = `NODE_CUSTOMGRAPHICS_${i}`
+  //   const customValue = defaultNodeProperties[customKey]
+
+  //   if (!customValue) continue
+
+  //   let pieChartConfig: any
+  //   const pieValue = customValue as any
+
+  //   if (typeof pieValue === 'string') {
+  //     const match = pieValue.match(/{.*}/)
+  //     if (match) {
+  //       try {
+  //         const parsedObj = JSON.parse(match[0])
+  //         if (parsedObj.name !== 'org.cytoscape.PieChart') {
+  //           console.error(
+  //             `Config name is not org.cytoscape.PieChart for ${customKey}`,
+  //           )
+  //           continue
+  //         }
+  //         pieChartConfig = parsedObj.properties
+  //       } catch (e) {
+  //         console.error(
+  //           `Failed to parse pie chart config from string for ${customKey}`,
+  //           e,
+  //         )
+  //       }
+  //     }
+  //   } else if (typeof pieValue === 'object') {
+  //     if (pieValue.name !== 'org.cytoscape.PieChart') {
+  //       console.error(
+  //         `Config name is not org.cytoscape.PieChart for ${customKey}`,
+  //       )
+  //       continue
+  //     }
+  //     pieChartConfig = pieValue.properties
+  //   }
+
+  //   if (pieChartConfig) {
+  //     ;(visualStyle as any).pieChartConfig = pieChartConfig
+  //     const nodesArray = cxUtil.getNodes(cx)
+  //     if (nodesArray && nodesArray.length > 0) {
+  //       const columns: string[] = pieChartConfig.cy_dataColumns
+  //       columns.forEach((col, j) => {
+  //         const vpName = `pie-${j + 1}-background-size`
+  //         const displayName = `Pie Slice ${j + 1} Size`
+  //         const tooltip = `The size of pie slice ${j + 1} as a percentage of the pie size.`
+  //         updateOrCreatePassthroughVP(vpName, displayName, tooltip, col)
+  //       })
+  //     }
+
+  //     if (pieChartConfig.cy_colors && Array.isArray(pieChartConfig.cy_colors)) {
+  //       pieChartConfig.cy_colors.forEach((color: string, j: number) => {
+  //         const vpName = `pie-${j + 1}-background-color`
+  //         const displayName = `Pie Slice ${j + 1} Background Color`
+  //         const tooltip = `The background color for pie slice ${j + 1}.`
+  //         ;(visualStyle as any)[vpName] = {
+  //           group: 'node',
+  //           name: vpName,
+  //           displayName,
+  //           type: 'color',
+  //           defaultValue: color,
+  //           bypassMap: new Map(),
+  //           tooltip,
+  //         }
+  //       })
+  //     }
+
+  //     // Process only the first encountered valid custom graphic
+  //     break
+  //   }
+  // }
   return visualStyle
 }
 

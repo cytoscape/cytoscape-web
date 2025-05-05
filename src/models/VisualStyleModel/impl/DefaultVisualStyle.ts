@@ -1,4 +1,8 @@
-import { NodeLabelPositionType } from '../VisualPropertyValue'
+import {
+  CustomGraphicsType,
+  NodeLabelPositionType,
+} from '../VisualPropertyValue'
+import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
 import { VisualStyle } from '../VisualStyle'
 
 export const DEFAULT_NODE_LABEL_POSITION: NodeLabelPositionType = {
@@ -10,6 +14,23 @@ export const DEFAULT_NODE_LABEL_POSITION: NodeLabelPositionType = {
   MARGIN_X: 0,
   MARGIN_Y: 0,
 }
+
+export const DEFAULT_CUSTOM_GRAPHICS_POSITION: CustomGraphicsPositionType = {
+  justification: 'center',
+  marginX: 0,
+  marginY: 0,
+  entityAnchor: 'C',
+  graphicsAnchor: 'C',
+}
+
+export const DEFAULT_CUSTOM_GRAPHICS: CustomGraphicsType = {
+  type: 'none',
+  name: 'none',
+  properties: {},
+}
+
+export const DEFAULT_CUSTOM_GRAPHICS_SIZE: number = 50
+
 export const getDefaultVisualStyle = (): VisualStyle => ({
   nodeShape: {
     group: 'node',
@@ -210,6 +231,240 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     tooltip:
       'The stacking order of nodes on the canvas. Higher values are drawn on top.',
   },
+  nodeImageChart1: {
+    group: 'node',
+    name: 'nodeImageChart1',
+    displayName: 'Image/Chart 1',
+    type: 'image/chart',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS,
+    bypassMap: new Map(),
+    tooltip:
+      'Custom graphics applied to nodes. This can be an image or a chart.',
+  },
+  nodeImageChart2: {
+    group: 'node',
+    name: 'nodeImageChart2',
+    displayName: 'Image/Chart 2',
+    type: 'image/chart',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS,
+    bypassMap: new Map(),
+    tooltip:
+      'Custom graphics applied to nodes. This can be an image or a chart.',
+  },
+  nodeImageChart3: {
+    group: 'node',
+    name: 'nodeImageChart3',
+    displayName: 'Image/Chart 3',
+    type: 'image/chart',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS,
+    bypassMap: new Map(),
+    tooltip:
+      'Custom graphics applied to nodes. This can be an image or a chart.',
+  },
+  nodeImageChart4: {
+    group: 'node',
+    name: 'nodeImageChart4',
+    displayName: 'Image/Chart 4',
+    type: 'image/chart',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS,
+    bypassMap: new Map(),
+    tooltip:
+      'Custom graphics applied to nodes. This can be an image or a chart.',
+  },
+  nodeImageChart5: {
+    group: 'node',
+    name: 'nodeImageChart5',
+    displayName: 'Image/Chart 5',
+    type: 'image/chart',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS,
+    bypassMap: new Map(),
+    tooltip:
+      'Custom graphics applied to nodes. This can be an image or a chart.',
+  },
+  nodeImageChart6: {
+    group: 'node',
+    name: 'nodeImageChart6',
+    displayName: 'Image/Chart 6',
+    type: 'image/chart',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS,
+    bypassMap: new Map(),
+    tooltip:
+      'Custom graphics applied to nodes. This can be an image or a chart.',
+  },
+  nodeImageChart7: {
+    group: 'node',
+    name: 'nodeImageChart7',
+    displayName: 'Image/Chart 7',
+    type: 'image/chart',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS,
+    bypassMap: new Map(),
+    tooltip:
+      'Custom graphics applied to nodes. This can be an image or a chart.',
+  },
+  nodeImageChart8: {
+    group: 'node',
+    name: 'nodeImageChart8',
+    displayName: 'Image/Chart 8',
+    type: 'image/chart',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS,
+    bypassMap: new Map(),
+    tooltip:
+      'Custom graphics applied to nodes. This can be an image or a chart.',
+  },
+  nodeImageChart9: {
+    group: 'node',
+    name: 'nodeImageChart9',
+    displayName: 'Image/Chart 9',
+    type: 'image/chart',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS,
+    bypassMap: new Map(),
+    tooltip:
+      'Custom graphics applied to nodes. This can be an image or a chart.',
+  },
+  nodeImageChartPosition1: {
+    group: 'node',
+    name: 'nodeImageChartPosition1',
+    displayName: 'Image/Chart Position 1',
+    type: 'customGraphicsPosition',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_POSITION,
+    bypassMap: new Map(),
+  },
+  nodeImageChartPosition2: {
+    group: 'node',
+    name: 'nodeImageChartPosition2',
+    displayName: 'Image/Chart Position 2',
+    type: 'customGraphicsPosition',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_POSITION,
+    bypassMap: new Map(),
+  },
+  nodeImageChartPosition3: {
+    group: 'node',
+    name: 'nodeImageChartPosition3',
+    displayName: 'Image/Chart Position 3',
+    type: 'customGraphicsPosition',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_POSITION,
+    bypassMap: new Map(),
+  },
+  nodeImageChartPosition4: {
+    group: 'node',
+    name: 'nodeImageChartPosition4',
+    displayName: 'Image/Chart Position 4',
+    type: 'customGraphicsPosition',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_POSITION,
+    bypassMap: new Map(),
+  },
+  nodeImageChartPosition5: {
+    group: 'node',
+    name: 'nodeImageChartPosition5',
+    displayName: 'Image/Chart Position 5',
+    type: 'customGraphicsPosition',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_POSITION,
+    bypassMap: new Map(),
+  },
+  nodeImageChartPosition6: {
+    group: 'node',
+    name: 'nodeImageChartPosition6',
+    displayName: 'Image/Chart Position 6',
+    type: 'customGraphicsPosition',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_POSITION,
+    bypassMap: new Map(),
+  },
+  nodeImageChartPosition7: {
+    group: 'node',
+    name: 'nodeImageChartPosition7',
+    displayName: 'Image/Chart Position 7',
+    type: 'customGraphicsPosition',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_POSITION,
+    bypassMap: new Map(),
+  },
+  nodeImageChartPosition8: {
+    group: 'node',
+    name: 'nodeImageChartPosition8',
+    displayName: 'Image/Chart Position 8',
+    type: 'customGraphicsPosition',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_POSITION,
+    bypassMap: new Map(),
+  },
+  nodeImageChartPosition9: {
+    group: 'node',
+    name: 'nodeImageChartPosition9',
+    displayName: 'Image/Chart Position 9',
+    type: 'customGraphicsPosition',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_POSITION,
+    bypassMap: new Map(),
+  },
+  nodeImageChartSize1: {
+    group: 'node',
+    name: 'nodeImageChartSize1',
+    displayName: 'Image/Chart Size 1',
+    type: 'number',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
+    bypassMap: new Map(),
+  },
+  nodeImageChartSize2: {
+    group: 'node',
+    name: 'nodeImageChartSize1',
+    displayName: 'Image/Chart Size 2',
+    type: 'number',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
+    bypassMap: new Map(),
+  },
+  nodeImageChartSize3: {
+    group: 'node',
+    name: 'nodeImageChartSize1',
+    displayName: 'Image/Chart Size 3',
+    type: 'number',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
+    bypassMap: new Map(),
+  },
+  nodeImageChartSize4: {
+    group: 'node',
+    name: 'nodeImageChartSize1',
+    displayName: 'Image/Chart Size 4',
+    type: 'number',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
+    bypassMap: new Map(),
+  },
+  nodeImageChartSize5: {
+    group: 'node',
+    name: 'nodeImageChartSize1',
+    displayName: 'Image/Chart Size 5',
+    type: 'number',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
+    bypassMap: new Map(),
+  },
+  nodeImageChartSize6: {
+    group: 'node',
+    name: 'nodeImageChartSize1',
+    displayName: 'Image/Chart Size 6',
+    type: 'number',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
+    bypassMap: new Map(),
+  },
+  nodeImageChartSize7: {
+    group: 'node',
+    name: 'nodeImageChartSize1',
+    displayName: 'Image/Chart Size 7',
+    type: 'number',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
+    bypassMap: new Map(),
+  },
+  nodeImageChartSize8: {
+    group: 'node',
+    name: 'nodeImageChartSize1',
+    displayName: 'Image/Chart Size 8',
+    type: 'number',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
+    bypassMap: new Map(),
+  },
+  nodeImageChartSize9: {
+    group: 'node',
+    name: 'nodeImageChartSize1',
+    displayName: 'Image/Chart Size 9',
+    type: 'number',
+    defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
+    bypassMap: new Map(),
+  },
   edgeLineColor: {
     group: 'edge',
     name: 'edgeLineColor',
@@ -376,16 +631,6 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     bypassMap: new Map(),
     tooltip:
       'The stacking order of edges on the canvas. Higher values are drawn on top.',
-  },
-  pieSize: {
-    group: 'node',
-    name: 'pieSize',
-    displayName: 'Pie Size',
-    type: 'string',
-    defaultValue: '80%',
-    bypassMap: new Map(),
-    tooltip:
-      'The diameter of the pie chart as a percentage of the node size (or an absolute value).',
   },
   networkBackgroundColor: {
     group: 'network',
