@@ -36,7 +36,18 @@ export interface NetworkUpdateActions {
   addEdges: (networkId: IdType, edges: Edge[]) => void
 
   // Delete nodes and edges from a network
-  deleteNodes: (networkId: IdType, nodeIds: IdType[]) => void
+
+  /**
+   * Delete nodes and all edges connected to them
+   *
+   * @param networkId ID of the network to delete nodes from
+   * @param nodeIds List of node IDs to be deleted
+   * @returns List of deleted Edge objects connected to the deleted nodes. (Node IDs are not returned.)
+   *
+   * @description This function will delete the nodes and all edges connected to them.
+   *
+   */
+  deleteNodes: (networkId: IdType, nodeIds: IdType[]) => Edge[]
   deleteEdges: (networkId: IdType, edgeIds: IdType[]) => void
 }
 

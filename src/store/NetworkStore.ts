@@ -80,7 +80,7 @@ export const useNetworkStore = create(
           edges: Edge[],
         ) => {
           set((state) => {
-            const network = state.networks.get(networkId)
+            const network: Network | undefined = state.networks.get(networkId)
             if (network !== undefined) {
               NetworkFn.addNodes(network, nodeIds)
               NetworkFn.addEdges(network, edges)
@@ -91,7 +91,9 @@ export const useNetworkStore = create(
           })
         },
 
-        deleteNodes: (networkId: IdType, nodeIds: IdType[]) => {
+        deleteNodes: (networkId: IdType, nodeIds: IdType[]): Edge[] => {
+          let deletedConnectingEdges: Edge[] = []
+
           set((state) => {
             if (nodeIds.length === 0) {
               return state
@@ -103,16 +105,38 @@ export const useNetworkStore = create(
               const deletedEdges = deletedElements.edges()
               const deletedNodeIds = deletedNodes.map((node) => node.id())
               const deletedEdgeIds = deletedEdges.map((edge) => edge.id())
-              const deleted = [...deletedNodeIds, ...deletedEdgeIds]
+
+              // Get edges to be deleted from the deleted edge objects
+              const deletedEdgeObjects: Edge[] = deletedEdges.map((edge) => {
+                const sourceNode: IdType = edge.source().id()
+                const targetNode: IdType = edge.target().id()
+                return {
+                  id: edge.id(),
+                  s: sourceNode,
+                  t: targetNode,
+                }
+              })
+
+              const deleted: string[] = [...deletedNodeIds, ...deletedEdgeIds]
               const event: NetworkUpdatedEvent = {
                 networkId,
                 type: UpdateEventType.DELETE,
                 payload: deleted,
               }
               state.lastUpdated = event
+              deletedConnectingEdges = deletedEdgeObjects
+            } else {
+              console.warn(
+                'Network not found when deleting nodes',
+                networkId,
+                nodeIds,
+              )
             }
             return state
           })
+
+          // Return the deleted edge objects and this will be used for undo / redo
+          return deletedConnectingEdges
         },
         deleteEdges: (networkId: IdType, edgeIds: IdType[]) => {
           set((state) => {

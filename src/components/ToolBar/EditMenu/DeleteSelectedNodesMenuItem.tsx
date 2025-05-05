@@ -5,11 +5,23 @@ import { useNetworkStore } from '../../../store/NetworkStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import { useViewModelStore } from '../../../store/ViewModelStore'
-import _ from 'lodash'
+
+import { useUndoStack } from '../../../task/UndoStack'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import {
+  Edge,
+  EdgeView,
+  NetworkView,
+  NodeView,
+  ValueType,
+} from '../../../models'
+import { useTableStore } from '../../../store/TableStore'
 
 export const DeleteSelectedNodesMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
+  const { postEdit } = useUndoStack()
+
   const [disabled, setDisabled] = useState<boolean>(true)
   const deleteSelectedNodes = useNetworkStore((state) => state.deleteNodes)
 
@@ -17,9 +29,11 @@ export const DeleteSelectedNodesMenuItem = (
     (state) => state.workspace.currentNetworkId,
   )
 
-  const viewModel = useViewModelStore((state) =>
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
   )
+
+  const tableRecord = useTableStore((state) => state.tables[currentNetworkId])
 
   const selectedNodes: IdType[] =
     viewModel !== undefined ? viewModel.selectedNodes : []
@@ -32,48 +46,69 @@ export const DeleteSelectedNodesMenuItem = (
     }
   }, [selectedNodes])
 
-  // TODO continue work on undo deletion after adding nodes/edges works properly
-  // const handleDeleteNodes = (): void => {
-  //   // TODO: ask user to confirm deletion
-  //   const connectedEdges = cyNet
-  //     .nodes()
-  //     .filter((node) => selectedNodes.includes(node.id()))
-  //     .connectedEdges()
-  //   const prevNodeRows = new Map()
-  //   selectedNodes.forEach((nodeId) => {
-  //     const rowData = nodeTable?.rows.get(nodeId)
-  //     if (rowData) {
-  //       prevNodeRows.set(nodeId, rowData)
-  //     }
-  //   })
-  //   const prevNodeIds = network?.nodes
-  //     .filter((n) => selectedNodes.includes(n.id))
-  //     .map((n) => n.id)
-  //   const prevEdges = network?.edges.filter((e) =>
-  //     connectedEdges.map((edge) => edge.id()).includes(e.id),
-  //   )
-  //   const prevEdgeRows = new Map()
-  //   connectedEdges.forEach((edge) => {
-  //     const rowData = edgeTable?.rows.get(edge.id())
-  //     if (rowData) {
-  //       prevEdgeRows.set(edge.id(), rowData)
-  //     }
-  //   })
-  //   postEdit(UndoCommandType.DELETE_NODES, [
-  //     currentNetworkId,
-  //     prevNodeIds,
-  //     prevNodeRows,
-  //     prevEdges,
-  //     prevEdgeRows,
-  //   ])
-
-  //   props.handleClose()
-  //   deleteSelectedNodes(currentNetworkId, selectedNodes)
-  // }
-
   const handleDeleteNodes = (): void => {
     props.handleClose()
-    deleteSelectedNodes(currentNetworkId, selectedNodes)
+
+    // Need to record the view models for nodes and edges
+    const deletedNodeViewModels: NodeView[] = []
+    if (viewModel !== undefined) {
+      const { nodeViews } = viewModel
+      selectedNodes.forEach((nodeId: IdType) => {
+        deletedNodeViewModels.push(nodeViews[nodeId])
+      })
+    }
+
+    const deletedEdges: Edge[] = deleteSelectedNodes(
+      currentNetworkId,
+      selectedNodes,
+    )
+
+    // Record the deleted edge view models
+    const deletedEdgeViewModels: EdgeView[] = []
+    if (viewModel !== undefined) {
+      const { edgeViews } = viewModel
+      deletedEdges.forEach((edge: Edge) => {
+        const edgeId: IdType = edge.id
+        deletedEdgeViewModels.push(edgeViews[edgeId])
+      })
+    }
+
+    const deletedNodeRows = new Map<IdType, Record<string, ValueType>>()
+    const deletedEdgeRows = new Map<IdType, Record<string, ValueType>>()
+    if (tableRecord !== undefined) {
+      selectedNodes.forEach((nodeId) => {
+        const row = tableRecord.nodeTable.rows.get(nodeId)
+        if (row !== undefined) {
+          deletedNodeRows.set(nodeId, { ...row }) // Clone row data
+        }
+      })
+      deletedEdges.forEach((edge) => {
+        const row = tableRecord.edgeTable.rows.get(edge.id)
+        if (row !== undefined) {
+          deletedEdgeRows.set(edge.id, { ...row }) // Clone row data
+        }
+      })
+    }
+
+    // TODO: Need to record the deleted bypasses??
+
+    postEdit(
+      UndoCommandType.DELETE_NODES,
+      'Delete Nodes',
+      // This is for adding back the deleted nodes and edges, views, tables, bypasses
+      [
+        currentNetworkId,
+        selectedNodes,
+        deletedEdges,
+        deletedNodeViewModels,
+        deletedEdgeViewModels,
+        deletedNodeRows,
+        deletedEdgeRows,
+      ],
+
+      // Redo means removing the deleted nodes and edges again
+      [currentNetworkId, selectedNodes],
+    )
   }
 
   return (

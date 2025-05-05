@@ -5,6 +5,7 @@ import Cytoscape, {
   EdgeSingular,
   EventObject,
   NodeSingular,
+  Position,
   SingularElementArgument,
 } from 'cytoscape'
 // @ts-expect-error-next-line
@@ -20,7 +21,7 @@ import { useViewModelStore } from '../../../store/ViewModelStore'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { Network } from '../../../models/NetworkModel'
 import { ReactElement, useEffect, useMemo, useRef, useState } from 'react'
-import { NetworkView } from '../../../models/ViewModel'
+import { NetworkView, NodeView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
@@ -37,6 +38,9 @@ import {
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 
 import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
+
+import { useUndoStack } from '../../../task/UndoStack'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 
 registerCyExtensions()
 interface NetworkRendererProps {
@@ -63,6 +67,15 @@ const CyjsRenderer = ({
   displayMode = DisplayMode.SELECT,
   hasTab = false,
 }: NetworkRendererProps): ReactElement => {
+  // For Undo functionality
+  const { postEdit } = useUndoStack()
+
+  // This is used to store the drag start position of the node
+  // when the user starts dragging the node
+  const dragStartPosition = useRef<Map<IdType, { x: number; y: number }>>(
+    new Map(),
+  )
+
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
   )
@@ -183,7 +196,7 @@ const CyjsRenderer = ({
     exclusiveSelect(id, selectedNodes, selectedEdges)
   }
 
-  const renderNetwork = (): void => {
+  const renderNetwork = (forceFit: boolean = true): void => {
     if (
       cy === null ||
       (renderedId === id &&
@@ -311,23 +324,70 @@ const CyjsRenderer = ({
     })
 
     // Moving nodes
+
+    // This captures the drag start position of the node
+    // when the user starts dragging the node
+    cy.on('grab', 'node', (e: EventObject): void => {
+      const targetNode = e.target
+
+      // Check if the target is a node
+      if (!targetNode.isNode()) return
+
+      const nodeId: IdType = targetNode.data('id')
+      const position = targetNode.position()
+      const nodeView: NodeView | undefined = networkView?.nodeViews[nodeId]
+      if (nodeView !== undefined) {
+        dragStartPosition.current.set(nodeId, { ...position })
+      }
+    })
+
     cy.on('dragfree', 'node', (e: EventObject): void => {
       // Enable flag to avoid unnecessary fit
       setNodesMoved(true)
 
-      const targetNode = e.target
+      // This is the Cytoscape.js node object
+      const targetNode: NodeSingular = e.target as NodeSingular
       const nodeId: IdType = targetNode.data('id')
-      const position = targetNode.position()
-      const prevPos = networkView?.nodeViews[nodeId]
 
+      // The position of the node from the Cytoscape.js instance
+      const position: Position = targetNode.position()
+
+      // The position of the node recorded when the user started dragging
+      const startPos: { x: number; y: number } | undefined =
+        dragStartPosition.current.get(nodeId)
+
+      // Record the position as the original position
+
+      let undoPosition: [number, number]
+      if (startPos !== undefined) {
+        undoPosition = [startPos.x, startPos.y]
+      } else {
+        console.warn(
+          `The start position of the node ${nodeId} is undefined. This should not happen.`,
+        )
+        // Fallback to the current position in the view model
+        const nodeView: NodeView | undefined = networkView?.nodeViews[nodeId]
+        if (nodeView !== undefined) {
+          undoPosition = [nodeView.x, nodeView.y]
+        } else {
+          // Fallback to (0, 0) if the node view is also undefined
+          undoPosition = [0, 0]
+        }
+      }
+
+      // Clear the original position cache of the node when dragging ends
+      dragStartPosition.current.delete(nodeId)
+
+      // Update the view model with the new position
       setNodePosition(id, nodeId, [position.x, position.y])
 
-      // TODO moving nodes breaks the undo stack
-      // postEdit(UndoCommandType.MOVE_NODES, [
-      //   id,
-      //   nodeId,
-      //   [prevPos?.x, prevPos?.y],
-      // ])
+      // Record the undo action
+      postEdit(
+        UndoCommandType.MOVE_NODES,
+        `Move Nodes`,
+        [id, nodeId, undoPosition],
+        [id, nodeId, [position.x, position.y]],
+      )
     })
 
     cy.on('mouseover', 'node, edge', (e: EventObject): void => {
@@ -382,7 +442,9 @@ const CyjsRenderer = ({
 
     cy.style(newStyle)
 
-    cy.fit()
+    if (forceFit) {
+      cy.fit()
+    }
 
     setVisualStyle(id, vs)
     setTimeout(() => {
@@ -395,7 +457,6 @@ const CyjsRenderer = ({
       return
     }
 
-    const t1 = performance.now()
     cy.startBatch()
 
     const data: NetworkViewSources = {
@@ -416,7 +477,6 @@ const CyjsRenderer = ({
 
     // Store the key-value pair in the local IndexedDB
     setViewModel(id, updatedNetworkView)
-    console.log('#Time to  apply style: ', performance.now() - t1)
   }
 
   const applyHoverUpdate = (): void => {
@@ -461,6 +521,27 @@ const CyjsRenderer = ({
     },
     [vs, table, visualEditorProperties],
   )
+
+  useEffect(() => {
+    if (id === '' || cy === null) {
+      return
+    }
+    // This is only for redrawing the network
+    // when the network structure is updated
+    const cyNodeCount: number = cy.nodes().length
+    const cyEdgeCount: number = cy.edges().length
+    const modelNodeCount: number = network.nodes.length
+    const modelEdgeCount: number = network.edges.length
+
+    if (!isViewCreated.current) {
+      return
+    }
+
+    // Render only when adding new nodes or edges (and avoid fitting)
+    if (modelNodeCount > cyNodeCount || modelEdgeCount > cyEdgeCount) {
+      renderNetwork(false)
+    }
+  }, [network.nodes.length, network.edges.length])
 
   // when the visual style model, table model, or edge/node views change re-render cy.js style
   useEffect(() => {
