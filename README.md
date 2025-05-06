@@ -15,7 +15,9 @@ The production version is available here:
 
 ## Publication
 
-(TBA)
+Please cite the following publication when you use it in your projects:
+
+Keiichiro Ono, Dylan Fong, Chengzhan Gao, Christopher Churas, Rudolf Pillich, Joanna Lenkiewicz, Dexter Pratt, Alexander R Pico, Kristina Hanspers, Yihang Xin, John Morris, Mike Kucera, Max Franz, Christian Lopes, Gary Bader, Trey Ideker, Jing Chen, **Cytoscape Web: bringing network biology to the browser**, Nucleic Acids Research, 2025;, gkaf365, https://doi.org/10.1093/nar/gkaf365
 
 ## App Development
 
