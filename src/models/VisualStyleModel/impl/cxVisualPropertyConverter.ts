@@ -307,8 +307,15 @@ export const VPNodeLabelPositionConverter = (
 
 export const VPPieSizeConverter = (): CXVisualPropertyConverter<string> => {
   return {
-    cxVPName: 'VPPrecentageConverter',
+    cxVPName: 'VPPieSizeConverter',
     valueConverter: (): string => '80%',
+  }
+}
+
+export const VPBackgroundImage = (): CXVisualPropertyConverter<string> => {
+  return {
+    cxVPName: 'VPBackgroundImage',
+    valueConverter: (): string => 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/tokyo-big.png',
   }
 }
 
@@ -342,6 +349,7 @@ export const cxVisualPropertyConverter: Record<
   nodeZOrder: VPNumberConverter('NODE_Z_LOCATION'),
 
   pieSize: VPPieSizeConverter(),
+  backgroundImage: VPPieSizeConverter(),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),

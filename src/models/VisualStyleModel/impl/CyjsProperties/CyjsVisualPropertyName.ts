@@ -49,6 +49,7 @@ export const CyjsNodeVisualPropertyName = {
   Visibility: 'display',
 
   PieSize: 'pie-size',
+  BackgroundImage: 'background-image',
 } as const
 
 export type CyjsNodeVisualPropertyType =

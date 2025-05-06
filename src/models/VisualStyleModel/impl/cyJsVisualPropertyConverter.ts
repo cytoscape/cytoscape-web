@@ -33,6 +33,7 @@ const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
   nodeMaxLabelWidth: CyVpName.TextMaxWidth,
 
   pieSize: CyVpName.PieSize,
+  backgroundImage: CyVpName.BackgroundImage,
 
   edgeLineType: CyVpName.LineStyle,
   edgeLineColor: CyVpName.LineColor,

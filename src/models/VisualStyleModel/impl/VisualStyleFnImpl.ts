@@ -462,7 +462,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           };
         });
       }
-  
+      console.log(visualStyle)
       // Process only the first encountered valid custom graphic
       break;
     }
