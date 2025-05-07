@@ -357,7 +357,7 @@ export const cxVisualPropertyConverter: Record<
 
   pieSize: VPPieSizeConverter(),
   backgroundImage: VPBackgroundImage(),
-  backgroundImageFit: VPPieSizeConverter(),
+  backgroundImageFit: VPBackgroundImageFit(),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),
