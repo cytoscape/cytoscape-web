@@ -147,17 +147,21 @@ export const exportNetworkToCx2 = (
     bypasses: { [key: IdType]: { [key: CXVPName]: CXVisualPropertyValue } },
     vp: VisualProperty<VisualPropertyValueType>,
   ): { [key: IdType]: { [key: CXVPName]: CXVisualPropertyValue } } => {
-    const { name, bypassMap } = vp
-    const cxVPName = vpNameToCXName(name)
+    const { name, bypassMap } = vp;
+    const cxVPName = vpNameToCXName(name);
+  
     bypassMap.forEach((value, id) => {
-      if (bypasses[id] == null) {
-        bypasses[id] = {}
+      const cxVal = vpToCX(vp.name, value);
+      if (cxVal != null) {
+        if (bypasses[id] == null) {
+          bypasses[id] = {};
+        }
+        bypasses[id][cxVPName] = cxVal;
       }
-      bypasses[id][cxVPName] = vpToCX(vp.name, value)
-    })
-    return bypasses
-  }
-
+    });
+  
+    return bypasses;
+  };
   const networkAttributeDeclarations: {
     [key: string]: { d: ValueTypeName }
   } = {}

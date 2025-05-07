@@ -392,7 +392,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'backgroundImage',
     displayName: 'Background Image',
     type: 'string',
-    defaultValue: 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/tokyo-big.png',
+    defaultValue: 'image',
     bypassMap: new Map(),
     tooltip:
       'Background Image.',

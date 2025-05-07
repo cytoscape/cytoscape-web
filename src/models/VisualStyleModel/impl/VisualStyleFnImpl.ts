@@ -402,6 +402,47 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     }
   }
 
+  const bypassList = nodeBypasses.nodeBypasses;
+
+  for (let i = 1; i <= 9; i++) {
+    const propName = i === 1 ? "backgroundImage" : `backgroundImage${i}`;
+    (visualStyle as any)[propName]?.bypassMap.clear();
+  }
+  
+  for (let i = 1; i <= 9; i++) {
+    const customKey = `NODE_CUSTOMGRAPHICS_${i}`;
+    const def = (defaultNodeProperties as any)[customKey];
+  
+    if (
+      def?.type === "image" &&
+      def.name ===
+        "org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics"
+    ) {
+      const stylePropName = i === 1 ? "backgroundImage" : `backgroundImage${i}`;
+      const styleProp = (visualStyle as any)[stylePropName];
+      if (!styleProp) {
+        continue;
+      }
+  
+      styleProp.defaultValue = def.properties?.url ?? "";
+  
+      bypassList.forEach(({ id: nodeId, v }) => {
+        const override = v[customKey as any];
+        if (
+          override?.type === "image" &&
+          override.name ===
+            "org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics"
+        ) {
+          styleProp.bypassMap.set(
+            String(nodeId),
+            override.properties?.url ?? ""
+          );
+        }
+      });
+    }
+  }
+
+
   for (let i = 1; i <= 9; i++) {
     const customKey = `NODE_CUSTOMGRAPHICS_${i}`;
     const customValue = defaultNodeProperties[customKey];

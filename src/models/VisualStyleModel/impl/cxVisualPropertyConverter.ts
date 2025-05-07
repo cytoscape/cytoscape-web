@@ -315,7 +315,7 @@ export const VPPieSizeConverter = (): CXVisualPropertyConverter<string> => {
 export const VPBackgroundImage = (): CXVisualPropertyConverter<string> => {
   return {
     cxVPName: 'VPBackgroundImage',
-    valueConverter: (): string => 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/tokyo-big.png',
+    valueConverter: (): string => 'image',
   }
 }
 
