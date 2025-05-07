@@ -50,6 +50,7 @@ export const CyjsNodeVisualPropertyName = {
 
   PieSize: 'pie-size',
   BackgroundImage: 'background-image',
+  BackgroundImageFit: 'background-fit'
 } as const
 
 export type CyjsNodeVisualPropertyType =

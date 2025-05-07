@@ -20,7 +20,8 @@ export const NodeVisualPropertyName = {
   NodeZOrder: 'nodeZOrder',
   NodeLabelPosition: 'nodeLabelPosition',
   PieSize: 'pieSize',
-  BackgroundImage: 'backgroundImage'
+  BackgroundImage: 'backgroundImage',
+  BackgroundImageFit: 'backgroundImageFit'
 } as const
 
 export type NodeVisualPropertyName =

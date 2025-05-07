@@ -319,6 +319,13 @@ export const VPBackgroundImage = (): CXVisualPropertyConverter<string> => {
   }
 }
 
+export const VPBackgroundImageFit = (): CXVisualPropertyConverter<string> => {
+  return {
+    cxVPName: 'VPBackgroundImageFit',
+    valueConverter: (): string => 'contain',
+  }
+}
+
 // lookup table of visual style property names to cx property names
 export const cxVisualPropertyConverter: Record<
   VisualPropertyName,
@@ -349,7 +356,8 @@ export const cxVisualPropertyConverter: Record<
   nodeZOrder: VPNumberConverter('NODE_Z_LOCATION'),
 
   pieSize: VPPieSizeConverter(),
-  backgroundImage: VPPieSizeConverter(),
+  backgroundImage: VPBackgroundImage(),
+  backgroundImageFit: VPPieSizeConverter(),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),

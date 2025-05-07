@@ -395,7 +395,17 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     defaultValue: 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/tokyo-big.png',
     bypassMap: new Map(),
     tooltip:
-      'The diameter of the pie chart as a percentage of the node size (or an absolute value).',
+      'Background Image.',
+  },
+  backgroundImageFit: {
+    group: 'node',
+    name: 'backgroundImageFit',
+    displayName: 'Background Image Fit',
+    type: 'string',
+    defaultValue: 'contain',
+    bypassMap: new Map(),
+    tooltip:
+      'Background Image Fit',
   },
   networkBackgroundColor: {
     group: 'network',
