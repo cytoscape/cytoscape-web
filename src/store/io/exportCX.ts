@@ -151,17 +151,14 @@ export const exportNetworkToCx2 = (
     const cxVPName = vpNameToCXName(name);
   
     bypassMap.forEach((value, id) => {
-      const cxVal = vpToCX(vp.name, value);
-      if (cxVal != null) {
-        if (bypasses[id] == null) {
-          bypasses[id] = {};
+      if (bypasses[id] == null) {
+        bypasses[id] = {}
+        bypasses[id][cxVPName] = vpToCX(vp.name, value)
         }
-        bypasses[id][cxVPName] = cxVal;
-      }
-    });
+      })
+      return bypasses
+    }
   
-    return bypasses;
-  };
   const networkAttributeDeclarations: {
     [key: string]: { d: ValueTypeName }
   } = {}
