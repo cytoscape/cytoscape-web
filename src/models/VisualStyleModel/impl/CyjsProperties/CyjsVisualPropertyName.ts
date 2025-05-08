@@ -49,6 +49,11 @@ export const CyjsNodeVisualPropertyName = {
   Visibility: 'display',
 
   PieSize: 'pie-size',
+  PieStartAngle: 'pie-start-angle',
+  PieHole: 'pie-hole',
+  PieBackgroundColor: 'pie-background-color',
+  PieBackgroundSize: 'pie-background-size',
+  PieBackgroundOpacity: 'pie-background-opacity',
 } as const
 
 export type CyjsNodeVisualPropertyType =
@@ -95,6 +100,11 @@ export type CyjsNodeVisualPropertyTypes =
   | 'border-height-relative-to'
   | 'z-index'
   | 'pie-size'
+  | 'pie-start-angle'
+  | 'pie-hole'
+  | 'pie-background-color'
+  | 'pie-background-size'
+  | 'pie-background-opacity'
 
 export const CyjsVisualPropertyName = {
   ...CyjsNodeVisualPropertyName,

@@ -44,7 +44,12 @@ import {
 } from '../../models/TableModel/impl/ValueTypeImpl'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
-
+import {
+  getCustomGraphicNodeVps,
+  getNonCustomGraphicVps,
+} from '../../models/VisualStyleModel/impl/CustomGraphicsImpl'
+import { DEFAULT_CUSTOM_GRAPHICS } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
+import _ from 'lodash'
 export const exportNetworkToCx2 = (
   network: Network,
   vs: VisualStyle,
@@ -242,49 +247,58 @@ export const exportNetworkToCx2 = (
     },
   ]
 
-  const nodeDefaults = VisualStyleFn.nodeVisualProperties(vs).reduce(
-    vpDefaultsAccumulator,
-    {},
+  const customGraphicNodeVps = getCustomGraphicNodeVps(
+    VisualStyleFn.nodeVisualProperties(vs),
   )
-  const nodeMappings = VisualStyleFn.nodeVisualProperties(vs)
-    .filter((vp) => vp.mapping != null)
-    .reduce(vpMappingsAccumulator, {})
+  const nonCustomGraphicNodeVps = getNonCustomGraphicVps(
+    VisualStyleFn.nodeVisualProperties(vs),
+  )
 
-  // const pieColorKeys = Object.keys(nodeDefaults).filter((key) =>
-  //   /^pie-\d+-background-color$/.test(key),
-  // )
-  // const pieMappingKeys = Object.keys(nodeMappings).filter((key) =>
-  //   /^pie-\d+-background-size$/.test(key),
-  // )
+  const validCustomGraphicNodeVps = []
+  for (let i = 1; i <= 9; i++) {
+    const customGraphicVpName = `nodeImageChart${i}` as NodeVisualPropertyName
+    const customGraphicVp = customGraphicNodeVps.find(
+      (v) => v.name === customGraphicVpName,
+    )
+    if (customGraphicVp) {
+      const invalidCustomGraphicDefaultValue = _.isEqual(
+        customGraphicVp.defaultValue,
+        DEFAULT_CUSTOM_GRAPHICS,
+      )
+      const invalidCustomGraphicMapping = customGraphicVp.mapping === undefined
+      const invalidCustomGraphicBypass = customGraphicVp.bypassMap.size === 0
+      if (
+        invalidCustomGraphicDefaultValue &&
+        invalidCustomGraphicMapping &&
+        invalidCustomGraphicBypass
+      ) {
+        continue
+      } else {
+        const customGraphicSizeVpName =
+          `nodeImageChartSize${i}` as NodeVisualPropertyName
+        const customGraphicPositionVpName =
+          `nodeImageChartPosition${i}` as NodeVisualPropertyName
+        const customGraphicSizeVp = customGraphicNodeVps.find(
+          (v) => v.name === customGraphicSizeVpName,
+        )
+        const customGraphicPositionVp = customGraphicNodeVps.find(
+          (v) => v.name === customGraphicPositionVpName,
+        )
+        if (customGraphicSizeVp !== undefined) {
+          validCustomGraphicNodeVps.push(customGraphicSizeVp)
+        }
+        if (customGraphicPositionVp !== undefined) {
+          validCustomGraphicNodeVps.push(customGraphicPositionVp)
+        }
+        validCustomGraphicNodeVps.push(customGraphicVp)
+      }
+    }
+  }
 
-  // if (pieColorKeys.length > 0) {
-  //   pieColorKeys.sort(
-  //     (a, b) => parseInt(a.match(/\d+/)![0]) - parseInt(b.match(/\d+/)![0]),
-  //   )
-  //   pieMappingKeys.sort(
-  //     (a, b) => parseInt(a.match(/\d+/)![0]) - parseInt(b.match(/\d+/)![0]),
-  //   )
-
-  //   const pieColors = pieColorKeys.map((key) => nodeDefaults[key])
-  //   const pieDataColumns = pieMappingKeys.map(
-  //     (key) => nodeMappings[key]?.definition?.attribute || '',
-  //   )
-
-  //   const customGraphics = {
-  //     type: 'chart',
-  //     name: 'org.cytoscape.PieChart',
-  //     properties: {
-  //       cy_colors: pieColors,
-  //       cy_dataColumns: pieDataColumns,
-  //     },
-  //   }
-
-  //   pieColorKeys.forEach((key) => delete nodeDefaults[key])
-  //   pieMappingKeys.forEach((key) => delete nodeMappings[key])
-
-  //   nodeDefaults['NODE_CUSTOMGRAPHICS_1'] =
-  //     customGraphics as unknown as CXVisualPropertyValue
-  // }
+  const nodePropertiesToExport = [
+    ...nonCustomGraphicNodeVps,
+    ...validCustomGraphicNodeVps,
+  ]
 
   const visualProperties = [
     {
@@ -297,12 +311,9 @@ export const exportNetworkToCx2 = (
           vpDefaultsAccumulator,
           {},
         ),
-        node: VisualStyleFn.nodeVisualProperties(vs).reduce(
-          vpDefaultsAccumulator,
-          {},
-        ),
+        node: nodePropertiesToExport.reduce(vpDefaultsAccumulator, {}),
       },
-      nodeMapping: VisualStyleFn.nodeVisualProperties(vs)
+      nodeMapping: nodePropertiesToExport
         .filter((vp) => vp.mapping != null)
         .reduce(vpMappingsAccumulator, {}),
       edgeMapping: VisualStyleFn.edgeVisualProperties(vs)
@@ -312,7 +323,7 @@ export const exportNetworkToCx2 = (
   ]
 
   const nodeBypasses = Object.entries(
-    VisualStyleFn.nodeVisualProperties(vs)
+    nodePropertiesToExport
       .filter((vp) => vp.bypassMap.size > 0)
       .reduce(vpBypassesAccumulator, {}),
   ).map(([id, bypassObj]) => {

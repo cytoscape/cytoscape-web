@@ -28,6 +28,12 @@ import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropert
 import { useUiStateStore } from '../../store/UiStateStore'
 import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
 import { useState } from 'react'
+import {
+  getCustomGraphicNodeVps,
+  getFirstValidCustomGraphicVp,
+  getNonCustomGraphicVps,
+  getSizePropertyForCustomGraphic,
+} from '../../models/VisualStyleModel/impl/CustomGraphicsImpl'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -180,7 +186,15 @@ export default function VizmapperView(props: {
     return <div></div>
   }
 
-  const nodeVps = VisualStyleFn.nodeVisualProperties(visualStyle).map((vp) => {
+  const customGraphicVps = getCustomGraphicNodeVps(
+    VisualStyleFn.nodeVisualProperties(visualStyle),
+  )
+
+  const nonCustomGraphicVps = getNonCustomGraphicVps(
+    VisualStyleFn.nodeVisualProperties(visualStyle),
+  )
+
+  const nodeVps = nonCustomGraphicVps.map((vp) => {
     return (
       <VisualPropertyView
         key={vp.name}
@@ -189,6 +203,35 @@ export default function VizmapperView(props: {
       />
     )
   })
+
+  // Only render the first valid custom graphic visual property and its associated size property
+  const firstValidCustomGraphicVP =
+    getFirstValidCustomGraphicVp(customGraphicVps)
+
+  if (firstValidCustomGraphicVP !== undefined) {
+    const customGraphicsSizeVP = getSizePropertyForCustomGraphic(
+      firstValidCustomGraphicVP,
+      customGraphicVps,
+    )
+
+    nodeVps.push(
+      <VisualPropertyView
+        key={firstValidCustomGraphicVP.name}
+        currentNetworkId={props.networkId}
+        visualProperty={firstValidCustomGraphicVP}
+      />,
+    )
+    if (customGraphicsSizeVP) {
+      nodeVps.push(
+        <VisualPropertyView
+          key={customGraphicsSizeVP.name}
+          currentNetworkId={props.networkId}
+          visualProperty={customGraphicsSizeVP}
+        />,
+      )
+    }
+  }
+
   const edgeVps = VisualStyleFn.edgeVisualProperties(visualStyle).map((vp) => {
     return (
       <VisualPropertyView

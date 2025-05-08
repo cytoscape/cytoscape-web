@@ -218,46 +218,9 @@ const CyjsRenderer = ({
       visualEditorProperties,
     )
 
+    const newStyle = createCyjsDataMapper(vs)
 
-    const newStyle = createCyjsDataMapper(vs);
-    const nodes = cy.nodes();
-    if (nodes.length > 0) {
-      const pieKeys = Object.keys(nodes[0].data()).filter(key =>
-        /^pie-\d+-background-size$/.test(key)
-      );
-      pieKeys.forEach(key => {
-        newStyle.push({
-          selector: 'node' as any,
-          style: {
-            [key]: (ele: any): number => {
-              const data = ele.data();
-              const total = pieKeys.reduce((sum, k) => sum + Math.max(Number(data[k]) || 0, 0), 0);
-              const current = Math.max(Number(data[key]) || 0, 0);
-              return total ? (100 * current) / total : 0;
-            }
-          } as any
-        });
-      });
-    }
-
-    if (nodes.length > 0) {
-      const pieColorKeys = Object.keys(nodes[0].data()).filter(key =>
-        /^pie-\d+-background-color$/.test(key)
-      );
-
-      pieColorKeys.forEach(key => {
-        newStyle.push({
-          selector: 'node' as any,
-          style: {
-            [key]: (ele: any): string => {
-              return ele.data(key) || "";
-            }
-          } as any
-        });
-      });
-    }
-
-    setCyStyle(newStyle);
+    setCyStyle(newStyle)
 
     const selectedNodes = networkView?.selectedNodes ?? []
     const selectedEdges = networkView?.selectedEdges ?? []
