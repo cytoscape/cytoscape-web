@@ -7,7 +7,6 @@ import {
   rem,
   MantineProvider,
   Modal,
-  Paper,
 } from '@mantine/core'
 import { IconUpload, IconX } from '@tabler/icons-react'
 import { Dropzone } from '@mantine/dropzone'
@@ -23,11 +22,7 @@ import {
   NdexNetworkProperty,
   Visibility,
 } from '../../models/NetworkSummaryModel'
-import TableFn, {
-  Table,
-  ValueType,
-  ValueTypeName,
-} from '../../models/TableModel'
+import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
@@ -41,15 +36,10 @@ import {
 import { PrimeReactProvider } from 'primereact/api'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/network-utils'
-import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { useUiStateStore } from '../../store/UiStateStore'
-import {
-  createDataFromLocalCx2,
-  getOptionalAspects,
-} from '../../utils/cx-utils'
+import { createDataFromLocalCx2 } from '../../utils/cx-utils'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { useMessageStore } from '../../store/MessageStore'
-import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { MessageSeverity } from '../../models/MessageModel'
 interface FileUploadProps {
   show: boolean
@@ -65,7 +55,6 @@ export function FileUpload(props: FileUploadProps) {
 
   const setVisualStyle = useVisualStyleStore((state) => state.add)
 
-  const ui = useUiStateStore((state) => state.ui)
   const setVisualStyleOptions = useUiStateStore(
     (state) => state.setVisualStyleOptions,
   )
@@ -218,11 +207,77 @@ export function FileUpload(props: FileUploadProps) {
     const reader = new FileReader()
     reader.addEventListener('load', () => {
       const text = reader.result as string
+      const fileExtension = file.name.split('.').pop()?.toLowerCase()
 
-      const fileExtension = file.name.split('.').pop()
+      // Check RTF format with wrong extension
+      if (
+        (fileExtension === 'txt' ||
+          fileExtension === 'csv' ||
+          fileExtension === 'tsv') &&
+        text.startsWith('{\\rtf')
+      ) {
+        addMessage({
+          duration: 5000,
+          message: `File ${file.name} has a .${fileExtension} 
+            extension but appears to be an RTF file, which is 
+            not supported for this extension.`,
+          severity: MessageSeverity.ERROR,
+        })
+        props.handleClose()
+        return
+      }
+
       if (fileExtension === 'cx2') {
         handleCX2File(file, text)
       } else {
+        // Simple validator for .txt, .csv, and .tsv files
+
+        const trimmedText = text.trim()
+
+        if (trimmedText.length === 0) {
+          handleTableFile(file, text)
+          return
+        }
+
+        const lines = trimmedText.split('\n')
+        const firstLine = lines[0].trim()
+
+        if (firstLine.length === 0 && trimmedText.length > 0) {
+          addMessage({
+            duration: 5000,
+            message: `File ${file.name} starts with empty lines and might not be a valid table format.`,
+            severity: MessageSeverity.ERROR,
+          })
+          props.handleClose()
+          return
+        }
+
+        // Simple test for CSV and TSV
+        if (fileExtension === 'csv') {
+          if (!firstLine.includes(',') && firstLine.length > 0) {
+            addMessage({
+              duration: 5000,
+              message: `File ${file.name} is a .csv file, 
+                but its first line does not contain commas. 
+                Please ensure it is a valid CSV.`,
+              severity: MessageSeverity.ERROR,
+            })
+            props.handleClose()
+            return
+          }
+        } else if (fileExtension === 'tsv') {
+          if (!firstLine.includes('\t') && firstLine.length > 0) {
+            addMessage({
+              duration: 5000,
+              message: `File ${file.name} is a .tsv file, 
+                but its first line does not contain tabs. 
+                Please ensure it is a valid TSV.`,
+              severity: MessageSeverity.ERROR,
+            })
+            props.handleClose()
+            return
+          }
+        }
         handleTableFile(file, text)
       }
     })
