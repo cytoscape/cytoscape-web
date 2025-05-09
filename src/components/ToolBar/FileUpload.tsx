@@ -9,7 +9,7 @@ import {
   Modal,
 } from '@mantine/core'
 import { IconUpload, IconX } from '@tabler/icons-react'
-import { Dropzone } from '@mantine/dropzone'
+import { Dropzone, FileWithPath } from '@mantine/dropzone'
 import { ModalsProvider } from '@mantine/modals'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -161,7 +161,7 @@ export function FileUpload(props: FileUploadProps) {
     } catch (error) {
       console.error(error)
       addMessage({
-        duration: 5000,
+        duration: 3000,
         message: 'Failed to parse CX2 file',
         severity: MessageSeverity.ERROR,
       })
@@ -180,8 +180,10 @@ export function FileUpload(props: FileUploadProps) {
   const setName = useCreateNetworkFromTableStore((state) => state.setName)
   const onFileError = (files: any) => {
     addMessage({
-      duration: 5000,
-      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. ${files?.[0]?.errors?.[0]?.message ?? ''}`,
+      duration: 3000,
+      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported.
+        The supported files are .csv, .txt, .tsv, and .cx2. 
+        (Error: ${files?.[0]?.errors?.[0]?.message ?? 'Unknown error'})`,
       severity: MessageSeverity.ERROR,
     })
   }
@@ -217,7 +219,7 @@ export function FileUpload(props: FileUploadProps) {
         text.startsWith('{\\rtf')
       ) {
         addMessage({
-          duration: 5000,
+          duration: 3000,
           message: `File ${file.name} has a .${fileExtension} 
             extension but appears to be an RTF file, which is 
             not supported for this extension.`,
@@ -244,7 +246,7 @@ export function FileUpload(props: FileUploadProps) {
 
         if (firstLine.length === 0 && trimmedText.length > 0) {
           addMessage({
-            duration: 5000,
+            duration: 3000,
             message: `File ${file.name} starts with empty lines and might not be a valid table format.`,
             severity: MessageSeverity.ERROR,
           })
@@ -256,7 +258,7 @@ export function FileUpload(props: FileUploadProps) {
         if (fileExtension === 'csv') {
           if (!firstLine.includes(',') && firstLine.length > 0) {
             addMessage({
-              duration: 5000,
+              duration: 3000,
               message: `File ${file.name} is a .csv file, 
                 but its first line does not contain commas. 
                 Please ensure it is a valid CSV.`,
@@ -268,7 +270,7 @@ export function FileUpload(props: FileUploadProps) {
         } else if (fileExtension === 'tsv') {
           if (!firstLine.includes('\t') && firstLine.length > 0) {
             addMessage({
-              duration: 5000,
+              duration: 3000,
               message: `File ${file.name} is a .tsv file, 
                 but its first line does not contain tabs. 
                 Please ensure it is a valid TSV.`,
@@ -296,47 +298,49 @@ export function FileUpload(props: FileUploadProps) {
               centered
               title={
                 <Title c="gray" order={4}>
-                  Upload file
+                  Upload network file
                 </Title>
               }
             >
               <Dropzone
-                accept={['.csv', '.txt', '.tsv', '.cx2']}
-                onDrop={(files: any) => {
-                  onFileDrop(files[0])
+                validator={(file: File) => {
+                  // Do not validate if the object is not a file
+                  if (!file.name) {
+                    return null
+                  }
+
+                  const fileExtension = file.name
+                    .split('.')
+                    .pop()
+                    ?.toLowerCase()
+                  if (
+                    fileExtension !== 'csv' &&
+                    fileExtension !== 'txt' &&
+                    fileExtension !== 'tsv' &&
+                    fileExtension !== 'cx2'
+                  ) {
+                    return {
+                      code: 'file-invalid-type',
+                      message: `File ${file.name} is not a supported type.`,
+                    }
+                  }
+                  return null
                 }}
-                onReject={(files: any) => {
-                  onFileError(files)
+                onDrop={(files: FileWithPath[]) => {
+                  if (files && files.length > 0) {
+                    onFileDrop(files[0])
+                  }
                 }}
-                // maxSize={}
+                onReject={(rejectedFiles: any) => {
+                  onFileError(rejectedFiles)
+                }}
               >
                 <Group
                   justify="center"
                   gap="xl"
                   mih={220}
-                  style={{ pointerEvents: 'none' }}
+                  style={{ pointerEvents: 'stroke' }}
                 >
-                  <Dropzone.Accept>
-                    <IconUpload
-                      style={{
-                        width: rem(52),
-                        height: rem(52),
-                        color: 'var(--mantine-color-blue-6)',
-                      }}
-                      stroke={1.5}
-                    />
-                  </Dropzone.Accept>
-                  <Dropzone.Reject>
-                    <IconX
-                      style={{
-                        width: rem(52),
-                        height: rem(52),
-                        color: 'var(--mantine-color-red-6)',
-                      }}
-                      stroke={1.5}
-                    />
-                  </Dropzone.Reject>
-
                   <Stack align="center">
                     <Button>Browse</Button>
                     <Text size="xl" inline>
