@@ -118,7 +118,7 @@ export const createMergedNetworkWithView = async (
     owner: '',
     version: mergedNetSummary.mergedVersion,
     completed: false,
-    visibility: Visibility.PUBLIC,
+    visibility: Visibility.LOCAL,
     nodeCount: newNetwork.nodes.length,
     edgeCount: newNetwork.edges.length,
     description: mergedNetSummary.mergedDescription,
@@ -129,6 +129,11 @@ export const createMergedNetworkWithView = async (
   }
   await putNetworkSummaryToDb(networkSummary)
 
+  const undoRedoStack = {
+    undoStack: [],
+    redoStack: [],
+  }
+
   return [
     {
       network: newNetwork,
@@ -137,6 +142,7 @@ export const createMergedNetworkWithView = async (
       visualStyle: newVisualStyle,
       networkViews: [newNetworkView],
       networkAttributes,
+      undoRedoStack,
     },
     networkSummary,
   ]

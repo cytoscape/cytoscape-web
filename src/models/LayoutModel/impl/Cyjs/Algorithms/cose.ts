@@ -1,9 +1,12 @@
 import { LayoutAlgorithm } from '../../..'
 import { ValueTypeName } from '../../../../TableModel'
+import { LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const cose: LayoutAlgorithm = {
   name: 'cose',
   engineName: 'Cytoscape.js',
+  displayName: 'Compound Spring Embedder Layout (CoSE)',
+  type: LayoutAlgorithmType.force,
   threshold: 2000,
   description:
     'The cose (Compound Spring Embedder) layout uses a physics simulation to lay out graphs (CPU)',

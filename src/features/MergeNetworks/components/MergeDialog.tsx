@@ -9,8 +9,9 @@ import {
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
 } from '@mui/icons-material'
-import React, { ChangeEvent, useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { UnionIcon, DifferenceIcon, IntersectionIcon } from './Icon'
+import ReportGmailerrorredIcon from '@mui/icons-material/ReportGmailerrorred'
 import {
   Dialog,
   DialogTitle,
@@ -69,6 +70,7 @@ import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { MatchingTableComp } from './MatchingTableComp'
 import { MatchingColumnTable } from './MatchingColumnTable'
 import {
+  checkDuplication,
   findPairIndex,
   getNetTableFromSummary,
   sortListAlphabetically,
@@ -77,6 +79,7 @@ import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
+import useNodesDuplicationStore from '../store/nodesDuplicationStore'
 
 interface MergeDialogProps {
   open: boolean
@@ -106,6 +109,18 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const [strictRemoveMode, setStrictRemoveMode] = useState(false) // Flag to indicate the rules of difference merge
   const [isNameDuplicate, setIsNameDuplicate] = useState(false) // Flag to indicate whether the network name is a duplicate
   const existingNetNames = new Set(workSpaceNetworks.map((pair) => pair[0])) // Set of existing network names
+  const nodesDuplication = useNodesDuplicationStore(
+    (state) => state.nodesDuplication,
+  )
+  const setNodesDuplication = useNodesDuplicationStore(
+    (state) => state.setNodesDuplication,
+  )
+  const removeNetInNodesDuplication = useNodesDuplicationStore(
+    (state) => state.removeNetworks,
+  )
+  const resetNodesDuplication = useNodesDuplicationStore(
+    (state) => state.resetStore,
+  )
   const mergeTooltipIsOpen = useMergeToolTipStore((state) => state.isOpen)
   const mergeTooltipText = useMergeToolTipStore((state) => state.text)
   // confirmation window
@@ -258,6 +273,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
     }
     const newMatchingCols: Record<string, Column> = {}
     const newNetworkRecords: Record<IdType, NetworkRecord> = {}
+    const newNodesDuplication: Record<string, boolean> = {}
     for (const net of selectedAvailable) {
       // Load the network data
       let netData = networkRecords[net[1]] // Attempt to use cached data
@@ -267,7 +283,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       newNetworkRecords[net[1]] = netData
       // Set the default matching column for the network
       let hasName = false
-      for (const col of netData.nodeTable.columns ?? []) {
+      const nodeTable = netData.nodeTable
+      for (const col of nodeTable.columns ?? []) {
         if (col.name === 'name' && col.type === 'string') {
           newMatchingCols[net[1]] = { name: 'name', type: 'string' } as Column
           hasName = true
@@ -276,11 +293,19 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       }
       if (!hasName) {
         newMatchingCols[net[1]] =
-          netData.nodeTable.columns.length > 0
-            ? netData.nodeTable.columns[0]
+          nodeTable.columns.length > 0
+            ? nodeTable.columns[0]
             : ({ name: 'none', type: 'string' } as Column)
       }
+      if (nodeTable.columns.length > 0) {
+        const matchingColName = newMatchingCols[net[1]].name
+        newNodesDuplication[net[1]] = checkDuplication(
+          nodeTable,
+          matchingColName,
+        )
+      }
     }
+    setNodesDuplication(newNodesDuplication)
     // Add the networks to the matching tables
     addNetsToNodeTable(
       selectedAvailable.map((pair) => pair[1]),
@@ -326,6 +351,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
     removeNetsFromEdgeTable(selectedToMerge.map((pair) => pair[1]))
     removeNetsFromNetTable(selectedToMerge.map((pair) => pair[1]))
     // Update the state stores
+    removeNetInNodesDuplication(selectedToMerge.map((pair) => pair[1]))
     setNetworkRecords(newNetworkRecords)
     setMatchingCols(newMatchingCols)
     setSelectedToMerge([])
@@ -415,6 +441,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       resetEdgeMatchingTable()
       resetNetMatchingTable()
       resetMatchingCols()
+      resetNodesDuplication()
     }
   }, [])
   // set merge type
@@ -686,7 +713,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           }}
         />
         {isNameDuplicate && (
-          <Typography color="orange">
+          <Typography sx={{ color: 'orange', ml: 1, mr: 1 }}>
             Warning: A network with this name already exists in your workspace.
           </Typography>
         )}
@@ -754,21 +781,33 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                 >
                   <ListItemText
                     primary={
-                      <>
-                        {network[0]}
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        <Box>{network[0]}</Box>
                         {index === 0 && (
                           <Tooltip
-                            title={`This is the base network`}
+                            title="This is the base network"
                             placement="top"
                             arrow
                           >
                             <StarIcon
-                              viewBox="0 -3.7 24 24"
-                              style={{ color: 'gold' }}
+                              viewBox="0 1 24 24"
+                              sx={{ color: 'gold' }}
                             />
                           </Tooltip>
                         )}
-                      </>
+                        {nodesDuplication[network[1]] && (
+                          <Tooltip
+                            title={`The node values under the chosen matching column '${matchingCols[network[1]].name}' are not all unique`}
+                            placement="top"
+                            arrow
+                          >
+                            <ReportGmailerrorredIcon
+                              viewBox="0 0.5 24 24"
+                              sx={{ color: 'orange' }}
+                            />
+                          </Tooltip>
+                        )}
+                      </Box>
                     }
                   />
                 </ListItem>
@@ -803,6 +842,53 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           </Box>
         </Box>
 
+        {Object.values(nodesDuplication).some((v) => v === true) && (
+          <Box display="flex" alignItems="center" gap={1} sx={{ ml: 1, mr: 1 }}>
+            <ReportGmailerrorredIcon
+              viewBox="0 0 24 24"
+              sx={{ color: 'orange' }}
+            />
+            <Typography sx={{ color: 'orange' }}>
+              Some nodes have duplicate values under the 'Matching Column'.
+              Hover over the warning icon or check 'Advanced Options' for
+              details. Enabling 'Merge nodes/edges in the same network' might
+              also be an option.
+            </Typography>
+          </Box>
+        )}
+
+        <Box display="flex" flexDirection="column" justifyContent="left" m={1}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={mergeWithinNetwork}
+                onChange={(e) => setMergeWithinNetwork(e.target.checked)}
+                name="mergeWithinNetwork"
+                color="primary"
+              />
+            }
+            label="Enable merging nodes/edges in the same network"
+          />
+          <Tooltip
+            placement="top-start"
+            title={`Cannot ignore edges when operating '${mergeOpType} Merge'`}
+            disableHoverListener={MergeType.intersection === mergeOpType} // Tooltip is only active when the checkbox is disabled
+          >
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={mergeOnlyNodes}
+                  onChange={(e) => setMergeOnlyNodes(e.target.checked)}
+                  name="mergeOnlyNodes"
+                  color="primary"
+                  disabled={MergeType.intersection !== mergeOpType}
+                />
+              }
+              label="Merge only nodes and ignore edges"
+            />
+          </Tooltip>
+        </Box>
+
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography>Advanced Options</Typography>
@@ -827,6 +913,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                 netLst={toMergeNetworksList}
                 tableView={tableView}
                 mergeOpType={mergeOpType}
+                mergeWithinNetwork={mergeWithinNetwork}
               />
             )}
 
@@ -867,42 +954,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                 </ToggleButtonGroup>
               </Box>
             </div>
-            <Box
-              display="flex"
-              flexDirection="column"
-              justifyContent="left"
-              m={1}
-            >
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={mergeWithinNetwork}
-                    onChange={(e) => setMergeWithinNetwork(e.target.checked)}
-                    name="mergeWithinNetwork"
-                    color="primary"
-                  />
-                }
-                label="Enable merging nodes/edges in the same network"
-              />
-              <Tooltip
-                placement="top-start"
-                title={`Cannot ignore edges when operating '${mergeOpType} Merge'`}
-                disableHoverListener={MergeType.intersection === mergeOpType} // Tooltip is only active when the checkbox is disabled
-              >
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={mergeOnlyNodes}
-                      onChange={(e) => setMergeOnlyNodes(e.target.checked)}
-                      name="mergeOnlyNodes"
-                      color="primary"
-                      disabled={MergeType.intersection !== mergeOpType}
-                    />
-                  }
-                  label="Merge only nodes and ignore edges"
-                />
-              </Tooltip>
-            </Box>
           </AccordionDetails>
         </Accordion>
       </DialogContent>

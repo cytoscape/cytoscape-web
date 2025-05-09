@@ -25,7 +25,7 @@ import { useViewModelStore } from '../../store/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 
-import { isValidUrl } from '../../utils/is-url'
+import { isValidUrl } from '../../utils/url-util'
 import {
   EditTableColumnForm,
   CreateTableColumnForm,
@@ -62,8 +62,11 @@ import NetworkInfoPanel from './NetworkInfoPanel'
 import { NetworkView } from '../../models/ViewModel'
 import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import { TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { CellEdit, TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { useEffect, useRef } from 'react'
+
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { useUndoStack } from '../../task/UndoStack'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -125,6 +128,7 @@ export default function TableBrowser(props: {
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
+  const { postEdit } = useUndoStack()
   const ui: Ui = useUiStateStore((state) => state.ui)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
@@ -230,31 +234,33 @@ export default function TableBrowser(props: {
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
 
+  // TODO reenable this when we figure out why this sometimes blocks the UI when switching to/from a hcx network
   // set the network to 'modified' when the table data is modified
-  useTableStore.subscribe(
-    (state) => state.tables[networkId],
-    (next: TableRecord, prev: TableRecord) => {
-      if (prev === undefined || next === undefined) {
-        return
-      }
+  // useTableStore.subscribe(
+  //   (state) => state.tables[networkId],
+  //   (next: TableRecord, prev: TableRecord) => {
+  //     if (prev === undefined || next === undefined) {
+  //       return
+  //     }
 
-      // Check if any table data has changed (excluding the selected rows/columns)
-      const tableDataChanged =
-        !_.isEqual(prev.nodeTable, next.nodeTable) ||
-        !_.isEqual(prev.edgeTable, next.edgeTable)
+  //     console.log('Table data changed', prev, next)
+  //     // Check if any table data has changed (excluding the selected rows/columns)
+  //     const tableDataChanged =
+  //       !_.isEqual(prev.nodeTable, next.nodeTable) ||
+  //       !_.isEqual(prev.edgeTable, next.edgeTable)
 
-      const { networkModified } = workspace
+  //     const { networkModified } = workspace
 
-      const currentNetworkIsNotModified =
-        networkModified[networkId] === undefined ||
-        networkModified[networkId] === false
+  //     const currentNetworkIsNotModified =
+  //       networkModified[networkId] === undefined ||
+  //       networkModified[networkId] === false
 
-      // If table data changed and the network is not already marked as modified, set it to modified
-      if (tableDataChanged && currentNetworkIsNotModified) {
-        setNetworkModified(networkId, true)
-      }
-    },
-  )
+  //     // If table data changed and the network is not already marked as modified, set it to modified
+  //     if (tableDataChanged && currentNetworkIsNotModified) {
+  //       setNetworkModified(networkId, true)
+  //     }
+  //   },
+  // )
 
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
@@ -349,6 +355,10 @@ export default function TableBrowser(props: {
       const cellType = getCellKind(column.type)
       const processedCellValue = valueDisplay(cellValue, column.type)
 
+      // These cells generally prevent users from inputting mismatched data types
+      // e.g. a user can't but a boolean in a number, a string in a number, etc.
+      // The exception is that users can still input floats into integer columns
+      // Extra validation for this logic is done in onCellEdited
       if (cellType === GridCellKind.Boolean) {
         return {
           allowOverlay: false,
@@ -449,24 +459,101 @@ export default function TableBrowser(props: {
 
       if (rowData == null || cxId == null || column == null || data == null)
         return
+      const prevCellValue = (rowData as any)?.[columnKey]
 
       if (isListType(column.type)) {
-        data = deserializeValueList(column.type, data as string)
-      }
-
-      const newDataIsValid = true
-
-      // TODO validate the new data
-      if (newDataIsValid) {
-        setCellValue(
-          props.currentNetworkId,
-          currentTable === nodeTable ? 'node' : 'edge',
-          `${cxId}`,
-          columnKey,
-          data as ValueType,
-        )
+        if (serializedStringIsValid(column.type, data as string)) {
+          data = deserializeValueList(column.type, data as string)
+          postEdit(
+            UndoCommandType.SET_CELL_VALUE,
+            'Set cell value',
+            [
+              props.currentNetworkId,
+              currentTable == nodeTable ? 'node' : 'edge',
+              cxId,
+              columnKey,
+              prevCellValue,
+            ],
+            [
+              props.currentNetworkId,
+              currentTable == nodeTable ? 'node' : 'edge',
+              cxId,
+              columnKey,
+              data as ValueType,
+            ],
+          )
+          setCellValue(
+            props.currentNetworkId,
+            currentTable === nodeTable ? 'node' : 'edge',
+            `${cxId}`,
+            columnKey,
+            data as ValueType,
+          )
+          setNetworkModified(networkId, true)
+        }
       } else {
-        // dont edit the value or do something else
+        if (
+          column.type !== ValueTypeName.Integer &&
+          column.type !== ValueTypeName.Long
+        ) {
+          postEdit(
+            UndoCommandType.SET_CELL_VALUE,
+            'Set cell value',
+            [
+              props.currentNetworkId,
+              currentTable == nodeTable ? 'node' : 'edge',
+              cxId,
+              columnKey,
+              prevCellValue,
+            ],
+            [
+              props.currentNetworkId,
+              currentTable == nodeTable ? 'node' : 'edge',
+              cxId,
+              columnKey,
+              data as ValueType,
+            ],
+          )
+          setCellValue(
+            props.currentNetworkId,
+            currentTable === nodeTable ? 'node' : 'edge',
+            `${cxId}`,
+            columnKey,
+            data as ValueType,
+          )
+          setNetworkModified(networkId, true)
+        } else {
+          if (Number.isInteger(data)) {
+            postEdit(
+              UndoCommandType.SET_CELL_VALUE,
+              'Set cell value',
+              [
+                props.currentNetworkId,
+                currentTable == nodeTable ? 'node' : 'edge',
+                cxId,
+                columnKey,
+                prevCellValue,
+              ],
+              [
+                props.currentNetworkId,
+                currentTable == nodeTable ? 'node' : 'edge',
+                cxId,
+                columnKey,
+                parseFloat(data as string),
+              ],
+            )
+            setCellValue(
+              props.currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge',
+              `${cxId}`,
+              columnKey,
+              parseFloat(data as string),
+            )
+            setNetworkModified(networkId, true)
+          } else {
+            // the user is trying to assign a double value to a integer column.  Ignore this value.
+          }
+        }
       }
     },
     [props.currentNetworkId, currentTable, tables, sort, rows],
@@ -638,6 +725,8 @@ export default function TableBrowser(props: {
                     currentTable === nodeTable ? 'node' : 'edge',
                     columnKey,
                   )
+                  setNetworkModified(networkId, true)
+
                   setSelection({
                     ...selection,
                     columns: CompactSelection.fromSingleSelection(
@@ -708,12 +797,29 @@ export default function TableBrowser(props: {
                 `${newColumnName} already exists.  Please enter a new unique column name`,
               )
             } else {
+              postEdit(
+                UndoCommandType.RENAME_COLUMN,
+                `Rename column '${selectedColumn.title}' to '${newColumnName}'`,
+                [
+                  props.currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  newColumnName,
+                  selectedColumn.id,
+                ],
+                [
+                  props.currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  selectedColumn.id,
+                  newColumnName,
+                ],
+              )
               setColumnName(
                 props.currentNetworkId,
                 currentTable === nodeTable ? 'node' : 'edge',
                 selectedColumn.id,
                 newColumnName,
               )
+              setNetworkModified(networkId, true)
 
               if (mappingUpdateType === 'rename') {
                 visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
@@ -744,11 +850,29 @@ export default function TableBrowser(props: {
             setDeleteColumnFormError(undefined)
           }}
           onSubmit={(mappingUpdateType) => {
+            postEdit(
+              UndoCommandType.DELETE_COLUMN,
+              `Delete ${currentTable === nodeTable ? 'node' : 'edge'} column ${selectedColumn.title}`,
+              [
+                props.currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                currentTable,
+                selectedColumn,
+              ],
+              [
+                props.currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                currentTable,
+                selectedColumn,
+              ],
+            )
             deleteColumn(
               props.currentNetworkId,
               currentTable === nodeTable ? 'node' : 'edge',
               selectedColumn.id,
             )
+            setNetworkModified(networkId, true)
+
             if (mappingUpdateType === 'delete') {
               visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
                 setMapping(props.currentNetworkId, vp.name, undefined)
@@ -792,6 +916,35 @@ export default function TableBrowser(props: {
                 const column = columns?.[columnIndex]
                 const columnKey = column.id
                 const cellValue = (rowData as any)?.[columnKey]
+                const cellEdits: CellEdit[] = []
+                const prevColumnValues: CellEdit[] = []
+                Array.from(currentTable.rows.entries()).map(([k, v]) => {
+                  cellEdits.push({
+                    row: k,
+                    column: columnKey,
+                    value: cellValue,
+                  })
+
+                  prevColumnValues.push({
+                    row: k,
+                    column: columnKey,
+                    value: (v as any)?.[columnKey] as ValueType,
+                  })
+                })
+                postEdit(
+                  UndoCommandType.APPLY_VALUE_TO_COLUMN,
+                  'Apply value to column',
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    prevColumnValues,
+                  ],
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    cellEdits,
+                  ],
+                )
                 applyValueToElemenets(
                   props.currentNetworkId,
                   currentTable === nodeTable ? 'node' : 'edge',
@@ -799,6 +952,7 @@ export default function TableBrowser(props: {
                   cellValue,
                   undefined,
                 )
+                setNetworkModified(networkId, true)
               }}
             >
               Apply value to column
@@ -811,6 +965,38 @@ export default function TableBrowser(props: {
                 const column = columns?.[columnIndex]
                 const columnKey = column.id
                 const cellValue = (rowData as any)?.[columnKey]
+                const cellEdits: CellEdit[] = []
+                const prevColumnValues: CellEdit[] = []
+
+                rows.forEach((r) => {
+                  const rowId = r.id
+                  cellEdits.push({
+                    row: rowId,
+                    column: columnKey,
+                    value: cellValue,
+                  })
+
+                  prevColumnValues.push({
+                    row: rowId,
+                    column: columnKey,
+                    value: (r as any)?.[columnKey] as ValueType,
+                  })
+                })
+
+                postEdit(
+                  UndoCommandType.APPLY_VALUE_TO_SELECTED,
+                  'Apply value to selected elements',
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    prevColumnValues,
+                  ],
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    cellEdits,
+                  ],
+                )
                 applyValueToElemenets(
                   props.currentNetworkId,
                   currentTable === nodeTable ? 'node' : 'edge',
@@ -818,6 +1004,7 @@ export default function TableBrowser(props: {
                   cellValue,
                   rows.map((r) => r.id),
                 )
+                setNetworkModified(networkId, true)
               }}
             >
               {`Apply value to selected ${
@@ -949,6 +1136,8 @@ export default function TableBrowser(props: {
                 dataType,
                 valueType,
               )
+              setNetworkModified(networkId, true)
+
               setCreateColumnFormError(undefined)
               setSelection({
                 ...selection,

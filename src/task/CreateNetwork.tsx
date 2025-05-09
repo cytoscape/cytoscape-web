@@ -139,6 +139,10 @@ const createViewForNetwork = (
     id: networkId,
     attributes: {},
   }
+  const undoRedoStack = {
+    undoStack: [],
+    redoStack: [],
+  }
 
   const withView: NetworkWithView = {
     network,
@@ -147,6 +151,7 @@ const createViewForNetwork = (
     visualStyle,
     networkViews: [networkView],
     networkAttributes,
+    undoRedoStack,
   }
 
   return withView

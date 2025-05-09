@@ -5,6 +5,8 @@ import { useState } from 'react'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
+import { UndoMenuItem } from './UndoMenuItem'
+import { RedoMenuItem } from './RedoMenuItem'
 
 export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
   const { label } = props
@@ -46,6 +48,8 @@ export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
       >
         <DeleteSelectedNodesMenuItem handleClose={handleClose} />
         <DeleteSelectedEdgesMenuItem handleClose={handleClose} />
+        <UndoMenuItem handleClose={handleClose} />
+        <RedoMenuItem handleClose={handleClose} />
       </Menu>
     </div>
   )

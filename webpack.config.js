@@ -162,9 +162,12 @@ module.exports = {
       'process.env.REACT_APP_GIT_COMMIT': JSON.stringify(
         execSync('git rev-parse --short HEAD').toString().trim(),
       ),
-      'process.env.REACT_APP_BUILD_DATE': JSON.stringify(
+      'process.env.REACT_APP_LAST_COMMIT_TIME': JSON.stringify(
         execSync('git show -s --format=%cI HEAD').toString().trim(),
       ), // Use commit date instead of current date
+      'process.env.REACT_APP_BUILD_TIME': JSON.stringify(
+          new Date().toISOString(), // JavaScript-based timestamp
+        ),
     }),
   ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other

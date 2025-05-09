@@ -4,6 +4,7 @@ import { NetworkView } from '../ViewModel'
 import { VisualStyle } from '../VisualStyleModel'
 import { VisualStyleOptions } from '../VisualStyleModel/VisualStyleOptions'
 import { OpaqueAspects } from '../OpaqueAspectModel'
+import { UndoRedoStack } from '../StoreModel/UndoStoreModel'
 
 /**
  * An utility interface to hold all the data needed to build a network view
@@ -17,4 +18,5 @@ export interface NetworkWithView {
   networkViews: NetworkView[]
   visualStyleOptions?: VisualStyleOptions
   otherAspects?: OpaqueAspects[] // All other optional aspects found in the CX2 stream
+  undoRedoStack: UndoRedoStack
 }

@@ -58,6 +58,7 @@ const AppShell = (): ReactElement => {
 
   // This is necessary to prevent creating a new workspace on every render
   const [showDialog, setShowDialog] = useState<boolean>(false)
+  const [targetNetworkId, setTargetNetworkId] = useState<string>('')
   const [search, setSearch] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -167,6 +168,15 @@ const AppShell = (): ReactElement => {
             Your workspace has now been initialized with the last cache.`,
           )
         }
+        // Replace current network ID with the one in the URL.
+        // This is necessary to prevent switching to the current network ID in the cache
+        if (
+          networkId !== undefined &&
+          networkId !== '' &&
+          networkId !== workspace.currentNetworkId
+        ) {
+          workspace.currentNetworkId = networkId
+        }
         setWorkspace(workspace)
       })
     }
@@ -240,12 +250,17 @@ const AppShell = (): ReactElement => {
 
     // const parsed = parsePathName(location.pathname)
     const parsedNetworkId = urlNetIdRef.current
+    // Clear it only after the network ID has been used for redirection
+    setTimeout(() => {
+      urlNetIdRef.current = ''
+    }, 0)
 
     // At this point, workspace ID is always available
     if (currentNetworkId === '' || currentNetworkId === undefined) {
       // ID from the URL parameter
       if (parsedNetworkId !== '' && parsedNetworkId !== undefined) {
         addNetworkIds(parsedNetworkId)
+        await waitSeconds(1)
         setCurrentNetworkId(parsedNetworkId)
         navigate(
           `/${id}/networks/${parsedNetworkId}${location.search.toString()}`,
@@ -296,16 +311,17 @@ const AppShell = (): ReactElement => {
             if (localNetworkModified && authenticated) {
               // local network and ndex network have been modified and the user is authenticated
               // ask the user what they want to do
+              setTargetNetworkId(networkId)
               setShowDialog(true)
             } else {
               // the local network has not been modified but it has been modified on NDEx
               // update the network silently
               deleteNetwork(networkId)
-              await waitSeconds(2)
+              await waitSeconds(1)
               addNetworkIds(networkId)
-              await waitSeconds(2)
+              await waitSeconds(1)
               setCurrentNetworkId(networkId)
-              await waitSeconds(2)
+              await waitSeconds(1)
               deleteNetworkModifiedStatus(networkId)
 
               navigate(
@@ -314,6 +330,7 @@ const AppShell = (): ReactElement => {
             }
           } else {
             addNetworkIds(networkId)
+            await waitSeconds(1)
             setCurrentNetworkId(networkId)
             navigate(
               `/${id}/networks/${networkId}${location.search.toString()}`,
@@ -405,6 +422,7 @@ const AppShell = (): ReactElement => {
       </Box>
       <UpdateNetworkDialog
         open={showDialog}
+        networkId={targetNetworkId}
         onClose={() => setShowDialog(false)}
       />
       <WarningDialog

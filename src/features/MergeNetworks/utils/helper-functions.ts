@@ -89,3 +89,17 @@ export function sortListAlphabetically(list: [string, IdType][]): [string, IdTyp
         return 0;
     });
 }
+
+export const checkDuplication = (table: Table|undefined, columnName: string): boolean => {
+    if (!table) {
+      return false;
+    }
+    const values = Array.from(table.rows.values()).map(row => row[columnName]);
+  
+    const normalizedValues = values.map(value => JSON.stringify(value));
+  
+    const uniqueValues = new Set(normalizedValues);
+  
+    return normalizedValues.length !== uniqueValues.size;
+  };
+  

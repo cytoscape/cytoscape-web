@@ -115,8 +115,8 @@ export const updateNetworkView = (
   const nodeViewCount = Object.keys(nodeViews).length
   const nodeCount = network.nodes.length
   if (nodeViewCount !== nodeCount) {
-    console.error(
-      '## nodeViews.length !== network.nodes.length',
+    console.warn(
+      'nodeViews.length is not same as network.nodes.length',
       nodeCount,
       nodeViewCount,
     )

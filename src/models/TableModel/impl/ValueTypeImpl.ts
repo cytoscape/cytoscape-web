@@ -27,9 +27,9 @@ export const serializedStringIsValid = (
     } else if (valueTypeName === ValueTypeName.Double) {
       return !isNaN(+serializedString)
     } else if (valueTypeName === ValueTypeName.Long) {
-      return !isNaN(+serializedString)
+      return !isNaN(+serializedString) && Number.isInteger(+serializedString)
     } else if (valueTypeName === ValueTypeName.Integer) {
-      return !isNaN(+serializedString)
+      return !isNaN(+serializedString) && Number.isInteger(+serializedString)
     } else if (valueTypeName === ValueTypeName.String) {
       return true
     }

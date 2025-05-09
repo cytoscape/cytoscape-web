@@ -28,6 +28,8 @@ import { useMessageStore } from '../../../store/MessageStore'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { Workspace } from '../../../models/WorkspaceModel'
 import { dateFormatter } from '../../../utils/date-format'
+import { debounce } from 'lodash'
+import { useNavigate } from 'react-router-dom'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
@@ -42,13 +44,14 @@ export const LoadWorkspaceDialog: React.FC<{
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const setWorkSpace = useWorkspaceStore((state) => state.set)
-  const resetWorksapce = useWorkspaceStore((state) => state.resetWorkspace)
+  const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
   const addMessage = useMessageStore((state) => state.addMessage)
   const apps = useAppStore((state) => state.apps)
   const serviceApps = useAppStore((state) => state.serviceApps)
   const addServiceApp = useAppStore((state) => state.addService)
   const removeServiceApp = useAppStore((state) => state.removeService)
   const setAppStatus = useAppStore((state) => state.setStatus)
+  const navigate = useNavigate()
 
   const [openDialog, setOpenDialog] = useState(false)
 
@@ -87,51 +90,54 @@ export const LoadWorkspaceDialog: React.FC<{
     )
     if (selectedWorkspace) {
       try {
-        resetWorksapce().then(() => {
-          setWorkSpace({
-            name: selectedWorkspace.name,
-            id: selectedWorkspace.workspaceId,
-            currentNetworkId: selectedWorkspace.options?.currentNetwork ?? '',
-            networkIds: selectedWorkspace.networkIDs,
-            localModificationTime: selectedWorkspace.modificationTime,
-            creationTime: selectedWorkspace.creationTime,
-            networkModified: {},
-            isRemote: true,
-          } as Workspace)
-          // Add apps
-          const activeApps = new Set(
-            selectedWorkspace.options?.activeApps ?? [],
-          )
-          const currentApps = new Set(
-            Object.keys(apps).filter(
-              (key) => apps[key].status === AppStatus.Active,
-            ),
-          )
-          currentApps.forEach((appKey) => {
-            if (!activeApps.has(appKey)) {
-              setAppStatus(appKey, AppStatus.Inactive)
-            }
-          })
-          activeApps.forEach((appKey) => {
-            if (!currentApps.has(appKey as string)) {
-              setAppStatus(appKey as string, AppStatus.Active)
-            }
-          })
-          // Add service apps
-          const activeServiceApps = new Set(
-            selectedWorkspace.options?.serviceApps ?? [],
-          )
-          const currentServiceApps = new Set(Object.keys(serviceApps))
-          currentServiceApps.forEach((serviceAppKey) => {
-            if (!activeServiceApps.has(serviceAppKey)) {
-              removeServiceApp(serviceAppKey)
-            }
-          })
-          activeServiceApps.forEach((serviceAppKey) => {
-            if (!currentServiceApps.has(serviceAppKey as string)) {
-              addServiceApp(serviceAppKey as string)
-            }
-          })
+        resetWorkspace().then(() => {
+          debounce(() => {
+            navigate('/')
+            setWorkSpace({
+              name: selectedWorkspace.name,
+              id: selectedWorkspace.workspaceId,
+              currentNetworkId: selectedWorkspace.options?.currentNetwork ?? '',
+              networkIds: selectedWorkspace.networkIDs,
+              localModificationTime: selectedWorkspace.modificationTime,
+              creationTime: selectedWorkspace.creationTime,
+              networkModified: {},
+              isRemote: true,
+            } as Workspace)
+            // Add apps
+            const activeApps = new Set(
+              selectedWorkspace.options?.activeApps ?? [],
+            )
+            const currentApps = new Set(
+              Object.keys(apps).filter(
+                (key) => apps[key].status === AppStatus.Active,
+              ),
+            )
+            currentApps.forEach((appKey) => {
+              if (!activeApps.has(appKey)) {
+                setAppStatus(appKey, AppStatus.Inactive)
+              }
+            })
+            activeApps.forEach((appKey) => {
+              if (!currentApps.has(appKey as string)) {
+                setAppStatus(appKey as string, AppStatus.Active)
+              }
+            })
+            // Add service apps
+            const activeServiceApps = new Set(
+              selectedWorkspace.options?.serviceApps ?? [],
+            )
+            const currentServiceApps = new Set(Object.keys(serviceApps))
+            currentServiceApps.forEach((serviceAppKey) => {
+              if (!activeServiceApps.has(serviceAppKey)) {
+                removeServiceApp(serviceAppKey)
+              }
+            })
+            activeServiceApps.forEach((serviceAppKey) => {
+              if (!currentServiceApps.has(serviceAppKey as string)) {
+                addServiceApp(serviceAppKey as string)
+              }
+            })
+          }, 1000)()
         })
         handleClose()
       } catch (e) {
