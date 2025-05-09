@@ -4,11 +4,9 @@ import {
   Title,
   Group,
   Text,
-  rem,
   MantineProvider,
   Modal,
 } from '@mantine/core'
-import { IconUpload, IconX } from '@tabler/icons-react'
 import { Dropzone, FileWithPath } from '@mantine/dropzone'
 import { ModalsProvider } from '@mantine/modals'
 import { v4 as uuidv4 } from 'uuid'
@@ -222,10 +220,9 @@ export function FileUpload(props: FileUploadProps) {
           duration: 3000,
           message: `File ${file.name} has a .${fileExtension} 
             extension but appears to be an RTF file, which is 
-            not supported for this extension.`,
+            not supported for this extension. Please check the file format.`,
           severity: MessageSeverity.ERROR,
         })
-        props.handleClose()
         return
       }
 
@@ -250,7 +247,6 @@ export function FileUpload(props: FileUploadProps) {
             message: `File ${file.name} starts with empty lines and might not be a valid table format.`,
             severity: MessageSeverity.ERROR,
           })
-          props.handleClose()
           return
         }
 
@@ -264,7 +260,6 @@ export function FileUpload(props: FileUploadProps) {
                 Please ensure it is a valid CSV.`,
               severity: MessageSeverity.ERROR,
             })
-            props.handleClose()
             return
           }
         } else if (fileExtension === 'tsv') {
@@ -276,7 +271,6 @@ export function FileUpload(props: FileUploadProps) {
                 Please ensure it is a valid TSV.`,
               severity: MessageSeverity.ERROR,
             })
-            props.handleClose()
             return
           }
         }
@@ -344,16 +338,16 @@ export function FileUpload(props: FileUploadProps) {
                   <Stack align="center">
                     <Button>Browse</Button>
                     <Text size="xl" inline>
-                      Drag file here
+                      Drag network file here
                     </Text>
-                    <Text size="sm" c="dimmed" inline mt={7}>
+                    <Text size="sm" inline mt={7}>
                       Supported file types: .csv, .txt, .tsv, .cx2.
                     </Text>
                     <Text size="sm" c="dimmed" inline>
                       Microsoft Excel files are not supported.
                     </Text>
                     <Text size="sm" c="dimmed" inline mt={7}>
-                      Files under 5mb supported.
+                      Files under 5MB supported.
                     </Text>
                   </Stack>
                 </Group>
