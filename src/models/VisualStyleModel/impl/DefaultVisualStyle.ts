@@ -403,7 +403,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   nodeImageChartSize2: {
     group: 'node',
-    name: 'nodeImageChartSize1',
+    name: 'nodeImageChartSize2',
     displayName: 'Image/Chart Size 2',
     type: 'number',
     defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
@@ -411,7 +411,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   nodeImageChartSize3: {
     group: 'node',
-    name: 'nodeImageChartSize1',
+    name: 'nodeImageChartSize3',
     displayName: 'Image/Chart Size 3',
     type: 'number',
     defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
@@ -419,7 +419,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   nodeImageChartSize4: {
     group: 'node',
-    name: 'nodeImageChartSize1',
+    name: 'nodeImageChartSize4',
     displayName: 'Image/Chart Size 4',
     type: 'number',
     defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
@@ -427,7 +427,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   nodeImageChartSize5: {
     group: 'node',
-    name: 'nodeImageChartSize1',
+    name: 'nodeImageChartSize5',
     displayName: 'Image/Chart Size 5',
     type: 'number',
     defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
@@ -435,7 +435,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   nodeImageChartSize6: {
     group: 'node',
-    name: 'nodeImageChartSize1',
+    name: 'nodeImageChartSize6',
     displayName: 'Image/Chart Size 6',
     type: 'number',
     defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
@@ -443,7 +443,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   nodeImageChartSize7: {
     group: 'node',
-    name: 'nodeImageChartSize1',
+    name: 'nodeImageChartSize7',
     displayName: 'Image/Chart Size 7',
     type: 'number',
     defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
@@ -451,7 +451,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   nodeImageChartSize8: {
     group: 'node',
-    name: 'nodeImageChartSize1',
+    name: 'nodeImageChartSize8',
     displayName: 'Image/Chart Size 8',
     type: 'number',
     defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
@@ -459,7 +459,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
   },
   nodeImageChartSize9: {
     group: 'node',
-    name: 'nodeImageChartSize1',
+    name: 'nodeImageChartSize9',
     displayName: 'Image/Chart Size 9',
     type: 'number',
     defaultValue: DEFAULT_CUSTOM_GRAPHICS_SIZE,
