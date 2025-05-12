@@ -16,6 +16,8 @@ import {
   ValueType,
 } from '../../../models'
 import { useTableStore } from '../../../store/TableStore'
+import { useUiStateStore } from '../../../store/UiStateStore'
+import { target } from '../../../../webpack.config'
 
 export const DeleteSelectedNodesMenuItem = (
   props: BaseMenuProps,
@@ -29,6 +31,15 @@ export const DeleteSelectedNodesMenuItem = (
     (state) => state.workspace.currentNetworkId,
   )
 
+  // Grab active network view id
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+  const targetNetworkId: IdType =
+    activeNetworkId === undefined || activeNetworkId === ''
+      ? currentNetworkId
+      : activeNetworkId
+
   const viewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
   )
@@ -39,12 +50,14 @@ export const DeleteSelectedNodesMenuItem = (
     viewModel !== undefined ? viewModel.selectedNodes : []
 
   useEffect(() => {
-    if (selectedNodes.length > 0) {
+    // Disable the menu item if there are no selected nodes
+    // or if the sub network view is selected
+    if (selectedNodes.length > 0 && targetNetworkId === currentNetworkId) {
       setDisabled(false)
     } else {
       setDisabled(true)
     }
-  }, [selectedNodes])
+  }, [selectedNodes, targetNetworkId])
 
   const handleDeleteNodes = (): void => {
     props.handleClose()

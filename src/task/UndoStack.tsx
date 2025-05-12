@@ -20,7 +20,6 @@ import { useUiStateStore } from '../store/UiStateStore'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { AppConfigContext } from '../AppConfigContext'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
-import { deleteEdges } from '../models/NetworkModel/impl/CyNetwork'
 
 export const useUndoStack = () => {
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
@@ -62,7 +61,8 @@ export const useUndoStack = () => {
   const setValues = useTableStore((state) => state.setValues)
   const { undoStackSize } = useContext(AppConfigContext)
 
-  const activeNetworkView: IdType = useUiStateStore(
+  // ID of the network on focus (can be different from the main network)
+  const activeNetworkViewId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -73,7 +73,7 @@ export const useUndoStack = () => {
     useUiStateStore((state) => state.ui?.networkViewUi?.activeTabIndex) ?? 0
 
   const targetNetworkId: IdType =
-    activeNetworkView === '' ? currentNetworkId : activeNetworkView
+    activeNetworkViewId === '' ? currentNetworkId : activeNetworkViewId
 
   const undoRedoStack = useUndoStore(
     (state) => state.undoRedoStacks[targetNetworkId],
@@ -89,11 +89,22 @@ export const useUndoStack = () => {
       undoParams: any[],
       redoParams: any[],
     ) => {
-      // Get the latest undo stack for the current network
+      // Get the LATEST targetNetworkId at the moment of execution
+      // This is necessary to avoid "stale closure" issues
+      const latestUiState = useUiStateStore.getState()
+      const latestWorkspaceState = useWorkspaceStore.getState()
+      const latestActiveNetworkViewId = latestUiState.ui.activeNetworkView
+      const latestCurrentNetworkId =
+        latestWorkspaceState.workspace.currentNetworkId
+      const currentTargetNetworkId =
+        latestActiveNetworkViewId === ''
+          ? latestCurrentNetworkId
+          : latestActiveNetworkViewId
 
+      // Get the latest undo stack for the current network
       const currentState = useUndoStore.getState()
       const currentNetworkStack = currentState.undoRedoStacks[
-        targetNetworkId
+        currentTargetNetworkId // Use the latest targetNetworkId
       ] ?? { undoStack: [], redoStack: [] }
       const currentUndoStack = currentNetworkStack.undoStack
 
@@ -101,10 +112,10 @@ export const useUndoStack = () => {
 
       const nextUndoStack = [...currentUndoStack, newEdit].slice(-undoStackSize)
 
-      setUndoStack(targetNetworkId, nextUndoStack)
-      setRedoStack(targetNetworkId, [])
+      setUndoStack(currentTargetNetworkId, nextUndoStack)
+      setRedoStack(currentTargetNetworkId, [])
     },
-    [targetNetworkId, setUndoStack, setRedoStack],
+    [targetNetworkId, setUndoStack, setRedoStack, undoStackSize],
   )
 
   const undoLastEdit = useCallback(() => {

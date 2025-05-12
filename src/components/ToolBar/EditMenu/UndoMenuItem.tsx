@@ -1,5 +1,5 @@
 import { MenuItem } from '@mui/material'
-import { ReactElement, useEffect, useState } from 'react'
+import { ReactElement } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 import { useUndoStack } from '../../../task/UndoStack'
 import { useUndoStore } from '../../../store/UndoStore'
@@ -26,7 +26,6 @@ export const UndoMenuItem = (props: BaseMenuProps): ReactElement => {
   ) ?? { undoStack: [], redoStack: [] }
 
   const handleUndo = (): void => {
-    // TODO: ask user to confirm deletion
     undoLastEdit()
     props.handleClose()
   }
