@@ -31,9 +31,10 @@ export function TableUpload(props: BaseMenuProps) {
   const addMessage = useMessageStore((state) => state.addMessage)
 
   const onFileError = (files: any) => {
+    const supportedExtensions = ['.txt', '.csv', '.tsv']
     addMessage({
       duration: 5000,
-      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. ${files?.[0]?.errors?.[0]?.message ?? ''}`,
+      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. Supported file types are: ${supportedExtensions.join(', ')}.`,
       severity: MessageSeverity.ERROR,
     })
   }
@@ -59,8 +60,12 @@ export function TableUpload(props: BaseMenuProps) {
             <>
               <Text>The following errors occured parsing your data:</Text>
               <List>
-                {result.errors.map((e) => {
-                  return <List.Item>{`${e.code}: ${e.message}`}</List.Item>
+                {result.errors.map((e, index) => {
+                  return (
+                    <List.Item
+                      key={`${e.code}-${index}`}
+                    >{`${e.code}: ${e.message}`}</List.Item>
+                  )
                 })}
               </List>
               <Text>Do you want to proceed to review your table data?</Text>
@@ -87,8 +92,11 @@ export function TableUpload(props: BaseMenuProps) {
         onReject={(files: any) => {
           onFileError(files)
         }}
-        // maxSize={}
-        accept={['.txt', '.csv', '.tsv']}
+        accept={{
+          'text/csv': ['.csv'],
+          'text/plain': ['.txt'],
+          'text/tab-separated-values': ['.tsv'],
+        }}
       >
         <Group
           justify="center"
