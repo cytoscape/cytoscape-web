@@ -43,7 +43,7 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
         <DialogContent dividers>
           <Box mb={2}>
             <Typography variant="body1" gutterBottom>
-              Ono K, Fong D, Gao C, Churas C, Pillich R, Lenkiewicz J, Pratt D, Pico AR, Hanspers K, Xin Y, Morris J, Kucera M, Franz M, Lopes C, Bader G, Ideker T, Chen J. Cytoscape Web: bringing network biology to the browser. Nucleic Acids Res. 2025 May 1:gkaf365.&nbsp;
+              {citationOne.split('doi: ')[0]}
               <Link
                 href="https://academic.oup.com/nar/advance-article/doi/10.1093/nar/gkaf365/8123447"
                 target="_blank"
