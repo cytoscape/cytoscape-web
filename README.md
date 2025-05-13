@@ -1,5 +1,7 @@
 # Cytoscape Web
 
+[![DOI](https://zenodo.org/badge/538576205.svg)](https://doi.org/10.5281/zenodo.14775458)
+
 A web-based version of [Cytoscape](https://cytoscape.org/) built for modern browsers
 
 ![Cytoscape Web Screenshot 1](docs/images/cyweb-v1-screenshot1.png)
