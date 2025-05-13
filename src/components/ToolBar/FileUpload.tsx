@@ -177,13 +177,21 @@ export function FileUpload(props: FileUploadProps) {
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
   const setName = useCreateNetworkFromTableStore((state) => state.setName)
   const onFileError = (files: any) => {
-    addMessage({
-      duration: 3000,
-      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported.
+    if (files.length > 1) {
+      addMessage({
+        duration: 3000,
+        message: `Only one file can be uploaded at a time.`,
+        severity: MessageSeverity.ERROR,
+      })
+    } else {
+      addMessage({
+        duration: 3000,
+        message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported.
         The supported files are .csv, .txt, .tsv, and .cx2. 
         (Error: ${files?.[0]?.errors?.[0]?.message ?? 'Unknown error'})`,
-      severity: MessageSeverity.ERROR,
-    })
+        severity: MessageSeverity.ERROR,
+      })
+    }
   }
 
   const handleTableFile = (file: File, text: string) => {
@@ -297,6 +305,8 @@ export function FileUpload(props: FileUploadProps) {
               }
             >
               <Dropzone
+                multiple={false}
+                maxFiles={1}
                 validator={(file: File) => {
                   // Do not validate if the object is not a file
                   if (!file.name) {
