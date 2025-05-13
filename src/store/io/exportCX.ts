@@ -44,19 +44,24 @@ import {
 } from '../../models/TableModel/impl/ValueTypeImpl'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
-
+import {
+  getCustomGraphicNodeVps,
+  getNonCustomGraphicVps,
+} from '../../models/VisualStyleModel/impl/CustomGraphicsImpl'
+import { DEFAULT_CUSTOM_GRAPHICS } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
+import _ from 'lodash'
 export const exportNetworkToCx2 = (
   network: Network,
   vs: VisualStyle,
   summary: NdexNetworkSummary,
   nodeTable: Table,
   edgeTable: Table,
-  visualStyleOptions?: VisualStyleOptions, //visual editor properties
+  visualStyleOptions?: VisualStyleOptions, // visual editor properties
   networkView?: NetworkView,
   networkName?: string, // optional new name for the network
   opaqueAspects?: OpaqueAspects,
 ): any => {
-  // accumulate node/edge attributes into a object
+  // accumulate node/edge attributes into an object
   const attributesAccumulator = (
     attributes: { [key: AttributeName]: { d: ValueTypeName; v?: ValueType } },
     column: Column,
@@ -64,12 +69,12 @@ export const exportNetworkToCx2 = (
     attributes[column.name] = {
       d: column.type,
     }
-
     return attributes
   }
 
   const vpNameToCXName = (vpName: VisualPropertyName): string => {
-    return cxVisualPropertyConverter[vpName].cxVPName
+    const converter = cxVisualPropertyConverter[vpName]
+    return converter.cxVPName
   }
 
   // TODO flesh out CX vp types
@@ -82,9 +87,7 @@ export const exportNetworkToCx2 = (
   ): { [key: CXVPName]: CXVisualPropertyValue } => {
     const { name, defaultValue } = vp
     const cxVPName = vpNameToCXName(name)
-
     defaults[cxVPName] = vpToCX(vp.name, defaultValue)
-
     return defaults
   }
 
@@ -107,7 +110,6 @@ export const exportNetworkToCx2 = (
         ? nodeTable.columns.map((col) => col.name).includes(attributeName)
         : edgeTable.columns.map((col) => col.name).includes(attributeName)
     }
-
     if (mapping != null) {
       switch (mapping.type) {
         case MappingFunctionType.Continuous: {
@@ -152,14 +154,12 @@ export const exportNetworkToCx2 = (
   ): { [key: IdType]: { [key: CXVPName]: CXVisualPropertyValue } } => {
     const { name, bypassMap } = vp
     const cxVPName = vpNameToCXName(name)
-
     bypassMap.forEach((value, id) => {
       if (bypasses[id] == null) {
         bypasses[id] = {}
       }
       bypasses[id][cxVPName] = vpToCX(vp.name, value)
     })
-
     return bypasses
   }
 
@@ -183,7 +183,7 @@ export const exportNetworkToCx2 = (
           )
         : property.value
   })
-  
+
   if (networkName || summary.name !== '') {
     networkAttributeDeclarations.name = { d: 'string' }
     networkAttributes[0].name = networkName ?? summary.name
@@ -213,7 +213,6 @@ export const exportNetworkToCx2 = (
 
   const nodes = network.nodes.map((node) => {
     const nodeRow = nodeTable.rows.get(node.id)
-
     return {
       id: parseInt(node.id),
       x: networkView?.nodeViews[node.id].x ?? 0,
@@ -227,7 +226,6 @@ export const exportNetworkToCx2 = (
     const edgeId = parseInt(translateEdgeIdToCX(edge.id))
     const source = parseInt(edge.s)
     const target = parseInt(edge.t)
-
     return {
       id: edgeId,
       s: source,
@@ -249,6 +247,59 @@ export const exportNetworkToCx2 = (
     },
   ]
 
+  const customGraphicNodeVps = getCustomGraphicNodeVps(
+    VisualStyleFn.nodeVisualProperties(vs),
+  )
+  const nonCustomGraphicNodeVps = getNonCustomGraphicVps(
+    VisualStyleFn.nodeVisualProperties(vs),
+  )
+
+  const validCustomGraphicNodeVps = []
+  for (let i = 1; i <= 9; i++) {
+    const customGraphicVpName = `nodeImageChart${i}` as NodeVisualPropertyName
+    const customGraphicVp = customGraphicNodeVps.find(
+      (v) => v.name === customGraphicVpName,
+    )
+    if (customGraphicVp) {
+      const invalidCustomGraphicDefaultValue = _.isEqual(
+        customGraphicVp.defaultValue,
+        DEFAULT_CUSTOM_GRAPHICS,
+      )
+      const invalidCustomGraphicMapping = customGraphicVp.mapping === undefined
+      const invalidCustomGraphicBypass = customGraphicVp.bypassMap.size === 0
+      if (
+        invalidCustomGraphicDefaultValue &&
+        invalidCustomGraphicMapping &&
+        invalidCustomGraphicBypass
+      ) {
+        continue
+      } else {
+        const customGraphicSizeVpName =
+          `nodeImageChartSize${i}` as NodeVisualPropertyName
+        const customGraphicPositionVpName =
+          `nodeImageChartPosition${i}` as NodeVisualPropertyName
+        const customGraphicSizeVp = customGraphicNodeVps.find(
+          (v) => v.name === customGraphicSizeVpName,
+        )
+        const customGraphicPositionVp = customGraphicNodeVps.find(
+          (v) => v.name === customGraphicPositionVpName,
+        )
+        if (customGraphicSizeVp !== undefined) {
+          validCustomGraphicNodeVps.push(customGraphicSizeVp)
+        }
+        if (customGraphicPositionVp !== undefined) {
+          validCustomGraphicNodeVps.push(customGraphicPositionVp)
+        }
+        validCustomGraphicNodeVps.push(customGraphicVp)
+      }
+    }
+  }
+
+  const nodePropertiesToExport = [
+    ...nonCustomGraphicNodeVps,
+    ...validCustomGraphicNodeVps,
+  ]
+
   const visualProperties = [
     {
       default: {
@@ -260,12 +311,9 @@ export const exportNetworkToCx2 = (
           vpDefaultsAccumulator,
           {},
         ),
-        node: VisualStyleFn.nodeVisualProperties(vs).reduce(
-          vpDefaultsAccumulator,
-          {},
-        ),
+        node: nodePropertiesToExport.reduce(vpDefaultsAccumulator, {}),
       },
-      nodeMapping: VisualStyleFn.nodeVisualProperties(vs)
+      nodeMapping: nodePropertiesToExport
         .filter((vp) => vp.mapping != null)
         .reduce(vpMappingsAccumulator, {}),
       edgeMapping: VisualStyleFn.edgeVisualProperties(vs)
@@ -275,7 +323,7 @@ export const exportNetworkToCx2 = (
   ]
 
   const nodeBypasses = Object.entries(
-    VisualStyleFn.nodeVisualProperties(vs)
+    nodePropertiesToExport
       .filter((vp) => vp.bypassMap.size > 0)
       .reduce(vpBypassesAccumulator, {}),
   ).map(([id, bypassObj]) => {
@@ -339,6 +387,7 @@ export const exportNetworkToCx2 = (
 
   return cx
 }
+
 export const exportGraph = (network: Network) => {
   const nodes = network.nodes.map((node) => {
     return {
@@ -349,7 +398,6 @@ export const exportGraph = (network: Network) => {
     const edgeId = parseInt(translateEdgeIdToCX(edge.id))
     const source = parseInt(edge.s)
     const target = parseInt(edge.t)
-
     return {
       id: edgeId,
       s: source,

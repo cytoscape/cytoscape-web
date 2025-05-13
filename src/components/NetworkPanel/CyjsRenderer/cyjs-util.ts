@@ -4,7 +4,6 @@ import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import { View } from '../../../models/ViewModel/View'
 import VisualStyleFn, {
   EdgeArrowShapeType,
-  NodeLabelPositionType,
   EdgeVisualPropertyName,
   NodeVisualPropertyName,
   VisualProperty,
@@ -20,6 +19,10 @@ import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/Cy
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 import { NodeShapeMapping } from './cyjs-factory'
+import {
+  getFirstValidCustomGraphicVp,
+  getNonCustomGraphicVps,
+} from '../../../models/VisualStyleModel/impl/CustomGraphicsImpl'
 
 function updateEdgeArrowShape(
   obj: SingularElementArgument,
@@ -128,68 +131,132 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   cyStyle.push(baseEdgeStyle as CyjsDirectMapper)
   cyStyle.push(baseNodeStyle as CyjsDirectMapper)
 
-  nodeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
-    const cyjsVpName = getCyjsVpName(vp.name)
-    if (cyjsVpName !== undefined) {
-      if (vp.name === VisualPropertyName.NodeSelectedPaint) {
-        const selectedNodeMapping = {
-          selector: 'node:selected',
-          style: {
-            [cyjsVpName]: `data(${vp.name})`,
-          },
-        }
-        cyStyle.push(selectedNodeMapping as CyjsDirectMapper)
-      } else if (vp.name === VisualPropertyName.NodeLabelPosition) {
-        const valignDirectMapping: CyjsDirectMapper = {
-          selector: `node[${SpecialPropertyName.NodeLabelVerticalAlign}]`,
-          style: {
-            [CyjsVisualPropertyName.LabelVerticalAlign]: `data(${SpecialPropertyName.NodeLabelVerticalAlign})`,
-          },
-        }
+  const nonCustomGraphicNodeVps = getNonCustomGraphicVps(nodeVps)
 
-        const halignDirectMapping: CyjsDirectMapper = {
-          selector: `node[${SpecialPropertyName.NodeLabelHorizontalAlign}]`,
-          style: {
-            [CyjsVisualPropertyName.LabelHorizontalAlign]: `data(${SpecialPropertyName.NodeLabelHorizontalAlign})`,
-          },
-        }
+  nonCustomGraphicNodeVps.forEach(
+    (vp: VisualProperty<VisualPropertyValueType>) => {
+      const cyjsVpName = getCyjsVpName(vp.name)
+      if (cyjsVpName !== undefined) {
+        if (vp.name === VisualPropertyName.NodeSelectedPaint) {
+          const selectedNodeMapping = {
+            selector: 'node:selected',
+            style: {
+              [cyjsVpName]: `data(${vp.name})`,
+            },
+          }
+          cyStyle.push(selectedNodeMapping as CyjsDirectMapper)
+        } else if (vp.name === VisualPropertyName.NodeLabelPosition) {
+          const valignDirectMapping: CyjsDirectMapper = {
+            selector: `node[${SpecialPropertyName.NodeLabelVerticalAlign}]`,
+            style: {
+              [CyjsVisualPropertyName.LabelVerticalAlign]: `data(${SpecialPropertyName.NodeLabelVerticalAlign})`,
+            },
+          }
 
-        const marginXDirectMapping: CyjsDirectMapper = {
-          selector: `node[${SpecialPropertyName.NodeLabelMarginX}]`,
-          style: {
-            'text-margin-x': `data(${SpecialPropertyName.NodeLabelMarginX})`,
-          },
-        }
+          const halignDirectMapping: CyjsDirectMapper = {
+            selector: `node[${SpecialPropertyName.NodeLabelHorizontalAlign}]`,
+            style: {
+              [CyjsVisualPropertyName.LabelHorizontalAlign]: `data(${SpecialPropertyName.NodeLabelHorizontalAlign})`,
+            },
+          }
 
-        const marginYDirectMapping: CyjsDirectMapper = {
-          selector: `node[${SpecialPropertyName.NodeLabelMarginY}]`,
-          style: {
-            'text-margin-y': `data(${SpecialPropertyName.NodeLabelMarginY})`,
-          },
-        }
-        const justificationDirectMapping: CyjsDirectMapper = {
-          selector: `node[${SpecialPropertyName.NodeLabelJustification}]`,
-          style: {
-            'text-justification': `data(${SpecialPropertyName.NodeLabelJustification})`,
-          },
-        }
+          const marginXDirectMapping: CyjsDirectMapper = {
+            selector: `node[${SpecialPropertyName.NodeLabelMarginX}]`,
+            style: {
+              'text-margin-x': `data(${SpecialPropertyName.NodeLabelMarginX})`,
+            },
+          }
 
-        cyStyle.push(valignDirectMapping)
-        cyStyle.push(halignDirectMapping)
-        cyStyle.push(marginXDirectMapping)
-        cyStyle.push(marginYDirectMapping)
-        cyStyle.push(justificationDirectMapping)
-      } else {
-        const directMapping: CyjsDirectMapper = {
-          selector: `node[${vp.name}]`,
-          style: {
-            [cyjsVpName]: `data(${vp.name})`,
-          },
+          const marginYDirectMapping: CyjsDirectMapper = {
+            selector: `node[${SpecialPropertyName.NodeLabelMarginY}]`,
+            style: {
+              'text-margin-y': `data(${SpecialPropertyName.NodeLabelMarginY})`,
+            },
+          }
+          const justificationDirectMapping: CyjsDirectMapper = {
+            selector: `node[${SpecialPropertyName.NodeLabelJustification}]`,
+            style: {
+              'text-justification': `data(${SpecialPropertyName.NodeLabelJustification})`,
+            },
+          }
+
+          cyStyle.push(valignDirectMapping)
+          cyStyle.push(halignDirectMapping)
+          cyStyle.push(marginXDirectMapping)
+          cyStyle.push(marginYDirectMapping)
+          cyStyle.push(justificationDirectMapping)
+        } else {
+          const directMapping: CyjsDirectMapper = {
+            selector: `node[${vp.name}]`,
+            style: {
+              [cyjsVpName]: `data(${vp.name})`,
+            },
+          }
+          cyStyle.push(directMapping)
         }
-        cyStyle.push(directMapping)
       }
+    },
+  )
+
+  // The first valid custom graphic will have only pie charts/ring charts/images in the
+  // default value, mapping and bypass.
+  // Support only default values and bypasses for now
+  const firstValidCustomGraphicVp = getFirstValidCustomGraphicVp(nodeVps)
+
+  if (firstValidCustomGraphicVp !== undefined) {
+    // Add all custom graphics properties
+    // We need to add all properties, because any particular node can have any
+    // particular custom graphic (e.g. ring, pie, image) in the default value, mapping and bypasses.
+    const addCyjsPieProperties = () => {
+      const MAX_SLICES = 16 // we need to allocate all 16 slices, because the number of slices depends on bypasses and default values
+      // e.g. a bypass can be a pie chart with 16 slices, and the default value can be a pie chart with 8 slices
+      const pieSizeStyleName = 'pie-size' // cyjsname
+      const pieSizeSelectorStr = 'pieSize' // key in the view model.  Avoid '-' in the key name.
+      const pieSizeMapping = {
+        selector: `node[${pieSizeSelectorStr}]`,
+        style: {
+          [pieSizeStyleName]: `data(${pieSizeSelectorStr})`,
+        },
+      }
+
+      const pieBackGroundMappings = []
+      for (let i = 1; i <= MAX_SLICES; i++) {
+        const bgColorStyleName = `pie-${i}-background-color` // cyjsname
+        const bgColorSelectorStr = `pie${i}BackgroundColor` // key in the view model.  Avoid '-' in the key name.
+        const pieBackgroundColorMapping = {
+          selector: `node[${bgColorSelectorStr}]`,
+          style: {
+            [bgColorStyleName]: `data(${bgColorSelectorStr})`,
+          },
+        }
+
+        const pieSliceSizeStyleName = `pie-${i}-background-size` // cyjsname
+        const pieSliceSizeSelectorStr = `pie${i}BackgroundSize` // key in the view model.  Avoid '-' in the key name.
+        const pieSliceSizeMapping = {
+          selector: `node[${pieSliceSizeSelectorStr}]`,
+          style: {
+            [pieSliceSizeStyleName]: `data(${pieSliceSizeSelectorStr})`,
+          },
+        }
+
+        pieBackGroundMappings.push(pieBackgroundColorMapping)
+        pieBackGroundMappings.push(pieSliceSizeMapping)
+      }
+      cyStyle.push(pieSizeMapping as CyjsDirectMapper)
+      pieBackGroundMappings.forEach((mapping) => {
+        cyStyle.push(mapping as CyjsDirectMapper)
+      })
     }
-  })
+
+    //TODO
+    const addCyjsRingProperties = () => {}
+
+    const addCyjsImageProperties = () => {}
+
+    addCyjsPieProperties()
+    addCyjsRingProperties()
+    addCyjsImageProperties()
+  }
 
   /**
    * Create edge style model

@@ -1,4 +1,8 @@
 import { ColorType } from './ColorType'
+import {
+  CustomGraphicsPositionType,
+  CustomGraphicsType,
+} from './CustomGraphicsType'
 import { EdgeArrowShapeType } from './EdgeArrowShapeType'
 import { EdgeFillType } from './EdgeFillType'
 import { EdgeLineType } from './EdgeLineType'
@@ -27,6 +31,8 @@ export type VisualPropertyValueType =
   | VisibilityType
   | NodeLabelPositionType
   | EdgeFillType
+  | CustomGraphicsType
+  | CustomGraphicsPositionType
   | string
   | number
   | boolean

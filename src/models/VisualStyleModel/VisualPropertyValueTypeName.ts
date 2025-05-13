@@ -13,6 +13,8 @@ export const VisualPropertyValueTypeName = {
   Number: 'number',
   String: 'string',
   Boolean: 'boolean',
+  CustomGraphic: 'customGraphic',
+  CustomGraphicPosition: 'customGraphicPosition',
 }
 
 export type VisualPropertyValueTypeName =

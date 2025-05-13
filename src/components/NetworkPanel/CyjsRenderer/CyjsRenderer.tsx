@@ -231,11 +231,10 @@ const CyjsRenderer = ({
       visualEditorProperties,
     )
 
-    // Generate a new Cytoscape.js styles based on given visual style
     const newStyle = createCyjsDataMapper(vs)
+
     setCyStyle(newStyle)
 
-    // Restore selection state in Cyjs instance
     const selectedNodes = networkView?.selectedNodes ?? []
     const selectedEdges = networkView?.selectedEdges ?? []
 
