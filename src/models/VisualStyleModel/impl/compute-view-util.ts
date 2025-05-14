@@ -342,7 +342,7 @@ const computeView = (
       (vp) => vp.name === NodeVisualPropertyName.NodeHeight,
     )
     const widthvp = nonCustomGraphicNodeVps.find(
-      (vp) => vp.name === NodeVisualPropertyName.NodeHeight,
+      (vp) => vp.name === NodeVisualPropertyName.NodeWidth,
     )
 
     const bypass = bypassMap.get(id)
