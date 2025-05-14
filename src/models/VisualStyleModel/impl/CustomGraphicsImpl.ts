@@ -75,22 +75,19 @@ export const getSizePropertyForCustomGraphic = (
   return customGraphicsSizeVP as VisualProperty<VisualPropertyValueType>
 }
 
+const sizeValueToCyjsPixelValue = (value: number) => `${value}px`
+
 const computeCustomGraphicSizeProperties = (
   id: IdType,
-
   vp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
   row: Record<AttributeName, ValueType>,
 ) => {
-  const sizeValueToCyjsPixelValue = (value: number) => `${value}px`
-
   const { defaultValue, mapping, bypassMap, name, group } = vp
   const bypass = bypassMap.get(id)
   if (bypass !== undefined) {
-    return sizeValueToCyjsPixelValue(bypass as number)
+    return bypass as number
   } else if (mapping !== undefined) {
-    // Mapping is available.
-    // TODO: compute mapping
     const attrName: string = mapping.attribute
     const attributeValueAssigned: ValueType | undefined = row[attrName]
 
@@ -105,12 +102,12 @@ const computeCustomGraphicSizeProperties = (
         attributeValueAssigned,
       )
 
-      return sizeValueToCyjsPixelValue(computedValue as number)
+      return computedValue as number
     } else {
-      return sizeValueToCyjsPixelValue(defaultValue as number)
+      return defaultValue as number
     }
   } else {
-    return sizeValueToCyjsPixelValue(defaultValue as number)
+    return defaultValue as number
   }
 }
 
@@ -119,7 +116,8 @@ export const computePieChartProperties = (
 
   value: CustomGraphicsType,
   row: Record<AttributeName, ValueType>,
-  customGraphicsSizeVp: VisualProperty<VisualPropertyValueType>,
+  widthVp: VisualProperty<VisualPropertyValueType>,
+  heightVp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
 ) => {
   const piePairsToAdd: [string, VisualPropertyValueType][] = []
@@ -130,14 +128,12 @@ export const computePieChartProperties = (
     return acc + value
   }, 0)
 
-  const size = computeCustomGraphicSizeProperties(
-    id,
-    customGraphicsSizeVp,
-    mappers,
-    row,
-  )
+  const width = computeCustomGraphicSizeProperties(id, widthVp, mappers, row)
 
-  piePairsToAdd.push(['pieSize', size])
+  const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
+
+  const size = Math.min(width, height)
+  piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
 
   pieValues.cy_colors.forEach((color, index) => {
     const attribute = pieValues.cy_dataColumns[index]
@@ -189,17 +185,12 @@ export const computeCustomGraphicsProperties = (
 
   value: CustomGraphicsType,
   row: Record<AttributeName, ValueType>,
-  customGraphicsSizeVp: VisualProperty<VisualPropertyValueType>,
+  widthVp: VisualProperty<VisualPropertyValueType>,
+  heightVp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
 ) => {
   if (value.name === CustomGraphicsNameType.PieChart) {
-    return computePieChartProperties(
-      id,
-      value,
-      row,
-      customGraphicsSizeVp,
-      mappers,
-    )
+    return computePieChartProperties(id, value, row, widthVp, heightVp, mappers)
   } else if (value.name === CustomGraphicsNameType.RingChart) {
     //TODO implement ring chart properties
     // return computeRingChartProperties(

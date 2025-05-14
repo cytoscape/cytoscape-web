@@ -17,6 +17,7 @@ import {
   EdgeFillType,
   EdgeArrowShapeType,
   CustomGraphicsType,
+  NodeVisualPropertyName,
 } from '..'
 
 import * as VisualStyleFnImpl from './VisualStyleFnImpl'
@@ -332,9 +333,16 @@ const computeView = (
 
   if (firstValidCustomGraphicVp !== undefined) {
     const { name, mapping, bypassMap } = firstValidCustomGraphicVp
-    const customGraphicsSizeVP = getSizePropertyForCustomGraphic(
-      firstValidCustomGraphicVp,
-      customGraphicNodeVps,
+    // const customGraphicsSizeVP = getSizePropertyForCustomGraphic(
+    //   firstValidCustomGraphicVp,
+    //   customGraphicNodeVps,
+    // )
+
+    const heightvp = nonCustomGraphicNodeVps.find(
+      (vp) => vp.name === NodeVisualPropertyName.NodeHeight,
+    )
+    const widthvp = nonCustomGraphicNodeVps.find(
+      (vp) => vp.name === NodeVisualPropertyName.NodeWidth,
     )
 
     const bypass = bypassMap.get(id)
@@ -345,7 +353,8 @@ const computeView = (
         id,
         bypass as CustomGraphicsType,
         row,
-        customGraphicsSizeVP,
+        widthvp as VisualProperty<VisualPropertyValueType>,
+        heightvp as VisualProperty<VisualPropertyValueType>,
         mappers,
       )
     } else if (mapping !== undefined) {
@@ -363,7 +372,8 @@ const computeView = (
             id,
             computedValue as CustomGraphicsType,
             row,
-            customGraphicsSizeVP,
+            widthvp as VisualProperty<VisualPropertyValueType>,
+            heightvp as VisualProperty<VisualPropertyValueType>,
             mappers,
           )
         }
@@ -376,7 +386,8 @@ const computeView = (
         id,
         defaultValue as CustomGraphicsType,
         row,
-        customGraphicsSizeVP,
+        widthvp as VisualProperty<VisualPropertyValueType>,
+        heightvp as VisualProperty<VisualPropertyValueType>,
         mappers,
       )
     }
