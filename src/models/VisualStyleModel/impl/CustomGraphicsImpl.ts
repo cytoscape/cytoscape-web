@@ -134,19 +134,23 @@ export const computePieChartProperties = (
 
   const size = Math.min(width, height)
   piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
-
-  pieValues.cy_colors.forEach((color, index) => {
-    const attribute = pieValues.cy_dataColumns[index]
-    const attributeValue = row[attribute]
-    const value = (attributeValue ?? 0) as number
-    const percentage = Math.min(Math.max(0, value / totalValue), 1)
-    const percentageToString = `${percentage * 100}%`
-    const bgColorSelectorStr = `pie${index + 1}BackgroundColor` // pie chart properties start at 1 instead of 0
-    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`
-
-    piePairsToAdd.push([bgColorSelectorStr, color])
-    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString])
-  })
+  
+  const colorsReversed  = pieValues.cy_colors.slice().reverse();
+  const columnsReversed = pieValues.cy_dataColumns.slice().reverse();
+  
+  colorsReversed.forEach((color, index) => {
+    const attribute = columnsReversed[index];
+    const attributeValue = row[attribute];
+    const value = (attributeValue ?? 0) as number;
+    const percentage = Math.min(Math.max(0, value / totalValue), 1);
+    const percentageToString = `${percentage * 100}%`;
+  
+    const bgColorSelectorStr      = `pie${index + 1}BackgroundColor`;
+    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`;
+  
+    piePairsToAdd.push([bgColorSelectorStr, color]);
+    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString]);
+  });
   return piePairsToAdd
 }
 
