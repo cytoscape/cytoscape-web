@@ -142,3 +142,16 @@ Possible solutions:
 - Use a new incognito window to open Cytoscape web
 - Clear browsing data include cookies
 - In developer tools, go to Application page,find IndexedDB in session storage. Click `Delete database`.
+
+---
+
+# Release Management
+
+When you need to create a new release, please follow these steps:
+
+1. Merge [development branch](https://github.com/cytoscape/cytoscape-web/tree/development) into [master](https://github.com/cytoscape/cytoscape-web/tree/master).
+2. Tag the master branch
+3. [Create a new release in GitHub](https://github.com/cytoscape/cytoscape-web/releases/new)
+4. Once released, check [Zenodo account](https://doi.org/10.5281/zenodo.14775458) and make sure it is linked to the new release.
+5. Check the doi badge and make sure the link is correct.
+6. Update the version number in the development branch for the next release.
