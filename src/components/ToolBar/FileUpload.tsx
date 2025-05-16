@@ -88,6 +88,8 @@ export function FileUpload(props: FileUploadProps) {
         networkAttributes,
       )
         .filter(([key, value]) => {
+          // Exclude 'name' and 'description' as they are handled separately as metadata fields
+          // TODO this 'handleCX2File' function should be moved to the cx2-utils or a hook
           return key !== 'name' && key !== 'description'
         })
         .map(([key, value]) => {
