@@ -219,6 +219,16 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         },
       }
 
+      const pieStartAngleStyleName = 'pie-start-angle'
+      const pieStartAngleSelectorStr = 'pieStartAngle'
+      const pieStartAngleMapping = {
+        selector: `node[${pieStartAngleSelectorStr}]`,
+        style: {
+          [pieStartAngleStyleName]: `data(${pieStartAngleSelectorStr})`,
+        },
+      }
+
+
       const pieBackGroundMappings = []
       for (let i = 1; i <= MAX_SLICES; i++) {
         const bgColorStyleName = `pie-${i}-background-color` // cyjsname
@@ -242,7 +252,10 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         pieBackGroundMappings.push(pieBackgroundColorMapping)
         pieBackGroundMappings.push(pieSliceSizeMapping)
       }
+
       cyStyle.push(pieSizeMapping as CyjsDirectMapper)
+      cyStyle.push(pieStartAngleMapping as CyjsDirectMapper)
+
       pieBackGroundMappings.forEach((mapping) => {
         cyStyle.push(mapping as CyjsDirectMapper)
       })
