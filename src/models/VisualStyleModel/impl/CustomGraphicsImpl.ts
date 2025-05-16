@@ -77,6 +77,8 @@ export const getSizePropertyForCustomGraphic = (
 
 const sizeValueToCyjsPixelValue = (value: number) => `${value}px`
 
+const angleValueToCyjsPixelValue = (value: number) => `${((90 - value) % 360 + 360) % 360}deg`
+
 const computeCustomGraphicSizeProperties = (
   id: IdType,
   vp: VisualProperty<VisualPropertyValueType>,
@@ -133,8 +135,13 @@ export const computePieChartProperties = (
   const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
 
   const size = Math.min(width, height)
+
+  const angle = pieValues.cy_startAngle
+
   piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
   
+  piePairsToAdd.push(['pieStartAngle', angleValueToCyjsPixelValue(angle)])
+
   const colorsReversed  = pieValues.cy_colors.slice().reverse();
   const columnsReversed = pieValues.cy_dataColumns.slice().reverse();
   
