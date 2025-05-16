@@ -86,15 +86,19 @@ export function FileUpload(props: FileUploadProps) {
 
       const localProperties: NdexNetworkProperty[] = Object.entries(
         networkAttributes,
-      ).map(([key, value]) => {
-        return {
-          predicateString: key,
-          value: value as ValueType,
-          dataType:
-            networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
-          subNetworkId: null,
-        }
-      })
+      )
+        .filter(([key, value]) => {
+          return key !== 'name' && key !== 'description'
+        })
+        .map(([key, value]) => {
+          return {
+            predicateString: key,
+            value: value as ValueType,
+            dataType:
+              networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
+            subNetworkId: null,
+          }
+        })
 
       const localUuid = uuidv4()
       const res = await createDataFromLocalCx2(localUuid, json)
