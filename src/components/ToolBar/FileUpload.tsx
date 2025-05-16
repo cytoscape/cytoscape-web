@@ -86,15 +86,21 @@ export function FileUpload(props: FileUploadProps) {
 
       const localProperties: NdexNetworkProperty[] = Object.entries(
         networkAttributes,
-      ).map(([key, value]) => {
-        return {
-          predicateString: key,
-          value: value as ValueType,
-          dataType:
-            networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
-          subNetworkId: null,
-        }
-      })
+      )
+        .filter(([key, value]) => {
+          // Exclude 'name' and 'description' as they are handled separately as metadata fields
+          // TODO this 'handleCX2File' function should be moved to the cx2-utils or a hook
+          return key !== 'name' && key !== 'description'
+        })
+        .map(([key, value]) => {
+          return {
+            predicateString: key,
+            value: value as ValueType,
+            dataType:
+              networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
+            subNetworkId: null,
+          }
+        })
 
       const localUuid = uuidv4()
       const res = await createDataFromLocalCx2(localUuid, json)
