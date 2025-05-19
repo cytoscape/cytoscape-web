@@ -131,8 +131,8 @@ export const computePieChartProperties = (
   const width = computeCustomGraphicSizeProperties(id, widthVp, mappers, row)
 
   const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
-
-  const size = Math.min(width, height)
+  const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
+  const size = Math.min(width, height) - padding
   piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
 
   pieValues.cy_colors.forEach((color, index) => {

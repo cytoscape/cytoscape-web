@@ -237,13 +237,7 @@ export const createDataFromLocalCx2 = async (
 const isValidNetworkAttributes = (aspect: Aspect): boolean => {
   return (
     Array.isArray(aspect.networkAttributes) &&
-    aspect.networkAttributes.every(
-      (attr: any) =>
-        typeof attr === 'object' &&
-        typeof attr.name === 'string' &&
-        (attr.description === undefined ||
-          typeof attr.description === 'string'),
-    )
+    aspect.networkAttributes.every((attr: any) => typeof attr === 'object')
   )
 }
 
