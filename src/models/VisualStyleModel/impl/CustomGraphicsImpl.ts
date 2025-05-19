@@ -77,6 +77,8 @@ export const getSizePropertyForCustomGraphic = (
 
 const sizeValueToCyjsPixelValue = (value: number) => `${value}px`
 
+const angleValueToCyjsPixelValue = (value: number) => `${((90 - value) % 360 + 360) % 360}deg`
+
 const computeCustomGraphicSizeProperties = (
   id: IdType,
   vp: VisualProperty<VisualPropertyValueType>,
@@ -133,20 +135,30 @@ export const computePieChartProperties = (
   const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
   const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
   const size = Math.min(width, height) - padding
+
+
+  const angle = pieValues.cy_startAngle
+
   piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
+  
+  piePairsToAdd.push(['pieStartAngle', angleValueToCyjsPixelValue(angle)])
 
-  pieValues.cy_colors.forEach((color, index) => {
-    const attribute = pieValues.cy_dataColumns[index]
-    const attributeValue = row[attribute]
-    const value = (attributeValue ?? 0) as number
-    const percentage = Math.min(Math.max(0, value / totalValue), 1)
-    const percentageToString = `${percentage * 100}%`
-    const bgColorSelectorStr = `pie${index + 1}BackgroundColor` // pie chart properties start at 1 instead of 0
-    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`
-
-    piePairsToAdd.push([bgColorSelectorStr, color])
-    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString])
-  })
+  const colorsReversed  = pieValues.cy_colors.slice().reverse();
+  const columnsReversed = pieValues.cy_dataColumns.slice().reverse();
+  
+  colorsReversed.forEach((color, index) => {
+    const attribute = columnsReversed[index];
+    const attributeValue = row[attribute];
+    const value = (attributeValue ?? 0) as number;
+    const percentage = Math.min(Math.max(0, value / totalValue), 1);
+    const percentageToString = `${percentage * 100}%`;
+  
+    const bgColorSelectorStr      = `pie${index + 1}BackgroundColor`;
+    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`;
+  
+    piePairsToAdd.push([bgColorSelectorStr, color]);
+    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString]);
+  });
   return piePairsToAdd
 }
 
