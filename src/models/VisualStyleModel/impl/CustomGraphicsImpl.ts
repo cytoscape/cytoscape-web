@@ -133,8 +133,9 @@ export const computePieChartProperties = (
   const width = computeCustomGraphicSizeProperties(id, widthVp, mappers, row)
 
   const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
+  const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
+  const size = Math.min(width, height) - padding
 
-  const size = Math.min(width, height)
 
   const angle = pieValues.cy_startAngle
 
