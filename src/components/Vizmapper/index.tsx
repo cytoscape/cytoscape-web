@@ -233,13 +233,13 @@ export default function VizmapperView(props: {
     //   customGraphicVps,
     // )
 
-    nodeVps.push(
-      <VisualPropertyView
-        key={firstValidCustomGraphicVP.name}
-        currentNetworkId={props.networkId}
-        visualProperty={firstValidCustomGraphicVP}
-      />,
-    )
+    // nodeVps.push(
+    //   <VisualPropertyView
+    //     key={firstValidCustomGraphicVP.name}
+    //     currentNetworkId={props.networkId}
+    //     visualProperty={firstValidCustomGraphicVP}
+    //   />,
+    // )
 
     // Dont expose custom graphics size properties for now
     // there are rendering limitations in cy.js
@@ -255,22 +255,22 @@ export default function VizmapperView(props: {
   } else {
     // There are no existing custom graphics vps set, so let the user
     // edit the first image chart property
-    const imageChart1Vp = customGraphicVps.find(
-      (vp) => vp.name === 'nodeImageChart1',
-    )
+    // const imageChart1Vp = customGraphicVps.find(
+    //   (vp) => vp.name === 'nodeImageChart1',
+    // )
     // const imageChartSize1Vp = customGraphicVps.find(
     //   (vp) => vp.name === 'nodeImageChartSize1',
     // )
 
-    if (imageChart1Vp) {
-      nodeVps.push(
-        <VisualPropertyView
-          key={imageChart1Vp.name}
-          currentNetworkId={props.networkId}
-          visualProperty={imageChart1Vp}
-        />,
-      )
-    }
+    // if (imageChart1Vp) {
+    //   nodeVps.push(
+    //     <VisualPropertyView
+    //       key={imageChart1Vp.name}
+    //       currentNetworkId={props.networkId}
+    //       visualProperty={imageChart1Vp}
+    //     />,
+    //   )
+    // }
     // if (imageChartSize1Vp) {
     //   nodeVps.push(
     //     <VisualPropertyView
