@@ -5,7 +5,7 @@ import { BaseMenuProps } from '../BaseMenuProps'
 
 export const DeveloperMenuItem = (props: BaseMenuProps): ReactElement => {
   const handleBugReport = (): void => {
-    window.open('https://github.com/cytoscape/cytoscape-web/wiki/Tutorial-For-Cytoscape-Web', '_blank')
+    window.open('https://github.com/cytoscape/cytoscape-web/wiki/Cytoscape-Web-Developer-Tutorial', '_blank')
     props.handleClose()
   }
 
