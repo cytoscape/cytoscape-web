@@ -136,11 +136,10 @@ export const computePieChartProperties = (
   const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
   const size = Math.min(width, height) - padding
 
-
-  const angle = pieValues.cy_startAngle
-
-  piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
+  const angle = pieValues.cy_startAngle ?? 0;
   
+  piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
+
   piePairsToAdd.push(['pieStartAngle', angleValueToCyjsPixelValue(angle)])
 
   const colorsReversed  = pieValues.cy_colors.slice().reverse();
