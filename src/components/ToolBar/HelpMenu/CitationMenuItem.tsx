@@ -17,9 +17,7 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const citationOne =
     'Ono K, Fong D, Gao C, Churas C, Pillich R, Lenkiewicz J, Pratt D, Pico AR, Hanspers K, Xin Y, Morris J, Kucera M, Franz M, Lopes C, Bader G, Ideker T, Chen J. Cytoscape Web: bringing network biology to the browser. Nucleic Acids Res. 2025 May 1:gkaf365. doi: 10.1093/nar/gkaf365. Epub ahead of print. PMID: 40308211.'
-  const citationTwo =
-    'Shannon P, Markiel A, Ozier O, Baliga NS, Wang JT, Ramage D, Amin N, Schwikowski B, Ideker T. Cytoscape: a software environment for integrated models of biomolecular interaction networks. Genome Res, 13:11 (2498-504). 2003 Nov. PubMed ID: 14597658.'
-
+  
   const handleOpenDialog = (): void => {
     setOpen(true)
   }
@@ -51,25 +49,20 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
               >
                 doi: 10.1093/nar/gkaf365
               </Link>
-              . Epub ahead of print. PMID: 40308211.
+              . PMID:{' '}
+              <Link
+                href="https://pubmed.ncbi.nlm.nih.gov/40308211/"
+                target="_blank"
+                rel="noopener"
+              >
+                40308211
+              </Link>
+              .
             </Typography>
             <Button
               size="small"
               variant="contained"
               onClick={() => handleCopyText(citationOne)}
-            >
-              Copy Citation
-            </Button>
-          </Box>
-
-          <Box>
-            <Typography variant="body1" gutterBottom>
-              {citationTwo}
-            </Typography>
-            <Button
-              size="small"
-              variant="contained"
-              onClick={() => handleCopyText(citationTwo)}
             >
               Copy Citation
             </Button>
