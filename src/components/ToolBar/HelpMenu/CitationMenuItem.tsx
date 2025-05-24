@@ -8,80 +8,164 @@ import {
   Typography,
   Box,
   Link,
+  Snackbar, // Added for feedback
 } from '@mui/material'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Example icon
 import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
-  const [open, setOpen] = useState(false)
+  const [openDialog, setOpenDialog] = useState(false)
+  const [snackbarOpen, setSnackbarOpen] = useState(false) // State for Snackbar
 
-  const citationOne =
-    'Ono K, Fong D, Gao C, Churas C, Pillich R, Lenkiewicz J, Pratt D, Pico AR, Hanspers K, Xin Y, Morris J, Kucera M, Franz M, Lopes C, Bader G, Ideker T, Chen J. Cytoscape Web: bringing network biology to the browser. Nucleic Acids Res. 2025 May 1:gkaf365. doi: 10.1093/nar/gkaf365. Epub ahead of print. PMID: 40308211.'
-  const citationTwo =
-    'Shannon P, Markiel A, Ozier O, Baliga NS, Wang JT, Ramage D, Amin N, Schwikowski B, Ideker T. Cytoscape: a software environment for integrated models of biomolecular interaction networks. Genome Res, 13:11 (2498-504). 2003 Nov. PubMed ID: 14597658.'
+  const citationOneFull =
+    'Ono K, Fong D, Gao C, Churas C, Pillich R, Lenkiewicz J, Pratt D, Pico AR, Hanspers K, Xin Y, Morris J, Kucera M, Franz M, Lopes C, Bader G, Ideker T, Chen J. Cytoscape Web: bringing network biology to the browser. Nucleic Acids Research, gkaf365. 1 May. 2025, doi: 10.1093/nar/gkaf365. PMID: 40308211.'
+  const citationTwoFull =
+    'Shannon P, Markiel A, Ozier O, Baliga NS, Wang JT, Ramage D, Amin N, Schwikowski B, Ideker T. Cytoscape: a software environment for integrated models of biomolecular interaction networks. Genome Res, 13:11 (2498-504). 2003 Nov. PMID: 14597658.'
+
+  // --- Parts for Citation One ---
+  const journalNameToItalicize = "Nucleic Acids Research"; // Updated full name
+  const doiLinkText = "doi: 10.1093/nar/gkaf365";
+  const doiUrl = "https://academic.oup.com/nar/advance-article/doi/10.1093/nar/gkaf365/8123447";
+  const pmidTextOne = "40308211";
+  const pmidUrlOne = "https://pubmed.ncbi.nlm.nih.gov/40308211/";
+
+  // 1. Part before the journal name
+  const citationOnePart1 = citationOneFull.substring(0, citationOneFull.indexOf(journalNameToItalicize));
+
+  // 2. Part after journal name, before DOI link
+  const textAfterJournalBeforeDoi = citationOneFull.substring(
+    citationOneFull.indexOf(journalNameToItalicize) + journalNameToItalicize.length,
+    citationOneFull.indexOf(doiLinkText)
+  );
+
+  // 3. Part after DOI link, before PMID
+  const textAfterDoiBeforePmid = citationOneFull.substring(
+    citationOneFull.indexOf(doiLinkText) + doiLinkText.length,
+    citationOneFull.indexOf(pmidTextOne)
+  );
+
+  // 4. Part after PMID
+  const textAfterPmidOne = citationOneFull.substring(
+    citationOneFull.indexOf(pmidTextOne) + pmidTextOne.length
+  );
+  // --- End Parts for Citation One ---
+
+  // --- Parts for Citation Two ---
+  const pmidTextTwo = "14597658";
+  const pmidUrlTwo = "https://pubmed.ncbi.nlm.nih.gov/14597658/";
+  const citationTwoPart1 = citationTwoFull.substring(0, citationTwoFull.indexOf(pmidTextTwo));
+  const citationTwoPart2 = citationTwoFull.substring(citationTwoFull.indexOf(pmidTextTwo) + pmidTextTwo.length);
+  // --- End Parts for Citation Two ---
+
 
   const handleOpenDialog = (): void => {
-    setOpen(true)
+    setOpenDialog(true)
   }
 
   const handleCloseDialog = (): void => {
-    setOpen(false)
+    setOpenDialog(false)
     props.handleClose()
   }
 
-  const handleCopyText = (text: string): void => {
-    navigator.clipboard.writeText(text).catch((err) => {
-      console.error('Failed to copy text: ', err)
-    })
+  const handleCopyAllCitations = (): void => {
+    const allCitations = `${citationOneFull}\n\n${citationTwoFull}` // Use full citation strings
+    navigator.clipboard.writeText(allCitations)
+      .then(() => {
+        setSnackbarOpen(true) // Show success feedback
+      })
+      .catch((err) => {
+        console.error('Failed to copy citations: ', err)
+        // Optionally, show an error Snackbar here
+      })
   }
+
+  const handleCloseSnackbar = (event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
 
   return (
     <>
       <MenuItem onClick={handleOpenDialog}>Citation</MenuItem>
-      <Dialog open={open} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Citations</DialogTitle>
+     <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+        <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                Citations
+            </Box>
+        </DialogTitle>
         <DialogContent dividers>
-          <Box mb={2}>
-            <Typography variant="body1" gutterBottom>
-              {citationOne.split('doi: ')[0]}
+          <Box mb={3}>
+            <Typography variant="body1" gutterBottom component="div">
+              {citationOnePart1}
+              <Typography component="span" sx={{ fontStyle: 'italic' }}>
+                {journalNameToItalicize}
+              </Typography>
+              {textAfterJournalBeforeDoi}
               <Link
-                href="https://academic.oup.com/nar/advance-article/doi/10.1093/nar/gkaf365/8123447"
+                href={doiUrl}
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
+                sx={{ fontWeight: 'medium' }}
               >
-                doi: 10.1093/nar/gkaf365
+                {doiLinkText}
               </Link>
-              . Epub ahead of print. PMID: 40308211.
+              {textAfterDoiBeforePmid}
+              <Link
+                href={pmidUrlOne}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ fontWeight: 'medium' }}
+              >
+                {pmidTextOne}
+              </Link>
+              {textAfterPmidOne}
             </Typography>
+          </Box>
+
+          <Box mb={3}>
+            <Typography variant="body1" gutterBottom component="div">
+              {citationTwoPart1}
+              <Link
+                href={pmidUrlTwo}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ fontWeight: 'medium' }}
+              >
+                {pmidTextTwo}
+              </Link>
+              {citationTwoPart2}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1, mb:1 }}>
             <Button
-              size="small"
               variant="contained"
-              onClick={() => handleCopyText(citationOne)}
+              startIcon={<ContentCopyIcon />}
+              onClick={handleCopyAllCitations}
             >
-              Copy Citation
+              Copy Both Citations
             </Button>
           </Box>
 
-          <Box>
-            <Typography variant="body1" gutterBottom>
-              {citationTwo}
-            </Typography>
-            <Button
-              size="small"
-              variant="contained"
-              onClick={() => handleCopyText(citationTwo)}
-            >
-              Copy Citation
-            </Button>
-          </Box>
         </DialogContent>
 
-        <DialogActions>
+        <DialogActions sx={{ padding: '16px 24px' }}>
           <Button onClick={handleCloseDialog} color="primary">
             Close
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000} // Hide after 3 seconds
+        onClose={handleCloseSnackbar}
+        message="Citations copied to clipboard!"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} // Position Snackbar
+      />       
     </>
   )
 }
