@@ -13,6 +13,8 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Example icon
 import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 import { useMessageStore } from '../../../store/MessageStore'
+import { MessageSeverity } from '../../../models/MessageModel'
+
 
 export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
   const [openDialog, setOpenDialog] = useState(false)
