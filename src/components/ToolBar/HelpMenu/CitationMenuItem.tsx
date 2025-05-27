@@ -97,7 +97,7 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
     return CITATIONS.map(citation => {
       let text = `${citation.authors} ${citation.title}`
       if (citation.journal) {
-        text += citation.journal
+        text += ` ${citation.journal}`
       }
       text += citation.details
       if (citation.doi) {
