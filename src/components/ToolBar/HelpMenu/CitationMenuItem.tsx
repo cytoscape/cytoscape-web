@@ -78,6 +78,7 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
           message: 'Citation copied to clipboard!',
           duration: 3000,
           severity: MessageSeverity.INFO
+        })
       })
       .catch((err) => {
         console.error('Failed to copy citations: ', err)
