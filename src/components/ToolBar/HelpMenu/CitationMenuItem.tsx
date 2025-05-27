@@ -8,15 +8,16 @@ import {
   Typography,
   Box,
   Link,
-  Snackbar, // Added for feedback
 } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Example icon
 import { ReactElement, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
+import { useMessageStore } from '../../../store/MessageStore'
 
 export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
   const [openDialog, setOpenDialog] = useState(false)
-  const [snackbarOpen, setSnackbarOpen] = useState(false) // State for Snackbar
+
+  const addMessage = useMessageStore((state) => state.addMessage)
 
   const citationOneFull =
     'Ono K, Fong D, Gao C, Churas C, Pillich R, Lenkiewicz J, Pratt D, Pico AR, Hanspers K, Xin Y, Morris J, Kucera M, Franz M, Lopes C, Bader G, Ideker T, Chen J. Cytoscape Web: bringing network biology to the browser. Nucleic Acids Research, gkaf365. 1 May. 2025, doi: 10.1093/nar/gkaf365. PMID: 40308211.'
@@ -73,6 +74,10 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
     navigator.clipboard.writeText(allCitations)
       .then(() => {
         setSnackbarOpen(true) // Show success feedback
+        addMessage({
+          message: 'Citation copied to clipboard!',
+          duration: 3000,
+          severity: MessageSeverity.INFO
       })
       .catch((err) => {
         console.error('Failed to copy citations: ', err)
@@ -80,12 +85,6 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
       })
   }
 
-  const handleCloseSnackbar = (event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setSnackbarOpen(false);
-  };
 
   return (
     <>
@@ -158,14 +157,6 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={3000} // Hide after 3 seconds
-        onClose={handleCloseSnackbar}
-        message="Citations copied to clipboard!"
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} // Position Snackbar
-      />       
     </>
   )
 }
