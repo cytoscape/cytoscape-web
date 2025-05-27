@@ -15,6 +15,8 @@ import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { useUndoStack } from '../../../task/UndoStack'
 import { LayoutAlgorithm } from '../../../models'
 
 interface DropdownMenuProps {
@@ -24,6 +26,7 @@ interface DropdownMenuProps {
 
 export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
+  const [layoutInfo, setLayoutInfo] = useState<string | undefined>(undefined)
 
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
@@ -46,6 +49,10 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
   )
+
+  const getViewModel = useViewModelStore((state) => state.getViewModel)
+  const networkView = getViewModel(targetNetworkId)
+  const { postEdit } = useUndoStack()
 
   const updateNodePositions: (
     networkId: IdType,
@@ -88,8 +95,22 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   }
 
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
+    const prevPositions = new Map<IdType, [number, number]>()
+
+    Object.entries(networkView?.nodeViews ?? {}).forEach(
+      ([nodeId, nodeView]) => {
+        prevPositions.set(nodeId, [nodeView.x, nodeView.y])
+      },
+    )
+
     // Update node positions in the view model
     updateNodePositions(targetNetworkId, positionMap)
+    postEdit(
+      UndoCommandType.APPLY_LAYOUT,
+      `Apply layout`,
+      [targetNetworkId, prevPositions],
+      [targetNetworkId, positionMap],
+    )
     setIsRunning(false)
     console.log('Finished layout')
   }
@@ -122,6 +143,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             ) as LayoutEngine
             const { nodes, edges } = target
             setIsRunning(true)
+            setLayoutInfo(engine.algorithms[name].displayName)
             engine.apply(nodes, edges, afterLayout, engine.algorithms[name])
           },
         }

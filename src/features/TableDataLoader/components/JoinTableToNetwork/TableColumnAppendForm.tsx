@@ -64,7 +64,9 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
   const activeTableIndex = useUiStateStore(
     (state) => state.ui.tableUi.activeTabIndex,
   )
-
+  const setNetworkModified = useWorkspaceStore(
+    (state) => state.setNetworkModified,
+  )
   const table = useTableStore((state) => state.tables[currentNetworkId])
   const setTable = useTableStore((state) => state.setTable)
   const nodeTable = table?.nodeTable
@@ -151,6 +153,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
       )
       setTable(currentNetworkId, tableToAppend, nextTable)
     }
+    setNetworkModified(currentNetworkId, true)
     setLoading(false)
     reset()
     props.handleClose()

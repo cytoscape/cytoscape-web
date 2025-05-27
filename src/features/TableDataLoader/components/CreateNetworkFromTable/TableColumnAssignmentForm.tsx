@@ -268,7 +268,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   )
 
   const rowValuesAreValid = columnsToImport.every(
-    (c) => c.invalidValues.length === 0,
+    (c) => c.invalidValues?.length === 0,
   )
 
   const submitDisabled = !(
@@ -319,10 +319,10 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
                         <Text size="sm" c="gray" fw={500}>
                           {h.name}
                         </Text>
-                        {h.invalidValues.length > 0 ? (
+                        {h.invalidValues?.length > 0 ? (
                           <Tooltip
                             zIndex={2001}
-                            label={`Column '${h.name}' has ${h.invalidValues.length} values that cannot be parsed as type ${valueTypeName2Label[h.dataType]}`}
+                            label={`Column '${h.name}' has ${h.invalidValues?.length} values that cannot be parsed as type ${valueTypeName2Label[h.dataType]}`}
                           >
                             <IconAlertCircle size={20} color="red" />
                           </Tooltip>
@@ -411,10 +411,10 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           One column must be assigned as a source or target node
         </Alert>
       ) : null}
-      {columnsToImport.some((c) => c.invalidValues.length > 0) ? (
+      {columnsToImport.some((c) => c.invalidValues?.length > 0) ? (
         <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>
           {`The following columns have values that cannot be parsed as their assigned data type: ${columns
-            .filter((c) => c.invalidValues.length > 0)
+            .filter((c) => c.invalidValues?.length > 0)
             .map((c) => `'${c.name}'`)
             .join(', ')}`}
         </Alert>

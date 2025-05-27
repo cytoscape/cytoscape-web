@@ -168,6 +168,15 @@ const AppShell = (): ReactElement => {
             Your workspace has now been initialized with the last cache.`,
           )
         }
+        // Replace current network ID with the one in the URL.
+        // This is necessary to prevent switching to the current network ID in the cache
+        if (
+          networkId !== undefined &&
+          networkId !== '' &&
+          networkId !== workspace.currentNetworkId
+        ) {
+          workspace.currentNetworkId = networkId
+        }
         setWorkspace(workspace)
       })
     }

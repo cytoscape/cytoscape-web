@@ -10,6 +10,7 @@ import {
   EdgeLineType,
   NodeLabelPositionType,
   EdgeArrowShapeType,
+  CustomGraphicsType,
 } from '../VisualPropertyValue'
 import {
   DiscreteMappingFunction,
@@ -19,6 +20,12 @@ import {
   VisualStyle,
 } from '..'
 import { ValueTypeName } from '../../TableModel'
+import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
+import {
+  DEFAULT_CUSTOM_GRAPHICS,
+  DEFAULT_CUSTOM_GRAPHICS_POSITION,
+  DEFAULT_CUSTOM_GRAPHICS_SIZE,
+} from './DefaultVisualStyle'
 
 type CXLabelPositionValueType = 'center' | 'top' | 'bottom' | 'left' | 'right'
 export interface CXLabelPositionType {
@@ -31,6 +38,8 @@ export interface CXLabelPositionType {
   JUSTIFICATION: CXLabelPositionValueType
 }
 
+export type CXCustomGraphicsType = CustomGraphicsType
+
 interface CXFontFaceType {
   FONT_FAMILY: 'serif' | 'sans-serif' | 'monospace'
   FONT_STYLE: 'normal' | 'bold'
@@ -42,6 +51,8 @@ export type CXVisualPropertyValue =
   | CXLabelPositionType
   | CXFontFaceType
   | CXLabelPositionType
+  | CXCustomGraphicsType
+  | CustomGraphicsPositionType
 
 export interface CXDiscreteMappingFunction<T> {
   type: 'DISCRETE'
@@ -305,6 +316,47 @@ export const VPNodeLabelPositionConverter = (
   }
 }
 
+export const VPPieSizeConverter = (): CXVisualPropertyConverter<string> => {
+  return {
+    cxVPName: 'VPPrecentageConverter',
+    valueConverter: (): string => '80%',
+  }
+}
+
+export const VPCustomGraphicsSizeConverter = (
+  cxVPName: string,
+): CXVisualPropertyConverter<number> => {
+  return {
+    cxVPName,
+    valueConverter: (cxVPValue?: CXVisualPropertyValue): number =>
+      cxVPValue ? (cxVPValue as number) : DEFAULT_CUSTOM_GRAPHICS_SIZE,
+  }
+}
+
+export const VPCustomGraphicsConverter = (
+  cxVPName: string,
+): CXVisualPropertyConverter<CustomGraphicsType> => {
+  return {
+    cxVPName,
+    valueConverter: (cxVPValue?: CXVisualPropertyValue): CustomGraphicsType =>
+      cxVPValue ? (cxVPValue as CustomGraphicsType) : DEFAULT_CUSTOM_GRAPHICS,
+  }
+}
+
+export const VPCustomGraphicsPositionConverter = (
+  cxVPName: string,
+): CXVisualPropertyConverter<CustomGraphicsPositionType> => {
+  return {
+    cxVPName,
+    valueConverter: (
+      cxVPValue?: CXVisualPropertyValue,
+    ): CustomGraphicsPositionType =>
+      cxVPValue
+        ? (cxVPValue as CustomGraphicsPositionType)
+        : DEFAULT_CUSTOM_GRAPHICS_POSITION,
+  }
+}
+
 // lookup table of visual style property names to cx property names
 export const cxVisualPropertyConverter: Record<
   VisualPropertyName,
@@ -333,6 +385,51 @@ export const cxVisualPropertyConverter: Record<
   nodeSelectedPaint: VPColorConverter('NODE_SELECTED_PAINT'),
   nodeMaxLabelWidth: VPNumberConverter('NODE_LABEL_MAX_WIDTH'),
   nodeZOrder: VPNumberConverter('NODE_Z_LOCATION'),
+  nodeImageChart1: VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_1'),
+  nodeImageChart2: VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_2'),
+  nodeImageChart3: VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_3'),
+  nodeImageChart4: VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_4'),
+  nodeImageChart5: VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_5'),
+  nodeImageChart6: VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_6'),
+  nodeImageChart7: VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_7'),
+  nodeImageChart8: VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_8'),
+  nodeImageChart9: VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_9'),
+  nodeImageChartPosition1: VPCustomGraphicsPositionConverter(
+    'NODE_CUSTOMGRAPHICS_POSITION_1',
+  ),
+  nodeImageChartPosition2: VPCustomGraphicsPositionConverter(
+    'NODE_CUSTOMGRAPHICS_POSITION_2',
+  ),
+  nodeImageChartPosition3: VPCustomGraphicsPositionConverter(
+    'NODE_CUSTOMGRAPHICS_POSITION_3',
+  ),
+  nodeImageChartPosition4: VPCustomGraphicsPositionConverter(
+    'NODE_CUSTOMGRAPHICS_POSITION_4',
+  ),
+  nodeImageChartPosition5: VPCustomGraphicsPositionConverter(
+    'NODE_CUSTOMGRAPHICS_POSITION_5',
+  ),
+  nodeImageChartPosition6: VPCustomGraphicsPositionConverter(
+    'NODE_CUSTOMGRAPHICS_POSITION_6',
+  ),
+  nodeImageChartPosition7: VPCustomGraphicsPositionConverter(
+    'NODE_CUSTOMGRAPHICS_POSITION_7',
+  ),
+  nodeImageChartPosition8: VPCustomGraphicsPositionConverter(
+    'NODE_CUSTOMGRAPHICS_POSITION_8',
+  ),
+  nodeImageChartPosition9: VPCustomGraphicsPositionConverter(
+    'NODE_CUSTOMGRAPHICS_POSITION_9',
+  ),
+  nodeImageChartSize1: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_1'),
+  nodeImageChartSize2: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_2'),
+  nodeImageChartSize3: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_3'),
+  nodeImageChartSize4: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_4'),
+  nodeImageChartSize5: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_5'),
+  nodeImageChartSize6: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_6'),
+  nodeImageChartSize7: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_7'),
+  nodeImageChartSize8: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_8'),
+  nodeImageChartSize9: VPNumberConverter('NODE_CUSTOMGRAPHICS_SIZE_9'),
 
   edgeLineType: VPEdgeLineTypeConverter('EDGE_LINE_STYLE'),
   edgeLineColor: VPColorConverter('EDGE_LINE_COLOR'),

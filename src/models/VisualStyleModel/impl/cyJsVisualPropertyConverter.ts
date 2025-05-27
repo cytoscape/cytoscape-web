@@ -25,6 +25,34 @@ const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
   nodeLabelRotation: CyVpName.LabelRotation,
   nodeLabelOpacity: CyVpName.LabelOpacity,
 
+  nodeImageChart1: CyVpName.PieSize, // image/chart properties are a special case, these values are placeholders
+  nodeImageChart2: CyVpName.PieSize,
+  nodeImageChart3: CyVpName.PieSize,
+  nodeImageChart4: CyVpName.PieSize,
+  nodeImageChart5: CyVpName.PieSize,
+  nodeImageChart6: CyVpName.PieSize,
+  nodeImageChart7: CyVpName.PieSize,
+  nodeImageChart8: CyVpName.PieSize,
+  nodeImageChart9: CyVpName.PieSize,
+  nodeImageChartPosition1: CyVpName.PieSize, // image/chart properties are a special case, these values are placeholders
+  nodeImageChartPosition2: CyVpName.PieSize,
+  nodeImageChartPosition3: CyVpName.PieSize,
+  nodeImageChartPosition4: CyVpName.PieSize,
+  nodeImageChartPosition5: CyVpName.PieSize,
+  nodeImageChartPosition6: CyVpName.PieSize,
+  nodeImageChartPosition7: CyVpName.PieSize,
+  nodeImageChartPosition8: CyVpName.PieSize,
+  nodeImageChartPosition9: CyVpName.PieSize,
+  nodeImageChartSize1: CyVpName.PieSize, // image/chart properties are a special case, these values are placeholders
+  nodeImageChartSize2: CyVpName.PieSize,
+  nodeImageChartSize3: CyVpName.PieSize,
+  nodeImageChartSize4: CyVpName.PieSize,
+  nodeImageChartSize5: CyVpName.PieSize,
+  nodeImageChartSize6: CyVpName.PieSize,
+  nodeImageChartSize7: CyVpName.PieSize,
+  nodeImageChartSize8: CyVpName.PieSize,
+  nodeImageChartSize9: CyVpName.PieSize,
+
   nodeVisibility: CyVpName.Visibility,
   nodeZOrder: CyVpName.NodeZOrder,
 

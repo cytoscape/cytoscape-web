@@ -217,6 +217,8 @@ export const MainPanel = (): JSX.Element => {
           width: '100%',
           height: '100%',
           boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <Allotment vertical minSize={100}>

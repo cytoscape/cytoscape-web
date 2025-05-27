@@ -4,13 +4,10 @@ import {
   Title,
   Group,
   Text,
-  rem,
   MantineProvider,
   Modal,
-  Paper,
 } from '@mantine/core'
-import { IconUpload, IconX } from '@tabler/icons-react'
-import { Dropzone } from '@mantine/dropzone'
+import { Dropzone, FileWithPath } from '@mantine/dropzone'
 import { ModalsProvider } from '@mantine/modals'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -23,11 +20,7 @@ import {
   NdexNetworkProperty,
   Visibility,
 } from '../../models/NetworkSummaryModel'
-import TableFn, {
-  Table,
-  ValueType,
-  ValueTypeName,
-} from '../../models/TableModel'
+import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useTableStore } from '../../store/TableStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
@@ -41,15 +34,10 @@ import {
 import { PrimeReactProvider } from 'primereact/api'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/network-utils'
-import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { useUiStateStore } from '../../store/UiStateStore'
-import {
-  createDataFromLocalCx2,
-  getOptionalAspects,
-} from '../../utils/cx-utils'
+import { createDataFromLocalCx2 } from '../../utils/cx-utils'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { useMessageStore } from '../../store/MessageStore'
-import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { MessageSeverity } from '../../models/MessageModel'
 interface FileUploadProps {
   show: boolean
@@ -65,7 +53,6 @@ export function FileUpload(props: FileUploadProps) {
 
   const setVisualStyle = useVisualStyleStore((state) => state.add)
 
-  const ui = useUiStateStore((state) => state.ui)
   const setVisualStyleOptions = useUiStateStore(
     (state) => state.setVisualStyleOptions,
   )
@@ -99,15 +86,21 @@ export function FileUpload(props: FileUploadProps) {
 
       const localProperties: NdexNetworkProperty[] = Object.entries(
         networkAttributes,
-      ).map(([key, value]) => {
-        return {
-          predicateString: key,
-          value: value as ValueType,
-          dataType:
-            networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
-          subNetworkId: null,
-        }
-      })
+      )
+        .filter(([key, value]) => {
+          // Exclude 'name' and 'description' as they are handled separately as metadata fields
+          // TODO this 'handleCX2File' function should be moved to the cx2-utils or a hook
+          return key !== 'name' && key !== 'description'
+        })
+        .map(([key, value]) => {
+          return {
+            predicateString: key,
+            value: value as ValueType,
+            dataType:
+              networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
+            subNetworkId: null,
+          }
+        })
 
       const localUuid = uuidv4()
       const res = await createDataFromLocalCx2(localUuid, json)
@@ -172,7 +165,7 @@ export function FileUpload(props: FileUploadProps) {
     } catch (error) {
       console.error(error)
       addMessage({
-        duration: 5000,
+        duration: 3000,
         message: 'Failed to parse CX2 file',
         severity: MessageSeverity.ERROR,
       })
@@ -190,11 +183,21 @@ export function FileUpload(props: FileUploadProps) {
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
   const setName = useCreateNetworkFromTableStore((state) => state.setName)
   const onFileError = (files: any) => {
-    addMessage({
-      duration: 5000,
-      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. ${files?.[0]?.errors?.[0]?.message ?? ''}`,
-      severity: MessageSeverity.ERROR,
-    })
+    if (files.length > 1) {
+      addMessage({
+        duration: 3000,
+        message: `Only one file can be uploaded at a time.`,
+        severity: MessageSeverity.ERROR,
+      })
+    } else {
+      addMessage({
+        duration: 3000,
+        message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported.
+        The supported files are .csv, .txt, .tsv, and .cx2. 
+        (Error: ${files?.[0]?.errors?.[0]?.message ?? 'Unknown error'})`,
+        severity: MessageSeverity.ERROR,
+      })
+    }
   }
 
   const handleTableFile = (file: File, text: string) => {
@@ -218,11 +221,73 @@ export function FileUpload(props: FileUploadProps) {
     const reader = new FileReader()
     reader.addEventListener('load', () => {
       const text = reader.result as string
+      const fileExtension = file.name.split('.').pop()?.toLowerCase()
 
-      const fileExtension = file.name.split('.').pop()
+      // Check RTF format with wrong extension
+      if (
+        (fileExtension === 'txt' ||
+          fileExtension === 'csv' ||
+          fileExtension === 'tsv') &&
+        text.startsWith('{\\rtf')
+      ) {
+        addMessage({
+          duration: 3000,
+          message: `File ${file.name} has a .${fileExtension} 
+            extension but appears to be an RTF file, which is 
+            not supported for this extension. Please check the file format.`,
+          severity: MessageSeverity.ERROR,
+        })
+        return
+      }
+
       if (fileExtension === 'cx2') {
         handleCX2File(file, text)
       } else {
+        // Simple validator for .txt, .csv, and .tsv files
+
+        const trimmedText = text.trim()
+
+        if (trimmedText.length === 0) {
+          handleTableFile(file, text)
+          return
+        }
+
+        const lines = trimmedText.split('\n')
+        const firstLine = lines[0].trim()
+
+        if (firstLine.length === 0 && trimmedText.length > 0) {
+          addMessage({
+            duration: 3000,
+            message: `File ${file.name} starts with empty lines and might not be a valid table format.`,
+            severity: MessageSeverity.ERROR,
+          })
+          return
+        }
+
+        // Simple test for CSV and TSV
+        if (fileExtension === 'csv') {
+          if (!firstLine.includes(',') && firstLine.length > 0) {
+            addMessage({
+              duration: 3000,
+              message: `File ${file.name} is a .csv file, 
+                but its first line does not contain commas. 
+                Please ensure it is a valid CSV.`,
+              severity: MessageSeverity.ERROR,
+            })
+            return
+          }
+        } else if (fileExtension === 'tsv') {
+          if (!firstLine.includes('\t') && firstLine.length > 0) {
+            addMessage({
+              duration: 3000,
+              message: `File ${file.name} is a .tsv file, 
+                but its first line does not contain tabs. 
+                Please ensure it is a valid TSV.`,
+              severity: MessageSeverity.ERROR,
+            })
+            return
+          }
+        }
         handleTableFile(file, text)
       }
     })
@@ -241,60 +306,64 @@ export function FileUpload(props: FileUploadProps) {
               centered
               title={
                 <Title c="gray" order={4}>
-                  Upload file
+                  Upload network file
                 </Title>
               }
             >
               <Dropzone
-                accept={['.csv', '.txt', '.tsv', '.cx2']}
-                onDrop={(files: any) => {
-                  onFileDrop(files[0])
+                multiple={false}
+                maxFiles={1}
+                validator={(file: File) => {
+                  // Do not validate if the object is not a file
+                  if (!file.name) {
+                    return null
+                  }
+
+                  const fileExtension = file.name
+                    .split('.')
+                    .pop()
+                    ?.toLowerCase()
+                  if (
+                    fileExtension !== 'csv' &&
+                    fileExtension !== 'txt' &&
+                    fileExtension !== 'tsv' &&
+                    fileExtension !== 'cx2'
+                  ) {
+                    return {
+                      code: 'file-invalid-type',
+                      message: `File ${file.name} is not a supported type.`,
+                    }
+                  }
+                  return null
                 }}
-                onReject={(files: any) => {
-                  onFileError(files)
+                onDrop={(files: FileWithPath[]) => {
+                  if (files && files.length > 0) {
+                    onFileDrop(files[0])
+                  }
                 }}
-                // maxSize={}
+                onReject={(rejectedFiles: any) => {
+                  onFileError(rejectedFiles)
+                }}
               >
                 <Group
                   justify="center"
                   gap="xl"
                   mih={220}
-                  style={{ pointerEvents: 'none' }}
+                  style={{ pointerEvents: 'stroke' }}
                 >
-                  <Dropzone.Accept>
-                    <IconUpload
-                      style={{
-                        width: rem(52),
-                        height: rem(52),
-                        color: 'var(--mantine-color-blue-6)',
-                      }}
-                      stroke={1.5}
-                    />
-                  </Dropzone.Accept>
-                  <Dropzone.Reject>
-                    <IconX
-                      style={{
-                        width: rem(52),
-                        height: rem(52),
-                        color: 'var(--mantine-color-red-6)',
-                      }}
-                      stroke={1.5}
-                    />
-                  </Dropzone.Reject>
-
                   <Stack align="center">
                     <Button>Browse</Button>
                     <Text size="xl" inline>
-                      Drag file here
+                      Drag network file here
                     </Text>
-                    <Text size="sm" c="dimmed" inline mt={7}>
+                    <Text size="sm" inline mt={7}>
                       Supported file types: .csv, .txt, .tsv, .cx2.
                     </Text>
                     <Text size="sm" c="dimmed" inline>
                       Microsoft Excel files are not supported.
                     </Text>
                     <Text size="sm" c="dimmed" inline mt={7}>
-                      Files under 5mb supported.
+                      Files under 5MB supported.
                     </Text>
                   </Stack>
                 </Group>

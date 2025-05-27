@@ -19,9 +19,11 @@ import {
   ContinuousMappingFunction,
   PassthroughMappingFunction,
   MappingFunctionType,
+  CustomGraphicsType,
 } from '..'
 
 import {
+  CXCustomGraphicsType,
   CXId,
   CXVisualMappingFunction,
   cxVisualPropertyConverter,
@@ -29,10 +31,15 @@ import {
   CXVisualPropertyValue,
 } from './cxVisualPropertyConverter'
 
-import { getDefaultVisualStyle } from './DefaultVisualStyle'
+import {
+  getDefaultVisualStyle,
+  DEFAULT_CUSTOM_GRAPHICS,
+  DEFAULT_CUSTOM_GRAPHICS_POSITION,
+} from './DefaultVisualStyle'
 import { createNewNetworkView, updateNetworkView } from './compute-view-util'
 import { VisualStyleOptions } from '../VisualStyleOptions'
 import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
+import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
 
 const sortByDisplayName = (
   a: VisualProperty<VisualPropertyValueType>,
@@ -362,8 +369,6 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                   attributeType: cxMapping.definition.type,
                 }
                 visualStyle[vpName].mapping = m
-              } else {
-                // visualStyle[vpName].mapping = undefined
               }
               break
             }
@@ -379,9 +384,6 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
         console.error(`Property ${vpName} not found in CX`)
       }
     })
-
-    // some cx properties are probably not handled in this conversion,
-    // we should find a way to store them and then restore them when we round trip
   })
 
   return visualStyle

@@ -67,6 +67,7 @@ import { useAppManager } from '../../store/hooks/useAppManager'
 import { NetworkWithView, VisualStyle } from '../../models'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { MessageSeverity } from '../../models/MessageModel'
+import { useUndoStore } from '../../store/UndoStore'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -156,6 +157,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
 
+  const addStack = useUndoStore((state) => state.addStack)
   // listen to view model changes
   // assume that if the view model change, the network has been modified and set the networkModified flag to true
   useViewModelStore.subscribe(
@@ -313,6 +315,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         networkViews,
         visualStyleOptions,
         otherAspects,
+        undoRedoStack,
       } = res
 
       setVisualStyleOptions(networkId, visualStyleOptions)
@@ -323,6 +326,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       if (otherAspects !== undefined) {
         addAllOpaqueAspects(networkId, otherAspects)
       }
+      addStack(networkId, undoRedoStack)
 
       if (isHCX(summary)) {
         const version =
@@ -522,7 +526,13 @@ const WorkSpaceEditor = (): JSX.Element => {
     } else {
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
+          restoreSelectionStates()
+
           restoreTableBrowserTabState()
+          setTimeout(() => {
+            restoreActiveNetworkView()
+          }, 1000)
+
           navigate(
             `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
           )
@@ -664,16 +674,28 @@ const WorkSpaceEditor = (): JSX.Element => {
           </Allotment.Pane>
         </Allotment>
 
-        {panels.right === PanelState.OPEN ? (
-          <Box sx={{ width: '100%', height: '100%' }}>
-            <OpenRightPanelButton
-              toOpen={false}
-              title="Close panel"
-              show={panels.right === PanelState.OPEN}
-            />
-            <SidePanel />
-          </Box>
-        ) : null}
+        {panels.right === PanelState.OPEN && (
+          <Allotment.Pane>
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                minWidth: 0, // For shrink to hide
+              }}
+            >
+              <OpenRightPanelButton
+                toOpen={false}
+                title="Close panel"
+                show={panels.right === PanelState.OPEN}
+              />
+              <Box sx={{ flexGrow: 1, width: '100%' }}>
+                <SidePanel />
+              </Box>
+            </Box>
+          </Allotment.Pane>
+        )}
       </Allotment>
       <SnackbarMessageList />
       <OpenRightPanelButton

@@ -16,14 +16,24 @@ import {
   NodeLabelPositionType,
   EdgeFillType,
   EdgeArrowShapeType,
+  CustomGraphicsType,
+  NodeVisualPropertyName,
 } from '..'
 
 import * as VisualStyleFnImpl from './VisualStyleFnImpl'
 import * as MapperFactory from './MapperFactory'
 import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/DirectMappingSelector'
 import { isOpenShape, openShapeToFilledShape } from './EdgeArrowShapeImpl'
-import { translateEdgeIdToCX } from '../../NetworkModel/impl/CyNetwork'
+
 import { computeNodeLabelPosition } from './nodeLabelPositionMap'
+
+import {
+  computeCustomGraphicsProperties,
+  getCustomGraphicNodeVps,
+  getFirstValidCustomGraphicVp,
+  getNonCustomGraphicVps,
+  getSizePropertyForCustomGraphic,
+} from './CustomGraphicsImpl'
 
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
@@ -106,8 +116,8 @@ export const updateNetworkView = (
   const nodeViewCount = Object.keys(nodeViews).length
   const nodeCount = network.nodes.length
   if (nodeViewCount !== nodeCount) {
-    console.error(
-      '## nodeViews.length !== network.nodes.length',
+    console.warn(
+      'nodeViews.length is not same as network.nodes.length',
       nodeCount,
       nodeViewCount,
     )
@@ -259,6 +269,45 @@ const computeNameAndPropertyPairs = (
   }
 }
 
+const computeViewModelStyleProperties = (
+  id: IdType,
+
+  vp: VisualProperty<VisualPropertyValueType>,
+  mappers: Map<AttributeName, Mapper>,
+  row: Record<AttributeName, ValueType>,
+) => {
+  const { defaultValue, mapping, bypassMap, name, group } = vp
+  const bypass = bypassMap.get(id)
+  let pairsToAdd: [string, VisualPropertyValueType][] = []
+  if (bypass !== undefined) {
+    pairsToAdd = computeNameAndPropertyPairs(vp.name, bypass)
+  } else if (mapping !== undefined) {
+    // Mapping is available.
+    // TODO: compute mapping
+    const attrName: string = mapping.attribute
+    const attributeValueAssigned: ValueType | undefined = row[attrName]
+
+    if (attributeValueAssigned !== undefined) {
+      const mapper: Mapper | undefined = mappers.get(vp.name)
+      if (mapper === undefined) {
+        throw new Error(
+          `Mapping is defined, but Mapper for ${vp.name} is not found`,
+        )
+      }
+      const computedValue: VisualPropertyValueType = mapper(
+        attributeValueAssigned,
+      )
+      pairsToAdd = computeNameAndPropertyPairs(vp.name, computedValue)
+    } else {
+      pairsToAdd = computeNameAndPropertyPairs(vp.name, defaultValue)
+    }
+  } else {
+    pairsToAdd = computeNameAndPropertyPairs(vp.name, defaultValue)
+  }
+
+  return pairsToAdd
+}
+
 const computeView = (
   id: IdType,
   visualProperties: Array<VisualProperty<VisualPropertyValueType>>,
@@ -268,40 +317,85 @@ const computeView = (
 ): Map<VisualPropertyName, VisualPropertyValueType> => {
   const pairs = new Map<VisualPropertyName, VisualPropertyValueType>()
 
-  visualProperties.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
-    const { defaultValue, mapping, bypassMap, name, group } = vp
-    const bypass = bypassMap.get(id)
-    let pairsToAdd: [string, VisualPropertyValueType][] = []
-    if (bypass !== undefined) {
-      pairsToAdd = computeNameAndPropertyPairs(vp.name, bypass)
-    } else if (mapping !== undefined) {
-      // Mapping is available.
-      // TODO: compute mapping
-      const attrName: string = mapping.attribute
-      const attributeValueAssigned: ValueType | undefined = row[attrName]
+  const customGraphicNodeVps = getCustomGraphicNodeVps(visualProperties)
+  const nonCustomGraphicNodeVps = getNonCustomGraphicVps(visualProperties)
+  nonCustomGraphicNodeVps.forEach(
+    (vp: VisualProperty<VisualPropertyValueType>) => {
+      const pairsToAdd = computeViewModelStyleProperties(id, vp, mappers, row)
+      pairsToAdd.forEach(([computedName, computedValue]) => {
+        pairs.set(computedName as VisualPropertyName, computedValue)
+      })
+    },
+  )
 
-      if (attributeValueAssigned !== undefined) {
-        const mapper: Mapper | undefined = mappers.get(vp.name)
-        if (mapper === undefined) {
-          throw new Error(
-            `Mapping is defined, but Mapper for ${vp.name} is not found`,
+  const firstValidCustomGraphicVp =
+    getFirstValidCustomGraphicVp(customGraphicNodeVps)
+
+  if (firstValidCustomGraphicVp !== undefined) {
+    const { name, mapping, bypassMap } = firstValidCustomGraphicVp
+    // const customGraphicsSizeVP = getSizePropertyForCustomGraphic(
+    //   firstValidCustomGraphicVp,
+    //   customGraphicNodeVps,
+    // )
+
+    const heightvp = nonCustomGraphicNodeVps.find(
+      (vp) => vp.name === NodeVisualPropertyName.NodeHeight,
+    )
+    const widthvp = nonCustomGraphicNodeVps.find(
+      (vp) => vp.name === NodeVisualPropertyName.NodeWidth,
+    )
+
+    const bypass = bypassMap.get(id)
+    let customGraphicPropertyPairs: [string, VisualPropertyValueType][] = []
+    if (bypass !== undefined) {
+      // compute pairs from bypass
+      customGraphicPropertyPairs = computeCustomGraphicsProperties(
+        id,
+        bypass as CustomGraphicsType,
+        row,
+        widthvp as VisualProperty<VisualPropertyValueType>,
+        heightvp as VisualProperty<VisualPropertyValueType>,
+        mappers,
+      )
+    } else if (mapping !== undefined) {
+      const mapper: Mapper | undefined = mappers.get(name)
+      if (mapper === undefined) {
+        console.error(`Mapping is defined, but Mapper for ${name} is not found`)
+      } else {
+        const attrName: string = mapping.attribute
+        const attributeValueAssigned: ValueType | undefined = row[attrName]
+        if (attributeValueAssigned !== undefined) {
+          const computedValue: VisualPropertyValueType = mapper(
+            attributeValueAssigned,
+          )
+          customGraphicPropertyPairs = computeCustomGraphicsProperties(
+            id,
+            computedValue as CustomGraphicsType,
+            row,
+            widthvp as VisualProperty<VisualPropertyValueType>,
+            heightvp as VisualProperty<VisualPropertyValueType>,
+            mappers,
           )
         }
-        const computedValue: VisualPropertyValueType = mapper(
-          attributeValueAssigned,
-        )
-        pairsToAdd = computeNameAndPropertyPairs(vp.name, computedValue)
-      } else {
-        pairsToAdd = computeNameAndPropertyPairs(vp.name, defaultValue)
       }
     } else {
-      pairsToAdd = computeNameAndPropertyPairs(vp.name, defaultValue)
+      // compute pairs with default value
+      const defaultValue =
+        firstValidCustomGraphicVp.defaultValue as CustomGraphicsType
+      customGraphicPropertyPairs = computeCustomGraphicsProperties(
+        id,
+        defaultValue as CustomGraphicsType,
+        row,
+        widthvp as VisualProperty<VisualPropertyValueType>,
+        heightvp as VisualProperty<VisualPropertyValueType>,
+        mappers,
+      )
     }
 
-    pairsToAdd.forEach(([computedName, computedValue]) => {
+    customGraphicPropertyPairs.forEach(([computedName, computedValue]) => {
       pairs.set(computedName as VisualPropertyName, computedValue)
     })
-  })
+  }
 
   return pairs
 }

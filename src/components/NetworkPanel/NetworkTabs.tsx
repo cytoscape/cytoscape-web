@@ -5,6 +5,7 @@ import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkTab } from './NetworkTab'
 import { Network } from '../../models/NetworkModel'
 import { useUiStateStore } from '../../store/UiStateStore'
+import { useSearchParams } from 'react-router-dom'
 
 interface NetworkTabsProps {
   network: Network
@@ -14,6 +15,14 @@ interface NetworkTabsProps {
   bgColor?: string
   handleClick?: () => void
 }
+
+/**
+ * URL search parameter key for the active network view
+ * This is used to store the active tab index in the URL
+ * so that it can be restored when the user navigates back to this page
+ * or refreshes the page.
+ */
+const ACTIVE_NETWORK_VIEW = 'activenetworkview'
 
 export const NetworkTabs = ({
   network,
@@ -26,6 +35,7 @@ export const NetworkTabs = ({
     (state) => state.ui.networkViewUi.activeTabIndex,
   )
   const setSelected = useUiStateStore((state) => state.setNetworkViewTabIndex)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const customNetworkTabName = useUiStateStore(
     (state) => state.ui.customNetworkTabName,
@@ -52,7 +62,24 @@ export const NetworkTabs = ({
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelected(newValue)
+
+    // Update URL search parameter with the selected tab ID
+    const newSearchParams = new URLSearchParams(searchParams)
+    newSearchParams.set(ACTIVE_NETWORK_VIEW, newValue.toString())
+    setSearchParams(newSearchParams, { replace: true })
   }
+
+  // Read tab ID from URL on initial render and set it as the selected view
+  useEffect(() => {
+    const tabParam = searchParams.get(ACTIVE_NETWORK_VIEW)
+    if (tabParam !== null) {
+      const tabIndex = parseInt(tabParam, 10)
+      const rendererList = Object.values(renderers)
+      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex < rendererList.length) {
+        setSelected(tabIndex)
+      }
+    }
+  }, [])
 
   const rendererList = Object.values(renderers)
   return (

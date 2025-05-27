@@ -20,9 +20,15 @@ export const TabPanel = (props: TabPanelProps): JSX.Element => {
       id={`sidepanel-${index}`}
       aria-labelledby={`sidepanel-${index}`}
       {...other}
-      sx={{ width: '100%', height: '100%' }}
+      sx={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
     >
-      {children}
+      <Box sx={{ width: '100%', height: '100%', flexGrow: 1 }}>{children}</Box>
     </Box>
   )
 }

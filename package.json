@@ -1,6 +1,6 @@
 {
   "name": "cytoscape-web",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "license": "MIT",
   "keywords": [
@@ -125,7 +125,7 @@
     "@visx/shape": "^3.0.0",
     "allotment": "1.18.1",
     "chroma-js": "^2.4.2",
-    "cytoscape": "^3.28.1",
+    "cytoscape": "^3.32.0",
     "cytoscape-canvas": "^3.0.1",
     "cytoscape-pdf-export": "^0.0.2",
     "cytoscape-svg": "^0.4.0",

@@ -28,6 +28,12 @@ import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropert
 import { useUiStateStore } from '../../store/UiStateStore'
 import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
 import { useState } from 'react'
+import {
+  getCustomGraphicNodeVps,
+  getFirstValidCustomGraphicVp,
+  getNonCustomGraphicVps,
+  getSizePropertyForCustomGraphic,
+} from '../../models/VisualStyleModel/impl/CustomGraphicsImpl'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -62,6 +68,8 @@ function VisualPropertyView(props: {
     tooltip = `Node width and height are locked. Use the \'${heightName}\' property to adjust the node size, or uncheck \“Lock node width and height\” in \'${heightName}\' to enable editing of the Width.`
   if (arrowColorDisabled)
     tooltip = `Edge color to arrows is enabled. Use the \'${edgeLineColorName}\' property to adjust the arrow color, or uncheck \“Edge color to arrows\” in \'${edgeLineColorName}\' to enable editing of the arrow color.`
+
+  const hasWarning = vpName.includes('nodeImageChart')
 
   return (
     <Box
@@ -158,6 +166,23 @@ function VisualPropertyView(props: {
           </IconButton>
         </Tooltip>
       )}
+
+      {hasWarning && (
+        <Tooltip
+          placement="top"
+          title={
+            'Due to rendering limitations, custom graphics size cannot be edited and will scale to the size of nodes by default.  Original size values are preserved.'
+          }
+          arrow={true}
+          sx={{
+            mr: 1,
+          }}
+        >
+          <IconButton sx={{ padding: 0.5 }}>
+            <InfoIcon sx={{ color: 'rgb(0,0,0,0.4)' }} />
+          </IconButton>
+        </Tooltip>
+      )}
     </Box>
   )
 }
@@ -180,7 +205,15 @@ export default function VizmapperView(props: {
     return <div></div>
   }
 
-  const nodeVps = VisualStyleFn.nodeVisualProperties(visualStyle).map((vp) => {
+  const customGraphicVps = getCustomGraphicNodeVps(
+    VisualStyleFn.nodeVisualProperties(visualStyle),
+  )
+
+  const nonCustomGraphicVps = getNonCustomGraphicVps(
+    VisualStyleFn.nodeVisualProperties(visualStyle),
+  )
+
+  const nodeVps = nonCustomGraphicVps.map((vp) => {
     return (
       <VisualPropertyView
         key={vp.name}
@@ -189,6 +222,66 @@ export default function VizmapperView(props: {
       />
     )
   })
+
+  // Only render the first valid custom graphic visual property and its associated size property
+  const firstValidCustomGraphicVP =
+    getFirstValidCustomGraphicVp(customGraphicVps)
+
+  if (firstValidCustomGraphicVP !== undefined) {
+    // const customGraphicsSizeVP = getSizePropertyForCustomGraphic(
+    //   firstValidCustomGraphicVP,
+    //   customGraphicVps,
+    // )
+
+    // nodeVps.push(
+    //   <VisualPropertyView
+    //     key={firstValidCustomGraphicVP.name}
+    //     currentNetworkId={props.networkId}
+    //     visualProperty={firstValidCustomGraphicVP}
+    //   />,
+    // )
+
+    // Dont expose custom graphics size properties for now
+    // there are rendering limitations in cy.js
+    // if (customGraphicsSizeVP) {
+    //   nodeVps.push(
+    //     <VisualPropertyView
+    //       key={customGraphicsSizeVP.name}
+    //       currentNetworkId={props.networkId}
+    //       visualProperty={customGraphicsSizeVP}
+    //     />,
+    //   )
+    // }
+  } else {
+    // There are no existing custom graphics vps set, so let the user
+    // edit the first image chart property
+    // const imageChart1Vp = customGraphicVps.find(
+    //   (vp) => vp.name === 'nodeImageChart1',
+    // )
+    // const imageChartSize1Vp = customGraphicVps.find(
+    //   (vp) => vp.name === 'nodeImageChartSize1',
+    // )
+
+    // if (imageChart1Vp) {
+    //   nodeVps.push(
+    //     <VisualPropertyView
+    //       key={imageChart1Vp.name}
+    //       currentNetworkId={props.networkId}
+    //       visualProperty={imageChart1Vp}
+    //     />,
+    //   )
+    // }
+    // if (imageChartSize1Vp) {
+    //   nodeVps.push(
+    //     <VisualPropertyView
+    //       key={imageChartSize1Vp.name}
+    //       currentNetworkId={props.networkId}
+    //       visualProperty={imageChartSize1Vp}
+    //     />,
+    //   )
+    // }
+  }
+
   const edgeVps = VisualStyleFn.edgeVisualProperties(visualStyle).map((vp) => {
     return (
       <VisualPropertyView

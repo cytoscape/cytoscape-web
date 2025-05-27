@@ -14,3 +14,5 @@ export { VisibilityType } from './VisibilityType'
 export { EdgeFillType } from './EdgeFillType'
 
 export { VisualPropertyValueType } from './VisualPropertyValueType'
+
+export { CustomGraphicsType } from './CustomGraphicsType'

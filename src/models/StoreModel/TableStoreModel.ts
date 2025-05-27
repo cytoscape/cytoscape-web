@@ -21,6 +21,11 @@ export const TableType = {
 
 export type TableType = (typeof TableType)[keyof typeof TableType]
 
+export type CellEdit = {
+  row: IdType
+  column: string
+  value: ValueType
+}
 export interface TableAction {
   // Add a new table to the store
   add: (networkId: IdType, nodeTable: Table, edgeTable: Table) => void
@@ -64,6 +69,11 @@ export interface TableAction {
     column: string,
     value: ValueType,
   ) => void
+  setValues: (
+    networkId: IdType,
+    tableType: TableType,
+    cellEdit: CellEdit[],
+  ) => void
   columnValues: (
     networkId: IdType,
     tableType: TableType,
@@ -73,6 +83,11 @@ export interface TableAction {
     networkId: IdType,
     tableType: TableType,
     column: AttributeName,
+  ) => void
+  editRows: (
+    networkId: IdType,
+    tableType: TableType,
+    rows: Map<IdType, Record<AttributeName, ValueType>>,
   ) => void
 
   // update table(s)

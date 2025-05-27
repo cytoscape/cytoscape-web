@@ -12,6 +12,7 @@ import {
   getUiStateFromDb,
   getOpaqueAspectsFromDb,
   OpaqueAspectsDB,
+  getUndoRedoStackFromDb,
 } from '../store/persist/db'
 import { CachedData } from './CachedData'
 import { createNetworkAttributesFromCx } from '../models/TableModel/impl/NetworkAttributesImpl'
@@ -61,6 +62,10 @@ export const createNetworkViewFromCx2 = (
     uuid,
     cx2,
   )
+  const undoRedoStack = {
+    undoStack: [],
+    redoStack: [],
+  }
 
   return {
     network,
@@ -70,6 +75,7 @@ export const createNetworkViewFromCx2 = (
     networkViews: [networkView],
     visualStyleOptions,
     networkAttributes,
+    undoRedoStack,
   }
 }
 
@@ -85,10 +91,20 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
       uiState?.visualStyleOptions ?? {}
     // Fall back to an empty object if the visual style options are not found
     const visualStyleOptions: VisualStyleOptions = vsOptions[id] ?? {}
-    const opaqueAspects: OpaqueAspectsDB|undefined = await getOpaqueAspectsFromDb(id)
+    const opaqueAspects: OpaqueAspectsDB | undefined =
+      await getOpaqueAspectsFromDb(id)
     const otherAspects: OpaqueAspects[] = opaqueAspects
-      ? Object.entries(opaqueAspects.aspects).map(([key, value]) => ({ [key]: value }))
+      ? Object.entries(opaqueAspects.aspects).map(([key, value]) => ({
+          [key]: value,
+        }))
       : []
+
+    const undoStackDbResult = await getUndoRedoStackFromDb(id)
+
+    const undoRedoStack = undoStackDbResult?.undoRedoStack ?? {
+      undoStack: [],
+      redoStack: [],
+    }
     return {
       network,
       visualStyle,
@@ -97,6 +113,7 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
       networkViews: networkViews ?? [],
       visualStyleOptions: visualStyleOptions,
       otherAspects: otherAspects,
+      undoRedoStack: undoRedoStack,
     }
   } catch (e) {
     console.error('Failed to restore data from IndexedDB', e)
@@ -126,6 +143,11 @@ export const createDataFromCx = async (
     VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
   const otherAspects: OpaqueAspects[] = getOptionalAspects(cxData)
 
+  const undoRedoStack = {
+    undoStack: [],
+    redoStack: [],
+  }
+
   return {
     network,
     nodeTable,
@@ -135,6 +157,7 @@ export const createDataFromCx = async (
     networkAttributes,
     visualStyleOptions,
     otherAspects,
+    undoRedoStack,
   }
 }
 const CoreAspectTagValueSet = new Set<string>(
@@ -214,13 +237,7 @@ export const createDataFromLocalCx2 = async (
 const isValidNetworkAttributes = (aspect: Aspect): boolean => {
   return (
     Array.isArray(aspect.networkAttributes) &&
-    aspect.networkAttributes.every(
-      (attr: any) =>
-        typeof attr === 'object' &&
-        typeof attr.name === 'string' &&
-        (attr.description === undefined ||
-          typeof attr.description === 'string'),
-    )
+    aspect.networkAttributes.every((attr: any) => typeof attr === 'object')
   )
 }
 

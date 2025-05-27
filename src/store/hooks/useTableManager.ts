@@ -23,7 +23,6 @@ export const useTableManager = (): void => {
         const { networkId, type, payload } = lastUpdated
         if (type === UpdateEventType.DELETE) {
           deleteRows(networkId, payload)
-          console.log('* Rows deleted updated', networkId, payload)
         }
       },
     )

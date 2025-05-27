@@ -21,7 +21,8 @@ export const useNdexNetwork = async (
       cache.visualStyle === undefined ||
       cache.networkViews === undefined ||
       cache.visualStyleOptions === undefined ||
-      cache.otherAspects === undefined
+      cache.otherAspects === undefined ||
+      cache.undoRedoStack === undefined
     ) {
       const cxData: Cx2 = await ndexNetworkFetcher(
         ndexNetworkId,
@@ -38,6 +39,7 @@ export const useNdexNetwork = async (
         networkViews: cache.networkViews,
         visualStyleOptions: cache.visualStyleOptions,
         otherAspects: cache.otherAspects,
+        undoRedoStack: cache.undoRedoStack,
       }
     }
   } catch (error) {

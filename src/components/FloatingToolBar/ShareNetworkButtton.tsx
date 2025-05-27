@@ -86,9 +86,7 @@ export const ShareNetworkButton = ({
     if (selectedNodeCount === 0 && selectedEdgeCount === 0) {
       params.delete(SelectionStates.SelectedNodes)
       params.delete(SelectionStates.SelectedEdges)
-      setTimeout(() => {
-        setSearch(params)
-      }, 200)
+      setSearch(params)
       return
     }
 
@@ -109,9 +107,13 @@ export const ShareNetworkButton = ({
     } else {
       params.delete(SelectionStates.SelectedEdges)
     }
-    setTimeout(() => {
-      setSearch(params)
-    }, 200)
+    // setTimeout(() => {
+    //   console.log(
+    //     `###Now setting Selected nodes In URL:`,
+    //     params.get(SelectionStates.SelectedNodes),
+    //   )
+    setSearch(params)
+    // }, 200)
   }
 
   useEffect(() => {
