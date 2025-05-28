@@ -96,7 +96,7 @@ export const NetworkPropertyEditor = (
       >
         <Box sx={{ p: 2, height: 'calc(100% - 60px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <Chip
-            sx={{ p: 1, mb: 2, width: 100 }}
+            sx={{ p: 1, mb: 2, width: 90 }}
             size="small"
             label={
               <Typography variant="caption">
