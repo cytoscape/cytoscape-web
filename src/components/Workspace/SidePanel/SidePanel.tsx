@@ -1,4 +1,4 @@
-import { Box, Container, Tab, Tabs } from '@mui/material'
+import { Box, Tab, Tabs } from '@mui/material'
 import { SyntheticEvent, useState } from 'react'
 import { getTabContents } from './TabContents'
 
@@ -17,8 +17,7 @@ export const SidePanel = (): JSX.Element => {
   const tabContents = getTabContents(value)
 
   return (
-    <Container
-      disableGutters={true}
+    <Box
       sx={{
         width: '100%',
         height: '100%',
@@ -71,6 +70,6 @@ export const SidePanel = (): JSX.Element => {
       >
         {tabContents}
       </Box>
-    </Container>
+    </Box>
   )
 }
