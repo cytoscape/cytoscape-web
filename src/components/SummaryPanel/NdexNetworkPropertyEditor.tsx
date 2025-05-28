@@ -88,109 +88,127 @@ export const NetworkPropertyEditor = (
     >
       <Paper
         sx={{
-          p: 2,
-          width: 800,
-          height: 800,
-          overflowY: 'scroll',
+          width: 850,
+          height: 810,
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <Chip
-          sx={{ p: 1, mb: 2 }}
-          size="small"
-          label={
-            <Typography variant="caption">
-              {localSummaryState.visibility}
-            </Typography>
-          }
-        />
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <TextField
+        <Box sx={{ p: 2, height: 'calc(100% - 60px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <Chip
+            sx={{ p: 1, mb: 2 }}
             size="small"
-            label="Name"
-            sx={{ width: '60%', mr: 1, fontSize: 12 }}
-            value={localSummaryState.name}
-            onChange={(e) => {
+            label={
+              <Typography variant="caption">
+                {localSummaryState.visibility}
+              </Typography>
+            }
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <TextField
+              size="small"
+              label="Name"
+              sx={{ width: '60%', mr: 1, fontSize: 12 }}
+              value={localSummaryState.name}
+              onChange={(e) => {
+                setLocalSummaryState({
+                  ...localSummaryState,
+                  name: e.target.value,
+                })
+              }}
+            ></TextField>
+            <TextField
+              size="small"
+              label="Version"
+              sx={{ width: '20%', fontSize: 12 }}
+              value={localSummaryState.version ?? ''}
+              onChange={(e) => {
+                setLocalSummaryState({
+                  ...localSummaryState,
+                  version: e.target.value,
+                })
+              }}
+            />
+          </Box>
+
+          <Typography sx={{ ml: 1.5, pt: 1 }} gutterBottom>
+            Description
+          </Typography>
+          <MantineProvider>
+            <style>
+              {`
+                .mantine-RichTextEditor-toolbar {
+                  padding-top: 0 !important;
+                  padding-bottom: 0 !important;
+                }
+              `}
+            </style>
+            <Box sx={{ height: 290, border: '1px solid #e0e0e0', borderRadius: 1, overflow: 'hidden' }}>
+              <RichTextEditor editor={editor} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <RichTextEditor.Toolbar>
+                  <RichTextEditor.ControlsGroup>
+                    <RichTextEditor.Bold />
+                    <RichTextEditor.Italic />
+                    <RichTextEditor.Underline />
+                    <RichTextEditor.Strikethrough />
+                    <RichTextEditor.ClearFormatting />
+                    <RichTextEditor.Highlight />
+                    <RichTextEditor.Code />
+                  </RichTextEditor.ControlsGroup>
+
+                  <RichTextEditor.ControlsGroup>
+                    <RichTextEditor.H1 />
+                    <RichTextEditor.H2 />
+                    <RichTextEditor.H3 />
+                    <RichTextEditor.H4 />
+                  </RichTextEditor.ControlsGroup>
+
+                  <RichTextEditor.ControlsGroup>
+                    <RichTextEditor.Blockquote />
+                    <RichTextEditor.Hr />
+                    <RichTextEditor.BulletList />
+                    <RichTextEditor.OrderedList />
+                    <RichTextEditor.Subscript />
+                    <RichTextEditor.Superscript />
+                  </RichTextEditor.ControlsGroup>
+
+                  <RichTextEditor.ControlsGroup>
+                    <RichTextEditor.Link />
+                    <RichTextEditor.Unlink />
+                  </RichTextEditor.ControlsGroup>
+
+                  <RichTextEditor.ControlsGroup>
+                    <RichTextEditor.AlignLeft />
+                    <RichTextEditor.AlignCenter />
+                    <RichTextEditor.AlignJustify />
+                    <RichTextEditor.AlignRight />
+                  </RichTextEditor.ControlsGroup>
+                </RichTextEditor.Toolbar>
+
+                <RichTextEditor.Content style={{ flex: 1, overflowY: 'auto' }} />
+              </RichTextEditor>
+            </Box>
+          </MantineProvider>
+
+          <Divider sx={{ mt: 2, mb: 1 }} />
+          <NdexNetworkPropertyTable
+            networkProperties={localSummaryState.properties}
+            setNetworkProperties={(nextProperties) => {
               setLocalSummaryState({
                 ...localSummaryState,
-                name: e.target.value,
-              })
-            }}
-          ></TextField>
-          <TextField
-            size="small"
-            label="Version"
-            sx={{ width: '20%', fontSize: 12 }}
-            value={localSummaryState.version ?? ''}
-            onChange={(e) => {
-              setLocalSummaryState({
-                ...localSummaryState,
-                version: e.target.value,
+                properties: nextProperties,
               })
             }}
           />
         </Box>
-
-        <Typography sx={{ ml: 1.5, pt: 1 }} gutterBottom>
-          Description
-        </Typography>
-        <MantineProvider>
-          <RichTextEditor editor={editor}>
-            <RichTextEditor.Toolbar sticky stickyOffset={60}>
-              <RichTextEditor.ControlsGroup>
-                <RichTextEditor.Bold />
-                <RichTextEditor.Italic />
-                <RichTextEditor.Underline />
-                <RichTextEditor.Strikethrough />
-                <RichTextEditor.ClearFormatting />
-                <RichTextEditor.Highlight />
-                <RichTextEditor.Code />
-              </RichTextEditor.ControlsGroup>
-
-              <RichTextEditor.ControlsGroup>
-                <RichTextEditor.H1 />
-                <RichTextEditor.H2 />
-                <RichTextEditor.H3 />
-                <RichTextEditor.H4 />
-              </RichTextEditor.ControlsGroup>
-
-              <RichTextEditor.ControlsGroup>
-                <RichTextEditor.Blockquote />
-                <RichTextEditor.Hr />
-                <RichTextEditor.BulletList />
-                <RichTextEditor.OrderedList />
-                <RichTextEditor.Subscript />
-                <RichTextEditor.Superscript />
-              </RichTextEditor.ControlsGroup>
-
-              <RichTextEditor.ControlsGroup>
-                <RichTextEditor.Link />
-                <RichTextEditor.Unlink />
-              </RichTextEditor.ControlsGroup>
-
-              <RichTextEditor.ControlsGroup>
-                <RichTextEditor.AlignLeft />
-                <RichTextEditor.AlignCenter />
-                <RichTextEditor.AlignJustify />
-                <RichTextEditor.AlignRight />
-              </RichTextEditor.ControlsGroup>
-            </RichTextEditor.Toolbar>
-
-            <RichTextEditor.Content />
-          </RichTextEditor>
-        </MantineProvider>
-
-        <Divider sx={{ mt: 2, mb: 1 }} />
-        <NdexNetworkPropertyTable
-          networkProperties={localSummaryState.properties}
-          setNetworkProperties={(nextProperties) => {
-            setLocalSummaryState({
-              ...localSummaryState,
-              properties: nextProperties,
-            })
-          }}
-        />
-        <Divider sx={{ mt: 2, mb: 1 }} />
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Box sx={{ 
+          px: 2, 
+          py: 1, 
+          borderTop: '1px solid #e0e0e0',
+          display: 'flex', 
+          justifyContent: 'space-between',
+          backgroundColor: '#fafafa'
+        }}>
           <Button
             color="primary"
             onClick={(e) => {
