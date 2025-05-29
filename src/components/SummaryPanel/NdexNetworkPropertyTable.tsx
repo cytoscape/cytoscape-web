@@ -233,7 +233,7 @@ const NdexNetworkPropertyTable = (props: {
         </Table>
       </TableContainer>
       <Button
-        sx={{ mt: 1 }}
+        sx={{ mt: 1, width: 'fit-content' }}
         variant="contained"
         onClick={() => addNetworkProperty()}
       >
