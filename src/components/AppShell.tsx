@@ -54,6 +54,51 @@ const IMPORT_KEY = 'import'
  *
  */
 const AppShell = (): ReactElement => {
+  useEffect(() => {
+    const originalPushState = history.pushState
+    const originalReplaceState = history.replaceState
+
+    history.pushState = function (...args) {
+      console.log('🔵 PUSH STATE:', args, new Error().stack)
+      return originalPushState.apply(this, args)
+    }
+
+    history.replaceState = function (...args) {
+      console.log('🟡 REPLACE STATE:', args, new Error().stack)
+      return originalReplaceState.apply(this, args)
+    }
+
+    // ブラウザの戻る・進むボタンの検知
+    const handlePopState = (event: PopStateEvent) => {
+      console.log('🔴 BROWSER NAVIGATION (Back/Forward):', {
+        url: window.location.href,
+        pathname: window.location.pathname,
+        search: window.location.search,
+        state: event.state,
+        timestamp: new Date().toISOString(),
+      })
+
+      // より詳細なスタックトレースが必要な場合
+      console.trace('🔴 Navigation stack trace')
+    }
+
+    // beforeunload イベントでページ離脱も検知（任意）
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      console.log('🟠 PAGE UNLOAD:', window.location.href)
+    }
+
+    // イベントリスナーを追加
+    window.addEventListener('popstate', handlePopState)
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      history.pushState = originalPushState
+      history.replaceState = originalReplaceState
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [])
+
   const [initializationError, setInitializationError] = useState<string>('')
 
   // This is necessary to prevent creating a new workspace on every render
@@ -248,7 +293,7 @@ const AppShell = (): ReactElement => {
 
     if (!initializedRef.current || id === '') return
 
-    // const parsed = parsePathName(location.pathname)
+    const parsed = parsePathName(location.pathname)
     const parsedNetworkId = urlNetIdRef.current
     // Clear it only after the network ID has been used for redirection
     setTimeout(() => {
@@ -257,31 +302,31 @@ const AppShell = (): ReactElement => {
 
     // At this point, workspace ID is always available
     if (currentNetworkId === '' || currentNetworkId === undefined) {
-      // ID from the URL parameter
       if (parsedNetworkId !== '' && parsedNetworkId !== undefined) {
         addNetworkIds(parsedNetworkId)
         await waitSeconds(1)
         setCurrentNetworkId(parsedNetworkId)
+        // replace を使用して履歴に追加しない
         navigate(
           `/${id}/networks/${parsedNetworkId}${location.search.toString()}`,
+          { replace: true },
         )
       } else if (networkIds.length > 0) {
-        // Case 1: Current network is not available
-        // Pick the first one if network is in the workspace
         navigate(
           `/${id}/networks/${networkIds[0]}${location.search.toString()}`,
+          { replace: true },
         )
       } else {
-        // Otherwise, display empty page
-        navigate(`/${id}/networks${location.search.toString()}`)
+        navigate(`/${id}/networks${location.search.toString()}`, {
+          replace: true,
+        })
       }
     } else {
-      // This is the network ID in the URL, not yet set as the current network ID
-      // No network ID in the URL --> redirect to the current network
       const networkId: string = parsedNetworkId
       if (networkId === '' || networkId === undefined) {
         navigate(
           `/${id}/networks/${currentNetworkId}${location.search.toString()}`,
+          { replace: true },
         )
       } else {
         // the user is trying to load a network that is already in the workspace
@@ -326,6 +371,7 @@ const AppShell = (): ReactElement => {
 
               navigate(
                 `/${id}/networks/${networkId}${location.search.toString()}`,
+                { replace: true },
               )
             }
           } else {
@@ -334,6 +380,7 @@ const AppShell = (): ReactElement => {
             setCurrentNetworkId(networkId)
             navigate(
               `/${id}/networks/${networkId}${location.search.toString()}`,
+              { replace: true },
             )
           }
         } catch (error) {
@@ -347,6 +394,8 @@ const AppShell = (): ReactElement => {
         }
       }
     }
+
+    console.log('---------------Finished redirecting------------------')
   }
 
   const handleImportNetworkFromSearchParam = async (): Promise<void> => {
@@ -356,7 +405,7 @@ const AppShell = (): ReactElement => {
           const nextParams = new URLSearchParams(search)
           nextParams.delete(IMPORT_KEY)
 
-          setSearch(nextParams)
+          // setSearch(nextParams)
           const res = await fetchUrlCx(value, 10000000)
 
           const { networkWithView, summary } = res
@@ -403,6 +452,65 @@ const AppShell = (): ReactElement => {
       void handleInit()
     }
   }, [id])
+
+  // 前回のlocation情報を保持するref
+  const prevLocationRef = useRef(location)
+  useEffect(() => {
+    console.log('🟢 REACT ROUTER LOCATION CHANGE:', {
+      // 現在の値
+      current: {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        state: location.state,
+        key: location.key,
+      },
+      // 前回の値
+      previous: {
+        pathname: prevLocationRef.current.pathname,
+        search: prevLocationRef.current.search,
+        hash: prevLocationRef.current.hash,
+        state: prevLocationRef.current.state,
+        key: prevLocationRef.current.key,
+      },
+      // 変更された項目のみ
+      changes: {
+        pathname:
+          location.pathname !== prevLocationRef.current.pathname
+            ? { from: prevLocationRef.current.pathname, to: location.pathname }
+            : 'unchanged',
+        search:
+          location.search !== prevLocationRef.current.search
+            ? { from: prevLocationRef.current.search, to: location.search }
+            : 'unchanged',
+        hash:
+          location.hash !== prevLocationRef.current.hash
+            ? { from: prevLocationRef.current.hash, to: location.hash }
+            : 'unchanged',
+      },
+      timestamp: new Date().toISOString(),
+    })
+
+    // 現在の値を前回の値として保存
+    prevLocationRef.current = location
+  }, [location])
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      console.log('🔴 BROWSER NAVIGATION2:', {
+        url: window.location.href,
+        pathname: window.location.pathname,
+        search: window.location.search,
+        state: event.state,
+        workspaceId: id,
+        currentNetworkId: currentNetworkId,
+        timestamp: new Date().toISOString(),
+      })
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [id, currentNetworkId])
 
   return (
     <Box

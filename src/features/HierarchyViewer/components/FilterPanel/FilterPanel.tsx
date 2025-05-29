@@ -171,7 +171,7 @@ export const FilterPanel = () => {
         FilterUrlParams.FILTER_ENABLED,
         isFilterEnabled.toString(),
       )
-      setSearchParams(searchParams)
+      // setSearchParams(searchParams)
     }
   }, [])
 
@@ -194,7 +194,7 @@ export const FilterPanel = () => {
    */
   useEffect(() => {
     searchParams.set(FilterUrlParams.FILTER_ENABLED, isFilterEnabled.toString())
-    setSearchParams(searchParams)
+    // setSearchParams(searchParams)
   }, [isFilterEnabled])
 
   useEffect(() => {
@@ -217,7 +217,7 @@ export const FilterPanel = () => {
         FilterUrlParams.FILTER_ENABLED,
         isFilterEnabled.toString(),
       )
-      setSearchParams(searchParams)
+      // setSearchParams(searchParams)
       return
     }
 
@@ -244,7 +244,7 @@ export const FilterPanel = () => {
         FilterUrlParams.FILTER_ENABLED,
         isFilterEnabled.toString(),
       )
-      setSearchParams(searchParams)
+      // setSearchParams(searchParams)
     } else {
       // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
     }

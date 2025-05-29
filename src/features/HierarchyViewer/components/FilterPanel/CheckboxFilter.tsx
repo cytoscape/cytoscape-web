@@ -127,11 +127,11 @@ export const CheckboxFilter = ({
   const updateUrl = (checked: ValueType[]): void => {
     if (checked.length !== 0) {
       searchParams.set(FilterUrlParams.FILTER_RANGE, checked.join(',') || '')
-      setSearchParams(searchParams)
+      // setSearchParams(searchParams)
     } else {
       // Remove the entire parameter if the selection is empty
       searchParams.delete(FilterUrlParams.FILTER_RANGE)
-      setSearchParams(searchParams)
+      // setSearchParams(searchParams)
     }
   }
   /**

@@ -86,7 +86,7 @@ export const ShareNetworkButton = ({
     if (selectedNodeCount === 0 && selectedEdgeCount === 0) {
       params.delete(SelectionStates.SelectedNodes)
       params.delete(SelectionStates.SelectedEdges)
-      setSearch(params)
+      // setSearch(params)
       return
     }
 
@@ -112,7 +112,7 @@ export const ShareNetworkButton = ({
     //     `###Now setting Selected nodes In URL:`,
     //     params.get(SelectionStates.SelectedNodes),
     //   )
-    setSearch(params)
+    // setSearch(params)
     // }, 200)
   }
 
