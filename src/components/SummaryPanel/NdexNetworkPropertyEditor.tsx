@@ -94,7 +94,15 @@ export const NetworkPropertyEditor = (
           flexDirection: 'column',
         }}
       >
-        <Box sx={{ p: 2, height: 'calc(100% - 60px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Box
+          sx={{
+            p: 2,
+            height: 'calc(100% - 60px)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           <Chip
             sx={{ p: 1, mb: 2, width: 90 }}
             size="small"
@@ -143,8 +151,22 @@ export const NetworkPropertyEditor = (
                 }
               `}
             </style>
-            <Box sx={{ height: 290, border: '1px solid #e0e0e0', borderRadius: 1, overflow: 'hidden' }}>
-              <RichTextEditor editor={editor} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Box
+              sx={{
+                height: 290,
+                border: '1px solid #e0e0e0',
+                borderRadius: 1,
+                overflow: 'hidden',
+              }}
+            >
+              <RichTextEditor
+                editor={editor}
+                style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <RichTextEditor.Toolbar>
                   <RichTextEditor.ControlsGroup>
                     <RichTextEditor.Bold />
@@ -185,7 +207,9 @@ export const NetworkPropertyEditor = (
                   </RichTextEditor.ControlsGroup>
                 </RichTextEditor.Toolbar>
 
-                <RichTextEditor.Content style={{ flex: 1, overflowY: 'auto' }} />
+                <RichTextEditor.Content
+                  style={{ flex: 1, overflowY: 'auto' }}
+                />
               </RichTextEditor>
             </Box>
           </MantineProvider>
@@ -201,14 +225,16 @@ export const NetworkPropertyEditor = (
             }}
           />
         </Box>
-        <Box sx={{ 
-          px: 2, 
-          py: 1, 
-          borderTop: '1px solid #e0e0e0',
-          display: 'flex', 
-          justifyContent: 'space-between',
-          backgroundColor: '#fafafa'
-        }}>
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            borderTop: '1px solid #e0e0e0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            backgroundColor: '#fafafa',
+          }}
+        >
           <Button
             color="primary"
             onClick={(e) => {
