@@ -4,11 +4,212 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cytoscape Web</title>
+    <style>
+      /* 
+      * Loading screen styles for immediate display
+      * before any JavaScript is executed.
+      * 
+      * This ensures a smooth user experience
+      * while the application is loading. 
+      */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 99999;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+          'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      }
+      .loading-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        color: #495057;
+        max-width: 90%;
+        padding: 0 20px;
+        position: relative;
+      }
+      @media (max-width: 768px) {
+        .loading-content {
+          flex-direction: column;
+          gap: 10px;
+        }
+        .loading-text-content {
+          min-width: auto;
+          width: 280px; /* Fixed width for mobile */
+        }
+        .loading-title {
+          font-size: 2rem;
+          height: 2.5rem; /* Adjusted height for mobile */
+        }
+        .loading-message {
+          font-size: 1rem;
+          max-width: 220px; /* Adjusted max width for mobile */
+        }
+        .loading-message-container {
+          margin-bottom: 30px;
+          height: 1.8rem; /* Adjusted height for mobile */
+        }
+        .loading-logo {
+          width: 300px;
+          height: 300px;
+        }
+      }
+      .loading-logo {
+        width: 330px;
+        height: 330px;
+        flex-shrink: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .loading-text-content {
+        display: flex;
+        flex-direction: column;
+        text-align: center;
+        min-width: 300px;
+        width: 400px; /* Fixed width to prevent layout shifts */
+      }
+      .cytoscape-logo-svg {
+        width: 100%;
+        height: 100%;
+      }
+      .cytoscape-logo-svg path {
+        fill: #495057;
+      }
+      .loading-title {
+        font-size: 3rem;
+        font-weight: 400;
+        margin-bottom: 15px;
+        letter-spacing: 2px;
+        height: 4rem; /* Increased height for larger title */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .loading-message-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 40px;
+        height: 2rem; /* Fixed height for message container */
+        min-height: 2rem;
+      }
+      .loading-message {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin: 0;
+        white-space: nowrap; /* Prevent text wrapping */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 320px; /* Limit text width to prevent overflow */
+      }
+      .loading-spinner {
+        width: 24px;
+        height: 24px;
+        border: 2px solid rgba(73, 80, 87, 0.3);
+        border-top: 2px solid #495057;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .loading-screen.fade-out {
+        animation: fadeOut 0.08s ease-out forwards;
+      }
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+          visibility: visible;
+        }
+        to {
+          opacity: 0;
+          visibility: hidden;
+        }
+      }
+
+      /* Ensure app root is hidden until explicitly shown */
+      #root {
+        opacity: 0;
+        transition: opacity 0.15s ease-out;
+        visibility: hidden;
+      }
+
+      #root.app-ready {
+        visibility: visible;
+      }
+
+      .loading-footer {
+        margin-top: 3rem;
+        font-size: 1rem;
+        color: #444444;
+        opacity: 0.9;
+        text-align: center;
+        font-style: italic;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Loading screen displayed before JavaScript loads -->
+    <div id="initial-loading-screen" class="loading-screen">
+      <div class="loading-content">
+        <div class="loading-logo">
+          <svg
+            class="cytoscape-logo-svg"
+            width="180"
+            height="180"
+            viewBox="0 0 32 32"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M14.6375 7.89337C14.587 8.38962 14.4428 8.86975 14.211 9.31084L17.9715 13.1506C18.5094 12.8914 19.0947 12.7473 19.6945 12.7265L21.2605 7.56658C20.8605 7.27001 20.52 6.89945 20.2585 6.47577L14.6375 7.89337ZM14.0107 5.34079L19.7123 3.90284C19.9682 1.98591 21.6113 0.51532 23.5871 0.51532C25.7458 0.51532 27.4967 2.26636 27.4967 4.42495C27.4967 6.52991 25.8317 8.24716 23.7475 8.33126L22.2025 13.4216C23.4207 14.2131 24.1716 15.5717 24.1716 17.0491C24.1716 18.2891 23.6434 19.4541 22.7334 20.2696L24.4249 23.6459C24.6061 23.6202 24.7894 23.6075 24.9728 23.6075C27.1316 23.6075 28.8825 25.3585 28.8825 27.5172C28.8825 29.6756 27.1316 31.4267 24.9728 31.4267C22.8141 31.4267 21.0632 29.6756 21.0632 27.5172C21.0632 26.5172 21.4427 25.5679 22.117 24.8472L20.3616 21.3436C20.1908 21.364 20.0186 21.3743 19.8463 21.3743C18.9707 21.3743 18.1255 21.1118 17.4101 20.6227L15.4226 22.3731C15.4361 22.4759 15.4427 22.5796 15.4427 22.6838C15.4427 24.0008 14.3746 25.0692 13.0574 25.0692C11.7403 25.0692 10.672 24.0008 10.672 22.6838C10.672 21.3665 11.7403 20.2981 13.0574 20.2981C13.2848 20.2981 13.5098 20.3304 13.7265 20.3935L15.7969 18.5704C15.6916 18.29 15.6159 17.9995 15.5709 17.7033L10.6353 17.0385C9.95997 18.2935 8.64337 19.0955 7.19197 19.0955C5.03325 19.0955 3.28247 17.3445 3.28247 15.186C3.28247 13.0274 5.03325 11.2767 7.19197 11.2767C9.09124 11.2767 10.695 12.6388 11.0349 14.4651L15.9696 15.13C16.0023 15.0638 16.037 14.9984 16.0733 14.9338L12.3026 11.0833C11.8133 11.2956 11.2855 11.405 10.7481 11.405C8.58948 11.405 6.83857 9.65414 6.83857 7.49554C6.83857 5.33695 8.58948 3.58604 10.7481 3.58604C12.073 3.58591 13.2928 4.2542 14.0107 5.34079Z"
+              fill="#EA9123"
+            />
+          </svg>
+        </div>
+        <div class="loading-text-content">
+          <h1 class="loading-title">Cytoscape Web</h1>
+          <div class="loading-message-container">
+            <p class="loading-message">Loading...</p>
+            <div class="loading-spinner"></div>
+          </div>
+        </div>
+      </div>
+      <div class="loading-footer">Initial loading may take some time</div>
+    </div>
 
-    <!-- this div is needed by the glide-data-grid to render the table browser-->
+    <div id="root" class="app-ready"></div>
+
+    <!-- Portal div needed by glide-data-grid for table browser -->
     <div id="portal" style="position: fixed; left: 0; top: 0; z-index: 9999" />
   </body>
 </html>
