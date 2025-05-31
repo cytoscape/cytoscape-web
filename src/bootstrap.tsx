@@ -91,9 +91,46 @@ const updateLoadingMessage = (message: string): void => {
   }
 }
 
+// Constants injected by webpack DefinePlugin
+declare const REACT_APP_VERSION: string
+declare const REACT_APP_BUILD_TIME: string
+
+const updateVersionText = (): void => {
+  const versionElement = document.getElementById('version-text')
+  const buildTimeElement = document.getElementById('build-time-text')
+
+  if (versionElement) {
+    const version =
+      typeof REACT_APP_VERSION !== 'undefined' ? REACT_APP_VERSION : 'Unknown'
+    versionElement.textContent = `Version ${version}`
+  }
+
+  if (buildTimeElement) {
+    const buildTime =
+      typeof REACT_APP_BUILD_TIME !== 'undefined'
+        ? REACT_APP_BUILD_TIME
+        : 'Unknown'
+    // Format the build time to be more readable
+    let formattedBuildTime = buildTime
+    if (buildTime !== 'Unknown') {
+      try {
+        const date = new Date(buildTime)
+        formattedBuildTime = date.toLocaleString()
+      } catch (e) {
+        // If parsing fails, use the raw string
+        formattedBuildTime = buildTime
+      }
+    }
+    buildTimeElement.textContent = `Built on: ${formattedBuildTime}`
+  }
+}
+
 if (googleAnalyticsId !== '') {
   ReactGA.initialize(googleAnalyticsId)
 }
+
+// Update version text from package.json
+updateVersionText()
 
 // Show initial progress when React styles are loaded
 updateLoadingMessage('Loading application modules...')

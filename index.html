@@ -7,7 +7,7 @@
     <style>
       /* 
       * Loading screen styles for immediate display
-      * before any JavaScript is executed.
+      * before the application is fully loaded.
       * 
       * This ensures a smooth user experience
       * while the application is loading. 
@@ -37,6 +37,26 @@
         padding: 0 20px;
         position: relative;
       }
+      .loading-sub-title {
+        font-size: 1.5rem;
+        color: #ea9123;
+        height: 2.5rem;
+        font-weight: 500;
+        margin-bottom: 5px;
+        text-align: center;
+      }
+      .version-container {
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .build-time-text {
+        font-size: 0.9rem;
+        color: #666666;
+        margin: 0;
+        font-weight: 300;
+        opacity: 0.8;
+        text-align: center;
+      }
       @media (max-width: 768px) {
         .loading-content {
           flex-direction: column;
@@ -48,7 +68,15 @@
         }
         .loading-title {
           font-size: 2rem;
+          height: 2rem; /* Adjusted height for mobile */
+        }
+        .loading-sub-title {
+          font-size: 1.5rem;
           height: 2.5rem; /* Adjusted height for mobile */
+          margin-bottom: 5px;
+        }
+        .build-time-text {
+          font-size: 0.8rem;
         }
         .loading-message {
           font-size: 1rem;
@@ -87,7 +115,7 @@
       }
       .loading-title {
         font-size: 3rem;
-        font-weight: 400;
+        font-weight: 600;
         margin-bottom: 15px;
         letter-spacing: 2px;
         height: 4rem; /* Increased height for larger title */
@@ -141,7 +169,7 @@
         }
       }
       .loading-screen.fade-out {
-        animation: fadeOut 0.08s ease-out forwards;
+        animation: fadeOut 1s ease-out forwards;
       }
       @keyframes fadeOut {
         from {
@@ -176,10 +204,11 @@
     </style>
   </head>
   <body>
-    <!-- Loading screen displayed before JavaScript loads -->
+    <!-- Loading screen displayed before React app loads -->
     <div id="initial-loading-screen" class="loading-screen">
       <div class="loading-content">
         <div class="loading-logo">
+          <!-- Embedded Cytoscape logo SVG -->
           <svg
             class="cytoscape-logo-svg"
             width="180"
@@ -198,6 +227,14 @@
         </div>
         <div class="loading-text-content">
           <h1 class="loading-title">Cytoscape Web</h1>
+          <div class="version-container">
+            <h2 class="loading-sub-title" id="version-text">
+              Checking web app version...
+            </h2>
+            <p class="build-time-text" id="build-time-text">
+              Loading build information...
+            </p>
+          </div>
           <div class="loading-message-container">
             <p class="loading-message">Loading...</p>
             <div class="loading-spinner"></div>
