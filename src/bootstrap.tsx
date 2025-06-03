@@ -32,12 +32,96 @@ export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 const rootElement: HTMLElement | null = document.getElementById('root')
 const { keycloakConfig, urlBaseName, googleAnalyticsId } = appConfig
 
-const LOADING_MESSAGE_ID = 'loadingMessage'
+const INITIAL_LOADING_SCREEN_ID = 'initial-loading-screen'
 
 const removeMessage = (id: string): void => {
-  const message = document.getElementById(id)
-  if (message && message.parentNode) {
-    message.parentNode.removeChild(message)
+  const element = document.getElementById(id)
+  if (element && element.parentNode) {
+    // Immediate removal without fade animation for faster response
+    element.parentNode.removeChild(element)
+  }
+}
+
+// Function to remove loading screen after React app is fully rendered
+const removeLoadingScreenAfterRender = (): void => {
+  // Use multiple animation frames to ensure all rendering is complete
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      // Check if React app has actually rendered content
+      const rootEl = document.getElementById('root')
+      if (rootEl && rootEl.children.length > 0) {
+        const loadingScreen = document.getElementById(INITIAL_LOADING_SCREEN_ID)
+        if (loadingScreen) {
+          // First, make the app content visible and ready
+          rootEl.style.opacity = '1'
+          rootEl.style.visibility = 'visible'
+
+          // Then wait for the app content to be displayed before starting the fade
+          setTimeout(() => {
+            // Set up the fade out with precise timing and visibility control
+            loadingScreen.style.opacity = '0'
+            loadingScreen.style.visibility = 'hidden'
+            loadingScreen.style.transition =
+              'opacity 0.08s ease-out, visibility 0.08s ease-out'
+
+            // Remove the loading screen element after fade completes
+            setTimeout(() => {
+              if (loadingScreen.parentNode) {
+                loadingScreen.parentNode.removeChild(loadingScreen)
+              }
+            }, 80)
+          }, 60) // Slightly longer delay to ensure app is fully visible
+        }
+      } else {
+        // If React hasn't rendered yet, try again very quickly
+        setTimeout(() => removeLoadingScreenAfterRender(), 10)
+      }
+    })
+  })
+}
+
+const updateLoadingMessage = (message: string): void => {
+  const loadingScreen = document.getElementById(INITIAL_LOADING_SCREEN_ID)
+  if (loadingScreen) {
+    const messageElement = loadingScreen.querySelector('.loading-message')
+
+    if (messageElement) {
+      messageElement.textContent = message
+    }
+  }
+}
+
+// Constants injected by webpack DefinePlugin
+declare const REACT_APP_VERSION: string
+declare const REACT_APP_BUILD_TIME: string
+
+const updateVersionText = (): void => {
+  const versionElement = document.getElementById('version-text')
+  const buildTimeElement = document.getElementById('build-time-text')
+
+  if (versionElement) {
+    const version =
+      typeof REACT_APP_VERSION !== 'undefined' ? REACT_APP_VERSION : 'Unknown'
+    versionElement.textContent = `Version ${version}`
+  }
+
+  if (buildTimeElement) {
+    const buildTime =
+      typeof REACT_APP_BUILD_TIME !== 'undefined'
+        ? REACT_APP_BUILD_TIME
+        : 'Unknown'
+    // Format the build time to be more readable
+    let formattedBuildTime = buildTime
+    if (buildTime !== 'Unknown') {
+      try {
+        const date = new Date(buildTime)
+        formattedBuildTime = date.toLocaleString()
+      } catch (e) {
+        // If parsing fails, use the raw string
+        formattedBuildTime = buildTime
+      }
+    }
+    buildTimeElement.textContent = `Built on: ${formattedBuildTime}`
   }
 }
 
@@ -45,12 +129,11 @@ if (googleAnalyticsId !== '') {
   ReactGA.initialize(googleAnalyticsId)
 }
 
-// Display simple loading message without using React
-const loadingMessage = document.createElement('h2')
-// Set ID for this temp element
-loadingMessage.id = LOADING_MESSAGE_ID
-loadingMessage.textContent = 'Initializing Cytoscape. Please wait...'
-document.body.appendChild(loadingMessage)
+// Update version text from package.json
+updateVersionText()
+
+// Show initial progress when React styles are loaded
+updateLoadingMessage('Loading application modules...')
 
 const keycloak = new Keycloak(keycloakConfig)
 
@@ -81,7 +164,7 @@ const parseMessage = (
 const checkUserVerification = async () => {
   try {
     const ndexClient = new NDEx(appConfig.ndexBaseUrl)
-    const userObj = await ndexClient.signInFromIdToken(keycloak.token)
+    await ndexClient.signInFromIdToken(keycloak.token)
     return {
       isVerified: true,
     }
@@ -115,19 +198,28 @@ keycloak
     let emailUnverified = true
     let userName = ''
     let userEmail = ''
+
+    updateLoadingMessage('Loading configuration...')
+
+    // Small delay to show progress step
+    await new Promise((resolve) => setTimeout(resolve, 200))
+
+    updateLoadingMessage('Initializing authentication...')
+
     if (authenticated) {
+      updateLoadingMessage('Verifying user credentials...')
       const verificationStatus = await checkUserVerification()
       emailUnverified = !verificationStatus.isVerified
       userName = verificationStatus.userName ?? ''
       userEmail = verificationStatus.userEmail ?? ''
     }
 
-    // Remove the loading message
-    removeMessage(LOADING_MESSAGE_ID)
+    updateLoadingMessage('Starting application...')
 
     if (rootElement !== null) {
       if (authenticated && emailUnverified) {
-        ReactDOM.createRoot(rootElement).render(
+        const root = ReactDOM.createRoot(rootElement)
+        root.render(
           <AppConfigContext.Provider value={appConfig}>
             <React.StrictMode>
               <KeycloakContext.Provider value={keycloak}>
@@ -143,8 +235,12 @@ keycloak
             </React.StrictMode>
           </AppConfigContext.Provider>,
         )
+
+        // Remove loading screen after React app is rendered
+        removeLoadingScreenAfterRender()
       } else {
-        ReactDOM.createRoot(rootElement).render(
+        const root = ReactDOM.createRoot(rootElement)
+        root.render(
           <AppConfigContext.Provider value={appConfig}>
             <React.StrictMode>
               <KeycloakContext.Provider value={keycloak}>
@@ -157,14 +253,24 @@ keycloak
             </React.StrictMode>
           </AppConfigContext.Provider>,
         )
+
+        // Remove loading screen after React app is rendered
+        removeLoadingScreenAfterRender()
       }
     } else {
       throw new Error('Cannot initialize app: Root element not found')
     }
   })
   .catch((e) => {
-    // Remove the loading message
-    removeMessage(LOADING_MESSAGE_ID)
+    // Make root element visible in case of error
+    const rootEl = document.getElementById('root')
+    if (rootEl) {
+      rootEl.style.opacity = '1'
+      rootEl.style.visibility = 'visible'
+    }
+
+    // Remove the initial loading screen
+    removeMessage(INITIAL_LOADING_SCREEN_ID)
 
     // Failed initialization
     console.warn('Failed to initialize Cytoscape:', e)
@@ -174,6 +280,6 @@ keycloak
     document.body.appendChild(errorMessage)
 
     const errorMessageSub = document.createElement('h4')
-    errorMessageSub.textContent = `Please rty reload this page. If this continues, please contact your administrator`
+    errorMessageSub.textContent = `Please try reloading this page. If this continues, please contact your administrator`
     document.body.appendChild(errorMessageSub)
   })
