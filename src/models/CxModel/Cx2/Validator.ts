@@ -15,8 +15,6 @@ export interface ValidationOptions {
  * Represents a validation error or warning
  */
 export interface ValidationIssue {
-  /** Unique error code for the issue */
-  code: string
   /** Human readable message describing the issue */
   message: string
   /** Path to the invalid element in the CX structure */
