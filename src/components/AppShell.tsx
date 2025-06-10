@@ -69,7 +69,7 @@ const AppShell = (): ReactElement => {
     }
 
     // ブラウザの戻る・進むボタンの検知
-    const handlePopState = (event: PopStateEvent) => {
+    const handlePopStateDebug = (event: PopStateEvent) => {
       console.log('🔴 BROWSER NAVIGATION (Back/Forward):', {
         url: window.location.href,
         pathname: window.location.pathname,
@@ -83,18 +83,18 @@ const AppShell = (): ReactElement => {
     }
 
     // beforeunload イベントでページ離脱も検知（任意）
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    const handleBeforeUnload = () => {
       console.log('🟠 PAGE UNLOAD:', window.location.href)
     }
 
     // イベントリスナーを追加
-    window.addEventListener('popstate', handlePopState)
+    window.addEventListener('popstate', handlePopStateDebug)
     window.addEventListener('beforeunload', handleBeforeUnload)
 
     return () => {
       history.pushState = originalPushState
       history.replaceState = originalReplaceState
-      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('popstate', handlePopStateDebug)
       window.removeEventListener('beforeunload', handleBeforeUnload)
     }
   }, [])
@@ -104,7 +104,7 @@ const AppShell = (): ReactElement => {
   // This is necessary to prevent creating a new workspace on every render
   const [showDialog, setShowDialog] = useState<boolean>(false)
   const [targetNetworkId, setTargetNetworkId] = useState<string>('')
-  const [search, setSearch] = useSearchParams()
+  const [search] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
   const resetMessage = useMessageStore((state) => state.resetMessages)
@@ -293,7 +293,6 @@ const AppShell = (): ReactElement => {
 
     if (!initializedRef.current || id === '') return
 
-    const parsed = parsePathName(location.pathname)
     const parsedNetworkId = urlNetIdRef.current
     // Clear it only after the network ID has been used for redirection
     setTimeout(() => {
@@ -455,6 +454,8 @@ const AppShell = (): ReactElement => {
 
   // 前回のlocation情報を保持するref
   const prevLocationRef = useRef(location)
+
+  // Location change の監視（デバッグ用）
   useEffect(() => {
     console.log('🟢 REACT ROUTER LOCATION CHANGE:', {
       // 現在の値
@@ -495,22 +496,37 @@ const AppShell = (): ReactElement => {
     prevLocationRef.current = location
   }, [location])
 
+  // Network ID 同期の処理
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      console.log('🔴 BROWSER NAVIGATION2:', {
-        url: window.location.href,
-        pathname: window.location.pathname,
-        search: window.location.search,
-        state: event.state,
-        workspaceId: id,
-        currentNetworkId: currentNetworkId,
+    // locationのnetwork IDとcurrentNetworkIdが異なる場合、locationの値をcurrent networkとしてセット
+    const parsed = parsePathName(location.pathname)
+    const { networkId: locationNetworkId } = parsed
+
+    if (
+      locationNetworkId &&
+      locationNetworkId !== '' &&
+      locationNetworkId !== currentNetworkId &&
+      id !== '' // workspaceが初期化されている場合のみ
+    ) {
+      console.log('🔄 Setting current network ID from location:', {
+        from: currentNetworkId,
+        to: locationNetworkId,
         timestamp: new Date().toISOString(),
       })
-    }
 
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [id, currentNetworkId])
+      // ネットワークをワークスペースに追加（まだ存在しない場合）
+      if (!networkIds.includes(locationNetworkId)) {
+        console.log('Adding network to workspace:', locationNetworkId)
+        addNetworkIds(locationNetworkId)
+      }
+
+      // current network IDを更新（重複チェック）
+      if (currentNetworkId !== locationNetworkId) {
+        console.log('Updating current network ID:', locationNetworkId)
+        setCurrentNetworkId(locationNetworkId)
+      }
+    }
+  }, [location, currentNetworkId, id, networkIds])
 
   return (
     <Box

@@ -3,12 +3,7 @@ import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box, Tooltip } from '@mui/material'
 
-import {
-  Outlet,
-  useLocation,
-  useNavigate,
-  useSearchParams,
-} from 'react-router-dom'
+import { Outlet, useLocation, useSearchParams } from 'react-router-dom'
 
 import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
 import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
@@ -68,6 +63,7 @@ import { NetworkWithView, VisualStyle } from '../../models'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useUndoStore } from '../../store/UndoStore'
+import { useUrlNavigation } from '../../store/hooks/useUrlNavigation'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -101,7 +97,7 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
-  const navigate = useNavigate()
+  const { navigateToNetwork } = useUrlNavigation()
   const location = useLocation()
 
   const [search] = useSearchParams()
@@ -461,7 +457,9 @@ const WorkSpaceEditor = (): JSX.Element => {
         // Remove the last one
         removeSummary(Object.keys(summaries)[0])
       }
-      navigate(`/${workspace.id}/networks`)
+      navigateToNetwork({
+        workspaceId: workspace.id,
+      })
       return
     }
 
@@ -513,9 +511,11 @@ const WorkSpaceEditor = (): JSX.Element => {
             }, 1000)
           }
 
-          navigate(
-            `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
-          )
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: currentNetworkId,
+            searchParams: new URLSearchParams(location.search),
+          })
         })
         .catch((err) => {
           console.error('* Failed to load a network:', err)
@@ -533,9 +533,11 @@ const WorkSpaceEditor = (): JSX.Element => {
             restoreActiveNetworkView()
           }, 1000)
 
-          navigate(
-            `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
-          )
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: currentNetworkId,
+            searchParams: new URLSearchParams(location.search),
+          })
         })
         .catch((err) => {
           console.error('Failed to load a network:', err)
