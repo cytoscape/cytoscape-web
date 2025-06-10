@@ -31,6 +31,7 @@ import { PanelState } from '../models/UiModel/PanelState'
 import { Panel } from '../models/UiModel/Panel'
 import { Workspace } from '../models/WorkspaceModel'
 import { SyncTabsAction } from './SyncTabs'
+import { HistoryDebugger } from './HistoryDebugger'
 
 import { useMessageStore } from '../store/MessageStore'
 import { MessageSeverity } from '../models/MessageModel'
@@ -560,6 +561,8 @@ const AppShell = (): ReactElement => {
         }}
       />
       <SyncTabsAction />
+      {/* History debugger - only show in development */}
+      {process.env.NODE_ENV === 'development' && <HistoryDebugger />}
     </Box>
   )
 }

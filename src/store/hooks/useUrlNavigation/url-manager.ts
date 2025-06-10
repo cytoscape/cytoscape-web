@@ -15,8 +15,27 @@ let historyEntries: Array<{
   url: string
   networkId: string
   timestamp: number
+  browserHistoryLength: number // Track browser history length at time of entry
 }> = []
 let currentHistoryIndex = -1
+
+/**
+ * Get comprehensive history information
+ */
+export const getHistoryInfo = () => {
+  return {
+    browserHistoryLength: window.history.length,
+    internalHistoryLength: historyEntries.length,
+    currentInternalIndex: currentHistoryIndex,
+    canGoBack: currentHistoryIndex > 0,
+    canGoForward: currentHistoryIndex < historyEntries.length - 1,
+    entries: historyEntries,
+    currentEntry: historyEntries[currentHistoryIndex] || null,
+    navigationCount,
+    lastNetworkId,
+    lastUrlPath,
+  }
+}
 
 /**
  * Add history entry (internal use only)
@@ -32,6 +51,7 @@ const addHistoryEntry = (url: string, networkId: string): void => {
     url,
     networkId,
     timestamp: Date.now(),
+    browserHistoryLength: window.history.length,
   })
 
   currentHistoryIndex = historyEntries.length - 1
@@ -114,7 +134,23 @@ export const navigateToNetwork = (
     return
   }
 
-  // 4. Force replace for navigation to the same network ID
+  // 4. Check if network ID matches the one currently in the pathname to avoid duplicates
+  if (safeNetworkId !== '' && !isHistoryNavigation) {
+    const currentPathname = window.location.pathname
+    const currentNetworkIdMatch = currentPathname.match(/\/networks\/([^/?]+)/)
+    const currentNetworkId = currentNetworkIdMatch
+      ? currentNetworkIdMatch[1]
+      : null
+
+    if (currentNetworkId === safeNetworkId) {
+      console.debug(
+        `[URLManager:${navigationCount}] Skipping navigation - network ID ${safeNetworkId} is already in current pathname: ${currentPathname}`,
+      )
+      return
+    }
+  }
+
+  // 5. Force replace for navigation to the same network ID
   let shouldReplace = replace
   if (safeNetworkId !== '' && safeNetworkId === lastNetworkId) {
     console.debug(
@@ -130,6 +166,9 @@ export const navigateToNetwork = (
   )
   console.log(
     `[URLManager:${navigationCount}] Previous state: lastNetworkId=${lastNetworkId}, lastPath=${lastUrlPath}`,
+  )
+  console.log(
+    `[URLManager:${navigationCount}] Browser history length before navigation: ${window.history.length}`,
   )
 
   // Update navigation state
@@ -152,6 +191,7 @@ export const navigateToNetwork = (
         url: path,
         networkId: safeNetworkId,
         timestamp: Date.now(),
+        browserHistoryLength: window.history.length,
       }
     } else {
       addHistoryEntry(path, safeNetworkId)
@@ -238,12 +278,43 @@ export const isInternalNavigation = (): boolean => {
   return isHandlingNavigation
 }
 
-export const resetNavigationState = (): void => {
-  lastUrlPath = ''
+/**
+ * Clear all internal history tracking
+ */
+export const clearInternalHistory = (): void => {
+  historyEntries = []
+  currentHistoryIndex = -1
   lastNetworkId = ''
+  lastUrlPath = ''
   lastNavigationTime = 0
+  navigationCount = 0
   isHandlingNavigation = false
   isHistoryNavigation = false
+
+  console.log('[History Debug] Internal history cleared')
+}
+
+/**
+ * Reset navigation to a clean state and optionally navigate to root
+ */
+export const resetNavigationState = (): void => {
+  clearInternalHistory()
+
+  console.log('[History Debug] Navigation state reset (without URL change)')
+}
+
+/**
+ * Reset navigation to a clean state and navigate to root
+ */
+export const resetNavigationToRoot = (): void => {
+  clearInternalHistory()
+
+  // This replaces the current entry, doesn't add to history
+  if (typeof window !== 'undefined') {
+    window.history.replaceState(null, '', '/')
+  }
+
+  console.log('[History Debug] Navigation state reset to root')
 }
 
 /**
@@ -266,4 +337,102 @@ export const printHistoryDebug = (): void => {
   console.table(historyEntries)
   console.log('Current history state:', getCurrentHistoryState())
   console.groupEnd()
+}
+
+/**
+ * Clear browser history - WARNING: This has significant limitations
+ * Modern browsers don't allow scripts to clear all history for security reasons.
+ * This function can only manipulate the current session's history stack.
+ */
+export const clearBrowserHistory = (): boolean => {
+  if (typeof window === 'undefined') {
+    console.warn(
+      '[History Debug] Cannot clear browser history - not in browser environment',
+    )
+    return false
+  }
+
+  try {
+    // Method 1: Replace current history entry with root
+    window.history.replaceState(null, '', '/')
+
+    // Method 2: Clear forward history by pushing then going back
+    // This is a workaround but has limitations
+    const currentLength = window.history.length
+
+    // Push a temp state and immediately go back to clear forward entries
+    window.history.pushState({ temp: true }, '', '/?temp=1')
+    window.history.back()
+
+    // After a brief delay, replace with clean root state
+    setTimeout(() => {
+      window.history.replaceState(null, '', '/')
+      console.log(
+        `[History Debug] Attempted to clear browser history. Length was: ${currentLength}, now: ${window.history.length}`,
+      )
+    }, 10)
+
+    return true
+  } catch (error) {
+    console.error('[History Debug] Error clearing browser history:', error)
+    return false
+  }
+}
+
+/**
+ * Initialize history clearing on page load/reload
+ * This should be called when the application starts up
+ */
+export const initHistoryClearing = (): void => {
+  if (typeof window === 'undefined') return
+
+  // Check if this is a page reload or fresh load
+  const perfEntries = window.performance.getEntriesByType(
+    'navigation',
+  ) as PerformanceNavigationTiming[]
+  const isReload = perfEntries.length > 0 && perfEntries[0].type === 'reload'
+  const isPageLoad =
+    document.readyState === 'loading' ||
+    (perfEntries.length > 0 && perfEntries[0].type === 'navigate')
+
+  if (isReload || isPageLoad) {
+    console.log(
+      '[History Debug] Page reload/load detected, attempting to clear browser history',
+    )
+
+    // Clear browser history
+    clearBrowserHistory()
+
+    // Clear internal history tracking
+    clearInternalHistory()
+
+    // Navigate to root to ensure clean state
+    setTimeout(() => {
+      if (window.location.pathname !== '/' || window.location.search !== '') {
+        window.history.replaceState(null, '', '/')
+      }
+    }, 50)
+  }
+
+  // Listen for beforeunload to potentially clear history before leaving
+  window.addEventListener('beforeunload', () => {
+    // Note: This won't clear history but ensures clean internal state
+    clearInternalHistory()
+  })
+}
+
+// Expose global debugging functions to window for console access
+if (typeof window !== 'undefined') {
+  // @ts-expect-error - Adding custom properties to window for debugging
+  window.debugHistory = {
+    getInfo: getHistoryInfo,
+    printDebug: printHistoryDebug,
+    getEntries: () => historyEntries,
+    getBrowserLength: () => window.history.length,
+    getCurrentState: getCurrentHistoryState,
+    clearInternal: clearInternalHistory,
+    resetToRoot: resetNavigationToRoot,
+    clearBrowser: clearBrowserHistory,
+    initClearing: initHistoryClearing,
+  }
 }

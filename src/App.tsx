@@ -19,6 +19,7 @@ import { KeycloakContext } from './bootstrap'
 import { useCredentialStore } from './store/CredentialStore'
 import { RedirectPanel } from './RedirectPanel'
 import ErrorBoundary from './ErrorBoundary'
+import { initHistoryClearing } from './store/hooks/useUrlNavigation/url-manager'
 
 enableMapSet()
 
@@ -90,6 +91,11 @@ export const App = (): React.ReactElement => {
   useEffect(() => {
     setClient(client)
   }, [client, setClient])
+
+  // Initialize history clearing on app startup
+  useEffect(() => {
+    initHistoryClearing()
+  }, [])
 
   const removeAllCookies = () => {
     const allCookies = Cookies.get()
