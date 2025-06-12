@@ -1,6 +1,7 @@
 import { Cx2 } from '../Cx2'
 import {
   findAspect,
+  validateCx2Attributes,
   validateCx2Metadata,
   validateCx2ReferentialIntegrity,
   validateCx2Structure,
@@ -568,6 +569,416 @@ describe('validateCx2Structure', () => {
       const result = validateCx2ReferentialIntegrity(input as Cx2)
       console.log(result)
       expect(result.isValid).toBe(true) // Warnings do not invalidate the document
+    })
+  })
+
+  describe('validateCx2Attributes', () => {
+    // Helper function to create a basic CX2 structure with attribute declarations
+    const createBaseCx2 = (): Cx2 =>
+      [
+        { CXVersion: '2.0' },
+        {
+          metaData: [
+            { name: 'attributeDeclarations', elementCount: 1 },
+            { name: 'nodes', elementCount: 0 },
+            { name: 'edges', elementCount: 0 },
+            { name: 'networkAttributes', elementCount: 0 },
+          ],
+        },
+        {
+          attributeDeclarations: [
+            {
+              nodes: {},
+              edges: {},
+              network: {},
+            },
+          ],
+        },
+        { status: [{ success: true }] },
+      ] as Cx2
+
+    describe('node attributes', () => {
+      it('should validate valid node attributes', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          {
+            metaData: [
+              { name: 'attributeDeclarations', elementCount: 1 },
+              { name: 'nodes', elementCount: 1 },
+            ],
+          },
+          {
+            attributeDeclarations: [
+              {
+                nodes: {
+                  name: { d: 'string' },
+                  score: { d: 'double', v: 0.0 },
+                  type: { d: 'string', a: 'nodeType' },
+                },
+              },
+            ],
+          },
+          {
+            nodes: [
+              {
+                id: 1,
+                v: {
+                  name: 'Node1',
+                  score: 0.5,
+                  nodeType: 'gene',
+                },
+              },
+            ],
+          },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(true)
+        expect(result.errors).toHaveLength(0)
+      })
+
+      it('should validate that node attributes are optional', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          {
+            metaData: [
+              { name: 'attributeDeclarations', elementCount: 1 },
+              { name: 'nodes', elementCount: 1 },
+            ],
+          },
+          {
+            attributeDeclarations: [
+              {
+                nodes: {
+                  name: { d: 'string' },
+                  score: { d: 'double', v: 0.0 },
+                },
+              },
+            ],
+          },
+          {
+            nodes: [
+              {
+                id: 1,
+                v: {
+                  score: 0.5, // Missing required 'name'
+                },
+              },
+            ],
+          },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(true)
+      })
+
+      it('should validate node attribute types', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          {
+            metaData: [
+              { name: 'attributeDeclarations', elementCount: 1 },
+              { name: 'nodes', elementCount: 1 },
+            ],
+          },
+          {
+            attributeDeclarations: [
+              {
+                nodes: {
+                  name: { d: 'string' },
+                  score: { d: 'double' },
+                  count: { d: 'integer' },
+                  isActive: { d: 'boolean' },
+                  tags: { d: 'list_of_string' },
+                },
+              },
+            ],
+          },
+          {
+            nodes: [
+              {
+                id: 1,
+                v: {
+                  name: 123, // Should be string
+                  score: '0.5', // Should be number
+                  count: 1.5, // Should be integer
+                  isActive: 'true', // Should be boolean
+                  tags: 'tag1', // Should be array
+                },
+              },
+            ],
+          },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(false)
+        expect(result.errors).toHaveLength(5)
+      })
+
+      it('should warn about undeclared node attributes', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          {
+            metaData: [
+              { name: 'attributeDeclarations', elementCount: 1 },
+              { name: 'nodes', elementCount: 1 },
+            ],
+          },
+          {
+            attributeDeclarations: [
+              {
+                nodes: {
+                  name: { d: 'string' },
+                },
+              },
+            ],
+          },
+          {
+            nodes: [
+              {
+                id: 1,
+                v: {
+                  name: 'Node1',
+                  undeclared: 'value',
+                },
+              },
+            ],
+          },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(true)
+        expect(result.warnings).toHaveLength(1)
+        expect(result.warnings[0].message).toContain('Undeclared attribute')
+      })
+    })
+
+    describe('edge attributes', () => {
+      it('should validate valid edge attributes', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          {
+            metaData: [
+              { name: 'attributeDeclarations', elementCount: 1 },
+              { name: 'edges', elementCount: 1 },
+            ],
+          },
+          {
+            attributeDeclarations: [
+              {
+                edges: {
+                  interaction: { d: 'string' },
+                  weight: { d: 'double', v: 1.0 },
+                  type: { d: 'string', a: 'edgeType' },
+                },
+              },
+            ],
+          },
+          {
+            edges: [
+              {
+                id: 1,
+                s: 1,
+                t: 2,
+                v: {
+                  interaction: 'interacts_with',
+                  weight: 0.5,
+                  edgeType: 'activation',
+                },
+              },
+            ],
+          },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(true)
+        expect(result.errors).toHaveLength(0)
+      })
+
+      it('should validate edge attribute types', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          {
+            metaData: [
+              { name: 'attributeDeclarations', elementCount: 1 },
+              { name: 'edges', elementCount: 1 },
+            ],
+          },
+          {
+            attributeDeclarations: [
+              {
+                edges: {
+                  interaction: { d: 'string' },
+                  weight: { d: 'double' },
+                  count: { d: 'integer' },
+                  isDirected: { d: 'boolean' },
+                  scores: { d: 'list_of_double' },
+                },
+              },
+            ],
+          },
+          {
+            edges: [
+              {
+                id: 1,
+                s: 1,
+                t: 2,
+                v: {
+                  interaction: 123, // Should be string
+                  weight: '0.5', // Should be number
+                  count: 1.5, // Should be integer
+                  isDirected: 'true', // Should be boolean
+                  scores: 0.5, // Should be array
+                },
+              },
+            ],
+          },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(false)
+        expect(result.errors).toHaveLength(5)
+      })
+    })
+
+    describe('network attributes', () => {
+      it('should validate valid network attributes', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          {
+            metaData: [
+              { name: 'attributeDeclarations', elementCount: 1 },
+              { name: 'networkAttributes', elementCount: 1 },
+            ],
+          },
+          {
+            attributeDeclarations: [
+              {
+                network: {
+                  name: { d: 'string' },
+                  version: { d: 'string' },
+                  description: { d: 'string' },
+                },
+              },
+            ],
+          },
+          {
+            networkAttributes: [
+              {
+                name: 'Test Network',
+                version: '1.0',
+                description: 'A test network',
+              },
+            ],
+          },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(true)
+        expect(result.errors).toHaveLength(0)
+      })
+
+      it('should reject network attributes with a or v fields', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          {
+            metaData: [{ name: 'attributeDeclarations', elementCount: 1 }],
+          },
+          {
+            attributeDeclarations: [
+              {
+                network: {
+                  name: { d: 'string', a: 'networkName' }, // Invalid: has 'a'
+                  version: { d: 'string', v: '1.0' }, // Invalid: has 'v'
+                },
+              },
+            ],
+          },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(false)
+        expect(result.errors).toHaveLength(2)
+        expect(result.errors[0].message).toContain("do not support 'a' field")
+        expect(result.errors[1].message).toContain("do not support 'v' field")
+      })
+
+      it('checks that network attributes are optional', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          {
+            metaData: [
+              { name: 'attributeDeclarations', elementCount: 1 },
+              { name: 'networkAttributes', elementCount: 1 },
+            ],
+          },
+          {
+            attributeDeclarations: [
+              {
+                network: {
+                  name: { d: 'string' },
+                  version: { d: 'string' },
+                },
+              },
+            ],
+          },
+          {
+            networkAttributes: [
+              {
+                name: 'Test Network', // Missing required 'version'
+              },
+            ],
+          },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(true)
+      })
+    })
+
+    describe('empty or missing declarations', () => {
+      it('should handle missing attribute declarations', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(true)
+        expect(result.errors).toHaveLength(0)
+      })
+
+      it('should handle empty attribute declarations', () => {
+        const cx2: Cx2 = [
+          { CXVersion: '2.0' },
+          {
+            metaData: [{ name: 'attributeDeclarations', elementCount: 1 }],
+          },
+          {
+            attributeDeclarations: [
+              {
+                nodes: {},
+                edges: {},
+                network: {},
+              },
+            ],
+          },
+          { status: [{ success: true }] },
+        ] as Cx2
+
+        const result = validateCx2Attributes(cx2)
+        expect(result.isValid).toBe(true)
+        expect(result.errors).toHaveLength(0)
+      })
     })
   })
 })

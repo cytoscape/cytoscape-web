@@ -1,5 +1,6 @@
 import { Cx2 } from '../Cx2'
 import { ValidationIssue, ValidationResult } from '../Cx2/Validator'
+import { z } from 'zod'
 
 export const findAspect = (
   cx: unknown[],
@@ -294,6 +295,231 @@ export const validateCx2ReferentialIntegrity = (
   }
 }
 
+const cx2TypeToZod = (type: string) => {
+  switch (type) {
+    case 'string':
+      return z.string()
+    case 'double':
+      return z.number()
+    case 'long':
+      return z.number()
+    case 'integer':
+      return z.number().int()
+    case 'boolean':
+      return z.boolean()
+    case 'list_of_string':
+      return z.array(z.string())
+    case 'list_of_double':
+      return z.array(z.number())
+    case 'list_of_long':
+      return z.array(z.number())
+    case 'list_of_integer':
+      return z.array(z.number().int())
+    case 'list_of_boolean':
+      return z.array(z.boolean())
+    default:
+      throw z.string()
+  }
+}
+
+const createAttributeSchema = (
+  declarations: Record<string, any>,
+  isNetworkAttributes: boolean = false,
+): { schema: z.ZodObject<any>; errors: ValidationIssue[] } => {
+  const schemaShape: Record<string, z.ZodTypeAny> = {}
+  const errors: ValidationIssue[] = []
+
+  Object.entries(declarations).forEach(([attrName, attrDecl]) => {
+    const { d: type, a, v } = attrDecl
+
+    // For network attributes, check for unsupported 'a' and 'v' fields
+    if (isNetworkAttributes) {
+      if (a !== undefined) {
+        errors.push({
+          message: `Network attributes do not support 'a' field. Found in attribute '${attrName}'`,
+          severity: 'error',
+          path: ['attributeDeclarations', 'network', attrName, 'a'],
+        })
+      }
+      if (v !== undefined) {
+        errors.push({
+          message: `Network attributes do not support 'v' field. Found in attribute '${attrName}'`,
+          severity: 'error',
+          path: ['attributeDeclarations', 'network', attrName, 'v'],
+        })
+      }
+      schemaShape[attrName] = cx2TypeToZod(type).optional()
+    } else {
+      const zodType = cx2TypeToZod(type)
+      schemaShape[a ?? attrName] = zodType.optional()
+    }
+  })
+
+  return {
+    schema: z.object(schemaShape),
+    errors,
+  }
+}
+
+export const validateCx2Attributes = (input: Cx2): ValidationResult => {
+  const errors: ValidationIssue[] = []
+  const warnings: ValidationIssue[] = []
+
+  const attributeDeclarations = findAspect(
+    input,
+    'attributeDeclarations',
+  ) as unknown[]
+  if (attributeDeclarations === undefined) {
+    return {
+      isValid: true, // attribute declarations are optional
+      errors: [],
+      warnings: [],
+    }
+  }
+
+  const nodesAspect = findAspect(input, 'nodes') as unknown[]
+  const edgesAspect = findAspect(input, 'edges') as unknown[]
+  const networkAttrsAspect = findAspect(input, 'networkAttributes') as unknown[]
+
+  // Get attribute declarations for nodes and edges
+  const attrDecls = attributeDeclarations[0] as
+    | {
+        nodes?: Record<string, any>
+        edges?: Record<string, any>
+        network?: Record<string, any>
+      }
+    | undefined
+  const nodeAttrDecls = attrDecls?.nodes ?? {}
+  const edgeAttrDecls = attrDecls?.edges ?? {}
+  const networkAttrDecls = attrDecls?.network ?? {}
+
+  // Create Zod schemas for each aspect
+  const nodeSchemaResult = createAttributeSchema(nodeAttrDecls)
+  const edgeSchemaResult = createAttributeSchema(edgeAttrDecls)
+  const networkSchemaResult = createAttributeSchema(networkAttrDecls, true)
+
+  // Add any schema creation errors
+  errors.push(...nodeSchemaResult.errors)
+  errors.push(...edgeSchemaResult.errors)
+  errors.push(...networkSchemaResult.errors)
+
+  // If there were any schema creation errors, return early
+  if (errors.length > 0) {
+    return {
+      isValid: false,
+      errors,
+      warnings,
+    }
+  }
+
+  // Validate node attributes
+  if (nodesAspect !== undefined) {
+    nodesAspect.forEach((node: Record<string, unknown>, nodeIndex) => {
+      const nodeAttrs = node.v as Record<string, unknown> | undefined
+      if (nodeAttrs === undefined) return
+
+      const result = nodeSchemaResult.schema.safeParse(nodeAttrs)
+      if (!result.success) {
+        result.error.issues.forEach((issue) => {
+          errors.push({
+            message: `Node attribute validation error: ${issue.message}`,
+            severity: 'error',
+            path: [
+              'nodes',
+              `index ${nodeIndex}`,
+              'v',
+              ...(issue.path as string[]),
+            ],
+          })
+        })
+      }
+
+      // Check for undeclared attributes
+      Object.keys(nodeAttrs).forEach((attrName) => {
+        if (!(attrName in nodeAttrDecls)) {
+          warnings.push({
+            message: `Undeclared attribute '${attrName}' found on node`,
+            severity: 'warning',
+            path: ['nodes', `index ${nodeIndex}`, 'v', attrName],
+          })
+        }
+      })
+    })
+  }
+
+  // Validate edge attributes
+  if (edgesAspect !== undefined) {
+    edgesAspect.forEach((edge: Record<string, unknown>, edgeIndex) => {
+      const edgeAttrs = edge.v as Record<string, unknown> | undefined
+      if (edgeAttrs === undefined) return
+
+      const result = edgeSchemaResult.schema.safeParse(edgeAttrs)
+      if (!result.success) {
+        result.error.issues.forEach((issue) => {
+          errors.push({
+            message: `Edge attribute validation error: ${issue.message}`,
+            severity: 'error',
+            path: [
+              'edges',
+              `index ${edgeIndex}`,
+              'v',
+              ...(issue.path as string[]),
+            ],
+          })
+        })
+      }
+
+      // Check for undeclared attributes
+      Object.keys(edgeAttrs).forEach((attrName) => {
+        if (!(attrName in edgeAttrDecls)) {
+          warnings.push({
+            message: `Undeclared attribute '${attrName}' found on edge`,
+            severity: 'warning',
+            path: ['edges', `index ${edgeIndex}`, 'v', attrName],
+          })
+        }
+      })
+    })
+  }
+
+  // Validate network attributes
+  if (networkAttrsAspect !== undefined) {
+    networkAttrsAspect.forEach((attrs: Record<string, unknown>, index) => {
+      const result = networkSchemaResult.schema.safeParse(attrs)
+      if (!result.success) {
+        result.error.issues.forEach((issue) => {
+          errors.push({
+            message: `Network attribute validation error: ${issue.message}`,
+            severity: 'error',
+            path: [
+              'networkAttributes',
+              `index ${index}`,
+              ...(issue.path as string[]),
+            ],
+          })
+        })
+      }
+
+      // Check for undeclared attributes
+      Object.keys(attrs).forEach((attrName) => {
+        if (!(attrName in networkAttrDecls)) {
+          warnings.push({
+            message: `Undeclared attribute '${attrName}' found in network attributes`,
+            severity: 'warning',
+            path: ['networkAttributes', `index ${index}`, attrName],
+          })
+        }
+      })
+    })
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  }
+}
+
 export const validateCX2 = (input: unknown): ValidationResult => {
   let validationResult: ValidationResult = {
     isValid: true,
@@ -341,6 +567,18 @@ export const validateCX2 = (input: unknown): ValidationResult => {
         ...validationResult.warnings,
         ...validateReferentialIntegrity.warnings,
       ],
+    }
+  }
+
+  const validateAttributes = validateCx2Attributes(input as Cx2)
+  if (!validateAttributes.isValid) {
+    return validateAttributes
+  } else {
+    validationResult = {
+      ...validationResult,
+      isValid: validationResult.isValid && validateAttributes.isValid,
+      errors: [...validationResult.errors, ...validateAttributes.errors],
+      warnings: [...validationResult.warnings, ...validateAttributes.warnings],
     }
   }
 
