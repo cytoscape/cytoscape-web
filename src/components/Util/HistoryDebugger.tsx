@@ -6,9 +6,9 @@ import {
   clearInternalHistory,
   resetNavigationToRoot,
   getHistoryInfo,
-} from '../store/hooks/useUrlNavigation/url-manager'
+} from '../../store/hooks/useUrlNavigation/url-manager'
 
-export const HistoryDebugger: React.FC = () => {
+export const HistoryDebugger = (): JSX.Element => {
   const [historyLength, setHistoryLength] = useState(window.history.length)
   const [navigationCount, setNavigationCount] = useState(0)
   const [internalHistoryLength, setInternalHistoryLength] = useState(0)

@@ -31,7 +31,7 @@ import { PanelState } from '../models/UiModel/PanelState'
 import { Panel } from '../models/UiModel/Panel'
 import { Workspace } from '../models/WorkspaceModel'
 import { SyncTabsAction } from './SyncTabs'
-import { HistoryDebugger } from './HistoryDebugger'
+// import { HistoryDebugger } from './Util/HistoryDebugger'
 
 import { useMessageStore } from '../store/MessageStore'
 import { MessageSeverity } from '../models/MessageModel'
@@ -55,50 +55,49 @@ const IMPORT_KEY = 'import'
  *
  */
 const AppShell = (): ReactElement => {
-  useEffect(() => {
-    const originalPushState = history.pushState
-    const originalReplaceState = history.replaceState
+  // useEffect(() => {
+  //   const originalPushState = history.pushState
+  //   const originalReplaceState = history.replaceState
 
-    history.pushState = function (...args) {
-      console.log('🔵 PUSH STATE:', args, new Error().stack)
-      return originalPushState.apply(this, args)
-    }
+  //   history.pushState = function (...args) {
+  //     console.log('🔵 PUSH STATE:', args, new Error().stack)
+  //     return originalPushState.apply(this, args)
+  //   }
 
-    history.replaceState = function (...args) {
-      console.log('🟡 REPLACE STATE:', args, new Error().stack)
-      return originalReplaceState.apply(this, args)
-    }
+  //   history.replaceState = function (...args) {
+  //     console.log('🟡 REPLACE STATE:', args, new Error().stack)
+  //     return originalReplaceState.apply(this, args)
+  //   }
 
-    // ブラウザの戻る・進むボタンの検知
-    const handlePopStateDebug = (event: PopStateEvent) => {
-      console.log('🔴 BROWSER NAVIGATION (Back/Forward):', {
-        url: window.location.href,
-        pathname: window.location.pathname,
-        search: window.location.search,
-        state: event.state,
-        timestamp: new Date().toISOString(),
-      })
+  //   // Detect browser back/forward button navigation
+  //   const handlePopStateDebug = (event: PopStateEvent) => {
+  //     console.log('🔴 BROWSER NAVIGATION (Back/Forward):', {
+  //       url: window.location.href,
+  //       pathname: window.location.pathname,
+  //       search: window.location.search,
+  //       state: event.state,
+  //       timestamp: new Date().toISOString(),
+  //     })
 
-      // より詳細なスタックトレースが必要な場合
-      console.trace('🔴 Navigation stack trace')
-    }
+  //     // Use if more detailed stack trace is needed
+  //     console.trace('🔴 Navigation stack trace')
+  //   }
 
-    // beforeunload イベントでページ離脱も検知（任意）
-    const handleBeforeUnload = () => {
-      console.log('🟠 PAGE UNLOAD:', window.location.href)
-    }
+  //   const handleBeforeUnload = () => {
+  //     console.log('🟠 PAGE UNLOAD:', window.location.href)
+  //   }
 
-    // イベントリスナーを追加
-    window.addEventListener('popstate', handlePopStateDebug)
-    window.addEventListener('beforeunload', handleBeforeUnload)
+  //   // Add event listeners
+  //   window.addEventListener('popstate', handlePopStateDebug)
+  //   window.addEventListener('beforeunload', handleBeforeUnload)
 
-    return () => {
-      history.pushState = originalPushState
-      history.replaceState = originalReplaceState
-      window.removeEventListener('popstate', handlePopStateDebug)
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-    }
-  }, [])
+  //   return () => {
+  //     history.pushState = originalPushState
+  //     history.replaceState = originalReplaceState
+  //     window.removeEventListener('popstate', handlePopStateDebug)
+  //     window.removeEventListener('beforeunload', handleBeforeUnload)
+  //   }
+  // }, [])
 
   const [initializationError, setInitializationError] = useState<string>('')
 
@@ -306,7 +305,7 @@ const AppShell = (): ReactElement => {
         addNetworkIds(parsedNetworkId)
         await waitSeconds(1)
         setCurrentNetworkId(parsedNetworkId)
-        // replace を使用して履歴に追加しない
+        // Use replace to avoid adding to history
         navigate(
           `/${id}/networks/${parsedNetworkId}${location.search.toString()}`,
           { replace: true },
@@ -453,13 +452,13 @@ const AppShell = (): ReactElement => {
     }
   }, [id])
 
-  // 前回のlocation情報を保持するref
+  // Store previous location information with ref
   const prevLocationRef = useRef(location)
 
-  // Location change の監視（デバッグ用）
+  // Monitor location changes for debugging
   useEffect(() => {
     console.log('🟢 REACT ROUTER LOCATION CHANGE:', {
-      // 現在の値
+      // Current values
       current: {
         pathname: location.pathname,
         search: location.search,
@@ -467,7 +466,7 @@ const AppShell = (): ReactElement => {
         state: location.state,
         key: location.key,
       },
-      // 前回の値
+      // Previous values
       previous: {
         pathname: prevLocationRef.current.pathname,
         search: prevLocationRef.current.search,
@@ -475,7 +474,7 @@ const AppShell = (): ReactElement => {
         state: prevLocationRef.current.state,
         key: prevLocationRef.current.key,
       },
-      // 変更された項目のみ
+      // Changed items only
       changes: {
         pathname:
           location.pathname !== prevLocationRef.current.pathname
@@ -493,13 +492,13 @@ const AppShell = (): ReactElement => {
       timestamp: new Date().toISOString(),
     })
 
-    // 現在の値を前回の値として保存
+    // Save current values as previous values
     prevLocationRef.current = location
   }, [location])
 
-  // Network ID 同期の処理
+  // Network ID synchronization process
   useEffect(() => {
-    // locationのnetwork IDとcurrentNetworkIdが異なる場合、locationの値をcurrent networkとしてセット
+    // If location network ID differs from currentNetworkId, set location value as current network
     const parsed = parsePathName(location.pathname)
     const { networkId: locationNetworkId } = parsed
 
@@ -507,7 +506,7 @@ const AppShell = (): ReactElement => {
       locationNetworkId &&
       locationNetworkId !== '' &&
       locationNetworkId !== currentNetworkId &&
-      id !== '' // workspaceが初期化されている場合のみ
+      id !== '' // Only when workspace is initialized
     ) {
       console.log('🔄 Setting current network ID from location:', {
         from: currentNetworkId,
@@ -515,19 +514,19 @@ const AppShell = (): ReactElement => {
         timestamp: new Date().toISOString(),
       })
 
-      // ネットワークをワークスペースに追加（まだ存在しない場合）
+      // Add network to workspace if it doesn't exist yet
       if (!networkIds.includes(locationNetworkId)) {
         console.log('Adding network to workspace:', locationNetworkId)
         addNetworkIds(locationNetworkId)
       }
 
-      // current network IDを更新（重複チェック）
+      // Update current network ID (with duplicate check)
       if (currentNetworkId !== locationNetworkId) {
         console.log('Updating current network ID:', locationNetworkId)
         setCurrentNetworkId(locationNetworkId)
       }
     }
-  }, [location, currentNetworkId, id, networkIds])
+  }, [location, id, networkIds])
 
   return (
     <Box
@@ -562,7 +561,7 @@ const AppShell = (): ReactElement => {
       />
       <SyncTabsAction />
       {/* History debugger - only show in development */}
-      {process.env.NODE_ENV === 'development' && <HistoryDebugger />}
+      {/* {process.env.NODE_ENV === 'development' && <HistoryDebugger />} */}
     </Box>
   )
 }
