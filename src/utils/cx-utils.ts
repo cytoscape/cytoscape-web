@@ -23,6 +23,7 @@ import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOption
 import { Ui } from '../models/UiModel'
 import { IdType } from '../models/IdType'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
+import { validateCX2 } from '../models/CxModel/impl/validator'
 
 interface FullNetworkData {
   network: Network
@@ -289,23 +290,7 @@ const isValidEdges = (aspect: Aspect): boolean => {
  * If any of these conditions are not met, the function returns false.
  */
 export const isValidCx2Network = (obj: any): boolean => {
-  if (!Array.isArray(obj)) {
-    console.warn('Invalid Cx2Network: Expected an array of aspects', obj)
-    return false
-  }
+  const validationResult = validateCX2(obj)
 
-  let hasValidNetworkAttributes = false
-  let hasValidNodes = false
-  let hasValidEdges = false
-
-  for (const aspect of obj) {
-    if (aspect.networkAttributes && isValidNetworkAttributes(aspect)) {
-      hasValidNetworkAttributes = true
-    } else if (aspect.nodes && isValidNodes(aspect)) {
-      hasValidNodes = true
-    } else if (aspect.edges && isValidEdges(aspect)) {
-      hasValidEdges = true
-    }
-  }
-  return hasValidNetworkAttributes && hasValidNodes && hasValidEdges
+  return validationResult.isValid
 }
