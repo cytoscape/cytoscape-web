@@ -23,7 +23,8 @@ const ModuleFederationPlugin =
 const isProduction = process.env.NODE_ENV === 'production'
 
 // Extract the common dependencies from the package.json file
-const deps = require('./package.json').dependencies
+const packageJson = require('./package.json')
+const deps = packageJson.dependencies
 
 // External Apps
 
@@ -144,6 +145,9 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './index.html',
       favicon: './src/assets/favicon.ico',
+      templateParameters: {
+        VERSION: packageJson.version,
+      },
     }),
     new CleanWebpackPlugin(),
     // netlify requires a _redirects file in the root of the dist folder to work with react router
@@ -166,8 +170,10 @@ module.exports = {
         execSync('git show -s --format=%cI HEAD').toString().trim(),
       ), // Use commit date instead of current date
       'process.env.REACT_APP_BUILD_TIME': JSON.stringify(
-          new Date().toISOString(), // JavaScript-based timestamp
-        ),
+        new Date().toISOString(), // JavaScript-based timestamp
+      ),
+      REACT_APP_BUILD_TIME: JSON.stringify(new Date().toISOString()),
+      REACT_APP_VERSION: JSON.stringify(packageJson.version),
     }),
   ],
   // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other

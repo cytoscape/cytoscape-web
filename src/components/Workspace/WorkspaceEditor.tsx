@@ -674,16 +674,28 @@ const WorkSpaceEditor = (): JSX.Element => {
           </Allotment.Pane>
         </Allotment>
 
-        {panels.right === PanelState.OPEN ? (
-          <Box sx={{ width: '100%', height: '100%' }}>
-            <OpenRightPanelButton
-              toOpen={false}
-              title="Close panel"
-              show={panels.right === PanelState.OPEN}
-            />
-            <SidePanel />
-          </Box>
-        ) : null}
+        {panels.right === PanelState.OPEN && (
+          <Allotment.Pane>
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                minWidth: 0, // For shrink to hide
+              }}
+            >
+              <OpenRightPanelButton
+                toOpen={false}
+                title="Close panel"
+                show={panels.right === PanelState.OPEN}
+              />
+              <Box sx={{ flexGrow: 1, width: '100%' }}>
+                <SidePanel />
+              </Box>
+            </Box>
+          </Allotment.Pane>
+        )}
       </Allotment>
       <SnackbarMessageList />
       <OpenRightPanelButton
