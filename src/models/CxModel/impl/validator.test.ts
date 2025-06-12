@@ -7,6 +7,8 @@ import {
   validateCx2Structure,
 } from './validator'
 
+// to run these: npx jest src/models/CxModel/impl/validator.test.ts
+
 describe('validateCx2Structure', () => {
   // Helper function to create a minimal valid CX2 document
   const createMinimalValidCx = () => [
@@ -280,7 +282,7 @@ describe('validateCx2Structure', () => {
       expect(result.errors).toHaveLength(1)
     })
 
-    it('should return an error when an aspect referenced in metadata is missing', () => {
+    it('should return a warning when an aspect referenced in metadata is missing', () => {
       const input = [
         { CXVersion: '2.0' },
         { metaData: [{ name: 'aspect1' }, { name: 'aspect2' }] },
@@ -288,8 +290,7 @@ describe('validateCx2Structure', () => {
       ]
 
       const result = validateCx2Metadata(input as Cx2)
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toHaveLength(1)
+      expect(result.isValid).toBe(true)
     })
 
     it('should return valid when metadata is empty', () => {

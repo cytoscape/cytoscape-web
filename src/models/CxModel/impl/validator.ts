@@ -132,29 +132,25 @@ export const validateCx2Metadata = (input: Cx2): ValidationResult => {
     }
   }
 
+  const result: ValidationResult = {
+    isValid: true,
+    errors: [],
+    warnings: [],
+  }
+
   for (let i = 0; i < metadataAspect.length; i++) {
     const aspectEntry = metadataAspect[i] as Record<string, unknown>
     const aspectKey = aspectEntry.name as string
     const aspect = findAspect(input, aspectKey)
     if (aspect === undefined) {
-      return {
-        isValid: false,
-        errors: [
-          {
-            message: `Aspect '${aspectKey}' found in metadata is missing in the CX array`,
-            severity: 'error',
-            path: ['metaData', aspectKey],
-          },
-        ],
-        warnings: [],
-      }
+      result.warnings.push({
+        message: `Aspect '${aspectKey}' found in metadata is missing in the CX array`,
+        severity: 'warning',
+        path: ['metaData', aspectKey],
+      })
     }
   }
-  return {
-    isValid: true,
-    errors: [],
-    warnings: [],
-  }
+  return result
 }
 
 export const validateCx2ReferentialIntegrity = (
