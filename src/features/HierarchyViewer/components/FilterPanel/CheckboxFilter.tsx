@@ -46,7 +46,7 @@ export const CheckboxFilter = ({
   const disabledColor = theme.palette.action.disabled
 
   // Updating URL by range
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
 
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)

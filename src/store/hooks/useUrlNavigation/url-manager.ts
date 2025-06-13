@@ -92,7 +92,7 @@ export const navigateToNetwork = (
   config: NavigationConfig,
   navigate: (path: string, options?: NavigateOptions) => void,
 ): void => {
-  const { workspaceId, networkId, searchParams, replace = false } = config
+  const { workspaceId, networkId, searchParams, replace } = config
   navigationCount++
 
   // Convert to safe value

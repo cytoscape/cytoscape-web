@@ -35,7 +35,7 @@ export const NetworkTabs = ({
     (state) => state.ui.networkViewUi.activeTabIndex,
   )
   const setSelected = useUiStateStore((state) => state.setNetworkViewTabIndex)
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
 
   const customNetworkTabName = useUiStateStore(
     (state) => state.ui.customNetworkTabName,

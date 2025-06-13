@@ -3,7 +3,6 @@ import {
   Location,
   Outlet,
   useLocation,
-  useNavigate,
   useSearchParams,
 } from 'react-router-dom'
 import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
@@ -41,6 +40,7 @@ import { useTableStore } from '../store/TableStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
+import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
 
 // This is a valid workspace ID for sharing
 const DUMMY_WS_ID = '0'
@@ -55,25 +55,26 @@ const IMPORT_KEY = 'import'
  *
  */
 const AppShell = (): ReactElement => {
-  // Uncomment this section with debugger UI hook to debug browser histor
+  // Uncomment this section with debugger UI hook to
+  // debug browser history navigation
 
   // useEffect(() => {
   //   const originalPushState = history.pushState
   //   const originalReplaceState = history.replaceState
 
   //   history.pushState = function (...args) {
-  //     console.log('🔵 PUSH STATE:', args, new Error().stack)
+  //     console.log('* PUSH STATE:', args, new Error().stack)
   //     return originalPushState.apply(this, args)
   //   }
 
   //   history.replaceState = function (...args) {
-  //     console.log('🟡 REPLACE STATE:', args, new Error().stack)
+  //     console.log('* REPLACE STATE:', args, new Error().stack)
   //     return originalReplaceState.apply(this, args)
   //   }
 
   //   // Detect browser back/forward button navigation
   //   const handlePopStateDebug = (event: PopStateEvent) => {
-  //     console.log('🔴 BROWSER NAVIGATION (Back/Forward):', {
+  //     console.log('* BROWSER NAVIGATION (Back/Forward):', {
   //       url: window.location.href,
   //       pathname: window.location.pathname,
   //       search: window.location.search,
@@ -82,11 +83,11 @@ const AppShell = (): ReactElement => {
   //     })
 
   //     // Use if more detailed stack trace is needed
-  //     console.trace('🔴 Navigation stack trace')
+  //     console.trace('* Navigation stack trace')
   //   }
 
   //   const handleBeforeUnload = () => {
-  //     console.log('🟠 PAGE UNLOAD:', window.location.href)
+  //     console.log('* PAGE UNLOAD:', window.location.href)
   //   }
 
   //   // Add event listeners
@@ -116,7 +117,7 @@ const AppShell = (): ReactElement => {
   // Keep track of the network ID in the URL
   const urlNetIdRef = useRef<string>('')
 
-  const navigate = useNavigate()
+  const { navigateToNetwork } = useUrlNavigation()
   const setWorkspace = useWorkspaceStore((state) => state.set)
   const workspace = useWorkspaceStore((state) => state.workspace)
   const location: Location = useLocation()
@@ -172,7 +173,6 @@ const AppShell = (): ReactElement => {
   const authenticated = client?.authenticated ?? false
   const { id, currentNetworkId, networkIds, networkModified } = workspace
 
-  // const parsed = parsePathName(location.pathname)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
@@ -307,28 +307,36 @@ const AppShell = (): ReactElement => {
         addNetworkIds(parsedNetworkId)
         await waitSeconds(1)
         setCurrentNetworkId(parsedNetworkId)
-        // Use replace to avoid adding to history
-        navigate(
-          `/${id}/networks/${parsedNetworkId}${location.search.toString()}`,
-          { replace: true },
-        )
+        // Use navigateToNetwork with replace to avoid adding to history
+        navigateToNetwork({
+          workspaceId: id,
+          networkId: parsedNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
       } else if (networkIds.length > 0) {
-        navigate(
-          `/${id}/networks/${networkIds[0]}${location.search.toString()}`,
-          { replace: true },
-        )
+        navigateToNetwork({
+          workspaceId: id,
+          networkId: networkIds[0],
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
       } else {
-        navigate(`/${id}/networks${location.search.toString()}`, {
+        navigateToNetwork({
+          workspaceId: id,
+          searchParams: new URLSearchParams(location.search),
           replace: true,
         })
       }
     } else {
       const networkId: string = parsedNetworkId
       if (networkId === '' || networkId === undefined) {
-        navigate(
-          `/${id}/networks/${currentNetworkId}${location.search.toString()}`,
-          { replace: true },
-        )
+        navigateToNetwork({
+          workspaceId: id,
+          networkId: currentNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
       } else {
         // the user is trying to load a network that is already in the workspace
         // check that if they have an outdated version of the network by comparing modification times
@@ -370,19 +378,23 @@ const AppShell = (): ReactElement => {
               await waitSeconds(1)
               deleteNetworkModifiedStatus(networkId)
 
-              navigate(
-                `/${id}/networks/${networkId}${location.search.toString()}`,
-                { replace: true },
-              )
+              navigateToNetwork({
+                workspaceId: id,
+                networkId: networkId,
+                searchParams: new URLSearchParams(location.search),
+                replace: true,
+              })
             }
           } else {
             addNetworkIds(networkId)
             await waitSeconds(1)
             setCurrentNetworkId(networkId)
-            navigate(
-              `/${id}/networks/${networkId}${location.search.toString()}`,
-              { replace: true },
-            )
+            navigateToNetwork({
+              workspaceId: id,
+              networkId: networkId,
+              searchParams: new URLSearchParams(location.search),
+              replace: true,
+            })
           }
         } catch (error) {
           const errorMessage: string = error.message

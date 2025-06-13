@@ -60,7 +60,7 @@ export const FilterPanel = () => {
   const [showOptions, setShowOptions] = useState<boolean>(false)
 
   // URL search parameters
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
 
   // Pick style for color coding
   const styles = useVisualStyleStore((state) => state.visualStyles)
