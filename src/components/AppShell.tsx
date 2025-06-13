@@ -55,6 +55,8 @@ const IMPORT_KEY = 'import'
  *
  */
 const AppShell = (): ReactElement => {
+  // Uncomment this section with debugger UI hook to debug browser histor
+
   // useEffect(() => {
   //   const originalPushState = history.pushState
   //   const originalReplaceState = history.replaceState

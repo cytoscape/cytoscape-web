@@ -397,7 +397,7 @@ export const initHistoryClearing = (): void => {
 
   if (isReload || isPageLoad) {
     console.log(
-      '[History Debug] Page reload/load detected, attempting to clear browser history',
+      '[History Debug] Page reload/load detected, preserving current URL',
     )
 
     // Clear browser history
@@ -406,11 +406,16 @@ export const initHistoryClearing = (): void => {
     // Clear internal history tracking
     clearInternalHistory()
 
-    // Navigate to root to ensure clean state
+    // DON'T navigate to root - preserve the current URL
+    // Only navigate to root if we're actually at an invalid/empty path
     setTimeout(() => {
-      if (window.location.pathname !== '/' || window.location.search !== '') {
+      if (
+        window.location.pathname === '' ||
+        window.location.pathname === null
+      ) {
         window.history.replaceState(null, '', '/')
       }
+      // Otherwise, keep the current URL as-is
     }, 50)
   }
 
