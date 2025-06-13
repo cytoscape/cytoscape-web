@@ -39,6 +39,7 @@ import { createDataFromLocalCx2 } from '../../utils/cx-utils'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { useMessageStore } from '../../store/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
+import { validateCX2 } from '../../models/CxModel/impl/validator'
 interface FileUploadProps {
   show: boolean
   handleClose: () => void
@@ -70,97 +71,111 @@ export function FileUpload(props: FileUploadProps) {
   const handleCX2File = async (file: File, jsonStr: string) => {
     try {
       const json = JSON.parse(jsonStr)
-      const networkAttributeDeclarations =
-        getAttributeDeclarations(json)?.attributeDeclarations?.[0]
-          ?.networkAttributes ?? {}
-      const networkAttributes = getNetworkAttributes(json)?.[0] ?? {}
+      const validationResult = validateCX2(json)
 
-      const name =
-        networkAttributes.name ??
-        generateUniqueName(
-          Object.values(summaries).map((s) => s.name),
-          file.name,
+      if (!validationResult.isValid) {
+        const errorMessages = validationResult.errors
+          .map((err) => err.message)
+          .join('\n')
+        addMessage({
+          duration: 15000,
+          message: `Failed to parse CX2 file:\n${errorMessages}. \n Please see the CX2 spec for full details https://cytoscape.org/cx/cx2/specification/cytoscape-exchange-format-specification-(version-2)/ `,
+          severity: MessageSeverity.ERROR,
+        })
+        return
+      } else {
+        const networkAttributeDeclarations =
+          getAttributeDeclarations(json)?.attributeDeclarations?.[0]
+            ?.networkAttributes ?? {}
+        const networkAttributes = getNetworkAttributes(json)?.[0] ?? {}
+
+        const name =
+          networkAttributes.name ??
+          generateUniqueName(
+            Object.values(summaries).map((s) => s.name),
+            file.name,
+          )
+
+        const description = networkAttributes.description ?? ''
+
+        const localProperties: NdexNetworkProperty[] = Object.entries(
+          networkAttributes,
+        )
+          .filter(([key, value]) => {
+            // Exclude 'name' and 'description' as they are handled separately as metadata fields
+            // TODO this 'handleCX2File' function should be moved to the cx2-utils or a hook
+            return key !== 'name' && key !== 'description'
+          })
+          .map(([key, value]) => {
+            return {
+              predicateString: key,
+              value: value as ValueType,
+              dataType:
+                networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
+              subNetworkId: null,
+            }
+          })
+
+        const localUuid = uuidv4()
+        const res = await createDataFromLocalCx2(localUuid, json)
+        const {
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkView,
+          visualStyleOptions,
+          otherAspects,
+        } = res
+
+        const nodesAspect = getNodes(json)
+        const anyNodeHasPosition = nodesAspect.some(
+          (n) => n.x !== undefined && n.y !== undefined,
         )
 
-      const description = networkAttributes.description ?? ''
-
-      const localProperties: NdexNetworkProperty[] = Object.entries(
-        networkAttributes,
-      )
-        .filter(([key, value]) => {
-          // Exclude 'name' and 'description' as they are handled separately as metadata fields
-          // TODO this 'handleCX2File' function should be moved to the cx2-utils or a hook
-          return key !== 'name' && key !== 'description'
+        const localNodeCount = network.nodes.length
+        const localEdgeCount = network.edges.length
+        await putNetworkSummaryToDb({
+          isNdex: false,
+          ownerUUID: localUuid,
+          name,
+          isReadOnly: false,
+          subnetworkIds: [],
+          isValid: false,
+          warnings: [],
+          isShowcase: false,
+          isCertified: false,
+          indexLevel: '',
+          hasLayout: anyNodeHasPosition,
+          hasSample: false,
+          cxFileSize: 0,
+          cx2FileSize: 0,
+          properties: localProperties,
+          owner: '',
+          version: '',
+          completed: false,
+          visibility: Visibility.LOCAL,
+          nodeCount: localNodeCount,
+          edgeCount: localEdgeCount,
+          description,
+          creationTime: new Date(Date.now()),
+          externalId: localUuid,
+          isDeleted: false,
+          modificationTime: new Date(Date.now()),
         })
-        .map(([key, value]) => {
-          return {
-            predicateString: key,
-            value: value as ValueType,
-            dataType:
-              networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
-            subNetworkId: null,
-          }
-        })
-
-      const localUuid = uuidv4()
-      const res = await createDataFromLocalCx2(localUuid, json)
-      const {
-        network,
-        nodeTable,
-        edgeTable,
-        visualStyle,
-        networkView,
-        visualStyleOptions,
-        otherAspects,
-      } = res
-
-      const nodesAspect = getNodes(json)
-      const anyNodeHasPosition = nodesAspect.some(
-        (n) => n.x !== undefined && n.y !== undefined,
-      )
-
-      const localNodeCount = network.nodes.length
-      const localEdgeCount = network.edges.length
-      await putNetworkSummaryToDb({
-        isNdex: false,
-        ownerUUID: localUuid,
-        name,
-        isReadOnly: false,
-        subnetworkIds: [],
-        isValid: false,
-        warnings: [],
-        isShowcase: false,
-        isCertified: false,
-        indexLevel: '',
-        hasLayout: anyNodeHasPosition,
-        hasSample: false,
-        cxFileSize: 0,
-        cx2FileSize: 0,
-        properties: localProperties,
-        owner: '',
-        version: '',
-        completed: false,
-        visibility: Visibility.LOCAL,
-        nodeCount: localNodeCount,
-        edgeCount: localEdgeCount,
-        description,
-        creationTime: new Date(Date.now()),
-        externalId: localUuid,
-        isDeleted: false,
-        modificationTime: new Date(Date.now()),
-      })
-      // TODO the db syncing logic in various stores assumes the updated network is the current network
-      // therefore, as a temporary fix, the first operation that should be done is to set the
-      // current network to be the new network id
-      setVisualStyleOptions(localUuid, visualStyleOptions)
-      addNetworkToWorkspace(localUuid)
-      setCurrentNetworkId(localUuid)
-      addNewNetwork(network)
-      setVisualStyle(localUuid, visualStyle)
-      setTables(localUuid, nodeTable, edgeTable)
-      setViewModel(localUuid, networkView)
-      if (otherAspects !== undefined) {
-        addAllOpaqueAspects(localUuid, otherAspects)
+        // TODO the db syncing logic in various stores assumes the updated network is the current network
+        // therefore, as a temporary fix, the first operation that should be done is to set the
+        // current network to be the new network id
+        setVisualStyleOptions(localUuid, visualStyleOptions)
+        addNetworkToWorkspace(localUuid)
+        setCurrentNetworkId(localUuid)
+        addNewNetwork(network)
+        setVisualStyle(localUuid, visualStyle)
+        setTables(localUuid, nodeTable, edgeTable)
+        setViewModel(localUuid, networkView)
+        if (otherAspects !== undefined) {
+          addAllOpaqueAspects(localUuid, otherAspects)
+        }
       }
     } catch (error) {
       console.error(error)
