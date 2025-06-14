@@ -107,7 +107,7 @@ const AppShell = (): ReactElement => {
   // This is necessary to prevent creating a new workspace on every render
   const [showDialog, setShowDialog] = useState<boolean>(false)
   const [targetNetworkId, setTargetNetworkId] = useState<string>('')
-  const [search] = useSearchParams()
+  const [search, setSearchParams] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
   const resetMessage = useMessageStore((state) => state.resetMessages)
@@ -279,6 +279,7 @@ const AppShell = (): ReactElement => {
         throw new Error(`Failed to initialize the workspace: ${error.message}`)
       } finally {
         // initializedRef.current = true
+        console.log('---------------Workspace initialized------------------')
       }
     }
 
@@ -307,7 +308,7 @@ const AppShell = (): ReactElement => {
         addNetworkIds(parsedNetworkId)
         await waitSeconds(1)
         setCurrentNetworkId(parsedNetworkId)
-        // Use navigateToNetwork with replace to avoid adding to history
+        // Use replace to avoid adding to history
         navigateToNetwork({
           workspaceId: id,
           networkId: parsedNetworkId,
@@ -407,6 +408,9 @@ const AppShell = (): ReactElement => {
         }
       }
     }
+
+    // Clear URL search params to remove unnecessary parameters
+    setSearchParams({}, { replace: true })
 
     console.log('---------------Finished redirecting------------------')
   }

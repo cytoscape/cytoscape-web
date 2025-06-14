@@ -35,15 +35,12 @@ interface ShareNetworkButtonProps {
 export const ShareNetworkButton = ({
   targetNetworkId,
 }: ShareNetworkButtonProps): JSX.Element => {
-  // Use this as the staring point for the sharable URL
-  const wsId = useWorkspaceStore((state) => state.workspace.id)
-
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
 
   // Encode UI states as URL search params
-  const [search, setSearch] = useSearchParams()
+  const [search] = useSearchParams()
 
   const ui: Ui = useUiStateStore((state) => state.ui)
   const { panels } = ui
@@ -74,6 +71,37 @@ export const ShareNetworkButton = ({
     }
     const searchStr = new URLSearchParams(searchObj).toString()
     return searchStr
+  }
+
+  const getSelectionParams = (): URLSearchParams => {
+    const params = new URLSearchParams()
+
+    if (networkViewModel === undefined) {
+      return params
+    }
+
+    const selectedNodeCount: number = networkViewModel.selectedNodes.length
+    const selectedEdgeCount: number = networkViewModel.selectedEdges.length
+
+    if (selectedNodeCount === 0 && selectedEdgeCount === 0) {
+      return params
+    }
+
+    if (selectedNodeCount > 0 && selectedNodeCount <= MAX_SELECTED_OBJ) {
+      params.set(
+        SelectionStates.SelectedNodes,
+        networkViewModel.selectedNodes.join(' '),
+      )
+    }
+
+    if (selectedEdgeCount > 0 && selectedEdgeCount <= MAX_SELECTED_OBJ) {
+      params.set(
+        SelectionStates.SelectedEdges,
+        networkViewModel.selectedEdges.join(' '),
+      )
+    }
+
+    return params
   }
 
   const setSelection = (params: URLSearchParams): void => {
@@ -107,13 +135,6 @@ export const ShareNetworkButton = ({
     } else {
       params.delete(SelectionStates.SelectedEdges)
     }
-    // setTimeout(() => {
-    //   console.log(
-    //     `###Now setting Selected nodes In URL:`,
-    //     params.get(SelectionStates.SelectedNodes),
-    //   )
-    // setSearch(params)
-    // }, 200)
   }
 
   useEffect(() => {
@@ -128,19 +149,25 @@ export const ShareNetworkButton = ({
   const handleClick = (): void => {
     const { location } = window
 
-    // Full URL
-    const { href } = location
+    // Get the origin (protocol + domain + port) instead of splitting by wsId
+    const baseUrl = location.origin + '/'
 
-    // The first part of the URL should be the base URL
-    const parts: string[] = href.split(wsId)
-    const baseUrl = parts[0]
+    // Get base query parameters
+    const baseQuery = getQueryString()
+    const allParams = new URLSearchParams(baseQuery)
 
-    const query = getQueryString()
+    // Add selection parameters
+    const selectionParams = getSelectionParams()
+    selectionParams.forEach((value, key) => {
+      allParams.set(key, value)
+    })
 
-    void copyTextToClipboard(
-      // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
-      `${baseUrl}0/networks/${currentNetworkId}?${query}`,
-    ).then(() => {
+    const finalQuery = allParams.toString()
+
+    // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
+    const newUrl = `${baseUrl}0/networks/${currentNetworkId}?${finalQuery}`
+    console.log(`Copied Sharable URL: ${newUrl}`)
+    void copyTextToClipboard(newUrl).then(() => {
       // Notify user that the sharable URL has been copied to clipboard
       addMessage({
         message: 'URL for sharing this network has been copied!',
