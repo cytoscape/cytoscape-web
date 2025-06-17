@@ -31,7 +31,7 @@ export const SyncTabsAction = (): ReactElement => {
           if ((timestamp ?? Date.now()) > localTimestamp) {
             // if the network at the current url was deleted, navigate to /networks/ and reload the page
             if (!workspace.networkIds.includes(networkId)) {
-              navigate('..', { relative: 'path' })
+              // navigate('..', { relative: 'path' })
               window.location.reload()
             } else {
               window.location.reload()

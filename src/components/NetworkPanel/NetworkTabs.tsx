@@ -35,7 +35,7 @@ export const NetworkTabs = ({
     (state) => state.ui.networkViewUi.activeTabIndex,
   )
   const setSelected = useUiStateStore((state) => state.setNetworkViewTabIndex)
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
 
   const customNetworkTabName = useUiStateStore(
     (state) => state.ui.customNetworkTabName,
@@ -66,7 +66,7 @@ export const NetworkTabs = ({
     // Update URL search parameter with the selected tab ID
     const newSearchParams = new URLSearchParams(searchParams)
     newSearchParams.set(ACTIVE_NETWORK_VIEW, newValue.toString())
-    setSearchParams(newSearchParams, { replace: true })
+    // setSearchParams(newSearchParams, { replace: true })
   }
 
   // Read tab ID from URL on initial render and set it as the selected view
