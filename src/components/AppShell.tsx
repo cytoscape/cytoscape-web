@@ -411,8 +411,6 @@ const AppShell = (): ReactElement => {
 
     // Clear URL search params to remove unnecessary parameters
     setSearchParams({}, { replace: true })
-
-    console.log('---------------Finished redirecting------------------')
   }
 
   const handleImportNetworkFromSearchParam = async (): Promise<void> => {
@@ -471,48 +469,48 @@ const AppShell = (): ReactElement => {
   }, [id])
 
   // Store previous location information with ref
-  const prevLocationRef = useRef(location)
+  // const prevLocationRef = useRef(location)
 
   // Monitor location changes for debugging
-  useEffect(() => {
-    console.log('🟢 REACT ROUTER LOCATION CHANGE:', {
-      // Current values
-      current: {
-        pathname: location.pathname,
-        search: location.search,
-        hash: location.hash,
-        state: location.state,
-        key: location.key,
-      },
-      // Previous values
-      previous: {
-        pathname: prevLocationRef.current.pathname,
-        search: prevLocationRef.current.search,
-        hash: prevLocationRef.current.hash,
-        state: prevLocationRef.current.state,
-        key: prevLocationRef.current.key,
-      },
-      // Changed items only
-      changes: {
-        pathname:
-          location.pathname !== prevLocationRef.current.pathname
-            ? { from: prevLocationRef.current.pathname, to: location.pathname }
-            : 'unchanged',
-        search:
-          location.search !== prevLocationRef.current.search
-            ? { from: prevLocationRef.current.search, to: location.search }
-            : 'unchanged',
-        hash:
-          location.hash !== prevLocationRef.current.hash
-            ? { from: prevLocationRef.current.hash, to: location.hash }
-            : 'unchanged',
-      },
-      timestamp: new Date().toISOString(),
-    })
+  // useEffect(() => {
+  //   console.log('🟢 REACT ROUTER LOCATION CHANGE:', {
+  //     // Current values
+  //     current: {
+  //       pathname: location.pathname,
+  //       search: location.search,
+  //       hash: location.hash,
+  //       state: location.state,
+  //       key: location.key,
+  //     },
+  //     // Previous values
+  //     previous: {
+  //       pathname: prevLocationRef.current.pathname,
+  //       search: prevLocationRef.current.search,
+  //       hash: prevLocationRef.current.hash,
+  //       state: prevLocationRef.current.state,
+  //       key: prevLocationRef.current.key,
+  //     },
+  //     // Changed items only
+  //     changes: {
+  //       pathname:
+  //         location.pathname !== prevLocationRef.current.pathname
+  //           ? { from: prevLocationRef.current.pathname, to: location.pathname }
+  //           : 'unchanged',
+  //       search:
+  //         location.search !== prevLocationRef.current.search
+  //           ? { from: prevLocationRef.current.search, to: location.search }
+  //           : 'unchanged',
+  //       hash:
+  //         location.hash !== prevLocationRef.current.hash
+  //           ? { from: prevLocationRef.current.hash, to: location.hash }
+  //           : 'unchanged',
+  //     },
+  //     timestamp: new Date().toISOString(),
+  //   })
 
-    // Save current values as previous values
-    prevLocationRef.current = location
-  }, [location])
+  //   // Save current values as previous values
+  //   prevLocationRef.current = location
+  // }, [location])
 
   // Network ID synchronization process
   useEffect(() => {
