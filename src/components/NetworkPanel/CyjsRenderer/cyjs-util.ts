@@ -228,6 +228,14 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         },
       }
 
+      const pieHoleSizeStyleName = 'pie-hole'
+      const pieHoleSizeSelectorStr = 'pieHole'
+      const pieHoleSizeMapping = {
+        selector: `node[${pieHoleSizeSelectorStr}]`,
+        style: {
+          [pieHoleSizeStyleName]: `data(${pieHoleSizeSelectorStr})`,
+        },
+      }
 
       const pieBackGroundMappings = []
       for (let i = 1; i <= MAX_SLICES; i++) {
@@ -255,6 +263,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
 
       cyStyle.push(pieSizeMapping as CyjsDirectMapper)
       cyStyle.push(pieStartAngleMapping as CyjsDirectMapper)
+      cyStyle.push(pieHoleSizeMapping as CyjsDirectMapper)
+
 
       pieBackGroundMappings.forEach((mapping) => {
         cyStyle.push(mapping as CyjsDirectMapper)
