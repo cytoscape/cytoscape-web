@@ -1,6 +1,7 @@
 # Cytoscape Web
 
 [![DOI](https://zenodo.org/badge/538576205.svg)](https://doi.org/10.5281/zenodo.14775458)
+[![Paper](https://img.shields.io/badge/Paper-NAR%202025-blue)](https://doi.org/10.1093/nar/gkaf365)
 
 A web-based version of [Cytoscape](https://cytoscape.org/) built for modern browsers
 
