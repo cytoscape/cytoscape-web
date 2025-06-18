@@ -57,7 +57,7 @@ const addHistoryEntry = (url: string, networkId: string): void => {
   currentHistoryIndex = historyEntries.length - 1
 
   // Output debug information
-  console.log('[History Debug] Added entry:', getCurrentHistoryState())
+  console.debug('[History Debug] Added entry:', getCurrentHistoryState())
 }
 
 /**
@@ -161,15 +161,15 @@ export const navigateToNetwork = (
 
   // ====== Execute navigation ======
 
-  console.log(
-    `[URLManager:${navigationCount}] Navigating to: ${path}, replace: ${shouldReplace}, networkId: ${safeNetworkId}`,
-  )
-  console.log(
-    `[URLManager:${navigationCount}] Previous state: lastNetworkId=${lastNetworkId}, lastPath=${lastUrlPath}`,
-  )
-  console.log(
-    `[URLManager:${navigationCount}] Browser history length before navigation: ${window.history.length}`,
-  )
+  // console.log(
+  //   `[URLManager:${navigationCount}] Navigating to: ${path}, replace: ${shouldReplace}, networkId: ${safeNetworkId}`,
+  // )
+  // console.log(
+  //   `[URLManager:${navigationCount}] Previous state: lastNetworkId=${lastNetworkId}, lastPath=${lastUrlPath}`,
+  // )
+  // console.log(
+  //   `[URLManager:${navigationCount}] Browser history length before navigation: ${window.history.length}`,
+  // )
 
   // Update navigation state
   isHandlingNavigation = true
