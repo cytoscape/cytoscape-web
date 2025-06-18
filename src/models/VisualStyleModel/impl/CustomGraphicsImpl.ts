@@ -10,6 +10,7 @@ import {
   CustomGraphicsNameType,
   CustomGraphicsType,
   PieChartPropertiesType,
+  ImagePropertiesType
 } from '../VisualPropertyValue/CustomGraphicsType'
 
 export const getCustomGraphicNodeVps = (

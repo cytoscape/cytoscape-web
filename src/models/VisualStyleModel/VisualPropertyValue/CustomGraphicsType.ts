@@ -38,7 +38,8 @@ export interface CustomGraphicsType {
   properties:
     | PieChartPropertiesType
     | RingChartPropertiesType
-    | NonePropertiesType //| ImagePropertiesType
+    | ImagePropertiesType
+    | NonePropertiesType
 }
 
 export interface PieChartPropertiesType {
@@ -58,11 +59,12 @@ export interface RingChartPropertiesType {
   cy_dataColumns: AttributeName[]
 }
 
+export interface ImagePropertiesType {
+   tag: string
+   url: string
+   id: number
+ }
+
+
 export interface NonePropertiesType {}
 
-// TODO
-// export interface ImagePropertiesType {
-//   tag: string
-//   url: string
-//   id: number
-// }
