@@ -7,10 +7,12 @@ import {
   Checkbox,
   Dialog,
   FormControlLabel,
+  Link,
   MenuItem,
   Radio,
   RadioGroup,
   Select,
+  Stack,
   TextField,
   Tooltip,
   Typography,
@@ -427,27 +429,90 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
     </Box>
   )
 
-  return (
-    <Dialog
-      maxWidth="sm"
-      fullWidth
-      open={open}
-      onClose={handleClose}
-      onKeyDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
-    >
-      <Box sx={{ p: 3.5 }}>
-        <Typography variant="h5">{app.name}</Typography>
+return (
+  <Dialog
+    maxWidth="sm"
+    fullWidth
+    open={open}
+    onClose={handleClose}
+    onKeyDown={(e) => {
+      e.stopPropagation();
+    }}
+    onClick={(e) => {
+      e.stopPropagation();
+    }}
+  >
+    <Box sx={{ p: 3.5 }}>
+      <Stack spacing={1.5}>
+        <Typography variant="h5">
+          {app.name === "Networkx Network Analyzer" ? "Analyze Network" : app.name}
+        </Typography>
+
+        <Typography variant="body1">
+          {app.name === "Networkx Network Analyzer" ? (
+            <>
+              Perform network analysis using the NetworkX Analyzer (NXA) service app. Computed metrics are added as new attributes in the NETWORK, NODE and EDGE tables.{' '}
+            </>
+          ) : (
+            app.description || "No description available."
+          )}
+        </Typography>
+
         {inputDefinition}
-        {parametersSection}
-        {submitButton}
-      </Box>
-    </Dialog>
-  )
+
+        {/* ↓↓↓ MODIFIED parametersSection rendering below ↓↓↓ */}
+        {app.parameters && (
+          <Box sx={{ p: 3 }}>
+            {/* Hide header if it's Networkx Network Analyzer */}
+            {app.name !== "Networkx Network Analyzer" && (
+              <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
+            )}
+            {app.parameters.map((parameter: ServiceAppParameter) => {
+              const isSpecialCheckbox =
+                app.name === "Networkx Network Analyzer" &&
+                parameter.displayName === "Analyze as Directed Graph";
+
+              return (
+                <Box key={parameter.displayName} sx={{ mb: 2 }}>
+                  {isSpecialCheckbox ? (
+                    // ✅ Use your app’s logic but change layout
+                    <Tooltip title="If checked, the analysis will take into account edge directions. Leave unchecked to ignore directionality.">
+                    <Box sx={{ display: 'inline-flex', alignItems: 'center'}}>
+                      <Box sx={{ whiteSpace: 'nowrap' }}>
+                        {renderParameter(parameter)}
+                      </Box>
+                    </Box>
+                    </Tooltip>
+                  ) : (
+                    renderParameter(parameter)
+                  )}
+                </Box>
+              );
+            })}
+          </Box>
+        )}
+        {/* ↑↑↑ END parametersSection override ↑↑↑ */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 3 }}>
+  {app.name === "Networkx Network Analyzer" ? (
+    <Typography variant="body2">
+      <Link
+        href="https://github.com/cytoscape/web-cytoscape-manual/blob/main/docs/analyze.md"
+        target="_blank"
+        rel="noopener"
+      >
+        Learn more in the Cytoscape Web Manual.
+      </Link>
+    </Typography>
+  ) : (
+    <Box /> // empty box to maintain alignment if no link is needed
+  )}
+
+  {submitButton}
+</Box>
+    </Stack>  
+    </Box>
+  </Dialog>
+);
 }
 
 export const AppMenuItem: React.FC<{
