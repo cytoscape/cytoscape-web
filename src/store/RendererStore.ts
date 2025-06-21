@@ -24,5 +24,13 @@ export const useRendererStore = create(
         delete state.renderers[rendererId]
       })
     },
+
+    setViewport: (rendererId: string, viewport) => {
+      set((state) => {
+        if (state.renderers[rendererId]) {
+          state.renderers[rendererId].viewport = viewport
+        }
+      })
+    },
   })),
 )

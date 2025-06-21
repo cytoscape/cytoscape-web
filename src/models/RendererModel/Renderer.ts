@@ -4,6 +4,7 @@
 
 import { ReactElement } from 'react'
 import { Network } from '../NetworkModel'
+import { ViewPort } from './ViewPort'
 
 /**
  * Renderer interface to be managed by the RendererStore
@@ -26,6 +27,8 @@ export interface Renderer {
    */
   description?: string
 
+  viewport?: ViewPort
+
   /**
    * Get an actual renderer React component for the given data model
    */
@@ -44,7 +47,7 @@ export interface Renderer {
      * (Optional) Visibility of the renderer component
      */
     visible?: boolean,
-    
+
     hasTab?: boolean,
   ) => ReactElement
 }
