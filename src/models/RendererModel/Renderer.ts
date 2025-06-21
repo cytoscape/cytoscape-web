@@ -27,8 +27,6 @@ export interface Renderer {
    */
   description?: string
 
-  viewport?: ViewPort
-
   /**
    * Get an actual renderer React component for the given data model
    */

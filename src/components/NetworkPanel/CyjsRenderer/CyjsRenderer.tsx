@@ -28,6 +28,7 @@ import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
 import { addObjects } from './cyjs-factory'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
+import { useRendererStore } from '../../../store/RendererStore'
 import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
@@ -168,6 +169,9 @@ const CyjsRenderer = ({
   const setRendererFunction = useRendererFunctionStore(
     (state) => state.setFunction,
   )
+
+  const setViewport = useRendererStore((state) => state.setViewport)
+  const getViewport = useRendererStore((state) => state.getViewport)
 
   // Avoid duplicate initialization of Cyjs
   const isInitialized = useRef(false)
@@ -399,6 +403,19 @@ const CyjsRenderer = ({
       setHoveredElement(undefined)
     })
 
+    // Track viewport changes (zoom and pan) - debounced to avoid excessive calls
+    cy.on(
+      'viewport',
+      debounce((): void => {
+        const zoom = cy.zoom()
+        const pan = cy.pan()
+        setViewport('cyjs', id, {
+          zoom,
+          pan: { x: pan.x, y: pan.y },
+        })
+      }, 300),
+    )
+
     const annotations = (summary?.properties ?? []).filter(
       (p) => p.predicateString === CX_ANNOTATIONS_KEY,
     )
@@ -442,7 +459,15 @@ const CyjsRenderer = ({
     cy.style(newStyle)
 
     if (forceFit) {
-      cy.fit()
+      // Try to restore saved viewport first
+      const savedViewport = getViewport('cyjs', id)
+      if (savedViewport) {
+        cy.zoom(savedViewport.zoom)
+        cy.pan(savedViewport.pan)
+      } else {
+        // If no saved viewport, fit the network
+        cy.fit()
+      }
     }
 
     setVisualStyle(id, vs)

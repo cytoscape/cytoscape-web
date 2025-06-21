@@ -1,3 +1,4 @@
+import { IdType } from '../IdType'
 import { Renderer } from '../RendererModel'
 import { ViewPort } from '../RendererModel/ViewPort'
 
@@ -7,6 +8,9 @@ export interface RendererState {
 
   // The default renderer name
   defaultRendererName: string
+
+  // Keep track of the viewports for each network
+  viewports: Record<string, Record<IdType, ViewPort>>
 }
 
 export interface RendererAction {
@@ -14,7 +18,14 @@ export interface RendererAction {
   delete: (rendererId: string) => void
 
   // Store renderer's state such as zoom, pan, etc.
-  setViewport: (rendererId: string, viewport: ViewPort) => void
+  setViewport: (
+    rendererId: string,
+    networkId: IdType,
+    viewport: ViewPort,
+  ) => void
+
+  // Get stored viewport for a renderer and network
+  getViewport: (rendererId: string, networkId: IdType) => ViewPort | undefined
 }
 
 export type RendererStore = RendererState & RendererAction
