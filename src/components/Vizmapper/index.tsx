@@ -7,8 +7,12 @@ import {
   Divider,
   Tooltip,
   IconButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material'
 import InfoIcon from '@mui/icons-material/Info'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
   EdgeVisualPropertyName,
@@ -16,18 +20,18 @@ import VisualStyleFn, {
   VisualProperty,
   VisualPropertyValueType,
   VisualStyle,
+  VisualPropertyGroup,
 } from '../../models/VisualStyleModel'
 
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
+import { useUiStateStore } from '../../store/UiStateStore'
 
 import { MappingForm } from './Forms/MappingForm'
 import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
-import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
-import { useUiStateStore } from '../../store/UiStateStore'
+
 import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
-import { useState } from 'react'
 import {
   getCustomGraphicNodeVps,
   getFirstValidCustomGraphicVp,
@@ -65,9 +69,9 @@ function VisualPropertyView(props: {
 
   let tooltip: string | undefined
   if (widthDisabled)
-    tooltip = `Node width and height are locked. Use the \'${heightName}\' property to adjust the node size, or uncheck \“Lock node width and height\” in \'${heightName}\' to enable editing of the Width.`
+    tooltip = `Node width and height are locked. Use the '${heightName}' property to adjust the node size, or uncheck “Lock node width and height” in '${heightName}' to enable editing of the Width.`
   if (arrowColorDisabled)
-    tooltip = `Edge color to arrows is enabled. Use the \'${edgeLineColorName}\' property to adjust the arrow color, or uncheck \“Edge color to arrows\” in \'${edgeLineColorName}\' to enable editing of the arrow color.`
+    tooltip = `Edge color to arrows is enabled. Use the '${edgeLineColorName}' property to adjust the arrow color, or uncheck “Edge color to arrows” in '${edgeLineColorName}' to enable editing of the arrow color.`
 
   const hasWarning = vpName.includes('nodeImageChart')
 
@@ -75,111 +79,52 @@ function VisualPropertyView(props: {
     <Box
       sx={{
         display: 'flex',
-        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        p: 0.25,
+        p: 0.5,
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-        }}
-      >
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
         {disabled ? (
-          <EmptyVisualPropertyViewBox
-            sx={{ ml: 0.5, mr: 2.1, cursor: 'not-allowed' }}
-          />
+          <EmptyVisualPropertyViewBox sx={{ ml: 0.5, mr: 1.5, cursor: 'not-allowed' }} />
         ) : (
           <DefaultValueForm
-            sx={{ ml: 0.5, mr: 2.1 }}
+            sx={{ ml: 0.5, mr: 1.5 }}
             visualProperty={visualProperty}
             currentNetworkId={currentNetworkId}
           />
         )}
         {visualProperty.group === VisualPropertyGroup.Network || disabled ? (
           <>
-            <Tooltip
-              placement="top"
-              arrow={true}
-              title={
-                disabled ? '' : 'Mapping not available for network properties'
-              }
-            >
-              <EmptyVisualPropertyViewBox
-                sx={{ mr: 2.1, cursor: 'not-allowed' }}
-              />
-            </Tooltip>
-            <Tooltip
-              placement="top"
-              arrow={true}
-              title={
-                disabled ? '' : 'Bypasses not available for network properties'
-              }
-            >
-              <EmptyVisualPropertyViewBox
-                sx={{ mr: 2.1, cursor: 'not-allowed' }}
-              />
-            </Tooltip>
+            <EmptyVisualPropertyViewBox sx={{ mr: 1.5, cursor: 'not-allowed' }} />
+            <EmptyVisualPropertyViewBox sx={{ mr: 1.5, cursor: 'not-allowed' }} />
           </>
         ) : (
           <>
-            <MappingForm
-              sx={{ mr: 2.1 }}
-              currentNetworkId={currentNetworkId}
-              visualProperty={visualProperty}
-            />
-            <BypassForm
-              sx={{ mr: 2.1 }}
-              currentNetworkId={currentNetworkId}
-              visualProperty={visualProperty}
-            />
+            <MappingForm sx={{ mr: 1.5 }} currentNetworkId={currentNetworkId} visualProperty={visualProperty} />
+            <BypassForm sx={{ mr: 1.5 }} currentNetworkId={currentNetworkId} visualProperty={visualProperty} />
           </>
         )}
-        <Tooltip
-          placement="top"
-          arrow={true}
-          title={tooltip ?? visualProperty.tooltip}
-        >
-          <Typography
-            variant="body2"
-            sx={{ color: disabled ? 'gray' : 'black' }}
-          >
+        <Tooltip placement="top" arrow title={tooltip ?? visualProperty.tooltip}>
+          <Typography variant="body2" sx={{ color: disabled ? 'gray' : 'black' }}>
             {visualProperty.displayName}
           </Typography>
         </Tooltip>
       </Box>
 
-      {disabled && (
+      {(disabled || hasWarning) && (
         <Tooltip
           placement="top"
-          title={tooltip ?? visualProperty.tooltip}
-          arrow={true}
-          sx={{
-            mr: 1,
-          }}
-        >
-          <IconButton sx={{ padding: 0.5 }}>
-            <InfoIcon sx={{ color: 'rgb(0,0,0,0.4)' }} />
-          </IconButton>
-        </Tooltip>
-      )}
-
-      {hasWarning && (
-        <Tooltip
-          placement="top"
+          arrow
           title={
-            'Due to rendering limitations, custom graphics size cannot be edited and will scale to the size of nodes by default.  Original size values are preserved.'
+            disabled
+              ? tooltip!
+              : 'Custom graphics size cannot be edited; it will scale automatically.'
           }
-          arrow={true}
-          sx={{
-            mr: 1,
-          }}
+          sx={{ ml: 1 }}
         >
-          <IconButton sx={{ padding: 0.5 }}>
-            <InfoIcon sx={{ color: 'rgb(0,0,0,0.4)' }} />
+          <IconButton sx={{ p: 0.5 }}>
+            <InfoIcon sx={{ color: 'rgba(0,0,0,0.4)' }} />
           </IconButton>
         </Tooltip>
       )}
@@ -194,125 +139,117 @@ export default function VizmapperView(props: {
   const TAB_ROTATE_DEGREE = 330
   const TAB_TEXT_WIDTH = 34
   const FONT_SIZE = 10
+
+  const { networkId, height } = props
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
-  const visualStyles: Record<IdType, VisualStyle> = useVisualStyleStore(
-    (state) => state.visualStyles,
+  const visualStyles = useVisualStyleStore((s) => s.visualStyles)
+  const visualStyle = visualStyles[networkId]
+  if (!visualStyle) return <div />
+
+  // --- Node props grouping (unchanged) ---
+  const allNodeVps = VisualStyleFn.nodeVisualProperties(visualStyle)
+  const customGraphicVps = getCustomGraphicNodeVps(allNodeVps)
+  const nonCustomGraphicVps = getNonCustomGraphicVps(allNodeVps)
+  const firstCustom = getFirstValidCustomGraphicVp(customGraphicVps)
+  const customSize = firstCustom
+    ? getSizePropertyForCustomGraphic(firstCustom, customGraphicVps)
+    : undefined
+  const fallbackImgs = (() => {
+    if (firstCustom) return []
+    const img1 = customGraphicVps.find((vp) => vp.name === 'nodeImageChart1')
+    const img1Size = customGraphicVps.find((vp) => vp.name === 'nodeImageChartSize1')
+    return [img1, img1Size].filter(Boolean) as VisualProperty<any>[]
+  })()
+  const borderProps = nonCustomGraphicVps.filter((vp) =>
+    vp.name.toLowerCase().includes('border') ||
+    vp.displayName.toLowerCase().includes('border'),
   )
-
-  const visualStyle = visualStyles[props.networkId]
-
-  if (visualStyle == null) {
-    return <div></div>
-  }
-
-  const customGraphicVps = getCustomGraphicNodeVps(
-    VisualStyleFn.nodeVisualProperties(visualStyle),
+  const fillNames = new Set(['fill color', 'opacity'])
+  const fillProps = nonCustomGraphicVps.filter((vp) =>
+    fillNames.has(vp.displayName.toLowerCase()),
   )
-
-  const nonCustomGraphicVps = getNonCustomGraphicVps(
-    VisualStyleFn.nodeVisualProperties(visualStyle),
+  const labelProps = nonCustomGraphicVps.filter((vp) =>
+    vp.name.toLowerCase().startsWith('label') ||
+    vp.displayName.toLowerCase().startsWith('label'),
   )
+  const generalProps = nonCustomGraphicVps.filter(
+    (vp) =>
+      !borderProps.includes(vp) &&
+      !fillProps.includes(vp) &&
+      !labelProps.includes(vp),
+  )
+  const customProps = [
+    ...(firstCustom ? [firstCustom] : []),
+    ...(customSize ? [customSize] : []),
+    ...fallbackImgs,
+  ]
 
-  const nodeVps = nonCustomGraphicVps.map((vp) => {
-    return (
-      <VisualPropertyView
-        key={vp.name}
-        currentNetworkId={props.networkId}
-        visualProperty={vp}
-      />
-    )
+  // --- Edge props grouping as requested ---
+  const edgeVps = VisualStyleFn.edgeVisualProperties(visualStyle)
+  const edgeLabelProps = edgeVps.filter((vp) =>
+    vp.name.toLowerCase().startsWith('label') ||
+    vp.displayName.toLowerCase().startsWith('label'),
+  )
+  const edgeFillNames = new Set(['opacity', 'stroke color'])
+  const edgeFillProps = edgeVps.filter((vp) =>
+    edgeFillNames.has(vp.displayName.toLowerCase()),
+  )
+  const edgeSourceTargetProps = edgeVps.filter((vp) => {
+    const nm = vp.name.toLowerCase()
+    const dn = vp.displayName.toLowerCase()
+    return nm.startsWith('source') || nm.startsWith('target') ||
+           dn.startsWith('source') || dn.startsWith('target')
   })
+  const edgeGeneralProps = edgeVps.filter(
+    (vp) =>
+      !edgeLabelProps.includes(vp) &&
+      !edgeFillProps.includes(vp) &&
+      !edgeSourceTargetProps.includes(vp),
+  )
 
-  // Only render the first valid custom graphic visual property and its associated size property
-  const firstValidCustomGraphicVP =
-    getFirstValidCustomGraphicVp(customGraphicVps)
+  // --- Network props (unchanged) ---
+  const networkVps = VisualStyleFn.networkVisualProperties(visualStyle)
 
-  if (firstValidCustomGraphicVP !== undefined) {
-    // const customGraphicsSizeVP = getSizePropertyForCustomGraphic(
-    //   firstValidCustomGraphicVP,
-    //   customGraphicVps,
-    // )
-
-    // nodeVps.push(
-    //   <VisualPropertyView
-    //     key={firstValidCustomGraphicVP.name}
-    //     currentNetworkId={props.networkId}
-    //     visualProperty={firstValidCustomGraphicVP}
-    //   />,
-    // )
-
-    // Dont expose custom graphics size properties for now
-    // there are rendering limitations in cy.js
-    // if (customGraphicsSizeVP) {
-    //   nodeVps.push(
-    //     <VisualPropertyView
-    //       key={customGraphicsSizeVP.name}
-    //       currentNetworkId={props.networkId}
-    //       visualProperty={customGraphicsSizeVP}
-    //     />,
-    //   )
-    // }
-  } else {
-    // There are no existing custom graphics vps set, so let the user
-    // edit the first image chart property
-    // const imageChart1Vp = customGraphicVps.find(
-    //   (vp) => vp.name === 'nodeImageChart1',
-    // )
-    // const imageChartSize1Vp = customGraphicVps.find(
-    //   (vp) => vp.name === 'nodeImageChartSize1',
-    // )
-
-    // if (imageChart1Vp) {
-    //   nodeVps.push(
-    //     <VisualPropertyView
-    //       key={imageChart1Vp.name}
-    //       currentNetworkId={props.networkId}
-    //       visualProperty={imageChart1Vp}
-    //     />,
-    //   )
-    // }
-    // if (imageChartSize1Vp) {
-    //   nodeVps.push(
-    //     <VisualPropertyView
-    //       key={imageChartSize1Vp.name}
-    //       currentNetworkId={props.networkId}
-    //       visualProperty={imageChartSize1Vp}
-    //     />,
-    //   )
-    // }
-  }
-
-  const edgeVps = VisualStyleFn.edgeVisualProperties(visualStyle).map((vp) => {
-    return (
-      <VisualPropertyView
-        key={vp.name}
-        currentNetworkId={props.networkId}
-        visualProperty={vp}
-      />
-    )
-  })
-
-  const networkVps = VisualStyleFn.networkVisualProperties(visualStyle).map(
-    (vp) => {
-      return (
-        <VisualPropertyView
-          key={vp.name}
-          currentNetworkId={props.networkId}
-          visualProperty={vp}
-        />
-      )
-    },
+  // Styled Accordion wrapper
+  const StyledAccordion = (p: React.PropsWithChildren<{ label: string }>) => (
+    <Accordion
+      defaultExpanded
+      disableGutters
+      elevation={0}
+      square
+      sx={{
+        backgroundColor: 'transparent',
+        '&:before': { display: 'none' },
+        mb: 1,
+      }}
+    >
+      <AccordionSummary
+        expandIcon={<ExpandMoreIcon />}
+        sx={{
+          pl: 0,
+          minHeight: 32,
+          '& .MuiAccordionSummary-content': { margin: 0 },
+        }}
+      >
+        <Typography variant="subtitle2">{p.label}</Typography>
+      </AccordionSummary>
+      <AccordionDetails
+        sx={{
+          p: 0,
+          '& > *:not(:last-child)': { mb: 1 },
+        }}
+      >
+        {p.children}
+      </AccordionDetails>
+    </Accordion>
   )
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        height: '100%',
-      }}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', height }}>
+      {/* Tabs */}
       <Tabs
         value={currentTabIndex}
+        onChange={(_, i) => setCurrentTabIndex(i)}
         TabIndicatorProps={{ sx: { backgroundColor: 'white' } }}
         sx={{
           display: 'flex',
@@ -321,99 +258,114 @@ export default function VizmapperView(props: {
           pb: 0.5,
           backgroundColor: '#2F80ED',
           '& button.Mui-selected': { color: 'white' },
-          '& button': {
-            minHeight: 34,
-            height: 34,
-            width: 30,
-          },
-          height: 34,
-          minHeight: 34,
+          '& button': { minHeight: 34, height: 34, width: 30 },
         }}
-        onChange={(e, nextTab) => setCurrentTabIndex(nextTab)}
       >
         <Tab label={<Typography variant="caption">Nodes</Typography>} />
         <Tab label={<Typography variant="caption">Edges</Typography>} />
         <Tab label={<Typography variant="caption">Network</Typography>} />
       </Tabs>
-      <Box sx={{ display: 'flex', p: 1.5, ml: 0.5, minHeight: '40px' }}>
-        <Box
-          sx={{
-            width: TAB_TEXT_WIDTH,
-            textAlign: 'center',
-            mr: 1.5,
-            fontSize: FONT_SIZE,
-            transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
-          }}
-        >
-          Default
-        </Box>
-        <Box
-          sx={{
-            width: TAB_TEXT_WIDTH,
-            textAlign: 'center',
-            mr: 1.5,
-            fontSize: FONT_SIZE,
-            transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
-          }}
-        >
-          Mapping
-        </Box>
-        <Box
-          sx={{
-            width: TAB_TEXT_WIDTH,
-            textAlign: 'center',
-            fontSize: FONT_SIZE,
-            transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
-          }}
-        >
-          Bypass
-        </Box>
+
+      {/* Secondary labels */}
+      <Box sx={{ display: 'flex', p: 1, ml: 0.5, minHeight: 40 }}>
+        {['Default', 'Mapping', 'Bypass'].map((label, idx) => (
+          <Box
+            key={idx}
+            sx={{
+              width: TAB_TEXT_WIDTH,
+              textAlign: 'center',
+              mr: idx < 2 ? 1.5 : 0,
+              fontSize: FONT_SIZE,
+              transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
+            }}
+          >
+            {label}
+          </Box>
+        ))}
       </Box>
+
       <Divider />
-      <div hidden={currentTabIndex !== 0}>
+
+      {/* Scrollable content */}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: 'auto',
+          px: 1,
+          pt: 1,
+          pb: '100px',
+          boxSizing: 'border-box',
+        }}
+      >
         {currentTabIndex === 0 && (
-          <Box
-            sx={{
-              ml: 1,
-              pt: 1,
-              overflow: 'scroll',
-              height: props.height - 162, // we want to only scroll the vp list instead of the whole allotment
-              // height has to be computed based on allotment size to allow overflow scroll
-              // height is passed as a prop but this could be pulled from a uiState store instead in the future
-            }}
-          >
-            {nodeVps}
-          </Box>
+          <>
+            <StyledAccordion label="Border">
+              {borderProps.map(vp => (
+                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
+              ))}
+            </StyledAccordion>
+            <StyledAccordion label="Fill">
+              {fillProps.map(vp => (
+                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
+              ))}
+            </StyledAccordion>
+            <StyledAccordion label="Label">
+              {labelProps.map(vp => (
+                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
+              ))}
+            </StyledAccordion>
+            <StyledAccordion label="General">
+              {generalProps.map(vp => (
+                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
+              ))}
+            </StyledAccordion>
+            {customProps.length > 0 && (
+              <StyledAccordion label="Custom Graphics">
+                {customProps.map(vp => (
+                  <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
+                ))}
+              </StyledAccordion>
+            )}
+          </>
         )}
-      </div>
-      <div hidden={currentTabIndex !== 1}>
+
         {currentTabIndex === 1 && (
-          <Box
-            sx={{
-              ml: 1,
-              pt: 1,
-              overflow: 'scroll',
-              height: props.height - 162,
-            }}
-          >
-            {edgeVps}
-          </Box>
+          <>
+            <StyledAccordion label="Label">
+              {edgeLabelProps.map(vp => (
+                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
+              ))}
+            </StyledAccordion>
+            <StyledAccordion label="Fill">
+              {edgeFillProps.map(vp => (
+                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
+              ))}
+            </StyledAccordion>
+            <StyledAccordion label="Source and Target">
+              {edgeSourceTargetProps.map(vp => (
+                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
+              ))}
+            </StyledAccordion>
+            <StyledAccordion label="General">
+              {edgeGeneralProps.map(vp => (
+                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
+              ))}
+            </StyledAccordion>
+          </>
         )}
-      </div>
-      <div hidden={currentTabIndex !== 2}>
+
         {currentTabIndex === 2 && (
-          <Box
-            sx={{
-              ml: 1,
-              pt: 1,
-              overflow: 'scroll',
-              height: props.height - 162,
-            }}
-          >
-            {networkVps}
+          <Box>
+            {networkVps.map(vp => (
+              <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
+            ))}
           </Box>
         )}
-      </div>
+      </Box>
+
+      <Box sx={{ flex: '0 0 auto', borderTop: '1px solid #ddd', p: 1 }}>
+        {/* Add extra space here to avoid overlapping with Layout tools UI*/}
+      </Box>
     </Box>
   )
 }
