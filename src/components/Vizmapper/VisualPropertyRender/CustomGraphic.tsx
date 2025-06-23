@@ -118,7 +118,11 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
               style={{ width: 32, height: 32, border: 0, padding: 0 }}
             />
 
-            <IconButton size="small" onClick={() => removeRow(i)}>
+            <IconButton
+              size="small"
+              onClick={() => removeRow(i)}
+              disabled={cy_dataColumns.length <= 1}
+            >
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
@@ -323,9 +327,10 @@ export function CustomGraphicPicker(props: {
 export function CustomGraphicRender(props: {
   value: CustomGraphicsType
 }): React.ReactElement {
-  const json = JSON.stringify(props.value.properties, null, 2)
   return (
     <Box sx={{ p: 1, fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+      <Typography variant="body2">
+      </Typography>
     </Box>
   )
 }
