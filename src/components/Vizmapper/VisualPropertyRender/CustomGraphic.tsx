@@ -17,13 +17,14 @@ import {
 import PieChartIcon from '@mui/icons-material/PieChart'
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
 import DeleteIcon from '@mui/icons-material/Delete'
+import AddIcon from '@mui/icons-material/Add'
 import { CustomGraphicsType } from '../../../models/VisualStyleModel'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 import { IdType } from '../../../models/IdType'
 import { useTableStore } from '../../../store/TableStore'
 import { Column } from '../../../models'
 
-/** The shape of chart‐specific properties */
+/** The shape of chart-specific properties */
 export interface ChartProperties {
   cy_colorScheme: string
   cy_colors: string[]
@@ -86,6 +87,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
       <Typography variant="subtitle2">Node Attributes &amp; Colors</Typography>
+
       {cy_dataColumns.map((col, i) => {
         // for this row, allow either its current value or any column not used elsewhere
         const options = availableColumns.filter(
@@ -129,17 +131,22 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
         )
       })}
 
-      <Button
-        onClick={addRow}
-        disabled={nextDefaultCol === ''} // no unused columns left
-      >
-        + Add Node Attribute
-      </Button>
+      {/* Centered, labeled “add” button */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+        <Button
+          startIcon={<AddIcon />}
+          size="small"
+          onClick={addRow}
+          disabled={nextDefaultCol === ''}
+        >
+          Add Node Attribute
+        </Button>
+      </Box>
     </Box>
   )
 }
 
-/** Props for the two‐step dialog */
+/** Props for the two-step dialog */
 interface CustomGraphicDialogProps {
   open: boolean
   initialValue: CustomGraphicsType | null
@@ -323,7 +330,7 @@ export function CustomGraphicPicker(props: {
   )
 }
 
-/** Read‐only render of chart properties */
+/** Read-only render of chart properties */
 export function CustomGraphicRender(props: {
   value: CustomGraphicsType
 }): React.ReactElement {
