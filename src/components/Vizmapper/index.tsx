@@ -154,12 +154,15 @@ export default function VizmapperView(props: {
   const customSize = firstCustom
     ? getSizePropertyForCustomGraphic(firstCustom, customGraphicVps)
     : undefined
-  const fallbackImgs = (() => {
-    if (firstCustom) return []
-    const img1 = customGraphicVps.find((vp) => vp.name === 'nodeImageChart1')
-    const img1Size = customGraphicVps.find((vp) => vp.name === 'nodeImageChartSize1')
-    return [img1, img1Size].filter(Boolean) as VisualProperty<any>[]
-  })()
+    const fallbackImgs = (() => {
+    
+      const result: VisualProperty<any>[] = []
+      for (let i = 1; i <= 9; i++) {
+        const img = customGraphicVps.find(vp => vp.name === `nodeImageChart${i}`)
+        if (img) result.push(img)
+      }
+      return result
+    })()
   const borderProps = nonCustomGraphicVps.filter((vp) =>
     vp.name.toLowerCase().includes('border') ||
     vp.displayName.toLowerCase().includes('border'),
@@ -179,8 +182,6 @@ export default function VizmapperView(props: {
       !labelProps.includes(vp),
   )
   const customProps = [
-    ...(firstCustom ? [firstCustom] : []),
-    ...(customSize ? [customSize] : []),
     ...fallbackImgs,
   ]
 
