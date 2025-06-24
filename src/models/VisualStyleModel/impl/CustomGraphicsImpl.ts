@@ -10,6 +10,7 @@ import {
   CustomGraphicsNameType,
   CustomGraphicsType,
   PieChartPropertiesType,
+  RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
 
 export const getCustomGraphicNodeVps = (
@@ -78,6 +79,8 @@ export const getSizePropertyForCustomGraphic = (
 const sizeValueToCyjsPixelValue = (value: number) => `${value}px`
 
 const angleValueToCyjsPixelValue = (value: number) => `${((90 - value) % 360 + 360) % 360}deg`
+
+const holeSizeValueToCyjsPixelValue = (value: number) => `${value * 100}%`
 
 const computeCustomGraphicSizeProperties = (
   id: IdType,
@@ -163,17 +166,56 @@ export const computePieChartProperties = (
 
 export const computeRingChartProperties = (
   id: IdType,
+
   value: CustomGraphicsType,
   row: Record<AttributeName, ValueType>,
-  customGraphicsSizeVp: VisualProperty<VisualPropertyValueType>,
+  widthVp: VisualProperty<VisualPropertyValueType>,
+  heightVp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
 ) => {
-  const size = computeCustomGraphicSizeProperties(
-    id,
-    customGraphicsSizeVp,
-    mappers,
-    row,
-  )
+  const piePairsToAdd: [string, VisualPropertyValueType][] = []
+  const pieValues = value.properties as RingChartPropertiesType
+  const totalValue = pieValues.cy_dataColumns.reduce((acc, attribute) => {
+    const attributeValue = row[attribute] as number
+    const value = attributeValue ?? 0
+    return acc + value
+  }, 0)
+
+  const width = computeCustomGraphicSizeProperties(id, widthVp, mappers, row)
+
+  const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
+  const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
+  const size = Math.min(width, height) - padding
+
+  const angle = pieValues.cy_startAngle ?? 0;
+
+  const holeSize = pieValues.cy_holeSize ?? 0.4;
+  
+  piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
+
+  piePairsToAdd.push(['pieStartAngle', angleValueToCyjsPixelValue(angle)])
+
+  piePairsToAdd.push(['pieHole', holeSizeValueToCyjsPixelValue(holeSize)])
+
+
+  const colorsReversed  = pieValues.cy_colors.slice().reverse();
+  const columnsReversed = pieValues.cy_dataColumns.slice().reverse();
+  
+  colorsReversed.forEach((color, index) => {
+    const attribute = columnsReversed[index];
+    const attributeValue = row[attribute];
+    const value = (attributeValue ?? 0) as number;
+    const percentage = Math.min(Math.max(0, value / totalValue), 1);
+    const percentageToString = `${percentage * 100}%`;
+  
+    const bgColorSelectorStr      = `pie${index + 1}BackgroundColor`;
+    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`;
+  
+    piePairsToAdd.push([bgColorSelectorStr, color]);
+    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString]);
+  });
+
+  return piePairsToAdd
 }
 
 export const computeImageProperties = (
@@ -203,14 +245,7 @@ export const computeCustomGraphicsProperties = (
   if (value.name === CustomGraphicsNameType.PieChart) {
     return computePieChartProperties(id, value, row, widthVp, heightVp, mappers)
   } else if (value.name === CustomGraphicsNameType.RingChart) {
-    //TODO implement ring chart properties
-    // return computeRingChartProperties(
-    //   id,
-    //   value,
-    //   row,
-    //   customGraphicsSizeVp,
-    //   mappers,
-    // )
+    return computeRingChartProperties(id, value, row, widthVp, heightVp, mappers)
   } else if (value.name === CustomGraphicsNameType.Image) {
     //TODO implement image properties
     // return computeImageProperties(id, value, row, customGraphicsSizeVp, mappers)
