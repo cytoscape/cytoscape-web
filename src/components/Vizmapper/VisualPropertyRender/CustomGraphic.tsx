@@ -85,28 +85,19 @@ const PALETTES: Record<string, string[]> = {
     '#80b1d3', '#fdb462', '#b3de69', '#fccde5',
     '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f',
   ],
-  // Add more custom arrays if desired...
 }
 
-/** Helper: pick `count` colors evenly from `base`. 
- * If count <= base.length: evenly spaced indices.
- * If count > base.length: cycle through.
- */
+/** Helper: pick `count` colors evenly from `base`. */
 function pickEvenly(base: string[], count: number): string[] {
-  if (!base.length || count <= 0) {
-    return []
-  }
+  if (!base.length || count <= 0) return []
   const n = base.length
-  if (count === 1) {
-    return [base[Math.floor((n - 1) / 2)]]
-  }
+  if (count === 1) return [base[Math.floor((n - 1) / 2)]]
   if (count <= n) {
     return Array.from({ length: count }, (_, i) => {
       const idx = Math.round(i * (n - 1) / (count - 1))
       return base[idx]
     })
   }
-  // more segments than colors: cycle
   return Array.from({ length: count }, (_, i) => base[i % n])
 }
 
@@ -120,17 +111,24 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
 
   const tables = useTableStore((s) => s.tables)
   const nodeTable = tables[currentNetworkId]?.nodeTable
-  const availableColumns: string[] = nodeTable
-    ? nodeTable.columns.map((col: Column) => col.name)
-    : []
+
+  // only keep numeric columns
+  const availableColumns: string[] = React.useMemo(() => {
+    if (!nodeTable || !nodeTable.rows) return []
+    return nodeTable.columns
+      .filter((col: Column) =>
+        Array.from(nodeTable.rows.values()).every(row => typeof row[col.name] === 'number')
+      )
+      .map(col => col.name)
+  }, [nodeTable])
+
+  // first unused numeric column or empty
+  const nextDefaultCol = React.useMemo(() => {
+    return availableColumns.find(c => !cy_dataColumns.includes(c)) || ''
+  }, [availableColumns, cy_dataColumns])
 
   const update = (patch: Partial<ChartProperties>) =>
     onChange({ ...properties, ...patch })
-
-  // first unused column or empty
-  const nextDefaultCol = React.useMemo(() => {
-    return availableColumns.find((c) => !cy_dataColumns.includes(c)) || ''
-  }, [availableColumns, cy_dataColumns])
 
   const addRow = () =>
     update({
