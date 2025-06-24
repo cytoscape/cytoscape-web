@@ -262,26 +262,6 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     }
 
     const addCyjsRingProperties = () => {
-      const MAX_SLICES = 16 // we need to allocate all 16 slices, because the number of slices depends on bypasses and default values
-      // e.g. a bypass can be a pie chart with 16 slices, and the default value can be a pie chart with 8 slices
-      const pieSizeStyleName = 'pie-size' // cyjsname
-      const pieSizeSelectorStr = 'pieSize' // key in the view model.  Avoid '-' in the key name.
-      const pieSizeMapping = {
-        selector: `node[${pieSizeSelectorStr}]`,
-        style: {
-          [pieSizeStyleName]: `data(${pieSizeSelectorStr})`,
-        },
-      }
-
-      const pieStartAngleStyleName = 'pie-start-angle'
-      const pieStartAngleSelectorStr = 'pieStartAngle'
-      const pieStartAngleMapping = {
-        selector: `node[${pieStartAngleSelectorStr}]`,
-        style: {
-          [pieStartAngleStyleName]: `data(${pieStartAngleSelectorStr})`,
-        },
-      }
-
       const pieHoleSizeStyleName = 'pie-hole'
       const pieHoleSizeSelectorStr = 'pieHole'
       const pieHoleSizeMapping = {
@@ -290,39 +270,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           [pieHoleSizeStyleName]: `data(${pieHoleSizeSelectorStr})`,
         },
       }
-
-      const pieBackGroundMappings = []
-      for (let i = 1; i <= MAX_SLICES; i++) {
-        const bgColorStyleName = `pie-${i}-background-color` // cyjsname
-        const bgColorSelectorStr = `pie${i}BackgroundColor` // key in the view model.  Avoid '-' in the key name.
-        const pieBackgroundColorMapping = {
-          selector: `node[${bgColorSelectorStr}]`,
-          style: {
-            [bgColorStyleName]: `data(${bgColorSelectorStr})`,
-          },
-        }
-
-        const pieSliceSizeStyleName = `pie-${i}-background-size` // cyjsname
-        const pieSliceSizeSelectorStr = `pie${i}BackgroundSize` // key in the view model.  Avoid '-' in the key name.
-        const pieSliceSizeMapping = {
-          selector: `node[${pieSliceSizeSelectorStr}]`,
-          style: {
-            [pieSliceSizeStyleName]: `data(${pieSliceSizeSelectorStr})`,
-          },
-        }
-
-        pieBackGroundMappings.push(pieBackgroundColorMapping)
-        pieBackGroundMappings.push(pieSliceSizeMapping)
-      }
-
-      cyStyle.push(pieSizeMapping as CyjsDirectMapper)
-      cyStyle.push(pieStartAngleMapping as CyjsDirectMapper)
       cyStyle.push(pieHoleSizeMapping as CyjsDirectMapper)
-
-
-      pieBackGroundMappings.forEach((mapping) => {
-        cyStyle.push(mapping as CyjsDirectMapper)
-      })
     }
 
     const addCyjsImageProperties = () => {}
