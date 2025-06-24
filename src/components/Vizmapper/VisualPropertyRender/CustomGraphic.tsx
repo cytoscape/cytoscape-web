@@ -13,22 +13,26 @@ import {
   MenuItem,
   IconButton,
   SelectChangeEvent,
+  TextField,
+  Slider,
 } from '@mui/material'
 import PieChartIcon from '@mui/icons-material/PieChart'
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-import { CustomGraphicsType } from '../../../models/VisualStyleModel'
-import { DEFAULT_CUSTOM_GRAPHICS } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 import { IdType } from '../../../models/IdType'
 import { useTableStore } from '../../../store/TableStore'
 import { Column } from '../../../models'
+import { CustomGraphicsType } from '../../../models/VisualStyleModel'
+import { DEFAULT_CUSTOM_GRAPHICS } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 
 /** The shape of chart-specific properties */
 export interface ChartProperties {
   cy_colorScheme: string
   cy_colors: string[]
   cy_dataColumns: string[]
+  cy_startAngle: number         // start angle in degrees 0–360
+  cy_holeSize?: number          // for ring charts, 0–1
 }
 
 /** Props for the editable chart form */
@@ -36,17 +40,16 @@ interface ChartGraphicFormProps {
   properties: ChartProperties
   onChange: (newProps: ChartProperties) => void
   currentNetworkId: IdType
+  kind: 'PieChart' | 'RingChart'
 }
 
-/** Each row binds one column name to one color,
- *  and we never allow the same column twice
- */
 const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
   properties,
   onChange,
   currentNetworkId,
+  kind,
 }) => {
-  const { cy_colors, cy_dataColumns } = properties
+  const { cy_colors, cy_dataColumns, cy_startAngle, cy_holeSize } = properties
 
   const tables = useTableStore((s) => s.tables)
   const nodeTable = tables[currentNetworkId]?.nodeTable
@@ -89,7 +92,6 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       <Typography variant="subtitle2">Node Attributes &amp; Colors</Typography>
 
       {cy_dataColumns.map((col, i) => {
-        // for this row, allow either its current value or any column not used elsewhere
         const options = availableColumns.filter(
           (c) => c === col || !cy_dataColumns.includes(c)
         )
@@ -131,6 +133,72 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
         )
       })}
 
+      {/* Start Angle slider/input */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}>
+        <Typography variant="subtitle2">Start Angle (degrees)</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Slider
+            value={cy_startAngle}
+            min={0}
+            max={360}
+            step={1}
+            valueLabelDisplay="auto"
+            onChange={(_, newValue) => {
+              const vNum = Array.isArray(newValue) ? newValue[0] : newValue
+              update({ cy_startAngle: vNum })
+            }}
+            sx={{ flex: 1 }}
+          />
+          <TextField
+            type="number"
+            value={cy_startAngle}
+            onChange={(e) => {
+              let v = parseInt(e.target.value, 10)
+              if (isNaN(v)) v = 0
+              v = Math.max(0, Math.min(360, v))
+              update({ cy_startAngle: v })
+            }}
+            inputProps={{ min: 0, max: 360 }}
+            size="small"
+            sx={{ width: 80 }}
+          />
+        </Box>
+      </Box>
+
+      {/* Hole Size for RingChart only */}
+      {kind === 'RingChart' && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}>
+          <Typography variant="subtitle2">Hole Size (0–1)</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Slider
+              value={cy_holeSize ?? 0.4}
+              min={0}
+              max={1}
+              step={0.05}
+              valueLabelDisplay="auto"
+              onChange={(_, newValue) => {
+                const vNum = Array.isArray(newValue) ? newValue[0] : newValue
+                update({ cy_holeSize: vNum })
+              }}
+              sx={{ flex: 1 }}
+            />
+            <TextField
+              type="number"
+              value={cy_holeSize ?? 0.4}
+              onChange={(e) => {
+                let v = parseFloat(e.target.value)
+                if (isNaN(v)) v = 0.4
+                v = Math.max(0, Math.min(1, v))
+                update({ cy_holeSize: v })
+              }}
+              inputProps={{ min: 0, max: 1, step: 0.05 }}
+              size="small"
+              sx={{ width: 80 }}
+            />
+          </Box>
+        </Box>
+      )}
+
       {/* Centered, labeled “add” button */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
         <Button
@@ -167,36 +235,56 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   onCancel,
   onConfirm,
 }) => {
-  const defaults = React.useMemo<ChartProperties>(
-    () => ({ cy_colorScheme: '', cy_colors: [], cy_dataColumns: [] }),
-    []
-  )
-
-  const initPie =
-    initialValue?.name === 'org.cytoscape.PieChart'
-      ? (initialValue.properties as ChartProperties)
-      : defaults
-
-  const initRing =
-    initialValue?.name === 'org.cytoscape.RingChart'
-      ? (initialValue.properties as ChartProperties)
-      : defaults
-
-  const initKind =
-    initialValue?.name === 'org.cytoscape.RingChart' ? 'RingChart' : 'PieChart'
-
-  const [kind, setKind] = React.useState<'PieChart' | 'RingChart'>(initKind)
-  const [pieProps, setPieProps] = React.useState<ChartProperties>(initPie)
-  const [ringProps, setRingProps] = React.useState<ChartProperties>(initRing)
+  const defaults: ChartProperties = {
+    cy_colorScheme: '',
+    cy_colors: [],
+    cy_dataColumns: [],
+    cy_startAngle: 0,
+    cy_holeSize: 0.4,
+  }
+  const [kind, setKind] = React.useState<'PieChart' | 'RingChart'>('PieChart')
+  const [pieProps, setPieProps] = React.useState<ChartProperties>(defaults)
+  const [ringProps, setRingProps] = React.useState<ChartProperties>(defaults)
   const [step, setStep] = React.useState<0 | 1>(0)
 
   React.useEffect(() => {
-    if (!open) return
-    setKind(initKind)
-    setPieProps(initPie)
-    setRingProps(initRing)
-    setStep(0)
-  }, [open, initKind, initPie, initRing])
+    if (open) {
+      // Compute initial kind
+      const initialKind =
+        initialValue?.name === 'org.cytoscape.RingChart' ? 'RingChart' : 'PieChart'
+      setKind(initialKind)
+
+      // Initialize pieProps
+      if (initialValue?.name === 'org.cytoscape.PieChart') {
+        const props = initialValue.properties as ChartProperties
+        setPieProps({
+          cy_colorScheme: props.cy_colorScheme ?? '',
+          cy_colors: props.cy_colors ?? [],
+          cy_dataColumns: props.cy_dataColumns ?? [],
+          cy_startAngle: props.cy_startAngle ?? 0,
+          cy_holeSize: props.cy_holeSize ?? 0.4,
+        })
+      } else {
+        setPieProps(defaults)
+      }
+
+      // Initialize ringProps
+      if (initialValue?.name === 'org.cytoscape.RingChart') {
+        const props = initialValue.properties as ChartProperties
+        setRingProps({
+          cy_colorScheme: props.cy_colorScheme ?? '',
+          cy_colors: props.cy_colors ?? [],
+          cy_dataColumns: props.cy_dataColumns ?? [],
+          cy_startAngle: props.cy_startAngle ?? 0,
+          cy_holeSize: props.cy_holeSize ?? 0.4,
+        })
+      } else {
+        setRingProps(defaults)
+      }
+
+      setStep(0)
+    }
+  }, [open]) // only run when open changes
 
   const currentProps = kind === 'PieChart' ? pieProps : ringProps
   const updateCurrent = (newProps: ChartProperties) =>
@@ -265,6 +353,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
             properties={currentProps}
             onChange={updateCurrent}
             currentNetworkId={currentNetworkId}
+            kind={kind}
           />
         )}
       </DialogContent>
