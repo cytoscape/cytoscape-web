@@ -458,16 +458,14 @@ const CyjsRenderer = ({
 
     cy.style(newStyle)
 
-    if (forceFit) {
-      // Try to restore saved viewport first
-      const savedViewport = getViewport('cyjs', id)
-      if (savedViewport) {
-        cy.zoom(savedViewport.zoom)
-        cy.pan(savedViewport.pan)
-      } else {
-        // If no saved viewport, fit the network
-        cy.fit()
-      }
+    // Always try to restore saved viewport first when network data is updated
+    const savedViewport = getViewport('cyjs', id)
+    if (savedViewport) {
+      cy.zoom(savedViewport.zoom)
+      cy.pan(savedViewport.pan)
+    } else if (forceFit) {
+      // If no saved viewport and forceFit is true, fit the network
+      cy.fit()
     }
 
     setVisualStyle(id, vs)
@@ -611,7 +609,11 @@ const CyjsRenderer = ({
       }
     })
     if (viewCount === cyNodeCount) {
-      cy.fit()
+      // Only fit if no saved viewport exists, otherwise preserve the current viewport
+      const savedViewport = getViewport('cyjs', id)
+      if (!savedViewport) {
+        cy.fit()
+      }
     }
   }, [networkView?.nodeViews])
 

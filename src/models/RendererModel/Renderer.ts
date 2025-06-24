@@ -4,7 +4,6 @@
 
 import { ReactElement } from 'react'
 import { Network } from '../NetworkModel'
-import { ViewPort } from './ViewPort'
 
 /**
  * Renderer interface to be managed by the RendererStore

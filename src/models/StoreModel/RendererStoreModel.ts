@@ -9,7 +9,11 @@ export interface RendererState {
   // The default renderer name
   defaultRendererName: string
 
-  // Keep track of the viewports for each network
+  /**
+   *  Viewports for each renderer and network
+   *  The key is the renderer ID, and the value is a
+   *  key-value pairs of network IDs to their respective viewport states.
+   */
   viewports: Record<string, Record<IdType, ViewPort>>
 }
 
