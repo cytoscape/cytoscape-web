@@ -20,6 +20,7 @@ import { useUiStateStore } from '../store/UiStateStore'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { AppConfigContext } from '../AppConfigContext'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
+import { useRendererStore } from '../store/RendererStore'
 
 export const useUndoStack = () => {
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
@@ -59,6 +60,7 @@ export const useUndoStack = () => {
   const deleteColumn = useTableStore((state) => state.deleteColumn)
   const addNodesAndEdges = useNetworkStore((state) => state.addNodesAndEdges)
   const setValues = useTableStore((state) => state.setValues)
+  const setViewport = useRendererStore((state) => state.setViewport)
   const { undoStackSize } = useContext(AppConfigContext)
 
   // ID of the network on focus (can be different from the main network)
@@ -232,6 +234,12 @@ export const useUndoStack = () => {
       },
       [UndoCommandType.SET_LAYOUT_SCALE]: (params: any[]) => {},
       [UndoCommandType.FIT_CONTENT]: (params: any[]) => {},
+      [UndoCommandType.SET_VIEWPORT]: (params: any[]) => {
+        const rendererId: string = params[0]
+        const networkId: IdType = params[1]
+        const viewport = params[2]
+        setViewport(rendererId, networkId, viewport)
+      },
       [UndoCommandType.CREATE_MAPPING]: (params: any[]) => {
         setMapping(params[0], params[1], undefined)
       },
@@ -280,6 +288,7 @@ export const useUndoStack = () => {
     addNodes,
     editRows,
     setNetwork,
+    setViewport,
   ])
 
   const redoLastEdit = useCallback(() => {
@@ -370,6 +379,12 @@ export const useUndoStack = () => {
       },
       [UndoCommandType.SET_LAYOUT_SCALE]: (params: any[]) => {},
       [UndoCommandType.FIT_CONTENT]: (params: any[]) => {},
+      [UndoCommandType.SET_VIEWPORT]: (params: any[]) => {
+        const rendererId: string = params[0]
+        const networkId: IdType = params[1]
+        const viewport = params[2]
+        setViewport(rendererId, networkId, viewport)
+      },
       [UndoCommandType.CREATE_MAPPING]: (params: any[]) => {
         createMapping(
           params[0],
@@ -428,6 +443,7 @@ export const useUndoStack = () => {
     editRows,
     setNetwork,
     deleteColumn,
+    setViewport,
   ])
 
   const clearStack = useCallback(() => {}, [])

@@ -26,6 +26,7 @@ export const UndoCommandType = {
   DELETE_NODES: 'DELETE_NODES',
   DELETE_EDGES: 'DELETE_EDGES',
   FIT_CONTENT: 'FIT_CONTENT',
+  SET_VIEWPORT: 'SET_VIEWPORT',
 } as const
 
 export type UndoCommandType =
