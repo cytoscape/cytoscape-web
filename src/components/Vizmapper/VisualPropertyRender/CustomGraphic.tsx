@@ -15,6 +15,7 @@ import {
   SelectChangeEvent,
   TextField,
   Slider,
+  Tooltip,
 } from '@mui/material'
 import PieChartIcon from '@mui/icons-material/PieChart'
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
@@ -43,13 +44,79 @@ interface ChartGraphicFormProps {
   kind: 'PieChart' | 'RingChart'
 }
 
+// Expanded palettes (ColorBrewer-like)
+const PALETTES: Record<string, string[]> = {
+  Category10: [
+    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+    '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+  ],
+  Accent: [
+    '#7fc97f', '#beaed4', '#fdc086', '#ffff99',
+    '#386cb0', '#f0027f', '#bf5b17', '#666666',
+  ],
+  Paired: [
+    '#a6cee3', '#1f78b4', '#b2df8a', '#33a02c',
+    '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00',
+    '#cab2d6', '#6a3d9a', '#ffff99', '#b15928',
+  ],
+  Pastel1: [
+    '#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4',
+    '#fed9a6', '#ffffcc', '#e5d8bd', '#fddaec',
+    '#f2f2f2',
+  ],
+  Pastel2: [
+    '#b3e2cd', '#fdcdac', '#cbd5e8', '#f4cae4',
+    '#e6f5c9', '#fff2ae', '#f1e2cc', '#cccccc',
+  ],
+  Dark2: [
+    '#1b9e77', '#d95f02', '#7570b3', '#e7298a',
+    '#66a61e', '#e6ab02', '#a6761d', '#666666',
+  ],
+  Set1: [
+    '#e41a1c', '#377eb8', '#4daf4a', '#984ea3',
+    '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999',
+  ],
+  Set2: [
+    '#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3',
+    '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3',
+  ],
+  Set3: [
+    '#8dd3c7', '#ffffb3', '#bebada', '#fb8072',
+    '#80b1d3', '#fdb462', '#b3de69', '#fccde5',
+    '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f',
+  ],
+  // Add more custom arrays if desired...
+}
+
+/** Helper: pick `count` colors evenly from `base`. 
+ * If count <= base.length: evenly spaced indices.
+ * If count > base.length: cycle through.
+ */
+function pickEvenly(base: string[], count: number): string[] {
+  if (!base.length || count <= 0) {
+    return []
+  }
+  const n = base.length
+  if (count === 1) {
+    return [base[Math.floor((n - 1) / 2)]]
+  }
+  if (count <= n) {
+    return Array.from({ length: count }, (_, i) => {
+      const idx = Math.round(i * (n - 1) / (count - 1))
+      return base[idx]
+    })
+  }
+  // more segments than colors: cycle
+  return Array.from({ length: count }, (_, i) => base[i % n])
+}
+
 const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
   properties,
   onChange,
   currentNetworkId,
   kind,
 }) => {
-  const { cy_colors, cy_dataColumns, cy_startAngle, cy_holeSize } = properties
+  const { cy_colorScheme, cy_colors, cy_dataColumns, cy_startAngle, cy_holeSize } = properties
 
   const tables = useTableStore((s) => s.tables)
   const nodeTable = tables[currentNetworkId]?.nodeTable
@@ -60,7 +127,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
   const update = (patch: Partial<ChartProperties>) =>
     onChange({ ...properties, ...patch })
 
-  // pick the first unused column, or empty
+  // first unused column or empty
   const nextDefaultCol = React.useMemo(() => {
     return availableColumns.find((c) => !cy_dataColumns.includes(c)) || ''
   }, [availableColumns, cy_dataColumns])
@@ -87,17 +154,95 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       ),
     })
 
+  // assign colors evenly based on palette
+  const handlePaletteChange = (scheme: string) => {
+    const base = PALETTES[scheme] || []
+    const newColors = pickEvenly(base, cy_dataColumns.length)
+    update({ cy_colorScheme: scheme, cy_colors: newColors })
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-      <Typography variant="subtitle2">Node Attributes &amp; Colors</Typography>
+      {/* Color Palette dropdown */}
+      <Typography variant="subtitle2">Color Palette</Typography>
+      <FormControl size="small">
+        <InputLabel id="palette-label">Palette</InputLabel>
+        <Select
+          labelId="palette-label"
+          value={cy_colorScheme}
+          label="Palette"
+          onChange={(e: SelectChangeEvent<string>) =>
+            handlePaletteChange(e.target.value)
+          }
+        >
+          <MenuItem value="">
+            <em>None</em>
+          </MenuItem>
+          {Object.entries(PALETTES).map(([name, colors]) => (
+            <MenuItem key={name} value={name}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  width: '100%',
+                }}
+              >
+                <Typography variant="body2">{name}</Typography>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'nowrap', ml: 2 }}>
+                  {colors.map((col) => (
+                    <Tooltip key={col} title={col}>
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          bgcolor: col,
+                          border: '1px solid',
+                          borderColor: 'grey.400',
+                          borderRadius: 0.5,
+                        }}
+                      />
+                    </Tooltip>
+                  ))}
+                </Box>
+              </Box>
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
+      {/* Preview aligned with current properties: one swatch per property */}
+      {cy_dataColumns.length > 0 && (
+        <Box>
+          <Typography variant="subtitle2">Segment Colors Preview</Typography>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+            {cy_colors.map((col, idx) => (
+              <Tooltip key={idx} title={col}>
+                <Box
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    bgcolor: col,
+                    border: '1px solid',
+                    borderColor: 'grey.400',
+                    borderRadius: 0.5,
+                  }}
+                />
+              </Tooltip>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {/* Node Attributes & Colors */}
+      <Typography variant="subtitle2">Node Attributes &amp; Colors</Typography>
       {cy_dataColumns.map((col, i) => {
         const options = availableColumns.filter(
           (c) => c === col || !cy_dataColumns.includes(c)
         )
         return (
           <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <FormControl sx={{ flex: 1 }}>
+            <FormControl sx={{ flex: 1 }} size="small">
               <InputLabel id={`col-label-${i}`}>Node Attribute</InputLabel>
               <Select
                 labelId={`col-label-${i}`}
@@ -132,6 +277,18 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
           </Box>
         )
       })}
+
+      {/* Moved "Add Node Attribute" button above Start Angle */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+        <Button
+          startIcon={<AddIcon />}
+          size="small"
+          onClick={addRow}
+          disabled={nextDefaultCol === ''}
+        >
+          Add Node Attribute
+        </Button>
+      </Box>
 
       {/* Start Angle slider/input */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}>
@@ -198,18 +355,6 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
           </Box>
         </Box>
       )}
-
-      {/* Centered, labeled “add” button */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-        <Button
-          startIcon={<AddIcon />}
-          size="small"
-          onClick={addRow}
-          disabled={nextDefaultCol === ''}
-        >
-          Add Node Attribute
-        </Button>
-      </Box>
     </Box>
   )
 }
@@ -249,7 +394,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
 
   React.useEffect(() => {
     if (open) {
-      // Compute initial kind
+      // Determine initial kind
       const initialKind =
         initialValue?.name === 'org.cytoscape.RingChart' ? 'RingChart' : 'PieChart'
       setKind(initialKind)
@@ -284,7 +429,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
 
       setStep(0)
     }
-  }, [open]) // only run when open changes
+  }, [open])
 
   const currentProps = kind === 'PieChart' ? pieProps : ringProps
   const updateCurrent = (newProps: ChartProperties) =>
@@ -426,6 +571,7 @@ export function CustomGraphicRender(props: {
   return (
     <Box sx={{ p: 1, fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
       <Typography variant="body2">
+        {/* Customize summary display if desired */}
       </Typography>
     </Box>
   )
