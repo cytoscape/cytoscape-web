@@ -54,7 +54,7 @@ import {
   serializedStringIsValid,
   deserializeValue,
 } from '../../models/TableModel/impl/ValueTypeImpl'
-import { serializeColumnUIKey, useUiStateStore } from '../../store/UiStateStore'
+import { useUiStateStore } from '../../store/UiStateStore'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { Panel } from '../../models/UiModel/Panel'
 import { Ui } from '../../models/UiModel'
@@ -64,6 +64,7 @@ import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { CellEdit, TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { useEffect, useRef } from 'react'
+import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualStyleOptions'
 
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { useUndoStack } from '../../task/UndoStack'
@@ -217,6 +218,16 @@ export default function TableBrowser(props: {
     (state) => viewModel?.selectedEdges ?? [],
   )
 
+  const tableDisplayConfiguration = useUiStateStore(
+    (state) =>
+      state.ui.visualStyleOptions?.[networkId]?.visualEditorProperties
+        ?.tableDisplayConfiguration,
+  )
+
+  const setTableDisplayConfiguration = useUiStateStore(
+    (state) => state.setTableDisplayConfiguration,
+  )
+
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const setCellValue = useTableStore((state) => state.setValue)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
@@ -265,6 +276,11 @@ export default function TableBrowser(props: {
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
   const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
+  const currentTableConfig =
+    currentTabIndex === 0
+      ? tableDisplayConfiguration?.nodeTable
+      : tableDisplayConfiguration?.edgeTable
+
   const nodeIds = Array.from(nodeTable?.rows.keys() ?? new Map()).map((v) => +v)
   const edgeIds = Array.from(edgeTable?.rows.keys() ?? new Map()).map(
     (v) => +v.slice(1),
@@ -273,26 +289,77 @@ export default function TableBrowser(props: {
   const minNodeId = nodeIds.sort((a, b) => a - b)[0]
   const maxEdgeId = edgeIds.sort((a, b) => b - a)[0]
   const minEdgeId = edgeIds.sort((a, b) => a - b)[0]
-  const modelColumns: Column[] =
-    currentTable?.columns != null ? currentTable?.columns : []
+  const modelColumns = currentTableConfig?.columnConfiguration ?? []
 
-  const columnWidths = ui.tableUi.columnUiState
+  // Utility function to create a new TableDisplayConfiguration with updates
+  const createUpdatedTableDisplayConfiguration = React.useCallback(
+    (updates: {
+      columnConfiguration?: ColumnConfiguration[]
+      sortColumn?: string
+      sortDirection?: 'ascending' | 'descending'
+    }) => {
+      const isNodeTable = currentTable === nodeTable
+      const currentConfig = isNodeTable
+        ? tableDisplayConfiguration.nodeTable
+        : tableDisplayConfiguration.edgeTable
+      const otherConfig = isNodeTable
+        ? tableDisplayConfiguration.edgeTable
+        : tableDisplayConfiguration.nodeTable
+
+      const updatedConfig = {
+        ...currentConfig,
+        ...updates,
+      }
+
+      return isNodeTable
+        ? {
+            nodeTable: updatedConfig,
+            edgeTable: otherConfig,
+          }
+        : {
+            nodeTable: otherConfig,
+            edgeTable: updatedConfig,
+          }
+    },
+    [tableDisplayConfiguration, currentTable, nodeTable, edgeTable],
+  )
+
+  // Initialize sort state from tableDisplayConfiguration
+  React.useEffect(() => {
+    if (currentTableConfig?.sortColumn && currentTableConfig?.sortDirection) {
+      // Find the column type for the sort column
+      const sortColumn = currentTable?.columns?.find(
+        (c) => c.name === currentTableConfig.sortColumn,
+      )
+
+      setSort({
+        column: currentTableConfig.sortColumn,
+        direction:
+          currentTableConfig.sortDirection === 'ascending' ? 'asc' : 'desc',
+        valueType: sortColumn?.type ?? ValueTypeName.String,
+      })
+    }
+  }, [
+    tableDisplayConfiguration,
+    currentTabIndex,
+    currentTable,
+    currentTableConfig,
+  ])
 
   const columns = modelColumns.map((col, index) => {
-    const tableTypeStr = currentTable === nodeTable ? 'node' : 'edge'
-    const columnWidthKey = serializeColumnUIKey(
-      networkId,
-      tableTypeStr,
-      col.name,
-    )
+    const columnType = currentTable?.columns?.find(
+      (c) => c.name === col.attributeName,
+    )?.type
+
     return {
-      id: col.name,
-      title: col.name,
-      type: col.type,
+      id: col?.attributeName ?? '',
+      title: col?.attributeName ?? '',
+      type: columnType ?? ValueTypeName.String,
       index,
-      width: columnWidths?.[columnWidthKey]?.width,
+      width: col?.columnWidth,
     }
   })
+  console.log('TABLECONFIG', modelColumns)
 
   const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
   const selectedElementsSet = new Set(selectedElements)
@@ -403,8 +470,35 @@ export default function TableBrowser(props: {
         startIndex,
         endIndex,
       )
+
+      // Create updated column configuration with moved column
+      const currentConfig =
+        currentTable === nodeTable
+          ? tableDisplayConfiguration.nodeTable
+          : tableDisplayConfiguration.edgeTable
+      const nextColumnConfig = [...currentConfig.columnConfiguration]
+      const [movedColumn] = nextColumnConfig.splice(startIndex, 1)
+      nextColumnConfig.splice(endIndex, 0, movedColumn)
+
+      // Use utility function to create new configuration
+      const newTableDisplayConfiguration =
+        createUpdatedTableDisplayConfiguration({
+          columnConfiguration: nextColumnConfig,
+        })
+      setTableDisplayConfiguration(networkId, newTableDisplayConfiguration)
     },
-    [modelColumns],
+    [
+      columns,
+      modelColumns,
+      createUpdatedTableDisplayConfiguration,
+      currentTable,
+      nodeTable,
+      edgeTable,
+      moveColumn,
+      networkId,
+      setTableDisplayConfiguration,
+      tableDisplayConfiguration,
+    ],
   )
 
   const onItemHovered = React.useCallback(
@@ -436,9 +530,36 @@ export default function TableBrowser(props: {
           column.id,
           newSize,
         )
+
+        // Update the width in the tableDisplayConfiguration using utility function
+        const currentConfig =
+          currentTable === nodeTable
+            ? tableDisplayConfiguration.nodeTable
+            : tableDisplayConfiguration.edgeTable
+        const nextColumnConfig = currentConfig.columnConfiguration.map((col) =>
+          col.attributeName === column.id
+            ? { ...col, columnWidth: newSize }
+            : col,
+        )
+
+        const newTableDisplayConfiguration =
+          createUpdatedTableDisplayConfiguration({
+            columnConfiguration: nextColumnConfig,
+          })
+        setTableDisplayConfiguration(networkId, newTableDisplayConfiguration)
       }
     },
-    [columns, columnWidths],
+    [
+      columns,
+      createUpdatedTableDisplayConfiguration,
+      currentTable,
+      nodeTable,
+      edgeTable,
+      setColumnWidth,
+      setTableDisplayConfiguration,
+      networkId,
+      tableDisplayConfiguration,
+    ],
   )
 
   const onCellContextMenu = React.useCallback(
@@ -664,6 +785,17 @@ export default function TableBrowser(props: {
                     direction: 'asc',
                     valueType: columnType,
                   })
+
+                  // Use utility function to update tableDisplayConfiguration with sort info
+                  const newTableDisplayConfiguration =
+                    createUpdatedTableDisplayConfiguration({
+                      sortColumn: columnKey,
+                      sortDirection: 'ascending',
+                    })
+                  setTableDisplayConfiguration(
+                    networkId,
+                    newTableDisplayConfiguration,
+                  )
                 }
               }}
             >
@@ -695,6 +827,17 @@ export default function TableBrowser(props: {
                     direction: 'desc',
                     valueType: columnType,
                   })
+
+                  // Use utility function to update tableDisplayConfiguration with sort info
+                  const newTableDisplayConfiguration =
+                    createUpdatedTableDisplayConfiguration({
+                      sortColumn: columnKey,
+                      sortDirection: 'descending',
+                    })
+                  setTableDisplayConfiguration(
+                    networkId,
+                    newTableDisplayConfiguration,
+                  )
                 }
               }}
             >

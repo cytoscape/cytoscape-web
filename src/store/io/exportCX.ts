@@ -238,11 +238,21 @@ export const exportNetworkToCx2 = (
     visualStyleOptions?.visualEditorProperties?.nodeSizeLocked
   const arrowColorMatchesEdge =
     visualStyleOptions?.visualEditorProperties?.arrowColorMatchesEdge
+  const tableDisplayConfiguration =
+    visualStyleOptions?.visualEditorProperties?.tableDisplayConfiguration
   const visualEditorProperties = [
     {
       properties: {
         nodeSizeLocked: nodeSizeLocked ?? false,
         arrowColorMatchesEdge: arrowColorMatchesEdge ?? false,
+        tableDisplayConfiguration: tableDisplayConfiguration ?? {
+          nodeTable: {
+            columnConfiguration: [],
+          },
+          edgeTable: {
+            columnConfiguration: [],
+          },
+        },
       },
     },
   ]
