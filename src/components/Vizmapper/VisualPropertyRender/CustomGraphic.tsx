@@ -46,48 +46,125 @@ interface ChartGraphicFormProps {
 
 // Expanded palettes (ColorBrewer-like)
 const PALETTES: Record<string, string[]> = {
-  Category10: [
-    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
-    '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+  Sequential1: [
+    '#f7fdf6', '#e5f7e3', '#c5eec5', '#9ae1a1', '#60cf7c',
+    '#00b962', '#009a49', '#006836',
   ],
-  Accent: [
-    '#7fc97f', '#beaed4', '#fdc086', '#ffff99',
-    '#386cb0', '#f0027f', '#bf5b17', '#666666',
+  Sequential2: [
+    '#f7fdf1', '#e0f6de', '#caefca', '#a2e4bb', '#69d6cb',
+    '#0bbfdb', '#009ac9', '#0065ac',
   ],
-  Paired: [
-    '#a6cee3', '#1f78b4', '#b2df8a', '#33a02c',
-    '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00',
-    '#cab2d6', '#6a3d9a', '#ffff99', '#b15928',
+  Sequential3: [
+    '#fff8fc', '#f1e5f3', '#d6d7ea', '#aac6e1', '#aac6e2',
+    '#009eca', '#009096', '#00735a',
   ],
-  Pastel1: [
-    '#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4',
-    '#fed9a6', '#ffffcc', '#e5d8bd', '#fddaec',
-    '#f2f2f2',
+  Sequential4: [
+    '#fff8f4', '#ffe2e1', '#ffc8c6', '#ffa2bd', '#ff62ac',
+    '#f700a4', '#ca008c', '#940085',
   ],
-  Pastel2: [
-    '#b3e2cd', '#fdcdac', '#cbd5e8', '#f4cae4',
-    '#e6f5c9', '#fff2ae', '#f1e2cc', '#cccccc',
+  Sequential5: [
+    '#fff8ee', '#ffeacc', '#ffd7a3', '#ffbf89', '#ff8f5c',
+    '#ff614a', '#f10011', '#b40000',
   ],
-  Dark2: [
-    '#1b9e77', '#d95f02', '#7570b3', '#e7298a',
-    '#66a61e', '#e6ab02', '#a6761d', '#666666',
+  Sequential6: [
+    '#f7fdfd', '#e1eff6', '#c2d9ea', '#a1c5e1', '#95a1cf',
+    '#9e73bd', '#9f41aa', '#860079',
   ],
-  Set1: [
-    '#e41a1c', '#377eb8', '#4daf4a', '#984ea3',
-    '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999',
+  Sequential7: [
+    '#ffffe7', '#fff8bf', '#ffe594', '#ffc847', '#ff9c00',
+    '#ff6f00', '#e44500', '#a52300',
   ],
-  Set2: [
-    '#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3',
-    '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3',
+  Sequential8: [
+    '#ffffcf', '#ffefa4', '#ffe594', '#ffb646', '#ff8f33',
+    '#ff3b1e', '#fd000a', '#cc0026',
   ],
-  Set3: [
-    '#8dd3c7', '#ffffb3', '#bebada', '#fb8072',
-    '#80b1d3', '#fdb462', '#b3de69', '#fccde5',
-    '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f',
+  Sequential9: [
+    '#fff6f2', '#ffe2d6', '#ffbfa8', '#ff9478', '#ff654c',
+    '#ff1126', '#e60012', '#b40000',
   ],
-}
+  Sequential10: [
+    '#f9f5fa', '#ebe4f2', '#dfbfe0', '#da9ad0', '#f662bb',
+    '#ff0097', '#e90060', '#ac0048',
+  ],
+  Sequential11: [
+    '#fff6ed', '#ffe8d2', '#ffd3a8', '#ffb26e', '#ff8f33',
+    '#ff6600', '#f13b00', '#a52300',
+  ],
+  Sequential12: [
+    '#f7fcff', '#dfeef9', '#c8e1f2', '#9cd2e6', '#5fbade',
+    '#19a0d0', '#007fc1', '#0050a2',
+  ],
+  Sequential13: [
+    '#fdfcfd', '#f2eff7', '#dfdfef', '#c4c4e2', '#a9a4d1',
+    '#8d88c5', '#7b59b0', '#5d0095',
+  ],
+  Sequential14: [
+    '#ffffe7', '#f7fdbc', '#d8f4a7', '#a8e493', '#66d17f',
+    '#00b962', '#009347', '#006836',
+  ],
+  Sequential15: [
+    '#ffffff', '#f2f2f2', '#dedede', '#c5c5c5', '#a0a0a0',
+    '#7e7e7e', '#5c5c5c', '#2a2a2a',
+  ],
+  Sequential16: [
+    '#f7fdfd', '#e5f7fa', '#cbf0e9', '#91e0cf', '#47cdad',
+    '#00bb7e', '#009a49', '#006623',
+  ],
+  Sequential17: [
+    '#ffffdb', '#ecfab5', '#c5eeb9', '#6fd7c2', '#00c3cd',
+    '#009fca', '#006bb5', '#003293',
+  ],
+  Sequential18: [
+    '#fff8fc', '#f0eaf4', '#d6d7ea', '#aac6e1', '#6fb5d7',
+    '#009eca', '#007ebc', '#005a89',
+  ],
 
-/** Helper: pick `count` colors evenly from `base`. */
+  Diverging: [
+    '#ff0000', '#ff304d', '#ff939b', '#ffdddf', '#e0dfff',
+    '#9e9cff', '#5750ff', '#1900ff',
+  ],
+  Diverging2: [
+    '#cd002c', '#ed5e52', '#ffa989', '#ffdecc', '#d2e9f3',
+    '#8ecee4', '#1ba1cd', '#0073b9',
+  ],
+  Diverging3: [
+    '#ca5a00', '#f38600', '#ffbc64', '#ffe2bb', '#dddfef',
+    '#bcb3da', '#8f7db8', '#682497',
+  ],
+  Diverging4: [
+    '#8e2191', '#ac78b7', '#cfacd7', '#eed8ec', '#d8f3d7',
+    '#a0e2a6', '#3bbb66', '#008739',
+  ],
+  Diverging5: [
+    '#ee2957', '#ff6a43', '#ffb262', '#ffe38e', '#e5f89b',
+    '#a6e4aa', '#47cdae', '#0096c8',
+  ],
+  Diverging6: [
+    '#a15600', '#d18820', '#e8c882', '#faeac7', '#c5efe8',
+    '#71d7c8', '#00a59a', '#007569',
+  ],
+  Diverging7: [
+    '#00ffff', '#3AFFFF', '#74ffff', '#d7ffff', '#ffddff',
+    '#ff92ff', '#ff29ff', '#ff00ff',
+  ],
+  Diverging8: [
+    '#f10021', '#ff6a43', '#ffb262', '#ffe38e', '#d8f38e',
+    '#a1e16b', '#4ac967', '#00a755',
+  ],
+  Diverging9: [
+    '#e0008a', '#f378b8', '#febae0', '#ffe2f2', '#e6f7d4',
+    '#b5e78a', '#75c739', '#35a002',
+  ],
+  Diverging10: [
+    '#cd002c', '#ed5e52', '#ffa989', '#ffdecc', '#e4e4e4',
+    '#c2c2c2', '#929292', '#575757',
+  ],
+  Diverging11: [
+    '#f10021', '#ff6a43', '#ffb262', '#ffe393', '#e0f6f9',
+    '#a8e0ed', '#6db8d9', '#3d82c0',
+  ],
+};
+
 function pickEvenly(base: string[], count: number): string[] {
   if (!base.length || count <= 0) return []
   const n = base.length
@@ -432,8 +509,15 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   const currentProps = kind === 'PieChart' ? pieProps : ringProps
   const updateCurrent = (newProps: ChartProperties) =>
     kind === 'PieChart' ? setPieProps(newProps) : setRingProps(newProps)
-
   const isLastStep = step === 1
+
+  // New handler to remove graphics and reset to defaults
+  const handleRemoveGraphics = () => {
+    setPieProps(defaults)
+    setRingProps(defaults)
+    setKind('PieChart')
+    setStep(1)
+  }
 
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
@@ -502,13 +586,20 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ justifyContent: 'space-between' }}>
-        <Button
-          onClick={() => setStep((s) => (s > 0 ? (s - 1) as 0 | 1 : s))}
-          disabled={step === 0}
-        >
-          Back
-        </Button>
-
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button
+            onClick={() => setStep((s) => (s > 0 ? (s - 1) as 0 | 1 : s))}
+            disabled={step === 0}
+          >
+            Back
+          </Button>
+          <Button
+            onClick={handleRemoveGraphics}
+            disabled={step === 0}
+          >
+            Remove Graphics
+          </Button>
+        </Box>
         <Box>
           <Button onClick={onCancel} sx={{ mr: 1 }}>
             Cancel
@@ -538,6 +629,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     </Dialog>
   )
 }
+
 
 /** Inline adapter for VisualPropertyValueForm */
 export function CustomGraphicPicker(props: {
