@@ -624,8 +624,8 @@ export default function TableBrowser(props: {
       moveColumn(
         networkId,
         currentTable === nodeTable ? 'node' : 'edge',
-        startIndex,
-        endIndex,
+        realStartIndex,
+        realEndIndex,
       )
 
       // Create updated column configuration with moved column
