@@ -119,7 +119,7 @@ const PALETTES: Record<string, string[]> = {
     '#009eca', '#007ebc', '#005a89',
   ],
 
-  Diverging: [
+  Diverging1: [
     '#ff0000', '#ff304d', '#ff939b', '#ffdddf', '#e0dfff',
     '#9e9cff', '#5750ff', '#1900ff',
   ],
