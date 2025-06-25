@@ -445,28 +445,19 @@ return (
     <Box sx={{ p: 3.5 }}>
       <Stack spacing={1.5}>
         <Typography variant="h5">
-          {app.name === "Networkx Network Analyzer" ? "Analyze Network" : app.name}
+          {app.name === "Networkx Network Analyzer" ? "NetworkX Analyzer (NXA)" : app.name}
         </Typography>
 
         <Typography variant="body1">
-          {app.name === "Networkx Network Analyzer" ? (
-            <>
-              Perform network analysis using the NetworkX Analyzer (NXA) service app. Computed metrics are added as new attributes in the NETWORK, NODE and EDGE tables.{' '}
-            </>
-          ) : (
-            app.description || "No description available."
-          )}
-        </Typography>
+  {app.showDescriptionInDialog ? (app.description || "No description available.") : null}
+</Typography>
 
         {inputDefinition}
 
         {/* ↓↓↓ MODIFIED parametersSection rendering below ↓↓↓ */}
         {app.parameters && (
           <Box sx={{ p: 3 }}>
-            {/* Hide header if it's Networkx Network Analyzer */}
-            {app.name !== "Networkx Network Analyzer" && (
-              <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
-            )}
+            {/* Hide "parameters" header*/}
             {app.parameters.map((parameter: ServiceAppParameter) => {
               const isSpecialCheckbox =
                 app.name === "Networkx Network Analyzer" &&
