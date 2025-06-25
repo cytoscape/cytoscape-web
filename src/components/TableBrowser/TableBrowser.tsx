@@ -68,6 +68,7 @@ import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualSt
 
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { useUndoStack } from '../../task/UndoStack'
+import { useNetworkStore } from '../../store/NetworkStore'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -276,6 +277,7 @@ export default function TableBrowser(props: {
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
   const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
+  const network = useNetworkStore((state) => state.networks.get(networkId))
   const currentTableConfig =
     currentTabIndex === 0
       ? tableDisplayConfiguration?.nodeTable
@@ -348,7 +350,7 @@ export default function TableBrowser(props: {
 
   const columns = modelColumns.map((col, index) => {
     const columnType = currentTable?.columns?.find(
-      (c) => c.name === col.attributeName,
+      (c) => c?.name === col?.attributeName,
     )?.type
 
     return {
@@ -359,7 +361,69 @@ export default function TableBrowser(props: {
       width: col?.columnWidth,
     }
   })
-  console.log('TABLECONFIG', modelColumns)
+
+  // Add virtual columns for edge table to show source and target node names
+  const virtualColumns = React.useMemo(() => {
+    if (currentTable !== edgeTable) {
+      return []
+    }
+
+    // Create a map of node ID to node name/label for lookup
+    const nodeNameMap = new Map<string, string>()
+    if (nodeTable) {
+      nodeTable.rows.forEach((nodeData, nodeId) => {
+        const nodeName =
+          (nodeData.name as string) ||
+          (nodeData.label as string) ||
+          (nodeData.nodeLabel as string) ||
+          (nodeData.displayName as string) ||
+          (nodeData.title as string) ||
+          nodeId.toString()
+        nodeNameMap.set(nodeId.toString(), nodeName)
+      })
+    }
+
+    return [
+      {
+        id: '__sourceNodeName',
+        title: 'Source Node',
+        type: ValueTypeName.String,
+        index: 0,
+        width: undefined,
+        isVirtual: true,
+        getValue: (edgeData: any) => {
+          // Get edge id from edgeData
+          const edgeId = edgeData?.id?.toString()
+          // Look up edge in network model
+          const edge = network?.edges?.find(
+            (e: any) => e.id?.toString() === edgeId,
+          )
+          const sourceId = edge?.s?.toString()
+          return sourceId ? nodeNameMap.get(sourceId) || `Node ${sourceId}` : ''
+        },
+      },
+      {
+        id: '__targetNodeName',
+        title: 'Target Node',
+        type: ValueTypeName.String,
+        index: 1,
+        width: undefined,
+        isVirtual: true,
+        getValue: (edgeData: any) => {
+          const edgeId = edgeData?.id?.toString()
+          const edge = network?.edges?.find(
+            (e: any) => e.id?.toString() === edgeId,
+          )
+          const targetId = edge?.t?.toString()
+          return targetId ? nodeNameMap.get(targetId) || `Node ${targetId}` : ''
+        },
+      },
+    ]
+  }, [currentTable, edgeTable, nodeTable, network])
+
+  // Combine regular columns with virtual columns for edge table
+  const allColumns =
+    currentTable === edgeTable ? [...virtualColumns, ...columns] : columns
 
   const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
   const selectedElementsSet = new Set(selectedElements)
@@ -386,12 +450,55 @@ export default function TableBrowser(props: {
 
   if (sort.column != null && sort.direction != null && sort.valueType != null) {
     if (sort.column != null) {
-      rows = _.orderBy(
-        rows,
-        (o) =>
-          (o as Record<string, ValueType>)[sort.column as string] as ValueType,
-        sort.direction,
-      )
+      // Handle sorting for virtual columns
+      if (
+        sort.column === '__sourceNodeName' ||
+        sort.column === '__targetNodeName'
+      ) {
+        // Create a map of node ID to node name for lookup
+        const nodeNameMap = new Map<string, string>()
+        if (nodeTable) {
+          nodeTable.rows.forEach((nodeData, nodeId) => {
+            const nodeName =
+              (nodeData.name as string) ||
+              (nodeData.label as string) ||
+              (nodeData.nodeLabel as string) ||
+              (nodeData.displayName as string) ||
+              (nodeData.title as string) ||
+              nodeId.toString()
+            nodeNameMap.set(nodeId.toString(), nodeName)
+          })
+        }
+
+        rows = _.orderBy(
+          rows,
+          (o) => {
+            if (sort.column === '__sourceNodeName') {
+              const sourceId = (o as any).s?.toString()
+              return sourceId
+                ? nodeNameMap.get(sourceId) || `Node ${sourceId}`
+                : ''
+            } else if (sort.column === '__targetNodeName') {
+              const targetId = (o as any).t?.toString()
+              return targetId
+                ? nodeNameMap.get(targetId) || `Node ${targetId}`
+                : ''
+            }
+            return ''
+          },
+          sort.direction,
+        )
+      } else {
+        // Regular column sorting
+        rows = _.orderBy(
+          rows,
+          (o) =>
+            (o as Record<string, ValueType>)[
+              sort.column as string
+            ] as ValueType,
+          sort.direction,
+        )
+      }
     }
   }
 
@@ -406,10 +513,35 @@ export default function TableBrowser(props: {
     (cell: Item): GridCell => {
       const [columnIndex, rowIndex] = cell
       const dataRow = rows?.[rowIndex]
-      const column = columns?.[columnIndex]
+      const column = allColumns?.[columnIndex]
       const columnKey = column?.id
+
+      // Handle virtual columns
+      if ((column as any).isVirtual) {
+        const virtualColumn = column as any
+        const cellValue = virtualColumn.getValue(dataRow)
+        return {
+          allowOverlay: false, // Virtual columns are read-only
+          readonly: true,
+          kind: GridCellKind.Text,
+          displayData: String(cellValue),
+          data: String(cellValue),
+        }
+      }
+
+      if (dataRow == null || column == null) {
+        return {
+          allowOverlay: true,
+          readonly: false,
+          kind: GridCellKind.Text,
+          displayData: '',
+          data: '',
+        }
+      }
+
+      // Handle regular columns
       const cellValue = (dataRow as any)?.[columnKey]
-      if (dataRow == null || cellValue == null || column == null) {
+      if (cellValue == null) {
         return {
           allowOverlay: true,
           readonly: false,
@@ -459,11 +591,36 @@ export default function TableBrowser(props: {
         }
       }
     },
-    [props.currentNetworkId, rows, currentTable, tables, sort, currentTabIndex],
+    [
+      props.currentNetworkId,
+      rows,
+      currentTable,
+      tables,
+      sort,
+      currentTabIndex,
+      allColumns,
+    ],
   )
 
   const onColMoved = React.useCallback(
     (startIndex: number, endIndex: number): void => {
+      // Don't allow moving virtual columns
+      const startColumn = allColumns[startIndex]
+      const endColumn = allColumns[endIndex]
+      if ((startColumn as any)?.isVirtual || (endColumn as any)?.isVirtual) {
+        return
+      }
+
+      // offset the virtual column indices
+      const realColumns = allColumns.filter((col) => !(col as any).isVirtual)
+      const startColId = allColumns[startIndex]?.id
+      const endColId = allColumns[endIndex]?.id
+      const realStartIndex = realColumns.findIndex(
+        (col) => col.id === startColId,
+      )
+      const realEndIndex = realColumns.findIndex((col) => col.id === endColId)
+      if (realStartIndex === -1 || realEndIndex === -1) return
+
       moveColumn(
         networkId,
         currentTable === nodeTable ? 'node' : 'edge',
@@ -477,8 +634,8 @@ export default function TableBrowser(props: {
           ? tableDisplayConfiguration.nodeTable
           : tableDisplayConfiguration.edgeTable
       const nextColumnConfig = [...currentConfig.columnConfiguration]
-      const [movedColumn] = nextColumnConfig.splice(startIndex, 1)
-      nextColumnConfig.splice(endIndex, 0, movedColumn)
+      const [movedColumn] = nextColumnConfig.splice(realStartIndex, 1)
+      nextColumnConfig.splice(realEndIndex, 0, movedColumn)
 
       // Use utility function to create new configuration
       const newTableDisplayConfiguration =
@@ -488,7 +645,7 @@ export default function TableBrowser(props: {
       setTableDisplayConfiguration(networkId, newTableDisplayConfiguration)
     },
     [
-      columns,
+      allColumns,
       modelColumns,
       createUpdatedTableDisplayConfiguration,
       currentTable,
@@ -498,6 +655,7 @@ export default function TableBrowser(props: {
       networkId,
       setTableDisplayConfiguration,
       tableDisplayConfiguration,
+      virtualColumns,
     ],
   )
 
@@ -524,6 +682,12 @@ export default function TableBrowser(props: {
       newSizeWithGrow: number,
     ): void => {
       if (column?.id !== undefined) {
+        // Don't allow resizing virtual columns
+        const columnData = allColumns[colIndex]
+        if ((columnData as any)?.isVirtual) {
+          return
+        }
+
         setColumnWidth(
           networkId,
           currentTable === nodeTable ? 'node' : 'edge',
@@ -550,7 +714,7 @@ export default function TableBrowser(props: {
       }
     },
     [
-      columns,
+      allColumns,
       createUpdatedTableDisplayConfiguration,
       currentTable,
       nodeTable,
@@ -739,7 +903,11 @@ export default function TableBrowser(props: {
   )
 
   const selectedColumn =
-    selection.columns.length > 0 ? columns[selection.columns.first()!] : null
+    selection.columns.length > 0 ? allColumns[selection.columns.first()!] : null
+
+  // Check if the selected column is a virtual column
+  const isSelectedColumnVirtual =
+    selectedColumn && (selectedColumn as any).isVirtual
 
   // scan the visual properties to see if the selected column name is used in any mappings
   const visualPropertiesDependentOnSelectedColumn = Object.values(
@@ -750,7 +918,7 @@ export default function TableBrowser(props: {
       vpValue?.mapping?.attribute === selectedColumn.id,
   )
   const selectedColumnToolbar =
-    selectedColumn != null ? (
+    selectedColumn != null && !isSelectedColumnVirtual ? (
       <>
         <Box
           sx={{
@@ -861,7 +1029,10 @@ export default function TableBrowser(props: {
             <Button
               sx={{ mr: 1 }}
               onClick={() => {
-                if (selectedColumn !== null) {
+                if (
+                  selectedColumn !== null &&
+                  !(selectedColumn as any)?.isVirtual
+                ) {
                   const columnKey = selectedColumn.id
                   duplicateColumn(
                     props.currentNetworkId,
@@ -876,8 +1047,45 @@ export default function TableBrowser(props: {
                       selectedColumn.index + 1, // select the newly created column
                     ),
                   })
+
+                  // Update tableDisplayConfiguration for duplicate
+                  const currentConfig =
+                    currentTable === nodeTable
+                      ? tableDisplayConfiguration.nodeTable
+                      : tableDisplayConfiguration.edgeTable
+                  // Find the duplicated column in the config
+                  const duplicatedCol = currentConfig.columnConfiguration.find(
+                    (col) => col.attributeName === columnKey,
+                  )
+                  // The new column will have a new name, which should be the next column in the table
+                  // We'll assume the duplicated column is inserted right after the original
+                  // Find the new column name by checking the columns array
+                  const allColumnNames = columns.map((c) => c.id)
+                  const originalIndex = allColumnNames.indexOf(columnKey)
+                  const newColumnName = allColumnNames[originalIndex + 1]
+                  if (duplicatedCol && newColumnName) {
+                    const newColConfig = [
+                      ...currentConfig.columnConfiguration.slice(
+                        0,
+                        originalIndex + 1,
+                      ),
+                      { ...duplicatedCol, attributeName: newColumnName },
+                      ...currentConfig.columnConfiguration.slice(
+                        originalIndex + 1,
+                      ),
+                    ]
+                    const newTableDisplayConfiguration =
+                      createUpdatedTableDisplayConfiguration({
+                        columnConfiguration: newColConfig,
+                      })
+                    setTableDisplayConfiguration(
+                      networkId,
+                      newTableDisplayConfiguration,
+                    )
+                  }
                 }
               }}
+              disabled={(selectedColumn as any)?.isVirtual}
             >
               <DuplicateIcon />
             </Button>
@@ -896,7 +1104,11 @@ export default function TableBrowser(props: {
               ],
             }}
           >
-            <Button sx={{ mr: 1 }} onClick={() => setShowEditColumnForm(true)}>
+            <Button
+              sx={{ mr: 1 }}
+              onClick={() => setShowEditColumnForm(true)}
+              disabled={(selectedColumn as any)?.isVirtual}
+            >
               <EditIcon />
             </Button>
           </Tooltip>
@@ -919,6 +1131,7 @@ export default function TableBrowser(props: {
               onClick={() => {
                 setShowDeleteColumnForm(true)
               }}
+              disabled={(selectedColumn as any)?.isVirtual}
             >
               <span className="icon">&#46;</span>
             </Button>
@@ -963,6 +1176,26 @@ export default function TableBrowser(props: {
                 newColumnName,
               )
               setNetworkModified(networkId, true)
+
+              // Update tableDisplayConfiguration for rename
+              const currentConfig =
+                currentTable === nodeTable
+                  ? tableDisplayConfiguration.nodeTable
+                  : tableDisplayConfiguration.edgeTable
+              const newColumnConfig = currentConfig.columnConfiguration.map(
+                (col) =>
+                  col.attributeName === selectedColumn.id
+                    ? { ...col, attributeName: newColumnName }
+                    : col,
+              )
+              const newTableDisplayConfiguration =
+                createUpdatedTableDisplayConfiguration({
+                  columnConfiguration: newColumnConfig,
+                })
+              setTableDisplayConfiguration(
+                networkId,
+                newTableDisplayConfiguration,
+              )
 
               if (mappingUpdateType === 'rename') {
                 visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
@@ -1016,6 +1249,23 @@ export default function TableBrowser(props: {
             )
             setNetworkModified(networkId, true)
 
+            // Update tableDisplayConfiguration for delete
+            const currentConfig =
+              currentTable === nodeTable
+                ? tableDisplayConfiguration.nodeTable
+                : tableDisplayConfiguration.edgeTable
+            const newColumnConfig = currentConfig.columnConfiguration.filter(
+              (col) => col.attributeName !== selectedColumn.id,
+            )
+            const newTableDisplayConfiguration =
+              createUpdatedTableDisplayConfiguration({
+                columnConfiguration: newColumnConfig,
+              })
+            setTableDisplayConfiguration(
+              networkId,
+              newTableDisplayConfiguration,
+            )
+
             if (mappingUpdateType === 'delete') {
               visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
                 setMapping(props.currentNetworkId, vp.name, undefined)
@@ -1039,8 +1289,14 @@ export default function TableBrowser(props: {
       ? [selectedCellColumn, selection.rows.first()!]
       : null
 
+  // Check if the selected cell is in a virtual column
+  const isSelectedCellVirtual =
+    selectedCell != null &&
+    allColumns[selectedCell[0]] &&
+    (allColumns[selectedCell[0]] as any).isVirtual
+
   const selectedCellToolbar =
-    selectedCell != null ? (
+    selectedCell != null && !isSelectedCellVirtual ? (
       <>
         <Box
           sx={{
@@ -1281,6 +1537,28 @@ export default function TableBrowser(props: {
               )
               setNetworkModified(networkId, true)
 
+              // Also add the new column to the tableDisplayConfiguration
+              const currentConfig =
+                currentTable === nodeTable
+                  ? tableDisplayConfiguration.nodeTable
+                  : tableDisplayConfiguration.edgeTable
+              const newColumnConfig = [
+                {
+                  attributeName: columnName,
+                  visible: true,
+                  columnWidth: undefined,
+                },
+                ...currentConfig.columnConfiguration,
+              ]
+              const newTableDisplayConfiguration =
+                createUpdatedTableDisplayConfiguration({
+                  columnConfiguration: newColumnConfig,
+                })
+              setTableDisplayConfiguration(
+                networkId,
+                newTableDisplayConfiguration,
+              )
+
               setCreateColumnFormError(undefined)
               setSelection({
                 ...selection,
@@ -1457,7 +1735,7 @@ export default function TableBrowser(props: {
           height={props.height - GRID_GAP}
           getCellContent={getContent}
           onCellEdited={onCellEdited}
-          columns={columns}
+          columns={allColumns}
           rows={maxEdgeId - minEdgeId + 1}
           gridSelection={selection}
         />
