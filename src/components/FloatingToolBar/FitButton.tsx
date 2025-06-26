@@ -1,12 +1,9 @@
 import { Box, IconButton, Tooltip } from '@mui/material'
 import { ZoomOutMap } from '@mui/icons-material'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
-import { IdType } from 'src/models'
-import { useWorkspaceStore } from '../../store/WorkspaceStore'
 
 interface FitButtonProps {
   rendererId: string
-  targetNetworkId?: IdType
   disabled?: boolean
 }
 
@@ -14,30 +11,14 @@ export const FIT_FUNCTION_NAME: string = 'fit'
 
 export const FitButton = ({
   rendererId,
-  targetNetworkId,
   disabled = false,
 }: FitButtonProps): JSX.Element => {
   const getRendererFunction = useRendererFunctionStore(
     (state) => state.getFunction,
   )
 
-  const currentNetworkId: IdType = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
-
-  const networkId: IdType = targetNetworkId ?? currentNetworkId
-
   const handleClick = (): void => {
-    const fitFunctionByRenderer = getRendererFunction(
-      rendererId,
-      FIT_FUNCTION_NAME,
-    )
-    const fitFunctionByNetworkId = getRendererFunction(
-      rendererId,
-      FIT_FUNCTION_NAME,
-      networkId,
-    )
-    const fitFunction = fitFunctionByNetworkId ?? fitFunctionByRenderer // network id functions given priority
+    const fitFunction = getRendererFunction(rendererId, FIT_FUNCTION_NAME)
     if (fitFunction !== undefined) {
       fitFunction()
       console.log('Fit function called for:', rendererId)
