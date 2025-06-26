@@ -19,4 +19,5 @@ export interface ServiceMetadata {
   author: string
   citation:string
   parameters: ServiceAppParameter[]
+  showDescriptionInDialog: boolean
 }
