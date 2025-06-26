@@ -466,13 +466,13 @@ return (
         <Box key={parameter.displayName} sx={{ mb: 2 }}>
           {isSpecialCheckbox ? (
             // ✅ Use your app’s logic but change layout
-            <Tooltip title="If checked, the analysis will take into account edge directions. Leave unchecked to ignore directionality.">
+            
               <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
                 <Box sx={{ whiteSpace: 'nowrap' }}>
                   {renderParameter(parameter)}
                 </Box>
               </Box>
-            </Tooltip>
+            
           ) : (
             renderParameter(parameter)
           )}
