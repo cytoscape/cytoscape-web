@@ -63,6 +63,7 @@ import { NetworkWithView, VisualStyle } from '../../models'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useUndoStore } from '../../store/UndoStore'
+import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
 import { useUrlNavigation } from '../../store/hooks/useUrlNavigation'
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
@@ -240,6 +241,10 @@ const WorkSpaceEditor = (): JSX.Element => {
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
+  const fitFunction = useRendererFunctionStore((state) =>
+    state.getFunction('cyjs', 'fit', currentNetworkId),
+  )
+
   const loadNetworkSummaries = async (networkIds: IdType[]): Promise<void> => {
     const currentToken = await getToken()
     const newSummaries = await useNdexNetworkSummary(
@@ -361,6 +366,12 @@ const WorkSpaceEditor = (): JSX.Element => {
               positionMap: Map<IdType, [number, number]>,
             ): void => {
               updateNodePositions(networkId, positionMap)
+              
+              // Fit the viewport to center the initial layout
+              if (fitFunction) {
+                fitFunction()
+              }
+              
               updateSummary(networkId, nextSummary)
               setIsRunning(false)
               setNetworkModified(networkId, false)

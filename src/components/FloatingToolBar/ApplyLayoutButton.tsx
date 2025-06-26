@@ -69,6 +69,7 @@ export const ApplyLayoutButton = ({
     )
     // Update node positions in the view model
     updateNodePositions(networkId, positionMap)
+    
     postEdit(
       UndoCommandType.APPLY_LAYOUT,
       `Apply ${layoutInfo} Layout`,

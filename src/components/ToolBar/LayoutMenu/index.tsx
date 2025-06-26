@@ -105,6 +105,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
     // Update node positions in the view model
     updateNodePositions(targetNetworkId, positionMap)
+    
     postEdit(
       UndoCommandType.APPLY_LAYOUT,
       `Apply layout`,

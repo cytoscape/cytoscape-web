@@ -21,6 +21,7 @@ import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { AppConfigContext } from '../AppConfigContext'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { useRendererStore } from '../store/RendererStore'
+import { useRendererFunctionStore } from '../store/RendererFunctionStore'
 
 export const useUndoStack = () => {
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
@@ -138,7 +139,21 @@ export const useUndoStack = () => {
         setDefault(params[0], params[1], params[2])
       },
       [UndoCommandType.APPLY_LAYOUT]: (params: any[]) => {
-        updateNodePositions(params[0], params[1])
+        const networkId = params[0]
+        const positions = params[1]
+        
+        // Update node positions
+        updateNodePositions(networkId, positions)
+        
+        // Fit viewport to center the layout
+        const fitFunction = useRendererFunctionStore.getState().getFunction(
+          'cyjs', 
+          'fit', 
+          networkId
+        )
+        if (fitFunction) {
+          fitFunction()
+        }
       },
       [UndoCommandType.DELETE_COLUMN]: (params: any[]) => {
         setTable(params[0], params[1], params[2])
@@ -238,7 +253,19 @@ export const useUndoStack = () => {
         const rendererId: string = params[0]
         const networkId: IdType = params[1]
         const viewport = params[2]
+        
+        // Update the store first
         setViewport(rendererId, networkId, viewport)
+        
+        // Apply the viewport change to the Cytoscape.js instance
+        const setViewportFunction = useRendererFunctionStore.getState().getFunction(
+          rendererId, 
+          'setViewport', 
+          networkId
+        )
+        if (setViewportFunction) {
+          setViewportFunction(viewport)
+        }
       },
       [UndoCommandType.CREATE_MAPPING]: (params: any[]) => {
         setMapping(params[0], params[1], undefined)
@@ -309,7 +336,21 @@ export const useUndoStack = () => {
         setDefault(params[0], params[1], params[2])
       },
       [UndoCommandType.APPLY_LAYOUT]: (params: any[]) => {
-        updateNodePositions(params[0], params[1])
+        const networkId = params[0]
+        const positions = params[1]
+        
+        // Update node positions
+        updateNodePositions(networkId, positions)
+        
+        // Fit viewport to center the layout
+        const fitFunction = useRendererFunctionStore.getState().getFunction(
+          'cyjs', 
+          'fit', 
+          networkId
+        )
+        if (fitFunction) {
+          fitFunction()
+        }
       },
       [UndoCommandType.DELETE_COLUMN]: (params: any[]) => {
         deleteColumn(params[0], params[1], params[3].id)
@@ -383,7 +424,19 @@ export const useUndoStack = () => {
         const rendererId: string = params[0]
         const networkId: IdType = params[1]
         const viewport = params[2]
+        
+        // Update the store first
         setViewport(rendererId, networkId, viewport)
+        
+        // Apply the viewport change to the Cytoscape.js instance
+        const setViewportFunction = useRendererFunctionStore.getState().getFunction(
+          rendererId, 
+          'setViewport', 
+          networkId
+        )
+        if (setViewportFunction) {
+          setViewportFunction(viewport)
+        }
       },
       [UndoCommandType.CREATE_MAPPING]: (params: any[]) => {
         createMapping(
