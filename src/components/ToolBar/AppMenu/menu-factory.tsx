@@ -460,7 +460,7 @@ return (
     {/* Hide "parameters" header */}
     {app.parameters.map((parameter: ServiceAppParameter) => {
       const isSpecialCheckbox =
-        app.name?.toLowerCase() === "networkx analyzer";
+        app.name === "NetworkX Analyzer";
 
       return (
         <Box key={parameter.displayName} sx={{ mb: 2 }}>
@@ -483,7 +483,7 @@ return (
 )}
         {/* ↑↑↑ END parametersSection override ↑↑↑ */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 3 }}>
-  {app.name?.toLowerCase() === "networkx analyzer" ? (
+  {app.name === "NetworkX Analyzer" ? (
     <Typography variant="body2">
       <Link
         href="https://github.com/cytoscape/web-cytoscape-manual/blob/main/docs/analyze.md"
