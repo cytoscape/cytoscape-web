@@ -147,7 +147,7 @@ const CyjsRenderer = ({
 
   // TO avoid unnecessary re-rendering / fit
   const [nodesMoved, setNodesMoved] = useState<boolean>(false)
-  
+
   // Reference to viewport change handler for temporary removal during undo/redo
   const viewportChangeHandlerRef = useRef<any>(null)
 
@@ -414,25 +414,12 @@ const CyjsRenderer = ({
         zoom,
         pan: { x: pan.x, y: pan.y },
       }
-      
-      // Get previous viewport for undo
-      const previousViewport = getViewport('cyjs', id)
-      
+
       // Update viewport
       setViewport('cyjs', id, newViewport)
-      
-      // Record change for undo/redo (only if there was a previous viewport)
-      if (previousViewport) {
-        postEdit(
-          UndoCommandType.SET_VIEWPORT,
-          'Change viewport zoom and pan',
-          ['cyjs', id, previousViewport], // undo params
-          ['cyjs', id, newViewport]       // redo params
-        )
-      }
     }, 300)
-    
-    // Store handler in ref for access from setViewportFunction
+
+    // Store handler in ref
     viewportChangeHandlerRef.current = viewportChangeHandler
     cy.on('viewport', viewportChangeHandler)
 
@@ -766,24 +753,6 @@ const CyjsRenderer = ({
         }
       }
 
-      const setViewportFunction = (viewport: { zoom: number; pan: { x: number; y: number } }): void => {
-        if (cy !== null && viewportChangeHandlerRef.current) {
-          // Temporarily remove viewport event listener to prevent recording undo entries
-          cy.off('viewport', viewportChangeHandlerRef.current)
-          
-          // Apply viewport changes
-          cy.zoom(viewport.zoom)
-          cy.pan(viewport.pan)
-          
-          // Re-add viewport event listener after a brief delay
-          setTimeout(() => {
-            if (viewportChangeHandlerRef.current) {
-              cy.on('viewport', viewportChangeHandlerRef.current)
-            }
-          }, 100)
-        }
-      }
-
       const exportPngFunction = (
         fullBg: boolean,
         customWidth: number,
@@ -867,7 +836,6 @@ const CyjsRenderer = ({
         }
       }
       setRendererFunction('cyjs', 'fit', fitFunction, id)
-      setRendererFunction('cyjs', 'setViewport', setViewportFunction, id)
       setRendererFunction('cyjs', 'exportPng', exportPngFunction, id)
       setRendererFunction('cyjs', 'exportPdf', exportPdfFunction, id)
       setRendererFunction('cyjs', 'exportSvg', exportSvgFunction, id)
