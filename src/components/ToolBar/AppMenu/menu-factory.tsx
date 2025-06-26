@@ -445,7 +445,7 @@ return (
     <Box sx={{ p: 3.5 }}>
       <Stack spacing={1.5}>
         <Typography variant="h5">
-          {app.name === "Networkx Network Analyzer" ? "NetworkX Analyzer (NXA)" : app.name}
+          {app.name}
         </Typography>
 
         <Typography variant="body1">
@@ -456,35 +456,34 @@ return (
 
         {/* ↓↓↓ MODIFIED parametersSection rendering below ↓↓↓ */}
         {app.parameters && (
-          <Box sx={{ p: 3 }}>
-            {/* Hide "parameters" header*/}
-            {app.parameters.map((parameter: ServiceAppParameter) => {
-              const isSpecialCheckbox =
-                app.name === "Networkx Network Analyzer" &&
-                parameter.displayName === "Analyze as Directed Graph";
+  <Box sx={{ p: 3 }}>
+    {/* Hide "parameters" header */}
+    {app.parameters.map((parameter: ServiceAppParameter) => {
+      const isSpecialCheckbox =
+        app.name?.toLowerCase() === "networkx analyzer";
 
-              return (
-                <Box key={parameter.displayName} sx={{ mb: 2 }}>
-                  {isSpecialCheckbox ? (
-                    // ✅ Use your app’s logic but change layout
-                    <Tooltip title="If checked, the analysis will take into account edge directions. Leave unchecked to ignore directionality.">
-                    <Box sx={{ display: 'inline-flex', alignItems: 'center'}}>
-                      <Box sx={{ whiteSpace: 'nowrap' }}>
-                        {renderParameter(parameter)}
-                      </Box>
-                    </Box>
-                    </Tooltip>
-                  ) : (
-                    renderParameter(parameter)
-                  )}
+      return (
+        <Box key={parameter.displayName} sx={{ mb: 2 }}>
+          {isSpecialCheckbox ? (
+            // ✅ Use your app’s logic but change layout
+            <Tooltip title="If checked, the analysis will take into account edge directions. Leave unchecked to ignore directionality.">
+              <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                <Box sx={{ whiteSpace: 'nowrap' }}>
+                  {renderParameter(parameter)}
                 </Box>
-              );
-            })}
-          </Box>
-        )}
+              </Box>
+            </Tooltip>
+          ) : (
+            renderParameter(parameter)
+          )}
+        </Box>
+      );
+    })}
+  </Box>
+)}
         {/* ↑↑↑ END parametersSection override ↑↑↑ */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 3 }}>
-  {app.name === "Networkx Network Analyzer" ? (
+  {app.name?.toLowerCase() === "networkx analyzer" ? (
     <Typography variant="body2">
       <Link
         href="https://github.com/cytoscape/web-cytoscape-manual/blob/main/docs/analyze.md"
