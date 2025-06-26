@@ -4,7 +4,7 @@ import Toolbar from '@mui/material/Toolbar'
 
 import { DataMenu } from './DataMenu'
 
-import logo from '../../assets/cytoscape.svg'
+import logo from '../../assets/cy-web.svg'
 import { LoginButton } from '../Login/LoginButton'
 import { LayoutMenu } from './LayoutMenu'
 import { EditMenu } from './EditMenu'
