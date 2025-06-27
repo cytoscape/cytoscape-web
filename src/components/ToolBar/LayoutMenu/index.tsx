@@ -1,6 +1,6 @@
 import Button from '@mui/material/Button'
 import { Box, Divider, Tooltip, MenuItem } from '@mui/material'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { IdType } from '../../../models/IdType'
@@ -18,6 +18,7 @@ import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { useUndoStack } from '../../../task/UndoStack'
 import { LayoutAlgorithm } from '../../../models'
+import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 
 interface DropdownMenuProps {
   label: string
@@ -27,6 +28,11 @@ interface DropdownMenuProps {
 export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
   const [layoutInfo, setLayoutInfo] = useState<string | undefined>(undefined)
+  const [layoutCounter, setLayoutCounter] = useState<number>(0)
+
+  const getRendererFunction = useRendererFunctionStore(
+    (state) => state.getFunction,
+  )
 
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
@@ -58,6 +64,24 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     networkId: IdType,
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
+
+  // Effect to handle fit after layout completion
+  useEffect(() => {
+    if (layoutCounter > 0) {
+      const fitFunction = getRendererFunction('cyjs', 'fit')
+      if (fitFunction !== undefined) {
+        // Use double requestAnimationFrame to ensure DOM updates are complete
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            fitFunction()
+            console.log('Fit after layout function called for: cyjs')
+          })
+        })
+      } else {
+        console.warn('Fit function not available for renderer: cyjs')
+      }
+    }
+  }, [layoutCounter, getRendererFunction])
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const target: Network = networks.get(targetNetworkId) ?? ({} as Network)
@@ -105,7 +129,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
     // Update node positions in the view model
     updateNodePositions(targetNetworkId, positionMap)
-    
+
     postEdit(
       UndoCommandType.APPLY_LAYOUT,
       `Apply layout`,
@@ -113,6 +137,9 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       [targetNetworkId, positionMap],
     )
     setIsRunning(false)
+
+    // Trigger fit by incrementing counter
+    setLayoutCounter((prev) => prev + 1)
     console.log('Finished layout')
   }
 
