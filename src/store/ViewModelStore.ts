@@ -105,9 +105,12 @@ export const useViewModelStore = create(
                   (viewModel) => viewModel.viewId === networkView.viewId,
                 )
               if (existingViewModel !== undefined) {
-                // Replace the existing one if it already exists
+                // Replace the existing one if it already exists, but preserve selection state
                 const index =
                   state.viewModels[networkId]?.indexOf(existingViewModel)
+                // Preserve existing selection state
+                networkView.selectedNodes = existingViewModel.selectedNodes
+                networkView.selectedEdges = existingViewModel.selectedEdges
                 state.viewModels[networkId][index] = networkView
                 return state
               }
@@ -159,6 +162,27 @@ export const useViewModelStore = create(
             if (viewList === undefined) {
               return state
             }
+
+            // // Check if selection actually changed to avoid unnecessary updates
+            // const currentView = viewList[0]
+            // if (currentView) {
+            //   const nodesEqual =
+            //     currentView.selectedNodes.length === selectedNodes.length &&
+            //     currentView.selectedNodes.every((id) =>
+            //       selectedNodes.includes(id),
+            //     )
+
+            //   const edgesEqual =
+            //     currentView.selectedEdges.length === selectedEdges.length &&
+            //     currentView.selectedEdges.every((id) =>
+            //       selectedEdges.includes(id),
+            //     )
+
+            //   // If selection hasn't changed, don't create new objects
+            //   if (nodesEqual && edgesEqual) {
+            //     return state
+            //   }
+            // }
 
             const newViewList: NetworkView[] = []
             viewList.forEach((view: NetworkView) => {

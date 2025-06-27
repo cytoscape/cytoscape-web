@@ -9,17 +9,31 @@ import { useNetworkStore } from '../../store/NetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useUndoStack } from '../../task/UndoStack'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
 
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType
+  rendererId: string
   disabled?: boolean
 }
 export const ApplyLayoutButton = ({
   targetNetworkId,
   disabled = false,
+  rendererId,
 }: ApplyLayoutButtonProps): JSX.Element => {
+  const getRendererFunction = useRendererFunctionStore(
+    (state) => state.getFunction,
+  )
+
   const [layoutInfo, setLayoutInfo] = useState<string | undefined>(undefined)
+
+  // Counter to trigger fit after layout is applied
+  // This is necessary to ensure the fit happens after the layout is applied
+  // and the DOM has been updated with the new positions.
+  // The number itself is not important, just keeping track of changes.
+  const [layoutCounter, setLayoutCounter] = useState<number>(0)
+
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
   )
@@ -59,6 +73,29 @@ export const ApplyLayoutButton = ({
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
+  // Effect to handle fit after layout completion
+  useEffect(() => {
+    // If layoutCounter is 0, no layout has been applied yet, so no need to call fit
+    if (layoutCounter > 0) {
+      const fitFunction = getRendererFunction(rendererId, 'fit')
+      if (fitFunction !== undefined) {
+        // Use double requestAnimationFrame pattern to ensure DOM updates are complete.
+        // This is a common pattern to ensure that the fit happens after the layout
+        // has been applied and the DOM has been updated with the new positions.
+        // The first requestAnimationFrame ensures that the layout changes are applied,
+        // and the second one ensures that the DOM has been updated before the
+        // fit function call.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            fitFunction()
+          })
+        })
+      } else {
+        console.warn('Fit function not available for renderer:', rendererId)
+      }
+    }
+  }, [layoutCounter, rendererId, getRendererFunction])
+
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
     const prevPositions = new Map<IdType, [number, number]>()
 
@@ -69,6 +106,10 @@ export const ApplyLayoutButton = ({
     )
     // Update node positions in the view model
     updateNodePositions(networkId, positionMap)
+
+    // Trigger fit  AFTER layout is applied by incrementing counter
+    setLayoutCounter((prev) => prev + 1)
+
     postEdit(
       UndoCommandType.APPLY_LAYOUT,
       `Apply ${layoutInfo} Layout`,

@@ -373,4 +373,34 @@ describe('useViewModelStore', () => {
       result.current.getViewModel(networkModelId)?.nodeViews.node3,
     ).toBeDefined()
   })
+
+  it('should not update state when selection content is the same in exclusiveSelect', async () => {
+    const { result } = renderHook(() => useViewModelStore())
+    
+    // Add initial view model
+    act(() => {
+      result.current.add(networkModelId, mockNetworkView)
+    })
+    
+    // Select some nodes and edges
+    act(() => {
+      result.current.exclusiveSelect(networkModelId, ['node1', 'node2'], ['edge1'])
+    })
+
+    // Get the view model reference
+    const viewModelBefore = result.current.getViewModel(networkModelId)
+
+    // Call exclusiveSelect with the same selection (should not create new objects)
+    act(() => {
+      result.current.exclusiveSelect(networkModelId, ['node1', 'node2'], ['edge1'])
+    })
+
+    // Get the view model reference after
+    const viewModelAfter = result.current.getViewModel(networkModelId)
+
+    // Object references should be the same since content didn't change
+    expect(viewModelBefore).toBe(viewModelAfter)
+    expect(viewModelBefore?.selectedNodes).toBe(viewModelAfter?.selectedNodes)
+    expect(viewModelBefore?.selectedEdges).toBe(viewModelAfter?.selectedEdges)
+  })
 })
