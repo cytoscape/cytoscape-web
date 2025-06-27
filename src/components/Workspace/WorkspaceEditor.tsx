@@ -407,7 +407,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     const selectedNodeStr = search.get(SelectionStates.SelectedNodes)
     const selectedEdgeStr = search.get(SelectionStates.SelectedEdges)
 
-    // Just ignore if no selection states are provided
+    // Just ignore if no selection states are provided in the URL
     if (
       selectedNodeStr === undefined ||
       selectedNodeStr === null ||

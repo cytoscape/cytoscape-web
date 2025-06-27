@@ -9,7 +9,7 @@ import { useNetworkStore } from '../../store/NetworkStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useUndoStack } from '../../task/UndoStack'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
 
 interface ApplyLayoutButtonProps {
@@ -27,6 +27,11 @@ export const ApplyLayoutButton = ({
   )
 
   const [layoutInfo, setLayoutInfo] = useState<string | undefined>(undefined)
+
+  // Counter to trigger fit after layout is applied
+  // This is necessary to ensure the fit happens after the layout is applied
+  // and the DOM has been updated with the new positions.
+  // The number itself is not important, just keeping track of changes.
   const [layoutCounter, setLayoutCounter] = useState<number>(0)
 
   const networks: Map<string, Network> = useNetworkStore(
@@ -70,10 +75,16 @@ export const ApplyLayoutButton = ({
 
   // Effect to handle fit after layout completion
   useEffect(() => {
+    // If layoutCounter is 0, no layout has been applied yet, so no need to call fit
     if (layoutCounter > 0) {
       const fitFunction = getRendererFunction(rendererId, 'fit')
       if (fitFunction !== undefined) {
-        // Use double requestAnimationFrame to ensure DOM updates are complete
+        // Use double requestAnimationFrame pattern to ensure DOM updates are complete.
+        // This is a common pattern to ensure that the fit happens after the layout
+        // has been applied and the DOM has been updated with the new positions.
+        // The first requestAnimationFrame ensures that the layout changes are applied,
+        // and the second one ensures that the DOM has been updated before the
+        // fit function call.
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             fitFunction()
@@ -96,7 +107,7 @@ export const ApplyLayoutButton = ({
     // Update node positions in the view model
     updateNodePositions(networkId, positionMap)
 
-    // Trigger fit by incrementing counter
+    // Trigger fit  AFTER layout is applied by incrementing counter
     setLayoutCounter((prev) => prev + 1)
 
     postEdit(

@@ -1,6 +1,9 @@
 import { Box, IconButton, Tooltip } from '@mui/material'
 import { ZoomOutMap } from '@mui/icons-material'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
+import { IdType } from '../../models'
+import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { useUiStateStore } from '../../store/UiStateStore'
 
 interface FitButtonProps {
   rendererId: string
@@ -17,13 +20,34 @@ export const FitButton = ({
     (state) => state.getFunction,
   )
 
+  // This is the ID of network in the selected viewport.
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+
+  const currentNetworkId: IdType = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+
+  const networkId: IdType = activeNetworkId ?? currentNetworkId
+
   const handleClick = (): void => {
-    const fitFunction = getRendererFunction(rendererId, FIT_FUNCTION_NAME)
+    const fitFunctionByRenderer = getRendererFunction(
+      rendererId,
+      FIT_FUNCTION_NAME,
+    )
+    const fitFunctionByNetworkId = getRendererFunction(
+      rendererId,
+      FIT_FUNCTION_NAME,
+      networkId,
+    )
+
+    // If there are two or more renderers, the active window has higher priority.
+    const fitFunction = fitFunctionByNetworkId ?? fitFunctionByRenderer
     if (fitFunction !== undefined) {
       fitFunction()
-      console.log('Fit function called for:', rendererId)
     } else {
-      console.log('Fit function not available')
+      console.warn('Fit function not available')
     }
   }
 

@@ -22,6 +22,7 @@ import { AppConfigContext } from '../AppConfigContext'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { useRendererStore } from '../store/RendererStore'
 import { useRendererFunctionStore } from '../store/RendererFunctionStore'
+import { DEFAULT_RENDERER_ID } from '../store/DefaultRenderer'
 
 export const useUndoStack = () => {
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
@@ -148,9 +149,14 @@ export const useUndoStack = () => {
         // Fit viewport to center the layout
         const fitFunction = useRendererFunctionStore
           .getState()
-          .getFunction('cyjs', 'fit', networkId)
+          .getFunction(DEFAULT_RENDERER_ID, 'fit', networkId)
         if (fitFunction) {
-          fitFunction()
+          // Use double requestAnimationFrame pattern to ensure DOM updates are complete
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              fitFunction()
+            })
+          })
         }
       },
       [UndoCommandType.DELETE_COLUMN]: (params: any[]) => {

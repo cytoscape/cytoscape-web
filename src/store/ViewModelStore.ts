@@ -163,26 +163,26 @@ export const useViewModelStore = create(
               return state
             }
 
-            // Check if selection actually changed to avoid unnecessary updates
-            const currentView = viewList[0]
-            if (currentView) {
-              const nodesEqual =
-                currentView.selectedNodes.length === selectedNodes.length &&
-                currentView.selectedNodes.every((id) =>
-                  selectedNodes.includes(id),
-                )
+            // // Check if selection actually changed to avoid unnecessary updates
+            // const currentView = viewList[0]
+            // if (currentView) {
+            //   const nodesEqual =
+            //     currentView.selectedNodes.length === selectedNodes.length &&
+            //     currentView.selectedNodes.every((id) =>
+            //       selectedNodes.includes(id),
+            //     )
 
-              const edgesEqual =
-                currentView.selectedEdges.length === selectedEdges.length &&
-                currentView.selectedEdges.every((id) =>
-                  selectedEdges.includes(id),
-                )
+            //   const edgesEqual =
+            //     currentView.selectedEdges.length === selectedEdges.length &&
+            //     currentView.selectedEdges.every((id) =>
+            //       selectedEdges.includes(id),
+            //     )
 
-              // If selection hasn't changed, don't create new objects
-              if (nodesEqual && edgesEqual) {
-                return state
-              }
-            }
+            //   // If selection hasn't changed, don't create new objects
+            //   if (nodesEqual && edgesEqual) {
+            //     return state
+            //   }
+            // }
 
             const newViewList: NetworkView[] = []
             viewList.forEach((view: NetworkView) => {

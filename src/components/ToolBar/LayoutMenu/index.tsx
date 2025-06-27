@@ -19,6 +19,7 @@ import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { useUndoStack } from '../../../task/UndoStack'
 import { LayoutAlgorithm } from '../../../models'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
+import { DEFAULT_RENDERER_ID } from '../../../store/DefaultRenderer'
 
 interface DropdownMenuProps {
   label: string
@@ -27,7 +28,8 @@ interface DropdownMenuProps {
 
 export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
-  const [layoutInfo, setLayoutInfo] = useState<string | undefined>(undefined)
+
+  // Counter to trigger fit function after layout is applied
   const [layoutCounter, setLayoutCounter] = useState<number>(0)
 
   const getRendererFunction = useRendererFunctionStore(
@@ -68,9 +70,11 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   // Effect to handle fit after layout completion
   useEffect(() => {
     if (layoutCounter > 0) {
-      const fitFunction = getRendererFunction('cyjs', 'fit')
+      // TODO: add support for multiple renderers
+      const fitFunction = getRendererFunction(DEFAULT_RENDERER_ID, 'fit')
       if (fitFunction !== undefined) {
-        // Use double requestAnimationFrame to ensure DOM updates are complete
+        // Use double requestAnimationFrame pattern to ensure DOM updates are complete
+        // This guarantees that the fit function is called after the layout has been applied
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             fitFunction()
@@ -137,9 +141,10 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     )
     setIsRunning(false)
 
-    // Trigger fit by incrementing counter
+    // Trigger fit() by incrementing counter
+    // This is because fit function should be called separately after layout is applied
+    // to support viewport recording.
     setLayoutCounter((prev) => prev + 1)
-    console.log('Finished layout')
   }
 
   const getMenuItems = (): any => {
@@ -170,7 +175,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             ) as LayoutEngine
             const { nodes, edges } = target
             setIsRunning(true)
-            setLayoutInfo(engine.algorithms[name].displayName)
+            // setLayoutInfo(engine.algorithms[name].displayName)
             engine.apply(nodes, edges, afterLayout, engine.algorithms[name])
           },
         }
