@@ -366,12 +366,12 @@ const WorkSpaceEditor = (): JSX.Element => {
               positionMap: Map<IdType, [number, number]>,
             ): void => {
               updateNodePositions(networkId, positionMap)
-              
+
               // Fit the viewport to center the initial layout
               if (fitFunction) {
                 fitFunction()
               }
-              
+
               updateSummary(networkId, nextSummary)
               setIsRunning(false)
               setNetworkModified(networkId, false)
@@ -406,6 +406,16 @@ const WorkSpaceEditor = (): JSX.Element => {
   const restoreSelectionStates = (): void => {
     const selectedNodeStr = search.get(SelectionStates.SelectedNodes)
     const selectedEdgeStr = search.get(SelectionStates.SelectedEdges)
+
+    // Just ignore if no selection states are provided
+    if (
+      selectedNodeStr === undefined ||
+      selectedNodeStr === null ||
+      selectedEdgeStr === undefined ||
+      selectedEdgeStr === null
+    ) {
+      return
+    }
 
     let selectedNodes: IdType[] = []
     let selectedEdges: IdType[] = []
