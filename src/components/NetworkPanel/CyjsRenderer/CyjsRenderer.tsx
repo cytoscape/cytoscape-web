@@ -651,7 +651,30 @@ const CyjsRenderer = ({
       return
     }
 
+    // This is the application-level selection state
     const { selectedNodes, selectedEdges } = networkView
+
+    // Get current selection from Cytoscape.js to compare
+    const currentSelectedNodes = cy
+      .nodes(':selected')
+      .map((ele: any) => ele.data('id'))
+    const currentSelectedEdges = cy
+      .edges(':selected')
+      .map((ele: any) => ele.data('id'))
+
+    // Check if selection actually changed to avoid unnecessary updates
+    const nodesChanged =
+      selectedNodes.length !== currentSelectedNodes.length ||
+      !selectedNodes.every((id) => currentSelectedNodes.includes(id))
+
+    const edgesChanged =
+      selectedEdges.length !== currentSelectedEdges.length ||
+      !selectedEdges.every((id) => currentSelectedEdges.includes(id))
+
+    // Skip update if selection hasn't actually changed
+    if (!nodesChanged && !edgesChanged) {
+      return
+    }
 
     // Clear selection
     if (selectedNodes.length === 0 && selectedEdges.length === 0) {

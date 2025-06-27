@@ -74,7 +74,6 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             fitFunction()
-            console.log('Fit after layout function called for: cyjs')
           })
         })
       } else {

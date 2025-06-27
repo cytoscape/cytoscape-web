@@ -77,7 +77,6 @@ export const ApplyLayoutButton = ({
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             fitFunction()
-            console.log('Fit after layout function called for:', rendererId)
           })
         })
       } else {

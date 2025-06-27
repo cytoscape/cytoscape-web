@@ -38,10 +38,6 @@ export const useRendererStore = create(
           state.viewports[rendererId] = {}
         }
         state.viewports[rendererId][networkId] = viewport
-        console.log(
-          `!! Viewport set for renderer ${rendererId} and network ${networkId}:`,
-          viewport,
-        )
       })
     },
 
