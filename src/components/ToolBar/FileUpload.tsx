@@ -36,10 +36,12 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/network-utils'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { createDataFromLocalCx2 } from '../../utils/cx-utils'
+import { createDataFromLocalSif } from '../../utils/sif-utils'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { useMessageStore } from '../../store/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { validateCX2 } from '../../models/CxModel/impl/validator'
+
 interface FileUploadProps {
   show: boolean
   handleClose: () => void
@@ -189,6 +191,75 @@ export function FileUpload(props: FileUploadProps) {
     }
   }
 
+  const handleSifFile = async (file: File, sifText: string) => {
+    try {
+      const name = generateUniqueName(
+        Object.values(summaries).map((s) => s.name),
+        file.name,
+      )
+
+      const localUuid = uuidv4()
+      const res = await createDataFromLocalSif(localUuid, sifText)
+      const {
+        network,
+        nodeTable,
+        edgeTable,
+        visualStyle,
+        networkView,
+        visualStyleOptions,
+      } = res
+
+      const localNodeCount = network.nodes.length
+      const localEdgeCount = network.edges.length
+
+      await putNetworkSummaryToDb({
+        isNdex: false,
+        ownerUUID: localUuid,
+        name,
+        isReadOnly: false,
+        subnetworkIds: [],
+        isValid: false,
+        warnings: [],
+        isShowcase: false,
+        isCertified: false,
+        indexLevel: '',
+        hasLayout: false, // SIF files don't contain layout information
+        hasSample: false,
+        cxFileSize: 0,
+        cx2FileSize: 0,
+        properties: [], // SIF files don't have network properties
+        owner: '',
+        version: '',
+        completed: false,
+        visibility: Visibility.LOCAL,
+        nodeCount: localNodeCount,
+        edgeCount: localEdgeCount,
+        description: 'Imported from SIF file',
+        creationTime: new Date(Date.now()),
+        externalId: localUuid,
+        isDeleted: false,
+        modificationTime: new Date(Date.now()),
+      })
+
+      setVisualStyleOptions(localUuid, visualStyleOptions)
+      addNetworkToWorkspace(localUuid)
+      setCurrentNetworkId(localUuid)
+      addNewNetwork(network)
+      setVisualStyle(localUuid, visualStyle)
+      setTables(localUuid, nodeTable, edgeTable)
+      setViewModel(localUuid, networkView)
+    } catch (error) {
+      console.error(error)
+      addMessage({
+        duration: 3000,
+        message: 'Failed to parse SIF file',
+        severity: MessageSeverity.ERROR,
+      })
+    } finally {
+      props.handleClose()
+    }
+  }
+
   const summaries = useNetworkSummaryStore((state) => state.summaries)
   const addMessage = useMessageStore((state) => state.addMessage)
 
@@ -208,7 +279,7 @@ export function FileUpload(props: FileUploadProps) {
       addMessage({
         duration: 3000,
         message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported.
-        The supported files are .csv, .txt, .tsv, and .cx2. 
+        The supported files are .csv, .txt, .tsv, .cx2, and .sif. 
         (Error: ${files?.[0]?.errors?.[0]?.message ?? 'Unknown error'})`,
         severity: MessageSeverity.ERROR,
       })
@@ -257,6 +328,8 @@ export function FileUpload(props: FileUploadProps) {
 
       if (fileExtension === 'cx2') {
         handleCX2File(file, text)
+      } else if (fileExtension === 'sif') {
+        handleSifFile(file, text)
       } else {
         // Simple validator for .txt, .csv, and .tsv files
 
@@ -342,7 +415,8 @@ export function FileUpload(props: FileUploadProps) {
                     fileExtension !== 'csv' &&
                     fileExtension !== 'txt' &&
                     fileExtension !== 'tsv' &&
-                    fileExtension !== 'cx2'
+                    fileExtension !== 'cx2' &&
+                    fileExtension !== 'sif'
                   ) {
                     return {
                       code: 'file-invalid-type',
@@ -372,7 +446,7 @@ export function FileUpload(props: FileUploadProps) {
                       Drag network file here
                     </Text>
                     <Text size="sm" inline mt={7}>
-                      Supported file types: .csv, .txt, .tsv, .cx2.
+                      Supported file types: .csv, .txt, .tsv, .cx2, .sif.
                     </Text>
                     <Text size="sm" c="dimmed" inline>
                       Microsoft Excel files are not supported.
