@@ -10,6 +10,7 @@ import {
 import { Dropzone, FileWithPath } from '@mantine/dropzone'
 import { ModalsProvider } from '@mantine/modals'
 import { v4 as uuidv4 } from 'uuid'
+import Papa from 'papaparse'
 
 import {
   getAttributeDeclarations,
@@ -331,8 +332,7 @@ export function FileUpload(props: FileUploadProps) {
       } else if (fileExtension === 'sif') {
         handleSifFile(file, text)
       } else {
-        // Simple validator for .txt, .csv, and .tsv files
-
+        // Generalized delimiter check for .txt, .csv, and .tsv files
         const trimmedText = text.trim()
 
         if (trimmedText.length === 0) {
@@ -340,8 +340,11 @@ export function FileUpload(props: FileUploadProps) {
           return
         }
 
-        const lines = trimmedText.split('\n')
-        const firstLine = lines[0].trim()
+        const lines = trimmedText
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0)
+        const firstLine = lines[0] || ''
 
         if (firstLine.length === 0 && trimmedText.length > 0) {
           addMessage({
@@ -352,25 +355,35 @@ export function FileUpload(props: FileUploadProps) {
           return
         }
 
-        // Simple test for CSV and TSV
-        if (fileExtension === 'csv') {
-          if (!firstLine.includes(',') && firstLine.length > 0) {
-            addMessage({
-              duration: 3000,
-              message: `File ${file.name} is a .csv file, 
-                but its first line does not contain commas. 
-                Please ensure it is a valid CSV.`,
-              severity: MessageSeverity.ERROR,
-            })
-            return
+        // Acceptable delimiters: comma, semicolon, tab, space
+        const possibleDelimiters = [',', ';', '\t', ' ']
+        let detectedDelimiter = null
+        let columnCount = 1
+        for (const delimiter of possibleDelimiters) {
+          const count = firstLine.split(delimiter).length
+          if (count > 1) {
+            detectedDelimiter = delimiter
+            columnCount = count
+            break
           }
-        } else if (fileExtension === 'tsv') {
-          if (!firstLine.includes('\t') && firstLine.length > 0) {
+        }
+
+        if (!detectedDelimiter && firstLine.length > 0) {
+          addMessage({
+            duration: 3000,
+            message: `File ${file.name} does not appear to start with a delimited pattern (comma, semicolon, tab, or space). Please check your file format.`,
+            severity: MessageSeverity.ERROR,
+          })
+          return
+        }
+
+        // Optionally, check that the next line has the same number of columns
+        if (lines.length > 1 && detectedDelimiter) {
+          const secondLineCount = lines[1].split(detectedDelimiter).length
+          if (secondLineCount !== columnCount) {
             addMessage({
               duration: 3000,
-              message: `File ${file.name} is a .tsv file, 
-                but its first line does not contain tabs. 
-                Please ensure it is a valid TSV.`,
+              message: `File ${file.name} header and first data row have different column counts. Please check your file format.`,
               severity: MessageSeverity.ERROR,
             })
             return
