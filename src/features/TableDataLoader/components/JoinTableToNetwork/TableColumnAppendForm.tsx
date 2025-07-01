@@ -14,6 +14,8 @@ import {
   Divider,
   Alert,
   Switch,
+  Radio,
+  TextInput,
 } from '@mantine/core'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
@@ -93,6 +95,14 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
   const [skipNLines, setSkipNLines] = useState(0)
   const [useFirstRowAsColumns, setUseFirstRowAsColumns] = useState(true)
 
+  const [decimalDelimiter, setDecimalDelimiter] = useState<string>('.')
+  const [customDecimalDelimiter, setCustomDecimalDelimiter] =
+    useState<string>('')
+  const effectiveDecimalDelimiter =
+    decimalDelimiter === 'custom' && customDecimalDelimiter
+      ? customDecimalDelimiter
+      : decimalDelimiter
+
   const [rows, setRows] = useState<DataTableValue[]>(() => {
     const result = Papa.parse(rawText, {
       header: useFirstRowAsColumns,
@@ -100,7 +110,24 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
     })
     let headers: string[] = []
     headers = result.meta.fields as string[]
-    return result.data as DataTableValue[]
+    // Transform decimal delimiter if needed
+    return (result.data as DataTableValue[]).map((row) => {
+      if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
+        const newRow: Record<string, any> = {}
+        for (const key in row) {
+          if (
+            typeof row[key] === 'string' &&
+            row[key].includes(effectiveDecimalDelimiter)
+          ) {
+            newRow[key] = row[key].replace(effectiveDecimalDelimiter, '.')
+          } else {
+            newRow[key] = row[key]
+          }
+        }
+        return newRow
+      }
+      return row
+    })
   })
   const [columns, setColumns] = useState<ColumnAppendState[]>(() => {
     const result = Papa.parse(rawText, {
@@ -206,7 +233,25 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
     let headers: string[]
     if (useFirstRowAsColumns) {
       headers = result.meta.fields as string[]
-      setRows(rows as DataTableValue[])
+      setRows(
+        (rows as DataTableValue[]).map((row) => {
+          if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
+            const newRow: Record<string, any> = {}
+            for (const key in row) {
+              if (
+                typeof row[key] === 'string' &&
+                row[key].includes(effectiveDecimalDelimiter)
+              ) {
+                newRow[key] = row[key].replace(effectiveDecimalDelimiter, '.')
+              } else {
+                newRow[key] = row[key]
+              }
+            }
+            return newRow
+          }
+          return row
+        }),
+      )
       const nextColumns = headers.map((c, i) => {
         return {
           ...(columns[i] ?? {}),
@@ -237,9 +282,33 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
         },
       )
 
-      setRows(nextRows)
+      setRows(
+        nextRows.map((row) => {
+          if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
+            const newRow: Record<string, any> = {}
+            for (const key in row) {
+              if (
+                typeof row[key] === 'string' &&
+                row[key].includes(effectiveDecimalDelimiter)
+              ) {
+                newRow[key] = row[key].replace(effectiveDecimalDelimiter, '.')
+              } else {
+                newRow[key] = row[key]
+              }
+            }
+            return newRow
+          }
+          return row
+        }),
+      )
     }
-  }, [rawText, skipNLines, useFirstRowAsColumns])
+  }, [
+    rawText,
+    skipNLines,
+    useFirstRowAsColumns,
+    decimalDelimiter,
+    customDecimalDelimiter,
+  ])
 
   const columnsToImport = columns.filter(
     (c) => c.meaning !== ColumnAppendType.NotImported,
@@ -479,20 +548,63 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
             </Button>
           </Popover.Target>
           <Popover.Dropdown>
-            <Switch
-              label="Use first row as column names"
-              checked={useFirstRowAsColumns}
-              onChange={(event) =>
-                setUseFirstRowAsColumns(event.currentTarget.checked)
-              }
-            />
-            <NumberInput
-              min={0}
-              size="sm"
-              label="Skip first N lines"
-              value={skipNLines}
-              onChange={(value) => setSkipNLines(Number(value))}
-            />
+            <Box mb="md">
+              <Text fw={500} size="sm" mb={4}>
+                Decimal Delimiter
+              </Text>
+              <Radio.Group
+                value={decimalDelimiter}
+                onChange={setDecimalDelimiter}
+                size="sm"
+              >
+                <Group gap="xs">
+                  <Radio value="." label="Dot (e.g. 1.23)" />
+                  <Radio value="," label="Comma (e.g. 1,23)" />
+                  <Radio value="custom" label="Custom" />
+                </Group>
+              </Radio.Group>
+              {decimalDelimiter === 'custom' && (
+                <TextInput
+                  label="Custom Decimal Delimiter"
+                  value={customDecimalDelimiter}
+                  onChange={(event) => {
+                    const val = event.currentTarget.value
+                    if (val.length <= 1) setCustomDecimalDelimiter(val)
+                  }}
+                  placeholder="Enter a single character"
+                  size="sm"
+                  mt="xs"
+                  error={
+                    decimalDelimiter === 'custom' &&
+                    customDecimalDelimiter.length !== 1
+                      ? 'Please enter a single character.'
+                      : undefined
+                  }
+                />
+              )}
+            </Box>
+            <Divider my="sm" />
+            <Box mb="md">
+              <Text fw={500} size="sm" mb={4}>
+                Table Structure
+              </Text>
+              <Switch
+                label="Use first row as column names"
+                checked={useFirstRowAsColumns}
+                onChange={(event) =>
+                  setUseFirstRowAsColumns(event.currentTarget.checked)
+                }
+                mb="xs"
+              />
+              <NumberInput
+                min={0}
+                size="sm"
+                label="Skip first N lines"
+                value={skipNLines}
+                onChange={(value) => setSkipNLines(Number(value))}
+                mt="xs"
+              />
+            </Box>
           </Popover.Dropdown>
         </Popover>
         <Group justify="space-between" gap="lg">
