@@ -21,6 +21,7 @@ import PieChartIcon from '@mui/icons-material/PieChart'
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { IdType } from '../../../models/IdType'
 import { useTableStore } from '../../../store/TableStore'
 import { Column } from '../../../models'
@@ -360,7 +361,14 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
 
       {/* Start Angle slider/input */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}>
-        <Typography variant="subtitle2">Start Angle (degrees)</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="subtitle2">
+            Start Angle (degrees)
+          </Typography>
+          <Tooltip title="0° → 3 o'clock; 90° → 12 o'clock; 180° → 9 o'clock; 270° → 6 o'clock">
+            <InfoOutlinedIcon fontSize="small" color="action" />
+          </Tooltip>
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Slider
             value={cy_startAngle}
@@ -393,7 +401,14 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       {/* Hole Size for RingChart only */}
       {kind === 'RingChart' && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}>
-          <Typography variant="subtitle2">Hole Size (0–1)</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography variant="subtitle2">
+              Hole Size (0–1)
+            </Typography>
+            <Tooltip title="0 → full pie (no hole); 1 → completely hollow (no chart)">
+              <InfoOutlinedIcon fontSize="small" color="action" />
+            </Tooltip>
+          </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Slider
               value={cy_holeSize ?? 0.4}
