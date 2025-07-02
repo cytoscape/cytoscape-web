@@ -574,7 +574,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
             onClick={handleRemoveGraphics}
             disabled={step === 0}
           >
-            Remove Graphics
+            Remove Charts
           </Button>
         </Box>
         <Box>

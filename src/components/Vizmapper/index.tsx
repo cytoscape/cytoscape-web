@@ -157,7 +157,8 @@ export default function VizmapperView(props: {
     const fallbackImgs = (() => {
     
       const result: VisualProperty<any>[] = []
-      for (let i = 1; i <= 9; i++) {
+      // For now, we only show the first property
+      for (let i = 1; i <= 1; i++) {
         const img = customGraphicVps.find(vp => vp.name === `nodeImageChart${i}`)
         if (img) result.push(img)
       }
