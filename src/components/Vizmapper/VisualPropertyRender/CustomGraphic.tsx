@@ -27,6 +27,8 @@ import { useTableStore } from '../../../store/TableStore'
 import { Column } from '../../../models'
 import { CustomGraphicsType } from '../../../models/VisualStyleModel'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 
 /** The shape of chart-specific properties */
 export interface ChartProperties {
@@ -245,7 +247,18 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
         idx === i ? color : col
       ),
     })
+  const count = cy_dataColumns.length
 
+  const moveRow = (from: number, to: number) => {
+    if (count <= 1) return
+    const newCols = Array.from(cy_dataColumns)
+    const newColors = Array.from(cy_colors)
+    const [colMoved] = newCols.splice(from, 1)
+    const [colorMoved] = newColors.splice(from, 1)
+    newCols.splice(to, 0, colMoved)
+    newColors.splice(to, 0, colorMoved)
+    update({ cy_dataColumns: newCols, cy_colors: newColors })
+  }
   // assign colors evenly based on palette
   const handlePaletteChange = (scheme: string) => {
     const base = PALETTES[scheme] || []
@@ -310,7 +323,25 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
           (c) => c === col || !cy_dataColumns.includes(c)
         )
         return (
-          <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, border: '1px solid #eee', borderRadius: 1 }}>
+            {/* Move Up with wrap */}
+            <IconButton
+              size="small"
+              onClick={() => moveRow(i, (i - 1 + count) % count)}
+              disabled={count <= 1}
+            >
+              <ArrowUpwardIcon fontSize="small" />
+            </IconButton>
+
+            {/* Move Down with wrap */}
+            <IconButton
+              size="small"
+              onClick={() => moveRow(i, (i + 1) % count)}
+              disabled={count <= 1}
+            >
+              <ArrowDownwardIcon fontSize="small" />
+            </IconButton>
+
             <FormControl sx={{ flex: 1 }} size="small">
               <InputLabel id={`col-label-${i}`}>Node Attribute</InputLabel>
               <Select
@@ -339,13 +370,14 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
             <IconButton
               size="small"
               onClick={() => removeRow(i)}
-              disabled={cy_dataColumns.length <= 1}
+              disabled={count <= 1}
             >
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
         )
       })}
+
 
       {/* Moved "Add Node Attribute" button above Start Angle */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
@@ -659,7 +691,7 @@ export function CustomGraphicPicker(props: {
         onValueChange(v)
         closePopover('confirm')
       }}
-      
+
     />
   )
 }
