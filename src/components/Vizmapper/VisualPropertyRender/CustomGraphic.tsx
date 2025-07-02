@@ -525,6 +525,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     setRingProps(defaults)
     setKind('PieChart')
     setStep(1)
+    onConfirm(DEFAULT_CUSTOM_GRAPHICS)
   }
 
   return (
@@ -658,6 +659,7 @@ export function CustomGraphicPicker(props: {
         onValueChange(v)
         closePopover('confirm')
       }}
+      
     />
   )
 }
