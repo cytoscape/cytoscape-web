@@ -286,29 +286,6 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
         </Select>
       </FormControl>
 
-      {/* Preview aligned with current properties: one swatch per property */}
-      {cy_dataColumns.length > 0 && (
-        <Box>
-          <Typography variant="subtitle2">Segment Colors Preview</Typography>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-            {cy_colors.map((col, idx) => (
-              <Tooltip key={idx} title={col}>
-                <Box
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    bgcolor: col,
-                    border: '1px solid',
-                    borderColor: 'grey.400',
-                    borderRadius: 0.5,
-                  }}
-                />
-              </Tooltip>
-            ))}
-          </Box>
-        </Box>
-      )}
-
       {/* Node Attributes & Colors */}
       <Typography variant="subtitle2">Node Attributes &amp; Colors</Typography>
       {cy_dataColumns.map((col, i) => {
