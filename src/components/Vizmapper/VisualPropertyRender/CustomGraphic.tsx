@@ -163,6 +163,22 @@ const PALETTES: Record<string, string[]> = {
     '#f10021', '#ff6a43', '#ffb262', '#ffe393', '#e0f6f9',
     '#a8e0ed', '#6db8d9', '#3d82c0',
   ],
+  Virdis1: [
+    '#ffea00', '#98e21e', '#00ce71', '#00af91', '#008f9a',
+    '#2f689b', '#55378d', '#560061',
+  ],
+  Virdis2: [
+    '#fcfec2', '#ffbf86', '#ff7762', '#ec3379', '#b31b8e',
+    '#75008e', '#2d0c60', '#000001',
+  ],
+  Virdis3: [
+    '#effb00', '#ffc100', '#ff8b46', '#f25872', '#d41995',
+    '#a600b3', '#6b00b2', '#120096',
+  ],
+  Virdis4: [
+    '#fbffa6', '#ffc600', '#ff7e00', '#ed3c46', '#ba106f',
+    '#7c007c', '#350062', '#000001',
+  ],
 };
 
 function pickEvenly(base: string[], count: number): string[] {
@@ -210,7 +226,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
   const addRow = () =>
     update({
       cy_dataColumns: [...cy_dataColumns, nextDefaultCol],
-      cy_colors: [...cy_colors, '#000000'],
+      cy_colors: [...cy_colors, '#FFFFFF'],
     })
 
   const removeRow = (i: number) =>
