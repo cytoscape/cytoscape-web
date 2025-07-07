@@ -4,6 +4,9 @@ import {
 } from '../VisualPropertyValue'
 import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
 import { VisualStyle } from '../VisualStyle'
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
+import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
+import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
 
 export const DEFAULT_NODE_LABEL_POSITION: NodeLabelPositionType = {
   HORIZONTAL_ALIGN: 'center',
@@ -106,6 +109,12 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'string',
     defaultValue: '',
     bypassMap: new Map(),
+    mapping: {
+      type: MappingFunctionType.Passthrough,
+      attribute: 'name',
+      visualPropertyType: VisualPropertyValueTypeName.String,
+      defaultValue: '',
+    } as PassthroughMappingFunction,
   },
   nodeLabelColor: {
     group: 'node',
@@ -128,7 +137,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeLabelFont',
     displayName: 'Label Font',
     type: 'font',
-    defaultValue: 'SansSerif',
+    defaultValue: 'sans-serif',
     bypassMap: new Map(),
   },
   nodeLabelRotation: {
@@ -556,7 +565,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeLabelFont',
     displayName: 'Label Font',
     type: 'font',
-    defaultValue: 'Dialog',
+    defaultValue: 'sans-serif',
     bypassMap: new Map(),
   },
   edgeLabelRotation: {
