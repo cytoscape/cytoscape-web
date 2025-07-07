@@ -619,7 +619,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeSelectedPaint',
     displayName: 'Selected Color',
     type: 'color',
-    defaultValue: '#FF0000',
+    defaultValue: 'red',
     bypassMap: new Map(),
   },
   edgeMaxLabelWidth: {
