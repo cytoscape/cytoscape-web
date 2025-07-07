@@ -37,7 +37,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeShape',
     type: 'nodeShape',
     displayName: 'Shape',
-    defaultValue: 'ellipse',
+    defaultValue: 'round-rectangle',
     bypassMap: new Map(),
   },
   nodeBorderColor: {
@@ -45,7 +45,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeBorderColor',
     displayName: 'Border Color',
     type: 'color',
-    defaultValue: '#000000',
+    defaultValue: '#CCCCCC',
     bypassMap: new Map(),
   },
   nodeBorderLineType: {
@@ -61,7 +61,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeBorderWidth',
     displayName: 'Border Width',
     type: 'number',
-    defaultValue: 1,
+    defaultValue: 0,
     bypassMap: new Map(),
   },
   nodeBorderOpacity: {
@@ -80,7 +80,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeHeight',
     displayName: 'Height',
     type: 'number',
-    defaultValue: 40,
+    defaultValue: 35,
     bypassMap: new Map(),
   },
   nodeWidth: {
@@ -88,7 +88,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeWidth',
     displayName: 'Width',
     type: 'number',
-    defaultValue: 40,
+    defaultValue: 75,
     bypassMap: new Map(),
   },
   nodeBackgroundColor: {
@@ -96,7 +96,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeBackgroundColor',
     displayName: 'Fill Color',
     type: 'color',
-    defaultValue: '#FFFFFF',
+    defaultValue: '#89D0F5',
     bypassMap: new Map(),
   },
   nodeLabel: {
@@ -128,7 +128,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeLabelFont',
     displayName: 'Label Font',
     type: 'font',
-    defaultValue: 'serif',
+    defaultValue: 'SansSerif',
     bypassMap: new Map(),
   },
   nodeLabelRotation: {
@@ -209,7 +209,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeSelectedPaint',
     displayName: 'Selected Color',
     type: 'color',
-    defaultValue: 'yellow',
+    defaultValue: '#FFFF00',
     bypassMap: new Map(),
   },
   nodeMaxLabelWidth: {
@@ -470,7 +470,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeLineColor',
     displayName: 'Stroke Color',
     type: 'color',
-    defaultValue: '#000000',
+    defaultValue: '#848484',
     bypassMap: new Map(),
     tooltip: 'The fill color of the edge line when not selected.',
   },
@@ -548,7 +548,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeLabelFontSize',
     displayName: 'Label Font Size',
     type: 'number',
-    defaultValue: 12,
+    defaultValue: 10,
     bypassMap: new Map(),
   },
   edgeLabelFont: {
@@ -556,7 +556,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeLabelFont',
     displayName: 'Label Font',
     type: 'font',
-    defaultValue: 'serif',
+    defaultValue: 'Dialog',
     bypassMap: new Map(),
   },
   edgeLabelRotation: {
@@ -593,7 +593,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeWidth',
     displayName: 'Width',
     type: 'number',
-    defaultValue: 1,
+    defaultValue: 2,
     bypassMap: new Map(),
   },
   edgeVisibility: {
@@ -610,7 +610,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeSelectedPaint',
     displayName: 'Selected Color',
     type: 'color',
-    defaultValue: 'red',
+    defaultValue: '#FF0000',
     bypassMap: new Map(),
   },
   edgeMaxLabelWidth: {
