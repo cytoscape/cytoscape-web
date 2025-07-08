@@ -78,58 +78,17 @@ export const runSearch = (
   operator: Operator,
   exact?: boolean,
 ): string[] => {
-  let toBeSelected: string[] = []
+  const tokens = query.replace(/,/g, ' ').split(/[\s,]+/g)
 
-  const exactOptions = {
-    threshold: 0, // Only exact matches
-    distance: 0, // Match only if the entire string matches exactly
-    useExtendedSearch: true, // Enables strict search modifiers
-    limit: 1000, // Set a high limit for maximum results
-  }
-
-  if (exact) {
-    query = `="${query}"`
-  }
+  const results: string[][] = tokens.map((t) => {
+    const searchToken = exact ? `=${t}` : t
+    const searchResults = index.search(searchToken)
+    return searchResults.map((r) => r.item.id as string)
+  })
 
   if (operator === 'AND') {
-    // Split tokens unless exact is true
-    const tokens: string[] = query.split(/[\s,]+/g)
-    const results: string[][] = []
-
-    tokens.forEach((token: string) => {
-      if (token !== '') {
-        // Run search with exact options if exact is enabled
-        const res = index.search(token)
-        const ids: string[] = []
-        res.forEach((r: any) => {
-          const objectId: string = r.item.id as string
-          ids.push(objectId)
-        })
-        results.push(ids)
-      }
-    })
-
-    // Find the intersection of all results (AND search)
-    toBeSelected = _.intersection(...results)
+    return _.intersection(...results)
   } else {
-    // OR search
-    const normalizedQuery = query.replace(/,/g, ' ')
-    const tokens: string[] = normalizedQuery.split(/[\s,]+/g)
-    const results: string[][] = []
-
-    tokens.forEach((token: string) => {
-      if (token !== '') {
-        const result = index.search(token)
-        const ids: string[] = []
-        result.forEach((r: any) => {
-          const objectId: string = r.item.id as string
-          ids.push(objectId)
-        })
-        results.push(ids)
-      }
-    })
-    toBeSelected = _.union(...results)
+    return _.union(...results)
   }
-
-  return toBeSelected
 }
