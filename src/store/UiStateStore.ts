@@ -7,7 +7,10 @@ import { TableUIState } from '../models/UiModel/TableUi'
 import { putUiStateToDb } from './persist/db'
 
 import { TableType } from '../models/StoreModel/TableStoreModel'
-import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
+import {
+  TableDisplayConfiguration,
+  VisualStyleOptions,
+} from '../models/VisualStyleModel/VisualStyleOptions'
 import { UiStateStore } from '../models/StoreModel/UiStateStoreModel'
 import { Ui } from '../models/UiModel'
 
@@ -172,6 +175,14 @@ export const useUiStateStore = create(
             visualEditorProperties: {
               nodeSizeLocked: false,
               arrowColorMatchesEdge: false,
+              tableDisplayConfiguration: {
+                nodeTable: {
+                  columnConfiguration: [],
+                },
+                edgeTable: {
+                  columnConfiguration: [],
+                },
+              },
             },
           },
         }
@@ -222,6 +233,34 @@ export const useUiStateStore = create(
             visualEditorProperties: {
               ...get().ui.visualStyleOptions[networkId]?.visualEditorProperties,
               arrowColorMatchesEdge,
+            },
+          },
+        }
+
+        const nextUi = {
+          ...get().ui,
+          visualStyleOptions: nextVisualStyleOptions,
+        }
+
+        void putUiStateToDb(nextUi)
+
+        state.ui.visualStyleOptions = nextVisualStyleOptions
+
+        return state
+      })
+    },
+    setTableDisplayConfiguration(
+      networkId,
+      tableDisplayConfiguration: TableDisplayConfiguration,
+    ) {
+      set((state) => {
+        const nextVisualStyleOptions = {
+          ...get().ui.visualStyleOptions,
+          [networkId]: {
+            ...get().ui.visualStyleOptions[networkId],
+            visualEditorProperties: {
+              ...get().ui.visualStyleOptions[networkId]?.visualEditorProperties,
+              tableDisplayConfiguration,
             },
           },
         }
