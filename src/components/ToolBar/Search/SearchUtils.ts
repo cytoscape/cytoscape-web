@@ -78,48 +78,58 @@ export const runSearch = (
   operator: Operator,
   exact?: boolean,
 ): string[] => {
-  let toBeSelected: string[] = [];
+  let toBeSelected: string[] = []
 
   const exactOptions = {
-    threshold: 0,          // Only exact matches
-    distance: 0,           // Match only if the entire string matches exactly
+    threshold: 0, // Only exact matches
+    distance: 0, // Match only if the entire string matches exactly
     useExtendedSearch: true, // Enables strict search modifiers
-    limit: 1000,           // Set a high limit for maximum results
-  };
+    limit: 1000, // Set a high limit for maximum results
+  }
 
   if (exact) {
-    query = `="${query}"`;
+    query = `="${query}"`
   }
 
   if (operator === 'AND') {
     // Split tokens unless exact is true
-    const tokens: string[] = exact ? [query] : query.split(/\s+/g);
-    const results: string[][] = [];
+    const tokens: string[] = query.split(/[\s,]+/g)
+    const results: string[][] = []
 
     tokens.forEach((token: string) => {
       if (token !== '') {
         // Run search with exact options if exact is enabled
-        const res = index.search(token, exact ? exactOptions : undefined);
-        const ids: string[] = [];
+        const res = index.search(token)
+        const ids: string[] = []
         res.forEach((r: any) => {
-          const objectId: string = r.item.id as string;
-          ids.push(objectId);
-        });
-        results.push(ids);
+          const objectId: string = r.item.id as string
+          ids.push(objectId)
+        })
+        results.push(ids)
       }
-    });
+    })
 
     // Find the intersection of all results (AND search)
-    toBeSelected = _.intersection(...results);
+    toBeSelected = _.intersection(...results)
   } else {
     // OR search
-    const result = index.search(query, exact ? exactOptions : undefined);
+    const normalizedQuery = query.replace(/,/g, ' ')
+    const tokens: string[] = normalizedQuery.split(/[\s,]+/g)
+    const results: string[][] = []
 
-    result.forEach((r: any) => {
-      const objectId: string = r.item.id as string;
-      toBeSelected.push(objectId);
-    });
+    tokens.forEach((token: string) => {
+      if (token !== '') {
+        const result = index.search(token)
+        const ids: string[] = []
+        result.forEach((r: any) => {
+          const objectId: string = r.item.id as string
+          ids.push(objectId)
+        })
+        results.push(ids)
+      }
+    })
+    toBeSelected = _.union(...results)
   }
 
-  return toBeSelected;
-};
+  return toBeSelected
+}
