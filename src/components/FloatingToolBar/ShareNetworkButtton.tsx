@@ -165,7 +165,7 @@ export const ShareNetworkButton = ({
     const finalQuery = allParams.toString()
 
     // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
-    const newUrl = `${baseUrl}0/networks/${currentNetworkId}?${finalQuery}`
+    const newUrl = `${baseUrl}cytoscape/0/networks/${currentNetworkId}?${finalQuery}`
     console.log(`Copied Sharable URL: ${newUrl}`)
     void copyTextToClipboard(newUrl).then(() => {
       // Notify user that the sharable URL has been copied to clipboard
