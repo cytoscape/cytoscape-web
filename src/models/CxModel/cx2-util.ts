@@ -184,21 +184,86 @@ const getVisualEditorProperties = (cx2: Cx2): VisualStyleOptions => {
     return entry.hasOwnProperty(CoreAspectTag.VisualEditorProperties)
   })
 
+  const attributeDeclarations =
+    getAttributeDeclarations(cx2).attributeDeclarations[0]
+
+  const nodeAttributeNames = Object.keys(attributeDeclarations.nodes || {})
+  const edgeAttributeNames = Object.keys(attributeDeclarations.edges || {})
+
+  const nodeColumnConfiguration = nodeAttributeNames.map((attributeName) => ({
+    attributeName,
+    visible: true,
+  }))
+  const edgeColumnConfiguration = edgeAttributeNames.map((attributeName) => ({
+    attributeName,
+    visible: true,
+  }))
+
   if (filtered.length === 0) {
     return {
       visualEditorProperties: {
         nodeSizeLocked: false,
         arrowColorMatchesEdge: false,
+        tableDisplayConfiguration: {
+          nodeTable: {
+            columnConfiguration: nodeColumnConfiguration,
+          },
+          edgeTable: {
+            columnConfiguration: edgeColumnConfiguration,
+          },
+        },
       },
     }
   }
   const properties = Object.values(
     Object.values(filtered[0])[0][0],
   )[0] as VisualEditorProperties
+
+  // Use the tableDisplayConfiguration from properties if it exists, otherwise use the generated one
+  const tableDisplayConfiguration = properties?.tableDisplayConfiguration ?? {
+    nodeTable: {
+      columnConfiguration: nodeColumnConfiguration,
+    },
+    edgeTable: {
+      columnConfiguration: edgeColumnConfiguration,
+    },
+  }
+
+  // when a cx network is imported into cytoscape web, ensure that all the node attributes and column attributes
+  // are populated in the tabledisplayconfiguration
+  nodeAttributeNames.forEach((a) => {
+    const attributeFound =
+      tableDisplayConfiguration.nodeTable.columnConfiguration.find(
+        (c) => c.attributeName === a,
+      )
+
+    if (!attributeFound) {
+      tableDisplayConfiguration.nodeTable.columnConfiguration.push({
+        attributeName: a,
+        visible: true,
+      })
+    }
+  })
+
+  edgeAttributeNames.forEach((a) => {
+    const attributeFound =
+      tableDisplayConfiguration.edgeTable.columnConfiguration.find(
+        (c) => c.attributeName === a,
+      )
+
+    if (!attributeFound) {
+      tableDisplayConfiguration.edgeTable.columnConfiguration.push({
+        attributeName: a,
+        visible: true,
+      })
+    }
+  })
+
   return {
     visualEditorProperties: {
       nodeSizeLocked: properties?.nodeSizeLocked ?? false,
       arrowColorMatchesEdge: properties.arrowColorMatchesEdge ?? false,
+      tableDisplayConfiguration,
     },
   }
 }

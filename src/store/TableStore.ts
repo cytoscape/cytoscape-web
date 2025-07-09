@@ -89,13 +89,6 @@ export const useTableStore = create(
               tableToUpdate.columns.splice(columnIndex, 1)
               tableToUpdate.columns.splice(newColumnIndex, 0, column)
 
-              const rows = tableToUpdate.rows.values()
-              Array.from(rows).forEach((row) => {
-                const v = row[column.name]
-                delete row[column.name]
-                row[column.name] = v
-              })
-
               state.tables[networkId][tableTypeKey] = tableToUpdate
             }
 

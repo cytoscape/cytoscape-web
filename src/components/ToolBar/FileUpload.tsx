@@ -10,6 +10,7 @@ import {
 import { Dropzone, FileWithPath } from '@mantine/dropzone'
 import { ModalsProvider } from '@mantine/modals'
 import { v4 as uuidv4 } from 'uuid'
+import Papa from 'papaparse'
 
 import {
   getAttributeDeclarations,
@@ -36,9 +37,12 @@ import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/network-utils'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { createDataFromLocalCx2 } from '../../utils/cx-utils'
+import { createDataFromLocalSif } from '../../utils/sif-utils'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { useMessageStore } from '../../store/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
+import { validateCX2 } from '../../models/CxModel/impl/validator'
+
 interface FileUploadProps {
   show: boolean
   handleClose: () => void
@@ -70,40 +74,133 @@ export function FileUpload(props: FileUploadProps) {
   const handleCX2File = async (file: File, jsonStr: string) => {
     try {
       const json = JSON.parse(jsonStr)
-      const networkAttributeDeclarations =
-        getAttributeDeclarations(json)?.attributeDeclarations?.[0]
-          ?.networkAttributes ?? {}
-      const networkAttributes = getNetworkAttributes(json)?.[0] ?? {}
+      const validationResult = validateCX2(json)
 
-      const name =
-        networkAttributes.name ??
-        generateUniqueName(
-          Object.values(summaries).map((s) => s.name),
-          file.name,
+      if (!validationResult.isValid) {
+        const errorMessages = validationResult.errors
+          .map((err) => err.message)
+          .join('\n')
+        addMessage({
+          duration: 15000,
+          message: `Failed to parse CX2 file:\n${errorMessages}. \n Please see the CX2 spec for full details https://cytoscape.org/cx/cx2/specification/cytoscape-exchange-format-specification-(version-2)/ `,
+          severity: MessageSeverity.ERROR,
+        })
+        return
+      } else {
+        const networkAttributeDeclarations =
+          getAttributeDeclarations(json)?.attributeDeclarations?.[0]
+            ?.networkAttributes ?? {}
+        const networkAttributes = getNetworkAttributes(json)?.[0] ?? {}
+
+        const name =
+          networkAttributes.name ??
+          generateUniqueName(
+            Object.values(summaries).map((s) => s.name),
+            file.name,
+          )
+
+        const description = networkAttributes.description ?? ''
+
+        const localProperties: NdexNetworkProperty[] = Object.entries(
+          networkAttributes,
+        )
+          .filter(([key, value]) => {
+            // Exclude 'name' and 'description' as they are handled separately as metadata fields
+            // TODO this 'handleCX2File' function should be moved to the cx2-utils or a hook
+            return key !== 'name' && key !== 'description'
+          })
+          .map(([key, value]) => {
+            return {
+              predicateString: key,
+              value: value as ValueType,
+              dataType:
+                networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
+              subNetworkId: null,
+            }
+          })
+
+        const localUuid = uuidv4()
+        const res = await createDataFromLocalCx2(localUuid, json)
+        const {
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkView,
+          visualStyleOptions,
+          otherAspects,
+        } = res
+
+        const nodesAspect = getNodes(json)
+        const anyNodeHasPosition = nodesAspect.some(
+          (n) => n.x !== undefined && n.y !== undefined,
         )
 
-      const description = networkAttributes.description ?? ''
+        const localNodeCount = network.nodes.length
+        const localEdgeCount = network.edges.length
+        await putNetworkSummaryToDb({
+          isNdex: false,
+          ownerUUID: localUuid,
+          name,
+          isReadOnly: false,
+          subnetworkIds: [],
+          isValid: false,
+          warnings: [],
+          isShowcase: false,
+          isCertified: false,
+          indexLevel: '',
+          hasLayout: anyNodeHasPosition,
+          hasSample: false,
+          cxFileSize: 0,
+          cx2FileSize: 0,
+          properties: localProperties,
+          owner: '',
+          version: '',
+          completed: false,
+          visibility: Visibility.LOCAL,
+          nodeCount: localNodeCount,
+          edgeCount: localEdgeCount,
+          description,
+          creationTime: new Date(Date.now()),
+          externalId: localUuid,
+          isDeleted: false,
+          modificationTime: new Date(Date.now()),
+        })
+        // TODO the db syncing logic in various stores assumes the updated network is the current network
+        // therefore, as a temporary fix, the first operation that should be done is to set the
+        // current network to be the new network id
+        setVisualStyleOptions(localUuid, visualStyleOptions)
+        addNetworkToWorkspace(localUuid)
+        setCurrentNetworkId(localUuid)
+        addNewNetwork(network)
+        setVisualStyle(localUuid, visualStyle)
+        setTables(localUuid, nodeTable, edgeTable)
+        setViewModel(localUuid, networkView)
+        if (otherAspects !== undefined) {
+          addAllOpaqueAspects(localUuid, otherAspects)
+        }
+      }
+    } catch (error) {
+      console.error(error)
+      addMessage({
+        duration: 3000,
+        message: 'Failed to parse CX2 file',
+        severity: MessageSeverity.ERROR,
+      })
+    } finally {
+      props.handleClose()
+    }
+  }
 
-      const localProperties: NdexNetworkProperty[] = Object.entries(
-        networkAttributes,
+  const handleSifFile = async (file: File, sifText: string) => {
+    try {
+      const name = generateUniqueName(
+        Object.values(summaries).map((s) => s.name),
+        file.name,
       )
-        .filter(([key, value]) => {
-          // Exclude 'name' and 'description' as they are handled separately as metadata fields
-          // TODO this 'handleCX2File' function should be moved to the cx2-utils or a hook
-          return key !== 'name' && key !== 'description'
-        })
-        .map(([key, value]) => {
-          return {
-            predicateString: key,
-            value: value as ValueType,
-            dataType:
-              networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
-            subNetworkId: null,
-          }
-        })
 
       const localUuid = uuidv4()
-      const res = await createDataFromLocalCx2(localUuid, json)
+      const res = await createDataFromLocalSif(localUuid, sifText)
       const {
         network,
         nodeTable,
@@ -111,16 +208,11 @@ export function FileUpload(props: FileUploadProps) {
         visualStyle,
         networkView,
         visualStyleOptions,
-        otherAspects,
       } = res
-
-      const nodesAspect = getNodes(json)
-      const anyNodeHasPosition = nodesAspect.some(
-        (n) => n.x !== undefined && n.y !== undefined,
-      )
 
       const localNodeCount = network.nodes.length
       const localEdgeCount = network.edges.length
+
       await putNetworkSummaryToDb({
         isNdex: false,
         ownerUUID: localUuid,
@@ -132,26 +224,24 @@ export function FileUpload(props: FileUploadProps) {
         isShowcase: false,
         isCertified: false,
         indexLevel: '',
-        hasLayout: anyNodeHasPosition,
+        hasLayout: false, // SIF files don't contain layout information
         hasSample: false,
         cxFileSize: 0,
         cx2FileSize: 0,
-        properties: localProperties,
+        properties: [], // SIF files don't have network properties
         owner: '',
         version: '',
         completed: false,
         visibility: Visibility.LOCAL,
         nodeCount: localNodeCount,
         edgeCount: localEdgeCount,
-        description,
+        description: 'Imported from SIF file',
         creationTime: new Date(Date.now()),
         externalId: localUuid,
         isDeleted: false,
         modificationTime: new Date(Date.now()),
       })
-      // TODO the db syncing logic in various stores assumes the updated network is the current network
-      // therefore, as a temporary fix, the first operation that should be done is to set the
-      // current network to be the new network id
+
       setVisualStyleOptions(localUuid, visualStyleOptions)
       addNetworkToWorkspace(localUuid)
       setCurrentNetworkId(localUuid)
@@ -159,14 +249,11 @@ export function FileUpload(props: FileUploadProps) {
       setVisualStyle(localUuid, visualStyle)
       setTables(localUuid, nodeTable, edgeTable)
       setViewModel(localUuid, networkView)
-      if (otherAspects !== undefined) {
-        addAllOpaqueAspects(localUuid, otherAspects)
-      }
     } catch (error) {
       console.error(error)
       addMessage({
         duration: 3000,
-        message: 'Failed to parse CX2 file',
+        message: 'Failed to parse SIF file',
         severity: MessageSeverity.ERROR,
       })
     } finally {
@@ -193,7 +280,7 @@ export function FileUpload(props: FileUploadProps) {
       addMessage({
         duration: 3000,
         message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported.
-        The supported files are .csv, .txt, .tsv, and .cx2. 
+        The supported files are .csv, .txt, .tsv, .cx2, and .sif. 
         (Error: ${files?.[0]?.errors?.[0]?.message ?? 'Unknown error'})`,
         severity: MessageSeverity.ERROR,
       })
@@ -242,9 +329,10 @@ export function FileUpload(props: FileUploadProps) {
 
       if (fileExtension === 'cx2') {
         handleCX2File(file, text)
+      } else if (fileExtension === 'sif') {
+        handleSifFile(file, text)
       } else {
-        // Simple validator for .txt, .csv, and .tsv files
-
+        // Generalized delimiter check for .txt, .csv, and .tsv files
         const trimmedText = text.trim()
 
         if (trimmedText.length === 0) {
@@ -252,8 +340,11 @@ export function FileUpload(props: FileUploadProps) {
           return
         }
 
-        const lines = trimmedText.split('\n')
-        const firstLine = lines[0].trim()
+        const lines = trimmedText
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0)
+        const firstLine = lines[0] || ''
 
         if (firstLine.length === 0 && trimmedText.length > 0) {
           addMessage({
@@ -264,25 +355,35 @@ export function FileUpload(props: FileUploadProps) {
           return
         }
 
-        // Simple test for CSV and TSV
-        if (fileExtension === 'csv') {
-          if (!firstLine.includes(',') && firstLine.length > 0) {
-            addMessage({
-              duration: 3000,
-              message: `File ${file.name} is a .csv file, 
-                but its first line does not contain commas. 
-                Please ensure it is a valid CSV.`,
-              severity: MessageSeverity.ERROR,
-            })
-            return
+        // Acceptable delimiters: comma, semicolon, tab, space
+        const possibleDelimiters = [',', ';', '\t', ' ']
+        let detectedDelimiter = null
+        let columnCount = 1
+        for (const delimiter of possibleDelimiters) {
+          const count = firstLine.split(delimiter).length
+          if (count > 1) {
+            detectedDelimiter = delimiter
+            columnCount = count
+            break
           }
-        } else if (fileExtension === 'tsv') {
-          if (!firstLine.includes('\t') && firstLine.length > 0) {
+        }
+
+        if (!detectedDelimiter && firstLine.length > 0) {
+          addMessage({
+            duration: 3000,
+            message: `File ${file.name} does not appear to start with a delimited pattern (comma, semicolon, tab, or space). Please check your file format.`,
+            severity: MessageSeverity.ERROR,
+          })
+          return
+        }
+
+        // Optionally, check that the next line has the same number of columns
+        if (lines.length > 1 && detectedDelimiter) {
+          const secondLineCount = lines[1].split(detectedDelimiter).length
+          if (secondLineCount !== columnCount) {
             addMessage({
               duration: 3000,
-              message: `File ${file.name} is a .tsv file, 
-                but its first line does not contain tabs. 
-                Please ensure it is a valid TSV.`,
+              message: `File ${file.name} header and first data row have different column counts. Please check your file format.`,
               severity: MessageSeverity.ERROR,
             })
             return
@@ -327,7 +428,8 @@ export function FileUpload(props: FileUploadProps) {
                     fileExtension !== 'csv' &&
                     fileExtension !== 'txt' &&
                     fileExtension !== 'tsv' &&
-                    fileExtension !== 'cx2'
+                    fileExtension !== 'cx2' &&
+                    fileExtension !== 'sif'
                   ) {
                     return {
                       code: 'file-invalid-type',
@@ -357,7 +459,7 @@ export function FileUpload(props: FileUploadProps) {
                       Drag network file here
                     </Text>
                     <Text size="sm" inline mt={7}>
-                      Supported file types: .csv, .txt, .tsv, .cx2.
+                      Supported file types: .csv, .txt, .tsv, .cx2, .sif.
                     </Text>
                     <Text size="sm" c="dimmed" inline>
                       Microsoft Excel files are not supported.

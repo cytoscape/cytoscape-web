@@ -25,7 +25,6 @@ import {
   CircularProgress,
 } from '@mui/material'
 import { useCredentialStore } from '../../../store/CredentialStore'
-import { formatBytes } from '../../../utils/byte-conversion'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
@@ -290,8 +289,14 @@ export const LoadFromNdexDialog = (
                 edgeCount,
                 modificationTime,
                 cx2FileSize,
-                subnetworkIds,
               } = network
+
+              // Ensure subnetworkIds is defined and is an array
+              let { subnetworkIds } = network
+              if (subnetworkIds === undefined) {
+                subnetworkIds = []
+              }
+
               const selected = selectedNetworks.includes(externalId)
               const networkAlreadyLoaded = networkIds.includes(externalId)
               const networkCanBeSelected =
@@ -317,7 +322,6 @@ export const LoadFromNdexDialog = (
                     backgroundColor: '#d9d9d9',
                     cursor: 'not-allowed',
                   }}
-                  key={externalId}
                   hover={false}
                   selected={false}
                 >

@@ -20,6 +20,9 @@ import { useUiStateStore } from '../store/UiStateStore'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { AppConfigContext } from '../AppConfigContext'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
+import { useRendererStore } from '../store/RendererStore'
+import { useRendererFunctionStore } from '../store/RendererFunctionStore'
+import { DEFAULT_RENDERER_ID } from '../store/DefaultRenderer'
 
 export const useUndoStack = () => {
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
@@ -59,6 +62,7 @@ export const useUndoStack = () => {
   const deleteColumn = useTableStore((state) => state.deleteColumn)
   const addNodesAndEdges = useNetworkStore((state) => state.addNodesAndEdges)
   const setValues = useTableStore((state) => state.setValues)
+  const setViewport = useRendererStore((state) => state.setViewport)
   const { undoStackSize } = useContext(AppConfigContext)
 
   // ID of the network on focus (can be different from the main network)
@@ -136,7 +140,24 @@ export const useUndoStack = () => {
         setDefault(params[0], params[1], params[2])
       },
       [UndoCommandType.APPLY_LAYOUT]: (params: any[]) => {
-        updateNodePositions(params[0], params[1])
+        const networkId = params[0]
+        const positions = params[1]
+
+        // Update node positions
+        updateNodePositions(networkId, positions)
+
+        // Fit viewport to center the layout
+        const fitFunction = useRendererFunctionStore
+          .getState()
+          .getFunction(DEFAULT_RENDERER_ID, 'fit', networkId)
+        if (fitFunction) {
+          // Use double requestAnimationFrame pattern to ensure DOM updates are complete
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              fitFunction()
+            })
+          })
+        }
       },
       [UndoCommandType.DELETE_COLUMN]: (params: any[]) => {
         setTable(params[0], params[1], params[2])
@@ -230,8 +251,6 @@ export const useUndoStack = () => {
       [UndoCommandType.REMOVE_MAPPING]: (params: any[]) => {
         setMapping(params[0], params[1], params[2])
       },
-      [UndoCommandType.SET_LAYOUT_SCALE]: (params: any[]) => {},
-      [UndoCommandType.FIT_CONTENT]: (params: any[]) => {},
       [UndoCommandType.CREATE_MAPPING]: (params: any[]) => {
         setMapping(params[0], params[1], undefined)
       },
@@ -280,6 +299,7 @@ export const useUndoStack = () => {
     addNodes,
     editRows,
     setNetwork,
+    setViewport,
   ])
 
   const redoLastEdit = useCallback(() => {
@@ -300,7 +320,19 @@ export const useUndoStack = () => {
         setDefault(params[0], params[1], params[2])
       },
       [UndoCommandType.APPLY_LAYOUT]: (params: any[]) => {
-        updateNodePositions(params[0], params[1])
+        const networkId = params[0]
+        const positions = params[1]
+
+        // Update node positions
+        updateNodePositions(networkId, positions)
+
+        // Fit viewport to center the layout
+        const fitFunction = useRendererFunctionStore
+          .getState()
+          .getFunction('cyjs', 'fit', networkId)
+        if (fitFunction) {
+          fitFunction()
+        }
       },
       [UndoCommandType.DELETE_COLUMN]: (params: any[]) => {
         deleteColumn(params[0], params[1], params[3].id)
@@ -368,8 +400,6 @@ export const useUndoStack = () => {
       [UndoCommandType.REMOVE_MAPPING]: (params: any[]) => {
         setMapping(params[0], params[1], undefined)
       },
-      [UndoCommandType.SET_LAYOUT_SCALE]: (params: any[]) => {},
-      [UndoCommandType.FIT_CONTENT]: (params: any[]) => {},
       [UndoCommandType.CREATE_MAPPING]: (params: any[]) => {
         createMapping(
           params[0],
@@ -428,6 +458,7 @@ export const useUndoStack = () => {
     editRows,
     setNetwork,
     deleteColumn,
+    setViewport,
   ])
 
   const clearStack = useCallback(() => {}, [])
