@@ -44,6 +44,7 @@ import {
   GridColumn,
   GridSelection,
   CompactSelection,
+  GridColumnIcon,
 } from '@glideapps/glide-data-grid'
 
 import {
@@ -387,6 +388,8 @@ export default function TableBrowser(props: {
       {
         id: '__sourceNodeName',
         title: 'Source Node',
+        icon: GridColumnIcon.ProtectedColumnOverlay,
+        style: 'highlight',
         type: ValueTypeName.String,
         index: 0,
         width: undefined,
@@ -405,6 +408,9 @@ export default function TableBrowser(props: {
       {
         id: '__targetNodeName',
         title: 'Target Node',
+        icon: GridColumnIcon.ProtectedColumnOverlay,
+        style: 'highlight',
+
         type: ValueTypeName.String,
         index: 1,
         width: undefined,
@@ -521,6 +527,10 @@ export default function TableBrowser(props: {
         const virtualColumn = column as any
         const cellValue = virtualColumn.getValue(dataRow)
         return {
+          cursor: 'not-allowed',
+          themeOverride: {
+            bgCell: '#D9D9D9',
+          },
           allowOverlay: false, // Virtual columns are read-only
           readonly: true,
           kind: GridCellKind.Text,
@@ -643,6 +653,7 @@ export default function TableBrowser(props: {
           columnConfiguration: nextColumnConfig,
         })
       setTableDisplayConfiguration(networkId, newTableDisplayConfiguration)
+      setNetworkModified(networkId, true)
     },
     [
       allColumns,
@@ -711,6 +722,7 @@ export default function TableBrowser(props: {
             columnConfiguration: nextColumnConfig,
           })
         setTableDisplayConfiguration(networkId, newTableDisplayConfiguration)
+        setNetworkModified(networkId, true)
       }
     },
     [
@@ -960,10 +972,12 @@ export default function TableBrowser(props: {
                       sortColumn: columnKey,
                       sortDirection: 'ascending',
                     })
+
                   setTableDisplayConfiguration(
                     networkId,
                     newTableDisplayConfiguration,
                   )
+                  setNetworkModified(networkId, true)
                 }
               }}
             >
@@ -1006,6 +1020,7 @@ export default function TableBrowser(props: {
                     networkId,
                     newTableDisplayConfiguration,
                   )
+                  setNetworkModified(networkId, true)
                 }
               }}
             >
@@ -1082,6 +1097,7 @@ export default function TableBrowser(props: {
                       networkId,
                       newTableDisplayConfiguration,
                     )
+                    setNetworkModified(networkId, true)
                   }
                 }
               }}
@@ -1196,6 +1212,7 @@ export default function TableBrowser(props: {
                 networkId,
                 newTableDisplayConfiguration,
               )
+              setNetworkModified(networkId, true)
 
               if (mappingUpdateType === 'rename') {
                 visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
@@ -1265,6 +1282,7 @@ export default function TableBrowser(props: {
               networkId,
               newTableDisplayConfiguration,
             )
+            setNetworkModified(networkId, true)
 
             if (mappingUpdateType === 'delete') {
               visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
@@ -1557,6 +1575,7 @@ export default function TableBrowser(props: {
                 networkId,
                 newTableDisplayConfiguration,
               )
+              setNetworkModified(networkId, true)
 
               setCreateColumnFormError(undefined)
               setSelection({
