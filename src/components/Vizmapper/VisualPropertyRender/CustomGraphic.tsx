@@ -552,7 +552,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   const isLastStep = step === 1
 
   // New handler to remove graphics and reset to defaults
-  const handleRemoveGraphics = () => {
+  const handleRemoveCharts = () => {
     setPieProps(defaults)
     setRingProps(defaults)
     setKind('PieChart')
@@ -635,7 +635,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
             Back
           </Button>
           <Button
-            onClick={handleRemoveGraphics}
+            onClick={handleRemoveCharts}
             disabled={step === 0}
           >
             Remove Charts
