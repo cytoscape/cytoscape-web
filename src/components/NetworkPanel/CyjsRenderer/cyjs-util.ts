@@ -270,10 +270,6 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         },
       }
       cyStyle.push(pieHoleSizeMapping as CyjsDirectMapper)
-
-      pieBackGroundMappings.forEach((mapping) => {
-        cyStyle.push(mapping as CyjsDirectMapper)
-      })
     }
 
     const addCyjsImageProperties = () => {}
