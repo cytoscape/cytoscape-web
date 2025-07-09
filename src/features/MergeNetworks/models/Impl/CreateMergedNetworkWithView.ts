@@ -134,6 +134,30 @@ export const createMergedNetworkWithView = async (
     redoStack: [],
   }
 
+  // Create default visualStyleOptions for merged network
+  const nodeTableColumnConfig = newNodeTable.columns.map((c) => ({
+    attributeName: c.name,
+    visible: true,
+  }))
+  const edgeTableColumnConfig = newEdgeTable.columns.map((c) => ({
+    attributeName: c.name,
+    visible: true,
+  }))
+  const visualStyleOptions = {
+    visualEditorProperties: {
+      nodeSizeLocked: false,
+      arrowColorMatchesEdge: false,
+      tableDisplayConfiguration: {
+        nodeTable: {
+          columnConfiguration: nodeTableColumnConfig,
+        },
+        edgeTable: {
+          columnConfiguration: edgeTableColumnConfig,
+        },
+      },
+    },
+  }
+
   return [
     {
       network: newNetwork,
@@ -143,6 +167,7 @@ export const createMergedNetworkWithView = async (
       networkViews: [newNetworkView],
       networkAttributes,
       undoRedoStack,
+      visualStyleOptions,
     },
     networkSummary,
   ]

@@ -17,6 +17,7 @@ import { createViewModelFromNetwork } from '../../../../models/ViewModel/impl/Vi
 import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
 import { NetworkView } from '../../../../models/ViewModel'
+import { VisualStyleOptions } from '../../../../models/VisualStyleModel/VisualStyleOptions'
 
 export const DEFAULT_COLUMN_MEANING = ColumnAssignmentType.EdgeAttribute
 export const DEFAULT_COLUMN_DATA_TYPE = ValueTypeName.String
@@ -173,6 +174,7 @@ export function createNetworkFromTableData(
   network: Network
   visualStyle: VisualStyle
   networkView: NetworkView
+  visualStyleOptions: VisualStyleOptions
 } {
   const tgtNodeCol = columns.find(
     (c) => c.meaning === ColumnAssignmentType.TargetNode,
@@ -348,6 +350,28 @@ export function createNetworkFromTableData(
     defaultValue: '',
   }
 
+  // Build visualEditorProperties for UI table display
+  const visualStyleOptions = {
+    visualEditorProperties: {
+      nodeSizeLocked: false,
+      arrowColorMatchesEdge: false,
+      tableDisplayConfiguration: {
+        nodeTable: {
+          columnConfiguration: nodeTableColumns.map((c) => ({
+            attributeName: c.name,
+            visible: true,
+          })),
+        },
+        edgeTable: {
+          columnConfiguration: edgeTableColumns.map((c) => ({
+            attributeName: c.name,
+            visible: true,
+          })),
+        },
+      },
+    },
+  }
+
   return {
     summary,
     nodeTable,
@@ -355,6 +379,7 @@ export function createNetworkFromTableData(
     network,
     visualStyle,
     networkView,
+    visualStyleOptions,
   }
 }
 

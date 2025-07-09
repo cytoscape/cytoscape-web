@@ -230,53 +230,6 @@ export const createDataFromLocalCx2 = async (
 }
 
 /**
- * Validate if an aspect contains valid network attributes
- *
- * @param aspect - The aspect to validate
- * @returns True if the aspect contains valid network attributes, otherwise false
- */
-const isValidNetworkAttributes = (aspect: Aspect): boolean => {
-  return (
-    Array.isArray(aspect.networkAttributes) &&
-    aspect.networkAttributes.every((attr: any) => typeof attr === 'object')
-  )
-}
-
-/**
- * Validate if an aspect contains valid nodes
- *
- * @param aspect - The aspect to validate
- * @returns True if the aspect contains valid nodes, otherwise false
- */
-const isValidNodes = (aspect: Aspect): boolean => {
-  return (
-    Array.isArray(aspect.nodes) &&
-    aspect.nodes.every(
-      (node: any) => typeof node === 'object' && typeof node.id === 'number',
-    )
-  )
-}
-
-/**
- * Validate if an aspect contains valid edges
- *
- * @param aspect - The aspect to validate
- * @returns True if the aspect contains valid edges, otherwise false
- */
-const isValidEdges = (aspect: Aspect): boolean => {
-  return (
-    Array.isArray(aspect.edges) &&
-    aspect.edges.every(
-      (edge: any) =>
-        typeof edge === 'object' &&
-        typeof edge.id === 'number' &&
-        typeof edge.s === 'number' &&
-        typeof edge.t === 'number',
-    )
-  )
-}
-
-/**
  * Validate if an object represents a valid CX2 network
  *
  * @param obj - The object to validate, expected to be an array of aspects
