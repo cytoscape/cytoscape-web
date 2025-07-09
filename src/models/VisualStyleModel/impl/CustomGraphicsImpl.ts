@@ -217,10 +217,6 @@ export const computeCustomGraphicsProperties = (
   heightVp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
 ) => {
-  if (value.name === CustomGraphicsNameType.None) {
-    return []
-  }
-
   if (value.name === CustomGraphicsNameType.PieChart) {
     return computePieChartProperties(id, value, row, widthVp, heightVp, mappers)
   } else if (value.name === CustomGraphicsNameType.RingChart) {
