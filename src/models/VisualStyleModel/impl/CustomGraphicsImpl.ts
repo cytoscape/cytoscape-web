@@ -31,37 +31,12 @@ export const getNonCustomGraphicVps = (
 export const getFirstValidCustomGraphicVp = (
   vps: VisualProperty<VisualPropertyValueType>[],
 ): VisualProperty<CustomGraphicsType> | undefined => {
+  // Grab all node‐image‐chart VPs in order
   const customGraphicNodeVps = getCustomGraphicNodeVps(vps)
-
-  const firstValidCustomGraphicVp = customGraphicNodeVps.find((vp) => {
-    const defaultValue = vp.defaultValue as CustomGraphicsType
-    const mapping = vp.mapping
-    const bypassMap = vp.bypassMap
-
-    const isValidCustomGraphicValue = (value: CustomGraphicsType) => {
-      return (
-        value.name === CustomGraphicsNameType.PieChart ||
-        value.name === CustomGraphicsNameType.RingChart ||
-        value.name === CustomGraphicsNameType.Image
-      )
-    }
-
-    const isValidDefaultValue = isValidCustomGraphicValue(defaultValue)
-
-    // Only support default values and bypasses for now
-    // Ignore mappings
-    // const isValidMapping = mapping !== undefined && (mapping)
-
-    const isValidBypassMap = Array.from(bypassMap.values()).every((value) =>
-      isValidCustomGraphicValue(value as CustomGraphicsType),
-    )
-
-    if (isValidDefaultValue && isValidBypassMap) {
-      return vp
-    }
-  })
-
-  return firstValidCustomGraphicVp as VisualProperty<CustomGraphicsType>
+  // Always return the first one, even if its defaultValue is “none”
+  return customGraphicNodeVps[0] as
+    | VisualProperty<CustomGraphicsType>
+    | undefined
 }
 
 export const getSizePropertyForCustomGraphic = (
@@ -78,7 +53,8 @@ export const getSizePropertyForCustomGraphic = (
 
 const sizeValueToCyjsPixelValue = (value: number) => `${value}px`
 
-const angleValueToCyjsPixelValue = (value: number) => `${((90 - value) % 360 + 360) % 360}deg`
+const angleValueToCyjsPixelValue = (value: number) =>
+  `${(((90 - value) % 360) + 360) % 360}deg`
 
 const holeSizeValueToCyjsPixelValue = (value: number) => `${value * 100}%`
 
@@ -139,28 +115,28 @@ export const computePieChartProperties = (
   const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
   const size = Math.min(width, height) - padding
 
-  const angle = pieValues.cy_startAngle ?? 0;
-  
+  const angle = pieValues.cy_startAngle ?? 0
+
   piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
 
   piePairsToAdd.push(['pieStartAngle', angleValueToCyjsPixelValue(angle)])
 
-  const colorsReversed  = pieValues.cy_colors.slice().reverse();
-  const columnsReversed = pieValues.cy_dataColumns.slice().reverse();
-  
+  const colorsReversed = pieValues.cy_colors.slice().reverse()
+  const columnsReversed = pieValues.cy_dataColumns.slice().reverse()
+
   colorsReversed.forEach((color, index) => {
-    const attribute = columnsReversed[index];
-    const attributeValue = row[attribute];
-    const value = (attributeValue ?? 0) as number;
-    const percentage = Math.min(Math.max(0, value / totalValue), 1);
-    const percentageToString = `${percentage * 100}%`;
-  
-    const bgColorSelectorStr      = `pie${index + 1}BackgroundColor`;
-    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`;
-  
-    piePairsToAdd.push([bgColorSelectorStr, color]);
-    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString]);
-  });
+    const attribute = columnsReversed[index]
+    const attributeValue = row[attribute]
+    const value = (attributeValue ?? 0) as number
+    const percentage = Math.min(Math.max(0, value / totalValue), 1)
+    const percentageToString = `${percentage * 100}%`
+
+    const bgColorSelectorStr = `pie${index + 1}BackgroundColor`
+    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`
+
+    piePairsToAdd.push([bgColorSelectorStr, color])
+    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString])
+  })
   return piePairsToAdd
 }
 
@@ -187,33 +163,32 @@ export const computeRingChartProperties = (
   const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
   const size = Math.min(width, height) - padding
 
-  const angle = pieValues.cy_startAngle ?? 0;
+  const angle = pieValues.cy_startAngle ?? 0
 
-  const holeSize = pieValues.cy_holeSize ?? 0.4;
-  
+  const holeSize = pieValues.cy_holeSize ?? 0.4
+
   piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
 
   piePairsToAdd.push(['pieStartAngle', angleValueToCyjsPixelValue(angle)])
 
   piePairsToAdd.push(['pieHole', holeSizeValueToCyjsPixelValue(holeSize)])
 
+  const colorsReversed = pieValues.cy_colors.slice().reverse()
+  const columnsReversed = pieValues.cy_dataColumns.slice().reverse()
 
-  const colorsReversed  = pieValues.cy_colors.slice().reverse();
-  const columnsReversed = pieValues.cy_dataColumns.slice().reverse();
-  
   colorsReversed.forEach((color, index) => {
-    const attribute = columnsReversed[index];
-    const attributeValue = row[attribute];
-    const value = (attributeValue ?? 0) as number;
-    const percentage = Math.min(Math.max(0, value / totalValue), 1);
-    const percentageToString = `${percentage * 100}%`;
-  
-    const bgColorSelectorStr      = `pie${index + 1}BackgroundColor`;
-    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`;
-  
-    piePairsToAdd.push([bgColorSelectorStr, color]);
-    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString]);
-  });
+    const attribute = columnsReversed[index]
+    const attributeValue = row[attribute]
+    const value = (attributeValue ?? 0) as number
+    const percentage = Math.min(Math.max(0, value / totalValue), 1)
+    const percentageToString = `${percentage * 100}%`
+
+    const bgColorSelectorStr = `pie${index + 1}BackgroundColor`
+    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`
+
+    piePairsToAdd.push([bgColorSelectorStr, color])
+    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString])
+  })
 
   return piePairsToAdd
 }
@@ -242,10 +217,21 @@ export const computeCustomGraphicsProperties = (
   heightVp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
 ) => {
+  if (value.name === CustomGraphicsNameType.None) {
+    return []
+  }
+
   if (value.name === CustomGraphicsNameType.PieChart) {
     return computePieChartProperties(id, value, row, widthVp, heightVp, mappers)
   } else if (value.name === CustomGraphicsNameType.RingChart) {
-    return computeRingChartProperties(id, value, row, widthVp, heightVp, mappers)
+    return computeRingChartProperties(
+      id,
+      value,
+      row,
+      widthVp,
+      heightVp,
+      mappers,
+    )
   } else if (value.name === CustomGraphicsNameType.Image) {
     //TODO implement image properties
     // return computeImageProperties(id, value, row, customGraphicsSizeVp, mappers)
