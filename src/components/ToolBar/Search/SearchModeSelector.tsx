@@ -1,4 +1,9 @@
-import { FormControl, FormControlLabel, FormLabel, Switch } from '@mui/material'
+import {
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  Checkbox,
+} from '@mui/material'
 import { useFilterStore } from '../../../store/FilterStore'
 
 export const SearchModeSelector = (): JSX.Element => {
@@ -16,9 +21,9 @@ export const SearchModeSelector = (): JSX.Element => {
       <FormLabel id="operator-selector-label">Search Mode</FormLabel>
       <FormControlLabel
         control={
-          <Switch color="primary" checked={exact} onChange={handleChange} />
+          <Checkbox color="primary" checked={exact} onChange={handleChange} />
         }
-        label="Exact match"
+        label="Contains"
         labelPlacement="start"
         onChange={handleChange}
       />

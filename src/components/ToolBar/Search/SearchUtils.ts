@@ -76,12 +76,12 @@ export const runSearch = (
   index: Fuse<Record<string, ValueType>>,
   query: string,
   operator: Operator,
-  exact?: boolean,
+  contains?: boolean,
 ): string[] => {
   const tokens = query.replace(/,/g, ' ').split(/[\s,]+/g)
 
   const results: string[][] = tokens.map((t) => {
-    const searchToken = exact ? `=${t}` : t
+    const searchToken = !contains ? `=${t}` : t
     const searchResults = index.search(searchToken)
     return searchResults.map((r) => r.item.id as string)
   })
