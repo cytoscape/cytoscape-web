@@ -55,6 +55,7 @@ export const ShareNetworkButton = ({
   )
 
   const isLocal = networkSummary?.isNdex !== true
+  const wsId = useWorkspaceStore(s => s.workspace.id)
 
   const addMessage = useMessageStore((state) => state.addMessage)
 
@@ -147,11 +148,11 @@ export const ShareNetworkButton = ({
     }
   }
   const handleClick = (): void => {
-    const { location } = window
-
-    // Get the origin (protocol + domain + port) instead of splitting by wsId
-    const baseUrl = location.origin + '/'
-
+    const { href } = window.location
+    // split on "/<wsId>/networks/<currentNetworkId>"
+    const [prefix] = href.split(`/${wsId}/networks/${currentNetworkId}`)
+    const baseUrl = prefix.endsWith('/') ? prefix : `${prefix}/`
+    console.log(baseUrl)
     // Get base query parameters
     const baseQuery = getQueryString()
     const allParams = new URLSearchParams(baseQuery)
@@ -165,8 +166,7 @@ export const ShareNetworkButton = ({
     const finalQuery = allParams.toString()
 
     // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
-    const newUrl = `${baseUrl}cytoscape/0/networks/${currentNetworkId}?${finalQuery}`
-    console.log(`Copied Sharable URL: ${newUrl}`)
+    const newUrl = `${baseUrl}0/networks/${currentNetworkId}?${finalQuery}` 
     void copyTextToClipboard(newUrl).then(() => {
       // Notify user that the sharable URL has been copied to clipboard
       addMessage({
