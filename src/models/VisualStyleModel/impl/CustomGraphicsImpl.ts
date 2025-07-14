@@ -27,14 +27,32 @@ export const getNonCustomGraphicVps = (
   return vps.filter((vp) => !vp.name.startsWith('nodeImageChart'))
 }
 
-// Support only default values and bypasses for now
 export const getFirstValidCustomGraphicVp = (
   vps: VisualProperty<VisualPropertyValueType>[],
 ): VisualProperty<CustomGraphicsType> | undefined => {
-  // Grab all node‐image‐chart VPs in order
   const customGraphicNodeVps = getCustomGraphicNodeVps(vps)
-  // Always return the first one, even if its defaultValue is “none”
-  return customGraphicNodeVps[0] as
+
+  // helper to test if a CustomGraphicsType is one of the supported chart/image types
+  const isValidCustomGraphicValue = (value: CustomGraphicsType) =>
+    value.name === CustomGraphicsNameType.PieChart ||
+    value.name === CustomGraphicsNameType.RingChart ||
+    value.name === CustomGraphicsNameType.Image
+
+  // find the first one whose defaultValue and all bypassMap entries are valid
+  const validVp = customGraphicNodeVps.find((vp) => {
+    const defaultValue = vp.defaultValue as CustomGraphicsType
+    const bypassMap = vp.bypassMap
+
+    const isValidDefault = isValidCustomGraphicValue(defaultValue)
+    const isValidBypass = Array.from(bypassMap.values()).every((v) =>
+      isValidCustomGraphicValue(v as CustomGraphicsType),
+    )
+
+    return isValidDefault && isValidBypass
+  })
+
+  // if we found a fully-valid VP, return it; otherwise just return the first one
+  return (validVp ?? customGraphicNodeVps[0]) as
     | VisualProperty<CustomGraphicsType>
     | undefined
 }
