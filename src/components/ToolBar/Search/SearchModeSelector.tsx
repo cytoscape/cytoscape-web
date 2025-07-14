@@ -2,7 +2,8 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
-  Checkbox,
+  RadioGroup,
+  Radio,
 } from '@mui/material'
 import { useFilterStore } from '../../../store/FilterStore'
 
@@ -12,21 +13,31 @@ export const SearchModeSelector = (): JSX.Element => {
   const { exact } = searchOptions
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    const newValue = event.target.checked
+    const newValue = event.target.value === 'exact'
     setOptions({ ...searchOptions, exact: newValue })
   }
 
   return (
     <FormControl>
       <FormLabel id="operator-selector-label">Search Mode</FormLabel>
-      <FormControlLabel
-        control={
-          <Checkbox color="primary" checked={exact} onChange={handleChange} />
-        }
-        label="Contains"
-        labelPlacement="start"
+      <RadioGroup
+        row
+        aria-labelledby="operator-selector-label"
+        name="search-mode"
+        value={exact ? 'exact' : 'contains'}
         onChange={handleChange}
-      />
+      >
+        <FormControlLabel
+          value="exact"
+          control={<Radio color="primary" />}
+          label="Equals"
+        />
+        <FormControlLabel
+          value="contains"
+          control={<Radio color="primary" />}
+          label="Contains"
+        />
+      </RadioGroup>
     </FormControl>
   )
 }

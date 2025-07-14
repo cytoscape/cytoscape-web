@@ -72,16 +72,54 @@ export const filterColumns = (
   return filteredColumns
 }
 
+/**
+ * Splits a query string into tokens, respecting double-quoted phrases.
+ * Commas and spaces are treated as delimiters.
+ * If a token is surrounded by double quotes, the quotes are removed.
+ * If a string has an unmatched double quote, it’s treated as a normal character.
+ *
+ * @param {string} query The input string to tokenize.
+ * @returns {string[]} An array of tokens.
+ */
+function tokenizeQuery(query: string): string[] {
+  // This regex matches either:
+  // 1. A sequence of characters inside double quotes: "[^"]+"
+  // 2. A sequence of characters that are not a comma or whitespace: [^,\s]+
+  const regex = /"[^"]+"|[^,\s]+/g
+  // Find all matches in the query string. If no matches, return an empty array.
+  const matches = query.match(regex) || []
+  // Process each match to remove quotes if they are balanced.
+  return matches.map((token) => {
+    // Check if the token starts and ends with a double quote
+    if (token.startsWith('"') && token.endsWith('"')) {
+      // If so, remove the quotes and return the inner content.
+      return token.slice(1, -1)
+    }
+    // Otherwise, return the token as is.
+    return token
+  })
+}
+
 export const runSearch = (
   index: Fuse<Record<string, ValueType>>,
   query: string,
   operator: Operator,
-  contains?: boolean,
+  equals?: boolean,
 ): string[] => {
-  const tokens = query.replace(/,/g, ' ').split(/[\s,]+/g)
+  const tokens = tokenizeQuery(query)
 
   const results: string[][] = tokens.map((t) => {
-    const searchToken = !contains ? `=${t}` : t
+    const tokenHasSpaces = t.includes(' ')
+    let searchToken = ''
+    if (equals) {
+      if (tokenHasSpaces) {
+        searchToken = `="${t}"`
+      } else {
+        searchToken = `=${t}`
+      }
+    } else {
+      searchToken = t
+    }
     const searchResults = index.search(searchToken)
     return searchResults.map((r) => r.item.id as string)
   })
