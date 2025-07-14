@@ -116,8 +116,8 @@ export const createDataFromLocalSif = async (
   // Minimal default visual style options
   const visualStyleOptions: VisualStyleOptions = {
     visualEditorProperties: {
-      nodeSizeLocked: true,
-      arrowColorMatchesEdge: true,
+      nodeSizeLocked: false,
+      arrowColorMatchesEdge: false,
       tableDisplayConfiguration: {
         nodeTable: {
           columnConfiguration: nodeTable.columns.map((col) => ({
