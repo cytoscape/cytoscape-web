@@ -4,6 +4,9 @@ import {
 } from '../VisualPropertyValue'
 import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
 import { VisualStyle } from '../VisualStyle'
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
+import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
+import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
 
 export const DEFAULT_NODE_LABEL_POSITION: NodeLabelPositionType = {
   HORIZONTAL_ALIGN: 'center',
@@ -37,7 +40,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeShape',
     type: 'nodeShape',
     displayName: 'Shape',
-    defaultValue: 'ellipse',
+    defaultValue: 'round-rectangle',
     bypassMap: new Map(),
   },
   nodeBorderColor: {
@@ -45,7 +48,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeBorderColor',
     displayName: 'Border Color',
     type: 'color',
-    defaultValue: '#000000',
+    defaultValue: '#006699',
     bypassMap: new Map(),
   },
   nodeBorderLineType: {
@@ -61,7 +64,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeBorderWidth',
     displayName: 'Border Width',
     type: 'number',
-    defaultValue: 1,
+    defaultValue: 0,
     bypassMap: new Map(),
   },
   nodeBorderOpacity: {
@@ -80,7 +83,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeHeight',
     displayName: 'Height',
     type: 'number',
-    defaultValue: 40,
+    defaultValue: 35,
     bypassMap: new Map(),
   },
   nodeWidth: {
@@ -88,7 +91,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeWidth',
     displayName: 'Width',
     type: 'number',
-    defaultValue: 40,
+    defaultValue: 75,
     bypassMap: new Map(),
   },
   nodeBackgroundColor: {
@@ -96,7 +99,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeBackgroundColor',
     displayName: 'Fill Color',
     type: 'color',
-    defaultValue: '#FFFFFF',
+    defaultValue: '#33FFFF',
     bypassMap: new Map(),
   },
   nodeLabel: {
@@ -106,6 +109,12 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     type: 'string',
     defaultValue: '',
     bypassMap: new Map(),
+    mapping: {
+      type: MappingFunctionType.Passthrough,
+      attribute: 'name',
+      visualPropertyType: VisualPropertyValueTypeName.String,
+      defaultValue: '',
+    } as PassthroughMappingFunction,
   },
   nodeLabelColor: {
     group: 'node',
@@ -128,7 +137,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeLabelFont',
     displayName: 'Label Font',
     type: 'font',
-    defaultValue: 'serif',
+    defaultValue: 'sans-serif',
     bypassMap: new Map(),
   },
   nodeLabelRotation: {
@@ -470,7 +479,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeLineColor',
     displayName: 'Stroke Color',
     type: 'color',
-    defaultValue: '#000000',
+    defaultValue: '#323232',
     bypassMap: new Map(),
     tooltip: 'The fill color of the edge line when not selected.',
   },
@@ -548,7 +557,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeLabelFontSize',
     displayName: 'Label Font Size',
     type: 'number',
-    defaultValue: 12,
+    defaultValue: 10,
     bypassMap: new Map(),
   },
   edgeLabelFont: {
@@ -556,7 +565,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeLabelFont',
     displayName: 'Label Font',
     type: 'font',
-    defaultValue: 'serif',
+    defaultValue: 'sans-serif',
     bypassMap: new Map(),
   },
   edgeLabelRotation: {
@@ -593,7 +602,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeWidth',
     displayName: 'Width',
     type: 'number',
-    defaultValue: 1,
+    defaultValue: 3,
     bypassMap: new Map(),
   },
   edgeVisibility: {
