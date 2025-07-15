@@ -48,7 +48,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeBorderColor',
     displayName: 'Border Color',
     type: 'color',
-    defaultValue: '#006699',
+    defaultValue: '#CCCCCC',
     bypassMap: new Map(),
   },
   nodeBorderLineType: {
@@ -99,7 +99,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeBackgroundColor',
     displayName: 'Fill Color',
     type: 'color',
-    defaultValue: '#33FFFF',
+    defaultValue: '#89D0F5',
     bypassMap: new Map(),
   },
   nodeLabel: {
@@ -218,7 +218,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'nodeSelectedPaint',
     displayName: 'Selected Color',
     type: 'color',
-    defaultValue: 'yellow',
+    defaultValue: '#FFFF00',
     bypassMap: new Map(),
   },
   nodeMaxLabelWidth: {
@@ -479,7 +479,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeLineColor',
     displayName: 'Stroke Color',
     type: 'color',
-    defaultValue: '#323232',
+    defaultValue: '#848484',
     bypassMap: new Map(),
     tooltip: 'The fill color of the edge line when not selected.',
   },
@@ -602,7 +602,7 @@ export const getDefaultVisualStyle = (): VisualStyle => ({
     name: 'edgeWidth',
     displayName: 'Width',
     type: 'number',
-    defaultValue: 3,
+    defaultValue: 2,
     bypassMap: new Map(),
   },
   edgeVisibility: {
