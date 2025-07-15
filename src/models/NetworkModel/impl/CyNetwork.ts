@@ -129,7 +129,10 @@ export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
  * @param cyJson
  * @returns
  */
-export const createFromCyJson = (id: IdType, cyJson: object): Network => {
+export const createFromCyJson = (
+  id: IdType,
+  cyJson: { elements: any },
+): Network => {
   const cyNet: CyNetwork = new CyNetwork(id)
   cyNet.store.json(cyJson)
 
