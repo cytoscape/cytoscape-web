@@ -99,7 +99,7 @@ function tokenizeQuery(query: string): string[] {
       // Otherwise, return the token as is.
       return token
     })
-    .filter((t) => t === '')
+    .filter((t) => t !== '')
 }
 
 export const runSearch = (
