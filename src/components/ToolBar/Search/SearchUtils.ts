@@ -89,15 +89,17 @@ function tokenizeQuery(query: string): string[] {
   // Find all matches in the query string. If no matches, return an empty array.
   const matches = query.match(regex) || []
   // Process each match to remove quotes if they are balanced.
-  return matches.map((token) => {
-    // Check if the token starts and ends with a double quote
-    if (token.startsWith('"') && token.endsWith('"')) {
-      // If so, remove the quotes and return the inner content.
-      return token.slice(1, -1)
-    }
-    // Otherwise, return the token as is.
-    return token
-  })
+  return matches
+    .map((token) => {
+      // Check if the token starts and ends with a double quote
+      if (token.startsWith('"') && token.endsWith('"')) {
+        // If so, remove the quotes and return the inner content.
+        return token.slice(1, -1)
+      }
+      // Otherwise, return the token as is.
+      return token
+    })
+    .filter((t) => t === '')
 }
 
 export const runSearch = (

@@ -26,16 +26,22 @@ export const SearchModeSelector = (): JSX.Element => {
         name="search-mode"
         value={exact ? 'exact' : 'contains'}
         onChange={handleChange}
+        sx={{
+          gap: 1,
+          minWidth: 0,
+          width: '100%',
+          justifyContent: 'flex-start',
+        }}
       >
         <FormControlLabel
           value="exact"
           control={<Radio color="primary" />}
-          label="Equals"
+          label={<span style={{ whiteSpace: 'nowrap' }}>Exact Match</span>}
         />
         <FormControlLabel
           value="contains"
           control={<Radio color="primary" />}
-          label="Contains"
+          label={<span style={{ whiteSpace: 'nowrap' }}>Contains</span>}
         />
       </RadioGroup>
     </FormControl>
