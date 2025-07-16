@@ -146,18 +146,29 @@ describe('parseSif', () => {
     expect(edges[0]).toMatchObject({ sourceName: 'nodeA', targetName: 'nodeA' })
   })
 
-  it('includes duplicate edges', () => {
-    const sif = 'nodeA type1 nodeB\nnodeA type1 nodeB'
-    const { nodeNames, edges } = parseSif(sif)
-    expect(nodeNames).toEqual(['nodeA', 'nodeB'])
-    expect(edges).toHaveLength(2)
-  })
-
   it('handles whitespace robustness', () => {
     const sif = '  nodeA   type1   nodeB   \nnodeC'
     const { nodeNames, edges } = parseSif(sif)
     expect(nodeNames).toEqual(['nodeA', 'nodeB', 'nodeC'])
     expect(edges).toHaveLength(1)
     expect(edges[0]).toMatchObject({ sourceName: 'nodeA', targetName: 'nodeB' })
+  })
+
+  it('ignores duplicated lines', () => {
+    const sif = [
+      'nodeA type1 nodeB',
+      'nodeA type1 nodeB', // duplicate edge line
+      'nodeC',
+      'nodeC', // duplicate orphan node line
+      'nodeA type1 nodeB', // another duplicate edge line
+    ].join('\n')
+    const { nodeNames, edges } = parseSif(sif)
+    expect(nodeNames).toEqual(['nodeA', 'nodeB', 'nodeC'])
+    expect(edges).toHaveLength(1)
+    expect(edges[0]).toMatchObject({
+      sourceName: 'nodeA',
+      interaction: 'type1',
+      targetName: 'nodeB',
+    })
   })
 })
