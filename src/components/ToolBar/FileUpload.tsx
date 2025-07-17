@@ -42,6 +42,7 @@ import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { useMessageStore } from '../../store/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { validateCX2 } from '../../models/CxModel/impl/validator'
+import { validateSif } from '../../utils/sif-utils'
 
 interface FileUploadProps {
   show: boolean
@@ -200,55 +201,69 @@ export function FileUpload(props: FileUploadProps) {
       )
 
       const localUuid = uuidv4()
-      const res = await createDataFromLocalSif(localUuid, sifText)
-      const {
-        network,
-        nodeTable,
-        edgeTable,
-        visualStyle,
-        networkView,
-        visualStyleOptions,
-      } = res
 
-      const localNodeCount = network.nodes.length
-      const localEdgeCount = network.edges.length
+      const validationResult = validateSif(sifText)
 
-      await putNetworkSummaryToDb({
-        isNdex: false,
-        ownerUUID: localUuid,
-        name,
-        isReadOnly: false,
-        subnetworkIds: [],
-        isValid: false,
-        warnings: [],
-        isShowcase: false,
-        isCertified: false,
-        indexLevel: '',
-        hasLayout: false, // SIF files don't contain layout information
-        hasSample: false,
-        cxFileSize: 0,
-        cx2FileSize: 0,
-        properties: [], // SIF files don't have network properties
-        owner: '',
-        version: '',
-        completed: false,
-        visibility: Visibility.LOCAL,
-        nodeCount: localNodeCount,
-        edgeCount: localEdgeCount,
-        description: 'Imported from SIF file',
-        creationTime: new Date(Date.now()),
-        externalId: localUuid,
-        isDeleted: false,
-        modificationTime: new Date(Date.now()),
-      })
+      if (!validationResult.isValid) {
+        const errorMessages = validationResult.errors
+          .map((err) => err.message)
+          .join('\n')
+        addMessage({
+          duration: 15000,
+          message: `Failed to parse sif file:\n${errorMessages}. \n Please see the sif spec for full details https://manual.cytoscape.org/en/stable/Supported_Network_File_Formats.html#sif-format`,
+          severity: MessageSeverity.ERROR,
+        })
+      } else {
+        const res = await createDataFromLocalSif(localUuid, sifText)
+        const {
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkView,
+          visualStyleOptions,
+        } = res
 
-      setVisualStyleOptions(localUuid, visualStyleOptions)
-      addNetworkToWorkspace(localUuid)
-      setCurrentNetworkId(localUuid)
-      addNewNetwork(network)
-      setVisualStyle(localUuid, visualStyle)
-      setTables(localUuid, nodeTable, edgeTable)
-      setViewModel(localUuid, networkView)
+        const localNodeCount = network.nodes.length
+        const localEdgeCount = network.edges.length
+
+        await putNetworkSummaryToDb({
+          isNdex: false,
+          ownerUUID: localUuid,
+          name,
+          isReadOnly: false,
+          subnetworkIds: [],
+          isValid: false,
+          warnings: [],
+          isShowcase: false,
+          isCertified: false,
+          indexLevel: '',
+          hasLayout: false, // SIF files don't contain layout information
+          hasSample: false,
+          cxFileSize: 0,
+          cx2FileSize: 0,
+          properties: [], // SIF files don't have network properties
+          owner: '',
+          version: '',
+          completed: false,
+          visibility: Visibility.LOCAL,
+          nodeCount: localNodeCount,
+          edgeCount: localEdgeCount,
+          description: 'Imported from SIF file',
+          creationTime: new Date(Date.now()),
+          externalId: localUuid,
+          isDeleted: false,
+          modificationTime: new Date(Date.now()),
+        })
+
+        setVisualStyleOptions(localUuid, visualStyleOptions)
+        addNetworkToWorkspace(localUuid)
+        setCurrentNetworkId(localUuid)
+        addNewNetwork(network)
+        setVisualStyle(localUuid, visualStyle)
+        setTables(localUuid, nodeTable, edgeTable)
+        setViewModel(localUuid, networkView)
+      }
     } catch (error) {
       console.error(error)
       addMessage({
