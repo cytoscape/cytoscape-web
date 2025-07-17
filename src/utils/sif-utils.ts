@@ -37,12 +37,9 @@ export function parseSif(sifText: string): {
   const edges: SifEdge[] = []
   let edgeId = 0
   const lines = sifText.split(/\r?\n/)
-  const seenLines = new Set<string>()
   for (const line of lines) {
     const trimmed = line.trim()
     if (!trimmed) continue
-    if (seenLines.has(trimmed)) continue // Ignore duplicated lines
-    seenLines.add(trimmed)
     const parts = trimmed.split(/\s+/)
     if (parts.length === 1) {
       // Orphan node (single node, no relationships)
