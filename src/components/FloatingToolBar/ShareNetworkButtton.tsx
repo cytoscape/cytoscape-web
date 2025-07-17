@@ -57,7 +57,6 @@ export const ShareNetworkButton = ({
   )
 
   const isLocal = networkSummary?.isNdex !== true
-  const wsId = useWorkspaceStore(s => s.workspace.id)
 
   const addMessage = useMessageStore((state) => state.addMessage)
 
