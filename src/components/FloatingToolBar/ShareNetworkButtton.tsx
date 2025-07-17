@@ -151,7 +151,7 @@ export const ShareNetworkButton = ({
   const handleClick = (): void => {
     const { location } = window
     // Get base query parameters
-    const baseUrl = location.origin + urlBaseName
+    const baseUrl = (location.origin + urlBaseName).replace(/\/+$/, '')
     const baseQuery = getQueryString()
     const allParams = new URLSearchParams(baseQuery)
 
@@ -164,7 +164,7 @@ export const ShareNetworkButton = ({
     const finalQuery = allParams.toString()
 
     // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
-    const newUrl = `${baseUrl}0/networks/${currentNetworkId}?${finalQuery}`
+    const newUrl = `${baseUrl}/0/networks/${currentNetworkId}?${finalQuery}`
     console.log(`Copied Sharable URL: ${newUrl}`)
 
     void copyTextToClipboard(newUrl).then(() => {
