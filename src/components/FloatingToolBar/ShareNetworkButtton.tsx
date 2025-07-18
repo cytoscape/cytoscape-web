@@ -1,7 +1,8 @@
+import { AppConfigContext } from '../../AppConfigContext'
 import { IconButton, Tooltip } from '@mui/material'
 import { Share } from '@mui/icons-material'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import { useEffect } from 'react'
+import { useContext, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'
@@ -41,6 +42,7 @@ export const ShareNetworkButton = ({
 
   // Encode UI states as URL search params
   const [search] = useSearchParams()
+  const { urlBaseName } = useContext(AppConfigContext)
 
   const ui: Ui = useUiStateStore((state) => state.ui)
   const { panels } = ui
@@ -148,11 +150,8 @@ export const ShareNetworkButton = ({
   }
   const handleClick = (): void => {
     const { location } = window
-
-    // Get the origin (protocol + domain + port) instead of splitting by wsId
-    const baseUrl = location.origin + '/'
-
     // Get base query parameters
+    const baseUrl = (location.origin + urlBaseName).replace(/\/+$/, '')
     const baseQuery = getQueryString()
     const allParams = new URLSearchParams(baseQuery)
 
@@ -165,8 +164,9 @@ export const ShareNetworkButton = ({
     const finalQuery = allParams.toString()
 
     // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
-    const newUrl = `${baseUrl}0/networks/${currentNetworkId}?${finalQuery}`
+    const newUrl = `${baseUrl}/0/networks/${currentNetworkId}?${finalQuery}`
     console.log(`Copied Sharable URL: ${newUrl}`)
+
     void copyTextToClipboard(newUrl).then(() => {
       // Notify user that the sharable URL has been copied to clipboard
       addMessage({
