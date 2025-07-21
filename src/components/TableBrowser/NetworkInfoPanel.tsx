@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   Typography,
   Box,
@@ -11,11 +12,10 @@ import {
   Chip,
   Divider,
 } from '@mui/material'
+import parse from 'html-react-parser'
 
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import parse from 'html-react-parser'
-import React from 'react'
 import { dateFormatter } from '../../utils/date-format'
 
 export function NetworkPropertyTable(): React.ReactElement {
@@ -26,6 +26,7 @@ export function NetworkPropertyTable(): React.ReactElement {
     (state) => state.summaries[currentNetworkId],
   )
   const properties = networkInfo?.properties ?? []
+
   return (
     <TableContainer component={Paper} sx={{ height: 200, overflow: 'scroll' }}>
       <Table sx={{ minWidth: 650 }} size="small" aria-label="simple table">
@@ -50,6 +51,7 @@ export function NetworkPropertyTable(): React.ReactElement {
     </TableContainer>
   )
 }
+
 export default function NetworkInfoPanel(props: {
   height: number
 }): React.ReactElement {
@@ -61,10 +63,8 @@ export default function NetworkInfoPanel(props: {
   )
   const properties = networkInfo?.properties ?? []
 
-  const containsHtmlAnchor = (text: string) => {
-    return /<a\s+href=/i.test(text)
-  }
-
+  // Helpers
+  const containsHtmlAnchor = (text: string) => /<a\s+href=/i.test(text)
   const linkifyPlainTextUrls = (text: string) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g
     return text.replace(
@@ -73,28 +73,51 @@ export default function NetworkInfoPanel(props: {
         `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`,
     )
   }
+  const capitalizeFirstLetter = (str: string): string =>
+    str.charAt(0).toUpperCase() + str.slice(1)
 
-  const capitalizeFirstLetter = (string: string): string => {
-    return string.charAt(0).toUpperCase() + string.slice(1)
-  }
+  // Define the exact display order for these special props
+  const specialOrder = ['rights', 'rightsHolder', 'reference'] as const
+
+  // Build specialProps in that exact sequence (exact match)
+  const specialProps = specialOrder
+    .map((key) =>
+      properties.find(
+        (p) => p.predicateString.toLowerCase() === key.toLowerCase(),
+      ),
+    )
+    .filter((p): p is typeof properties[number] => Boolean(p))
+
+  // All other props
+  const otherProps = properties.filter(
+    (p) =>
+      !specialOrder.some(
+        (key) => p.predicateString.toLowerCase() === key.toLowerCase(),
+      ) &&
+      !p.predicateString.startsWith('__') &&
+      p.predicateString !== 'description',
+  )
 
   return (
     <Box sx={{ height: props.height, overflow: 'auto', pl: 1, pr: 1 }}>
+      {/* Header with name, visibility, version */}
       <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
         <Typography variant="h6">{networkInfo?.name ?? ''}</Typography>
-        {networkInfo?.visibility ? (
-          <Chip sx={{ ml: 1 }} size="small" label={networkInfo?.visibility} />
-        ) : null}
-        {networkInfo?.version ? (
+        {networkInfo?.visibility && (
+          <Chip sx={{ ml: 1 }} size="small" label={networkInfo.visibility} />
+        )}
+        {networkInfo?.version && (
           <Chip
             sx={{ ml: 1 }}
             size="small"
-            label={`Version: ${networkInfo?.version}`}
+            label={`Version: ${networkInfo.version}`}
           />
-        ) : null}
+        )}
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        {networkInfo?.isNdex === false ? (
+
+      {/* Metadata line */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+        {!networkInfo?.isNdex ? (
           <Typography
             sx={{ ml: 1, mr: 4, fontSize: 14, color: 'gray' }}
             variant="subtitle1"
@@ -107,19 +130,19 @@ export default function NetworkInfoPanel(props: {
               sx={{ ml: 1, mr: 4, fontSize: 14, color: 'gray' }}
               variant="subtitle1"
             >
-              {`Owner: ${networkInfo?.owner}`}
+              {`Owner: ${networkInfo.owner}`}
             </Typography>
             <Typography
               sx={{ mr: 4, fontSize: 14, color: 'gray' }}
               variant="subtitle1"
             >
-              {`Created: ${dateFormatter(networkInfo?.creationTime ?? '')}`}
+              {`Created: ${dateFormatter(networkInfo.creationTime)}`}
             </Typography>
             <Typography
               sx={{ mr: 4, fontSize: 14, color: 'gray' }}
               variant="subtitle1"
             >
-              {`Modified: ${dateFormatter(networkInfo?.modificationTime ?? '')}`}
+              {`Modified: ${dateFormatter(networkInfo.modificationTime)}`}
             </Typography>
             <Typography sx={{ mr: 1, fontSize: 14, color: 'gray' }}>
               UUID: {currentNetworkId}
@@ -127,81 +150,55 @@ export default function NetworkInfoPanel(props: {
           </>
         )}
       </Box>
-      <Divider />
+
+      <Divider sx={{ my: 1 }} />
+
       <Box sx={{ p: 1 }}>
-        <Box>
-          <Typography
-            sx={{ fontSize: 14, fontWeight: 'bold' }}
-            variant="subtitle1"
-          >
-            Description:
-          </Typography>
-          <Typography variant="body2">
-            {parse(networkInfo?.description ?? '')}
-            {properties
-              .filter(
-                (prop) =>
-                  prop.predicateString.startsWith('rights') ||
-                  prop.predicateString.startsWith('reference'),
-              )
-              .map((prop, index) => {
-                let displayValue: React.ReactNode
+        {/* DESCRIPTION section */}
+        <Typography
+          sx={{ fontSize: 14, fontWeight: 'bold' }}
+          variant="subtitle1"
+        >
+          Description:
+        </Typography>
+        <Typography variant="body2" component="div">
+          {parse(networkInfo?.description ?? '')}
+          {specialProps.map((prop, idx) => {
+            const valueString = prop.value.toString()
+            const displayValue = containsHtmlAnchor(valueString)
+              ? parse(valueString)
+              : parse(linkifyPlainTextUrls(valueString))
 
-                const valueString = prop.value.toString()
+            return (
+              <div key={idx} style={{ margin: 0 }}>
+                <strong>{capitalizeFirstLetter(prop.predicateString)}:</strong>{' '}
+                {displayValue}
+              </div>
+            )
+          })}
+        </Typography>
 
-                if (containsHtmlAnchor(valueString)) {
-                  displayValue = parse(valueString)
-                } else {
-                  displayValue = parse(linkifyPlainTextUrls(valueString))
-                }
+        {/* PROPERTIES section */}
+        <Typography
+          sx={{ fontSize: 14, fontWeight: 'bold' }}
+          variant="subtitle1"
+        >
+          Properties:
+        </Typography>
+        <Typography variant="body2" component="div">
+          {otherProps.map((prop, idx) => {
+            const valueString = prop.value.toString()
+            const displayValue = containsHtmlAnchor(valueString)
+              ? parse(valueString)
+              : parse(linkifyPlainTextUrls(valueString))
 
-                return (
-                  <div key={index} style={{ margin: '4px 0px' }}>
-                    <span style={{ fontWeight: 'bold' }}>
-                      {capitalizeFirstLetter(prop.predicateString)}:
-                    </span>{' '}
-                    {displayValue}
-                  </div>
-                )
-              })}
-          </Typography>
-
-          <Typography
-            sx={{ fontSize: 14, fontWeight: 'bold' }}
-            variant="subtitle1"
-          >
-            Properties:
-          </Typography>
-          <Typography variant="body2" component="div">
-            {properties
-              .filter(
-                (prop) =>
-                  !prop.predicateString.startsWith('__') &&
-                  prop.predicateString !== 'description' &&
-                  prop.predicateString !== 'reference' &&
-                  prop.predicateString !== 'rights' &&
-                  prop.predicateString !== 'rightsHolder',
-              )
-              .map((prop, index) => {
-                let displayValue: React.ReactNode
-
-                const valueString = prop.value.toString()
-
-                if (containsHtmlAnchor(valueString)) {
-                  displayValue = parse(valueString)
-                } else {
-                  displayValue = parse(linkifyPlainTextUrls(valueString))
-                }
-
-                return (
-                  <div key={index}>
-                    {capitalizeFirstLetter(prop.predicateString)}:{' '}
-                    {displayValue}
-                  </div>
-                )
-              })}
-          </Typography>
-        </Box>
+            return (
+              <div key={idx}>
+                {capitalizeFirstLetter(prop.predicateString)}: {displayValue}
+              </div>
+            )
+          })}
+        </Typography>
       </Box>
     </Box>
   )

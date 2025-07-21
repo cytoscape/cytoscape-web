@@ -144,7 +144,11 @@ export function FileUpload(props: FileUploadProps) {
             ?.value
             ?.toString()
           ?? "";
-          
+        const filteredProperties = localProperties.filter(
+          p => p.predicateString !== "version"
+        );
+
+
         await putNetworkSummaryToDb({
           isNdex: false,
           ownerUUID: localUuid,
@@ -160,9 +164,9 @@ export function FileUpload(props: FileUploadProps) {
           hasSample: false,
           cxFileSize: 0,
           cx2FileSize: 0,
-          properties: localProperties,
+          properties: filteredProperties,
           owner: '',
-          version,
+          version: version,
           completed: false,
           visibility: Visibility.LOCAL,
           nodeCount: localNodeCount,
