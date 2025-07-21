@@ -61,7 +61,6 @@ export default function NetworkInfoPanel(props: {
   const networkInfo = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
-  console.log('NetworkInfoPanel networkInfo:', networkInfo)
 
   const properties = networkInfo?.properties ?? []
   // Helpers
