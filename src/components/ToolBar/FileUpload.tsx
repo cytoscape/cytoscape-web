@@ -138,17 +138,7 @@ export function FileUpload(props: FileUploadProps) {
 
         const localNodeCount = network.nodes.length
         const localEdgeCount = network.edges.length
-        const version: string =
-          localProperties
-            .find(p => p.predicateString === "version")
-            ?.value
-            ?.toString()
-          ?? "";
-        const filteredProperties = localProperties.filter(
-          p => p.predicateString !== "version"
-        );
-
-
+  
         await putNetworkSummaryToDb({
           isNdex: false,
           ownerUUID: localUuid,
@@ -164,9 +154,9 @@ export function FileUpload(props: FileUploadProps) {
           hasSample: false,
           cxFileSize: 0,
           cx2FileSize: 0,
-          properties: filteredProperties,
+          properties: localProperties,
           owner: '',
-          version: version,
+          version: '',
           completed: false,
           visibility: Visibility.LOCAL,
           nodeCount: localNodeCount,

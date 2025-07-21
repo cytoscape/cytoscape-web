@@ -61,8 +61,9 @@ export default function NetworkInfoPanel(props: {
   const networkInfo = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
-  const properties = networkInfo?.properties ?? []
+  console.log('NetworkInfoPanel networkInfo:', networkInfo)
 
+  const properties = networkInfo?.properties ?? []
   // Helpers
   const containsHtmlAnchor = (text: string) => /<a\s+href=/i.test(text)
   const linkifyPlainTextUrls = (text: string) => {
@@ -87,6 +88,14 @@ export default function NetworkInfoPanel(props: {
       ),
     )
     .filter((p): p is typeof properties[number] => Boolean(p))
+  
+  // Check NDEx version first, if it is null, then we find version from properties
+  const version =
+    networkInfo?.version ||
+    properties.find((p) => p.predicateString.toLowerCase() === 'version')
+      ?.value
+      ?.toString() ||
+    ''
 
   // All other props
   const otherProps = properties.filter(
@@ -95,7 +104,8 @@ export default function NetworkInfoPanel(props: {
         (key) => p.predicateString.toLowerCase() === key.toLowerCase(),
       ) &&
       !p.predicateString.startsWith('__') &&
-      p.predicateString !== 'description',
+      p.predicateString.toLowerCase() !== 'description' &&
+      p.predicateString.toLowerCase() !== 'version'
   )
 
   return (
@@ -106,11 +116,11 @@ export default function NetworkInfoPanel(props: {
         {networkInfo?.visibility && (
           <Chip sx={{ ml: 1 }} size="small" label={networkInfo.visibility} />
         )}
-        {networkInfo?.version && (
+        {version && (
           <Chip
             sx={{ ml: 1 }}
             size="small"
-            label={`Version: ${networkInfo.version}`}
+            label={`Version: ${version}`}
           />
         )}
       </Box>
