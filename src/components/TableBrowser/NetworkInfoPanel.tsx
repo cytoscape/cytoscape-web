@@ -202,7 +202,7 @@ export default function NetworkInfoPanel(props: {
               : parse(linkifyPlainTextUrls(valueString))
 
             return (
-              <div key={idx}>
+              <div key={idx} style={{ margin: 0 }}>
                 {capitalizeFirstLetter(prop.predicateString)}: {displayValue}
               </div>
             )
