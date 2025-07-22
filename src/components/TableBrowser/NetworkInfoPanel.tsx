@@ -179,10 +179,10 @@ export default function NetworkInfoPanel(props: {
               : parse(linkifyPlainTextUrls(valueString))
 
             return (
-              <div key={idx} style={{ margin: 0 }}>
+              <Box key={idx} sx={{ margin: 0 }}>
                 <strong>{capitalizeFirstLetter(prop.predicateString)}:</strong>{' '}
                 {displayValue}
-              </div>
+              </Box>
             )
           })}
         </Typography>
