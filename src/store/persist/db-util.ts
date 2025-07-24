@@ -29,8 +29,6 @@ export type DiscreteMappingFunctionWithRecords =
 // IndexedDB in Safari does not support structured cloning of Map objects, so we must convert them to plain objects.
 export const mapToObject = (map: Map<any, any>): Record<any, any> => {
   if (!(map instanceof Map)) {
-    console.log('[mapToObject] Did not receive a map object, received:', map)
-
     return map
   }
   return Object.fromEntries(map.entries())

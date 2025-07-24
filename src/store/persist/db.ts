@@ -348,8 +348,8 @@ export const clearTablesFromDb = async (): Promise<void> => {
 export const putWorkspaceToDb = async (workspace: Workspace): Promise<void> => {
   console.log('[putWorkspaceToDb] called with:', workspace)
   try {
-    console.log('[putWorkspaceToDb] success')
     await db.workspace.put({ ...workspace })
+    console.log('[putWorkspaceToDb] success')
   } catch (e) {
     console.error('[putWorkspaceToDb] error:', e, workspace)
     throw e
@@ -572,6 +572,10 @@ export const putNetworkViewToDb = async (
   try {
     await db.transaction('rw', db.cyNetworkViews, async () => {
       if (view === undefined) {
+        console.log(
+          '[putNetworkViewToDb] view is undefined, exiting early for id:',
+          id,
+        )
         return
       }
 
