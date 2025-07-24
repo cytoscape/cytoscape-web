@@ -572,6 +572,7 @@ export const putNetworkViewToDb = async (
   try {
     await db.transaction('rw', db.cyNetworkViews, async () => {
       if (view === undefined) {
+        console.log('[putNetworkViewToDb] view is undefined, exiting early for id:', id)
         return
       }
 
