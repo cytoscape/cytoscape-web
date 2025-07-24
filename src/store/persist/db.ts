@@ -5,13 +5,8 @@ import { IdType } from '../../models/IdType'
 import NetworkFn, { Node, Edge, Network } from '../../models/NetworkModel'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { Table } from '../../models/TableModel'
-import {
-  DiscreteMappingFunction,
-  MappingFunctionType,
-  VisualStyle,
-} from '../../models/VisualStyleModel'
+import { VisualStyle } from '../../models/VisualStyleModel'
 import { Workspace } from '../../models/WorkspaceModel'
-import { v4 as uuidv4 } from 'uuid'
 import { NetworkView } from '../../models/ViewModel'
 import { Ui } from '../../models/UiModel'
 import { applyMigrations } from './migrations'
@@ -20,7 +15,11 @@ import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
+import { createWorkspace } from '../../models/WorkspaceModel/impl/WorkspaceImpl'
+
 import _ from 'lodash'
+
+import { logDb } from '../../debug'
 
 import {
   serializeVisualStyle,
@@ -124,7 +123,9 @@ class CyDB extends Dexie {
 
     // This will be applied only when the DB is created and should not be
     // called multiple times
-    applyMigrations(this, currentVersion).catch((err) => console.log(err))
+    applyMigrations(this, currentVersion).catch((err) =>
+      logDb.error('[applyMigrations] Failed to apply migrations', err),
+    )
   }
 }
 
@@ -133,28 +134,31 @@ let db: CyDB
 try {
   db = new CyDB(DB_NAME)
 } catch (err) {
-  console.error('Failed to create Dixie instance', err)
+  logDb.error('[initializeDb] Failed to create Dixie instance', err)
   throw err
 }
 
 export const initializeDb = async (): Promise<void> => {
   await db.open()
-  console.log('IndexedDB is opened')
+  logDb.info('[initializeDb] IndexedDB is opened')
 
   // Check all object stores are available
   const currentNames = new Set<string>(db.tables.map((table) => table.name))
   Object.values(ObjectStoreNames).forEach((name) => {
     if (!currentNames.has(name)) {
-      console.warn(`Object store ${name} is not found`)
+      logDb.warn(`[initializeDb] Object store ${name} is not found`)
     }
   })
 
   db.on('ready', () => {
-    console.info(`Indexed DB version ${db.verno} is ready`)
+    logDb.info(`[initializeDb] Indexed DB version ${db.verno} is ready`)
   })
 
   db.on('versionchange', function (event) {
-    console.log('IndexedDB version change has been detected.', event)
+    logDb.info(
+      `[initializeDb] IndexedDB version change has been detected.`,
+      event,
+    )
   })
 }
 
@@ -180,15 +184,15 @@ export const deleteDb = async (): Promise<void> => {
   try {
     if (db) {
       db.close()
-      console.log('DB is closed')
+      logDb.info('[DeleteDB] DB is closed')
     }
     await Dexie.delete(DB_NAME)
-    console.log(`${DB_NAME} is deleted`)
+    logDb.info(`[DeleteDB]  ${DB_NAME} is deleted`)
     db = new CyDB(DB_NAME)
     await db.open()
-    console.log(`${DB_NAME} is opened and ready to use`)
+    logDb.info(`[DeleteDB] ${DB_NAME} is opened and ready to use`)
   } catch (err) {
-    console.error('! Failed to reset DB', err)
+    logDb.error('[DeleteDB] Failed to reset DB', err)
   }
 }
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {
@@ -202,15 +206,13 @@ export const getAllNetworkKeys = async (): Promise<IdType[]> => {
  * @returns
  */
 export const putNetworkToDb = async (network: Network): Promise<void> => {
-  console.log('[putNetworkToDb] called with:', network)
   try {
     await db.transaction('rw', db.cyNetworks, async () => {
       // Store plain network topology only
       await db.cyNetworks.put(cyNetwork2Network(network))
     })
-    console.log('[putNetworkToDb] success')
   } catch (e) {
-    console.error('[putNetworkToDb] error:', e, network)
+    logDb.error('[putNetworkToDb] error:', e, network)
     throw e
   }
 }
@@ -255,14 +257,12 @@ export const getNetworkFromDb = async (
 }
 
 export const putNetworkToDbOld = async (network: Network): Promise<void> => {
-  console.log('[putNetworkToDbOld] called with:', network)
   try {
     await db.transaction('rw', db.cyNetworks, async () => {
       await db.cyNetworks.put({ ...network })
     })
-    console.log('[putNetworkToDbOld] success')
   } catch (e) {
-    console.error('[putNetworkToDbOld] error:', e, network)
+    logDb.error('[putNetworkToDbOld] error:', e, network)
     throw e
   }
 }
@@ -273,7 +273,7 @@ export const deleteNetworkFromDb = async (id: IdType): Promise<void> => {
       await db.cyNetworks.delete(id)
     })
     .catch((err) => {
-      console.error('DELETE ERROR::', err)
+      logDb.error('[deleteNetworkFromDb] error:', err)
     })
 }
 
@@ -311,10 +311,9 @@ export const putTablesToDb = async (
   nodeTable: Table,
   edgeTable: Table,
 ): Promise<void> => {
-  console.log('[putTablesToDb] called with:', id, nodeTable, edgeTable)
   try {
     await db.transaction('rw', db.cyTables, async () => {
-      console.log(
+      logDb.info(
         '[putTablesToDb] putting tables for ID:',
         id,
         serializeTable(nodeTable),
@@ -326,9 +325,8 @@ export const putTablesToDb = async (
         edgeTable: serializeTable(edgeTable),
       })
     })
-    console.log('[putTablesToDb] success')
   } catch (e) {
-    console.error('[putTablesToDb] error:', e, id, nodeTable, edgeTable)
+    logDb.error('[putTablesToDb] error:', e, id, nodeTable, edgeTable)
     throw e
   }
 }
@@ -346,12 +344,10 @@ export const clearTablesFromDb = async (): Promise<void> => {
 // Workspace management
 
 export const putWorkspaceToDb = async (workspace: Workspace): Promise<void> => {
-  console.log('[putWorkspaceToDb] called with:', workspace)
   try {
     await db.workspace.put({ ...workspace })
-    console.log('[putWorkspaceToDb] success')
   } catch (e) {
-    console.error('[putWorkspaceToDb] error:', e, workspace)
+    logDb.error('[putWorkspaceToDb] error:', e, workspace)
     throw e
   }
 }
@@ -364,85 +360,67 @@ export const updateWorkspaceDb = async (
 }
 
 export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
-  console.log('[getWorkspaceFromDb] called with id:', id)
-
   // Check if there is any workspace in the DB
   const workspaceCount: number = await db.workspace.count()
-  console.log('[getWorkspaceFromDb] workspace count:', workspaceCount)
+  logDb.info('[getWorkspaceFromDb] workspace count:', workspaceCount)
 
   if (id === undefined || id === '') {
-    console.log('[getWorkspaceFromDb] Workspace ID is not specified.')
+    logDb.info('[getWorkspaceFromDb] Workspace ID is not specified.')
 
     if (workspaceCount === 0) {
-      console.log(
+      logDb.info(
         '[getWorkspaceFromDb] No workspace found. Initializing a new workspace.',
       )
       // Initialize all data
       const newWs: Workspace = createWorkspace()
       await db.transaction('rw', db.workspace, async () => {
         await putWorkspaceToDb(newWs)
-        console.info('New workspace created')
+        logDb.info('[getWorkspaceFromDb] New workspace created')
       })
-      console.log('[getWorkspaceFromDb] New workspace created:', newWs)
+      logDb.info('[getWorkspaceFromDb] New workspace created:', newWs)
       return newWs
     } else {
-      console.log('[getWorkspaceFromDb] Workspace(s) found in the DB.')
+      logDb.info('[getWorkspaceFromDb] Workspace(s) found in the DB.')
       const allWS: Workspace[] = await db.workspace.toArray()
-      console.log('[getWorkspaceFromDb] All workspaces:', allWS)
+      logDb.info('[getWorkspaceFromDb] All workspaces:', allWS)
 
       // TODO: pick the newest one in production
       const lastWs: Workspace = allWS[0]
-      console.log('[getWorkspaceFromDb] Returning the first workspace:', lastWs)
+      logDb.info('[getWorkspaceFromDb] Returning the first workspace:', lastWs)
       return lastWs
     }
   }
 
-  console.log('[getWorkspaceFromDb] Workspace ID is specified:', id)
+  logDb.info('[getWorkspaceFromDb] Workspace ID is specified:', id)
 
   const cachedWorkspace: Workspace = await db.workspace.get(id)
   if (cachedWorkspace !== undefined) {
-    console.log(
+    logDb.info(
       '[getWorkspaceFromDb] Found workspace with ID:',
       id,
       cachedWorkspace,
     )
     return cachedWorkspace
   } else {
-    console.log('[getWorkspaceFromDb] No workspace found with ID:', id)
+    logDb.info('[getWorkspaceFromDb] No workspace found with ID:', id)
 
     if (workspaceCount === 0) {
-      console.log(
+      logDb.info(
         '[getWorkspaceFromDb] No workspaces in DB. Creating a new workspace.',
       )
       const newWs: Workspace = createWorkspace()
       await putWorkspaceToDb(newWs)
-      console.log('[getWorkspaceFromDb] New workspace created:', newWs)
+      logDb.info('[getWorkspaceFromDb] New workspace created:', newWs)
       return newWs
     } else {
-      console.log(
+      logDb.info(
         '[getWorkspaceFromDb] Returning the first workspace from the DB.',
       )
       const allWS: Workspace[] = await db.workspace.toArray()
       const lastWs: Workspace = allWS[0]
-      console.log('[getWorkspaceFromDb] Returning workspace:', lastWs)
+      logDb.info('[getWorkspaceFromDb] Returning workspace:', lastWs)
       return lastWs
     }
-  }
-}
-
-// const DEF_WORKSPACE_ID = 'newWorkspace'
-const DEF_WORKSPACE_NAME = 'Untitled Workspace'
-
-const createWorkspace = (): Workspace => {
-  return {
-    id: uuidv4(),
-    name: DEF_WORKSPACE_NAME,
-    networkIds: [],
-    networkModified: {},
-    creationTime: new Date(),
-    localModificationTime: new Date(),
-    currentNetworkId: '',
-    isRemote: false,
   }
 }
 
@@ -463,13 +441,11 @@ export const getNetworkSummariesFromDb = async (
 export const putNetworkSummaryToDb = async (
   summary: NdexNetworkSummary,
 ): Promise<void> => {
-  console.log('[putNetworkSummaryToDb] called with:', summary)
   try {
     // ExternalId will be used as the primary key
     await db.summaries.put({ ...summary })
-    console.log('[putNetworkSummaryToDb] success')
   } catch (e) {
-    console.error('[putNetworkSummaryToDb] error:', e, summary)
+    logDb.error('[putNetworkSummaryToDb] error:', e, summary)
     throw e
   }
 }
@@ -509,8 +485,6 @@ export const putVisualStyleToDb = async (
   id: IdType,
   visualStyle: VisualStyle,
 ): Promise<void> => {
-  console.log('[putVisualStyleToDb] called with:', id, visualStyle)
-
   try {
     await db.transaction('rw', db.cyVisualStyles, async () => {
       // Need to add ID because it does not have one
@@ -519,9 +493,8 @@ export const putVisualStyleToDb = async (
         visualStyle: serializeVisualStyle(visualStyle),
       })
     })
-    console.log('[putVisualStyleToDb] success')
   } catch (e) {
-    console.error('[putVisualStyleToDb] error:', e, id, visualStyle)
+    logDb.error('[putVisualStyleToDb] error:', e, id, visualStyle)
     throw e
   }
 }
@@ -567,12 +540,10 @@ export const putNetworkViewToDb = async (
   id: IdType,
   view: NetworkView,
 ): Promise<void> => {
-  console.log('[putNetworkViewToDb] called with:', id, view)
-
   try {
     await db.transaction('rw', db.cyNetworkViews, async () => {
       if (view === undefined) {
-        console.log(
+        logDb.info(
           '[putNetworkViewToDb] view is undefined, exiting early for id:',
           id,
         )
@@ -617,9 +588,8 @@ export const putNetworkViewToDb = async (
         await db.cyNetworkViews.put({ id, views: [serializedView] })
       }
     })
-    console.log('[putNetworkViewToDb] success')
   } catch (e) {
-    console.error('[putNetworkViewToDb] error:', e, id, view)
+    logDb.error('[putNetworkViewToDb] error:', e, id, view)
     throw e
   }
 }
@@ -635,7 +605,6 @@ export const putNetworkViewsToDb = async (
   id: IdType,
   views: NetworkView[],
 ): Promise<void> => {
-  console.log('[putNetworkViewsToDb] called with:', id, views)
   try {
     await db.transaction('rw', db.cyNetworkViews, async () => {
       if (views.filter((v) => v.type === 'circlePacking').length > 0) {
@@ -646,9 +615,8 @@ export const putNetworkViewsToDb = async (
         views: views.map((v) => serializeNetworkView(v)),
       })
     })
-    console.log('[putNetworkViewsToDb] success')
   } catch (e) {
-    console.error('[putNetworkViewsToDb] error:', e, id, views)
+    logDb.error('[putNetworkViewsToDb] error:', e, id, views)
     throw e
   }
 }
@@ -699,14 +667,12 @@ export const getUiStateFromDb = async (): Promise<Ui | undefined> => {
 }
 
 export const putUiStateToDb = async (uiState: Ui): Promise<void> => {
-  console.log('[putUiStateToDb] called with:', uiState)
   try {
     await db.transaction('rw', db.uiState, async () => {
       await db.uiState.put({ id: DEFAULT_UI_STATE_ID, ...uiState })
     })
-    console.log('[putUiStateToDb] success')
   } catch (e) {
-    console.error('[putUiStateToDb] error:', e, uiState)
+    logDb.error('[putUiStateToDb] error:', e, uiState)
     throw e
   }
 }
@@ -728,14 +694,12 @@ export const getTimestampFromDb = async (): Promise<number | undefined> => {
 }
 
 export const putTimestampToDb = async (ts: number): Promise<void> => {
-  console.log('[putTimestampToDb] called with:', ts)
   try {
     await db.transaction('rw', db.timestamp, async () => {
       await db.timestamp.put({ id: DEFAULT_TIMESTAMP_ID, timestamp: ts })
     })
-    console.log('[putTimestampToDb] success')
   } catch (e) {
-    console.error('[putTimestampToDb] error:', e, ts)
+    logDb.error('[putTimestampToDb] error:', e, ts)
     throw e
   }
 }
@@ -748,14 +712,12 @@ export const putTimestampToDb = async (ts: number): Promise<void> => {
 export const putFilterToDb = async (
   filterConfig: FilterConfig,
 ): Promise<void> => {
-  console.log('[putFilterToDb] called with:', filterConfig)
   try {
     await db.transaction('rw', db.filters, async () => {
       await db.filters.put({ id: filterConfig.name, ...filterConfig })
     })
-    console.log('[putFilterToDb] success')
   } catch (e) {
-    console.error('[putFilterToDb] error:', e, filterConfig)
+    logDb.error('[putFilterToDb] error:', e, filterConfig)
     throw e
   }
 }
@@ -782,14 +744,12 @@ export const deleteFilterFromDb = async (filterName: string): Promise<void> => {
  * Store CyApps metadata to DB
  */
 export const putAppToDb = async (app: CyApp): Promise<void> => {
-  console.log('[putAppToDb] called with:', app)
   try {
     await db.transaction('rw', db.apps, async () => {
       await db.apps.put(app)
     })
-    console.log('[putAppToDb] success')
   } catch (e) {
-    console.error('[putAppToDb] error:', e, app)
+    logDb.error('[putAppToDb] error:', e, app)
     throw e
   }
 }
@@ -812,14 +772,12 @@ export const deleteAppFromDb = async (appId: string): Promise<void> => {
 export const putServiceAppToDb = async (
   serviceApp: ServiceApp,
 ): Promise<void> => {
-  console.log('[putServiceAppToDb] called with:', serviceApp)
   try {
     await db.transaction('rw', db.serviceApps, async () => {
       await db.serviceApps.put(serviceApp)
     })
-    console.log('[putServiceAppToDb] success')
   } catch (e) {
-    console.error('[putServiceAppToDb] error:', e, serviceApp)
+    logDb.error('[putServiceAppToDb] error:', e, serviceApp)
     throw e
   }
 }
@@ -830,7 +788,11 @@ export const getAllServiceAppsFromDb = async (): Promise<ServiceApp[]> => {
     const serviceList: ServiceApp[] = await db.serviceApps.toArray()
     return serviceList
   } catch (err) {
-    console.warn('### Failed to open DB or fetch data', err, db.serviceApps)
+    logDb.warn(
+      '[getAllServiceAppsFromDb] Failed to open DB or fetch data',
+      err,
+      db.serviceApps,
+    )
     return []
   }
 }
@@ -852,14 +814,12 @@ export const putOpaqueAspectsToDb = async (
   networkId: IdType,
   aspects: Record<string, any[]>,
 ): Promise<void> => {
-  console.log('[putOpaqueAspectsToDb] called with:', networkId, aspects)
   try {
     await db.transaction('rw', db.opaqueAspects, async () => {
       await db.opaqueAspects.put({ id: networkId, aspects })
     })
-    console.log('[putOpaqueAspectsToDb] success')
   } catch (e) {
-    console.error('[putOpaqueAspectsToDb] error:', e, networkId, aspects)
+    logDb.error('[putOpaqueAspectsToDb] error:', e, networkId, aspects)
     throw e
   }
 }
@@ -891,14 +851,12 @@ export const putUndoRedoStackToDb = async (
   networkId: IdType,
   undoRedoStack: UndoRedoStack,
 ): Promise<void> => {
-  console.log('[putUndoRedoStackToDb] called with:', networkId, undoRedoStack)
   try {
     await db.transaction('rw', db.undoStacks, async () => {
       await db.undoStacks.put({ id: networkId, undoRedoStack })
     })
-    console.log('[putUndoRedoStackToDb] success')
   } catch (e) {
-    console.error('[putUndoRedoStackToDb] error:', e, networkId, undoRedoStack)
+    logDb.error('[putUndoRedoStackToDb] error:', e, networkId, undoRedoStack)
     throw e
   }
 }
