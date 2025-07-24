@@ -284,8 +284,10 @@ export default function TableBrowser(props: {
       ? tableDisplayConfiguration?.nodeTable
       : tableDisplayConfiguration?.edgeTable
 
-  const nodeIds = Array.from(nodeTable?.rows.keys() ?? new Map()).map((v) => +v)
-  const edgeIds = Array.from(edgeTable?.rows.keys() ?? new Map()).map(
+  const nodeIds = Array.from(nodeTable?.rows?.keys() ?? new Map()).map(
+    (v) => +v,
+  )
+  const edgeIds = Array.from(edgeTable?.rows?.keys() ?? new Map()).map(
     (v) => +v.slice(1),
   )
   const maxNodeId = nodeIds.sort((a, b) => b - a)[0]
