@@ -1,5 +1,6 @@
 import { Transaction, Dexie } from 'dexie'
 
+import { logDb } from '../../debug'
 export interface DexieMigration {
   version: number
   upgradeFn: (tx: Transaction) => Promise<number>
@@ -29,7 +30,7 @@ export const applyMigrations = async (
   const currentDbVersion: number = await db.verno
 
   if (currentDbVersion >= versionNumber) {
-    console.log(
+    logDb.info(
       `IndexedDB is already at version ${currentDbVersion}, no migration needed`,
     )
     return
@@ -44,5 +45,5 @@ export const applyMigrations = async (
   })
 
   const version = await db.verno
-  console.log(`IndexedDB migrated to version ${version}`)
+  logDb.info(`IndexedDB migrated to version ${version}`)
 }
