@@ -1,6 +1,8 @@
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 import 'dexie-observable'
 
+import config from '../../assets/config.json'
+
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Node, Edge, Network } from '../../models/NetworkModel'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
@@ -160,6 +162,10 @@ export const initializeDb = async (): Promise<void> => {
       event,
     )
   })
+
+  if (config.debug) {
+    window.db = db
+  }
 }
 
 export const getDatabaseVersion = (): number => {
@@ -229,41 +235,12 @@ const cyNetwork2Network = (cyNetwork: Network): Network => {
   }
 }
 
-/**
- *
- * Create in-memory model from local DB cache
- *
- * @param id
- * @returns
- */
-export const getNetworkFromDbOld = async (
-  id: IdType,
-): Promise<Network | undefined> => {
-  const cached: any = await db.cyNetworks.get({ id })
-  if (cached !== undefined) {
-    return cached
-  }
-
-  return NetworkFn.createFromCyJson(id, cached)
-}
-
 export const getNetworkFromDb = async (
   id: IdType,
 ): Promise<Network | undefined> => {
   const network: Network | undefined = await db.cyNetworks.get({ id })
   if (network !== undefined) {
     return NetworkFn.plainNetwork2CyNetwork(network)
-  }
-}
-
-export const putNetworkToDbOld = async (network: Network): Promise<void> => {
-  try {
-    await db.transaction('rw', db.cyNetworks, async () => {
-      await db.cyNetworks.put({ ...network })
-    })
-  } catch (e) {
-    logDb.error('[putNetworkToDbOld] error:', e, network)
-    throw e
   }
 }
 

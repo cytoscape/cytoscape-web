@@ -127,10 +127,45 @@ window.cy.pan({ x: 100, y: 100 }) // Pan the viewport
 Depending on your app setup, you may also find other objects such as:
 
 ```js
-window.store // Zustand or Redux store (if exposed)
-window.app // Main application instance
-window.debug // Debug utilities or loggers
+window.cy // cy.js renderer
+window.db // indexeddb instance
+// ...
 ```
+
+// ...
+
+### Exposing Objects to the `window` for Debugging
+
+You can make any object or variable accessible from the browser console by attaching it to the global `window` object. This is useful for debugging and live inspection.
+
+First, add fields to the window in `custom.d.ts`
+
+custom.d.ts:
+
+```ts
+// global variables for debugging
+interface Window {
+  cy: any
+  db: any
+}
+```
+
+**Example:**
+
+```typescript
+// Make the database instance available globally
+if (config.debug) {
+  ;(window as any).db = db
+}
+
+// Expose Cytoscape.js instance
+;(window as any).cy = cyInstance(
+  // Expose your app's store or other objects
+  window as any,
+).store = store
+```
+
+Now you can access these objects directly in the browser console, e.g. `window.db`, `window.cy`, or `window.store`.
 
 ---
 
