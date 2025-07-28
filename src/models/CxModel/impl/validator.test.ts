@@ -438,7 +438,6 @@ describe('validateCx2Structure', () => {
       ]
 
       const result = validateCx2ReferentialIntegrity(input as Cx2)
-      console.log(result)
       expect(result.isValid).toBe(true)
       expect(result.errors).toHaveLength(0)
       expect(result.warnings).toHaveLength(0)
@@ -568,7 +567,6 @@ describe('validateCx2Structure', () => {
       ]
 
       const result = validateCx2ReferentialIntegrity(input as Cx2)
-      console.log(result)
       expect(result.isValid).toBe(true) // Warnings do not invalidate the document
     })
   })

@@ -11,6 +11,7 @@ import { useUndoStack } from '../../task/UndoStack'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { useState, useEffect } from 'react'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
+import { logUi } from '../../debug'
 
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType
@@ -91,7 +92,9 @@ export const ApplyLayoutButton = ({
           })
         })
       } else {
-        console.warn('Fit function not available for renderer:', rendererId)
+        logUi.warn(
+          `[${ApplyLayoutButton.name}]:[${handleClick.name}]: Fit function not available for renderer: ${rendererId}`,
+        )
       }
     }
   }, [layoutCounter, rendererId, getRendererFunction])
@@ -125,7 +128,9 @@ export const ApplyLayoutButton = ({
       setLayoutInfo(defaultLayout.displayName)
       engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
     } else {
-      console.log('Fit function not available')
+      logUi.warn(
+        `[${ApplyLayoutButton.name}]:[${handleClick.name}]: Fit function not available for renderer: ${rendererId}`,
+      )
     }
   }
 

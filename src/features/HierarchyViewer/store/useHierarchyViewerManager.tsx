@@ -22,6 +22,7 @@ import {
 } from '../../../store/persist/db'
 import { useRendererStore } from '../../../store/RendererStore'
 import { DEFAULT_RENDERER_ID } from '../../../store/DefaultRenderer'
+import { logDb } from '../../../debug'
 
 /**
  *  Switch the panel state based on the network meta data
@@ -93,7 +94,10 @@ export const useHierarchyViewerManager = (): void => {
     const removed = diff[0]
 
     void deleteChildren(removed).catch((error) => {
-      console.error('## Error deleting interaction networks:', error)
+      logDb.error(
+        `[${useHierarchyViewerManager.name}]: Error deleting interaction networks:`,
+        error,
+      )
     })
   }, [networkIds])
 

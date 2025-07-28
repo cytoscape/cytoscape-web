@@ -80,6 +80,7 @@ import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import useNodesDuplicationStore from '../store/nodesDuplicationStore'
+import { logUi } from '../../../debug'
 
 interface MergeDialogProps {
   open: boolean
@@ -564,7 +565,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       )
       handleClose()
     } catch (e) {
-      console.error(e)
+      logUi.error(`[${handleMerge.name}]: Error merging networks:`, e)
       setErrorMessage(`An error occurred: ${e.message}`) // Set the error message
       setShowError(true) // Show the error message panel
     }

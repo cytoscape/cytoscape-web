@@ -12,6 +12,7 @@ import { Edge, Network } from '../../../models/NetworkModel'
 import { ValueType } from '../../../models/TableModel'
 import { useTableStore } from '../../../store/TableStore'
 import { TableRecord } from '../../../models'
+import { logUi } from '../../../debug'
 
 export const DeleteSelectedEdgesMenuItem = (
   props: BaseMenuProps,
@@ -53,7 +54,7 @@ export const DeleteSelectedEdgesMenuItem = (
 
     // Grab actual edge model from network store
     if (network === undefined) {
-      console.error('Network not found in store')
+      logUi.error(`[${handleDeleteEdges.name}]: Network not found in store`)
       return
     }
 

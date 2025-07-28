@@ -5,7 +5,8 @@ import { CyApp } from '../../models/AppModel/CyApp'
 import { appImportMap } from '../../assets/app-definition'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 
-console.log('[AppManager] App config file loaded: ', appConfig)
+import { logApp } from '../../debug'
+logApp.info(`[AppManager]: App config file loaded: `, appConfig)
 
 // appConfig contains reference list of available apps.
 const appNameMap = new Map<string, string>()
@@ -34,11 +35,17 @@ const loadModules = async () => {
           const externalAppModule = importFunc()
             .then((module: any) => module)
             .catch((e: any) => {
-              console.warn(`! Error loading external module ${moduleName}:`, e)
+              logApp.warn(
+                `[${loadModules.name}]: Error loading external module ${moduleName}:`,
+                e,
+              )
             })
           return [moduleName, externalAppModule]
         } catch (e) {
-          console.error(`Error loading external module ${moduleName}:`, e)
+          logApp.error(
+            `[${loadModules.name}]: Error loading external module ${moduleName}:`,
+            e,
+          )
           return [moduleName, null]
         }
       }
@@ -57,10 +64,15 @@ const loadModules = async () => {
           loaded.push(cyApp)
         } else {
           // Check cached
-          console.log('Status set to error', entryName)
+          logApp.info(
+            `[${loadModules.name}]: Status set to error: ${entryName}`,
+          )
         }
       } catch (err) {
-        console.warn(`! Failed to load a remote app: ${entryName}`, err)
+        logApp.warn(
+          `[${loadModules.name}]: Failed to load a remote app: ${entryName}`,
+          err,
+        )
       }
     }),
   )
@@ -85,12 +97,14 @@ export const useAppManager = (): void => {
       restore(appIds).then(() => {
         // Load remote modules after loading from cached.
         // const appsLoaded: CyApp[] = loadModules()
-        console.log('Apps restored from the local cache')
+        logApp.info(
+          `[${useAppManager.name}]: Apps restored from the local cache`,
+        )
       })
     }
 
     return () => {
-      // console.log('App Manager unmounted')
+      logApp.info(`[${useAppManager.name}]: App Manager unmounted`)
     }
   }, [])
 

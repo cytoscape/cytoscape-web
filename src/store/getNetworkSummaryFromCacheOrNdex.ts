@@ -5,6 +5,8 @@ import { IdType } from '../models/IdType'
 import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from './persist/db'
 import { ValueType } from '../models/TableModel/ValueType'
 import { ValueTypeName } from '../models/TableModel/ValueTypeName'
+import { logApi, logDb } from '../debug'
+
 // check the local cache for ndex network summaries and fetch from NDEx if not found
 export const getSummariesFromCacheOrNdex = async (
   ndexNetworkId: IdType | IdType[],
@@ -49,7 +51,9 @@ export const getSummariesFromCacheOrNdex = async (
 
     return summaryResults
   } catch (error) {
-    console.error('Failed to get network summary', error)
+    logDb.error(
+      `[${getSummariesFromCacheOrNdex.name}]: Failed to get network summary: ${error}`,
+    )
     throw error
   }
 }
@@ -73,7 +77,9 @@ export const ndexSummaryFetcher = async (
       await ndexClient.getNetworkSummariesByUUIDs(ids)
     return processSummary(summaries)
   } catch (error) {
-    console.error('Failed to fetch summary', error)
+    logApi.error(
+      `[${ndexSummaryFetcher.name}]: Failed to fetch summary: ${error}`,
+    )
     throw error
   }
 }

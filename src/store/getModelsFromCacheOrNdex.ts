@@ -3,7 +3,7 @@ import { createDataFromCx, getCachedData } from '../utils/cx-utils'
 import { CachedData } from '../utils/CachedData'
 import { ndexNetworkFetcher } from '../utils/fetchers'
 import { NetworkWithView } from '../models/NetworkWithViewModel'
-
+import { logApi, logDb } from '../debug'
 export const getModelsFromCacheOrNdex = async (
   ndexNetworkId: string,
   url: string,
@@ -43,7 +43,12 @@ export const getModelsFromCacheOrNdex = async (
       }
     }
   } catch (error) {
-    console.error('Failed to get network', error)
+    logApi.error(
+      `[${getModelsFromCacheOrNdex.name}]: Failed to get network: ${error}`,
+    )
+    logDb.error(
+      `[${getModelsFromCacheOrNdex.name}]: Failed to get network: ${error}`,
+    )
     throw error
   }
 }

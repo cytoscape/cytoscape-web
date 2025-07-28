@@ -8,6 +8,7 @@ import {
 import debounce from 'lodash.debounce'
 import { useNavigate } from 'react-router-dom'
 import { parsePathName } from '../utils/paths-util'
+import { logUi } from '../debug'
 
 const markForPageReload = debounce(() => {
   void putTimestampToDb(Date.now())
@@ -73,7 +74,12 @@ export const SyncTabsAction = (): ReactElement => {
   useEffect(() => {
     initDbListener()
       .then(() => {})
-      .catch((e) => console.log(e))
+      .catch((e) =>
+        logUi.error(
+          `[${SyncTabsAction.name}]:[${initDbListener.name}]: Failed to initialize db listener`,
+          e,
+        ),
+      )
   }, [])
 
   return <></>

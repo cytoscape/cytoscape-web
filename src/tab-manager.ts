@@ -5,6 +5,8 @@
  * Currently, just manages the tab IDs for external applications
  */
 
+import { logApp } from './debug'
+
 /**
  * Generates a channel name based on the current hostname and port
  *
@@ -21,8 +23,9 @@ const generateChannelName = (): string => {
 }
 
 const CHANNEL_NAME: string = generateChannelName()
-console.log(
-  "Cytoscape Web's current active broadcast channel name:",
+
+logApp.info(
+  `[tab-manager.ts]:[${generateChannelName.name}]: Cytoscape Web's current active broadcast channel name:`,
   CHANNEL_NAME,
 )
 
@@ -81,7 +84,9 @@ export const initTabManager = (channelName: string = CHANNEL_NAME): string => {
   document.addEventListener('visibilitychange', () => {
     const isVisible = !document.hidden
     if (isVisible) {
-      console.log('Current Cytoscape Instance:', tabId, isVisible)
+      logApp.info(
+        `[tab-manager.ts]:[${document.addEventListener.name}]: Current Cytoscape Instance: ${tabId} isVisible: ${isVisible}`,
+      )
       channel.postMessage({ type: TabMessageType.ACTIVE, tabId })
     } else {
       channel.postMessage({ type: TabMessageType.INACTIVE, tabId })

@@ -24,6 +24,7 @@ import { Ui } from '../models/UiModel'
 import { IdType } from '../models/IdType'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { validateCX2 } from '../models/CxModel/impl/validator'
+import { logDb } from '../debug'
 
 interface FullNetworkData {
   network: Network
@@ -117,7 +118,9 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
       undoRedoStack: undoRedoStack,
     }
   } catch (e) {
-    console.error('Failed to restore data from IndexedDB', e)
+    logDb.error(
+      `[${getCachedData.name}]:[${id}]: Failed to restore data from IndexedDB for network ${id} ${e}`,
+    )
     throw e
   }
 }

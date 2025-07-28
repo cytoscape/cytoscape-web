@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
+import { logUi } from './debug'
 
 interface Props {
   children?: ReactNode
@@ -19,7 +20,11 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Uncaught error:', error, errorInfo)
+    logUi.error(
+      `[${ErrorBoundary.name}]:[${this.componentDidCatch.name}]: Uncaught error:`,
+      error,
+      errorInfo,
+    )
   }
 
   public render(): ReactNode {

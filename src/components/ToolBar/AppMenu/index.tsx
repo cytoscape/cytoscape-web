@@ -16,6 +16,7 @@ import { useServiceTaskRunner } from '../../../store/hooks/useServiceTaskRunner'
 import { TaskStatusDialog } from '../../Util/TaskStatusDialog'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
+import { logApp } from '../../../debug'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   const theme = useTheme()
@@ -81,7 +82,10 @@ export const AppMenu = (props: DropdownMenuProps) => {
     } catch (e) {
       setNotificationDialog(true)
       setNotificationMessage(e.message)
-      console.error(`Failed to run the task:`, e)
+      logApp.error(
+        `[${AppMenu.name}]:[${handleRun.name}]: Failed to run the task: ${url}`,
+        e,
+      )
     } finally {
       clearCurrentTask()
     }

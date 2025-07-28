@@ -52,6 +52,8 @@ import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { AppConfigContext } from '../../../AppConfigContext'
 
 registerCyExtensions()
+import { logUi } from '../../../debug'
+
 interface NetworkRendererProps {
   network?: Network
 
@@ -378,8 +380,8 @@ const CyjsRenderer = ({
       if (startPos !== undefined) {
         undoPosition = [startPos.x, startPos.y]
       } else {
-        console.warn(
-          `The start position of the node ${nodeId} is undefined. This should not happen.`,
+        logUi.warn(
+          `[${CyjsRenderer.name}]:[cy.on('dragfree', 'node')]: The start position of the node ${nodeId} is undefined. This should not happen.`,
         )
         // Fallback to the current position in the view model
         const nodeView: NodeView | undefined = networkView?.nodeViews[nodeId]

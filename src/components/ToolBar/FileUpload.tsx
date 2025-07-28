@@ -43,6 +43,7 @@ import { useMessageStore } from '../../store/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { validateCX2 } from '../../models/CxModel/impl/validator'
 import { validateSif } from '../../utils/sif-utils'
+import { logUi } from '../../debug'
 
 interface FileUploadProps {
   show: boolean
@@ -182,7 +183,10 @@ export function FileUpload(props: FileUploadProps) {
         }
       }
     } catch (error) {
-      console.error(error)
+      logUi.error(
+        `[${FileUpload.name}]:[${handleCX2File.name}]: Failed to parse CX2 file ${file.name}`,
+        error,
+      )
       addMessage({
         duration: 3000,
         message: 'Failed to parse CX2 file',
@@ -265,7 +269,10 @@ export function FileUpload(props: FileUploadProps) {
         setViewModel(localUuid, networkView)
       }
     } catch (error) {
-      console.error(error)
+      logUi.error(
+        `[${FileUpload.name}]:[${handleSifFile.name}]: Failed to parse SIF file ${file.name} ${sifText}`,
+        error,
+      )
       addMessage({
         duration: 3000,
         message: 'Failed to parse SIF file',

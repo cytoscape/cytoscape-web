@@ -24,6 +24,7 @@ import {
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 import { VisualStyleStore } from '../models/StoreModel/VisualStyleStoreModel'
+import { logStore } from '../debug'
 
 /**
  * Visual Style State manager based on zustand
@@ -61,8 +62,8 @@ export const useVisualStyleStore = create(
       add: (networkId: IdType, visualStyle: VisualStyle) => {
         set((state) => {
           if (state.visualStyles[networkId] !== undefined) {
-            console.warn(
-              `Visual Style already exists for network ${networkId}, and it 
+            logStore.warn(
+              `[${useVisualStyleStore.name}]: Visual Style already exists for network ${networkId}, and it 
               will be overwritten.`,
             )
           }
@@ -355,8 +356,8 @@ export const useVisualStyleStore = create(
             }
             state.visualStyles[networkId][vpName].mapping = continuousMapping
           } else {
-            console.error(
-              `Could not create continuous mapping function because vpType needs to be a color or number.  Received ${vpType}}`,
+            logStore.error(
+              `[${useVisualStyleStore.name}]: Could not create continuous mapping function because vpType needs to be a color or number.  Received ${vpType}}`,
             )
           }
           return state
@@ -448,7 +449,9 @@ export const useVisualStyleStore = create(
             return acc
           }, {})
           void deleteVisualStyleFromDb(networkId).then(() => {
-            console.log('Deleted visual style from db', networkId)
+            logStore.info(
+              `[${useVisualStyleStore.name}]: Deleted visual style from db: ${networkId}`,
+            )
           })
           return {
             ...state,
@@ -461,10 +464,14 @@ export const useVisualStyleStore = create(
           state.visualStyles = {}
           clearVisualStyleFromDb()
             .then(() => {
-              console.log('Deleted all visual styles from db')
+              logStore.info(
+                `[${useVisualStyleStore.name}]: Deleted all visual styles from db`,
+              )
             })
             .catch((err) => {
-              console.error('Error clearing visual styles from db', err)
+              logStore.error(
+                `[${useVisualStyleStore.name}]: Error clearing visual styles from db: ${err}`,
+              )
             })
 
           return state

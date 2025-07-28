@@ -7,6 +7,7 @@ import { useCredentialStore } from '../../store/CredentialStore'
 import { getSummariesFromCacheOrNdex } from '../../store/getNetworkSummaryFromCacheOrNdex'
 import { AppConfigContext } from '../../AppConfigContext'
 import { useUiStateStore } from '../../store/UiStateStore'
+import { logUi } from '../../debug'
 
 interface ExternalNetworkLoadingPanelProps {
   message: string
@@ -50,7 +51,10 @@ export const ExternalNetworkLoadingPanel = (
           navigate(`/${id}/networks/${networkId}${location.search.toString()}`)
         })
         .catch((error) => {
-          console.log('SUMMARY error', error)
+          logUi.error(
+            `[${ExternalNetworkLoadingPanel.name}]:[${redirect.name}]: Failed to load the network ${networkId}`,
+            error,
+          )
           const errorMessage: string = error.message
           setErrorMessage(
             `Failed to load the network ${networkId}: ${errorMessage}`,
@@ -61,7 +65,9 @@ export const ExternalNetworkLoadingPanel = (
   }
 
   useEffect(() => {
-    console.log('workspace', workspace)
+    logUi.info(
+      `[${ExternalNetworkLoadingPanel.name}]:[${useEffect.name}]: workspace: ${workspace}`,
+    )
     if (id !== undefined) {
       redirect()
     }

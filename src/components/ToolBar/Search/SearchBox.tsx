@@ -17,6 +17,7 @@ import {
 } from '../../../models/FilterModel/Search'
 import { createFuseIndex, filterColumns, runSearch } from './SearchUtils'
 import { SearchState } from '../../../models/FilterModel/SearchState'
+import { logUi } from '../../../debug'
 
 export const SearchBox = (): JSX.Element => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
@@ -156,7 +157,7 @@ export const SearchBox = (): JSX.Element => {
         setIndex(currentNetworkId, GraphObjectType.EDGE, edgeIndex)
       }
     } catch (error) {
-      console.log('Error indexing', error)
+      logUi.error(`[${reIndex.name}]: Error indexing`, error)
     }
   }
   useEffect(() => {

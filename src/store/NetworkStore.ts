@@ -127,8 +127,8 @@ export const useNetworkStore = create(
               state.lastUpdated = event
               deletedConnectingEdges = deletedEdgeObjects
             } else {
-              console.warn(
-                'Network not found when deleting nodes',
+              logStore.warn(
+                `[${useNetworkStore.name}]: Network not found when deleting nodes`,
                 networkId,
                 nodeIds,
               )
@@ -195,7 +195,9 @@ export const useNetworkStore = create(
         add: (network: Network) =>
           set((state) => {
             if (state.networks.has(network.id)) {
-              console.warn('Network already exists in store', network.id)
+              logStore.warn(
+                `[${useNetworkStore.name}]: Network already exists in store: ${network.id}`,
+              )
             }
 
             const newNetworkMap = new Map(state.networks).set(
@@ -216,7 +218,9 @@ export const useNetworkStore = create(
           set((state) => {
             state.networks.delete(networkId)
             void deleteNetworkFromDb(networkId).then(() => {
-              console.log('## Deleted network from db', networkId)
+              logStore.info(
+                `[${useNetworkStore.name}]: Deleted network from db: ${networkId}`,
+              )
             })
             return state
           }),
@@ -224,10 +228,14 @@ export const useNetworkStore = create(
           set((state) => {
             clearNetworksFromDb()
               .then(() => {
-                console.log('Deleted all networks from db')
+                logStore.info(
+                  `[${useNetworkStore.name}]: Deleted all networks from db`,
+                )
               })
               .catch((err) => {
-                console.warn('Error clearing all networks from db', err)
+                logStore.error(
+                  `[${useNetworkStore.name}]: Error clearing all networks from db: ${err}`,
+                )
               })
 
             return { ...state, networks: new Map<IdType, Network>() }

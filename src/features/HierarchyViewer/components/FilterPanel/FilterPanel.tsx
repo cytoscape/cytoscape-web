@@ -208,7 +208,6 @@ export const FilterPanel = () => {
     const visualMapping = getMapping(vs, targetAttrName)
 
     if (currentConfig !== undefined) {
-      console.log('Need to update the existing filter config')
       const newConfig = { ...currentConfig, visualMapping }
       updateFilterConfig(newConfig.name, newConfig)
       searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)

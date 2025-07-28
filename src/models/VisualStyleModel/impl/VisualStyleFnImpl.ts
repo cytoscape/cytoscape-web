@@ -381,7 +381,9 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
       } else {
         // property is not found in cx, in theory all cytoscape web properties should be in
         // cx, if this happens, it is a bug
-        console.error(`Property ${vpName} not found in CX`)
+        console.debug(
+          `[${createVisualStyleFromCx.name}]: Property ${vpName} not found in CX`,
+        )
       }
     })
   })

@@ -29,7 +29,10 @@ const useDynamicImport = (
         }
       })
       .catch((err) => {
-        console.error('Failed to load module:', err)
+        console.error(
+          `[${useDynamicImport.name}]:[${importFunc.name}]: Failed to load module:`,
+          err,
+        )
         if (isMounted) {
           setError(err)
         }

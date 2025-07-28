@@ -19,9 +19,7 @@ export const cosmos: LayoutAlgorithm = {
       gravity: 0.3,
     },
     events: {
-      onClick: (node: any) => {
-        console.log('Clicked node: %s', node)
-      },
+      onClick: (node: any) => {},
     },
   },
   editables: {

@@ -28,6 +28,7 @@ import {
   TimeOutErrorMessage,
 } from '../../../utils/ndex-utils'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { logUi } from '../../../debug'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
@@ -107,7 +108,10 @@ export const CopyNetworkToNDExMenuItem = (
         severity: MessageSeverity.SUCCESS,
       })
     } catch (e) {
-      console.log(e)
+      logUi.error(
+        `[${CopyNetworkToNDExMenuItem.name}]:[${saveCopyToNDEx.name}] Failed to save a copy of the current network to NDEx`,
+        e,
+      )
       if (e.message.includes(TimeOutErrorIndicator)) {
         addMessage({
           message: TimeOutErrorMessage,

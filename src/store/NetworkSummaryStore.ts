@@ -8,7 +8,7 @@ import {
   putNetworkSummaryToDb,
 } from './persist/db'
 import { NetworkSummaryStore } from '../models/StoreModel/NetworkSummaryStoreModel'
-
+import { logStore } from '../debug'
 export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore>((set, get) => ({
     summaries: {},
@@ -43,10 +43,14 @@ export const useNetworkSummaryStore = create(
         delete state.summaries[networkId]
         void deleteNetworkSummaryFromDb(networkId)
           .then((val) => {
-            console.log('Summary deleted', networkId, val)
+            logStore.info(
+              `[${useNetworkSummaryStore.name}]: Summary deleted: ${networkId}`,
+            )
           })
           .catch((err) => {
-            console.error('', err)
+            logStore.error(
+              `[${useNetworkSummaryStore.name}]: Error deleting summary: ${err}`,
+            )
           })
 
         return state
@@ -57,10 +61,14 @@ export const useNetworkSummaryStore = create(
         state.summaries = {}
         clearNetworkSummaryFromDb()
           .then((val) => {
-            console.log('Summary cleared', val)
+            logStore.info(
+              `[${useNetworkSummaryStore.name}]: Summary cleared: ${val}`,
+            )
           })
           .catch((err) => {
-            console.error('Failed to clear Summary', err)
+            logStore.error(
+              `[${useNetworkSummaryStore.name}]: Failed to clear Summary: ${err}`,
+            )
           })
 
         return state

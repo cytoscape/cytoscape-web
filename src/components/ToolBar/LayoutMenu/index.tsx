@@ -20,6 +20,7 @@ import { useUndoStack } from '../../../task/UndoStack'
 import { LayoutAlgorithm } from '../../../models'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { DEFAULT_RENDERER_ID } from '../../../store/DefaultRenderer'
+import { logUi } from '../../../debug'
 
 interface DropdownMenuProps {
   label: string
@@ -81,7 +82,9 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
           })
         })
       } else {
-        console.warn('Fit function not available for renderer: cyjs')
+        logUi.warn(
+          `[${LayoutMenu.name}]: Fit function not available for renderer: cyjs`,
+        )
       }
     }
   }, [layoutCounter, getRendererFunction])

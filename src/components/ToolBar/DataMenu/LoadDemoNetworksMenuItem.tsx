@@ -14,15 +14,12 @@ export const LoadDemoNetworksMenuItem = (
 
   const { testNetworks } = useContext(AppConfigContext)
 
-  const handleRemoveAllNetworks = (): void => {
-    console.info('(Not implemented) All networks removed')
+  const handleAddDemoNetworks = (): void => {
     props.handleClose()
     addNetworks(testNetworks)
   }
 
   return (
-    <MenuItem onClick={handleRemoveAllNetworks}>
-      Open Sample Networks
-    </MenuItem>
+    <MenuItem onClick={handleAddDemoNetworks}>Open Sample Networks</MenuItem>
   )
 }

@@ -12,6 +12,7 @@ import {
 import { AppStatus } from '../models/AppModel/AppStatus'
 import { serviceFetcher } from '../utils/service-fetcher'
 import { ServiceAppTask } from '../models/AppModel/ServiceAppTask'
+import { logStore } from '../debug'
 
 export const useAppStore = create(
   immer<AppStore>((set, get) => ({
@@ -66,7 +67,9 @@ export const useAppStore = create(
     addService: async (url: string) => {
       // Do not register the same service app multiple times
       if (get().serviceApps[url] !== undefined) {
-        console.warn(`Service app already registered: ${url}`)
+        logStore.warn(
+          `[${useAppStore.name}]: Service app already registered: ${url}`,
+        )
         return
       }
       const serviceApp = await serviceFetcher(url)
@@ -81,7 +84,10 @@ export const useAppStore = create(
       set((state) => {
         delete state.serviceApps[url]
         deleteServiceAppFromDb(url).catch((error) => {
-          console.error(`Failed to delete service metadata from ${url}`, error)
+          logStore.error(
+            `[${useAppStore.name}]: Failed to delete service metadata from ${url}`,
+            error,
+          )
         })
       })
     },
@@ -128,10 +134,15 @@ export const useAppStore = create(
       // Update the cached service app
       putServiceAppToDb({ ...get().serviceApps[url] })
         .then(() => {
-          console.info(`Target column updated for service app: ${url}`)
+          logStore.info(
+            `[${useAppStore.name}]: Target column updated for service app: ${url}`,
+          )
         })
         .catch((error) => {
-          console.error(`Failed to update service app`, error)
+          logStore.error(
+            `[${useAppStore.name}]: Failed to update service app`,
+            error,
+          )
         })
     },
 
@@ -157,10 +168,15 @@ export const useAppStore = create(
       // Update the cached service app
       putServiceAppToDb({ ...get().serviceApps[url] })
         .then(() => {
-          console.info(`Target column updated for service app: ${url}`)
+          logStore.info(
+            `[${useAppStore.name}]: Target column updated for service app: ${url}`,
+          )
         })
         .catch((error) => {
-          console.error(`Failed to update service app`, error)
+          logStore.error(
+            `[${useAppStore.name}]: Failed to update service app`,
+            error,
+          )
         })
     },
   })),

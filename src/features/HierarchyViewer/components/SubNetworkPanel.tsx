@@ -33,6 +33,7 @@ import { CirclePackingView } from '../model/CirclePackingView'
 import { applyCpLayout } from '../utils/hierarchy-util'
 import { DefaultRenderer } from '../../../store/DefaultRenderer'
 import { useUndoStore } from '../../../store/UndoStore'
+import { logApi, logUi } from '../../../debug'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -73,7 +74,6 @@ export const SubNetworkPanel = ({
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
-
 
   // Tracking processing progress
   const [processingProgress, setProcessingProgress] = useState<number>(0)
@@ -141,7 +141,7 @@ export const SubNetworkPanel = ({
         if (viewId !== undefined && viewId !== '' && viewId !== cpViewId)
           setCpViewId(viewId)
       } else {
-        // console.log('Other model', hierarchyViewModel)
+        logUi.info(`[${SubNetworkPanel.name}]: Other model: ${type}`)
       }
     })
   }, [hierarchyViewModels])
@@ -284,7 +284,7 @@ export const SubNetworkPanel = ({
   const { data, error, isFetching } = result
 
   if (error !== undefined && error !== null) {
-    console.error('Failed to get network', error)
+    logApi.error(`[${SubNetworkPanel.name}]: Failed to get network`, error)
   }
 
   // The query network to be rendered
@@ -314,7 +314,11 @@ export const SubNetworkPanel = ({
     const nodeViews = networkViews[0].nodeViews
     const nodeViewCount = Object.keys(nodeViews).length
     if (nodeCount !== nodeViewCount) {
-      console.error('Node count mismatch', nodeCount, nodeViewCount)
+      logUi.error(
+        `[${SubNetworkPanel.name}]:[${updateNetworkView.name}]: Node count mismatch`,
+        nodeCount,
+        nodeViewCount,
+      )
       return ''
     }
     const newUuid: string = network.id.toString()
@@ -425,7 +429,10 @@ export const SubNetworkPanel = ({
 
           // Handle worker error
           worker.onerror = (error) => {
-            console.error('Worker error:', error)
+            logUi.error(
+              `[${SubNetworkPanel.name}]:[${calculatePositions.name}]: Worker error:`,
+              error,
+            )
             reject(new Error('Worker error'))
             worker.terminate()
           }
@@ -451,8 +458,8 @@ export const SubNetworkPanel = ({
           }, 200)
         } catch (error) {
           // Fallback to synchronous calculation if worker fails
-          console.warn(
-            'Web Worker failed, falling back to synchronous calculation:',
+          logUi.warn(
+            `[${SubNetworkPanel.name}]:[${calculatePositions.name}]: Web Worker failed, falling back to synchronous calculation:`,
             error,
           )
           const newPositions = applyCpLayout(

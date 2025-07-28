@@ -41,6 +41,7 @@ import { useViewModelStore } from '../store/ViewModelStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
+import { logStartup, logUi } from '../debug'
 
 // This is a valid workspace ID for sharing
 const DUMMY_WS_ID = '0'
@@ -279,7 +280,9 @@ const AppShell = (): ReactElement => {
         throw new Error(`Failed to initialize the workspace: ${error.message}`)
       } finally {
         // initializedRef.current = true
-        console.log('---------------Workspace initialized------------------')
+        logStartup.info(
+          `[${AppShell.name}]:[${initializeWorkspace.name}]: Workspace initialized`,
+        )
       }
     }
 
@@ -457,7 +460,10 @@ const AppShell = (): ReactElement => {
       try {
         await redirect()
       } catch (error) {
-        console.error('Failed to redirect', error)
+        logStartup.error(
+          `[${AppShell.name}]:[${handleInit.name}]: Failed to redirect`,
+          error,
+        )
       }
 
       await handleImportNetworkFromSearchParam()
@@ -524,21 +530,24 @@ const AppShell = (): ReactElement => {
       locationNetworkId !== currentNetworkId &&
       id !== '' // Only when workspace is initialized
     ) {
-      console.log('🔄 Setting current network ID from location:', {
-        from: currentNetworkId,
-        to: locationNetworkId,
-        timestamp: new Date().toISOString(),
-      })
+      logUi.info(
+        `[${AppShell.name}]:[${useEffect.name}]: Setting current network ID from location: 
+        from: ${currentNetworkId} to: ${locationNetworkId}, timestamp: ${new Date().toISOString()}`,
+      )
 
       // Add network to workspace if it doesn't exist yet
       if (!networkIds.includes(locationNetworkId)) {
-        console.log('Adding network to workspace:', locationNetworkId)
+        logUi.info(
+          `[${AppShell.name}]:[${useEffect.name}]: Adding network to workspace: ${locationNetworkId}`,
+        )
         addNetworkIds(locationNetworkId)
       }
 
       // Update current network ID (with duplicate check)
       if (currentNetworkId !== locationNetworkId) {
-        console.log('Updating current network ID:', locationNetworkId)
+        logUi.info(
+          `[${AppShell.name}]:[${useEffect.name}]: Updating current network ID: ${locationNetworkId}`,
+        )
         setCurrentNetworkId(locationNetworkId)
       }
     }

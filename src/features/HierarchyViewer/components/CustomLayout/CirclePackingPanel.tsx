@@ -33,6 +33,7 @@ import { useFilterStore } from '../../../../store/FilterStore'
 import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
 import { useCredentialStore } from '../../../../store/CredentialStore'
 import { AppConfigContext } from '../../../../AppConfigContext'
+import { logUi } from '../../../../debug'
 
 interface CirclePackingPanelProps {
   rendererId: string
@@ -162,7 +163,7 @@ export const CirclePackingPanel = ({
   const fitRoot = (): void => {
     const fitFunction = getRendererFunction(rendererId, 'fit')
     if (fitFunction === undefined) {
-      console.log('Registering fit function for CP renderer')
+      logUi.info('Registering fit function for CP renderer')
       setRendererFunction(rendererId, 'fit', fitCircle)
     }
     if (initialSize !== undefined && initialSize.w > 0 && initialSize.h > 0) {
@@ -175,7 +176,7 @@ export const CirclePackingPanel = ({
       circlePackingView.hierarchy as d3Hierarchy.HierarchyCircularNode<D3TreeNode>
     const circleNode = findHierarchyNode(selectedNodeId, rootNode)
     if (circleNode === undefined) {
-      console.warn(
+      logUi.warn(
         'Node selected in primary view is not found in Circle Packing view',
       )
       return
@@ -374,7 +375,9 @@ export const CirclePackingPanel = ({
 
         // Redraw the CP view
         displaySelectedNodes(new Set<string>(), '')
-        console.log('Selection in CP cleared', selectedNodes.length)
+        logUi.info(
+          `[${draw.name}]: Selection in CP cleared: ${selectedNodes.length}`,
+        )
       }
     })
 
@@ -510,7 +513,10 @@ export const CirclePackingPanel = ({
     try {
       updateViewModel()
     } catch (e) {
-      console.error('Failed to build the Circle Packing view', e)
+      logUi.error(
+        `[${updateViewModel.name}]: Failed to build the Circle Packing view`,
+        e,
+      )
       throw e
     }
   }, [visualStyle])

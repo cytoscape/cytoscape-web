@@ -26,7 +26,11 @@ const ErrorHandler: React.FC<ErrorBoundaryProps> = ({ children }) => {
     <ReactErrorBoundary
       FallbackComponent={ErrorFallback}
       onError={(error, errorInfo) => {
-        console.warn('App loader caught an error', error, errorInfo)
+        console.error(
+          `[${ErrorHandler.name}]:[onError]: App loader caught an error`,
+          error,
+          errorInfo,
+        )
       }}
     >
       {children}

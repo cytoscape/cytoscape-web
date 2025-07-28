@@ -25,6 +25,8 @@ import { getWorkspaceFromDb } from '../store/persist/db'
 import { AppStatus } from '../models/AppModel/AppStatus'
 import { ServiceApp } from '../models/AppModel/ServiceApp'
 
+import { logApi } from '../debug'
+
 export const TimeOutErrorMessage =
   'You network has been saved in NDEx, but the server is under heavy load right now. Please use the “Open Networks from NDEx” menu to manually open this network from your account later.'
 export const TimeOutErrorIndicator = 'NDEx_TIMEOUT_ERROR'
@@ -340,7 +342,9 @@ export const useSaveWorkspace = () => {
             severity: MessageSeverity.ERROR,
           })
         }
-        console.error(e)
+        logApi.error(
+          `[${saveWorkspace.name}]:[${networkId}]: Unable to save workspace ${e}`,
+        )
       }
     }
 

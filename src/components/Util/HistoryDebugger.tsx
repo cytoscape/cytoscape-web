@@ -7,6 +7,7 @@ import {
   resetNavigationToRoot,
   getHistoryInfo,
 } from '../../store/hooks/useUrlNavigation/url-manager'
+import { logUi } from '../../debug'
 
 export const HistoryDebugger = (): JSX.Element => {
   const [historyLength, setHistoryLength] = useState(window.history.length)
@@ -29,7 +30,9 @@ export const HistoryDebugger = (): JSX.Element => {
   useEffect(() => {
     const handlePopState = () => {
       setHistoryLength(window.history.length)
-      console.log('PopState event - History length:', window.history.length)
+      logUi.info(
+        `[${HistoryDebugger.name}]: PopState event - History length: ${window.history.length}`,
+      )
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -42,21 +45,21 @@ export const HistoryDebugger = (): JSX.Element => {
     const success = clearBrowserHistory()
     if (success) {
       setHistoryLength(window.history.length)
-      console.log('Browser history cleared')
+      logUi.info(`[${HistoryDebugger.name}]: Browser history cleared`)
     }
   }
 
   const handleClearInternalHistory = () => {
     clearInternalHistory()
     setInternalHistoryLength(0)
-    console.log('Internal history cleared')
+    logUi.info(`[${HistoryDebugger.name}]: Internal history cleared`)
   }
 
   const handleResetToRoot = () => {
     resetNavigationToRoot()
     setHistoryLength(window.history.length)
     setInternalHistoryLength(0)
-    console.log('Navigation reset to root')
+    logUi.info(`[${HistoryDebugger.name}]: Navigation reset to root`)
   }
 
   return (
@@ -112,7 +115,9 @@ export const HistoryDebugger = (): JSX.Element => {
           variant="outlined"
           onClick={() => {
             const historyInfo = getHistoryInfo()
-            console.log('Current history state:', historyInfo)
+            logUi.info(
+              `[${HistoryDebugger.name}]: Current history state: ${historyInfo}`,
+            )
           }}
         >
           Log History Info

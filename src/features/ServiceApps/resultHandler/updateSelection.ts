@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 import { useViewModelStore } from '../../../store/ViewModelStore'
+import { logUi } from '../../../debug'
 
 interface UpdatedSelection {
   nodes: number[]
@@ -13,16 +14,19 @@ export const useUpdateSelection = (): (({
 }: ActionHandlerProps) => void) => {
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const isValidUpdatedSelection = (obj: any): obj is UpdatedSelection =>
-  obj &&
-  Array.isArray(obj.nodes) &&
-  obj.nodes.every((id: any) => typeof id === 'number') &&
-  Array.isArray(obj.edges) &&
-  obj.edges.every((id: any) => typeof id === 'number')
+    obj &&
+    Array.isArray(obj.nodes) &&
+    obj.nodes.every((id: any) => typeof id === 'number') &&
+    Array.isArray(obj.edges) &&
+    obj.edges.every((id: any) => typeof id === 'number')
 
   const updateSelection = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
       if (!isValidUpdatedSelection(responseObj)) {
-        console.warn('Invalid selection update response:', responseObj)
+        logUi.warn(
+          `[${updateSelection.name}]: Invalid selection update response:`,
+          responseObj,
+        )
         return
       }
       const selectedNodeIds = responseObj.nodes

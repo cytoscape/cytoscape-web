@@ -7,7 +7,10 @@ import { putNetworkSummaryToDb } from '../../../store/persist/db'
 import { v4 as uuidv4 } from 'uuid'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
-import { NdexNetworkProperty, Visibility } from '../../../models/NetworkSummaryModel'
+import {
+  NdexNetworkProperty,
+  Visibility,
+} from '../../../models/NetworkSummaryModel'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import {
   createDataFromLocalCx2,
@@ -25,6 +28,7 @@ import {
   getNetworkAttributes,
   getNodes,
 } from '../../../models/CxModel/cx2-util'
+import { logApp } from '../../../debug'
 
 export const useAddNetworks = (): (({
   responseObj,
@@ -49,8 +53,8 @@ export const useAddNetworks = (): (({
   const addNetworks = useCallback(
     async ({ responseObj, networkId }: ActionHandlerProps) => {
       if (!Array.isArray(responseObj)) {
-        console.warn(
-          'Invalid addNetwork response: Expected an array',
+        logApp.warn(
+          `[${addNetworks.name}]: Invalid addNetwork response: Expected an array`,
           responseObj,
         )
         return
@@ -146,10 +150,10 @@ export const useAddNetworks = (): (({
             }
             validNetworkIds.push(localUuid)
           } catch (error) {
-            console.error(error)
+            logApp.error(`[${addNetworks.name}]: Error adding network:`, error)
           }
         } else {
-          console.warn('Invalid Cx2Network item:', item)
+          logApp.warn(`[${addNetworks.name}]: Invalid Cx2Network item:`, item)
         }
       }
       addNetworksToWorkspace(validNetworkIds)

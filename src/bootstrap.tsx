@@ -17,16 +17,15 @@ import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
 import ErrorBoundary from './ErrorBoundary'
 import { initTabManager } from './tab-manager'
-import { initializeDebug } from './debug'
+import { initializeDebug, logStartup } from './debug'
 
 enableMapSet()
 initializeDebug()
 
 // Window name of this instance based on the current time
 window.name = initTabManager()
-console.log(
-  'Cytoscape window name initialized. ',
-  'Use this as the target when you open this tab again.',
+logStartup.info(
+  `[bootstrap.tsx]:[${initTabManager.name}]: Cytoscape window name initialized. Use this as the target when you open this tab again.`,
   window.name,
 )
 
@@ -276,7 +275,10 @@ keycloak
     removeMessage(INITIAL_LOADING_SCREEN_ID)
 
     // Failed initialization
-    console.warn('Failed to initialize Cytoscape:', e)
+    logStartup.error(
+      `[bootstrap.tsx]:[${keycloak.init.name}]: Failed to initialize Cytoscape:`,
+      e,
+    )
     const errorMessage = document.createElement('h2')
     errorMessage.style.color = 'red'
     errorMessage.textContent = `Failed to initialize Cytoscape: ${e.error}`

@@ -76,7 +76,6 @@ describe('db-util', () => {
       }
 
       const serialized = serializeVisualStyle(visualStyle as any)
-      console.log('Serialized VisualStyle:', serialized)
       expect(serialized.nodeShape.bypassMap).toEqual({ key1: 'value1' })
       expect((serialized.nodeShape?.mapping as any)?.vpValueMap ?? {}).toEqual({
         key2: 'value2',

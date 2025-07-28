@@ -36,6 +36,5 @@ export const useApplyLayout = (network: Network): void => {
     setIsRunning(true)
     engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
   } else {
-    console.log('Fit function not available')
   }
 }

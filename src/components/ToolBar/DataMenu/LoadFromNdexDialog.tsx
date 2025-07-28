@@ -33,6 +33,7 @@ import { dateFormatter } from '../../../utils/date-format'
 import { KeycloakContext } from '../../../bootstrap'
 import { useMessageStore } from '../../../store/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { logUi } from '../../../debug'
 
 interface LoadFromNdexDialogProps {
   open: boolean
@@ -189,8 +190,14 @@ export const LoadFromNdexDialog = (
           }
         }
       })
-      console.log('Valid networks', validNetworkIds)
-      console.log('Invalid networks', invalidNetworkIds)
+      logUi.info(
+        `[${LoadFromNdexDialog.name}]:[${addNDExNetworksToWorkspace.name}]: Valid networks`,
+        validNetworkIds,
+      )
+      logUi.info(
+        `[${LoadFromNdexDialog.name}]:[${addNDExNetworksToWorkspace.name}]: Invalid networks`,
+        invalidNetworkIds,
+      )
       addNetworks(validNetworkIds)
       const nextCurrentNetworkId: IdType | undefined = validNetworkIds[0]
 
