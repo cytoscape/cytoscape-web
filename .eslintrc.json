@@ -25,9 +25,8 @@
     "sourceType": "module",
     "project": ["tsconfig.json"]
   },
-  "plugins": ["react", "@typescript-eslint", "prettier"],
+  "plugins": ["react", "@typescript-eslint", "prettier", "react-hooks"],
   "rules": {
-
     // TODO: Remove these rules and fix the errors / warnings
 
     // "@typescript-eslint/no-redeclare": "off",
@@ -41,6 +40,8 @@
     "@typescript-eslint/ban-types": "warn",
     "no-prototype-builtins": "warn",
     "react/jsx-uses-react": "off",
-    "react/react-in-jsx-scope": "off"
+    "react/react-in-jsx-scope": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn"
   }
 }
