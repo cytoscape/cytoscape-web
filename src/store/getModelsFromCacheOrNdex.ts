@@ -1,10 +1,10 @@
-import { Cx2 } from '../../models/CxModel/Cx2'
-import { createDataFromCx, getCachedData } from '../../utils/cx-utils'
-import { CachedData } from '../../utils/CachedData'
-import { ndexNetworkFetcher } from '../../utils/fetchers'
-import { NetworkWithView } from '../../models/NetworkWithViewModel'
+import { Cx2 } from '../models/CxModel/Cx2'
+import { createDataFromCx, getCachedData } from '../utils/cx-utils'
+import { CachedData } from '../utils/CachedData'
+import { ndexNetworkFetcher } from '../utils/fetchers'
+import { NetworkWithView } from '../models/NetworkWithViewModel'
 
-export const useNdexNetwork = async (
+export const getModelsFromCacheOrNdex = async (
   ndexNetworkId: string,
   url: string,
   accessToken?: string,

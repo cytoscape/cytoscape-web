@@ -1,12 +1,12 @@
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
-import { IdType } from '../../models/IdType'
-import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from '../persist/db'
-import { ValueType } from '../../models/TableModel/ValueType'
-import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
+import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
+import { IdType } from '../models/IdType'
+import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from './persist/db'
+import { ValueType } from '../models/TableModel/ValueType'
+import { ValueTypeName } from '../models/TableModel/ValueTypeName'
 // check the local cache for ndex network summaries and fetch from NDEx if not found
-export const useNdexNetworkSummary = async (
+export const getSummariesFromCacheOrNdex = async (
   ndexNetworkId: IdType | IdType[],
   url: string,
   accessToken?: string,

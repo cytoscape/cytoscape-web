@@ -13,9 +13,9 @@ import {
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { exportNetworkToCx2 } from '../store/io/exportCX'
 import { TableRecord } from '../models/StoreModel/TableStoreModel'
-import { useNdexNetwork } from '../store/hooks/useNdexNetwork'
+import { getModelsFromCacheOrNdex } from '../store/getModelsFromCacheOrNdex'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
-import { ndexSummaryFetcher } from '../store/hooks/useNdexNetworkSummary'
+import { ndexSummaryFetcher } from '../store/getNetworkSummaryFromCacheOrNdex'
 import { waitSeconds } from './wait-seconds'
 import { MessageSeverity } from '../models/MessageModel'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
@@ -261,7 +261,11 @@ export const useSaveWorkspace = () => {
 
       try {
         if (!network || !visualStyle || !nodeTable || !edgeTable) {
-          const res = await useNdexNetwork(networkId, ndexBaseUrl, accessToken)
+          const res = await getModelsFromCacheOrNdex(
+            networkId,
+            ndexBaseUrl,
+            accessToken,
+          )
           // Using parentheses to perform destructuring assignment correctly
           ;({
             network,
@@ -348,7 +352,7 @@ export const useSaveWorkspace = () => {
     const workspace = await getWorkspaceFromDb(currentWorkspaceId)
     if (isUpdate) {
       await ndexClient.updateCyWebWorkspace(
-        workspaceToBeOverwritten ?? currentWorkspaceId, 
+        workspaceToBeOverwritten ?? currentWorkspaceId,
         {
           name: workspaceName,
           options: {

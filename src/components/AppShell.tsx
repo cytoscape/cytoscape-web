@@ -19,9 +19,9 @@ import { WarningDialog } from './ExternalLoading/WarningDialog'
 import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
 import { AppConfigContext } from '../AppConfigContext'
 import {
-  useNdexNetworkSummary,
+  getSummariesFromCacheOrNdex,
   ndexSummaryFetcher,
-} from '../store/hooks/useNdexNetworkSummary'
+} from '../store/getNetworkSummaryFromCacheOrNdex'
 import { useCredentialStore } from '../store/CredentialStore'
 
 import { UpdateNetworkDialog } from './UpdateNetworkDialog'
@@ -344,7 +344,7 @@ const AppShell = (): ReactElement => {
         // of the local copy and the ndex summary
         try {
           const token = await getToken()
-          const summaryMap = await useNdexNetworkSummary(
+          const summaryMap = await getSummariesFromCacheOrNdex(
             networkId,
             ndexBaseUrl,
             token,

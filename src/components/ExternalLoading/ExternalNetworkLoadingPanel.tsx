@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Workspace } from '../../models/WorkspaceModel'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useCredentialStore } from '../../store/CredentialStore'
-import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
+import { getSummariesFromCacheOrNdex } from '../../store/getNetworkSummaryFromCacheOrNdex'
 import { AppConfigContext } from '../../AppConfigContext'
 import { useUiStateStore } from '../../store/UiStateStore'
 
@@ -42,7 +42,7 @@ export const ExternalNetworkLoadingPanel = (
   const redirect = (): void => {
     const networkId = location.pathname.split('/')[2]
     void getToken().then((token) => {
-      useNdexNetworkSummary(networkId, ndexBaseUrl, token)
+      getSummariesFromCacheOrNdex(networkId, ndexBaseUrl, token)
         .then((summary) => {
           // Add to the workspace
           addNetworkIds(networkId)
@@ -73,7 +73,7 @@ export const ExternalNetworkLoadingPanel = (
     >
       <Box sx={{ margin: 'auto' }}>
         <h2>{props.message}</h2>
-        {props.showProgress ?? false ? <LinearProgress /> : null}
+        {(props.showProgress ?? false) ? <LinearProgress /> : null}
       </Box>
     </Box>
   )

@@ -1,12 +1,20 @@
-import { Suspense, lazy, useContext, useEffect, useRef, useState } from 'react'
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box, Tooltip } from '@mui/material'
 
 import { Outlet, useLocation, useSearchParams } from 'react-router-dom'
 
-import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
-import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
+import { getModelsFromCacheOrNdex } from '../../store/getModelsFromCacheOrNdex'
+import { getSummariesFromCacheOrNdex } from '../../store/getNetworkSummaryFromCacheOrNdex'
 import { useTableStore } from '../../store/TableStore'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -65,7 +73,7 @@ import { MessageSeverity } from '../../models/MessageModel'
 import { useUndoStore } from '../../store/UndoStore'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
 import { useUrlNavigation } from '../../store/hooks/useUrlNavigation'
-
+import { logUi } from '../../debug'
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
 
@@ -247,7 +255,7 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const loadNetworkSummaries = async (networkIds: IdType[]): Promise<void> => {
     const currentToken = await getToken()
-    const newSummaries = await useNdexNetworkSummary(
+    const newSummaries = await getSummariesFromCacheOrNdex(
       networkIds,
       ndexBaseUrl,
       currentToken,
@@ -297,13 +305,13 @@ const WorkSpaceEditor = (): JSX.Element => {
     try {
       const currentToken = await getToken()
 
-      const summaryMap = await useNdexNetworkSummary(
+      const summaryMap = await getSummariesFromCacheOrNdex(
         [networkId],
         ndexBaseUrl,
         currentToken,
       )
       const summary = summaryMap[networkId]
-      const res: NetworkWithView = await useNdexNetwork(
+      const res: NetworkWithView = await getModelsFromCacheOrNdex(
         networkId,
         ndexBaseUrl,
         currentToken,
@@ -387,23 +395,25 @@ const WorkSpaceEditor = (): JSX.Element => {
         }
       }
     } catch (e) {
-      console.error('Failed to load network:', e)
+      logUi.error(
+        `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${e}`,
+      )
       setFailedToLoad(true)
     }
   }
 
-  const restoreTableBrowserTabState = (): void => {
+  const restoreTableBrowserTabState = useCallback((): void => {
     const tableBrowserTab = search.get('activeTableBrowserTab')
 
     if (tableBrowserTab != null) {
       setActiveTableBrowserIndex(Number(tableBrowserTab))
     }
-  }
+  }, [search, setActiveTableBrowserIndex])
 
   /**
    * Restore the node / edge selection states from URL
    */
-  const restoreSelectionStates = (): void => {
+  const restoreSelectionStates = useCallback((): void => {
     const selectedNodeStr = search.get(SelectionStates.SelectedNodes)
     const selectedEdgeStr = search.get(SelectionStates.SelectedEdges)
 
@@ -429,12 +439,12 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
 
     exclusiveSelect(currentNetworkId, selectedNodes, selectedEdges)
-  }
+  }, [search, currentNetworkId, exclusiveSelect])
 
   /**
    * Restore filter states from URL
    */
-  const restoreFilterStates = (): void => {
+  const restoreFilterStates = useCallback((): void => {
     const filterFor = search.get(FilterUrlParams.FILTER_FOR)
     const filterBy = search.get(FilterUrlParams.FILTER_BY)
     const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
@@ -456,138 +466,186 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
       addFilterConfig(filterConfig)
     }
-  }
+  }, [search, addFilterConfig])
 
-  const restoreActiveNetworkView = (): void => {
+  const restoreActiveNetworkView = useCallback((): void => {
     const activeNetworkView = search.get('activeNetworkView')
     if (activeNetworkView !== null) {
       setActiveNetworkView(activeNetworkView)
     }
-  }
+  }, [search, setActiveNetworkView])
 
   /**
    * Check number of networks in the workspace
    */
-  useEffect(() => {
-    const networkCount: number = workspace.networkIds.length
-    const summaryCount: number = Object.keys(summaries).length
+  useEffect(
+    function checkNetworkCountHook() {
+      const networkCount: number = workspace.networkIds.length
+      const summaryCount: number = Object.keys(summaries).length
 
-    // No action required if empty or no change
-    if (networkCount === 0 && isInitializedRef.current === true) {
-      if (summaryCount !== 0) {
-        // Remove the last one
-        removeSummary(Object.keys(summaries)[0])
+      // No action required if empty or no change
+      if (networkCount === 0 && isInitializedRef.current === true) {
+        logUi.info(
+          `[${WorkSpaceEditor.name}]:[${checkNetworkCountHook.name}]: No networks in the workspace, navigating to empty network view. Summary count: ${summaryCount}, Network count: ${networkCount}`,
+        )
+
+        if (summaryCount !== 0) {
+          // Remove the last one
+          removeSummary(Object.keys(summaries)[0])
+        }
+        navigateToNetwork({
+          workspaceId: workspace.id,
+        })
+        return
       }
-      navigateToNetwork({
-        workspaceId: workspace.id,
+
+      const summaryIds: IdType[] = [...Object.keys(summaries)]
+
+      // Case 1: network removed
+      if (networkCount < summaryCount) {
+        const toBeRemoved: IdType[] = summaryIds.filter((id) => {
+          return !workspace.networkIds.includes(id)
+        })
+        removeSummary(toBeRemoved[0])
+        logUi.info(
+          `[${WorkSpaceEditor.name}]:[${checkNetworkCountHook.name}]: Network removed, removing summary for network: ${toBeRemoved[0]}`,
+        )
+        return
+      }
+
+      // Case 2: network added
+      const toBeAdded: IdType[] = workspace.networkIds.filter((id) => {
+        return !summaryIds.includes(id)
       })
-      return
-    }
-
-    const summaryIds: IdType[] = [...Object.keys(summaries)]
-
-    // Case 1: network removed
-    if (networkCount < summaryCount) {
-      const toBeRemoved: IdType[] = summaryIds.filter((id) => {
-        return !workspace.networkIds.includes(id)
-      })
-      removeSummary(toBeRemoved[0])
-      return
-    }
-
-    // Case 2: network added
-    const toBeAdded: IdType[] = workspace.networkIds.filter((id) => {
-      return !summaryIds.includes(id)
-    })
-    loadNetworkSummaries(toBeAdded)
-      .then(() => {})
-      .catch((err) => console.error(err))
-  }, [workspace.networkIds])
+      if (toBeAdded.length > 0) {
+        logUi.info(
+          `[${WorkSpaceEditor.name}]:[${checkNetworkCountHook.name}]: Network added, loading summaries for new networks: ${toBeAdded.join(', ')}`,
+        )
+      }
+      loadNetworkSummaries(toBeAdded)
+        .then(() => {})
+        .catch((err) => {
+          logUi.error(
+            `[${WorkSpaceEditor.name}]:[${checkNetworkCountHook.name}]: Failed to load summaries for new networks: ${toBeAdded.join(', ')}`,
+            err,
+          )
+        })
+    },
+    [
+      workspace.networkIds,
+      summaries,
+      loadNetworkSummaries,
+      navigateToNetwork,
+      removeSummary,
+      workspace.id,
+    ],
+  )
 
   /**
    * Swap the current network, can be an expensive operation
    */
-  useEffect(() => {
-    if (currentNetworkId === '' || currentNetworkId === undefined) {
-      // No need to load new network
-      return
-    }
+  useEffect(
+    function swapCurrentNetworkHook() {
+      if (currentNetworkId === '' || currentNetworkId === undefined) {
+        // No need to load new network
+        return
+      }
 
-    if (isLoadingRef.current) {
-      return
-    }
+      if (isLoadingRef.current) {
+        return
+      }
 
-    isLoadingRef.current = true
-    setFailedToLoad(false)
-    if (currentNetworkView === undefined) {
-      loadCurrentNetworkById(currentNetworkId)
-        .then(() => {
-          const path = location.pathname
-          if (path.includes(currentNetworkId)) {
+      isLoadingRef.current = true
+      setFailedToLoad(false)
+      if (currentNetworkView === undefined) {
+        loadCurrentNetworkById(currentNetworkId)
+          .then(() => {
+            const path = location.pathname
+            if (path.includes(currentNetworkId)) {
+              restoreSelectionStates()
+              restoreTableBrowserTabState()
+              restoreFilterStates()
+              setTimeout(() => {
+                restoreActiveNetworkView()
+              }, 1000)
+            }
+
+            navigateToNetwork({
+              workspaceId: workspace.id,
+              networkId: currentNetworkId,
+              searchParams: new URLSearchParams(location.search),
+            })
+          })
+          .catch((err) => {
+            logUi.error(
+              `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Failed to load network: ${err}`,
+            )
+          })
+          .finally(() => {
+            isLoadingRef.current = false
+          })
+      } else {
+        loadCurrentNetworkById(currentNetworkId)
+          .then(() => {
             restoreSelectionStates()
+
             restoreTableBrowserTabState()
-            restoreFilterStates()
             setTimeout(() => {
               restoreActiveNetworkView()
             }, 1000)
-          }
 
-          navigateToNetwork({
-            workspaceId: workspace.id,
-            networkId: currentNetworkId,
-            searchParams: new URLSearchParams(location.search),
+            navigateToNetwork({
+              workspaceId: workspace.id,
+              networkId: currentNetworkId,
+              searchParams: new URLSearchParams(location.search),
+            })
           })
-        })
-        .catch((err) => {
-          console.error('* Failed to load a network:', err)
-        })
-        .finally(() => {
-          isLoadingRef.current = false
-        })
-    } else {
-      loadCurrentNetworkById(currentNetworkId)
-        .then(() => {
-          restoreSelectionStates()
-
-          restoreTableBrowserTabState()
-          setTimeout(() => {
-            restoreActiveNetworkView()
-          }, 1000)
-
-          navigateToNetwork({
-            workspaceId: workspace.id,
-            networkId: currentNetworkId,
-            searchParams: new URLSearchParams(location.search),
+          .catch((err) => {
+            logUi.error(
+              `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Failed to load network: ${err}`,
+            )
           })
-        })
-        .catch((err) => {
-          console.error('Failed to load a network:', err)
-        })
-        .finally(() => {
-          isLoadingRef.current = false
-        })
-    }
+          .finally(() => {
+            isLoadingRef.current = false
+          })
+      }
 
-    // Mark as initialized after loading the first network to avoid
-    isInitializedRef.current = true
-  }, [currentNetworkId])
+      // Mark as initialized after loading the first network to avoid
+      isInitializedRef.current = true
+    },
+    [
+      currentNetworkId,
+      location,
+      workspace.id,
+      currentNetworkView,
+      loadCurrentNetworkById,
+      navigateToNetwork,
+      restoreActiveNetworkView,
+      restoreFilterStates,
+      restoreSelectionStates,
+      restoreTableBrowserTabState,
+    ],
+  )
 
   /**
    * if there is no current network id set, set the first network in the workspace to the current network
    */
-  useEffect(() => {
-    let curId: IdType = ''
-    if (
-      currentNetworkId === undefined ||
-      currentNetworkId === '' ||
-      !workspace.networkIds.includes(currentNetworkId)
-    ) {
-      if (Object.keys(summaries).length !== 0) {
-        curId = Object.keys(summaries)[0]
-        setCurrentNetworkId(curId)
+  useEffect(
+    function setInitialNetworkIdHook() {
+      let curId: IdType = ''
+      if (
+        currentNetworkId === undefined ||
+        currentNetworkId === '' ||
+        !workspace.networkIds.includes(currentNetworkId)
+      ) {
+        if (Object.keys(summaries).length !== 0) {
+          curId = Object.keys(summaries)[0]
+          setCurrentNetworkId(curId)
+        }
       }
-    }
-  }, [summaries])
+    },
+    [currentNetworkId, workspace.networkIds, setCurrentNetworkId, summaries],
+  )
 
   // Return the main component including the network panel, network view, and the table browser
   return (

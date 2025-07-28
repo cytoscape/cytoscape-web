@@ -55,7 +55,7 @@ import useNetMatchingTableStore from '../store/netMatchingTableStore'
 import useMergeToolTipStore from '../store/mergeToolTip'
 import { Column } from '../../../models/TableModel'
 import { IdType } from '../../../models/IdType'
-import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork'
+import { getModelsFromCacheOrNdex } from '../../../store/getModelsFromCacheOrNdex'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
@@ -494,7 +494,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   //utility function to load network by id
   const loadNetworkById = async (networkId: IdType) => {
     const currentToken = await getToken()
-    const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
+    const res = await getModelsFromCacheOrNdex(
+      networkId,
+      ndexBaseUrl,
+      currentToken,
+    )
     const { network, nodeTable, edgeTable, visualStyle } = res
     const summary = netSummaries[networkId]
     const netTable = getNetTableFromSummary(summary)

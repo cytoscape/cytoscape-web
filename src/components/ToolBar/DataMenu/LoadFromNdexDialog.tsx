@@ -28,7 +28,7 @@ import { useCredentialStore } from '../../../store/CredentialStore'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { ndexSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
+import { ndexSummaryFetcher } from '../../../store/getNetworkSummaryFromCacheOrNdex'
 import { dateFormatter } from '../../../utils/date-format'
 import { KeycloakContext } from '../../../bootstrap'
 import { useMessageStore } from '../../../store/MessageStore'
