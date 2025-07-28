@@ -20,7 +20,14 @@ import { useTableStore } from '../../../store/TableStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { Network } from '../../../models/NetworkModel'
-import { ReactElement, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ReactElement,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
@@ -42,6 +49,7 @@ import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
 
 import { useUndoStack } from '../../../task/UndoStack'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { AppConfigContext } from '../../../AppConfigContext'
 
 registerCyExtensions()
 interface NetworkRendererProps {
@@ -70,6 +78,8 @@ const CyjsRenderer = ({
 }: NetworkRendererProps): ReactElement => {
   // For Undo functionality
   const { postEdit } = useUndoStack()
+
+  const { debug } = useContext(AppConfigContext)
 
   // This is used to store the drag start position of the node
   // when the user starts dragging the node
@@ -767,6 +777,10 @@ const CyjsRenderer = ({
         // wheelSensitivity: 0.1,
         boxSelectionEnabled: displayMode === DisplayMode.SELECT ? true : false,
       })
+
+      if (debug) {
+        window.cy = cy
+      }
       setCy(cy)
       // Now add event handlers. This is necessary only once.
       // addEventHandlers(cy)

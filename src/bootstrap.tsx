@@ -17,7 +17,10 @@ import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
 import ErrorBoundary from './ErrorBoundary'
 import { initTabManager } from './tab-manager'
+import { initializeDebug } from './debug'
+
 enableMapSet()
+initializeDebug()
 
 // Window name of this instance based on the current time
 window.name = initTabManager()
