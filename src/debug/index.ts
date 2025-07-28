@@ -9,6 +9,7 @@ export const DebugNamespaceType = {
   UI: 'ui',
   STARTUP: 'startup',
   PERFORMANCE: 'performance',
+  HISTORY: 'history',
 } as const
 
 export type DebugNamespaceType =
@@ -29,11 +30,12 @@ export const logApp = createLoggers(DebugNamespaceType.APP)
 export const logUi = createLoggers(DebugNamespaceType.UI)
 export const logStartup = createLoggers(DebugNamespaceType.STARTUP)
 export const logPerformance = createLoggers(DebugNamespaceType.PERFORMANCE)
+export const logHistory = createLoggers(DebugNamespaceType.HISTORY)
 
 export const initializeDebug = (): void => {
   // Enable all debug namespaces if debug mode is enabled in config
   if (config.debug) {
-    localStorage.debug = '*'
+    localStorage.debug = 'ui:info'
   }
   console.log(
     config.debug

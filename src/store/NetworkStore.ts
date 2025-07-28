@@ -14,6 +14,7 @@ import {
   NetworkUpdatedEvent,
   UpdateEventType,
 } from '../models/StoreModel/NetworkStoreModel'
+import { logStore } from '../debug'
 
 const persist =
   (config: StateCreator<NetworkStore>) =>
@@ -31,7 +32,7 @@ const persist =
           get().networks.get(currentNetworkId)
         const deleted = updated === undefined
         if (!deleted) {
-          console.debug('DB Update: network store', updated)
+          logStore.info(`Network store updated for network ${currentNetworkId}`)
           await putNetworkToDb(updated)
         }
       },
@@ -204,10 +205,10 @@ export const useNetworkStore = create(
             state.networks = newNetworkMap
             void putNetworkToDb(network)
               .then(() => {
-                console.debug('* New network has been added to DB', network.id)
+                logStore.info(`New network has been added to DB: ${network.id}`)
               })
               .catch((err) => {
-                console.error('Failed adding network to DB', err)
+                logStore.error(`Failed adding network to DB: ${err}`)
               })
             return state
           }),

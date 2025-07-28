@@ -62,12 +62,7 @@ export const useTableStore = create(
             }
             state.tables[networkId] = { nodeTable, edgeTable }
             void putTablesToDb(networkId, nodeTable, edgeTable)
-              .then(() => {
-                console.debug('Added tables to DB', networkId)
-              })
-              .catch((err) => {
-                console.error('Error adding tables to DB', err)
-              })
+
             return state
           })
         },

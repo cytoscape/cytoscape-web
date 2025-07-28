@@ -68,12 +68,7 @@ export const useVisualStyleStore = create(
           }
           state.visualStyles[networkId] = visualStyle
           void putVisualStyleToDb(networkId, visualStyle)
-            .then(() => {
-              console.debug('Added visual style to DB', networkId)
-            })
-            .catch((err) => {
-              console.error('Error adding visual style to DB', err)
-            })
+
           return state
         })
       },

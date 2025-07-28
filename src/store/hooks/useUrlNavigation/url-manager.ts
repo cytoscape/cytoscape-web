@@ -1,5 +1,7 @@
 import { NavigateOptions } from 'react-router-dom'
 import { NavigationConfig } from './NavigationConfig'
+import { logHistory } from '../../../debug'
+import config from '../../../assets/config.json'
 
 let lastNetworkId: string = '' // Last displayed network ID
 let lastUrlPath: string = '' // Last set URL path
@@ -57,7 +59,7 @@ const addHistoryEntry = (url: string, networkId: string): void => {
   currentHistoryIndex = historyEntries.length - 1
 
   // Output debug information
-  console.debug('[History Debug] Added entry:', getCurrentHistoryState())
+  logHistory.info('[History Debug] Added entry:', getCurrentHistoryState())
 }
 
 /**
@@ -112,7 +114,7 @@ export const navigateToNetwork = (
   // 1. Control frequent navigation calls (history operations are exceptions)
   const now = Date.now()
   if (now - lastNavigationTime < 300 && !isHistoryNavigation) {
-    console.debug(
+    logHistory.info(
       `[URLManager:${navigationCount}] Navigation throttled - too frequent calls`,
     )
     return
@@ -120,7 +122,7 @@ export const navigateToNetwork = (
 
   // 2. Ignore if already handling navigation (history operations are exceptions)
   if (isHandlingNavigation && !isHistoryNavigation) {
-    console.debug(
+    logHistory.info(
       `[URLManager:${navigationCount}] Already handling navigation, skipping`,
     )
     return
@@ -128,7 +130,7 @@ export const navigateToNetwork = (
 
   // 3. Ignore if path is exactly the same (history operations are exceptions)
   if (path === lastUrlPath && !isHistoryNavigation) {
-    console.debug(
+    logHistory.info(
       `[URLManager:${navigationCount}] Skipping navigation to same path: ${path}`,
     )
     return
@@ -143,7 +145,7 @@ export const navigateToNetwork = (
       : null
 
     if (currentNetworkId === safeNetworkId) {
-      console.debug(
+      logHistory.info(
         `[URLManager:${navigationCount}] Skipping navigation - network ID ${safeNetworkId} is already in current pathname: ${currentPathname}`,
       )
       return
@@ -153,7 +155,7 @@ export const navigateToNetwork = (
   // 5. Force replace for navigation to the same network ID
   let shouldReplace = replace
   if (safeNetworkId !== '' && safeNetworkId === lastNetworkId) {
-    console.debug(
+    logHistory.info(
       `[URLManager:${navigationCount}] Same network ID detected: ${safeNetworkId}, forcing replace=true`,
     )
     shouldReplace = true
@@ -426,8 +428,7 @@ export const initHistoryClearing = (): void => {
   })
 }
 
-// Expose global debugging functions to window for console access
-if (typeof window !== 'undefined') {
+if (config.debug) {
   // @ts-expect-error - Adding custom properties to window for debugging
   window.debugHistory = {
     getInfo: getHistoryInfo,
