@@ -502,7 +502,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     loadNetworkSummaries(toBeAdded)
       .then(() => {})
       .catch((err) => console.error(err))
-  }, [workspace.networkIds])
+  }, [workspace.networkIds, summaries])
 
   /**
    * Swap the current network, can be an expensive operation
