@@ -426,8 +426,7 @@ export const initHistoryClearing = (): void => {
 }
 
 if (config.debug) {
-  // @ts-expect-error - Adding custom properties to window for debugging
-  window.debugHistory = {
+  window.debug.history = {
     getInfo: getHistoryInfo,
     printDebug: printHistoryDebug,
     getEntries: () => historyEntries,

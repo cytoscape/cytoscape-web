@@ -781,7 +781,7 @@ const CyjsRenderer = ({
       })
 
       if (debug) {
-        window.cy = cy
+        window.debug.cy = cy
       }
       setCy(cy)
       // Now add event handlers. This is necessary only once.

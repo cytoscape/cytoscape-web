@@ -163,7 +163,7 @@ if (config.debug) {
 ;(window as any).debug.cy = cy
 ```
 
-Now you can access these objects directly in the browser console, e.g. `window.db`, `window.cy`, or `window.store`.
+Now you can access these objects directly in the browser console, e.g. `window.debug.db`, `window.debug.cy`, or `window.store`.
 
 ---
 

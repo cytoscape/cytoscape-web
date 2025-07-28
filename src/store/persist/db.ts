@@ -164,7 +164,7 @@ export const initializeDb = async (): Promise<void> => {
   })
 
   if (config.debug) {
-    window.db = db
+    window.debug.db = db
   }
 }
 
