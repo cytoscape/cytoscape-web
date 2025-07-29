@@ -145,7 +145,7 @@ export default function NetworkInfoPanel(props: {
               sx={{ mr: 4, fontSize: 14, color: 'gray' }}
               variant="subtitle1"
             >
-              {`Created: ${dateFormatter(networkInfo.creationTime)}`}
+              {`Created: ${dateFormatter(networkInfo?.creationTime ?? '')}`}
             </Typography>
             <Typography
               sx={{ mr: 4, fontSize: 14, color: 'gray' }}
