@@ -139,6 +139,7 @@ export function FileUpload(props: FileUploadProps) {
 
         const localNodeCount = network.nodes.length
         const localEdgeCount = network.edges.length
+  
         await putNetworkSummaryToDb({
           isNdex: false,
           ownerUUID: localUuid,
