@@ -1,7 +1,7 @@
 import { Box, IconButton, Tooltip } from '@mui/material'
 import { ZoomOutMap } from '@mui/icons-material'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
-import { IdType } from 'src/models'
+import { IdType } from '../../models'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 
 interface FitButtonProps {
