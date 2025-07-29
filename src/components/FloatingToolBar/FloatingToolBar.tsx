@@ -38,9 +38,8 @@ export const FloatingToolBar = ({
       <ApplyLayoutButton
         targetNetworkId={targetNetworkId}
         disabled={isCirclePackingRenderer}
-        rendererId={rendererId}
       />
-      <FitButton rendererId={rendererId} />
+      <FitButton targetNetworkId={targetNetworkId} rendererId={rendererId} />
       <OpenInCytoscapeButton
         targetNetworkId={targetNetworkId}
         networkLabel={networkLabel}
