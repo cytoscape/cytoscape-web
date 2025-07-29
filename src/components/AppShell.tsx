@@ -3,6 +3,7 @@ import {
   Location,
   Outlet,
   useLocation,
+  useNavigate,
   useSearchParams,
 } from 'react-router-dom'
 import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
@@ -30,7 +31,6 @@ import { PanelState } from '../models/UiModel/PanelState'
 import { Panel } from '../models/UiModel/Panel'
 import { Workspace } from '../models/WorkspaceModel'
 import { SyncTabsAction } from './SyncTabs'
-// import { HistoryDebugger } from './Util/HistoryDebugger'
 
 import { useMessageStore } from '../store/MessageStore'
 import { MessageSeverity } from '../models/MessageModel'
@@ -40,7 +40,6 @@ import { useTableStore } from '../store/TableStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
-import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
 
 // This is a valid workspace ID for sharing
 const DUMMY_WS_ID = '0'
@@ -55,59 +54,12 @@ const IMPORT_KEY = 'import'
  *
  */
 const AppShell = (): ReactElement => {
-  // Uncomment this section with debugger UI hook to
-  // debug browser history navigation
-
-  // useEffect(() => {
-  //   const originalPushState = history.pushState
-  //   const originalReplaceState = history.replaceState
-
-  //   history.pushState = function (...args) {
-  //     console.log('* PUSH STATE:', args, new Error().stack)
-  //     return originalPushState.apply(this, args)
-  //   }
-
-  //   history.replaceState = function (...args) {
-  //     console.log('* REPLACE STATE:', args, new Error().stack)
-  //     return originalReplaceState.apply(this, args)
-  //   }
-
-  //   // Detect browser back/forward button navigation
-  //   const handlePopStateDebug = (event: PopStateEvent) => {
-  //     console.log('* BROWSER NAVIGATION (Back/Forward):', {
-  //       url: window.location.href,
-  //       pathname: window.location.pathname,
-  //       search: window.location.search,
-  //       state: event.state,
-  //       timestamp: new Date().toISOString(),
-  //     })
-
-  //     // Use if more detailed stack trace is needed
-  //     console.trace('* Navigation stack trace')
-  //   }
-
-  //   const handleBeforeUnload = () => {
-  //     console.log('* PAGE UNLOAD:', window.location.href)
-  //   }
-
-  //   // Add event listeners
-  //   window.addEventListener('popstate', handlePopStateDebug)
-  //   window.addEventListener('beforeunload', handleBeforeUnload)
-
-  //   return () => {
-  //     history.pushState = originalPushState
-  //     history.replaceState = originalReplaceState
-  //     window.removeEventListener('popstate', handlePopStateDebug)
-  //     window.removeEventListener('beforeunload', handleBeforeUnload)
-  //   }
-  // }, [])
-
   const [initializationError, setInitializationError] = useState<string>('')
 
   // This is necessary to prevent creating a new workspace on every render
   const [showDialog, setShowDialog] = useState<boolean>(false)
   const [targetNetworkId, setTargetNetworkId] = useState<string>('')
-  const [search, setSearchParams] = useSearchParams()
+  const [search, setSearch] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
   const resetMessage = useMessageStore((state) => state.resetMessages)
@@ -117,7 +69,7 @@ const AppShell = (): ReactElement => {
   // Keep track of the network ID in the URL
   const urlNetIdRef = useRef<string>('')
 
-  const { navigateToNetwork } = useUrlNavigation()
+  const navigate = useNavigate()
   const setWorkspace = useWorkspaceStore((state) => state.set)
   const workspace = useWorkspaceStore((state) => state.workspace)
   const location: Location = useLocation()
@@ -173,6 +125,7 @@ const AppShell = (): ReactElement => {
   const authenticated = client?.authenticated ?? false
   const { id, currentNetworkId, networkIds, networkModified } = workspace
 
+  // const parsed = parsePathName(location.pathname)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
@@ -279,7 +232,6 @@ const AppShell = (): ReactElement => {
         throw new Error(`Failed to initialize the workspace: ${error.message}`)
       } finally {
         // initializedRef.current = true
-        console.log('---------------Workspace initialized------------------')
       }
     }
 
@@ -296,6 +248,7 @@ const AppShell = (): ReactElement => {
 
     if (!initializedRef.current || id === '') return
 
+    // const parsed = parsePathName(location.pathname)
     const parsedNetworkId = urlNetIdRef.current
     // Clear it only after the network ID has been used for redirection
     setTimeout(() => {
@@ -304,40 +257,32 @@ const AppShell = (): ReactElement => {
 
     // At this point, workspace ID is always available
     if (currentNetworkId === '' || currentNetworkId === undefined) {
+      // ID from the URL parameter
       if (parsedNetworkId !== '' && parsedNetworkId !== undefined) {
         addNetworkIds(parsedNetworkId)
         await waitSeconds(1)
         setCurrentNetworkId(parsedNetworkId)
-        // Use replace to avoid adding to history
-        navigateToNetwork({
-          workspaceId: id,
-          networkId: parsedNetworkId,
-          searchParams: new URLSearchParams(location.search),
-          replace: true,
-        })
+        navigate(
+          `/${id}/networks/${parsedNetworkId}${location.search.toString()}`,
+        )
       } else if (networkIds.length > 0) {
-        navigateToNetwork({
-          workspaceId: id,
-          networkId: networkIds[0],
-          searchParams: new URLSearchParams(location.search),
-          replace: true,
-        })
+        // Case 1: Current network is not available
+        // Pick the first one if network is in the workspace
+        navigate(
+          `/${id}/networks/${networkIds[0]}${location.search.toString()}`,
+        )
       } else {
-        navigateToNetwork({
-          workspaceId: id,
-          searchParams: new URLSearchParams(location.search),
-          replace: true,
-        })
+        // Otherwise, display empty page
+        navigate(`/${id}/networks${location.search.toString()}`)
       }
     } else {
+      // This is the network ID in the URL, not yet set as the current network ID
+      // No network ID in the URL --> redirect to the current network
       const networkId: string = parsedNetworkId
       if (networkId === '' || networkId === undefined) {
-        navigateToNetwork({
-          workspaceId: id,
-          networkId: currentNetworkId,
-          searchParams: new URLSearchParams(location.search),
-          replace: true,
-        })
+        navigate(
+          `/${id}/networks/${currentNetworkId}${location.search.toString()}`,
+        )
       } else {
         // the user is trying to load a network that is already in the workspace
         // check that if they have an outdated version of the network by comparing modification times
@@ -379,23 +324,17 @@ const AppShell = (): ReactElement => {
               await waitSeconds(1)
               deleteNetworkModifiedStatus(networkId)
 
-              navigateToNetwork({
-                workspaceId: id,
-                networkId: networkId,
-                searchParams: new URLSearchParams(location.search),
-                replace: true,
-              })
+              navigate(
+                `/${id}/networks/${networkId}${location.search.toString()}`,
+              )
             }
           } else {
             addNetworkIds(networkId)
             await waitSeconds(1)
             setCurrentNetworkId(networkId)
-            navigateToNetwork({
-              workspaceId: id,
-              networkId: networkId,
-              searchParams: new URLSearchParams(location.search),
-              replace: true,
-            })
+            navigate(
+              `/${id}/networks/${networkId}${location.search.toString()}`,
+            )
           }
         } catch (error) {
           const errorMessage: string = error.message
@@ -408,9 +347,6 @@ const AppShell = (): ReactElement => {
         }
       }
     }
-
-    // Clear URL search params to remove unnecessary parameters
-    setSearchParams({}, { replace: true })
   }
 
   const handleImportNetworkFromSearchParam = async (): Promise<void> => {
@@ -420,7 +356,7 @@ const AppShell = (): ReactElement => {
           const nextParams = new URLSearchParams(search)
           nextParams.delete(IMPORT_KEY)
 
-          // setSearch(nextParams)
+          setSearch(nextParams)
           const res = await fetchUrlCx(value, 10000000)
 
           const { networkWithView, summary } = res
@@ -468,82 +404,6 @@ const AppShell = (): ReactElement => {
     }
   }, [id])
 
-  // Store previous location information with ref
-  // const prevLocationRef = useRef(location)
-
-  // Monitor location changes for debugging
-  // useEffect(() => {
-  //   console.log('🟢 REACT ROUTER LOCATION CHANGE:', {
-  //     // Current values
-  //     current: {
-  //       pathname: location.pathname,
-  //       search: location.search,
-  //       hash: location.hash,
-  //       state: location.state,
-  //       key: location.key,
-  //     },
-  //     // Previous values
-  //     previous: {
-  //       pathname: prevLocationRef.current.pathname,
-  //       search: prevLocationRef.current.search,
-  //       hash: prevLocationRef.current.hash,
-  //       state: prevLocationRef.current.state,
-  //       key: prevLocationRef.current.key,
-  //     },
-  //     // Changed items only
-  //     changes: {
-  //       pathname:
-  //         location.pathname !== prevLocationRef.current.pathname
-  //           ? { from: prevLocationRef.current.pathname, to: location.pathname }
-  //           : 'unchanged',
-  //       search:
-  //         location.search !== prevLocationRef.current.search
-  //           ? { from: prevLocationRef.current.search, to: location.search }
-  //           : 'unchanged',
-  //       hash:
-  //         location.hash !== prevLocationRef.current.hash
-  //           ? { from: prevLocationRef.current.hash, to: location.hash }
-  //           : 'unchanged',
-  //     },
-  //     timestamp: new Date().toISOString(),
-  //   })
-
-  //   // Save current values as previous values
-  //   prevLocationRef.current = location
-  // }, [location])
-
-  // Network ID synchronization process
-  useEffect(() => {
-    // If location network ID differs from currentNetworkId, set location value as current network
-    const parsed = parsePathName(location.pathname)
-    const { networkId: locationNetworkId } = parsed
-
-    if (
-      locationNetworkId &&
-      locationNetworkId !== '' &&
-      locationNetworkId !== currentNetworkId &&
-      id !== '' // Only when workspace is initialized
-    ) {
-      console.log('🔄 Setting current network ID from location:', {
-        from: currentNetworkId,
-        to: locationNetworkId,
-        timestamp: new Date().toISOString(),
-      })
-
-      // Add network to workspace if it doesn't exist yet
-      if (!networkIds.includes(locationNetworkId)) {
-        console.log('Adding network to workspace:', locationNetworkId)
-        addNetworkIds(locationNetworkId)
-      }
-
-      // Update current network ID (with duplicate check)
-      if (currentNetworkId !== locationNetworkId) {
-        console.log('Updating current network ID:', locationNetworkId)
-        setCurrentNetworkId(locationNetworkId)
-      }
-    }
-  }, [location, id, networkIds])
-
   return (
     <Box
       sx={{
@@ -576,8 +436,6 @@ const AppShell = (): ReactElement => {
         }}
       />
       <SyncTabsAction />
-      {/* History debugger - only show in development */}
-      {/* {process.env.NODE_ENV === 'development' && <HistoryDebugger />} */}
     </Box>
   )
 }
