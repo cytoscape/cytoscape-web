@@ -154,16 +154,16 @@ export default function VizmapperView(props: {
   const customSize = firstCustom
     ? getSizePropertyForCustomGraphic(firstCustom, customGraphicVps)
     : undefined
-    const fallbackImgs = (() => {
-    
-      const result: VisualProperty<any>[] = []
-      // For now, we only show the first property
-      for (let i = 1; i <= 1; i++) {
-        const img = customGraphicVps.find(vp => vp.name === `nodeImageChart${i}`)
-        if (img) result.push(img)
-      }
-      return result
-    })()
+  const fallbackImgs = (() => {
+
+    const result: VisualProperty<any>[] = []
+    // For now, we only show the first property
+    for (let i = 1; i <= 1; i++) {
+      const img = customGraphicVps.find(vp => vp.name === `nodeImageChart${i}`)
+      if (img) result.push(img)
+    }
+    return result
+  })()
   const borderProps = nonCustomGraphicVps.filter((vp) =>
     vp.name.toLowerCase().includes('border') ||
     vp.displayName.toLowerCase().includes('border'),
@@ -200,7 +200,7 @@ export default function VizmapperView(props: {
     const nm = vp.name.toLowerCase()
     const dn = vp.displayName.toLowerCase()
     return nm.startsWith('source') || nm.startsWith('target') ||
-           dn.startsWith('source') || dn.startsWith('target')
+      dn.startsWith('source') || dn.startsWith('target')
   })
   const edgeGeneralProps = edgeVps.filter(
     (vp) =>
@@ -287,7 +287,6 @@ export default function VizmapperView(props: {
       </Box>
 
       <Divider />
-
       {/* Scrollable content */}
       <Box
         sx={{
@@ -299,72 +298,69 @@ export default function VizmapperView(props: {
           boxSizing: 'border-box',
         }}
       >
-        {currentTabIndex === 0 && (
-          <>
-            <StyledAccordion label="Border">
-              {borderProps.map(vp => (
-                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
-              ))}
-            </StyledAccordion>
-            <StyledAccordion label="Fill">
-              {fillProps.map(vp => (
-                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
-              ))}
-            </StyledAccordion>
-            <StyledAccordion label="Label">
-              {labelProps.map(vp => (
-                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
-              ))}
-            </StyledAccordion>
-            <StyledAccordion label="General">
-              {generalProps.map(vp => (
-                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
-              ))}
-            </StyledAccordion>
-            {customProps.length > 0 && (
-              <StyledAccordion label="Custom Graphics">
-                {customProps.map(vp => (
-                  <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
-                ))}
-              </StyledAccordion>
-            )}
-          </>
-        )}
+        {(() => {
+          switch (currentTabIndex) {
+            case 0: {
+              const sections0 = [
+                { label: 'Border', items: borderProps },
+                { label: 'Fill', items: fillProps },
+                { label: 'Label', items: labelProps },
+                { label: 'General', items: generalProps },
+                ...(customProps.length > 0
+                  ? [{ label: 'Custom Graphics', items: customProps }]
+                  : []),
+              ]
+              return sections0.map(({ label, items }) => (
+                <StyledAccordion key={label} label={label}>
+                  {items.map(vp => (
+                    <VisualPropertyView
+                      key={vp.name}
+                      currentNetworkId={networkId}
+                      visualProperty={vp}
+                    />
+                  ))}
+                </StyledAccordion>
+              ))
+            }
 
-        {currentTabIndex === 1 && (
-          <>
-            <StyledAccordion label="Label">
-              {edgeLabelProps.map(vp => (
-                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
-              ))}
-            </StyledAccordion>
-            <StyledAccordion label="Fill">
-              {edgeFillProps.map(vp => (
-                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
-              ))}
-            </StyledAccordion>
-            <StyledAccordion label="Source and Target">
-              {edgeSourceTargetProps.map(vp => (
-                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
-              ))}
-            </StyledAccordion>
-            <StyledAccordion label="General">
-              {edgeGeneralProps.map(vp => (
-                <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
-              ))}
-            </StyledAccordion>
-          </>
-        )}
+            case 1: {
+              const sections1 = [
+                { label: 'Label', items: edgeLabelProps },
+                { label: 'Fill', items: edgeFillProps },
+                { label: 'Source and Target', items: edgeSourceTargetProps },
+                { label: 'General', items: edgeGeneralProps },
+              ]
+              return sections1.map(({ label, items }) => (
+                <StyledAccordion key={label} label={label}>
+                  {items.map(vp => (
+                    <VisualPropertyView
+                      key={vp.name}
+                      currentNetworkId={networkId}
+                      visualProperty={vp}
+                    />
+                  ))}
+                </StyledAccordion>
+              ))
+            }
 
-        {currentTabIndex === 2 && (
-          <Box>
-            {networkVps.map(vp => (
-              <VisualPropertyView key={vp.name} currentNetworkId={networkId} visualProperty={vp} />
-            ))}
-          </Box>
-        )}
+            case 2:
+              return (
+                <Box>
+                  {networkVps.map(vp => (
+                    <VisualPropertyView
+                      key={vp.name}
+                      currentNetworkId={networkId}
+                      visualProperty={vp}
+                    />
+                  ))}
+                </Box>
+              )
+
+            default:
+              return null
+          }
+        })()}
       </Box>
-
       <Box sx={{ flex: '0 0 auto', borderTop: '1px solid #ddd', p: 1 }}>
         {/* Add extra space here to avoid overlapping with Layout tools UI*/}
       </Box>
