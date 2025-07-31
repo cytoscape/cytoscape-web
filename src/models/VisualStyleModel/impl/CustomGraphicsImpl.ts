@@ -33,28 +33,37 @@ export const getFirstValidCustomGraphicVp = (
   const customGraphicNodeVps = getCustomGraphicNodeVps(vps)
 
   // helper to test if a CustomGraphicsType is one of the supported chart/image types
-  const isValidCustomGraphicValue = (value: CustomGraphicsType) =>
+  const isPreferredGraphic = (value: CustomGraphicsType) =>
     value.name === CustomGraphicsNameType.PieChart ||
     value.name === CustomGraphicsNameType.RingChart ||
     value.name === CustomGraphicsNameType.Image
 
-  // find the first one whose defaultValue and all bypassMap entries are valid
-  const validVp = customGraphicNodeVps.find((vp) => {
+  const fullyValid = customGraphicNodeVps.find((vp) => {
     const defaultValue = vp.defaultValue as CustomGraphicsType
     const bypassMap = vp.bypassMap
 
-    const isValidDefault = isValidCustomGraphicValue(defaultValue)
+    const isValidDefault = isPreferredGraphic(defaultValue)
     const isValidBypass = Array.from(bypassMap.values()).every((v) =>
-      isValidCustomGraphicValue(v as CustomGraphicsType),
+      isPreferredGraphic(v as CustomGraphicsType),
     )
 
     return isValidDefault && isValidBypass
   })
+  if (fullyValid) {
+    return fullyValid as VisualProperty<CustomGraphicsType>
+  }
 
-  // if we found a fully-valid VP, return it; otherwise just return the first one
-  return (validVp ?? customGraphicNodeVps[0]) as
-    | VisualProperty<CustomGraphicsType>
-    | undefined
+  // If none of the preferred types are fully valid, pick the first “empty” graphic (None)
+  const emptyGraphic = customGraphicNodeVps.find((vp) => {
+    const defaultValue = vp.defaultValue as CustomGraphicsType
+    return defaultValue.name === CustomGraphicsNameType.None
+  })
+  if (emptyGraphic) {
+    return emptyGraphic as VisualProperty<CustomGraphicsType>
+  }
+
+  // No valid or empty graphics found → return undefined
+  return undefined
 }
 
 export const getSizePropertyForCustomGraphic = (
