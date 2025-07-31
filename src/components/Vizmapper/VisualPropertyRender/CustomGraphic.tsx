@@ -618,7 +618,7 @@ export function CustomGraphicRender(props: {
   return (
     <Box sx={{ p: 1, fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
       <Typography variant="body2">
-        {/* Customize summary display if desired */}
+        {/* This could render the custom graphic in the future */}
       </Typography>
     </Box>
   )
