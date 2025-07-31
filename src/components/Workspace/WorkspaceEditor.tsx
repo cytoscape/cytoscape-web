@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { debounce } from 'lodash'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box, Tooltip } from '@mui/material'
@@ -402,18 +403,18 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   }
 
-  const restoreTableBrowserTabState = useCallback((): void => {
+  const restoreTableBrowserTabState = (): void => {
     const tableBrowserTab = search.get('activeTableBrowserTab')
 
     if (tableBrowserTab != null) {
       setActiveTableBrowserIndex(Number(tableBrowserTab))
     }
-  }, [search, setActiveTableBrowserIndex])
+  }
 
   /**
    * Restore the node / edge selection states from URL
    */
-  const restoreSelectionStates = useCallback((): void => {
+  const restoreSelectionStates = (): void => {
     const selectedNodeStr = search.get(SelectionStates.SelectedNodes)
     const selectedEdgeStr = search.get(SelectionStates.SelectedEdges)
 
@@ -439,12 +440,12 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
 
     exclusiveSelect(currentNetworkId, selectedNodes, selectedEdges)
-  }, [search, currentNetworkId, exclusiveSelect])
+  }
 
   /**
    * Restore filter states from URL
    */
-  const restoreFilterStates = useCallback((): void => {
+  const restoreFilterStates = (): void => {
     const filterFor = search.get(FilterUrlParams.FILTER_FOR)
     const filterBy = search.get(FilterUrlParams.FILTER_BY)
     const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
@@ -466,14 +467,14 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
       addFilterConfig(filterConfig)
     }
-  }, [search, addFilterConfig])
+  }
 
-  const restoreActiveNetworkView = useCallback((): void => {
+  const restoreActiveNetworkView = (): void => {
     const activeNetworkView = search.get('activeNetworkView')
     if (activeNetworkView !== null) {
       setActiveNetworkView(activeNetworkView)
     }
-  }, [search, setActiveNetworkView])
+  }
 
   /**
    * Check number of networks in the workspace
@@ -531,14 +532,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           )
         })
     },
-    [
-      workspace.networkIds,
-      summaries,
-      loadNetworkSummaries,
-      navigateToNetwork,
-      removeSummary,
-      workspace.id,
-    ],
+    [workspace.networkIds],
   )
 
   /**
@@ -613,18 +607,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       // Mark as initialized after loading the first network to avoid
       isInitializedRef.current = true
     },
-    [
-      currentNetworkId,
-      location,
-      workspace.id,
-      currentNetworkView,
-      loadCurrentNetworkById,
-      navigateToNetwork,
-      restoreActiveNetworkView,
-      restoreFilterStates,
-      restoreSelectionStates,
-      restoreTableBrowserTabState,
-    ],
+    [currentNetworkId],
   )
 
   /**
@@ -644,7 +627,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         }
       }
     },
-    [currentNetworkId, workspace.networkIds, setCurrentNetworkId, summaries],
+    [summaries],
   )
 
   // Return the main component including the network panel, network view, and the table browser
