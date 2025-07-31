@@ -35,23 +35,33 @@ import {
   DivergingCustomGraphicColors,
   ViridisCustomGraphicColors
 } from '../../../models/VisualStyleModel/impl/CustomColor'
+import {
+  PieChartPropertiesType,
+  RingChartPropertiesType
+} from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import { AttributeName } from '../../../models/TableModel/AttributeName'
+import { ColorType } from '../../../models/VisualStyleModel/VisualPropertyValue'
+
+
 /** The shape of chart-specific properties */
-export interface ChartProperties {
-  cy_colorScheme: string
-  cy_colors: string[]
-  cy_dataColumns: string[]
-  cy_startAngle: number         // start angle in degrees 0–360
-  cy_holeSize?: number          // for ring charts, 0–1
-}
+export type ChartKind =
+  | typeof CustomGraphicsNameType.PieChart
+  | typeof CustomGraphicsNameType.RingChart
 
 /** Props for the editable chart form */
 interface ChartGraphicFormProps {
-  properties: ChartProperties
-  onChange: (newProps: ChartProperties) => void
-  currentNetworkId: IdType
-  kind: 'PieChart' | 'RingChart'
-}
+  // only PieChart or RingChart properties ever arrive here
+  properties: PieChartPropertiesType | RingChartPropertiesType
 
+  // mirror the properties type in the callback
+  onChange: (newProps: PieChartPropertiesType | RingChartPropertiesType) => void
+
+  currentNetworkId: IdType
+
+  // use the exact custom‐graphics name constants
+  kind: ChartKind
+}
+type ChartProperties = PieChartPropertiesType | RingChartPropertiesType
 // Expanded palettes (ColorBrewer-like)
 const PALETTES: Record<string, string[]> = {
   Sequential1: SequentialCustomGraphicColors[0],
@@ -91,6 +101,7 @@ const PALETTES: Record<string, string[]> = {
   Viridis4: ViridisCustomGraphicColors[3],
 
 };
+const DEFAULT_COLOR = '#000000' as ColorType
 
 function pickEvenly(base: string[], count: number): string[] {
   if (!base.length || count <= 0) return []
@@ -111,28 +122,39 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
   currentNetworkId,
   kind,
 }) => {
-  const { cy_colorScheme, cy_colors, cy_dataColumns, cy_startAngle, cy_holeSize } = properties
+  const { cy_colorScheme, cy_colors, cy_dataColumns, cy_startAngle } = properties
+
+  let cy_holeSize: number | undefined
+  if (kind === CustomGraphicsNameType.RingChart) {
+    cy_holeSize = (properties as RingChartPropertiesType).cy_holeSize
+  }
+
 
   const tables = useTableStore((s) => s.tables)
   const nodeTable = tables[currentNetworkId]?.nodeTable
 
   // only keep numeric columns
-  const availableColumns = React.useMemo(() => {
-    if (!nodeTable?.rows) return [];
+  const availableColumns: string[] = React.useMemo(() => {
+    if (!nodeTable?.rows) return []
+
+    const rows = Array.from(nodeTable.rows.values())
+    if (!rows.length) return []
 
     return nodeTable.columns
-      .filter((col) => {
-        // assert this column really has a valueType field
-        const vt = (col as unknown as { valueType: ValueTypeName }).valueType;
-        return (
-          vt === ValueTypeName.Integer ||
-          vt === ValueTypeName.Double ||
-          vt === ValueTypeName.Long
-        );
-      })
-      .map((col) => col.name);
-  }, [nodeTable]);
+      .filter(col => {
+        const vals = rows.map(r => r[col.name])
+        const allInts = vals.every(v => Number.isInteger(v))
+        const allNums = vals.every(v => typeof v === 'number')
+        const vt = allInts ? ValueTypeName.Integer
+          : allNums ? ValueTypeName.Double
+            : null
 
+        return vt === ValueTypeName.Integer
+          || vt === ValueTypeName.Double
+          || vt === ValueTypeName.Long
+      })
+      .map(col => col.name)
+  }, [nodeTable])
   // first unused numeric column or empty
   const nextDefaultCol = React.useMemo(() => {
     return availableColumns.find(c => !cy_dataColumns.includes(c)) || ''
@@ -153,13 +175,17 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       cy_colors: cy_colors.filter((_, idx) => idx !== i),
     })
 
-  const updateRow = (i: number, column: string, color: string) =>
+  const updateRow = (
+    i: number,
+    column: AttributeName,
+    color: ColorType
+  ) =>
     update({
       cy_dataColumns: cy_dataColumns.map((c, idx) =>
         idx === i ? column : c
       ),
-      cy_colors: cy_colors.map((col, idx) =>
-        idx === i ? color : col
+      cy_colors: cy_colors.map((c, idx) =>
+        idx === i ? color : c
       ),
     })
   const count = cy_dataColumns.length
@@ -176,11 +202,14 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
   }
   // assign colors evenly based on palette
   const handlePaletteChange = (scheme: string) => {
-    const base = PALETTES[scheme] || []
-    const newColors = pickEvenly(base, cy_dataColumns.length)
-    update({ cy_colorScheme: scheme, cy_colors: newColors })
-  }
+    const base = PALETTES[scheme] ?? []
+    const newColors = pickEvenly(base, cy_dataColumns.length) as ColorType[]
 
+    update({
+      cy_colorScheme: scheme,
+      cy_colors: newColors,
+    })
+  }
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
       {/* Color Palette dropdown */}
@@ -234,6 +263,8 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       {/* Node Attributes & Colors */}
       <Typography variant="subtitle2">Node Attributes &amp; Colors</Typography>
       {cy_dataColumns.map((col, i) => {
+        console.log(cy_dataColumns)
+
         const options = availableColumns.filter(
           (c) => c === col || !cy_dataColumns.includes(c)
         )
@@ -277,8 +308,17 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
 
             <input
               type="color"
-              value={cy_colors[i] || '#000000'}
-              onChange={(e) => updateRow(i, col, e.target.value)}
+              // ensure the value is a ColorType
+
+              value={(cy_colors[i] ?? DEFAULT_COLOR) as ColorType}
+              onChange={e =>
+                updateRow(
+                  i,
+                  col,
+                  // cast the string from the input into ColorType
+                  e.target.value as ColorType
+                )
+              }
               style={{ width: 32, height: 32, border: 0, padding: 0 }}
             />
 
@@ -346,7 +386,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       </Box>
 
       {/* Hole Size for RingChart only */}
-      {kind === 'RingChart' && (
+      {kind === CustomGraphicsNameType.RingChart && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Typography variant="subtitle2">
@@ -410,56 +450,69 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   onCancel,
   onConfirm,
 }) => {
-  const defaults: ChartProperties = {
+  const defaultPieProps: PieChartPropertiesType = {
+    cy_range: [0, 1],
     cy_colorScheme: '',
-    cy_colors: [],
-    cy_dataColumns: [],
+    cy_startAngle: 0,
+    cy_colors: [] as ColorType[],
+    cy_dataColumns: [] as AttributeName[],
+  }
+
+  const defaultRingProps: RingChartPropertiesType = {
+    cy_range: [0, 1],
+    cy_colorScheme: '',
     cy_startAngle: 0,
     cy_holeSize: 0.4,
+    cy_colors: [] as ColorType[],
+    cy_dataColumns: [] as AttributeName[],
   }
+
+  const defaults =
+    initialValue?.name === CustomGraphicsNameType.RingChart
+      ? defaultRingProps
+      : defaultPieProps
   const [kind, setKind] = React.useState<'PieChart' | 'RingChart'>('PieChart')
   const [pieProps, setPieProps] = React.useState<ChartProperties>(defaults)
   const [ringProps, setRingProps] = React.useState<ChartProperties>(defaults)
   const [step, setStep] = React.useState<0 | 1>(0)
+  const fullKind: ChartKind = kind === 'RingChart'
+    ? CustomGraphicsNameType.RingChart
+    : CustomGraphicsNameType.PieChart
 
   React.useEffect(() => {
-    if (open) {
-      // Determine initial kind
-      const initialKind =
-        initialValue?.name === 'org.cytoscape.RingChart' ? 'RingChart' : 'PieChart'
-      setKind(initialKind)
+    if (!open) return
 
-      // Initialize pieProps
-      if (initialValue?.name === 'org.cytoscape.PieChart') {
-        const props = initialValue.properties as ChartProperties
-        setPieProps({
-          cy_colorScheme: props.cy_colorScheme ?? '',
-          cy_colors: props.cy_colors ?? [],
-          cy_dataColumns: props.cy_dataColumns ?? [],
-          cy_startAngle: props.cy_startAngle ?? 0,
-          cy_holeSize: props.cy_holeSize ?? 0.4,
-        })
-      } else {
-        setPieProps(defaults)
-      }
+    // Determine initial kind
+    const initialKind: 'PieChart' | 'RingChart' =
+      initialValue?.name === CustomGraphicsNameType.RingChart
+        ? 'RingChart'
+        : 'PieChart'
+    setKind(initialKind)
 
-      // Initialize ringProps
-      if (initialValue?.name === 'org.cytoscape.RingChart') {
-        const props = initialValue.properties as ChartProperties
-        setRingProps({
-          cy_colorScheme: props.cy_colorScheme ?? '',
-          cy_colors: props.cy_colors ?? [],
-          cy_dataColumns: props.cy_dataColumns ?? [],
-          cy_startAngle: props.cy_startAngle ?? 0,
-          cy_holeSize: props.cy_holeSize ?? 0.4,
-        })
-      } else {
-        setRingProps(defaults)
-      }
-
-      setStep(0)
+    // Initialize pieProps
+    if (initialValue?.name === CustomGraphicsNameType.PieChart) {
+      const pieInit = initialValue.properties as PieChartPropertiesType
+      setPieProps({
+        ...defaultPieProps,
+        ...pieInit,
+      })
+    } else {
+      setPieProps(defaultPieProps)
     }
-  }, [open])
+
+    // Initialize ringProps
+    if (initialValue?.name === CustomGraphicsNameType.RingChart) {
+      const ringInit = initialValue.properties as RingChartPropertiesType
+      setRingProps({
+        ...defaultRingProps,
+        ...ringInit,
+      })
+    } else {
+      setRingProps(defaultRingProps)
+    }
+
+    setStep(0)
+  }, [open, initialValue])
 
   const currentProps = kind === 'PieChart' ? pieProps : ringProps
   const updateCurrent = (newProps: ChartProperties) =>
@@ -536,7 +589,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
             properties={currentProps}
             onChange={updateCurrent}
             currentNetworkId={currentNetworkId}
-            kind={kind}
+            kind={fullKind}
           />
         )}
       </DialogContent>
