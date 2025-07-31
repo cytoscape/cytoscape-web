@@ -30,6 +30,8 @@ import { DEFAULT_CUSTOM_GRAPHICS } from '../../../models/VisualStyleModel/impl/D
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import { CustomGraphicsNameType } from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
+
 /** The shape of chart-specific properties */
 export interface ChartProperties {
   cy_colorScheme: string
@@ -209,15 +211,22 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
   const nodeTable = tables[currentNetworkId]?.nodeTable
 
   // only keep numeric columns
-  const availableColumns: string[] = React.useMemo(() => {
-    if (!nodeTable || !nodeTable.rows) return []
-    return nodeTable.columns
-      .filter((col: Column) =>
-        Array.from(nodeTable.rows.values()).every(row => typeof row[col.name] === 'number')
-      )
-      .map(col => col.name)
-  }, [nodeTable])
+  const availableColumns = React.useMemo(() => {
+    if (!nodeTable?.rows) return [];
 
+    return nodeTable.columns
+      .filter((col) => {
+        // assert this column really has a valueType field
+        const vt = (col as unknown as { valueType: ValueTypeName }).valueType;
+        return (
+          vt === ValueTypeName.Integer ||
+          vt === ValueTypeName.Double ||
+          vt === ValueTypeName.Long
+        );
+      })
+      .map((col) => col.name);
+  }, [nodeTable]);
+  
   // first unused numeric column or empty
   const nextDefaultCol = React.useMemo(() => {
     return availableColumns.find(c => !cy_dataColumns.includes(c)) || ''
