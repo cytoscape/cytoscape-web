@@ -29,7 +29,7 @@ import { CustomGraphicsType } from '../../../models/VisualStyleModel'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
-
+import { CustomGraphicsNameType } from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 /** The shape of chart-specific properties */
 export interface ChartProperties {
   cy_colorScheme: string
@@ -654,8 +654,8 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                   type: 'chart',
                   name:
                     kind === 'PieChart'
-                      ? 'org.cytoscape.PieChart'
-                      : 'org.cytoscape.RingChart',
+                      ? CustomGraphicsNameType.PieChart
+                      : CustomGraphicsNameType.RingChart,
                   properties: currentProps,
                 })
               } else {
