@@ -24,14 +24,17 @@ import AddIcon from '@mui/icons-material/Add'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { IdType } from '../../../models/IdType'
 import { useTableStore } from '../../../store/TableStore'
-import { Column } from '../../../models'
 import { CustomGraphicsType } from '../../../models/VisualStyleModel'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import { CustomGraphicsNameType } from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
-
+import { ValueTypeName } from '../../../models/TableModel'
+import {
+  SequentialCustomGraphicColors,
+  DivergingCustomGraphicColors,
+  ViridisCustomGraphicColors
+} from '../../../models/VisualStyleModel/impl/CustomColor'
 /** The shape of chart-specific properties */
 export interface ChartProperties {
   cy_colorScheme: string
@@ -51,139 +54,42 @@ interface ChartGraphicFormProps {
 
 // Expanded palettes (ColorBrewer-like)
 const PALETTES: Record<string, string[]> = {
-  Sequential1: [
-    '#f7fdf6', '#e5f7e3', '#c5eec5', '#9ae1a1', '#60cf7c',
-    '#00b962', '#009a49', '#006836',
-  ],
-  Sequential2: [
-    '#f7fdf1', '#e0f6de', '#caefca', '#a2e4bb', '#69d6cb',
-    '#0bbfdb', '#009ac9', '#0065ac',
-  ],
-  Sequential3: [
-    '#fff8fc', '#f1e5f3', '#d6d7ea', '#aac6e1', '#aac6e2',
-    '#009eca', '#009096', '#00735a',
-  ],
-  Sequential4: [
-    '#fff8f4', '#ffe2e1', '#ffc8c6', '#ffa2bd', '#ff62ac',
-    '#f700a4', '#ca008c', '#940085',
-  ],
-  Sequential5: [
-    '#fff8ee', '#ffeacc', '#ffd7a3', '#ffbf89', '#ff8f5c',
-    '#ff614a', '#f10011', '#b40000',
-  ],
-  Sequential6: [
-    '#f7fdfd', '#e1eff6', '#c2d9ea', '#a1c5e1', '#95a1cf',
-    '#9e73bd', '#9f41aa', '#860079',
-  ],
-  Sequential7: [
-    '#ffffe7', '#fff8bf', '#ffe594', '#ffc847', '#ff9c00',
-    '#ff6f00', '#e44500', '#a52300',
-  ],
-  Sequential8: [
-    '#ffffcf', '#ffefa4', '#ffe594', '#ffb646', '#ff8f33',
-    '#ff3b1e', '#fd000a', '#cc0026',
-  ],
-  Sequential9: [
-    '#fff6f2', '#ffe2d6', '#ffbfa8', '#ff9478', '#ff654c',
-    '#ff1126', '#e60012', '#b40000',
-  ],
-  Sequential10: [
-    '#f9f5fa', '#ebe4f2', '#dfbfe0', '#da9ad0', '#f662bb',
-    '#ff0097', '#e90060', '#ac0048',
-  ],
-  Sequential11: [
-    '#fff6ed', '#ffe8d2', '#ffd3a8', '#ffb26e', '#ff8f33',
-    '#ff6600', '#f13b00', '#a52300',
-  ],
-  Sequential12: [
-    '#f7fcff', '#dfeef9', '#c8e1f2', '#9cd2e6', '#5fbade',
-    '#19a0d0', '#007fc1', '#0050a2',
-  ],
-  Sequential13: [
-    '#fdfcfd', '#f2eff7', '#dfdfef', '#c4c4e2', '#a9a4d1',
-    '#8d88c5', '#7b59b0', '#5d0095',
-  ],
-  Sequential14: [
-    '#ffffe7', '#f7fdbc', '#d8f4a7', '#a8e493', '#66d17f',
-    '#00b962', '#009347', '#006836',
-  ],
-  Sequential15: [
-    '#ffffff', '#f2f2f2', '#dedede', '#c5c5c5', '#a0a0a0',
-    '#7e7e7e', '#5c5c5c', '#2a2a2a',
-  ],
-  Sequential16: [
-    '#f7fdfd', '#e5f7fa', '#cbf0e9', '#91e0cf', '#47cdad',
-    '#00bb7e', '#009a49', '#006623',
-  ],
-  Sequential17: [
-    '#ffffdb', '#ecfab5', '#c5eeb9', '#6fd7c2', '#00c3cd',
-    '#009fca', '#006bb5', '#003293',
-  ],
-  Sequential18: [
-    '#fff8fc', '#f0eaf4', '#d6d7ea', '#aac6e1', '#6fb5d7',
-    '#009eca', '#007ebc', '#005a89',
-  ],
+  Sequential1: SequentialCustomGraphicColors[0],
+  Sequential2: SequentialCustomGraphicColors[1],
+  Sequential3: SequentialCustomGraphicColors[2],
+  Sequential4: SequentialCustomGraphicColors[3],
+  Sequential5: SequentialCustomGraphicColors[4],
+  Sequential6: SequentialCustomGraphicColors[5],
+  Sequential7: SequentialCustomGraphicColors[6],
+  Sequential8: SequentialCustomGraphicColors[7],
+  Sequential9: SequentialCustomGraphicColors[8],
+  Sequential10: SequentialCustomGraphicColors[9],
+  Sequential11: SequentialCustomGraphicColors[10],
+  Sequential12: SequentialCustomGraphicColors[11],
+  Sequential13: SequentialCustomGraphicColors[12],
+  Sequential14: SequentialCustomGraphicColors[13],
+  Sequential15: SequentialCustomGraphicColors[14],
+  Sequential16: SequentialCustomGraphicColors[15],
+  Sequential17: SequentialCustomGraphicColors[16],
+  Sequential18: SequentialCustomGraphicColors[17],
 
-  Diverging1: [
-    '#ff0000', '#ff304d', '#ff939b', '#ffdddf', '#e0dfff',
-    '#9e9cff', '#5750ff', '#1900ff',
-  ],
-  Diverging2: [
-    '#cd002c', '#ed5e52', '#ffa989', '#ffdecc', '#d2e9f3',
-    '#8ecee4', '#1ba1cd', '#0073b9',
-  ],
-  Diverging3: [
-    '#ca5a00', '#f38600', '#ffbc64', '#ffe2bb', '#dddfef',
-    '#bcb3da', '#8f7db8', '#682497',
-  ],
-  Diverging4: [
-    '#8e2191', '#ac78b7', '#cfacd7', '#eed8ec', '#d8f3d7',
-    '#a0e2a6', '#3bbb66', '#008739',
-  ],
-  Diverging5: [
-    '#ee2957', '#ff6a43', '#ffb262', '#ffe38e', '#e5f89b',
-    '#a6e4aa', '#47cdae', '#0096c8',
-  ],
-  Diverging6: [
-    '#a15600', '#d18820', '#e8c882', '#faeac7', '#c5efe8',
-    '#71d7c8', '#00a59a', '#007569',
-  ],
-  Diverging7: [
-    '#00ffff', '#3AFFFF', '#74ffff', '#d7ffff', '#ffddff',
-    '#ff92ff', '#ff29ff', '#ff00ff',
-  ],
-  Diverging8: [
-    '#f10021', '#ff6a43', '#ffb262', '#ffe38e', '#d8f38e',
-    '#a1e16b', '#4ac967', '#00a755',
-  ],
-  Diverging9: [
-    '#e0008a', '#f378b8', '#febae0', '#ffe2f2', '#e6f7d4',
-    '#b5e78a', '#75c739', '#35a002',
-  ],
-  Diverging10: [
-    '#cd002c', '#ed5e52', '#ffa989', '#ffdecc', '#e4e4e4',
-    '#c2c2c2', '#929292', '#575757',
-  ],
-  Diverging11: [
-    '#f10021', '#ff6a43', '#ffb262', '#ffe393', '#e0f6f9',
-    '#a8e0ed', '#6db8d9', '#3d82c0',
-  ],
-  Viridis1: [
-    '#ffea00', '#98e21e', '#00ce71', '#00af91', '#008f9a',
-    '#2f689b', '#55378d', '#560061',
-  ],
-  Viridis2: [
-    '#fcfec2', '#ffbf86', '#ff7762', '#ec3379', '#b31b8e',
-    '#75008e', '#2d0c60', '#000001',
-  ],
-  Viridis3: [
-    '#effb00', '#ffc100', '#ff8b46', '#f25872', '#d41995',
-    '#a600b3', '#6b00b2', '#120096',
-  ],
-  Viridis4: [
-    '#fbffa6', '#ffc600', '#ff7e00', '#ed3c46', '#ba106f',
-    '#7c007c', '#350062', '#000001',
-  ],
+  Diverging1: DivergingCustomGraphicColors[0],
+  Diverging2: DivergingCustomGraphicColors[1],
+  Diverging3: DivergingCustomGraphicColors[2],
+  Diverging4: DivergingCustomGraphicColors[3],
+  Diverging5: DivergingCustomGraphicColors[4],
+  Diverging6: DivergingCustomGraphicColors[5],
+  Diverging7: DivergingCustomGraphicColors[6],
+  Diverging8: DivergingCustomGraphicColors[7],
+  Diverging9: DivergingCustomGraphicColors[8],
+  Diverging10: DivergingCustomGraphicColors[9],
+  Diverging11: DivergingCustomGraphicColors[10],
+
+  Viridis1: ViridisCustomGraphicColors[0],
+  Viridis2: ViridisCustomGraphicColors[1],
+  Viridis3: ViridisCustomGraphicColors[2],
+  Viridis4: ViridisCustomGraphicColors[3],
+
 };
 
 function pickEvenly(base: string[], count: number): string[] {
@@ -226,7 +132,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       })
       .map((col) => col.name);
   }, [nodeTable]);
-  
+
   // first unused numeric column or empty
   const nextDefaultCol = React.useMemo(() => {
     return availableColumns.find(c => !cy_dataColumns.includes(c)) || ''
