@@ -17,7 +17,7 @@ import { ToolBar } from './ToolBar'
 import { ParsedUrlParams, parsePathName } from '../utils/paths-util'
 import { WarningDialog } from './ExternalLoading/WarningDialog'
 import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
-import { AppConfigContext } from '../init/AppConfigContext'
+import { AppConfigContext } from '../AppConfigContext'
 import {
   getSummariesFromCacheOrNdex,
   ndexSummaryFetcher,

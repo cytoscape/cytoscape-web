@@ -1,7 +1,5 @@
 import * as ReactDOM from 'react-dom/client'
 import './index.css'
-import './split-pane.css'
-import './data-grid.css'
 import appConfig from './assets/config.json'
 import { AppConfigContext } from './AppConfigContext'
 import { FeatureAvailabilityProvider } from './components/FeatureAvailability'
