@@ -17,7 +17,7 @@ import { ToolBar } from './ToolBar'
 import { ParsedUrlParams, parsePathName } from '../utils/paths-util'
 import { WarningDialog } from './ExternalLoading/WarningDialog'
 import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
-import { AppConfigContext } from '../AppConfigContext'
+import { AppConfigContext } from '../init/AppConfigContext'
 import {
   getSummariesFromCacheOrNdex,
   ndexSummaryFetcher,
@@ -519,39 +519,42 @@ const AppShell = (): ReactElement => {
   // }, [location])
 
   // Network ID synchronization process
-  useEffect(() => {
-    // If location network ID differs from currentNetworkId, set location value as current network
-    const parsed = parsePathName(location.pathname)
-    const { networkId: locationNetworkId } = parsed
+  useEffect(
+    function syncNetworkId() {
+      // If location network ID differs from currentNetworkId, set location value as current network
+      const parsed = parsePathName(location.pathname)
+      const { networkId: locationNetworkId } = parsed
 
-    if (
-      locationNetworkId &&
-      locationNetworkId !== '' &&
-      locationNetworkId !== currentNetworkId &&
-      id !== '' // Only when workspace is initialized
-    ) {
-      logUi.info(
-        `[${AppShell.name}]:[${useEffect.name}]: Setting current network ID from location: 
+      if (
+        locationNetworkId &&
+        locationNetworkId !== '' &&
+        locationNetworkId !== currentNetworkId &&
+        id !== '' // Only when workspace is initialized
+      ) {
+        logUi.info(
+          `[${AppShell.name}]:[${syncNetworkId.name}]: Setting current network ID from location:
         from: ${currentNetworkId} to: ${locationNetworkId}, timestamp: ${new Date().toISOString()}`,
-      )
-
-      // Add network to workspace if it doesn't exist yet
-      if (!networkIds.includes(locationNetworkId)) {
-        logUi.info(
-          `[${AppShell.name}]:[${useEffect.name}]: Adding network to workspace: ${locationNetworkId}`,
         )
-        addNetworkIds(locationNetworkId)
-      }
 
-      // Update current network ID (with duplicate check)
-      if (currentNetworkId !== locationNetworkId) {
-        logUi.info(
-          `[${AppShell.name}]:[${useEffect.name}]: Updating current network ID: ${locationNetworkId}`,
-        )
-        setCurrentNetworkId(locationNetworkId)
+        // Add network to workspace if it doesn't exist yet
+        if (!networkIds.includes(locationNetworkId)) {
+          logUi.info(
+            `[${AppShell.name}]:[${syncNetworkId.name}]: Adding network to workspace: ${locationNetworkId}`,
+          )
+          addNetworkIds(locationNetworkId)
+        }
+
+        // Update current network ID (with duplicate check)
+        if (currentNetworkId !== locationNetworkId) {
+          logUi.info(
+            `[${AppShell.name}]:[${syncNetworkId.name}]: Updating current network ID: ${locationNetworkId}`,
+          )
+          setCurrentNetworkId(locationNetworkId)
+        }
       }
-    }
-  }, [location, id, networkIds])
+    },
+    [location, id, networkIds],
+  )
 
   return (
     <Box
@@ -584,7 +587,7 @@ const AppShell = (): ReactElement => {
           setInitializationError('')
         }}
       />
-      <SyncTabsAction />
+      {/* <SyncTabsAction /> */}
       {/* History debugger - only show in development */}
       {/* {process.env.NODE_ENV === 'development' && <HistoryDebugger />} */}
     </Box>
