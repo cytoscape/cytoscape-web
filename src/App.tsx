@@ -4,7 +4,7 @@ import CookieConsent from 'react-cookie-consent'
 import Cookies from 'js-cookie'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import './index.css'
-import { Error } from './Error'
+import { Error } from './components/Error'
 import {
   createBrowserRouter,
   RouterProvider,
@@ -17,8 +17,8 @@ import { MessagePanel } from './components/Messages'
 import appConfig from './assets/config.json'
 import { KeycloakContext } from './KeycloakContext'
 import { useCredentialStore } from './store/CredentialStore'
-import { RedirectPanel } from './RedirectPanel'
-import ErrorBoundary from './ErrorBoundary'
+import { RedirectPanel } from './components/RedirectPanel'
+import ErrorBoundary from './components/ErrorBoundary'
 // import { initHistoryClearing } from './store/hooks/useUrlNavigation/url-manager'
 
 enableMapSet()

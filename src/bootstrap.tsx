@@ -13,7 +13,7 @@ import ReactGA from 'react-ga4'
 import { enableMapSet } from 'immer'
 import React, { createContext } from 'react'
 import Keycloak from 'keycloak-js'
-import ErrorBoundary from './ErrorBoundary'
+import ErrorBoundary from './components/ErrorBoundary'
 import { initTabManager } from './tab-manager'
 import { initializeDebug, logStartup } from './debug'
 
