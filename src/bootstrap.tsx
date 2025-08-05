@@ -17,6 +17,8 @@ import ErrorBoundary from './ErrorBoundary'
 import { initTabManager } from './tab-manager'
 import { initializeDebug, logStartup } from './debug'
 
+export const KeycloakContext = createContext<Keycloak>(new Keycloak())
+
 enableMapSet()
 initializeDebug()
 
@@ -26,8 +28,6 @@ logStartup.info(
   `[bootstrap.tsx]:[${initTabManager.name}]: Cytoscape window name initialized. Use this as the target when you open this tab again.`,
   window.name,
 )
-
-export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
 const rootElement: HTMLElement | null = document.getElementById('root')
 const { keycloakConfig, urlBaseName, googleAnalyticsId } = appConfig
