@@ -3,7 +3,7 @@ import { deepOrange } from '@mui/material/colors'
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
 import { ReactElement, useContext, useState } from 'react'
 import { LoginPanel } from './LoginPanel'
-import { KeycloakContext } from '../../KeycloakContext'
+import { KeycloakContext } from '../../init/keycloak'
 import { AppConfigContext } from '../../AppConfigContext'
 import { logApi } from '../../debug'
 

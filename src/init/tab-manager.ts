@@ -5,7 +5,7 @@
  * Currently, just manages the tab IDs for external applications
  */
 
-import { logApp } from './debug'
+import { logStartup } from '../debug'
 
 /**
  * Generates a channel name based on the current hostname and port
@@ -24,7 +24,7 @@ const generateChannelName = (): string => {
 
 const CHANNEL_NAME: string = generateChannelName()
 
-logApp.info(
+logStartup.info(
   `[tab-manager.ts]:[${generateChannelName.name}]: Cytoscape Web's current active broadcast channel name:`,
   CHANNEL_NAME,
 )
@@ -55,7 +55,9 @@ interface TabMessage {
  *
  * @returns the tab ID for the current tab
  */
-export const initTabManager = (channelName: string = CHANNEL_NAME): string => {
+export const initializeTabManager = (
+  channelName: string = CHANNEL_NAME,
+): string => {
   // Check window.name for the tab ID
   const windowName = window.name
   let tabId = `${CYWEB_PREFIX}-${Date.now()}`
@@ -84,7 +86,7 @@ export const initTabManager = (channelName: string = CHANNEL_NAME): string => {
   document.addEventListener('visibilitychange', () => {
     const isVisible = !document.hidden
     if (isVisible) {
-      logApp.info(
+      logStartup.info(
         `[tab-manager.ts]:[${document.addEventListener.name}]: Current Cytoscape Instance: ${tabId} isVisible: ${isVisible}`,
       )
       channel.postMessage({ type: TabMessageType.ACTIVE, tabId })
@@ -114,6 +116,13 @@ export const initTabManager = (channelName: string = CHANNEL_NAME): string => {
         break
     }
   }
+
+  // Window name of this instance based on the current time
+  window.name = tabId
+  logStartup.info(
+    `[tab-manager.ts]:[${initializeTabManager.name}]: Cytoscape window name initialized. Use this as the target when you open this tab again.`,
+    window.name,
+  )
 
   return tabId
 }

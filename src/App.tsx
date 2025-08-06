@@ -15,7 +15,7 @@ import {
 import { enableMapSet } from 'immer'
 import { MessagePanel } from './components/Messages'
 import appConfig from './assets/config.json'
-import { KeycloakContext } from './KeycloakContext'
+import { KeycloakContext } from './init/keycloak'
 import { useCredentialStore } from './store/CredentialStore'
 import { RedirectPanel } from './components/RedirectPanel'
 import ErrorBoundary from './components/ErrorBoundary'
