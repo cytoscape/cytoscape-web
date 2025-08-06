@@ -6,7 +6,6 @@ import {
   putTimestampToDb,
 } from '../store/persist/db'
 import debounce from 'lodash.debounce'
-import { useNavigate } from 'react-router-dom'
 import { parsePathName } from '../utils/paths-util'
 import { logUi } from '../debug'
 
@@ -17,7 +16,6 @@ const markForPageReload = debounce(() => {
 export const SyncTabsAction = (): ReactElement => {
   const [localTimestamp, setLocalTimestamp] = useState(0)
 
-  const navigate = useNavigate()
   useEffect(() => {
     const onVisibilityChange = (): void => {
       if (document.hidden) {
