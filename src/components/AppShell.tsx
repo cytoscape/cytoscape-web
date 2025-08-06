@@ -15,7 +15,7 @@ import {
 
 import { ToolBar } from './ToolBar'
 import { ParsedUrlParams, parsePathName } from '../utils/paths-util'
-import { WarningDialog } from './ExternalLoading/WarningDialog'
+import { WarningDialog } from './WarningDialog'
 import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
 import { AppConfigContext } from '../AppConfigContext'
 import {
@@ -268,7 +268,7 @@ const AppShell = (): ReactElement => {
   /**
    * Once this component is initialized, check the workspace ID
    */
-  useEffect(() => {
+  useEffect(function init() {
     const initializeWorkspace = async (): Promise<void> => {
       try {
         await initializeDb()
@@ -587,7 +587,7 @@ const AppShell = (): ReactElement => {
           setInitializationError('')
         }}
       />
-      {/* <SyncTabsAction /> */}
+      <SyncTabsAction />
       {/* History debugger - only show in development */}
       {/* {process.env.NODE_ENV === 'development' && <HistoryDebugger />} */}
     </Box>
