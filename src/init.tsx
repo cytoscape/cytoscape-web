@@ -28,7 +28,7 @@ import { initializeTabManager } from './init/tab-manager'
 const initializeApp = () => {
   const { urlBaseName } = appConfig
   const rootElement: HTMLElement | null = document.getElementById('root')
-  if (rootElement === null) {
+  if (rootElement == null) {
     logStartup.error(
       `[bootstrap.tsx]:[${initializeApp.name}]: Failed to initialize Cytoscape:`,
       'Root element not found',
@@ -77,54 +77,34 @@ const initializeApp = () => {
 
       updateLoadingMessage('Starting application...')
 
-      if (rootElement !== null) {
-        if (authenticated && emailUnverified) {
-          const root = ReactDOM.createRoot(rootElement)
-          root.render(
-            <AppConfigContext.Provider value={appConfig}>
-              <React.StrictMode>
-                <KeycloakContext.Provider value={keycloak}>
-                  <ErrorBoundary>
-                    <EmailVerificationModal
-                      userName={userName}
-                      userEmail={userEmail}
-                      onVerify={handleVerify}
-                      onCancel={handleCancel}
-                    />
-                  </ErrorBoundary>
-                </KeycloakContext.Provider>
-              </React.StrictMode>
-            </AppConfigContext.Provider>,
-          )
-
-          // Remove loading screen after React app is rendered
-          removeLoadingScreenAfterRender()
-        } else {
-          const root = ReactDOM.createRoot(rootElement)
-          root.render(
-            <AppConfigContext.Provider value={appConfig}>
-              <React.StrictMode>
-                <KeycloakContext.Provider value={keycloak}>
-                  <FeatureAvailabilityProvider>
-                    <ErrorBoundary>
-                      <App />
-                    </ErrorBoundary>
-                  </FeatureAvailabilityProvider>
-                </KeycloakContext.Provider>
-              </React.StrictMode>
-            </AppConfigContext.Provider>,
-          )
-
-          // Remove loading screen after React app is rendered
-          removeLoadingScreenAfterRender()
-        }
-      } else {
-        logStartup.error(
-          `[bootstrap.tsx]:[${keycloak.init.name}]: Failed to initialize Cytoscape:`,
-          'Root element not found',
+      const root = ReactDOM.createRoot(rootElement)
+      const innerContent =
+        authenticated && emailUnverified ? (
+          <EmailVerificationModal
+            userName={userName}
+            userEmail={userEmail}
+            onVerify={handleVerify}
+            onCancel={handleCancel}
+          />
+        ) : (
+          <FeatureAvailabilityProvider>
+            <App />
+          </FeatureAvailabilityProvider>
         )
-        throw new Error('Root element not found')
-      }
+      const outerContent = (
+        <AppConfigContext.Provider value={appConfig}>
+          <React.StrictMode>
+            <KeycloakContext.Provider value={keycloak}>
+              <ErrorBoundary>{innerContent}</ErrorBoundary>
+            </KeycloakContext.Provider>
+          </React.StrictMode>
+        </AppConfigContext.Provider>
+      )
+
+      root.render(outerContent)
+
+      // Remove loading screen after React app is rendered
+      removeLoadingScreenAfterRender()
     })
     .catch((e) => {
       // Make root element visible in case of error
