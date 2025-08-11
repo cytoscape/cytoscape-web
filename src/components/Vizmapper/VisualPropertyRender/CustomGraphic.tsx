@@ -263,8 +263,6 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       {/* Node Attributes & Colors */}
       <Typography variant="subtitle2">Node Attributes &amp; Colors</Typography>
       {cy_dataColumns.map((col, i) => {
-        console.log(cy_dataColumns)
-
         const options = availableColumns.filter(
           (c) => c === col || !cy_dataColumns.includes(c)
         )
