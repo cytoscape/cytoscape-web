@@ -36,8 +36,43 @@ import {
   getCustomGraphicNodeVps,
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
-  getSizePropertyForCustomGraphic,
 } from '../../models/VisualStyleModel/impl/CustomGraphicsImpl'
+
+// ---- Hoisted to avoid remounting/flicker on hover ----
+type StyledAccordionProps = { label: string; children: React.ReactNode }
+const StyledAccordion = ({ label, children }: StyledAccordionProps) => (
+  <Accordion
+    defaultExpanded
+    disableGutters
+    elevation={0}
+    square
+    sx={{
+      backgroundColor: 'transparent',
+      '&:before': { display: 'none' },
+      mb: 1,
+    }}
+  >
+    <AccordionSummary
+      expandIcon={<ExpandMoreIcon />}
+      sx={{
+        pl: 0,
+        minHeight: 32,
+        '& .MuiAccordionSummary-content': { margin: 0 },
+      }}
+    >
+      <Typography variant="subtitle2">{label}</Typography>
+    </AccordionSummary>
+    <AccordionDetails
+      sx={{
+        p: 0,
+        '& > *:not(:last-child)': { mb: 1 },
+      }}
+    >
+      {children}
+    </AccordionDetails>
+  </Accordion>
+)
+
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -86,7 +121,9 @@ function VisualPropertyView(props: {
     >
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         {disabled ? (
-          <EmptyVisualPropertyViewBox sx={{ ml: 0.5, mr: 1.5, cursor: 'not-allowed' }} />
+          <EmptyVisualPropertyViewBox
+            sx={{ ml: 0.5, mr: 1.5, cursor: 'not-allowed' }}
+          />
         ) : (
           <DefaultValueForm
             sx={{ ml: 0.5, mr: 1.5 }}
@@ -96,13 +133,25 @@ function VisualPropertyView(props: {
         )}
         {visualProperty.group === VisualPropertyGroup.Network || disabled ? (
           <>
-            <EmptyVisualPropertyViewBox sx={{ mr: 1.5, cursor: 'not-allowed' }} />
-            <EmptyVisualPropertyViewBox sx={{ mr: 1.5, cursor: 'not-allowed' }} />
+            <EmptyVisualPropertyViewBox
+              sx={{ mr: 1.5, cursor: 'not-allowed' }}
+            />
+            <EmptyVisualPropertyViewBox
+              sx={{ mr: 1.5, cursor: 'not-allowed' }}
+            />
           </>
         ) : (
           <>
-            <MappingForm sx={{ mr: 1.5 }} currentNetworkId={currentNetworkId} visualProperty={visualProperty} />
-            <BypassForm sx={{ mr: 1.5 }} currentNetworkId={currentNetworkId} visualProperty={visualProperty} />
+            <MappingForm
+              sx={{ mr: 1.5 }}
+              currentNetworkId={currentNetworkId}
+              visualProperty={visualProperty}
+            />
+            <BypassForm
+              sx={{ mr: 1.5 }}
+              currentNetworkId={currentNetworkId}
+              visualProperty={visualProperty}
+            />
           </>
         )}
         <Tooltip placement="top" arrow title={tooltip ?? visualProperty.tooltip}>
@@ -142,39 +191,40 @@ export default function VizmapperView(props: {
 
   const { networkId, height } = props
   const [currentTabIndex, setCurrentTabIndex] = React.useState(0)
-  const visualStyles = useVisualStyleStore((s) => s.visualStyles)
+  const visualStyles: Record<IdType, VisualStyle> = useVisualStyleStore(
+    (s) => s.visualStyles,
+  )
   const visualStyle = visualStyles[networkId]
   if (!visualStyle) return <div />
 
-  // --- Node props grouping (unchanged) ---
+  // --- Node props grouping ---
   const allNodeVps = VisualStyleFn.nodeVisualProperties(visualStyle)
   const customGraphicVps = getCustomGraphicNodeVps(allNodeVps)
   const nonCustomGraphicVps = getNonCustomGraphicVps(allNodeVps)
-  const firstCustom = getFirstValidCustomGraphicVp(customGraphicVps)
-  const customSize = firstCustom
-    ? getSizePropertyForCustomGraphic(firstCustom, customGraphicVps)
-    : undefined
-  const fallbackImgs = (() => {
 
-    const result: VisualProperty<any>[] = []
-    // For now, we only show the first property
+  const firstCustom = getFirstValidCustomGraphicVp(customGraphicVps)
+  const fallbackImgs: VisualProperty<VisualPropertyValueType>[] = (() => {
+    const result: VisualProperty<VisualPropertyValueType>[] = []
     for (let i = 1; i <= 1; i++) {
-      const img = customGraphicVps.find(vp => vp.name === `nodeImageChart${i}`)
+      const img = customGraphicVps.find((vp) => vp.name === `nodeImageChart${i}`)
       if (img) result.push(img)
     }
     return result
   })()
-  const borderProps = nonCustomGraphicVps.filter((vp) =>
-    vp.name.toLowerCase().includes('border') ||
-    vp.displayName.toLowerCase().includes('border'),
+
+  const borderProps = nonCustomGraphicVps.filter(
+    (vp) =>
+      vp.name.toLowerCase().includes('border') ||
+      vp.displayName.toLowerCase().includes('border'),
   )
   const fillNames = new Set(['fill color', 'opacity'])
   const fillProps = nonCustomGraphicVps.filter((vp) =>
     fillNames.has(vp.displayName.toLowerCase()),
   )
-  const labelProps = nonCustomGraphicVps.filter((vp) =>
-    vp.name.toLowerCase().startsWith('label') ||
-    vp.displayName.toLowerCase().startsWith('label'),
+  const labelProps = nonCustomGraphicVps.filter(
+    (vp) =>
+      vp.name.toLowerCase().startsWith('label') ||
+      vp.displayName.toLowerCase().startsWith('label'),
   )
   const generalProps = nonCustomGraphicVps.filter(
     (vp) =>
@@ -182,15 +232,14 @@ export default function VizmapperView(props: {
       !fillProps.includes(vp) &&
       !labelProps.includes(vp),
   )
-  const customProps = [
-    ...fallbackImgs,
-  ]
+  const customProps = [...fallbackImgs]
 
-  // --- Edge props grouping as requested ---
+  // --- Edge props grouping ---
   const edgeVps = VisualStyleFn.edgeVisualProperties(visualStyle)
-  const edgeLabelProps = edgeVps.filter((vp) =>
-    vp.name.toLowerCase().startsWith('label') ||
-    vp.displayName.toLowerCase().startsWith('label'),
+  const edgeLabelProps = edgeVps.filter(
+    (vp) =>
+      vp.name.toLowerCase().startsWith('label') ||
+      vp.displayName.toLowerCase().startsWith('label'),
   )
   const edgeFillNames = new Set(['opacity', 'stroke color'])
   const edgeFillProps = edgeVps.filter((vp) =>
@@ -199,8 +248,12 @@ export default function VizmapperView(props: {
   const edgeSourceTargetProps = edgeVps.filter((vp) => {
     const nm = vp.name.toLowerCase()
     const dn = vp.displayName.toLowerCase()
-    return nm.startsWith('source') || nm.startsWith('target') ||
-      dn.startsWith('source') || dn.startsWith('target')
+    return (
+      nm.startsWith('source') ||
+      nm.startsWith('target') ||
+      dn.startsWith('source') ||
+      dn.startsWith('target')
+    )
   })
   const edgeGeneralProps = edgeVps.filter(
     (vp) =>
@@ -209,42 +262,8 @@ export default function VizmapperView(props: {
       !edgeSourceTargetProps.includes(vp),
   )
 
-  // --- Network props (unchanged) ---
+  // --- Network props ---
   const networkVps = VisualStyleFn.networkVisualProperties(visualStyle)
-
-  // Styled Accordion wrapper
-  const StyledAccordion = (p: React.PropsWithChildren<{ label: string }>) => (
-    <Accordion
-      defaultExpanded
-      disableGutters
-      elevation={0}
-      square
-      sx={{
-        backgroundColor: 'transparent',
-        '&:before': { display: 'none' },
-        mb: 1,
-      }}
-    >
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
-        sx={{
-          pl: 0,
-          minHeight: 32,
-          '& .MuiAccordionSummary-content': { margin: 0 },
-        }}
-      >
-        <Typography variant="subtitle2">{p.label}</Typography>
-      </AccordionSummary>
-      <AccordionDetails
-        sx={{
-          p: 0,
-          '& > *:not(:last-child)': { mb: 1 },
-        }}
-      >
-        {p.children}
-      </AccordionDetails>
-    </Accordion>
-  )
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', height }}>
@@ -268,8 +287,16 @@ export default function VizmapperView(props: {
         <Tab label={<Typography variant="caption">Network</Typography>} />
       </Tabs>
 
-      {/* Secondary labels */}
-      <Box sx={{ display: 'flex', p: 1, ml: 0.5, minHeight: 40 }}>
+      {/* Secondary labels (disable pointer events to avoid intercepting clicks) */}
+      <Box
+        sx={{
+          display: 'flex',
+          p: 1,
+          ml: 0.5,
+          minHeight: 40,
+          pointerEvents: 'none',
+        }}
+      >
         {['Default', 'Mapping', 'Bypass'].map((label, idx) => (
           <Box
             key={idx}
@@ -277,7 +304,7 @@ export default function VizmapperView(props: {
               width: TAB_TEXT_WIDTH,
               textAlign: 'center',
               mr: idx < 2 ? 1.5 : 0,
-              fontSize: FONT_SIZE,
+              fontSize: 10,
               transform: `rotate(${TAB_ROTATE_DEGREE}deg)`,
             }}
           >
@@ -287,7 +314,8 @@ export default function VizmapperView(props: {
       </Box>
 
       <Divider />
-      {/* Scrollable content */}
+
+      {/* Scrollable content (ensure it's on top) */}
       <Box
         sx={{
           flex: 1,
@@ -296,6 +324,8 @@ export default function VizmapperView(props: {
           pt: 1,
           pb: '100px',
           boxSizing: 'border-box',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {(() => {
@@ -312,7 +342,7 @@ export default function VizmapperView(props: {
               ]
               return sections0.map(({ label, items }) => (
                 <StyledAccordion key={label} label={label}>
-                  {items.map(vp => (
+                  {items.map((vp) => (
                     <VisualPropertyView
                       key={vp.name}
                       currentNetworkId={networkId}
@@ -322,7 +352,6 @@ export default function VizmapperView(props: {
                 </StyledAccordion>
               ))
             }
-
             case 1: {
               const sections1 = [
                 { label: 'Label', items: edgeLabelProps },
@@ -332,7 +361,7 @@ export default function VizmapperView(props: {
               ]
               return sections1.map(({ label, items }) => (
                 <StyledAccordion key={label} label={label}>
-                  {items.map(vp => (
+                  {items.map((vp) => (
                     <VisualPropertyView
                       key={vp.name}
                       currentNetworkId={networkId}
@@ -342,11 +371,10 @@ export default function VizmapperView(props: {
                 </StyledAccordion>
               ))
             }
-
             case 2:
               return (
                 <Box>
-                  {networkVps.map(vp => (
+                  {networkVps.map((vp) => (
                     <VisualPropertyView
                       key={vp.name}
                       currentNetworkId={networkId}
@@ -355,15 +383,14 @@ export default function VizmapperView(props: {
                   ))}
                 </Box>
               )
-
             default:
               return null
           }
         })()}
       </Box>
-      <Box sx={{ flex: '0 0 auto', borderTop: '1px solid #ddd', p: 1 }}>
-        {/* Add extra space here to avoid overlapping with Layout tools UI*/}
-      </Box>
+
+      {/* Bottom spacer so layout tools don’t overlap */}
+      <Box sx={{ flex: '0 0 auto', borderTop: '1px solid #ddd', p: 1 }} />
     </Box>
   )
 }
