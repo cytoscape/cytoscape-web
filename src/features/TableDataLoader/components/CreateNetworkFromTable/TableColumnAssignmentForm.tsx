@@ -74,6 +74,8 @@ import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
 import { AppConfigContext } from '../../../../AppConfigContext'
 import { NetworkNameInput } from './NetworkNameInput'
 import { useUiStateStore } from '../../../../store/UiStateStore'
+import { useNetworkSummaryStore } from '../../../../store/NetworkSummaryStore'
+import { useUrlNavigation } from '../../../../store/hooks/useUrlNavigation/useUrlNavigation'
 
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
@@ -81,7 +83,10 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
   const reset = useCreateNetworkFromTableStore((state) => state.reset)
   const name = useCreateNetworkFromTableStore((state) => state.name)
+  const addSummary = useNetworkSummaryStore((state) => state.add)
   const [loading, setLoading] = useState(false)
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
 
   const [validColumnTypes, setValidColumnAssignmentTypes] = useState<
     ColumnAssignmentType[]
@@ -292,16 +297,22 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
 
     await putNetworkSummaryToDb(summary)
 
-    // TODO the db syncing logic in various stores assumes the updated network is the current network
-    // therefore, as a temporary fix, the first operation that should be done is to set the
-    // current network to be the new network id
-    setCurrentNetworkId(newNetworkId)
+    addSummary(newNetworkId, summary)
     setVisualStyleOptions(newNetworkId, visualStyleOptions)
     addNewNetwork(network)
     setVisualStyle(newNetworkId, visualStyle)
     setTables(newNetworkId, nodeTable, edgeTable)
     setViewModel(newNetworkId, networkView)
     addNetworkToWorkspace(newNetworkId)
+
+    setCurrentNetworkId(newNetworkId)
+
+    navigateToNetwork({
+      workspaceId: workspace.id,
+      networkId: newNetworkId,
+      searchParams: new URLSearchParams(location.search),
+      replace: false,
+    })
 
     setLoading(false)
     reset()

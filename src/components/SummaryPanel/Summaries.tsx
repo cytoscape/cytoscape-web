@@ -1,14 +1,12 @@
 import { ReactElement } from 'react'
-import { IdType } from '../../models/IdType'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { NetworkPropertyPanel } from './NetworkPropertyPanel'
 import { MessagePanel } from '../Messages'
+import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
 
-interface SummariesProps {
-  summaries: Record<IdType, NdexNetworkSummary>
-}
+export const Summaries = (): ReactElement => {
+  const summaries = useNetworkSummaryStore((state) => state.summaries)
 
-export const Summaries = ({ summaries }: SummariesProps): ReactElement => {
   const summaryData = Object.values(summaries)
   if (summaryData.length === 0) {
     return <MessagePanel message="No network in workspace" />

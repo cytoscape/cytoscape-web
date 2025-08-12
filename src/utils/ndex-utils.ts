@@ -26,6 +26,7 @@ import { AppStatus } from '../models/AppModel/AppStatus'
 import { ServiceApp } from '../models/AppModel/ServiceApp'
 
 import { logApi } from '../debug'
+import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
 
 export const TimeOutErrorMessage =
   'You network has been saved in NDEx, but the server is under heavy load right now. Please use the “Open Networks from NDEx” menu to manually open this network from your account later.'
@@ -122,6 +123,8 @@ export const useSaveCopyToNDEx = () => {
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
   const saveCopyToNDEx = async (
     ndexBaseUrl: string,
     accessToken: string,
@@ -160,9 +163,28 @@ export const useSaveCopyToNDEx = () => {
       throw new Error('The network is rejected by NDEx')
     }
     addNetworkToWorkspace(uuid as IdType) // add the new network to the workspace
-    if (setCurrentNetworkId) setCurrentNetworkId(uuid as string)
+    if (setCurrentNetworkId) {
+      setCurrentNetworkId(uuid as string)
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: uuid as string,
+        searchParams: new URLSearchParams(location.search),
+        replace: false,
+      })
+    }
     if (deleteOriginal === true) {
       deleteNetworkFromWorkspace(network.id) // delete the original network from the workspace
+      const nextNetworkId =
+        workspace.networkIds.filter(
+          (networkId) => networkId !== network.id,
+        )?.[0] ?? ''
+      setCurrentNetworkId(nextNetworkId)
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: nextNetworkId,
+        searchParams: new URLSearchParams(location.search),
+        replace: true,
+      })
     }
     return uuid
   }

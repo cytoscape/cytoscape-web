@@ -13,6 +13,7 @@ import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { createNetworkViewFromCx2 } from '../utils/cx-utils'
 import { v4 as uuidv4 } from 'uuid'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
+import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
 
 /**
  * Props for creating a network with a view from a CX2 object.
@@ -45,6 +46,8 @@ export const useCreateNetworkFromCx2 = (): ((
   const setCurrentNetworkId: (networkId: string) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
 
   const createNetworkFromCx = useCallback(
     ({ cxData }: CreateNetworkFromCx2Props) => {
@@ -98,6 +101,12 @@ export const useCreateNetworkFromCx2 = (): ((
 
       // Select it as the current network
       setCurrentNetworkId(network.id)
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: network.id,
+        searchParams: new URLSearchParams(location.search),
+        replace: false,
+      })
 
       return withView
     },

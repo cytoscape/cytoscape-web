@@ -29,6 +29,7 @@ import {
   getNodes,
 } from '../../../models/CxModel/cx2-util'
 import { logApp } from '../../../debug'
+import { useUrlNavigation } from '../../../store/hooks/useUrlNavigation/useUrlNavigation'
 
 export const useAddNetworks = (): (({
   responseObj,
@@ -49,7 +50,8 @@ export const useAddNetworks = (): (({
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
-
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
   const addNetworks = useCallback(
     async ({ responseObj, networkId }: ActionHandlerProps) => {
       if (!Array.isArray(responseObj)) {
@@ -160,6 +162,12 @@ export const useAddNetworks = (): (({
       const nextCurrentNetworkId: IdType | undefined = validNetworkIds[0]
       if (nextCurrentNetworkId !== undefined) {
         setCurrentNetworkId(nextCurrentNetworkId)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: nextCurrentNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: false,
+        })
       }
     },
     [

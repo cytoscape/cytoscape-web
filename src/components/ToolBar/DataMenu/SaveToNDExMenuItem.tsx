@@ -172,7 +172,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       opaqueAspects,
     )
     setNetworkModified(currentNetworkId, false)
-    setCurrentNetworkId(currentNetworkId)
     addMessage({
       message: `Saved network to NDEx`,
       duration: 3000,

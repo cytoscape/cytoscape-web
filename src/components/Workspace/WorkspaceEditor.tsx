@@ -12,7 +12,12 @@ import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box, Tooltip } from '@mui/material'
 
-import { Outlet, useLocation, useSearchParams } from 'react-router-dom'
+import {
+  Outlet,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom'
 
 import { getModelsFromCacheOrNdex } from '../../store/getModelsFromCacheOrNdex'
 import { getSummariesFromCacheOrNdex } from '../../store/getNetworkSummaryFromCacheOrNdex'
@@ -213,13 +218,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   })
 
-  // Network Summaries
-  const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
-    (state) => state.summaries,
-  )
-
-  const setSummaries = useNetworkSummaryStore((state) => state.addAll)
-  const removeSummary = useNetworkSummaryStore((state) => state.delete)
   useNetworkSummaryManager()
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(100)
@@ -253,38 +251,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   const fitFunction = useRendererFunctionStore((state) =>
     state.getFunction('cyjs', 'fit', currentNetworkId),
   )
-
-  const loadNetworkSummaries = async (networkIds: IdType[]): Promise<void> => {
-    const currentToken = await getToken()
-    const newSummaries = await getSummariesFromCacheOrNdex(
-      networkIds,
-      ndexBaseUrl,
-      currentToken,
-    )
-
-    setSummaries({ ...summaries, ...newSummaries })
-
-    const loadedNetworks = Object.keys(newSummaries)
-    if (loadedNetworks.length !== networkIds.length) {
-      const networksFailtoLoad = networkIds.filter(
-        (id) => !loadedNetworks.includes(id),
-      )
-      const numOfNets = networksFailtoLoad.length
-      const largestNum = 3
-      const largeNum = numOfNets > largestNum
-      deleteNetwork(networksFailtoLoad) // remove the networks that the app fails to load from the workspace
-      addMessage({
-        // show a message to the user
-        message: `Failed to load ${networksFailtoLoad.length} network${largeNum ? 's' : ''} with id${largeNum ? 's' : ''}: ${
-          largeNum
-            ? networksFailtoLoad.slice(0, largestNum).join(', ') + '...'
-            : networksFailtoLoad.join(', ')
-        }`,
-        duration: 5000,
-        severity: MessageSeverity.ERROR,
-      })
-    }
-  }
 
   const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
 
@@ -476,70 +442,14 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   }
 
-  /**
-   * Check number of networks in the workspace
-   */
-  useEffect(
-    function checkNetworkCountHook() {
-      const networkCount: number = workspace.networkIds.length
-      const summaryCount: number = Object.keys(summaries).length
-
-      // No action required if empty or no change
-      if (networkCount === 0 && isInitializedRef.current === true) {
-        logUi.info(
-          `[${WorkSpaceEditor.name}]:[${checkNetworkCountHook.name}]: No networks in the workspace, navigating to empty network view. Summary count: ${summaryCount}, Network count: ${networkCount}`,
-        )
-
-        if (summaryCount !== 0) {
-          // Remove the last one
-          removeSummary(Object.keys(summaries)[0])
-        }
-        navigateToNetwork({
-          workspaceId: workspace.id,
-        })
-        return
-      }
-
-      const summaryIds: IdType[] = [...Object.keys(summaries)]
-
-      // Case 1: network removed
-      if (networkCount < summaryCount) {
-        const toBeRemoved: IdType[] = summaryIds.filter((id) => {
-          return !workspace.networkIds.includes(id)
-        })
-        removeSummary(toBeRemoved[0])
-        logUi.info(
-          `[${WorkSpaceEditor.name}]:[${checkNetworkCountHook.name}]: Network removed, removing summary for network: ${toBeRemoved[0]}`,
-        )
-        return
-      }
-
-      // Case 2: network added
-      const toBeAdded: IdType[] = workspace.networkIds.filter((id) => {
-        return !summaryIds.includes(id)
-      })
-      if (toBeAdded.length > 0) {
-        logUi.info(
-          `[${WorkSpaceEditor.name}]:[${checkNetworkCountHook.name}]: Network added, loading summaries for new networks: ${toBeAdded.join(', ')}`,
-        )
-      }
-      loadNetworkSummaries(toBeAdded)
-        .then(() => {})
-        .catch((err) => {
-          logUi.error(
-            `[${WorkSpaceEditor.name}]:[${checkNetworkCountHook.name}]: Failed to load summaries for new networks: ${toBeAdded.join(', ')}`,
-            err,
-          )
-        })
-    },
-    [workspace.networkIds],
-  )
+  const params = useParams()
 
   /**
    * Swap the current network, can be an expensive operation
    */
   useEffect(
     function swapCurrentNetworkHook() {
+      const currentNetworkId = params.networkId
       if (currentNetworkId === '' || currentNetworkId === undefined) {
         // No need to load new network
         return
@@ -563,7 +473,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                 restoreActiveNetworkView()
               }, 1000)
             }
-
+            // setCurrentNetworkId(currentNetworkId)
             navigateToNetwork({
               workspaceId: workspace.id,
               networkId: currentNetworkId,
@@ -588,6 +498,7 @@ const WorkSpaceEditor = (): JSX.Element => {
               restoreActiveNetworkView()
             }, 1000)
 
+            // setCurrentNetworkId(currentNetworkId)
             navigateToNetwork({
               workspaceId: workspace.id,
               networkId: currentNetworkId,
@@ -607,27 +518,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       // Mark as initialized after loading the first network to avoid
       isInitializedRef.current = true
     },
-    [currentNetworkId],
-  )
-
-  /**
-   * if there is no current network id set, set the first network in the workspace to the current network
-   */
-  useEffect(
-    function setInitialNetworkIdHook() {
-      let curId: IdType = ''
-      if (
-        currentNetworkId === undefined ||
-        currentNetworkId === '' ||
-        !workspace.networkIds.includes(currentNetworkId)
-      ) {
-        if (Object.keys(summaries).length !== 0) {
-          curId = Object.keys(summaries)[0]
-          setCurrentNetworkId(curId)
-        }
-      }
-    },
-    [summaries],
+    [params],
   )
 
   // Return the main component including the network panel, network view, and the table browser

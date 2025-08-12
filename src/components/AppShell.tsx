@@ -3,6 +3,7 @@ import {
   Location,
   Outlet,
   useLocation,
+  useParams,
   useSearchParams,
 } from 'react-router-dom'
 import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
@@ -56,505 +57,208 @@ const IMPORT_KEY = 'import'
  *
  */
 const AppShell = (): ReactElement => {
-  // Uncomment this section with debugger UI hook to
-  // debug browser history navigation
+  const params = useParams()
 
-  // useEffect(() => {
-  //   const originalPushState = history.pushState
-  //   const originalReplaceState = history.replaceState
-
-  //   history.pushState = function (...args) {
-  //     console.log('* PUSH STATE:', args, new Error().stack)
-  //     return originalPushState.apply(this, args)
-  //   }
-
-  //   history.replaceState = function (...args) {
-  //     console.log('* REPLACE STATE:', args, new Error().stack)
-  //     return originalReplaceState.apply(this, args)
-  //   }
-
-  //   // Detect browser back/forward button navigation
-  //   const handlePopStateDebug = (event: PopStateEvent) => {
-  //     console.log('* BROWSER NAVIGATION (Back/Forward):', {
-  //       url: window.location.href,
-  //       pathname: window.location.pathname,
-  //       search: window.location.search,
-  //       state: event.state,
-  //       timestamp: new Date().toISOString(),
-  //     })
-
-  //     // Use if more detailed stack trace is needed
-  //     console.trace('* Navigation stack trace')
-  //   }
-
-  //   const handleBeforeUnload = () => {
-  //     console.log('* PAGE UNLOAD:', window.location.href)
-  //   }
-
-  //   // Add event listeners
-  //   window.addEventListener('popstate', handlePopStateDebug)
-  //   window.addEventListener('beforeunload', handleBeforeUnload)
-
-  //   return () => {
-  //     history.pushState = originalPushState
-  //     history.replaceState = originalReplaceState
-  //     window.removeEventListener('popstate', handlePopStateDebug)
-  //     window.removeEventListener('beforeunload', handleBeforeUnload)
-  //   }
-  // }, [])
-
-  const [initializationError, setInitializationError] = useState<string>('')
-
-  // This is necessary to prevent creating a new workspace on every render
-  const [showDialog, setShowDialog] = useState<boolean>(false)
-  const [targetNetworkId, setTargetNetworkId] = useState<string>('')
   const [search, setSearchParams] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
-  const resetMessage = useMessageStore((state) => state.resetMessages)
-
-  const initializedRef = useRef(false)
-
-  // Keep track of the network ID in the URL
-  const urlNetIdRef = useRef<string>('')
-
   const { navigateToNetwork } = useUrlNavigation()
   const setWorkspace = useWorkspaceStore((state) => state.set)
-  const workspace = useWorkspaceStore((state) => state.workspace)
   const location: Location = useLocation()
-  const addNetworkIds = useWorkspaceStore((state) => state.addNetworkIds)
-  const setCurrentNetworkId = useWorkspaceStore(
-    (state) => state.setCurrentNetworkId,
-  )
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
   )
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
-  const setErrorMessage = useUiStateStore((state) => state.setErrorMessage)
-  const errorMessageInStore = useUiStateStore((state) => state.ui.errorMessage)
-
-  useEffect(() => {
-    if (errorMessageInStore !== undefined && errorMessageInStore !== '') {
-      setInitializationError(errorMessageInStore)
-      setShowErrorDialog(true)
-      setErrorMessage('')
-    }
-  }, [errorMessageInStore])
-
   const setUi = useUiStateStore((state) => state.setUi)
   const setVisualStyleOptions = useUiStateStore(
     (state) => state.setVisualStyleOptions,
   )
-  // const { showErrorDialog } = useUiStateStore((state) => state.ui)
-  const setShowErrorDialog = useUiStateStore(
-    (state) => state.setShowErrorDialog,
-  )
-
-  const addSummary = useNetworkSummaryStore((state) => state.add)
 
   const addNewNetwork = useNetworkStore((state) => state.add)
-
   const setVisualStyle = useVisualStyleStore((state) => state.add)
-
   const setViewModel = useViewModelStore((state) => state.add)
-
   const setTables = useTableStore((state) => state.add)
-
-  const addNetworkToWorkspace = useWorkspaceStore(
-    (state) => state.addNetworkIds,
-  )
-
-  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
-  const deleteNetworkModifiedStatus = useWorkspaceStore(
-    (state) => state.deleteNetworkModifiedStatus,
-  )
-  const client = useCredentialStore((state) => state.client)
-
-  const authenticated = client?.authenticated ?? false
-  const { id, currentNetworkId, networkIds, networkModified } = workspace
-
-  const setPanelState: (panel: Panel, panelState: PanelState) => void =
-    useUiStateStore((state) => state.setPanelState)
-
-  const setActiveTableBrowserIndex = useUiStateStore(
-    (state) => state.setActiveTableBrowserIndex,
-  )
-  /**
-   * Initializing assigned workspace for this session
-   */
-  const setupWorkspace = (): void => {
-    const parsed: ParsedUrlParams = parsePathName(location.pathname)
-
-    const { workspaceId, networkId } = parsed
-    urlNetIdRef.current = networkId
-
-    // Check location and curren workspace ID
-    if (id === '') {
-      // No workspace ID is set
-      // Check if the URL has workspace ID
-
-      let targetWorkspaceId: string = workspaceId
-
-      // TODO: URL design should be consolidated as constants
-      if (targetWorkspaceId === 'network') {
-        // Special case: network import
-        targetWorkspaceId = ''
-      }
-
-      void getWorkspaceFromDb(
-        targetWorkspaceId === '' ? undefined : targetWorkspaceId,
-      ).then((workspace: Workspace) => {
-        // Add error message if the new workspace ID is not same as the one in URL
-        if (
-          targetWorkspaceId !== workspace.id &&
-          targetWorkspaceId !== '' &&
-          targetWorkspaceId !== DUMMY_WS_ID
-        ) {
-          setErrorMessage(
-            `An invalid workspace ID was entered (${targetWorkspaceId}). 
-            Your workspace has now been initialized with the last cache.`,
-          )
-        }
-        // Replace current network ID with the one in the URL.
-        // This is necessary to prevent switching to the current network ID in the cache
-        if (
-          networkId !== undefined &&
-          networkId !== '' &&
-          networkId !== workspace.currentNetworkId
-        ) {
-          workspace.currentNetworkId = networkId
-        }
-        setWorkspace(workspace)
-      })
-    }
-  }
-
-  const loadUiState = (): Promise<void> => {
-    return getUiStateFromDb().then((uiState) => {
-      if (uiState !== undefined) {
-        setUi(uiState)
-      } else {
-        setUi(DEFAULT_UI_STATE)
-      }
-    })
-  }
-
-  const restorePanelStates = (): void => {
-    // Set panel states based on the Search params
-    const leftPanelState: PanelState = search.get(Panel.LEFT) as PanelState
-    const rightPanelState: PanelState = search.get(Panel.RIGHT) as PanelState
-    const bottomPanelState: PanelState = search.get(Panel.BOTTOM) as PanelState
-
-    if (leftPanelState !== undefined && leftPanelState !== null) {
-      setPanelState(Panel.LEFT, leftPanelState)
-    }
-    if (rightPanelState !== undefined && rightPanelState !== null) {
-      setPanelState(Panel.RIGHT, rightPanelState)
-    }
-    if (bottomPanelState !== undefined && bottomPanelState !== null) {
-      setPanelState(Panel.BOTTOM, bottomPanelState)
-    }
-  }
-
-  const restoreTableBrowserTabState = (): void => {
-    const tableBrowserTab = search.get('activeTableBrowserTab')
-
-    if (tableBrowserTab != null) {
-      setActiveTableBrowserIndex(Number(tableBrowserTab))
-    }
-  }
-
-  /**
-   * Once this component is initialized, check the workspace ID
-   */
-  useEffect(function init() {
-    const initializeWorkspace = async (): Promise<void> => {
-      try {
-        await initializeDb()
-        setupWorkspace()
-        await loadUiState()
-        restorePanelStates()
-        restoreTableBrowserTabState()
-      } catch (error) {
-        throw new Error(`Failed to initialize the workspace: ${error.message}`)
-      } finally {
-        // initializedRef.current = true
-        logStartup.info(
-          `[${AppShell.name}]:[${initializeWorkspace.name}]: Workspace initialized`,
-        )
-      }
-    }
-
-    // Use this flag to prevent creating a new workspace more than once
-    if (!initializedRef.current) {
-      initializedRef.current = true
-      initializeWorkspace()
-    }
-  }, [])
-
-  const redirect = async (): Promise<void> => {
-    // clear all messages
-    resetMessage()
-
-    if (!initializedRef.current || id === '') return
-
-    const parsedNetworkId = urlNetIdRef.current
-    // Clear it only after the network ID has been used for redirection
-    setTimeout(() => {
-      urlNetIdRef.current = ''
-    }, 0)
-
-    // At this point, workspace ID is always available
-    if (currentNetworkId === '' || currentNetworkId === undefined) {
-      if (parsedNetworkId !== '' && parsedNetworkId !== undefined) {
-        addNetworkIds(parsedNetworkId)
-        await waitSeconds(1)
-        setCurrentNetworkId(parsedNetworkId)
-        // Use replace to avoid adding to history
-        navigateToNetwork({
-          workspaceId: id,
-          networkId: parsedNetworkId,
-          searchParams: new URLSearchParams(location.search),
-          replace: true,
-        })
-      } else if (networkIds.length > 0) {
-        navigateToNetwork({
-          workspaceId: id,
-          networkId: networkIds[0],
-          searchParams: new URLSearchParams(location.search),
-          replace: true,
-        })
-      } else {
-        navigateToNetwork({
-          workspaceId: id,
-          searchParams: new URLSearchParams(location.search),
-          replace: true,
-        })
-      }
-    } else {
-      const networkId: string = parsedNetworkId
-      if (networkId === '' || networkId === undefined) {
-        navigateToNetwork({
-          workspaceId: id,
-          networkId: currentNetworkId,
-          searchParams: new URLSearchParams(location.search),
-          replace: true,
-        })
-      } else {
-        // the user is trying to load a network that is already in the workspace
-        // check that if they have an outdated version of the network by comparing modification times
-        // of the local copy and the ndex summary
-        try {
-          const token = await getToken()
-          const summaryMap = await getSummariesFromCacheOrNdex(
-            networkId,
-            ndexBaseUrl,
-            token,
-          )
-          const networkSummary = summaryMap[networkId]
-          const ndexSummaries = await ndexSummaryFetcher(
-            networkId,
-            ndexBaseUrl,
-            token,
-          )
-          const ndexSummary = ndexSummaries?.[0]
-          const localNetworkOutdated =
-            networkSummary?.modificationTime !== undefined &&
-            ndexSummary?.modificationTime !== undefined &&
-            networkSummary?.modificationTime < ndexSummary?.modificationTime
-
-          const localNetworkModified = networkModified[networkId] ?? false
-          if (localNetworkOutdated) {
-            if (localNetworkModified && authenticated) {
-              // local network and ndex network have been modified and the user is authenticated
-              // ask the user what they want to do
-              setTargetNetworkId(networkId)
-              setShowDialog(true)
-            } else {
-              // the local network has not been modified but it has been modified on NDEx
-              // update the network silently
-              deleteNetwork(networkId)
-              await waitSeconds(1)
-              addNetworkIds(networkId)
-              await waitSeconds(1)
-              setCurrentNetworkId(networkId)
-              await waitSeconds(1)
-              deleteNetworkModifiedStatus(networkId)
-
-              navigateToNetwork({
-                workspaceId: id,
-                networkId: networkId,
-                searchParams: new URLSearchParams(location.search),
-                replace: true,
-              })
-            }
-          } else {
-            addNetworkIds(networkId)
-            await waitSeconds(1)
-            setCurrentNetworkId(networkId)
-            navigateToNetwork({
-              workspaceId: id,
-              networkId: networkId,
-              searchParams: new URLSearchParams(location.search),
-              replace: true,
-            })
-          }
-        } catch (error) {
-          const errorMessage: string = error.message
-          setErrorMessage(
-            `Failed to load the network (${networkId}) entered in the URL (${errorMessage}). 
-            Please double-check the network ID you entered. 
-            Your workspace has now been initialized with the last cache.`,
-          )
-          setShowErrorDialog(true)
-        }
-      }
-    }
-
-    // Clear URL search params to remove unnecessary parameters
-    setSearchParams({}, { replace: true })
-  }
-
-  const handleImportNetworkFromSearchParam = async (): Promise<void> => {
-    search.forEach(async (value, key) => {
-      if (key === IMPORT_KEY) {
-        try {
-          const nextParams = new URLSearchParams(search)
-          nextParams.delete(IMPORT_KEY)
-
-          // setSearch(nextParams)
-          const res = await fetchUrlCx(value, 10000000)
-
-          const { networkWithView, summary } = res
-          const { network, nodeTable, edgeTable, visualStyle, networkViews } =
-            networkWithView
-          const newNetworkId = network.id
-
-          addSummary(newNetworkId, summary)
-
-          // TODO the db syncing logic in various stores assumes the updated network is the current network
-          // therefore, as a temporary fix, the first operation that should be done is to set the
-          // current network to be the new network id
-
-          setVisualStyleOptions(newNetworkId)
-          setCurrentNetworkId(newNetworkId)
-          addNewNetwork(network)
-          setVisualStyle(newNetworkId, visualStyle)
-          setTables(newNetworkId, nodeTable, edgeTable)
-          setViewModel(newNetworkId, networkViews[0])
-          addNetworkToWorkspace(newNetworkId)
-        } catch (error) {
-          addMessage({
-            message: `Failed to import network from url: ${value}`,
-            duration: 5000,
-            severity: MessageSeverity.ERROR,
-          })
-        }
-      }
-    })
-  }
+  const addSummaries = useNetworkSummaryStore((state) => state.addAll)
 
   useEffect(() => {
-    const handleInit = async () => {
-      try {
-        await redirect()
-      } catch (error) {
-        logStartup.error(
-          `[${AppShell.name}]:[${handleInit.name}]: Failed to redirect`,
-          error,
-        )
+    const init = async () => {
+      // Load workspace, summaries in the workspace and authentication token
+      const workspace = await getWorkspaceFromDb()
+      const token = await getToken()
+      const summaries = await getSummariesFromCacheOrNdex(
+        workspace.networkIds,
+        ndexBaseUrl,
+        token,
+      )
+
+      // Process UI state parameters from search params
+      const uiState = (await getUiStateFromDb()) ?? DEFAULT_UI_STATE
+      uiState.panels[Panel.LEFT] =
+        (search.get(Panel.LEFT) as PanelState) ?? uiState.panels[Panel.LEFT]
+      uiState.panels[Panel.RIGHT] =
+        (search.get(Panel.RIGHT) as PanelState) ?? uiState.panels[Panel.RIGHT]
+      uiState.panels[Panel.BOTTOM] =
+        (search.get(Panel.BOTTOM) as PanelState) ?? uiState.panels[Panel.BOTTOM]
+      uiState.tableUi.activeTabIndex =
+        search.get('activeTableBrowserTab') != null
+          ? Number(search.get('activeTableBrowserTab'))
+          : uiState.tableUi.activeTabIndex
+
+      // Handle importing networks from
+      // /:workspaceId/networks/:networkId
+      // /...?import=...
+      // 1. Handle import network from url e.g. /:workspaceId/networks/:networkId
+      const { networkId } = params
+      const networkIdNonEmpty = networkId !== undefined && networkId !== ''
+      const networkIdNotInWorkspace =
+        networkIdNonEmpty && !workspace.networkIds.includes(networkId)
+
+      const unableToImportNetworkMessages = []
+
+      if (networkIdNotInWorkspace) {
+        // Check if the network is in the cache or NDEx
+        const newNetworkSummary = (
+          await ndexSummaryFetcher(networkId, ndexBaseUrl, token)
+        )?.[0]
+
+        if (newNetworkSummary !== undefined) {
+          summaries[networkId] = newNetworkSummary
+          workspace.currentNetworkId = networkId
+          workspace.networkIds.push(networkId)
+        } else {
+          unableToImportNetworkMessages.push(
+            `Unable to import network ${networkId} from ${location.pathname}. ${networkId} does not exist in NDEx`,
+          )
+        }
+      } else {
+        // TODO: handle network found in workspace
+        // Prompt the user to update the network if it is from NDEx and it has been updated in NDEx
+        // promptUserToUpdateNetwork()
       }
 
-      await handleImportNetworkFromSearchParam()
-    }
-    // Now workspace ID is set. route to the correct page
-    if (id !== '' && initializedRef.current) {
-      void handleInit()
-    }
-  }, [id])
+      // 2. Handle import network from search params e.g. /...?import=...
+      search.forEach(async (value, key) => {
+        if (key === IMPORT_KEY) {
+          try {
+            // setSearch(nextParams)
+            const res = await fetchUrlCx(value, 10000000)
 
-  // Store previous location information with ref
-  // const prevLocationRef = useRef(location)
+            const { networkWithView, summary } = res
+            const { network, nodeTable, edgeTable, visualStyle, networkViews } =
+              networkWithView
+            const newNetworkId = network.id
+            summaries[newNetworkId] = summary
+            workspace.currentNetworkId = newNetworkId
+            workspace.networkIds.push(newNetworkId)
 
-  // Monitor location changes for debugging
-  // useEffect(() => {
-  //   console.log('🟢 REACT ROUTER LOCATION CHANGE:', {
-  //     // Current values
-  //     current: {
-  //       pathname: location.pathname,
-  //       search: location.search,
-  //       hash: location.hash,
-  //       state: location.state,
-  //       key: location.key,
-  //     },
-  //     // Previous values
-  //     previous: {
-  //       pathname: prevLocationRef.current.pathname,
-  //       search: prevLocationRef.current.search,
-  //       hash: prevLocationRef.current.hash,
-  //       state: prevLocationRef.current.state,
-  //       key: prevLocationRef.current.key,
-  //     },
-  //     // Changed items only
-  //     changes: {
-  //       pathname:
-  //         location.pathname !== prevLocationRef.current.pathname
-  //           ? { from: prevLocationRef.current.pathname, to: location.pathname }
-  //           : 'unchanged',
-  //       search:
-  //         location.search !== prevLocationRef.current.search
-  //           ? { from: prevLocationRef.current.search, to: location.search }
-  //           : 'unchanged',
-  //       hash:
-  //         location.hash !== prevLocationRef.current.hash
-  //           ? { from: prevLocationRef.current.hash, to: location.hash }
-  //           : 'unchanged',
-  //     },
-  //     timestamp: new Date().toISOString(),
-  //   })
+            // TODO the db syncing logic in various stores assumes the updated network is the current network
+            // therefore, as a temporary fix, the first operation that should be done is to set the
+            // current network to be the new network id
 
-  //   // Save current values as previous values
-  //   prevLocationRef.current = location
-  // }, [location])
-
-  // Network ID synchronization process
-  useEffect(
-    function syncNetworkId() {
-      // If location network ID differs from currentNetworkId, set location value as current network
-      const parsed = parsePathName(location.pathname)
-      const { networkId: locationNetworkId } = parsed
-
-      if (
-        locationNetworkId &&
-        locationNetworkId !== '' &&
-        locationNetworkId !== currentNetworkId &&
-        id !== '' // Only when workspace is initialized
-      ) {
-        logUi.info(
-          `[${AppShell.name}]:[${syncNetworkId.name}]: Setting current network ID from location:
-        from: ${currentNetworkId} to: ${locationNetworkId}, timestamp: ${new Date().toISOString()}`,
-        )
-
-        // Add network to workspace if it doesn't exist yet
-        if (!networkIds.includes(locationNetworkId)) {
-          logUi.info(
-            `[${AppShell.name}]:[${syncNetworkId.name}]: Adding network to workspace: ${locationNetworkId}`,
-          )
-          addNetworkIds(locationNetworkId)
+            setVisualStyleOptions(newNetworkId)
+            addNewNetwork(network)
+            setVisualStyle(newNetworkId, visualStyle)
+            setTables(newNetworkId, nodeTable, edgeTable)
+            setViewModel(newNetworkId, networkViews[0])
+          } catch (error) {
+            unableToImportNetworkMessages.push(
+              `Unable to import network from query params. Could not fetch network from url ${value}.`,
+            )
+          }
         }
+      })
 
-        // Update current network ID (with duplicate check)
-        if (currentNetworkId !== locationNetworkId) {
-          logUi.info(
-            `[${AppShell.name}]:[${syncNetworkId.name}]: Updating current network ID: ${locationNetworkId}`,
-          )
-          setCurrentNetworkId(locationNetworkId)
-        }
+      if (unableToImportNetworkMessages.length > 0) {
+        addMessage({
+          message: unableToImportNetworkMessages.join('\n'),
+          duration: 5000,
+          severity: MessageSeverity.ERROR,
+        })
       }
-    },
-    [location, id, networkIds],
-  )
+
+      // Update the workspace, uiState and summaries in the stores so react can start to render the workspace editor
+      setUi(uiState)
+      addSummaries(summaries)
+      setWorkspace(workspace)
+      // From '/', navigate to /:workspaceId/networks/:networkId
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: workspace.currentNetworkId,
+        searchParams: new URLSearchParams(location.search),
+        replace: true,
+      })
+    }
+
+    init()
+  }, [])
+
+  // const promptUserToUpdateNetwork = async (): Promise<void> => {
+  //           try {
+  //       const token = await getToken()
+  //       const summaryMap = await getSummariesFromCacheOrNdex(
+  //         networkId,
+  //         ndexBaseUrl,
+  //         token,
+  //       )
+  //       const networkSummary = summaryMap[networkId]
+  //       const ndexSummaries = await ndexSummaryFetcher(
+  //         networkId,
+  //         ndexBaseUrl,
+  //         token,
+  //       )
+  //       const ndexSummary = ndexSummaries?.[0]
+  //       const localNetworkOutdated =
+  //         networkSummary?.modificationTime !== undefined &&
+  //         ndexSummary?.modificationTime !== undefined &&
+  //         networkSummary?.modificationTime < ndexSummary?.modificationTime
+
+  //       const localNetworkModified = networkModified[networkId] ?? false
+  //       if (localNetworkOutdated) {
+  //         if (localNetworkModified && authenticated) {
+  //           // local network and ndex network have been modified and the user is authenticated
+  //           // ask the user what they want to do
+  //           setTargetNetworkId(networkId)
+  //           setShowDialog(true)
+  //         } else {
+  //           // the local network has not been modified but it has been modified on NDEx
+  //           // update the network silently
+  //           deleteNetwork(networkId)
+  //           await waitSeconds(1)
+  //           addNetworkIds(networkId)
+  //           await waitSeconds(1)
+  //           setCurrentNetworkId(networkId)
+  //           await waitSeconds(1)
+  //           deleteNetworkModifiedStatus(networkId)
+
+  //           navigateToNetwork({
+  //             workspaceId: id,
+  //             networkId: networkId,
+  //             searchParams: new URLSearchParams(location.search),
+  //             replace: true,
+  //           })
+  //         }
+  //       } else {
+  //         addNetworkIds(networkId)
+  //         await waitSeconds(1)
+  //         setCurrentNetworkId(networkId)
+  //         navigateToNetwork({
+  //           workspaceId: id,
+  //           networkId: networkId,
+  //           searchParams: new URLSearchParams(location.search),
+  //           replace: true,
+  //         })
+  //       }
+  //     } catch (error) {
+  //       const errorMessage: string = error.message
+  //       setErrorMessage(
+  //         `Failed to load the network (${networkId}) entered in the URL (${errorMessage}).
+  //         Please double-check the network ID you entered.
+  //         Your workspace has now been initialized with the last cache.`,
+  //       )
+  //       setShowErrorDialog(true)
+  //     }
+  //   }
 
   return (
     <Box
@@ -572,24 +276,12 @@ const AppShell = (): ReactElement => {
       <Box sx={{ flexGrow: 1, height: '100%', p: 0, margin: 0 }}>
         <Outlet />
       </Box>
-      <UpdateNetworkDialog
+      {/* <UpdateNetworkDialog
         open={showDialog}
         networkId={targetNetworkId}
         onClose={() => setShowDialog(false)}
-      />
-      <WarningDialog
-        title="Initialization Error"
-        subtitle="Problems during initialization:"
-        message={initializationError}
-        open={initializationError !== ''}
-        handleClose={() => {
-          setShowErrorDialog(false)
-          setInitializationError('')
-        }}
-      />
-      <SyncTabsAction />
-      {/* History debugger - only show in development */}
-      {/* {process.env.NODE_ENV === 'development' && <HistoryDebugger />} */}
+      /> */}
+      {/* <SyncTabsAction /> */}
     </Box>
   )
 }

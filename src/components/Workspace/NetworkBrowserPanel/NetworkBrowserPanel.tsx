@@ -161,7 +161,7 @@ export const NetworkBrowserPanel = ({
         }}
         hidden={currentTabIndex !== 0}
       >
-        {currentTabIndex === 0 && <SummaryList summaries={summaries} />}
+        {currentTabIndex === 0 && <SummaryList />}
       </Box>
       <Box hidden={currentTabIndex !== 1}>
         {currentTabIndex === 1 && (

@@ -29,6 +29,10 @@ import {
 } from '../../../utils/ndex-utils'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { logUi } from '../../../debug'
+import { useUrlNavigation } from '../../../store/hooks/useUrlNavigation/useUrlNavigation'
+import { getSummariesFromCacheOrNdex } from '../../../store/getNetworkSummaryFromCacheOrNdex'
+import { NdexNetworkSummary } from '../../../models'
+import { waitSeconds } from '../../../utils/wait-seconds'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
@@ -36,6 +40,8 @@ export const CopyNetworkToNDExMenuItem = (
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const [showHcxValidationDialog, setShowHcxValidationDialog] =
     useState<boolean>(false)
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
 
   const validationResults = useHcxValidatorStore(
     (state) => state.validationResults,
@@ -52,6 +58,8 @@ export const CopyNetworkToNDExMenuItem = (
   const summary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
+
+  const addSummary = useNetworkSummaryStore((state) => state.add)
 
   const viewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
@@ -78,6 +86,7 @@ export const CopyNetworkToNDExMenuItem = (
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
+  const addNetwork = useWorkspaceStore((state) => state.addNetworkIds)
   const saveNetworkCopy = useSaveCopyToNDEx()
   const saveCopyToNDEx = async (): Promise<void> => {
     const ndexClient = new NDEx(ndexBaseUrl)
@@ -99,7 +108,23 @@ export const CopyNetworkToNDExMenuItem = (
         opaqueAspects,
         false, // keep the original network
       )
+      waitSeconds(1)
+      const summaries = await getSummariesFromCacheOrNdex(
+        uuid as IdType,
+        ndexBaseUrl,
+        accessToken,
+      )
+
+      waitSeconds(1)
+      addSummary(uuid, summaries[uuid] as NdexNetworkSummary)
+      addNetwork(uuid)
       setCurrentNetworkId(uuid as IdType)
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: uuid as IdType,
+        searchParams: new URLSearchParams(location.search),
+        replace: false,
+      })
       addMessage({
         message: `Saved a copy of the current network to NDEx with new uuid ${
           uuid as string

@@ -81,6 +81,7 @@ import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import useNodesDuplicationStore from '../store/nodesDuplicationStore'
 import { logUi } from '../../../debug'
+import { useUrlNavigation } from '../../../store/hooks/useUrlNavigation/useUrlNavigation'
 
 interface MergeDialogProps {
   open: boolean
@@ -124,6 +125,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   )
   const mergeTooltipIsOpen = useMergeToolTipStore((state) => state.isOpen)
   const mergeTooltipText = useMergeToolTipStore((state) => state.text)
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
   // confirmation window
   const [openConfirmation, setOpenConfirmation] = useState(false)
   const [confirmationTitle, setConfirmationTitle] = useState('')
@@ -540,7 +543,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
 
       // Update state stores with the new network and its components
       setVisualStyleOptions(newNetworkId, newNetworkWithView.visualStyleOptions)
-      setCurrentNetworkId(newNetworkId)
       addNetworkToWorkspace(newNetworkId)
       addNewNetwork(newNetworkWithView.network)
       setVisualStyle(newNetworkId, newNetworkWithView.visualStyle)
@@ -563,6 +565,13 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         },
         defaultLayout,
       )
+      setCurrentNetworkId(newNetworkId)
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: newNetworkId,
+        searchParams: new URLSearchParams(location.search),
+        replace: true,
+      })
       handleClose()
     } catch (e) {
       logUi.error(`[${handleMerge.name}]: Error merging networks:`, e)

@@ -44,6 +44,7 @@ import { MessageSeverity } from '../../models/MessageModel'
 import { validateCX2 } from '../../models/CxModel/impl/validator'
 import { validateSif } from '../../utils/sif-utils'
 import { logUi } from '../../debug'
+import { useUrlNavigation } from '../../store/hooks/useUrlNavigation/useUrlNavigation'
 
 interface FileUploadProps {
   show: boolean
@@ -54,7 +55,8 @@ export function FileUpload(props: FileUploadProps) {
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
-
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
   const addNewNetwork = useNetworkStore((state) => state.add)
 
   const setVisualStyle = useVisualStyleStore((state) => state.add)
@@ -62,6 +64,8 @@ export function FileUpload(props: FileUploadProps) {
   const setVisualStyleOptions = useUiStateStore(
     (state) => state.setVisualStyleOptions,
   )
+
+  const addSummary = useNetworkSummaryStore((state) => state.add)
 
   const setViewModel = useViewModelStore((state) => state.add)
 
@@ -140,7 +144,7 @@ export function FileUpload(props: FileUploadProps) {
 
         const localNodeCount = network.nodes.length
         const localEdgeCount = network.edges.length
-        await putNetworkSummaryToDb({
+        const summary = {
           isNdex: false,
           ownerUUID: localUuid,
           name,
@@ -167,20 +171,28 @@ export function FileUpload(props: FileUploadProps) {
           externalId: localUuid,
           isDeleted: false,
           modificationTime: new Date(Date.now()),
-        })
+        }
+        await putNetworkSummaryToDb(summary)
         // TODO the db syncing logic in various stores assumes the updated network is the current network
         // therefore, as a temporary fix, the first operation that should be done is to set the
         // current network to be the new network id
         setVisualStyleOptions(localUuid, visualStyleOptions)
         addNetworkToWorkspace(localUuid)
-        setCurrentNetworkId(localUuid)
         addNewNetwork(network)
         setVisualStyle(localUuid, visualStyle)
         setTables(localUuid, nodeTable, edgeTable)
         setViewModel(localUuid, networkView)
+        addSummary(localUuid, summary)
         if (otherAspects !== undefined) {
           addAllOpaqueAspects(localUuid, otherAspects)
         }
+        setCurrentNetworkId(localUuid)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: localUuid,
+          searchParams: new URLSearchParams(location.search),
+          replace: false,
+        })
       }
     } catch (error) {
       logUi.error(
@@ -231,7 +243,7 @@ export function FileUpload(props: FileUploadProps) {
         const localNodeCount = network.nodes.length
         const localEdgeCount = network.edges.length
 
-        await putNetworkSummaryToDb({
+        const summary = {
           isNdex: false,
           ownerUUID: localUuid,
           name,
@@ -258,15 +270,23 @@ export function FileUpload(props: FileUploadProps) {
           externalId: localUuid,
           isDeleted: false,
           modificationTime: new Date(Date.now()),
-        })
+        }
+        await putNetworkSummaryToDb(summary)
 
         setVisualStyleOptions(localUuid, visualStyleOptions)
         addNetworkToWorkspace(localUuid)
-        setCurrentNetworkId(localUuid)
         addNewNetwork(network)
         setVisualStyle(localUuid, visualStyle)
         setTables(localUuid, nodeTable, edgeTable)
         setViewModel(localUuid, networkView)
+        addSummary(localUuid, summary)
+        setCurrentNetworkId(localUuid)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: localUuid,
+          searchParams: new URLSearchParams(location.search),
+          replace: false,
+        })
       }
     } catch (error) {
       logUi.error(
