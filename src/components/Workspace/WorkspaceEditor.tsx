@@ -380,32 +380,13 @@ const WorkSpaceEditor = (): JSX.Element => {
   /**
    * Restore the node / edge selection states from URL
    */
-  const restoreSelectionStates = (): void => {
-    const selectedNodeStr = search.get(SelectionStates.SelectedNodes)
-    const selectedEdgeStr = search.get(SelectionStates.SelectedEdges)
+  const restoreSelectionStates = (networkId: IdType): void => {
+    const selectedNodeStr = search.get(SelectionStates.SelectedNodes) ?? ''
+    const selectedEdgeStr = search.get(SelectionStates.SelectedEdges) ?? ''
 
-    // Just ignore if no selection states are provided in the URL
-    if (
-      selectedNodeStr === undefined ||
-      selectedNodeStr === null ||
-      selectedEdgeStr === undefined ||
-      selectedEdgeStr === null
-    ) {
-      return
-    }
-
-    let selectedNodes: IdType[] = []
-    let selectedEdges: IdType[] = []
-
-    if (selectedNodeStr !== undefined && selectedNodeStr !== null) {
-      selectedNodes = selectedNodeStr.split(' ')
-    }
-
-    if (selectedEdgeStr !== undefined && selectedEdgeStr !== null) {
-      selectedEdges = selectedEdgeStr.split(' ')
-    }
-
-    exclusiveSelect(currentNetworkId, selectedNodes, selectedEdges)
+    let selectedNodes: IdType[] = selectedNodeStr.split(' ')
+    let selectedEdges: IdType[] = selectedEdgeStr.split(' ')
+    exclusiveSelect(networkId, selectedNodes, selectedEdges)
   }
 
   /**
@@ -416,7 +397,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     const filterBy = search.get(FilterUrlParams.FILTER_BY)
     const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
 
-    if (filterFor !== null && filterBy !== null && filterRange !== null) {
+    if (filterFor != null && filterBy != null && filterRange != null) {
       const filterConfig: FilterConfig = {
         name: DEFAULT_FILTER_NAME,
         attributeName: filterBy,
@@ -429,7 +410,6 @@ const WorkSpaceEditor = (): JSX.Element => {
         label: 'Interaction edge filter',
         range: { values: filterRange.split(',') },
         displayMode: DisplayMode.SHOW_HIDE,
-        // visualMapping,
       }
       addFilterConfig(filterConfig)
     }
@@ -437,7 +417,7 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const restoreActiveNetworkView = (): void => {
     const activeNetworkView = search.get('activeNetworkView')
-    if (activeNetworkView !== null) {
+    if (activeNetworkView != null) {
       setActiveNetworkView(activeNetworkView)
     }
   }
@@ -461,62 +441,28 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       isLoadingRef.current = true
       setFailedToLoad(false)
-      if (currentNetworkView === undefined) {
-        loadCurrentNetworkById(currentNetworkId)
-          .then(() => {
-            const path = location.pathname
-            if (path.includes(currentNetworkId)) {
-              restoreSelectionStates()
-              restoreTableBrowserTabState()
-              restoreFilterStates()
-              setTimeout(() => {
-                restoreActiveNetworkView()
-              }, 1000)
-            }
-            // setCurrentNetworkId(currentNetworkId)
-            navigateToNetwork({
-              workspaceId: workspace.id,
-              networkId: currentNetworkId,
-              searchParams: new URLSearchParams(location.search),
-            })
-          })
-          .catch((err) => {
-            logUi.error(
-              `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Failed to load network: ${err}`,
-            )
-          })
-          .finally(() => {
-            isLoadingRef.current = false
-          })
-      } else {
-        loadCurrentNetworkById(currentNetworkId)
-          .then(() => {
-            restoreSelectionStates()
 
-            restoreTableBrowserTabState()
-            setTimeout(() => {
-              restoreActiveNetworkView()
-            }, 1000)
+      logUi.info(
+        `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Loading network: ${currentNetworkId}`,
+      )
 
-            // setCurrentNetworkId(currentNetworkId)
-            navigateToNetwork({
-              workspaceId: workspace.id,
-              networkId: currentNetworkId,
-              searchParams: new URLSearchParams(location.search),
-            })
-          })
-          .catch((err) => {
-            logUi.error(
-              `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Failed to load network: ${err}`,
-            )
-          })
-          .finally(() => {
-            isLoadingRef.current = false
-          })
-      }
-
-      // Mark as initialized after loading the first network to avoid
-      isInitializedRef.current = true
+      loadCurrentNetworkById(currentNetworkId)
+        .then(() => {
+          setTimeout(() => {
+            restoreActiveNetworkView()
+          }, 1000)
+          restoreSelectionStates(currentNetworkId)
+          restoreTableBrowserTabState()
+          restoreFilterStates()
+        })
+        .catch((err) => {
+          logUi.error(
+            `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Failed to load network: ${err}`,
+          )
+        })
+        .finally(() => {
+          isLoadingRef.current = false
+        })
     },
     [params],
   )

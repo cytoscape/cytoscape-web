@@ -9,6 +9,7 @@ import {
 import { putUndoRedoStackToDb } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 import { IdType } from '../models'
+import { logStore } from '../debug'
 
 const persist =
   (config: StateCreator<UndoStore>) =>
@@ -19,6 +20,7 @@ const persist =
   ) =>
     config(
       async (args) => {
+        logStore.info('[UndoStore]: Persisting undo store')
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
 

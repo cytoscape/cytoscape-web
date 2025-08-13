@@ -25,6 +25,7 @@ const persist =
   ) =>
     config(
       async (args) => {
+        logStore.info('[NetworkStore]: Persisting network store')
         const currentNetworkId: IdType =
           useWorkspaceStore.getState().workspace.currentNetworkId
         set(args)

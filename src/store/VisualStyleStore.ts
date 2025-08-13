@@ -39,6 +39,7 @@ const persist =
   ) =>
     config(
       async (args) => {
+        logStore.info('[VisualStyleStore]: Persisting visual style store')
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
 

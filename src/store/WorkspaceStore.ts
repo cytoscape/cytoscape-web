@@ -27,6 +27,7 @@ const persist =
   ) => {
     return config(
       (args) => {
+        logStore.info('[WorkspaceStore]: Persisting workspace store')
         const lastWorkspace = get().workspace
         set(args)
         const newWorkspace = get().workspace

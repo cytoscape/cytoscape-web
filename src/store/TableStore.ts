@@ -33,6 +33,7 @@ const persist =
   ) =>
     config(
       async (args) => {
+        logStore.info('[TableStore]: Persisting table store')
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
         set(args)

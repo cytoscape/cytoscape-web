@@ -12,6 +12,7 @@ import {
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 import { ViewModelStore } from '../models/StoreModel/ViewModelStoreModel'
+import { logStore } from '../debug'
 
 // Default view type (a node-link diagram)
 export const DEF_VIEW_TYPE = 'nodeLink'
@@ -54,6 +55,7 @@ const persist =
   ) =>
     config(
       async (args) => {
+        logStore.info('[ViewModelStore]: Persisting view model store')
         const last = get()
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId

@@ -8,15 +8,9 @@ import {
 } from 'react-router-dom'
 import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
-import {
-  getUiStateFromDb,
-  getWorkspaceFromDb,
-  initializeDb,
-} from '../store/persist/db'
+import { getUiStateFromDb, getWorkspaceFromDb } from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
-import { ParsedUrlParams, parsePathName } from '../utils/paths-util'
-import { WarningDialog } from './WarningDialog'
 import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
 import { AppConfigContext } from '../AppConfigContext'
 import {
@@ -25,13 +19,9 @@ import {
 } from '../store/getNetworkSummaryFromCacheOrNdex'
 import { useCredentialStore } from '../store/CredentialStore'
 
-import { UpdateNetworkDialog } from './UpdateNetworkDialog'
-import { waitSeconds } from '../utils/wait-seconds'
 import { PanelState } from '../models/UiModel/PanelState'
 import { Panel } from '../models/UiModel/Panel'
-import { Workspace } from '../models/WorkspaceModel'
 import { SyncTabsAction } from './SyncTabs'
-// import { HistoryDebugger } from './Util/HistoryDebugger'
 
 import { useMessageStore } from '../store/MessageStore'
 import { MessageSeverity } from '../models/MessageModel'
@@ -42,12 +32,7 @@ import { useViewModelStore } from '../store/ViewModelStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
-import { logStartup, logUi } from '../debug'
-
-// This is a valid workspace ID for sharing
-const DUMMY_WS_ID = '0'
-
-const IMPORT_KEY = 'import'
+import { logStartup } from '../debug'
 
 /**
  *
@@ -80,6 +65,7 @@ const AppShell = (): ReactElement => {
   const setViewModel = useViewModelStore((state) => state.add)
   const setTables = useTableStore((state) => state.add)
   const addSummaries = useNetworkSummaryStore((state) => state.addAll)
+  const initialized = useRef(false)
 
   useEffect(() => {
     const init = async () => {
@@ -105,7 +91,7 @@ const AppShell = (): ReactElement => {
           ? Number(search.get('activeTableBrowserTab'))
           : uiState.tableUi.activeTabIndex
 
-      // Handle importing networks from
+      // Handle importing networks from NDEx
       // /:workspaceId/networks/:networkId
       // /...?import=...
       // 1. Handle import network from url e.g. /:workspaceId/networks/:networkId
@@ -117,7 +103,7 @@ const AppShell = (): ReactElement => {
       const unableToImportNetworkMessages = []
 
       if (networkIdNotInWorkspace) {
-        // Check if the network is in the cache or NDEx
+        // Check if the network is in NDEx
         const newNetworkSummary = (
           await ndexSummaryFetcher(networkId, ndexBaseUrl, token)
         )?.[0]
@@ -137,37 +123,39 @@ const AppShell = (): ReactElement => {
         // promptUserToUpdateNetwork()
       }
 
-      // 2. Handle import network from search params e.g. /...?import=...
-      search.forEach(async (value, key) => {
-        if (key === IMPORT_KEY) {
-          try {
-            // setSearch(nextParams)
-            const res = await fetchUrlCx(value, 10000000)
+      // 2. Handle import network from search params
+      // find all key value search params with key = import. e.g. /...?import=...
+      const IMPORT_KEY = 'import'
+      const importKeyValues = Array.from(search.entries()).filter(
+        ([key]) => key === IMPORT_KEY,
+      )
+      for (const [value] of importKeyValues) {
+        try {
+          const res = await fetchUrlCx(value, 10000000)
 
-            const { networkWithView, summary } = res
-            const { network, nodeTable, edgeTable, visualStyle, networkViews } =
-              networkWithView
-            const newNetworkId = network.id
-            summaries[newNetworkId] = summary
-            workspace.currentNetworkId = newNetworkId
-            workspace.networkIds.push(newNetworkId)
+          const { networkWithView, summary } = res
+          const { network, nodeTable, edgeTable, visualStyle, networkViews } =
+            networkWithView
+          const newNetworkId = network.id
+          summaries[newNetworkId] = summary
+          workspace.currentNetworkId = newNetworkId
+          workspace.networkIds.push(newNetworkId)
 
-            // TODO the db syncing logic in various stores assumes the updated network is the current network
-            // therefore, as a temporary fix, the first operation that should be done is to set the
-            // current network to be the new network id
+          // TODO the db syncing logic in various stores assumes the updated network is the current network
+          // therefore, as a temporary fix, the first operation that should be done is to set the
+          // current network to be the new network id
 
-            setVisualStyleOptions(newNetworkId)
-            addNewNetwork(network)
-            setVisualStyle(newNetworkId, visualStyle)
-            setTables(newNetworkId, nodeTable, edgeTable)
-            setViewModel(newNetworkId, networkViews[0])
-          } catch (error) {
-            unableToImportNetworkMessages.push(
-              `Unable to import network from query params. Could not fetch network from url ${value}.`,
-            )
-          }
+          setVisualStyleOptions(newNetworkId)
+          addNewNetwork(network)
+          setVisualStyle(newNetworkId, visualStyle)
+          setTables(newNetworkId, nodeTable, edgeTable)
+          setViewModel(newNetworkId, networkViews[0])
+        } catch (error) {
+          unableToImportNetworkMessages.push(
+            `Unable to import network from query params. Could not fetch network from url ${value}.`,
+          )
         }
-      })
+      }
 
       if (unableToImportNetworkMessages.length > 0) {
         addMessage({
@@ -190,7 +178,11 @@ const AppShell = (): ReactElement => {
       })
     }
 
-    init()
+    if (!initialized.current) {
+      initialized.current = true
+      logStartup.info('[AppShell]: Initializing app shell')
+      init()
+    }
   }, [])
 
   // const promptUserToUpdateNetwork = async (): Promise<void> => {
@@ -281,7 +273,7 @@ const AppShell = (): ReactElement => {
         networkId={targetNetworkId}
         onClose={() => setShowDialog(false)}
       /> */}
-      {/* <SyncTabsAction /> */}
+      <SyncTabsAction />
     </Box>
   )
 }
