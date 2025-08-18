@@ -86,7 +86,7 @@ export const ApplyLayoutButton = ({
       engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
     } else {
       logUi.warn(
-        `[${ApplyLayoutButton.name}]:[${handleClick.name}]: Fit function not available for renderer: ${rendererId}`,
+        `[${ApplyLayoutButton.name}]:[${handleClick.name}]: Engine or network not found`,
       )
     }
   }
