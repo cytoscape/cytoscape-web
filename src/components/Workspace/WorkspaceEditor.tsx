@@ -115,7 +115,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   const { navigateToNetwork } = useUrlNavigation()
   const location = useLocation()
 
-  const [search] = useSearchParams()
+  const [search, setSearchParams] = useSearchParams()
 
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
 
@@ -448,12 +448,20 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          setTimeout(() => {
-            restoreActiveNetworkView()
-          }, 1000)
-          restoreSelectionStates(currentNetworkId)
-          restoreTableBrowserTabState()
-          restoreFilterStates()
+          const hasSearchQueryParams = search.size > 0
+
+          if (hasSearchQueryParams) {
+            setTimeout(() => {
+              restoreActiveNetworkView()
+            }, 1000)
+            restoreSelectionStates(currentNetworkId)
+            restoreTableBrowserTabState()
+            restoreFilterStates()
+            // remove all search params after restoring state
+            setSearchParams(new URLSearchParams(), { replace: true })
+          }
+          // handle the case where the back/forward button is pressed
+          setCurrentNetworkId(currentNetworkId)
         })
         .catch((err) => {
           logUi.error(

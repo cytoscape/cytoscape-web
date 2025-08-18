@@ -4,6 +4,7 @@ import {
   Outlet,
   useLocation,
   useParams,
+  useNavigate,
   useSearchParams,
 } from 'react-router-dom'
 import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
@@ -43,7 +44,7 @@ import { logStartup } from '../debug'
  */
 const AppShell = (): ReactElement => {
   const params = useParams()
-
+  const navigate = useNavigate()
   const [search, setSearchParams] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -170,12 +171,16 @@ const AppShell = (): ReactElement => {
       addSummaries(summaries)
       setWorkspace(workspace)
       // From '/', navigate to /:workspaceId/networks/:networkId
-      navigateToNetwork({
-        workspaceId: workspace.id,
-        networkId: workspace.currentNetworkId,
-        searchParams: new URLSearchParams(location.search),
-        replace: true,
-      })
+
+      navigate(
+        {
+          pathname: `/${workspace.id}/networks/${workspace.currentNetworkId}`,
+          search: location.search,
+        },
+        {
+          replace: true,
+        },
+      )
     }
 
     if (!initialized.current) {

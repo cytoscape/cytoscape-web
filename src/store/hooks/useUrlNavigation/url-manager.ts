@@ -426,6 +426,10 @@ export const initHistoryClearing = (): void => {
 }
 
 if (config.debug) {
+  if (window.debug === undefined) {
+    window.debug = {}
+  }
+
   window.debug.history = {
     getInfo: getHistoryInfo,
     printDebug: printHistoryDebug,
