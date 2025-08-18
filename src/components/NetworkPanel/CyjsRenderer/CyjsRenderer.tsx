@@ -35,7 +35,6 @@ import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
 import { addObjects } from './cyjs-factory'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
-import { useRendererStore } from '../../../store/RendererStore'
 import { CircularProgress, Typography } from '@mui/material'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
@@ -160,9 +159,6 @@ const CyjsRenderer = ({
   // TO avoid unnecessary re-rendering / fit
   const [nodesMoved, setNodesMoved] = useState<boolean>(false)
 
-  // Reference to viewport change handler for temporary removal during undo/redo
-  const viewportChangeHandlerRef = useRef<any>(null)
-
   const networkView: NetworkView | undefined = getViewModel(id)
   const vs: VisualStyle = visualStyles[id]
 
@@ -184,9 +180,6 @@ const CyjsRenderer = ({
   const setRendererFunction = useRendererFunctionStore(
     (state) => state.setFunction,
   )
-
-  const setViewport = useRendererStore((state) => state.setViewport)
-  const getViewport = useRendererStore((state) => state.getViewport)
 
   // Avoid duplicate initialization of Cyjs
   const isInitialized = useRef(false)
@@ -418,23 +411,6 @@ const CyjsRenderer = ({
       setHoveredElement(undefined)
     })
 
-    // Track viewport changes (zoom and pan) - debounced to avoid excessive calls
-    const viewportChangeHandler = debounce((): void => {
-      const zoom = cy.zoom()
-      const pan = cy.pan()
-      const newViewport = {
-        zoom,
-        pan: { x: pan.x, y: pan.y },
-      }
-
-      // Update viewport
-      setViewport('cyjs', id, newViewport)
-    }, 300)
-
-    // Store handler in ref
-    viewportChangeHandlerRef.current = viewportChangeHandler
-    cy.on('viewport', viewportChangeHandler)
-
     const annotations = (summary?.properties ?? []).filter(
       (p) => p.predicateString === CX_ANNOTATIONS_KEY,
     )
@@ -477,13 +453,7 @@ const CyjsRenderer = ({
 
     cy.style(newStyle)
 
-    // Always try to restore saved viewport first when network data is updated
-    const savedViewport = getViewport('cyjs', id)
-    if (savedViewport) {
-      cy.zoom(savedViewport.zoom)
-      cy.pan(savedViewport.pan)
-    } else if (forceFit) {
-      // If no saved viewport and forceFit is true, fit the network
+    if (forceFit) {
       cy.fit()
     }
 
@@ -628,11 +598,7 @@ const CyjsRenderer = ({
       }
     })
     if (viewCount === cyNodeCount) {
-      // Only fit if no saved viewport exists, otherwise preserve the current viewport
-      const savedViewport = getViewport('cyjs', id)
-      if (!savedViewport) {
-        cy.fit()
-      }
+      cy.fit()
     }
   }, [networkView?.nodeViews])
 
@@ -663,30 +629,7 @@ const CyjsRenderer = ({
       return
     }
 
-    // This is the application-level selection state
     const { selectedNodes, selectedEdges } = networkView
-
-    // Get current selection from Cytoscape.js to compare
-    const currentSelectedNodes = cy
-      .nodes(':selected')
-      .map((ele: any) => ele.data('id'))
-    const currentSelectedEdges = cy
-      .edges(':selected')
-      .map((ele: any) => ele.data('id'))
-
-    // Check if selection actually changed to avoid unnecessary updates
-    const nodesChanged =
-      selectedNodes.length !== currentSelectedNodes.length ||
-      !selectedNodes.every((id) => currentSelectedNodes.includes(id))
-
-    const edgesChanged =
-      selectedEdges.length !== currentSelectedEdges.length ||
-      !selectedEdges.every((id) => currentSelectedEdges.includes(id))
-
-    // Skip update if selection hasn't actually changed
-    if (!nodesChanged && !edgesChanged) {
-      return
-    }
 
     // Clear selection
     if (selectedNodes.length === 0 && selectedEdges.length === 0) {
