@@ -431,10 +431,9 @@ const WorkSpaceEditor = (): JSX.Element => {
       if (isLoadingRef.current) {
         return
       }
-
+      
       isLoadingRef.current = true
       setFailedToLoad(false)
-
       logUi.info(
         `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Loading network: ${currentNetworkId}`,
       )
