@@ -5,7 +5,6 @@ import { IdType } from '../models'
 import { deleteOpaqueAspectsFromDb, putOpaqueAspectsToDb } from './persist/db'
 import { clear } from 'idb-keyval'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
-import { logStore } from 'src/debug'
 
 export const useOpaqueAspectStore = create(
   immer<OpaqueAspectStore>((set) => ({

@@ -87,7 +87,7 @@ export const initializeTabManager = (
     const isVisible = !document.hidden
     if (isVisible) {
       logStartup.info(
-        `[tab-manager.ts]:[${document.addEventListener.name}]: Current Cytoscape Instance: ${tabId} isVisible: ${isVisible}`,
+        `[tab-manager.ts]:[onVisibilitychange]: Current Cytoscape Instance: ${tabId} isVisible: ${isVisible}`,
       )
       channel.postMessage({ type: TabMessageType.ACTIVE, tabId })
     } else {

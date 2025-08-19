@@ -373,6 +373,10 @@ const WorkSpaceEditor = (): JSX.Element => {
     const selectedNodeStr = search.get(SelectionStates.SelectedNodes) ?? ''
     const selectedEdgeStr = search.get(SelectionStates.SelectedEdges) ?? ''
 
+    if (selectedNodeStr === '' && selectedEdgeStr === '') {
+      return
+    }
+
     let selectedNodes: IdType[] = selectedNodeStr.split(' ')
     let selectedEdges: IdType[] = selectedEdgeStr.split(' ')
     exclusiveSelect(networkId, selectedNodes, selectedEdges)
