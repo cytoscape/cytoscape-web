@@ -36,6 +36,7 @@ export const useAddNetworks = (): (({
   networkId,
 }: ActionHandlerProps) => void) => {
   const summaries = useNetworkSummaryStore((state) => state.summaries)
+  const addSummaries = useNetworkSummaryStore((state) => state.addAll)
   const addNetworksToWorkspace: (ids: IdType | IdType[]) => void =
     useWorkspaceStore((state) => state.addNetworkIds)
   const addNewNetwork = useNetworkStore((state) => state.add)
@@ -113,7 +114,7 @@ export const useAddNetworks = (): (({
 
             const localNodeCount = network.nodes.length
             const localEdgeCount = network.edges.length
-            await putNetworkSummaryToDb({
+            const summary = {
               isNdex: false,
               ownerUUID: localUuid,
               name: localName,
@@ -140,8 +141,10 @@ export const useAddNetworks = (): (({
               externalId: localUuid,
               isDeleted: false,
               modificationTime: new Date(Date.now()),
-            })
+            }
+            await putNetworkSummaryToDb(summary)
 
+            addSummaries({ [localUuid]: summary })
             setVisualStyleOptions(localUuid, visualStyleOptions)
             addNewNetwork(network)
             setVisualStyle(localUuid, visualStyle)
