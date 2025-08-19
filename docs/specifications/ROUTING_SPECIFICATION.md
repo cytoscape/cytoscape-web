@@ -44,8 +44,8 @@ This specification defines the routing behavior for the Cytoscape Web applicatio
 **Query Parameters**:
 
 - `import`: URL to import network from
-- `left`, `right`, `bottom`: Panel states
-- `activeTableBrowserTab`: Table browser tab index
+- `left`, `right`, `bottom`: Panel states (left -> network list panel, right -> subnetwork panel, bottom -> table browser panel)
+- `activeTableBrowserTab`: Table browser tab index (0 -> nodes, 1 -> edges, 2 -> network)
 
 Query paramters will set the initial ui state and subsequently removed from the url
 
