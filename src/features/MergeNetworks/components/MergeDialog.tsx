@@ -82,6 +82,7 @@ import { useUiStateStore } from '../../../store/UiStateStore'
 import useNodesDuplicationStore from '../store/nodesDuplicationStore'
 import { logUi } from '../../../debug'
 import { useUrlNavigation } from '../../../store/hooks/useUrlNavigation/useUrlNavigation'
+import { putNetworkSummaryToDb } from '../../../store/persist/db'
 
 interface MergeDialogProps {
   open: boolean
@@ -192,6 +193,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const netMatchingTableObj = createMatchingTable(netMatchingTable)
   // Functions relying on store hooks
   const updateSummary = useNetworkSummaryStore((state) => state.update)
+  const addSummaries = useNetworkSummaryStore((state) => state.addAll)
   const netSummaries = useNetworkSummaryStore((state) => state.summaries)
   const setVisualStyleOptions = useUiStateStore(
     (state) => state.setVisualStyleOptions,
@@ -553,6 +555,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       )
       setViewModel(newNetworkId, newNetworkWithView.networkViews[0])
       const newSummary = { ...networkSummary, hasLayout: true }
+      await putNetworkSummaryToDb(newSummary)
+      addSummaries({ [newNetworkId]: newSummary })
       // Apply layout to the network
       setIsRunning(true)
       engine.apply(
