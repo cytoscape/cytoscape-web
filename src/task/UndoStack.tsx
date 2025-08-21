@@ -152,11 +152,7 @@ export const useUndoStack = () => {
           .getFunction(DEFAULT_RENDERER_ID, 'fit', networkId)
         if (fitFunction) {
           // Use double requestAnimationFrame pattern to ensure DOM updates are complete
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              fitFunction()
-            })
-          })
+          fitFunction()
         }
       },
       [UndoCommandType.DELETE_COLUMN]: (params: any[]) => {

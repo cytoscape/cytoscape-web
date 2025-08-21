@@ -80,17 +80,7 @@ export const ApplyLayoutButton = ({
     if (layoutCounter > 0) {
       const fitFunction = getRendererFunction(rendererId, 'fit')
       if (fitFunction !== undefined) {
-        // Use double requestAnimationFrame pattern to ensure DOM updates are complete.
-        // This is a common pattern to ensure that the fit happens after the layout
-        // has been applied and the DOM has been updated with the new positions.
-        // The first requestAnimationFrame ensures that the layout changes are applied,
-        // and the second one ensures that the DOM has been updated before the
-        // fit function call.
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            fitFunction()
-          })
-        })
+        fitFunction()
       } else {
         logUi.warn(
           `[${ApplyLayoutButton.name}]:[${handleClick.name}]: Fit function not available for renderer: ${rendererId}`,

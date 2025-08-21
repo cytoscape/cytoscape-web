@@ -74,13 +74,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       // TODO: add support for multiple renderers
       const fitFunction = getRendererFunction(DEFAULT_RENDERER_ID, 'fit')
       if (fitFunction !== undefined) {
-        // Use double requestAnimationFrame pattern to ensure DOM updates are complete
-        // This guarantees that the fit function is called after the layout has been applied
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            fitFunction()
-          })
-        })
+        fitFunction()
       } else {
         logUi.warn(
           `[${LayoutMenu.name}]: Fit function not available for renderer: cyjs`,

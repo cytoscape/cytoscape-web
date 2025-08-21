@@ -248,9 +248,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  const fitFunction = useRendererFunctionStore((state) =>
-    state.getFunction('cyjs', 'fit', currentNetworkId),
-  )
+  const getFunction = useRendererFunctionStore((state) => state.getFunction)
 
   const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
 
@@ -341,9 +339,10 @@ const WorkSpaceEditor = (): JSX.Element => {
               positionMap: Map<IdType, [number, number]>,
             ): void => {
               updateNodePositions(networkId, positionMap)
+              const fitFunction = getFunction('cyjs', 'fit', networkId)
 
               // Fit the viewport to center the initial layout
-              if (fitFunction) {
+              if (fitFunction !== undefined) {
                 fitFunction()
               }
 
@@ -442,7 +441,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       if (isLoadingRef.current) {
         return
       }
-      
+
       isLoadingRef.current = true
       setFailedToLoad(false)
       logUi.info(

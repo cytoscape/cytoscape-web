@@ -776,7 +776,6 @@ const CyjsRenderer = ({
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
-        // wheelSensitivity: 0.1,
         boxSelectionEnabled: displayMode === DisplayMode.SELECT ? true : false,
       })
 
@@ -786,100 +785,8 @@ const CyjsRenderer = ({
       setCy(cy)
       // Now add event handlers. This is necessary only once.
       // addEventHandlers(cy)
-      const fitFunction = (): void => {
-        if (cy !== null) {
-          cy.fit()
-        }
-      }
 
-      const exportPngFunction = (
-        fullBg: boolean,
-        customWidth: number,
-        customHeight: number,
-        transparentBg: boolean,
-      ): string => {
-        if (cy !== null) {
-          const opt: any = {
-            full: fullBg,
-            maxWidth: customWidth,
-            maxHeight: customHeight,
-          }
-
-          if (!transparentBg) {
-            opt.bg = 'white'
-          }
-
-          const result = cy.png(opt)
-          return result
-        } else {
-          return ''
-        }
-      }
-
-      const exportPdfFunction = (
-        fullBg: boolean,
-        paperSize: PaperSize,
-        orientation: Orientation,
-        margin: number,
-        customWidth?: number,
-        customHeight?: number,
-      ): Promise<Blob> => {
-        if (cy !== null) {
-          // @ts-expect-error-next-line
-          const result = cy.pdf({
-            paperSize,
-            orientation,
-            full: fullBg,
-            margin,
-            width: customWidth,
-            height: customHeight,
-            debug: false,
-          })
-
-          return result
-        } else {
-          return Promise.resolve(new Blob())
-        }
-      }
-
-      const exportSvgFunction = (fullBg: boolean): Blob => {
-        if (cy !== null) {
-          // @ts-expect-error-next-line
-          const result = cy.svg({
-            scale: 1,
-            full: fullBg,
-            background: 'white',
-          })
-
-          const svgBlob = new Blob([result], { type: 'image/svg+xml' })
-
-          return svgBlob
-        } else {
-          return new Blob()
-        }
-      }
-
-      const widthFunction = (): number => {
-        if (cy !== null) {
-          return cy.width()
-        } else {
-          return 0
-        }
-      }
-
-      const heightFunction = (): number => {
-        if (cy !== null) {
-          return cy.height()
-        } else {
-          return 0
-        }
-      }
-      setRendererFunction('cyjs', 'fit', fitFunction, id)
-      setRendererFunction('cyjs', 'exportPng', exportPngFunction, id)
-      setRendererFunction('cyjs', 'exportPdf', exportPdfFunction, id)
-      setRendererFunction('cyjs', 'exportSvg', exportSvgFunction, id)
-      setRendererFunction('cyjs', 'width', widthFunction, id)
-      setRendererFunction('cyjs', 'height', heightFunction, id)
+      renderNetwork()
     }
 
     return () => {
@@ -894,6 +801,111 @@ const CyjsRenderer = ({
       renderNetwork()
     }
   }, [cy])
+
+  useEffect(() => {
+    const fitFunction = (): void => {
+      if (cy !== null) {
+        // Use double requestAnimationFrame pattern to ensure DOM updates are complete.
+        // This is a common pattern to ensure that the fit happens after the layout
+        // has been applied and the DOM has been updated with the new positions.
+        // The first requestAnimationFrame ensures that the layout changes are applied,
+        // and the second one ensures that the DOM has been updated before the
+        // fit function call.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            cy.fit()
+          })
+        })
+      }
+    }
+
+    const exportPngFunction = (
+      fullBg: boolean,
+      customWidth: number,
+      customHeight: number,
+      transparentBg: boolean,
+    ): string => {
+      if (cy !== null) {
+        const opt: any = {
+          full: fullBg,
+          maxWidth: customWidth,
+          maxHeight: customHeight,
+        }
+
+        if (!transparentBg) {
+          opt.bg = 'white'
+        }
+
+        const result = cy.png(opt)
+        return result
+      } else {
+        return ''
+      }
+    }
+
+    const exportPdfFunction = (
+      fullBg: boolean,
+      paperSize: PaperSize,
+      orientation: Orientation,
+      margin: number,
+      customWidth?: number,
+      customHeight?: number,
+    ): Promise<Blob> => {
+      if (cy !== null) {
+        const result = cy.pdf({
+          paperSize,
+          orientation,
+          full: fullBg,
+          margin,
+          width: customWidth,
+          height: customHeight,
+          debug: false,
+        })
+
+        return result
+      } else {
+        return Promise.resolve(new Blob())
+      }
+    }
+
+    const exportSvgFunction = (fullBg: boolean): Blob => {
+      if (cy !== null) {
+        const result = cy.svg({
+          scale: 1,
+          full: fullBg,
+          background: 'white',
+        })
+
+        const svgBlob = new Blob([result], { type: 'image/svg+xml' })
+
+        return svgBlob
+      } else {
+        return new Blob()
+      }
+    }
+
+    const widthFunction = (): number => {
+      if (cy !== null) {
+        return cy.width()
+      } else {
+        return 0
+      }
+    }
+
+    const heightFunction = (): number => {
+      if (cy !== null) {
+        return cy.height()
+      } else {
+        return 0
+      }
+    }
+    setRendererFunction('cyjs', 'fit', fitFunction, id)
+    setRendererFunction('cyjs', 'exportPng', exportPngFunction, id)
+    setRendererFunction('cyjs', 'exportPdf', exportPdfFunction, id)
+    setRendererFunction('cyjs', 'exportSvg', exportSvgFunction, id)
+    setRendererFunction('cyjs', 'width', widthFunction, id)
+    setRendererFunction('cyjs', 'height', heightFunction, id)
+  }, [cy, id])
 
   return (
     <>
