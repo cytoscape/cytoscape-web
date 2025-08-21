@@ -1,6 +1,6 @@
 import Button from '@mui/material/Button'
 import { Box, Divider, Tooltip, MenuItem } from '@mui/material'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { IdType } from '../../../models/IdType'
@@ -20,6 +20,7 @@ import { useUndoStack } from '../../../task/UndoStack'
 import { LayoutAlgorithm } from '../../../models'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { DEFAULT_RENDERER_ID } from '../../../store/DefaultRenderer'
+import { logUi } from '../../../debug'
 
 interface DropdownMenuProps {
   label: string
@@ -28,7 +29,13 @@ interface DropdownMenuProps {
 
 export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
-  const [layoutInfo, setLayoutInfo] = useState<string | undefined>(undefined)
+
+  // Counter to trigger fit function after layout is applied
+  const [layoutCounter, setLayoutCounter] = useState<number>(0)
+
+  const getRendererFunction = useRendererFunctionStore(
+    (state) => state.getFunction,
+  )
 
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
@@ -60,6 +67,27 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     networkId: IdType,
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
+
+  // Effect to handle fit after layout completion
+  useEffect(() => {
+    if (layoutCounter > 0) {
+      // TODO: add support for multiple renderers
+      const fitFunction = getRendererFunction(DEFAULT_RENDERER_ID, 'fit')
+      if (fitFunction !== undefined) {
+        // Use double requestAnimationFrame pattern to ensure DOM updates are complete
+        // This guarantees that the fit function is called after the layout has been applied
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            fitFunction()
+          })
+        })
+      } else {
+        logUi.warn(
+          `[${LayoutMenu.name}]: Fit function not available for renderer: cyjs`,
+        )
+      }
+    }
+  }, [layoutCounter, getRendererFunction])
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const target: Network = networks.get(targetNetworkId) ?? ({} as Network)
@@ -107,6 +135,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
     // Update node positions in the view model
     updateNodePositions(targetNetworkId, positionMap)
+
     postEdit(
       UndoCommandType.APPLY_LAYOUT,
       `Apply layout`,
@@ -114,7 +143,11 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       [targetNetworkId, positionMap],
     )
     setIsRunning(false)
-    console.log('Finished layout')
+
+    // Trigger fit() by incrementing counter
+    // This is because fit function should be called separately after layout is applied
+    // to support viewport recording.
+    setLayoutCounter((prev) => prev + 1)
   }
 
   const getMenuItems = (): any => {
@@ -145,7 +178,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             ) as LayoutEngine
             const { nodes, edges } = target
             setIsRunning(true)
-            setLayoutInfo(engine.algorithms[name].displayName)
+            // setLayoutInfo(engine.algorithms[name].displayName)
             engine.apply(nodes, edges, afterLayout, engine.algorithms[name])
           },
         }
