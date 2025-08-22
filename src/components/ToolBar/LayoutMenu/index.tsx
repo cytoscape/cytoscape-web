@@ -172,7 +172,6 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             ) as LayoutEngine
             const { nodes, edges } = target
             setIsRunning(true)
-            // setLayoutInfo(engine.algorithms[name].displayName)
             engine.apply(nodes, edges, afterLayout, engine.algorithms[name])
           },
         }

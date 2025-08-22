@@ -325,7 +325,7 @@ export const useUndoStack = () => {
         // Fit viewport to center the layout
         const fitFunction = useRendererFunctionStore
           .getState()
-          .getFunction('cyjs', 'fit', networkId)
+          .getFunction(DEFAULT_RENDERER_ID, 'fit', networkId)
         if (fitFunction) {
           fitFunction()
         }

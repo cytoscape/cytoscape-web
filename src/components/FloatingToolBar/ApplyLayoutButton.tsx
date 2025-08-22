@@ -74,20 +74,27 @@ export const ApplyLayoutButton = ({
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  // Effect to handle fit after layout completion
-  useEffect(() => {
-    // If layoutCounter is 0, no layout has been applied yet, so no need to call fit
-    if (layoutCounter > 0) {
-      const fitFunction = getRendererFunction(rendererId, 'fit')
-      if (fitFunction !== undefined) {
-        fitFunction()
-      } else {
-        logUi.warn(
-          `[${ApplyLayoutButton.name}]:[${handleClick.name}]: Fit function not available for renderer: ${rendererId}`,
-        )
+  /**
+   * useFitAfterLayout
+   * React effect that triggers the renderer's fit function after a layout is applied.
+   * This ensures the viewport is centered on the new node positions after layout completion.
+   */
+  useEffect(
+    function fitAfterLayout() {
+      // If layoutCounter is 0, no layout has been applied yet, so no need to call fit
+      if (layoutCounter > 0) {
+        const fitFunction = getRendererFunction(rendererId, 'fit')
+        if (fitFunction !== undefined) {
+          fitFunction()
+        } else {
+          logUi.warn(
+            `[${ApplyLayoutButton.name}]:[${fitAfterLayout.name}]: Fit function not available for renderer: ${rendererId}`,
+          )
+        }
       }
-    }
-  }, [layoutCounter, rendererId, getRendererFunction])
+    },
+    [layoutCounter, rendererId, getRendererFunction],
+  )
 
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
     const prevPositions = new Map<IdType, [number, number]>()
