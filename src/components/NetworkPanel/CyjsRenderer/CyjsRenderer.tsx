@@ -760,30 +760,26 @@ const CyjsRenderer = ({
 
       const { selectedNodes, selectedEdges } = networkView
 
-      // Get current selection from Cytoscape.js to compare
-      const currentSelectedNodes = cy
-        .nodes(':selected')
-        .map((ele: any) => ele.data('id'))
-      const currentSelectedEdges = cy
-        .edges(':selected')
-        .map((ele: any) => ele.data('id'))
+      // Helper functions
+      const getCurrentSelection = () => ({
+        nodes: cy.nodes(':selected').map((ele: any) => ele.data('id')),
+        edges: cy.edges(':selected').map((ele: any) => ele.data('id')),
+      })
 
-      // Check if selection actually changed to avoid unnecessary updates
-      const nodesChanged =
-        selectedNodes.length !== currentSelectedNodes.length ||
-        !selectedNodes.every((id) => currentSelectedNodes.includes(id))
-
-      const edgesChanged =
-        selectedEdges.length !== currentSelectedEdges.length ||
-        !selectedEdges.every((id) => currentSelectedEdges.includes(id))
-
-      // Skip update if selection hasn't actually changed
-      if (!nodesChanged && !edgesChanged) {
-        return
+      const hasSelectionChanged = (current: {
+        nodes: string[]
+        edges: string[]
+      }) => {
+        const nodesChanged =
+          selectedNodes.length !== current.nodes.length ||
+          !selectedNodes.every((id) => current.nodes.includes(id))
+        const edgesChanged =
+          selectedEdges.length !== current.edges.length ||
+          !selectedEdges.every((id) => current.edges.includes(id))
+        return nodesChanged || edgesChanged
       }
 
-      // Clear selection
-      if (selectedNodes.length === 0 && selectedEdges.length === 0) {
+      const clearAllSelection = () => {
         cy.elements().unselect()
         if (displayMode === DisplayMode.SELECT) {
           cy.elements().show()
@@ -791,58 +787,77 @@ const CyjsRenderer = ({
           cy.nodes().show()
           cy.edges().hide()
         }
+      }
+
+      const updateNodeSelection = () => {
+        if (selectedNodes.length === 0) {
+          cy.nodes().unselect()
+          if (displayMode === DisplayMode.SHOW_HIDE) {
+            cy.nodes().show()
+          }
+        } else {
+          cy.nodes().show().unselect()
+          cy.nodes()
+            .filter((ele: SingularElementArgument) =>
+              selectedNodes.includes(ele.data('id')),
+            )
+            .select()
+        }
+      }
+
+      const updateEdgeSelection = () => {
+        if (selectedEdges.length === 0) {
+          cy.edges().unselect()
+        } else {
+          // Set visibility based on display mode
+          if (displayMode === DisplayMode.SHOW_HIDE) {
+            cy.edges().hide()
+          } else {
+            cy.edges().show()
+          }
+
+          // Handle selection logic
+          if (displayMode === DisplayMode.SHOW_HIDE) {
+            const targetEdgeIds = clickSelection
+              ? subSelectedEdges
+              : selectedEdges
+            const newSelectedEdges = cy
+              .edges()
+              .filter((ele: SingularElementArgument) =>
+                targetEdgeIds.includes(ele.data('id')),
+              )
+            newSelectedEdges.show()
+
+            if (clickSelection) {
+              setClickSelection(false)
+            } else {
+              setSubSelectedEdges(selectedEdges)
+            }
+          } else {
+            cy.edges()
+              .filter((ele: SingularElementArgument) =>
+                selectedEdges.includes(ele.data('id')),
+              )
+              .select()
+          }
+        }
+      }
+
+      // Check if selection actually changed to avoid unnecessary updates
+      const currentSelection = getCurrentSelection()
+      if (!hasSelectionChanged(currentSelection)) {
         return
       }
 
-      if (selectedNodes.length === 0) {
-        cy.nodes().unselect()
-        if (displayMode === DisplayMode.SHOW_HIDE) {
-          cy.nodes().show()
-        }
-      } else {
-        cy.nodes().show()
-        cy.nodes()
-          .unselect()
-          .filter((ele: SingularElementArgument) => {
-            return selectedNodes.includes(ele.data('id'))
-          })
-          .select()
+      // Handle clear selection case
+      if (selectedNodes.length === 0 && selectedEdges.length === 0) {
+        clearAllSelection()
+        return
       }
 
-      // Handle edge selection
-      if (selectedEdges.length === 0) {
-        cy.edges().unselect()
-      } else {
-        if (displayMode === DisplayMode.SHOW_HIDE) {
-          cy.edges().hide()
-        } else {
-          cy.edges().show()
-        }
-
-        if (displayMode === DisplayMode.SHOW_HIDE) {
-          const targetEdgeIds = clickSelection
-            ? subSelectedEdges
-            : selectedEdges
-          const newSelectedEdges = cy
-            .edges()
-            .filter((ele: SingularElementArgument) => {
-              return targetEdgeIds.includes(ele.data('id'))
-            })
-          newSelectedEdges.show()
-          if (clickSelection) {
-            setClickSelection(false)
-          } else {
-            setSubSelectedEdges(selectedEdges)
-          }
-        } else {
-          const newSelectedEdges = cy
-            .edges()
-            .filter((ele: SingularElementArgument) => {
-              return selectedEdges.includes(ele.data('id'))
-            })
-          newSelectedEdges.select()
-        }
-      }
+      // Update selections
+      updateNodeSelection()
+      updateEdgeSelection()
     },
     [networkView?.selectedNodes, networkView?.selectedEdges],
   )
