@@ -151,7 +151,6 @@ export const useUndoStack = () => {
           .getState()
           .getFunction(DEFAULT_RENDERER_ID, 'fit', networkId)
         if (fitFunction) {
-          // Use double requestAnimationFrame pattern to ensure DOM updates are complete
           fitFunction()
         }
       },
