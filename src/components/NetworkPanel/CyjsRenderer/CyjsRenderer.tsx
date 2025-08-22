@@ -32,7 +32,7 @@ import { NetworkView, NodeView } from '../../../models/ViewModel'
 import { IdType } from '../../../models/IdType'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
-import { addObjects } from './cyjs-factory'
+import { addCyElements } from './cyjs-factory'
 import { useLayoutStore } from '../../../store/LayoutStore'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { useRendererStore } from '../../../store/RendererStore'
@@ -264,7 +264,7 @@ const CyjsRenderer = ({
     const { nodeViews, edgeViews } = updatedNetworkView
 
     // Add nodes and edges to Cytoscape.js
-    addObjects(
+    addCyElements(
       cy,
       Object.values(nodeViews),
       network.edges,
@@ -605,7 +605,7 @@ const CyjsRenderer = ({
   )
 
   /**
-   * Effect: Updates the Cytoscape.js rendered style and view model when relevant data changes.
+   * Effect: Updates the Cytoscape.js rendered style and view model when relevant application state changes.
    *
    * This effect is triggered whenever the visual style (`vs`), table data (`table`), or
    * visual editor properties (`visualEditorProperties`) change. It applies the computed
@@ -651,7 +651,8 @@ const CyjsRenderer = ({
   /**
    * Effect: Synchronizes Cytoscape node elements with the application's nodeViews.
    * Updates node positions
-   * Removes Cytoscape.js nodes not present in the view model,
+   * Removes Cytoscape.js nodes not present in the view model
+   * e.g. when a user deletes nodes from the network, the Cytoscape nodes are removed.
    * and fits the network if appropriate.
    */
   useEffect(
