@@ -435,9 +435,23 @@ const updateCyElements = <T extends View>(
         if (vpHandler) {
           vpHandler(obj, key, value, view)
         } else {
-          obj.data(key, value)
+          if (value === '') {
+            obj.removeData(key)
+          } else {
+            obj.data(key, value)
+          }
         }
       })
+
+      if (!view.values.get('pieSize' as any)) {
+        obj.removeData('pieSize' as any)
+        obj.removeData('pieStartAngle' as any)
+        obj.removeData('pieHole' as any)
+        for (let i = 1; i <= 16; i++) {
+          obj.removeData(`pie${i}BackgroundColor` as any)
+          obj.removeData(`pie${i}BackgroundSize` as any)
+        }
+      }
 
       // If node size is locked, set width equal to height.
       if (visualEditorProperties?.nodeSizeLocked) {
