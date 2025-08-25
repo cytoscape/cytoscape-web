@@ -118,7 +118,9 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
         <g>
           {cy_dataColumns.map((_, index) => {
             const color = cy_colors[index] || '#CCCCCC'
-            return generateSlicePath(index, color)
+            // Reverse the render order to match Cytoscape.js
+            const reversedIndex = cy_dataColumns.length - 1 - index
+            return generateSlicePath(reversedIndex, color)
           })}
         </g>
       </svg>

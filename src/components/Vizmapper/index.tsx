@@ -56,11 +56,15 @@ const StyledAccordion = ({ label, children }: StyledAccordionProps) => (
       expandIcon={<ExpandMoreIcon />}
       sx={{
         pl: 0,
+        mb: 1,
         minHeight: 32,
+        backgroundColor: '#f5f5f5',
         '& .MuiAccordionSummary-content': { margin: 0 },
       }}
     >
-      <Typography variant="subtitle2">{label}</Typography>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+        {label}
+      </Typography>
     </AccordionSummary>
     <AccordionDetails
       sx={{
@@ -72,7 +76,6 @@ const StyledAccordion = ({ label, children }: StyledAccordionProps) => (
     </AccordionDetails>
   </Accordion>
 )
-
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -116,7 +119,6 @@ function VisualPropertyView(props: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        p: 0.5,
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -140,6 +142,17 @@ function VisualPropertyView(props: {
               sx={{ mr: 1.5, cursor: 'not-allowed' }}
             />
           </>
+        ) : visualProperty.name.includes('nodeImageChart') ? (
+          <>
+            <EmptyVisualPropertyViewBox
+              sx={{ mr: 1.5, cursor: 'not-allowed' }}
+            />
+            <BypassForm
+              sx={{ mr: 1.5 }}
+              currentNetworkId={currentNetworkId}
+              visualProperty={visualProperty}
+            />
+          </>
         ) : (
           <>
             <MappingForm
@@ -154,8 +167,15 @@ function VisualPropertyView(props: {
             />
           </>
         )}
-        <Tooltip placement="top" arrow title={tooltip ?? visualProperty.tooltip}>
-          <Typography variant="body2" sx={{ color: disabled ? 'gray' : 'black' }}>
+        <Tooltip
+          placement="top"
+          arrow
+          title={tooltip ?? visualProperty.tooltip}
+        >
+          <Typography
+            variant="body2"
+            sx={{ color: disabled ? 'gray' : 'black' }}
+          >
             {visualProperty.displayName}
           </Typography>
         </Tooltip>
@@ -206,7 +226,9 @@ export default function VizmapperView(props: {
   const fallbackImgs: VisualProperty<VisualPropertyValueType>[] = (() => {
     const result: VisualProperty<VisualPropertyValueType>[] = []
     for (let i = 1; i <= 1; i++) {
-      const img = customGraphicVps.find((vp) => vp.name === `nodeImageChart${i}`)
+      const img = customGraphicVps.find(
+        (vp) => vp.name === `nodeImageChart${i}`,
+      )
       if (img) result.push(img)
     }
     return result
@@ -266,7 +288,9 @@ export default function VizmapperView(props: {
   const networkVps = VisualStyleFn.networkVisualProperties(visualStyle)
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', height }}>
+    <Box
+      sx={{ display: 'flex', flexDirection: 'column', width: '100%', height }}
+    >
       {/* Tabs */}
       <Tabs
         value={currentTabIndex}

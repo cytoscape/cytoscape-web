@@ -70,6 +70,10 @@ import {
   CustomGraphicPicker,
   CustomGraphicRender,
 } from '../VisualPropertyRender/CustomGraphics/CustomGraphic'
+import {
+  CustomGraphicsType,
+  CustomGraphicsTypeType,
+} from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,
@@ -314,6 +318,12 @@ interface VisualPropertyRenderProps {
 export function VisualPropertyValueRender(
   props: VisualPropertyRenderProps,
 ): React.ReactElement {
+  if (props.vpName.includes('nodeImageChart')) {
+    const customGraphic = props.value as CustomGraphicsType
+    if (customGraphic.type === CustomGraphicsTypeType.None) {
+      return <EmptyVisualPropertyViewBox />
+    }
+  }
   if (props.value == null) {
     return <EmptyVisualPropertyViewBox />
   }

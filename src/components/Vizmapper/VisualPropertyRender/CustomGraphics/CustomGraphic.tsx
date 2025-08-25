@@ -22,6 +22,10 @@ import DonutLargeIcon from '@mui/icons-material/DonutLarge'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import ListAltIcon from '@mui/icons-material/ListAlt'
+import PaletteIcon from '@mui/icons-material/Palette'
+import SettingsIcon from '@mui/icons-material/Settings'
+import VisibilityIcon from '@mui/icons-material/Visibility'
 import { IdType } from '../../../../models/IdType'
 import { useTableStore } from '../../../../store/TableStore'
 import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
@@ -275,9 +279,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
               <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
                 {cy_dataColumns.length}
               </Typography>
-              <Typography variant="caption">
-                / 16 slice{cy_dataColumns.length !== 1 ? 's' : ''}
-              </Typography>
+              <Typography variant="caption">/ 16 slices</Typography>
             </Box>
           </Box>
 
@@ -285,7 +287,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: '60px 40px 40px 1fr 40px 40px',
+              gridTemplateColumns: '80px 1fr 40px 40px',
               gap: 1,
               alignItems: 'center',
               px: 1,
@@ -307,26 +309,6 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                 Order
               </Typography>
             </Tooltip>
-            <Typography
-              variant="caption"
-              sx={{
-                fontWeight: 'medium',
-                color: 'text.secondary',
-                textAlign: 'center',
-              }}
-            >
-              Up
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                fontWeight: 'medium',
-                color: 'text.secondary',
-                textAlign: 'center',
-              }}
-            >
-              Down
-            </Typography>
             <Typography
               variant="caption"
               sx={{ fontWeight: 'medium', color: 'text.secondary' }}
@@ -364,7 +346,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                 key={i}
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: '60px 40px 40px 1fr 40px 40px',
+                  gridTemplateColumns: '80px 1fr 40px 40px',
                   alignItems: 'center',
                   gap: 1,
                   p: 1,
@@ -373,43 +355,49 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                   mb: 1,
                 }}
               >
-                {/* Slice Order */}
+                {/* Slice Order with Up/Down arrows */}
                 <Box
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    bgcolor: 'grey.200',
-                    color: 'text.secondary',
-                    fontSize: '0.75rem',
-                    fontWeight: 'medium',
+                    gap: 0.5,
                   }}
                 >
-                  {i + 1}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      bgcolor: 'grey.200',
+                      color: 'text.secondary',
+                      fontSize: '0.75rem',
+                      fontWeight: 'medium',
+                    }}
+                  >
+                    {i + 1}
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => moveRow(i, (i - 1 + count) % count)}
+                      disabled={count <= 1}
+                      sx={{ p: 0.5, minWidth: 24, height: 20 }}
+                    >
+                      <ArrowUpwardIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => moveRow(i, (i + 1) % count)}
+                      disabled={count <= 1}
+                      sx={{ p: 0.5, minWidth: 24, height: 20 }}
+                    >
+                      <ArrowDownwardIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </Box>
                 </Box>
-
-                {/* Move Up with wrap */}
-                <IconButton
-                  size="small"
-                  onClick={() => moveRow(i, (i - 1 + count) % count)}
-                  disabled={count <= 1}
-                  sx={{ justifySelf: 'center' }}
-                >
-                  <ArrowUpwardIcon fontSize="small" />
-                </IconButton>
-
-                {/* Move Down with wrap */}
-                <IconButton
-                  size="small"
-                  onClick={() => moveRow(i, (i + 1) % count)}
-                  disabled={count <= 1}
-                  sx={{ justifySelf: 'center' }}
-                >
-                  <ArrowDownwardIcon fontSize="small" />
-                </IconButton>
 
                 <FormControl size="small">
                   <InputLabel id={`col-label-${i}`}>Node Attribute</InputLabel>
@@ -472,12 +460,13 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                       ? 'No more numeric attributes available to add'
                       : 'Add a numeric attribute to the chart'
                 }
+                sx={{ color: '#1976d2', textTransform: 'none' }}
               >
                 {cy_dataColumns.length >= 16
                   ? 'Maximum Slices Reached'
                   : nextDefaultCol === ''
                     ? 'No Attributes Available'
-                    : 'Add Node Attribute'}
+                    : '+ ADD NODE ATTRIBUTE'}
               </Button>
             </Box>
 
@@ -579,11 +568,10 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                 sx={{
                   textAlign: 'center',
                   color: 'text.secondary',
-                  fontStyle: 'italic',
+                  fontSize: '0.75rem',
                 }}
               >
-                {availableColumns.length} numeric attribute
-                {availableColumns.length !== 1 ? 's' : ''} available
+                {availableColumns.length} numeric attributes available
               </Typography>
             )}
           </Box>
@@ -610,7 +598,8 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
               variant="body2"
               sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
             >
-              Select a color palette for your {cy_dataColumns.length} attribute
+              Optionally Select a color palette for your {cy_dataColumns.length}{' '}
+              attribute
               {cy_dataColumns.length !== 1 ? 's' : ''}. The colors will be
               applied to each slice of your chart.
             </Typography>
@@ -816,12 +805,11 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
         <>
           <Box
             sx={{
-              p: 2,
+              p: 1.5,
               border: '1px solid',
-              borderColor: 'success.main',
+              borderColor: 'grey.300',
               borderRadius: 1,
-              bgcolor: 'success.light',
-              color: 'success.contrastText',
+              bgcolor: 'grey.50',
             }}
           >
             <Typography variant="body2" sx={{ fontWeight: 'medium', mb: 1 }}>
@@ -1658,6 +1646,115 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
         </Button>
       </DialogTitle>
 
+      {/* Step Overview */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 1,
+          p: 2,
+          borderBottom: '1px solid #e0e0e0',
+          bgcolor: '#fafafa',
+        }}
+      >
+        {[
+          { step: WizardStep.SelectType, label: 'Type', icon: PieChartIcon },
+          {
+            step: WizardStep.SelectAttributes,
+            label: 'Attributes',
+            icon: ListAltIcon,
+          },
+          {
+            step: WizardStep.SelectPalette,
+            label: 'Colors',
+            icon: PaletteIcon,
+          },
+          {
+            step: WizardStep.ConfigureProperties,
+            label: 'Properties',
+            icon: SettingsIcon,
+          },
+          { step: WizardStep.Preview, label: 'Preview', icon: VisibilityIcon },
+        ].map((stepInfo, index) => {
+          const IconComponent = stepInfo.icon
+          return (
+            <React.Fragment key={stepInfo.step}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 0.5,
+                }}
+              >
+                <Box
+                  onClick={() => setCurrentStep(stepInfo.step)}
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px',
+                    fontWeight: 'medium',
+                    bgcolor:
+                      currentStep === stepInfo.step ? '#1976d2' : '#e0e0e0',
+                    color: currentStep === stepInfo.step ? 'white' : '#666',
+                    border:
+                      currentStep > stepInfo.step
+                        ? '2px solid #4caf50'
+                        : 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      transform: 'scale(1.1)',
+                      bgcolor:
+                        currentStep === stepInfo.step ? '#1565c0' : '#d0d0d0',
+                    },
+                  }}
+                >
+                  {currentStep > stepInfo.step ? (
+                    '✓'
+                  ) : (
+                    <IconComponent sx={{ fontSize: 16 }} />
+                  )}
+                </Box>
+                <Typography
+                  variant="caption"
+                  onClick={() => setCurrentStep(stepInfo.step)}
+                  sx={{
+                    fontSize: '0.7rem',
+                    fontWeight:
+                      currentStep === stepInfo.step ? 'bold' : 'normal',
+                    color: currentStep === stepInfo.step ? '#1976d2' : '#666',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s ease',
+                    '&:hover': {
+                      color:
+                        currentStep === stepInfo.step ? '#1565c0' : '#1976d2',
+                    },
+                  }}
+                >
+                  {stepInfo.label}
+                </Typography>
+              </Box>
+              {index < 4 && (
+                <Box
+                  sx={{
+                    width: 20,
+                    height: 2,
+                    bgcolor:
+                      currentStep > stepInfo.step ? '#4caf50' : '#e0e0e0',
+                  }}
+                />
+              )}
+            </React.Fragment>
+          )
+        })}
+      </Box>
+
       <DialogContent dividers>{renderStepContent()}</DialogContent>
 
       <DialogActions sx={{ justifyContent: 'space-between' }}>
@@ -1727,13 +1824,7 @@ export function CustomGraphicRender(props: {
 
   // If no custom graphic or it's None type, show empty state
   if (!value || value.name === CustomGraphicsNameType.None) {
-    return (
-      <Box sx={{ p: 1, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
-          No custom graphic configured
-        </Typography>
-      </Box>
-    )
+    return <Box sx={{ p: 1, textAlign: 'center' }}></Box>
   }
 
   // Render pie chart
@@ -1746,7 +1837,7 @@ export function CustomGraphicRender(props: {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          transform: 'translate(5px, 5px)',
+          transform: 'translate(4px, 12px)',
         }}
       >
         <PieChartRenderComponent
@@ -1783,11 +1874,5 @@ export function CustomGraphicRender(props: {
   }
 
   // Fallback for other types (like Image in the future)
-  return (
-    <Box sx={{ p: 1, textAlign: 'center' }}>
-      <Typography variant="body2" color="text.secondary">
-        {value.name}
-      </Typography>
-    </Box>
-  )
+  return <Box sx={{ p: 1, textAlign: 'center' }}></Box>
 }
