@@ -1,3 +1,17 @@
+/**
+ * cyjs-util.ts
+ *
+ * Utility functions and mappings for integrating Cytoscape.js with the application's
+ * visual style and view model system. This module provides:
+ *   - Handlers for mapping application visual properties to Cytoscape.js data fields.
+ *   - Functions to generate Cytoscape.js style objects from the application's visual style model.
+ *   - Functions to apply view model data to Cytoscape.js elements.
+ *
+ * The main entry points are:
+ *   - createCyjsDataMapper: Generates Cytoscape.js style mappings from a VisualStyle.
+ *   - applyViewModel: Applies the current view model to Cytoscape.js elements.
+ */
+
 import { Collection, Core, SingularElementArgument } from 'cytoscape'
 import { IdType } from '../../../models/IdType'
 import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
@@ -24,6 +38,16 @@ import {
   getNonCustomGraphicVps,
 } from '../../../models/VisualStyleModel/impl/CustomGraphicsImpl'
 
+/**
+ * Helper to update edge arrow shape and fill properties on a Cytoscape.js element.
+ * Handles special case for 'Arrow' shape, mapping it to 'Triangle' for Cytoscape.js.
+ *
+ * @param obj - Cytoscape.js element
+ * @param key - Visual property name (arrow shape)
+ * @param value - Value for the arrow shape
+ * @param view - The view model for the element
+ * @param arrowFillProperty - The fill property name (source/target)
+ */
 function updateEdgeArrowShape(
   obj: SingularElementArgument,
   key: VisualPropertyName,
@@ -36,11 +60,17 @@ function updateEdgeArrowShape(
   )
   obj.data(key, value)
   obj.data(arrowFillProperty, arrowFillValue)
+  // Cytoscape.js does not support 'arrow', so map to 'triangle'
   if (obj.data(key) === EdgeArrowShapeType.Arrow) {
     obj.data(key, EdgeArrowShapeType.Triangle)
   }
 }
 
+/**
+ * Map of visual property handlers for special-case property conversions.
+ * Each handler is responsible for mapping a specific visual property from the view model
+ * to the appropriate Cytoscape.js data fields.
+ */
 const vpHandlers = new Map<
   VisualPropertyName,
   (
@@ -51,6 +81,7 @@ const vpHandlers = new Map<
   ) => void
 >()
 
+// Handler for node label position: computes and sets alignment, margin, and justification.
 vpHandlers.set(
   VisualPropertyName.NodeLabelPosition,
   (obj, key, value, view) => {
@@ -63,6 +94,7 @@ vpHandlers.set(
   },
 )
 
+// Handler for edge target arrow shape and fill.
 vpHandlers.set(
   VisualPropertyName.EdgeTargetArrowShape,
   (obj, key, value, view) => {
@@ -76,6 +108,7 @@ vpHandlers.set(
   },
 )
 
+// Handler for edge source arrow shape and fill.
 vpHandlers.set(
   VisualPropertyName.EdgeSourceArrowShape,
   (obj, key, value, view) => {
@@ -89,10 +122,12 @@ vpHandlers.set(
   },
 )
 
+// Handler for node shape: maps application node shape to Cytoscape.js node shape.
 vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value, view) => {
   obj.data(key, NodeShapeMapping[value as NodeShapeType])
 })
 
+// Handler for node label rotation: converts degrees to radians for Cytoscape.js.
 vpHandlers.set(
   VisualPropertyName.NodeLabelRotation,
   (obj, key, value, view) => {
@@ -100,6 +135,7 @@ vpHandlers.set(
   },
 )
 
+// Handler for edge label rotation: converts degrees to radians for Cytoscape.js.
 vpHandlers.set(
   VisualPropertyName.EdgeLabelRotation,
   (obj, key, value, view) => {
@@ -107,13 +143,20 @@ vpHandlers.set(
   },
 )
 
+/**
+ * Generates an array of Cytoscape.js style mappings (CyjsDirectMapper) from the application's VisualStyle.
+ * Handles node and edge visual properties, including custom graphics (pie/ring/image), selection, and hover.
+ *
+ * @param vs - The application's VisualStyle object
+ * @returns Array of CyjsDirectMapper objects for Cytoscape.js
+ */
 export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   const nodeVps = VisualStyleFn.nodeVisualProperties(vs)
   const edgeVps = VisualStyleFn.edgeVisualProperties(vs)
 
   const cyStyle: CyjsDirectMapper[] = []
 
-  // This is for showing arrows.
+  // Base edge style: ensures arrows and text wrapping are enabled.
   const baseEdgeStyle = {
     selector: 'edge',
     style: {
@@ -122,6 +165,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     },
   }
 
+  // Base node style: enables text wrapping.
   const baseNodeStyle = {
     selector: 'node',
     style: {
@@ -131,6 +175,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   cyStyle.push(baseEdgeStyle as CyjsDirectMapper)
   cyStyle.push(baseNodeStyle as CyjsDirectMapper)
 
+  // Add node visual properties (excluding custom graphics).
   const nonCustomGraphicNodeVps = getNonCustomGraphicVps(nodeVps)
 
   nonCustomGraphicNodeVps.forEach(
@@ -138,6 +183,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
       const cyjsVpName = getCyjsVpName(vp.name)
       if (cyjsVpName !== undefined) {
         if (vp.name === VisualPropertyName.NodeSelectedPaint) {
+          // Special mapping for selected node color.
           const selectedNodeMapping = {
             selector: 'node:selected',
             style: {
@@ -146,6 +192,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           }
           cyStyle.push(selectedNodeMapping as CyjsDirectMapper)
         } else if (vp.name === VisualPropertyName.NodeLabelPosition) {
+          // Node label position is mapped to several style properties.
           const valignDirectMapping: CyjsDirectMapper = {
             selector: `node[${SpecialPropertyName.NodeLabelVerticalAlign}]`,
             style: {
@@ -186,6 +233,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           cyStyle.push(marginYDirectMapping)
           cyStyle.push(justificationDirectMapping)
         } else {
+          // Default direct mapping for node visual properties.
           const directMapping: CyjsDirectMapper = {
             selector: `node[${vp.name}]`,
             style: {
@@ -198,20 +246,20 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     },
   )
 
-  // The first valid custom graphic will have only pie charts/ring charts/images in the
-  // default value, mapping and bypass.
-  // Support only default values and bypasses for now
+  // Handle custom graphics (pie/ring/image) if present in the node visual properties.
+  // Only default values and bypasses are supported for now.
   const firstValidCustomGraphicVp = getFirstValidCustomGraphicVp(nodeVps)
 
   if (firstValidCustomGraphicVp !== undefined) {
-    // Add all custom graphics properties
-    // We need to add all properties, because any particular node can have any
-    // particular custom graphic (e.g. ring, pie, image) in the default value, mapping and bypasses.
+    // Add all custom graphics properties for pie, ring, and image.
+    // This ensures that any node can use any custom graphic in its style or bypass.
+    /**
+     * Adds Cytoscape.js pie chart style properties for up to 16 slices.
+     */
     const addCyjsPieProperties = () => {
-      const MAX_SLICES = 16 // we need to allocate all 16 slices, because the number of slices depends on bypasses and default values
-      // e.g. a bypass can be a pie chart with 16 slices, and the default value can be a pie chart with 8 slices
-      const pieSizeStyleName = 'pie-size' // cyjsname
-      const pieSizeSelectorStr = 'pieSize' // key in the view model.  Avoid '-' in the key name.
+      const MAX_SLICES = 16 // Allocate all 16 slices for flexibility.
+      const pieSizeStyleName = 'pie-size'
+      const pieSizeSelectorStr = 'pieSize'
       const pieSizeMapping = {
         selector: `node[${pieSizeSelectorStr}]`,
         style: {
@@ -230,8 +278,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
 
       const pieBackGroundMappings = []
       for (let i = 1; i <= MAX_SLICES; i++) {
-        const bgColorStyleName = `pie-${i}-background-color` // cyjsname
-        const bgColorSelectorStr = `pie${i}BackgroundColor` // key in the view model.  Avoid '-' in the key name.
+        const bgColorStyleName = `pie-${i}-background-color`
+        const bgColorSelectorStr = `pie${i}BackgroundColor`
         const pieBackgroundColorMapping = {
           selector: `node[${bgColorSelectorStr}]`,
           style: {
@@ -239,8 +287,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           },
         }
 
-        const pieSliceSizeStyleName = `pie-${i}-background-size` // cyjsname
-        const pieSliceSizeSelectorStr = `pie${i}BackgroundSize` // key in the view model.  Avoid '-' in the key name.
+        const pieSliceSizeStyleName = `pie-${i}-background-size`
+        const pieSliceSizeSelectorStr = `pie${i}BackgroundSize`
         const pieSliceSizeMapping = {
           selector: `node[${pieSliceSizeSelectorStr}]`,
           style: {
@@ -255,12 +303,14 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
       cyStyle.push(pieSizeMapping as CyjsDirectMapper)
       cyStyle.push(pieStartAngleMapping as CyjsDirectMapper)
 
-
       pieBackGroundMappings.forEach((mapping) => {
         cyStyle.push(mapping as CyjsDirectMapper)
       })
     }
 
+    /**
+     * Adds Cytoscape.js ring chart (pie hole) style property.
+     */
     const addCyjsRingProperties = () => {
       const pieHoleSizeStyleName = 'pie-hole'
       const pieHoleSizeSelectorStr = 'pieHole'
@@ -273,6 +323,10 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
       cyStyle.push(pieHoleSizeMapping as CyjsDirectMapper)
     }
 
+    /**
+     * Placeholder for image custom graphics properties.
+     * (Not implemented yet.)
+     */
     const addCyjsImageProperties = () => {}
 
     addCyjsPieProperties()
@@ -281,13 +335,10 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   }
 
   /**
-   * Create edge style model
-   *
-   * Since order of edge style is important, we need to add higher priority element later
-   * e.g., selected color should be the last element
-   *
+   * Create edge style model.
+   * The order of edge style mappings is important: higher priority elements (e.g. selection)
+   * should be added last.
    */
-
   let edgeSelectedPaintMapping = {}
   edgeVps.forEach((vp: VisualProperty<VisualPropertyValueType>) => {
     const cyjsVpName = getCyjsVpName(vp.name)
@@ -305,6 +356,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         vp.name === VisualPropertyName.EdgeSourceArrowShape ||
         vp.name === VisualPropertyName.EdgeTargetArrowShape
       ) {
+        // Edge arrow shape and fill require two mappings each.
         const edgeArrowShapeMapping: CyjsDirectMapper = {
           selector: `edge[${vp.name}]`,
           style: {
@@ -328,6 +380,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         cyStyle.push(edgeArrowFillMapping)
         cyStyle.push(edgeArrowShapeMapping)
       } else {
+        // Default direct mapping for edge visual properties.
         const directMapping: CyjsDirectMapper = {
           selector: `edge[${vp.name}]`,
           style: {
@@ -342,9 +395,9 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   // Edge selection color should be the last element in the style
   cyStyle.push(edgeSelectedPaintMapping as CyjsDirectMapper)
 
-  // Need to add special class to handle mouse hover
-  // This is not the part of current style object, and defined here
-  // TODO: Define type for this
+  // Add a special class for mouse hover highlighting.
+  // This is not part of the current style object, but is defined here for convenience.
+  // TODO: Define a proper type for this mapping.
   const hoverMapping: any = {
     selector: `.hover`,
     style: {
@@ -359,17 +412,15 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   return cyStyle
 }
 
-export const applyViewModel = (
-  cy: Core,
-  networkView: NetworkView,
-  visualEditorProperties: VisualEditorProperties,
-): void => {
-  const { nodeViews, edgeViews } = networkView
-  updateCyObjects<NodeView>(nodeViews, cy.nodes(), visualEditorProperties)
-  updateCyObjects<EdgeView>(edgeViews, cy.edges(), visualEditorProperties)
-}
-
-const updateCyObjects = <T extends View>(
+/**
+ * Updates Cytoscape.js elements with data from the application's view model.
+ * Handles special-case property handlers and visual editor property overrides.
+ *
+ * @param views - Map of element IDs to view models
+ * @param cyObjects - Cytoscape.js collection of elements (nodes or edges)
+ * @param visualEditorProperties - Visual editor options
+ */
+const updateCyElements = <T extends View>(
   views: Record<IdType, T>,
   cyObjects: Collection<SingularElementArgument>,
   visualEditorProperties: VisualEditorProperties,
@@ -388,12 +439,14 @@ const updateCyObjects = <T extends View>(
         }
       })
 
+      // If node size is locked, set width equal to height.
       if (visualEditorProperties?.nodeSizeLocked) {
         obj.data(
           NodeVisualPropertyName.NodeWidth,
           obj.data(NodeVisualPropertyName.NodeHeight),
         )
       }
+      // If arrow color should match edge color, set arrow colors to edge line color.
       if (visualEditorProperties?.arrowColorMatchesEdge) {
         const color = obj.data(EdgeVisualPropertyName.EdgeLineColor)
         obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor, color)
@@ -401,4 +454,23 @@ const updateCyObjects = <T extends View>(
       }
     }
   })
+}
+
+/**
+ * Applies the current view model (node and edge views) to the Cytoscape.js instance.
+ * This updates Cytoscape.js element data fields to match the application's view model,
+ * including any visual editor property overrides.
+ *
+ * @param cy - Cytoscape.js core instance
+ * @param networkView - The application's network view (nodeViews, edgeViews)
+ * @param visualEditorProperties - Visual editor options (e.g. node size lock)
+ */
+export const applyViewModel = (
+  cy: Core,
+  networkView: NetworkView,
+  visualEditorProperties: VisualEditorProperties,
+): void => {
+  const { nodeViews, edgeViews } = networkView
+  updateCyElements<NodeView>(nodeViews, cy.nodes(), visualEditorProperties)
+  updateCyElements<EdgeView>(edgeViews, cy.edges(), visualEditorProperties)
 }

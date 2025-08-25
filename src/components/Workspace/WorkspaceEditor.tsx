@@ -77,6 +77,7 @@ import { NetworkWithView, VisualStyle } from '../../models'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useUndoStore } from '../../store/UndoStore'
+import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
 import { useUrlNavigation } from '../../store/hooks/useUrlNavigation'
 import { logUi } from '../../debug'
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
@@ -247,6 +248,8 @@ const WorkSpaceEditor = (): JSX.Element => {
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
+  const getFunction = useRendererFunctionStore((state) => state.getFunction)
+
   const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
 
   /**
@@ -336,6 +339,13 @@ const WorkSpaceEditor = (): JSX.Element => {
               positionMap: Map<IdType, [number, number]>,
             ): void => {
               updateNodePositions(networkId, positionMap)
+              const fitFunction = getFunction('cyjs', 'fit', networkId)
+
+              // Fit the viewport to center the initial layout
+              if (fitFunction !== undefined) {
+                fitFunction()
+              }
+
               updateSummary(networkId, nextSummary)
               setIsRunning(false)
               setNetworkModified(networkId, false)
@@ -431,7 +441,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       if (isLoadingRef.current) {
         return
       }
-      
+
       isLoadingRef.current = true
       setFailedToLoad(false)
       logUi.info(
