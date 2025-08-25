@@ -27,15 +27,26 @@ import VisualStyleFn, {
   NodeShapeType,
 } from '../../../models/VisualStyleModel'
 import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
-import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
+import {
+  getCyjsVpName,
+  getPieBackgroundColorCyJsProp,
+  getPieBackgroundSizeCyJsProp,
+} from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
 import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
-import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
+import {
+  CyjsVisualPropertyName,
+  CyjsVisualPropertyType,
+} from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 import { NodeShapeMapping } from './cyjs-factory'
 import {
+  VALID_PIE_CHART_SLICE_INDEX_RANGE,
+  getCustomGraphicsPropertyKeys,
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
+  getPieBackgroundColorViewModelProp,
+  getPieBackgroundSizeViewModelProp,
 } from '../../../models/VisualStyleModel/impl/CustomGraphicsImpl'
 
 /**
@@ -257,9 +268,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
      * Adds Cytoscape.js pie chart style properties for up to 16 slices.
      */
     const addCyjsPieProperties = () => {
-      const MAX_SLICES = 16 // Allocate all 16 slices for flexibility.
-      const pieSizeStyleName = 'pie-size'
-      const pieSizeSelectorStr = 'pieSize'
+      const pieSizeStyleName = 'pie-size' as CyjsVisualPropertyType
+      const pieSizeSelectorStr = SpecialPropertyName.PieSize
       const pieSizeMapping = {
         selector: `node[${pieSizeSelectorStr}]`,
         style: {
@@ -267,8 +277,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         },
       }
 
-      const pieStartAngleStyleName = 'pie-start-angle'
-      const pieStartAngleSelectorStr = 'pieStartAngle'
+      const pieStartAngleStyleName = 'pie-start-angle' as CyjsVisualPropertyType
+      const pieStartAngleSelectorStr = SpecialPropertyName.PieStartAngle
       const pieStartAngleMapping = {
         selector: `node[${pieStartAngleSelectorStr}]`,
         style: {
@@ -277,9 +287,13 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
       }
 
       const pieBackGroundMappings = []
-      for (let i = 1; i <= MAX_SLICES; i++) {
-        const bgColorStyleName = `pie-${i}-background-color`
-        const bgColorSelectorStr = `pie${i}BackgroundColor`
+      for (
+        let i = VALID_PIE_CHART_SLICE_INDEX_RANGE[0];
+        i <= VALID_PIE_CHART_SLICE_INDEX_RANGE[1];
+        i++
+      ) {
+        const bgColorStyleName = getPieBackgroundColorCyJsProp(i)
+        const bgColorSelectorStr = getPieBackgroundColorViewModelProp(i)
         const pieBackgroundColorMapping = {
           selector: `node[${bgColorSelectorStr}]`,
           style: {
@@ -287,8 +301,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           },
         }
 
-        const pieSliceSizeStyleName = `pie-${i}-background-size`
-        const pieSliceSizeSelectorStr = `pie${i}BackgroundSize`
+        const pieSliceSizeStyleName = getPieBackgroundSizeCyJsProp(i)
+        const pieSliceSizeSelectorStr = getPieBackgroundSizeViewModelProp(i)
         const pieSliceSizeMapping = {
           selector: `node[${pieSliceSizeSelectorStr}]`,
           style: {
@@ -312,8 +326,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
      * Adds Cytoscape.js ring chart (pie hole) style property.
      */
     const addCyjsRingProperties = () => {
-      const pieHoleSizeStyleName = 'pie-hole'
-      const pieHoleSizeSelectorStr = 'pieHole'
+      const pieHoleSizeStyleName = 'pie-hole' as CyjsVisualPropertyType
+      const pieHoleSizeSelectorStr = SpecialPropertyName.PieHole
       const pieHoleSizeMapping = {
         selector: `node[${pieHoleSizeSelectorStr}]`,
         style: {
@@ -432,26 +446,24 @@ const updateCyElements = <T extends View>(
     if (view !== undefined) {
       view.values.forEach((value, key) => {
         const vpHandler = vpHandlers.get(key)
+
         if (vpHandler) {
           vpHandler(obj, key, value, view)
         } else {
-          if (value === '') {
-            obj.removeData(key)
-          } else {
-            obj.data(key, value)
-          }
+          obj.data(key, value)
         }
       })
 
-      if (!view.values.get('pieSize' as any)) {
-        obj.removeData('pieSize' as any)
-        obj.removeData('pieStartAngle' as any)
-        obj.removeData('pieHole' as any)
-        for (let i = 1; i <= 16; i++) {
-          obj.removeData(`pie${i}BackgroundColor` as any)
-          obj.removeData(`pie${i}BackgroundSize` as any)
+      // Update the cyObject with the custom graphics properties
+      // Custom graphics properties are different from other properties
+      // In between updates, the keys may be removed from the view model
+      // So we need to remove the data from the cyObject
+      const customGraphicsPropertyKeys = getCustomGraphicsPropertyKeys()
+      customGraphicsPropertyKeys.forEach((key) => {
+        if (!view.values.has(key as any)) {
+          obj.removeData(key as any)
         }
-      }
+      })
 
       // If node size is locked, set width equal to height.
       if (visualEditorProperties?.nodeSizeLocked) {

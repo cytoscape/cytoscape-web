@@ -1,4 +1,5 @@
 import { VisualPropertyName } from '..'
+import { VALID_PIE_CHART_SLICE_INDEX_RANGE } from './CustomGraphicsImpl'
 
 import {
   CyjsVisualPropertyType,
@@ -83,6 +84,34 @@ const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
 
   networkBackgroundColor: CyVpName.BackgroundColor,
 } as const
+
+export const getPieBackgroundColorCyJsProp = (
+  sliceIndex: number,
+): CyjsVisualPropertyType => {
+  if (
+    sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
+    sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
+  ) {
+    console.debug(
+      `[cyJsVisualPropertyConverter] getPieBackgroundColorCyJsProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
+    )
+  }
+  return `pie-${sliceIndex}-background-color` as CyjsVisualPropertyType
+}
+
+export const getPieBackgroundSizeCyJsProp = (
+  sliceIndex: number,
+): CyjsVisualPropertyType => {
+  if (
+    sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
+    sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
+  ) {
+    console.debug(
+      `[cyJsVisualPropertyConverter] getPieBackgroundSizeCyJsProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
+    )
+  }
+  return `pie-${sliceIndex}-background-size` as CyjsVisualPropertyType
+}
 
 /**
  * The mapping function from static map of visual property name
