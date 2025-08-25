@@ -69,7 +69,7 @@ import { LockColorCheckbox } from '../VisualPropertyRender/Checkbox'
 import {
   CustomGraphicPicker,
   CustomGraphicRender,
-} from '../VisualPropertyRender/CustomGraphic'
+} from '../VisualPropertyRender/CustomGraphics/CustomGraphic'
 
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,
