@@ -47,6 +47,7 @@ import { AttributeName } from '../../../../models/TableModel/AttributeName'
 import { ColorType } from '../../../../models/VisualStyleModel/VisualPropertyValue'
 import { PieChartRender as PieChartRenderComponent } from './PieChartRender'
 import { RingChartRender as RingChartRenderComponent } from './RingChartRender'
+import { VALID_PIE_CHART_SLICE_INDEX_RANGE } from '../../../../models/VisualStyleModel/impl/CustomGraphicsImpl'
 
 /** The shape of chart-specific properties */
 export type ChartKind =
@@ -70,7 +71,7 @@ interface ChartGraphicFormProps {
   showOnlyAttributes?: boolean
   showOnlyPalette?: boolean
   showOnlyProperties?: boolean
-  showPreview?: boolean
+  hideStepGuidance?: boolean
 }
 type ChartProperties = PieChartPropertiesType | RingChartPropertiesType
 // Expanded palettes (ColorBrewer-like)
@@ -113,6 +114,33 @@ const PALETTES: Record<string, string[]> = {
 }
 const DEFAULT_COLOR = '#000000' as ColorType
 
+// Generate a random color
+function generateRandomColor(): ColorType {
+  const colors = [
+    '#FF6B6B',
+    '#4ECDC4',
+    '#45B7D1',
+    '#96CEB4',
+    '#FFEAA7',
+    '#DDA0DD',
+    '#98D8C8',
+    '#F7DC6F',
+    '#BB8FCE',
+    '#85C1E9',
+    '#F8C471',
+    '#82E0AA',
+    '#F1948A',
+    '#85C1E9',
+    '#D7BDE2',
+    '#A9CCE3',
+    '#F9E79F',
+    '#D5A6BD',
+    '#A2D9CE',
+    '#FAD7A0',
+  ]
+  return colors[Math.floor(Math.random() * colors.length)] as ColorType
+}
+
 function pickEvenly(base: string[], count: number): string[] {
   if (!base.length || count <= 0) return []
   const n = base.length
@@ -134,7 +162,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
   showOnlyAttributes = false,
   showOnlyPalette = false,
   showOnlyProperties = false,
-  showPreview = false,
+  hideStepGuidance = false,
 }) => {
   const { cy_colorScheme, cy_colors, cy_dataColumns, cy_startAngle } =
     properties
@@ -184,7 +212,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
   const addRow = () =>
     update({
       cy_dataColumns: [...cy_dataColumns, nextDefaultCol],
-      cy_colors: [...cy_colors, '#FFFFFF'],
+      cy_colors: [...cy_colors, generateRandomColor()],
     })
 
   const removeRow = (i: number) =>
@@ -226,7 +254,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       {showOnlyAttributes && (
         <>
           {/* Show guidance when no attributes are configured */}
-          {cy_dataColumns.length === 0 && (
+          {!hideStepGuidance && (
             <Box
               sx={{
                 p: 1.5,
@@ -247,12 +275,13 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                 variant="body2"
                 sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
               >
-                Choose which numeric attributes from your node table will be
-                displayed in the{' '}
-                {kind === CustomGraphicsNameType.PieChart
-                  ? 'pie chart'
-                  : 'ring chart'}
-                . Each attribute will become a slice in your chart.
+                {`Select up to ${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]} numeric attributes from your node table to
+                represent each slice of the
+                ${
+                  kind === CustomGraphicsNameType.PieChart
+                    ? 'pie chart'
+                    : 'ring chart'
+                }.`}
               </Typography>
             </Box>
           )}
@@ -287,14 +316,14 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: '80px 1fr 40px 40px',
-              gap: 1,
+              gridTemplateColumns: '70px 1fr 32px 32px',
+              gap: 0.5,
               alignItems: 'center',
-              px: 1,
-              py: 0.5,
+              px: 0.75,
+              py: 0.25,
               bgcolor: 'grey.50',
               borderRadius: 1,
-              mb: 1,
+              mb: 0.5,
             }}
           >
             <Tooltip title="Slice order determines which slice appears first in the chart">
@@ -346,13 +375,13 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                 key={i}
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: '80px 1fr 40px 40px',
+                  gridTemplateColumns: '70px 1fr 32px 32px',
                   alignItems: 'center',
-                  gap: 1,
-                  p: 1,
+                  gap: 0.5,
+                  p: 0.5,
                   border: '1px solid #eee',
                   borderRadius: 1,
-                  mb: 1,
+                  mb: 0.5,
                 }}
               >
                 {/* Slice Order with Up/Down arrows */}
@@ -368,12 +397,12 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: 24,
-                      height: 24,
+                      width: 20,
+                      height: 20,
                       borderRadius: '50%',
                       bgcolor: 'grey.200',
                       color: 'text.secondary',
-                      fontSize: '0.75rem',
+                      fontSize: '0.7rem',
                       fontWeight: 'medium',
                     }}
                   >
@@ -384,22 +413,25 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                       size="small"
                       onClick={() => moveRow(i, (i - 1 + count) % count)}
                       disabled={count <= 1}
-                      sx={{ p: 0.5, minWidth: 24, height: 20 }}
+                      sx={{ p: 0.25, minWidth: 20, height: 16 }}
                     >
-                      <ArrowUpwardIcon sx={{ fontSize: 14 }} />
+                      <ArrowUpwardIcon sx={{ fontSize: 12 }} />
                     </IconButton>
                     <IconButton
                       size="small"
                       onClick={() => moveRow(i, (i + 1) % count)}
                       disabled={count <= 1}
-                      sx={{ p: 0.5, minWidth: 24, height: 20 }}
+                      sx={{ p: 0.25, minWidth: 20, height: 16 }}
                     >
-                      <ArrowDownwardIcon sx={{ fontSize: 14 }} />
+                      <ArrowDownwardIcon sx={{ fontSize: 12 }} />
                     </IconButton>
                   </Box>
                 </Box>
 
-                <FormControl size="small">
+                <FormControl
+                  size="small"
+                  sx={{ '& .MuiInputBase-root': { height: 32 } }}
+                >
                   <InputLabel id={`col-label-${i}`}>Node Attribute</InputLabel>
                   <Select
                     labelId={`col-label-${i}`}
@@ -424,11 +456,11 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                     updateRow(i, col, e.target.value as ColorType)
                   }
                   style={{
-                    width: 32,
-                    height: 32,
+                    width: 24,
+                    height: 24,
                     border: 0,
                     padding: 0,
-                    borderRadius: '4px',
+                    borderRadius: '3px',
                     cursor: 'pointer',
                   }}
                 />
@@ -437,9 +469,9 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                   size="small"
                   onClick={() => removeRow(i)}
                   disabled={count <= 1}
-                  sx={{ justifySelf: 'center' }}
+                  sx={{ justifySelf: 'center', p: 0.5 }}
                 >
-                  <DeleteIcon fontSize="small" />
+                  <DeleteIcon sx={{ fontSize: 16 }} />
                 </IconButton>
               </Box>
             )
@@ -466,7 +498,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                   ? 'Maximum Slices Reached'
                   : nextDefaultCol === ''
                     ? 'No Attributes Available'
-                    : '+ ADD NODE ATTRIBUTE'}
+                    : 'ADD NODE ATTRIBUTE'}
               </Button>
             </Box>
 
@@ -560,20 +592,6 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
                   </Typography>
                 </Box>
               )}
-
-            {/* Show available attributes count when there are some */}
-            {availableColumns.length > 0 && (
-              <Typography
-                variant="caption"
-                sx={{
-                  textAlign: 'center',
-                  color: 'text.secondary',
-                  fontSize: '0.75rem',
-                }}
-              >
-                {availableColumns.length} numeric attributes available
-              </Typography>
-            )}
           </Box>
         </>
       )}
@@ -581,29 +599,34 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       {/* Step 2: Select Palette - Show only palette section */}
       {showOnlyPalette && (
         <>
-          <Box
-            sx={{
-              p: 1.5,
-              border: '1px solid',
-              borderColor: 'grey.300',
-              borderRadius: 1,
-              bgcolor: 'grey.50',
-              mb: 2,
-            }}
-          >
-            <Typography variant="body2" sx={{ fontWeight: 'medium', mb: 0.5 }}>
-              Step 2: Choose Color Palette
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
+          {!hideStepGuidance && (
+            <Box
+              sx={{
+                p: 1.5,
+                border: '1px solid',
+                borderColor: 'grey.300',
+                borderRadius: 1,
+                bgcolor: 'grey.50',
+                mb: 2,
+              }}
             >
-              Optionally Select a color palette for your {cy_dataColumns.length}{' '}
-              attribute
-              {cy_dataColumns.length !== 1 ? 's' : ''}. The colors will be
-              applied to each slice of your chart.
-            </Typography>
-          </Box>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 'medium', mb: 0.5 }}
+              >
+                Step 2: Choose Color Palette
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
+              >
+                Optionally Select a color palette for your{' '}
+                {cy_dataColumns.length} attribute
+                {cy_dataColumns.length !== 1 ? 's' : ''}. The colors will be
+                applied to each slice of your chart.
+              </Typography>
+            </Box>
+          )}
 
           {/* Color Palette dropdown */}
           <Typography variant="subtitle2">Color Palette</Typography>
@@ -693,30 +716,35 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
       {/* Step 3: Configure Properties - Show only properties section */}
       {showOnlyProperties && (
         <>
-          <Box
-            sx={{
-              p: 1.5,
-              border: '1px solid',
-              borderColor: 'grey.300',
-              borderRadius: 1,
-              bgcolor: 'grey.50',
-              mb: 2,
-            }}
-          >
-            <Typography variant="body2" sx={{ fontWeight: 'medium', mb: 0.5 }}>
-              Step 3: Configure Chart Properties
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
+          {!hideStepGuidance && (
+            <Box
+              sx={{
+                p: 1.5,
+                border: '1px solid',
+                borderColor: 'grey.300',
+                borderRadius: 1,
+                bgcolor: 'grey.50',
+                mb: 2,
+              }}
             >
-              Adjust the start angle and{' '}
-              {kind === CustomGraphicsNameType.RingChart
-                ? 'hole size'
-                : 'other properties'}{' '}
-              for your chart.
-            </Typography>
-          </Box>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 'medium', mb: 0.5 }}
+              >
+                Step 3: Configure Chart Properties
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
+              >
+                Adjust the start angle and{' '}
+                {kind === CustomGraphicsNameType.RingChart
+                  ? 'hole size'
+                  : 'other properties'}{' '}
+                for your chart.
+              </Typography>
+            </Box>
+          )}
 
           {/* Start Angle slider/input */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}>
@@ -800,111 +828,37 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
         </>
       )}
 
-      {/* Step 4: Preview - Show all sections with preview */}
-      {showPreview && (
+      {/* Default: Show everything (for backward compatibility) */}
+      {!showOnlyAttributes && !showOnlyPalette && !showOnlyProperties && (
         <>
-          <Box
-            sx={{
-              p: 1.5,
-              border: '1px solid',
-              borderColor: 'grey.300',
-              borderRadius: 1,
-              bgcolor: 'grey.50',
-            }}
-          >
-            <Typography variant="body2" sx={{ fontWeight: 'medium', mb: 1 }}>
-              Preview & Finalize
-            </Typography>
-            <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-              Review your{' '}
-              {kind === CustomGraphicsNameType.PieChart
-                ? 'pie chart'
-                : 'ring chart'}{' '}
-              configuration. You can edit any section below before confirming.
-            </Typography>
-          </Box>
-
-          {/* Show all sections for editing */}
-          <Typography variant="subtitle2">
-            Node Attributes &amp; Colors
-          </Typography>
-          {cy_dataColumns.map((col, i) => {
-            const options = availableColumns.filter(
-              (c) => c === col || !cy_dataColumns.includes(c),
-            )
-            return (
-              <Box
-                key={i}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  p: 1,
-                  border: '1px solid #eee',
-                  borderRadius: 1,
-                }}
-              >
-                <IconButton
-                  size="small"
-                  onClick={() => moveRow(i, (i - 1 + count) % count)}
-                  disabled={count <= 1}
-                >
-                  <ArrowUpwardIcon fontSize="small" />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => moveRow(i, (i + 1) % count)}
-                  disabled={count <= 1}
-                >
-                  <ArrowDownwardIcon fontSize="small" />
-                </IconButton>
-                <FormControl sx={{ flex: 1 }} size="small">
-                  <InputLabel id={`col-label-${i}`}>Node Attribute</InputLabel>
-                  <Select
-                    labelId={`col-label-${i}`}
-                    value={col}
-                    label="Node Attribute"
-                    onChange={(e: SelectChangeEvent<string>) =>
-                      updateRow(i, e.target.value, cy_colors[i] || '#000000')
-                    }
-                  >
-                    {options.map((c) => (
-                      <MenuItem key={c} value={c}>
-                        {c}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <input
-                  type="color"
-                  value={(cy_colors[i] ?? DEFAULT_COLOR) as ColorType}
-                  onChange={(e) =>
-                    updateRow(i, col, e.target.value as ColorType)
-                  }
-                  style={{ width: 32, height: 32, border: 0, padding: 0 }}
-                />
-                <IconButton
-                  size="small"
-                  onClick={() => removeRow(i)}
-                  disabled={count <= 1}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            )
-          })}
-
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-            <Button
-              startIcon={<AddIcon />}
-              size="small"
-              onClick={addRow}
-              disabled={nextDefaultCol === ''}
+          {/* Show guidance when no attributes are configured */}
+          {cy_dataColumns.length === 0 && (
+            <Box
+              sx={{
+                p: 2,
+                border: '1px solid',
+                borderColor: 'primary.main',
+                borderRadius: 1,
+                bgcolor: 'primary.light',
+                color: 'primary.contrastText',
+              }}
             >
-              Add Node Attribute
-            </Button>
-          </Box>
+              <Typography variant="body2" sx={{ fontWeight: 'medium', mb: 1 }}>
+                Getting Started
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                To create a{' '}
+                {kind === CustomGraphicsNameType.PieChart
+                  ? 'pie chart'
+                  : 'ring chart'}
+                , you need to add numeric attributes from your node table. Each
+                attribute will become a slice in your chart. Click "Add Node
+                Attribute" below to get started.
+              </Typography>
+            </Box>
+          )}
 
+          {/* Color Palette dropdown */}
           <Typography variant="subtitle2">Color Palette</Typography>
           <FormControl size="small">
             <InputLabel id="palette-label">Palette</InputLabel>
@@ -959,6 +913,131 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
             </Select>
           </FormControl>
 
+          {/* Node Attributes & Colors */}
+          <Typography variant="subtitle2">
+            Node Attributes &amp; Colors
+          </Typography>
+          {cy_dataColumns.map((col, i) => {
+            const options = availableColumns.filter(
+              (c) => c === col || !cy_dataColumns.includes(c),
+            )
+            return (
+              <Box
+                key={i}
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: '70px 1fr 32px 32px',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  p: 0.5,
+                  border: '1px solid #eee',
+                  borderRadius: 1,
+                  mb: 0.5,
+                }}
+              >
+                {/* Slice Order with Up/Down arrows */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      bgcolor: 'grey.200',
+                      color: 'text.secondary',
+                      fontSize: '0.7rem',
+                      fontWeight: 'medium',
+                    }}
+                  >
+                    {i + 1}
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => moveRow(i, (i - 1 + count) % count)}
+                      disabled={count <= 1}
+                      sx={{ p: 0.25, minWidth: 20, height: 16 }}
+                    >
+                      <ArrowUpwardIcon sx={{ fontSize: 12 }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => moveRow(i, (i + 1) % count)}
+                      disabled={count <= 1}
+                      sx={{ p: 0.25, minWidth: 20, height: 16 }}
+                    >
+                      <ArrowDownwardIcon sx={{ fontSize: 12 }} />
+                    </IconButton>
+                  </Box>
+                </Box>
+
+                <FormControl
+                  size="small"
+                  sx={{ '& .MuiInputBase-root': { height: 32 } }}
+                >
+                  <InputLabel id={`col-label-${i}`}>Node Attribute</InputLabel>
+                  <Select
+                    labelId={`col-label-${i}`}
+                    value={col}
+                    label="Node Attribute"
+                    onChange={(e: SelectChangeEvent<string>) =>
+                      updateRow(i, e.target.value, cy_colors[i] || '#000000')
+                    }
+                  >
+                    {options.map((c) => (
+                      <MenuItem key={c} value={c}>
+                        {c}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <input
+                  type="color"
+                  value={(cy_colors[i] ?? DEFAULT_COLOR) as ColorType}
+                  onChange={(e) =>
+                    updateRow(i, col, e.target.value as ColorType)
+                  }
+                  style={{
+                    width: 24,
+                    height: 24,
+                    border: 0,
+                    padding: 0,
+                    borderRadius: '3px',
+                    cursor: 'pointer',
+                  }}
+                />
+                <IconButton
+                  size="small"
+                  onClick={() => removeRow(i)}
+                  disabled={count <= 1}
+                  sx={{ justifySelf: 'center', p: 0.5 }}
+                >
+                  <DeleteIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Box>
+            )
+          })}
+
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+            <Button
+              startIcon={<AddIcon />}
+              size="small"
+              onClick={addRow}
+              disabled={nextDefaultCol === ''}
+            >
+              Add Node Attribute
+            </Button>
+          </Box>
+
+          {/* Start Angle slider/input */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Typography variant="subtitle2">Start Angle (degrees)</Typography>
@@ -995,6 +1074,7 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
             </Box>
           </Box>
 
+          {/* Hole Size for RingChart only */}
           {kind === CustomGraphicsNameType.RingChart && (
             <Box
               sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}
@@ -1038,268 +1118,6 @@ const ChartGraphicForm: React.FC<ChartGraphicFormProps> = ({
           )}
         </>
       )}
-
-      {/* Default: Show everything (for backward compatibility) */}
-      {!showOnlyAttributes &&
-        !showOnlyPalette &&
-        !showOnlyProperties &&
-        !showPreview && (
-          <>
-            {/* Show guidance when no attributes are configured */}
-            {cy_dataColumns.length === 0 && (
-              <Box
-                sx={{
-                  p: 2,
-                  border: '1px solid',
-                  borderColor: 'primary.main',
-                  borderRadius: 1,
-                  bgcolor: 'primary.light',
-                  color: 'primary.contrastText',
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 'medium', mb: 1 }}
-                >
-                  Getting Started
-                </Typography>
-                <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                  To create a{' '}
-                  {kind === CustomGraphicsNameType.PieChart
-                    ? 'pie chart'
-                    : 'ring chart'}
-                  , you need to add numeric attributes from your node table.
-                  Each attribute will become a slice in your chart. Click "Add
-                  Node Attribute" below to get started.
-                </Typography>
-              </Box>
-            )}
-
-            {/* Color Palette dropdown */}
-            <Typography variant="subtitle2">Color Palette</Typography>
-            <FormControl size="small">
-              <InputLabel id="palette-label">Palette</InputLabel>
-              <Select
-                labelId="palette-label"
-                value={cy_colorScheme}
-                label="Palette"
-                onChange={(e: SelectChangeEvent<string>) =>
-                  handlePaletteChange(e.target.value)
-                }
-              >
-                <MenuItem value="">
-                  <em>None</em>
-                </MenuItem>
-                {Object.entries(PALETTES).map(([name, colors]) => (
-                  <MenuItem key={name} value={name}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        width: '100%',
-                      }}
-                    >
-                      <Typography variant="body2">{name}</Typography>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          gap: 0.5,
-                          flexWrap: 'nowrap',
-                          ml: 2,
-                        }}
-                      >
-                        {colors.map((col) => (
-                          <Tooltip key={col} title={col}>
-                            <Box
-                              sx={{
-                                width: 12,
-                                height: 12,
-                                bgcolor: col,
-                                border: '1px solid',
-                                borderColor: 'grey.400',
-                                borderRadius: 0.5,
-                              }}
-                            />
-                          </Tooltip>
-                        ))}
-                      </Box>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {/* Node Attributes & Colors */}
-            <Typography variant="subtitle2">
-              Node Attributes &amp; Colors
-            </Typography>
-            {cy_dataColumns.map((col, i) => {
-              const options = availableColumns.filter(
-                (c) => c === col || !cy_dataColumns.includes(c),
-              )
-              return (
-                <Box
-                  key={i}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    p: 1,
-                    border: '1px solid #eee',
-                    borderRadius: 1,
-                  }}
-                >
-                  <IconButton
-                    size="small"
-                    onClick={() => moveRow(i, (i - 1 + count) % count)}
-                    disabled={count <= 1}
-                  >
-                    <ArrowUpwardIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => moveRow(i, (i + 1) % count)}
-                    disabled={count <= 1}
-                  >
-                    <ArrowDownwardIcon fontSize="small" />
-                  </IconButton>
-                  <FormControl sx={{ flex: 1 }} size="small">
-                    <InputLabel id={`col-label-${i}`}>
-                      Node Attribute
-                    </InputLabel>
-                    <Select
-                      labelId={`col-label-${i}`}
-                      value={col}
-                      label="Node Attribute"
-                      onChange={(e: SelectChangeEvent<string>) =>
-                        updateRow(i, e.target.value, cy_colors[i] || '#000000')
-                      }
-                    >
-                      {options.map((c) => (
-                        <MenuItem key={c} value={c}>
-                          {c}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <input
-                    type="color"
-                    value={(cy_colors[i] ?? DEFAULT_COLOR) as ColorType}
-                    onChange={(e) =>
-                      updateRow(i, col, e.target.value as ColorType)
-                    }
-                    style={{ width: 32, height: 32, border: 0, padding: 0 }}
-                  />
-                  <IconButton
-                    size="small"
-                    onClick={() => removeRow(i)}
-                    disabled={count <= 1}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              )
-            })}
-
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-              <Button
-                startIcon={<AddIcon />}
-                size="small"
-                onClick={addRow}
-                disabled={nextDefaultCol === ''}
-              >
-                Add Node Attribute
-              </Button>
-            </Box>
-
-            {/* Start Angle slider/input */}
-            <Box
-              sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography variant="subtitle2">
-                  Start Angle (degrees)
-                </Typography>
-                <Tooltip title="0° → 3 o'clock; 90° → 12 o'clock; 180° → 9 o'clock; 270° → 6 o'clock">
-                  <InfoOutlinedIcon fontSize="small" color="action" />
-                </Tooltip>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Slider
-                  value={cy_startAngle}
-                  min={0}
-                  max={360}
-                  step={1}
-                  valueLabelDisplay="auto"
-                  onChange={(_, newValue) => {
-                    const vNum = Array.isArray(newValue)
-                      ? newValue[0]
-                      : newValue
-                    update({ cy_startAngle: vNum })
-                  }}
-                  sx={{ flex: 1 }}
-                />
-                <TextField
-                  type="number"
-                  value={cy_startAngle}
-                  onChange={(e) => {
-                    let v = parseInt(e.target.value, 10)
-                    if (isNaN(v)) v = 0
-                    v = Math.max(0, Math.min(360, v))
-                    update({ cy_startAngle: v })
-                  }}
-                  inputProps={{ min: 0, max: 360 }}
-                  size="small"
-                  sx={{ width: 80 }}
-                />
-              </Box>
-            </Box>
-
-            {/* Hole Size for RingChart only */}
-            {kind === CustomGraphicsNameType.RingChart && (
-              <Box
-                sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Typography variant="subtitle2">Hole Size (0–1)</Typography>
-                  <Tooltip title="0 → full pie (no hole); 1 → completely hollow (no chart)">
-                    <InfoOutlinedIcon fontSize="small" color="action" />
-                  </Tooltip>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Slider
-                    value={cy_holeSize ?? 0.4}
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    valueLabelDisplay="auto"
-                    onChange={(_, newValue) => {
-                      const vNum = Array.isArray(newValue)
-                        ? newValue[0]
-                        : newValue
-                      update({ cy_holeSize: vNum })
-                    }}
-                    sx={{ flex: 1 }}
-                  />
-                  <TextField
-                    type="number"
-                    value={cy_holeSize ?? 0.4}
-                    onChange={(e) => {
-                      let v = parseFloat(e.target.value)
-                      if (isNaN(v)) v = 0.4
-                      v = Math.max(0, Math.min(1, v))
-                      update({ cy_holeSize: v })
-                    }}
-                    inputProps={{ min: 0, max: 1, step: 0.05 }}
-                    size="small"
-                    sx={{ width: 80 }}
-                  />
-                </Box>
-              </Box>
-            )}
-          </>
-        )}
     </Box>
   )
 }
@@ -1443,7 +1261,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   const getStepTitle = (step: WizardStep): string => {
     switch (step) {
       case WizardStep.SelectType:
-        return 'Select Chart Type'
+        return 'Select Custom Graphics Type'
       case WizardStep.SelectAttributes:
         return 'Select Node Attributes'
       case WizardStep.SelectPalette:
@@ -1546,70 +1364,243 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
 
   // Step 1: Select node attributes
   const renderSelectAttributesStep = () => (
-    <ChartGraphicForm
-      properties={currentProps}
-      onChange={updateCurrent}
-      currentNetworkId={currentNetworkId}
-      kind={fullKind}
-      showOnlyAttributes={true}
-    />
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Chart Preview - Fixed at top */}
+      <Box
+        sx={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          bgcolor: 'white',
+          borderBottom: '1px solid #e0e0e0',
+          pb: 2,
+          mb: 2,
+        }}
+      >
+        <Box
+          sx={{
+            border: '1px solid #e0e0e0',
+            borderRadius: 1,
+            bgcolor: '#fafafa',
+            p: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
+            Chart Preview
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            {kind === CustomGraphicsNameType.PieChart ? (
+              <PieChartRenderComponent
+                properties={pieProps as PieChartPropertiesType}
+                size={80}
+                showLabels={false}
+              />
+            ) : (
+              <RingChartRenderComponent
+                properties={ringProps as RingChartPropertiesType}
+                size={80}
+                showLabels={false}
+              />
+            )}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Attributes Form */}
+      <ChartGraphicForm
+        properties={currentProps}
+        onChange={updateCurrent}
+        currentNetworkId={currentNetworkId}
+        kind={fullKind}
+        showOnlyAttributes={true}
+      />
+    </Box>
   )
 
   // Step 2: Select color palette
   const renderSelectPaletteStep = () => (
-    <ChartGraphicForm
-      properties={currentProps}
-      onChange={updateCurrent}
-      currentNetworkId={currentNetworkId}
-      kind={fullKind}
-      showOnlyPalette={true}
-    />
-  )
-
-  // Step 3: Configure properties
-  const renderConfigurePropertiesStep = () => (
-    <ChartGraphicForm
-      properties={currentProps}
-      onChange={updateCurrent}
-      currentNetworkId={currentNetworkId}
-      kind={fullKind}
-      showOnlyProperties={true}
-    />
-  )
-
-  // Step 4: Preview and finalize
-  const renderPreviewStep = () => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Chart Preview */}
-      <Box sx={{ textAlign: 'center', py: 2 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
+      <Box
+        sx={{
+          border: '1px solid #e0e0e0',
+          borderRadius: 1,
+          bgcolor: '#fafafa',
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
           Chart Preview
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
           {kind === CustomGraphicsNameType.PieChart ? (
             <PieChartRenderComponent
               properties={pieProps as PieChartPropertiesType}
-              size={120}
-              showLabels={true}
+              size={80}
+              showLabels={false}
             />
           ) : (
             <RingChartRenderComponent
               properties={ringProps as RingChartPropertiesType}
-              size={120}
-              showLabels={true}
+              size={80}
+              showLabels={false}
             />
           )}
         </Box>
       </Box>
 
-      {/* Editable Form */}
+      {/* Palette Form */}
       <ChartGraphicForm
         properties={currentProps}
         onChange={updateCurrent}
         currentNetworkId={currentNetworkId}
         kind={fullKind}
-        showPreview={true}
+        showOnlyPalette={true}
       />
+    </Box>
+  )
+
+  // Step 3: Configure properties
+  const renderConfigurePropertiesStep = () => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Chart Preview */}
+      <Box
+        sx={{
+          border: '1px solid #e0e0e0',
+          borderRadius: 1,
+          bgcolor: '#fafafa',
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
+          Chart Preview
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          {kind === CustomGraphicsNameType.PieChart ? (
+            <PieChartRenderComponent
+              properties={pieProps as PieChartPropertiesType}
+              size={80}
+              showLabels={false}
+            />
+          ) : (
+            <RingChartRenderComponent
+              properties={ringProps as RingChartPropertiesType}
+              size={80}
+              showLabels={false}
+            />
+          )}
+        </Box>
+      </Box>
+
+      {/* Properties Form */}
+      <ChartGraphicForm
+        properties={currentProps}
+        onChange={updateCurrent}
+        currentNetworkId={currentNetworkId}
+        kind={fullKind}
+        showOnlyProperties={true}
+      />
+    </Box>
+  )
+
+  // Step 4: Preview and finalize
+  const renderPreviewStep = () => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Fixed Chart Preview at Top */}
+      <Box
+        sx={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          bgcolor: 'white',
+          borderBottom: '1px solid #e0e0e0',
+          pb: 2,
+          mb: 2,
+        }}
+      >
+        <Box
+          sx={{
+            border: '1px solid #e0e0e0',
+            borderRadius: 1,
+            bgcolor: '#fafafa',
+            p: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
+            Chart Preview
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            {kind === CustomGraphicsNameType.PieChart ? (
+              <PieChartRenderComponent
+                properties={pieProps as PieChartPropertiesType}
+                size={80}
+                showLabels={false}
+              />
+            ) : (
+              <RingChartRenderComponent
+                properties={ringProps as RingChartPropertiesType}
+                size={80}
+                showLabels={false}
+              />
+            )}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Reuse step components for editing */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* Attributes Section */}
+        <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
+          <ChartGraphicForm
+            properties={currentProps}
+            onChange={updateCurrent}
+            currentNetworkId={currentNetworkId}
+            kind={fullKind}
+            showOnlyAttributes={true}
+            hideStepGuidance={true}
+          />
+        </Box>
+
+        {/* Palette Section */}
+        <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
+          <ChartGraphicForm
+            properties={currentProps}
+            onChange={updateCurrent}
+            currentNetworkId={currentNetworkId}
+            kind={fullKind}
+            showOnlyPalette={true}
+            hideStepGuidance={true}
+          />
+        </Box>
+
+        {/* Properties Section */}
+        <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
+          <ChartGraphicForm
+            properties={currentProps}
+            onChange={updateCurrent}
+            currentNetworkId={currentNetworkId}
+            kind={fullKind}
+            showOnlyProperties={true}
+            hideStepGuidance={true}
+          />
+        </Box>
+      </Box>
     </Box>
   )
 
@@ -1653,7 +1644,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
           justifyContent: 'center',
           alignItems: 'center',
           gap: 1,
-          p: 2,
+          p: 1,
           borderBottom: '1px solid #e0e0e0',
           bgcolor: '#fafafa',
         }}
@@ -1691,13 +1682,13 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                 <Box
                   onClick={() => setCurrentStep(stepInfo.step)}
                   sx={{
-                    width: 32,
-                    height: 32,
+                    width: 24,
+                    height: 24,
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '14px',
+                    fontSize: '12px',
                     fontWeight: 'medium',
                     bgcolor:
                       currentStep === stepInfo.step ? '#1976d2' : '#e0e0e0',
@@ -1718,14 +1709,14 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                   {currentStep > stepInfo.step ? (
                     '✓'
                   ) : (
-                    <IconComponent sx={{ fontSize: 16 }} />
+                    <IconComponent sx={{ fontSize: 14 }} />
                   )}
                 </Box>
                 <Typography
                   variant="caption"
                   onClick={() => setCurrentStep(stepInfo.step)}
                   sx={{
-                    fontSize: '0.7rem',
+                    fontSize: '0.65rem',
                     fontWeight:
                       currentStep === stepInfo.step ? 'bold' : 'normal',
                     color: currentStep === stepInfo.step ? '#1976d2' : '#666',
@@ -1743,7 +1734,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
               {index < 4 && (
                 <Box
                   sx={{
-                    width: 20,
+                    width: 16,
                     height: 2,
                     bgcolor:
                       currentStep > stepInfo.step ? '#4caf50' : '#e0e0e0',

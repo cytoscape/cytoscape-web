@@ -55,20 +55,21 @@ const StyledAccordion = ({ label, children }: StyledAccordionProps) => (
     <AccordionSummary
       expandIcon={<ExpandMoreIcon />}
       sx={{
-        pl: 0,
+        pl: 1,
         mb: 1,
         minHeight: 32,
         backgroundColor: '#f5f5f5',
         '& .MuiAccordionSummary-content': { margin: 0 },
       }}
     >
-      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
         {label}
       </Typography>
     </AccordionSummary>
     <AccordionDetails
       sx={{
         p: 0,
+        pl: 2,
         '& > *:not(:last-child)': { mb: 1 },
       }}
     >
@@ -124,11 +125,11 @@ function VisualPropertyView(props: {
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         {disabled ? (
           <EmptyVisualPropertyViewBox
-            sx={{ ml: 0.5, mr: 1.5, cursor: 'not-allowed' }}
+            sx={{ ml: 4, mr: 1.5, cursor: 'not-allowed' }}
           />
         ) : (
           <DefaultValueForm
-            sx={{ ml: 0.5, mr: 1.5 }}
+            sx={{ ml: 4, mr: 1.5 }}
             visualProperty={visualProperty}
             currentNetworkId={currentNetworkId}
           />
@@ -221,18 +222,7 @@ export default function VizmapperView(props: {
   const allNodeVps = VisualStyleFn.nodeVisualProperties(visualStyle)
   const customGraphicVps = getCustomGraphicNodeVps(allNodeVps)
   const nonCustomGraphicVps = getNonCustomGraphicVps(allNodeVps)
-
-  const firstCustom = getFirstValidCustomGraphicVp(customGraphicVps)
-  const fallbackImgs: VisualProperty<VisualPropertyValueType>[] = (() => {
-    const result: VisualProperty<VisualPropertyValueType>[] = []
-    for (let i = 1; i <= 1; i++) {
-      const img = customGraphicVps.find(
-        (vp) => vp.name === `nodeImageChart${i}`,
-      )
-      if (img) result.push(img)
-    }
-    return result
-  })()
+  const customGraphicsVp = getFirstValidCustomGraphicVp(customGraphicVps)
 
   const borderProps = nonCustomGraphicVps.filter(
     (vp) =>
@@ -254,7 +244,7 @@ export default function VizmapperView(props: {
       !fillProps.includes(vp) &&
       !labelProps.includes(vp),
   )
-  const customProps = [...fallbackImgs]
+  const customProps = customGraphicsVp ? [customGraphicsVp] : []
 
   // --- Edge props grouping ---
   const edgeVps = VisualStyleFn.edgeVisualProperties(visualStyle)
@@ -316,7 +306,7 @@ export default function VizmapperView(props: {
         sx={{
           display: 'flex',
           p: 1,
-          ml: 0.5,
+          ml: 6,
           minHeight: 40,
           pointerEvents: 'none',
         }}
