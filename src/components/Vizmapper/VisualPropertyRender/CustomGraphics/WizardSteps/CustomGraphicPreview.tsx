@@ -8,19 +8,19 @@ import {
 import { PieChartRender as PieChartRenderComponent } from '../PieChartRender'
 import { RingChartRender as RingChartRenderComponent } from '../RingChartRender'
 
-export type ChartKind =
+export type CustomGraphicKind =
   | typeof CustomGraphicsNameType.PieChart
   | typeof CustomGraphicsNameType.RingChart
 
-interface ChartPreviewProps {
-  kind: ChartKind
+interface CustomGraphicPreviewProps {
+  kind: CustomGraphicKind
   properties: PieChartPropertiesType | RingChartPropertiesType
   size?: number
   showLabels?: boolean
   sticky?: boolean
 }
 
-export const ChartPreview: React.FC<ChartPreviewProps> = ({
+export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
   kind,
   properties,
   size = 80,
@@ -41,7 +41,7 @@ export const ChartPreview: React.FC<ChartPreviewProps> = ({
       }}
     >
       <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
-        Chart Preview
+        Custom Graphic Preview
       </Typography>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         {kind === CustomGraphicsNameType.PieChart ? (

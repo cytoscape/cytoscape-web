@@ -9,8 +9,11 @@ import {
 } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue'
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
+import { ValueTypeName } from '../../../../../models/TableModel/ValueTypeName'
 import { WizardStep } from '../WizardSteps/StepProgress'
-import { ChartKind } from '../WizardSteps/SelectTypeStep'
+import { CustomGraphicKind } from '../WizardSteps/SelectTypeStep'
+import { useTableStore } from '../../../../../store/TableStore'
+import { useWorkspaceStore } from '../../../../../store/WorkspaceStore'
 
 // Default properties
 const defaultPieProps: PieChartPropertiesType = {
@@ -39,6 +42,38 @@ export const useCustomGraphicState = ({
   open,
   initialValue,
 }: UseCustomGraphicStateProps) => {
+  // Get current network ID and node table
+  const currentNetworkId = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+  const tables = useTableStore((state) => state.tables)
+  const nodeTable = tables[currentNetworkId]?.nodeTable
+
+  // Check if the current network has numeric properties in the node table
+  const hasNumericProperties = React.useMemo(() => {
+    if (!nodeTable?.rows || !nodeTable?.columns) return false
+
+    const rows = Array.from(nodeTable.rows.values())
+    if (!rows.length) return false
+
+    return nodeTable.columns.some((col) => {
+      const vals = rows.map((r) => r[col.name])
+      const allInts = vals.every((v) => Number.isInteger(v))
+      const allNums = vals.every((v) => typeof v === 'number')
+      const vt = allInts
+        ? ValueTypeName.Integer
+        : allNums
+          ? ValueTypeName.Double
+          : null
+
+      return (
+        vt === ValueTypeName.Integer ||
+        vt === ValueTypeName.Double ||
+        vt === ValueTypeName.Long
+      )
+    })
+  }, [nodeTable])
+
   // Determine initial state based on whether a custom graphic exists
   const hasExistingGraphic =
     initialValue && initialValue.name !== CustomGraphicsNameType.None
@@ -49,7 +84,7 @@ export const useCustomGraphicState = ({
     : WizardStep.SelectType
 
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(initialStep)
-  const [kind, setKind] = React.useState<ChartKind>(
+  const [kind, setKind] = React.useState<CustomGraphicKind>(
     CustomGraphicsNameType.PieChart,
   )
   const [pieProps, setPieProps] =
@@ -61,7 +96,7 @@ export const useCustomGraphicState = ({
     if (!open) return
 
     // Determine initial kind
-    const initialKind: ChartKind =
+    const initialKind: CustomGraphicKind =
       initialValue?.name === CustomGraphicsNameType.RingChart
         ? CustomGraphicsNameType.RingChart
         : CustomGraphicsNameType.PieChart
@@ -109,6 +144,11 @@ export const useCustomGraphicState = ({
 
   // Navigation functions
   const goToNextStep = () => {
+    // Prevent navigation if no numeric properties and trying to go past SelectType step
+    if (currentStep === WizardStep.SelectType && !hasNumericProperties) {
+      return
+    }
+
     if (currentStep < WizardStep.Preview) {
       setCurrentStep(currentStep + 1)
     }
@@ -177,6 +217,7 @@ export const useCustomGraphicState = ({
     setKind,
     currentProps,
     isLastStep,
+    hasNumericProperties,
     goToNextStep,
     goToPreviousStep,
     handleRemoveCharts,

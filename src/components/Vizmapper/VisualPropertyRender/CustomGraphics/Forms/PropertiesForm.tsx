@@ -3,11 +3,11 @@ import { Box, Typography, Slider, TextField, Tooltip } from '@mui/material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { StepGuidance } from '../WizardSteps/StepGuidance'
-import { ChartKind } from '../WizardSteps/ChartPreview'
+import { CustomGraphicKind } from '../WizardSteps/SelectTypeStep'
 interface PropertiesFormProps {
   startAngle: number
   holeSize?: number
-  kind: ChartKind
+  kind: CustomGraphicKind
   onUpdate: (startAngle: number, holeSize?: number) => void
   hideGuidance?: boolean
 }
@@ -51,7 +51,7 @@ export const PropertiesForm: React.FC<PropertiesFormProps> = ({
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {!hideGuidance && (
         <StepGuidance
-          title="Step 3: Configure Chart Properties"
+          title="Step 3: Configure Custom Graphic Properties"
           description={`Adjust the start angle and ${kind === CustomGraphicsNameType.RingChart ? 'hole size' : 'other properties'} for your chart.`}
         />
       )}

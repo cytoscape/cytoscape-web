@@ -17,6 +17,7 @@ export enum WizardStep {
 interface StepProgressProps {
   currentStep: WizardStep
   onStepClick: (step: WizardStep) => void
+  hasNumericProperties?: boolean
 }
 
 const STEP_CONFIG = [
@@ -34,6 +35,7 @@ const STEP_CONFIG = [
 export const StepProgress: React.FC<StepProgressProps> = ({
   currentStep,
   onStepClick,
+  hasNumericProperties = true,
 }) => {
   return (
     <Box
@@ -49,6 +51,10 @@ export const StepProgress: React.FC<StepProgressProps> = ({
     >
       {STEP_CONFIG.map((stepInfo, index) => {
         const IconComponent = stepInfo.icon
+        const isDisabled =
+          !hasNumericProperties && stepInfo.step > WizardStep.SelectType
+        const isClickable = stepInfo.step <= currentStep || hasNumericProperties
+
         return (
           <React.Fragment key={stepInfo.step}>
             <Box
@@ -60,7 +66,7 @@ export const StepProgress: React.FC<StepProgressProps> = ({
               }}
             >
               <Box
-                onClick={() => onStepClick(stepInfo.step)}
+                onClick={() => isClickable && onStepClick(stepInfo.step)}
                 sx={{
                   width: 24,
                   height: 24,
@@ -70,18 +76,27 @@ export const StepProgress: React.FC<StepProgressProps> = ({
                   justifyContent: 'center',
                   fontSize: '12px',
                   fontWeight: 'medium',
-                  bgcolor:
-                    currentStep === stepInfo.step ? '#1976d2' : '#e0e0e0',
-                  color: currentStep === stepInfo.step ? 'white' : '#666',
+                  bgcolor: isDisabled
+                    ? '#f0f0f0'
+                    : currentStep === stepInfo.step
+                      ? '#1976d2'
+                      : '#e0e0e0',
+                  color: isDisabled
+                    ? '#999'
+                    : currentStep === stepInfo.step
+                      ? 'white'
+                      : '#666',
                   border:
                     currentStep > stepInfo.step ? '2px solid #4caf50' : 'none',
-                  cursor: 'pointer',
+                  cursor: isClickable ? 'pointer' : 'not-allowed',
                   transition: 'all 0.2s ease',
-                  '&:hover': {
-                    transform: 'scale(1.1)',
-                    bgcolor:
-                      currentStep === stepInfo.step ? '#1565c0' : '#d0d0d0',
-                  },
+                  '&:hover': isClickable
+                    ? {
+                        transform: 'scale(1.1)',
+                        bgcolor:
+                          currentStep === stepInfo.step ? '#1565c0' : '#d0d0d0',
+                      }
+                    : {},
                 }}
               >
                 {currentStep > stepInfo.step ? (
@@ -92,17 +107,10 @@ export const StepProgress: React.FC<StepProgressProps> = ({
               </Box>
               <Typography
                 variant="caption"
-                onClick={() => onStepClick(stepInfo.step)}
                 sx={{
-                  fontSize: '0.65rem',
-                  fontWeight: currentStep === stepInfo.step ? 'bold' : 'normal',
-                  color: currentStep === stepInfo.step ? '#1976d2' : '#666',
-                  cursor: 'pointer',
-                  transition: 'color 0.2s ease',
-                  '&:hover': {
-                    color:
-                      currentStep === stepInfo.step ? '#1565c0' : '#1976d2',
-                  },
+                  color: isDisabled ? '#999' : 'inherit',
+                  textAlign: 'center',
+                  fontSize: '0.7rem',
                 }}
               >
                 {stepInfo.label}
@@ -111,9 +119,9 @@ export const StepProgress: React.FC<StepProgressProps> = ({
             {index < STEP_CONFIG.length - 1 && (
               <Box
                 sx={{
-                  width: 16,
-                  height: 2,
-                  bgcolor: currentStep > stepInfo.step ? '#4caf50' : '#e0e0e0',
+                  width: 20,
+                  height: 1,
+                  bgcolor: isDisabled ? '#f0f0f0' : '#e0e0e0',
                 }}
               />
             )}

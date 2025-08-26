@@ -22,6 +22,7 @@ import { ColorType } from '../../../../../models/VisualStyleModel/VisualProperty
 import { ValueTypeName } from '../../../../../models/TableModel'
 import { VALID_PIE_CHART_SLICE_INDEX_RANGE } from '../../../../../models/VisualStyleModel/impl/CustomGraphicsImpl'
 import { StepGuidance } from '../WizardSteps/StepGuidance'
+import { generateRandomColor } from '../utils/colorUtils'
 
 interface AttributesFormProps {
   dataColumns: AttributeName[]
@@ -33,33 +34,6 @@ interface AttributesFormProps {
 }
 
 const DEFAULT_COLOR = '#000000' as ColorType
-
-// Generate a random color
-function generateRandomColor(): ColorType {
-  const colors = [
-    '#FF6B6B',
-    '#4ECDC4',
-    '#45B7D1',
-    '#96CEB4',
-    '#FFEAA7',
-    '#DDA0DD',
-    '#98D8C8',
-    '#F7DC6F',
-    '#BB8FCE',
-    '#85C1E9',
-    '#F8C471',
-    '#82E0AA',
-    '#F1948A',
-    '#85C1E9',
-    '#D7BDE2',
-    '#A9CCE3',
-    '#F9E79F',
-    '#D5A6BD',
-    '#A2D9CE',
-    '#FAD7A0',
-  ]
-  return colors[Math.floor(Math.random() * colors.length)] as ColorType
-}
 
 export const AttributesForm: React.FC<AttributesFormProps> = ({
   dataColumns,

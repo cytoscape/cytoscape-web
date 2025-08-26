@@ -10,7 +10,7 @@ export { PropertiesForm } from './Forms/PropertiesForm'
 
 // Wizard step components
 export { SelectTypeStep } from './WizardSteps/SelectTypeStep'
-export { ChartPreview } from './WizardSteps/ChartPreview'
+export { CustomGraphicPreview } from './WizardSteps/CustomGraphicPreview'
 export { StepProgress, WizardStep } from './WizardSteps/StepProgress'
 export { StepGuidance } from './WizardSteps/StepGuidance'
 
@@ -22,4 +22,4 @@ export { generateRandomColor, pickEvenly } from './utils/colorUtils'
 export { useCustomGraphicState } from './hooks/useCustomGraphicState'
 
 // Types
-export type { ChartKind } from './WizardSteps/SelectTypeStep'
+export type { CustomGraphicKind } from './WizardSteps/SelectTypeStep'

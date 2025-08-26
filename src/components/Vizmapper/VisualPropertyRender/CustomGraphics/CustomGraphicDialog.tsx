@@ -20,8 +20,8 @@ import { ColorType } from '../../../../models/VisualStyleModel/VisualPropertyVal
 import { AttributeName } from '../../../../models/TableModel/AttributeName'
 
 // Import extracted components
-import { SelectTypeStep, ChartKind } from './WizardSteps/SelectTypeStep'
-import { ChartPreview } from './WizardSteps/ChartPreview'
+import { SelectTypeStep, CustomGraphicKind } from './WizardSteps/SelectTypeStep'
+import { CustomGraphicPreview } from './WizardSteps/CustomGraphicPreview'
 import { StepProgress, WizardStep } from './WizardSteps/StepProgress'
 import { StepGuidance } from './WizardSteps/StepGuidance'
 import { AttributesForm } from './Forms/AttributesForm'
@@ -59,6 +59,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     setKind,
     currentProps,
     isLastStep,
+    hasNumericProperties,
     goToNextStep,
     goToPreviousStep,
     handleRemoveCharts,
@@ -95,12 +96,22 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   const renderStepContent = () => {
     switch (currentStep) {
       case WizardStep.SelectType:
-        return <SelectTypeStep selectedKind={kind} onKindChange={setKind} />
+        return (
+          <SelectTypeStep
+            selectedKind={kind}
+            onKindChange={setKind}
+            hasNumericProperties={hasNumericProperties}
+          />
+        )
 
       case WizardStep.SelectAttributes:
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <ChartPreview kind={kind} properties={currentProps} sticky={true} />
+            <CustomGraphicPreview
+              kind={kind}
+              properties={currentProps}
+              sticky={true}
+            />
             <AttributesForm
               dataColumns={currentProps.cy_dataColumns}
               colors={currentProps.cy_colors}
@@ -114,7 +125,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
       case WizardStep.SelectPalette:
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <ChartPreview kind={kind} properties={currentProps} />
+            <CustomGraphicPreview kind={kind} properties={currentProps} />
             <PaletteForm
               colorScheme={currentProps.cy_colorScheme}
               colors={currentProps.cy_colors}
@@ -127,7 +138,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
       case WizardStep.ConfigureProperties:
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <ChartPreview kind={kind} properties={currentProps} />
+            <CustomGraphicPreview kind={kind} properties={currentProps} />
             <PropertiesForm
               startAngle={currentProps.cy_startAngle}
               holeSize={
@@ -144,7 +155,11 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
       case WizardStep.Preview:
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <ChartPreview kind={kind} properties={currentProps} sticky={true} />
+            <CustomGraphicPreview
+              kind={kind}
+              properties={currentProps}
+              sticky={true}
+            />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* Reuse step components for editing */}
               <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
@@ -225,7 +240,11 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
         </Button>
       </DialogTitle>
 
-      <StepProgress currentStep={currentStep} onStepClick={setCurrentStep} />
+      <StepProgress
+        currentStep={currentStep}
+        onStepClick={setCurrentStep}
+        hasNumericProperties={hasNumericProperties}
+      />
 
       <DialogContent dividers>{renderStepContent()}</DialogContent>
 
@@ -244,6 +263,9 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
           </Button>
           <Button
             variant="contained"
+            disabled={
+              currentStep === WizardStep.SelectType && !hasNumericProperties
+            }
             onClick={() => {
               if (isLastStep) {
                 onConfirm({
