@@ -66,10 +66,14 @@ import {
 } from '../VisualPropertyRender/NodeLabelPosition'
 import { IdType } from '../../../models/IdType'
 import { LockColorCheckbox } from '../VisualPropertyRender/Checkbox'
+// import {
+//   CustomGraphicPicker,
+//   CustomGraphicRender,
+// } from '../VisualPropertyRender/CustomGraphics/CustomGraphic'
 import {
   CustomGraphicPicker,
   CustomGraphicRender,
-} from '../VisualPropertyRender/CustomGraphics/CustomGraphic'
+} from '../VisualPropertyRender/CustomGraphics'
 import {
   CustomGraphicsType,
   CustomGraphicsTypeType,
