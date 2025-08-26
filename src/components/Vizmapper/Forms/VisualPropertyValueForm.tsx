@@ -324,7 +324,10 @@ export function VisualPropertyValueRender(
 ): React.ReactElement {
   if (props.vpName.includes('nodeImageChart')) {
     const customGraphic = props.value as CustomGraphicsType
-    if (customGraphic.type === CustomGraphicsTypeType.None) {
+    if (
+      customGraphic?.type === CustomGraphicsTypeType.None ||
+      customGraphic == null
+    ) {
       return <EmptyVisualPropertyViewBox />
     }
   }

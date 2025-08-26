@@ -214,11 +214,9 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
               display: 'grid',
               gridTemplateColumns: '70px 1fr 32px 32px',
               alignItems: 'center',
-              gap: 0.5,
               p: 0.5,
               border: '1px solid #eee',
               borderRadius: 1,
-              mb: 0.5,
             }}
           >
             {/* Slice Order with Up/Down arrows */}
@@ -267,13 +265,11 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
 
             <FormControl
               size="small"
-              sx={{ '& .MuiInputBase-root': { height: 32 } }}
+              sx={{ '& .MuiInputBase-root': { height: 32, width: 340 } }}
             >
-              <InputLabel id={`col-label-${i}`}>Node Attribute</InputLabel>
               <Select
                 labelId={`col-label-${i}`}
                 value={col}
-                label="Node Attribute"
                 onChange={(e: SelectChangeEvent<string>) =>
                   updateRow(i, e.target.value, colors[i] || '#000000')
                 }

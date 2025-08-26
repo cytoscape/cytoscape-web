@@ -208,7 +208,14 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   }
 
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      maxWidth="sm"
+      fullWidth
+      disableEscapeKeyDown={false}
+      onBackdropClick={() => {}}
+    >
       <DialogTitle
         sx={{
           display: 'flex',
