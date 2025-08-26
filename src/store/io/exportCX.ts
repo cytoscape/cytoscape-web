@@ -264,50 +264,90 @@ export const exportNetworkToCx2 = (
     VisualStyleFn.nodeVisualProperties(vs),
   )
 
-  const validCustomGraphicNodeVps = []
+  // Separate lists for different purposes
+  const customGraphicNodeVpsForDefaults = []
+  const customGraphicNodeVpsForMappings = []
+  const customGraphicNodeVpsForBypasses = []
+
   for (let i = 1; i <= 9; i++) {
     const customGraphicVpName = `nodeImageChart${i}` as NodeVisualPropertyName
     const customGraphicVp = customGraphicNodeVps.find(
       (v) => v.name === customGraphicVpName,
     )
+
     if (customGraphicVp) {
-      const invalidCustomGraphicDefaultValue = _.isEqual(
+      const customGraphicSizeVpName =
+        `nodeImageChartSize${i}` as NodeVisualPropertyName
+      const customGraphicPositionVpName =
+        `nodeImageChartPosition${i}` as NodeVisualPropertyName
+      const customGraphicSizeVp = customGraphicNodeVps.find(
+        (v) => v.name === customGraphicSizeVpName,
+      )
+      const customGraphicPositionVp = customGraphicNodeVps.find(
+        (v) => v.name === customGraphicPositionVpName,
+      )
+
+      // Check if this custom graphic has valid defaults
+      const hasValidDefault = !_.isEqual(
         customGraphicVp.defaultValue,
         DEFAULT_CUSTOM_GRAPHICS,
       )
-      const invalidCustomGraphicMapping = customGraphicVp.mapping === undefined
-      const invalidCustomGraphicBypass = customGraphicVp.bypassMap.size === 0
-      if (
-        invalidCustomGraphicDefaultValue &&
-        invalidCustomGraphicMapping &&
-        invalidCustomGraphicBypass
-      ) {
-        continue
-      } else {
-        const customGraphicSizeVpName =
-          `nodeImageChartSize${i}` as NodeVisualPropertyName
-        const customGraphicPositionVpName =
-          `nodeImageChartPosition${i}` as NodeVisualPropertyName
-        const customGraphicSizeVp = customGraphicNodeVps.find(
-          (v) => v.name === customGraphicSizeVpName,
-        )
-        const customGraphicPositionVp = customGraphicNodeVps.find(
-          (v) => v.name === customGraphicPositionVpName,
-        )
+
+      // Check if this custom graphic has valid mapping
+      const hasValidMapping = customGraphicVp.mapping !== undefined
+
+      // Check if this custom graphic has valid bypasses
+      const hasValidBypasses = customGraphicVp.bypassMap.size > 0
+
+      // Add to defaults list if it has valid defaults
+      if (hasValidDefault) {
         if (customGraphicSizeVp !== undefined) {
-          validCustomGraphicNodeVps.push(customGraphicSizeVp)
+          customGraphicNodeVpsForDefaults.push(customGraphicSizeVp)
         }
         if (customGraphicPositionVp !== undefined) {
-          validCustomGraphicNodeVps.push(customGraphicPositionVp)
+          customGraphicNodeVpsForDefaults.push(customGraphicPositionVp)
         }
-        validCustomGraphicNodeVps.push(customGraphicVp)
+        customGraphicNodeVpsForDefaults.push(customGraphicVp)
+      }
+
+      // Add to mappings list if it has valid mappings
+      if (hasValidMapping) {
+        if (customGraphicSizeVp !== undefined) {
+          customGraphicNodeVpsForMappings.push(customGraphicSizeVp)
+        }
+        if (customGraphicPositionVp !== undefined) {
+          customGraphicNodeVpsForMappings.push(customGraphicPositionVp)
+        }
+        customGraphicNodeVpsForMappings.push(customGraphicVp)
+      }
+
+      // Add to bypasses list if it has valid bypasses
+      if (hasValidBypasses) {
+        if (customGraphicSizeVp !== undefined) {
+          customGraphicNodeVpsForBypasses.push(customGraphicSizeVp)
+        }
+        if (customGraphicPositionVp !== undefined) {
+          customGraphicNodeVpsForBypasses.push(customGraphicPositionVp)
+        }
+        customGraphicNodeVpsForBypasses.push(customGraphicVp)
       }
     }
   }
 
-  const nodePropertiesToExport = [
+  // Create separate property lists for each purpose
+  const nodePropertiesForDefaults = [
     ...nonCustomGraphicNodeVps,
-    ...validCustomGraphicNodeVps,
+    ...customGraphicNodeVpsForDefaults,
+  ]
+
+  const nodePropertiesForMappings = [
+    ...nonCustomGraphicNodeVps,
+    ...customGraphicNodeVpsForMappings,
+  ]
+
+  const nodePropertiesForBypasses = [
+    ...nonCustomGraphicNodeVps,
+    ...customGraphicNodeVpsForBypasses,
   ]
 
   const visualProperties = [
@@ -321,9 +361,9 @@ export const exportNetworkToCx2 = (
           vpDefaultsAccumulator,
           {},
         ),
-        node: nodePropertiesToExport.reduce(vpDefaultsAccumulator, {}),
+        node: nodePropertiesForDefaults.reduce(vpDefaultsAccumulator, {}),
       },
-      nodeMapping: nodePropertiesToExport
+      nodeMapping: nodePropertiesForMappings
         .filter((vp) => vp.mapping != null)
         .reduce(vpMappingsAccumulator, {}),
       edgeMapping: VisualStyleFn.edgeVisualProperties(vs)
@@ -333,7 +373,7 @@ export const exportNetworkToCx2 = (
   ]
 
   const nodeBypasses = Object.entries(
-    nodePropertiesToExport
+    nodePropertiesForBypasses
       .filter((vp) => vp.bypassMap.size > 0)
       .reduce(vpBypassesAccumulator, {}),
   ).map(([id, bypassObj]) => {
