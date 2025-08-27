@@ -70,12 +70,9 @@ import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualSt
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { useUndoStack } from '../../task/UndoStack'
 import { useNetworkStore } from '../../store/NetworkStore'
-
-interface TabPanelProps {
-  children?: React.ReactNode
-  index: number
-  value: number
-}
+import { TabPanel } from './Components/TabPanel'
+import { getCellKind } from './DataGrid/utils'
+import { useTableBrowserFormState, useTableBrowserSelections } from './hooks'
 
 export interface TableColumn {
   id: string
@@ -92,133 +89,30 @@ const TABS_HEIGHT = 32
 // Adjust Data Grid size
 const GRID_GAP = TOOLBAR_HEIGHT * 2 - 1
 
-function TabPanel(props: TabPanelProps): React.ReactElement {
-  const { children, value, index, ...other } = props
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      style={{ flexGrow: 1 }}
-      {...other}
-    >
-      {value === index && <Box>{children}</Box>}
-    </div>
-  )
-}
-
-export const getCellKind = (type: ValueTypeName): GridCellKind => {
-  const valueTypeName2CellTypeMap: Record<ValueTypeName, GridCellKind> = {
-    [ValueTypeName.String]: GridCellKind.Text,
-    [ValueTypeName.Long]: GridCellKind.Number,
-    [ValueTypeName.Integer]: GridCellKind.Number,
-    [ValueTypeName.Double]: GridCellKind.Number,
-    [ValueTypeName.Boolean]: GridCellKind.Boolean,
-    [ValueTypeName.ListString]: GridCellKind.Text,
-    [ValueTypeName.ListLong]: GridCellKind.Text,
-    [ValueTypeName.ListInteger]: GridCellKind.Text,
-    [ValueTypeName.ListDouble]: GridCellKind.Text,
-    [ValueTypeName.ListBoolean]: GridCellKind.Text,
-  }
-  return valueTypeName2CellTypeMap[type] ?? GridCellKind.Text
-}
-
 export default function TableBrowser(props: {
   currentNetworkId: IdType
   setHeight: (height: number) => void
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
   width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
-  const { postEdit } = useUndoStack()
-  const ui: Ui = useUiStateStore((state) => state.ui)
-  const setPanelState: (panel: Panel, panelState: PanelState) => void =
-    useUiStateStore((state) => state.setPanelState)
-  const { panels } = ui
-  const setUi = useUiStateStore((state) => state.setUi)
-  const currentTabIndex = ui.tableUi.activeTabIndex
-
-  const networkModified = useWorkspaceStore(
-    (state) => state.workspace.networkModified,
-  )
-  const networkModifiedRef = useRef(networkModified)
-
-  // Update the ref when networkModified changes
-  useEffect(() => {
-    networkModifiedRef.current = networkModified
-  }, [networkModified])
-
-  const setCurrentTabIndex = (index: number): void => {
-    const nextTableUi = { ...ui.tableUi, activeTabIndex: index }
-
-    const nextUi = { ...ui, tableUi: nextTableUi }
-    setUi(nextUi)
-  }
-
-  const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
-
-  const setColumnWidth = useUiStateStore((state) => state.setColumnWidth)
-
-  const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
-  const [createColumnFormError, setCreateColumnFormError] = React.useState<
-    string | undefined
-  >(undefined)
-
-  const [showDeleteColumnForm, setShowDeleteColumnForm] = React.useState(false)
-  const [deleteColumnFormError, setDeleteColumnFormError] = React.useState<
-    string | undefined
-  >(undefined)
-
-  const [showEditColumnForm, setShowEditColumnForm] = React.useState(false)
-  const [columnFormError, setColumnFormError] = React.useState<
-    string | undefined
-  >(undefined)
-
-  const [nodeSelection, setNodeSelection] = React.useState<GridSelection>({
-    columns: CompactSelection.empty(),
-    rows: CompactSelection.empty(),
-  })
-
-  const [edgeSelection, setEdgeSelection] = React.useState<GridSelection>({
-    columns: CompactSelection.empty(),
-    rows: CompactSelection.empty(),
-  })
-
-  const selection = currentTabIndex === 0 ? nodeSelection : edgeSelection
-  const setSelection =
-    currentTabIndex === 0 ? setNodeSelection : setEdgeSelection
-
-  const [selectedCellColumn, setSelectedCellColumn] = React.useState<
-    number | null
-  >(null)
-
-  const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
-  const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
-
-  const [showSearch, setShowSearch] = React.useState(false)
-  const onSearchClose = React.useCallback(() => setShowSearch(false), [])
-  const [sort, setSort] = React.useState<SortType>({
-    column: undefined,
-    direction: undefined,
-    valueType: undefined,
-  })
-
   const networkId = props.currentNetworkId
-  const visualStyle = useVisualStyleStore(
-    (state) => state.visualStyles[props.currentNetworkId],
-  )
-  const setMapping = useVisualStyleStore((state) => state.setMapping)
 
-  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
-    state.getViewModel(networkId),
-  )
-  const selectedNodes = useViewModelStore(
-    (state) => viewModel?.selectedNodes ?? [],
-  )
-  const selectedEdges = useViewModelStore(
-    (state) => viewModel?.selectedEdges ?? [],
-  )
+  // ===== STORE SELECTORS =====
+
+  // UI State Store
+  const {
+    ui,
+    setUi,
+    setPanelState,
+    setColumnWidth,
+    setTableDisplayConfiguration,
+  } = useUiStateStore((state) => ({
+    ui: state.ui,
+    setUi: state.setUi,
+    setPanelState: state.setPanelState,
+    setColumnWidth: state.setColumnWidth,
+    setTableDisplayConfiguration: state.setTableDisplayConfiguration,
+  }))
 
   const tableDisplayConfiguration = useUiStateStore(
     (state) =>
@@ -226,26 +120,126 @@ export default function TableBrowser(props: {
         ?.tableDisplayConfiguration,
   )
 
-  const setTableDisplayConfiguration = useUiStateStore(
-    (state) => state.setTableDisplayConfiguration,
+  // Table Store
+  const {
+    tables,
+    setCellValue,
+    duplicateColumn,
+    setColumnName,
+    addColumn,
+    deleteColumn,
+    applyValueToElemenets,
+    moveColumn,
+  } = useTableStore((state) => ({
+    tables: state.tables,
+    setCellValue: state.setValue,
+    duplicateColumn: state.duplicateColumn,
+    setColumnName: state.setColumnName,
+    addColumn: state.createColumn,
+    deleteColumn: state.deleteColumn,
+    applyValueToElemenets: state.applyValueToElements,
+    moveColumn: state.moveColumn,
+  }))
+
+  // View Model Store
+  const viewModel = useViewModelStore((state) => state.getViewModel(networkId))
+  const { selectedNodes, selectedEdges, exclusiveSelect } = useViewModelStore(
+    (state) => ({
+      selectedNodes: viewModel?.selectedNodes ?? [],
+      selectedEdges: viewModel?.selectedEdges ?? [],
+      exclusiveSelect: state.exclusiveSelect,
+    }),
   )
 
-  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
-  const setCellValue = useTableStore((state) => state.setValue)
-  const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
-    useTableStore((state) => state.tables)
-  const duplicateColumn = useTableStore((state) => state.duplicateColumn)
-  const setColumnName = useTableStore((state) => state.setColumnName)
-  const addColumn = useTableStore((state) => state.createColumn)
-  const deleteColumn = useTableStore((state) => state.deleteColumn)
-  const applyValueToElemenets = useTableStore(
-    (state) => state.applyValueToElements,
-  )
-  const moveColumn = useTableStore((state) => state.moveColumn)
+  // Visual Style Store
+  const { visualStyle, setMapping } = useVisualStyleStore((state) => ({
+    visualStyle: state.visualStyles[props.currentNetworkId],
+    setMapping: state.setMapping,
+  }))
 
-  const workspace = useWorkspaceStore((state) => state.workspace)
-  const setNetworkModified: (id: IdType, isModified: boolean) => void =
-    useWorkspaceStore((state) => state.setNetworkModified)
+  // Workspace Store
+  const { workspace, networkModified, setNetworkModified } = useWorkspaceStore(
+    (state) => ({
+      workspace: state.workspace,
+      networkModified: state.workspace.networkModified,
+      setNetworkModified: state.setNetworkModified,
+    }),
+  )
+
+  // Join Table Store
+  const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
+
+  // Undo Stack
+  const { postEdit } = useUndoStack()
+
+  // ===== LOCAL STATE =====
+
+  // Form states
+  const {
+    showCreateColumnForm,
+    showDeleteColumnForm,
+    showEditColumnForm,
+    showSearch,
+    createColumnFormError,
+    deleteColumnFormError,
+    columnFormError,
+    setShowCreateColumnForm,
+    setShowDeleteColumnForm,
+    setShowEditColumnForm,
+    setShowSearch,
+    setCreateColumnFormError,
+    setDeleteColumnFormError,
+    setColumnFormError,
+    clearAllErrors,
+    closeAllForms,
+  } = useTableBrowserFormState()
+
+  // Selection states
+  const {
+    nodeSelection,
+    edgeSelection,
+    selectedCellColumn,
+    setNodeSelection,
+    setEdgeSelection,
+    setSelectedCellColumn,
+    clearAllSelections,
+    clearNodeSelection,
+    clearEdgeSelection,
+  } = useTableBrowserSelections()
+
+  // Sort state
+  const [sort, setSort] = React.useState<SortType>({
+    column: undefined,
+    direction: undefined,
+    valueType: undefined,
+  })
+
+  // ===== REFS =====
+  const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
+  const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
+  const networkModifiedRef = useRef(networkModified)
+
+  // ===== DERIVED STATE =====
+  const { panels } = ui
+  const currentTabIndex = ui.tableUi.activeTabIndex
+  const selection = currentTabIndex === 0 ? nodeSelection : edgeSelection
+  const setSelection =
+    currentTabIndex === 0 ? setNodeSelection : setEdgeSelection
+
+  // ===== EFFECTS =====
+  // Update the ref when networkModified changes
+  useEffect(() => {
+    networkModifiedRef.current = networkModified
+  }, [networkModified])
+
+  // ===== CALLBACKS =====
+  const setCurrentTabIndex = (index: number): void => {
+    const nextTableUi = { ...ui.tableUi, activeTabIndex: index }
+    const nextUi = { ...ui, tableUi: nextTableUi }
+    setUi(nextUi)
+  }
+
+  const onSearchClose = React.useCallback(() => setShowSearch(false), [])
 
   // TODO reenable this when we figure out why this sometimes blocks the UI when switching to/from a hcx network
   // set the network to 'modified' when the table data is modified
@@ -1304,8 +1298,8 @@ export default function TableBrowser(props: {
 
   const selectedCell =
     selection.rows.length > 0 &&
-      selectedCellColumn !== null &&
-      selectedCellColumn >= 0
+    selectedCellColumn !== null &&
+    selectedCellColumn >= 0
       ? [selectedCellColumn, selection.rows.first()!]
       : null
 
@@ -1426,8 +1420,9 @@ export default function TableBrowser(props: {
                 setNetworkModified(networkId, true)
               }}
             >
-              {`Apply value to selected ${currentTable === nodeTable ? 'nodes' : 'edges'
-                }`}
+              {`Apply value to selected ${
+                currentTable === nodeTable ? 'nodes' : 'edges'
+              }`}
             </Button>
             <Button
               onClick={() => {
@@ -1454,7 +1449,15 @@ export default function TableBrowser(props: {
     ) : null
 
   const tableBrowserToolbar = (
-    <Box sx={{ position: 'relative', zIndex: 1, height: TOOLBAR_HEIGHT, display: 'flex', alignItems: 'center' }}>
+    <Box
+      sx={{
+        position: 'relative',
+        zIndex: 1,
+        height: TOOLBAR_HEIGHT,
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
       <Tooltip
         title="Search"
         placement="bottom"
@@ -1651,7 +1654,7 @@ export default function TableBrowser(props: {
     >
       <Box
         sx={{
-          position: 'relative',      // create a new stacking context
+          position: 'relative', // create a new stacking context
           zIndex: 2,
           borderBottom: 1,
           borderColor: 'divider',
