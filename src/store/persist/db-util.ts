@@ -3,6 +3,8 @@ import {
   MappingFunctionType,
   NetworkView,
   Table,
+  VisualProperty,
+  VisualPropertyValueType,
   VisualStyle,
 } from '../../models'
 
@@ -21,6 +23,9 @@ export type NetworkViewWithRecords = ReplaceMapsWithArrayEntries<NetworkView>
 
 export type VisualStyleWithRecords = ReplaceMapsWithArrayEntries<VisualStyle>
 export type TableWithRecords = ReplaceMapsWithArrayEntries<Table>
+export type VisualPropertyWithRecords = ReplaceMapsWithArrayEntries<
+  VisualProperty<VisualPropertyValueType>
+>
 export type DiscreteMappingFunctionWithRecords =
   ReplaceMapsWithArrayEntries<DiscreteMappingFunction>
 
@@ -128,19 +133,27 @@ export const serializeVisualStyle = (
 ): VisualStyleWithRecords => {
   const serializedVs = Object.fromEntries(
     Object.entries(visualStyle).map(([k, v]) => {
-      const serializedVp = {
-        ...v,
+      // Destructure to exclude mapping if it's undefined
+      const { mapping, ...rest } = v
+      const serializedVp: Partial<VisualPropertyWithRecords> = {
+        ...rest,
         bypassMap: maptoListEntries(v.bypassMap),
-        mapping:
-          v.mapping?.type === MappingFunctionType.Discrete
-            ? {
-                ...v.mapping,
-                vpValueMap: maptoListEntries(
-                  (v.mapping as DiscreteMappingFunction).vpValueMap,
-                ),
-              }
-            : v.mapping,
       }
+
+      // Only add mapping if it actually exists and has a value
+      if (mapping !== undefined) {
+        if (mapping.type === MappingFunctionType.Discrete) {
+          ;(serializedVp as any).mapping = {
+            ...mapping,
+            vpValueMap: maptoListEntries(
+              (mapping as DiscreteMappingFunction).vpValueMap,
+            ),
+          }
+        } else {
+          ;(serializedVp as any).mapping = mapping
+        }
+      }
+      // If mapping is undefined, don't add the key at all
 
       return [k, serializedVp]
     }),
@@ -161,21 +174,27 @@ export const deserializeVisualStyle = (
   visualStyle: VisualStyleWithRecords,
 ): VisualStyle => {
   const deserializedVs = Object.fromEntries(
-    Object.entries(visualStyle).map(([k, v]) => [
-      k,
-      {
+    Object.entries(visualStyle).map(([k, v]) => {
+      const deserializedVp: any = {
         ...v,
-        mapping:
-          v.mapping?.type === MappingFunctionType.Discrete
-            ? {
-                ...v.mapping,
-                vpValueMap: listEntriesToMap((v.mapping as any).vpValueMap),
-              }
-            : v.mapping,
-
         bypassMap: listEntriesToMap(v.bypassMap),
-      },
-    ]),
+      }
+
+      // Only add mapping if it actually exists and has a value
+      if (v.mapping !== undefined) {
+        if (v.mapping.type === MappingFunctionType.Discrete) {
+          deserializedVp.mapping = {
+            ...v.mapping,
+            vpValueMap: listEntriesToMap((v.mapping as any).vpValueMap),
+          }
+        } else {
+          deserializedVp.mapping = v.mapping
+        }
+      }
+      // If mapping is undefined, don't add the key at all
+
+      return [k, deserializedVp]
+    }),
   )
 
   return deserializedVs as VisualStyle

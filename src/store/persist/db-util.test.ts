@@ -175,6 +175,137 @@ describe('db-util', () => {
       expect(typeof Array.from(vpValueMap.keys())[1]).toBe('number')
       expect(typeof Array.from(vpValueMap.keys())[2]).toBe('number')
     })
+
+    it('should not add mapping property when mapping is undefined (fixes undefined mapping bug)', () => {
+      // Create a visual style where most properties have no mapping (undefined)
+      const visualStyle = {
+        nodeShape: {
+          group: 'node',
+          name: 'nodeShape',
+          type: 'nodeShape',
+          displayName: 'Shape',
+          defaultValue: 'round-rectangle',
+          bypassMap: new Map(),
+          // mapping is undefined (should not be added to serialized version)
+        },
+        nodeBackgroundColor: {
+          group: 'node',
+          name: 'nodeBackgroundColor',
+          type: 'color',
+          displayName: 'Fill Color',
+          defaultValue: '#89D0F5',
+          bypassMap: new Map(),
+          // mapping is undefined (should not be added to serialized version)
+        },
+        nodeLabel: {
+          group: 'node',
+          name: 'nodeLabel',
+          type: 'string',
+          displayName: 'Label',
+          defaultValue: '',
+          bypassMap: new Map(),
+          mapping: {
+            type: MappingFunctionType.Passthrough,
+            attribute: 'name',
+            visualPropertyType: 'string',
+            defaultValue: '',
+          },
+        },
+      }
+
+      const serialized = serializeVisualStyle(visualStyle as any)
+
+      // Properties with undefined mapping should NOT have a mapping key
+      expect(serialized.nodeShape).not.toHaveProperty('mapping')
+      expect(serialized.nodeBackgroundColor).not.toHaveProperty('mapping')
+
+      // Properties with actual mappings should have the mapping key
+      expect(serialized.nodeLabel).toHaveProperty('mapping')
+      expect(serialized.nodeLabel.mapping).toEqual({
+        type: MappingFunctionType.Passthrough,
+        attribute: 'name',
+        visualPropertyType: 'string',
+        defaultValue: '',
+      })
+
+      // Test round-trip serialization/deserialization
+      const deserialized = deserializeVisualStyle(serialized as any)
+
+      // After deserialization, properties that had no mapping should still have no mapping
+      expect(deserialized.nodeShape).not.toHaveProperty('mapping')
+      expect(deserialized.nodeBackgroundColor).not.toHaveProperty('mapping')
+
+      // Properties that had mappings should still have mappings
+      expect(deserialized.nodeLabel).toHaveProperty('mapping')
+      expect(deserialized.nodeLabel.mapping).toEqual({
+        type: MappingFunctionType.Passthrough,
+        attribute: 'name',
+        visualPropertyType: 'string',
+        defaultValue: '',
+      })
+
+      // Verify that the structure is preserved exactly
+      expect(Object.keys(serialized.nodeShape)).toEqual([
+        'group',
+        'name',
+        'type',
+        'displayName',
+        'defaultValue',
+        'bypassMap',
+        // Note: 'mapping' is NOT in this list
+      ])
+    })
+
+    it('should handle mixed undefined and defined mappings correctly', () => {
+      const visualStyle = {
+        nodeShape: {
+          group: 'node',
+          name: 'nodeShape',
+          type: 'nodeShape',
+          displayName: 'Shape',
+          defaultValue: 'round-rectangle',
+          bypassMap: new Map(),
+          // No mapping property at all
+        },
+        nodeBorderColor: {
+          group: 'node',
+          name: 'nodeBorderColor',
+          type: 'color',
+          displayName: 'Border Color',
+          defaultValue: '#CCCCCC',
+          bypassMap: new Map(),
+          mapping: undefined, // Explicitly undefined
+        },
+        nodeLabel: {
+          group: 'node',
+          name: 'nodeLabel',
+          type: 'string',
+          displayName: 'Label',
+          defaultValue: '',
+          bypassMap: new Map(),
+          mapping: {
+            type: MappingFunctionType.Passthrough,
+            attribute: 'name',
+            visualPropertyType: 'string',
+            defaultValue: '',
+          },
+        },
+      }
+
+      const serialized = serializeVisualStyle(visualStyle as any)
+
+      // Both undefined cases should result in no mapping property
+      expect(serialized.nodeShape).not.toHaveProperty('mapping')
+      expect(serialized.nodeBorderColor).not.toHaveProperty('mapping')
+      expect(serialized.nodeLabel).toHaveProperty('mapping')
+
+      const deserialized = deserializeVisualStyle(serialized as any)
+
+      // After round-trip, structure should be preserved
+      expect(deserialized.nodeShape).not.toHaveProperty('mapping')
+      expect(deserialized.nodeBorderColor).not.toHaveProperty('mapping')
+      expect(deserialized.nodeLabel).toHaveProperty('mapping')
+    })
   })
 
   describe('serializeTable and deserializeTable', () => {
