@@ -762,15 +762,29 @@ const CyjsRenderer = ({
       const { selectedNodes, selectedEdges } = networkView
 
       // Helper functions
-      const getCurrentSelection = () => ({
-        nodes: cy.nodes(':selected').map((ele: any) => ele.data('id')),
-        edges: cy.edges(':selected').map((ele: any) => ele.data('id')),
-      })
+      const getCurrentSelection = () => {
+        let currentEdgesToCompare: string[]
+        if (displayMode === DisplayMode.SHOW_HIDE) {
+          currentEdgesToCompare = cy
+            .edges(':visible')
+            .map((ele: any) => ele.data('id'))
+        } else {
+          currentEdgesToCompare = cy
+            .edges(':selected')
+            .map((ele: any) => ele.data('id'))
+        }
+
+        return {
+          nodes: cy.nodes(':selected').map((ele: any) => ele.data('id')),
+          edges: currentEdgesToCompare,
+        }
+      }
 
       const hasSelectionChanged = (current: {
         nodes: string[]
         edges: string[]
       }) => {
+        // Check if selection actually changed to avoid unnecessary updates
         const nodesChanged =
           selectedNodes.length !== current.nodes.length ||
           !selectedNodes.every((id) => current.nodes.includes(id))
