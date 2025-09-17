@@ -16,6 +16,7 @@ import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyle
 import { useMessageStore } from '../../../store/MessageStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { logUi } from '../../../debug'
 
 export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
@@ -78,7 +79,10 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
         severity: MessageSeverity.SUCCESS,
       })
     } catch (error) {
-      console.error('Failed to download the current network as file:', error)
+      logUi.error(
+        `[${DownloadNetworkMenuItem.name}]:[${handleSaveCurrentNetworkToFile.name}] Failed to download the current network as file`,
+        error,
+      )
       addMessage({
         message: 'Failed to download the current network as file.',
         duration: 5000,

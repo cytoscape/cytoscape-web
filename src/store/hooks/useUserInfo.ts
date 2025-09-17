@@ -18,7 +18,6 @@ const userInfoFetcher = async (
 
     return await userInfo
   } catch (error) {
-    console.error('Failed to fetch userInfo', error)
     throw error
   }
 }
@@ -31,7 +30,6 @@ export const useUserInfo = async (
   try {
     return await userInfoFetcher(userId, url, accessToken)
   } catch (error) {
-    console.error('Failed to get user info', error)
     throw error
   }
 }

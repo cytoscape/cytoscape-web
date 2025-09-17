@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 import { useAppStore } from '../../../store/AppStore'
+import { logApp } from '../../../debug'
 
 interface UpdatedPosition {
   id: number
@@ -27,7 +28,10 @@ export const useUpdateLayouts = (): (({
   const updateLayouts = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
       if (!Array.isArray(responseObj)) {
-        console.warn('Invalid layout update response: Expected an array', responseObj)
+        logApp.warn(
+          `[${updateLayouts.name}]: Invalid layout update response: Expected an array`,
+          responseObj,
+        )
         return
       }
 
@@ -36,7 +40,10 @@ export const useUpdateLayouts = (): (({
           const { id, x, y, z } = item
           setNodePosition(networkId, String(id), [x, y, z])
         } else {
-          console.warn('Invalid UpdatedPosition item:', item)
+          logApp.warn(
+            `[${updateLayouts.name}]: Invalid UpdatedPosition item:`,
+            item,
+          )
         }
       }
     },

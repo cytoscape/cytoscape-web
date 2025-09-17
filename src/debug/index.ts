@@ -1,4 +1,7 @@
 import debug from 'debug'
+import whyDidYouRender from '@welldone-software/why-did-you-render'
+import React from 'react'
+
 import config from '../assets/config.json'
 
 export const DebugNamespaceType = {
@@ -9,6 +12,8 @@ export const DebugNamespaceType = {
   UI: 'ui',
   STARTUP: 'startup',
   PERFORMANCE: 'performance',
+  HISTORY: 'history',
+  MODEL: 'model',
 } as const
 
 export type DebugNamespaceType =
@@ -29,11 +34,16 @@ export const logApp = createLoggers(DebugNamespaceType.APP)
 export const logUi = createLoggers(DebugNamespaceType.UI)
 export const logStartup = createLoggers(DebugNamespaceType.STARTUP)
 export const logPerformance = createLoggers(DebugNamespaceType.PERFORMANCE)
+export const logHistory = createLoggers(DebugNamespaceType.HISTORY)
+export const logModel = createLoggers(DebugNamespaceType.MODEL)
 
 export const initializeDebug = (): void => {
   // Enable all debug namespaces if debug mode is enabled in config
   if (config.debug) {
     localStorage.debug = '*'
+    window.debug = {}
+
+    whyDidYouRender(React, { trackAllPureComponents: false })
   }
   console.log(
     config.debug

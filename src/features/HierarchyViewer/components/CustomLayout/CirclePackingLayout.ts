@@ -10,6 +10,7 @@ import { NetworkView, NodeView } from '../../../../models/ViewModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
 import { IdType } from '../../../../models/IdType'
 import { translateMemberIds } from '../../../../utils/ndex-utils'
+import { logUi } from '../../../../debug'
 
 /**
  *
@@ -87,7 +88,10 @@ export const createTreeLayout = async ({
         id2name.set(memberId, memberName)
       })
     } catch (e) {
-      console.warn('Failed to convert to ID to node names', e)
+      logUi.warn(
+        `[${createTreeLayout.name}]: Failed to convert to ID to node names`,
+        e,
+      )
     }
   }
 
@@ -116,7 +120,7 @@ export const createTreeLayout = async ({
       })
     return hierarchyRootNode
   } catch (e) {
-    console.error('Failed to build D3 tree,', e)
+    logUi.error(`[${createTreeLayout.name}]: Failed to build D3 tree`, e)
     // throw e
     return {} as HierarchyNode<D3TreeNode>
   }

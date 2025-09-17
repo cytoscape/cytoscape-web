@@ -12,6 +12,7 @@ import { NetworkTab } from './NetworkTab'
 import { NetworkTabs } from './NetworkTabs'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { useRendererStore } from '../../store/RendererStore'
+import { useWorkspaceStore } from '../../store/WorkspaceStore'
 
 interface NetworkPanelProps {
   networkId: IdType
@@ -66,11 +67,13 @@ const NetworkPanel = ({
     (state) => state.viewModels,
   )
 
+  const workspace = useWorkspaceStore((state) => state.workspace)
+
   if (failedToLoad) {
     return <MessagePanel message="Failed to load network data" />
   }
 
-  if (networks.size === 0) {
+  if (workspace.networkIds.length === 0) {
     return <MessagePanel message="No network selected" />
   }
 

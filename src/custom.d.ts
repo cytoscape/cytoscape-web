@@ -19,6 +19,5 @@ declare module '*.json' {
 
 // global variables for debugging
 interface Window {
-  cy: any
-  db: any
+  debug: any
 }

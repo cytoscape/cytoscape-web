@@ -151,12 +151,7 @@ export const useUndoStack = () => {
           .getState()
           .getFunction(DEFAULT_RENDERER_ID, 'fit', networkId)
         if (fitFunction) {
-          // Use double requestAnimationFrame pattern to ensure DOM updates are complete
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              fitFunction()
-            })
-          })
+          fitFunction()
         }
       },
       [UndoCommandType.DELETE_COLUMN]: (params: any[]) => {
@@ -329,7 +324,7 @@ export const useUndoStack = () => {
         // Fit viewport to center the layout
         const fitFunction = useRendererFunctionStore
           .getState()
-          .getFunction('cyjs', 'fit', networkId)
+          .getFunction(DEFAULT_RENDERER_ID, 'fit', networkId)
         if (fitFunction) {
           fitFunction()
         }

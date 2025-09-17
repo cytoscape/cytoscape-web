@@ -20,6 +20,7 @@ import { useUndoStack } from '../../../task/UndoStack'
 import { LayoutAlgorithm } from '../../../models'
 import { useRendererFunctionStore } from '../../../store/RendererFunctionStore'
 import { DEFAULT_RENDERER_ID } from '../../../store/DefaultRenderer'
+import { logUi } from '../../../debug'
 
 interface DropdownMenuProps {
   label: string
@@ -73,15 +74,11 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       // TODO: add support for multiple renderers
       const fitFunction = getRendererFunction(DEFAULT_RENDERER_ID, 'fit')
       if (fitFunction !== undefined) {
-        // Use double requestAnimationFrame pattern to ensure DOM updates are complete
-        // This guarantees that the fit function is called after the layout has been applied
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            fitFunction()
-          })
-        })
+        fitFunction()
       } else {
-        console.warn('Fit function not available for renderer: cyjs')
+        logUi.warn(
+          `[${LayoutMenu.name}]: Fit function not available for renderer: cyjs`,
+        )
       }
     }
   }, [layoutCounter, getRendererFunction])
@@ -175,7 +172,6 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             ) as LayoutEngine
             const { nodes, edges } = target
             setIsRunning(true)
-            // setLayoutInfo(engine.algorithms[name].displayName)
             engine.apply(nodes, edges, afterLayout, engine.algorithms[name])
           },
         }

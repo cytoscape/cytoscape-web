@@ -3,8 +3,9 @@ import { deepOrange } from '@mui/material/colors'
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
 import { ReactElement, useContext, useState } from 'react'
 import { LoginPanel } from './LoginPanel'
-import { KeycloakContext } from '../../bootstrap'
+import { KeycloakContext } from '../../init/keycloak'
 import { AppConfigContext } from '../../AppConfigContext'
+import { logApi } from '../../debug'
 
 export const LoginButton = (): ReactElement => {
   const [open, setOpen] = useState<boolean>(false)
@@ -29,10 +30,16 @@ export const LoginButton = (): ReactElement => {
         client
           ?.login()
           .then((result) => {
-            console.log('* Login success', result)
+            logApi.info(
+              `[${LoginButton.name}]:[${handleClose.name}]: Login success`,
+              result,
+            )
           })
           .catch((error: any) => {
-            console.warn('Failed to login', error)
+            logApi.error(
+              `[${LoginButton.name}]:[${handleClose.name}]: Failed to login`,
+              error,
+            )
           })
       }
     } else {
@@ -49,10 +56,15 @@ export const LoginButton = (): ReactElement => {
         redirectUri: window.location.origin + urlBaseName,
       })
       .then(() => {
-        console.log('* Logout success')
+        logApi.info(
+          `[${LoginButton.name}]:[${handleLogout.name}]: Logout success`,
+        )
       })
       .catch((error: any) => {
-        console.warn('Failed to logout', error)
+        logApi.error(
+          `[${LoginButton.name}]:[${handleLogout.name}]: Failed to logout`,
+          error,
+        )
       })
   }
 

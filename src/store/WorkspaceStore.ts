@@ -5,6 +5,7 @@ import { IdType } from '../models/IdType'
 import { Workspace } from '../models/WorkspaceModel'
 import { deleteDb, putWorkspaceToDb } from './persist/db'
 import { WorkspaceStore } from '../models/StoreModel/WorkspaceStoreModel'
+import { logStore } from '../debug'
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
@@ -26,6 +27,7 @@ const persist =
   ) => {
     return config(
       (args) => {
+        logStore.info('[WorkspaceStore]: Persisting workspace store')
         const lastWorkspace = get().workspace
         set(args)
         const newWorkspace = get().workspace
@@ -128,9 +130,13 @@ export const useWorkspaceStore = create(
         },
         resetWorkspace: async () => {
           await deleteDb()
-          console.log('IndexedDB cleared (Workspace cache has been reset)')
+          logStore.info(
+            `[${useWorkspaceStore.name}]: IndexedDB cleared (Workspace cache has been reset)`,
+          )
           set((state) => {
-            console.log('Now creating a new workspace')
+            logStore.info(
+              `[${useWorkspaceStore.name}]: Now creating a new workspace`,
+            )
             state.workspace = EMPTY_WORKSPACE
             return state
           })

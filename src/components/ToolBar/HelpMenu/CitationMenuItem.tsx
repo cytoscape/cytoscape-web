@@ -14,6 +14,7 @@ import { ReactElement, useState, useMemo } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 import { useMessageStore } from '../../../store/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { logUi } from '../../../debug'
 
 interface CitationData {
   authors: string
@@ -32,32 +33,39 @@ interface CitationData {
 
 const CITATIONS: CitationData[] = [
   {
-    authors: 'Ono K, Fong D, Gao C, Churas C, Pillich R, Lenkiewicz J, Pratt D, Pico AR, Hanspers K, Xin Y, Morris J, Kucera M, Franz M, Lopes C, Bader G, Ideker T, Chen J.',
+    authors:
+      'Ono K, Fong D, Gao C, Churas C, Pillich R, Lenkiewicz J, Pratt D, Pico AR, Hanspers K, Xin Y, Morris J, Kucera M, Franz M, Lopes C, Bader G, Ideker T, Chen J.',
     title: 'Cytoscape Web: bringing network biology to the browser.',
     journal: 'Nucleic Acids Research',
     details: ', gkaf365. 1 May. 2025, ',
     doi: {
       text: 'doi: 10.1093/nar/gkaf365',
-      url: 'https://academic.oup.com/nar/advance-article/doi/10.1093/nar/gkaf365/8123447'
+      url: 'https://academic.oup.com/nar/advance-article/doi/10.1093/nar/gkaf365/8123447',
     },
     pmid: {
       id: '40308211',
-      url: 'https://pubmed.ncbi.nlm.nih.gov/40308211/'
-    }
+      url: 'https://pubmed.ncbi.nlm.nih.gov/40308211/',
+    },
   },
   {
-    authors: 'Shannon P, Markiel A, Ozier O, Baliga NS, Wang JT, Ramage D, Amin N, Schwikowski B, Ideker T.',
-    title: 'Cytoscape: a software environment for integrated models of biomolecular interaction networks.',
+    authors:
+      'Shannon P, Markiel A, Ozier O, Baliga NS, Wang JT, Ramage D, Amin N, Schwikowski B, Ideker T.',
+    title:
+      'Cytoscape: a software environment for integrated models of biomolecular interaction networks.',
     journal: 'Genome Res',
     details: ', 13:11 (2498-504). 2003 Nov. PMID: ',
     pmid: {
       id: '14597658',
-      url: 'https://pubmed.ncbi.nlm.nih.gov/14597658/'
-    }
-  }
+      url: 'https://pubmed.ncbi.nlm.nih.gov/14597658/',
+    },
+  },
 ]
 
-const CitationText = ({ citation }: { citation: CitationData }): ReactElement => (
+const CitationText = ({
+  citation,
+}: {
+  citation: CitationData
+}): ReactElement => (
   <Typography variant="body1" component="div">
     {citation.authors} {citation.title}
     {citation.journal && (
@@ -94,7 +102,7 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
   const addMessage = useMessageStore((state) => state.addMessage)
 
   const fullCitationsText = useMemo(() => {
-    return CITATIONS.map(citation => {
+    return CITATIONS.map((citation) => {
       let text = `${citation.authors} ${citation.title}`
       if (citation.journal) {
         text += ` ${citation.journal}`
@@ -123,14 +131,17 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
       addMessage({
         message: 'Citation copied to clipboard!',
         duration: 3000,
-        severity: MessageSeverity.INFO
+        severity: MessageSeverity.INFO,
       })
     } catch (err) {
-      console.error('Failed to copy citations: ', err)
+      logUi.error(
+        `[${handleCopyAllCitations.name}]: Failed to copy citations: `,
+        err,
+      )
       addMessage({
         message: 'Failed to copy citations',
         duration: 3000,
-        severity: MessageSeverity.ERROR
+        severity: MessageSeverity.ERROR,
       })
     }
   }
@@ -138,13 +149,24 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
   return (
     <>
       <MenuItem onClick={handleOpenDialog}>Citation</MenuItem>
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
             Citations
           </Box>
         </DialogTitle>
-        
+
         <DialogContent dividers>
           {CITATIONS.map((citation, index) => (
             <Box key={index} mb={3}>

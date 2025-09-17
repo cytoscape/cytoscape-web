@@ -3,47 +3,58 @@ import {
   MappingFunctionType,
   NetworkView,
   Table,
+  VisualProperty,
+  VisualPropertyValueType,
   VisualStyle,
 } from '../../models'
 
-// Utility type to recursively replace all Map<K, V> with Record<K & string, V>
-type ReplaceMapsWithRecords<T> =
+// Utility type to recursively replace all Map<K, V> with Array<[K, V]>
+type ReplaceMapsWithArrayEntries<T> =
   T extends Map<infer K, infer V>
-    ? Record<K & string, ReplaceMapsWithRecords<V>>
+    ? Array<[K, ReplaceMapsWithArrayEntries<V>]>
     : T extends Array<infer U>
-      ? Array<ReplaceMapsWithRecords<U>>
+      ? Array<ReplaceMapsWithArrayEntries<U>>
       : T extends object
-        ? { [P in keyof T]: ReplaceMapsWithRecords<T[P]> }
+        ? { [P in keyof T]: ReplaceMapsWithArrayEntries<T[P]> }
         : T
 
 // Example: NetworkViewWithRecords has all Maps replaced by Records
-export type NetworkViewWithRecords = ReplaceMapsWithRecords<NetworkView>
+export type NetworkViewWithRecords = ReplaceMapsWithArrayEntries<NetworkView>
 
-export type VisualStyleWithRecords = ReplaceMapsWithRecords<VisualStyle>
-export type TableWithRecords = ReplaceMapsWithRecords<Table>
+export type VisualStyleWithRecords = ReplaceMapsWithArrayEntries<VisualStyle>
+export type TableWithRecords = ReplaceMapsWithArrayEntries<Table>
+export type VisualPropertyWithRecords = ReplaceMapsWithArrayEntries<
+  VisualProperty<VisualPropertyValueType>
+>
 export type DiscreteMappingFunctionWithRecords =
-  ReplaceMapsWithRecords<DiscreteMappingFunction>
+  ReplaceMapsWithArrayEntries<DiscreteMappingFunction>
 
-// Utility functions to convert between Map and Object
+// Utility functions to convert between Map and Array of entries
 // These functions are necessary because JavaScript Map objects cannot be directly stored in IndexedDB in Safari.
-// IndexedDB in Safari does not support structured cloning of Map objects, so we must convert them to plain objects.
-export const mapToObject = (map: Map<any, any>): Record<any, any> => {
+// IndexedDB in Safari does not support structured cloning of Map objects, so we must convert them to arrays of entries.
+export const maptoListEntries = (map: Map<any, any>): Array<[any, any]> => {
   if (!(map instanceof Map)) {
-    return map
+    return []
   }
-  return Object.fromEntries(map.entries())
+  return Array.from(map.entries())
 }
 
-export const objectToMap = (obj: Record<any, any>): Map<string, any> => {
-  return new Map(Object.entries(obj ?? {}))
+export const listEntriesToMap = (list: Array<[any, any]>): Map<any, any> => {
+  const m = new Map()
+  if (Array.isArray(list)) {
+    list.forEach(([k, v]) => {
+      m.set(k, v)
+    })
+  }
+  return m
 }
 /**
  * Converts a `NetworkView` object into a serialized format by replacing all `Map` properties
- * with plain objects. This is necessary for storing the object in IndexedDB, as `Map` objects
+ * with arrays of entries. This is necessary for storing the object in IndexedDB, as `Map` objects
  * are not supported in Safari's IndexedDB implementation.
  *
  * @param networkView - The `NetworkView` object to serialize.
- * @returns A serialized `NetworkView` object with `Map` properties replaced by plain objects.
+ * @returns A serialized `NetworkView` object with `Map` properties replaced by arrays of entries.
  */
 export const serializeNetworkView = (
   networkView: NetworkView,
@@ -55,7 +66,7 @@ export const serializeNetworkView = (
         k,
         {
           ...nv,
-          values: mapToObject(nv.values),
+          values: maptoListEntries(nv.values),
         },
       ]),
     ),
@@ -64,17 +75,17 @@ export const serializeNetworkView = (
         k,
         {
           ...ev,
-          values: mapToObject(ev.values),
+          values: maptoListEntries(ev.values),
         },
       ]),
     ),
-    values: mapToObject(networkView.values),
+    values: maptoListEntries(networkView.values),
   }
 }
 
 /**
- * Converts a serialized `NetworkView` object (with plain objects) back into its original format
- * by replacing plain objects with `Map` objects. This is necessary after retrieving the object
+ * Converts a serialized `NetworkView` object (with arrays of entries) back into its original format
+ * by replacing arrays of entries with `Map` objects. This is necessary after retrieving the object
  * from IndexedDB.
  *
  * @param networkView - The serialized `NetworkView` object to deserialize.
@@ -90,7 +101,7 @@ export const deserializeNetworkView = (
         k,
         {
           ...nv,
-          values: new Map(Object.entries(nv.values)),
+          values: listEntriesToMap(nv.values),
         },
       ]),
     ),
@@ -99,11 +110,11 @@ export const deserializeNetworkView = (
         k,
         {
           ...ev,
-          values: new Map(Object.entries(ev.values)),
+          values: listEntriesToMap(ev.values),
         },
       ]),
     ),
-    values: new Map(Object.entries(networkView.values)),
+    values: listEntriesToMap(networkView.values),
   } as NetworkView
 
   return deserializedNetworkView as NetworkView
@@ -111,30 +122,38 @@ export const deserializeNetworkView = (
 
 /**
  * Converts a `VisualStyle` object into a serialized format by replacing all `Map` properties
- * with plain objects. This is necessary for storing the object in IndexedDB, as `Map` objects
+ * with arrays of entries. This is necessary for storing the object in IndexedDB, as `Map` objects
  * are not supported in Safari's IndexedDB implementation.
  *
  * @param visualStyle - The `VisualStyle` object to serialize.
- * @returns A serialized `VisualStyle` object with `Map` properties replaced by plain objects.
+ * @returns A serialized `VisualStyle` object with `Map` properties replaced by arrays of entries.
  */
 export const serializeVisualStyle = (
   visualStyle: VisualStyle,
 ): VisualStyleWithRecords => {
   const serializedVs = Object.fromEntries(
     Object.entries(visualStyle).map(([k, v]) => {
-      const serializedVp = {
-        ...v,
-        bypassMap: mapToObject(v.bypassMap),
-        mapping:
-          v.mapping?.type === MappingFunctionType.Discrete
-            ? {
-                ...v.mapping,
-                vpValueMap: mapToObject(
-                  (v.mapping as DiscreteMappingFunction).vpValueMap,
-                ),
-              }
-            : v.mapping,
+      // Destructure to exclude mapping if it's undefined
+      const { mapping, ...rest } = v
+      const serializedVp: Partial<VisualPropertyWithRecords> = {
+        ...rest,
+        bypassMap: maptoListEntries(v.bypassMap),
       }
+
+      // Only add mapping if it actually exists and has a value
+      if (mapping !== undefined) {
+        if (mapping.type === MappingFunctionType.Discrete) {
+          ;(serializedVp as any).mapping = {
+            ...mapping,
+            vpValueMap: maptoListEntries(
+              (mapping as DiscreteMappingFunction).vpValueMap,
+            ),
+          }
+        } else {
+          ;(serializedVp as any).mapping = mapping
+        }
+      }
+      // If mapping is undefined, don't add the key at all
 
       return [k, serializedVp]
     }),
@@ -144,8 +163,8 @@ export const serializeVisualStyle = (
 }
 
 /**
- * Converts a serialized `VisualStyle` object (with plain objects) back into its original format
- * by replacing plain objects with `Map` objects. This is necessary after retrieving the object
+ * Converts a serialized `VisualStyle` object (with arrays of entries) back into its original format
+ * by replacing arrays of entries with `Map` objects. This is necessary after retrieving the object
  * from IndexedDB.
  *
  * @param visualStyle - The serialized `VisualStyle` object to deserialize.
@@ -155,25 +174,27 @@ export const deserializeVisualStyle = (
   visualStyle: VisualStyleWithRecords,
 ): VisualStyle => {
   const deserializedVs = Object.fromEntries(
-    Object.entries(visualStyle).map(([k, v]) => [
-      k,
-      {
+    Object.entries(visualStyle).map(([k, v]) => {
+      const deserializedVp: any = {
         ...v,
-        mapping:
-          v.mapping?.type === MappingFunctionType.Discrete
-            ? {
-                ...v.mapping,
-                vpValueMap: new Map(
-                  Object.entries(
-                    (v.mapping as DiscreteMappingFunction).vpValueMap,
-                  ),
-                ),
-              }
-            : v.mapping,
+        bypassMap: listEntriesToMap(v.bypassMap),
+      }
 
-        bypassMap: new Map(Object.entries(v.bypassMap)),
-      },
-    ]),
+      // Only add mapping if it actually exists and has a value
+      if (v.mapping !== undefined) {
+        if (v.mapping.type === MappingFunctionType.Discrete) {
+          deserializedVp.mapping = {
+            ...v.mapping,
+            vpValueMap: listEntriesToMap((v.mapping as any).vpValueMap),
+          }
+        } else {
+          deserializedVp.mapping = v.mapping
+        }
+      }
+      // If mapping is undefined, don't add the key at all
+
+      return [k, deserializedVp]
+    }),
   )
 
   return deserializedVs as VisualStyle
@@ -190,7 +211,7 @@ export const deserializeVisualStyle = (
 export const serializeTable = (table: Table): TableWithRecords => {
   return {
     ...table,
-    rows: mapToObject(table.rows),
+    rows: maptoListEntries(table.rows),
   }
 }
 
@@ -205,7 +226,7 @@ export const serializeTable = (table: Table): TableWithRecords => {
 export const deserializeTable = (table: TableWithRecords): Table => {
   const deserializedTable = {
     ...table,
-    rows: objectToMap(table.rows),
+    rows: listEntriesToMap(table.rows),
   }
 
   return deserializedTable as Table

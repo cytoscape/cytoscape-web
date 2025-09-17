@@ -1,5 +1,7 @@
 import { NavigateOptions } from 'react-router-dom'
 import { NavigationConfig } from './NavigationConfig'
+import { logHistory } from '../../../debug'
+import config from '../../../assets/config.json'
 
 let lastNetworkId: string = '' // Last displayed network ID
 let lastUrlPath: string = '' // Last set URL path
@@ -57,7 +59,7 @@ const addHistoryEntry = (url: string, networkId: string): void => {
   currentHistoryIndex = historyEntries.length - 1
 
   // Output debug information
-  console.debug('[History Debug] Added entry:', getCurrentHistoryState())
+  logHistory.info('[History Debug] Added entry:', getCurrentHistoryState())
 }
 
 /**
@@ -66,7 +68,7 @@ const addHistoryEntry = (url: string, networkId: string): void => {
 const simulateBackButtonPress = (): void => {
   if (currentHistoryIndex > 0) {
     currentHistoryIndex--
-    console.log(
+    logHistory.info(
       '[History Debug] Back button pressed:',
       getCurrentHistoryState(),
     )
@@ -112,7 +114,7 @@ export const navigateToNetwork = (
   // 1. Control frequent navigation calls (history operations are exceptions)
   const now = Date.now()
   if (now - lastNavigationTime < 300 && !isHistoryNavigation) {
-    console.debug(
+    logHistory.info(
       `[URLManager:${navigationCount}] Navigation throttled - too frequent calls`,
     )
     return
@@ -120,7 +122,7 @@ export const navigateToNetwork = (
 
   // 2. Ignore if already handling navigation (history operations are exceptions)
   if (isHandlingNavigation && !isHistoryNavigation) {
-    console.debug(
+    logHistory.info(
       `[URLManager:${navigationCount}] Already handling navigation, skipping`,
     )
     return
@@ -128,7 +130,7 @@ export const navigateToNetwork = (
 
   // 3. Ignore if path is exactly the same (history operations are exceptions)
   if (path === lastUrlPath && !isHistoryNavigation) {
-    console.debug(
+    logHistory.info(
       `[URLManager:${navigationCount}] Skipping navigation to same path: ${path}`,
     )
     return
@@ -143,7 +145,7 @@ export const navigateToNetwork = (
       : null
 
     if (currentNetworkId === safeNetworkId) {
-      console.debug(
+      logHistory.info(
         `[URLManager:${navigationCount}] Skipping navigation - network ID ${safeNetworkId} is already in current pathname: ${currentPathname}`,
       )
       return
@@ -153,7 +155,7 @@ export const navigateToNetwork = (
   // 5. Force replace for navigation to the same network ID
   let shouldReplace = replace
   if (safeNetworkId !== '' && safeNetworkId === lastNetworkId) {
-    console.debug(
+    logHistory.info(
       `[URLManager:${navigationCount}] Same network ID detected: ${safeNetworkId}, forcing replace=true`,
     )
     shouldReplace = true
@@ -161,13 +163,13 @@ export const navigateToNetwork = (
 
   // ====== Execute navigation ======
 
-  // console.log(
+  // logHistory.log(
   //   `[URLManager:${navigationCount}] Navigating to: ${path}, replace: ${shouldReplace}, networkId: ${safeNetworkId}`,
   // )
-  // console.log(
+  // logHistory.log(
   //   `[URLManager:${navigationCount}] Previous state: lastNetworkId=${lastNetworkId}, lastPath=${lastUrlPath}`,
   // )
-  // console.log(
+  // logHistory.log(
   //   `[URLManager:${navigationCount}] Browser history length before navigation: ${window.history.length}`,
   // )
 
@@ -197,7 +199,7 @@ export const navigateToNetwork = (
       addHistoryEntry(path, safeNetworkId)
     }
   } catch (error) {
-    console.error(`[URLManager:${navigationCount}] Navigation error:`, error)
+    logHistory.error(`[URLManager:${navigationCount}] Navigation error:`, error)
   }
 
   // Reset history operation flag
@@ -213,7 +215,7 @@ export const navigateToNetwork = (
  * Notify browser history operation (back/forward buttons)
  */
 export const handleHistoryNavigation = (): void => {
-  console.log(
+  logHistory.info(
     `[URLManager:${navigationCount}] Browser history navigation detected`,
   )
   isHistoryNavigation = true
@@ -222,17 +224,16 @@ export const handleHistoryNavigation = (): void => {
   simulateBackButtonPress()
 
   // Display history details
-  console.group('Current Browser History State')
-  console.log('Current URL:', window.location.href)
-  console.log('History length:', window.history.length)
-  console.log('Can go back:', window.history.length > 1)
-  console.log('Tracked history entries:', getCurrentHistoryState())
-  console.groupEnd()
+  logHistory.info('Current Browser History State')
+  logHistory.info('Current URL:', window.location.href)
+  logHistory.info('History length:', window.history.length)
+  logHistory.info('Can go back:', window.history.length > 1)
+  logHistory.info('Tracked history entries:', getCurrentHistoryState())
 
   // Reset flag after sufficient time has passed
   setTimeout(() => {
     if (isHistoryNavigation) {
-      console.log(
+      logHistory.info(
         `[URLManager:${navigationCount}] Resetting isHistoryNavigation flag`,
       )
       isHistoryNavigation = false
@@ -253,7 +254,7 @@ export const updateSearchParams = (
   replace: boolean = true,
 ): void => {
   navigationCount++
-  console.log(
+  logHistory.info(
     `[URLManager:${navigationCount}] Updating search params:`,
     updates,
     `replace: ${replace}`,
@@ -291,7 +292,7 @@ export const clearInternalHistory = (): void => {
   isHandlingNavigation = false
   isHistoryNavigation = false
 
-  console.log('[History Debug] Internal history cleared')
+  logHistory.info('[History Debug] Internal history cleared')
 }
 
 /**
@@ -300,7 +301,7 @@ export const clearInternalHistory = (): void => {
 export const resetNavigationState = (): void => {
   clearInternalHistory()
 
-  console.log('[History Debug] Navigation state reset (without URL change)')
+  logHistory.info('[History Debug] Navigation state reset (without URL change)')
 }
 
 /**
@@ -314,7 +315,7 @@ export const resetNavigationToRoot = (): void => {
     window.history.replaceState(null, '', '/')
   }
 
-  console.log('[History Debug] Navigation state reset to root')
+  logHistory.info('[History Debug] Navigation state reset to root')
 }
 
 /**
@@ -333,10 +334,8 @@ export const getDebugState = (): Record<string, any> => {
 
 // Expose history display function for debugging
 export const printHistoryDebug = (): void => {
-  console.group('Current History Debug Information')
-  console.table(historyEntries)
-  console.log('Current history state:', getCurrentHistoryState())
-  console.groupEnd()
+  logHistory.info('Current History Debug Information')
+  logHistory.info('Current history state:', getCurrentHistoryState())
 }
 
 /**
@@ -346,7 +345,7 @@ export const printHistoryDebug = (): void => {
  */
 export const clearBrowserHistory = (): boolean => {
   if (typeof window === 'undefined') {
-    console.warn(
+    logHistory.warn(
       '[History Debug] Cannot clear browser history - not in browser environment',
     )
     return false
@@ -367,14 +366,14 @@ export const clearBrowserHistory = (): boolean => {
     // After a brief delay, replace with clean root state
     setTimeout(() => {
       window.history.replaceState(null, '', '/')
-      console.log(
+      logHistory.info(
         `[History Debug] Attempted to clear browser history. Length was: ${currentLength}, now: ${window.history.length}`,
       )
     }, 10)
 
     return true
   } catch (error) {
-    console.error('[History Debug] Error clearing browser history:', error)
+    logHistory.error('[History Debug] Error clearing browser history:', error)
     return false
   }
 }
@@ -396,7 +395,7 @@ export const initHistoryClearing = (): void => {
     (perfEntries.length > 0 && perfEntries[0].type === 'navigate')
 
   if (isReload || isPageLoad) {
-    console.log(
+    logHistory.info(
       '[History Debug] Page reload/load detected, preserving current URL',
     )
 
@@ -426,10 +425,12 @@ export const initHistoryClearing = (): void => {
   })
 }
 
-// Expose global debugging functions to window for console access
-if (typeof window !== 'undefined') {
-  // @ts-expect-error - Adding custom properties to window for debugging
-  window.debugHistory = {
+if (config.debug) {
+  if (window.debug === undefined) {
+    window.debug = {}
+  }
+
+  window.debug.history = {
     getInfo: getHistoryInfo,
     printDebug: printHistoryDebug,
     getEntries: () => historyEntries,

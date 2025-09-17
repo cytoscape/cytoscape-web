@@ -26,10 +26,6 @@ export const StyleSelector = (): JSX.Element => {
     }
   }, [visualStyles])
 
-  useEffect(() => {
-    console.log('applyVisualStyle')
-  }, [activeNetworkView])
-
   const applyVisualStyle = (): void => {}
 
   return (

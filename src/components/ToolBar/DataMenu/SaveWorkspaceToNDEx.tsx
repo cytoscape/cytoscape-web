@@ -4,7 +4,7 @@ import { BaseMenuProps } from '../BaseMenuProps'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { KeycloakContext } from '../../../bootstrap'
+import { KeycloakContext } from '../../../init/keycloak'
 import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
 export const SaveWorkspaceToNDExMenuItem = (

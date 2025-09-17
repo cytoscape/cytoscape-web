@@ -26,6 +26,7 @@ import { inputColumnFilterFn } from '../../../models/AppModel/impl'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { getDomain } from '../../../utils/url-util'
 import React from 'react'
+import { logApp } from '../../../debug'
 
 interface AppMenuItemProps {
   handleClose: () => void
@@ -518,7 +519,9 @@ const path2menu = (
 
   const command = async (): Promise<void> => {
     await commandFn(url)
-    console.log('## Task finished!')
+    logApp.info(
+      `[${path2menu.name}]:[${command.name}]: Task finished for url: ${url}`,
+    )
   }
 
   // Case 1: Single menu item

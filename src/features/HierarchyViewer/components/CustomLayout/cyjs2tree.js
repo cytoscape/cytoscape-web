@@ -1,4 +1,5 @@
 import * as d3Hierarchy from 'd3-hierarchy'
+import { logUi } from '../../../../debug'
 
 let originals = new Set()
 let aliases = new Set()
@@ -67,7 +68,9 @@ const findRoot = (edges, nodeSet) => {
   let vals = Array.from(targets)
   let idx2 = vals.length
   let rootId = null
-  console.log(nodeSet.size, nonRoots.size)
+  logUi.info(
+    `[${findRoot.name}]: nodeSet.size: ${nodeSet.size}, nonRoots.size: ${nonRoots.size}`,
+  )
   while (idx2--) {
     const node = vals[idx2]
     if (!nonRoots.has(node)) {

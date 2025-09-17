@@ -11,6 +11,7 @@ import {
 import { BaseMenuProps } from '../BaseMenuProps'
 import packageInfo from '../../../../package.json'
 import { getDatabaseVersion } from '../../../store/persist/db'
+import { logUi } from '../../../debug'
 
 const formatDateForHash = (dateString: string): string => {
   const date = new Date(dateString)
@@ -39,7 +40,7 @@ export const AboutCytoscapeWebMenuItem = (
   const handleCopyInfo = () => {
     const infoToCopy = `Version: ${packageInfo.version}\nBuild ID: ${commitHash}\nBuild Date: ${buildDate}\nCache Version: ${getDatabaseVersion()}`
     navigator.clipboard.writeText(infoToCopy).catch((err) => {
-      console.error('Failed to copy: ', err)
+      logUi.error(`[${handleCopyInfo.name}]: Failed to copy: `, err)
     })
   }
 

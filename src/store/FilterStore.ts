@@ -9,7 +9,7 @@ import { DiscreteRange } from '../models/PropertyModel/DiscreteRange'
 import { deleteFilterFromDb, putFilterToDb } from './persist/db'
 import { FilterConfig } from '../models/FilterModel'
 import { SearchState } from '../models/FilterModel/SearchState'
-
+import { logStore } from '../debug'
 /**
  * The store for both search and filter.
  *
@@ -138,17 +138,21 @@ export const useFilterStore = create(
         const newName = filter.name
         const existingConfig = state.filterConfigs[newName]
         if (existingConfig !== undefined) {
-          console.warn(`Filter config with name ${newName} already exists`)
+          logStore.warn(
+            `[${useFilterStore.name}]: Filter config with name ${newName} already exists`,
+          )
           return
         }
         state.filterConfigs[newName] = filter
         putFilterToDb(filter)
           .then(() => {
-            // console.log('New filter saved to db: ', filter.name)
+            logStore.info(
+              `[${useFilterStore.name}]: New filter saved to db: ${filter.name}`,
+            )
           })
           .catch((e) => {
-            console.error(
-              `Failed to store the new filter to db: ${filter.name}`,
+            logStore.error(
+              `[${useFilterStore.name}]: Failed to store the new filter to db: ${filter.name}`,
               e,
             )
           })
@@ -175,10 +179,15 @@ export const useFilterStore = create(
         const newFilter = get().filterConfigs[name]
         putFilterToDb(newFilter)
           .then(() => {
-            console.log('Range updated in db: ', name)
+            logStore.info(
+              `[${useFilterStore.name}]: Range updated in db: ${name}`,
+            )
           })
           .catch((e) => {
-            console.error(`Failed to update range in db: ${name}`, e)
+            logStore.error(
+              `[${useFilterStore.name}]: Failed to update range in db: ${name}`,
+              e,
+            )
           })
       })
     },

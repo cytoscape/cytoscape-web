@@ -9,6 +9,7 @@ import { useWorkspaceStore } from '../WorkspaceStore'
 import { useUiStateStore } from '../UiStateStore'
 import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
 import { useOpaqueAspectStore } from '../OpaqueAspectStore'
+import { logStore } from '../../debug'
 
 /**
  * Based on the changes in the workspace store, this hook will
@@ -89,13 +90,14 @@ export const useWorkspaceManager = (): void => {
       (ids, lastIds) => {
         if (ids.length === 0 && lastIds.length !== 0) {
           handleDeleteAll()
-          console.log('! All networks removed from workspace')
+          logStore.info(
+            `[${useWorkspaceManager.name}]: All networks removed from workspace`,
+          )
         } else if (ids.length < lastIds.length) {
           const removed = lastIds.filter((id) => !ids.includes(id))
           handleDeleteNetwork(removed[0])
-          console.log(
-            '*************************************!! A network removed from workspace',
-            removed[0],
+          logStore.info(
+            `[${useWorkspaceManager.name}]: A network removed from workspace: ${removed[0]}`,
           )
         }
       },

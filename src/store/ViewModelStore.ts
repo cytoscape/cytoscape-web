@@ -12,6 +12,7 @@ import {
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 import { ViewModelStore } from '../models/StoreModel/ViewModelStoreModel'
+import { logStore } from '../debug'
 
 // Default view type (a node-link diagram)
 export const DEF_VIEW_TYPE = 'nodeLink'
@@ -54,6 +55,7 @@ const persist =
   ) =>
     config(
       async (args) => {
+        logStore.info('[ViewModelStore]: Persisting view model store')
         const last = get()
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
@@ -127,9 +129,7 @@ export const useViewModelStore = create(
             const viewType = networkView.type
             if (viewType !== 'circlePacking') {
               // Store only default view type (node-link diagram) only.
-              void putNetworkViewToDb(networkId, networkView).then(() => {
-                console.debug('Network view model added to the DB.', networkId)
-              })
+              void putNetworkViewToDb(networkId, networkView).then(() => {})
             }
             return state
           })
@@ -162,27 +162,6 @@ export const useViewModelStore = create(
             if (viewList === undefined) {
               return state
             }
-
-            // // Check if selection actually changed to avoid unnecessary updates
-            // const currentView = viewList[0]
-            // if (currentView) {
-            //   const nodesEqual =
-            //     currentView.selectedNodes.length === selectedNodes.length &&
-            //     currentView.selectedNodes.every((id) =>
-            //       selectedNodes.includes(id),
-            //     )
-
-            //   const edgesEqual =
-            //     currentView.selectedEdges.length === selectedEdges.length &&
-            //     currentView.selectedEdges.every((id) =>
-            //       selectedEdges.includes(id),
-            //     )
-
-            //   // If selection hasn't changed, don't create new objects
-            //   if (nodesEqual && edgesEqual) {
-            //     return state
-            //   }
-            // }
 
             const newViewList: NetworkView[] = []
             viewList.forEach((view: NetworkView) => {

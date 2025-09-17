@@ -89,11 +89,11 @@ localStorage.debug = ''
 ## 4. Example Usage in Code
 
 ```typescript
-import { logDbInfo, logDbWarn, logDbError } from './debug/index'
+import { logDb } from './debug/index'
 
-logDbInfo('Database opened successfully')
-logDbWarn('Database response is slow')
-logDbError('Failed to open database', error)
+logDb.info('Database opened successfully')
+logDb.warn('Database response is slow')
+logDeb.error('Failed to open database', error)
 ```
 
 ---
@@ -147,6 +147,7 @@ custom.d.ts:
 interface Window {
   cy: any
   db: any
+  debug: any
 }
 ```
 
@@ -155,17 +156,14 @@ interface Window {
 ```typescript
 // Make the database instance available globally
 if (config.debug) {
-  ;(window as any).db = db
+  ;(window as any).debug.db = db
 }
 
 // Expose Cytoscape.js instance
-;(window as any).cy = cyInstance(
-  // Expose your app's store or other objects
-  window as any,
-).store = store
+;(window as any).debug.cy = cy
 ```
 
-Now you can access these objects directly in the browser console, e.g. `window.db`, `window.cy`, or `window.store`.
+Now you can access these objects directly in the browser console, e.g. `window.debug.db`, `window.debug.cy`, or `window.store`.
 
 ---
 

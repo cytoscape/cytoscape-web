@@ -4,6 +4,7 @@ import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
 import { IdType } from '../../models'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useUiStateStore } from '../../store/UiStateStore'
+import { logUi } from '../../debug'
 
 interface FitButtonProps {
   rendererId: string
@@ -47,7 +48,9 @@ export const FitButton = ({
     if (fitFunction !== undefined) {
       fitFunction()
     } else {
-      console.warn('Fit function not available')
+      logUi.warn(
+        `[${FitButton.name}]:[${handleClick.name}]: Fit function not available`,
+      )
     }
   }
 

@@ -25,7 +25,7 @@ import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../store/MessageStore'
-import { KeycloakContext } from '../../../bootstrap'
+import { KeycloakContext } from '../../../init/keycloak'
 import { useHcxValidatorStore } from '../../../features/HierarchyViewer/store/HcxValidatorStore'
 import { HcxValidationSaveDialog } from '../../../features/HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { NetworkView } from '../../../models/ViewModel'
@@ -38,6 +38,7 @@ import {
   TimeOutErrorMessage,
 } from '../../../utils/ndex-utils'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { logUi } from '../../../debug'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -113,7 +114,10 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
               permission === PermissionType.WRITE,
           )
         } catch (e) {
-          console.error('Error fetching permissions:', e)
+          logUi.error(
+            `[${fetchPermission.name}]: Error fetching permissions:`,
+            e,
+          )
           setEditPermission(false)
         }
       }
@@ -168,7 +172,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       opaqueAspects,
     )
     setNetworkModified(currentNetworkId, false)
-    setCurrentNetworkId(currentNetworkId)
     addMessage({
       message: `Saved network to NDEx`,
       duration: 3000,
@@ -207,7 +210,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         severity: MessageSeverity.SUCCESS,
       })
     } catch (e) {
-      console.log(e)
+      logUi.error(`[${saveCopyToNDEx.name}]: Error saving copy to NDEx`, e)
       if (e.message.includes(TimeOutErrorIndicator)) {
         addMessage({
           message: TimeOutErrorMessage,
@@ -261,7 +264,10 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         await overwriteNDExNetwork(accessToken, ndexClient)
       }
     } catch (e) {
-      console.log(e)
+      logUi.error(
+        `[${handleSaveCurrentNetworkToNDEx.name}]: Error saving current network to NDEx`,
+        e,
+      )
       if (e.message.includes(TimeOutErrorIndicator)) {
         addMessage({
           message: TimeOutErrorMessage,

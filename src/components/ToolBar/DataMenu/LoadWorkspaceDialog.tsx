@@ -30,6 +30,7 @@ import { Workspace } from '../../../models/WorkspaceModel'
 import { dateFormatter } from '../../../utils/date-format'
 import { debounce } from 'lodash'
 import { useNavigate } from 'react-router-dom'
+import { logUi } from '../../../debug'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
@@ -68,7 +69,10 @@ export const LoadWorkspaceDialog: React.FC<{
       void fetchMyWorkspaces(ndexBaseUrl, getToken)
         .then(setMyWorkspaces)
         .catch((error) => {
-          console.error('Error:', error)
+          logUi.error(
+            `[${LoadWorkspaceDialog.name}]:[${handleCloseDialog.name}] Error fetching workspaces from NDEx`,
+            error,
+          )
           addMessage({
             message: 'Failed to fetch workspaces from NDEx',
             duration: 4000,
@@ -175,7 +179,10 @@ export const LoadWorkspaceDialog: React.FC<{
       await fetchMyWorkspaces(ndexBaseUrl, getToken)
         .then(setMyWorkspaces)
         .catch((err) => {
-          console.log(err)
+          logUi.error(
+            `[${LoadWorkspaceDialog.name}]:[${handleConfirmDelete.name}] Error deleting workspace`,
+            err,
+          )
         })
       setSelectedWorkspaceId(null)
     } else {

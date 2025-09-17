@@ -51,7 +51,9 @@ export const ServiceListPanel = () => {
         setWarningMessage(
           `Failed to add the service at "${trimmedUrl}" due to: ${e.message}.`,
         )
-        console.error(`Failed to add the service from ${trimmedUrl}. ${e}`)
+        console.error(
+          `[${ServiceListPanel.name}]:[handleAddServiceApp]: Failed to add the service from ${trimmedUrl}. ${e}`,
+        )
       }
       setNewUrl('')
     }

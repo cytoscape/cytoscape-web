@@ -52,7 +52,6 @@ export const NetworkTabs = ({
     if (boxElement) {
       window.requestAnimationFrame(() => {
         const rect = boxElement.getBoundingClientRect()
-        // console.log(`box Width: ${rect.width}, box Height: ${rect.height}`)
         if (rect.width !== 0 && rect.height !== 0) {
           setBoxSize({ w: rect.width, h: rect.height })
         }

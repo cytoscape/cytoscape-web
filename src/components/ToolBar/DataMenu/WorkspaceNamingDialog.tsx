@@ -16,6 +16,7 @@ import { useMessageStore } from '../../../store/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { useWorkspaceData } from '../../../store/hooks/useWorkspaceData'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
+import { logUi } from '../../../debug'
 
 interface WorkspaceNamingDialogProps {
   openDialog: boolean
@@ -90,7 +91,11 @@ export const WorkspaceNamingDialog = ({
         message: 'Failed to overwrite the workspace in NDEx',
         severity: MessageSeverity.ERROR,
       })
-      console.error(e)
+      logUi.error(
+        `[${handleConfirmSave.name}]: Failed to overwrite the workspace in NDEx`,
+        e,
+      )
+      throw e
     }
     handleConfirmClose()
     onClose()
@@ -135,7 +140,7 @@ export const WorkspaceNamingDialog = ({
         )
       }
     } catch (e) {
-      console.error(e)
+      logUi.error(`[${onSave.name}]: Failed to save the workspace to NDEx`, e)
       addMessage({
         duration: 4000,
         message: 'Failed to save the workspace to NDEx',

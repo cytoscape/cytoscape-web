@@ -23,7 +23,9 @@ export const ExampleServicePanel = () => {
         try {
           addService(url)
         } catch (e) {
-          console.error(`Failed to add the service from ${url}. ${e}`)
+          console.error(
+            `[${ExampleServicePanel.name}]:[addDefaultServices]: Failed to add the service from ${url}. ${e}`,
+          )
         }
       }
     })

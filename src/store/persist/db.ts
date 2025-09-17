@@ -164,7 +164,7 @@ export const initializeDb = async (): Promise<void> => {
   })
 
   if (config.debug) {
-    window.db = db
+    window.debug.db = db
   }
 }
 
@@ -584,12 +584,11 @@ export const putNetworkViewsToDb = async (
 ): Promise<void> => {
   try {
     await db.transaction('rw', db.cyNetworkViews, async () => {
-      if (views.filter((v) => v.type === 'circlePacking').length > 0) {
-        return
-      }
       await db.cyNetworkViews.put({
         id,
-        views: views.map((v) => serializeNetworkView(v)),
+        views: views
+          .filter((v) => v.type !== 'circlePacking')
+          .map((v) => serializeNetworkView(v)),
       })
     })
   } catch (e) {

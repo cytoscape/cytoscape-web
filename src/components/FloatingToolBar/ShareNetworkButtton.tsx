@@ -12,6 +12,7 @@ import { IdType } from '../../models'
 import { useMessageStore } from '../../store/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
+import { logUi } from '../../debug'
 
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300
@@ -165,7 +166,9 @@ export const ShareNetworkButton = ({
 
     // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
     const newUrl = `${baseUrl}/0/networks/${currentNetworkId}?${finalQuery}`
-    console.log(`Copied Sharable URL: ${newUrl}`)
+    logUi.info(
+      `[${ShareNetworkButton.name}]:[${handleClick.name}]: Copied Sharable URL: ${newUrl}`,
+    )
 
     void copyTextToClipboard(newUrl).then(() => {
       // Notify user that the sharable URL has been copied to clipboard

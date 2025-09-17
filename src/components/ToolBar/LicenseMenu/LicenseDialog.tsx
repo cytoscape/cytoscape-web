@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
+import { logUi } from '../../../debug'
 
 interface LicenseDialogProps {
   open: boolean
@@ -46,7 +47,7 @@ export const LicenseDialog = ({
 
   const handleCopyText = (): void => {
     navigator.clipboard.writeText(LicenseText).catch((err) => {
-      console.error('Failed to copy text: ', err)
+      logUi.error(`[${handleCopyText.name}]: Failed to copy text: `, err)
     })
   }
 

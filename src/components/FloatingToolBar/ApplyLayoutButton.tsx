@@ -11,6 +11,7 @@ import { useUndoStack } from '../../task/UndoStack'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { useState, useEffect } from 'react'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
+import { logUi } from '../../debug'
 
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType
@@ -73,28 +74,27 @@ export const ApplyLayoutButton = ({
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  // Effect to handle fit after layout completion
-  useEffect(() => {
-    // If layoutCounter is 0, no layout has been applied yet, so no need to call fit
-    if (layoutCounter > 0) {
-      const fitFunction = getRendererFunction(rendererId, 'fit')
-      if (fitFunction !== undefined) {
-        // Use double requestAnimationFrame pattern to ensure DOM updates are complete.
-        // This is a common pattern to ensure that the fit happens after the layout
-        // has been applied and the DOM has been updated with the new positions.
-        // The first requestAnimationFrame ensures that the layout changes are applied,
-        // and the second one ensures that the DOM has been updated before the
-        // fit function call.
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            fitFunction()
-          })
-        })
-      } else {
-        console.warn('Fit function not available for renderer:', rendererId)
+  /**
+   * useFitAfterLayout
+   * React effect that triggers the renderer's fit function after a layout is applied.
+   * This ensures the viewport is centered on the new node positions after layout completion.
+   */
+  useEffect(
+    function fitAfterLayout() {
+      // If layoutCounter is 0, no layout has been applied yet, so no need to call fit
+      if (layoutCounter > 0) {
+        const fitFunction = getRendererFunction(rendererId, 'fit')
+        if (fitFunction !== undefined) {
+          fitFunction()
+        } else {
+          logUi.warn(
+            `[${ApplyLayoutButton.name}]:[${fitAfterLayout.name}]: Fit function not available for renderer: ${rendererId}`,
+          )
+        }
       }
-    }
-  }, [layoutCounter, rendererId, getRendererFunction])
+    },
+    [layoutCounter, rendererId, getRendererFunction],
+  )
 
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
     const prevPositions = new Map<IdType, [number, number]>()
@@ -125,7 +125,9 @@ export const ApplyLayoutButton = ({
       setLayoutInfo(defaultLayout.displayName)
       engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
     } else {
-      console.log('Fit function not available')
+      logUi.warn(
+        `[${ApplyLayoutButton.name}]:[${handleClick.name}]: Engine or network not found`,
+      )
     }
   }
 
