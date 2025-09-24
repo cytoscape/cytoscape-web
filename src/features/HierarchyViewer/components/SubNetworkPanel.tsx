@@ -34,6 +34,7 @@ import { applyCpLayout } from '../utils/hierarchy-util'
 import { DefaultRenderer } from '../../../store/DefaultRenderer'
 import { useUndoStore } from '../../../store/UndoStore'
 import { logApi, logUi } from '../../../debug'
+import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -110,6 +111,10 @@ export const SubNetworkPanel = ({
   const setActiveNetworkView: (id: IdType) => void = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+  const setVisualStyleOptions = useUiStateStore(
+    (state) => state.setVisualStyleOptions,
+  )
+
   const addStack = useUndoStore((state) => state.addStack)
 
   // For converting node names to node ids
@@ -368,6 +373,7 @@ export const SubNetworkPanel = ({
     networkView: NetworkView,
     nodeTable: Table,
     edgeTable: Table,
+    visualStyleOptions?: VisualStyleOptions,
   ): Promise<void> => {
     // Register new networks to the store if not cached
     const newNetworkId: string = network.id
@@ -382,6 +388,7 @@ export const SubNetworkPanel = ({
     setProcessingStage('Adding table data...')
     setProcessingProgress(50)
     addTable(newNetworkId, nodeTable, edgeTable)
+    setVisualStyleOptions(newNetworkId, visualStyleOptions)
     addStack(newNetworkId, {
       undoStack: [],
       redoStack: [],
@@ -419,6 +426,7 @@ export const SubNetworkPanel = ({
                   positionsMap.set(id, [pos[0], pos[1]])
                 },
               )
+
               resolve(positionsMap)
               worker.terminate()
             } else {
@@ -437,7 +445,6 @@ export const SubNetworkPanel = ({
             worker.terminate()
           }
 
-          // Start the worker with necessary data to apply the layout
           worker.postMessage({
             cpViewModel,
             subsystemNodeId,
@@ -487,7 +494,6 @@ export const SubNetworkPanel = ({
     // Process positions in batches to prevent UI freezing
     const positionEntries = Array.from(newPositions.entries())
     const batchSize = 100 // Adjust based on performance
-
     for (let i = 0; i < positionEntries.length; i += batchSize) {
       const batch = positionEntries.slice(i, i + batchSize)
       batch.forEach(([nodeId, position]) => {
@@ -606,6 +612,7 @@ export const SubNetworkPanel = ({
             data.networkViews[0],
             data.nodeTable,
             data.edgeTable,
+            data.visualStyleOptions,
           )
         }
 
