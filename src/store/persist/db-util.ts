@@ -32,6 +32,10 @@ export type DiscreteMappingFunctionWithRecords =
 // Utility functions to convert between Map and Array of entries
 // These functions are necessary because JavaScript Map objects cannot be directly stored in IndexedDB in Safari.
 // IndexedDB in Safari does not support structured cloning of Map objects, so we must convert them to arrays of entries.
+//
+// CONDITIONAL DESERIALIZATION APPROACH:
+// Deserialization functions check if values are arrays of entries (need conversion) or already Maps (no conversion needed).
+// This allows the same deserialization functions to handle both serialized and non-serialized data.
 export const maptoListEntries = (map: Map<any, any>): Array<[any, any]> => {
   if (!(map instanceof Map)) {
     return []
@@ -92,8 +96,21 @@ export const serializeNetworkView = (
  * @returns A deserialized `NetworkView` object with `Map` properties restored.
  */
 export const deserializeNetworkView = (
-  networkView: NetworkViewWithRecords,
+  networkView: NetworkViewWithRecords | NetworkView,
 ): NetworkView => {
+  // Helper function to conditionally convert values
+  const conditionalConvertValues = (values: any) => {
+    if (Array.isArray(values)) {
+      // It's an array of entries, convert to Map
+      return listEntriesToMap(values)
+    } else if (values instanceof Map) {
+      // It's already a Map, return as-is
+      return values
+    }
+    // Fallback: try to convert anyway
+    return listEntriesToMap(values)
+  }
+
   const deserializedNetworkView = {
     ...networkView,
     nodeViews: Object.fromEntries(
@@ -101,7 +118,7 @@ export const deserializeNetworkView = (
         k,
         {
           ...nv,
-          values: listEntriesToMap(nv.values),
+          values: conditionalConvertValues(nv.values),
         },
       ]),
     ),
@@ -110,11 +127,11 @@ export const deserializeNetworkView = (
         k,
         {
           ...ev,
-          values: listEntriesToMap(ev.values),
+          values: conditionalConvertValues(ev.values),
         },
       ]),
     ),
-    values: listEntriesToMap(networkView.values),
+    values: conditionalConvertValues(networkView.values),
   } as NetworkView
 
   return deserializedNetworkView as NetworkView
@@ -171,13 +188,26 @@ export const serializeVisualStyle = (
  * @returns A deserialized `VisualStyle` object with `Map` properties restored.
  */
 export const deserializeVisualStyle = (
-  visualStyle: VisualStyleWithRecords,
+  visualStyle: VisualStyleWithRecords | VisualStyle,
 ): VisualStyle => {
+  // Helper function to conditionally convert values
+  const conditionalConvertValues = (values: any) => {
+    if (Array.isArray(values)) {
+      // It's an array of entries, convert to Map
+      return listEntriesToMap(values)
+    } else if (values instanceof Map) {
+      // It's already a Map, return as-is
+      return values
+    }
+    // Fallback: try to convert anyway
+    return listEntriesToMap(values)
+  }
+
   const deserializedVs = Object.fromEntries(
     Object.entries(visualStyle).map(([k, v]) => {
       const deserializedVp: any = {
         ...v,
-        bypassMap: listEntriesToMap(v.bypassMap),
+        bypassMap: conditionalConvertValues(v.bypassMap),
       }
 
       // Only add mapping if it actually exists and has a value
@@ -185,7 +215,7 @@ export const deserializeVisualStyle = (
         if (v.mapping.type === MappingFunctionType.Discrete) {
           deserializedVp.mapping = {
             ...v.mapping,
-            vpValueMap: listEntriesToMap((v.mapping as any).vpValueMap),
+            vpValueMap: conditionalConvertValues((v.mapping as any).vpValueMap),
           }
         } else {
           deserializedVp.mapping = v.mapping
@@ -223,10 +253,23 @@ export const serializeTable = (table: Table): TableWithRecords => {
  * @param table - The serialized `Table` object to deserialize.
  * @returns A deserialized `Table` object with the `rows` property restored as a `Map`.
  */
-export const deserializeTable = (table: TableWithRecords): Table => {
+export const deserializeTable = (table: TableWithRecords | Table): Table => {
+  // Helper function to conditionally convert values
+  const conditionalConvertValues = (values: any) => {
+    if (Array.isArray(values)) {
+      // It's an array of entries, convert to Map
+      return listEntriesToMap(values)
+    } else if (values instanceof Map) {
+      // It's already a Map, return as-is
+      return values
+    }
+    // Fallback: try to convert anyway
+    return listEntriesToMap(values)
+  }
+
   const deserializedTable = {
     ...table,
-    rows: listEntriesToMap(table.rows),
+    rows: conditionalConvertValues(table.rows),
   }
 
   return deserializedTable as Table
