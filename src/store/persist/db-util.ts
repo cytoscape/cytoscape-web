@@ -7,6 +7,7 @@ import {
   VisualPropertyValueType,
   VisualStyle,
 } from '../../models'
+import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 
 // Utility type to recursively replace all Map<K, V> with Array<[K, V]>
 type ReplaceMapsWithArrayEntries<T> =
@@ -28,6 +29,7 @@ export type VisualPropertyWithRecords = ReplaceMapsWithArrayEntries<
 >
 export type DiscreteMappingFunctionWithRecords =
   ReplaceMapsWithArrayEntries<DiscreteMappingFunction>
+export type FilterConfigWithRecords = ReplaceMapsWithArrayEntries<FilterConfig>
 
 // Utility functions to convert between Map and Array of entries
 // These functions are necessary because JavaScript Map objects cannot be directly stored in IndexedDB in Safari.
@@ -273,4 +275,81 @@ export const deserializeTable = (table: TableWithRecords | Table): Table => {
   }
 
   return deserializedTable as Table
+}
+
+/**
+ * Converts a `FilterConfig` object into a serialized format by replacing all `Map` properties
+ * with arrays of entries. This is necessary for storing the object in IndexedDB, as `Map` objects
+ * are not supported in Safari's IndexedDB implementation.
+ *
+ * @param filterConfig - The `FilterConfig` object to serialize.
+ * @returns A serialized `FilterConfig` object with `Map` properties replaced by arrays of entries.
+ */
+export const serializeFilterConfig = (
+  filterConfig: FilterConfig,
+): FilterConfigWithRecords => {
+  // If there's no visualMapping or it's not a DiscreteMappingFunction, return as-is
+  if (
+    !filterConfig.visualMapping ||
+    filterConfig.visualMapping.type !== MappingFunctionType.Discrete
+  ) {
+    return filterConfig as FilterConfigWithRecords
+  }
+
+  // Serialize the vpValueMap in the DiscreteMappingFunction
+  const discreteMapping = filterConfig.visualMapping as DiscreteMappingFunction
+  const serializedMapping = {
+    ...discreteMapping,
+    vpValueMap: maptoListEntries(discreteMapping.vpValueMap),
+  }
+
+  return {
+    ...filterConfig,
+    visualMapping: serializedMapping,
+  } as FilterConfigWithRecords
+}
+
+/**
+ * Converts a serialized `FilterConfig` object (with arrays of entries) back into its original format
+ * by replacing arrays of entries with `Map` objects. This is necessary after retrieving the object
+ * from IndexedDB.
+ *
+ * @param filterConfig - The serialized `FilterConfig` object to deserialize.
+ * @returns A deserialized `FilterConfig` object with `Map` properties restored.
+ */
+export const deserializeFilterConfig = (
+  filterConfig: FilterConfigWithRecords | FilterConfig,
+): FilterConfig => {
+  // Helper function to conditionally convert values
+  const conditionalConvertValues = (values: any) => {
+    if (Array.isArray(values)) {
+      // It's an array of entries, convert to Map
+      return listEntriesToMap(values)
+    } else if (values instanceof Map) {
+      // It's already a Map, return as-is
+      return values
+    }
+    // Fallback: try to convert anyway
+    return listEntriesToMap(values)
+  }
+
+  // If there's no visualMapping or it's not a DiscreteMappingFunction, return as-is
+  if (
+    !filterConfig.visualMapping ||
+    filterConfig.visualMapping.type !== MappingFunctionType.Discrete
+  ) {
+    return filterConfig as FilterConfig
+  }
+
+  // Deserialize the vpValueMap in the DiscreteMappingFunction
+  const serializedMapping = filterConfig.visualMapping as any
+  const deserializedMapping = {
+    ...serializedMapping,
+    vpValueMap: conditionalConvertValues(serializedMapping.vpValueMap),
+  }
+
+  return {
+    ...filterConfig,
+    visualMapping: deserializedMapping,
+  } as FilterConfig
 }

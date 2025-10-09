@@ -8,7 +8,12 @@ import {
   deserializeVisualStyle,
   serializeTable,
   deserializeTable,
+  serializeFilterConfig,
+  deserializeFilterConfig,
 } from './db-util'
+import { DisplayMode } from '../../models/FilterModel/DisplayMode'
+import { FilterWidgetType } from '../../models/FilterModel/FilterWidgetType'
+import { GraphObjectType } from '../../models/NetworkModel'
 
 describe('db-util', () => {
   describe('maptoListEntries and listEntriesToMap', () => {
@@ -597,6 +602,362 @@ describe('db-util', () => {
       expect(result.values).toBe(originalMap)
       expect(result.nodeViews.node1.values).toBe(originalMap)
       expect(result.edgeViews.edge1.values).toBe(originalMap)
+    })
+  })
+
+  describe('serializeFilterConfig and deserializeFilterConfig', () => {
+    it('should serialize and deserialize a FilterConfig with DiscreteMappingFunction', () => {
+      const filterConfig = {
+        name: 'testFilter',
+        target: GraphObjectType.NODE,
+        attributeName: 'type',
+        label: 'Test Filter',
+        description: 'A test filter',
+        widgetType: FilterWidgetType.CHECKBOX,
+        displayMode: DisplayMode.SHOW_HIDE,
+        range: { values: ['A', 'B', 'C'] },
+        visualMapping: {
+          type: MappingFunctionType.Discrete,
+          attribute: 'type',
+          visualPropertyType: 'color',
+          defaultValue: '#CCCCCC',
+          vpValueMap: new Map([
+            ['A', '#FF0000'],
+            ['B', '#00FF00'],
+            ['C', '#0000FF'],
+          ]),
+        },
+      }
+
+      const serialized = serializeFilterConfig(filterConfig as any)
+      expect((serialized.visualMapping as any).vpValueMap).toEqual([
+        ['A', '#FF0000'],
+        ['B', '#00FF00'],
+        ['C', '#0000FF'],
+      ])
+
+      const deserialized = deserializeFilterConfig(serialized as any)
+      expect((deserialized.visualMapping as any).vpValueMap).toEqual(
+        new Map([
+          ['A', '#FF0000'],
+          ['B', '#00FF00'],
+          ['C', '#0000FF'],
+        ]),
+      )
+    })
+
+    it('should preserve numeric keys in vpValueMap', () => {
+      const filterConfig = {
+        name: 'numericFilter',
+        target: GraphObjectType.NODE,
+        attributeName: 'value',
+        label: 'Numeric Filter',
+        description: 'A filter with numeric keys',
+        widgetType: FilterWidgetType.CHECKBOX,
+        displayMode: DisplayMode.SHOW_HIDE,
+        range: { values: [0, 1, 2] },
+        visualMapping: {
+          type: MappingFunctionType.Discrete,
+          attribute: 'value',
+          visualPropertyType: 'color',
+          defaultValue: '#CCCCCC',
+          vpValueMap: new Map([
+            [0, '#FF0000'],
+            [1, '#00FF00'],
+            [2, '#0000FF'],
+          ]),
+        },
+      }
+
+      const serialized = serializeFilterConfig(filterConfig as any)
+      expect((serialized.visualMapping as any).vpValueMap).toEqual([
+        [0, '#FF0000'],
+        [1, '#00FF00'],
+        [2, '#0000FF'],
+      ])
+
+      const deserialized = deserializeFilterConfig(serialized as any)
+      const vpValueMap = (deserialized.visualMapping as any).vpValueMap
+
+      // Verify the Map has numeric keys, not string keys
+      expect(vpValueMap.get(0)).toBe('#FF0000')
+      expect(vpValueMap.get(1)).toBe('#00FF00')
+      expect(vpValueMap.get(2)).toBe('#0000FF')
+
+      // Verify keys are numbers, not strings
+      expect(typeof Array.from(vpValueMap.keys())[0]).toBe('number')
+      expect(typeof Array.from(vpValueMap.keys())[1]).toBe('number')
+      expect(typeof Array.from(vpValueMap.keys())[2]).toBe('number')
+    })
+
+    it('should handle FilterConfig without visualMapping', () => {
+      const filterConfig = {
+        name: 'simpleFilter',
+        target: GraphObjectType.NODE,
+        attributeName: 'name',
+        label: 'Simple Filter',
+        description: 'A simple filter without visual mapping',
+        widgetType: FilterWidgetType.CHECKBOX,
+        displayMode: DisplayMode.SELECT,
+        range: { values: ['Item1', 'Item2'] },
+      }
+
+      const serialized = serializeFilterConfig(filterConfig as any)
+      expect(serialized).toEqual(filterConfig)
+
+      const deserialized = deserializeFilterConfig(serialized as any)
+      expect(deserialized).toEqual(filterConfig)
+    })
+
+    it('should handle FilterConfig with undefined visualMapping', () => {
+      const filterConfig = {
+        name: 'undefinedMappingFilter',
+        target: GraphObjectType.EDGE,
+        attributeName: 'interaction',
+        label: 'Undefined Mapping Filter',
+        description: 'Filter with undefined visual mapping',
+        widgetType: FilterWidgetType.CHECKBOX,
+        displayMode: DisplayMode.SHOW_HIDE,
+        range: { values: ['interacts', 'binds'] },
+        visualMapping: undefined,
+      }
+
+      const serialized = serializeFilterConfig(filterConfig as any)
+      expect(serialized).toEqual(filterConfig)
+
+      const deserialized = deserializeFilterConfig(serialized as any)
+      expect(deserialized).toEqual(filterConfig)
+    })
+
+    it('should handle FilterConfig with non-Discrete mapping (Passthrough)', () => {
+      const filterConfig = {
+        name: 'passthroughFilter',
+        target: GraphObjectType.NODE,
+        attributeName: 'label',
+        label: 'Passthrough Filter',
+        description: 'Filter with passthrough mapping',
+        widgetType: FilterWidgetType.CHECKBOX,
+        displayMode: DisplayMode.SELECT,
+        range: { values: ['Label1', 'Label2'] },
+        visualMapping: {
+          type: MappingFunctionType.Passthrough,
+          attribute: 'label',
+          visualPropertyType: 'string',
+          defaultValue: '',
+        },
+      }
+
+      const serialized = serializeFilterConfig(filterConfig as any)
+      // Should return as-is since it's not a Discrete mapping
+      expect(serialized).toEqual(filterConfig)
+
+      const deserialized = deserializeFilterConfig(serialized as any)
+      expect(deserialized).toEqual(filterConfig)
+    })
+
+    it('should handle already deserialized FilterConfig (with Maps) without conversion', () => {
+      const filterConfig = {
+        name: 'alreadyDeserializedFilter',
+        target: GraphObjectType.NODE,
+        attributeName: 'category',
+        label: 'Already Deserialized',
+        description: 'Filter that is already deserialized',
+        widgetType: FilterWidgetType.CHECKBOX,
+        displayMode: DisplayMode.SHOW_HIDE,
+        range: { values: ['Cat1', 'Cat2'] },
+        visualMapping: {
+          type: MappingFunctionType.Discrete,
+          attribute: 'category',
+          visualPropertyType: 'color',
+          defaultValue: '#FFFFFF',
+          vpValueMap: new Map([
+            ['Cat1', '#AA0000'],
+            ['Cat2', '#00AA00'],
+          ]),
+        },
+      }
+
+      // Pass the already deserialized FilterConfig directly
+      const result = deserializeFilterConfig(filterConfig as any)
+
+      // Should return the same Map without conversion
+      expect((result.visualMapping as any).vpValueMap).toBe(
+        (filterConfig.visualMapping as any).vpValueMap,
+      )
+    })
+
+    it('should handle mixed serialized and non-serialized FilterConfig data', () => {
+      const mixedFilterConfig = {
+        name: 'mixedFilter',
+        target: GraphObjectType.NODE,
+        attributeName: 'status',
+        label: 'Mixed Filter',
+        description: 'Filter with mixed serialization state',
+        widgetType: FilterWidgetType.CHECKBOX,
+        displayMode: DisplayMode.SHOW_HIDE,
+        range: { values: ['active', 'inactive'] },
+        visualMapping: {
+          type: MappingFunctionType.Discrete,
+          attribute: 'status',
+          visualPropertyType: 'color',
+          defaultValue: '#888888',
+          vpValueMap: [
+            ['active', '#00FF00'],
+            ['inactive', '#FF0000'],
+          ], // Array (serialized)
+        },
+      }
+
+      const result = deserializeFilterConfig(mixedFilterConfig as any)
+
+      // Array should be converted to Map
+      expect((result.visualMapping as any).vpValueMap).toEqual(
+        new Map([
+          ['active', '#00FF00'],
+          ['inactive', '#FF0000'],
+        ]),
+      )
+    })
+
+    it('should handle FilterConfig with discreteFilterDetails array', () => {
+      const filterConfig = {
+        name: 'detailedFilter',
+        target: GraphObjectType.NODE,
+        attributeName: 'type',
+        label: 'Detailed Filter',
+        description: 'Filter with discrete filter details',
+        widgetType: FilterWidgetType.CHECKBOX,
+        displayMode: DisplayMode.SHOW_HIDE,
+        range: { values: ['TypeA', 'TypeB'] },
+        discreteFilterDetails: [
+          {
+            predicate: 'equals',
+            criterion: 'TypeA',
+            description: 'Type A items',
+            tooltip: 'Show all Type A',
+          },
+          {
+            predicate: 'equals',
+            criterion: 'TypeB',
+            description: 'Type B items',
+            tooltip: 'Show all Type B',
+          },
+        ],
+        visualMapping: {
+          type: MappingFunctionType.Discrete,
+          attribute: 'type',
+          visualPropertyType: 'shape',
+          defaultValue: 'ellipse',
+          vpValueMap: new Map([
+            ['TypeA', 'rectangle'],
+            ['TypeB', 'triangle'],
+          ]),
+        },
+      }
+
+      const serialized = serializeFilterConfig(filterConfig as any)
+      expect(serialized.discreteFilterDetails).toEqual(
+        filterConfig.discreteFilterDetails,
+      )
+      expect((serialized.visualMapping as any).vpValueMap).toEqual([
+        ['TypeA', 'rectangle'],
+        ['TypeB', 'triangle'],
+      ])
+
+      const deserialized = deserializeFilterConfig(serialized as any)
+      expect(deserialized.discreteFilterDetails).toEqual(
+        filterConfig.discreteFilterDetails,
+      )
+      expect((deserialized.visualMapping as any).vpValueMap).toEqual(
+        new Map([
+          ['TypeA', 'rectangle'],
+          ['TypeB', 'triangle'],
+        ]),
+      )
+    })
+
+    it('should preserve boolean keys in vpValueMap', () => {
+      const filterConfig = {
+        name: 'booleanFilter',
+        target: GraphObjectType.NODE,
+        attributeName: 'active',
+        label: 'Boolean Filter',
+        description: 'Filter with boolean keys',
+        widgetType: FilterWidgetType.CHECKBOX,
+        displayMode: DisplayMode.SHOW_HIDE,
+        range: { values: [true, false] },
+        visualMapping: {
+          type: MappingFunctionType.Discrete,
+          attribute: 'active',
+          visualPropertyType: 'color',
+          defaultValue: '#CCCCCC',
+          vpValueMap: new Map([
+            [true, '#00FF00'],
+            [false, '#FF0000'],
+          ]),
+        },
+      }
+
+      const serialized = serializeFilterConfig(filterConfig as any)
+      expect((serialized.visualMapping as any).vpValueMap).toEqual([
+        [true, '#00FF00'],
+        [false, '#FF0000'],
+      ])
+
+      const deserialized = deserializeFilterConfig(serialized as any)
+      const vpValueMap = (deserialized.visualMapping as any).vpValueMap
+
+      // Verify the Map has boolean keys
+      expect(vpValueMap.get(true)).toBe('#00FF00')
+      expect(vpValueMap.get(false)).toBe('#FF0000')
+
+      // Verify keys are booleans, not strings
+      expect(typeof Array.from(vpValueMap.keys())[0]).toBe('boolean')
+      expect(typeof Array.from(vpValueMap.keys())[1]).toBe('boolean')
+    })
+
+    it('should handle round-trip serialization/deserialization', () => {
+      const originalFilterConfig = {
+        name: 'roundTripFilter',
+        target: GraphObjectType.EDGE,
+        attributeName: 'weight',
+        label: 'Round Trip Filter',
+        description: 'Testing round-trip conversion',
+        widgetType: FilterWidgetType.SLIDER,
+        displayMode: DisplayMode.SELECT,
+        range: { min: 0, max: 100 },
+        visualMapping: {
+          type: MappingFunctionType.Discrete,
+          attribute: 'weight',
+          visualPropertyType: 'width',
+          defaultValue: 1,
+          vpValueMap: new Map([
+            [0, 1],
+            [50, 5],
+            [100, 10],
+          ]),
+        },
+      }
+
+      // Serialize
+      const serialized = serializeFilterConfig(originalFilterConfig as any)
+
+      // Deserialize
+      const deserialized = deserializeFilterConfig(serialized as any)
+
+      // Serialize again
+      const reSerialized = serializeFilterConfig(deserialized as any)
+
+      // Should be identical to first serialization
+      expect(reSerialized).toEqual(serialized)
+
+      // Deserialize again
+      const reDeserialized = deserializeFilterConfig(reSerialized as any)
+
+      // vpValueMap should be equal
+      expect((reDeserialized.visualMapping as any).vpValueMap).toEqual(
+        (originalFilterConfig.visualMapping as any).vpValueMap,
+      )
     })
   })
 })
