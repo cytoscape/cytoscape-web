@@ -6,7 +6,8 @@ import {
   ValueTypeName,
 } from '../../../models/TableModel'
 import { Operator } from '../../../models/FilterModel/Search'
-import _ from 'lodash'
+import intersection from 'lodash/intersection'
+import union from 'lodash/union'
 
 /**
  * Generates a Fuse index from a data table
@@ -127,8 +128,8 @@ export const runSearch = (
   })
 
   if (operator === 'AND') {
-    return _.intersection(...results)
+    return intersection(...results)
   } else {
-    return _.union(...results)
+    return union(...results)
   }
 }

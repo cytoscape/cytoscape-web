@@ -13,7 +13,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import AddCircleIcon from '@mui/icons-material/AddCircle'
 import EditIcon from '@mui/icons-material/Edit'
 import Close from '@mui/icons-material/DisabledByDefault'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 
 import { scaleLinear as visXScaleLinear } from '@visx/scale'
 import { extent } from 'd3-array'

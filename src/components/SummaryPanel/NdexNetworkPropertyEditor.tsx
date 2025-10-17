@@ -26,7 +26,7 @@ import '@mantine/tiptap/styles.css'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useUndoStack } from '../../task/UndoStack'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import _ from 'lodash'
+import isEqual from 'lodash/isEqual'
 import { IdType } from '../../models'
 
 interface NetworkPropertyEditorProps {
@@ -257,7 +257,7 @@ const NetworkPropertyEditor = (
               },
             }}
             onClick={(e) => {
-              if (_.isEqual(localSummaryState, summary)) {
+              if (isEqual(localSummaryState, summary)) {
                 onClose(e)
               } else {
                 postEdit(

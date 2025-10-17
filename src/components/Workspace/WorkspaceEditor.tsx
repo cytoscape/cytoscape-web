@@ -7,9 +7,9 @@ import {
   useRef,
   useState,
 } from 'react'
-import { debounce } from 'lodash'
+import isEqual from 'lodash/isEqual'
+import omit from 'lodash/omit'
 import { Allotment } from 'allotment'
-import _ from 'lodash'
 import { Box, Tooltip } from '@mui/material'
 
 import {
@@ -58,8 +58,17 @@ import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
 import { validateHcx } from '../../features/HierarchyViewer/model/impl/hcxValidators'
 import { useMessageStore } from '../../store/MessageStore'
 import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
-import { CreateNetworkFromTableForm } from '../../features/TableDataLoader/components/CreateNetworkFromTable/CreateNetworkFromTableForm'
-import { JoinTableToNetworkForm } from '../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
+// Lazy load heavy TableDataLoader forms
+const CreateNetworkFromTableForm = lazy(() =>
+  import(
+    '../../features/TableDataLoader/components/CreateNetworkFromTable/CreateNetworkFromTableForm'
+  ).then((module) => ({ default: module.CreateNetworkFromTableForm })),
+)
+const JoinTableToNetworkForm = lazy(() =>
+  import(
+    '../../features/TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
+  ).then((module) => ({ default: module.JoinTableToNetworkForm })),
+)
 import { useCreateNetworkFromTableStore } from '../../features/TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
@@ -180,10 +189,10 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       // primitive compare fn that does not take into account the selection/hover state
       // this leads to the network having a 'modified' state even though nothing was modified
-      const viewModelChanged = !_.isEqual(
+      const viewModelChanged = !isEqual(
         // omit selection state and hovered element changes as valid viewModel changes
-        _.omit(prev, ['selectedNodes', 'selectedEdges']),
-        _.omit(next, ['selectedNodes', 'selectedEdges']),
+        omit(prev, ['selectedNodes', 'selectedEdges']),
+        omit(next, ['selectedNodes', 'selectedEdges']),
       )
 
       const { networkModified } = workspace
@@ -205,7 +214,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       return
     }
 
-    const visualStyleChanged = !_.isEqual(prevVisualStyle, nextVisualStyle)
+    const visualStyleChanged = !isEqual(prevVisualStyle, nextVisualStyle)
 
     const { networkModified } = workspace
 
