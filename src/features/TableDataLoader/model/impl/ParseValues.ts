@@ -45,9 +45,13 @@ export function valueMatchesType(
         return false
       }
     case ValueTypeName.ListBoolean:
-      return value
-        .split(delimiter)
-        .every((item) => /^true|false$/i.test(item.trim()))
+      try {
+        return value
+          .split(delimiter)
+          .every((item) => /^true|false$/i.test(item.trim()))
+      } catch {
+        return false
+      }
     default:
       return false
   }

@@ -30,6 +30,8 @@ import {
   deserializeNetworkView,
   serializeTable,
   deserializeTable,
+  serializeFilterConfig,
+  deserializeFilterConfig,
 } from './db-util'
 // Unique, fixed DB name for the Cytoscape Web
 const DB_NAME: string = 'cyweb-db'
@@ -689,8 +691,9 @@ export const putFilterToDb = async (
   filterConfig: FilterConfig,
 ): Promise<void> => {
   try {
+    const serializedFilterConfig = serializeFilterConfig(filterConfig)
     await db.transaction('rw', db.filters, async () => {
-      await db.filters.put({ id: filterConfig.name, ...filterConfig })
+      await db.filters.put({ id: filterConfig.name, ...serializedFilterConfig })
     })
   } catch (e) {
     logDb.error('[putFilterToDb] error:', e, filterConfig)
@@ -704,7 +707,11 @@ export const putFilterToDb = async (
 export const getFilterFromDb = async (
   filterName: string,
 ): Promise<FilterConfig | undefined> => {
-  return await db.filters.get({ id: filterName })
+  const filterConfig = await db.filters.get({ id: filterName })
+  if (filterConfig === undefined) {
+    return undefined
+  }
+  return deserializeFilterConfig(filterConfig)
 }
 
 /**

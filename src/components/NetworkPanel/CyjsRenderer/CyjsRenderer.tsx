@@ -350,6 +350,18 @@ const CyjsRenderer = ({
           // Deselect all if in select mode and no modifier key is pressed
           exclusiveSelect(id, [], [])
         } else {
+          if (displayMode === DisplayMode.SHOW_HIDE) {
+            // In show/hide mode, keep all visible edges displayed
+            exclusiveSelect(
+              id,
+              [],
+              cy
+                .edges(':visible')
+                .map((ele: SingularElementArgument) => ele.data('id')),
+            )
+          } else {
+            // do nothing. Keep the selection as-is
+          }
           // Do nothing, keep selection as-is
         }
       } else if (e.target.isNode() || e.target.isEdge()) {
