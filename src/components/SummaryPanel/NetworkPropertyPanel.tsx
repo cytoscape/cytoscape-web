@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react'
+import { ReactElement, useState, lazy, Suspense } from 'react'
 import {
   Tooltip,
   IconButton,
@@ -7,6 +7,7 @@ import {
   Typography,
   Divider,
   Chip,
+  CircularProgress,
 } from '@mui/material'
 import { blueGrey } from '@mui/material/colors'
 import { useTheme } from '@mui/material/styles'
@@ -19,7 +20,8 @@ import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
 import { useViewModelStore } from '../../store/ViewModelStore'
 
-import { NetworkPropertyEditor } from './NdexNetworkPropertyEditor'
+// Lazy load the heavy network property editor with rich text editing capabilities
+const NetworkPropertyEditor = lazy(() => import('./NdexNetworkPropertyEditor'))
 import { HcxValidationButtonGroup } from '../../features/HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
 import { ConfirmationDialog } from '../Util/ConfirmationDialog'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -246,11 +248,24 @@ export const NetworkPropertyPanel = ({
             </Tooltip>
           </Box>
         </Box>
-        <NetworkPropertyEditor
-          networkId={summary.externalId}
-          anchorEl={editNetworkSummaryAnchorEl}
-          onClose={hideEditNetworkSummaryForm}
-        />
+        <Suspense
+          fallback={
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minHeight="200px"
+            >
+              <CircularProgress />
+            </Box>
+          }
+        >
+          <NetworkPropertyEditor
+            networkId={summary.externalId}
+            anchorEl={editNetworkSummaryAnchorEl}
+            onClose={hideEditNetworkSummaryForm}
+          />
+        </Suspense>
         <ConfirmationDialog
           title="Remove Network From Workspace"
           message={`Do you really want to delete the network, ${summary.name}?`}

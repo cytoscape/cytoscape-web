@@ -27,7 +27,7 @@ const MAX_ZOOM = 5
 
 type UnitType = 'pixels' | 'inches'
 
-export const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
+const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
   (props, ref) => {
     const [transparentBg, setTransparentBg] = useState(true)
     const [fullBg, setFullBg] = useState(true)
@@ -350,3 +350,5 @@ export const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     )
   },
 )
+
+export default PngExportForm

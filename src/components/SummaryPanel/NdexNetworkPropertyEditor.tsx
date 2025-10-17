@@ -34,7 +34,7 @@ interface NetworkPropertyEditorProps {
   onClose: (event: any) => void
   networkId: IdType
 }
-export const NetworkPropertyEditor = (
+const NetworkPropertyEditor = (
   props: NetworkPropertyEditorProps,
 ): ReactElement => {
   const { postEdit } = useUndoStack()
@@ -282,3 +282,5 @@ export const NetworkPropertyEditor = (
     </Popover>
   )
 }
+
+export default NetworkPropertyEditor

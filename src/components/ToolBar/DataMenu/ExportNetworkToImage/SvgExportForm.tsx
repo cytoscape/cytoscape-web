@@ -17,7 +17,7 @@ import { IdType } from '../../../../models/IdType'
 import { useUiStateStore } from '../../../../store/UiStateStore'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
 
-export const SvgExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
+const SvgExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
   (props, ref) => {
     const [fullBg, setFullBg] = useState(true)
 
@@ -69,3 +69,5 @@ export const SvgExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     )
   },
 )
+
+export default SvgExportForm
