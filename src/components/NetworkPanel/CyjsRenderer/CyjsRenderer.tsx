@@ -8,10 +8,7 @@ import Cytoscape, {
   Position,
   SingularElementArgument,
 } from 'cytoscape'
-// @ts-expect-error-next-line
-import { CxToCyCanvas } from '@js4cytoscape/cyannotation-cx2js'
-// @ts-expect-error-next-line
-import { CyNetworkUtils, CxToJs } from '@js4cytoscape/cx2js'
+import { CxToCyCanvas } from './annotations/CxToCyCanvas'
 
 import { registerCyExtensions } from './register-cy-extensions'
 
@@ -529,9 +526,7 @@ const CyjsRenderer = ({
     })
 
     // Set up annotation rendering utilities
-    const cxNetworkUtils = new CyNetworkUtils()
-    const cyService = new CxToJs(cxNetworkUtils)
-    const annotationRenderer = new CxToCyCanvas(cyService)
+    const annotationRenderer = new CxToCyCanvas()
 
     // Render annotations if present, otherwise clear annotation layers
     if (annotations.length > 0) {
