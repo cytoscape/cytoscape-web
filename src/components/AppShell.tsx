@@ -127,13 +127,10 @@ const AppShell = (): ReactElement => {
       // 2. Handle import network from search params
       // find all key value search params with key = import. e.g. /...?import=...
       const IMPORT_KEY = 'import'
-      const importKeyValues = Array.from(search.entries()).filter(
-        ([key]) => key === IMPORT_KEY,
-      )
-      for (const [value] of importKeyValues) {
+      const importValues = search.getAll(IMPORT_KEY)
+      for (const value of importValues) {
         try {
           const res = await fetchUrlCx(value, 10000000)
-
           const { networkWithView, summary } = res
           const { network, nodeTable, edgeTable, visualStyle, networkViews } =
             networkWithView
