@@ -9,7 +9,11 @@ import {
 } from 'react-router-dom'
 import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
-import { getUiStateFromDb, getWorkspaceFromDb } from '../store/persist/db'
+import {
+  getUiStateFromDb,
+  getWorkspaceFromDb,
+  putNetworkSummaryToDb,
+} from '../store/persist/db'
 
 import { ToolBar } from './ToolBar'
 import { DEFAULT_UI_STATE, useUiStateStore } from '../store/UiStateStore'
@@ -32,8 +36,17 @@ import { useTableStore } from '../store/TableStore'
 import { useViewModelStore } from '../store/ViewModelStore'
 import { useVisualStyleStore } from '../store/VisualStyleStore'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
-import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
 import { logStartup } from '../debug'
+import { SelectionStates } from './FloatingToolBar/ShareNetworkButtton'
+import { FilterUrlParams } from '../models/FilterModel/FilterUrlParams'
+import { DEFAULT_FILTER_NAME } from '../features/HierarchyViewer/components/FilterPanel/FilterPanel'
+import {
+  DisplayMode,
+  FilterConfig,
+  FilterWidgetType,
+} from '../models/FilterModel'
+import { GraphObjectType } from '../models/NetworkModel'
+import { useFilterStore } from '../store/FilterStore'
 
 /**
  *
@@ -48,7 +61,6 @@ const AppShell = (): ReactElement => {
   const [search, setSearchParams] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
-  const { navigateToNetwork } = useUrlNavigation()
   const setWorkspace = useWorkspaceStore((state) => state.set)
   const location: Location = useLocation()
   const getToken: () => Promise<string> = useCredentialStore(
@@ -66,7 +78,72 @@ const AppShell = (): ReactElement => {
   const setViewModel = useViewModelStore((state) => state.add)
   const setTables = useTableStore((state) => state.add)
   const addSummaries = useNetworkSummaryStore((state) => state.addAll)
+  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
+  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+  const setActiveTableBrowserIndex = useUiStateStore(
+    (state) => state.setActiveTableBrowserIndex,
+  )
+  const setActiveNetworkView = useUiStateStore(
+    (state) => state.setActiveNetworkView,
+  )
   const initialized = useRef(false)
+
+  /**
+   * Restore the node / edge selection states from URL
+   */
+  const restoreSelectionStates = (networkId: string): void => {
+    const selectedNodeStr = search.get(SelectionStates.SelectedNodes) ?? ''
+    const selectedEdgeStr = search.get(SelectionStates.SelectedEdges) ?? ''
+
+    if (selectedNodeStr === '' && selectedEdgeStr === '') {
+      return
+    }
+
+    let selectedNodes: string[] = selectedNodeStr.split(' ')
+    let selectedEdges: string[] = selectedEdgeStr.split(' ')
+    exclusiveSelect(networkId, selectedNodes, selectedEdges)
+  }
+
+  /**
+   * Restore filter states from URL
+   */
+  const restoreFilterStates = (): void => {
+    const filterFor = search.get(FilterUrlParams.FILTER_FOR)
+    const filterBy = search.get(FilterUrlParams.FILTER_BY)
+    const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
+
+    if (filterFor != null && filterBy != null && filterRange != null) {
+      const filterConfig: FilterConfig = {
+        name: DEFAULT_FILTER_NAME,
+        attributeName: filterBy,
+        target:
+          filterFor === GraphObjectType.NODE
+            ? GraphObjectType.NODE
+            : GraphObjectType.EDGE,
+        widgetType: FilterWidgetType.CHECKBOX,
+        description: 'Filter nodes / edges by selected values',
+        label: 'Interaction edge filter',
+        range: { values: filterRange.split(',') },
+        displayMode: DisplayMode.SHOW_HIDE,
+      }
+      addFilterConfig(filterConfig)
+    }
+  }
+
+  const restoreTableBrowserTabState = (): void => {
+    const tableBrowserTab = search.get('activeTableBrowserTab')
+
+    if (tableBrowserTab != null) {
+      setActiveTableBrowserIndex(Number(tableBrowserTab))
+    }
+  }
+
+  const restoreActiveNetworkView = (): void => {
+    const activeNetworkView = search.get('activeNetworkView')
+    if (activeNetworkView != null) {
+      setActiveNetworkView(activeNetworkView)
+    }
+  }
 
   useEffect(() => {
     const init = async () => {
@@ -136,6 +213,7 @@ const AppShell = (): ReactElement => {
             networkWithView
           const newNetworkId = network.id
           summaries[newNetworkId] = summary
+          await putNetworkSummaryToDb(summary)
           workspace.currentNetworkId = newNetworkId
           workspace.networkIds.push(newNetworkId)
 
@@ -167,12 +245,26 @@ const AppShell = (): ReactElement => {
       setUi(uiState)
       addSummaries(summaries)
       setWorkspace(workspace)
-      // From '/', navigate to /:workspaceId/networks/:networkId
 
+      // Process state restoration parameters after workspace is set
+      const hasSearchQueryParams = search.size > 0
+      if (hasSearchQueryParams) {
+        // Restore state parameters
+        restoreSelectionStates(workspace.currentNetworkId)
+        restoreTableBrowserTabState()
+        restoreFilterStates()
+
+        // Restore active network view with a delay to ensure components are ready
+        setTimeout(() => {
+          restoreActiveNetworkView()
+        }, 1000)
+      }
+
+      // From '/', navigate to /:workspaceId/networks/:networkId
       navigate(
         {
           pathname: `/${workspace.id}/networks/${workspace.currentNetworkId}`,
-          search: location.search,
+          search: '', // Clear search params after processing
         },
         {
           replace: true,

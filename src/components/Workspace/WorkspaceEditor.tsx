@@ -50,7 +50,6 @@ import { useHierarchyViewerManager } from '../../features/HierarchyViewer/store/
 import { useNetworkSummaryManager } from '../../store/hooks/useNetworkSummaryManager'
 import { ChevronRight } from '@mui/icons-material'
 import { Panel } from '../../models/UiModel/Panel'
-import { SelectionStates } from '../FloatingToolBar/ShareNetworkButtton'
 import { LayoutEngine } from '../../models/LayoutModel'
 import { useLayoutStore } from '../../store/LayoutStore'
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
@@ -63,22 +62,12 @@ import { JoinTableToNetworkForm } from '../../features/TableDataLoader/component
 import { useCreateNetworkFromTableStore } from '../../features/TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../../features/TableDataLoader/store/joinTableToNetworkStore'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
-import { FilterUrlParams } from '../../models/FilterModel/FilterUrlParams'
-import { DEFAULT_FILTER_NAME } from '../../features/HierarchyViewer/components/FilterPanel/FilterPanel'
-import {
-  DisplayMode,
-  FilterConfig,
-  FilterWidgetType,
-} from '../../models/FilterModel'
-import { GraphObjectType } from '../../models/NetworkModel'
-import { useFilterStore } from '../../store/FilterStore'
 import { useAppManager } from '../../store/hooks/useAppManager'
 import { NetworkWithView, VisualStyle } from '../../models'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useUndoStore } from '../../store/UndoStore'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
-import { useUrlNavigation } from '../../store/hooks/useUrlNavigation'
 import { logUi } from '../../debug'
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -112,21 +101,11 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
-  const { navigateToNetwork } = useUrlNavigation()
-  const location = useLocation()
-
-  const [search, setSearchParams] = useSearchParams()
-
-  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
-
-  // For restoring the selection state from URL
-  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
 
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
   )
 
-  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -139,14 +118,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
-
-  const setActiveTableBrowserIndex = useUiStateStore(
-    (state) => state.setActiveTableBrowserIndex,
-  )
-
-  const setActiveNetworkView = useUiStateStore(
-    (state) => state.setActiveNetworkView,
-  )
 
   const { panels, activeNetworkView } = ui
 
@@ -162,8 +133,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   const allViewModels: Record<string, NetworkView[]> = useViewModelStore(
     (state) => state.viewModels,
   )
-  const currentNetworkView: NetworkView | undefined =
-    allViewModels[currentNetworkId]?.[0]
 
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
@@ -368,63 +337,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   }
 
-  const restoreTableBrowserTabState = (): void => {
-    const tableBrowserTab = search.get('activeTableBrowserTab')
-
-    if (tableBrowserTab != null) {
-      setActiveTableBrowserIndex(Number(tableBrowserTab))
-    }
-  }
-
-  /**
-   * Restore the node / edge selection states from URL
-   */
-  const restoreSelectionStates = (networkId: IdType): void => {
-    const selectedNodeStr = search.get(SelectionStates.SelectedNodes) ?? ''
-    const selectedEdgeStr = search.get(SelectionStates.SelectedEdges) ?? ''
-
-    if (selectedNodeStr === '' && selectedEdgeStr === '') {
-      return
-    }
-
-    let selectedNodes: IdType[] = selectedNodeStr.split(' ')
-    let selectedEdges: IdType[] = selectedEdgeStr.split(' ')
-    exclusiveSelect(networkId, selectedNodes, selectedEdges)
-  }
-
-  /**
-   * Restore filter states from URL
-   */
-  const restoreFilterStates = (): void => {
-    const filterFor = search.get(FilterUrlParams.FILTER_FOR)
-    const filterBy = search.get(FilterUrlParams.FILTER_BY)
-    const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
-
-    if (filterFor != null && filterBy != null && filterRange != null) {
-      const filterConfig: FilterConfig = {
-        name: DEFAULT_FILTER_NAME,
-        attributeName: filterBy,
-        target:
-          filterFor === GraphObjectType.NODE
-            ? GraphObjectType.NODE
-            : GraphObjectType.EDGE,
-        widgetType: FilterWidgetType.CHECKBOX,
-        description: 'Filter nodes / edges by selected values',
-        label: 'Interaction edge filter',
-        range: { values: filterRange.split(',') },
-        displayMode: DisplayMode.SHOW_HIDE,
-      }
-      addFilterConfig(filterConfig)
-    }
-  }
-
-  const restoreActiveNetworkView = (): void => {
-    const activeNetworkView = search.get('activeNetworkView')
-    if (activeNetworkView != null) {
-      setActiveNetworkView(activeNetworkView)
-    }
-  }
-
   const params = useParams()
 
   /**
@@ -450,18 +362,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          const hasSearchQueryParams = search.size > 0
-
-          if (hasSearchQueryParams) {
-            setTimeout(() => {
-              restoreActiveNetworkView()
-            }, 1000)
-            restoreSelectionStates(currentNetworkId)
-            restoreTableBrowserTabState()
-            restoreFilterStates()
-            // remove all search params after restoring state
-            setSearchParams(new URLSearchParams(), { replace: true })
-          }
           // handle the case where the back/forward button is pressed
           setCurrentNetworkId(currentNetworkId)
         })
@@ -474,7 +374,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           isLoadingRef.current = false
         })
     },
-    [params],
+    [params.networkId],
   )
 
   // Return the main component including the network panel, network view, and the table browser
