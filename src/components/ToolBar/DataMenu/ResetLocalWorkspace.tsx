@@ -4,7 +4,7 @@ import { BaseMenuProps } from '../BaseMenuProps'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useNavigate } from 'react-router-dom'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 import { logUi } from '../../../debug'
 
 export const ResetLocalWorkspaceMenuItem = (

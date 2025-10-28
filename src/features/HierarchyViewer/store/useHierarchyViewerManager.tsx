@@ -12,7 +12,7 @@ import { Panel } from '../../../models/UiModel/Panel'
 import { ValueType } from '../../../models/TableModel'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { getHcxProps } from '../utils/hierarchy-util'
-import _ from 'lodash'
+import difference from 'lodash/difference'
 import {
   deleteNetworkFromDb,
   deleteNetworkViewsFromDb,
@@ -84,7 +84,7 @@ export const useHierarchyViewerManager = (): void => {
     }
 
     // Check the diff
-    const diff = _.difference(lastIds, networkIds)
+    const diff = difference(lastIds, networkIds)
     setLastIds(networkIds)
 
     if (diff.length < 1) {

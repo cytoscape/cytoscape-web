@@ -49,7 +49,7 @@ import {
   getNonCustomGraphicVps,
 } from '../../models/VisualStyleModel/impl/CustomGraphicsImpl'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
-import _ from 'lodash'
+import isEqual from 'lodash/isEqual'
 export const exportNetworkToCx2 = (
   network: Network,
   vs: VisualStyle,
@@ -271,7 +271,7 @@ export const exportNetworkToCx2 = (
       (v) => v.name === customGraphicVpName,
     )
     if (customGraphicVp) {
-      const invalidCustomGraphicDefaultValue = _.isEqual(
+      const invalidCustomGraphicDefaultValue = isEqual(
         customGraphicVp.defaultValue,
         DEFAULT_CUSTOM_GRAPHICS,
       )

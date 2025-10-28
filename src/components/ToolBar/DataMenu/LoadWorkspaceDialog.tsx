@@ -28,7 +28,7 @@ import { useMessageStore } from '../../../store/MessageStore'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { Workspace } from '../../../models/WorkspaceModel'
 import { dateFormatter } from '../../../utils/date-format'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 import { useNavigate } from 'react-router-dom'
 import { logUi } from '../../../debug'
 

@@ -1,7 +1,7 @@
 import { TextInput } from '@mantine/core'
 import { useCreateNetworkFromTableStore } from '../../store/createNetworkFromTableStore'
 import { useState } from 'react'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 
 export const NetworkNameInput = () => {
   const name = useCreateNetworkFromTableStore((state) => state.name)

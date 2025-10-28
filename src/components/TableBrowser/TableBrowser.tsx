@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material'
 import { Button, ButtonGroup, Tooltip } from '@mui/material'
-import _, { set } from 'lodash'
+import orderBy from 'lodash/orderBy'
 import '../../assets/icons.css'
 import {
   SortAscIcon,
@@ -478,7 +478,7 @@ export default function TableBrowser(props: {
           })
         }
 
-        rows = _.orderBy(
+        rows = orderBy(
           rows,
           (o) => {
             if (sort.column === '__sourceNodeName') {
@@ -498,7 +498,7 @@ export default function TableBrowser(props: {
         )
       } else {
         // Regular column sorting
-        rows = _.orderBy(
+        rows = orderBy(
           rows,
           (o) =>
             (o as Record<string, ValueType>)[
@@ -681,7 +681,7 @@ export default function TableBrowser(props: {
       if (cxId != null) {
         // TODO this operation is too expensive for large networks
         // // const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
-        // setHovered(props.currentNetworkId, String(cxId))
+        // setHovered(networkId, String(cxId))
       }
     },
     [props.currentNetworkId, currentTable, tables],
@@ -1304,8 +1304,8 @@ export default function TableBrowser(props: {
 
   const selectedCell =
     selection.rows.length > 0 &&
-      selectedCellColumn !== null &&
-      selectedCellColumn >= 0
+    selectedCellColumn !== null &&
+    selectedCellColumn >= 0
       ? [selectedCellColumn, selection.rows.first()!]
       : null
 
@@ -1426,8 +1426,9 @@ export default function TableBrowser(props: {
                 setNetworkModified(networkId, true)
               }}
             >
-              {`Apply value to selected ${currentTable === nodeTable ? 'nodes' : 'edges'
-                }`}
+              {`Apply value to selected ${
+                currentTable === nodeTable ? 'nodes' : 'edges'
+              }`}
             </Button>
             <Button
               onClick={() => {
@@ -1454,7 +1455,15 @@ export default function TableBrowser(props: {
     ) : null
 
   const tableBrowserToolbar = (
-    <Box sx={{ position: 'relative', zIndex: 1, height: TOOLBAR_HEIGHT, display: 'flex', alignItems: 'center' }}>
+    <Box
+      sx={{
+        position: 'relative',
+        zIndex: 1,
+        height: TOOLBAR_HEIGHT,
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
       <Tooltip
         title="Search"
         placement="bottom"
@@ -1651,7 +1660,7 @@ export default function TableBrowser(props: {
     >
       <Box
         sx={{
-          position: 'relative',      // create a new stacking context
+          position: 'relative', // create a new stacking context
           zIndex: 2,
           borderBottom: 1,
           borderColor: 'divider',

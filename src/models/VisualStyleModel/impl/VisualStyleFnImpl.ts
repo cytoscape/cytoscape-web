@@ -1,4 +1,5 @@
-import _ from 'lodash'
+import uniqWith from 'lodash/uniqWith'
+import isEqual from 'lodash/isEqual'
 import { Cx2 } from '../../CxModel/Cx2'
 import * as cxUtil from '../../CxModel/cx2-util'
 
@@ -345,7 +346,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 }
               }
 
-              const uniqueCtrlPts = _.uniqWith(controlPoints, _.isEqual)
+              const uniqueCtrlPts = uniqWith(controlPoints, isEqual)
 
               const sortedCtrlPts = Array.from(uniqueCtrlPts).sort(
                 (a, b) => (a.value as number) - (b.value as number),

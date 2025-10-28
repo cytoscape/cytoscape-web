@@ -41,7 +41,7 @@ export const Orientation = {
 } as const
 export type Orientation = (typeof Orientation)[keyof typeof Orientation]
 
-export const PdfExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
+const PdfExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
   (props, ref) => {
     const [fullBg, setFullBg] = useState(true)
     const [paperSize, setPaperSize] = useState<PaperSize>(PaperSize.LETTER)
@@ -198,3 +198,5 @@ export const PdfExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     )
   },
 )
+
+export default PdfExportForm

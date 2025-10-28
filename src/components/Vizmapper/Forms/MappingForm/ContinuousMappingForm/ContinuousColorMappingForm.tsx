@@ -31,7 +31,7 @@ import RdYlBu from '../../../../../assets/RdYlBu.png'
 
 import { color } from 'd3-color'
 import Draggable from 'react-draggable'
-import { debounce, isError, set } from 'lodash'
+import debounce from 'lodash/debounce'
 
 import { IdType } from '../../../../../models/IdType'
 import {

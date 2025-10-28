@@ -12,13 +12,15 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { ReactElement, useRef, useState } from 'react'
+import { ReactElement, useRef, useState, lazy, Suspense } from 'react'
 import { BaseMenuProps } from '../../BaseMenuProps'
 import { useNetworkSummaryStore } from '../../../../store/NetworkSummaryStore'
-import { PdfExportForm } from './PdfExportForm'
-import { PngExportForm } from './PngExportForm'
-import { SvgExportForm } from './SvgExportForm'
 import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
+
+// Lazy load export forms - only load when user opens export dialog
+const PdfExportForm = lazy(() => import('./PdfExportForm'))
+const PngExportForm = lazy(() => import('./PngExportForm'))
+const SvgExportForm = lazy(() => import('./SvgExportForm'))
 
 interface ExportImageProps {
   open: boolean
@@ -137,7 +139,9 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
             sx={{ width: 300 }}
           ></TextField>
         </Box>
-        {currentExportForm}
+        <Suspense fallback={<div>Loading export options...</div>}>
+          {currentExportForm}
+        </Suspense>
       </DialogContent>
       <DialogActions sx={{ pr: 1 }}>
         <Button color="primary" onClick={props.handleClose}>
