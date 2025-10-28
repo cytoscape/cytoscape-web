@@ -40,8 +40,7 @@ export const SvgExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     useImperativeHandle(ref, () => ({
       save: async () => {
         const result = await svgFunction?.(fullBg)
-        const blob = new Blob([result], { type: 'image/svg+xml' })
-        saveAs(blob, `${props.fileName}.svg`)
+        saveAs(result, `${props.fileName}.svg`)
       },
     }))
 

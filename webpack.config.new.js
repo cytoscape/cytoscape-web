@@ -10,8 +10,6 @@ const BundleAnalyzerPlugin =
   require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
-const exp = require('constants')
-
 const webpack = require('webpack')
 const { execSync } = require('child_process')
 
@@ -45,10 +43,6 @@ module.exports = {
   mode: isProduction ? 'production' : 'development', // Set mode to production or development
   entry: {
     cyweb: path.resolve(__dirname, './src/index.tsx'),
-    'export-network-to-image': path.resolve(
-      __dirname,
-      './src/components/ToolBar/DataMenu/ExportNetworkToImage/ExportNetworkToImageEntry.tsx',
-    ),
   },
   devtool: isProduction ? false : 'inline-source-map',
   stats: 'normal',
@@ -65,9 +59,19 @@ module.exports = {
         test: /\.css$/i,
         use: [MiniCssExtractPlugin.loader, 'css-loader'],
       },
-      // load all other assets using webpacks default loader
+      // load all other assets using webpacks default loader with size optimization
       {
         test: /\.(png|jpg|jpeg|gif|svg|ico)$/i,
+        type: 'asset',
+        parser: {
+          dataUrlCondition: {
+            maxSize: 8 * 1024, // 8KB - inline smaller assets as base64
+          },
+        },
+      },
+      // Font optimization
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/i,
         type: 'asset/resource',
       },
     ],
@@ -127,54 +131,46 @@ module.exports = {
       },
 
       shared: {
-        react: {
-          singleton: true,
-          requiredVersion: deps.react,
-          eager: true, // Allow eager consumption
-        },
-        'react-dom': {
-          singleton: true,
-          requiredVersion: deps['react-dom'],
-          eager: true, // Allow eager consumption
-        },
+        react: { singleton: true, requiredVersion: deps.react },
+        'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
         '@mui/material': {
           singleton: true,
           requiredVersion: deps['@mui/material'],
-          eager: true, // Allow eager consumption
         },
       },
     }),
-    new BundleAnalyzerPlugin({
-      analyzerMode: 'static',
-      openAnalyzer: false,
-      reportFilename: './ba/bundle-report.html',
-      generateStatsFile: true,
-      statsFilename: './ba/bundle-stats.json',
-      statsOptions: {
-        source: false,
-        modules: false,
-        chunks: true,
-        chunkModules: true,
-        chunkOrigins: true,
-        reasons: false,
-        usedExports: true, // Enable for better tree shaking insights
-        providedExports: true, // Enable for better tree shaking insights
-        optimizationBailout: false,
-        errorDetails: false,
-        publicPath: false,
-        timings: true,
-        builtAt: true,
-        assets: true,
-        entrypoints: true,
-        performance: true,
-        hash: true,
-        version: true,
-      },
-    }),
-
-    // new BundleAnalyzerPlugin({
-    //   analyzerMode: 'static',
-    // }),
+    // Only run bundle analyzer when explicitly requested or in production
+    ...(process.env.ANALYZE || isProduction
+      ? [
+          new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            openAnalyzer: false,
+            reportFilename: './ba/bundle-report.html',
+            generateStatsFile: true,
+            statsFilename: './ba/bundle-stats.json',
+            statsOptions: {
+              source: false,
+              modules: false,
+              chunks: true,
+              chunkModules: true,
+              chunkOrigins: true,
+              reasons: false,
+              usedExports: true, // Enable for better tree shaking insights
+              providedExports: true, // Enable for better tree shaking insights
+              optimizationBailout: false,
+              errorDetails: false,
+              publicPath: false,
+              timings: true,
+              builtAt: true,
+              assets: true,
+              entrypoints: true,
+              performance: true,
+              hash: true,
+              version: true,
+            },
+          }),
+        ]
+      : []),
     new CopyPlugin({
       patterns: [{ from: './silent-check-sso.html', to: '.' }],
     }),
@@ -200,7 +196,18 @@ module.exports = {
         ]
       : []),
     // ...(isProduction ? [] : [new ESLintPlugin({ extensions: ['ts', 'tsx'] })]),
-    ...(isProduction ? [new CompressionWebpackPlugin()] : []),
+    ...(isProduction
+      ? [
+          new CompressionWebpackPlugin({
+            filename: '[path][base].gz',
+            algorithm: 'gzip',
+            test: /\.(js|css|html|svg)$/,
+            threshold: 10240, // Only compress files bigger than 10KB
+            minRatio: 0.8, // Only compress if compression ratio is better than 80%
+            deleteOriginalAssets: false, // Keep original files
+          }),
+        ]
+      : []),
 
     new webpack.DefinePlugin({
       // Inject Git commit and build date into process.env variables
@@ -217,47 +224,124 @@ module.exports = {
       REACT_APP_VERSION: JSON.stringify(packageJson.version),
     }),
   ],
-  // split bundle into two chunks, node modules(vendor code) in one bundle and app source code in the other
-  // when source code changes, only the source code bundle will need to be updated, not the vendor code
+  // Advanced code splitting for optimal bundle size
   optimization: {
     minimize: isProduction, // Only minimize in production
+    usedExports: true, // Enable tree shaking
+    sideEffects: true, // Respect package.json sideEffects field
     minimizer: [
       new TerserPlugin({
-        // Include your own code to apply the plugin.
-        include: /\/src/,
-
-        // Disable source maps for vendor code by excluding them
-        exclude: /\/node_modules/,
-
         terserOptions: {
-          // your custom options for terser
           compress: {
-            drop_console: true,
+            drop_console: isProduction, // Only drop console logs in production
+            drop_debugger: isProduction, // Remove debugger statements in production
+            pure_funcs: isProduction
+              ? ['console.log', 'console.info', 'console.debug']
+              : [], // Remove specific console methods
           },
-          sourceMap: true, // Enable source map
+          mangle: {
+            safari10: true, // Fix Safari 10 issues
+          },
+          sourceMap: !isProduction, // Enable source maps only in development
         },
         extractComments: false, // remove comments from output
+        parallel: true, // Use multi-process parallel running for faster builds
       }),
       new CssMinimizerPlugin(),
     ],
     moduleIds: 'deterministic',
     runtimeChunk: 'single',
     splitChunks: {
+      chunks: 'all',
+      minSize: 20000,
+      maxSize: 244000, // 244KB limit
       cacheGroups: {
-        // Create a separate chunk for image export-specific dependencies first
-        imageExportDependencies: {
-          test: /[\\/]node_modules[\\/](cytoscape-pdf-export|cytoscape-svg)[\\/]/,
-          name: 'export-dependencies',
+        // Core app bundle - essential functionality only
+        core: {
+          test: /[\\/]node_modules[\\/](react|react-dom|react-router|@mui\/material|@mui\/icons-material|zustand|immer)/,
+          name: 'core',
           chunks: 'all',
-          priority: 20, // Higher priority than vendor chunk
+          priority: 30,
+          enforce: true,
         },
+        // Export features bundle - PDF, PNG, SVG export
+        exportFeatures: {
+          test: /[\\/]node_modules[\\/](cytoscape-pdf-export|file-saver|html2canvas)/,
+          name: 'export-features',
+          chunks: 'async', // Only load when needed
+          priority: 25,
+          enforce: true,
+        },
+        // Layout features bundle - G6, Cosmos, layout algorithms
+        layoutFeatures: {
+          test: /[\\/]node_modules[\\/](@antv\/g6|@cosmograph\/cosmos)/,
+          name: 'layout-features',
+          chunks: 'async', // Only load when needed
+          priority: 25,
+          enforce: true,
+        },
+        // Data visualization features - D3, VisX, charts
+        dataVizFeatures: {
+          test: /[\\/]node_modules[\\/](@visx|d3-|chroma-js)/,
+          name: 'data-viz-features',
+          chunks: 'async', // Only load when needed
+          priority: 25,
+          enforce: true,
+        },
+        // Table features bundle - Data grid, CSV parsing
+        tableFeatures: {
+          test: /[\\/]node_modules[\\/](@glideapps\/glide-data-grid|papaparse|@mantine\/core|@mantine\/hooks|@mantine\/modals|@mantine\/notifications|@mantine\/dropzone|primereact)/,
+          name: 'table-features',
+          chunks: 'async', // Only load when needed
+          priority: 25,
+          enforce: true,
+        },
+        // Editor features bundle - Rich text editor
+        editorFeatures: {
+          test: /[\\/]node_modules[\\/](@tiptap)/,
+          name: 'editor-features',
+          chunks: 'async', // Only load when needed
+          priority: 25,
+          enforce: true,
+        },
+        // AI features bundle - OpenAI, LLM query
+        aiFeatures: {
+          test: /[\\/]node_modules[\\/](openai|zod)/,
+          name: 'ai-features',
+          chunks: 'async', // Only load when needed
+          priority: 25,
+          enforce: true,
+        },
+        // Core Cytoscape engine - always needed
+        cytoscape: {
+          test: /[\\/]node_modules[\\/](cytoscape|cytoscape-canvas|cytoscape-svg)/,
+          name: 'cytoscape-core',
+          chunks: 'all',
+          priority: 20,
+          enforce: true,
+        },
+        // Utility libraries
+        utils: {
+          test: /[\\/]node_modules[\\/](lodash|uuid|js-cookie|keycloak-js|debug)/,
+          name: 'utils',
+          chunks: 'all',
+          priority: 15,
+          enforce: true,
+        },
+        // Default vendor chunk for remaining libraries
         vendor: {
           test: /[\\/]node_modules[\\/]/,
           name: 'vendors',
           chunks: 'all',
-          priority: 10, // Lower priority than export dependencies
+          priority: 5,
         },
       },
     },
+  },
+  // Performance hints for bundle size monitoring
+  performance: {
+    hints: isProduction ? 'warning' : false,
+    maxEntrypointSize: 512000, // 500KB
+    maxAssetSize: 512000, // 500KB
   },
 }

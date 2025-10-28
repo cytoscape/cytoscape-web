@@ -999,7 +999,7 @@ const CyjsRenderer = ({
         }
       }
 
-      const exportPdfFunction = (
+      const exportPdfFunction = async (
         fullBg: boolean,
         paperSize: PaperSize,
         orientation: Orientation,
@@ -1008,6 +1008,12 @@ const CyjsRenderer = ({
         customHeight?: number,
       ): Promise<Blob> => {
         if (cy !== null) {
+          // Dynamically import and register export extensions only when needed
+          const { registerExportExtensions } = await import(
+            '../../ToolBar/DataMenu/ExportNetworkToImage/register-cy-export-extensions'
+          )
+          registerExportExtensions()
+
           const result = cy.pdf({
             paperSize,
             orientation,
@@ -1024,8 +1030,14 @@ const CyjsRenderer = ({
         }
       }
 
-      const exportSvgFunction = (fullBg: boolean): Blob => {
+      const exportSvgFunction = async (fullBg: boolean): Promise<Blob> => {
         if (cy !== null) {
+          // Dynamically import and register export extensions only when needed
+          const { registerExportExtensions } = await import(
+            '../../ToolBar/DataMenu/ExportNetworkToImage/register-cy-export-extensions'
+          )
+          registerExportExtensions()
+
           const result = cy.svg({
             scale: 1,
             full: fullBg,

@@ -19,7 +19,7 @@ import { JoinTableToNetworkMenuItem } from '../../../features/TableDataLoader/co
 import { TieredMenu } from 'primereact/tieredmenu'
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
-import { ExportImageMenuItem } from './ExportNetworkToImage/ExportNetworkToImageMenuItem'
+import { ExportImageMenuItem } from './ExportNetworkToImage/DynamicExportImageMenuItem'
 import './menuItem.css'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
