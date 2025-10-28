@@ -22,6 +22,7 @@ import {
   getNetworkAttributes,
   getNodes,
 } from '../../../models/CxModel/cx2-util'
+import { logApi, logStore } from '../../../debug'
 
 export const useUpdateNetwork = (): (({
   responseObj,
@@ -45,7 +46,10 @@ export const useUpdateNetwork = (): (({
   const updateNetwork = useCallback(
     async ({ responseObj, networkId }: ActionHandlerProps) => {
       if (!isValidCx2Network(responseObj)) {
-        console.warn('Invalid update network response', responseObj)
+        logApi.warn(
+          `[${updateNetwork.name}]: Invalid update network response`,
+          responseObj,
+        )
         return
       }
       try {
@@ -123,7 +127,10 @@ export const useUpdateNetwork = (): (({
         })
         setNetworkModified(networkId, true)
       } catch (e) {
-        console.warn('Failed to update the current network. ', e)
+        logStore.warn(
+          `[${updateNetwork.name}]: Failed to update the current network. `,
+          e,
+        )
       }
     },
     [

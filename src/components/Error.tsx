@@ -5,7 +5,7 @@ import {
   useNavigate,
   useRouteError,
 } from 'react-router-dom'
-import { useWorkspaceStore } from './store/WorkspaceStore'
+import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { debounce } from 'lodash'
 
 export const Error = (): ReactElement => {

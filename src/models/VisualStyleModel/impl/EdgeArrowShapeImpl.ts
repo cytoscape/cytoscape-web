@@ -8,7 +8,6 @@ export const isOpenShape = (shape: string): boolean => {
       return false
     }
   } catch (e) {
-    console.error(e)
     return false
   }
 }

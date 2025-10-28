@@ -14,12 +14,8 @@ export const gForce: LayoutAlgorithm = {
     nodeStrength: 650,
     edgeStrength: 50,
     nodeSize: 350,
-    onTick: () => {
-      console.log('ticking')
-    },
-    onLayoutEnd: () => {
-      console.log('* force layout done')
-    },
+    onTick: () => {},
+    onLayoutEnd: () => {},
     preventOverlap: true,
     workerEnabled: true, // Whether to activate web-worker
     gpuEnabled: true,

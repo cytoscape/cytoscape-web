@@ -7,6 +7,7 @@ import { useAppStore } from '../AppStore'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ComponentMetadata } from '../../models/AppModel/ComponentMetadata'
 import ExternalComponent from '../../components/AppManager/ExternalComponent'
+import { logApp } from '../../debug'
 
 /**
  * Custom hook to manage the app panel
@@ -18,7 +19,7 @@ export const useAppPanel = (): any[] => {
   const [panels, setPanels] = useState<any[]>([])
 
   useEffect(() => {
-    console.log('App Panel updated:', apps)
+    logApp.info(`[${useAppPanel.name}]: App Panel updated:`, apps)
     Object.keys(apps).forEach((appId: string) => {
       const app: CyApp = apps[appId]
       const { components } = app

@@ -1,4 +1,13 @@
-import { Suspense, lazy, useContext, useEffect, useRef, useState } from 'react'
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+import { debounce } from 'lodash'
 import { Allotment } from 'allotment'
 import _ from 'lodash'
 import { Box, Tooltip } from '@mui/material'
@@ -6,12 +15,12 @@ import { Box, Tooltip } from '@mui/material'
 import {
   Outlet,
   useLocation,
-  useNavigate,
+  useParams,
   useSearchParams,
 } from 'react-router-dom'
 
-import { useNdexNetwork } from '../../store/hooks/useNdexNetwork'
-import { useNdexNetworkSummary } from '../../store/hooks/useNdexNetworkSummary'
+import { getModelsFromCacheOrNdex } from '../../store/getModelsFromCacheOrNdex'
+import { getSummariesFromCacheOrNdex } from '../../store/getNetworkSummaryFromCacheOrNdex'
 import { useTableStore } from '../../store/TableStore'
 import { useVisualStyleStore } from '../../store/VisualStyleStore'
 import { useNetworkStore } from '../../store/NetworkStore'
@@ -68,7 +77,9 @@ import { NetworkWithView, VisualStyle } from '../../models'
 import { useOpaqueAspectStore } from '../../store/OpaqueAspectStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useUndoStore } from '../../store/UndoStore'
-
+import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
+import { useUrlNavigation } from '../../store/hooks/useUrlNavigation'
+import { logUi } from '../../debug'
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
 
@@ -101,10 +112,10 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   // Server location
   const { ndexBaseUrl } = useContext(AppConfigContext)
-  const navigate = useNavigate()
+  const { navigateToNetwork } = useUrlNavigation()
   const location = useLocation()
 
-  const [search] = useSearchParams()
+  const [search, setSearchParams] = useSearchParams()
 
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
 
@@ -207,13 +218,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
   })
 
-  // Network Summaries
-  const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
-    (state) => state.summaries,
-  )
-
-  const setSummaries = useNetworkSummaryStore((state) => state.addAll)
-  const removeSummary = useNetworkSummaryStore((state) => state.delete)
   useNetworkSummaryManager()
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(100)
@@ -244,37 +248,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  const loadNetworkSummaries = async (networkIds: IdType[]): Promise<void> => {
-    const currentToken = await getToken()
-    const newSummaries = await useNdexNetworkSummary(
-      networkIds,
-      ndexBaseUrl,
-      currentToken,
-    )
-
-    setSummaries({ ...summaries, ...newSummaries })
-
-    const loadedNetworks = Object.keys(newSummaries)
-    if (loadedNetworks.length !== networkIds.length) {
-      const networksFailtoLoad = networkIds.filter(
-        (id) => !loadedNetworks.includes(id),
-      )
-      const numOfNets = networksFailtoLoad.length
-      const largestNum = 3
-      const largeNum = numOfNets > largestNum
-      deleteNetwork(networksFailtoLoad) // remove the networks that the app fails to load from the workspace
-      addMessage({
-        // show a message to the user
-        message: `Failed to load ${networksFailtoLoad.length} network${largeNum ? 's' : ''} with id${largeNum ? 's' : ''}: ${
-          largeNum
-            ? networksFailtoLoad.slice(0, largestNum).join(', ') + '...'
-            : networksFailtoLoad.join(', ')
-        }`,
-        duration: 5000,
-        severity: MessageSeverity.ERROR,
-      })
-    }
-  }
+  const getFunction = useRendererFunctionStore((state) => state.getFunction)
 
   const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
 
@@ -296,13 +270,13 @@ const WorkSpaceEditor = (): JSX.Element => {
     try {
       const currentToken = await getToken()
 
-      const summaryMap = await useNdexNetworkSummary(
+      const summaryMap = await getSummariesFromCacheOrNdex(
         [networkId],
         ndexBaseUrl,
         currentToken,
       )
       const summary = summaryMap[networkId]
-      const res: NetworkWithView = await useNdexNetwork(
+      const res: NetworkWithView = await getModelsFromCacheOrNdex(
         networkId,
         ndexBaseUrl,
         currentToken,
@@ -365,6 +339,13 @@ const WorkSpaceEditor = (): JSX.Element => {
               positionMap: Map<IdType, [number, number]>,
             ): void => {
               updateNodePositions(networkId, positionMap)
+              const fitFunction = getFunction('cyjs', 'fit', networkId)
+
+              // Fit the viewport to center the initial layout
+              if (fitFunction !== undefined) {
+                fitFunction()
+              }
+
               updateSummary(networkId, nextSummary)
               setIsRunning(false)
               setNetworkModified(networkId, false)
@@ -380,7 +361,9 @@ const WorkSpaceEditor = (): JSX.Element => {
         }
       }
     } catch (e) {
-      console.error('Failed to load network:', e)
+      logUi.error(
+        `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${e}`,
+      )
       setFailedToLoad(true)
     }
   }
@@ -396,22 +379,17 @@ const WorkSpaceEditor = (): JSX.Element => {
   /**
    * Restore the node / edge selection states from URL
    */
-  const restoreSelectionStates = (): void => {
-    const selectedNodeStr = search.get(SelectionStates.SelectedNodes)
-    const selectedEdgeStr = search.get(SelectionStates.SelectedEdges)
+  const restoreSelectionStates = (networkId: IdType): void => {
+    const selectedNodeStr = search.get(SelectionStates.SelectedNodes) ?? ''
+    const selectedEdgeStr = search.get(SelectionStates.SelectedEdges) ?? ''
 
-    let selectedNodes: IdType[] = []
-    let selectedEdges: IdType[] = []
-
-    if (selectedNodeStr !== undefined && selectedNodeStr !== null) {
-      selectedNodes = selectedNodeStr.split(' ')
+    if (selectedNodeStr === '' && selectedEdgeStr === '') {
+      return
     }
 
-    if (selectedEdgeStr !== undefined && selectedEdgeStr !== null) {
-      selectedEdges = selectedEdgeStr.split(' ')
-    }
-
-    exclusiveSelect(currentNetworkId, selectedNodes, selectedEdges)
+    let selectedNodes: IdType[] = selectedNodeStr.split(' ')
+    let selectedEdges: IdType[] = selectedEdgeStr.split(' ')
+    exclusiveSelect(networkId, selectedNodes, selectedEdges)
   }
 
   /**
@@ -422,7 +400,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     const filterBy = search.get(FilterUrlParams.FILTER_BY)
     const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
 
-    if (filterFor !== null && filterBy !== null && filterRange !== null) {
+    if (filterFor != null && filterBy != null && filterRange != null) {
       const filterConfig: FilterConfig = {
         name: DEFAULT_FILTER_NAME,
         attributeName: filterBy,
@@ -435,7 +413,6 @@ const WorkSpaceEditor = (): JSX.Element => {
         label: 'Interaction edge filter',
         range: { values: filterRange.split(',') },
         displayMode: DisplayMode.SHOW_HIDE,
-        // visualMapping,
       }
       addFilterConfig(filterConfig)
     }
@@ -443,128 +420,62 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const restoreActiveNetworkView = (): void => {
     const activeNetworkView = search.get('activeNetworkView')
-    if (activeNetworkView !== null) {
+    if (activeNetworkView != null) {
       setActiveNetworkView(activeNetworkView)
     }
   }
 
-  /**
-   * Check number of networks in the workspace
-   */
-  useEffect(() => {
-    const networkCount: number = workspace.networkIds.length
-    const summaryCount: number = Object.keys(summaries).length
-
-    // No action required if empty or no change
-    if (networkCount === 0 && isInitializedRef.current === true) {
-      if (summaryCount !== 0) {
-        // Remove the last one
-        removeSummary(Object.keys(summaries)[0])
-      }
-      navigate(`/${workspace.id}/networks`)
-      return
-    }
-
-    const summaryIds: IdType[] = [...Object.keys(summaries)]
-
-    // Case 1: network removed
-    if (networkCount < summaryCount) {
-      const toBeRemoved: IdType[] = summaryIds.filter((id) => {
-        return !workspace.networkIds.includes(id)
-      })
-      removeSummary(toBeRemoved[0])
-      return
-    }
-
-    // Case 2: network added
-    const toBeAdded: IdType[] = workspace.networkIds.filter((id) => {
-      return !summaryIds.includes(id)
-    })
-    loadNetworkSummaries(toBeAdded)
-      .then(() => {})
-      .catch((err) => console.error(err))
-  }, [workspace.networkIds])
+  const params = useParams()
 
   /**
    * Swap the current network, can be an expensive operation
    */
-  useEffect(() => {
-    if (currentNetworkId === '' || currentNetworkId === undefined) {
-      // No need to load new network
-      return
-    }
+  useEffect(
+    function swapCurrentNetworkHook() {
+      const currentNetworkId = params.networkId
+      if (currentNetworkId === '' || currentNetworkId === undefined) {
+        // No need to load new network
+        return
+      }
 
-    if (isLoadingRef.current) {
-      return
-    }
+      if (isLoadingRef.current) {
+        return
+      }
 
-    isLoadingRef.current = true
-    setFailedToLoad(false)
-    if (currentNetworkView === undefined) {
+      isLoadingRef.current = true
+      setFailedToLoad(false)
+      logUi.info(
+        `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Loading network: ${currentNetworkId}`,
+      )
+
       loadCurrentNetworkById(currentNetworkId)
         .then(() => {
-          const path = location.pathname
-          if (path.includes(currentNetworkId)) {
-            restoreSelectionStates()
-            restoreTableBrowserTabState()
-            restoreFilterStates()
+          const hasSearchQueryParams = search.size > 0
+
+          if (hasSearchQueryParams) {
             setTimeout(() => {
               restoreActiveNetworkView()
             }, 1000)
+            restoreSelectionStates(currentNetworkId)
+            restoreTableBrowserTabState()
+            restoreFilterStates()
+            // remove all search params after restoring state
+            setSearchParams(new URLSearchParams(), { replace: true })
           }
-
-          navigate(
-            `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
-          )
+          // handle the case where the back/forward button is pressed
+          setCurrentNetworkId(currentNetworkId)
         })
         .catch((err) => {
-          console.error('* Failed to load a network:', err)
+          logUi.error(
+            `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Failed to load network: ${err}`,
+          )
         })
         .finally(() => {
           isLoadingRef.current = false
         })
-    } else {
-      loadCurrentNetworkById(currentNetworkId)
-        .then(() => {
-          restoreSelectionStates()
-
-          restoreTableBrowserTabState()
-          setTimeout(() => {
-            restoreActiveNetworkView()
-          }, 1000)
-
-          navigate(
-            `/${workspace.id}/networks/${currentNetworkId}${location.search.toString()}`,
-          )
-        })
-        .catch((err) => {
-          console.error('Failed to load a network:', err)
-        })
-        .finally(() => {
-          isLoadingRef.current = false
-        })
-    }
-
-    // Mark as initialized after loading the first network to avoid
-    isInitializedRef.current = true
-  }, [currentNetworkId])
-
-  /**
-   * if there is no current network id set, set the first network in the workspace to the current network
-   */
-  useEffect(() => {
-    let curId: IdType = ''
-    if (
-      currentNetworkId === undefined ||
-      currentNetworkId === '' ||
-      !workspace.networkIds.includes(currentNetworkId)
-    ) {
-      if (Object.keys(summaries).length !== 0) {
-        curId = Object.keys(summaries)[0]
-        setCurrentNetworkId(curId)
-      }
-    }
-  }, [summaries])
+    },
+    [params],
+  )
 
   // Return the main component including the network panel, network view, and the table browser
   return (

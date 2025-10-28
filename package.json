@@ -1,6 +1,6 @@
 {
   "name": "cytoscape-web",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "license": "MIT",
   "keywords": [
@@ -51,6 +51,7 @@
     "@types/d3-scale-chromatic": "^3.0.0",
     "@types/d3-selection": "^3.0.7",
     "@types/d3-zoom": "^3.0.5",
+    "@types/debug": "^4.1.12",
     "@types/jest": "^29.0.3",
     "@types/js-cookie": "^3.0.3",
     "@types/lodash.debounce": "^4.0.7",
@@ -61,6 +62,7 @@
     "@types/uuid": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
+    "@welldone-software/why-did-you-render": "^8.0.3",
     "babel-jest": "^29.7.0",
     "clean-webpack-plugin": "^4.0.0",
     "compression-webpack-plugin": "^10.0.0",
@@ -71,6 +73,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.1",
     "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-webpack-plugin": "^4.0.1",
     "fake-indexeddb": "^4.0.0",
     "html-webpack-plugin": "^5.5.0",
@@ -125,7 +128,7 @@
     "@visx/shape": "^3.0.0",
     "allotment": "1.18.1",
     "chroma-js": "^2.4.2",
-    "cytoscape": "^3.32.0",
+    "cytoscape": "^3.32.1",
     "cytoscape-canvas": "^3.0.1",
     "cytoscape-pdf-export": "^0.0.2",
     "cytoscape-svg": "^0.4.0",
@@ -135,6 +138,7 @@
     "d3-scale": "^4.0.2",
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
+    "debug": "^4.4.1",
     "dexie": "^3.2.4",
     "dexie-observable": "^4.0.1-beta.13",
     "file-saver": "^2.0.5",
@@ -165,6 +169,7 @@
     "react-router-dom": "^6.20.1",
     "react-spring": "^9.6.1",
     "uuid": "^9.0.0",
+    "zod": "^3.25.56",
     "zustand": "^4.4.7"
   }
 }

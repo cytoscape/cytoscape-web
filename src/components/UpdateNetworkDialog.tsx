@@ -14,6 +14,7 @@ import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { parsePathName } from '../utils/paths-util'
 import { waitSeconds } from '../utils/wait-seconds'
+import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
 
 export const UpdateNetworkDialog = (props: {
   open: boolean
@@ -22,7 +23,7 @@ export const UpdateNetworkDialog = (props: {
 }): ReactElement => {
   const { networkId } = props
   const [loading, setLoading] = useState<boolean>(false)
-  const navigate = useNavigate()
+  const { navigateToNetwork } = useUrlNavigation()
   const workspace = useWorkspaceStore((state) => state.workspace)
   const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
   const addNetworkIds = useWorkspaceStore((state) => state.addNetworkIds)
@@ -85,12 +86,15 @@ export const UpdateNetworkDialog = (props: {
             await waitSeconds(1)
             addNetworkIds(networkId)
             await waitSeconds(1)
-            setCurrentNetworkId(networkId)
-            await waitSeconds(1)
             deleteNetworkModifiedStatus(networkId)
-            navigate(
-              `/${id}/networks/${networkId}${location.search.toString()}`,
-            )
+            await waitSeconds(1)
+            setCurrentNetworkId(networkId)
+            navigateToNetwork({
+              workspaceId: id,
+              networkId: networkId,
+              searchParams: new URLSearchParams(location.search),
+              replace: true,
+            })
             setLoading(false)
             props.onClose()
           }}

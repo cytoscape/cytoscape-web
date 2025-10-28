@@ -23,6 +23,8 @@ import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOption
 import { Ui } from '../models/UiModel'
 import { IdType } from '../models/IdType'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
+import { validateCX2 } from '../models/CxModel/impl/validator'
+import { logDb } from '../debug'
 
 interface FullNetworkData {
   network: Network
@@ -116,7 +118,9 @@ export const getCachedData = async (id: string): Promise<CachedData> => {
       undoRedoStack: undoRedoStack,
     }
   } catch (e) {
-    console.error('Failed to restore data from IndexedDB', e)
+    logDb.error(
+      `[${getCachedData.name}]:[${id}]: Failed to restore data from IndexedDB for network ${id} ${e}`,
+    )
     throw e
   }
 }
@@ -229,53 +233,6 @@ export const createDataFromLocalCx2 = async (
 }
 
 /**
- * Validate if an aspect contains valid network attributes
- *
- * @param aspect - The aspect to validate
- * @returns True if the aspect contains valid network attributes, otherwise false
- */
-const isValidNetworkAttributes = (aspect: Aspect): boolean => {
-  return (
-    Array.isArray(aspect.networkAttributes) &&
-    aspect.networkAttributes.every((attr: any) => typeof attr === 'object')
-  )
-}
-
-/**
- * Validate if an aspect contains valid nodes
- *
- * @param aspect - The aspect to validate
- * @returns True if the aspect contains valid nodes, otherwise false
- */
-const isValidNodes = (aspect: Aspect): boolean => {
-  return (
-    Array.isArray(aspect.nodes) &&
-    aspect.nodes.every(
-      (node: any) => typeof node === 'object' && typeof node.id === 'number',
-    )
-  )
-}
-
-/**
- * Validate if an aspect contains valid edges
- *
- * @param aspect - The aspect to validate
- * @returns True if the aspect contains valid edges, otherwise false
- */
-const isValidEdges = (aspect: Aspect): boolean => {
-  return (
-    Array.isArray(aspect.edges) &&
-    aspect.edges.every(
-      (edge: any) =>
-        typeof edge === 'object' &&
-        typeof edge.id === 'number' &&
-        typeof edge.s === 'number' &&
-        typeof edge.t === 'number',
-    )
-  )
-}
-
-/**
  * Validate if an object represents a valid CX2 network
  *
  * @param obj - The object to validate, expected to be an array of aspects
@@ -289,23 +246,7 @@ const isValidEdges = (aspect: Aspect): boolean => {
  * If any of these conditions are not met, the function returns false.
  */
 export const isValidCx2Network = (obj: any): boolean => {
-  if (!Array.isArray(obj)) {
-    console.warn('Invalid Cx2Network: Expected an array of aspects', obj)
-    return false
-  }
+  const validationResult = validateCX2(obj)
 
-  let hasValidNetworkAttributes = false
-  let hasValidNodes = false
-  let hasValidEdges = false
-
-  for (const aspect of obj) {
-    if (aspect.networkAttributes && isValidNetworkAttributes(aspect)) {
-      hasValidNetworkAttributes = true
-    } else if (aspect.nodes && isValidNodes(aspect)) {
-      hasValidNodes = true
-    } else if (aspect.edges && isValidEdges(aspect)) {
-      hasValidEdges = true
-    }
-  }
-  return hasValidNetworkAttributes && hasValidNodes && hasValidEdges
+  return validationResult.isValid
 }

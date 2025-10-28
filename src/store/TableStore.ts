@@ -22,6 +22,7 @@ import {
   TableStore,
   TableType,
 } from '../models/StoreModel/TableStoreModel'
+import { logStore } from '../debug'
 
 const persist =
   (config: StateCreator<TableStore>) =>
@@ -32,6 +33,7 @@ const persist =
   ) =>
     config(
       async (args) => {
+        logStore.info('[TableStore]: Persisting table store')
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
         set(args)
@@ -58,16 +60,13 @@ export const useTableStore = create(
         add: (networkId: IdType, nodeTable: Table, edgeTable: Table) => {
           set((state) => {
             if (state.tables[networkId] !== undefined) {
-              console.warn('Table already exists for network', networkId)
+              logStore.warn(
+                `[${useTableStore.name}]: Table already exists for network: ${networkId}`,
+              )
             }
             state.tables[networkId] = { nodeTable, edgeTable }
             void putTablesToDb(networkId, nodeTable, edgeTable)
-              .then(() => {
-                console.debug('Added tables to DB', networkId)
-              })
-              .catch((err) => {
-                console.error('Error adding tables to DB', err)
-              })
+
             return state
           })
         },
@@ -88,13 +87,6 @@ export const useTableStore = create(
               const column = tableToUpdate.columns[columnIndex]
               tableToUpdate.columns.splice(columnIndex, 1)
               tableToUpdate.columns.splice(newColumnIndex, 0, column)
-
-              const rows = tableToUpdate.rows.values()
-              Array.from(rows).forEach((row) => {
-                const v = row[column.name]
-                delete row[column.name]
-                row[column.name] = v
-              })
 
               state.tables[networkId][tableTypeKey] = tableToUpdate
             }
@@ -391,7 +383,9 @@ export const useTableStore = create(
             state.tables = filtered
 
             void deleteTablesFromDb(networkId).then(() => {
-              console.log('Deleted network table from db', networkId)
+              logStore.info(
+                `[${useTableStore.name}]: Deleted network table from db: ${networkId}`,
+              )
             })
             return state
           })
@@ -401,11 +395,13 @@ export const useTableStore = create(
             state.tables = {}
             clearTablesFromDb()
               .then(() => {
-                console.log('Deleted all network tables from db')
+                logStore.info(
+                  `[${useTableStore.name}]: Deleted all network tables from db`,
+                )
               })
               .catch((err) => {
-                console.error(
-                  'Error clearing  all attribute tables from db',
+                logStore.error(
+                  `[${useTableStore.name}]: Error clearing  all attribute tables from db: ${err}`,
                   err,
                 )
               })

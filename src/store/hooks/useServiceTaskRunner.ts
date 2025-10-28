@@ -25,7 +25,7 @@ import { isHCX } from '../../features/HierarchyViewer/utils/hierarchy-util'
 import { ServiceAppAction } from '../../models/AppModel/ServiceAppAction'
 import { useMessageStore } from '../MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
-
+import { logApp } from '../../debug'
 export interface RunTaskResult {
   status: ServiceStatus
   algorithmName: string
@@ -119,11 +119,17 @@ export const useServiceTaskRunner = (): ((
         throw new Error(`Service not found for URL: ${url}`)
       }
 
-      if (serviceApp.serviceInputDefinition?.inputNetwork && networkRef.current === undefined) {
+      if (
+        serviceApp.serviceInputDefinition?.inputNetwork &&
+        networkRef.current === undefined
+      ) {
         throw new Error('Network not found')
       }
 
-      if (serviceApp.serviceInputDefinition?.inputColumns && tableRef.current === undefined) {
+      if (
+        serviceApp.serviceInputDefinition?.inputColumns &&
+        tableRef.current === undefined
+      ) {
         throw new Error('Table not found')
       }
 
@@ -150,7 +156,10 @@ export const useServiceTaskRunner = (): ((
         opaqueAspect: opaqueAspectRef.current,
       })
 
-      console.log(`Got response from service:`, result)
+      logApp.info(
+        `[${useServiceTaskRunner.name}]: Got response from service:`,
+        result,
+      )
 
       // Process the result to update the workspace state
       if (result.status === ServiceStatus.Complete) {
@@ -179,7 +188,10 @@ export const useServiceTaskRunner = (): ((
         }
       }
 
-      console.log(`Task finished!`, serviceApp.name)
+      logApp.info(
+        `[${useServiceTaskRunner.name}]: Task finished!`,
+        serviceApp.name,
+      )
 
       return {
         status: result.status,

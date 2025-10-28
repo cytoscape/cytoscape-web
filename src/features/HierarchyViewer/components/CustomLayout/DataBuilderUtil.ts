@@ -3,6 +3,7 @@ import { IdType } from '../../../../models/IdType'
 import { Table, ValueType } from '../../../../models/TableModel'
 import { SubsystemTag } from '../../model/HcxMetaTag'
 import { D3TreeNode } from './D3TreeNode'
+import { logUi } from '../../../../debug'
 
 export const DuplicateNodeSeparator = '-'
 /**
@@ -98,7 +99,7 @@ export const cyNetDag2tree2 = (
     // Add all members to the new node as new leaf nodes
     getMembers(nodeId, nodeTable).forEach((member: string) => {
       if (members.has(member)) {
-        // console.log('##Duplicate member', member)
+        logUi.warn(`[${cyNetDag2tree2.name}]: Duplicate member`, member)
       } else {
         members.add(member)
       }
@@ -124,11 +125,11 @@ export const cyNetDag2tree2 = (
       })
     })
     const nodeMembers: Set<string> = new Set(getMembers(nodeId, nodeTable))
-    // console.log(
-    //   'Child members & node mem',
-    //   Array.from(childMembers).sort(),
-    //   Array.from(nodeMembers).sort(),
-    // )
+    logUi.info(
+      `[${cyNetDag2tree2.name}]: Child members & node mem`,
+      Array.from(childMembers).sort(),
+      Array.from(nodeMembers).sort(),
+    )
 
     nodeMembers.forEach((member: string) => {
       members.add(member)

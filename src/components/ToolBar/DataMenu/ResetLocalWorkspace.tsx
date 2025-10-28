@@ -5,6 +5,7 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { useNavigate } from 'react-router-dom'
 import { ConfirmationDialog } from '../../Util/ConfirmationDialog'
 import { debounce } from 'lodash'
+import { logUi } from '../../../debug'
 
 export const ResetLocalWorkspaceMenuItem = (
   props: BaseMenuProps,
@@ -24,7 +25,10 @@ export const ResetLocalWorkspaceMenuItem = (
         }, 1500)()
       })
       .catch((error) => {
-        console.error('Failed to reset workspace:', error)
+        logUi.error(
+          `[${ResetLocalWorkspaceMenuItem.name}]:[${handleReset.name}] Failed to reset workspace`,
+          error,
+        )
         alert('Failed to reset workspace. Please try again.')
       })
   }

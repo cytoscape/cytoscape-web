@@ -72,54 +72,63 @@ export const filterColumns = (
   return filteredColumns
 }
 
+/**
+ * Splits a query string into tokens, respecting double-quoted phrases.
+ * Commas and spaces are treated as delimiters.
+ * If a token is surrounded by double quotes, the quotes are removed.
+ * If a string has an unmatched double quote, it’s treated as a normal character.
+ *
+ * @param {string} query The input string to tokenize.
+ * @returns {string[]} An array of tokens.
+ */
+function tokenizeQuery(query: string): string[] {
+  // This regex matches either:
+  // 1. A sequence of characters inside double quotes: "[^"]+"
+  // 2. A sequence of characters that are not a comma or whitespace: [^,\s]+
+  const regex = /"[^"]+"|[^,\s]+/g
+  // Find all matches in the query string. If no matches, return an empty array.
+  const matches = query.match(regex) || []
+  // Process each match to remove quotes if they are balanced.
+  return matches
+    .map((token) => {
+      // Check if the token starts and ends with a double quote
+      if (token.startsWith('"') && token.endsWith('"')) {
+        // If so, remove the quotes and return the inner content.
+        return token.slice(1, -1)
+      }
+      // Otherwise, return the token as is.
+      return token
+    })
+    .filter((t) => t !== '')
+}
+
 export const runSearch = (
   index: Fuse<Record<string, ValueType>>,
   query: string,
   operator: Operator,
-  exact?: boolean,
+  equals?: boolean,
 ): string[] => {
-  let toBeSelected: string[] = [];
+  const tokens = tokenizeQuery(query)
 
-  const exactOptions = {
-    threshold: 0,          // Only exact matches
-    distance: 0,           // Match only if the entire string matches exactly
-    useExtendedSearch: true, // Enables strict search modifiers
-    limit: 1000,           // Set a high limit for maximum results
-  };
-
-  if (exact) {
-    query = `="${query}"`;
-  }
+  const results: string[][] = tokens.map((t) => {
+    const tokenHasSpaces = t.includes(' ')
+    let searchToken = ''
+    if (equals) {
+      if (tokenHasSpaces) {
+        searchToken = `="${t}"`
+      } else {
+        searchToken = `=${t}`
+      }
+    } else {
+      searchToken = t
+    }
+    const searchResults = index.search(searchToken)
+    return searchResults.map((r) => r.item.id as string)
+  })
 
   if (operator === 'AND') {
-    // Split tokens unless exact is true
-    const tokens: string[] = exact ? [query] : query.split(/\s+/g);
-    const results: string[][] = [];
-
-    tokens.forEach((token: string) => {
-      if (token !== '') {
-        // Run search with exact options if exact is enabled
-        const res = index.search(token, exact ? exactOptions : undefined);
-        const ids: string[] = [];
-        res.forEach((r: any) => {
-          const objectId: string = r.item.id as string;
-          ids.push(objectId);
-        });
-        results.push(ids);
-      }
-    });
-
-    // Find the intersection of all results (AND search)
-    toBeSelected = _.intersection(...results);
+    return _.intersection(...results)
   } else {
-    // OR search
-    const result = index.search(query, exact ? exactOptions : undefined);
-
-    result.forEach((r: any) => {
-      const objectId: string = r.item.id as string;
-      toBeSelected.push(objectId);
-    });
+    return _.union(...results)
   }
-
-  return toBeSelected;
-};
+}

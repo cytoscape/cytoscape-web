@@ -1,13 +1,16 @@
 import { createDataFromCx } from '../../utils/cx-utils'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { Cx2 } from './Cx2'
-import { getAttributeDeclarations, getNetworkAttributes } from '../../models/CxModel/cx2-util'
+import {
+  getAttributeDeclarations,
+  getNetworkAttributes,
+} from '../../models/CxModel/cx2-util'
 import { NdexNetworkProperty } from '../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { v4 as uuidv4 } from 'uuid'
 import { Visibility } from '../NetworkSummaryModel/Visibility'
 import { NetworkWithView } from '../NetworkWithViewModel'
-
+import { logApi } from '../../debug'
 export const fetchUrlCx = async (
   url: string,
   maxSize: number,
@@ -33,14 +36,18 @@ export const fetchUrlCx = async (
     const uuid = uuidv4()
     const network = await createDataFromCx(uuid, data)
 
-    const networkAttributeDeclarations = getAttributeDeclarations(data)?.attributeDeclarations?.[0]?.networkAttributes ?? {}
+    const networkAttributeDeclarations =
+      getAttributeDeclarations(data)?.attributeDeclarations?.[0]
+        ?.networkAttributes ?? {}
     const networkAttributes = getNetworkAttributes(data)?.[0] ?? {}
-    
+
     const urlObj = new URL(url)
-    const name = (network.networkAttributes?.attributes?.name as string) || `${urlObj.host} (${new Date().toLocaleString()})`
-    
+    const name =
+      (network.networkAttributes?.attributes?.name as string) ||
+      `${urlObj.host} (${new Date().toLocaleString()})`
+
     const description = networkAttributes.description ?? ''
-    
+
     const properties: NdexNetworkProperty[] = Object.entries(
       networkAttributes,
     ).map(([key, value]) => {
@@ -96,7 +103,7 @@ export const fetchUrlCx = async (
       networkWithView: network,
     }
   } catch (error) {
-    console.error('Failed to fetch URL:', error)
+    logApi.error(`[${fetchUrlCx.name}]: Failed to fetch URL:`, error)
     throw error // Rethrow or handle as needed
   }
 }

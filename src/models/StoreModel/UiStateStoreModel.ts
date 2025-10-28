@@ -1,7 +1,10 @@
 import { IdType } from '../IdType'
 import { Panel } from '../UiModel/Panel'
 import { PanelState } from '../UiModel/PanelState'
-import { VisualStyleOptions } from '../VisualStyleModel/VisualStyleOptions'
+import {
+  TableDisplayConfiguration,
+  VisualStyleOptions,
+} from '../VisualStyleModel/VisualStyleOptions'
 import { TableType } from './TableStoreModel'
 import { Ui } from '../UiModel'
 
@@ -34,7 +37,10 @@ export interface UiStateAction {
     arrowColorMatchesEdge: boolean,
   ) => void
   setNetworkViewTabIndex: (index: number) => void
-
+  setTableDisplayConfiguration: (
+    networkId: IdType,
+    tableDisplayConfiguration: TableDisplayConfiguration,
+  ) => void
   setCustomNetworkTabName: (rendererId: IdType, name: string) => void
 }
 

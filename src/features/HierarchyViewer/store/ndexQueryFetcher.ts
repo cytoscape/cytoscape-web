@@ -5,6 +5,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 import { NetworkWithView } from '../../../models/NetworkWithViewModel'
+import { logApi } from '../../../debug'
 
 const MAX_RETRY_COUNT: number = 1
 
@@ -66,7 +67,7 @@ export const ndexQueryFetcher = async (
     // If we still cannot get valid data, throw an error. This might be an network issue.
     throw new Error('Failed to get CX data from NDEx')
   } catch (error) {
-    console.error('Failed to get network', error)
+    logApi.error(`[${ndexQueryFetcher.name}]: Failed to get network`, error)
     throw error
   }
 }
@@ -139,7 +140,9 @@ const validate = (
     nodeIdSet.size !== nodeViewIdSet.size ||
     edgeIdSet.size !== edgeViewIdSet.size
   ) {
-    console.warn('Network and network view are not consistent')
+    logApi.warn(
+      `[${isValidNetworkAndViews.name}]: Network and network view are not consistent`,
+    )
     return false
   }
 

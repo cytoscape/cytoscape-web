@@ -24,6 +24,7 @@ import { HcxValidationButtonGroup } from '../../features/HierarchyViewer/compone
 import { ConfirmationDialog } from '../Util/ConfirmationDialog'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { Network } from '../../models'
+import { useUrlNavigation } from '../../store/hooks/useUrlNavigation/useUrlNavigation'
 
 interface NetworkPropertyPanelProps {
   summary: NdexNetworkSummary
@@ -33,7 +34,8 @@ export const NetworkPropertyPanel = ({
   summary,
 }: NetworkPropertyPanelProps): ReactElement => {
   const theme: Theme = useTheme()
-
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
   const [openConfirmation, setOpenConfirmation] = useState<boolean>(false)
 
   // Need to use ID from the summary since it is different from the currentNetworkId
@@ -76,7 +78,6 @@ export const NetworkPropertyPanel = ({
     useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
 
   const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
-
   const onClickDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     setLastOpenedNetworkId(currentNetworkId)
@@ -86,14 +87,51 @@ export const NetworkPropertyPanel = ({
 
   const onConfirmDelete = () => {
     deleteNetwork(id)
-    if (lastOpenedNetworkId && lastOpenedNetworkId !== id) {
-      setCurrentNetworkId(lastOpenedNetworkId)
+    // deleteSummary(id)
+    const nextNetworkId =
+      lastOpenedNetworkId !== '' && lastOpenedNetworkId !== id
+        ? lastOpenedNetworkId
+        : (workspace.networkIds.filter((networkId) => networkId !== id)?.[0] ??
+          undefined)
+
+    if (nextNetworkId) {
+      setCurrentNetworkId(nextNetworkId)
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: nextNetworkId,
+        searchParams: new URLSearchParams(location.search),
+        replace: true,
+      })
+    } else {
+      setCurrentNetworkId('')
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: '',
+        searchParams: new URLSearchParams(location.search),
+        replace: true,
+      })
     }
   }
 
   const onCancelDelete = () => {
-    if (lastOpenedNetworkId && lastOpenedNetworkId !== id) {
-      setCurrentNetworkId(lastOpenedNetworkId)
+    if (lastOpenedNetworkId !== '') {
+      if (lastOpenedNetworkId !== id) {
+        setCurrentNetworkId(lastOpenedNetworkId)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: lastOpenedNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
+      }
+    } else {
+      setCurrentNetworkId('')
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: '',
+        searchParams: new URLSearchParams(location.search),
+        replace: true,
+      })
     }
   }
 
@@ -120,6 +158,12 @@ export const NetworkPropertyPanel = ({
         }}
         onClick={() => {
           setCurrentNetworkId(id)
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: id,
+            searchParams: new URLSearchParams(location.search),
+            replace: false,
+          })
         }}
       >
         <Box sx={{ width: '100%' }}>
@@ -177,6 +221,12 @@ export const NetworkPropertyPanel = ({
                 sx={{ width: 25, height: 25 }}
                 onClick={(e) => {
                   setCurrentNetworkId(id)
+                  navigateToNetwork({
+                    workspaceId: workspace.id,
+                    networkId: id,
+                    searchParams: new URLSearchParams(location.search),
+                    replace: false,
+                  })
                   showEditNetworkSummaryForm(e)
                 }}
               >

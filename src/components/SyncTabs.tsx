@@ -6,8 +6,8 @@ import {
   putTimestampToDb,
 } from '../store/persist/db'
 import debounce from 'lodash.debounce'
-import { useNavigate } from 'react-router-dom'
 import { parsePathName } from '../utils/paths-util'
+import { logUi } from '../debug'
 
 const markForPageReload = debounce(() => {
   void putTimestampToDb(Date.now())
@@ -16,7 +16,6 @@ const markForPageReload = debounce(() => {
 export const SyncTabsAction = (): ReactElement => {
   const [localTimestamp, setLocalTimestamp] = useState(0)
 
-  const navigate = useNavigate()
   useEffect(() => {
     const onVisibilityChange = (): void => {
       if (document.hidden) {
@@ -31,7 +30,7 @@ export const SyncTabsAction = (): ReactElement => {
           if ((timestamp ?? Date.now()) > localTimestamp) {
             // if the network at the current url was deleted, navigate to /networks/ and reload the page
             if (!workspace.networkIds.includes(networkId)) {
-              navigate('..', { relative: 'path' })
+              // navigate('..', { relative: 'path' })
               window.location.reload()
             } else {
               window.location.reload()
@@ -73,7 +72,12 @@ export const SyncTabsAction = (): ReactElement => {
   useEffect(() => {
     initDbListener()
       .then(() => {})
-      .catch((e) => console.log(e))
+      .catch((e) =>
+        logUi.error(
+          `[${SyncTabsAction.name}]:[${initDbListener.name}]: Failed to initialize db listener`,
+          e,
+        ),
+      )
   }, [])
 
   return <></>

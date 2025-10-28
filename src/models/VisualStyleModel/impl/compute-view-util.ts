@@ -116,8 +116,8 @@ export const updateNetworkView = (
   const nodeViewCount = Object.keys(nodeViews).length
   const nodeCount = network.nodes.length
   if (nodeViewCount !== nodeCount) {
-    console.warn(
-      'nodeViews.length is not same as network.nodes.length',
+    console.debug(
+      `[${updateNetworkView.name}]: nodeViews.length is not same as network.nodes.length`,
       nodeCount,
       nodeViewCount,
     )
@@ -157,8 +157,8 @@ const nodeViewBuilder = (
   const columns: Column[] = nodeTable.columns
   let idx: number = nodes.length
   if (idx !== nodes.length) {
-    console.error(
-      '# of nodes does not match to the # of node views:',
+    console.debug(
+      `[${nodeViewBuilder.name}]: # of nodes does not match to the # of node views:`,
       idx,
       nodeViews,
     )
@@ -171,7 +171,9 @@ const nodeViewBuilder = (
       nodeViews !== undefined ? nodeViews[nodeId] : undefined
 
     if (nodeView === undefined) {
-      console.error('@@nodeView is undefined. This might break the view.')
+      console.debug(
+        `[${nodeViewBuilder.name}]: nodeView is undefined. This might break the view.`,
+      )
     }
 
     const nv: NodeView = {
@@ -360,7 +362,9 @@ const computeView = (
     } else if (mapping !== undefined) {
       const mapper: Mapper | undefined = mappers.get(name)
       if (mapper === undefined) {
-        console.error(`Mapping is defined, but Mapper for ${name} is not found`)
+        console.debug(
+          `[${computeView.name}]: Mapping is defined, but Mapper for ${name} is not found`,
+        )
       } else {
         const attrName: string = mapping.attribute
         const attributeValueAssigned: ValueType | undefined = row[attrName]

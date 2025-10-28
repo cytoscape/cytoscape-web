@@ -14,6 +14,7 @@ import {
   NetworkUpdatedEvent,
   UpdateEventType,
 } from '../models/StoreModel/NetworkStoreModel'
+import { logStore } from '../debug'
 
 const persist =
   (config: StateCreator<NetworkStore>) =>
@@ -24,6 +25,7 @@ const persist =
   ) =>
     config(
       async (args) => {
+        logStore.info('[NetworkStore]: Persisting network store')
         const currentNetworkId: IdType =
           useWorkspaceStore.getState().workspace.currentNetworkId
         set(args)
@@ -31,7 +33,7 @@ const persist =
           get().networks.get(currentNetworkId)
         const deleted = updated === undefined
         if (!deleted) {
-          console.debug('DB Update: network store', updated)
+          logStore.info(`Network store updated for network ${currentNetworkId}`)
           await putNetworkToDb(updated)
         }
       },
@@ -126,8 +128,8 @@ export const useNetworkStore = create(
               state.lastUpdated = event
               deletedConnectingEdges = deletedEdgeObjects
             } else {
-              console.warn(
-                'Network not found when deleting nodes',
+              logStore.warn(
+                `[${useNetworkStore.name}]: Network not found when deleting nodes`,
                 networkId,
                 nodeIds,
               )
@@ -194,7 +196,9 @@ export const useNetworkStore = create(
         add: (network: Network) =>
           set((state) => {
             if (state.networks.has(network.id)) {
-              console.warn('Network already exists in store', network.id)
+              logStore.warn(
+                `[${useNetworkStore.name}]: Network already exists in store: ${network.id}`,
+              )
             }
 
             const newNetworkMap = new Map(state.networks).set(
@@ -204,10 +208,10 @@ export const useNetworkStore = create(
             state.networks = newNetworkMap
             void putNetworkToDb(network)
               .then(() => {
-                console.debug('* New network has been added to DB', network.id)
+                logStore.info(`New network has been added to DB: ${network.id}`)
               })
               .catch((err) => {
-                console.error('Failed adding network to DB', err)
+                logStore.error(`Failed adding network to DB: ${err}`)
               })
             return state
           }),
@@ -215,7 +219,9 @@ export const useNetworkStore = create(
           set((state) => {
             state.networks.delete(networkId)
             void deleteNetworkFromDb(networkId).then(() => {
-              console.log('## Deleted network from db', networkId)
+              logStore.info(
+                `[${useNetworkStore.name}]: Deleted network from db: ${networkId}`,
+              )
             })
             return state
           }),
@@ -223,10 +229,14 @@ export const useNetworkStore = create(
           set((state) => {
             clearNetworksFromDb()
               .then(() => {
-                console.log('Deleted all networks from db')
+                logStore.info(
+                  `[${useNetworkStore.name}]: Deleted all networks from db`,
+                )
               })
               .catch((err) => {
-                console.warn('Error clearing all networks from db', err)
+                logStore.error(
+                  `[${useNetworkStore.name}]: Error clearing all networks from db: ${err}`,
+                )
               })
 
             return { ...state, networks: new Map<IdType, Network>() }

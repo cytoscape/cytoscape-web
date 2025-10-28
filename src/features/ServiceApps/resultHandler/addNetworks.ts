@@ -7,7 +7,10 @@ import { putNetworkSummaryToDb } from '../../../store/persist/db'
 import { v4 as uuidv4 } from 'uuid'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
-import { NdexNetworkProperty, Visibility } from '../../../models/NetworkSummaryModel'
+import {
+  NdexNetworkProperty,
+  Visibility,
+} from '../../../models/NetworkSummaryModel'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import {
   createDataFromLocalCx2,
@@ -25,12 +28,15 @@ import {
   getNetworkAttributes,
   getNodes,
 } from '../../../models/CxModel/cx2-util'
+import { logApp } from '../../../debug'
+import { useUrlNavigation } from '../../../store/hooks/useUrlNavigation/useUrlNavigation'
 
 export const useAddNetworks = (): (({
   responseObj,
   networkId,
 }: ActionHandlerProps) => void) => {
   const summaries = useNetworkSummaryStore((state) => state.summaries)
+  const addSummaries = useNetworkSummaryStore((state) => state.addAll)
   const addNetworksToWorkspace: (ids: IdType | IdType[]) => void =
     useWorkspaceStore((state) => state.addNetworkIds)
   const addNewNetwork = useNetworkStore((state) => state.add)
@@ -45,12 +51,13 @@ export const useAddNetworks = (): (({
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
-
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
   const addNetworks = useCallback(
     async ({ responseObj, networkId }: ActionHandlerProps) => {
       if (!Array.isArray(responseObj)) {
-        console.warn(
-          'Invalid addNetwork response: Expected an array',
+        logApp.warn(
+          `[${addNetworks.name}]: Invalid addNetwork response: Expected an array`,
           responseObj,
         )
         return
@@ -107,7 +114,7 @@ export const useAddNetworks = (): (({
 
             const localNodeCount = network.nodes.length
             const localEdgeCount = network.edges.length
-            await putNetworkSummaryToDb({
+            const summary = {
               isNdex: false,
               ownerUUID: localUuid,
               name: localName,
@@ -134,8 +141,10 @@ export const useAddNetworks = (): (({
               externalId: localUuid,
               isDeleted: false,
               modificationTime: new Date(Date.now()),
-            })
+            }
+            await putNetworkSummaryToDb(summary)
 
+            addSummaries({ [localUuid]: summary })
             setVisualStyleOptions(localUuid, visualStyleOptions)
             addNewNetwork(network)
             setVisualStyle(localUuid, visualStyle)
@@ -146,16 +155,22 @@ export const useAddNetworks = (): (({
             }
             validNetworkIds.push(localUuid)
           } catch (error) {
-            console.error(error)
+            logApp.error(`[${addNetworks.name}]: Error adding network:`, error)
           }
         } else {
-          console.warn('Invalid Cx2Network item:', item)
+          logApp.warn(`[${addNetworks.name}]: Invalid Cx2Network item:`, item)
         }
       }
       addNetworksToWorkspace(validNetworkIds)
       const nextCurrentNetworkId: IdType | undefined = validNetworkIds[0]
       if (nextCurrentNetworkId !== undefined) {
         setCurrentNetworkId(nextCurrentNetworkId)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: nextCurrentNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: false,
+        })
       }
     },
     [

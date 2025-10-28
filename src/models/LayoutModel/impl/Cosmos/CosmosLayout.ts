@@ -48,7 +48,6 @@ export const CosmosLayout: LayoutEngine = {
         scaledPosMap.set(key, [value[0] * 10, value[1] * 10])
       })
       afterLayout(scaledPosMap)
-      console.log('COSMOS.stop() called)))))))))))))))', scaledPosMap, graph)
       graph.destroy()
     }, 2400)
   },

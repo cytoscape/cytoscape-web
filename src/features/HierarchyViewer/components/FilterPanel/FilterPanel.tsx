@@ -60,7 +60,7 @@ export const FilterPanel = () => {
   const [showOptions, setShowOptions] = useState<boolean>(false)
 
   // URL search parameters
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
 
   // Pick style for color coding
   const styles = useVisualStyleStore((state) => state.visualStyles)
@@ -171,7 +171,7 @@ export const FilterPanel = () => {
         FilterUrlParams.FILTER_ENABLED,
         isFilterEnabled.toString(),
       )
-      setSearchParams(searchParams)
+      // setSearchParams(searchParams)
     }
   }, [])
 
@@ -194,7 +194,7 @@ export const FilterPanel = () => {
    */
   useEffect(() => {
     searchParams.set(FilterUrlParams.FILTER_ENABLED, isFilterEnabled.toString())
-    setSearchParams(searchParams)
+    // setSearchParams(searchParams)
   }, [isFilterEnabled])
 
   useEffect(() => {
@@ -208,7 +208,6 @@ export const FilterPanel = () => {
     const visualMapping = getMapping(vs, targetAttrName)
 
     if (currentConfig !== undefined) {
-      console.log('Need to update the existing filter config')
       const newConfig = { ...currentConfig, visualMapping }
       updateFilterConfig(newConfig.name, newConfig)
       searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
@@ -217,7 +216,7 @@ export const FilterPanel = () => {
         FilterUrlParams.FILTER_ENABLED,
         isFilterEnabled.toString(),
       )
-      setSearchParams(searchParams)
+      // setSearchParams(searchParams)
       return
     }
 
@@ -244,7 +243,7 @@ export const FilterPanel = () => {
         FilterUrlParams.FILTER_ENABLED,
         isFilterEnabled.toString(),
       )
-      setSearchParams(searchParams)
+      // setSearchParams(searchParams)
     } else {
       // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
     }

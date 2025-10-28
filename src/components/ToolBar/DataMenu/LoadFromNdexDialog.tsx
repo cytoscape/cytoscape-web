@@ -25,15 +25,21 @@ import {
   CircularProgress,
 } from '@mui/material'
 import { useCredentialStore } from '../../../store/CredentialStore'
-import { formatBytes } from '../../../utils/byte-conversion'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { ndexSummaryFetcher } from '../../../store/hooks/useNdexNetworkSummary'
+import {
+  getSummariesFromCacheOrNdex,
+  ndexSummaryFetcher,
+} from '../../../store/getNetworkSummaryFromCacheOrNdex'
 import { dateFormatter } from '../../../utils/date-format'
-import { KeycloakContext } from '../../../bootstrap'
+import { KeycloakContext } from '../../../init/keycloak'
 import { useMessageStore } from '../../../store/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { logUi } from '../../../debug'
+import { useUrlNavigation } from '../../../store/hooks/useUrlNavigation/useUrlNavigation'
+import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
+import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 
 interface LoadFromNdexDialogProps {
   open: boolean
@@ -123,6 +129,9 @@ export const LoadFromNdexDialog = (
     undefined,
   )
   const [selectedNetworks, setSelectedNetworks] = useState<IdType[]>([])
+  const workspace = useWorkspaceStore((state) => state.workspace)
+  const { navigateToNetwork } = useUrlNavigation()
+  const addSummaries = useNetworkSummaryStore((state) => state.addAll)
 
   const networkListData =
     currentTabIndex === 0 ? searchResultNetworks : myNetworks
@@ -171,7 +180,6 @@ export const LoadFromNdexDialog = (
     try {
       const token = await getToken()
       const summaries = await ndexSummaryFetcher(networkIds, ndexBaseUrl, token)
-
       const invalidNetworkIds: IdType[] = []
       const validNetworkIds: IdType[] = []
 
@@ -190,16 +198,55 @@ export const LoadFromNdexDialog = (
           }
         }
       })
-      console.log('Valid networks', validNetworkIds)
-      console.log('Invalid networks', invalidNetworkIds)
+
+      const failedToLoadNetworks = networkIds.filter(
+        (id) =>
+          !validNetworkIds.includes(id) && !invalidNetworkIds.includes(id),
+      )
+
+      logUi.info(
+        `[${LoadFromNdexDialog.name}]:[${addNDExNetworksToWorkspace.name}]: Valid networks`,
+        validNetworkIds,
+      )
+      logUi.info(
+        `[${LoadFromNdexDialog.name}]:[${addNDExNetworksToWorkspace.name}]: Invalid networks`,
+        invalidNetworkIds,
+      )
       addNetworks(validNetworkIds)
+      addSummaries(
+        summaries.reduce(
+          (acc, summary) => {
+            acc[summary.externalId] = summary
+            return acc
+          },
+          {} as Record<IdType, NdexNetworkSummary>,
+        ),
+      )
       const nextCurrentNetworkId: IdType | undefined = validNetworkIds[0]
 
       if (nextCurrentNetworkId !== undefined) {
         setCurrentNetworkId(nextCurrentNetworkId)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: nextCurrentNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: false,
+        })
       }
 
       setSuccessMessage(`${validNetworkIds.length} network(s) loaded`)
+      if (failedToLoadNetworks.length > 0) {
+        addMessage({
+          // show a message to the user
+          message: `Failed to load ${failedToLoadNetworks.length} network${failedToLoadNetworks.length > 1 ? 's' : ''} with id${failedToLoadNetworks.length > 1 ? 's' : ''}: ${
+            failedToLoadNetworks.length > 1
+              ? failedToLoadNetworks.slice(0, 3).join(', ') + '...'
+              : failedToLoadNetworks.join(', ')
+          }`,
+          duration: 5000,
+          severity: MessageSeverity.ERROR,
+        })
+      }
 
       setSelectedNetworks([])
     } catch (e) {
@@ -290,8 +337,14 @@ export const LoadFromNdexDialog = (
                 edgeCount,
                 modificationTime,
                 cx2FileSize,
-                subnetworkIds,
               } = network
+
+              // Ensure subnetworkIds is defined and is an array
+              let { subnetworkIds } = network
+              if (subnetworkIds === undefined) {
+                subnetworkIds = []
+              }
+
               const selected = selectedNetworks.includes(externalId)
               const networkAlreadyLoaded = networkIds.includes(externalId)
               const networkCanBeSelected =
@@ -317,7 +370,6 @@ export const LoadFromNdexDialog = (
                     backgroundColor: '#d9d9d9',
                     cursor: 'not-allowed',
                   }}
-                  key={externalId}
                   hover={false}
                   selected={false}
                 >

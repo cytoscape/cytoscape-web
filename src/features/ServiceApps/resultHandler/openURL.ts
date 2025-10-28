@@ -8,6 +8,7 @@ interface URLData {
   target?: string
 }
 
+import { logApp } from '../../../debug'
 export const useOpenURL = (): (({
   responseObj,
   networkId,
@@ -23,7 +24,7 @@ export const useOpenURL = (): (({
   const openURL = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
       if (!isValidURLData(responseObj)) {
-        console.warn('Invalid URL data:', responseObj)
+        logApp.warn(`[${openURL.name}]: Invalid URL data:`, responseObj)
         return
       }
       const { url, target } = responseObj

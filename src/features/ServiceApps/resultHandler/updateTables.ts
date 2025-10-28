@@ -3,6 +3,7 @@ import { ActionHandlerProps } from './serviceResultHandlerManager'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { useTableStore } from '../../../store/TableStore'
 import { Column, ValueType, Table } from '../../../models'
+import { logApp } from '../../../debug'
 
 interface UpdatedTable {
   id: TableType
@@ -37,7 +38,10 @@ export const useUpdateTables = (): (({
   const updateTables = useCallback(
     ({ responseObj, networkId }: ActionHandlerProps) => {
       if (!isValidTableUpdate(responseObj)) {
-        console.warn('Invalid table update response:', responseObj)
+        logApp.warn(
+          `[${updateTables.name}]: Invalid table update response:`,
+          responseObj,
+        )
         return
       }
       const { id, rows, columns } = responseObj as UpdatedTable

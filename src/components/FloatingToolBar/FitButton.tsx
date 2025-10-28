@@ -1,12 +1,13 @@
 import { Box, IconButton, Tooltip } from '@mui/material'
 import { ZoomOutMap } from '@mui/icons-material'
 import { useRendererFunctionStore } from '../../store/RendererFunctionStore'
-import { IdType } from 'src/models'
+import { IdType } from '../../models'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { useUiStateStore } from '../../store/UiStateStore'
+import { logUi } from '../../debug'
 
 interface FitButtonProps {
   rendererId: string
-  targetNetworkId?: IdType
   disabled?: boolean
 }
 
@@ -14,18 +15,22 @@ export const FIT_FUNCTION_NAME: string = 'fit'
 
 export const FitButton = ({
   rendererId,
-  targetNetworkId,
   disabled = false,
 }: FitButtonProps): JSX.Element => {
   const getRendererFunction = useRendererFunctionStore(
     (state) => state.getFunction,
   )
 
+  // This is the ID of network in the selected viewport.
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
 
-  const networkId: IdType = targetNetworkId ?? currentNetworkId
+  const networkId: IdType = activeNetworkId ?? currentNetworkId
 
   const handleClick = (): void => {
     const fitFunctionByRenderer = getRendererFunction(
@@ -37,12 +42,15 @@ export const FitButton = ({
       FIT_FUNCTION_NAME,
       networkId,
     )
-    const fitFunction = fitFunctionByNetworkId ?? fitFunctionByRenderer // network id functions given priority
+
+    // If there are two or more renderers, the active window has higher priority.
+    const fitFunction = fitFunctionByNetworkId ?? fitFunctionByRenderer
     if (fitFunction !== undefined) {
       fitFunction()
-      console.log('Fit function called for:', rendererId)
     } else {
-      console.log('Fit function not available')
+      logUi.warn(
+        `[${FitButton.name}]:[${handleClick.name}]: Fit function not available`,
+      )
     }
   }
 

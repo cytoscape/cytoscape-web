@@ -20,6 +20,7 @@ export interface AppConfig {
   openAIAPIKey: string
   googleAnalyticsId: string
   undoStackSize: number
+  debug: boolean
 }
 
 export const defaultAppConfig: AppConfig = {
@@ -55,6 +56,7 @@ export const defaultAppConfig: AppConfig = {
   openAIAPIKey: '',
   googleAnalyticsId: '',
   undoStackSize: 20,
+  debug: true,
 }
 
 export const AppConfigContext = createContext<AppConfig>(defaultAppConfig)

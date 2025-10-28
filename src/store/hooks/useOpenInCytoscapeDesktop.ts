@@ -12,6 +12,7 @@ import {
   VisualStyle,
 } from '../../models'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { logApi } from '../../debug'
 
 export const useOpenNetworkInCytoscape = () => {
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -23,7 +24,7 @@ export const useOpenNetworkInCytoscape = () => {
     table: TableRecord,
     visualStyleOptions: VisualStyleOptions,
     viewModel: NetworkView | undefined,
-    opaqueAspects: OpaqueAspects|undefined,
+    opaqueAspects: OpaqueAspects | undefined,
     cyndex: CyNDEx,
     networkLabel?: string,
   ): Promise<void> => {
@@ -38,7 +39,7 @@ export const useOpenNetworkInCytoscape = () => {
 
     let exportSummary: any = summary
     if (summary === undefined) {
-        exportSummary = {
+      exportSummary = {
         name: networkLabel ?? 'Interaction Network',
         properties: [],
         externalId: '',
@@ -81,7 +82,10 @@ export const useOpenNetworkInCytoscape = () => {
         duration: 5000,
         severity: MessageSeverity.ERROR,
       })
-      console.error('Could not open the network in Cytoscape Desktop!', error)
+      logApi.error(
+        `[${useOpenNetworkInCytoscape.name}]: Could not open the network in Cytoscape Desktop!`,
+        error,
+      )
     }
   }
 

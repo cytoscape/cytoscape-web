@@ -55,7 +55,7 @@ import useNetMatchingTableStore from '../store/netMatchingTableStore'
 import useMergeToolTipStore from '../store/mergeToolTip'
 import { Column } from '../../../models/TableModel'
 import { IdType } from '../../../models/IdType'
-import { useNdexNetwork } from '../../../store/hooks/useNdexNetwork'
+import { getModelsFromCacheOrNdex } from '../../../store/getModelsFromCacheOrNdex'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../store/CredentialStore'
 import { useWorkspaceStore } from '../../../store/WorkspaceStore'
@@ -80,6 +80,9 @@ import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import useNodesDuplicationStore from '../store/nodesDuplicationStore'
+import { logUi } from '../../../debug'
+import { useUrlNavigation } from '../../../store/hooks/useUrlNavigation/useUrlNavigation'
+import { putNetworkSummaryToDb } from '../../../store/persist/db'
 
 interface MergeDialogProps {
   open: boolean
@@ -123,6 +126,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   )
   const mergeTooltipIsOpen = useMergeToolTipStore((state) => state.isOpen)
   const mergeTooltipText = useMergeToolTipStore((state) => state.text)
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
   // confirmation window
   const [openConfirmation, setOpenConfirmation] = useState(false)
   const [confirmationTitle, setConfirmationTitle] = useState('')
@@ -188,6 +193,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const netMatchingTableObj = createMatchingTable(netMatchingTable)
   // Functions relying on store hooks
   const updateSummary = useNetworkSummaryStore((state) => state.update)
+  const addSummaries = useNetworkSummaryStore((state) => state.addAll)
   const netSummaries = useNetworkSummaryStore((state) => state.summaries)
   const setVisualStyleOptions = useUiStateStore(
     (state) => state.setVisualStyleOptions,
@@ -494,7 +500,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   //utility function to load network by id
   const loadNetworkById = async (networkId: IdType) => {
     const currentToken = await getToken()
-    const res = await useNdexNetwork(networkId, ndexBaseUrl, currentToken)
+    const res = await getModelsFromCacheOrNdex(
+      networkId,
+      ndexBaseUrl,
+      currentToken,
+    )
     const { network, nodeTable, edgeTable, visualStyle } = res
     const summary = netSummaries[networkId]
     const netTable = getNetTableFromSummary(summary)
@@ -535,7 +545,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
 
       // Update state stores with the new network and its components
       setVisualStyleOptions(newNetworkId, newNetworkWithView.visualStyleOptions)
-      setCurrentNetworkId(newNetworkId)
       addNetworkToWorkspace(newNetworkId)
       addNewNetwork(newNetworkWithView.network)
       setVisualStyle(newNetworkId, newNetworkWithView.visualStyle)
@@ -546,6 +555,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       )
       setViewModel(newNetworkId, newNetworkWithView.networkViews[0])
       const newSummary = { ...networkSummary, hasLayout: true }
+      await putNetworkSummaryToDb(newSummary)
+      addSummaries({ [newNetworkId]: newSummary })
       // Apply layout to the network
       setIsRunning(true)
       engine.apply(
@@ -558,9 +569,16 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         },
         defaultLayout,
       )
+      setCurrentNetworkId(newNetworkId)
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: newNetworkId,
+        searchParams: new URLSearchParams(location.search),
+        replace: true,
+      })
       handleClose()
     } catch (e) {
-      console.error(e)
+      logUi.error(`[${handleMerge.name}]: Error merging networks:`, e)
       setErrorMessage(`An error occurred: ${e.message}`) // Set the error message
       setShowError(true) // Show the error message panel
     }

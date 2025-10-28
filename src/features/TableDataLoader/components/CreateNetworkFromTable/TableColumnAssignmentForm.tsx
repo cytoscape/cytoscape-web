@@ -12,6 +12,10 @@ import {
   Alert,
   Switch,
   NumberInput,
+  Select,
+  TextInput,
+  Radio,
+  Group as MantineGroup,
 } from '@mantine/core'
 
 import Papa from 'papaparse'
@@ -70,6 +74,8 @@ import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
 import { AppConfigContext } from '../../../../AppConfigContext'
 import { NetworkNameInput } from './NetworkNameInput'
 import { useUiStateStore } from '../../../../store/UiStateStore'
+import { useNetworkSummaryStore } from '../../../../store/NetworkSummaryStore'
+import { useUrlNavigation } from '../../../../store/hooks/useUrlNavigation/useUrlNavigation'
 
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
@@ -77,7 +83,10 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
   const reset = useCreateNetworkFromTableStore((state) => state.reset)
   const name = useCreateNetworkFromTableStore((state) => state.name)
+  const addSummary = useNetworkSummaryStore((state) => state.add)
   const [loading, setLoading] = useState(false)
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
 
   const [validColumnTypes, setValidColumnAssignmentTypes] = useState<
     ColumnAssignmentType[]
@@ -88,6 +97,13 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
 
   const [skipNLines, setSkipNLines] = useState(0)
   const [useFirstRowAsColumns, setUseFirstRowAsColumns] = useState(true)
+  const [decimalDelimiter, setDecimalDelimiter] = useState<string>('.')
+  const [customDecimalDelimiter, setCustomDecimalDelimiter] =
+    useState<string>('')
+  const effectiveDecimalDelimiter =
+    decimalDelimiter === 'custom' && customDecimalDelimiter
+      ? customDecimalDelimiter
+      : decimalDelimiter
 
   const [rows, setRows] = useState<DataTableValue[]>(() => {
     const result = Papa.parse(text, {
@@ -96,7 +112,23 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     })
     let headers: string[] = []
     headers = result.meta.fields as string[]
-    return result.data as DataTableValue[]
+    return (result.data as DataTableValue[]).map((row) => {
+      if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
+        const newRow: Record<string, any> = {}
+        for (const key in row) {
+          if (
+            typeof row[key] === 'string' &&
+            row[key].includes(effectiveDecimalDelimiter)
+          ) {
+            newRow[key] = row[key].replace(effectiveDecimalDelimiter, '.')
+          } else {
+            newRow[key] = row[key]
+          }
+        }
+        return newRow
+      }
+      return row
+    })
   })
   const [columns, setColumns] = useState<ColumnAssignmentState[]>(() => {
     const result = Papa.parse(text, {
@@ -144,7 +176,25 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     let headers: string[]
     if (useFirstRowAsColumns) {
       headers = result.meta.fields as string[]
-      setRows(rows as DataTableValue[])
+      setRows(
+        (rows as DataTableValue[]).map((row) => {
+          if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
+            const newRow: Record<string, any> = {}
+            for (const key in row) {
+              if (
+                typeof row[key] === 'string' &&
+                row[key].includes(effectiveDecimalDelimiter)
+              ) {
+                newRow[key] = row[key].replace(effectiveDecimalDelimiter, '.')
+              } else {
+                newRow[key] = row[key]
+              }
+            }
+            return newRow
+          }
+          return row
+        }),
+      )
       const nextColumns = headers.map((c, i) => {
         return {
           ...(columns[i] ?? {}),
@@ -174,10 +224,32 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           return rowData as DataTableValue
         },
       )
-
-      setRows(nextRows)
+      setRows(
+        nextRows.map((row) => {
+          if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
+            const newRow: Record<string, any> = {}
+            for (const key in row) {
+              if (
+                typeof row[key] === 'string' &&
+                row[key].includes(effectiveDecimalDelimiter)
+              ) {
+                newRow[key] = row[key].replace(effectiveDecimalDelimiter, '.')
+              } else {
+                newRow[key] = row[key]
+              }
+            }
+            return newRow
+          }
+          return row
+        }),
+      )
     }
-  }, [skipNLines, useFirstRowAsColumns])
+  }, [
+    skipNLines,
+    useFirstRowAsColumns,
+    decimalDelimiter,
+    customDecimalDelimiter,
+  ])
 
   const onColumnAssignmentTypeChange = (
     index: number,
@@ -210,24 +282,38 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const handleConfirm = useCallback(async () => {
     const res = createNetworkFromTableData(rows, columns, undefined, name)
 
-    const { network, nodeTable, edgeTable, visualStyle, summary, networkView } =
-      res
+    const {
+      network,
+      nodeTable,
+      edgeTable,
+      visualStyle,
+      summary,
+      networkView,
+      visualStyleOptions,
+    } = res
     const newNetworkId = network.id
 
     setLoading(true)
 
     await putNetworkSummaryToDb(summary)
 
-    // TODO the db syncing logic in various stores assumes the updated network is the current network
-    // therefore, as a temporary fix, the first operation that should be done is to set the
-    // current network to be the new network id
-    setCurrentNetworkId(newNetworkId)
-    setVisualStyleOptions(newNetworkId)
+    addSummary(newNetworkId, summary)
+    setVisualStyleOptions(newNetworkId, visualStyleOptions)
     addNewNetwork(network)
     setVisualStyle(newNetworkId, visualStyle)
     setTables(newNetworkId, nodeTable, edgeTable)
     setViewModel(newNetworkId, networkView)
     addNetworkToWorkspace(newNetworkId)
+
+    setCurrentNetworkId(newNetworkId)
+
+    navigateToNetwork({
+      workspaceId: workspace.id,
+      networkId: newNetworkId,
+      searchParams: new URLSearchParams(location.search),
+      replace: false,
+    })
+
     setLoading(false)
     reset()
     props.handleClose()
@@ -428,7 +514,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
         <Popover
           withinPortal={false}
           zIndex={2001}
-          width={300}
+          width={450}
           position="right"
           withArrow
           shadow="lg"
@@ -439,20 +525,63 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
             </Button>
           </Popover.Target>
           <Popover.Dropdown>
-            <Switch
-              label="Use first row as column names"
-              checked={useFirstRowAsColumns}
-              onChange={(event) =>
-                setUseFirstRowAsColumns(event.currentTarget.checked)
-              }
-            />
-            <NumberInput
-              min={0}
-              size="sm"
-              label="Skip first N lines"
-              value={skipNLines}
-              onChange={(value) => setSkipNLines(Number(value))}
-            />
+            <Box mb="md">
+              <Text fw={500} size="sm" mb={4}>
+                Decimal Delimiter
+              </Text>
+              <Radio.Group
+                value={decimalDelimiter}
+                onChange={setDecimalDelimiter}
+                size="sm"
+              >
+                <MantineGroup gap="xs">
+                  <Radio value="." label="Dot (e.g. 1.23)" />
+                  <Radio value="," label="Comma (e.g. 1,23)" />
+                  <Radio value="custom" label="Custom" />
+                </MantineGroup>
+              </Radio.Group>
+              {decimalDelimiter === 'custom' && (
+                <TextInput
+                  label="Custom Decimal Delimiter"
+                  value={customDecimalDelimiter}
+                  onChange={(event) => {
+                    const val = event.currentTarget.value
+                    if (val.length <= 1) setCustomDecimalDelimiter(val)
+                  }}
+                  placeholder="Enter a single character"
+                  size="sm"
+                  mt="xs"
+                  error={
+                    decimalDelimiter === 'custom' &&
+                    customDecimalDelimiter.length !== 1
+                      ? 'Please enter a single character.'
+                      : undefined
+                  }
+                />
+              )}
+            </Box>
+            <Divider my="sm" />
+            <Box mb="md">
+              <Text fw={500} size="sm" mb={4}>
+                Table Structure
+              </Text>
+              <Switch
+                label="Use first row as column names"
+                checked={useFirstRowAsColumns}
+                onChange={(event) =>
+                  setUseFirstRowAsColumns(event.currentTarget.checked)
+                }
+                mb="xs"
+              />
+              <NumberInput
+                min={0}
+                size="sm"
+                label="Skip first N lines"
+                value={skipNLines}
+                onChange={(value) => setSkipNLines(Number(value))}
+                mt="xs"
+              />
+            </Box>
           </Popover.Dropdown>
         </Popover>
         <Group justify="space-between" gap="lg">

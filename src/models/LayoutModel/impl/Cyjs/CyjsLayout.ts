@@ -3,7 +3,7 @@ import { IdType } from '../../../IdType'
 import { LayoutEngine } from '../../LayoutEngine'
 import { CyjsAlgorithms } from './Algorithms/CyjsAlgorithms'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
-import cytoscape from 'cytoscape'
+import cytoscape, { EdgeDefinition, NodeDefinition } from 'cytoscape'
 
 export const CyjsLayout: LayoutEngine = {
   // Cytoscape.js Layout
@@ -20,10 +20,12 @@ export const CyjsLayout: LayoutEngine = {
     const cy = cytoscape({
       headless: true,
       elements: {
-        nodes: nodes.map((node) => ({ data: { id: node.id } })),
+        nodes: nodes.map((node) => ({
+          data: { id: node.id },
+        })) as NodeDefinition[],
         edges: edges.map((edge) => ({
           data: { source: edge.s, target: edge.t },
-        })),
+        })) as EdgeDefinition[],
       },
     })
 

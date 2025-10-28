@@ -1,7 +1,8 @@
+import { AppConfigContext } from '../../AppConfigContext'
 import { IconButton, Tooltip } from '@mui/material'
 import { Share } from '@mui/icons-material'
 import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import { useEffect } from 'react'
+import { useContext, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'
@@ -11,6 +12,7 @@ import { IdType } from '../../models'
 import { useMessageStore } from '../../store/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
+import { logUi } from '../../debug'
 
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300
@@ -35,15 +37,13 @@ interface ShareNetworkButtonProps {
 export const ShareNetworkButton = ({
   targetNetworkId,
 }: ShareNetworkButtonProps): JSX.Element => {
-  // Use this as the staring point for the sharable URL
-  const wsId = useWorkspaceStore((state) => state.workspace.id)
-
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
 
   // Encode UI states as URL search params
-  const [search, setSearch] = useSearchParams()
+  const [search] = useSearchParams()
+  const { urlBaseName } = useContext(AppConfigContext)
 
   const ui: Ui = useUiStateStore((state) => state.ui)
   const { panels } = ui
@@ -76,6 +76,37 @@ export const ShareNetworkButton = ({
     return searchStr
   }
 
+  const getSelectionParams = (): URLSearchParams => {
+    const params = new URLSearchParams()
+
+    if (networkViewModel === undefined) {
+      return params
+    }
+
+    const selectedNodeCount: number = networkViewModel.selectedNodes.length
+    const selectedEdgeCount: number = networkViewModel.selectedEdges.length
+
+    if (selectedNodeCount === 0 && selectedEdgeCount === 0) {
+      return params
+    }
+
+    if (selectedNodeCount > 0 && selectedNodeCount <= MAX_SELECTED_OBJ) {
+      params.set(
+        SelectionStates.SelectedNodes,
+        networkViewModel.selectedNodes.join(' '),
+      )
+    }
+
+    if (selectedEdgeCount > 0 && selectedEdgeCount <= MAX_SELECTED_OBJ) {
+      params.set(
+        SelectionStates.SelectedEdges,
+        networkViewModel.selectedEdges.join(' '),
+      )
+    }
+
+    return params
+  }
+
   const setSelection = (params: URLSearchParams): void => {
     if (networkViewModel === undefined) {
       return
@@ -86,7 +117,7 @@ export const ShareNetworkButton = ({
     if (selectedNodeCount === 0 && selectedEdgeCount === 0) {
       params.delete(SelectionStates.SelectedNodes)
       params.delete(SelectionStates.SelectedEdges)
-      setSearch(params)
+      // setSearch(params)
       return
     }
 
@@ -107,13 +138,6 @@ export const ShareNetworkButton = ({
     } else {
       params.delete(SelectionStates.SelectedEdges)
     }
-    // setTimeout(() => {
-    //   console.log(
-    //     `###Now setting Selected nodes In URL:`,
-    //     params.get(SelectionStates.SelectedNodes),
-    //   )
-    setSearch(params)
-    // }, 200)
   }
 
   useEffect(() => {
@@ -127,20 +151,26 @@ export const ShareNetworkButton = ({
   }
   const handleClick = (): void => {
     const { location } = window
+    // Get base query parameters
+    const baseUrl = (location.origin + urlBaseName).replace(/\/+$/, '')
+    const baseQuery = getQueryString()
+    const allParams = new URLSearchParams(baseQuery)
 
-    // Full URL
-    const { href } = location
+    // Add selection parameters
+    const selectionParams = getSelectionParams()
+    selectionParams.forEach((value, key) => {
+      allParams.set(key, value)
+    })
 
-    // The first part of the URL should be the base URL
-    const parts: string[] = href.split(wsId)
-    const baseUrl = parts[0]
+    const finalQuery = allParams.toString()
 
-    const query = getQueryString()
+    // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
+    const newUrl = `${baseUrl}/0/networks/${currentNetworkId}?${finalQuery}`
+    logUi.info(
+      `[${ShareNetworkButton.name}]:[${handleClick.name}]: Copied Sharable URL: ${newUrl}`,
+    )
 
-    void copyTextToClipboard(
-      // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
-      `${baseUrl}0/networks/${currentNetworkId}?${query}`,
-    ).then(() => {
+    void copyTextToClipboard(newUrl).then(() => {
       // Notify user that the sharable URL has been copied to clipboard
       addMessage({
         message: 'URL for sharing this network has been copied!',

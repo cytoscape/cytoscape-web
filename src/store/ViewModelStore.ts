@@ -12,6 +12,7 @@ import {
 } from './persist/db'
 import { useWorkspaceStore } from './WorkspaceStore'
 import { ViewModelStore } from '../models/StoreModel/ViewModelStoreModel'
+import { logStore } from '../debug'
 
 // Default view type (a node-link diagram)
 export const DEF_VIEW_TYPE = 'nodeLink'
@@ -54,6 +55,7 @@ const persist =
   ) =>
     config(
       async (args) => {
+        logStore.info('[ViewModelStore]: Persisting view model store')
         const last = get()
         const currentNetworkId =
           useWorkspaceStore.getState().workspace.currentNetworkId
@@ -105,9 +107,12 @@ export const useViewModelStore = create(
                   (viewModel) => viewModel.viewId === networkView.viewId,
                 )
               if (existingViewModel !== undefined) {
-                // Replace the existing one if it already exists
+                // Replace the existing one if it already exists, but preserve selection state
                 const index =
                   state.viewModels[networkId]?.indexOf(existingViewModel)
+                // Preserve existing selection state
+                networkView.selectedNodes = existingViewModel.selectedNodes
+                networkView.selectedEdges = existingViewModel.selectedEdges
                 state.viewModels[networkId][index] = networkView
                 return state
               }
@@ -124,9 +129,7 @@ export const useViewModelStore = create(
             const viewType = networkView.type
             if (viewType !== 'circlePacking') {
               // Store only default view type (node-link diagram) only.
-              void putNetworkViewToDb(networkId, networkView).then(() => {
-                console.debug('Network view model added to the DB.', networkId)
-              })
+              void putNetworkViewToDb(networkId, networkView).then(() => {})
             }
             return state
           })
