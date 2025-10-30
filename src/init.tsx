@@ -62,9 +62,6 @@ const initializeApp = () => {
 
       updateLoadingMessage('Loading configuration...')
 
-      // Small delay to show progress step
-      await new Promise((resolve) => setTimeout(resolve, 200))
-
       updateLoadingMessage('Initializing authentication...')
 
       if (authenticated) {
