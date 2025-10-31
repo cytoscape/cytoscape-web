@@ -172,37 +172,6 @@ module.exports = {
       },
     }),
 
-    // new BundleAnalyzerPlugin({
-    //   analyzerMode: 'static',
-    // }),
-    new BundleAnalyzerPlugin({
-      analyzerMode: 'static',
-      openAnalyzer: false,
-      reportFilename: './ba/bundle-report.html',
-      generateStatsFile: true,
-      statsFilename: './ba/bundle-stats.json',
-      statsOptions: {
-        source: false,
-        modules: false,
-        chunks: true,
-        chunkModules: true,
-        chunkOrigins: true,
-        reasons: false,
-        usedExports: true, // Enable for better tree shaking insights
-        providedExports: true, // Enable for better tree shaking insights
-        optimizationBailout: false,
-        errorDetails: false,
-        publicPath: false,
-        timings: true,
-        builtAt: true,
-        assets: true,
-        entrypoints: true,
-        performance: true,
-        hash: true,
-        version: true,
-      },
-    }),
-
     new CopyPlugin({
       patterns: [{ from: './silent-check-sso.html', to: '.' }],
     }),

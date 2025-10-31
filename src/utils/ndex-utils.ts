@@ -21,7 +21,7 @@ import { MessageSeverity } from '../models/MessageModel'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { useMessageStore } from '../store/MessageStore'
-import { getWorkspaceFromDb } from '../store/persist/db'
+import { getWorkspaceFromDb, putNetworkSummaryToDb } from '../store/persist/db'
 import { AppStatus } from '../models/AppModel/AppStatus'
 import { ServiceApp } from '../models/AppModel/ServiceApp'
 
@@ -125,6 +125,7 @@ export const useSaveCopyToNDEx = () => {
   )
   const { navigateToNetwork } = useUrlNavigation()
   const workspace = useWorkspaceStore((state) => state.workspace)
+  const addSummary = useNetworkSummaryStore((state) => state.add)
   const saveCopyToNDEx = async (
     ndexBaseUrl: string,
     accessToken: string,
@@ -159,9 +160,15 @@ export const useSaveCopyToNDEx = () => {
       ndexBaseUrl,
       accessToken,
     )
+
     if (summaryStatus.rejected) {
       throw new Error('The network is rejected by NDEx')
     }
+
+    const newSummary = await ndexSummaryFetcher(uuid, ndexBaseUrl, accessToken)
+    await putNetworkSummaryToDb(newSummary[0])
+    addSummary(uuid, newSummary[0])
+
     addNetworkToWorkspace(uuid as IdType) // add the new network to the workspace
     if (setCurrentNetworkId) {
       setCurrentNetworkId(uuid as string)
