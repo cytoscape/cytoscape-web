@@ -1,7 +1,11 @@
-import { IdType } from '../models/IdType'
+/**
+ * NDEx Workspace Operations
+ *
+ * Functions for managing workspaces, saving networks, and workspace-related operations.
+ */
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
-import { getNdexClient } from './fetchers'
+import { IdType } from '../../models/IdType'
 import {
   CyApp,
   NdexNetworkSummary,
@@ -9,62 +13,41 @@ import {
   NetworkView,
   Table,
   VisualStyle,
-} from '../models'
-import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
-import { exportNetworkToCx2 } from '../store/io/exportCX'
-import { TableRecord } from '../models/StoreModel/TableStoreModel'
-import { getModelsFromCacheOrNdex } from '../store/getModelsFromCacheOrNdex'
-import { OpaqueAspects } from '../models/OpaqueAspectModel'
-import { ndexSummaryFetcher } from '../store/getNetworkSummaryFromCacheOrNdex'
-import { waitSeconds } from './wait-seconds'
-import { MessageSeverity } from '../models/MessageModel'
-import { useWorkspaceStore } from '../store/WorkspaceStore'
-import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
-import { useMessageStore } from '../store/MessageStore'
-import { getWorkspaceFromDb, putNetworkSummaryToDb } from '../store/persist/db'
-import { AppStatus } from '../models/AppModel/AppStatus'
-import { ServiceApp } from '../models/AppModel/ServiceApp'
-
-import { logApi } from '../debug'
-import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
+} from '../../models'
+import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { exportNetworkToCx2 } from '../../models/CxModel/impl'
+import { TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { getModelsFromCacheOrNdex } from '../../store/getModelsFromCacheOrNdex'
+import { OpaqueAspects } from '../../models/OpaqueAspectModel'
+import { ndexSummaryFetcher } from '../../store/getNetworkSummaryFromCacheOrNdex'
+import { waitSeconds } from '../../utils/wait-seconds'
+import { MessageSeverity } from '../../models/MessageModel'
+import { useWorkspaceStore } from '../../store/WorkspaceStore'
+import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
+import { useMessageStore } from '../../store/MessageStore'
+import {
+  getWorkspaceFromDb,
+  putNetworkSummaryToDb,
+} from '../../store/persist/db'
+import { AppStatus } from '../../models/AppModel/AppStatus'
+import { ServiceApp } from '../../models/AppModel/ServiceApp'
+import { logApi } from '../../debug'
+import { useUrlNavigation } from '../../store/hooks/useUrlNavigation/useUrlNavigation'
+import { getNDExSummaryStatus } from './status'
 
 export const TimeOutErrorMessage =
-  'You network has been saved in NDEx, but the server is under heavy load right now. Please use the “Open Networks from NDEx” menu to manually open this network from your account later.'
+  'You network has been saved in NDEx, but the server is under heavy load right now. Please use the "Open Networks from NDEx" menu to manually open this network from your account later.'
 export const TimeOutErrorIndicator = 'NDEx_TIMEOUT_ERROR'
 export const NdexDuplicateKeyErrorMessage =
   'duplicate key value violates unique constraint'
 
-export const translateMemberIds = async ({
-  networkUUID,
-  ids,
-  accessToken,
-  url,
-}: {
-  networkUUID: IdType
-  ids: string[]
-  url: string
-  accessToken?: string
-}): Promise<string[]> => {
-  if (!url) {
-    throw new Error('Server URL is not provided')
-  }
-
-  const ndexClient: NDEx = getNdexClient(url, accessToken)
-  const geneNameMap = await ndexClient.getAttributesOfSelectedNodes(
-    networkUUID,
-    {
-      ids,
-      attributeNames: ['name'],
-    },
-    accessToken,
-  )
-
-  const geneNames = Object.values(geneNameMap).map(
-    (o: { name: string }) => o.name,
-  )
-  return geneNames
-}
-
+/**
+ * Fetches the user's workspaces from NDEx.
+ *
+ * @param ndexBaseUrl - NDEx base URL
+ * @param getToken - Function that returns a Promise resolving to an access token
+ * @returns Promise resolving to array of workspaces
+ */
 export const fetchMyWorkspaces = async (
   ndexBaseUrl: string,
   getToken: () => Promise<string>,
@@ -76,43 +59,13 @@ export const fetchMyWorkspaces = async (
   return myWorkspaces as any[]
 }
 
-export const getNDExSummaryStatus = async (
-  uuid: string,
-  baseUrl: string,
-  accessToken: string,
-): Promise<{ rejected: boolean; modificationTime?: Date }> => {
-  const MAX_TRIES = 13
-  let interval = 0.5
-  let tries = 0
-
-  await waitSeconds(0.2) // initial wait
-  while (tries < MAX_TRIES) {
-    tries += 1
-    const newSummary = await ndexSummaryFetcher(uuid, baseUrl, accessToken)
-
-    if (newSummary[0].completed === true) {
-      if (newSummary[0].errorMessage) {
-        return {
-          rejected: true,
-        }
-      }
-      return {
-        rejected: false,
-        modificationTime: newSummary[0].modificationTime,
-      }
-    }
-    if (tries >= 10) {
-      // after 10 tries, increase the interval to 5 seconds
-      interval = 5
-    } else if (tries >= 3) {
-      // after 3 tries, increase the interval to 1 second
-      interval = 1
-    }
-    await waitSeconds(interval)
-  }
-  throw new Error(TimeOutErrorIndicator)
-}
-
+/**
+ * Hook that returns a function to save a copy of a network to NDEx.
+ *
+ * The copy will be added to the current workspace and optionally replace the original.
+ *
+ * @returns Function to save a copy of a network to NDEx
+ */
 export const useSaveCopyToNDEx = () => {
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
@@ -198,6 +151,13 @@ export const useSaveCopyToNDEx = () => {
   return saveCopyToNDEx
 }
 
+/**
+ * Hook that returns a function to save a network to NDEx.
+ *
+ * Updates an existing network in NDEx.
+ *
+ * @returns Function to save a network to NDEx
+ */
 export const useSaveNetworkToNDEx = () => {
   const updateSummary = useNetworkSummaryStore((state) => state.update)
   const saveNetworkToNDEx = async (
@@ -245,6 +205,13 @@ export const useSaveNetworkToNDEx = () => {
   return saveNetworkToNDEx
 }
 
+/**
+ * Hook that returns a function to save a workspace to NDEx.
+ *
+ * Saves all networks in the workspace and the workspace itself to NDEx.
+ *
+ * @returns Function to save a workspace to NDEx
+ */
 export const useSaveWorkspace = () => {
   const deleteNetworkModifiedStatus = useWorkspaceStore(
     (state) => state.deleteNetworkModifiedStatus,

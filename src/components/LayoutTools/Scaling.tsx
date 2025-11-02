@@ -8,7 +8,7 @@ import { NetworkView, NodeView } from '../../models/ViewModel'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { ScalingType, ScalingTypeSelector } from './ScalingTypeSelector'
 import { calcScale } from './scaling-util'
-import { useUndoStack } from '../../task/UndoStack'
+import { useUndoStack } from '../../store/hooks/useUndoStack'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 
 const marks = [

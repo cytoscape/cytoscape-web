@@ -9,7 +9,7 @@ import { IdType } from '../../../models/IdType'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 
 import { VisualPropertyValueForm } from './VisualPropertyValueForm'
-import { useUndoStack } from '../../../task/UndoStack'
+import { useUndoStack } from '../../../store/hooks/useUndoStack'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 
 export function DefaultValueForm(props: {

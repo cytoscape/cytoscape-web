@@ -11,7 +11,7 @@ import {
 import { useEffect, useState } from 'react'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
-import { fetchMyWorkspaces, useSaveWorkspace } from '../../../utils/ndex-utils'
+import { fetchMyWorkspaces, useSaveWorkspace } from '../../../api/ndex'
 import { useMessageStore } from '../../../store/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { useWorkspaceData } from '../../../store/hooks/useWorkspaceData'

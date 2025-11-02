@@ -9,7 +9,7 @@ import { D3TreeNode } from './D3TreeNode'
 import { NetworkView, NodeView } from '../../../../models/ViewModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
 import { IdType } from '../../../../models/IdType'
-import { translateMemberIds } from '../../../../utils/ndex-utils'
+import { translateMemberIds } from '../../../../api/ndex'
 import { logUi } from '../../../../debug'
 
 /**

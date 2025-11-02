@@ -8,7 +8,7 @@ import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
 import {
   createDataFromLocalCx2,
   isValidCx2Network,
-} from '../../../utils/cx-utils'
+} from '../../../models/CxModel/impl'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { NdexNetworkProperty } from '../../../models/NetworkSummaryModel'

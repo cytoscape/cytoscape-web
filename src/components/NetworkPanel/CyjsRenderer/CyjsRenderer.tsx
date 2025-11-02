@@ -44,7 +44,7 @@ import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 
 import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
 
-import { useUndoStack } from '../../../task/UndoStack'
+import { useUndoStack } from '../../../store/hooks/useUndoStack'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { AppConfigContext } from '../../../AppConfigContext'
 

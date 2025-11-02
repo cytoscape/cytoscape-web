@@ -36,7 +36,7 @@ import {
   useSaveCopyToNDEx,
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
-} from '../../../utils/ndex-utils'
+} from '../../../api/ndex'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { logUi } from '../../../debug'
 

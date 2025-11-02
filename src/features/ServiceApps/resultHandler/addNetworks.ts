@@ -15,7 +15,7 @@ import { Cx2 } from '../../../models/CxModel/Cx2'
 import {
   createDataFromLocalCx2,
   isValidCx2Network,
-} from '../../../utils/cx-utils'
+} from '../../../models/CxModel/impl'
 import { useUiStateStore } from '../../../store/UiStateStore'
 import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'

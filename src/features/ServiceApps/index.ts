@@ -1,4 +1,4 @@
-import { exportNetworkToCx2, exportGraph } from '../../store/io/exportCX'
+import { exportNetworkToCx2, exportGraph } from '../../models/CxModel/impl'
 import {
   Table,
   IdType,

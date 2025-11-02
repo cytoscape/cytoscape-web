@@ -121,9 +121,9 @@ module.exports = {
         './VisualStyleStore': './src/store/VisualStyleStore.ts',
         './WorkspaceStore': './src/store/WorkspaceStore.ts',
 
-        // Tasks
-        './CreateNetwork': './src/task/CreateNetwork.tsx',
-        './CreateNetworkFromCx2': './src/task/CreateNetworkFromCx2.tsx',
+        // External Apps
+        './CreateNetwork': './src/externalapps/useCreateNetwork.tsx',
+        './CreateNetworkFromCx2': './src/externalapps/useCreateNetworkFromCx2.tsx',
       },
 
       shared: {

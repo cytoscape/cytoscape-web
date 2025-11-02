@@ -68,7 +68,7 @@ import { useEffect, useRef } from 'react'
 import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualStyleOptions'
 
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../task/UndoStack'
+import { useUndoStack } from '../../store/hooks/useUndoStack'
 import { useNetworkStore } from '../../store/NetworkStore'
 
 interface TabPanelProps {

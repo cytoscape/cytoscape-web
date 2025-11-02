@@ -1,7 +1,7 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
-import { useUndoStack } from '../../../task/UndoStack'
+import { useUndoStack } from '../../../store/hooks/useUndoStack'
 import { useUndoStore } from '../../../store/UndoStore'
 import { IdType } from '../../../models'
 import { useUiStateStore } from '../../../store/UiStateStore'

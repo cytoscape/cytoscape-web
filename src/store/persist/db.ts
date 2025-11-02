@@ -8,9 +8,11 @@ import NetworkFn, { Node, Edge, Network } from '../../models/NetworkModel'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { Table } from '../../models/TableModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
+import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { Workspace } from '../../models/WorkspaceModel'
 import { NetworkView } from '../../models/ViewModel'
 import { Ui } from '../../models/UiModel'
+import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { applyMigrations } from './migrations'
 import { getNetworkViewId } from '../ViewModelStore'
 import { FilterConfig } from '../../models/FilterModel/FilterConfig'
@@ -830,6 +832,23 @@ export interface UndoRedoStackDB {
   undoRedoStack: UndoRedoStack
 }
 
+/**
+ * Represents cached network data retrieved from IndexedDB.
+ *
+ * All fields are optional because data may be partially cached or missing.
+ * This type aggregates all network-related data from the database cache.
+ */
+export interface CachedNetworkData {
+  network?: Network
+  nodeTable?: Table
+  edgeTable?: Table
+  visualStyle?: VisualStyle
+  networkViews?: NetworkView[]
+  visualStyleOptions?: VisualStyleOptions
+  otherAspects?: OpaqueAspects[]
+  undoRedoStack?: UndoRedoStack
+}
+
 export const putUndoRedoStackToDb = async (
   networkId: IdType,
   undoRedoStack: UndoRedoStack,
@@ -861,4 +880,65 @@ export const clearUndoRedoStackFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.undoStacks, async () => {
     await db.undoStacks.clear()
   })
+}
+
+/**
+ * Retrieves cached network data from IndexedDB.
+ *
+ * Attempts to load all network-related data from the cache, including:
+ * - Network structure
+ * - Tables (node and edge)
+ * - Network views
+ * - Visual styles and style options
+ * - Opaque aspects
+ * - Undo/redo stack
+ *
+ * @param id - Network ID to retrieve from cache
+ * @returns Promise resolving to CachedNetworkData object
+ * @throws Error if data retrieval fails
+ */
+export const getCachedNetworkData = async (
+  id: string,
+): Promise<CachedNetworkData> => {
+  try {
+    const network = await getNetworkFromDb(id)
+    const tables = await getTablesFromDb(id)
+    const networkViews: NetworkView[] | undefined =
+      await getNetworkViewsFromDb(id)
+    const visualStyle = await getVisualStyleFromDb(id)
+    const uiState: Ui | undefined = await getUiStateFromDb()
+    const vsOptions: Record<IdType, VisualStyleOptions> =
+      uiState?.visualStyleOptions ?? {}
+    // Fall back to an empty object if the visual style options are not found
+    const visualStyleOptions: VisualStyleOptions = vsOptions[id] ?? {}
+    const opaqueAspects: OpaqueAspectsDB | undefined =
+      await getOpaqueAspectsFromDb(id)
+    const otherAspects: OpaqueAspects[] = opaqueAspects
+      ? Object.entries(opaqueAspects.aspects).map(([key, value]) => ({
+          [key]: value,
+        }))
+      : []
+
+    const undoStackDbResult = await getUndoRedoStackFromDb(id)
+
+    const undoRedoStack = undoStackDbResult?.undoRedoStack ?? {
+      undoStack: [],
+      redoStack: [],
+    }
+    return {
+      network,
+      visualStyle,
+      nodeTable: tables !== undefined ? tables.nodeTable : undefined,
+      edgeTable: tables !== undefined ? tables.edgeTable : undefined,
+      networkViews: networkViews ?? [],
+      visualStyleOptions: visualStyleOptions,
+      otherAspects: otherAspects,
+      undoRedoStack: undoRedoStack,
+    }
+  } catch (e) {
+    logDb.error(
+      `[${getCachedNetworkData.name}]:[${id}]: Failed to restore data from IndexedDB for network ${id} ${e}`,
+    )
+    throw e
+  }
 }

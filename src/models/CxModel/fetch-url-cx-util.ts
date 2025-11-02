@@ -1,4 +1,4 @@
-import { createDataFromCx } from '../../utils/cx-utils'
+import { createDataFromCx2 } from './impl'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { Cx2 } from './Cx2'
 import {
@@ -34,7 +34,7 @@ export const fetchUrlCx = async (
     }
     const data: Cx2 = await fullResponse.json()
     const uuid = uuidv4()
-    const network = await createDataFromCx(uuid, data)
+    const network = await createDataFromCx2(uuid, data)
 
     const networkAttributeDeclarations =
       getAttributeDeclarations(data)?.attributeDeclarations?.[0]

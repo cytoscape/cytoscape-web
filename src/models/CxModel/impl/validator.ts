@@ -516,6 +516,24 @@ export const validateCx2Attributes = (input: Cx2): ValidationResult => {
   }
 }
 
+/**
+ * Validates if an object represents a valid CX2 network
+ *
+ * @param obj - The object to validate, expected to be an array of aspects
+ * @returns True if the object contains valid network attributes, nodes, and edges, otherwise false
+ *
+ * This function checks if the provided object:
+ * - Contains valid network attributes
+ * - Contains valid nodes
+ * - Contains valid edges
+ *
+ * If any of these conditions are not met, the function returns false.
+ */
+export const isValidCx2Network = (obj: any): boolean => {
+  const validationResult = validateCX2(obj)
+  return validationResult.isValid
+}
+
 export const validateCX2 = (input: unknown): ValidationResult => {
   let validationResult: ValidationResult = {
     isValid: true,

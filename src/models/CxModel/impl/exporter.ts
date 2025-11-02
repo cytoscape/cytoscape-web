@@ -1,24 +1,29 @@
+/**
+ * CX2 Format Export Utilities
+ *
+ * Functions for converting internal application models to CX2 format.
+ */
 import {
   AttributeName,
   Table,
   ValueType,
   ValueTypeName,
   Column,
-} from '../../models/TableModel'
+} from '../../TableModel'
 
-import { NetworkView } from '../../models/ViewModel'
-import { Network } from '../../models/NetworkModel'
+import { NetworkView } from '../../ViewModel'
+import { Network } from '../../NetworkModel'
 
-import { IdType } from '../../models/IdType'
+import { IdType } from '../../IdType'
 import VisualStyleFn, {
   VisualStyle,
   VisualPropertyName,
   VisualProperty,
   VisualPropertyValueType,
   NodeVisualPropertyName,
-} from '../../models/VisualStyleModel'
+} from '../../VisualStyleModel'
 
-import { translateEdgeIdToCX } from '../../models/NetworkModel/impl/CyNetwork'
+import { translateEdgeIdToCX } from '../../NetworkModel/impl/CyNetwork'
 import {
   CXVisualMappingFunction,
   cxVisualPropertyConverter,
@@ -27,29 +32,47 @@ import {
   convertPassthroughMappingToCX,
   convertDiscreteMappingToCX,
   vpToCX,
-} from '../../models/VisualStyleModel/impl/cxVisualPropertyConverter'
+} from '../../VisualStyleModel/impl/cxVisualPropertyConverter'
 
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
+import { NdexNetworkSummary } from '../../NetworkSummaryModel'
 
 import {
   ContinuousMappingFunction,
   DiscreteMappingFunction,
   MappingFunctionType,
   PassthroughMappingFunction,
-} from '../../models/VisualStyleModel/VisualMappingFunction'
+} from '../../VisualStyleModel/VisualMappingFunction'
 
 import {
   deserializeValue,
   isListType,
-} from '../../models/TableModel/impl/ValueTypeImpl'
-import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
-import { OpaqueAspects } from '../../models/OpaqueAspectModel'
+} from '../../TableModel/impl/ValueTypeImpl'
+import { VisualStyleOptions } from '../../VisualStyleModel/VisualStyleOptions'
+import { OpaqueAspects } from '../../OpaqueAspectModel'
 import {
   getCustomGraphicNodeVps,
   getNonCustomGraphicVps,
-} from '../../models/VisualStyleModel/impl/CustomGraphicsImpl'
-import { DEFAULT_CUSTOM_GRAPHICS } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
+} from '../../VisualStyleModel/impl/CustomGraphicsImpl'
+import { DEFAULT_CUSTOM_GRAPHICS } from '../../VisualStyleModel/impl/DefaultVisualStyle'
 import isEqual from 'lodash/isEqual'
+
+/**
+ * Exports a network to CX2 format.
+ *
+ * Converts internal application models (Network, VisualStyle, Tables, etc.) into
+ * the CX2 format used by NDEx and other Cytoscape tools.
+ *
+ * @param network - Network to export
+ * @param vs - Visual style to export
+ * @param summary - Network summary metadata
+ * @param nodeTable - Node table with attributes
+ * @param edgeTable - Edge table with attributes
+ * @param visualStyleOptions - Optional visual editor properties
+ * @param networkView - Optional network view with coordinates
+ * @param networkName - Optional name override for the network
+ * @param opaqueAspects - Optional opaque aspects to include
+ * @returns CX2 format array
+ */
 export const exportNetworkToCx2 = (
   network: Network,
   vs: VisualStyle,
@@ -398,6 +421,15 @@ export const exportNetworkToCx2 = (
   return cx
 }
 
+/**
+ * Exports a network graph structure to CX2 format (nodes and edges only).
+ *
+ * Creates a minimal CX2 representation with only the network structure,
+ * without visual styles, attributes, or other aspects.
+ *
+ * @param network - Network to export
+ * @returns Array with nodes and edges aspects in CX2 format
+ */
 export const exportGraph = (network: Network) => {
   const nodes = network.nodes.map((node) => {
     return {

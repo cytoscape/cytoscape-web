@@ -6,7 +6,7 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 
-import { useUndoStack } from '../../../task/UndoStack'
+import { useUndoStack } from '../../../store/hooks/useUndoStack'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import {
   Edge,

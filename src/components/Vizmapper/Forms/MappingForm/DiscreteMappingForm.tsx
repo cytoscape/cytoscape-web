@@ -31,7 +31,7 @@ import { DiscreteMappingFunction } from '../../../../models/VisualStyleModel/Vis
 import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
 import { VisualPropertyGroup } from '../../../../models/VisualStyleModel/VisualPropertyGroup'
 import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../../task/UndoStack'
+import { useUndoStack } from '../../../../store/hooks/useUndoStack'
 
 export function DiscreteMappingForm(props: {
   currentNetworkId: IdType

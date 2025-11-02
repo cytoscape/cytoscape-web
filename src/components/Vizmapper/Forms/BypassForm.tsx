@@ -58,7 +58,7 @@ import { useState } from 'react'
 import { Column } from '../../../models'
 import { getKeybyAttribute } from '../../../features/MergeNetworks/utils/attributes-operations'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../task/UndoStack'
+import { useUndoStack } from '../../../store/hooks/useUndoStack'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType

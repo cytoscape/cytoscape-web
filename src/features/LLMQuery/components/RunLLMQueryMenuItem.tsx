@@ -19,7 +19,7 @@ import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
 import { NetworkView } from '../../../models/ViewModel'
-import { translateMemberIds } from '../../../utils/ndex-utils'
+import { translateMemberIds } from '../../../api/ndex'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { MessageSeverity } from '../../../models/MessageModel'
 

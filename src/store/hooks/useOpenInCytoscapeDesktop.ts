@@ -1,7 +1,7 @@
 import { useMessageStore } from '../MessageStore'
 // @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
-import { exportNetworkToCx2 } from '../io/exportCX'
+import { exportNetworkToCx2 } from '../../models/CxModel/impl'
 import { MessageSeverity } from '../../models/MessageModel'
 import { Network } from '../../models/NetworkModel'
 import { NetworkView } from '../../models/ViewModel'

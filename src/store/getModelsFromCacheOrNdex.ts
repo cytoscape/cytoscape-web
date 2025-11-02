@@ -1,7 +1,7 @@
 import { Cx2 } from '../models/CxModel/Cx2'
-import { createDataFromCx, getCachedData } from '../utils/cx-utils'
-import { CachedData } from '../utils/CachedData'
-import { ndexNetworkFetcher } from '../utils/fetchers'
+import { createDataFromCx2 } from '../models/CxModel/impl'
+import { getCachedNetworkData, CachedNetworkData } from './persist/db'
+import { fetchNetwork } from '../api/ndex'
 import { NetworkWithView } from '../models/NetworkWithViewModel'
 import { logApi, logDb } from '../debug'
 export const getModelsFromCacheOrNdex = async (
@@ -11,7 +11,7 @@ export const getModelsFromCacheOrNdex = async (
 ): Promise<NetworkWithView> => {
   try {
     // First, check the local cache
-    const cache: CachedData = await getCachedData(ndexNetworkId)
+    const cache: CachedNetworkData = await getCachedNetworkData(ndexNetworkId)
 
     // This is necessary only when data is not in the cache
     if (
@@ -24,12 +24,8 @@ export const getModelsFromCacheOrNdex = async (
       cache.otherAspects === undefined ||
       cache.undoRedoStack === undefined
     ) {
-      const cxData: Cx2 = await ndexNetworkFetcher(
-        ndexNetworkId,
-        url,
-        accessToken,
-      )
-      return await createDataFromCx(ndexNetworkId, cxData)
+      const cxData: Cx2 = await fetchNetwork(ndexNetworkId, url, accessToken)
+      return await createDataFromCx2(ndexNetworkId, cxData)
     } else {
       return {
         network: cache.network,
