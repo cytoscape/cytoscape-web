@@ -19,7 +19,7 @@ import {
   useJoinTableToNetworkStore,
   JoinTableToNetworkStep,
 } from '../../store/joinTableToNetworkStore'
-import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { TableColumnAppendForm } from './TableColumnAppendForm'
 import { ModalsProvider } from '@mantine/modals'
 import { useState } from 'react'

@@ -47,7 +47,7 @@ module.exports = {
     cyweb: path.resolve(__dirname, './src/index.tsx'),
     'export-network-to-image': path.resolve(
       __dirname,
-      './src/components/ToolBar/DataMenu/ExportNetworkToImage/ExportNetworkToImageEntry.tsx',
+      './src/features/ToolBar/DataMenu/ExportNetworkToImage/ExportNetworkToImageEntry.tsx',
     ),
   },
   devtool: isProduction ? false : 'inline-source-map',
@@ -58,7 +58,7 @@ module.exports = {
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
-        exclude: [/node_modules/, /dist/, /apps/],
+        exclude: [/node_modules/, /dist/, /\/apps\//],
       },
       // look for css files to transform into the bundle
       {
@@ -108,22 +108,23 @@ module.exports = {
       remotes: externalAppsConfig,
       exposes: {
         // Core data models exposed to other Apps
-        './CredentialStore': './src/store/CredentialStore.ts',
-        './LayoutStore': './src/store/LayoutStore.ts',
-        './MessageStore': './src/store/MessageStore.ts',
-        './NetworkStore': './src/store/NetworkStore.ts',
-        './NetworkSummaryStore': './src/store/NetworkSummaryStore.ts',
-        './OpaqueAspectStore': './src/store/OpaqueAspectStore.ts',
-        './RendererStore': './src/store/RendererStore.ts',
-        './TableStore': './src/store/TableStore.ts',
-        './UiStateStore': './src/store/UiStateStore.ts',
-        './ViewModelStore': './src/store/ViewModelStore.ts',
-        './VisualStyleStore': './src/store/VisualStyleStore.ts',
-        './WorkspaceStore': './src/store/WorkspaceStore.ts',
+        './CredentialStore': './src/hooks/stores/CredentialStore.ts',
+        './LayoutStore': './src/hooks/stores/LayoutStore.ts',
+        './MessageStore': './src/hooks/stores/MessageStore.ts',
+        './NetworkStore': './src/hooks/stores/NetworkStore.ts',
+        './NetworkSummaryStore': './src/hooks/stores/NetworkSummaryStore.ts',
+        './OpaqueAspectStore': './src/hooks/stores/OpaqueAspectStore.ts',
+        './RendererStore': './src/hooks/stores/RendererStore.ts',
+        './TableStore': './src/hooks/stores/TableStore.ts',
+        './UiStateStore': './src/hooks/stores/UiStateStore.ts',
+        './ViewModelStore': './src/hooks/stores/ViewModelStore.ts',
+        './VisualStyleStore': './src/hooks/stores/VisualStyleStore.ts',
+        './WorkspaceStore': './src/hooks/stores/WorkspaceStore.ts',
 
         // External Apps
         './CreateNetwork': './src/externalapps/useCreateNetwork.tsx',
-        './CreateNetworkFromCx2': './src/externalapps/useCreateNetworkFromCx2.tsx',
+        './CreateNetworkFromCx2':
+          './src/externalapps/useCreateNetworkFromCx2.tsx',
       },
 
       shared: {

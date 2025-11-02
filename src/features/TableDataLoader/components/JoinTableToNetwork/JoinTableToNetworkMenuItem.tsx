@@ -5,9 +5,9 @@ import { Dialog, MantineProvider, Modal } from '@mantine/core'
 import { MenuItem } from '@mui/material'
 import { ReactElement, useState, useEffect } from 'react'
 
-import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { JoinTableToNetworkForm } from './JoinTableToNetworkForm'
-import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
+import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
 import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
 
 export const JoinTableToNetworkMenuItem = (

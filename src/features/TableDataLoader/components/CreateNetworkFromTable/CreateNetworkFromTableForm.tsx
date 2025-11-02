@@ -14,7 +14,7 @@ import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../../store/createNetworkFromTableStore'
-import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { ModalsProvider } from '@mantine/modals'
 import { IconWindowMinimize, IconWindowMaximize } from '@tabler/icons-react'
 import { useState } from 'react'

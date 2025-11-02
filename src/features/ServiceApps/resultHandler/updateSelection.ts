@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { useViewModelStore } from '../../../store/ViewModelStore'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
 import { logUi } from '../../../debug'
 
 interface UpdatedSelection {

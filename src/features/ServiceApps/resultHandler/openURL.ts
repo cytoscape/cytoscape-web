@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { useAppStore } from '../../../store/AppStore'
+import { useAppStore } from '../../../hooks/stores/AppStore'
 import { CyApp } from '../../../models'
 
 interface URLData {

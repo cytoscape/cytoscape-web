@@ -10,12 +10,12 @@ import {
 } from '@mui/material'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 
-import { useNetworkSummaryStore } from '../../../../store/NetworkSummaryStore'
+import { useNetworkSummaryStore } from '../../../../hooks/stores/NetworkSummaryStore'
 import { WarningAmberOutlined, PublishedWithChanges } from '@mui/icons-material'
 import { HcxMetaTag } from '../../model/HcxMetaTag'
 import { validateHcx } from '../../model/impl/hcxValidators'
-import { useTableStore } from '../../../../store/TableStore'
-import { useMessageStore } from '../../../../store/MessageStore'
+import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { useMessageStore } from '../../../../hooks/stores/MessageStore'
 import { HcxValidationWarningsDialog } from './HcxValidationWarningsDialog'
 import { MessageSeverity } from '../../../../models/MessageModel'
 

@@ -1,9 +1,9 @@
 import Grid from '@mui/material/Grid'
 import { useEffect, useState } from 'react'
 import { IdType } from '../../../../models/IdType'
-import { useTableStore } from '../../../../store/TableStore'
-import { useUiStateStore } from '../../../../store/UiStateStore'
-import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
+import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import {
   Accordion,
@@ -20,7 +20,7 @@ import { ModeSelector } from './ModeSelector'
 import SettingsIcon from '@mui/icons-material/Settings'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import { useSearchParams } from 'react-router-dom'
-import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
 import {
   VisualMappingFunction,
   VisualProperty,
@@ -29,7 +29,7 @@ import {
 } from '../../../../models/VisualStyleModel'
 import { CompatibleVisualProperties } from './CompatibleVisualMappings'
 import { CheckboxFilter } from './CheckboxFilter'
-import { useFilterStore } from '../../../../store/FilterStore'
+import { useFilterStore } from '../../../../hooks/stores/FilterStore'
 import { DisplayMode, FilterConfig } from '../../../../models/FilterModel'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
 import { Table } from '../../../../models/TableModel'

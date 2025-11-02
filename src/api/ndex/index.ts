@@ -10,7 +10,7 @@
 export { getNdexClient } from './client'
 
 // Network operations
-export { fetchNetwork } from './networks'
+export { fetchNetwork, ndexSummaryFetcher } from './networks'
 
 // Query operations
 export { fetchNetworkByQuery, isValidNetworkAndViews } from './queries'

@@ -8,9 +8,9 @@ import {
   useTheme,
 } from '@mui/material'
 import { ValueType } from '../../../../models/TableModel'
-import { useTableStore } from '../../../../store/TableStore'
-import { useViewModelStore } from '../../../../store/ViewModelStore'
-import { MessagePanel } from '../../../../components/Messages'
+import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
+import { MessagePanel } from '../../../Messages'
 import { NetworkView } from '../../../../models/ViewModel'
 
 interface PropertyPanelProps {
@@ -24,8 +24,8 @@ export const PropertyPanel = ({
   const tables = useTableStore((state) => state.tables)
   const tablePair = tables[networkId]
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(networkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(networkId),
   )
   const { selectedNodes, selectedEdges } = viewModel ?? {}
 
@@ -44,7 +44,6 @@ export const PropertyPanel = ({
       <MessagePanel message="(Selected objects are displayed in the table browser)" />
     )
   }
-
 
   const { nodeTable } = tablePair
 

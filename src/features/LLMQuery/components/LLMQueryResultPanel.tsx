@@ -6,8 +6,8 @@ import {
   CircularProgress,
 } from '@mui/material'
 import { ReactElement, useState, useEffect } from 'react'
-import { useMessageStore } from '../../../store/MessageStore'
-import { useUiStateStore } from '../../../store/UiStateStore'
+import { useMessageStore } from '../../../hooks/stores/MessageStore'
+import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
 import { MessageSeverity } from '../../../models/MessageModel'

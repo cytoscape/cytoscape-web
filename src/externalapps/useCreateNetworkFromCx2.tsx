@@ -5,15 +5,15 @@ import {
   NdexNetworkSummary,
   getBaseSummary,
 } from '../models/NetworkSummaryModel'
-import { useNetworkStore } from '../store/NetworkStore'
-import { useTableStore } from '../store/TableStore'
-import { useViewModelStore } from '../store/ViewModelStore'
-import { useVisualStyleStore } from '../store/VisualStyleStore'
-import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
+import { useNetworkStore } from '../hooks/stores/NetworkStore'
+import { useTableStore } from '../hooks/stores/TableStore'
+import { useViewModelStore } from '../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
+import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
 import { createNetworkViewFromCx2 } from '../models/CxModel/impl'
 import { v4 as uuidv4 } from 'uuid'
-import { useWorkspaceStore } from '../store/WorkspaceStore'
-import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
+import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
+import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
 
 /**
  * Props for creating a network with a view from a CX2 object.

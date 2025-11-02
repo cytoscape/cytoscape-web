@@ -64,18 +64,18 @@ import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../../store/createNetworkFromTableStore'
-import { putNetworkSummaryToDb } from '../../../../store/persist/db'
-import { useNetworkStore } from '../../../../store/NetworkStore'
-import { useTableStore } from '../../../../store/TableStore'
-import { useViewModelStore } from '../../../../store/ViewModelStore'
-import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
-import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
-import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
+import { putNetworkSummaryToDb } from '../../../../db'
+import { useNetworkStore } from '../../../../hooks/stores/NetworkStore'
+import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { AppConfigContext } from '../../../../AppConfigContext'
 import { NetworkNameInput } from './NetworkNameInput'
-import { useUiStateStore } from '../../../../store/UiStateStore'
-import { useNetworkSummaryStore } from '../../../../store/NetworkSummaryStore'
-import { useUrlNavigation } from '../../../../store/hooks/useUrlNavigation/useUrlNavigation'
+import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
+import { useNetworkSummaryStore } from '../../../../hooks/stores/NetworkSummaryStore'
+import { useUrlNavigation } from '../../../../hooks/navigation/useUrlNavigation'
 
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)

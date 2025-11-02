@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import {
   NdexNetworkProperty,
   NdexNetworkSummary,
 } from '../../../models/NetworkSummaryModel'
 import { IdType } from '../../../models/IdType'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { useUiStateStore } from '../../../store/UiStateStore'
+import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import { PanelState } from '../../../models/UiModel/PanelState'
 import { Panel } from '../../../models/UiModel/Panel'
 import { ValueType } from '../../../models/TableModel'
@@ -19,9 +19,9 @@ import {
   deleteTablesFromDb,
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
-} from '../../../store/persist/db'
-import { useRendererStore } from '../../../store/RendererStore'
-import { DEFAULT_RENDERER_ID } from '../../../store/DefaultRenderer'
+} from '../../../db'
+import { useRendererStore } from '../../../hooks/stores/RendererStore'
+import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
 import { logDb } from '../../../debug'
 
 /**

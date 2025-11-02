@@ -8,9 +8,9 @@ import appConfig from './assets/config.json'
 import { AppConfigContext } from './AppConfigContext'
 import { App } from './App'
 
-import { EmailVerificationModal } from './components/EmailVerification'
-import { FeatureAvailabilityProvider } from './components/FeatureAvailability'
-import ErrorBoundary from './components/ErrorBoundary'
+import { EmailVerificationModal } from './features/EmailVerification'
+import { FeatureAvailabilityProvider } from './features/FeatureAvailability'
+import ErrorBoundary from './features/ErrorBoundary'
 
 // this allows immer to work with Map and Set
 import { initializeDebug, logStartup } from './debug'

@@ -4,7 +4,7 @@ import Select, { SelectChangeEvent } from '@mui/material/Select'
 import { useEffect, useState } from 'react'
 import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStore'
 import { Button, FormHelperText, Stack } from '@mui/material'
-import { useUiStateStore } from '../../../../store/UiStateStore'
+import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
 
 export const StyleSelector = (): JSX.Element => {
   const [selectedStyleName, setSelectedStyleName] = useState<string>('')

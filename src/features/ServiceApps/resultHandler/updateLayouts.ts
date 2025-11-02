@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
-import { useViewModelStore } from '../../../store/ViewModelStore'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { useAppStore } from '../../../store/AppStore'
+import { useAppStore } from '../../../hooks/stores/AppStore'
 import { logApp } from '../../../debug'
 
 interface UpdatedPosition {

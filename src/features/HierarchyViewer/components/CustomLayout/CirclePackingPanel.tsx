@@ -15,13 +15,13 @@ import { VisualStyle } from '../../../../models/VisualStyleModel'
 import { SearchState } from '../../../../models/FilterModel/SearchState'
 
 // Internal store imports
-import { useViewModelStore } from '../../../../store/ViewModelStore'
-import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
 import { useSubNetworkStore } from '../../store/SubNetworkStore'
-import { useTableStore } from '../../../../store/TableStore'
-import { useFilterStore } from '../../../../store/FilterStore'
-import { useRendererFunctionStore } from '../../../../store/RendererFunctionStore'
-import { useCredentialStore } from '../../../../store/CredentialStore'
+import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { useFilterStore } from '../../../../hooks/stores/FilterStore'
+import { useRendererFunctionStore } from '../../../../hooks/stores/RendererFunctionStore'
+import { useCredentialStore } from '../../../../hooks/stores/CredentialStore'
 
 // Internal component imports
 import { AppConfigContext } from '../../../../AppConfigContext'

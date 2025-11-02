@@ -1,9 +1,9 @@
 import { useCallback } from 'react'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
-import { useNetworkStore } from '../../../store/NetworkStore'
-import { putNetworkSummaryToDb } from '../../../store/persist/db'
+import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
+import { putNetworkSummaryToDb } from '../../../db'
 import { v4 as uuidv4 } from 'uuid'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
@@ -16,20 +16,20 @@ import {
   createDataFromLocalCx2,
   isValidCx2Network,
 } from '../../../models/CxModel/impl'
-import { useUiStateStore } from '../../../store/UiStateStore'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
-import { useTableStore } from '../../../store/TableStore'
-import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
+import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+import { useTableStore } from '../../../hooks/stores/TableStore'
+import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
 import { generateUniqueName } from '../../../utils/generate-unique-name'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
+import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
 } from '../../../models/CxModel/cx2-util'
 import { logApp } from '../../../debug'
-import { useUrlNavigation } from '../../../store/hooks/useUrlNavigation/useUrlNavigation'
+import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
 
 export const useAddNetworks = (): (({
   responseObj,

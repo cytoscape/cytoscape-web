@@ -7,7 +7,7 @@
 import { NDEx } from '@js4cytoscape/ndex-client'
 import { IdType } from '../../models/IdType'
 import { waitSeconds } from '../../utils/wait-seconds'
-import { ndexSummaryFetcher } from '../../store/getNetworkSummaryFromCacheOrNdex'
+import { ndexSummaryFetcher } from './networks'
 import { getNdexClient } from './client'
 
 export const TimeOutErrorIndicator = 'NDEx_TIMEOUT_ERROR'

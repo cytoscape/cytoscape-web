@@ -2,25 +2,24 @@ import React, { Suspense, useContext, useEffect } from 'react'
 import CssBaseline from '@mui/material/CssBaseline'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import './index.css'
-import { Error } from './components/Error'
+import { Error } from './features/Error'
 import {
   createBrowserRouter,
   RouterProvider,
   Route,
   createRoutesFromElements,
 } from 'react-router-dom'
-import { MessagePanel } from './components/Messages'
+import { MessagePanel } from './features/Messages'
 import appConfig from './assets/config.json'
 import { KeycloakContext } from './init/keycloak'
-import { useCredentialStore } from './store/CredentialStore'
-import { RedirectPanel } from './components/RedirectPanel'
-import ErrorBoundary from './components/ErrorBoundary'
-import { CookieConsentWidget } from './components/CookieConsent'
-// import { initHistoryClearing } from './store/hooks/useUrlNavigation/url-manager'
+import { useCredentialStore } from './hooks/stores/CredentialStore'
+import { RedirectPanel } from './features/RedirectPanel'
+import ErrorBoundary from './features/ErrorBoundary'
+import { CookieConsentWidget } from './features/CookieConsent'
 
-const AppShell = React.lazy(() => import('./components/AppShell'))
+const AppShell = React.lazy(() => import('./features/AppShell'))
 const WorkspaceEditor = React.lazy(
-  () => import('./components/Workspace/WorkspaceEditor'),
+  () => import('./features/Workspace/WorkspaceEditor'),
 )
 
 const theme = createTheme({

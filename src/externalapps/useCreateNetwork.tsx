@@ -16,14 +16,14 @@ import VisualStyleFn, {
   VisualStyle,
 } from '../models/VisualStyleModel'
 import { NetworkWithView } from '../models/NetworkWithViewModel'
-import { useNetworkStore } from '../store/NetworkStore'
-import { useTableStore } from '../store/TableStore'
-import { useViewModelStore } from '../store/ViewModelStore'
-import { useVisualStyleStore } from '../store/VisualStyleStore'
+import { useNetworkStore } from '../hooks/stores/NetworkStore'
+import { useTableStore } from '../hooks/stores/TableStore'
+import { useViewModelStore } from '../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
 import { useCallback } from 'react'
 import { NetworkStore } from '../models/StoreModel/NetworkStoreModel'
 import { TableRecord, TableStore } from '../models/StoreModel/TableStoreModel'
-import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
+import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
 import {
   getBaseSummary,
   NdexNetworkSummary,

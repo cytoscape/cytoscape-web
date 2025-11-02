@@ -9,7 +9,7 @@ import {
 import { useEffect } from 'react'
 import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStore'
 import { VisualStyle } from '../../../../models/VisualStyleModel'
-import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
 
 interface SharedStyleManagerProps {
   networkId: string

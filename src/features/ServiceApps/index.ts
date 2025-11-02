@@ -20,7 +20,7 @@ import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOpt
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { NetworkView } from '../../models/ViewModel'
 import { useCallback } from 'react'
-import { useAppStore } from '../../store/AppStore'
+import { useAppStore } from '../../hooks/stores/AppStore'
 import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
 import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
 import {

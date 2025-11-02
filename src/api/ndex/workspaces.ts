@@ -17,22 +17,18 @@ import {
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { exportNetworkToCx2 } from '../../models/CxModel/impl'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
-import { getModelsFromCacheOrNdex } from '../../store/getModelsFromCacheOrNdex'
+import { getModelsFromCacheOrNdex } from '../../db/getModelsFromCacheOrNdex'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
-import { ndexSummaryFetcher } from '../../store/getNetworkSummaryFromCacheOrNdex'
-import { waitSeconds } from '../../utils/wait-seconds'
+import { ndexSummaryFetcher } from './networks'
 import { MessageSeverity } from '../../models/MessageModel'
-import { useWorkspaceStore } from '../../store/WorkspaceStore'
-import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
-import { useMessageStore } from '../../store/MessageStore'
-import {
-  getWorkspaceFromDb,
-  putNetworkSummaryToDb,
-} from '../../store/persist/db'
+import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
+import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
+import { useMessageStore } from '../../hooks/stores/MessageStore'
+import { getWorkspaceFromDb, putNetworkSummaryToDb } from '../../db'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { logApi } from '../../debug'
-import { useUrlNavigation } from '../../store/hooks/useUrlNavigation/useUrlNavigation'
+import { useUrlNavigation } from '../../hooks/navigation/useUrlNavigation'
 import { getNDExSummaryStatus } from './status'
 
 export const TimeOutErrorMessage =

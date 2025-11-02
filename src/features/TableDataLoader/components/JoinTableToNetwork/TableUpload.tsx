@@ -16,12 +16,12 @@ import { Dropzone } from '@mantine/dropzone'
 import { notifications } from '@mantine/notifications'
 import Papa from 'papaparse'
 import { modals } from '@mantine/modals'
-import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import {
   useJoinTableToNetworkStore,
   JoinTableToNetworkStep,
 } from '../../store/joinTableToNetworkStore'
-import { useMessageStore } from '../../../../store/MessageStore'
+import { useMessageStore } from '../../../../hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../../models/MessageModel'
 
 export function TableUpload(props: BaseMenuProps) {

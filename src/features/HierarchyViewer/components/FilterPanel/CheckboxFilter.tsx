@@ -4,14 +4,14 @@ import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { IdType } from '../../../../models/IdType'
 import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
-import { useViewModelStore } from '../../../../store/ViewModelStore'
+import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import { NetworkView } from '../../../../models/ViewModel'
 import {
   DiscreteMappingFunction,
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
-import { useFilterStore } from '../../../../store/FilterStore'
+import { useFilterStore } from '../../../../hooks/stores/FilterStore'
 import {
   Filter,
   FilterConfig,

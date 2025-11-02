@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useMessageStore } from '../../src/store/MessageStore'
+import { useMessageStore } from '../../src/hooks/stores/MessageStore'
 import { Message, MessageSeverity } from '../../src/models/MessageModel'
 
 describe('useMessageStore', () => {
@@ -7,7 +7,7 @@ describe('useMessageStore', () => {
     const message: Message = {
       message: 'Hello world',
       duration: 5000,
-      severity: MessageSeverity.INFO
+      severity: MessageSeverity.INFO,
     }
 
     const { result } = renderHook(() => useMessageStore())
