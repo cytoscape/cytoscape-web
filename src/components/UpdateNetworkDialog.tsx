@@ -12,7 +12,6 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useCredentialStore } from '../store/CredentialStore'
 import { useNetworkSummaryStore } from '../store/NetworkSummaryStore'
 import { useWorkspaceStore } from '../store/WorkspaceStore'
-import { parsePathName } from '../utils/paths-util'
 import { waitSeconds } from '../utils/wait-seconds'
 import { useUrlNavigation } from '../store/hooks/useUrlNavigation/useUrlNavigation'
 

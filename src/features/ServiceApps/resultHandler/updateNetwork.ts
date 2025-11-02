@@ -16,7 +16,7 @@ import { useWorkspaceStore } from '../../../store/WorkspaceStore'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { useNetworkStore } from '../../../store/NetworkStore'
-import { generateUniqueName } from '../../../utils/network-utils'
+import { generateUniqueName } from '../../../utils/generate-unique-name'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,

@@ -23,9 +23,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
-    "test": "npm run test:playwright && npm run test:unit",
-    "test:unit": "jest unittest",
-    "test:playwright": "npx playwright test --trace on",
+    "test": "jest",
     "build": "webpack --mode production",
     "build:netlify": "BUILD=netlify webpack --mode production",
     "dev": "webpack serve --open --mode development",
@@ -39,7 +37,6 @@
     "@babel/preset-react": "^7.24.7",
     "@faker-js/faker": "^7.6.0",
     "@mui/types": "^7.2.0",
-    "@playwright/test": "^1.34.3",
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.0",
     "@types/chroma-js": "^2.1.4",

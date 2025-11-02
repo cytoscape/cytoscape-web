@@ -34,7 +34,7 @@ import {
 } from '../../features/TableDataLoader/store/createNetworkFromTableStore'
 import { PrimeReactProvider } from 'primereact/api'
 import { useNetworkSummaryStore } from '../../store/NetworkSummaryStore'
-import { generateUniqueName } from '../../utils/network-utils'
+import { generateUniqueName } from '../../utils/generate-unique-name'
 import { useUiStateStore } from '../../store/UiStateStore'
 import { createDataFromLocalCx2 } from '../../utils/cx-utils'
 import { createDataFromLocalSif } from '../../utils/sif-utils'

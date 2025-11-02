@@ -21,7 +21,7 @@ import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { useViewModelStore } from '../../../store/ViewModelStore'
 import { useTableStore } from '../../../store/TableStore'
 import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
-import { generateUniqueName } from '../../../utils/network-utils'
+import { generateUniqueName } from '../../../utils/generate-unique-name'
 import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
 import {
   getAttributeDeclarations,

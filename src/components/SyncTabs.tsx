@@ -1,4 +1,5 @@
 import { ReactElement, useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   getDb,
   getTimestampFromDb,
@@ -6,7 +7,6 @@ import {
   putTimestampToDb,
 } from '../store/persist/db'
 import debounce from 'lodash.debounce'
-import { parsePathName } from '../utils/paths-util'
 import { logUi } from '../debug'
 
 const markForPageReload = debounce(() => {
@@ -14,6 +14,9 @@ const markForPageReload = debounce(() => {
 }, 300)
 
 export const SyncTabsAction = (): ReactElement => {
+  const params = useParams<{ workspaceId?: string; networkId?: string }>()
+  const workspaceId = params.workspaceId ?? ''
+  const networkId = params.networkId ?? ''
   const [localTimestamp, setLocalTimestamp] = useState(0)
 
   useEffect(() => {
@@ -22,9 +25,6 @@ export const SyncTabsAction = (): ReactElement => {
         setLocalTimestamp(Date.now())
       } else {
         void getTimestampFromDb().then(async (timestamp) => {
-          const parsed = parsePathName(location.pathname)
-          const { networkId, workspaceId } = parsed
-
           const workspace = await getWorkspaceFromDb(workspaceId)
 
           if ((timestamp ?? Date.now()) > localTimestamp) {
@@ -44,7 +44,7 @@ export const SyncTabsAction = (): ReactElement => {
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
-  })
+  }, [workspaceId, networkId])
 
   const initDbListener = async (): Promise<void> => {
     const db = await getDb()
