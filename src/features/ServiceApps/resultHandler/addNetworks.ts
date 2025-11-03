@@ -107,7 +107,7 @@ export const useAddNetworks = (): (({
               nodeTable,
               edgeTable,
               visualStyle,
-              networkView,
+              networkViews,
               visualStyleOptions,
               otherAspects,
             } = res
@@ -149,7 +149,7 @@ export const useAddNetworks = (): (({
             addNewNetwork(network)
             setVisualStyle(localUuid, visualStyle)
             setTables(localUuid, nodeTable, edgeTable)
-            setViewModel(localUuid, networkView)
+            setViewModel(localUuid, networkViews[0])
             if (otherAspects !== undefined) {
               addAllOpaqueAspects(localUuid, otherAspects)
             }

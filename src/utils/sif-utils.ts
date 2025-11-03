@@ -3,6 +3,7 @@ import TableFn, { Table } from '../models/TableModel'
 import ViewModelFn, { NetworkView } from '../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../models/VisualStyleModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
+import { NetworkWithView } from '../models/NetworkWithViewModel'
 import { v4 as uuidv4 } from 'uuid'
 import { Column } from '../models/TableModel/Column'
 import { AttributeName } from '../models/TableModel/AttributeName'
@@ -12,15 +13,6 @@ interface SifEdge extends Edge {
   interaction: string
   sourceName: string
   targetName: string
-}
-
-interface FullNetworkData {
-  network: Network
-  nodeTable: Table
-  edgeTable: Table
-  visualStyle: VisualStyle
-  networkView: NetworkView
-  visualStyleOptions: VisualStyleOptions
 }
 
 /**
@@ -80,12 +72,12 @@ export function parseSif(sifText: string): {
  * Create a full network data object from SIF text
  * @param localNetworkId - The unique identifier for the local network
  * @param sifText - The SIF file contents as a string
- * @returns A full network data object including tables, styles, and aspects
+ * @returns NetworkWithView object including tables, styles, and aspects
  */
 export const createDataFromLocalSif = async (
   localNetworkId: string,
   sifText: string,
-): Promise<FullNetworkData> => {
+): Promise<NetworkWithView> => {
   const { nodeIdMap, nodeNames, edges } = parseSif(sifText)
   // Create node list with integer string IDs
   const nodeList: Node[] = nodeNames.map((name, idx) => ({
@@ -144,13 +136,20 @@ export const createDataFromLocalSif = async (
     },
   }
   const networkView: NetworkView = ViewModelFn.createViewModel(network)
+
+  const undoRedoStack = {
+    undoStack: [],
+    redoStack: [],
+  }
+
   return {
     network,
     nodeTable,
     edgeTable,
     visualStyle,
-    networkView,
+    networkViews: [networkView],
     visualStyleOptions,
+    undoRedoStack,
   }
 }
 

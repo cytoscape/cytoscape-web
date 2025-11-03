@@ -16,16 +16,6 @@ import { VisualStyleOptions } from '../../VisualStyleModel/VisualStyleOptions'
 import { IdType } from '../../IdType'
 import { OpaqueAspects } from '../../OpaqueAspectModel'
 
-interface FullNetworkData {
-  network: Network
-  nodeTable: Table
-  edgeTable: Table
-  visualStyle: VisualStyle
-  networkView: NetworkView
-  visualStyleOptions: VisualStyleOptions
-  otherAspects: OpaqueAspects[]
-}
-
 /**
  * Utility function to create a full network view from CX2
  *
@@ -122,12 +112,12 @@ export const createDataFromCx2 = async (
  *
  * @param LocalNetworkId - The unique identifier for the local network
  * @param cxData - The CX2 data object containing network details
- * @returns A full network data object including tables, styles, and aspects
+ * @returns NetworkWithView object including tables, styles, and aspects
  */
 export const createDataFromLocalCx2 = async (
   LocalNetworkId: string,
   cxData: Cx2,
-): Promise<FullNetworkData> => {
+): Promise<NetworkWithView> => {
   const network: Network = NetworkFn.createNetworkFromCx(LocalNetworkId, cxData)
 
   const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
@@ -147,14 +137,26 @@ export const createDataFromLocalCx2 = async (
 
   const otherAspects: OpaqueAspects[] = getOptionalAspects(cxData)
 
+  const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
+    LocalNetworkId,
+    cxData,
+  )
+
+  const undoRedoStack = {
+    undoStack: [],
+    redoStack: [],
+  }
+
   return {
     network,
     nodeTable,
     edgeTable,
     visualStyle,
-    networkView,
+    networkViews: [networkView],
     visualStyleOptions,
     otherAspects,
+    networkAttributes,
+    undoRedoStack,
   }
 }
 

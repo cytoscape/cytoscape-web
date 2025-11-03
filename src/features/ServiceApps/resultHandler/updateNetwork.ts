@@ -100,7 +100,7 @@ export const useUpdateNetwork = (): (({
           nodeTable,
           edgeTable,
           visualStyle,
-          networkView,
+          networkViews,
           visualStyleOptions,
           otherAspects,
         } = res
@@ -123,6 +123,7 @@ export const useUpdateNetwork = (): (({
         if (otherAspects !== undefined) {
           addAllOpaqueAspects(networkId, otherAspects, true)
         }
+        const networkView = networkViews[0]
         setViewModel(networkId, {
           ...networkView,
           type: networkView.type ?? DEF_VIEW_TYPE,

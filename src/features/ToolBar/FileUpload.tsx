@@ -132,7 +132,7 @@ export function FileUpload(props: FileUploadProps) {
           nodeTable,
           edgeTable,
           visualStyle,
-          networkView,
+          networkViews,
           visualStyleOptions,
           otherAspects,
         } = res
@@ -181,7 +181,7 @@ export function FileUpload(props: FileUploadProps) {
         addNewNetwork(network)
         setVisualStyle(localUuid, visualStyle)
         setTables(localUuid, nodeTable, edgeTable)
-        setViewModel(localUuid, networkView)
+        setViewModel(localUuid, networkViews[0])
         addSummary(localUuid, summary)
         if (otherAspects !== undefined) {
           addAllOpaqueAspects(localUuid, otherAspects)
@@ -236,7 +236,7 @@ export function FileUpload(props: FileUploadProps) {
           nodeTable,
           edgeTable,
           visualStyle,
-          networkView,
+          networkViews,
           visualStyleOptions,
         } = res
 
@@ -278,7 +278,7 @@ export function FileUpload(props: FileUploadProps) {
         addNewNetwork(network)
         setVisualStyle(localUuid, visualStyle)
         setTables(localUuid, nodeTable, edgeTable)
-        setViewModel(localUuid, networkView)
+        setViewModel(localUuid, networkViews[0])
         addSummary(localUuid, summary)
         setCurrentNetworkId(localUuid)
         navigateToNetwork({
