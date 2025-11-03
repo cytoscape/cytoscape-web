@@ -9,7 +9,7 @@ import { D3TreeNode } from './D3TreeNode'
 import { NetworkView, NodeView } from '../../../../models/ViewModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
 import { IdType } from '../../../../models/IdType'
-import { translateMemberIds } from '../../../../api/ndex'
+import { fetchGeneNamesFromIds } from '../../../../api/ndex'
 import { logUi } from '../../../../debug'
 
 /**
@@ -28,12 +28,7 @@ export const getNames = async (
   const token: string = await getToken()
 
   // TODO: move this function to the core??
-  const names: string[] = await translateMemberIds({
-    networkUUID: uuid,
-    ids: nodeIds,
-    url,
-    accessToken: token,
-  })
+  const names: string[] = await fetchGeneNamesFromIds(uuid, nodeIds, token, url)
 
   return names
 }

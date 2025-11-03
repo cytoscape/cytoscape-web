@@ -19,7 +19,7 @@ import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
 import { NetworkView } from '../../../models/ViewModel'
-import { translateMemberIds } from '../../../api/ndex'
+import { fetchGeneNamesFromIds } from '../../../api/ndex'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { MessageSeverity } from '../../../models/MessageModel'
 
@@ -85,12 +85,11 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
 
           if (members !== undefined) {
             const token = await getToken()
-            const names = await translateMemberIds({
-              networkUUID: parentInteractionNetworkId as string,
-              ids: members as string[],
-              url: ndexBaseUrl,
-              accessToken: token,
-            })
+            const names = await fetchGeneNamesFromIds(
+              parentInteractionNetworkId as string,
+              members as string[],
+              token,
+            )
 
             geneNames.push(...names)
           } else {

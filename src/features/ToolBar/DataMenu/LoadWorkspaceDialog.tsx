@@ -16,12 +16,10 @@ import {
   Checkbox,
   Typography,
 } from '@mui/material'
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { fetchMyWorkspaces } from '../../../api/ndex'
+import { fetchMyNdexWorkspaces, deleteNdexWorkspace } from '../../../api/ndex'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { useAppStore } from '../../../hooks/stores/AppStore'
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
@@ -64,23 +62,28 @@ export const LoadWorkspaceDialog: React.FC<{
     setOpenDialog(false)
   }
 
+  const fetchWorkspaces = async (): Promise<void> => {
+    const token = await getToken()
+    fetchMyNdexWorkspaces(token)
+      .then(setMyWorkspaces)
+      .catch((error) => {
+        logUi.error(
+          `[${LoadWorkspaceDialog.name}]:[${handleCloseDialog.name}] Error fetching workspaces from NDEx`,
+          error,
+        )
+
+        addMessage({
+          message: 'Failed to fetch workspaces from NDEx',
+          duration: 4000,
+          severity: MessageSeverity.ERROR,
+        })
+      })
+  }
   useEffect(() => {
     if (open) {
-      void fetchMyWorkspaces(ndexBaseUrl, getToken)
-        .then(setMyWorkspaces)
-        .catch((error) => {
-          logUi.error(
-            `[${LoadWorkspaceDialog.name}]:[${handleCloseDialog.name}] Error fetching workspaces from NDEx`,
-            error,
-          )
-          addMessage({
-            message: 'Failed to fetch workspaces from NDEx',
-            duration: 4000,
-            severity: MessageSeverity.ERROR,
-          })
-        })
+      fetchWorkspaces()
     }
-  }, [open, ndexBaseUrl, getToken])
+  }, [open])
 
   const handleRowSelect = (workspaceId: string): void => {
     setSelectedWorkspaceId((prevId) =>
@@ -166,24 +169,19 @@ export const LoadWorkspaceDialog: React.FC<{
         (workspace) => workspace.workspaceId === selectedWorkspaceId,
       )
       if (selectedWorkspace) {
-        const ndexClient = new NDEx(ndexBaseUrl)
         const token = await getToken()
-        ndexClient.setAuthToken(token)
-        await ndexClient.deleteCyWebWorkspace(selectedWorkspace.workspaceId)
+        await deleteNdexWorkspace(
+          selectedWorkspace.workspaceId,
+          token,
+          ndexBaseUrl,
+        )
         if (currentWorkspaceId === selectedWorkspace.workspaceId) {
-          setWorkspaceIsRemote(false) //If user wants to delete the current workspace, then mark it as ‘local’
+          setWorkspaceIsRemote(false) //If user wants to delete the current workspace, then mark it as 'local'
         }
       } else {
         alert('Selected workspace not found')
       }
-      await fetchMyWorkspaces(ndexBaseUrl, getToken)
-        .then(setMyWorkspaces)
-        .catch((err) => {
-          logUi.error(
-            `[${LoadWorkspaceDialog.name}]:[${handleConfirmDelete.name}] Error deleting workspace`,
-            err,
-          )
-        })
+      await fetchWorkspaces()
       setSelectedWorkspaceId(null)
     } else {
       alert('No workspace selected')

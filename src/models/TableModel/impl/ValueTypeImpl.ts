@@ -140,6 +140,62 @@ export const isListType = (type: ValueTypeName): boolean => {
   return listTypes.includes(type)
 }
 
+/**
+ * Converts a list type to its equivalent single type.
+ *
+ * @param listType - A list type (e.g., 'list_of_string', 'list_of_integer')
+ * @returns The equivalent single type, or the original type if it's not a list type
+ * @example
+ *   getSingleTypeFromList('list_of_string') // returns 'string'
+ *   getSingleTypeFromList('list_of_integer') // returns 'integer'
+ */
+export const getSingleTypeFromList = (
+  listType: ValueTypeName,
+): ValueTypeName => {
+  if (!isListType(listType)) {
+    return listType
+  }
+
+  // Remove 'list_of_' prefix
+  const singleType = listType.replace('list_of_', '') as ValueTypeName
+
+  // Validate the result is a known single type
+  if (isSingleType(singleType)) {
+    return singleType
+  }
+
+  // Fallback: return original if conversion fails
+  return listType
+}
+
+/**
+ * Converts a single type to its equivalent list type.
+ *
+ * @param singleType - A single type (e.g., 'string', 'integer')
+ * @returns The equivalent list type, or the original type if it's not a single type
+ * @example
+ *   getListTypeFromSingle('string') // returns 'list_of_string'
+ *   getListTypeFromSingle('integer') // returns 'list_of_integer'
+ */
+export const getListTypeFromSingle = (
+  singleType: ValueTypeName,
+): ValueTypeName => {
+  if (!isSingleType(singleType)) {
+    return singleType
+  }
+
+  // Add 'list_of_' prefix
+  const listType = `list_of_${singleType}` as ValueTypeName
+
+  // Validate the result is a known list type
+  if (isListType(listType)) {
+    return listType
+  }
+
+  // Fallback: return original if conversion fails
+  return singleType
+}
+
 export type SortDirection = 'asc' | 'desc'
 export interface SortType {
   column: AttributeName | undefined

@@ -6,7 +6,7 @@ import { CyjsRenderer } from '../../NetworkPanel/CyjsRenderer'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
 import { AppConfigContext } from '../../../AppConfigContext'
-import { ndexQueryFetcher } from '../store'
+import { fetchNdexSubnetworkByQuery } from '../utils/query-network-util'
 import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
 import { Query } from './MainPanel'
 import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
@@ -281,7 +281,7 @@ export const SubNetworkPanel = ({
     queryFn: async ({ queryKey }) => {
       const token = await getToken()
       const keys = queryKey as string[]
-      const data = await ndexQueryFetcher([...keys, token])
+      const data = await fetchNdexSubnetworkByQuery([...keys, token])
       return data
     },
     refetchOnReconnect: 'always',

@@ -1,12 +1,11 @@
 import { Cx2 } from '../models/CxModel/Cx2'
 import { createDataFromCx2 } from '../models/CxModel/impl'
 import { getCachedNetworkData, CachedNetworkData } from '.'
-import { fetchNetwork } from '../api/ndex'
+import { fetchNdexNetwork } from '../api/ndex'
 import { NetworkWithView } from '../models/NetworkWithViewModel'
 import { logApi, logDb } from '../debug'
 export const getModelsFromCacheOrNdex = async (
   ndexNetworkId: string,
-  url: string,
   accessToken?: string,
 ): Promise<NetworkWithView> => {
   try {
@@ -24,7 +23,7 @@ export const getModelsFromCacheOrNdex = async (
       cache.otherAspects === undefined ||
       cache.undoRedoStack === undefined
     ) {
-      const cxData: Cx2 = await fetchNetwork(ndexNetworkId, url, accessToken)
+      const cxData: Cx2 = await fetchNdexNetwork(ndexNetworkId, accessToken)
       return await createDataFromCx2(ndexNetworkId, cxData)
     } else {
       return {

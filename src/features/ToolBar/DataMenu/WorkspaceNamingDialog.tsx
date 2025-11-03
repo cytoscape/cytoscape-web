@@ -11,7 +11,8 @@ import {
 import { useEffect, useState } from 'react'
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
-import { fetchMyWorkspaces, useSaveWorkspace } from '../../../api/ndex'
+import { fetchMyNdexWorkspaces } from '../../../api/ndex'
+import { useSaveWorkspace } from '../../../hooks/useSaveWorkspaceToNDEx'
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { useWorkspaceData } from '../../../hooks/useWorkspaceData'
@@ -54,7 +55,6 @@ export const WorkspaceNamingDialog = ({
     string | undefined
   >(undefined)
   const saveWorkspace = useSaveWorkspace()
-  const ndexClient = new NDEx(ndexBaseUrl)
 
   const addMessage = useMessageStore((state) => state.addMessage)
 
@@ -67,8 +67,6 @@ export const WorkspaceNamingDialog = ({
     try {
       await saveWorkspace(
         accessToken,
-        ndexBaseUrl,
-        ndexClient,
         allNetworkId,
         networkModifiedStatus,
         networks,
@@ -108,7 +106,8 @@ export const WorkspaceNamingDialog = ({
       return
     }
     try {
-      const existingWorkspaces = await fetchMyWorkspaces(ndexBaseUrl, getToken)
+      const accessToken = await getToken()
+      const existingWorkspaces = await fetchMyNdexWorkspaces(accessToken)
       const workspaceId = existingWorkspaces.find(
         (workspace) => workspace.name === workspaceName,
       )?.workspaceId
@@ -118,11 +117,8 @@ export const WorkspaceNamingDialog = ({
         setShowConfirmDialog(true)
         return
       } else {
-        const accessToken = await getToken()
         await saveWorkspace(
           accessToken,
-          ndexBaseUrl,
-          ndexClient,
           allNetworkId,
           networkModifiedStatus,
           networks,

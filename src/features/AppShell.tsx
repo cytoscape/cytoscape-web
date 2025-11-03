@@ -19,7 +19,7 @@ import { ToolBar } from './ToolBar'
 import { DEFAULT_UI_STATE, useUiStateStore } from '../hooks/stores/UiStateStore'
 import { AppConfigContext } from '../AppConfigContext'
 import { getSummariesFromCacheOrNdex } from '../db/getNetworkSummaryFromCacheOrNdex'
-import { ndexSummaryFetcher } from '../api/ndex'
+import { fetchNdexSummaries } from '../api/ndex'
 import { useCredentialStore } from '../hooks/stores/CredentialStore'
 
 import { PanelState } from '../models/UiModel/PanelState'
@@ -150,7 +150,6 @@ const AppShell = (): ReactElement => {
       const token = await getToken()
       const summaries = await getSummariesFromCacheOrNdex(
         workspace.networkIds,
-        ndexBaseUrl,
         token,
       )
 
@@ -181,7 +180,7 @@ const AppShell = (): ReactElement => {
       if (networkIdNotInWorkspace) {
         // Check if the network is in NDEx
         const newNetworkSummary = (
-          await ndexSummaryFetcher(networkId, ndexBaseUrl, token)
+          await fetchNdexSummaries(networkId, token)
         )?.[0]
 
         if (newNetworkSummary !== undefined) {

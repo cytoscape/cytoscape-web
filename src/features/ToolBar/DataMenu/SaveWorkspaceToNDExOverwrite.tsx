@@ -1,14 +1,11 @@
 import React, { useState, useContext } from 'react'
 import { MenuItem, Box, Tooltip } from '@mui/material'
 import { BaseMenuProps } from '../BaseMenuProps'
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
 import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
 import { KeycloakContext } from '../../../init/keycloak'
-import { useSaveWorkspace } from '../../../api/ndex'
-import { ConfirmationDialog } from '../../ConfirmationDialog'
+import { useSaveWorkspace } from '../../../hooks/useSaveWorkspaceToNDEx'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 import { useWorkspaceData } from '../../../hooks/useWorkspaceData'
@@ -45,11 +42,8 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   const saveWorkspaceToNDEx = async (): Promise<void> => {
     try {
       const accessToken = await getToken()
-      const ndexClient = new NDEx(ndexBaseUrl)
       await saveWorkspace(
         accessToken,
-        ndexBaseUrl,
-        ndexClient,
         allNetworkId,
         networkModifiedStatus,
         networks,

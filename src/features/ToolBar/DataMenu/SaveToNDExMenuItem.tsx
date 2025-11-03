@@ -11,9 +11,7 @@ import {
 } from '@mui/material'
 import { ReactElement, useContext, useEffect, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
-import { PermissionType } from '../../../models/NetworkModel/AccessPermission'
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
+import { hasNdexEditPermission, fetchNdexSummaries } from '../../../api/ndex'
 
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
@@ -31,12 +29,9 @@ import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Valida
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
-import {
-  useSaveNetworkToNDEx,
-  useSaveCopyToNDEx,
-  TimeOutErrorIndicator,
-  TimeOutErrorMessage,
-} from '../../../api/ndex'
+import { TimeOutErrorMessage, TimeOutErrorIndicator } from '../../../api/ndex'
+import { useSaveNetworkToNDEx } from '../../../hooks/useSaveNetworkToNDEx'
+import { useSaveCopyToNDEx } from '../../../hooks/useSaveNetworkCopyToNDEx'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { logUi } from '../../../debug'
 
@@ -102,17 +97,14 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   useEffect(() => {
     const fetchPermission = async () => {
       if (authenticated && currentNetworkId) {
-        const ndexClient = new NDEx(ndexBaseUrl)
         try {
           const accessToken = await getToken()
-          ndexClient.setAuthToken(accessToken)
-          const permission = (
-            await ndexClient.getNetworkPermissionsByUUIDs([currentNetworkId])
-          )?.[currentNetworkId]
-          setEditPermission(
-            permission === PermissionType.ADMIN ||
-              permission === PermissionType.WRITE,
+          const hasPermission = await hasNdexEditPermission(
+            currentNetworkId,
+            accessToken,
+            ndexBaseUrl,
           )
+          setEditPermission(hasPermission)
         } catch (e) {
           logUi.error(
             `[${fetchPermission.name}]: Error fetching permissions:`,
@@ -153,14 +145,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     currentNetworkId,
   ])
 
-  const overwriteNDExNetwork = async (
-    accessToken: string,
-    ndexClient: NDEx,
-  ): Promise<void> => {
+  const overwriteNDExNetwork = async (accessToken: string): Promise<void> => {
     await saveNetworkOverwrite(
-      ndexBaseUrl,
       accessToken,
-      ndexClient,
       currentNetworkId,
       network,
       visualStyle,
@@ -184,14 +171,11 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const saveCopyToNDEx = async (
     accessToken: string,
-    ndexClient: NDEx,
     deleteOriginal: boolean,
   ): Promise<void> => {
     try {
       const uuid = await saveNetworkCopy(
-        ndexBaseUrl,
         accessToken,
-        ndexClient,
         network,
         visualStyle,
         summary,
@@ -243,25 +227,28 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const handleSaveCurrentNetworkToNDEx = async (): Promise<void> => {
-    const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
-    ndexClient.setAuthToken(accessToken)
 
     if (summary?.isNdex === false) {
-      await saveCopyToNDEx(accessToken, ndexClient, true)
+      await saveCopyToNDEx(accessToken, true)
       return
     }
 
     const localModificationTime = summary?.modificationTime
 
     try {
-      const ndexSummary = await ndexClient.getNetworkSummary(currentNetworkId)
+      const ndexSummaries = await fetchNdexSummaries(
+        currentNetworkId,
+        accessToken,
+        ndexBaseUrl,
+      )
+      const ndexSummary = ndexSummaries?.[0]
       const ndexModificationTime = ndexSummary?.modificationTime
 
       if (ndexModificationTime > localModificationTime) {
         setShowConfirmDialog(true)
       } else {
-        await overwriteNDExNetwork(accessToken, ndexClient)
+        await overwriteNDExNetwork(accessToken)
       }
     } catch (e) {
       logUi.error(
@@ -270,7 +257,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       )
       if (e.message.includes(TimeOutErrorIndicator)) {
         addMessage({
-          message: TimeOutErrorMessage,
+          message: TimeOutErrorIndicator,
           duration: 4000,
           severity: MessageSeverity.ERROR,
         })
@@ -327,10 +314,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       <DialogActions>
         <Button
           onClick={async () => {
-            const ndexClient = new NDEx(ndexBaseUrl)
             const accessToken = await getToken()
-            ndexClient.setAuthToken(accessToken)
-            await overwriteNDExNetwork(accessToken, ndexClient)
+            await overwriteNDExNetwork(accessToken)
           }}
           sx={{
             color: '#F50157',
@@ -358,10 +343,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
             },
           }}
           onClick={async () => {
-            const ndexClient = new NDEx(ndexBaseUrl)
             const accessToken = await getToken()
-            ndexClient.setAuthToken(accessToken)
-            await saveCopyToNDEx(accessToken, ndexClient, false)
+            await saveCopyToNDEx(accessToken, false)
           }}
         >
           Yes, create copy to NDEx

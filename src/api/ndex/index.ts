@@ -10,32 +10,31 @@
 export { getNdexClient } from './client'
 
 // Network operations
-export { fetchNetwork } from './networks'
+export { fetchNdexNetwork, updateNdexNetwork } from './network'
 
 // Network summary operations
 export {
   fetchNdexSummaries,
   getNetworkValidationStatus,
-  TimeOutErrorIndicator,
-  // Deprecated exports (for backward compatibility)
-  fetchSummary,
-  waitForNetworkValidation,
-  fetchSummaryStatus,
-  ndexSummaryFetcher,
 } from './network-summary'
 
 // Query operations
-export { fetchNetworkByQuery, isValidNetworkAndViews } from './queries'
+export { fetchNdexInterconnectQuery, fetchGeneNamesFromIds } from './query'
 
 // Workspace operations
 export {
-  fetchMyWorkspaces,
-  useSaveCopyToNDEx,
-  useSaveNetworkToNDEx,
-  useSaveWorkspace,
+  fetchMyNdexWorkspaces,
+  fetchMyNdexAccountNetworks,
+  searchNdexNetworks,
+  deleteNdexWorkspace,
+} from './workspace'
+
+// Permission operations
+export { getNdexNetworkPermission, hasNdexEditPermission } from './permissions'
+
+// Errors
+export {
+  TimeOutErrorIndicator,
   TimeOutErrorMessage,
   NdexDuplicateKeyErrorMessage,
-} from './workspaces'
-
-// Status and attribute operations
-export { translateMemberIds } from './status'
+} from './errors'

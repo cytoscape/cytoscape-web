@@ -2,9 +2,6 @@ import { MenuItem, Box, Tooltip } from '@mui/material'
 import { ReactElement, useContext, useState } from 'react'
 import { BaseMenuProps } from '../BaseMenuProps'
 
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
-
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
 import { useTableStore } from '../../../hooks/stores/TableStore'
@@ -22,11 +19,8 @@ import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Valida
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
-import {
-  useSaveCopyToNDEx,
-  TimeOutErrorIndicator,
-  TimeOutErrorMessage,
-} from '../../../api/ndex'
+import { TimeOutErrorIndicator, TimeOutErrorMessage } from '../../../api/ndex'
+import { useSaveCopyToNDEx } from '../../../hooks/useSaveNetworkCopyToNDEx'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { logUi } from '../../../debug'
 import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
@@ -89,15 +83,11 @@ export const CopyNetworkToNDExMenuItem = (
   const addNetwork = useWorkspaceStore((state) => state.addNetworkIds)
   const saveNetworkCopy = useSaveCopyToNDEx()
   const saveCopyToNDEx = async (): Promise<void> => {
-    const ndexClient = new NDEx(ndexBaseUrl)
     const accessToken = await getToken()
-    ndexClient.setAuthToken(accessToken)
 
     try {
       const uuid = await saveNetworkCopy(
-        ndexBaseUrl,
         accessToken,
-        ndexClient,
         network,
         visualStyle,
         summary,
@@ -111,7 +101,6 @@ export const CopyNetworkToNDExMenuItem = (
       waitSeconds(1)
       const summaries = await getSummariesFromCacheOrNdex(
         uuid as IdType,
-        ndexBaseUrl,
         accessToken,
       )
 

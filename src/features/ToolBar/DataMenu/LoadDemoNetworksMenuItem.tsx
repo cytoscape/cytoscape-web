@@ -5,7 +5,7 @@ import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { BaseMenuProps } from '../BaseMenuProps'
 import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
-import { ndexSummaryFetcher } from '../../../api/ndex'
+import { fetchNdexSummaries } from '../../../api/ndex'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
 import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
 import { NdexNetworkSummary } from '../../../models'
@@ -22,7 +22,6 @@ export const LoadDemoNetworksMenuItem = (
   const { navigateToNetwork } = useUrlNavigation()
 
   const workspace = useWorkspaceStore((state) => state.workspace)
-  const { ndexBaseUrl } = useContext(AppConfigContext)
   const addSummaries = useNetworkSummaryStore((state) => state.addAll)
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
@@ -30,7 +29,7 @@ export const LoadDemoNetworksMenuItem = (
   const { getToken } = useCredentialStore()
   const handleAddDemoNetworks = async () => {
     const token = await getToken()
-    const summaries = await ndexSummaryFetcher(testNetworks, ndexBaseUrl, token)
+    const summaries = await fetchNdexSummaries(testNetworks, token)
     addNetworks(testNetworks)
 
     addSummaries(

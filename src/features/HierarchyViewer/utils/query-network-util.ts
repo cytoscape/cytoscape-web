@@ -3,14 +3,18 @@
  *
  * Functions for executing queries and fetching networks via queries.
  */
-import { Cx2 } from '../../models/CxModel/Cx2'
-import { NetworkView } from '../../models/ViewModel'
-import { Network } from '../../models/NetworkModel'
-import { IdType } from '../../models/IdType'
-import { NetworkWithView } from '../../models/NetworkWithViewModel'
-import { createDataFromCx2 } from '../../models/CxModel/impl'
-import { getNdexClient } from './client'
-import { logApi } from '../../debug'
+import { Cx2 } from '../../../models/CxModel/Cx2'
+import { NetworkView } from '../../../models/ViewModel'
+import { Network } from '../../../models/NetworkModel'
+import { IdType } from '../../../models/IdType'
+import { NetworkWithView } from '../../../models/NetworkWithViewModel'
+import { createDataFromCx2 } from '../../../models/CxModel/impl'
+import {
+  getNdexClient,
+  fetchNdexNetwork,
+  fetchNdexInterconnectQuery,
+} from '../../../api/ndex'
+import { logApi } from '../../../debug'
 
 const MAX_RETRY_COUNT = 1
 
@@ -86,33 +90,29 @@ const validateViewConsistency = (
  * @param interactionNetworkUuid - Optional NDEx UUID to fetch directly
  * @param rootNetworkUuid - Root network UUID for queries
  * @param query - Query string for interconnect queries
- * @param ndexClient - NDEx client instance
+ * @param accessToken - Optional authentication token
+ * @param ndexUrl - Optional NDEx base URL (defaults to module configuration if not provided)
  * @returns Promise resolving to NetworkWithView
  */
-const fetchFromRemote = async (
+const fetchNdexSubnetwork = async (
   interactionNetworkId: IdType,
   interactionNetworkUuid: IdType,
   rootNetworkUuid: IdType,
   query: string,
-  ndexClient: any,
+  accessToken?: string,
+  ndexUrl?: string,
 ): Promise<NetworkWithView> => {
-  // Case 1: Simply fetch network if UUID is provided as node attribute
-  if (interactionNetworkUuid !== undefined && interactionNetworkUuid !== '') {
-    const cx2Network: Cx2 = await ndexClient.getCX2Network(
-      interactionNetworkUuid,
-    )
-    return await createDataFromCx2(interactionNetworkId, cx2Network)
-  } else {
-    // Case 2: Just run the interconnect query if UUID is not provided
-    const cx2QueryResult: Cx2 = await ndexClient.interConnectQuery(
-      rootNetworkUuid,
-      null,
-      false,
-      query,
-      true,
-    )
-    return await createDataFromCx2(interactionNetworkId, cx2QueryResult)
-  }
+  const interactionNetworkUuidExists =
+    interactionNetworkUuid !== undefined && interactionNetworkUuid !== ''
+  const result = interactionNetworkUuidExists
+    ? await fetchNdexNetwork(interactionNetworkUuid, accessToken, ndexUrl)
+    : await fetchNdexInterconnectQuery(
+        rootNetworkUuid,
+        query,
+        accessToken,
+        ndexUrl,
+      )
+  return await createDataFromCx2(interactionNetworkId, result)
 }
 
 /**
@@ -123,11 +123,12 @@ const fetchFromRemote = async (
  * @param params - Array containing: hierarchyId, rootNetworkUuid, subsystemId, query, interactionNetworkUuid, accessToken
  * @returns Promise resolving to NetworkWithView
  */
-export const fetchNetworkByQuery = async (
+export const fetchNdexSubnetworkByQuery = async (
   params: string[],
 ): Promise<NetworkWithView> => {
   const [
     hierarchyId,
+    interactionNetworkHost,
     rootNetworkUuid,
     subsystemId,
     query,
@@ -146,16 +147,15 @@ export const fetchNetworkByQuery = async (
   // Use Hierarchy ID and selected node ID as the new network ID
   const interactionNetworkId: string = `${hierarchyId}_${subsystemId}`
 
-  const ndexClient = getNdexClient(accessToken)
-
   try {
     // always refresh the data from the server
-    let result = await fetchFromRemote(
+    let result = await fetchNdexSubnetwork(
       interactionNetworkId,
       interactionNetworkUuid,
       rootNetworkUuid,
       query,
-      ndexClient,
+      accessToken,
+      interactionNetworkHost,
     )
 
     let isValidData = false
@@ -165,12 +165,13 @@ export const fetchNetworkByQuery = async (
       if (isValidData) {
         return result
       } else {
-        result = await fetchFromRemote(
+        result = await fetchNdexSubnetwork(
           interactionNetworkId,
           interactionNetworkUuid,
           rootNetworkUuid,
           query,
-          ndexClient,
+          accessToken,
+          interactionNetworkHost,
         )
       }
       retryCount++

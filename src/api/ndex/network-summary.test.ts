@@ -1,7 +1,22 @@
-import { normalizeNdexSummaries } from './network-summary'
+import {
+  normalizeNdexSummaries,
+  fetchNdexSummaries,
+  getNetworkValidationStatus,
+} from './network-summary'
 import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { NdexNetworkProperty } from '../../models/NetworkSummaryModel/NdexNetworkProperty'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
+import { getNdexClient } from './client'
+import { waitSeconds } from '../../utils/wait-seconds'
+
+// Mock dependencies
+jest.mock('./client', () => ({
+  getNdexClient: jest.fn(),
+}))
+
+jest.mock('../../utils/wait-seconds', () => ({
+  waitSeconds: jest.fn().mockResolvedValue(undefined),
+}))
 
 describe('normalizeNdexSummaries', () => {
   const createBaseSummary = (): NdexNetworkSummary => ({
@@ -524,5 +539,487 @@ describe('normalizeNdexSummaries', () => {
       expect(result[0].properties[0].dataType).toBe(ValueTypeName.Integer)
       expect(result[0].properties[0].value).toBe(42) // Converted
     })
+  })
+})
+
+describe('fetchNdexSummaries', () => {
+  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+    typeof getNdexClient
+  >
+  const mockWaitSeconds = waitSeconds as jest.MockedFunction<typeof waitSeconds>
+
+  const createBaseSummary = (): NdexNetworkSummary => ({
+    isNdex: false,
+    ownerUUID: 'owner-123',
+    isReadOnly: false,
+    subnetworkIds: [],
+    isValid: true,
+    warnings: [],
+    isShowcase: false,
+    isCertified: false,
+    indexLevel: 'full',
+    hasLayout: true,
+    hasSample: false,
+    cxFileSize: 1000,
+    cx2FileSize: 500,
+    name: 'Test Network',
+    properties: [],
+    owner: 'test-owner',
+    version: '1.0',
+    completed: true,
+    visibility: 'public',
+    nodeCount: 10,
+    edgeCount: 20,
+    description: 'Test description',
+    creationTime: new Date('2023-01-01T00:00:00Z'),
+    externalId: 'network-123',
+    isDeleted: false,
+    modificationTime: new Date('2023-01-02T00:00:00Z'),
+  })
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockWaitSeconds.mockResolvedValue(undefined)
+  })
+
+  it('should fetch a single network summary by ID', async () => {
+    const mockNetworkId = 'test-network-uuid-123'
+    const mockAccessToken = 'test-access-token'
+    const rawSummary = createBaseSummary()
+    rawSummary.externalId = mockNetworkId
+
+    const mockClient = {
+      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue([rawSummary]),
+      setAuthToken: jest.fn(),
+    }
+
+    mockGetNdexClient.mockReturnValue(mockClient as any)
+
+    const result = await fetchNdexSummaries(mockNetworkId, mockAccessToken)
+
+    expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
+    expect(mockClient.getNetworkSummariesByUUIDs).toHaveBeenCalledWith([
+      mockNetworkId,
+    ])
+    expect(result).toHaveLength(1)
+    expect(result[0].externalId).toBe(mockNetworkId)
+    expect(result[0].isNdex).toBe(true) // Should be normalized
+  })
+
+  it('should fetch multiple network summaries by IDs', async () => {
+    const mockNetworkIds = ['network-1', 'network-2', 'network-3']
+    const rawSummaries = mockNetworkIds.map((id, index) => {
+      const summary = createBaseSummary()
+      summary.externalId = id
+      summary.name = `Network ${index + 1}`
+      return summary
+    })
+
+    const mockClient = {
+      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue(rawSummaries),
+      setAuthToken: jest.fn(),
+    }
+
+    mockGetNdexClient.mockReturnValue(mockClient as any)
+
+    const result = await fetchNdexSummaries(mockNetworkIds)
+
+    expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
+    expect(mockClient.getNetworkSummariesByUUIDs).toHaveBeenCalledWith(
+      mockNetworkIds,
+    )
+    expect(result).toHaveLength(3)
+    expect(result[0].externalId).toBe('network-1')
+    expect(result[1].externalId).toBe('network-2')
+    expect(result[2].externalId).toBe('network-3')
+    result.forEach((summary) => {
+      expect(summary.isNdex).toBe(true)
+    })
+  })
+
+  it('should handle arrays with single ID', async () => {
+    const mockNetworkId = 'single-network-uuid'
+    const rawSummary = createBaseSummary()
+    rawSummary.externalId = mockNetworkId
+
+    const mockClient = {
+      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue([rawSummary]),
+      setAuthToken: jest.fn(),
+    }
+
+    mockGetNdexClient.mockReturnValue(mockClient as any)
+
+    const result = await fetchNdexSummaries([mockNetworkId])
+
+    expect(mockClient.getNetworkSummariesByUUIDs).toHaveBeenCalledWith([
+      mockNetworkId,
+    ])
+    expect(result).toHaveLength(1)
+  })
+
+  it('should normalize summaries after fetching', async () => {
+    const mockNetworkId = 'normalize-test-uuid'
+    const rawSummary = createBaseSummary()
+    rawSummary.externalId = mockNetworkId
+    rawSummary.version = undefined as any
+    rawSummary.description = undefined as any
+    rawSummary.properties = [
+      {
+        subNetworkId: null,
+        value: '42',
+        predicateString: 'count',
+        dataType: ValueTypeName.Integer,
+      },
+    ]
+
+    const mockClient = {
+      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue([rawSummary]),
+      setAuthToken: jest.fn(),
+    }
+
+    mockGetNdexClient.mockReturnValue(mockClient as any)
+
+    const result = await fetchNdexSummaries(mockNetworkId)
+
+    expect(result[0].isNdex).toBe(true)
+    expect(result[0].version).toBe('') // Default value
+    expect(result[0].description).toBe('') // Default value
+    expect(result[0].properties[0].value).toBe(42) // Normalized to number
+  })
+
+  it('should propagate errors from the NDEx client', async () => {
+    const mockNetworkId = 'error-network-uuid'
+    const mockError = new Error('Network not found')
+
+    const mockClient = {
+      getNetworkSummariesByUUIDs: jest.fn().mockRejectedValue(mockError),
+      setAuthToken: jest.fn(),
+    }
+
+    mockGetNdexClient.mockReturnValue(mockClient as any)
+
+    await expect(fetchNdexSummaries(mockNetworkId)).rejects.toThrow(
+      'Network not found',
+    )
+
+    expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
+    expect(mockClient.getNetworkSummariesByUUIDs).toHaveBeenCalledWith([
+      mockNetworkId,
+    ])
+  })
+
+  it('should work without an access token', async () => {
+    const mockNetworkId = 'public-network-uuid'
+    const rawSummary = createBaseSummary()
+    rawSummary.externalId = mockNetworkId
+
+    const mockClient = {
+      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue([rawSummary]),
+      setAuthToken: jest.fn(),
+    }
+
+    mockGetNdexClient.mockReturnValue(mockClient as any)
+
+    const result = await fetchNdexSummaries(mockNetworkId)
+
+    expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
+    expect(result).toHaveLength(1)
+  })
+
+  it('should fetch summaries with custom NDEx URL', async () => {
+    const mockNetworkId = 'test-network-uuid-custom-url'
+    const mockAccessToken = 'test-access-token'
+    const mockNdexUrl = 'https://custom.ndex.org'
+    const rawSummary = createBaseSummary()
+    rawSummary.externalId = mockNetworkId
+
+    const mockClient = {
+      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue([rawSummary]),
+      setAuthToken: jest.fn(),
+    }
+
+    mockGetNdexClient.mockReturnValue(mockClient as any)
+
+    const result = await fetchNdexSummaries(
+      mockNetworkId,
+      mockAccessToken,
+      mockNdexUrl,
+    )
+
+    expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, mockNdexUrl)
+    expect(result).toHaveLength(1)
+    expect(result[0].externalId).toBe(mockNetworkId)
+  })
+})
+
+describe('getNetworkValidationStatus', () => {
+  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+    typeof getNdexClient
+  >
+  const mockWaitSeconds = waitSeconds as jest.MockedFunction<typeof waitSeconds>
+
+  const createValidSummary = (): NdexNetworkSummary => ({
+    isNdex: true,
+    ownerUUID: 'owner-123',
+    isReadOnly: false,
+    subnetworkIds: [],
+    isValid: true,
+    warnings: [],
+    isShowcase: false,
+    isCertified: false,
+    indexLevel: 'full',
+    hasLayout: true,
+    hasSample: false,
+    cxFileSize: 1000,
+    cx2FileSize: 500,
+    name: 'Valid Network',
+    properties: [],
+    owner: 'test-owner',
+    version: '1.0',
+    completed: true,
+    visibility: 'public',
+    nodeCount: 10,
+    edgeCount: 20,
+    description: 'Test description',
+    creationTime: new Date('2023-01-01T00:00:00Z'),
+    externalId: 'network-123',
+    isDeleted: false,
+    modificationTime: new Date('2023-01-02T00:00:00Z'),
+    errorMessage: undefined,
+  })
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockWaitSeconds.mockResolvedValue(undefined)
+  })
+
+  it('should return true when network is valid on first attempt', async () => {
+    const mockUuid = 'valid-network-uuid'
+    const mockAccessToken = 'test-token'
+    const validSummary = createValidSummary()
+    validSummary.externalId = mockUuid
+    validSummary.completed = true
+    validSummary.errorMessage = undefined
+
+    // Mock fetchNdexSummaries to return valid summary
+    jest.spyOn(require('./network-summary'), 'fetchNdexSummaries')
+    const mockFetchSummaries = jest.fn().mockResolvedValue([validSummary])
+    require('./network-summary').fetchNdexSummaries = mockFetchSummaries
+
+    const result = await getNetworkValidationStatus(mockUuid, mockAccessToken)
+
+    expect(result).toBe(true)
+    expect(mockWaitSeconds).toHaveBeenCalledWith(0.5) // initialDelaySeconds
+    expect(mockFetchSummaries).toHaveBeenCalledWith(
+      mockUuid,
+      mockAccessToken,
+      undefined,
+    )
+  })
+
+  it('should validate network with custom NDEx URL', async () => {
+    const mockUuid = 'valid-network-uuid-custom-url'
+    const mockAccessToken = 'test-token'
+    const mockNdexUrl = 'https://custom.ndex.org'
+    const validSummary = createValidSummary()
+    validSummary.externalId = mockUuid
+    validSummary.completed = true
+    validSummary.errorMessage = undefined
+
+    jest.spyOn(require('./network-summary'), 'fetchNdexSummaries')
+    const mockFetchSummaries = jest.fn().mockResolvedValue([validSummary])
+    require('./network-summary').fetchNdexSummaries = mockFetchSummaries
+
+    const result = await getNetworkValidationStatus(
+      mockUuid,
+      mockAccessToken,
+      mockNdexUrl,
+    )
+
+    expect(result).toBe(true)
+    expect(mockFetchSummaries).toHaveBeenCalledWith(
+      mockUuid,
+      mockAccessToken,
+      mockNdexUrl,
+    )
+  })
+
+  it('should return true when network becomes valid after retries', async () => {
+    const mockUuid = 'retry-network-uuid'
+    const mockAccessToken = 'test-token'
+    const invalidSummary = createValidSummary()
+    invalidSummary.completed = false
+    const validSummary = createValidSummary()
+    validSummary.completed = true
+    validSummary.errorMessage = undefined
+
+    // Mock fetchNdexSummaries to return invalid then valid
+    jest.spyOn(require('./network-summary'), 'fetchNdexSummaries')
+    const mockFetchSummaries = jest
+      .fn()
+      .mockResolvedValueOnce([invalidSummary])
+      .mockResolvedValueOnce([validSummary])
+    require('./network-summary').fetchNdexSummaries = mockFetchSummaries
+
+    const result = await getNetworkValidationStatus(
+      mockUuid,
+      mockAccessToken,
+      undefined,
+      {
+        maxAttempts: 3,
+        initialDelaySeconds: 0.1,
+        delaySeconds: 0.1,
+      },
+    )
+
+    expect(result).toBe(true)
+    expect(mockFetchSummaries).toHaveBeenCalledTimes(2)
+    expect(mockFetchSummaries).toHaveBeenCalledWith(
+      mockUuid,
+      mockAccessToken,
+      undefined,
+    )
+    expect(mockWaitSeconds).toHaveBeenCalledWith(0.1) // initialDelaySeconds
+    expect(mockWaitSeconds).toHaveBeenCalledWith(0.1) // delaySeconds after first attempt
+  })
+
+  it('should return false when network validation fails after max attempts', async () => {
+    const mockUuid = 'invalid-network-uuid'
+    const mockAccessToken = 'test-token'
+    const invalidSummary = createValidSummary()
+    invalidSummary.completed = false
+    invalidSummary.errorMessage = 'Validation failed'
+
+    // Mock fetchNdexSummaries to always return invalid
+    jest.spyOn(require('./network-summary'), 'fetchNdexSummaries')
+    const mockFetchSummaries = jest.fn().mockResolvedValue([invalidSummary])
+    require('./network-summary').fetchNdexSummaries = mockFetchSummaries
+
+    const result = await getNetworkValidationStatus(
+      mockUuid,
+      mockAccessToken,
+      undefined,
+      {
+        maxAttempts: 3,
+        initialDelaySeconds: 0.1,
+        delaySeconds: 0.1,
+      },
+    )
+
+    expect(result).toBe(false)
+    expect(mockFetchSummaries).toHaveBeenCalledTimes(3)
+    expect(mockWaitSeconds).toHaveBeenCalledTimes(3) // initialDelay + 2 delays
+  })
+
+  it('should return false when network has error message', async () => {
+    const mockUuid = 'error-network-uuid'
+    const mockAccessToken = 'test-token'
+    const errorSummary = createValidSummary()
+    errorSummary.completed = true
+    errorSummary.errorMessage = 'Network has errors'
+
+    jest.spyOn(require('./network-summary'), 'fetchNdexSummaries')
+    const mockFetchSummaries = jest.fn().mockResolvedValue([errorSummary])
+    require('./network-summary').fetchNdexSummaries = mockFetchSummaries
+
+    const result = await getNetworkValidationStatus(
+      mockUuid,
+      mockAccessToken,
+      undefined,
+      {
+        maxAttempts: 2,
+        initialDelaySeconds: 0.1,
+        delaySeconds: 0.1,
+      },
+    )
+
+    expect(result).toBe(false)
+    expect(mockFetchSummaries).toHaveBeenCalledTimes(2)
+  })
+
+  it('should retry on errors and eventually return false', async () => {
+    const mockUuid = 'error-prone-network-uuid'
+    const mockAccessToken = 'test-token'
+    const mockError = new Error('Network fetch failed')
+
+    jest.spyOn(require('./network-summary'), 'fetchNdexSummaries')
+    const mockFetchSummaries = jest.fn().mockRejectedValue(mockError)
+    require('./network-summary').fetchNdexSummaries = mockFetchSummaries
+
+    const result = await getNetworkValidationStatus(
+      mockUuid,
+      mockAccessToken,
+      undefined,
+      {
+        maxAttempts: 3,
+        initialDelaySeconds: 0.1,
+        delaySeconds: 0.1,
+      },
+    )
+
+    expect(result).toBe(false)
+    expect(mockFetchSummaries).toHaveBeenCalledTimes(3)
+    expect(mockWaitSeconds).toHaveBeenCalledTimes(3) // initialDelay + 2 delays
+  })
+
+  it('should use default options when none provided', async () => {
+    const mockUuid = 'default-options-uuid'
+    const mockAccessToken = 'test-token'
+    const validSummary = createValidSummary()
+    validSummary.completed = true
+
+    jest.spyOn(require('./network-summary'), 'fetchNdexSummaries')
+    const mockFetchSummaries = jest.fn().mockResolvedValue([validSummary])
+    require('./network-summary').fetchNdexSummaries = mockFetchSummaries
+
+    const result = await getNetworkValidationStatus(mockUuid, mockAccessToken)
+
+    expect(result).toBe(true)
+    expect(mockWaitSeconds).toHaveBeenCalledWith(0.5) // default initialDelaySeconds
+    // Since network is valid on first attempt, delaySeconds is never called
+    expect(mockWaitSeconds).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not wait after last attempt', async () => {
+    const mockUuid = 'last-attempt-uuid'
+    const mockAccessToken = 'test-token'
+    const invalidSummary = createValidSummary()
+    invalidSummary.completed = false
+
+    jest.spyOn(require('./network-summary'), 'fetchNdexSummaries')
+    const mockFetchSummaries = jest.fn().mockResolvedValue([invalidSummary])
+    require('./network-summary').fetchNdexSummaries = mockFetchSummaries
+
+    await getNetworkValidationStatus(mockUuid, mockAccessToken, undefined, {
+      maxAttempts: 2,
+      initialDelaySeconds: 0.1,
+      delaySeconds: 0.1,
+    })
+
+    // Should wait initialDelay + delay after first attempt, but NOT after last attempt
+    expect(mockWaitSeconds).toHaveBeenCalledTimes(2) // initialDelay + 1 delay (not 2)
+  })
+
+  it('should handle empty summary array', async () => {
+    const mockUuid = 'empty-summary-uuid'
+    const mockAccessToken = 'test-token'
+
+    jest.spyOn(require('./network-summary'), 'fetchNdexSummaries')
+    const mockFetchSummaries = jest.fn().mockResolvedValue([])
+    require('./network-summary').fetchNdexSummaries = mockFetchSummaries
+
+    const result = await getNetworkValidationStatus(
+      mockUuid,
+      mockAccessToken,
+      undefined,
+      {
+        maxAttempts: 2,
+        initialDelaySeconds: 0.1,
+        delaySeconds: 0.1,
+      },
+    )
+
+    expect(result).toBe(false)
+    expect(mockFetchSummaries).toHaveBeenCalledTimes(2)
   })
 })

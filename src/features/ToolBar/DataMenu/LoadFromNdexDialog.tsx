@@ -25,11 +25,12 @@ import {
   CircularProgress,
 } from '@mui/material'
 import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { getSummariesFromCacheOrNdex } from '../../../db/getNetworkSummaryFromCacheOrNdex'
-import { ndexSummaryFetcher } from '../../../api/ndex'
+import {
+  fetchNdexSummaries,
+  fetchMyNdexAccountNetworks,
+  searchNdexNetworks,
+} from '../../../api/ndex'
 import { dateFormatter } from '../../../utils/date-format'
 import { KeycloakContext } from '../../../init/keycloak'
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
@@ -177,7 +178,7 @@ export const LoadFromNdexDialog = (
   ): Promise<void> => {
     try {
       const token = await getToken()
-      const summaries = await ndexSummaryFetcher(networkIds, ndexBaseUrl, token)
+      const summaries = await fetchNdexSummaries(networkIds, token)
       const invalidNetworkIds: IdType[] = []
       const validNetworkIds: IdType[] = []
 
@@ -254,10 +255,13 @@ export const LoadFromNdexDialog = (
 
   useEffect(() => {
     const fetchMyNetworks = async (): Promise<any> => {
-      const ndexClient = new NDEx(ndexBaseUrl)
       const token = await getToken()
-      ndexClient.setAuthToken(token)
-      const myNetworks = await ndexClient.getAccountPageNetworks(0, 1000)
+      const myNetworks = await fetchMyNdexAccountNetworks(
+        token,
+        0,
+        1000,
+        ndexBaseUrl,
+      )
       return myNetworks
     }
     if (authenticated) {
@@ -274,7 +278,7 @@ export const LoadFromNdexDialog = (
     } else {
       setMyNetworks([])
     }
-  }, [authenticated])
+  }, [authenticated, ndexBaseUrl, getToken])
 
   useEffect(() => {
     if (!open) {
@@ -294,15 +298,22 @@ export const LoadFromNdexDialog = (
 
   const fetchSearchResults = async (searchValue: string): Promise<void> => {
     setLoading(true)
-    const ndexClient = new NDEx(ndexBaseUrl)
 
-    if (authenticated) {
-      const token = await getToken()
-      ndexClient.setAuthToken(token)
+    try {
+      const token = authenticated ? await getToken() : undefined
+      const searchResults = await searchNdexNetworks(
+        searchValue,
+        token,
+        0,
+        1000,
+        ndexBaseUrl,
+      )
+      setSearchResultNetworks(searchResults?.networks ?? [])
+    } catch (err) {
+      setErrorMessage(err.message)
+    } finally {
+      setLoading(false)
     }
-    const searchResults = await ndexClient.searchNetworks(searchValue, 0, 1000)
-    setSearchResultNetworks(searchResults?.networks ?? [])
-    setLoading(false)
   }
 
   const errorMessageContent = <Typography>{errorMessage}</Typography>

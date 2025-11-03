@@ -9,6 +9,7 @@ import { ValueType } from '../../models/TableModel/ValueType'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import {
   deserializeValue,
+  getSingleTypeFromList,
   isListType,
 } from '../../models/TableModel/impl/ValueTypeImpl'
 import { logApi } from '../../debug'
@@ -37,31 +38,18 @@ const normalizeNdexSummaryValue = (
     // NDEx returns list values as JSON strings, e.g., '["tag1", "tag2"]'
     try {
       const parsed = JSON.parse(value as string)
+      const isArray = Array.isArray(parsed)
 
       // Validate that the parsed result is an array
-      if (!Array.isArray(parsed)) {
+      if (!isArray) {
         logApi.warn(
           `[normalizeNdexSummaryValue]: Expected array for list type ${dataType}, got: ${typeof parsed}. Returning empty array.`,
         )
         return [] as ValueType
       }
-
-      // Convert array elements based on the list type
-      switch (dataType) {
-        case ValueTypeName.ListString:
-          return parsed as ValueType
-
-        case ValueTypeName.ListInteger:
-        case ValueTypeName.ListLong:
-        case ValueTypeName.ListDouble:
-          return parsed.map(Number) as ValueType
-
-        case ValueTypeName.ListBoolean:
-          return parsed.map((v: string) => v === 'true') as ValueType
-
-        default:
-          return parsed as ValueType
-      }
+      return parsed.map((v) =>
+        deserializeValue(getSingleTypeFromList(dataType), v),
+      ) as ValueType
     } catch (error) {
       // Handle JSON parse errors - return empty array for invalid JSON
       logApi.warn(
@@ -128,80 +116,86 @@ export const normalizeNdexSummaries = (
  *
  * @param id - Network ID(s) to fetch summaries for
  * @param accessToken - Optional authentication token
+ * @param ndexUrl - Optional NDEx base URL (defaults to module configuration if not provided)
  * @returns Promise resolving to array of processed network summaries
  */
 export const fetchNdexSummaries = async (
   id: IdType | IdType[],
   accessToken?: string,
+  ndexUrl?: string,
 ): Promise<NdexNetworkSummary[]> => {
-  const ndexClient = getNdexClient(accessToken)
-
+  const ndexClient = getNdexClient(accessToken, ndexUrl)
   const ids = Array.isArray(id) ? id : [id]
 
-  try {
-    const summaries: NdexNetworkSummary[] =
-      await ndexClient.getNetworkSummariesByUUIDs(ids)
-    return normalizeNdexSummaries(summaries)
-  } catch (error) {
-    logApi.error(
-      `[${fetchNdexSummaries.name}]: Failed to fetch summary: ${error}`,
-    )
-    throw error
-  }
+  const summaries: NdexNetworkSummary[] =
+    await ndexClient.getNetworkSummariesByUUIDs(ids)
+  return normalizeNdexSummaries(summaries)
 }
 
 /**
- * Gets the network validation status from NDEx.
+ * Validates that a network has been successfully processed by NDEx.
  *
- * Polls NDEx until the network validation is completed or timeout occurs.
+ * Polls NDEx a few times to check if the network validation is completed.
  * Used after creating or updating networks to check if NDEx validated them successfully.
  *
  * @param uuid - Network UUID
- * @param accessToken - Authentication token
- * @returns Promise resolving to validation result with rejection status and modification time
+ * @param accessToken - Optional authentication token
+ * @param ndexUrl - Optional NDEx base URL (defaults to module configuration if not provided)
+ * @param options - Optional configuration for polling
+ * @returns Promise resolving to true if validation succeeded, false otherwise
  */
 export const getNetworkValidationStatus = async (
   uuid: string,
-  accessToken: string,
-): Promise<{ rejected: boolean; modificationTime?: Date }> => {
-  const MAX_TRIES = 13
-  let interval = 0.5
-  let tries = 0
+  accessToken?: string,
+  ndexUrl?: string,
+  options?: {
+    maxAttempts?: number
+    initialDelaySeconds?: number
+    delaySeconds?: number
+  },
+): Promise<boolean> => {
+  const maxAttempts = options?.maxAttempts ?? 10
+  const initialDelaySeconds = options?.initialDelaySeconds ?? 0.5
+  const delaySeconds = options?.delaySeconds ?? 1.0
 
-  await waitSeconds(0.2) // initial wait
-  while (tries < MAX_TRIES) {
-    tries += 1
-    const newSummary = await fetchNdexSummaries(uuid, accessToken)
+  await waitSeconds(initialDelaySeconds)
 
-    if (newSummary[0].completed === true) {
-      if (newSummary[0].errorMessage) {
-        return {
-          rejected: true,
-        }
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const summaries = await fetchNdexSummaries(uuid, accessToken, ndexUrl)
+      const summary = summaries?.[0]
+      const summaryIsValid = summary?.completed && !summary?.errorMessage
+
+      // Check if validation is complete and successful
+      if (summaryIsValid) {
+        return true
+      } else {
+        logApi.warn(
+          `[${getNetworkValidationStatus.name}]: Validation not complete for network ${uuid}: ${summary?.errorMessage}`,
+          {
+            summary,
+          },
+        )
       }
-      return {
-        rejected: false,
-        modificationTime: newSummary[0].modificationTime,
+
+      // Not completed yet - wait before next attempt
+      if (attempt < maxAttempts) {
+        await waitSeconds(delaySeconds)
+      }
+    } catch (error) {
+      // Log error and continue retrying
+      logApi.warn(
+        `[${getNetworkValidationStatus.name}]: Error during validation poll (attempt ${attempt}/${maxAttempts}):`,
+        error,
+      )
+
+      // Wait before retrying (except on last attempt)
+      if (attempt < maxAttempts) {
+        await waitSeconds(delaySeconds)
       }
     }
-    if (tries >= 10) {
-      // after 10 tries, increase the interval to 5 seconds
-      interval = 5
-    } else if (tries >= 3) {
-      // after 3 tries, increase the interval to 1 second
-      interval = 1
-    }
-    await waitSeconds(interval)
   }
-  throw new Error(TimeOutErrorIndicator)
-}
 
-// Deprecated exports for backward compatibility
-/** @deprecated Use fetchSummaries instead */
-export const fetchSummary = fetchNdexSummaries
-/** @deprecated Use fetchSummaries instead */
-export const ndexSummaryFetcher = fetchNdexSummaries
-/** @deprecated Use getNetworkValidationStatus instead */
-export const waitForNetworkValidation = getNetworkValidationStatus
-/** @deprecated Use getNetworkValidationStatus instead */
-export const fetchSummaryStatus = getNetworkValidationStatus
+  // Max attempts reached - validation failed
+  return false
+}

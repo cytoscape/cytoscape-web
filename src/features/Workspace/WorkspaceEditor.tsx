@@ -250,13 +250,11 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       const summaryMap = await getSummariesFromCacheOrNdex(
         [networkId],
-        ndexBaseUrl,
         currentToken,
       )
       const summary = summaryMap[networkId]
       const res: NetworkWithView = await getModelsFromCacheOrNdex(
         networkId,
-        ndexBaseUrl,
         currentToken,
       )
       const {

@@ -500,11 +500,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   //utility function to load network by id
   const loadNetworkById = async (networkId: IdType) => {
     const currentToken = await getToken()
-    const res = await getModelsFromCacheOrNdex(
-      networkId,
-      ndexBaseUrl,
-      currentToken,
-    )
+    const res = await getModelsFromCacheOrNdex(networkId, currentToken)
     const { network, nodeTable, edgeTable, visualStyle } = res
     const summary = netSummaries[networkId]
     const netTable = getNetTableFromSummary(summary)

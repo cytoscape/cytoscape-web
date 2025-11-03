@@ -4,6 +4,8 @@ import {
   compareLists,
   serializeValue,
   deserializeValueList,
+  getSingleTypeFromList,
+  getListTypeFromSingle,
 } from '../../src/models/TableModel/impl/ValueTypeImpl'
 import { ValueTypeName } from '../../src/models/TableModel'
 
@@ -90,4 +92,116 @@ describe('compareLists', () => {
       }
     },
   )
+})
+
+describe('getSingleTypeFromList', () => {
+  it.each([
+    [ValueTypeName.ListString, ValueTypeName.String],
+    [ValueTypeName.ListInteger, ValueTypeName.Integer],
+    [ValueTypeName.ListLong, ValueTypeName.Long],
+    [ValueTypeName.ListDouble, ValueTypeName.Double],
+    [ValueTypeName.ListBoolean, ValueTypeName.Boolean],
+  ])('should convert list type %s to single type %s', (listType, expected) => {
+    expect(getSingleTypeFromList(listType)).toBe(expected)
+  })
+
+  it('should return original type if input is not a list type', () => {
+    expect(getSingleTypeFromList(ValueTypeName.String)).toBe(
+      ValueTypeName.String,
+    )
+    expect(getSingleTypeFromList(ValueTypeName.Integer)).toBe(
+      ValueTypeName.Integer,
+    )
+    expect(getSingleTypeFromList(ValueTypeName.Boolean)).toBe(
+      ValueTypeName.Boolean,
+    )
+  })
+
+  it('should handle all list types correctly', () => {
+    expect(getSingleTypeFromList(ValueTypeName.ListString)).toBe(
+      ValueTypeName.String,
+    )
+    expect(getSingleTypeFromList(ValueTypeName.ListInteger)).toBe(
+      ValueTypeName.Integer,
+    )
+    expect(getSingleTypeFromList(ValueTypeName.ListLong)).toBe(
+      ValueTypeName.Long,
+    )
+    expect(getSingleTypeFromList(ValueTypeName.ListDouble)).toBe(
+      ValueTypeName.Double,
+    )
+    expect(getSingleTypeFromList(ValueTypeName.ListBoolean)).toBe(
+      ValueTypeName.Boolean,
+    )
+  })
+})
+
+describe('getListTypeFromSingle', () => {
+  it.each([
+    [ValueTypeName.String, ValueTypeName.ListString],
+    [ValueTypeName.Integer, ValueTypeName.ListInteger],
+    [ValueTypeName.Long, ValueTypeName.ListLong],
+    [ValueTypeName.Double, ValueTypeName.ListDouble],
+    [ValueTypeName.Boolean, ValueTypeName.ListBoolean],
+  ])(
+    'should convert single type %s to list type %s',
+    (singleType, expected) => {
+      expect(getListTypeFromSingle(singleType)).toBe(expected)
+    },
+  )
+
+  it('should return original type if input is not a single type', () => {
+    expect(getListTypeFromSingle(ValueTypeName.ListString)).toBe(
+      ValueTypeName.ListString,
+    )
+    expect(getListTypeFromSingle(ValueTypeName.ListInteger)).toBe(
+      ValueTypeName.ListInteger,
+    )
+  })
+
+  it('should handle all single types correctly', () => {
+    expect(getListTypeFromSingle(ValueTypeName.String)).toBe(
+      ValueTypeName.ListString,
+    )
+    expect(getListTypeFromSingle(ValueTypeName.Integer)).toBe(
+      ValueTypeName.ListInteger,
+    )
+    expect(getListTypeFromSingle(ValueTypeName.Long)).toBe(
+      ValueTypeName.ListLong,
+    )
+    expect(getListTypeFromSingle(ValueTypeName.Double)).toBe(
+      ValueTypeName.ListDouble,
+    )
+    expect(getListTypeFromSingle(ValueTypeName.Boolean)).toBe(
+      ValueTypeName.ListBoolean,
+    )
+  })
+})
+
+describe('round-trip conversion', () => {
+  it('should convert list to single and back to list', () => {
+    const originalListType = ValueTypeName.ListString
+    const singleType = getSingleTypeFromList(originalListType)
+    const listType = getListTypeFromSingle(singleType)
+    expect(listType).toBe(originalListType)
+  })
+
+  it('should convert single to list and back to single', () => {
+    const originalSingleType = ValueTypeName.String
+    const listType = getListTypeFromSingle(originalSingleType)
+    const singleType = getSingleTypeFromList(listType)
+    expect(singleType).toBe(originalSingleType)
+  })
+
+  it.each([
+    ValueTypeName.String,
+    ValueTypeName.Integer,
+    ValueTypeName.Long,
+    ValueTypeName.Double,
+    ValueTypeName.Boolean,
+  ])('should correctly round-trip convert %s', (singleType) => {
+    const listType = getListTypeFromSingle(singleType)
+    const convertedBack = getSingleTypeFromList(listType)
+    expect(convertedBack).toBe(singleType)
+  })
 })

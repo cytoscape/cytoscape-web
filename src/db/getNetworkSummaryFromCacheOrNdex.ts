@@ -2,12 +2,10 @@ import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
 import { IdType } from '../models/IdType'
 import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from '.'
 import { logDb } from '../debug'
-import { ndexSummaryFetcher } from '../api/ndex'
-
+import { fetchNdexSummaries } from '../api/ndex'
 // check the local cache for ndex network summaries and fetch from NDEx if not found
 export const getSummariesFromCacheOrNdex = async (
   ndexNetworkId: IdType | IdType[],
-  url: string,
   accessToken?: string,
 ): Promise<Record<IdType, NdexNetworkSummary>> => {
   try {
@@ -29,9 +27,8 @@ export const getSummariesFromCacheOrNdex = async (
 
     // fetch summaries not found in the cache in NDEx
     // and then save them to the cache
-    const newSummaries = await ndexSummaryFetcher(
+    const newSummaries = await fetchNdexSummaries(
       Array.from(nonCachedIds),
-      url,
       accessToken,
     )
     const validNewSummaries = newSummaries.filter((s) => s !== undefined)
