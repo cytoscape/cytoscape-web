@@ -21,7 +21,7 @@ type GroupType = (typeof GroupType)[keyof typeof GroupType]
  * Simply stores graph structure only, no attributes
  *
  */
-class CyNetwork implements Network {
+class NetworkImpl implements Network {
   readonly id: IdType
 
   // Graph storage, using Cytoscape
@@ -68,7 +68,7 @@ const createCyDataStore = (): Core => {
  * @param id Create an empty network
  * @returns Network instance
  */
-export const createNetwork = (id: IdType): Network => new CyNetwork(id)
+export const createNetwork = (id: IdType): Network => new NetworkImpl(id)
 
 // cy.js does not allow nodes and edges to have the same ids
 // when converting cx ids to cy ids, we add a prefix to edges
@@ -87,15 +87,15 @@ export const translateEdgeIdToCX = (id: IdType): IdType => id.slice(1)
  *
  */
 export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
-  // Create an empty CyNetwork
-  const cyNet: CyNetwork = new CyNetwork(id)
+  // Create an empty NetworkImpl
+  const networkImpl: NetworkImpl = new NetworkImpl(id)
 
   // Extract nodes and edges from CX2 object
   const cxNodes: CxNode[] = cxUtil.getNodes(cx)
   const cxEdges: CxEdge[] = cxUtil.getEdges(cx)
 
   // Convert CX nodes to Cytoscape nodes
-  cyNet.store.add(
+  networkImpl.store.add(
     cxNodes.map((node: CxNode) => {
       const n: any = node
       return createCyNode(
@@ -105,7 +105,7 @@ export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
   )
 
   // Convert CX edges to Cytoscape edges
-  cyNet.store.add(
+  networkImpl.store.add(
     cxEdges.map((edge: CxEdge, i: number) => {
       const eBlob: any = edge
       const e = createCyEdge(
@@ -119,7 +119,7 @@ export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
     }),
   )
 
-  return cyNet
+  return networkImpl
 }
 
 /**
@@ -133,29 +133,32 @@ export const createFromCyJson = (
   id: IdType,
   cyJson: { elements: any },
 ): Network => {
-  const cyNet: CyNetwork = new CyNetwork(id)
-  cyNet.store.json(cyJson)
+  const networkImpl: NetworkImpl = new NetworkImpl(id)
+  networkImpl.store.json(cyJson)
 
-  return cyNet
+  return networkImpl
 }
 
-const addToCyStoreFromLists = (network: Network, cyNet: CyNetwork): void => {
-  cyNet.store.add(
+const addToCyStoreFromLists = (
+  network: Network,
+  networkImpl: NetworkImpl,
+): void => {
+  networkImpl.store.add(
     network.nodes.map((node: Node) => createCyNode(node.id.toString())),
   )
 
-  cyNet.store.add(
+  networkImpl.store.add(
     network.edges.map((edge: Edge) =>
       createCyEdge(edge.id.toString(), edge.s.toString(), edge.t.toString()),
     ),
   )
 }
 
-export const plainNetwork2CyNetwork = (network: Network): Network => {
+export const networkModelToImplNetwork = (network: Network): Network => {
   const { id } = network
-  const cyNet: CyNetwork = new CyNetwork(id)
-  addToCyStoreFromLists(network, cyNet)
-  return cyNet
+  const networkImpl: NetworkImpl = new NetworkImpl(id)
+  addToCyStoreFromLists(network, networkImpl)
+  return networkImpl
 }
 
 export const createNetworkFromLists = (
@@ -163,18 +166,18 @@ export const createNetworkFromLists = (
   nodes: Node[],
   edges: Edge[],
 ): Network => {
-  const cyNet: Network = new CyNetwork(id)
+  const networkImpl: Network = new NetworkImpl(id)
   addNodes(
-    cyNet,
+    networkImpl,
     nodes.map((node) => node.id),
   )
-  addEdges(cyNet, edges)
-  return cyNet
+  addEdges(networkImpl, edges)
+  return networkImpl
 }
 
 export const createCyJSON = (network: Network): object => {
-  const cyGraph = network as CyNetwork
-  const store = cyGraph.store
+  const networkImpl = network as NetworkImpl
+  const store = networkImpl.store
   return store.json()
 }
 
@@ -242,37 +245,39 @@ const createCyEdge = (id: IdType, source: IdType, target: IdType): CyEdge => ({
  * @returns
  */
 export const addNode = (network: Network, nodeId: IdType): Network => {
-  const cyNet: CyNetwork = network as CyNetwork
-  cyNet.store.add(createCyNode(nodeId))
-  return cyNet
+  const networkImpl: NetworkImpl = network as NetworkImpl
+  networkImpl.store.add(createCyNode(nodeId))
+  return networkImpl
 }
 
 export const deleteNodes = (
   network: Network,
   nodeIds: IdType[],
 ): cytoscape.CollectionReturnValue => {
-  const cyNet: CyNetwork = network as CyNetwork
-  const removed = cyNet.store.remove(
+  const networkImpl: NetworkImpl = network as NetworkImpl
+  const removed = networkImpl.store.remove(
     nodeIds.map((nodeId) => `#${nodeId}`).join(', '),
   )
   return removed
 }
 
 export const addNodes = (network: Network, nodeIds: IdType[]): Network => {
-  const cyNet: CyNetwork = network as CyNetwork
-  cyNet.store.add(nodeIds.map((nodeId) => createCyNode(nodeId)))
+  const networkImpl: NetworkImpl = network as NetworkImpl
+  networkImpl.store.add(nodeIds.map((nodeId) => createCyNode(nodeId)))
   return network
 }
 
 export const addEdge = (network: Network, edge: Edge): Network => {
-  const cyNet: CyNetwork = network as CyNetwork
-  cyNet.store.add(createCyEdge(edge.id, edge.s, edge.t))
+  const networkImpl: NetworkImpl = network as NetworkImpl
+  networkImpl.store.add(createCyEdge(edge.id, edge.s, edge.t))
   return network
 }
 
 export const addEdges = (network: Network, edges: Edge[]): Network => {
-  const cyNet: CyNetwork = network as CyNetwork
-  cyNet.store.add(edges.map((edge) => createCyEdge(edge.id, edge.s, edge.t)))
+  const networkImpl: NetworkImpl = network as NetworkImpl
+  networkImpl.store.add(
+    edges.map((edge) => createCyEdge(edge.id, edge.s, edge.t)),
+  )
   return network
 }
 
@@ -280,8 +285,10 @@ export const deleteEdges = (
   network: Network,
   edgeIds: IdType[],
 ): cytoscape.CollectionReturnValue => {
-  const cyNet: CyNetwork = network as CyNetwork
-  return cyNet.store.remove(edgeIds.map((edgeId) => `#${edgeId}`).join(', '))
+  const networkImpl: NetworkImpl = network as NetworkImpl
+  return networkImpl.store.remove(
+    edgeIds.map((edgeId) => `#${edgeId}`).join(', '),
+  )
 }
 
 export const addNodeRow = (
@@ -289,8 +296,8 @@ export const addNodeRow = (
   newNodeId: IdType,
   row?: Record<AttributeName, ValueType>,
 ): Network => {
-  const cyGraph = network as CyNetwork
-  const store = cyGraph.store
+  const networkImpl = network as NetworkImpl
+  const store = networkImpl.store
   const node = createCyNode(newNodeId)
   store.add(node)
   return network
@@ -302,9 +309,9 @@ export const addNodesWithRows = (
     | [Node, Record<AttributeName, ValueType>?]
     | Array<[Node, Record<AttributeName, ValueType>?]>,
 ): Network => {
-  const cyGraph = network as CyNetwork
-  // const nodeTable = cyGraph.nodeTable
-  const store = cyGraph.store
+  const networkImpl = network as NetworkImpl
+  // const nodeTable = networkImpl.nodeTable
+  const store = networkImpl.store
 
   if (!Array.isArray(nodes)) {
     // Add single node
@@ -329,6 +336,6 @@ export const addNodesWithRows = (
  * @returns Cytoscape instance (for this impl)
  */
 export const getInternalNetworkDataStore = (network: Network): any => {
-  const cyGraph = network as CyNetwork
-  return cyGraph.store
+  const networkImpl = network as NetworkImpl
+  return networkImpl.store
 }
