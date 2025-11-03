@@ -2,12 +2,12 @@ import { Cx2 } from '../models/CxModel/Cx2'
 import { createDataFromCx2 } from '../models/CxModel/impl'
 import { getCachedNetworkData, CachedNetworkData } from '.'
 import { fetchNdexNetwork } from '../api/ndex'
-import { NetworkWithView } from '../models/NetworkWithViewModel'
+import { CyNetwork } from '../models/CyNetworkModel'
 import { logApi, logDb } from '../debug'
 export const getModelsFromCacheOrNdex = async (
   ndexNetworkId: string,
   accessToken?: string,
-): Promise<NetworkWithView> => {
+): Promise<CyNetwork> => {
   try {
     // First, check the local cache
     const cache: CachedNetworkData = await getCachedNetworkData(ndexNetworkId)

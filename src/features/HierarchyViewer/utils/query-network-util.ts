@@ -7,7 +7,7 @@ import { Cx2 } from '../../../models/CxModel/Cx2'
 import { NetworkView } from '../../../models/ViewModel'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
-import { NetworkWithView } from '../../../models/NetworkWithViewModel'
+import { CyNetwork } from '../../../models/CyNetworkModel'
 import { createDataFromCx2 } from '../../../models/CxModel/impl'
 import {
   getNdexClient,
@@ -92,7 +92,7 @@ const validateViewConsistency = (
  * @param query - Query string for interconnect queries
  * @param accessToken - Optional authentication token
  * @param ndexUrl - Optional NDEx base URL (defaults to module configuration if not provided)
- * @returns Promise resolving to NetworkWithView
+ * @returns Promise resolving to CyNetwork
  */
 const fetchNdexSubnetwork = async (
   interactionNetworkId: IdType,
@@ -101,7 +101,7 @@ const fetchNdexSubnetwork = async (
   query: string,
   accessToken?: string,
   ndexUrl?: string,
-): Promise<NetworkWithView> => {
+): Promise<CyNetwork> => {
   const interactionNetworkUuidExists =
     interactionNetworkUuid !== undefined && interactionNetworkUuid !== ''
   const result = interactionNetworkUuidExists
@@ -121,11 +121,11 @@ const fetchNdexSubnetwork = async (
  * Used by hierarchy viewer to fetch subnetworks via queries.
  *
  * @param params - Array containing: hierarchyId, rootNetworkUuid, subsystemId, query, interactionNetworkUuid, accessToken
- * @returns Promise resolving to NetworkWithView
+ * @returns Promise resolving to CyNetwork
  */
 export const fetchNdexSubnetworkByQuery = async (
   params: string[],
-): Promise<NetworkWithView> => {
+): Promise<CyNetwork> => {
   const [
     hierarchyId,
     interactionNetworkHost,

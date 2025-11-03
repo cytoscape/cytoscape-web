@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { Cx2 } from '../models/CxModel/Cx2'
-import { NetworkWithView } from '../models/NetworkWithViewModel'
+import { CyNetwork } from '../models/CyNetworkModel'
 import {
   NdexNetworkSummary,
   getBaseSummary,
@@ -26,13 +26,13 @@ interface CreateNetworkFromCx2Props {
 }
 
 /**
- * A custom hook to return a function that creates a NetworkWithView from CX2
+ * A custom hook to return a function that creates a CyNetwork from CX2
  * and stores it in Zustand. Modeled after createNetworkWithView in
  * [src/task/CreateNetwork.tsx](src/task/CreateNetwork.tsx).
  */
 export const useCreateNetworkFromCx2 = (): ((
   props: CreateNetworkFromCx2Props,
-) => NetworkWithView) => {
+) => CyNetwork) => {
   const addNetwork = useNetworkStore((state) => state.add)
   const addTable = useTableStore((state) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
@@ -51,11 +51,8 @@ export const useCreateNetworkFromCx2 = (): ((
 
   const createNetworkFromCx = useCallback(
     ({ cxData }: CreateNetworkFromCx2Props) => {
-      // Convert CX2 to a fully populated NetworkWithView
-      const withView: NetworkWithView = createNetworkViewFromCx2(
-        cxData,
-        uuidv4(),
-      )
+      // Convert CX2 to a fully populated CyNetwork
+      const withView: CyNetwork = createNetworkViewFromCx2(cxData, uuidv4())
       const {
         network,
         networkAttributes,

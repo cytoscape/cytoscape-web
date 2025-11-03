@@ -9,14 +9,14 @@ import { NdexNetworkProperty } from '../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { v4 as uuidv4 } from 'uuid'
 import { Visibility } from '../NetworkSummaryModel/Visibility'
-import { NetworkWithView } from '../NetworkWithViewModel'
+import { CyNetwork } from '../CyNetworkModel'
 import { logApi } from '../../debug'
 export const fetchUrlCx = async (
   url: string,
   maxSize: number,
 ): Promise<{
   summary: NdexNetworkSummary
-  networkWithView: NetworkWithView
+  networkWithView: CyNetwork
 }> => {
   try {
     const response = await fetch(url, { method: 'HEAD' }) // Use HEAD request to get headers first

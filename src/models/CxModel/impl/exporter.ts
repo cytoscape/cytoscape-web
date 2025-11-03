@@ -23,7 +23,7 @@ import VisualStyleFn, {
   NodeVisualPropertyName,
 } from '../../VisualStyleModel'
 
-import { translateEdgeIdToCX } from '../../NetworkModel/impl/CyNetwork'
+import { translateEdgeIdToCX } from '../../NetworkModel/impl/NetworkImpl'
 import {
   CXVisualMappingFunction,
   cxVisualPropertyConverter,

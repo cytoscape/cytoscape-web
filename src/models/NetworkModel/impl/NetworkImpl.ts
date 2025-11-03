@@ -30,7 +30,10 @@ class NetworkImpl implements Network {
 
   constructor(id: IdType) {
     this.id = id
-    this._store = createCyDataStore()
+    this._store = cytoscape({
+      headless: true,
+      styleEnabled: false,
+    })
   }
 
   get nodes(): Node[] {
@@ -50,17 +53,6 @@ class NetworkImpl implements Network {
   get store(): Core {
     return this._store
   }
-}
-
-/**
- *
- * @returns Initialized Cytoscape.js Core object
- */
-const createCyDataStore = (): Core => {
-  return cytoscape({
-    headless: true,
-    styleEnabled: false,
-  })
 }
 
 /**

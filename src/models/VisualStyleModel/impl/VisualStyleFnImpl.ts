@@ -39,7 +39,7 @@ import {
 } from './DefaultVisualStyle'
 import { createNewNetworkView, updateNetworkView } from './compute-view-util'
 import { VisualStyleOptions } from '../VisualStyleOptions'
-import { translateCXEdgeId } from '../../NetworkModel/impl/CyNetwork'
+import { translateCXEdgeId } from '../../NetworkModel/impl/NetworkImpl'
 import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
 
 const sortByDisplayName = (

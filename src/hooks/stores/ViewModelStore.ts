@@ -1,6 +1,6 @@
 import { IdType } from '../../models/IdType'
 import { EdgeView, NetworkView, NodeView } from '../../models/ViewModel'
-import { isEdgeId } from '../../models/NetworkModel/impl/CyNetwork'
+import { isEdgeId } from '../../models/NetworkModel/impl/NetworkImpl'
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { subscribeWithSelector } from 'zustand/middleware'

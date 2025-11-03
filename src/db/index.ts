@@ -244,7 +244,7 @@ export const getNetworkFromDb = async (
 ): Promise<Network | undefined> => {
   const network: Network | undefined = await db.cyNetworks.get({ id })
   if (network !== undefined) {
-    return NetworkFn.plainNetwork2CyNetwork(network)
+    return NetworkFn.networkModelToImplNetwork(network)
   }
 }
 

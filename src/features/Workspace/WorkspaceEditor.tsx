@@ -72,7 +72,7 @@ import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createN
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { useAppManager } from '../../externalapps/useAppManager'
-import { NetworkWithView, VisualStyle } from '../../models'
+import { CyNetwork, VisualStyle } from '../../models'
 import { useOpaqueAspectStore } from '../../hooks/stores/OpaqueAspectStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useUndoStore } from '../../hooks/stores/UndoStore'
@@ -253,7 +253,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         currentToken,
       )
       const summary = summaryMap[networkId]
-      const res: NetworkWithView = await getModelsFromCacheOrNdex(
+      const res: CyNetwork = await getModelsFromCacheOrNdex(
         networkId,
         currentToken,
       )

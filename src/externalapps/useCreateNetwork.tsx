@@ -15,7 +15,7 @@ import VisualStyleFn, {
   VisualPropertyName,
   VisualStyle,
 } from '../models/VisualStyleModel'
-import { NetworkWithView } from '../models/NetworkWithViewModel'
+import { CyNetwork } from '../models/CyNetworkModel'
 import { useNetworkStore } from '../hooks/stores/NetworkStore'
 import { useTableStore } from '../hooks/stores/TableStore'
 import { useViewModelStore } from '../hooks/stores/ViewModelStore'
@@ -125,12 +125,12 @@ const createTableData = (
  *
  * @param network
  *
- * @returns NetworkWithView object
+ * @returns CyNetwork object
  */
 const createViewForNetwork = (
   network: Network,
   nodeIdMap: Map<IdType, IdType>,
-): NetworkWithView => {
+): CyNetwork => {
   const networkId: IdType = network.id
   const networkView = createViewModelFromNetwork(networkId, network)
   const { nodeTable, edgeTable } = createTableData(network, nodeIdMap)
@@ -144,7 +144,7 @@ const createViewForNetwork = (
     redoStack: [],
   }
 
-  const withView: NetworkWithView = {
+  const cynetwork: CyNetwork = {
     network,
     nodeTable,
     edgeTable,
@@ -154,7 +154,7 @@ const createViewForNetwork = (
     undoRedoStack,
   }
 
-  return withView
+  return cynetwork
 }
 
 interface CreateNetworkWithViewProps {
@@ -178,7 +178,7 @@ export const useCreateNetworkWithView = (): (({
   name,
   description,
   edgeList,
-}: CreateNetworkWithViewProps) => NetworkWithView) => {
+}: CreateNetworkWithViewProps) => CyNetwork) => {
   const addNetwork = useNetworkStore((state: NetworkStore) => state.add)
   const addTable = useTableStore((state: TableStore) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
@@ -202,7 +202,7 @@ export const useCreateNetworkWithView = (): (({
       const network: Network = createNetworkFromEdgeList(edgeList, nodeIdMap)
 
       // Add all required objects to the network
-      const withView: NetworkWithView = createViewForNetwork(network, nodeIdMap)
+      const withView: CyNetwork = createViewForNetwork(network, nodeIdMap)
       const summary: NdexNetworkSummary = getBaseSummary({
         name: name || `CyWeb Network (${network.id})`,
         network,

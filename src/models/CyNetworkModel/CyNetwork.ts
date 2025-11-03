@@ -7,9 +7,10 @@ import { OpaqueAspects } from '../OpaqueAspectModel'
 import { UndoRedoStack } from '../StoreModel/UndoStoreModel'
 
 /**
- * An utility interface to hold all the data needed to build a network view
+ * A Cytoscape Web network model that includes the visual style, table, network topology, summary, etc.
+ * Represents a complete network with all its associated data and views.
  */
-export interface NetworkWithView {
+export interface CyNetwork {
   network: Network
   networkAttributes?: NetworkAttributes
   nodeTable: Table

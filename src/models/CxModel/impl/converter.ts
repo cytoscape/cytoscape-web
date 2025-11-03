@@ -11,7 +11,7 @@ import VisualStyleFn, { VisualStyle } from '../../VisualStyleModel'
 import { v4 as uuidv4 } from 'uuid'
 import { createNetworkAttributesFromCx } from '../../TableModel/impl/NetworkAttributesImpl'
 import { CoreAspectTag } from '../Cx2/CoreAspectTag'
-import { NetworkWithView } from '../../NetworkWithViewModel'
+import { CyNetwork } from '../../CyNetworkModel'
 import { VisualStyleOptions } from '../../VisualStyleModel/VisualStyleOptions'
 import { IdType } from '../../IdType'
 import { OpaqueAspects } from '../../OpaqueAspectModel'
@@ -21,12 +21,9 @@ import { OpaqueAspects } from '../../OpaqueAspectModel'
  *
  * @param cx2 - CX2 data object
  * @param id - Optional network ID (will generate UUID if not provided)
- * @returns NetworkWithView object with all network data, tables, styles, and views
+ * @returns CyNetwork object with all network data, tables, styles, and views
  */
-export const createNetworkViewFromCx2 = (
-  cx2: Cx2,
-  id?: string,
-): NetworkWithView => {
+export const createNetworkViewFromCx2 = (cx2: Cx2, id?: string): CyNetwork => {
   // Use standard UUID v4 if id is not provided
   const uuid: string = id !== undefined ? id : uuidv4()
 
@@ -65,12 +62,12 @@ export const createNetworkViewFromCx2 = (
  *
  * @param ndexNetworkId - Network ID from NDEx
  * @param cxData - CX2 data object
- * @returns NetworkWithView object with all network data
+ * @returns CyNetwork object with all network data
  */
 export const createDataFromCx2 = async (
   ndexNetworkId: string,
   cxData: Cx2,
-): Promise<NetworkWithView> => {
+): Promise<CyNetwork> => {
   const network: Network = NetworkFn.createNetworkFromCx(ndexNetworkId, cxData)
   const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
     ndexNetworkId,
@@ -112,12 +109,12 @@ export const createDataFromCx2 = async (
  *
  * @param LocalNetworkId - The unique identifier for the local network
  * @param cxData - The CX2 data object containing network details
- * @returns NetworkWithView object including tables, styles, and aspects
+ * @returns CyNetwork object including tables, styles, and aspects
  */
 export const createDataFromLocalCx2 = async (
   LocalNetworkId: string,
   cxData: Cx2,
-): Promise<NetworkWithView> => {
+): Promise<CyNetwork> => {
   const network: Network = NetworkFn.createNetworkFromCx(LocalNetworkId, cxData)
 
   const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(

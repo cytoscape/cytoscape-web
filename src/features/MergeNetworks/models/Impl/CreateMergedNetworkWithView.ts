@@ -14,7 +14,7 @@ import { MergeType, NetworkRecord } from '../DataInterfaceForMerge'
 import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
 import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel'
-import { NetworkWithView } from '../../../../models/NetworkWithViewModel'
+import { CyNetwork } from '../../../../models/CyNetworkModel'
 
 export const createMergedNetworkWithView = async (
   fromNetworks: IdType[],
@@ -30,7 +30,7 @@ export const createMergedNetworkWithView = async (
   mergeWithinNetwork: boolean = false,
   mergeOnlyNodes: boolean = false,
   strictRemoveMode: boolean = false,
-): Promise<[NetworkWithView, NdexNetworkSummary]> => {
+): Promise<[CyNetwork, NdexNetworkSummary]> => {
   if (
     checkAttribute(
       nodeAttributeMapping,

@@ -3,7 +3,7 @@
  *
  * All public functions should be accessed through the NetworkFn object
  */
-import * as NetworkFn from './impl/CyNetwork'
+import * as NetworkFn from './impl/NetworkImpl'
 
 export { Network } from './Network'
 export { Edge } from './Edge'
