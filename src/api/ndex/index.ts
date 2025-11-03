@@ -10,7 +10,19 @@
 export { getNdexClient } from './client'
 
 // Network operations
-export { fetchNetwork, ndexSummaryFetcher } from './networks'
+export { fetchNetwork } from './networks'
+
+// Network summary operations
+export {
+  fetchNdexSummaries,
+  getNetworkValidationStatus,
+  TimeOutErrorIndicator,
+  // Deprecated exports (for backward compatibility)
+  fetchSummary,
+  waitForNetworkValidation,
+  fetchSummaryStatus,
+  ndexSummaryFetcher,
+} from './network-summary'
 
 // Query operations
 export { fetchNetworkByQuery, isValidNetworkAndViews } from './queries'
@@ -22,9 +34,8 @@ export {
   useSaveNetworkToNDEx,
   useSaveWorkspace,
   TimeOutErrorMessage,
-  TimeOutErrorIndicator,
   NdexDuplicateKeyErrorMessage,
 } from './workspaces'
 
 // Status and attribute operations
-export { translateMemberIds, getNDExSummaryStatus } from './status'
+export { translateMemberIds } from './status'

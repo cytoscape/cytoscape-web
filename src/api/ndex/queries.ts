@@ -120,7 +120,7 @@ const fetchFromRemote = async (
  *
  * Used by hierarchy viewer to fetch subnetworks via queries.
  *
- * @param params - Array containing: hierarchyId, url, rootNetworkUuid, subsystemId, query, interactionNetworkUuid, accessToken
+ * @param params - Array containing: hierarchyId, rootNetworkUuid, subsystemId, query, interactionNetworkUuid, accessToken
  * @returns Promise resolving to NetworkWithView
  */
 export const fetchNetworkByQuery = async (
@@ -128,7 +128,6 @@ export const fetchNetworkByQuery = async (
 ): Promise<NetworkWithView> => {
   const [
     hierarchyId,
-    url,
     rootNetworkUuid,
     subsystemId,
     query,
@@ -137,7 +136,6 @@ export const fetchNetworkByQuery = async (
   ] = params
   if (
     hierarchyId === undefined ||
-    url === undefined ||
     rootNetworkUuid === undefined ||
     subsystemId === undefined ||
     query === undefined
@@ -148,7 +146,7 @@ export const fetchNetworkByQuery = async (
   // Use Hierarchy ID and selected node ID as the new network ID
   const interactionNetworkId: string = `${hierarchyId}_${subsystemId}`
 
-  const ndexClient = getNdexClient(url, accessToken)
+  const ndexClient = getNdexClient(accessToken)
 
   try {
     // always refresh the data from the server

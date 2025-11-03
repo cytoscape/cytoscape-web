@@ -19,7 +19,6 @@ import { exportNetworkToCx2 } from '../../models/CxModel/impl'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { getModelsFromCacheOrNdex } from '../../db/getModelsFromCacheOrNdex'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
-import { ndexSummaryFetcher } from './networks'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
@@ -29,28 +28,30 @@ import { AppStatus } from '../../models/AppModel/AppStatus'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { logApi } from '../../debug'
 import { useUrlNavigation } from '../../hooks/navigation/useUrlNavigation'
-import { getNDExSummaryStatus } from './status'
+import {
+  fetchNdexSummaries,
+  getNetworkValidationStatus,
+  TimeOutErrorIndicator,
+} from './network-summary'
+import { getNdexClient } from './client'
+import { getNDExBaseUrl } from './config'
 
 export const TimeOutErrorMessage =
   'You network has been saved in NDEx, but the server is under heavy load right now. Please use the "Open Networks from NDEx" menu to manually open this network from your account later.'
-export const TimeOutErrorIndicator = 'NDEx_TIMEOUT_ERROR'
 export const NdexDuplicateKeyErrorMessage =
   'duplicate key value violates unique constraint'
 
 /**
  * Fetches the user's workspaces from NDEx.
  *
- * @param ndexBaseUrl - NDEx base URL
  * @param getToken - Function that returns a Promise resolving to an access token
  * @returns Promise resolving to array of workspaces
  */
 export const fetchMyWorkspaces = async (
-  ndexBaseUrl: string,
   getToken: () => Promise<string>,
 ): Promise<any[]> => {
-  const ndexClient = new NDEx(ndexBaseUrl)
   const token = await getToken()
-  ndexClient.setAuthToken(token)
+  const ndexClient = getNdexClient(token)
   const myWorkspaces = await ndexClient.getUserCyWebWorkspaces()
   return myWorkspaces as any[]
 }
@@ -76,7 +77,6 @@ export const useSaveCopyToNDEx = () => {
   const workspace = useWorkspaceStore((state) => state.workspace)
   const addSummary = useNetworkSummaryStore((state) => state.add)
   const saveCopyToNDEx = async (
-    ndexBaseUrl: string,
     accessToken: string,
     ndexClient: NDEx,
     network: Network,
@@ -104,17 +104,16 @@ export const useSaveCopyToNDEx = () => {
       opaqueAspect,
     )
     const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
-    const summaryStatus = await getNDExSummaryStatus(
+    const validationResult = await getNetworkValidationStatus(
       uuid as string,
-      ndexBaseUrl,
       accessToken,
     )
 
-    if (summaryStatus.rejected) {
+    if (validationResult.rejected) {
       throw new Error('The network is rejected by NDEx')
     }
 
-    const newSummary = await ndexSummaryFetcher(uuid, ndexBaseUrl, accessToken)
+    const newSummary = await fetchNdexSummaries(uuid, accessToken)
     await putNetworkSummaryToDb(newSummary[0])
     addSummary(uuid, newSummary[0])
 
@@ -157,7 +156,6 @@ export const useSaveCopyToNDEx = () => {
 export const useSaveNetworkToNDEx = () => {
   const updateSummary = useNetworkSummaryStore((state) => state.update)
   const saveNetworkToNDEx = async (
-    ndexBaseUrl: string,
     accessToken: string,
     ndexClient: NDEx,
     networkId: string,
@@ -185,17 +183,16 @@ export const useSaveNetworkToNDEx = () => {
       opaqueAspect,
     )
     await ndexClient.updateNetworkFromRawCX2(networkId, cx)
-    const summaryStatus = await getNDExSummaryStatus(
+    const validationResult = await getNetworkValidationStatus(
       networkId as string,
-      ndexBaseUrl,
       accessToken,
     )
-    if (summaryStatus.rejected) {
+    if (validationResult.rejected) {
       throw new Error('The network is rejected by NDEx')
     }
 
     updateSummary(networkId, {
-      modificationTime: summaryStatus.modificationTime,
+      modificationTime: validationResult.modificationTime,
     })
   }
   return saveNetworkToNDEx
@@ -221,7 +218,6 @@ export const useSaveWorkspace = () => {
 
   const saveWorkspace = async (
     accessToken: string,
-    ndexBaseUrl: string,
     ndexClient: NDEx,
     allNetworkId: string[],
     networkModifiedStatus: Record<string, boolean | undefined>,
@@ -255,6 +251,7 @@ export const useSaveWorkspace = () => {
 
       try {
         if (!network || !visualStyle || !nodeTable || !edgeTable) {
+          const ndexBaseUrl = getNDExBaseUrl()
           const res = await getModelsFromCacheOrNdex(
             networkId,
             ndexBaseUrl,
@@ -285,7 +282,6 @@ export const useSaveWorkspace = () => {
         }
         if (summary.isNdex === false) {
           await saveCopyToNDEx(
-            ndexBaseUrl,
             accessToken,
             ndexClient,
             network,
@@ -303,7 +299,6 @@ export const useSaveWorkspace = () => {
 
         if (networkModifiedStatus[networkId] === true) {
           await saveNetworkToNDEx(
-            ndexBaseUrl,
             accessToken,
             ndexClient,
             networkId,
