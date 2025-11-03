@@ -13,7 +13,7 @@ import {
   VisualStyle,
 } from '../../../../models/VisualStyleModel'
 import { createVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
-import { createViewModelFromNetwork } from '../../../../models/ViewModel/impl/ViewModelImpl'
+import { createViewModel } from '../../../../models/ViewModel/impl/ViewModelImpl'
 import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
 import { NetworkView } from '../../../../models/ViewModel'
@@ -341,7 +341,7 @@ export function createNetworkFromTableData(
     modificationTime: new Date(Date.now()),
   }
 
-  const networkView = createViewModelFromNetwork(networkId, network)
+  const networkView = createViewModel(network)
 
   visualStyle.nodeLabel.mapping = {
     type: MappingFunctionType.Passthrough,

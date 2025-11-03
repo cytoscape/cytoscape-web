@@ -16,9 +16,37 @@ import {
 } from '../../VisualStyleModel/VisualPropertyName'
 import { Network } from '../../NetworkModel'
 
-export const createViewModel = (network: Network): NetworkView => {
+/**
+ * Internal helper to create a NetworkView from prepared node and edge views
+ */
+const createNetworkViewFromViews = (
+  id: IdType,
+  nodeViews: Record<IdType, NodeView>,
+  edgeViews: Record<IdType, EdgeView>,
+): NetworkView => {
+  return {
+    id,
+    nodeViews,
+    edgeViews,
+    selectedNodes: [],
+    selectedEdges: [],
+    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>(),
+  }
+}
+
+/**
+ * Creates a view model from a Network object.
+ * All node positions default to (0, 0) and no z-coordinate is set.
+ *
+ * @param network - The network to create a view model for
+ * @param id - Optional explicit ID for the view model. Defaults to network.id
+ * @returns A new NetworkView instance
+ */
+export const createViewModel = (network: Network, id?: IdType): NetworkView => {
+  const viewId = id ?? network.id
   const nodeViews: Record<IdType, NodeView> = {}
   const edgeViews: Record<IdType, EdgeView> = {}
+
   network.nodes.forEach((node) => {
     const values = new Map<NodeVisualPropertyName, VisualPropertyValueType>()
     nodeViews[node.id] = {
@@ -36,34 +64,40 @@ export const createViewModel = (network: Network): NetworkView => {
     }
   })
 
-  const networkView: NetworkView = {
-    id: network.id,
-    nodeViews,
-    edgeViews,
-    selectedNodes: [],
-    selectedEdges: [],
-    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>(),
-  }
-
-  return networkView
+  return createNetworkViewFromViews(viewId, nodeViews, edgeViews)
 }
 
+/**
+ * Creates a view model from CX2 format.
+ * Extracts node positions from CX format if available, and handles z-coordinates.
+ * Edge IDs are translated with the 'e' prefix.
+ *
+ * @param id - The ID for the view model
+ * @param cx - The CX2 data object
+ * @returns A new NetworkView instance
+ */
 export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
   const cxNodes: CxNode[] = cxUtil.getNodes(cx)
   const cxEdges: CxEdge[] = cxUtil.getEdges(cx)
 
   const nodeViews: Record<IdType, NodeView> = {}
   const edgeViews: Record<IdType, EdgeView> = {}
+
   cxNodes.forEach((node: CxNode) => {
     const nodeId: string = node.id.toString()
     const values = new Map<NodeVisualPropertyName, VisualPropertyValueType>()
-    nodeViews[nodeId] = {
+    const nodeView: NodeView = {
       id: nodeId,
       x: node.x ?? 0,
       y: node.y ?? 0,
-      ...(node.z !== null && node.z !== undefined ? { z: node.z } : {}),
       values,
     }
+
+    if (node.z !== null && node.z !== undefined) {
+      nodeView.z = node.z
+    }
+
+    nodeViews[nodeId] = nodeView
   })
 
   cxEdges.forEach((edge: CxEdge) => {
@@ -74,55 +108,7 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
     }
   })
 
-  const networkView: NetworkView = {
-    id,
-    nodeViews,
-    edgeViews,
-    selectedNodes: [],
-    selectedEdges: [],
-    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>(),
-  }
-
-  return networkView
-}
-
-export const createViewModelFromNetwork = (
-  id: IdType,
-  network: Network,
-): NetworkView => {
-  const nodes = network.nodes
-  const edges = network.edges
-
-  const nodeViews: Record<IdType, NodeView> = {}
-  const edgeViews: Record<IdType, EdgeView> = {}
-  nodes.forEach((node: Node) => {
-    const nodeId: string = node.id.toString()
-    const values = new Map<NodeVisualPropertyName, VisualPropertyValueType>()
-    nodeViews[nodeId] = {
-      id: nodeId,
-      x: 0,
-      y: 0,
-      values,
-    }
-  })
-
-  edges.forEach((edge: Edge) => {
-    edgeViews[edge.id] = {
-      id: edge.id,
-      values: new Map<EdgeVisualPropertyName, VisualPropertyValueType>(),
-    }
-  })
-
-  const networkView: NetworkView = {
-    id,
-    nodeViews,
-    edgeViews,
-    selectedNodes: [],
-    selectedEdges: [],
-    values: new Map<NetworkVisualPropertyName, VisualPropertyValueType>(),
-  }
-
-  return networkView
+  return createNetworkViewFromViews(id, nodeViews, edgeViews)
 }
 export const addNodeViewsToModel = (
   networkView: NetworkView,

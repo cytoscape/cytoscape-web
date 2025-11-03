@@ -29,7 +29,7 @@ import {
   NdexNetworkSummary,
 } from '../models/NetworkSummaryModel'
 import { IdType } from '../models'
-import { createViewModelFromNetwork } from '../models/ViewModel/impl/ViewModelImpl'
+import { createViewModel } from '../models/ViewModel/impl/ViewModelImpl'
 
 const toNode = (id: IdType): Node => {
   return {
@@ -132,7 +132,7 @@ const createViewForNetwork = (
   nodeIdMap: Map<IdType, IdType>,
 ): CyNetwork => {
   const networkId: IdType = network.id
-  const networkView = createViewModelFromNetwork(networkId, network)
+  const networkView = createViewModel(network)
   const { nodeTable, edgeTable } = createTableData(network, nodeIdMap)
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
   const networkAttributes: NetworkAttributes = {
