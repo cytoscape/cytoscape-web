@@ -8,7 +8,7 @@ import { NetworkView } from '../../../models/ViewModel'
 import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
 import { CyNetwork } from '../../../models/CyNetworkModel'
-import { createDataFromCx2 } from '../../../models/CxModel/impl'
+import { createCyNetworkFromCx2 } from '../../../models/CxModel/impl'
 import {
   getNdexClient,
   fetchNdexNetwork,
@@ -112,7 +112,7 @@ const fetchNdexSubnetwork = async (
         accessToken,
         ndexUrl,
       )
-  return await createDataFromCx2(interactionNetworkId, result)
+  return await createCyNetworkFromCx2(interactionNetworkId, result)
 }
 
 /**

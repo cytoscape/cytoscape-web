@@ -1,5 +1,5 @@
 import { Cx2 } from '../models/CxModel/Cx2'
-import { createDataFromCx2 } from '../models/CxModel/impl'
+import { createCyNetworkFromCx2 } from '../models/CxModel/impl'
 import { getCachedNetworkData, CachedNetworkData } from '.'
 import { fetchNdexNetwork } from '../api/ndex'
 import { CyNetwork } from '../models/CyNetworkModel'
@@ -24,7 +24,7 @@ export const getModelsFromCacheOrNdex = async (
       cache.undoRedoStack === undefined
     ) {
       const cxData: Cx2 = await fetchNdexNetwork(ndexNetworkId, accessToken)
-      return await createDataFromCx2(ndexNetworkId, cxData)
+      return await createCyNetworkFromCx2(ndexNetworkId, cxData)
     } else {
       return {
         network: cache.network,

@@ -9,7 +9,7 @@ import {
 import { useTableStore } from '../../../hooks/stores/TableStore'
 import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
 import {
-  createDataFromLocalCx2,
+  createCyNetworkFromCx2,
   isValidCx2Network,
 } from '../../../models/CxModel/impl'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
@@ -94,7 +94,7 @@ export const useUpdateNetwork = (): (({
 
         // Delete the old view model
         deleteViewModel(networkId)
-        const res = await createDataFromLocalCx2(networkId, responseObj as Cx2)
+        const res = await createCyNetworkFromCx2(networkId, responseObj as Cx2)
         const {
           network,
           nodeTable,

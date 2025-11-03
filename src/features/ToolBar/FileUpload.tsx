@@ -36,7 +36,7 @@ import { PrimeReactProvider } from 'primereact/api'
 import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/generate-unique-name'
 import { useUiStateStore } from '../../hooks/stores/UiStateStore'
-import { createDataFromLocalCx2 } from '../../models/CxModel/impl'
+import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { createDataFromLocalSif } from '../../utils/sif-utils'
 import { useOpaqueAspectStore } from '../../hooks/stores/OpaqueAspectStore'
 import { useMessageStore } from '../../hooks/stores/MessageStore'
@@ -126,7 +126,7 @@ export function FileUpload(props: FileUploadProps) {
           })
 
         const localUuid = uuidv4()
-        const res = await createDataFromLocalCx2(localUuid, json)
+        const res = await createCyNetworkFromCx2(localUuid, json)
         const {
           network,
           nodeTable,

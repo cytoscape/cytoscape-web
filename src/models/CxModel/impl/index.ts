@@ -7,8 +7,7 @@
 // Converter utilities (CX2 → Internal models)
 export {
   createNetworkViewFromCx2,
-  createDataFromCx2,
-  createDataFromLocalCx2,
+  createCyNetworkFromCx2,
   getOptionalAspects,
 } from './converter'
 

@@ -13,7 +13,7 @@ import {
 } from '../../../models/NetworkSummaryModel'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import {
-  createDataFromLocalCx2,
+  createCyNetworkFromCx2,
   isValidCx2Network,
 } from '../../../models/CxModel/impl'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
@@ -101,7 +101,7 @@ export const useAddNetworks = (): (({
             )
             const localUuid = uuidv4()
 
-            const res = await createDataFromLocalCx2(localUuid, item as Cx2)
+            const res = await createCyNetworkFromCx2(localUuid, item as Cx2)
             const {
               network,
               nodeTable,

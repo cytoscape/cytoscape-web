@@ -58,28 +58,32 @@ export const createNetworkViewFromCx2 = (cx2: Cx2, id?: string): CyNetwork => {
 }
 
 /**
- * Create network data from CX2 format (used for NDEx networks)
+ * Create network data from CX2 format
  *
- * @param ndexNetworkId - Network ID from NDEx
+ * Converts CX2 format data into a complete CyNetwork object with all components:
+ * network topology, tables, visual style, network views, network attributes,
+ * visual style options, optional aspects, and undo/redo stack.
+ *
+ * @param networkId - Unique identifier for the network
  * @param cxData - CX2 data object
  * @returns CyNetwork object with all network data
  */
-export const createDataFromCx2 = async (
-  ndexNetworkId: string,
+export const createCyNetworkFromCx2 = async (
+  networkId: string,
   cxData: Cx2,
 ): Promise<CyNetwork> => {
-  const network: Network = NetworkFn.createNetworkFromCx(ndexNetworkId, cxData)
+  const network: Network = NetworkFn.createNetworkFromCx(networkId, cxData)
   const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
-    ndexNetworkId,
+    networkId,
     cxData,
   )
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
   const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
-    ndexNetworkId,
+    networkId,
     cxData,
   )
   const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
-    ndexNetworkId,
+    networkId,
     cxData,
   )
   const visualStyleOptions: VisualStyleOptions =
@@ -103,63 +107,6 @@ export const createDataFromCx2 = async (
     undoRedoStack,
   }
 }
-
-/**
- * Create a full network data object from local CX2
- *
- * @param LocalNetworkId - The unique identifier for the local network
- * @param cxData - The CX2 data object containing network details
- * @returns CyNetwork object including tables, styles, and aspects
- */
-export const createDataFromLocalCx2 = async (
-  LocalNetworkId: string,
-  cxData: Cx2,
-): Promise<CyNetwork> => {
-  const network: Network = NetworkFn.createNetworkFromCx(LocalNetworkId, cxData)
-
-  const [nodeTable, edgeTable]: [Table, Table] = TableFn.createTablesFromCx(
-    LocalNetworkId,
-    cxData,
-  )
-
-  const visualStyle: VisualStyle = VisualStyleFn.createVisualStyleFromCx(cxData)
-
-  const networkView: NetworkView = ViewModelFn.createViewModelFromCX(
-    LocalNetworkId,
-    cxData,
-  )
-
-  const visualStyleOptions: VisualStyleOptions =
-    VisualStyleFn.createVisualStyleOptionsFromCx(cxData)
-
-  const otherAspects: OpaqueAspects[] = getOptionalAspects(cxData)
-
-  const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
-    LocalNetworkId,
-    cxData,
-  )
-
-  const undoRedoStack = {
-    undoStack: [],
-    redoStack: [],
-  }
-
-  return {
-    network,
-    nodeTable,
-    edgeTable,
-    visualStyle,
-    networkViews: [networkView],
-    visualStyleOptions,
-    otherAspects,
-    networkAttributes,
-    undoRedoStack,
-  }
-}
-
-const CoreAspectTagValueSet = new Set<string>(
-  Object.values(CoreAspectTag) as string[],
-)
 
 /**
  * Extract optional aspects from CX2
@@ -170,6 +117,9 @@ const CoreAspectTagValueSet = new Set<string>(
  * @returns Array of optional Aspects (opaque aspects)
  */
 export const getOptionalAspects = (cx2: Cx2): OpaqueAspects[] => {
+  const CoreAspectTagValueSet = new Set<string>(
+    Object.values(CoreAspectTag) as string[],
+  )
   const optionalAspects: OpaqueAspects[] = []
   for (const entry of cx2) {
     if (entry !== undefined) {
