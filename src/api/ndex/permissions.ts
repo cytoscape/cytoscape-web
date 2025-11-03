@@ -3,8 +3,17 @@
  *
  * Functions for checking and managing network permissions in NDEx.
  */
-import { PermissionType } from '../../models/NetworkModel/AccessPermission'
+
 import { getNdexClient } from './client'
+
+// Access Permission Type to networks defined in the backend
+export const PermissionType = {
+  READ: 'READ',
+  WRITE: 'WRITE',
+  ADMIN: 'ADMIN',
+} as const
+
+type PermissionType = (typeof PermissionType)[keyof typeof PermissionType]
 
 /**
  * Fetches the permission level for a specific network from NDEx.

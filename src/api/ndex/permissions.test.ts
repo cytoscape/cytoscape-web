@@ -1,6 +1,9 @@
-import { getNdexNetworkPermission, hasNdexEditPermission } from './permissions'
+import {
+  getNdexNetworkPermission,
+  hasNdexEditPermission,
+  PermissionType,
+} from './permissions'
 import { getNdexClient } from './client'
-import { PermissionType } from '../../models/NetworkModel/AccessPermission'
 
 // Mock the NDEx client module
 jest.mock('./client', () => ({
