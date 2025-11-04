@@ -11,7 +11,7 @@ import { VisualStyle } from '../../VisualStyleModel'
 import { CyNetwork } from '../../CyNetworkModel'
 import { VisualStyleOptions } from '../../VisualStyleModel/VisualStyleOptions'
 import { OpaqueAspects } from '../../OpaqueAspectModel'
-import { getOptionalAspects } from '../extractor'
+import { getOptionalAspects } from './extractor'
 import {
   createNetworkFromCx,
   createTablesFromCx,

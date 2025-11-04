@@ -10,7 +10,7 @@ import { addNodes, addEdges } from '../../../NetworkModel/impl/NetworkImpl'
 import { Cx2 } from '../../Cx2'
 import { Node as CxNode } from '../../Cx2/CoreAspects/Node'
 import { Edge as CxEdge } from '../../Cx2/CoreAspects/Edge'
-import * as cxUtil from '../../extractor'
+import * as cxUtil from '../extractor'
 
 // cy.js does not allow nodes and edges to have the same ids
 // when converting cx ids to cy ids, we add a prefix to edges

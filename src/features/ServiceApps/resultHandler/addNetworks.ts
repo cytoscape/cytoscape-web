@@ -27,7 +27,7 @@ import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
-} from '../../../models/CxModel/extractor'
+} from '../../../models/CxModel/impl/extractor'
 import { logApp } from '../../../debug'
 import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
 

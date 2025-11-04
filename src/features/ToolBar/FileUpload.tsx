@@ -16,11 +16,8 @@ import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
-} from '../../models/CxModel/extractor'
-import {
-  NetworkProperty,
-  Visibility,
-} from '../../models/NetworkSummaryModel'
+} from '../../models/CxModel/impl/extractor'
+import { NetworkProperty, Visibility } from '../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { useNetworkStore } from '../../hooks/stores/NetworkStore'
 import { useTableStore } from '../../hooks/stores/TableStore'

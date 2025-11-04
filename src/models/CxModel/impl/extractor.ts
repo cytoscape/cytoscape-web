@@ -1,25 +1,25 @@
-import { Cx2 } from './Cx2'
-import { Aspect } from './Cx2/Aspect'
+import { Cx2 } from '../Cx2'
+import { Aspect } from '../Cx2/Aspect'
 import {
   NetworkAttributeValue,
   NetworkAttributes,
-} from './Cx2/CoreAspects/NetworkAttributes'
-import { CoreAspectTag } from './Cx2/CoreAspectTag'
-import { CxDescriptor } from './Cx2/CxDescriptor'
-import { Node } from './Cx2/CoreAspects/Node'
-import { Edge } from './Cx2/CoreAspects/Edge'
-import { AttributeDeclarations } from './Cx2/CoreAspects/AttributeDeclarations'
-import { VisualProperties } from './Cx2/CoreAspects/VisualProperties'
+} from '../Cx2/CoreAspects/NetworkAttributes'
+import { CoreAspectTag } from '../Cx2/CoreAspectTag'
+import { CxDescriptor } from '../Cx2/CxDescriptor'
+import { Node } from '../Cx2/CoreAspects/Node'
+import { Edge } from '../Cx2/CoreAspects/Edge'
+import { AttributeDeclarations } from '../Cx2/CoreAspects/AttributeDeclarations'
+import { VisualProperties } from '../Cx2/CoreAspects/VisualProperties'
 
-import { CxValue } from './Cx2/CxValue'
-import { Attribute } from './Cx2/CoreAspects/Attribute'
-import { NodeBypasses } from './Cx2/CoreAspects/NodeBypasses'
-import { EdgeBypasses } from './Cx2/CoreAspects/EdgeBypasses'
+import { CxValue } from '../Cx2/CxValue'
+import { Attribute } from '../Cx2/CoreAspects/Attribute'
+import { NodeBypasses } from '../Cx2/CoreAspects/NodeBypasses'
+import { EdgeBypasses } from '../Cx2/CoreAspects/EdgeBypasses'
 import {
   VisualEditorProperties,
   VisualStyleOptions,
-} from '../VisualStyleModel/VisualStyleOptions'
-import { OpaqueAspects } from '../OpaqueAspectModel/OpaqueAspects'
+} from '../../VisualStyleModel/VisualStyleOptions'
+import { OpaqueAspects } from '../../OpaqueAspectModel/OpaqueAspects'
 
 export const CX_ANNOTATIONS_KEY = '__Annotations'
 

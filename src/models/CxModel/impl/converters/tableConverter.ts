@@ -5,7 +5,7 @@
  */
 import { Column, Table } from '../../../TableModel'
 import { Cx2 } from '../../Cx2'
-import * as cxUtil from '../../extractor'
+import * as cxUtil from '../extractor'
 import { IdType } from '../../../IdType'
 import { AttributeName } from '../../../TableModel/AttributeName'
 import { ValueType } from '../../../TableModel/ValueType'

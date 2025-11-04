@@ -6,7 +6,7 @@
 import { Cx2 } from '../../Cx2'
 import { NetworkAttributeValue } from '../../Cx2/CoreAspects/NetworkAttributes'
 import { NetworkAttributes } from '../../../TableModel/NetworkAttributes'
-import * as cxUtil from '../../extractor'
+import * as cxUtil from '../extractor'
 import { IdType } from '../../../IdType'
 import { ValueType } from '../../../TableModel/ValueType'
 
@@ -35,4 +35,3 @@ export const createNetworkAttributesFromCx = (
 
   return networkAttributes
 }
-

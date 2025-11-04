@@ -24,7 +24,7 @@ import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
-} from '../../../models/CxModel/extractor'
+} from '../../../models/CxModel/impl/extractor'
 import { logApi, logStore } from '../../../debug'
 
 export const useUpdateNetwork = (): (({

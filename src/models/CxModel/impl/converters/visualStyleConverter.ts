@@ -6,7 +6,7 @@
 import uniqWith from 'lodash/uniqWith'
 import isEqual from 'lodash/isEqual'
 import { Cx2 } from '../../Cx2'
-import * as cxUtil from '../../extractor'
+import * as cxUtil from '../extractor'
 import { ValueType } from '../../../TableModel'
 import {
   VisualStyle,

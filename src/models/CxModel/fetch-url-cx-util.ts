@@ -3,7 +3,7 @@ import { Cx2 } from './Cx2'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
-} from '../../models/CxModel/extractor'
+} from './impl/extractor'
 import {
   NetworkProperty,
   NetworkSummary,
