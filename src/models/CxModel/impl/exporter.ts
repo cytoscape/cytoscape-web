@@ -417,9 +417,11 @@ export const exportCyNetworkToCx2 = (
     { key: 'edgeBypasses', aspect: edgeBypasses },
     { key: 'visualEditorProperties', aspect: visualEditorProperties },
   ].concat(
-    Object.entries(opaqueAspects ?? {}).map(([key, aspect]) => {
-      return { key, aspect }
-    }),
+    Object.entries(opaqueAspects ?? {})
+      .filter(([, aspect]) => aspect != null)
+      .map(([key, aspect]) => {
+        return { key, aspect }
+      }),
   )
 
   const status = [
