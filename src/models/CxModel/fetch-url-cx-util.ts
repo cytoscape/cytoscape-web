@@ -4,7 +4,7 @@ import { Cx2 } from './Cx2'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
-} from '../../models/CxModel/cx2-util'
+} from '../../models/CxModel/extractor'
 import { NdexNetworkProperty } from '../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { v4 as uuidv4 } from 'uuid'
@@ -34,7 +34,7 @@ export const fetchUrlCx = async (
     }
     const data: Cx2 = await fullResponse.json()
     const uuid = uuidv4()
-    const network = await createCyNetworkFromCx2(uuid, data)
+    const network = createCyNetworkFromCx2(uuid, data)
 
     const networkAttributeDeclarations =
       getAttributeDeclarations(data)?.attributeDeclarations?.[0]

@@ -6,8 +6,9 @@ import {
   VisualStyle,
 } from '../models'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
-import { exportNetworkToCx2 } from '../models/CxModel/impl'
+import { exportCyNetworkToCx2 } from '../models/CxModel/impl'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
+import { CyNetwork } from '../models/CyNetworkModel'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import {
   updateNdexNetwork,
@@ -39,17 +40,20 @@ export const useSaveNetworkToNDEx = () => {
     if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
     }
-    const cx = exportNetworkToCx2(
+    const cyNetwork: CyNetwork = {
       network,
-      visualStyle,
-      summary,
       nodeTable,
       edgeTable,
+      visualStyle,
+      networkViews: [viewModel],
       visualStyleOptions,
-      viewModel,
-      undefined,
-      opaqueAspect,
-    )
+      otherAspects: opaqueAspect ? [opaqueAspect as any] : undefined,
+      undoRedoStack: {
+        undoStack: [],
+        redoStack: [],
+      },
+    }
+    const cx = exportCyNetworkToCx2(cyNetwork, summary)
     await updateNdexNetwork(networkId, cx, accessToken)
     const summaryIsValid = await getNetworkValidationStatus(
       networkId as string,

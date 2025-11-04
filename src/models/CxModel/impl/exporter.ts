@@ -55,6 +55,7 @@ import {
 } from '../../VisualStyleModel/impl/CustomGraphicsImpl'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../VisualStyleModel/impl/DefaultVisualStyle'
 import isEqual from 'lodash/isEqual'
+import { CyNetwork } from '../../CyNetworkModel'
 
 /**
  * Exports a network to CX2 format.
@@ -73,17 +74,26 @@ import isEqual from 'lodash/isEqual'
  * @param opaqueAspects - Optional opaque aspects to include
  * @returns CX2 format array
  */
-export const exportNetworkToCx2 = (
-  network: Network,
-  vs: VisualStyle,
-  summary: NdexNetworkSummary,
-  nodeTable: Table,
-  edgeTable: Table,
-  visualStyleOptions?: VisualStyleOptions, // visual editor properties
-  networkView?: NetworkView,
+export const exportCyNetworkToCx2 = (
+  cyNetwork: CyNetwork,
+  summary?: NdexNetworkSummary,
   networkName?: string, // optional new name for the network
-  opaqueAspects?: OpaqueAspects,
 ): any => {
+  const network = cyNetwork.network
+  const vs = cyNetwork.visualStyle
+  const nodeTable = cyNetwork.nodeTable
+  const edgeTable = cyNetwork.edgeTable
+  const visualStyleOptions = cyNetwork.visualStyleOptions
+  const networkView = cyNetwork.networkViews?.[0] // Use first view if available
+  const opaqueAspects: OpaqueAspects | undefined = cyNetwork.otherAspects
+    ? Object.fromEntries(
+        cyNetwork.otherAspects.map((aspect: OpaqueAspects, index: number) => {
+          const key = Object.keys(aspect)[0] || `aspect${index}`
+          const value = Object.values(aspect)[0]
+          return [key, value]
+        }),
+      )
+    : undefined
   // accumulate node/edge attributes into an object
   const attributesAccumulator = (
     attributes: { [key: AttributeName]: { d: ValueTypeName; v?: ValueType } },
@@ -191,33 +201,48 @@ export const exportNetworkToCx2 = (
   } = {}
   const networkAttributes: any = [{}]
 
-  summary.properties.forEach((property) => {
-    networkAttributeDeclarations[property.predicateString] = {
-      d: property.dataType,
-    }
-  })
+  // Handle summary properties if provided
+  if (summary) {
+    summary.properties.forEach((property) => {
+      networkAttributeDeclarations[property.predicateString] = {
+        d: property.dataType,
+      }
+    })
 
-  summary.properties.forEach((property) => {
-    networkAttributes[0][property.predicateString] =
-      isListType(property.dataType) && !Array.isArray(property.value)
-        ? deserializeValue(
-            networkAttributeDeclarations[property.predicateString].d,
-            property.value as string,
-          )
-        : property.value
-  })
+    summary.properties.forEach((property) => {
+      networkAttributes[0][property.predicateString] =
+        isListType(property.dataType) && !Array.isArray(property.value)
+          ? deserializeValue(
+              networkAttributeDeclarations[property.predicateString].d,
+              property.value as string,
+            )
+          : property.value
+    })
+  }
 
-  if (networkName || summary.name !== '') {
+  // Handle name, description, version from summary or networkAttributes
+  const networkNameValue =
+    networkName ??
+    summary?.name ??
+    (cyNetwork.networkAttributes?.attributes?.name as string | undefined)
+  const descriptionValue =
+    summary?.description ??
+    (cyNetwork.networkAttributes?.attributes?.description as string | undefined)
+  const versionValue =
+    summary?.version ??
+    (cyNetwork.networkAttributes?.attributes?.version as string | undefined)
+
+  if (networkNameValue) {
     networkAttributeDeclarations.name = { d: 'string' }
-    networkAttributes[0].name = networkName ?? summary.name
+    networkAttributes[0].name = networkNameValue
   }
-  if (summary.description !== '') {
+  if (descriptionValue) {
     networkAttributeDeclarations.description = { d: 'string' }
-    networkAttributes[0].description = summary.description
+    networkAttributes[0].description = descriptionValue
   }
-  if (summary.version !== '') {
+  if (versionValue) {
     networkAttributeDeclarations.version = { d: 'string' }
-    networkAttributes[0].version = summary.version
+    networkAttributes[0].version = versionValue
   }
 
   const attributeDeclarations = [
@@ -419,32 +444,4 @@ export const exportNetworkToCx2 = (
   ]
 
   return cx
-}
-
-/**
- * Exports a network graph structure to CX2 format (nodes and edges only).
- *
- * Creates a minimal CX2 representation with only the network structure,
- * without visual styles, attributes, or other aspects.
- *
- * @param network - Network to export
- * @returns Array with nodes and edges aspects in CX2 format
- */
-export const exportGraph = (network: Network) => {
-  const nodes = network.nodes.map((node) => {
-    return {
-      id: parseInt(node.id),
-    }
-  })
-  const edges = network.edges.map((edge) => {
-    const edgeId = parseInt(translateEdgeIdToCX(edge.id))
-    const source = parseInt(edge.s)
-    const target = parseInt(edge.t)
-    return {
-      id: edgeId,
-      s: source,
-      t: target,
-    }
-  })
-  return [{ nodes: nodes }, { edges: edges }]
 }

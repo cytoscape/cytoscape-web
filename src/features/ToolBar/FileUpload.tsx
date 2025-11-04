@@ -16,7 +16,7 @@ import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
-} from '../../models/CxModel/cx2-util'
+} from '../../models/CxModel/extractor'
 import {
   NdexNetworkProperty,
   Visibility,
@@ -112,7 +112,7 @@ export function FileUpload(props: FileUploadProps) {
         )
           .filter(([key, value]) => {
             // Exclude 'name' and 'description' as they are handled separately as metadata fields
-            // TODO this 'handleCX2File' function should be moved to the cx2-utils or a hook
+            // TODO this 'handleCX2File' function should be moved to the extractor or a hook
             return key !== 'name' && key !== 'description'
           })
           .map(([key, value]) => {
@@ -126,7 +126,7 @@ export function FileUpload(props: FileUploadProps) {
           })
 
         const localUuid = uuidv4()
-        const res = await createCyNetworkFromCx2(localUuid, json)
+        const res = createCyNetworkFromCx2(localUuid, json)
         const {
           network,
           nodeTable,

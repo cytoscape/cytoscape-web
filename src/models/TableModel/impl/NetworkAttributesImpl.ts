@@ -1,7 +1,7 @@
 import { Cx2 } from '../../CxModel/Cx2'
 import { NetworkAttributeValue } from '../../CxModel/Cx2/CoreAspects/NetworkAttributes'
 import { NetworkAttributes } from '../NetworkAttributes'
-import * as cxUtil from '../../CxModel/cx2-util'
+import * as cxUtil from '../../CxModel/extractor'
 import { IdType } from '../../IdType'
 import { ValueType } from '../ValueType'
 

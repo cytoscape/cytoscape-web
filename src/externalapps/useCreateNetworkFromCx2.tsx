@@ -10,7 +10,7 @@ import { useTableStore } from '../hooks/stores/TableStore'
 import { useViewModelStore } from '../hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
 import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
-import { createNetworkViewFromCx2 } from '../models/CxModel/impl'
+import { createCyNetworkFromCx2 } from '../models/CxModel/impl'
 import { v4 as uuidv4 } from 'uuid'
 import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
 import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
@@ -52,7 +52,7 @@ export const useCreateNetworkFromCx2 = (): ((
   const createNetworkFromCx = useCallback(
     ({ cxData }: CreateNetworkFromCx2Props) => {
       // Convert CX2 to a fully populated CyNetwork
-      const withView: CyNetwork = createNetworkViewFromCx2(cxData, uuidv4())
+      const withView: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
       const {
         network,
         networkAttributes,
@@ -107,7 +107,17 @@ export const useCreateNetworkFromCx2 = (): ((
 
       return withView
     },
-    [addNetwork, addVisualStyle, addTable, addViewModel, addSummary],
+    [
+      addNetwork,
+      addVisualStyle,
+      addTable,
+      addViewModel,
+      addSummary,
+      addNetworkIds,
+      setCurrentNetworkId,
+      navigateToNetwork,
+      workspace,
+    ],
   )
 
   return createNetworkFromCx

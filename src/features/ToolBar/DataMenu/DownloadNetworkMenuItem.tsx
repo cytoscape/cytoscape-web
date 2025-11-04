@@ -8,7 +8,8 @@ import { useTableStore } from '../../../hooks/stores/TableStore'
 import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { exportNetworkToCx2 } from '../../../models/CxModel/impl'
+import { exportCyNetworkToCx2 } from '../../../models/CxModel/impl'
+import { CyNetwork } from '../../../models/CyNetworkModel'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
@@ -51,17 +52,20 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
     if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
     }
-    const cx = exportNetworkToCx2(
+    const cyNetwork: CyNetwork = {
       network,
+      nodeTable: table.nodeTable,
+      edgeTable: table.edgeTable,
       visualStyle,
-      summary,
-      table.nodeTable,
-      table.edgeTable,
+      networkViews: [viewModel],
       visualStyleOptions,
-      viewModel,
-      summary.name,
-      opaqueAspects,
-    )
+      otherAspects: opaqueAspects ? [opaqueAspects as any] : undefined,
+      undoRedoStack: {
+        undoStack: [],
+        redoStack: [],
+      },
+    }
+    const cx = exportCyNetworkToCx2(cyNetwork, summary, summary.name)
     const link = document.createElement('a')
     link.download = `${summary.name}.cx2`
     const cxFile = new Blob([JSON.stringify(cx)], { type: 'text/plain' })

@@ -42,7 +42,7 @@ import {
 } from '../../ToolBar/DataMenu/ExportNetworkToImage/PdfExportForm'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
 
-import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/cx2-util'
+import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/extractor'
 
 import { useUndoStack } from '../../../hooks/useUndoStack'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'

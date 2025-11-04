@@ -112,7 +112,7 @@ const fetchNdexSubnetwork = async (
         accessToken,
         ndexUrl,
       )
-  return await createCyNetworkFromCx2(interactionNetworkId, result)
+  return createCyNetworkFromCx2(interactionNetworkId, result)
 }
 
 /**

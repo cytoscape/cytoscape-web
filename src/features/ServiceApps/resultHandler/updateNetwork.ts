@@ -24,7 +24,7 @@ import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
-} from '../../../models/CxModel/cx2-util'
+} from '../../../models/CxModel/extractor'
 import { logApi, logStore } from '../../../debug'
 
 export const useUpdateNetwork = (): (({
@@ -94,7 +94,7 @@ export const useUpdateNetwork = (): (({
 
         // Delete the old view model
         deleteViewModel(networkId)
-        const res = await createCyNetworkFromCx2(networkId, responseObj as Cx2)
+        const res = createCyNetworkFromCx2(networkId, responseObj as Cx2)
         const {
           network,
           nodeTable,

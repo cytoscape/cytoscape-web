@@ -1,7 +1,8 @@
 import { useMessageStore } from '../hooks/stores/MessageStore'
 // @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
-import { exportNetworkToCx2 } from '../models/CxModel/impl'
+import { exportCyNetworkToCx2 } from '../models/CxModel/impl'
+import { CyNetwork } from '../models/CyNetworkModel'
 import { MessageSeverity } from '../models/MessageModel'
 import { Network } from '../models/NetworkModel'
 import { NetworkView } from '../models/ViewModel'
@@ -47,16 +48,23 @@ export const useOpenNetworkInCytoscape = () => {
       }
     }
 
-    const cx = exportNetworkToCx2(
+    const cyNetwork: CyNetwork = {
       network,
+      nodeTable: table.nodeTable,
+      edgeTable: table.edgeTable,
       visualStyle,
-      exportSummary,
-      table.nodeTable,
-      table.edgeTable,
+      networkViews: [viewModel],
       visualStyleOptions,
-      viewModel,
+      otherAspects: opaqueAspects ? [opaqueAspects as any] : undefined,
+      undoRedoStack: {
+        undoStack: [],
+        redoStack: [],
+      },
+    }
+    const cx = exportCyNetworkToCx2(
+      cyNetwork,
+      exportSummary,
       `Copy of ${exportSummary.name}`,
-      opaqueAspects,
     )
 
     try {

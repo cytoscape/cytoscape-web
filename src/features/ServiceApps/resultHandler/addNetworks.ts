@@ -27,7 +27,7 @@ import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
-} from '../../../models/CxModel/cx2-util'
+} from '../../../models/CxModel/extractor'
 import { logApp } from '../../../debug'
 import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
 
@@ -101,7 +101,7 @@ export const useAddNetworks = (): (({
             )
             const localUuid = uuidv4()
 
-            const res = await createCyNetworkFromCx2(localUuid, item as Cx2)
+            const res = createCyNetworkFromCx2(localUuid, item as Cx2)
             const {
               network,
               nodeTable,

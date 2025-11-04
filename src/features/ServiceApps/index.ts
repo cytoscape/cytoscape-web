@@ -1,4 +1,4 @@
-import { exportNetworkToCx2, exportGraph } from '../../models/CxModel/impl'
+import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
 import {
   Table,
   IdType,
@@ -8,6 +8,7 @@ import {
   VisualStyle,
   NdexNetworkSummary,
 } from '../../models'
+import { CyNetwork } from '../../models/CyNetworkModel'
 import { deleteTask, getTaskResult, getTaskStatus, submitTask } from './api'
 import {
   CytoContainerRequest,
@@ -84,7 +85,7 @@ export const createNetworkDataObj = (
 
   if (inputNetwork.format === Format.cx2) {
     if (inputNetwork.model === Model.graph) {
-      return exportGraph(filterElements ? getFilteredNetwork() : network)
+      return filterElements ? getFilteredNetwork() : network
     } else if (
       inputNetwork.model === Model.network &&
       visualStyle &&
@@ -99,17 +100,20 @@ export const createNetworkDataObj = (
             edgeCount: selectedEdges.size,
           }
         : summary
-      return exportNetworkToCx2(
-        filteredNetwork,
+      const cyNetwork: CyNetwork = {
+        network: filteredNetwork,
+        nodeTable: table.nodeTable,
+        edgeTable: table.edgeTable,
         visualStyle,
-        filteredSummary,
-        table.nodeTable,
-        table.edgeTable,
+        networkViews: viewModel ? [viewModel] : [],
         visualStyleOptions,
-        viewModel,
-        summary.name,
-        opaqueAspect,
-      )
+        otherAspects: opaqueAspect ? [opaqueAspect as any] : undefined,
+        undoRedoStack: {
+          undoStack: [],
+          redoStack: [],
+        },
+      }
+      return exportCyNetworkToCx2(cyNetwork, filteredSummary, summary.name)
     } else {
       throw new Error('Illegal Input')
     }

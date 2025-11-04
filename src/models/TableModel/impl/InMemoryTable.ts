@@ -1,6 +1,6 @@
 import { Column, Table } from '..'
 import { Cx2 } from '../../CxModel/Cx2'
-import * as cxUtil from '../../CxModel/cx2-util'
+import * as cxUtil from '../../CxModel/extractor'
 import { IdType } from '../../IdType'
 import { AttributeName } from '../AttributeName'
 import { ValueType } from '../ValueType'

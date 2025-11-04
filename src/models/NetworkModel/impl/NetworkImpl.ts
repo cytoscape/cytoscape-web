@@ -6,7 +6,7 @@ import { Cx2 } from '../../CxModel/Cx2'
 
 import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
 import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
-import * as cxUtil from '../../CxModel/cx2-util'
+import * as cxUtil from '../../CxModel/extractor'
 
 import { Core, EdgeSingular, NodeSingular } from 'cytoscape'
 import cytoscape from 'cytoscape'

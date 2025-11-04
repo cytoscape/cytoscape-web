@@ -19,6 +19,7 @@ import {
   VisualEditorProperties,
   VisualStyleOptions,
 } from '../VisualStyleModel/VisualStyleOptions'
+import { OpaqueAspects } from '../OpaqueAspectModel/OpaqueAspects'
 
 export const CX_ANNOTATIONS_KEY = '__Annotations'
 
@@ -243,6 +244,34 @@ const getVisualEditorProperties = (cx2: Cx2): VisualStyleOptions => {
   }
 }
 
+/**
+ * Extract optional aspects from CX2
+ *
+ * Filters out core CX2 aspects and returns only optional/custom aspects.
+ *
+ * @param cx2 - CX2 data object
+ * @returns Array of optional Aspects (opaque aspects)
+ */
+const getOptionalAspects = (cx2: Cx2): OpaqueAspects[] => {
+  const CoreAspectTagValueSet = new Set<string>(
+    Object.values(CoreAspectTag) as string[],
+  )
+  const optionalAspects: OpaqueAspects[] = []
+  for (const entry of cx2) {
+    if (entry !== undefined) {
+      const key = Object.keys(entry)[0]
+      if (
+        !CoreAspectTagValueSet.has(key) &&
+        key !== 'status' &&
+        key !== 'CXVersion'
+      ) {
+        optionalAspects.push(entry as OpaqueAspects)
+      }
+    }
+  }
+  return optionalAspects
+}
+
 export {
   getNodes,
   getEdges,
@@ -254,4 +283,5 @@ export {
   getNodeBypasses,
   getEdgeBypasses,
   getVisualEditorProperties,
+  getOptionalAspects,
 }

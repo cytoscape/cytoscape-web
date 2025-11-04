@@ -7,7 +7,8 @@ import {
   VisualStyle,
 } from '../models'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
-import { exportNetworkToCx2 } from '../models/CxModel/impl'
+import { exportCyNetworkToCx2 } from '../models/CxModel/impl'
+import { CyNetwork } from '../models/CyNetworkModel'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
@@ -54,16 +55,23 @@ export const useSaveCopyToNDEx = () => {
     if (viewModel === undefined) {
       throw new Error('Could not find the current network view model.')
     }
-    const cx = exportNetworkToCx2(
+    const cyNetwork: CyNetwork = {
       network,
-      visualStyle,
-      summary,
       nodeTable,
       edgeTable,
+      visualStyle,
+      networkViews: [viewModel],
       visualStyleOptions,
-      viewModel,
+      otherAspects: opaqueAspect ? [opaqueAspect as any] : undefined,
+      undoRedoStack: {
+        undoStack: [],
+        redoStack: [],
+      },
+    }
+    const cx = exportCyNetworkToCx2(
+      cyNetwork,
+      summary,
       deleteOriginal ? summary.name : `Copy of ${summary.name}`,
-      opaqueAspect,
     )
     const ndexClient = getNdexClient(accessToken)
     const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)

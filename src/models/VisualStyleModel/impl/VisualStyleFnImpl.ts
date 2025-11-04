@@ -1,7 +1,7 @@
 import uniqWith from 'lodash/uniqWith'
 import isEqual from 'lodash/isEqual'
 import { Cx2 } from '../../CxModel/Cx2'
-import * as cxUtil from '../../CxModel/cx2-util'
+import * as cxUtil from '../../CxModel/extractor'
 
 import { NetworkView } from '../../ViewModel'
 

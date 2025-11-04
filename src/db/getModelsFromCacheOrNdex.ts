@@ -24,7 +24,7 @@ export const getModelsFromCacheOrNdex = async (
       cache.undoRedoStack === undefined
     ) {
       const cxData: Cx2 = await fetchNdexNetwork(ndexNetworkId, accessToken)
-      return await createCyNetworkFromCx2(ndexNetworkId, cxData)
+      return createCyNetworkFromCx2(ndexNetworkId, cxData)
     } else {
       return {
         network: cache.network,
