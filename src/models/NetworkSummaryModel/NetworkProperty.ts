@@ -7,4 +7,3 @@ export interface NetworkProperty {
   predicateString: string
   dataType: ValueTypeName
 }
-

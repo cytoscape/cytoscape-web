@@ -11,8 +11,5 @@ export interface HcxValidationResult {
 
 export interface HcxValidator {
   version: HcxVersion
-  validate: (
-    summary: NetworkSummary,
-    nodeTable: Table,
-  ) => HcxValidationResult
+  validate: (summary: NetworkSummary, nodeTable: Table) => HcxValidationResult
 }

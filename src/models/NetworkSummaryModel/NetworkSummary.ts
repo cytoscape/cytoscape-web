@@ -31,4 +31,3 @@ export interface NetworkSummary {
   isDeleted: boolean
   modificationTime: Date
 }
-
