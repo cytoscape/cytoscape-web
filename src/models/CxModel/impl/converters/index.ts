@@ -11,4 +11,3 @@ export {
 } from './visualStyleConverter'
 export { createViewModelFromCX } from './viewModelConverter'
 export { createNetworkAttributesFromCx } from './networkAttributesConverter'
-

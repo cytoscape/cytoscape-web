@@ -6,8 +6,8 @@ import {
   deserializeValueList,
   getSingleTypeFromList,
   getListTypeFromSingle,
-} from '../../src/models/TableModel/impl/ValueTypeImpl'
-import { ValueTypeName } from '../../src/models/TableModel'
+} from './ValueTypeImpl'
+import { ValueTypeName } from '..'
 
 describe('serializeValueList', () => {
   it.each([

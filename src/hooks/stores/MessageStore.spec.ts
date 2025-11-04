@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
-import { useMessageStore } from '../../src/hooks/stores/MessageStore'
-import { Message, MessageSeverity } from '../../src/models/MessageModel'
+import { useMessageStore } from './MessageStore'
+import { Message, MessageSeverity } from '../../models/MessageModel'
 
 describe('useMessageStore', () => {
   it('should add a message to the store', () => {
