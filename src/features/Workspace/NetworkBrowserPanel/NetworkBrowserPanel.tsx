@@ -5,7 +5,7 @@ import ShareIcon from '@mui/icons-material/Share'
 import PaletteIcon from '@mui/icons-material/Palette'
 import { Summaries as SummaryList } from '../../SummaryPanel'
 import { IdType } from '../../../models/IdType'
-import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
@@ -60,7 +60,7 @@ export const NetworkBrowserPanel = ({
     }
   }, [activeNetworkViewId, currentNetworkId])
 
-  const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
+  const summaries: Record<IdType, NetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
 

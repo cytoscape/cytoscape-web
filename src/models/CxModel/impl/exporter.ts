@@ -34,7 +34,7 @@ import {
   vpToCX,
 } from '../../VisualStyleModel/impl/cxVisualPropertyConverter'
 
-import { NdexNetworkSummary } from '../../NetworkSummaryModel'
+import { NetworkSummary } from '../../NetworkSummaryModel'
 
 import {
   ContinuousMappingFunction,
@@ -76,7 +76,7 @@ import { CyNetwork } from '../../CyNetworkModel'
  */
 export const exportCyNetworkToCx2 = (
   cyNetwork: CyNetwork,
-  summary?: NdexNetworkSummary,
+  summary?: NetworkSummary,
   networkName?: string, // optional new name for the network
 ): any => {
   const network = cyNetwork.network

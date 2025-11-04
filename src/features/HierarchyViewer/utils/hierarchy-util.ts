@@ -1,7 +1,7 @@
 import { HierarchyNode } from 'd3-hierarchy'
 import {
-  NdexNetworkProperty,
-  NdexNetworkSummary,
+  NetworkProperty,
+  NetworkSummary,
   Visibility,
 } from '../../../models/NetworkSummaryModel'
 import { Table, ValueType } from '../../../models/TableModel'
@@ -41,9 +41,9 @@ export const createDummySummary = (
   name: string,
   nodeCount: number,
   edgeCount: number,
-): NdexNetworkSummary => {
+): NetworkSummary => {
   const time: Date = new Date(Date.now())
-  const summary: NdexNetworkSummary = {
+  const summary: NetworkSummary = {
     isNdex: false,
     ownerUUID: '',
     isReadOnly: false,
@@ -74,7 +74,7 @@ export const createDummySummary = (
   return summary
 }
 
-export const isHCX = (summary: NdexNetworkSummary): boolean => {
+export const isHCX = (summary: NetworkSummary): boolean => {
   if (summary === undefined) {
     return false
   }
@@ -217,12 +217,12 @@ export const applyCpLayout = (
  *
  */
 export const getHcxMetadata = (
-  summary: NdexNetworkSummary,
+  summary: NetworkSummary,
 ): HcxMetaData | undefined => {
   if (summary === undefined) {
     return undefined
   }
-  const networkProps: NdexNetworkProperty[] = summary.properties
+  const networkProps: NetworkProperty[] = summary.properties
   if (networkProps === undefined || networkProps.length === 0) {
     return undefined
   }

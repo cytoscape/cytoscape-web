@@ -77,7 +77,7 @@ import {
 } from '../utils/helper-functions'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import useNodesDuplicationStore from '../store/nodesDuplicationStore'
 import { logUi } from '../../../debug'
@@ -516,7 +516,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const handleMerge = async (): Promise<void> => {
     try {
       const newNetworkId = uuidv4()
-      const summaryRecord: Record<IdType, NdexNetworkSummary> =
+      const summaryRecord: Record<IdType, NetworkSummary> =
         Object.fromEntries(
           Object.entries(netSummaries).filter(([id]) =>
             toMergeNetworksList.some((pair) => pair[1] === id),

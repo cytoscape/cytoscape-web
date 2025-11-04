@@ -3,11 +3,12 @@ import {
   fetchNdexSummaries,
   getNetworkValidationStatus,
 } from './network-summary'
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
-import { NdexNetworkProperty } from '../../models/NetworkSummaryModel/NdexNetworkProperty'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { NetworkProperty } from '../../models/NetworkSummaryModel/NetworkProperty'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import { getNdexClient } from './client'
 import { waitSeconds } from '../../utils/wait-seconds'
+import { NdexNetworkSummary } from './NdexNetworkSummary'
 
 // Mock dependencies
 jest.mock('./client', () => ({
@@ -20,7 +21,6 @@ jest.mock('../../utils/wait-seconds', () => ({
 
 describe('normalizeNdexSummaries', () => {
   const createBaseSummary = (): NdexNetworkSummary => ({
-    isNdex: false,
     ownerUUID: 'owner-123',
     isReadOnly: false,
     subnetworkIds: [],
@@ -250,7 +250,6 @@ describe('normalizeNdexSummaries', () => {
   describe('summary metadata processing', () => {
     it('should set isNdex to true', () => {
       const summary = createBaseSummary()
-      summary.isNdex = false
 
       const result = normalizeNdexSummaries([summary])
 
@@ -549,7 +548,6 @@ describe('fetchNdexSummaries', () => {
   const mockWaitSeconds = waitSeconds as jest.MockedFunction<typeof waitSeconds>
 
   const createBaseSummary = (): NdexNetworkSummary => ({
-    isNdex: false,
     ownerUUID: 'owner-123',
     isReadOnly: false,
     subnetworkIds: [],
@@ -759,7 +757,6 @@ describe('getNetworkValidationStatus', () => {
   const mockWaitSeconds = waitSeconds as jest.MockedFunction<typeof waitSeconds>
 
   const createValidSummary = (): NdexNetworkSummary => ({
-    isNdex: true,
     ownerUUID: 'owner-123',
     isReadOnly: false,
     subnetworkIds: [],

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { IdType } from '../../models/IdType'
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import {
   clearNetworkSummaryFromDb,
   deleteNetworkSummaryFromDb,
@@ -12,7 +12,7 @@ import { logStore } from '../../debug'
 export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore>((set, get) => ({
     summaries: {},
-    add: (networkId: IdType, summary: NdexNetworkSummary) => {
+    add: (networkId: IdType, summary: NetworkSummary) => {
       set((state) => {
         state.summaries[networkId] = summary
         putNetworkSummaryToDb(summary)
@@ -20,14 +20,14 @@ export const useNetworkSummaryStore = create(
         return state
       })
     },
-    addAll: (summaries: Record<IdType, NdexNetworkSummary>) => {
+    addAll: (summaries: Record<IdType, NetworkSummary>) => {
       set((state) => {
         state.summaries = { ...state.summaries, ...summaries }
 
         return state
       })
     },
-    update: (networkId: IdType, summaryUpdate: Partial<NdexNetworkSummary>) => {
+    update: (networkId: IdType, summaryUpdate: Partial<NetworkSummary>) => {
       const summary = get().summaries[networkId]
       if (summary === undefined) {
         return

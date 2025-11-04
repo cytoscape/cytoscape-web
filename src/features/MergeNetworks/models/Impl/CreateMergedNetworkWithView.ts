@@ -11,7 +11,7 @@ import { putNetworkSummaryToDb } from '../../../../db'
 import { NetworkAttributes } from '../../../../models/NetworkModel'
 import ViewModelFn, { NetworkView } from '../../../../models/ViewModel'
 import { MergeType, NetworkRecord } from '../DataInterfaceForMerge'
-import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
 import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel'
 import { CyNetwork } from '../../../../models/CyNetworkModel'
@@ -25,12 +25,12 @@ export const createMergedNetworkWithView = async (
   edgeAttributeMapping: MatchingTable,
   networkAttributeMapping: MatchingTable,
   matchingAttribute: Record<IdType, Column>,
-  netSummaries: Record<IdType, NdexNetworkSummary>,
+  netSummaries: Record<IdType, NetworkSummary>,
   mergeOpType: MergeType = MergeType.union,
   mergeWithinNetwork: boolean = false,
   mergeOnlyNodes: boolean = false,
   strictRemoveMode: boolean = false,
-): Promise<[CyNetwork, NdexNetworkSummary]> => {
+): Promise<[CyNetwork, NetworkSummary]> => {
   if (
     checkAttribute(
       nodeAttributeMapping,
@@ -99,7 +99,7 @@ export const createMergedNetworkWithView = async (
     : VisualStyleFn.createVisualStyle()
   const newNetworkView: NetworkView = ViewModelFn.createViewModel(newNetwork)
 
-  const networkSummary: NdexNetworkSummary = {
+  const networkSummary: NetworkSummary = {
     isNdex: false,
     ownerUUID: toNetworkId,
     name: networkName,

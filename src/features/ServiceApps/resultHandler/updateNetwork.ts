@@ -14,7 +14,7 @@ import {
 } from '../../../models/CxModel/impl'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
-import { NdexNetworkProperty } from '../../../models/NetworkSummaryModel'
+import { NetworkProperty } from '../../../models/NetworkSummaryModel'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
 import { Cx2 } from '../../../models/CxModel/Cx2'
@@ -75,7 +75,7 @@ export const useUpdateNetwork = (): (({
           summaries[networkId]?.description ??
           localDescription
 
-        const localProperties: NdexNetworkProperty[] = Object.entries(
+        const localProperties: NetworkProperty[] = Object.entries(
           networkAttributes,
         ).map(([key, value]) => {
           return {

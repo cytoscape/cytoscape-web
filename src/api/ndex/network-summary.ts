@@ -3,7 +3,8 @@
  *
  * Functions for fetching and managing network summaries from NDEx.
  */
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
+import { NdexNetworkSummary } from './NdexNetworkSummary'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { IdType } from '../../models/IdType'
 import { ValueType } from '../../models/TableModel/ValueType'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
@@ -84,7 +85,7 @@ const normalizeNdexSummaryValue = (
  */
 export const normalizeNdexSummaries = (
   summaries: NdexNetworkSummary[],
-): NdexNetworkSummary[] => {
+): NetworkSummary[] => {
   return summaries.map((summary) => {
     const normalizedProperties = summary.properties.map((property) => {
       const normalizedValue = normalizeNdexSummaryValue(
@@ -117,13 +118,13 @@ export const normalizeNdexSummaries = (
  * @param id - Network ID(s) to fetch summaries for
  * @param accessToken - Optional authentication token
  * @param ndexUrl - Optional NDEx base URL (defaults to module configuration if not provided)
- * @returns Promise resolving to array of processed network summaries
+ * @returns Promise resolving to array of processed network summaries in internal format
  */
 export const fetchNdexSummaries = async (
   id: IdType | IdType[],
   accessToken?: string,
   ndexUrl?: string,
-): Promise<NdexNetworkSummary[]> => {
+): Promise<NetworkSummary[]> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
   const ids = Array.isArray(id) ? id : [id]
 
@@ -162,7 +163,11 @@ export const getNetworkValidationStatus = async (
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const summaries = await fetchNdexSummaries(uuid, accessToken, ndexUrl)
+      const summaries: NetworkSummary[] = await fetchNdexSummaries(
+        uuid,
+        accessToken,
+        ndexUrl,
+      )
       const summary = summaries?.[0]
       const summaryIsValid = summary?.completed && !summary?.errorMessage
 

@@ -5,7 +5,7 @@ import MergeDialog from '../../MergeNetworks/components/MergeDialog'
 import { IdType } from '../../../models/IdType'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import {
   NetworkRecord,
   Pair,
@@ -23,7 +23,7 @@ export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
   const networkIds: IdType[] = useWorkspaceStore(
     (state) => state.workspace.networkIds,
   )
-  const networkSummaries: Record<IdType, NdexNetworkSummary> =
+  const networkSummaries: Record<IdType, NetworkSummary> =
     useNetworkSummaryStore((state) => state.summaries)
   const networkVisualStyles: Record<string, VisualStyle> = useVisualStyleStore(
     (state) => state.visualStyles,

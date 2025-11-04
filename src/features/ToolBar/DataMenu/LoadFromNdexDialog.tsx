@@ -38,7 +38,7 @@ import { MessageSeverity } from '../../../models/MessageModel'
 import { logUi } from '../../../debug'
 import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 
 interface LoadFromNdexDialogProps {
   open: boolean
@@ -218,7 +218,7 @@ export const LoadFromNdexDialog = (
             acc[summary.externalId] = summary
             return acc
           },
-          {} as Record<IdType, NdexNetworkSummary>,
+          {} as Record<IdType, NetworkSummary>,
         ),
       )
       const nextCurrentNetworkId: IdType | undefined = validNetworkIds[0]

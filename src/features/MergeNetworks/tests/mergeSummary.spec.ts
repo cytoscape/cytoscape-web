@@ -6,7 +6,7 @@ jest.mock('lodash/cloneDeep', () => ({
 import { createMatchingTable } from "../models/Impl/MatchingTableImpl";
 import { MatchingTable, MatchingTableRow } from "../models/MatchingTable";
 import { mergeNetSummary } from "../models/Impl/MergeNetSummary";
-import { NdexNetworkProperty, NdexNetworkSummary } from "../../../models/NetworkSummaryModel";
+import { NetworkProperty, NetworkSummary } from "../../../models/NetworkSummaryModel";
 import { IdType } from "../../../models/IdType";
 
 describe('mergeNetSummary', () => {
@@ -15,7 +15,7 @@ describe('mergeNetSummary', () => {
     });
     it('should merge network summaries with different data types and handle edge cases', () => {
         const fromNetworks: IdType[] = ['net1', 'net2', 'net3'];
-        const netSummaryRecord: Record<IdType, NdexNetworkSummary> = {
+        const netSummaryRecord: Record<IdType, NetworkSummary> = {
             [fromNetworks[0]]: {
                 version: '1.0',
                 description: 'network 1 description',
@@ -25,8 +25,8 @@ describe('mergeNetSummary', () => {
                     { subNetworkId: null, predicateString: 'att2', dataType: 'string', value: 'att2' },
                     { subNetworkId: null, predicateString: 'att3', dataType: 'string', value: 'att33' },
                     { subNetworkId: null, predicateString: 'att4', dataType: 'list_of_string', value: '["value1", "value2"]' },
-                ] as NdexNetworkProperty[]
-            } as NdexNetworkSummary,
+                ] as NetworkProperty[]
+            } as NetworkSummary,
             [fromNetworks[1]]: {
                 version: '2.0',
                 description: 'network 2 description',
@@ -37,8 +37,8 @@ describe('mergeNetSummary', () => {
                     { subNetworkId: 'subNet2', predicateString: 'att4', dataType: 'list_of_string', value: '["value2", "value3"]' },
                     { subNetworkId: 'subNet2', predicateString: 'att5', dataType: 'list_of_number', value: [1, 2] },
                     { subNetworkId: 'subNet2', predicateString: 'att6', dataType: 'list_of_boolean', value: [false, true, false] }
-                ] as NdexNetworkProperty[]
-            } as NdexNetworkSummary,
+                ] as NetworkProperty[]
+            } as NetworkSummary,
             [fromNetworks[2]]: {
                 version: '3.0',
                 description: 'network 3 description',
@@ -51,7 +51,7 @@ describe('mergeNetSummary', () => {
                     { subNetworkId: 'subNet3', predicateString: 'att5', dataType: 'list_of_number', value: [2, 3] },
                     { subNetworkId: 'subNet3', predicateString: 'att6', dataType: 'list_of_boolean', value: [false, true, true] }
                 ]
-            } as NdexNetworkSummary
+            } as NetworkSummary
         };
 
         const netAttributeMapping: MatchingTable = createMatchingTable([

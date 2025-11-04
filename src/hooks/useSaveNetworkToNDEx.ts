@@ -1,5 +1,5 @@
 import {
-  NdexNetworkSummary,
+  NetworkSummary,
   Network,
   NetworkView,
   Table,
@@ -30,7 +30,7 @@ export const useSaveNetworkToNDEx = () => {
     networkId: string,
     network: Network,
     visualStyle: VisualStyle,
-    summary: NdexNetworkSummary,
+    summary: NetworkSummary,
     nodeTable: Table,
     edgeTable: Table,
     viewModel?: NetworkView,

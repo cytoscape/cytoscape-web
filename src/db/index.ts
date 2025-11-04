@@ -5,7 +5,7 @@ import config from '../assets/config.json'
 
 import { IdType } from '../models/IdType'
 import NetworkFn, { Node, Edge, Network } from '../models/NetworkModel'
-import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
+import { NetworkSummary } from '../models/NetworkSummaryModel'
 import { Table } from '../models/TableModel'
 import { VisualStyle } from '../models/VisualStyleModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
@@ -409,18 +409,18 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
 
 export const getNetworkSummaryFromDb = async (
   externalId: IdType,
-): Promise<NdexNetworkSummary | undefined> => {
+): Promise<NetworkSummary | undefined> => {
   return await db.summaries.get({ externalId })
 }
 
 export const getNetworkSummariesFromDb = async (
   externalIds: IdType[],
-): Promise<NdexNetworkSummary[]> => {
+): Promise<NetworkSummary[]> => {
   return await db.summaries.bulkGet(externalIds)
 }
 
 export const putNetworkSummaryToDb = async (
-  summary: NdexNetworkSummary,
+  summary: NetworkSummary,
 ): Promise<void> => {
   try {
     // ExternalId will be used as the primary key

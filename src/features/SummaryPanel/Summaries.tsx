@@ -1,5 +1,5 @@
 import { ReactElement } from 'react'
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { NetworkPropertyPanel } from './NetworkPropertyPanel'
 import { MessagePanel } from '../Messages'
 import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
@@ -14,7 +14,7 @@ export const Summaries = (): ReactElement => {
 
   return (
     <>
-      {summaryData.map((summary: NdexNetworkSummary) => {
+      {summaryData.map((summary: NetworkSummary) => {
         return (
           <NetworkPropertyPanel key={summary.externalId} summary={summary} />
         )

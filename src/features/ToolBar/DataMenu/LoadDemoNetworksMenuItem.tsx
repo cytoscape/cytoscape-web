@@ -8,7 +8,7 @@ import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
 import { fetchNdexSummaries } from '../../../api/ndex'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
 import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
-import { NdexNetworkSummary } from '../../../models'
+import { NetworkSummary } from '../../../models'
 
 export const LoadDemoNetworksMenuItem = (
   props: BaseMenuProps,
@@ -38,7 +38,7 @@ export const LoadDemoNetworksMenuItem = (
           acc[summary.externalId] = summary
           return acc
         },
-        {} as Record<IdType, NdexNetworkSummary>,
+        {} as Record<IdType, NetworkSummary>,
       ),
     )
 

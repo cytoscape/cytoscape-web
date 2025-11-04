@@ -1,6 +1,6 @@
 import { IdType } from '../models/IdType'
 import {
-  NdexNetworkSummary,
+  NetworkSummary,
   Network,
   NetworkView,
   Table,
@@ -44,7 +44,7 @@ export const useSaveCopyToNDEx = () => {
     accessToken: string,
     network: Network,
     visualStyle: VisualStyle,
-    summary: NdexNetworkSummary,
+    summary: NetworkSummary,
     nodeTable: Table,
     edgeTable: Table,
     viewModel?: NetworkView,

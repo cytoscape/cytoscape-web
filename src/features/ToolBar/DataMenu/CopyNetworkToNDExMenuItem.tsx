@@ -25,7 +25,7 @@ import { MessageSeverity } from '../../../models/MessageModel'
 import { logUi } from '../../../debug'
 import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
 import { getSummariesFromCacheOrNdex } from '../../../db/getNetworkSummaryFromCacheOrNdex'
-import { NdexNetworkSummary } from '../../../models'
+import { NetworkSummary } from '../../../models'
 import { waitSeconds } from '../../../utils/wait-seconds'
 
 export const CopyNetworkToNDExMenuItem = (
@@ -105,7 +105,7 @@ export const CopyNetworkToNDExMenuItem = (
       )
 
       waitSeconds(1)
-      addSummary(uuid, summaries[uuid] as NdexNetworkSummary)
+      addSummary(uuid, summaries[uuid] as NetworkSummary)
       addNetwork(uuid)
       setCurrentNetworkId(uuid as IdType)
       navigateToNetwork({

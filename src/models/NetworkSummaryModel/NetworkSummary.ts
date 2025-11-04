@@ -1,8 +1,8 @@
 import { IdType } from '../IdType'
-import { NdexNetworkProperty } from './NdexNetworkProperty'
+import { NetworkProperty } from './NetworkProperty'
 import { Visibility } from './Visibility'
 
-export interface NdexNetworkSummary {
+export interface NetworkSummary {
   isNdex: boolean
   ownerUUID: IdType
   isReadOnly: boolean
@@ -18,7 +18,7 @@ export interface NdexNetworkSummary {
   cxFileSize: number
   cx2FileSize: number
   name: string
-  properties: NdexNetworkProperty[]
+  properties: NetworkProperty[]
   owner: string
   version: string
   completed: boolean
@@ -31,3 +31,4 @@ export interface NdexNetworkSummary {
   isDeleted: boolean
   modificationTime: Date
 }
+

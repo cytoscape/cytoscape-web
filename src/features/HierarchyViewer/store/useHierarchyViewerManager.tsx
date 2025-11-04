@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import {
-  NdexNetworkProperty,
-  NdexNetworkSummary,
+  NetworkProperty,
+  NetworkSummary,
 } from '../../../models/NetworkSummaryModel'
 import { IdType } from '../../../models/IdType'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
@@ -104,7 +104,7 @@ export const useHierarchyViewerManager = (): void => {
   const uiState = useUiStateStore((state) => state.ui)
   const setPanelState = useUiStateStore((state) => state.setPanelState)
 
-  const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
+  const summaries: Record<IdType, NetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -122,7 +122,7 @@ export const useHierarchyViewerManager = (): void => {
       return
     }
 
-    const networkProps: NdexNetworkProperty[] = summary.properties
+    const networkProps: NetworkProperty[] = summary.properties
     const networkPropObj: Record<string, ValueType> = networkProps.reduce<{
       [key: string]: ValueType
     }>((acc, prop) => {

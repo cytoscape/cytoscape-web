@@ -24,10 +24,8 @@ import { useCallback } from 'react'
 import { NetworkStore } from '../models/StoreModel/NetworkStoreModel'
 import { TableRecord, TableStore } from '../models/StoreModel/TableStoreModel'
 import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
-import {
-  getBaseSummary,
-  NdexNetworkSummary,
-} from '../models/NetworkSummaryModel'
+import { NetworkSummary } from '../models/NetworkSummaryModel'
+import { getBaseSummary } from '../models/NetworkSummaryModel/impl/NetworkSummaryImpl'
 import { IdType } from '../models'
 import { createViewModel } from '../models/ViewModel/impl/ViewModelImpl'
 
@@ -203,7 +201,7 @@ export const useCreateNetworkWithView = (): (({
 
       // Add all required objects to the network
       const withView: CyNetwork = createViewForNetwork(network, nodeIdMap)
-      const summary: NdexNetworkSummary = getBaseSummary({
+      const summary: NetworkSummary = getBaseSummary({
         name: name || `CyWeb Network (${network.id})`,
         network,
         description,

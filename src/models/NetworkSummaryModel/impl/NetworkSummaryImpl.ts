@@ -1,5 +1,5 @@
 import { Network } from '../../NetworkModel/Network'
-import { NdexNetworkSummary } from '../NdexNetworkSummary'
+import { NetworkSummary } from '../NetworkSummary'
 import { Visibility } from '../Visibility'
 
 interface BaseSummaryProps {
@@ -12,10 +12,10 @@ export const getBaseSummary = ({
   name,
   network,
   description,
-}: BaseSummaryProps): NdexNetworkSummary => {
+}: BaseSummaryProps): NetworkSummary => {
   const creationTime = new Date(Date.now())
 
-  const summary: NdexNetworkSummary = {
+  const summary: NetworkSummary = {
     isNdex: false,
     ownerUUID: '',
     name,

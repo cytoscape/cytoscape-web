@@ -1,11 +1,13 @@
 import { createCyNetworkFromCx2 } from './impl'
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
 import { Cx2 } from './Cx2'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
 } from '../../models/CxModel/extractor'
-import { NdexNetworkProperty } from '../../models/NetworkSummaryModel'
+import {
+  NetworkProperty,
+  NetworkSummary,
+} from '../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { v4 as uuidv4 } from 'uuid'
 import { Visibility } from '../NetworkSummaryModel/Visibility'
@@ -15,7 +17,7 @@ export const fetchUrlCx = async (
   url: string,
   maxSize: number,
 ): Promise<{
-  summary: NdexNetworkSummary
+  summary: NetworkSummary
   networkWithView: CyNetwork
 }> => {
   try {
@@ -48,16 +50,17 @@ export const fetchUrlCx = async (
 
     const description = networkAttributes.description ?? ''
 
-    const properties: NdexNetworkProperty[] = Object.entries(
-      networkAttributes,
-    ).map(([key, value]) => {
-      return {
-        predicateString: key,
-        value: value as ValueType,
-        dataType: networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
-        subNetworkId: null,
-      }
-    })
+    const properties: NetworkProperty[] = Object.entries(networkAttributes).map(
+      ([key, value]) => {
+        return {
+          predicateString: key,
+          value: value as ValueType,
+          dataType:
+            networkAttributeDeclarations[key]?.d ?? ValueTypeName.String,
+          subNetworkId: null,
+        }
+      },
+    )
 
     const summary = {
       isNdex: false,

@@ -16,7 +16,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import CircleIcon from '@mui/icons-material/Circle'
 
 import { IdType } from '../../models/IdType'
-import { NdexNetworkSummary } from '../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
 
@@ -29,7 +29,7 @@ import { Network } from '../../models'
 import { useUrlNavigation } from '../../hooks/navigation/useUrlNavigation'
 
 interface NetworkPropertyPanelProps {
-  summary: NdexNetworkSummary
+  summary: NetworkSummary
 }
 
 export const NetworkPropertyPanel = ({

@@ -1,10 +1,8 @@
 import { useCallback } from 'react'
 import { Cx2 } from '../models/CxModel/Cx2'
 import { CyNetwork } from '../models/CyNetworkModel'
-import {
-  NdexNetworkSummary,
-  getBaseSummary,
-} from '../models/NetworkSummaryModel'
+import { NetworkSummary } from '../models/NetworkSummaryModel'
+import { getBaseSummary } from '../models/NetworkSummaryModel/impl/NetworkSummaryImpl'
 import { useNetworkStore } from '../hooks/stores/NetworkStore'
 import { useTableStore } from '../hooks/stores/TableStore'
 import { useViewModelStore } from '../hooks/stores/ViewModelStore'
@@ -62,7 +60,7 @@ export const useCreateNetworkFromCx2 = (): ((
         networkViews,
       } = withView
 
-      let summary: NdexNetworkSummary
+      let summary: NetworkSummary
 
       if (networkAttributes) {
         const { attributes } = networkAttributes

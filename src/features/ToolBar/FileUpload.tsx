@@ -18,7 +18,7 @@ import {
   getNodes,
 } from '../../models/CxModel/extractor'
 import {
-  NdexNetworkProperty,
+  NetworkProperty,
   Visibility,
 } from '../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
@@ -107,7 +107,7 @@ export function FileUpload(props: FileUploadProps) {
 
         const description = networkAttributes.description ?? ''
 
-        const localProperties: NdexNetworkProperty[] = Object.entries(
+        const localProperties: NetworkProperty[] = Object.entries(
           networkAttributes,
         )
           .filter(([key, value]) => {

@@ -1,5 +1,3 @@
-export { NdexNetworkSummary } from './NdexNetworkSummary'
-export { NdexNetworkProperty } from './NdexNetworkProperty'
+export { NetworkSummary } from './NetworkSummary'
+export { NetworkProperty } from './NetworkProperty'
 export { Visibility } from './Visibility'
-
-export { getBaseSummary } from './impl/NetworkSummaryImpl'

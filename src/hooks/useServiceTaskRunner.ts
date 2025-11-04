@@ -11,7 +11,7 @@ import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
 import { useUiStateStore } from '../hooks/stores/UiStateStore'
 import { NetworkView } from '../models/ViewModel'
 import { ServiceStatus } from '../models/AppModel/ServiceStatus'
-import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
+import { NetworkSummary } from '../models/NetworkSummaryModel'
 import { VisualStyle } from '../models/VisualStyleModel'
 import { Network } from '../models/NetworkModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
@@ -52,7 +52,7 @@ export const useServiceTaskRunner = (): ((
   const table: TableRecord = useTableStore(
     (state) => state.tables[currentNetworkId],
   )
-  const summary: NdexNetworkSummary = useNetworkSummaryStore(
+  const summary: NetworkSummary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
   const viewModel: NetworkView | undefined = useViewModelStore((state) =>

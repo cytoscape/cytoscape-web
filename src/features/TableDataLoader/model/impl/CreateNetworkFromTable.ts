@@ -14,7 +14,7 @@ import {
 } from '../../../../models/VisualStyleModel'
 import { createVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 import { createViewModel } from '../../../../models/ViewModel/impl/ViewModelImpl'
-import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
 import { NetworkView } from '../../../../models/ViewModel'
 import { VisualStyleOptions } from '../../../../models/VisualStyleModel/VisualStyleOptions'
@@ -168,7 +168,7 @@ export function createNetworkFromTableData(
   uuid?: string,
   name?: string,
 ): {
-  summary: NdexNetworkSummary
+  summary: NetworkSummary
   nodeTable: Table
   edgeTable: Table
   network: Network

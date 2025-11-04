@@ -21,15 +21,15 @@ import { ValueTypeName, ValueType } from '../../models/TableModel'
 import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { serializedStringIsValid } from '../../models/TableModel/impl/ValueTypeImpl'
-import { NdexNetworkProperty } from '../../models/NetworkSummaryModel'
+import { NetworkProperty } from '../../models/NetworkSummaryModel'
 
-interface NdexNetworkPropertyState extends NdexNetworkProperty {
+interface NetworkPropertyState extends NetworkProperty {
   valueIsValid: boolean
 }
 
-const NdexNetworkPropertyTable = (props: {
-  networkProperties: NdexNetworkProperty[]
-  setNetworkProperties: (properties: NdexNetworkProperty[]) => void
+const NetworkPropertyTable = (props: {
+  networkProperties: NetworkProperty[]
+  setNetworkProperties: (properties: NetworkProperty[]) => void
 }): React.ReactElement => {
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -37,7 +37,7 @@ const NdexNetworkPropertyTable = (props: {
   const { networkProperties, setNetworkProperties } = props
 
   const [localNetworkProperties, setLocalNetworkProperties] = React.useState<
-    NdexNetworkPropertyState[]
+    NetworkPropertyState[]
   >(networkProperties.map((p) => ({ ...p, valueIsValid: true })))
 
   React.useEffect(() => {
@@ -124,7 +124,7 @@ const NdexNetworkPropertyTable = (props: {
     while (existingPropertyNames.has(newPropertyName(newPropertyCounter))) {
       newPropertyCounter++
     }
-    const defaultNewProperty: NdexNetworkPropertyState = {
+    const defaultNewProperty: NetworkPropertyState = {
       subNetworkId: null,
       predicateString: newPropertyName(newPropertyCounter),
       dataType: ValueTypeName.String,
@@ -243,4 +243,4 @@ const NdexNetworkPropertyTable = (props: {
   )
 }
 
-export default NdexNetworkPropertyTable
+export default NetworkPropertyTable

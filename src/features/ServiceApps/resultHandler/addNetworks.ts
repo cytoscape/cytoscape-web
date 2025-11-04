@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
 import {
-  NdexNetworkProperty,
+  NetworkProperty,
   Visibility,
 } from '../../../models/NetworkSummaryModel'
 import { Cx2 } from '../../../models/CxModel/Cx2'
@@ -83,7 +83,7 @@ export const useAddNetworks = (): (({
               )
             localDescription = networkAttributes.description ?? localDescription
 
-            const localProperties: NdexNetworkProperty[] = Object.entries(
+            const localProperties: NetworkProperty[] = Object.entries(
               networkAttributes,
             ).map(([key, value]) => {
               return {

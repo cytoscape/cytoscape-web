@@ -1,4 +1,4 @@
-import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
+import { NetworkSummary } from '../models/NetworkSummaryModel'
 import { IdType } from '../models/IdType'
 import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from '.'
 import { logDb } from '../debug'
@@ -7,7 +7,7 @@ import { fetchNdexSummaries } from '../api/ndex'
 export const getSummariesFromCacheOrNdex = async (
   ndexNetworkId: IdType | IdType[],
   accessToken?: string,
-): Promise<Record<IdType, NdexNetworkSummary>> => {
+): Promise<Record<IdType, NetworkSummary>> => {
   try {
     const uniqueIds = Array.from(
       new Set(Array.isArray(ndexNetworkId) ? ndexNetworkId : [ndexNetworkId]),
@@ -32,13 +32,13 @@ export const getSummariesFromCacheOrNdex = async (
       accessToken,
     )
     const validNewSummaries = newSummaries.filter((s) => s !== undefined)
-    validNewSummaries.forEach(async (summary: NdexNetworkSummary) => {
+    validNewSummaries.forEach(async (summary: NetworkSummary) => {
       await putNetworkSummaryToDb(summary)
     })
-    const summaryResults: Record<IdType, NdexNetworkSummary> = [
+    const summaryResults: Record<IdType, NetworkSummary> = [
       ...cachedSummaries.filter((s) => s !== undefined),
       ...validNewSummaries,
-    ].reduce((acc: Record<IdType, NdexNetworkSummary>, s) => {
+    ].reduce((acc: Record<IdType, NetworkSummary>, s) => {
       acc[s.externalId] = s
       return acc
     }, {})

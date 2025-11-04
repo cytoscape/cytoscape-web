@@ -1,6 +1,6 @@
 import {
   CyApp,
-  NdexNetworkSummary,
+  NetworkSummary,
   Network,
   NetworkView,
   VisualStyle,
@@ -48,7 +48,7 @@ export const useSaveWorkspace = () => {
     networkModifiedStatus: Record<string, boolean | undefined>,
     networks: Map<string, Network>,
     visualStyles: Record<string, VisualStyle>,
-    summaries: Record<string, NdexNetworkSummary>,
+    summaries: Record<string, NetworkSummary>,
     tables: Record<string, TableRecord>,
     viewModels: Record<string, NetworkView[]>,
     networkVisualStyleOpt: Record<string, VisualStyleOptions>,

@@ -7,7 +7,7 @@ import { MessageSeverity } from '../models/MessageModel'
 import { Network } from '../models/NetworkModel'
 import { NetworkView } from '../models/ViewModel'
 import { VisualStyle } from '../models/VisualStyleModel'
-import { NdexNetworkSummary } from '../models/NetworkSummaryModel'
+import { NetworkSummary } from '../models/NetworkSummaryModel'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { TableRecord } from '../models/StoreModel/TableStoreModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
@@ -19,7 +19,7 @@ export const useOpenNetworkInCytoscape = () => {
   const openNetworkInCytoscape = async (
     network: Network,
     visualStyle: VisualStyle,
-    summary: NdexNetworkSummary | undefined,
+    summary: NetworkSummary | undefined,
     table: TableRecord,
     visualStyleOptions: VisualStyleOptions,
     viewModel: NetworkView | undefined,

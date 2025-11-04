@@ -1,4 +1,4 @@
-import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { Table } from '../../../models/TableModel'
 
 import { HcxVersion } from './HcxVersion'
@@ -12,7 +12,7 @@ export interface HcxValidationResult {
 export interface HcxValidator {
   version: HcxVersion
   validate: (
-    summary: NdexNetworkSummary,
+    summary: NetworkSummary,
     nodeTable: Table,
   ) => HcxValidationResult
 }

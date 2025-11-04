@@ -6,7 +6,7 @@ import {
   ValueType,
   Network,
   VisualStyle,
-  NdexNetworkSummary,
+  NetworkSummary,
 } from '../../models'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { deleteTask, getTaskResult, getTaskStatus, submitTask } from './api'
@@ -44,7 +44,7 @@ interface RunTaskProps {
   network?: Network
   table?: TableRecord
   visualStyle?: VisualStyle
-  summary?: NdexNetworkSummary
+  summary?: NetworkSummary
   visualStyleOptions?: VisualStyleOptions
   viewModel?: NetworkView
   opaqueAspect?: OpaqueAspects
@@ -61,7 +61,7 @@ export const createNetworkDataObj = (
   inputNetwork: InputNetwork,
   network: Network,
   visualStyle?: VisualStyle,
-  summary?: NdexNetworkSummary,
+  summary?: NetworkSummary,
   table?: TableRecord,
   visualStyleOptions?: VisualStyleOptions,
   viewModel?: NetworkView,
