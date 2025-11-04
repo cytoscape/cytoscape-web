@@ -21,13 +21,13 @@ import {
 } from '../api/ndex'
 
 /**
- * Hook that returns a function to save a copy of a network to NDEx.
+ * Hook that returns a function to save a copy of a CyNetwork to NDEx.
  *
  * The copy will be added to the current workspace and optionally replace the original.
  *
- * @returns Function to save a copy of a network to NDEx
+ * @returns Function to save a copy of a CyNetwork to NDEx
  */
-export const useSaveCopyToNDEx = () => {
+export const useSaveCyNetworkCopyToNDEx = () => {
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )

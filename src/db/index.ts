@@ -13,6 +13,7 @@ import { Workspace } from '../models/WorkspaceModel'
 import { NetworkView } from '../models/ViewModel'
 import { Ui } from '../models/UiModel'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
+import { CyNetwork } from '../models/CyNetworkModel'
 import { applyMigrations } from './migrations'
 import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import { FilterConfig } from '../models/FilterModel/FilterConfig'
@@ -883,7 +884,7 @@ export const clearUndoRedoStackFromDb = async (): Promise<void> => {
 }
 
 /**
- * Retrieves cached network data from IndexedDB.
+ * Retrieves a CyNetwork from IndexedDB.
  *
  * Attempts to load all network-related data from the cache, including:
  * - Network structure
@@ -894,12 +895,10 @@ export const clearUndoRedoStackFromDb = async (): Promise<void> => {
  * - Undo/redo stack
  *
  * @param id - Network ID to retrieve from cache
- * @returns Promise resolving to CachedNetworkData object
- * @throws Error if data retrieval fails
+ * @returns Promise resolving to CyNetwork object
+ * @throws Error if data retrieval fails or required fields are missing
  */
-export const getCachedNetworkData = async (
-  id: string,
-): Promise<CachedNetworkData> => {
+export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
   try {
     const network = await getNetworkFromDb(id)
     const tables = await getTablesFromDb(id)
@@ -925,19 +924,34 @@ export const getCachedNetworkData = async (
       undoStack: [],
       redoStack: [],
     }
+
+    // Ensure all required fields are present
+    if (!network) {
+      throw new Error(`Network not found for id: ${id}`)
+    }
+    if (!tables || !tables.nodeTable || !tables.edgeTable) {
+      throw new Error(`Tables not found for id: ${id}`)
+    }
+    if (!visualStyle) {
+      throw new Error(`Visual style not found for id: ${id}`)
+    }
+    if (!networkViews) {
+      throw new Error(`Network views not found for id: ${id}`)
+    }
+
     return {
       network,
+      nodeTable: tables.nodeTable,
+      edgeTable: tables.edgeTable,
       visualStyle,
-      nodeTable: tables !== undefined ? tables.nodeTable : undefined,
-      edgeTable: tables !== undefined ? tables.edgeTable : undefined,
-      networkViews: networkViews ?? [],
+      networkViews: networkViews,
       visualStyleOptions: visualStyleOptions,
       otherAspects: otherAspects,
       undoRedoStack: undoRedoStack,
     }
   } catch (e) {
     logDb.error(
-      `[${getCachedNetworkData.name}]:[${id}]: Failed to restore data from IndexedDB for network ${id} ${e}`,
+      `[${getCyNetworkFromDb.name}]:[${id}]: Failed to restore data from IndexedDB for network ${id} ${e}`,
     )
     throw e
   }

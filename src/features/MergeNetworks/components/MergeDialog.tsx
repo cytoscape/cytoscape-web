@@ -55,7 +55,7 @@ import useNetMatchingTableStore from '../store/netMatchingTableStore'
 import useMergeToolTipStore from '../store/mergeToolTip'
 import { Column } from '../../../models/TableModel'
 import { IdType } from '../../../models/IdType'
-import { getModelsFromCacheOrNdex } from '../../../db/getModelsFromCacheOrNdex'
+import { useLoadCyNetwork } from '../../../hooks/useLoadCyNetwork'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
@@ -497,10 +497,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
   )
+  const loadCyNetwork = useLoadCyNetwork()
   //utility function to load network by id
   const loadNetworkById = async (networkId: IdType) => {
     const currentToken = await getToken()
-    const res = await getModelsFromCacheOrNdex(networkId, currentToken)
+    const res = await loadCyNetwork(networkId, currentToken)
     const { network, nodeTable, edgeTable, visualStyle } = res
     const summary = netSummaries[networkId]
     const netTable = getNetTableFromSummary(summary)
@@ -516,12 +517,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const handleMerge = async (): Promise<void> => {
     try {
       const newNetworkId = uuidv4()
-      const summaryRecord: Record<IdType, NetworkSummary> =
-        Object.fromEntries(
-          Object.entries(netSummaries).filter(([id]) =>
-            toMergeNetworksList.some((pair) => pair[1] === id),
-          ),
-        )
+      const summaryRecord: Record<IdType, NetworkSummary> = Object.fromEntries(
+        Object.entries(netSummaries).filter(([id]) =>
+          toMergeNetworksList.some((pair) => pair[1] === id),
+        ),
+      )
       const [newNetworkWithView, networkSummary] =
         await createMergedNetworkWithView(
           [...toMergeNetworksList.map((i) => i[1])],

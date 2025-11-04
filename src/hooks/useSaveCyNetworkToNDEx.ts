@@ -17,13 +17,13 @@ import {
 } from '../api/ndex'
 
 /**
- * Hook that returns a function to save a network to NDEx.
+ * Hook that returns a function to save a CyNetwork to NDEx.
  *
  * Updates an existing network in NDEx.
  *
- * @returns Function to save a network to NDEx
+ * @returns Function to save a CyNetwork to NDEx
  */
-export const useSaveNetworkToNDEx = () => {
+export const useSaveCyNetworkToNDEx = () => {
   const updateSummary = useNetworkSummaryStore((state) => state.update)
   const saveNetworkToNDEx = async (
     accessToken: string,

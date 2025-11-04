@@ -30,8 +30,8 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
 import { TimeOutErrorMessage, TimeOutErrorIndicator } from '../../../api/ndex'
-import { useSaveNetworkToNDEx } from '../../../hooks/useSaveNetworkToNDEx'
-import { useSaveCopyToNDEx } from '../../../hooks/useSaveNetworkCopyToNDEx'
+import { useSaveCyNetworkToNDEx } from '../../../hooks/useSaveCyNetworkToNDEx'
+import { useSaveCyNetworkCopyToNDEx } from '../../../hooks/useSaveCyNetworkCopyToNDEx'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { logUi } from '../../../debug'
 
@@ -91,8 +91,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
 
-  const saveNetworkOverwrite = useSaveNetworkToNDEx()
-  const saveNetworkCopy = useSaveCopyToNDEx()
+  const saveNetworkOverwrite = useSaveCyNetworkToNDEx()
+  const saveNetworkCopy = useSaveCyNetworkCopyToNDEx()
 
   useEffect(() => {
     const fetchPermission = async () => {

@@ -7,7 +7,7 @@ import {
 } from '../models'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { TableRecord } from '../models/StoreModel/TableStoreModel'
-import { getModelsFromCacheOrNdex } from '../db/getModelsFromCacheOrNdex'
+import { useLoadCyNetwork } from './useLoadCyNetwork'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { MessageSeverity } from '../models/MessageModel'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
@@ -21,8 +21,8 @@ import {
   TimeOutErrorMessage,
   TimeOutErrorIndicator,
 } from '../api/ndex'
-import { useSaveNetworkToNDEx } from './useSaveNetworkToNDEx'
-import { useSaveCopyToNDEx } from './useSaveNetworkCopyToNDEx'
+import { useSaveCyNetworkToNDEx } from './useSaveCyNetworkToNDEx'
+import { useSaveCyNetworkCopyToNDEx } from './useSaveCyNetworkCopyToNDEx'
 
 /**
  * Hook that returns a function to save a workspace to NDEx.
@@ -36,8 +36,9 @@ export const useSaveWorkspace = () => {
     (state) => state.deleteNetworkModifiedStatus,
   )
   const addMessage = useMessageStore((state) => state.addMessage)
-  const saveNetworkToNDEx = useSaveNetworkToNDEx()
-  const saveCopyToNDEx = useSaveCopyToNDEx()
+  const saveNetworkToNDEx = useSaveCyNetworkToNDEx()
+  const saveCopyToNDEx = useSaveCyNetworkCopyToNDEx()
+  const loadCyNetwork = useLoadCyNetwork()
   const setId = useWorkspaceStore((state) => state.setId)
   const renameWorkspace = useWorkspaceStore((state) => state.setName)
   const setIsRemote = useWorkspaceStore((state) => state.setIsRemote)
@@ -76,7 +77,7 @@ export const useSaveWorkspace = () => {
 
       try {
         if (!network || !visualStyle || !nodeTable || !edgeTable) {
-          const res = await getModelsFromCacheOrNdex(networkId, accessToken)
+          const res = await loadCyNetwork(networkId, accessToken)
           // Using parentheses to perform destructuring assignment correctly
           ;({
             network,

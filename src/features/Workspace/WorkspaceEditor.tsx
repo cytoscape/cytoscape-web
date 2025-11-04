@@ -19,8 +19,8 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 
-import { getModelsFromCacheOrNdex } from '../../db/getModelsFromCacheOrNdex'
-import { getSummariesFromCacheOrNdex } from '../../db/getNetworkSummaryFromCacheOrNdex'
+import { useLoadCyNetwork } from '../../hooks/useLoadCyNetwork'
+import { useLoadNetworkSummaries } from '../../hooks/useLoadNetworkSummaries'
 import { useTableStore } from '../../hooks/stores/TableStore'
 import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
 import { useNetworkStore } from '../../hooks/stores/NetworkStore'
@@ -216,6 +216,9 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
+  const loadCyNetwork = useLoadCyNetwork()
+  const loadNetworkSummaries = useLoadNetworkSummaries()
+
   const addNewNetwork = useNetworkStore((state) => state.add)
   const addVisualStyle = useVisualStyleStore((state) => state.add)
   const addTable = useTableStore((state) => state.add)
@@ -248,15 +251,9 @@ const WorkSpaceEditor = (): JSX.Element => {
     try {
       const currentToken = await getToken()
 
-      const summaryMap = await getSummariesFromCacheOrNdex(
-        [networkId],
-        currentToken,
-      )
+      const summaryMap = await loadNetworkSummaries([networkId], currentToken)
       const summary = summaryMap[networkId]
-      const res: CyNetwork = await getModelsFromCacheOrNdex(
-        networkId,
-        currentToken,
-      )
+      const res: CyNetwork = await loadCyNetwork(networkId, currentToken)
       const {
         network,
         nodeTable,

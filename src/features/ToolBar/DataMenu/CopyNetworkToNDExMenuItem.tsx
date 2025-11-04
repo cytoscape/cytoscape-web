@@ -20,11 +20,11 @@ import { NetworkView } from '../../../models/ViewModel'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
 import { TimeOutErrorIndicator, TimeOutErrorMessage } from '../../../api/ndex'
-import { useSaveCopyToNDEx } from '../../../hooks/useSaveNetworkCopyToNDEx'
+import { useSaveCyNetworkCopyToNDEx } from '../../../hooks/useSaveCyNetworkCopyToNDEx'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { logUi } from '../../../debug'
 import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
-import { getSummariesFromCacheOrNdex } from '../../../db/getNetworkSummaryFromCacheOrNdex'
+import { useLoadNetworkSummaries } from '../../../hooks/useLoadNetworkSummaries'
 import { NetworkSummary } from '../../../models'
 import { waitSeconds } from '../../../utils/wait-seconds'
 
@@ -81,7 +81,8 @@ export const CopyNetworkToNDExMenuItem = (
     (state) => state.setCurrentNetworkId,
   )
   const addNetwork = useWorkspaceStore((state) => state.addNetworkIds)
-  const saveNetworkCopy = useSaveCopyToNDEx()
+  const saveNetworkCopy = useSaveCyNetworkCopyToNDEx()
+  const loadNetworkSummaries = useLoadNetworkSummaries()
   const saveCopyToNDEx = async (): Promise<void> => {
     const accessToken = await getToken()
 
@@ -99,10 +100,7 @@ export const CopyNetworkToNDExMenuItem = (
         false, // keep the original network
       )
       waitSeconds(1)
-      const summaries = await getSummariesFromCacheOrNdex(
-        uuid as IdType,
-        accessToken,
-      )
+      const summaries = await loadNetworkSummaries(uuid as IdType, accessToken)
 
       waitSeconds(1)
       addSummary(uuid, summaries[uuid] as NetworkSummary)

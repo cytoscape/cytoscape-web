@@ -18,7 +18,7 @@ import {
 import { ToolBar } from './ToolBar'
 import { DEFAULT_UI_STATE, useUiStateStore } from '../hooks/stores/UiStateStore'
 import { AppConfigContext } from '../AppConfigContext'
-import { getSummariesFromCacheOrNdex } from '../db/getNetworkSummaryFromCacheOrNdex'
+import { useLoadNetworkSummaries } from '../hooks/useLoadNetworkSummaries'
 import { fetchNdexSummaries } from '../api/ndex'
 import { useCredentialStore } from '../hooks/stores/CredentialStore'
 
@@ -64,6 +64,7 @@ const AppShell = (): ReactElement => {
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
   )
+  const loadNetworkSummaries = useLoadNetworkSummaries()
   const { ndexBaseUrl } = useContext(AppConfigContext)
 
   const setUi = useUiStateStore((state) => state.setUi)
@@ -148,10 +149,7 @@ const AppShell = (): ReactElement => {
       // Load workspace, summaries in the workspace and authentication token
       const workspace = await getWorkspaceFromDb()
       const token = await getToken()
-      const summaries = await getSummariesFromCacheOrNdex(
-        workspace.networkIds,
-        token,
-      )
+      const summaries = await loadNetworkSummaries(workspace.networkIds, token)
 
       // Process UI state parameters from search params
       const uiState = (await getUiStateFromDb()) ?? DEFAULT_UI_STATE
