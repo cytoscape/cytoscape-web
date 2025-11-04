@@ -8,6 +8,7 @@ import { Network, Node, Edge } from '../index'
 import NetworkFn from '../index'
 import { Cx2 } from '../../CxModel/Cx2'
 import { IdType } from '../../IdType'
+import { createNetworkFromCx } from '../../CxModel/impl/converters'
 
 describe('Network Implementation', () => {
   describe('createNetwork', () => {
@@ -480,7 +481,7 @@ describe('Network Implementation', () => {
         },
       ]
 
-      const network = NetworkFn.createNetworkFromCx(networkId, cx2)
+      const network = createNetworkFromCx(networkId, cx2)
 
       expect(network.id).toBe(networkId)
       expect(network.nodes.length).toBeGreaterThan(0)
@@ -502,7 +503,7 @@ describe('Network Implementation', () => {
         },
       ]
 
-      const network = NetworkFn.createNetworkFromCx(networkId, cx2)
+      const network = createNetworkFromCx(networkId, cx2)
 
       expect(network.id).toBe(networkId)
       expect(network.nodes).toEqual([])

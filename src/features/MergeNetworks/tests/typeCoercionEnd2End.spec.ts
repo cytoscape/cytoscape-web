@@ -1,12 +1,23 @@
 
-jest.mock('../../../models/NetworkModel', () => {
+jest.mock('../../../models/NetworkModel/impl/NetworkImpl', () => {
     return {
-        default: {
-            createNetwork: jest.fn(),
-            createNetworkFromLists: jest.fn(),
-            addNode: jest.fn(),
-            addNodes: jest.fn()
-        }
+        createNetwork: jest.fn(),
+        createNetworkFromLists: jest.fn(),
+        addNode: jest.fn(),
+        addNodes: jest.fn(),
+        addEdges: jest.fn(),
+        addEdge: jest.fn(),
+        deleteNodes: jest.fn(),
+        deleteEdges: jest.fn(),
+        translateCXEdgeId: jest.fn((id: string) => `e${id}`),
+        isEdgeId: jest.fn((id: string) => id.startsWith('e')),
+        translateEdgeIdToCX: jest.fn((id: string) => id.slice(1)),
+        createFromCyJson: jest.fn(),
+        networkModelToImplNetwork: jest.fn(),
+        createCyJSON: jest.fn(),
+        addNodeRow: jest.fn(),
+        addNodesWithRows: jest.fn(),
+        getInternalNetworkDataStore: jest.fn(),
     };
 });
 

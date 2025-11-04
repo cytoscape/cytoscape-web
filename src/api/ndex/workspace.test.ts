@@ -430,7 +430,7 @@ describe('searchNdexNetworks', () => {
 
     const result = await searchNdexNetworks(mockSearchValue)
 
-    expect(result).toEqual({})
+    expect(result).toEqual({ networks: [] })
   })
 
   it('should propagate errors from the NDEx client', async () => {

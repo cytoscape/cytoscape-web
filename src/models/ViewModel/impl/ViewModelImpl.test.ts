@@ -7,12 +7,12 @@ import { Network, Node, Edge } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
 import {
   createViewModel,
-  createViewModelFromCX,
   addNodeViewsToModel,
   addEdgeViewsToModel,
   addNodeViewToModel,
   addEdgeViewToModel,
 } from './ViewModelImpl'
+import { createViewModelFromCX } from '../../CxModel/impl/converters'
 import { NetworkView, NodeView, EdgeView } from '../index'
 import { Cx2 } from '../../CxModel/Cx2'
 import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'

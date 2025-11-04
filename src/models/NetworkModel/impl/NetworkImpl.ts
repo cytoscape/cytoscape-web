@@ -2,11 +2,6 @@ import { IdType } from '../../IdType'
 import { AttributeName, ValueType } from '../../TableModel'
 import { Network, Node, Edge } from '..'
 
-import { Cx2 } from '../../CxModel/Cx2'
-
-import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
-import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
-import * as cxUtil from '../../CxModel/extractor'
 
 import { Core, EdgeSingular, NodeSingular } from 'cytoscape'
 import cytoscape from 'cytoscape'
@@ -69,50 +64,6 @@ export const translateCXEdgeId = (id: IdType): IdType => `e${id}`
 export const isEdgeId = (id: IdType): boolean => id.startsWith('e')
 
 export const translateEdgeIdToCX = (id: IdType): IdType => id.slice(1)
-
-/**
- * Create a network from a CX object
- *
- * @param cx
- * @param id
- * @returns
- *
- */
-export const createNetworkFromCx = (id: IdType, cx: Cx2): Network => {
-  // Create an empty NetworkImpl
-  const networkImpl: NetworkImpl = new NetworkImpl(id)
-
-  // Extract nodes and edges from CX2 object
-  const cxNodes: CxNode[] = cxUtil.getNodes(cx)
-  const cxEdges: CxEdge[] = cxUtil.getEdges(cx)
-
-  // Convert CX nodes to Cytoscape nodes
-  networkImpl.store.add(
-    cxNodes.map((node: CxNode) => {
-      const n: any = node
-      return createCyNode(
-        node.id !== undefined ? node.id.toString() : n['@id'].toString(),
-      )
-    }),
-  )
-
-  // Convert CX edges to Cytoscape edges
-  networkImpl.store.add(
-    cxEdges.map((edge: CxEdge, i: number) => {
-      const eBlob: any = edge
-      const e = createCyEdge(
-        translateCXEdgeId(
-          edge.id !== undefined ? edge.id.toString() : eBlob['@id'].toString(),
-        ),
-        edge.s.toString(),
-        edge.t.toString(),
-      )
-      return e
-    }),
-  )
-
-  return networkImpl
-}
 
 /**
  * Create a Cytoscape.js object from a Cyjs JSON
