@@ -12,11 +12,23 @@ import { Edge,Network, Node } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
 import { EdgeView,NetworkView, NodeView } from '../index'
 import {
+  additiveSelect,
+  additiveUnselect,
+  addEdgeViewDirect,
   addEdgeViewsToModel,
   addEdgeViewToModel,
+  addNodeViewDirect,
   addNodeViewsToModel,
   addNodeViewToModel,
   createViewModel,
+  deleteEdgeViews,
+  deleteNodeViews,
+  deleteObjects,
+  exclusiveSelect,
+  getNetworkViewId,
+  setNodePosition,
+  toggleSelected,
+  updateNodePositions,
 } from './viewModelImpl'
 
 describe('ViewModel Implementation', () => {
@@ -639,6 +651,483 @@ describe('ViewModel Implementation', () => {
       expect(viewModel.nodeViews['n1']).toBeDefined()
       expect(viewModel.nodeViews['n2']).toBeDefined()
       expect(Object.keys(viewModel.nodeViews)).toHaveLength(2)
+    })
+  })
+
+  describe('getNetworkViewId', () => {
+    it('should generate view ID for new view', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetwork('test-network-1'),
+      )
+      networkView.type = 'nodeLink'
+
+      const viewId = getNetworkViewId(networkView, [])
+
+      expect(viewId).toBe('test-network-1-nodeLink-1')
+    })
+
+    it('should increment view ID when views exist', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetwork('test-network-1'),
+      )
+      networkView.type = 'nodeLink'
+      const existingViews: NetworkView[] = [
+        {
+          ...createViewModel(NetworkFn.createNetwork('test-network-1')),
+          viewId: 'test-network-1-nodeLink-1',
+          type: 'nodeLink',
+        },
+        {
+          ...createViewModel(NetworkFn.createNetwork('test-network-1')),
+          viewId: 'test-network-1-nodeLink-2',
+          type: 'nodeLink',
+        },
+      ]
+
+      const viewId = getNetworkViewId(networkView, existingViews)
+
+      expect(viewId).toBe('test-network-1-nodeLink-3')
+    })
+
+    it('should use default type if not provided', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetwork('test-network-1'),
+      )
+      delete networkView.type
+
+      const viewId = getNetworkViewId(networkView, [])
+
+      expect(viewId).toBe('test-network-1-nodeLink-1')
+    })
+  })
+
+  describe('exclusiveSelect', () => {
+    it('should set selected nodes and edges exclusively', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [{ id: 'e1', s: 'n1', t: 'n2' }],
+        ),
+      )
+      networkView.selectedNodes = ['n1']
+      networkView.selectedEdges = ['e1']
+
+      const result = exclusiveSelect(networkView, ['n2'], [])
+
+      expect(result.selectedNodes).toEqual(['n2'])
+      expect(result.selectedEdges).toEqual([])
+      expect(result).not.toBe(networkView) // Immutability check
+      expect(networkView.selectedNodes).toEqual(['n1']) // Original unchanged
+    })
+
+    it('should clear selection when empty arrays provided', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }],
+          [{ id: 'e1', s: 'n1', t: 'n1' }],
+        ),
+      )
+      networkView.selectedNodes = ['n1']
+      networkView.selectedEdges = ['e1']
+
+      const result = exclusiveSelect(networkView, [], [])
+
+      expect(result.selectedNodes).toEqual([])
+      expect(result.selectedEdges).toEqual([])
+    })
+  })
+
+  describe('toggleSelected', () => {
+    it('should toggle node selection', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [],
+        ),
+      )
+      networkView.selectedNodes = ['n1']
+
+      const result = toggleSelected(networkView, ['n1', 'n2'])
+
+      expect(result.selectedNodes).not.toContain('n1')
+      expect(result.selectedNodes).toContain('n2')
+      expect(result).not.toBe(networkView) // Immutability check
+    })
+
+    it('should toggle edge selection', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [{ id: 'e1', s: 'n1', t: 'n2' }],
+        ),
+      )
+      networkView.selectedEdges = ['e1']
+
+      const result = toggleSelected(networkView, ['e1'])
+
+      expect(result.selectedEdges).not.toContain('e1')
+    })
+
+    it('should handle both nodes and edges', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }],
+          [{ id: 'e1', s: 'n1', t: 'n1' }],
+        ),
+      )
+
+      const result = toggleSelected(networkView, ['n1', 'e1'])
+
+      expect(result.selectedNodes).toContain('n1')
+      expect(result.selectedEdges).toContain('e1')
+    })
+  })
+
+  describe('additiveSelect', () => {
+    it('should add nodes to selection without removing existing', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [],
+        ),
+      )
+      networkView.selectedNodes = ['n1']
+
+      const result = additiveSelect(networkView, ['n2'])
+
+      expect(result.selectedNodes).toContain('n1')
+      expect(result.selectedNodes).toContain('n2')
+      expect(result).not.toBe(networkView) // Immutability check
+    })
+
+    it('should add edges to selection without removing existing', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [{ id: 'e1', s: 'n1', t: 'n2' }],
+        ),
+      )
+      networkView.selectedEdges = []
+
+      const result = additiveSelect(networkView, ['e1'])
+
+      expect(result.selectedEdges).toContain('e1')
+    })
+  })
+
+  describe('additiveUnselect', () => {
+    it('should remove nodes from selection without affecting others', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [],
+        ),
+      )
+      networkView.selectedNodes = ['n1', 'n2']
+
+      const result = additiveUnselect(networkView, ['n1'])
+
+      expect(result.selectedNodes).not.toContain('n1')
+      expect(result.selectedNodes).toContain('n2')
+      expect(result).not.toBe(networkView) // Immutability check
+    })
+
+    it('should remove edges from selection without affecting others', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [{ id: 'e1', s: 'n1', t: 'n2' }],
+        ),
+      )
+      networkView.selectedEdges = ['e1']
+
+      const result = additiveUnselect(networkView, ['e1'])
+
+      expect(result.selectedEdges).not.toContain('e1')
+    })
+  })
+
+  describe('setNodePosition', () => {
+    it('should set node position', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }],
+          [],
+        ),
+      )
+
+      const result = setNodePosition(networkView, 'n1', [100, 200])
+
+      expect(result.nodeViews['n1'].x).toBe(100)
+      expect(result.nodeViews['n1'].y).toBe(200)
+      expect(result).not.toBe(networkView) // Immutability check
+      expect(networkView.nodeViews['n1'].x).toBe(0) // Original unchanged
+    })
+
+    it('should set node position with z coordinate', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }],
+          [],
+        ),
+      )
+
+      const result = setNodePosition(networkView, 'n1', [100, 200, 300])
+
+      expect(result.nodeViews['n1'].x).toBe(100)
+      expect(result.nodeViews['n1'].y).toBe(200)
+      expect(result.nodeViews['n1'].z).toBe(300)
+    })
+
+    it('should return unchanged if node does not exist', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists('test-network-1', [], []),
+      )
+
+      const result = setNodePosition(networkView, 'non-existent', [100, 200])
+
+      expect(result).toBe(networkView) // Should return unchanged
+    })
+  })
+
+  describe('updateNodePositions', () => {
+    it('should update multiple node positions', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [],
+        ),
+      )
+      const positions = new Map<IdType, [number, number, number?]>([
+        ['n1', [100, 200]],
+        ['n2', [300, 400]],
+      ])
+
+      const result = updateNodePositions(networkView, positions)
+
+      expect(result.nodeViews['n1'].x).toBe(100)
+      expect(result.nodeViews['n1'].y).toBe(200)
+      expect(result.nodeViews['n2'].x).toBe(300)
+      expect(result.nodeViews['n2'].y).toBe(400)
+      expect(result).not.toBe(networkView) // Immutability check
+    })
+
+    it('should only update positions for nodes in the map', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [],
+        ),
+      )
+      const originalN2X = networkView.nodeViews['n2'].x
+      const positions = new Map<IdType, [number, number, number?]>([
+        ['n1', [100, 200]],
+      ])
+
+      const result = updateNodePositions(networkView, positions)
+
+      expect(result.nodeViews['n1'].x).toBe(100)
+      expect(result.nodeViews['n2'].x).toBe(originalN2X)
+    })
+  })
+
+  describe('deleteObjects', () => {
+    it('should delete nodes from view', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [],
+        ),
+      )
+
+      const result = deleteObjects(networkView, ['n1'])
+
+      expect(result.nodeViews['n1']).toBeUndefined()
+      expect(result.nodeViews['n2']).toBeDefined()
+      expect(result).not.toBe(networkView) // Immutability check
+      expect(networkView.nodeViews['n1']).toBeDefined() // Original unchanged
+    })
+
+    it('should delete edges from view', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [{ id: 'e1', s: 'n1', t: 'n2' }],
+        ),
+      )
+
+      const result = deleteObjects(networkView, ['e1'])
+
+      expect(result.edgeViews['e1']).toBeUndefined()
+    })
+
+    it('should delete both nodes and edges', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }],
+          [{ id: 'e1', s: 'n1', t: 'n1' }],
+        ),
+      )
+
+      const result = deleteObjects(networkView, ['n1', 'e1'])
+
+      expect(result.nodeViews['n1']).toBeUndefined()
+      expect(result.edgeViews['e1']).toBeUndefined()
+    })
+  })
+
+  describe('addNodeViewDirect', () => {
+    it('should add a node view', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists('test-network-1', [], []),
+      )
+      const newNodeView: NodeView = {
+        id: 'n1',
+        x: 100,
+        y: 200,
+        values: new Map(),
+      }
+
+      const result = addNodeViewDirect(networkView, newNodeView)
+
+      expect(result.nodeViews['n1']).toEqual(newNodeView)
+      expect(result).not.toBe(networkView) // Immutability check
+    })
+
+    it('should replace existing node view', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }],
+          [],
+        ),
+      )
+      const updatedNodeView: NodeView = {
+        id: 'n1',
+        x: 999,
+        y: 888,
+        values: new Map(),
+      }
+
+      const result = addNodeViewDirect(networkView, updatedNodeView)
+
+      expect(result.nodeViews['n1'].x).toBe(999)
+      expect(result.nodeViews['n1'].y).toBe(888)
+    })
+  })
+
+  describe('addEdgeViewDirect', () => {
+    it('should add an edge view', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists('test-network-1', [], []),
+      )
+      const newEdgeView: EdgeView = {
+        id: 'e1',
+        values: new Map(),
+      }
+
+      const result = addEdgeViewDirect(networkView, newEdgeView)
+
+      expect(result.edgeViews['e1']).toEqual(newEdgeView)
+      expect(result).not.toBe(networkView) // Immutability check
+    })
+  })
+
+  describe('deleteNodeViews', () => {
+    it('should delete node views', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [],
+        ),
+      )
+
+      const result = deleteNodeViews(networkView, ['n1'])
+
+      expect(result.nodeViews['n1']).toBeUndefined()
+      expect(result.nodeViews['n2']).toBeDefined()
+      expect(result).not.toBe(networkView) // Immutability check
+    })
+
+    it('should delete multiple node views', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [],
+        ),
+      )
+
+      const result = deleteNodeViews(networkView, ['n1', 'n2'])
+
+      expect(result.nodeViews['n1']).toBeUndefined()
+      expect(result.nodeViews['n2']).toBeUndefined()
+    })
+  })
+
+  describe('deleteEdgeViews', () => {
+    it('should delete edge views', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [{ id: 'e1', s: 'n1', t: 'n2' }],
+        ),
+      )
+
+      const result = deleteEdgeViews(networkView, ['e1'])
+
+      expect(result.edgeViews['e1']).toBeUndefined()
+      expect(result).not.toBe(networkView) // Immutability check
+    })
+  })
+
+  describe('immutability', () => {
+    it('should not mutate the original network view in any operation', () => {
+      const original = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }],
+          [{ id: 'e1', s: 'n1', t: 'n1' }],
+        ),
+      )
+      const originalSelectedNodes = original.selectedNodes
+      const originalNodeX = original.nodeViews['n1'].x
+
+      // Perform various operations
+      let networkView = exclusiveSelect(original, ['n1'], ['e1'])
+      networkView = toggleSelected(networkView, ['n1'])
+      networkView = setNodePosition(networkView, 'n1', [100, 200])
+      networkView = addNodeViewDirect(networkView, {
+        id: 'n2',
+        x: 300,
+        y: 400,
+        values: new Map(),
+      })
+      networkView = deleteObjects(networkView, ['n2'])
+
+      // Verify original is unchanged
+      expect(original.selectedNodes).toBe(originalSelectedNodes)
+      expect(original.nodeViews['n1'].x).toBe(originalNodeX)
+      expect(original.nodeViews['n2']).toBeUndefined()
+      expect(original.edgeViews['e1']).toBeDefined()
     })
   })
 })

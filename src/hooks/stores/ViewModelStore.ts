@@ -10,42 +10,14 @@ import {
 } from '../../db'
 import { logStore } from '../../debug'
 import { IdType } from '../../models/IdType'
-import { isEdgeId } from '../../models/NetworkModel/impl/networkImpl'
 import { ViewModelStore } from '../../models/StoreModel/ViewModelStoreModel'
 import { EdgeView, NetworkView, NodeView } from '../../models/ViewModel'
+import * as ViewModelImpl from '../../models/ViewModel/impl/viewModelImpl'
 import { useWorkspaceStore } from './WorkspaceStore'
 
-// Default view type (a node-link diagram)
-export const DEF_VIEW_TYPE = 'nodeLink'
-
-/**
- * Create a new view ID for a network view.
- *
- * @param newView
- * @param views
- * @returns
- */
-export const getNetworkViewId = (
-  newView: NetworkView,
-  views: NetworkView[],
-): IdType => {
-  let { type } = newView
-  const { id } = newView
-  if (type === undefined) {
-    type = DEF_VIEW_TYPE
-  }
-  const prefix = `${id}-${type}`
-  const existingIds: string[] = []
-
-  views.forEach((view: NetworkView) => {
-    const viewId: string = view.viewId ?? ''
-    if (viewId.startsWith(prefix)) {
-      existingIds.push(viewId)
-    }
-  })
-
-  return `${id}-${type}-${existingIds.length + 1}`
-}
+// Re-export for compatibility
+export const DEF_VIEW_TYPE = ViewModelImpl.DEF_VIEW_TYPE
+export const getNetworkViewId = ViewModelImpl.getNetworkViewId
 
 const persist =
   (config: StateCreator<ViewModelStore>) =>
@@ -91,12 +63,12 @@ export const useViewModelStore = create(
               const viewId: string = networkView.viewId ?? ''
               let viewModelType: string = networkView.type ?? ''
               if (viewModelType === '') {
-                networkView.type = DEF_VIEW_TYPE
-                viewModelType = DEF_VIEW_TYPE
+                networkView.type = ViewModelImpl.DEF_VIEW_TYPE
+                viewModelType = ViewModelImpl.DEF_VIEW_TYPE
               }
 
               if (viewId === '') {
-                networkView.viewId = getNetworkViewId(
+                networkView.viewId = ViewModelImpl.getNetworkViewId(
                   networkView,
                   state.viewModels[networkId] ?? [],
                 )
@@ -164,14 +136,9 @@ export const useViewModelStore = create(
               return state
             }
 
-            const newViewList: NetworkView[] = []
-            viewList.forEach((view: NetworkView) => {
-              const newView = { ...view }
-              newView.selectedNodes = selectedNodes
-              newView.selectedEdges = selectedEdges
-              newViewList.push(newView)
-            })
-            state.viewModels[networkId] = newViewList
+            state.viewModels[networkId] = viewList.map((view: NetworkView) =>
+              ViewModelImpl.exclusiveSelect(view, selectedNodes, selectedEdges),
+            )
             return state
           })
         },
@@ -183,31 +150,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              const selectedNodesSet = new Set(networkView.selectedNodes)
-              const selectedEdgesSet = new Set(networkView.selectedEdges)
-
-              const nodeEles = eles.filter((id) => !isEdgeId(id))
-              const edgeEles = eles.filter((id) => isEdgeId(id))
-              nodeEles.forEach((id) => {
-                if (selectedNodesSet.has(id)) {
-                  selectedNodesSet.delete(id)
-                } else {
-                  selectedNodesSet.add(id)
-                }
-              })
-
-              edgeEles.forEach((id) => {
-                if (selectedEdgesSet.has(id)) {
-                  selectedEdgesSet.delete(id)
-                } else {
-                  selectedEdgesSet.add(id)
-                }
-              })
-
-              networkView.selectedNodes = Array.from(selectedNodesSet)
-              networkView.selectedEdges = Array.from(selectedEdgesSet)
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.toggleSelected(networkView, eles),
+            )
             return state
           })
         },
@@ -221,22 +167,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              const selectedNodesSet = new Set(networkView.selectedNodes)
-              const selectedEdgesSet = new Set(networkView.selectedEdges)
-
-              for (let i = 0; i < eles.length; i++) {
-                const eleId = eles[i]
-                if (isEdgeId(eleId)) {
-                  selectedEdgesSet.add(eleId)
-                } else {
-                  selectedNodesSet.add(eleId)
-                }
-              }
-
-              networkView.selectedNodes = Array.from(selectedNodesSet)
-              networkView.selectedEdges = Array.from(selectedEdgesSet)
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.additiveSelect(networkView, eles),
+            )
             return state
           })
         },
@@ -250,21 +184,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              const selectedNodesSet = new Set(networkView.selectedNodes)
-              const selectedEdgesSet = new Set(networkView.selectedEdges)
-
-              for (let i = 0; i < eles.length; i++) {
-                const eleId = eles[i]
-                if (isEdgeId(eleId)) {
-                  selectedEdgesSet.delete(eleId)
-                } else {
-                  selectedNodesSet.delete(eleId)
-                }
-              }
-              networkView.selectedNodes = Array.from(selectedNodesSet)
-              networkView.selectedEdges = Array.from(selectedEdgesSet)
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.additiveUnselect(networkView, eles),
+            )
             return state
           })
         },
@@ -276,17 +199,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              const nodeView: NodeView = networkView.nodeViews[eleId]
-              if (nodeView !== null && nodeView !== undefined) {
-                const newNodeView = {
-                  ...nodeView,
-                  x: position[0],
-                  y: position[1],
-                }
-                networkView.nodeViews[eleId] = newNodeView
-              }
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.setNodePosition(networkView, eleId, position),
+            )
             return state
           })
         },
@@ -298,19 +214,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
-              Object.keys(nodeViews).forEach((nodeId: IdType) => {
-                const nodeView: NodeView = nodeViews[nodeId]
-                const newPosition: [number, number, number?] | undefined =
-                  positions.get(nodeId)
-                if (newPosition !== undefined) {
-                  nodeView.x = newPosition[0]
-                  nodeView.y = newPosition[1]
-                }
-              })
-            })
-
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.updateNodePositions(networkView, positions),
+            )
             return state
           })
         },
@@ -322,18 +229,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
-              const edgeViews: Record<IdType, EdgeView> = networkView.edgeViews
-
-              ids.forEach((id) => {
-                if (nodeViews[id] !== undefined) {
-                  delete nodeViews[id]
-                } else {
-                  delete edgeViews[id]
-                }
-              })
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.deleteObjects(networkView, ids),
+            )
             return state
           })
         },
@@ -362,9 +261,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              networkView.nodeViews[nodeView.id] = nodeView
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.addNodeViewDirect(networkView, nodeView),
+            )
             return state
           })
         },
@@ -377,11 +277,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              nodeViews.forEach((nodeView) => {
-                networkView.nodeViews[nodeView.id] = nodeView
-              })
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.addNodeViewsToModel(networkView, nodeViews),
+            )
             return state
           })
         },
@@ -394,9 +293,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              networkView.edgeViews[edgeView.id] = edgeView
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.addEdgeViewDirect(networkView, edgeView),
+            )
             return state
           })
         },
@@ -409,11 +309,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              edgeViews.forEach((edgeView) => {
-                networkView.edgeViews[edgeView.id] = edgeView
-              })
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.addEdgeViewsToModel(networkView, edgeViews),
+            )
             return state
           })
         },
@@ -427,13 +326,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            // Delete the specified nodes from all view models
-            viewList.forEach((networkView: NetworkView) => {
-              const nodeViews: Record<IdType, NodeView> = networkView.nodeViews
-              nodeIds.forEach((id) => {
-                delete nodeViews[id]
-              })
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.deleteNodeViews(networkView, nodeIds),
+            )
             return state
           })
         },
@@ -445,12 +341,10 @@ export const useViewModelStore = create(
               return state
             }
 
-            viewList.forEach((networkView: NetworkView) => {
-              const edgeViews: Record<IdType, EdgeView> = networkView.edgeViews
-              edgeIds.forEach((edgeId) => {
-                delete edgeViews[edgeId]
-              })
-            })
+            state.viewModels[networkId] = viewList.map(
+              (networkView: NetworkView) =>
+                ViewModelImpl.deleteEdgeViews(networkView, edgeIds),
+            )
             return state
           })
         },
