@@ -6,7 +6,7 @@
 import { IdType } from '../../../IdType'
 import { Column, Table } from '../../../TableModel'
 import { AttributeName } from '../../../TableModel/AttributeName'
-import { createTable } from '../../../TableModel/impl/InMemoryTable'
+import { createTable } from '../../../TableModel/impl/inMemoryTable'
 import { ValueType } from '../../../TableModel/ValueType'
 import { ValueTypeName } from '../../../TableModel/ValueTypeName'
 import { Cx2 } from '../../Cx2'

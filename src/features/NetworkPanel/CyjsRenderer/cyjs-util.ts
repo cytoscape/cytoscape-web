@@ -30,10 +30,10 @@ import VisualStyleFn, {
 import {
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
-} from '../../../models/VisualStyleModel/impl/CustomGraphicsImpl'
-import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
-import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
-import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
+} from '../../../models/VisualStyleModel/impl/customGraphicsImpl'
+import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/cyjsDirectMapper'
+import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/directMappingSelector'
+import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/cyjsVisualPropertyName'
 import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
 import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'

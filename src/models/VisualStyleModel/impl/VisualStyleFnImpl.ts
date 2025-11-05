@@ -20,7 +20,7 @@ import {
 } from '..'
 import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
 import { VisualStyleOptions } from '../VisualStyleOptions'
-import { createNewNetworkView, updateNetworkView } from './compute-view-util'
+import { createNewNetworkView, updateNetworkView } from './computeViewUtil'
 import {
   CXCustomGraphicsType,
 } from './cxVisualPropertyConverter'
@@ -28,7 +28,7 @@ import {
   DEFAULT_CUSTOM_GRAPHICS,
   DEFAULT_CUSTOM_GRAPHICS_POSITION,
   getDefaultVisualStyle,
-} from './DefaultVisualStyle'
+} from './defaultVisualStyle'
 
 const sortByDisplayName = (
   a: VisualProperty<VisualPropertyValueType>,

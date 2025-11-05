@@ -10,7 +10,7 @@ import {
 } from '../../db'
 import { logStore } from '../../debug'
 import { IdType } from '../../models/IdType'
-import { isEdgeId } from '../../models/NetworkModel/impl/NetworkImpl'
+import { isEdgeId } from '../../models/NetworkModel/impl/networkImpl'
 import { ViewModelStore } from '../../models/StoreModel/ViewModelStoreModel'
 import { EdgeView, NetworkView, NodeView } from '../../models/ViewModel'
 import { useWorkspaceStore } from './WorkspaceStore'

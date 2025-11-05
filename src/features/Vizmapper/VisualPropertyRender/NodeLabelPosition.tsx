@@ -2,7 +2,7 @@ import { MantineProvider, NumberInput } from '@mantine/core'
 import { Box, Button, MenuItem, Select, Typography } from '@mui/material'
 import React from 'react'
 
-import { DEFAULT_NODE_LABEL_POSITION } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
+import { DEFAULT_NODE_LABEL_POSITION } from '../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import {
   NodeLabelOrientationType,
   orientationToPositionMap,

@@ -13,7 +13,7 @@ import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'
-import { serializeValueList } from '../../../models/TableModel/impl/ValueTypeImpl'
+import { serializeValueList } from '../../../models/TableModel/impl/valueTypeImpl'
 import { NetworkView } from '../../../models/ViewModel'
 import {
   HcxMetaTag,

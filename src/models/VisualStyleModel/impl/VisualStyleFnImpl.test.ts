@@ -1,6 +1,6 @@
 import NetworkFn from '../../NetworkModel'
-import { createTable } from '../../TableModel/impl/InMemoryTable'
-import { createViewModel } from '../../ViewModel/impl/ViewModelImpl'
+import { createTable } from '../../TableModel/impl/inMemoryTable'
+import { createViewModel } from '../../ViewModel/impl/viewModelImpl'
 import { VisualPropertyGroup } from '../VisualPropertyGroup'
 import { VisualStyle } from '../VisualStyle'
 import {
@@ -9,9 +9,9 @@ import {
   edgeVisualProperties,
   networkVisualProperties,
   nodeVisualProperties,
-} from './VisualStyleFnImpl'
+} from './visualStyleFnImpl'
 
-// to run these: npx jest src/models/VisualStyleModel/impl/VisualStyleFnImpl.test.ts
+// to run these: npx jest src/models/VisualStyleModel/impl/visualStyleFnImpl.test.ts
 
 describe('VisualStyleFnImpl', () => {
   describe('createVisualStyle', () => {
@@ -203,4 +203,3 @@ describe('VisualStyleFnImpl', () => {
     })
   })
 })
-

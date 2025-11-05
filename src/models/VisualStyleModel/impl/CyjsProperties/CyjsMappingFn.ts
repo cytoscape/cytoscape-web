@@ -1,7 +1,7 @@
 import { VisualPropertyName } from '../../VisualPropertyName'
-import { CyjsDirectMapper } from './CyjsStyleModels/CyjsDirectMapper'
-import { SelectorType } from './CyjsStyleModels/SelectorType'
-import { CyjsVisualPropertyType } from './CyjsVisualPropertyName'
+import { CyjsDirectMapper } from './CyjsStyleModels/cyjsDirectMapper'
+import { SelectorType } from './CyjsStyleModels/selectorType'
+import { CyjsVisualPropertyType } from './cyjsVisualPropertyName'
 
 interface DirectMapperProps {
   selector: SelectorType // node or edge

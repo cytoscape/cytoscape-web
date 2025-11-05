@@ -26,8 +26,8 @@ import {
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
   getSizePropertyForCustomGraphic,
-} from '../../models/VisualStyleModel/impl/CustomGraphicsImpl'
-import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
+} from '../../models/VisualStyleModel/impl/customGraphicsImpl'
+import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
 import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'

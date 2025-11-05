@@ -4,9 +4,9 @@ import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import {
   typesCanBeMapped,
   validMappingsForVP,
-} from './MappingFunctionImpl'
+} from './mappingFunctionImpl'
 
-// to run these: npx jest src/models/VisualStyleModel/impl/MappingFunctionImpl.test.ts
+// to run these: npx jest src/models/VisualStyleModel/impl/mappingFunctionImpl.test.ts
 
 describe('MappingFunctionImpl', () => {
   describe('validMappingsForVP', () => {

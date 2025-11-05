@@ -5,7 +5,7 @@ import { ScaleLinear } from 'd3-scale'
 import * as React from 'react'
 import { ContinuousMappingFunction, ValueType } from 'src/models'
 
-import { getMapper } from '../../../../../models/VisualStyleModel/impl/MapperFactory'
+import { getMapper } from '../../../../../models/VisualStyleModel/impl/mapperFactory'
 
 export interface ColorGradiientProps {
   numSteps: number

@@ -6,13 +6,13 @@ import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
 import { Table, ValueType, ValueTypeName } from '../../../../models/TableModel'
 import { NetworkView } from '../../../../models/ViewModel'
-import { createViewModel } from '../../../../models/ViewModel/impl/ViewModelImpl'
+import { createViewModel } from '../../../../models/ViewModel/impl/viewModelImpl'
 import {
   MappingFunctionType,
   VisualPropertyValueTypeName,
   VisualStyle,
 } from '../../../../models/VisualStyleModel'
-import { createVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
+import { createVisualStyle } from '../../../../models/VisualStyleModel/impl/visualStyleFnImpl'
 import { VisualStyleOptions } from '../../../../models/VisualStyleModel/VisualStyleOptions'
 import { ColumnAssignmentState } from '../ColumnAssignmentState'
 import { ColumnAssignmentType } from '../ColumnAssignmentType'

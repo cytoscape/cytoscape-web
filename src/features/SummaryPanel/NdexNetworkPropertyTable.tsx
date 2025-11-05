@@ -21,7 +21,7 @@ import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { NetworkProperty } from '../../models/NetworkSummaryModel'
 import { ValueType,ValueTypeName } from '../../models/TableModel'
-import { serializedStringIsValid } from '../../models/TableModel/impl/ValueTypeImpl'
+import { serializedStringIsValid } from '../../models/TableModel/impl/valueTypeImpl'
 
 interface NetworkPropertyState extends NetworkProperty {
   valueIsValid: boolean

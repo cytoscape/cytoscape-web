@@ -17,7 +17,7 @@ import {
   addNodeViewsToModel,
   addNodeViewToModel,
   createViewModel,
-} from './ViewModelImpl'
+} from './viewModelImpl'
 
 describe('ViewModel Implementation', () => {
   describe('createViewModel', () => {

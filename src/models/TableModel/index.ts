@@ -5,7 +5,7 @@
  *
  */
 
-import * as TableFn from './impl/InMemoryTable'
+import * as TableFn from './impl/inMemoryTable'
 
 export { AttributeName } from './AttributeName'
 export { Column } from './Column'

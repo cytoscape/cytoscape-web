@@ -25,7 +25,7 @@ import {
   DEFAULT_CUSTOM_GRAPHICS,
   DEFAULT_CUSTOM_GRAPHICS_POSITION,
   DEFAULT_CUSTOM_GRAPHICS_SIZE,
-} from './DefaultVisualStyle'
+} from './defaultVisualStyle'
 
 type CXLabelPositionValueType = 'center' | 'top' | 'bottom' | 'left' | 'right'
 export interface CXLabelPositionType {

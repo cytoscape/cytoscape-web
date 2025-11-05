@@ -7,9 +7,9 @@ import {
   DEFAULT_CUSTOM_GRAPHICS_SIZE,
   DEFAULT_NODE_LABEL_POSITION,
   getDefaultVisualStyle,
-} from './DefaultVisualStyle'
+} from './defaultVisualStyle'
 
-// to run these: npx jest src/models/VisualStyleModel/impl/DefaultVisualStyle.test.ts
+// to run these: npx jest src/models/VisualStyleModel/impl/defaultVisualStyle.test.ts
 
 describe('DefaultVisualStyle', () => {
   describe('DEFAULT_NODE_LABEL_POSITION', () => {

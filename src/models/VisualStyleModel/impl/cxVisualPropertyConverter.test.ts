@@ -25,7 +25,7 @@ import {
   VPStringConverter,
   vpToCX,
 } from './cxVisualPropertyConverter'
-import { createVisualStyle } from './VisualStyleFnImpl'
+import { createVisualStyle } from './visualStyleFnImpl'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/cxVisualPropertyConverter.test.ts
 

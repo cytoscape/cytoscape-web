@@ -8,7 +8,7 @@ import isEqual from 'lodash/isEqual'
 import { CyNetwork } from '../../CyNetworkModel'
 import { IdType } from '../../IdType'
 import { Network } from '../../NetworkModel'
-import { translateEdgeIdToCX } from '../../NetworkModel/impl/NetworkImpl'
+import { translateEdgeIdToCX } from '../../NetworkModel/impl/networkImpl'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { OpaqueAspects } from '../../OpaqueAspectModel'
 import {
@@ -21,7 +21,7 @@ import {
 import {
   deserializeValue,
   isListType,
-} from '../../TableModel/impl/ValueTypeImpl'
+} from '../../TableModel/impl/valueTypeImpl'
 import { NetworkView } from '../../ViewModel'
 import VisualStyleFn, {
   NodeVisualPropertyName,
@@ -33,7 +33,7 @@ import VisualStyleFn, {
 import {
   getCustomGraphicNodeVps,
   getNonCustomGraphicVps,
-} from '../../VisualStyleModel/impl/CustomGraphicsImpl'
+} from '../../VisualStyleModel/impl/customGraphicsImpl'
 import {
   convertContinuousMappingToCX,
   convertDiscreteMappingToCX,
@@ -43,7 +43,7 @@ import {
   CXVisualPropertyValue,
   vpToCX,
 } from '../../VisualStyleModel/impl/cxVisualPropertyConverter'
-import { DEFAULT_CUSTOM_GRAPHICS } from '../../VisualStyleModel/impl/DefaultVisualStyle'
+import { DEFAULT_CUSTOM_GRAPHICS } from '../../VisualStyleModel/impl/defaultVisualStyle'
 import {
   ContinuousMappingFunction,
   DiscreteMappingFunction,

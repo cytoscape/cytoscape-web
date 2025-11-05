@@ -1,5 +1,5 @@
 import { VisualPropertyName } from '../../../VisualPropertyName'
-import { SpecialPropertyName } from './DirectMappingSelector'
+import { SpecialPropertyName } from './directMappingSelector'
 
 /**
  * Only this mapping type is supported

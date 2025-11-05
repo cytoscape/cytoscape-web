@@ -6,7 +6,7 @@
 import { IdType } from '../../../IdType'
 import { Edge,Network, Node } from '../../../NetworkModel'
 import NetworkFn from '../../../NetworkModel'
-import { addEdges,addNodes } from '../../../NetworkModel/impl/NetworkImpl'
+import { addEdges,addNodes } from '../../../NetworkModel/impl/networkImpl'
 import { Cx2 } from '../../Cx2'
 import { Edge as CxEdge } from '../../Cx2/CoreAspects/Edge'
 import { Node as CxNode } from '../../Cx2/CoreAspects/Node'

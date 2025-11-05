@@ -15,11 +15,11 @@ import {
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
   getSizePropertyForCustomGraphic,
-} from './CustomGraphicsImpl'
-import { DEFAULT_CUSTOM_GRAPHICS } from './DefaultVisualStyle'
-import { createVisualStyle } from './VisualStyleFnImpl'
+} from './customGraphicsImpl'
+import { DEFAULT_CUSTOM_GRAPHICS } from './defaultVisualStyle'
+import { createVisualStyle } from './visualStyleFnImpl'
 
-// to run these: npx jest src/models/VisualStyleModel/impl/CustomGraphicsImpl.test.ts
+// to run these: npx jest src/models/VisualStyleModel/impl/customGraphicsImpl.test.ts
 
 describe('CustomGraphicsImpl', () => {
   describe('getCustomGraphicNodeVps', () => {

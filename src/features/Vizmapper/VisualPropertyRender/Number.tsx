@@ -11,8 +11,8 @@ import React from 'react'
 
 import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
-import { serializedStringIsValid } from '../../../models/TableModel/impl/ValueTypeImpl'
-import { getDefaultVisualStyle } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
+import { serializedStringIsValid } from '../../../models/TableModel/impl/valueTypeImpl'
+import { getDefaultVisualStyle } from '../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import {
   NodeVisualPropertyName,
   VisualPropertyName,

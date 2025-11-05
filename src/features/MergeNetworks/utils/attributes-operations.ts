@@ -9,7 +9,7 @@ import TableFn, {
 import {
   isListType,
   isSingleType,
-} from '../../../models/TableModel/impl/ValueTypeImpl'
+} from '../../../models/TableModel/impl/valueTypeImpl'
 import {
   ListOfValueType,
   SingleValueType,

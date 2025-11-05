@@ -8,7 +8,7 @@ import {
   DivergingCustomColors,
   SequentialCustomColors,
   VirdisCustomColors,
-} from '../../../models/VisualStyleModel/impl/CustomColor'
+} from '../../../models/VisualStyleModel/impl/customColor'
 import { ColorType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 
 export function ColorPicker(props: {

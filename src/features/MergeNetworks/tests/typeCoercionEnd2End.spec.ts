@@ -1,5 +1,5 @@
 
-jest.mock('../../../models/NetworkModel/impl/NetworkImpl', () => {
+jest.mock('../../../models/NetworkModel/impl/networkImpl', () => {
     return {
         createNetwork: jest.fn(),
         createNetworkFromLists: jest.fn(),

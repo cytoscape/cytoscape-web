@@ -28,7 +28,7 @@ import { useViewModelStore } from '../hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
 import { useLoadNetworkSummaries } from '../hooks/useLoadNetworkSummaries'
-import { fetchUrlCx } from '../models/CxModel/fetch-url-cx-util'
+import { fetchUrlCx } from '../models/CxModel/fetchUrlCxUtil'
 import {
   DisplayMode,
   FilterConfig,

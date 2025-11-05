@@ -2,7 +2,7 @@ import { Box, Button, MenuItem, Select, Typography } from '@mui/material'
 import React from 'react'
 
 import { CustomGraphicsType } from '../../../models'
-import { DEFAULT_CUSTOM_GRAPHICS } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
+import { DEFAULT_CUSTOM_GRAPHICS } from '../../../models/VisualStyleModel/impl/defaultVisualStyle'
 
 export function CustomGraphicPicker(props: {
   currentValue: CustomGraphicsType | null

@@ -4,7 +4,7 @@ import { IdType } from '../../../IdType'
 import { Edge,Node } from '../../../NetworkModel'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutEngine'
-import { CyjsAlgorithms } from './Algorithms/CyjsAlgorithms'
+import { CyjsAlgorithms } from './Algorithms/cyjsAlgorithms'
 
 export const CyjsLayout: LayoutEngine = {
   // Cytoscape.js Layout

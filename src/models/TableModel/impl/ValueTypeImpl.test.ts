@@ -7,7 +7,7 @@ import {
   serializedStringIsValid,
   serializeValue,
   serializeValueList,
-} from './ValueTypeImpl'
+} from './valueTypeImpl'
 
 describe('serializeValueList', () => {
   it.each([

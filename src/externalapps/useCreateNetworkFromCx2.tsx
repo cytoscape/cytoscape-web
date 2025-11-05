@@ -12,7 +12,7 @@ import { Cx2 } from '../models/CxModel/Cx2'
 import { createCyNetworkFromCx2 } from '../models/CxModel/impl'
 import { CyNetwork } from '../models/CyNetworkModel'
 import { NetworkSummary } from '../models/NetworkSummaryModel'
-import { getBaseSummary } from '../models/NetworkSummaryModel/impl/NetworkSummaryImpl'
+import { getBaseSummary } from '../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 /**
  * Props for creating a network with a view from a CX2 object.

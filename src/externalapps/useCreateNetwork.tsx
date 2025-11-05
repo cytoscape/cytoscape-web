@@ -15,7 +15,7 @@ import NetworkFn, {
   Node,
 } from '../models/NetworkModel'
 import { NetworkSummary } from '../models/NetworkSummaryModel'
-import { getBaseSummary } from '../models/NetworkSummaryModel/impl/NetworkSummaryImpl'
+import { getBaseSummary } from '../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { NetworkStore } from '../models/StoreModel/NetworkStoreModel'
 import { TableRecord, TableStore } from '../models/StoreModel/TableStoreModel'
 import TableFn, {
@@ -24,7 +24,7 @@ import TableFn, {
   ValueType,
   ValueTypeName,
 } from '../models/TableModel'
-import { createViewModel } from '../models/ViewModel/impl/ViewModelImpl'
+import { createViewModel } from '../models/ViewModel/impl/viewModelImpl'
 import VisualStyleFn, {
   VisualPropertyName,
   VisualStyle,

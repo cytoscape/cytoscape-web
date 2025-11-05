@@ -2,7 +2,7 @@ import { VisualPropertyName } from '..'
 import {
   CyjsVisualPropertyName as CyVpName,
   CyjsVisualPropertyType,
-} from './CyjsProperties/CyjsVisualPropertyName'
+} from './CyjsProperties/cyjsVisualPropertyName'
 
 const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
   nodeShape: CyVpName.Shape,

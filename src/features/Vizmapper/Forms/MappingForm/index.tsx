@@ -30,7 +30,7 @@ import {
 import {
   typesCanBeMapped,
   validMappingsForVP,
-} from '../../../../models/VisualStyleModel/impl/MappingFunctionImpl'
+} from '../../../../models/VisualStyleModel/impl/mappingFunctionImpl'
 import { MappingFunctionType } from '../../../../models/VisualStyleModel/VisualMappingFunction'
 import { VisualPropertyGroup } from '../../../../models/VisualStyleModel/VisualPropertyGroup'
 import {

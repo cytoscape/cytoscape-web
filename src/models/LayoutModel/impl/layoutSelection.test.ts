@@ -1,6 +1,6 @@
 import NetworkFn from '../../NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
-import { getBaseSummary } from '../../NetworkSummaryModel/impl/NetworkSummaryImpl'
+import { getBaseSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'
 import { LayoutAlgorithm } from '../LayoutAlgorithm'
 import { LayoutEngine } from '../LayoutEngine'
 import {
@@ -18,7 +18,7 @@ jest.mock('../../../features/HierarchyViewer/utils/hierarchy-util', () => ({
 }))
 
 // Mock Cosmos layout to avoid dependency issues with @cosmograph/cosmos
-jest.mock('./Cosmos/CosmosLayout', () => ({
+jest.mock('./Cosmos/cosmosLayout', () => ({
   CosmosLayout: {
     name: 'cosmos',
     algorithms: {

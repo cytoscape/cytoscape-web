@@ -25,12 +25,12 @@ import {
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
   getSizePropertyForCustomGraphic,
-} from './CustomGraphicsImpl'
-import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/DirectMappingSelector'
-import { isOpenShape, openShapeToFilledShape } from './EdgeArrowShapeImpl'
-import * as MapperFactory from './MapperFactory'
+} from './customGraphicsImpl'
+import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
+import { isOpenShape, openShapeToFilledShape } from './edgeArrowShapeImpl'
+import * as MapperFactory from './mapperFactory'
 import { computeNodeLabelPosition } from './nodeLabelPositionMap'
-import * as VisualStyleFnImpl from './VisualStyleFnImpl'
+import * as VisualStyleFnImpl from './visualStyleFnImpl'
 
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {

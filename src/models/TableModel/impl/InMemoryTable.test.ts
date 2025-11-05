@@ -8,9 +8,9 @@ import {
   insertRow,
   insertRows,
   updateRow,
-} from './InMemoryTable'
+} from './inMemoryTable'
 
-// to run these: npx jest src/models/TableModel/impl/InMemoryTable.test.ts
+// to run these: npx jest src/models/TableModel/impl/inMemoryTable.test.ts
 
 describe('InMemoryTable', () => {
   describe('createTable', () => {

@@ -1,4 +1,4 @@
-import * as VisualStyleFn from './impl/VisualStyleFnImpl'
+import * as VisualStyleFn from './impl/visualStyleFnImpl'
 
 export * from './Bypass'
 export * from './VisualMappingFunction'

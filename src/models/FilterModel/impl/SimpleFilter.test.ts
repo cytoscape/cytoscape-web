@@ -1,10 +1,10 @@
 import { DiscreteRange } from '../../PropertyModel/DiscreteRange'
 import { NumberRange } from '../../PropertyModel/NumberRange'
-import { createTable } from '../../TableModel/impl/InMemoryTable'
+import { createTable } from '../../TableModel/impl/inMemoryTable'
 import { Filter } from '../Filter'
-import { getBasicFilter } from './SimpleFilter'
+import { getBasicFilter } from './simpleFilter'
 
-// to run these: npx jest src/models/FilterModel/impl/SimpleFilter.test.ts
+// to run these: npx jest src/models/FilterModel/impl/simpleFilter.test.ts
 
 describe('SimpleFilter', () => {
   let filter: Filter

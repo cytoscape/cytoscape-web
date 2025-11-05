@@ -47,7 +47,7 @@ import {
   serializedStringIsValid,
   SortType,
   valueDisplay,
-} from '../../models/TableModel/impl/ValueTypeImpl'
+} from '../../models/TableModel/impl/valueTypeImpl'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'

@@ -8,10 +8,10 @@ import { VisualStyle } from '../VisualStyle'
 import {
   createNewNetworkView,
   updateNetworkView,
-} from './compute-view-util'
-import { createVisualStyle } from './VisualStyleFnImpl'
+} from './computeViewUtil'
+import { createVisualStyle } from './visualStyleFnImpl'
 
-// to run these: npx jest src/models/VisualStyleModel/impl/compute-view-util.test.ts
+// to run these: npx jest src/models/VisualStyleModel/impl/computeViewUtil.test.ts
 
 describe('compute-view-util', () => {
   let network: Network

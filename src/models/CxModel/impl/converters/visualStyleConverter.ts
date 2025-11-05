@@ -29,12 +29,12 @@ import {
 } from '../../../VisualStyleModel/impl/cxVisualPropertyConverter'
 import {
   getDefaultVisualStyle,
-} from '../../../VisualStyleModel/impl/DefaultVisualStyle'
+} from '../../../VisualStyleModel/impl/defaultVisualStyle'
 import {
   edgeVisualProperties,
   networkVisualProperties,
   nodeVisualProperties,
-} from '../../../VisualStyleModel/impl/VisualStyleFnImpl'
+} from '../../../VisualStyleModel/impl/visualStyleFnImpl'
 import { VisualStyleOptions } from '../../../VisualStyleModel/VisualStyleOptions'
 import { Cx2 } from '../../Cx2'
 import * as cxUtil from '../extractor'

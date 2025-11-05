@@ -3,7 +3,7 @@
  *
  * All public functions should be accessed through the NetworkFn object
  */
-import * as NetworkFn from './impl/NetworkImpl'
+import * as NetworkFn from './impl/networkImpl'
 
 export { NetworkAttributes } from '../TableModel/NetworkAttributes'
 export { Edge } from './Edge'

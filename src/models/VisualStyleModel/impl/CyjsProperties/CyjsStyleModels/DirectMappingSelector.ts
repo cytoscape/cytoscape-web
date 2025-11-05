@@ -1,5 +1,5 @@
 import { VisualPropertyName } from '../../../VisualPropertyName'
-import { SelectorType } from './SelectorType'
+import { SelectorType } from './selectorType'
 
 // these exist in cytoscape.js, but are derived from a nested visual property e.g. node label position
 export const SpecialPropertyName = {

@@ -1,5 +1,5 @@
-import { DataMapper } from './DataMapper'
-import { DirectMappingSelector } from './DirectMappingSelector'
+import { DataMapper } from './dataMapper'
+import { DirectMappingSelector } from './directMappingSelector'
 
 /**
  * 1-1 mapping between data and visual property value

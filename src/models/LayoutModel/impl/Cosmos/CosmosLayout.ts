@@ -4,7 +4,7 @@ import { IdType } from '../../../IdType'
 import { Edge,Node } from '../../../NetworkModel'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutEngine'
-import { CosmosAlgorithms } from './Algorithms/CosmosAlgorithms'
+import { CosmosAlgorithms } from './Algorithms/cosmosAlgorithms'
 
 const dummyContainer: HTMLCanvasElement = document.createElement('canvas')
 dummyContainer.style.display = 'none'

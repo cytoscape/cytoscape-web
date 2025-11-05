@@ -11,7 +11,7 @@ import { ServiceApp } from '../models/AppModel/ServiceApp'
 import { CyNetwork } from '../models/CyNetworkModel'
 import { FilterConfig } from '../models/FilterModel/FilterConfig'
 import { IdType } from '../models/IdType'
-import NetworkFn, { Edge, Network,Node } from '../models/NetworkModel'
+import NetworkFn, { Edge, Network, Node } from '../models/NetworkModel'
 import { NetworkSummary } from '../models/NetworkSummaryModel'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { UndoRedoStack } from '../models/StoreModel/UndoStoreModel'
@@ -21,7 +21,7 @@ import { NetworkView } from '../models/ViewModel'
 import { VisualStyle } from '../models/VisualStyleModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { Workspace } from '../models/WorkspaceModel'
-import { createWorkspace } from '../models/WorkspaceModel/impl/WorkspaceImpl'
+import { createWorkspace } from '../models/WorkspaceModel/impl/workspaceImpl'
 import {
   deserializeFilterConfig,
   deserializeNetworkView,

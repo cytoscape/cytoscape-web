@@ -29,7 +29,7 @@ import { IdType } from '../../../../models/IdType'
 import { Network } from '../../../../models/NetworkModel'
 import { NetworkView } from '../../../../models/ViewModel'
 import { VisualStyle } from '../../../../models/VisualStyleModel'
-import { applyVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
+import { applyVisualStyle } from '../../../../models/VisualStyleModel/impl/visualStyleFnImpl'
 import { CirclePackingView } from '../../model/CirclePackingView'
 import { useSubNetworkStore } from '../../store/SubNetworkStore'
 // Local imports

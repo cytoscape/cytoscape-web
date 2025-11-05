@@ -8,9 +8,9 @@ import {
   createContinuousMapper,
   createDiscreteMapper,
   createPassthroughMapper,
-} from './MapperFactory'
+} from './mapperFactory'
 
-// to run these: npx jest src/models/VisualStyleModel/impl/MapperFactory.test.ts
+// to run these: npx jest src/models/VisualStyleModel/impl/mapperFactory.test.ts
 
 describe('MapperFactory', () => {
   describe('createDiscreteMapper', () => {

@@ -4,7 +4,7 @@ import { IdType } from '../../../IdType'
 import { Edge,Node } from '../../../NetworkModel'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutEngine'
-import { G6Algorithms } from './Algorithms/G6Algorithms'
+import { G6Algorithms } from './Algorithms/g6Algorithms'
 
 const DEFAULT_ALGORITHM: LayoutAlgorithm = G6Algorithms.gForce
 

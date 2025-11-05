@@ -10,7 +10,7 @@ import {
   deserializeValue,
   getSingleTypeFromList,
   isListType,
-} from '../../models/TableModel/impl/ValueTypeImpl'
+} from '../../models/TableModel/impl/valueTypeImpl'
 import { ValueType } from '../../models/TableModel/ValueType'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import { waitSeconds } from '../../utils/wait-seconds'
@@ -24,7 +24,7 @@ export const TimeOutErrorIndicator = 'NDEx_TIMEOUT_ERROR'
  *
  * NDEx returns property values as strings, with lists as JSON-encoded strings.
  * This function converts them to the appropriate types:
- * - Single values: Uses deserializeValue from ValueTypeImpl
+ * - Single values: Uses deserializeValue from valueTypeImpl
  * - List values: Parses JSON first, then converts elements
  *
  * @param value - The raw value from NDEx (string for single values, JSON string for lists)
@@ -60,7 +60,7 @@ const normalizeNdexSummaryValue = (
     }
   } else {
     // For single values, NDEx returns plain strings that can be deserialized directly
-    // Try to use deserializeValue from ValueTypeImpl, but fall back to preserving the value
+    // Try to use deserializeValue from valueTypeImpl, but fall back to preserving the value
     // for unknown types to maintain backward compatibility
     try {
       return deserializeValue(dataType, String(value))

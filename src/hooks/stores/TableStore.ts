@@ -17,7 +17,7 @@ import {
   ValueType,
   ValueTypeName,
 } from '../../models/TableModel'
-import { columnValueSet } from '../../models/TableModel/impl/InMemoryTable'
+import { columnValueSet } from '../../models/TableModel/impl/inMemoryTable'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
 import { useWorkspaceStore } from './WorkspaceStore'
 
