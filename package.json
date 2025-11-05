@@ -30,7 +30,8 @@
     "build:analyze": "ANALYZE=true webpack --mode production",
     "lint": "eslint --ext .js,.ts,.jsx,.tsx src",
     "lint:fix": "eslint --ext .js,.ts,.jsx,.tsx src --fix",
-    "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'"
+    "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'",
+    "generate-model-diagram": "./scripts/generate-model-diagram-to-png.sh"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -38,6 +39,7 @@
     "@babel/preset-env": "^7.25.3",
     "@babel/preset-react": "^7.24.7",
     "@faker-js/faker": "^7.6.0",
+    "@mermaid-js/mermaid-cli": "^11.12.0",
     "@mui/types": "^7.2.0",
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.0",
