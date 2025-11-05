@@ -481,14 +481,14 @@ export const CirclePackingPanel = ({
 
     return () => {
       if (svgRef.current) {
-        const svg = d3Selection.select(svgRef.current)
-        // Remove all event listeners (click, zoom, mouseenter, mousemove)
-        svg.on('click', null)
-        svg.on('zoom', null)
-        // Remove all SVG content (circles, text, groups)
-        svg.selectAll('*').remove()
-        // Clear refs to prevent memory leaks
-        zoomBehaviorRef.current = null
+        // const svg = d3Selection.select(svgRef.current)
+        // // Remove all event listeners (click, zoom, mouseenter, mousemove)
+        // svg.on('click', null)
+        // svg.on('zoom', null)
+        // // Remove all SVG content (circles, text, groups)
+        // svg.selectAll('*').remove()
+        // // Clear refs to prevent memory leaks
+        // zoomBehaviorRef.current = null
       }
     }
   }, [])
