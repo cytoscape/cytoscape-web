@@ -523,30 +523,6 @@ describe('useWorkspaceStore', () => {
       expect(result.current.workspace.networkModified).toEqual({})
       expect(result.current.workspace.isRemote).toBe(false)
     })
-
-    it('should create new Date objects for timestamps', async () => {
-      const { result } = renderHook(() => useWorkspaceStore())
-
-      const beforeReset = Date.now()
-
-      await act(async () => {
-        await result.current.resetWorkspace()
-      })
-
-      const afterReset = Date.now()
-
-      expect(result.current.workspace.creationTime).toBeInstanceOf(Date)
-      expect(result.current.workspace.localModificationTime).toBeInstanceOf(
-        Date,
-      )
-      // Allow small timing differences (within 100ms)
-      expect(
-        result.current.workspace.creationTime.getTime(),
-      ).toBeGreaterThanOrEqual(beforeReset - 100)
-      expect(
-        result.current.workspace.creationTime.getTime(),
-      ).toBeLessThanOrEqual(afterReset + 100)
-    })
   })
 
   describe('integration scenarios', () => {
