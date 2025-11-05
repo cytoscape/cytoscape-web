@@ -3,7 +3,6 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
 const TerserPlugin = require('terser-webpack-plugin')
-const { ESBuildMinifyPlugin } = require('esbuild-loader')
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
 const CompressionWebpackPlugin = require('compression-webpack-plugin')
 const config = require('./src/assets/config.json')
@@ -55,27 +54,15 @@ module.exports = {
   module: {
     rules: [
       // look for tsx files to transform into the bundle
-      // Using esbuild-loader for much faster compilation (10-100x faster than ts-loader)
-      // Handle .tsx files (with JSX)
       {
-        test: /\.tsx$/,
-        loader: 'esbuild-loader',
-        options: {
-          loader: 'tsx',
-          target: 'es2022', // ES2022 for top-level await support
-          jsx: 'automatic', // React 17+ automatic JSX transform
+        test: /\.tsx?$/,
+        use: {
+          loader: 'ts-loader',
+          options: {
+            configFile: 'tsconfig.json',
+          },
         },
-        exclude: [/node_modules/, /dist/, /\/apps\//],
-      },
-      // Handle .ts files (TypeScript only, no JSX)
-      {
-        test: /\.ts$/,
-        loader: 'esbuild-loader',
-        options: {
-          loader: 'ts', // TypeScript only, not tsx (prevents JSX parsing issues)
-          target: 'es2022', // ES2022 for top-level await support
-        },
-        exclude: [/node_modules/, /dist/, /\/apps\//],
+        exclude: [/node_modules/, /dist/, /\/apps\//, /scripts/],
       },
       // look for css files to transform into the bundle
       {
@@ -242,20 +229,22 @@ module.exports = {
   optimization: {
     minimize: isProduction, // Only minimize in production
     minimizer: [
-      // Using esbuild minifier (much faster than Terser - 10-20x faster)
-      // Falls back to TerserPlugin if you need advanced options
-      ...(isProduction
-        ? [
-            new ESBuildMinifyPlugin({
-              target: 'es2022', // Match loader target
-              css: false, // CSS is handled by CssMinimizerPlugin
-              // Drop console logs in production
-              drop: ['console'],
-              // Legal comments are preserved
-              legalComments: 'none',
-            }),
-          ]
-        : []),
+      new TerserPlugin({
+        // Include your own code to apply the plugin.
+        include: /\/src/,
+
+        // Disable source maps for vendor code by excluding them
+        exclude: /\/node_modules/,
+
+        terserOptions: {
+          // your custom options for terser
+          compress: {
+            drop_console: true,
+          },
+          sourceMap: true, // Enable source map
+        },
+        extractComments: false, // remove comments from output
+      }),
       new CssMinimizerPlugin(),
     ],
     moduleIds: 'deterministic',

@@ -17,5 +17,6 @@
     "baseUrl": ".",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
-  }
+  },
+  "exclude": ["node_modules", "dist", "scripts", "**/*.test.ts", "**/*.spec.ts"]
 }
