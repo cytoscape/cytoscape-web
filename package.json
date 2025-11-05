@@ -27,6 +27,7 @@
     "build": "webpack --mode production",
     "build:netlify": "BUILD=netlify webpack --mode production",
     "dev": "webpack serve --open --mode development",
+    "build:analyze": "ANALYZE=true webpack --mode production",
     "lint": "eslint --ext .js,.ts,.jsx,.tsx src",
     "lint:fix": "eslint --ext .js,.ts,.jsx,.tsx src --fix",
     "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'"
@@ -67,6 +68,7 @@
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.7.1",
     "css-minimizer-webpack-plugin": "^5.0.1",
+    "esbuild-loader": "^4.4.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.1",
