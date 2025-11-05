@@ -33,7 +33,7 @@ import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { createFilterFromAspect } from '../utils/filter-asprct-util'
 import { applyCpLayout } from '../utils/hierarchy-util'
 import { fetchNdexSubnetworkByQuery } from '../utils/query-network-util'
-import { CirclePackingType } from './CustomLayout/CirclePackingLayout'
+import { CirclePackingType } from './CirclePackingLayout/CirclePackingLayout'
 import { Query } from './MainPanel'
 
 interface SubNetworkPanelProps {

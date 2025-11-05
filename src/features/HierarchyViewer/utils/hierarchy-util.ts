@@ -8,7 +8,7 @@ import {
 } from '../../../models/NetworkSummaryModel'
 import { Table, ValueType } from '../../../models/TableModel'
 import { NodeView } from '../../../models/ViewModel'
-import { D3TreeNode } from '../components/CustomLayout/D3TreeNode'
+import { D3TreeNode } from '../components/CirclePackingLayout/D3TreeNode'
 import { CirclePackingView } from '../model/CirclePackingView'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { HcxMetaTag } from '../model/HcxMetaTag'
@@ -35,44 +35,6 @@ export const getHcxProps = (
   }
 
   return undefined
-}
-
-export const createDummySummary = (
-  uuid: string,
-  name: string,
-  nodeCount: number,
-  edgeCount: number,
-): NetworkSummary => {
-  const time: Date = new Date(Date.now())
-  const summary: NetworkSummary = {
-    isNdex: false,
-    ownerUUID: '',
-    isReadOnly: false,
-    subnetworkIds: [],
-    isValid: true,
-    warnings: [],
-    isShowcase: false,
-    isCertified: false,
-    indexLevel: 'NONE',
-    hasLayout: true,
-    hasSample: false,
-    cxFileSize: 0,
-    cx2FileSize: 0,
-    name,
-    properties: [],
-    owner: '',
-    version: '',
-    completed: false,
-    visibility: Visibility.PRIVATE,
-    nodeCount,
-    edgeCount,
-    description: '',
-    creationTime: time,
-    externalId: uuid,
-    isDeleted: false,
-    modificationTime: time,
-  }
-  return summary
 }
 
 export const isHCX = (summary: NetworkSummary): boolean => {

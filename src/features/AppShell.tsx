@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { ReactElement, useContext,useEffect, useRef, useState } from 'react'
+import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
 import {
   Location,
   Outlet,
@@ -39,7 +39,7 @@ import { MessageSeverity } from '../models/MessageModel'
 import { GraphObjectType } from '../models/NetworkModel'
 import { Panel } from '../models/UiModel/Panel'
 import { PanelState } from '../models/UiModel/PanelState'
-import { SelectionStates } from './FloatingToolBar/ShareNetworkButtton'
+import { SelectionStates } from './FloatingToolBar/ShareNetworkButton'
 import { DEFAULT_FILTER_NAME } from './HierarchyViewer/components/FilterPanel/FilterPanel'
 import { SyncTabsAction } from './SyncTabs'
 import { ToolBar } from './ToolBar'

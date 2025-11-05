@@ -13,7 +13,7 @@ import {
 } from '@mui/material'
 import { blueGrey } from '@mui/material/colors'
 import { useTheme } from '@mui/material/styles'
-import { lazy, ReactElement, Suspense,useState } from 'react'
+import { lazy, ReactElement, Suspense, useState } from 'react'
 
 import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
@@ -21,7 +21,7 @@ import { IdType } from '../../models/IdType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
-const NetworkPropertyEditor = lazy(() => import('./NdexNetworkPropertyEditor'))
+const NetworkPropertyEditor = lazy(() => import('./NetworkPropertyEditor'))
 import { useUrlNavigation } from '../../hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../../hooks/stores/NetworkStore'
 import { Network } from '../../models'
