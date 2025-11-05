@@ -45,7 +45,7 @@ export function unionMerge(
     type: nodeMergedAttributes[0].type,
   }
   // preprocess the network to merge
-  const { mergedNodeTable, mergedEdgeTable } = preprocess(
+  let { mergedNodeTable, mergedEdgeTable } = preprocess(
     toNetworkId,
     nodeMergedAttributes,
     edgeMergedAttributes,
@@ -174,8 +174,8 @@ export function unionMerge(
   })
 
   //clone the table rows(columns have already been initialized in the preprocess step)
-  TableFn.insertRows(mergedNodeTable, Object.entries(initialNodeRows))
-  TableFn.insertRows(mergedEdgeTable, Object.entries(initialEdgeRows))
+  mergedNodeTable = TableFn.insertRows(mergedNodeTable, Object.entries(initialNodeRows))
+  mergedEdgeTable = TableFn.insertRows(mergedEdgeTable, Object.entries(initialEdgeRows))
 
   // merge nodes
   // loop over the networks to merge (the first network is base network)
@@ -221,7 +221,7 @@ export function unionMerge(
         getKeybyAttribute(nodeRecord[matchingAttribute[netToMerge].name]),
         newNodeId,
       )
-      TableFn.insertRow(mergedNodeTable, [
+      mergedNodeTable = TableFn.insertRow(mergedNodeTable, [
         newNodeId,
         addMergedAtt(
           castAttributes(nodeRecord, netToMerge, nodeAttributeMapping),
@@ -248,7 +248,7 @@ export function unionMerge(
         nodeAttributeMapping,
       )
       // update the mergedNodeTable
-      TableFn.updateRow(mergedNodeTable, [
+      mergedNodeTable = TableFn.updateRow(mergedNodeTable, [
         mergedNodeId,
         mergeAttributes(originalRow, castedRecord),
       ])
@@ -293,7 +293,7 @@ export function unionMerge(
             (!originalRow.hasOwnProperty('interaction') &&
               !castedRecord.hasOwnProperty('interaction'))
           if (isMatch) {
-            TableFn.updateRow(mergedEdgeTable, [
+            mergedEdgeTable = TableFn.updateRow(mergedEdgeTable, [
               mergedEdgeId,
               mergeAttributes(originalRow, castedRecord),
             ])
@@ -304,7 +304,7 @@ export function unionMerge(
         shouldAddEdge = !hasMatched
       }
       if (shouldAddEdge) {
-        TableFn.insertRow(mergedEdgeTable, [newEdgeId, castedRecord])
+        mergedEdgeTable = TableFn.insertRow(mergedEdgeTable, [newEdgeId, castedRecord])
         NetworkFn.addEdge(mergedNetwork, {
           id: newEdgeId,
           s: sourceId,

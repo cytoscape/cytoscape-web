@@ -52,7 +52,7 @@ export function intersectionMerge(
     type: nodeMergedAttributes[0].type,
   }
   // preprocess the network to merge
-  const { mergedNodeTable, mergedEdgeTable } = preprocess(
+  let { mergedNodeTable, mergedEdgeTable } = preprocess(
     toNetworkId,
     nodeMergedAttributes,
     edgeMergedAttributes,
@@ -168,7 +168,7 @@ export function intersectionMerge(
   }
 
   //Add intersection nodes to nodeTable and network
-  TableFn.insertRows(
+  mergedNodeTable = TableFn.insertRows(
     mergedNodeTable,
     Object.entries(initialNodeRows).filter(([id]) =>
       intersectedNodeIds.has(id),
@@ -280,7 +280,7 @@ export function intersectionMerge(
   //Add intersection edges to nodeTable and network
   for (const [edgeKey, edgeIds] of edgeMap) {
     edgeIds.forEach((edgeId) => {
-      TableFn.insertRow(mergedEdgeTable, [edgeId, initialEdgeRows[edgeId]])
+      mergedEdgeTable = TableFn.insertRow(mergedEdgeTable, [edgeId, initialEdgeRows[edgeId]])
       NetworkFn.addEdge(mergedNetwork, {
         id: edgeId,
         s: edgeKey.split('-')[0],

@@ -53,7 +53,7 @@ export function differenceMerge(
     type: nodeMergedAttributes[0].type,
   }
   // preprocess the network to merge
-  const { mergedNodeTable, mergedEdgeTable } = preprocess(
+  let { mergedNodeTable, mergedEdgeTable } = preprocess(
     toNetworkId,
     nodeMergedAttributes,
     edgeMergedAttributes,
@@ -259,8 +259,8 @@ export function differenceMerge(
       } as Edge)
     }
   })
-  TableFn.insertRows(mergedNodeTable, Object.entries(initialNodeRows))
-  TableFn.insertRows(mergedEdgeTable, Object.entries(initialEdgeRows))
+  mergedNodeTable = TableFn.insertRows(mergedNodeTable, Object.entries(initialNodeRows))
+  mergedEdgeTable = TableFn.insertRows(mergedEdgeTable, Object.entries(initialEdgeRows))
   return {
     network: mergedNetwork,
     nodeTable: mergedNodeTable,
