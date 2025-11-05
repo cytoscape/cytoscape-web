@@ -1,34 +1,35 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import React, { ReactElement, useState, useEffect, useContext } from 'react'
+ 
 import {
+  Box,
+  Button,
+  Checkbox,
   Dialog,
-  DialogTitle,
+  DialogActions,
   DialogContent,
   DialogContentText,
+  DialogTitle,
   Table,
+  TableBody,
+  TableCell,
   TableHead,
   TableRow,
-  TableCell,
-  TableBody,
-  DialogActions,
-  Button,
-  Box,
-  Checkbox,
   Typography,
 } from '@mui/material'
+import debounce from 'lodash/debounce'
+import React, { ReactElement, useContext,useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+import { deleteNdexWorkspace,fetchMyNdexWorkspaces } from '../../../api/ndex'
 import { AppConfigContext } from '../../../AppConfigContext'
-import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { fetchMyNdexWorkspaces, deleteNdexWorkspace } from '../../../api/ndex'
-import { MessageSeverity } from '../../../models/MessageModel'
+import { logUi } from '../../../debug'
 import { useAppStore } from '../../../hooks/stores/AppStore'
+import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { Workspace } from '../../../models/WorkspaceModel'
 import { dateFormatter } from '../../../utils/date-format'
-import debounce from 'lodash/debounce'
-import { useNavigate } from 'react-router-dom'
-import { logUi } from '../../../debug'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean

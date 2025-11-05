@@ -1,5 +1,5 @@
-import { createWorkspace, DEF_WORKSPACE_NAME } from './WorkspaceImpl'
 import { Workspace } from '../Workspace'
+import { createWorkspace, DEF_WORKSPACE_NAME } from './WorkspaceImpl'
 
 // to run these: npx jest src/models/WorkspaceModel/impl/WorkspaceImpl.test.ts
 

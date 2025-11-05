@@ -1,5 +1,6 @@
+import * as d3Scale from 'd3-scale'
+
 import { ValueType } from '../../TableModel'
-import { ColorType, VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisibilityType } from '../../VisualStyleModel/VisualPropertyValue/VisibilityType'
 import {
   ContinuousFunctionControlPoint,
@@ -8,8 +9,7 @@ import {
 import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
 import { Mapper } from '../VisualMappingFunction/Mapper'
 import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
-
-import * as d3Scale from 'd3-scale'
+import { ColorType, VisualPropertyValueType } from '../VisualPropertyValue'
 // import * as d3Color from 'd3-color'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 

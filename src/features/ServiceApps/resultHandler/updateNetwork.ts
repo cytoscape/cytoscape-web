@@ -1,31 +1,32 @@
 import { useCallback } from 'react'
-import { ActionHandlerProps } from './serviceResultHandlerManager'
+
+import { logApi, logStore } from '../../../debug'
+import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
+import { useTableStore } from '../../../hooks/stores/TableStore'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
 import {
   DEF_VIEW_TYPE,
   useViewModelStore,
 } from '../../../hooks/stores/ViewModelStore'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
+import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { Cx2 } from '../../../models/CxModel/Cx2'
+import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import {
   createCyNetworkFromCx2,
   isValidCx2Network,
 } from '../../../models/CxModel/impl'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
-import { NetworkProperty } from '../../../models/NetworkSummaryModel'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { ValueType, ValueTypeName } from '../../../models/TableModel'
-import { Cx2 } from '../../../models/CxModel/Cx2'
-import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
-import { generateUniqueName } from '../../../utils/generate-unique-name'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
 } from '../../../models/CxModel/impl/extractor'
-import { logApi, logStore } from '../../../debug'
+import { NetworkProperty } from '../../../models/NetworkSummaryModel'
+import { ValueType, ValueTypeName } from '../../../models/TableModel'
+import { generateUniqueName } from '../../../utils/generate-unique-name'
+import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 export const useUpdateNetwork = (): (({
   responseObj,

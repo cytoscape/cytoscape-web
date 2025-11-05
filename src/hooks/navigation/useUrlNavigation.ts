@@ -1,8 +1,9 @@
 // useUrlNavigation.ts
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { navigateToNetwork, updateSearchParams } from './url-manager'
+
 import { NavigationConfig } from './NavigationConfig'
 import { NavigationFunctions } from './NavigationFunctions'
+import { navigateToNetwork, updateSearchParams } from './url-manager'
 
 /**
  * Custom hook for URL navigation and search parameter management

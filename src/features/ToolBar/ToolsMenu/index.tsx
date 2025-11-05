@@ -1,10 +1,11 @@
 import Button from '@mui/material/Button'
-import { useRef, useState } from 'react'
-import { DropdownMenuProps } from '../DropdownMenuProps'
-import { MergeNetwork } from './MergeNetwork'
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
+import { useRef, useState } from 'react'
+
+import { DropdownMenuProps } from '../DropdownMenuProps'
+import { MergeNetwork } from './MergeNetwork'
 
 export const ToolsMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,

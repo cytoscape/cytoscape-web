@@ -1,4 +1,5 @@
 import { IdType } from '../IdType'
+import { Ui } from '../UiModel'
 import { Panel } from '../UiModel/Panel'
 import { PanelState } from '../UiModel/PanelState'
 import {
@@ -6,7 +7,6 @@ import {
   VisualStyleOptions,
 } from '../VisualStyleModel/VisualStyleOptions'
 import { TableType } from './TableStoreModel'
-import { Ui } from '../UiModel'
 
 export interface UiState {
   ui: Ui

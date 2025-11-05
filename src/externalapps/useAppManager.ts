@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { useAppStore } from '../hooks/stores/AppStore'
-import appConfig from '../assets/apps.json'
-import { CyApp } from '../models/AppModel/CyApp'
-import { appImportMap } from '../assets/app-definition'
-import { AppStatus } from '../models/AppModel/AppStatus'
 
+import { appImportMap } from '../assets/app-definition'
+import appConfig from '../assets/apps.json'
 import { logApp } from '../debug'
+import { useAppStore } from '../hooks/stores/AppStore'
+import { AppStatus } from '../models/AppModel/AppStatus'
+import { CyApp } from '../models/AppModel/CyApp'
 logApp.info(`[AppManager]: App config file loaded: `, appConfig)
 
 // appConfig contains reference list of available apps.

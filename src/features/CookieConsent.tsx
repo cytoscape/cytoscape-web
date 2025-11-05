@@ -1,5 +1,5 @@
-import { CookieConsent } from 'react-cookie-consent'
 import Cookies from 'js-cookie'
+import { CookieConsent } from 'react-cookie-consent'
 
 export const COOKIE_NAME = 'cytoscapeWebCookieConsent'
 

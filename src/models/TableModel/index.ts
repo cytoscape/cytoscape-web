@@ -7,9 +7,9 @@
 
 import * as TableFn from './impl/InMemoryTable'
 
-export { Table } from './Table'
-export { Column } from './Column'
 export { AttributeName } from './AttributeName'
+export { Column } from './Column'
+export { Table } from './Table'
 export { ValueType } from './ValueType'
 export { ValueTypeName } from './ValueTypeName'
 

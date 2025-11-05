@@ -3,21 +3,21 @@
  *
  * These tests verify the behavior of view model creation and manipulation functions.
  */
-import { Network, Node, Edge } from '../../NetworkModel'
-import NetworkFn from '../../NetworkModel'
-import {
-  createViewModel,
-  addNodeViewsToModel,
-  addEdgeViewsToModel,
-  addNodeViewToModel,
-  addEdgeViewToModel,
-} from './ViewModelImpl'
-import { createViewModelFromCX } from '../../CxModel/impl/converters'
-import { NetworkView, NodeView, EdgeView } from '../index'
 import { Cx2 } from '../../CxModel/Cx2'
-import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
 import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
+import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
+import { createViewModelFromCX } from '../../CxModel/impl/converters'
 import { IdType } from '../../IdType'
+import { Edge,Network, Node } from '../../NetworkModel'
+import NetworkFn from '../../NetworkModel'
+import { EdgeView,NetworkView, NodeView } from '../index'
+import {
+  addEdgeViewsToModel,
+  addEdgeViewToModel,
+  addNodeViewsToModel,
+  addNodeViewToModel,
+  createViewModel,
+} from './ViewModelImpl'
 
 describe('ViewModel Implementation', () => {
   describe('createViewModel', () => {

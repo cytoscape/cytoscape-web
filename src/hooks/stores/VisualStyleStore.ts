@@ -1,34 +1,33 @@
-import { IdType } from '../../models/IdType'
-import {
-  VisualPropertyName,
-  VisualPropertyValueType,
-  VisualStyle,
-} from '../../models/VisualStyleModel'
-
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import {
-  AttributeName,
-  ValueType,
-  ValueTypeName,
-} from '../../models/TableModel'
-import {
-  DiscreteMappingFunction,
-  MappingFunctionType,
-  PassthroughMappingFunction,
-  ContinuousMappingFunction,
-} from '../../models/VisualStyleModel/VisualMappingFunction'
-import { ContinuousFunctionControlPoint } from '../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
-import { VisualPropertyValueTypeName } from '../../models/VisualStyleModel/VisualPropertyValueTypeName'
 
 import {
   clearVisualStyleFromDb,
   deleteVisualStyleFromDb,
   putVisualStyleToDb,
 } from '../../db'
-import { useWorkspaceStore } from './WorkspaceStore'
-import { VisualStyleStore } from '../../models/StoreModel/VisualStyleStoreModel'
 import { logStore } from '../../debug'
+import { IdType } from '../../models/IdType'
+import { VisualStyleStore } from '../../models/StoreModel/VisualStyleStoreModel'
+import {
+  AttributeName,
+  ValueType,
+  ValueTypeName,
+} from '../../models/TableModel'
+import {
+  VisualPropertyName,
+  VisualPropertyValueType,
+  VisualStyle,
+} from '../../models/VisualStyleModel'
+import {
+  ContinuousMappingFunction,
+  DiscreteMappingFunction,
+  MappingFunctionType,
+  PassthroughMappingFunction,
+} from '../../models/VisualStyleModel/VisualMappingFunction'
+import { ContinuousFunctionControlPoint } from '../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
+import { VisualPropertyValueTypeName } from '../../models/VisualStyleModel/VisualPropertyValueTypeName'
+import { useWorkspaceStore } from './WorkspaceStore'
 
 /**
  * Visual Style State manager based on zustand

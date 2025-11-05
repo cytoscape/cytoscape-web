@@ -1,12 +1,13 @@
-import * as d3Scale from 'd3-scale'
-import * as d3Interpolate from 'd3-interpolate'
 import * as d3Hierarchy from 'd3-hierarchy'
+import * as d3Interpolate from 'd3-interpolate'
+import * as d3Scale from 'd3-scale'
 import * as d3Selection from 'd3-selection'
+
+import { IdType } from '../../../../models/IdType'
+import { NodeView } from '../../../../models/ViewModel'
 import { VisualPropertyValueType } from '../../../../models/VisualStyleModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
-import { NodeView } from '../../../../models/ViewModel'
 import { D3TreeNode } from './D3TreeNode'
-import { IdType } from '../../../../models/IdType'
 
 // Number of letters to display in the label
 const MAX_LABEL_LENGTH = 90

@@ -1,14 +1,15 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { IdType } from '../../models/IdType'
-import { NetworkSummary } from '../../models/NetworkSummaryModel'
+
 import {
   clearNetworkSummaryFromDb,
   deleteNetworkSummaryFromDb,
   putNetworkSummaryToDb,
 } from '../../db'
-import { NetworkSummaryStore } from '../../models/StoreModel/NetworkSummaryStoreModel'
 import { logStore } from '../../debug'
+import { IdType } from '../../models/IdType'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { NetworkSummaryStore } from '../../models/StoreModel/NetworkSummaryStoreModel'
 export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore>((set, get) => ({
     summaries: {},

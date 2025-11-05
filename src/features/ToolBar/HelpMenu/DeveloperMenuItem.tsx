@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 import { MenuItem } from '@mui/material'
 import { ReactElement } from 'react'
+
 import { BaseMenuProps } from '../BaseMenuProps'
 
 export const DeveloperMenuItem = (props: BaseMenuProps): ReactElement => {

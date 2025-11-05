@@ -1,13 +1,14 @@
-import NetworkFn, { Network, Node, Edge } from '../models/NetworkModel'
+import { v4 as uuidv4 } from 'uuid'
+
+import { CyNetwork } from '../models/CyNetworkModel'
+import NetworkFn, { Edge,Network, Node } from '../models/NetworkModel'
 import TableFn, { Table } from '../models/TableModel'
+import { AttributeName } from '../models/TableModel/AttributeName'
+import { Column } from '../models/TableModel/Column'
+import { ValueType } from '../models/TableModel/ValueType'
 import ViewModelFn, { NetworkView } from '../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../models/VisualStyleModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
-import { CyNetwork } from '../models/CyNetworkModel'
-import { v4 as uuidv4 } from 'uuid'
-import { Column } from '../models/TableModel/Column'
-import { AttributeName } from '../models/TableModel/AttributeName'
-import { ValueType } from '../models/TableModel/ValueType'
 
 interface SifEdge extends Edge {
   interaction: string

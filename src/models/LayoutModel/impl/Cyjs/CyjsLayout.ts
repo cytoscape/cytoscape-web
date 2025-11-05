@@ -1,9 +1,10 @@
-import { Node, Edge } from '../../../NetworkModel'
+import cytoscape, { EdgeDefinition, NodeDefinition } from 'cytoscape'
+
 import { IdType } from '../../../IdType'
+import { Edge,Node } from '../../../NetworkModel'
+import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutEngine'
 import { CyjsAlgorithms } from './Algorithms/CyjsAlgorithms'
-import { LayoutAlgorithm } from '../../LayoutAlgorithm'
-import cytoscape, { EdgeDefinition, NodeDefinition } from 'cytoscape'
 
 export const CyjsLayout: LayoutEngine = {
   // Cytoscape.js Layout

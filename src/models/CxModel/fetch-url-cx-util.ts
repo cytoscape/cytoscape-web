@@ -1,18 +1,19 @@
-import { createCyNetworkFromCx2 } from './impl'
-import { Cx2 } from './Cx2'
-import {
-  getAttributeDeclarations,
-  getNetworkAttributes,
-} from './impl/extractor'
+import { v4 as uuidv4 } from 'uuid'
+
+import { logApi } from '../../debug'
 import {
   NetworkProperty,
   NetworkSummary,
 } from '../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
-import { v4 as uuidv4 } from 'uuid'
-import { Visibility } from '../NetworkSummaryModel/Visibility'
 import { CyNetwork } from '../CyNetworkModel'
-import { logApi } from '../../debug'
+import { Visibility } from '../NetworkSummaryModel/Visibility'
+import { Cx2 } from './Cx2'
+import { createCyNetworkFromCx2 } from './impl'
+import {
+  getAttributeDeclarations,
+  getNetworkAttributes,
+} from './impl/extractor'
 export const fetchUrlCx = async (
   url: string,
   maxSize: number,

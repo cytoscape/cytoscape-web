@@ -1,29 +1,29 @@
 import {
-  Paper,
+  ActionIcon,
   Center,
-  Title,
   Container,
-  Space,
+  Group,
   MantineProvider,
   Modal,
+  Paper,
   RemoveScroll,
+  Space,
+  Title,
   Tooltip,
-  ActionIcon,
-  Group,
 } from '@mantine/core'
-
-import { TableUpload } from '../JoinTableToNetwork/TableUpload'
-import { TableColumnAssignmentForm } from '../CreateNetworkFromTable/TableColumnAssignmentForm'
-import { PrimeReactProvider } from 'primereact/api'
-import {
-  useJoinTableToNetworkStore,
-  JoinTableToNetworkStep,
-} from '../../store/joinTableToNetworkStore'
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
-import { TableColumnAppendForm } from './TableColumnAppendForm'
 import { ModalsProvider } from '@mantine/modals'
+import { IconWindowMaximize,IconWindowMinimize } from '@tabler/icons-react'
+import { PrimeReactProvider } from 'primereact/api'
 import { useState } from 'react'
-import { IconWindowMinimize, IconWindowMaximize } from '@tabler/icons-react'
+
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
+import {
+  JoinTableToNetworkStep,
+  useJoinTableToNetworkStore,
+} from '../../store/joinTableToNetworkStore'
+import { TableColumnAssignmentForm } from '../CreateNetworkFromTable/TableColumnAssignmentForm'
+import { TableUpload } from '../JoinTableToNetwork/TableUpload'
+import { TableColumnAppendForm } from './TableColumnAppendForm'
 
 export function JoinTableToNetworkForm(props: BaseMenuProps) {
   const step = useJoinTableToNetworkStore((state) => state.step)

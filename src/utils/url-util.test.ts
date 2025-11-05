@@ -1,4 +1,4 @@
-import { isValidUrl, getDomain } from './url-util'
+import { getDomain,isValidUrl } from './url-util'
 
 describe('url-util', () => {
   describe('isValidUrl', () => {

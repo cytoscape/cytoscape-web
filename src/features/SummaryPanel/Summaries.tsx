@@ -1,8 +1,9 @@
 import { ReactElement } from 'react'
-import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { NetworkPropertyPanel } from './NetworkPropertyPanel'
-import { MessagePanel } from '../Messages'
+
 import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { MessagePanel } from '../Messages'
+import { NetworkPropertyPanel } from './NetworkPropertyPanel'
 
 export const Summaries = (): ReactElement => {
   const summaries = useNetworkSummaryStore((state) => state.summaries)

@@ -1,12 +1,12 @@
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
-
 import { useState } from 'react'
+
 import { DropdownMenuProps } from '../DropdownMenuProps'
-import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
-import { UndoMenuItem } from './UndoMenuItem'
+import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { RedoMenuItem } from './RedoMenuItem'
+import { UndoMenuItem } from './UndoMenuItem'
 
 export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
   const { label } = props

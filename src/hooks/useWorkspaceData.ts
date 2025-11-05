@@ -1,12 +1,12 @@
-import { useWorkspaceStore } from './stores/WorkspaceStore'
+import { useAppStore } from './stores/AppStore'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
-import { useTableStore } from './stores/TableStore'
-import { useViewModelStore } from './stores/ViewModelStore'
-import { useUiStateStore } from './stores/UiStateStore'
-import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
-import { useAppStore } from './stores/AppStore'
+import { useTableStore } from './stores/TableStore'
+import { useUiStateStore } from './stores/UiStateStore'
+import { useViewModelStore } from './stores/ViewModelStore'
+import { useVisualStyleStore } from './stores/VisualStyleStore'
+import { useWorkspaceStore } from './stores/WorkspaceStore'
 
 export const useWorkspaceData = () => {
   const apps = useAppStore((state) => state.apps)

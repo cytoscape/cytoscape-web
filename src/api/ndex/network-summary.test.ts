@@ -1,14 +1,14 @@
-import {
-  normalizeNdexSummaries,
-  fetchNdexSummaries,
-  getNetworkValidationStatus,
-} from './network-summary'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { NetworkProperty } from '../../models/NetworkSummaryModel/NetworkProperty'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
-import { getNdexClient } from './client'
 import { waitSeconds } from '../../utils/wait-seconds'
+import { getNdexClient } from './client'
 import { NdexNetworkSummary } from './NdexNetworkSummary'
+import {
+  fetchNdexSummaries,
+  getNetworkValidationStatus,
+  normalizeNdexSummaries,
+} from './network-summary'
 
 // Mock dependencies
 jest.mock('./client', () => ({

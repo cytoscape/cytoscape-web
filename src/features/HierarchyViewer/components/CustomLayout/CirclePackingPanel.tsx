@@ -1,41 +1,37 @@
 // React imports
-import {
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useMemo,
-  useCallback,
-} from 'react'
-
 // Third-party imports
 import { Tooltip } from '@mui/material'
 import * as d3Hierarchy from 'd3-hierarchy'
 import * as d3Selection from 'd3-selection'
 import * as d3Zoom from 'd3-zoom'
-
-// Internal model imports
-import { Network } from '../../../../models/NetworkModel'
-import { NetworkView } from '../../../../models/ViewModel'
-import { IdType } from '../../../../models/IdType'
-import { VisualStyle } from '../../../../models/VisualStyleModel'
-import { SearchState } from '../../../../models/FilterModel/SearchState'
-
-// Internal store imports
-import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
-import { useSubNetworkStore } from '../../store/SubNetworkStore'
-import { useTableStore } from '../../../../hooks/stores/TableStore'
-import { useFilterStore } from '../../../../hooks/stores/FilterStore'
-import { useRendererFunctionStore } from '../../../../hooks/stores/RendererFunctionStore'
-import { useCredentialStore } from '../../../../hooks/stores/CredentialStore'
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 // Internal component imports
 import { AppConfigContext } from '../../../../AppConfigContext'
-import { CirclePackingView } from '../../model/CirclePackingView'
-import { applyVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
 import { logUi } from '../../../../debug'
-
+import { useCredentialStore } from '../../../../hooks/stores/CredentialStore'
+import { useFilterStore } from '../../../../hooks/stores/FilterStore'
+import { useRendererFunctionStore } from '../../../../hooks/stores/RendererFunctionStore'
+import { useTableStore } from '../../../../hooks/stores/TableStore'
+// Internal store imports
+import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
+import { SearchState } from '../../../../models/FilterModel/SearchState'
+import { IdType } from '../../../../models/IdType'
+// Internal model imports
+import { Network } from '../../../../models/NetworkModel'
+import { NetworkView } from '../../../../models/ViewModel'
+import { VisualStyle } from '../../../../models/VisualStyleModel'
+import { applyVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
+import { CirclePackingView } from '../../model/CirclePackingView'
+import { useSubNetworkStore } from '../../store/SubNetworkStore'
 // Local imports
 import {
   CirclePackingType,

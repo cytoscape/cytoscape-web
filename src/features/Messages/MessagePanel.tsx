@@ -1,5 +1,5 @@
-import { ReactElement } from 'react'
 import { Box, LinearProgress } from '@mui/material'
+import { ReactElement } from 'react'
 
 interface MessagePanelProps {
   message: string

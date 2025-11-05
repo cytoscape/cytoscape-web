@@ -1,35 +1,36 @@
 import { useCallback } from 'react'
-import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { IdType } from '../../../models/IdType'
-import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
-import { putNetworkSummaryToDb } from '../../../db'
 import { v4 as uuidv4 } from 'uuid'
-import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
-import { ValueType, ValueTypeName } from '../../../models/TableModel'
-import {
-  NetworkProperty,
-  Visibility,
-} from '../../../models/NetworkSummaryModel'
+
+import { putNetworkSummaryToDb } from '../../../db'
+import { logApp } from '../../../debug'
+import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
+import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
+import { useTableStore } from '../../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { Cx2 } from '../../../models/CxModel/Cx2'
+import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import {
   createCyNetworkFromCx2,
   isValidCx2Network,
 } from '../../../models/CxModel/impl'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
-import { generateUniqueName } from '../../../utils/generate-unique-name'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
 } from '../../../models/CxModel/impl/extractor'
-import { logApp } from '../../../debug'
-import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
+import { IdType } from '../../../models/IdType'
+import {
+  NetworkProperty,
+  Visibility,
+} from '../../../models/NetworkSummaryModel'
+import { ValueType, ValueTypeName } from '../../../models/TableModel'
+import { generateUniqueName } from '../../../utils/generate-unique-name'
+import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 export const useAddNetworks = (): (({
   responseObj,
@@ -63,7 +64,7 @@ export const useAddNetworks = (): (({
         return
       }
 
-      let validNetworkIds: IdType[] = []
+      const validNetworkIds: IdType[] = []
       for (const item of responseObj) {
         if (isValidCx2Network(item)) {
           try {

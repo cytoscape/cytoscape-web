@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
-import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+
 import { logUi } from '../../../debug'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 interface UpdatedSelection {
   nodes: number[]

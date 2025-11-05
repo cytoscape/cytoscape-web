@@ -1,25 +1,26 @@
-import * as React from 'react'
+import AddCircleIcon from '@mui/icons-material/AddCircle'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
+import ArrowRightIcon from '@mui/icons-material/ArrowRight'
+import Close from '@mui/icons-material/DisabledByDefault'
+import EditIcon from '@mui/icons-material/Edit'
 import {
-  Button,
   Box,
-  Tooltip,
+  Button,
   IconButton,
   Paper,
   Popover,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material'
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
-import AddCircleIcon from '@mui/icons-material/AddCircle'
-import EditIcon from '@mui/icons-material/Edit'
-import Close from '@mui/icons-material/DisabledByDefault'
-import debounce from 'lodash/debounce'
-
 import { scaleLinear as visXScaleLinear } from '@visx/scale'
 import { extent } from 'd3-array'
-
+import debounce from 'lodash/debounce'
+import * as React from 'react'
 import Draggable from 'react-draggable'
 
+import { useVisualStyleStore } from '../../../../../hooks/stores/VisualStyleStore'
 import { IdType } from '../../../../../models/IdType'
 import {
   VisualProperty,
@@ -27,15 +28,10 @@ import {
 } from '../../../../../models/VisualStyleModel'
 import { ContinuousMappingFunction } from '../../../../../models/VisualStyleModel/VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
-
-import { useVisualStyleStore } from '../../../../../hooks/stores/VisualStyleStore'
-
-import { Handle, addHandle, removeHandle, editHandle } from './Handle'
-import { LineChart } from './LineChart'
 import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
-import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
-import ArrowRightIcon from '@mui/icons-material/ArrowRight'
+import { addHandle, editHandle,Handle, removeHandle } from './Handle'
+import { LineChart } from './LineChart'
 
 export function ContinuousNumberMappingForm(props: {
   currentNetworkId: IdType

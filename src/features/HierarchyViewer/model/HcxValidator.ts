@@ -1,6 +1,5 @@
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { Table } from '../../../models/TableModel'
-
 import { HcxVersion } from './HcxVersion'
 
 export interface HcxValidationResult {

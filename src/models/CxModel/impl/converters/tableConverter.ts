@@ -3,17 +3,17 @@
  *
  * Converts CX2 format data to TableModel.
  */
-import { Column, Table } from '../../../TableModel'
-import { Cx2 } from '../../Cx2'
-import * as cxUtil from '../extractor'
 import { IdType } from '../../../IdType'
+import { Column, Table } from '../../../TableModel'
 import { AttributeName } from '../../../TableModel/AttributeName'
+import { createTable } from '../../../TableModel/impl/InMemoryTable'
 import { ValueType } from '../../../TableModel/ValueType'
 import { ValueTypeName } from '../../../TableModel/ValueTypeName'
-import { CxValue } from '../../Cx2/CxValue'
+import { Cx2 } from '../../Cx2'
 import { AttributeDeclaration } from '../../Cx2/CoreAspects/AttributeDeclarations'
+import { CxValue } from '../../Cx2/CxValue'
+import * as cxUtil from '../extractor'
 import { translateCXEdgeId } from './networkConverter'
-import { createTable } from '../../../TableModel/impl/InMemoryTable'
 
 /**
  * Create tables (node and edge) from CX2 format

@@ -1,10 +1,10 @@
 import { Network, NetworkAttributes } from '../NetworkModel'
+import { OpaqueAspects } from '../OpaqueAspectModel'
+import { UndoRedoStack } from '../StoreModel/UndoStoreModel'
 import { Table } from '../TableModel'
 import { NetworkView } from '../ViewModel'
 import { VisualStyle } from '../VisualStyleModel'
 import { VisualStyleOptions } from '../VisualStyleModel/VisualStyleOptions'
-import { OpaqueAspects } from '../OpaqueAspectModel'
-import { UndoRedoStack } from '../StoreModel/UndoStoreModel'
 
 /**
  * A Cytoscape Web network model that includes the visual style, table, network topology, summary, etc.

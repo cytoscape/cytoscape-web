@@ -1,6 +1,3 @@
-import React from 'react'
-import { Column } from '../../../models/TableModel/Column'
-import { NetworkRecord, Pair } from '../models/DataInterfaceForMerge'
 import {
   MenuItem,
   Paper,
@@ -12,6 +9,10 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material'
+import React from 'react'
+
+import { Column } from '../../../models/TableModel/Column'
+import { NetworkRecord, Pair } from '../models/DataInterfaceForMerge'
 import useMatchingColumnsStore from '../store/matchingColumnStore'
 import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
 import useNodesDuplicationStore from '../store/nodesDuplicationStore'

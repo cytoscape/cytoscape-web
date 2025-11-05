@@ -1,25 +1,25 @@
 import { CxValue } from '../../CxModel/Cx2/CxValue'
-import { VisualPropertyName } from '../VisualPropertyName'
+import { ValueTypeName } from '../../TableModel'
 import {
-  ColorType,
-  FontType,
-  NodeBorderLineType,
-  NodeShapeType,
-  VisualPropertyValueType,
-  VisibilityType,
-  EdgeLineType,
-  NodeLabelPositionType,
-  EdgeArrowShapeType,
-  CustomGraphicsType,
-} from '../VisualPropertyValue'
-import {
-  DiscreteMappingFunction,
   ContinuousMappingFunction,
+  DiscreteMappingFunction,
   PassthroughMappingFunction,
   VisualProperty,
   VisualStyle,
 } from '..'
-import { ValueTypeName } from '../../TableModel'
+import { VisualPropertyName } from '../VisualPropertyName'
+import {
+  ColorType,
+  CustomGraphicsType,
+  EdgeArrowShapeType,
+  EdgeLineType,
+  FontType,
+  NodeBorderLineType,
+  NodeLabelPositionType,
+  NodeShapeType,
+  VisibilityType,
+  VisualPropertyValueType,
+} from '../VisualPropertyValue'
 import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
 import {
   DEFAULT_CUSTOM_GRAPHICS,

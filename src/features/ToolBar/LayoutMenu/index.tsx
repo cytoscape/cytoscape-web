@@ -1,26 +1,27 @@
+import { Box, Divider, MenuItem,Tooltip } from '@mui/material'
 import Button from '@mui/material/Button'
-import { Box, Divider, Tooltip, MenuItem } from '@mui/material'
-import { useRef, useState, useEffect } from 'react'
-import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
-import { IdType } from '../../../models/IdType'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
-import { Network } from '../../../models/NetworkModel'
-import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
-import { LayoutOptionDialog } from './LayoutOptionDialog'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
+import { useEffect,useRef, useState } from 'react'
+
+import { logUi } from '../../../debug'
+import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
+import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
-import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { useRendererFunctionStore } from '../../../hooks/stores/RendererFunctionStore'
+import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../../hooks/useUndoStack'
 import { LayoutAlgorithm } from '../../../models'
-import { useRendererFunctionStore } from '../../../hooks/stores/RendererFunctionStore'
+import { IdType } from '../../../models/IdType'
+import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
+import { Network } from '../../../models/NetworkModel'
 import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
-import { logUi } from '../../../debug'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
+import { LayoutOptionDialog } from './LayoutOptionDialog'
 
 interface DropdownMenuProps {
   label: string
@@ -83,7 +84,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     }
   }, [layoutCounter, getRendererFunction])
 
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+   
   const target: Network = networks.get(targetNetworkId) ?? ({} as Network)
 
   const summary = useNetworkSummaryStore(

@@ -1,5 +1,6 @@
-import { HorizontalAlignType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box, Typography } from '@mui/material'
+
+import { HorizontalAlignType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 
 export function HorizontalAlignPicker(props: {
   currentValue: HorizontalAlignType | null

@@ -1,4 +1,5 @@
 import { CardContent, Divider, Typography } from '@mui/material'
+
 import { ValueType } from '../../models/TableModel'
 
 interface GraphObjectPropertyPanelProps {

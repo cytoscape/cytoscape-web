@@ -1,24 +1,24 @@
-import { IdType } from '../models/IdType'
 import {
-  NetworkSummary,
+  fetchNdexSummaries,
+  getNdexClient,
+  getNetworkValidationStatus,
+} from '../api/ndex'
+import { putNetworkSummaryToDb } from '../db'
+import {
   Network,
+  NetworkSummary,
   NetworkView,
   Table,
   VisualStyle,
 } from '../models'
-import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { exportCyNetworkToCx2 } from '../models/CxModel/impl'
 import { CyNetwork } from '../models/CyNetworkModel'
+import { IdType } from '../models/IdType'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
-import { useWorkspaceStore } from './stores/WorkspaceStore'
-import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
-import { putNetworkSummaryToDb } from '../db'
+import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { useUrlNavigation } from './navigation/useUrlNavigation'
-import {
-  getNdexClient,
-  fetchNdexSummaries,
-  getNetworkValidationStatus,
-} from '../api/ndex'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
+import { useWorkspaceStore } from './stores/WorkspaceStore'
 
 /**
  * Hook that returns a function to save a copy of a CyNetwork to NDEx.

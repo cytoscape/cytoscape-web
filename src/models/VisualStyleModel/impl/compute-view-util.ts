@@ -4,29 +4,21 @@ import { AttributeName, Column, Table, ValueType } from '../../TableModel'
 import { EdgeView, NetworkView, NodeView } from '../../ViewModel'
 import {
   ContinuousMappingFunction,
+  CustomGraphicsType,
   DiscreteMappingFunction,
+  EdgeArrowShapeType,
+  EdgeFillType,
+  Mapper,
   MappingFunctionType,
+  NodeLabelPositionType,
+  NodeVisualPropertyName,
   PassthroughMappingFunction,
   VisualMappingFunction,
   VisualProperty,
   VisualPropertyName,
   VisualPropertyValueType,
   VisualStyle,
-  Mapper,
-  NodeLabelPositionType,
-  EdgeFillType,
-  EdgeArrowShapeType,
-  CustomGraphicsType,
-  NodeVisualPropertyName,
 } from '..'
-
-import * as VisualStyleFnImpl from './VisualStyleFnImpl'
-import * as MapperFactory from './MapperFactory'
-import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/DirectMappingSelector'
-import { isOpenShape, openShapeToFilledShape } from './EdgeArrowShapeImpl'
-
-import { computeNodeLabelPosition } from './nodeLabelPositionMap'
-
 import {
   computeCustomGraphicsProperties,
   getCustomGraphicNodeVps,
@@ -34,6 +26,11 @@ import {
   getNonCustomGraphicVps,
   getSizePropertyForCustomGraphic,
 } from './CustomGraphicsImpl'
+import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/DirectMappingSelector'
+import { isOpenShape, openShapeToFilledShape } from './EdgeArrowShapeImpl'
+import * as MapperFactory from './MapperFactory'
+import { computeNodeLabelPosition } from './nodeLabelPositionMap'
+import * as VisualStyleFnImpl from './VisualStyleFnImpl'
 
 // Build mapping functions from all visual properties
 const buildMappers = (vs: VisualStyle): Map<VisualPropertyName, Mapper> => {
@@ -163,7 +160,7 @@ const nodeViewBuilder = (
       nodeViews,
     )
   }
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+   
   while (idx--) {
     const node = nodes[idx]
     const nodeId = node.id
@@ -202,7 +199,7 @@ const edgeViewBuilder = (
   const result: Record<IdType, EdgeView> = {}
   const columns: Column[] = edgeTable.columns
   let idx: number = edges.length
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+   
   while (idx--) {
     const edge = edges[idx]
     const ev: EdgeView = {

@@ -1,31 +1,31 @@
+import { ValueTypeName } from '../../TableModel'
+import { ContinuousMappingFunction } from '../VisualMappingFunction/ContinuousMappingFunction'
+import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
+import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
+import { VisualPropertyName } from '../VisualPropertyName'
+import { EdgeArrowShapeType } from '../VisualPropertyValue'
+import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
+import { VisualStyle } from '../VisualStyle'
 import {
-  vpToCX,
-  convertPassthroughMappingToCX,
-  convertDiscreteMappingToCX,
   convertContinuousMappingToCX,
-  VPColorConverter,
-  VPStringConverter,
-  VPNumberConverter,
-  VPFontTypeConverter,
-  VPNodeShapeTypeConverter,
-  VPEdgeArrowShapeTypeConverter,
+  convertDiscreteMappingToCX,
+  convertPassthroughMappingToCX,
+  cxVisualPropertyConverter,
   VPBooleanConverter,
-  VPNodeLabelPositionConverter,
+  VPColorConverter,
   VPCustomGraphicsConverter,
   VPCustomGraphicsPositionConverter,
   VPCustomGraphicsSizeConverter,
-  cxVisualPropertyConverter,
+  VPEdgeArrowShapeTypeConverter,
+  VPFontTypeConverter,
+  VPNodeLabelPositionConverter,
+  VPNodeShapeTypeConverter,
+  VPNumberConverter,
+  VPStringConverter,
+  vpToCX,
 } from './cxVisualPropertyConverter'
-import { VisualPropertyName } from '../VisualPropertyName'
-import { EdgeArrowShapeType } from '../VisualPropertyValue'
-import { VisualStyle } from '../VisualStyle'
 import { createVisualStyle } from './VisualStyleFnImpl'
-import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
-import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
-import { ContinuousMappingFunction } from '../VisualMappingFunction/ContinuousMappingFunction'
-import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
-import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
-import { ValueTypeName } from '../../TableModel'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/cxVisualPropertyConverter.test.ts
 

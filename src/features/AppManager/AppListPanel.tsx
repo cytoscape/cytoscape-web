@@ -6,8 +6,9 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material'
-import { CyApp } from '../../models/AppModel'
+
 import { useAppStore } from '../../hooks/stores/AppStore'
+import { CyApp } from '../../models/AppModel'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 
 interface AppListPanelProps {

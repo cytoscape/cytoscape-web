@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { LLMModel, models } from '../model/LLMModel'
+
 import config from '../../../assets/config.json'
+import { LLMModel, models } from '../model/LLMModel'
 import { LLMTemplate, templates } from '../model/LLMTemplate'
 
 interface LLMQueryState {

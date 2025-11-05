@@ -1,8 +1,9 @@
-import { VisibilityType } from '../../../models/VisualStyleModel/VisualPropertyValue'
-import { Box, Button } from '@mui/material'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
+import { Box, Button } from '@mui/material'
 import React from 'react'
+
+import { VisibilityType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 const visibilityMap: Record<
   VisibilityType,
   (isSelected: boolean) => React.ReactElement

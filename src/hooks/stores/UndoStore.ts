@@ -1,15 +1,15 @@
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
+import { putUndoRedoStackToDb } from '../../db'
+import { logStore } from '../../debug'
+import { IdType } from '../../models'
 import {
   Edit,
   UndoRedoStack,
   UndoStore,
 } from '../../models/StoreModel/UndoStoreModel'
-import { putUndoRedoStackToDb } from '../../db'
 import { useWorkspaceStore } from './WorkspaceStore'
-import { IdType } from '../../models'
-import { logStore } from '../../debug'
 
 const persist =
   (config: StateCreator<UndoStore>) =>

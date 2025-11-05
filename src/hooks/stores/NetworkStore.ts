@@ -1,20 +1,21 @@
-import { IdType } from '../../models/IdType'
-import NetworkFn, { Edge, Network } from '../../models/NetworkModel'
 import { create, StateCreator, StoreApi } from 'zustand'
-import { immer } from 'zustand/middleware/immer'
 import { subscribeWithSelector } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
+
 import {
   clearNetworksFromDb,
   deleteNetworkFromDb,
   putNetworkToDb,
 } from '../../db'
-import { useWorkspaceStore } from './WorkspaceStore'
+import { logStore } from '../../debug'
+import { IdType } from '../../models/IdType'
+import NetworkFn, { Edge, Network } from '../../models/NetworkModel'
 import {
   NetworkStore,
   NetworkUpdatedEvent,
   UpdateEventType,
 } from '../../models/StoreModel/NetworkStoreModel'
-import { logStore } from '../../debug'
+import { useWorkspaceStore } from './WorkspaceStore'
 
 const persist =
   (config: StateCreator<NetworkStore>) =>

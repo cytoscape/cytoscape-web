@@ -1,12 +1,13 @@
+import debounce from 'lodash.debounce'
 import { ReactElement, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+
 import {
   getDb,
   getTimestampFromDb,
   getWorkspaceFromDb,
   putTimestampToDb,
 } from '../db'
-import debounce from 'lodash.debounce'
 import { logUi } from '../debug'
 
 const markForPageReload = debounce(() => {

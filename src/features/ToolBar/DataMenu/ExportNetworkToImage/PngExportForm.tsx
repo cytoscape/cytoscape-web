@@ -1,3 +1,4 @@
+import { MantineProvider, NumberInput } from '@mantine/core'
 import {
   Box,
   Checkbox,
@@ -9,18 +10,18 @@ import {
   Slider,
   Typography,
 } from '@mui/material'
-import { MantineProvider, NumberInput } from '@mantine/core'
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 //@ts-expect-error
 import { saveAs } from 'file-saver'
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+
 import { useRendererFunctionStore } from '../../../../hooks/stores/RendererFunctionStore'
+import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
+import { IdType } from '../../../../models/IdType'
 import {
   ExportFormRef,
   ExportImageFormatProps,
 } from './ExportNetworkToImageMenuItem'
-import { IdType } from '../../../../models/IdType'
-import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
-import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
 
 const MIN_ZOOM = 0
 const MAX_ZOOM = 5

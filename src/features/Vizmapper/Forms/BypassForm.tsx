@@ -1,32 +1,41 @@
-import * as React from 'react'
 import {
-  Box,
-  Popover,
-  Typography,
-  Button,
-  SxProps,
+  Delete as DeleteIcon,
+  ExpandMore as ExpandMoreIcon,
+  Info as InfoIcon,
+} from '@mui/icons-material'
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Badge,
-  IconButton,
+  Box,
+  Button,
   Divider,
+  IconButton,
+  MenuItem,
+  Popover,
+  Select,
+  SxProps,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
-  TableContainer,
-  Select,
-  MenuItem,
   Tooltip,
-  AccordionDetails,
-  Accordion,
-  AccordionSummary,
+  Typography,
 } from '@mui/material'
-import {
-  Delete as DeleteIcon,
-  Info as InfoIcon,
-  ExpandMore as ExpandMoreIcon,
-} from '@mui/icons-material'
+import * as React from 'react'
+import { useState } from 'react'
+
+import { useTableStore } from '../../../hooks/stores/TableStore'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
+import { useUndoStack } from '../../../hooks/useUndoStack'
+import { Column } from '../../../models'
 import { IdType } from '../../../models/IdType'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { NetworkView } from '../../../models/ViewModel'
 import {
   EdgeVisualPropertyName,
   Mapper,
@@ -35,11 +44,12 @@ import {
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
-
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-
+import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
+import { getKeybyAttribute } from '../../MergeNetworks/utils/attributes-operations'
+import {
+  LockColorCheckbox,
+  LockSizeCheckbox,
+} from '../VisualPropertyRender/Checkbox'
 import {
   VisualPropertyValueForm,
   VisualPropertyValueRender,
@@ -48,17 +58,6 @@ import {
   EmptyVisualPropertyViewBox,
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
-import { NetworkView } from '../../../models/ViewModel'
-import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
-import {
-  LockColorCheckbox,
-  LockSizeCheckbox,
-} from '../VisualPropertyRender/Checkbox'
-import { useState } from 'react'
-import { Column } from '../../../models'
-import { getKeybyAttribute } from '../../MergeNetworks/utils/attributes-operations'
-import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../hooks/useUndoStack'
 
 function BypassFormContent(props: {
   currentNetworkId: IdType

@@ -1,33 +1,34 @@
-import {
-  Popover,
-  Paper,
-  Chip,
-  Typography,
-  Box,
-  TextField,
-  Divider,
-  Button,
-} from '@mui/material'
-import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
-import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
-import { RichTextEditor, Link } from '@mantine/tiptap'
-import { useEditor } from '@tiptap/react'
-import Highlight from '@tiptap/extension-highlight'
-import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
-import TextAlign from '@tiptap/extension-text-align'
-import Superscript from '@tiptap/extension-superscript'
-import SubScript from '@tiptap/extension-subscript'
-
-import { removePTags } from '../../utils/remove-p-tags'
-import { ReactElement, useEffect, useState } from 'react'
-import { MantineProvider } from '@mantine/core'
 import '@mantine/tiptap/styles.css'
+
+import { MantineProvider } from '@mantine/core'
+import { Link,RichTextEditor } from '@mantine/tiptap'
+import {
+  Box,
+  Button,
+  Chip,
+  Divider,
+  Paper,
+  Popover,
+  TextField,
+  Typography,
+} from '@mui/material'
+import Highlight from '@tiptap/extension-highlight'
+import SubScript from '@tiptap/extension-subscript'
+import Superscript from '@tiptap/extension-superscript'
+import TextAlign from '@tiptap/extension-text-align'
+import Underline from '@tiptap/extension-underline'
+import { useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import isEqual from 'lodash/isEqual'
+import { ReactElement, useEffect, useState } from 'react'
+
+import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../hooks/useUndoStack'
-import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import isEqual from 'lodash/isEqual'
 import { IdType } from '../../models'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { removePTags } from '../../utils/remove-p-tags'
+import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 
 interface NetworkPropertyEditorProps {
   anchorEl?: HTMLElement

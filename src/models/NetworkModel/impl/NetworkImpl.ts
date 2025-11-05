@@ -1,10 +1,9 @@
-import { IdType } from '../../IdType'
-import { AttributeName, ValueType } from '../../TableModel'
-import { Network, Node, Edge } from '..'
-
-
 import { Core, EdgeSingular, NodeSingular } from 'cytoscape'
 import cytoscape from 'cytoscape'
+
+import { IdType } from '../../IdType'
+import { AttributeName, ValueType } from '../../TableModel'
+import { Edge,Network, Node } from '..'
 
 const GroupType = { Nodes: 'nodes', Edges: 'edges' } as const
 type GroupType = (typeof GroupType)[keyof typeof GroupType]

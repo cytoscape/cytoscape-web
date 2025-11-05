@@ -1,9 +1,9 @@
-import { MenuItem, Tooltip, Box } from '@mui/material'
+import { Box,MenuItem, Tooltip } from '@mui/material'
 import { Menu } from 'primereact/menu'
 import { ReactElement, useContext } from 'react'
-import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
-import { IdType } from '../../../models/IdType'
-import { serializeValueList } from '../../../models/TableModel/impl/ValueTypeImpl'
+
+import { fetchGeneNamesFromIds } from '../../../api/ndex'
+import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
@@ -11,17 +11,18 @@ import { useTableStore } from '../../../hooks/stores/TableStore'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { IdType } from '../../../models/IdType'
+import { MessageSeverity } from '../../../models/MessageModel'
+import { serializeValueList } from '../../../models/TableModel/impl/ValueTypeImpl'
+import { NetworkView } from '../../../models/ViewModel'
 import {
-  SubsystemTag,
   HcxMetaTag,
+  SubsystemTag,
 } from '../../HierarchyViewer/model/HcxMetaTag'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
+import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
-import { NetworkView } from '../../../models/ViewModel'
-import { fetchGeneNamesFromIds } from '../../../api/ndex'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { MessageSeverity } from '../../../models/MessageModel'
 
 export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)

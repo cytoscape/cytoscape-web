@@ -1,26 +1,27 @@
-import Tooltip from '@mui/material/Tooltip'
-import { Table, ValueType } from '../../../../models/TableModel'
 import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
+import Tooltip from '@mui/material/Tooltip'
 import { useEffect, useState } from 'react'
-import { IdType } from '../../../../models/IdType'
-import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
-import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
-import { GraphObjectType } from '../../../../models/NetworkModel'
-import { NetworkView } from '../../../../models/ViewModel'
-import {
-  DiscreteMappingFunction,
-  VisualPropertyValueType,
-} from '../../../../models/VisualStyleModel'
+import { useSearchParams } from 'react-router-dom'
+
 import { useFilterStore } from '../../../../hooks/stores/FilterStore'
+import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
 import {
   Filter,
   FilterConfig,
   getBasicFilter,
 } from '../../../../models/FilterModel'
-import { useSearchParams } from 'react-router-dom'
-import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
-import { useTheme } from '@mui/material/styles'
 import { DiscreteFilterDetails } from '../../../../models/FilterModel/DiscreteFilterDetails'
+import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
+import { IdType } from '../../../../models/IdType'
+import { GraphObjectType } from '../../../../models/NetworkModel'
+import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
+import { Table, ValueType } from '../../../../models/TableModel'
+import { NetworkView } from '../../../../models/ViewModel'
+import {
+  DiscreteMappingFunction,
+  VisualPropertyValueType,
+} from '../../../../models/VisualStyleModel'
 import { getAllDiscreteValues } from '../../utils/filter-util'
 
 interface CheckboxFilterProps {

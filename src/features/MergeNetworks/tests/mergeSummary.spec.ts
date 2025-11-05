@@ -3,14 +3,14 @@ jest.mock('lodash/cloneDeep', () => ({
   default: jest.fn(deepClone),
 }))
 
-import { createMatchingTable } from '../models/Impl/MatchingTableImpl'
-import { MatchingTable, MatchingTableRow } from '../models/MatchingTable'
-import { mergeNetSummary } from '../models/Impl/MergeNetSummary'
+import { IdType } from '../../../models/IdType'
 import {
   NetworkProperty,
   NetworkSummary,
 } from '../../../models/NetworkSummaryModel'
-import { IdType } from '../../../models/IdType'
+import { createMatchingTable } from '../models/Impl/MatchingTableImpl'
+import { mergeNetSummary } from '../models/Impl/MergeNetSummary'
+import { MatchingTable, MatchingTableRow } from '../models/MatchingTable'
 
 describe('mergeNetSummary', () => {
   beforeEach(() => {

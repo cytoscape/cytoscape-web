@@ -1,14 +1,15 @@
-import { ViewerPanel } from '../../HierarchyViewer/components'
-import { TabPanel } from './TabPanel'
 import { ComponentType, LazyExoticComponent, Suspense } from 'react'
+
 import { useAppStore } from '../../../hooks/stores/AppStore'
 import {
-  CyApp,
   ComponentType as AppComponentType,
+  CyApp,
 } from '../../../models/AppModel'
+import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
 import ExternalComponent from '../../AppManager/ExternalComponent'
-import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { ViewerPanel } from '../../HierarchyViewer/components'
+import { TabPanel } from './TabPanel'
 
 /**
  * Actual contents of the side panel

@@ -1,11 +1,11 @@
+import { clear } from 'idb-keyval'
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { OpaqueAspectStore } from '../../models/StoreModel/OpaqueAspectStoreModel'
-import { IdType } from '../../models/IdType'
-import { deleteOpaqueAspectsFromDb, putOpaqueAspectsToDb } from '../../db'
 
-import { clear } from 'idb-keyval'
+import { deleteOpaqueAspectsFromDb, putOpaqueAspectsToDb } from '../../db'
+import { IdType } from '../../models/IdType'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
+import { OpaqueAspectStore } from '../../models/StoreModel/OpaqueAspectStoreModel'
 
 export const useOpaqueAspectStore = create(
   immer<OpaqueAspectStore>((set) => ({

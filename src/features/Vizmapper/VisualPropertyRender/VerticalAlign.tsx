@@ -1,5 +1,6 @@
-import { VerticalAlignType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box, Typography } from '@mui/material'
+
+import { VerticalAlignType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 
 export function VerticalAlignPicker(props: {
   currentValue: VerticalAlignType | null

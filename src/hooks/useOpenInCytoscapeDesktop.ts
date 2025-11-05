@@ -1,17 +1,18 @@
-import { useMessageStore } from '../hooks/stores/MessageStore'
 // @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
+
+import { logApi } from '../debug'
+import { useMessageStore } from '../hooks/stores/MessageStore'
 import { exportCyNetworkToCx2 } from '../models/CxModel/impl'
 import { CyNetwork } from '../models/CyNetworkModel'
 import { MessageSeverity } from '../models/MessageModel'
 import { Network } from '../models/NetworkModel'
-import { NetworkView } from '../models/ViewModel'
-import { VisualStyle } from '../models/VisualStyleModel'
 import { NetworkSummary } from '../models/NetworkSummaryModel'
 import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { TableRecord } from '../models/StoreModel/TableStoreModel'
+import { NetworkView } from '../models/ViewModel'
+import { VisualStyle } from '../models/VisualStyleModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
-import { logApi } from '../debug'
 
 export const useOpenNetworkInCytoscape = () => {
   const addMessage = useMessageStore((state) => state.addMessage)

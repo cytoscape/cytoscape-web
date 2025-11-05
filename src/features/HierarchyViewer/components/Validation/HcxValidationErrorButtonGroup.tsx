@@ -1,6 +1,5 @@
-import { ReactElement, useState } from 'react'
-import { useHcxValidatorStore } from '../../store/HcxValidatorStore'
-import { IdType } from '../../../../models/IdType'
+import { PublishedWithChanges,WarningAmberOutlined } from '@mui/icons-material'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import {
   Box,
   ButtonGroup,
@@ -8,16 +7,17 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import { ReactElement, useState } from 'react'
 
+import { useMessageStore } from '../../../../hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '../../../../hooks/stores/NetworkSummaryStore'
-import { WarningAmberOutlined, PublishedWithChanges } from '@mui/icons-material'
+import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { IdType } from '../../../../models/IdType'
+import { MessageSeverity } from '../../../../models/MessageModel'
 import { HcxMetaTag } from '../../model/HcxMetaTag'
 import { validateHcx } from '../../model/impl/hcxValidators'
-import { useTableStore } from '../../../../hooks/stores/TableStore'
-import { useMessageStore } from '../../../../hooks/stores/MessageStore'
+import { useHcxValidatorStore } from '../../store/HcxValidatorStore'
 import { HcxValidationWarningsDialog } from './HcxValidationWarningsDialog'
-import { MessageSeverity } from '../../../../models/MessageModel'
 
 export interface HcxValidationButtonGroupProps {
   id: IdType

@@ -1,13 +1,13 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
-import { BaseMenuProps } from '../BaseMenuProps'
-import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { IdType } from '../../../models/IdType'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
 
+import { target } from '../../../../webpack.config'
+import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
+import { useTableStore } from '../../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../../hooks/useUndoStack'
-import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import {
   Edge,
   EdgeView,
@@ -15,9 +15,9 @@ import {
   NodeView,
   ValueType,
 } from '../../../models'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { target } from '../../../../webpack.config'
+import { IdType } from '../../../models/IdType'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 export const DeleteSelectedNodesMenuItem = (
   props: BaseMenuProps,

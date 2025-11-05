@@ -1,13 +1,13 @@
-import {
-  serializeValueList,
-  serializedStringIsValid,
-  compareLists,
-  serializeValue,
-  deserializeValueList,
-  getSingleTypeFromList,
-  getListTypeFromSingle,
-} from './ValueTypeImpl'
 import { ValueTypeName } from '..'
+import {
+  compareLists,
+  deserializeValueList,
+  getListTypeFromSingle,
+  getSingleTypeFromList,
+  serializedStringIsValid,
+  serializeValue,
+  serializeValueList,
+} from './ValueTypeImpl'
 
 describe('serializeValueList', () => {
   it.each([

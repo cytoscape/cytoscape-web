@@ -1,12 +1,13 @@
-import React from 'react'
 import { FormControl, MenuItem, Select, SelectChangeEvent } from '@mui/material'
-import { TableView } from '../models/DataInterfaceForMerge'
-import { getAllConvertiableTypes } from '../utils/attributes-operations'
-import { MatchingTableRow } from '../models/MatchingTable'
+import React from 'react'
+
 import { ValueTypeName } from '../../../models/TableModel'
-import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
+import { TableView } from '../models/DataInterfaceForMerge'
+import { MatchingTableRow } from '../models/MatchingTable'
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
 import useNetMatchingTableStore from '../store/netMatchingTableStore'
+import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
+import { getAllConvertiableTypes } from '../utils/attributes-operations'
 
 interface typeDropDownTemplateProps {
   type: TableView

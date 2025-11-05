@@ -1,58 +1,53 @@
-import { useEffect, useState, useRef } from 'react'
 import {
   Box,
-  Popover,
+  Button,
+  Checkbox,
+  Divider,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
+  Popover,
   Select,
-  Typography,
   SxProps,
   Tooltip,
-  Divider,
-  Button,
-  FormControlLabel,
-  Checkbox,
+  Typography,
 } from '@mui/material'
+import { useEffect, useRef,useState } from 'react'
 
-import { IdType } from '../../../../models/IdType'
-import { AttributeName, ValueTypeName } from '../../../../models/TableModel'
-import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
 import { useTableStore } from '../../../../hooks/stores/TableStore'
-
+import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
+import { useUndoStack } from '../../../../hooks/useUndoStack'
+import { IdType } from '../../../../models/IdType'
+import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
+import { AttributeName, ValueTypeName } from '../../../../models/TableModel'
 import {
   EdgeVisualPropertyName,
   NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
-import { MappingFunctionType } from '../../../../models/VisualStyleModel/VisualMappingFunction'
-
-import {
-  PassthroughMappingFunctionIcon,
-  DiscreteMappingFunctionIcon,
-  ContinuousMappingFunctionIcon,
-} from '../../VisualStyleIcons'
-
 import {
   typesCanBeMapped,
   validMappingsForVP,
 } from '../../../../models/VisualStyleModel/impl/MappingFunctionImpl'
-
-import {
-  EmptyVisualPropertyViewBox,
-  VisualPropertyViewBox,
-} from '../VisualPropertyViewBox'
-
-import { DiscreteMappingForm } from './DiscreteMappingForm'
-import { ContinuousMappingForm } from './ContinuousMappingForm'
+import { MappingFunctionType } from '../../../../models/VisualStyleModel/VisualMappingFunction'
 import { VisualPropertyGroup } from '../../../../models/VisualStyleModel/VisualPropertyGroup'
 import {
   LockColorCheckbox,
   LockSizeCheckbox,
 } from '../../VisualPropertyRender/Checkbox'
-import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../../hooks/useUndoStack'
+import {
+  ContinuousMappingFunctionIcon,
+  DiscreteMappingFunctionIcon,
+  PassthroughMappingFunctionIcon,
+} from '../../VisualStyleIcons'
+import {
+  EmptyVisualPropertyViewBox,
+  VisualPropertyViewBox,
+} from '../VisualPropertyViewBox'
+import { ContinuousMappingForm } from './ContinuousMappingForm'
+import { DiscreteMappingForm } from './DiscreteMappingForm'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   [MappingFunctionType.Passthrough]: <PassthroughMappingFunctionIcon />,

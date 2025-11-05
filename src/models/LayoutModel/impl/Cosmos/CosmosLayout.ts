@@ -1,6 +1,7 @@
 import { Graph } from '@cosmograph/cosmos'
+
 import { IdType } from '../../../IdType'
-import { Node, Edge } from '../../../NetworkModel'
+import { Edge,Node } from '../../../NetworkModel'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutEngine'
 import { CosmosAlgorithms } from './Algorithms/CosmosAlgorithms'

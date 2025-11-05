@@ -1,17 +1,18 @@
-import React from 'react'
 import {
-  MenuItem,
-  Dialog,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
   Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  MenuItem,
+  Typography,
 } from '@mui/material'
-import { BaseMenuProps } from '../BaseMenuProps'
+import React from 'react'
+
 import packageInfo from '../../../../package.json'
 import { getDatabaseVersion } from '../../../db'
 import { logUi } from '../../../debug'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 const formatDateForHash = (dateString: string): string => {
   const date = new Date(dateString)

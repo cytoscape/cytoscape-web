@@ -1,7 +1,8 @@
 import React, { ReactNode } from 'react'
+
+import { useNetworkStore } from '../../hooks/stores/NetworkStore'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { DataStoreContext } from './DataStoreContext'
-import { useNetworkStore } from '../../hooks/stores/NetworkStore'
 
 export const DataStoreProvider: React.FC<{ children: ReactNode }> = ({
   children,

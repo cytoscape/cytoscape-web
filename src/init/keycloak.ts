@@ -1,9 +1,9 @@
-import Keycloak from 'keycloak-js'
-import appConfig from '../assets/config.json'
-import { createContext } from 'react'
-
 // @ts-expect-error-next-line: The @js4cytoscape/ndex-client package does not provide TypeScript types, but runtime usage is known to work safely.
 import { NDEx } from '@js4cytoscape/ndex-client'
+import Keycloak from 'keycloak-js'
+import { createContext } from 'react'
+
+import appConfig from '../assets/config.json'
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 

@@ -1,6 +1,7 @@
-import G6, { GraphData, NodeConfig, EdgeConfig, LayoutConfig } from '@antv/g6'
+import G6, { EdgeConfig, GraphData, LayoutConfig,NodeConfig } from '@antv/g6'
+
 import { IdType } from '../../../IdType'
-import { Node, Edge } from '../../../NetworkModel'
+import { Edge,Node } from '../../../NetworkModel'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutEngine'
 import { G6Algorithms } from './Algorithms/G6Algorithms'

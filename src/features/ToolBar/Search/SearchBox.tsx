@@ -1,23 +1,24 @@
-import { StyledInputBase } from './StyledInputBase'
-import { Search } from './Search'
-import { useEffect, useRef, useState } from 'react'
-import { SearchControls } from './SearchControls'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { IdType } from '../../../models/IdType'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import Fuse from 'fuse.js'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+import { useEffect, useRef, useState } from 'react'
+
+import { logUi } from '../../../debug'
 import { useFilterStore } from '../../../hooks/stores/FilterStore'
-import { GraphObjectType } from '../../../models/NetworkModel'
+import { useTableStore } from '../../../hooks/stores/TableStore'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import {
   IndexedColumns,
   Indices,
   Operator,
 } from '../../../models/FilterModel/Search'
-import { createFuseIndex, filterColumns, runSearch } from './SearchUtils'
 import { SearchState } from '../../../models/FilterModel/SearchState'
-import { logUi } from '../../../debug'
+import { IdType } from '../../../models/IdType'
+import { GraphObjectType } from '../../../models/NetworkModel'
+import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
+import { Search } from './Search'
+import { SearchControls } from './SearchControls'
+import { createFuseIndex, filterColumns, runSearch } from './SearchUtils'
+import { StyledInputBase } from './StyledInputBase'
 
 export const SearchBox = (): JSX.Element => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)

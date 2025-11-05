@@ -1,6 +1,6 @@
-import { fetchNdexInterconnectQuery, fetchGeneNamesFromIds } from './query'
-import { getNdexClient } from './client'
 import { Cx2 } from '../../models/CxModel/Cx2'
+import { getNdexClient } from './client'
+import { fetchGeneNamesFromIds,fetchNdexInterconnectQuery } from './query'
 
 // Mock the NDEx client module
 jest.mock('./client', () => ({

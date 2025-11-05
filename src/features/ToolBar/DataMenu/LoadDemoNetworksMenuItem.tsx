@@ -1,14 +1,15 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useContext } from 'react'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { IdType } from '../../../models/IdType'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { BaseMenuProps } from '../BaseMenuProps'
-import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
+
 import { fetchNdexSummaries } from '../../../api/ndex'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { AppConfigContext } from '../../../AppConfigContext'
+import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
+import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { NetworkSummary } from '../../../models'
+import { IdType } from '../../../models/IdType'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 export const LoadDemoNetworksMenuItem = (
   props: BaseMenuProps,

@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import { Box, Button, Divider,Paper, Typography } from '@mui/material'
+import React, { useEffect,useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Box, Typography, Button, Paper, Divider } from '@mui/material'
+
+import { logUi } from '../debug'
 import {
   clearBrowserHistory,
   clearInternalHistory,
-  resetNavigationToRoot,
   getHistoryInfo,
+  resetNavigationToRoot,
 } from '../hooks/navigation/url-manager'
-import { logUi } from '../debug'
 
 export const HistoryDebugger = (): JSX.Element => {
   const [historyLength, setHistoryLength] = useState(window.history.length)

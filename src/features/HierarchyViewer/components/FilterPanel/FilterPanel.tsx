@@ -1,10 +1,5 @@
-import Grid from '@mui/material/Grid'
-import { useEffect, useState } from 'react'
-import { IdType } from '../../../../models/IdType'
-import { useTableStore } from '../../../../hooks/stores/TableStore'
-import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
-import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
-import { GraphObjectType } from '../../../../models/NetworkModel'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import SettingsIcon from '@mui/icons-material/Settings'
 import {
   Accordion,
   AccordionDetails,
@@ -14,29 +9,34 @@ import {
   Switch,
   Typography,
 } from '@mui/material'
-import { AttributeSelector } from './AttributeSelector'
-import { ModeSelector } from './ModeSelector'
-
-import SettingsIcon from '@mui/icons-material/Settings'
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import Grid from '@mui/material/Grid'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+
+import { useFilterStore } from '../../../../hooks/stores/FilterStore'
+import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
 import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
+import { DisplayMode, FilterConfig } from '../../../../models/FilterModel'
+import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
+import { IdType } from '../../../../models/IdType'
+import { GraphObjectType } from '../../../../models/NetworkModel'
+import { Table } from '../../../../models/TableModel'
 import {
   VisualMappingFunction,
   VisualProperty,
   VisualPropertyValueType,
   VisualStyle,
 } from '../../../../models/VisualStyleModel'
-import { CompatibleVisualProperties } from './CompatibleVisualMappings'
-import { CheckboxFilter } from './CheckboxFilter'
-import { useFilterStore } from '../../../../hooks/stores/FilterStore'
-import { DisplayMode, FilterConfig } from '../../../../models/FilterModel'
-import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
-import { Table } from '../../../../models/TableModel'
 import {
   getAllDiscreteValues,
   getDefaultCheckboxFilterConfig,
 } from '../../utils/filter-util'
+import { AttributeSelector } from './AttributeSelector'
+import { CheckboxFilter } from './CheckboxFilter'
+import { CompatibleVisualProperties } from './CompatibleVisualMappings'
+import { ModeSelector } from './ModeSelector'
 
 // Default filter name if none exists
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'

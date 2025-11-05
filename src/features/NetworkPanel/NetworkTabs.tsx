@@ -1,11 +1,12 @@
 import { Box, Tab, Tabs } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
-import { NetworkView } from '../../models/ViewModel'
-import { Renderer } from '../../models/RendererModel/Renderer'
-import { NetworkTab } from './NetworkTab'
-import { Network } from '../../models/NetworkModel'
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
 import { useSearchParams } from 'react-router-dom'
+
+import { useUiStateStore } from '../../hooks/stores/UiStateStore'
+import { Network } from '../../models/NetworkModel'
+import { Renderer } from '../../models/RendererModel/Renderer'
+import { NetworkView } from '../../models/ViewModel'
+import { NetworkTab } from './NetworkTab'
 
 interface NetworkTabsProps {
   network: Network

@@ -1,27 +1,28 @@
+import { ContentCopy, Preview } from '@mui/icons-material'
 import {
-  MenuItem,
+  Box,
+  Button,
+  ButtonGroup,
   Dialog,
-  DialogTitle,
+  DialogActions,
   DialogContent,
+  DialogTitle,
   FormControl,
+  IconButton,
   InputLabel,
+  MenuItem,
   Select,
   TextField,
-  DialogActions,
-  Button,
   Tooltip,
-  Box,
-  ButtonGroup,
-  IconButton,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
-import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
-import { LLMModel, models } from '../model/LLMModel'
-import { useLLMQueryStore } from '../store'
-import { LLMTemplate, templates } from '../model/LLMTemplate'
-import { ContentCopy, Preview } from '@mui/icons-material'
+
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
+import { LLMModel, models } from '../model/LLMModel'
+import { LLMTemplate, templates } from '../model/LLMTemplate'
+import { useLLMQueryStore } from '../store'
 
 export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
   const [showTemplatePreview, setShowTemplatePreview] = useState(false)

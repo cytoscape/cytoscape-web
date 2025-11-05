@@ -1,50 +1,48 @@
 import { Box } from '@mui/material'
+import { ReactElement, useContext,useEffect, useRef, useState } from 'react'
 import {
   Location,
   Outlet,
   useLocation,
-  useParams,
   useNavigate,
+  useParams,
   useSearchParams,
 } from 'react-router-dom'
-import { useState, ReactElement, useEffect, useRef, useContext } from 'react'
-import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
+
+import { fetchNdexSummaries } from '../api/ndex'
+import { AppConfigContext } from '../AppConfigContext'
 import {
   getUiStateFromDb,
   getWorkspaceFromDb,
   putNetworkSummaryToDb,
 } from '../db/'
-
-import { ToolBar } from './ToolBar'
-import { DEFAULT_UI_STATE, useUiStateStore } from '../hooks/stores/UiStateStore'
-import { AppConfigContext } from '../AppConfigContext'
-import { useLoadNetworkSummaries } from '../hooks/useLoadNetworkSummaries'
-import { fetchNdexSummaries } from '../api/ndex'
+import { logStartup } from '../debug'
 import { useCredentialStore } from '../hooks/stores/CredentialStore'
-
-import { PanelState } from '../models/UiModel/PanelState'
-import { Panel } from '../models/UiModel/Panel'
-import { SyncTabsAction } from './SyncTabs'
-
+import { useFilterStore } from '../hooks/stores/FilterStore'
 import { useMessageStore } from '../hooks/stores/MessageStore'
-import { MessageSeverity } from '../models/MessageModel'
-import { fetchUrlCx } from '../models/CxModel/fetch-url-cx-util'
 import { useNetworkStore } from '../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../hooks/stores/TableStore'
+import { DEFAULT_UI_STATE, useUiStateStore } from '../hooks/stores/UiStateStore'
 import { useViewModelStore } from '../hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
-import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
-import { logStartup } from '../debug'
-import { SelectionStates } from './FloatingToolBar/ShareNetworkButtton'
-import { FilterUrlParams } from '../models/FilterModel/FilterUrlParams'
-import { DEFAULT_FILTER_NAME } from './HierarchyViewer/components/FilterPanel/FilterPanel'
+import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
+import { useLoadNetworkSummaries } from '../hooks/useLoadNetworkSummaries'
+import { fetchUrlCx } from '../models/CxModel/fetch-url-cx-util'
 import {
   DisplayMode,
   FilterConfig,
   FilterWidgetType,
 } from '../models/FilterModel'
+import { FilterUrlParams } from '../models/FilterModel/FilterUrlParams'
+import { MessageSeverity } from '../models/MessageModel'
 import { GraphObjectType } from '../models/NetworkModel'
-import { useFilterStore } from '../hooks/stores/FilterStore'
+import { Panel } from '../models/UiModel/Panel'
+import { PanelState } from '../models/UiModel/PanelState'
+import { SelectionStates } from './FloatingToolBar/ShareNetworkButtton'
+import { DEFAULT_FILTER_NAME } from './HierarchyViewer/components/FilterPanel/FilterPanel'
+import { SyncTabsAction } from './SyncTabs'
+import { ToolBar } from './ToolBar'
 
 /**
  *
@@ -98,8 +96,8 @@ const AppShell = (): ReactElement => {
       return
     }
 
-    let selectedNodes: string[] = selectedNodeStr.split(' ')
-    let selectedEdges: string[] = selectedEdgeStr.split(' ')
+    const selectedNodes: string[] = selectedNodeStr.split(' ')
+    const selectedEdges: string[] = selectedEdgeStr.split(' ')
     exclusiveSelect(networkId, selectedNodes, selectedEdges)
   }
 

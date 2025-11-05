@@ -1,7 +1,7 @@
 import { Button, MenuItem } from '@mui/material'
 import { ReactElement, useRef, useState } from 'react'
-import { BaseMenuProps } from '../BaseMenuProps'
 
+import { BaseMenuProps } from '../BaseMenuProps'
 import { FileUpload } from '../FileUpload'
 
 export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {

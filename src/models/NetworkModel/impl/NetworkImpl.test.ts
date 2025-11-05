@@ -4,11 +4,11 @@
  * These tests define the contract that any Network implementation must fulfill.
  * The tests should be implementation-agnostic and test the public API only.
  */
-import { Network, Node, Edge } from '../index'
-import NetworkFn from '../index'
 import { Cx2 } from '../../CxModel/Cx2'
-import { IdType } from '../../IdType'
 import { createNetworkFromCx } from '../../CxModel/impl/converters'
+import { IdType } from '../../IdType'
+import { Edge,Network, Node } from '../index'
+import NetworkFn from '../index'
 
 describe('Network Implementation', () => {
   describe('createNetwork', () => {

@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { CyApp } from '../../models/AppModel/CyApp'
-import { AppStore } from '../../models/StoreModel/AppStoreModel'
+
 import {
   deleteServiceAppFromDb,
   getAllServiceAppsFromDb,
@@ -9,12 +8,13 @@ import {
   putAppToDb,
   putServiceAppToDb,
 } from '../../db'
-import { AppStatus } from '../../models/AppModel/AppStatus'
-import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
 import { logStore } from '../../debug'
-
+import { AppStatus } from '../../models/AppModel/AppStatus'
+import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
+import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
 import { ServiceMetadata } from '../../models/AppModel/ServiceMetadata'
+import { AppStore } from '../../models/StoreModel/AppStoreModel'
 
 const sampleUrl = 'https://cd.ndexbio.org/cy/cytocontainer/v1/louvain'
 

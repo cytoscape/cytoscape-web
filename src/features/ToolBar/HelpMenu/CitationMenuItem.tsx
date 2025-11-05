@@ -1,20 +1,21 @@
-import {
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  Box,
-  Link,
-} from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
-import { ReactElement, useState, useMemo } from 'react'
-import { BaseMenuProps } from '../BaseMenuProps'
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Link,
+  MenuItem,
+  Typography,
+} from '@mui/material'
+import { ReactElement, useMemo,useState } from 'react'
+
+import { logUi } from '../../../debug'
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
-import { logUi } from '../../../debug'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 interface CitationData {
   authors: string

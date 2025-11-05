@@ -1,18 +1,19 @@
-import { IdType } from '../../models/IdType'
-import { EdgeView, NetworkView, NodeView } from '../../models/ViewModel'
-import { isEdgeId } from '../../models/NetworkModel/impl/NetworkImpl'
 import { create, StateCreator, StoreApi } from 'zustand'
-import { immer } from 'zustand/middleware/immer'
 import { subscribeWithSelector } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
+
 import {
   clearNetworkViewsFromDb,
   deleteNetworkViewsFromDb,
-  putNetworkViewToDb,
   putNetworkViewsToDb,
+  putNetworkViewToDb,
 } from '../../db'
-import { useWorkspaceStore } from './WorkspaceStore'
-import { ViewModelStore } from '../../models/StoreModel/ViewModelStoreModel'
 import { logStore } from '../../debug'
+import { IdType } from '../../models/IdType'
+import { isEdgeId } from '../../models/NetworkModel/impl/NetworkImpl'
+import { ViewModelStore } from '../../models/StoreModel/ViewModelStoreModel'
+import { EdgeView, NetworkView, NodeView } from '../../models/ViewModel'
+import { useWorkspaceStore } from './WorkspaceStore'
 
 // Default view type (a node-link diagram)
 export const DEF_VIEW_TYPE = 'nodeLink'

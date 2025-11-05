@@ -1,23 +1,23 @@
 import {
   Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
   TextField,
   Typography,
-  Button,
-  FormControlLabel,
-  Checkbox,
 } from '@mui/material'
-import { useState, useEffect, ChangeEvent } from 'react'
-import { serializedStringIsValid } from '../../../models/TableModel/impl/ValueTypeImpl'
+import { ChangeEvent,useEffect, useState } from 'react'
+import React from 'react'
+
+import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
+import { serializedStringIsValid } from '../../../models/TableModel/impl/ValueTypeImpl'
+import { getDefaultVisualStyle } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 import {
-  VisualPropertyName,
   NodeVisualPropertyName,
+  VisualPropertyName,
 } from '../../../models/VisualStyleModel/VisualPropertyName'
 import { LockSizeCheckbox } from './Checkbox'
-import { IdType } from '../../../models/IdType'
-import { getDefaultVisualStyle } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
-
-import React from 'react'
 
 export function NumberInput(props: {
   currentValue: number | null

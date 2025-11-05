@@ -1,75 +1,73 @@
-import * as React from 'react'
-import Tabs from '@mui/material/Tabs'
-import Tab from '@mui/material/Tab'
-import Typography from '@mui/material/Typography'
-import Box from '@mui/material/Box'
-import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material'
-import { Button, ButtonGroup, Tooltip } from '@mui/material'
-import orderBy from 'lodash/orderBy'
 import '../../assets/icons.css'
+
 import {
-  SortAscIcon,
-  SortDescIcon,
-  RenameIcon,
-  DuplicateIcon,
-  EditIcon,
-} from './Icon'
+  CellClickedEventArgs,
+  CompactSelection,
+  DataEditor,
+  DataEditorRef,
+  EditableGridCell,
+  GridCell,
+  GridCellKind,
+  GridColumn,
+  GridColumnIcon,
+  GridSelection,
+  HeaderClickedEventArgs,
+  Item,
+} from '@glideapps/glide-data-grid'
+import { KeyboardArrowDown,KeyboardArrowUp } from '@mui/icons-material'
+import { Button, ButtonGroup, Tooltip } from '@mui/material'
+import Box from '@mui/material/Box'
+import Tab from '@mui/material/Tab'
+import Tabs from '@mui/material/Tabs'
+import Typography from '@mui/material/Typography'
+import orderBy from 'lodash/orderBy'
+import * as React from 'react'
+import { useEffect, useRef } from 'react'
+
+import { useNetworkStore } from '../../hooks/stores/NetworkStore'
+import { useTableStore } from '../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
+import { useUndoStack } from '../../hooks/useUndoStack'
+import { IdType } from '../../models/IdType'
+import { CellEdit, TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import {
+  Column,
   Table,
   ValueType,
   ValueTypeName,
-  Column,
 } from '../../models/TableModel'
-import { useTableStore } from '../../hooks/stores/TableStore'
-import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
-import { IdType } from '../../models/IdType'
-import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
-
-import { isValidUrl } from '../../utils/url-util'
 import {
-  EditTableColumnForm,
+  deserializeValue,
+  deserializeValueList,
+  isListType,
+  serializedStringIsValid,
+  SortType,
+  valueDisplay,
+} from '../../models/TableModel/impl/ValueTypeImpl'
+import { Ui } from '../../models/UiModel'
+import { Panel } from '../../models/UiModel/Panel'
+import { PanelState } from '../../models/UiModel/PanelState'
+import { NetworkView } from '../../models/ViewModel'
+import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { isValidUrl } from '../../utils/url-util'
+import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
+import {
+  DuplicateIcon,
+  EditIcon,
+  RenameIcon,
+  SortAscIcon,
+  SortDescIcon,
+} from './Icon'
+import NetworkInfoPanel from './NetworkInfoPanel'
+import {
   CreateTableColumnForm,
   DeleteTableColumnForm,
+  EditTableColumnForm,
 } from './TableColumnForm'
-
-import {
-  DataEditor,
-  GridCellKind,
-  GridCell,
-  EditableGridCell,
-  Item,
-  CellClickedEventArgs,
-  DataEditorRef,
-  HeaderClickedEventArgs,
-  GridColumn,
-  GridSelection,
-  CompactSelection,
-  GridColumnIcon,
-} from '@glideapps/glide-data-grid'
-
-import {
-  deserializeValueList,
-  valueDisplay,
-  isListType,
-  SortType,
-  serializedStringIsValid,
-  deserializeValue,
-} from '../../models/TableModel/impl/ValueTypeImpl'
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
-import { PanelState } from '../../models/UiModel/PanelState'
-import { Panel } from '../../models/UiModel/Panel'
-import { Ui } from '../../models/UiModel'
-import NetworkInfoPanel from './NetworkInfoPanel'
-import { NetworkView } from '../../models/ViewModel'
-import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
-import { CellEdit, TableRecord } from '../../models/StoreModel/TableStoreModel'
-import { useEffect, useRef } from 'react'
-import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualStyleOptions'
-
-import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../hooks/useUndoStack'
-import { useNetworkStore } from '../../hooks/stores/NetworkStore'
 
 interface TabPanelProps {
   children?: React.ReactNode

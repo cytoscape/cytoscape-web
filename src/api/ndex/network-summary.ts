@@ -3,19 +3,19 @@
  *
  * Functions for fetching and managing network summaries from NDEx.
  */
-import { NdexNetworkSummary } from './NdexNetworkSummary'
-import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { logApi } from '../../debug'
 import { IdType } from '../../models/IdType'
-import { ValueType } from '../../models/TableModel/ValueType'
-import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import {
   deserializeValue,
   getSingleTypeFromList,
   isListType,
 } from '../../models/TableModel/impl/ValueTypeImpl'
-import { logApi } from '../../debug'
-import { getNdexClient } from './client'
+import { ValueType } from '../../models/TableModel/ValueType'
+import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import { waitSeconds } from '../../utils/wait-seconds'
+import { getNdexClient } from './client'
+import { NdexNetworkSummary } from './NdexNetworkSummary'
 
 export const TimeOutErrorIndicator = 'NDEx_TIMEOUT_ERROR'
 

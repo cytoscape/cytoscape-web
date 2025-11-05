@@ -1,5 +1,6 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useState } from 'react'
+
 import { BaseMenuProps } from '../BaseMenuProps'
 import { LoadFromNdexDialog } from './LoadFromNdexDialog'
 

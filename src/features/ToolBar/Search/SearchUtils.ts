@@ -1,13 +1,14 @@
 import Fuse from 'fuse.js'
+import intersection from 'lodash/intersection'
+import union from 'lodash/union'
+
+import { Operator } from '../../../models/FilterModel/Search'
 import {
   Column,
   Table,
   ValueType,
   ValueTypeName,
 } from '../../../models/TableModel'
-import { Operator } from '../../../models/FilterModel/Search'
-import intersection from 'lodash/intersection'
-import union from 'lodash/union'
 
 /**
  * Generates a Fuse index from a data table

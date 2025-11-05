@@ -1,4 +1,5 @@
 import cloneDeep from 'lodash/cloneDeep'
+
 import { NodeLabelPositionType } from '../VisualPropertyValue'
 
 export const NodeLabelOrientationType = {

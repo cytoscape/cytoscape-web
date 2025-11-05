@@ -1,19 +1,20 @@
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+
+import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../hooks/stores/CredentialStore'
 import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
 import { waitSeconds } from '../utils/wait-seconds'
-import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
 
 export const UpdateNetworkDialog = (props: {
   open: boolean

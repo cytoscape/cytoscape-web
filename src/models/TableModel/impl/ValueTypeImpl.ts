@@ -1,6 +1,6 @@
+import { AttributeName } from '../AttributeName'
 import { ListOfValueType, SingleValueType, ValueType } from '../ValueType'
 import { ValueTypeName } from '../ValueTypeName'
-import { AttributeName } from '../AttributeName'
 // serialize lists of different value types into a string to display in the table
 // e.g. [1, 2, 3] -> '1, 2, 3'
 export const serializeValueList = (value: ListOfValueType): string => {

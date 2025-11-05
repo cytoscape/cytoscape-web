@@ -1,12 +1,13 @@
 import { Button, Grid, Typography } from '@mui/material'
+import debounce from 'lodash/debounce'
 import { ReactElement, useEffect } from 'react'
 import {
   isRouteErrorResponse,
   useNavigate,
   useRouteError,
 } from 'react-router-dom'
+
 import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
-import debounce from 'lodash/debounce'
 export const Error = (): ReactElement => {
   const error: any = useRouteError()
   const navigate = useNavigate()

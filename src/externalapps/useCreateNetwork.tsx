@@ -1,33 +1,34 @@
+import { useCallback } from 'react'
+import { v4 as uuidv4 } from 'uuid'
+
+import { useNetworkStore } from '../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../hooks/stores/TableStore'
+import { useViewModelStore } from '../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
+import { IdType } from '../models'
+import { CyNetwork } from '../models/CyNetworkModel'
 import NetworkFn, {
-  NetworkAttributes,
-  Node,
   Edge,
   Network,
+  NetworkAttributes,
+  Node,
 } from '../models/NetworkModel'
-import { v4 as uuidv4 } from 'uuid'
+import { NetworkSummary } from '../models/NetworkSummaryModel'
+import { getBaseSummary } from '../models/NetworkSummaryModel/impl/NetworkSummaryImpl'
+import { NetworkStore } from '../models/StoreModel/NetworkStoreModel'
+import { TableRecord, TableStore } from '../models/StoreModel/TableStoreModel'
 import TableFn, {
   AttributeName,
   Table,
   ValueType,
   ValueTypeName,
 } from '../models/TableModel'
+import { createViewModel } from '../models/ViewModel/impl/ViewModelImpl'
 import VisualStyleFn, {
   VisualPropertyName,
   VisualStyle,
 } from '../models/VisualStyleModel'
-import { CyNetwork } from '../models/CyNetworkModel'
-import { useNetworkStore } from '../hooks/stores/NetworkStore'
-import { useTableStore } from '../hooks/stores/TableStore'
-import { useViewModelStore } from '../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
-import { useCallback } from 'react'
-import { NetworkStore } from '../models/StoreModel/NetworkStoreModel'
-import { TableRecord, TableStore } from '../models/StoreModel/TableStoreModel'
-import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
-import { NetworkSummary } from '../models/NetworkSummaryModel'
-import { getBaseSummary } from '../models/NetworkSummaryModel/impl/NetworkSummaryImpl'
-import { IdType } from '../models'
-import { createViewModel } from '../models/ViewModel/impl/ViewModelImpl'
 
 const toNode = (id: IdType): Node => {
   return {

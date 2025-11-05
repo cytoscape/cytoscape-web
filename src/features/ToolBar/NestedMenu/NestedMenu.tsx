@@ -1,5 +1,5 @@
 import { Menu, MenuItem } from '@mui/material'
-import { NestedMenuItem, IconMenuItem } from 'mui-nested-menu'
+import { IconMenuItem,NestedMenuItem } from 'mui-nested-menu'
 import { useState } from 'react'
 
 export const NestedMenu = (): JSX.Element => {

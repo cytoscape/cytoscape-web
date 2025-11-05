@@ -1,5 +1,5 @@
-import debug from 'debug'
 import whyDidYouRender from '@welldone-software/why-did-you-render'
+import debug from 'debug'
 import React from 'react'
 
 import config from './assets/config.json'

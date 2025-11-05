@@ -2,18 +2,17 @@ import AppBar from '@mui/material/AppBar'
 import Box from '@mui/material/Box'
 import Toolbar from '@mui/material/Toolbar'
 
-import { DataMenu } from './DataMenu'
-
 import logo from '../../assets/cytoscape.svg'
 import { LoginButton } from '../Login/LoginButton'
-import { LayoutMenu } from './LayoutMenu'
-import { EditMenu } from './EditMenu'
-import { SearchBox } from './Search'
 import { AnalysisMenu } from './AnalysisMenu'
-import { ToolsMenu } from './ToolsMenu'
-import { HelpMenu } from './HelpMenu'
 import { AppMenu } from './AppMenu'
+import { DataMenu } from './DataMenu'
+import { EditMenu } from './EditMenu'
+import { HelpMenu } from './HelpMenu'
+import { LayoutMenu } from './LayoutMenu'
 import { LicenseMenu } from './LicenseMenu'
+import { SearchBox } from './Search'
+import { ToolsMenu } from './ToolsMenu'
 
 export const ToolBar = (): JSX.Element => {
   return (

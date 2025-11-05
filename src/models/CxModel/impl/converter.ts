@@ -3,23 +3,23 @@
  *
  * Functions for converting CX2 format data to internal application models.
  */
-import { Cx2 } from '../Cx2'
+import { CyNetwork } from '../../CyNetworkModel'
 import { Network, NetworkAttributes } from '../../NetworkModel'
+import { OpaqueAspects } from '../../OpaqueAspectModel'
 import { Table } from '../../TableModel'
 import { NetworkView } from '../../ViewModel'
 import { VisualStyle } from '../../VisualStyleModel'
-import { CyNetwork } from '../../CyNetworkModel'
 import { VisualStyleOptions } from '../../VisualStyleModel/VisualStyleOptions'
-import { OpaqueAspects } from '../../OpaqueAspectModel'
-import { getOptionalAspects } from './extractor'
+import { Cx2 } from '../Cx2'
 import {
+  createNetworkAttributesFromCx,
   createNetworkFromCx,
   createTablesFromCx,
+  createViewModelFromCX,
   createVisualStyleFromCx,
   createVisualStyleOptionsFromCx,
-  createViewModelFromCX,
-  createNetworkAttributesFromCx,
 } from './converters'
+import { getOptionalAspects } from './extractor'
 
 /**
  * Create network data from CX2 format

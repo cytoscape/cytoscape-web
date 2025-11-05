@@ -3,18 +3,18 @@
  *
  * Functions for executing queries and fetching networks via queries.
  */
-import { Cx2 } from '../../../models/CxModel/Cx2'
-import { NetworkView } from '../../../models/ViewModel'
-import { Network } from '../../../models/NetworkModel'
-import { IdType } from '../../../models/IdType'
-import { CyNetwork } from '../../../models/CyNetworkModel'
-import { createCyNetworkFromCx2 } from '../../../models/CxModel/impl'
 import {
-  getNdexClient,
-  fetchNdexNetwork,
   fetchNdexInterconnectQuery,
+  fetchNdexNetwork,
+  getNdexClient,
 } from '../../../api/ndex'
 import { logApi } from '../../../debug'
+import { Cx2 } from '../../../models/CxModel/Cx2'
+import { createCyNetworkFromCx2 } from '../../../models/CxModel/impl'
+import { CyNetwork } from '../../../models/CyNetworkModel'
+import { IdType } from '../../../models/IdType'
+import { Network } from '../../../models/NetworkModel'
+import { NetworkView } from '../../../models/ViewModel'
 
 const MAX_RETRY_COUNT = 1
 

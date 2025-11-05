@@ -1,15 +1,16 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+
+import { deleteFilterFromDb, putFilterToDb } from '../../db'
+import { logStore } from '../../debug'
+import { FilterConfig } from '../../models/FilterModel'
 import { Search, SearchOptions } from '../../models/FilterModel/Search'
+import { SearchState } from '../../models/FilterModel/SearchState'
 import { IdType } from '../../models/IdType'
 import { GraphObjectType } from '../../models/NetworkModel'
-import { ValueType } from '../../models/TableModel'
-import { NumberRange } from '../../models/PropertyModel/NumberRange'
 import { DiscreteRange } from '../../models/PropertyModel/DiscreteRange'
-import { deleteFilterFromDb, putFilterToDb } from '../../db'
-import { FilterConfig } from '../../models/FilterModel'
-import { SearchState } from '../../models/FilterModel/SearchState'
-import { logStore } from '../../debug'
+import { NumberRange } from '../../models/PropertyModel/NumberRange'
+import { ValueType } from '../../models/TableModel'
 /**
  * The store for both search and filter.
  *

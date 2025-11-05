@@ -1,16 +1,17 @@
 import { HierarchyNode } from 'd3-hierarchy'
+
+import { IdType } from '../../../models/IdType'
 import {
   NetworkProperty,
   NetworkSummary,
   Visibility,
 } from '../../../models/NetworkSummaryModel'
 import { Table, ValueType } from '../../../models/TableModel'
+import { NodeView } from '../../../models/ViewModel'
 import { D3TreeNode } from '../components/CustomLayout/D3TreeNode'
+import { CirclePackingView } from '../model/CirclePackingView'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { HcxMetaTag } from '../model/HcxMetaTag'
-import { IdType } from '../../../models/IdType'
-import { NodeView } from '../../../models/ViewModel'
-import { CirclePackingView } from '../model/CirclePackingView'
 
 export const getHcxProps = (
   summaryObject: Record<string, any>,

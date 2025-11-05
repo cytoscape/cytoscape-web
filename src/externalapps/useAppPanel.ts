@@ -3,11 +3,12 @@
  */
 
 import { useEffect, useState } from 'react'
-import { useAppStore } from '../hooks/stores/AppStore'
-import { CyApp } from '../models/AppModel/CyApp'
-import { ComponentMetadata } from '../models/AppModel/ComponentMetadata'
-import ExternalComponent from '../features/AppManager/ExternalComponent'
+
 import { logApp } from '../debug'
+import ExternalComponent from '../features/AppManager/ExternalComponent'
+import { useAppStore } from '../hooks/stores/AppStore'
+import { ComponentMetadata } from '../models/AppModel/ComponentMetadata'
+import { CyApp } from '../models/AppModel/CyApp'
 
 /**
  * Custom hook to manage the app panel

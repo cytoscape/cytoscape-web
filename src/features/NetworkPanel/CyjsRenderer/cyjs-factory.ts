@@ -9,16 +9,17 @@
  */
 
 import { Core } from 'cytoscape'
+
 import { IdType } from '../../../models/IdType'
 import { Edge } from '../../../models/NetworkModel'
 import { ValueType } from '../../../models/TableModel'
 import { EdgeView, NodeView } from '../../../models/ViewModel'
 import {
-  VisualPropertyName,
-  NodeVisualPropertyName,
   EdgeVisualPropertyName,
-  VisualPropertyValueType,
   NodeShapeType,
+  NodeVisualPropertyName,
+  VisualPropertyName,
+  VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 

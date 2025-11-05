@@ -3,59 +3,54 @@
  *
  * Functions for converting internal application models to CX2 format.
  */
+import isEqual from 'lodash/isEqual'
+
+import { CyNetwork } from '../../CyNetworkModel'
+import { IdType } from '../../IdType'
+import { Network } from '../../NetworkModel'
+import { translateEdgeIdToCX } from '../../NetworkModel/impl/NetworkImpl'
+import { NetworkSummary } from '../../NetworkSummaryModel'
+import { OpaqueAspects } from '../../OpaqueAspectModel'
 import {
   AttributeName,
+  Column,
   Table,
   ValueType,
   ValueTypeName,
-  Column,
 } from '../../TableModel'
-
-import { NetworkView } from '../../ViewModel'
-import { Network } from '../../NetworkModel'
-
-import { IdType } from '../../IdType'
-import VisualStyleFn, {
-  VisualStyle,
-  VisualPropertyName,
-  VisualProperty,
-  VisualPropertyValueType,
-  NodeVisualPropertyName,
-} from '../../VisualStyleModel'
-
-import { translateEdgeIdToCX } from '../../NetworkModel/impl/NetworkImpl'
 import {
+  deserializeValue,
+  isListType,
+} from '../../TableModel/impl/ValueTypeImpl'
+import { NetworkView } from '../../ViewModel'
+import VisualStyleFn, {
+  NodeVisualPropertyName,
+  VisualProperty,
+  VisualPropertyName,
+  VisualPropertyValueType,
+  VisualStyle,
+} from '../../VisualStyleModel'
+import {
+  getCustomGraphicNodeVps,
+  getNonCustomGraphicVps,
+} from '../../VisualStyleModel/impl/CustomGraphicsImpl'
+import {
+  convertContinuousMappingToCX,
+  convertDiscreteMappingToCX,
+  convertPassthroughMappingToCX,
   CXVisualMappingFunction,
   cxVisualPropertyConverter,
   CXVisualPropertyValue,
-  convertContinuousMappingToCX,
-  convertPassthroughMappingToCX,
-  convertDiscreteMappingToCX,
   vpToCX,
 } from '../../VisualStyleModel/impl/cxVisualPropertyConverter'
-
-import { NetworkSummary } from '../../NetworkSummaryModel'
-
+import { DEFAULT_CUSTOM_GRAPHICS } from '../../VisualStyleModel/impl/DefaultVisualStyle'
 import {
   ContinuousMappingFunction,
   DiscreteMappingFunction,
   MappingFunctionType,
   PassthroughMappingFunction,
 } from '../../VisualStyleModel/VisualMappingFunction'
-
-import {
-  deserializeValue,
-  isListType,
-} from '../../TableModel/impl/ValueTypeImpl'
 import { VisualStyleOptions } from '../../VisualStyleModel/VisualStyleOptions'
-import { OpaqueAspects } from '../../OpaqueAspectModel'
-import {
-  getCustomGraphicNodeVps,
-  getNonCustomGraphicVps,
-} from '../../VisualStyleModel/impl/CustomGraphicsImpl'
-import { DEFAULT_CUSTOM_GRAPHICS } from '../../VisualStyleModel/impl/DefaultVisualStyle'
-import isEqual from 'lodash/isEqual'
-import { CyNetwork } from '../../CyNetworkModel'
 
 /**
  * Exports a network to CX2 format.

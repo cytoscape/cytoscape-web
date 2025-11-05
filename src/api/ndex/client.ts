@@ -6,6 +6,7 @@
 // TODO: Make client TS compatible
 // @ts-expect-error-next-line
 import { NDEx } from '@js4cytoscape/ndex-client'
+
 import { getNDExBaseUrl } from './config'
 
 /**

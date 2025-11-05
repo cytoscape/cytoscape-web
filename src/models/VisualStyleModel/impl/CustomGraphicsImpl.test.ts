@@ -1,13 +1,5 @@
-import {
-  getCustomGraphicNodeVps,
-  getNonCustomGraphicVps,
-  getFirstValidCustomGraphicVp,
-  getSizePropertyForCustomGraphic,
-  computePieChartProperties,
-  computeRingChartProperties,
-  computeCustomGraphicsProperties,
-} from './CustomGraphicsImpl'
 import { VisualProperty } from '../VisualProperty'
+import { NodeVisualPropertyName } from '../VisualPropertyName'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import {
   CustomGraphicsNameType,
@@ -15,8 +7,16 @@ import {
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
+import {
+  computeCustomGraphicsProperties,
+  computePieChartProperties,
+  computeRingChartProperties,
+  getCustomGraphicNodeVps,
+  getFirstValidCustomGraphicVp,
+  getNonCustomGraphicVps,
+  getSizePropertyForCustomGraphic,
+} from './CustomGraphicsImpl'
 import { DEFAULT_CUSTOM_GRAPHICS } from './DefaultVisualStyle'
-import { NodeVisualPropertyName } from '../VisualPropertyName'
 import { createVisualStyle } from './VisualStyleFnImpl'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/CustomGraphicsImpl.test.ts

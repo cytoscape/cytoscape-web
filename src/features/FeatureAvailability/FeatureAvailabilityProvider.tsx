@@ -1,16 +1,17 @@
 import React, {
+  ReactNode,
   useContext,
   useEffect,
-  useReducer,
-  ReactNode,
   useMemo,
+  useReducer,
 } from 'react'
+
 import {
-  initialState,
-  FeatureAvailabilityState,
-  FeatureAvailabilityActionType,
   FeatureAvailabilityAction,
+  FeatureAvailabilityActionType,
   FeatureAvailabilityContext,
+  FeatureAvailabilityState,
+  initialState,
 } from './FeatureAvailabilityContext'
 
 const END_POINT = 'http://127.0.0.1:1234/v1/version'

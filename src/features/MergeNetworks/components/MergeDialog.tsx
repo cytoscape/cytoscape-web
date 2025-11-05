@@ -1,88 +1,90 @@
+import './MergeDialog.css'
+
 import {
-  ArrowForward as ArrowForwardIcon,
   ArrowBack as ArrowBackIcon,
-  ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon,
+  ArrowForward as ArrowForwardIcon,
+  ArrowUpward as ArrowUpwardIcon,
   ExpandMore as ExpandMoreIcon,
-  Star as StarIcon,
-  Info as InfoIcon,
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
+  Info as InfoIcon,
+  Star as StarIcon,
 } from '@mui/icons-material'
-import React, { useContext, useEffect, useState } from 'react'
-import { UnionIcon, DifferenceIcon, IntersectionIcon } from './Icon'
 import ReportGmailerrorredIcon from '@mui/icons-material/ReportGmailerrorred'
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
+  Button,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  IconButton,
   List,
   ListItem,
   ListItemText,
   ListSubheader,
   Paper,
-  FormControlLabel,
-  Checkbox,
+  Radio,
+  RadioGroup,
+  TextField,
+  ToggleButton,
   ToggleButtonGroup,
   Tooltip,
-  ToggleButton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  TextField,
-  IconButton,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  Radio,
+  Typography,
 } from '@mui/material'
-import './MergeDialog.css'
+import React, { useContext, useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
+
+import { AppConfigContext } from '../../../AppConfigContext'
+import { putNetworkSummaryToDb } from '../../../db'
+import { logUi } from '../../../debug'
+import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
+import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
+import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
+import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useLoadCyNetwork } from '../../../hooks/useLoadCyNetwork'
+import { IdType } from '../../../models/IdType'
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { NetworkSummary } from '../../../models/NetworkSummaryModel'
+import { Column } from '../../../models/TableModel'
+import { ConfirmationDialog } from '../../ConfirmationDialog'
 import {
   MergeType,
   NetworkRecord,
-  TableView,
   Pair,
+  TableView,
 } from '../models/DataInterfaceForMerge'
-import useMatchingColumnsStore from '../store/matchingColumnStore'
-import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
-import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
-import useNetMatchingTableStore from '../store/netMatchingTableStore'
-import useMergeToolTipStore from '../store/mergeToolTip'
-import { Column } from '../../../models/TableModel'
-import { IdType } from '../../../models/IdType'
-import { useLoadCyNetwork } from '../../../hooks/useLoadCyNetwork'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
-import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
 import { createMergedNetworkWithView } from '../models/Impl/CreateMergedNetworkWithView'
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl'
-import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
-import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
-import { MatchingTableComp } from './MatchingTableComp'
-import { MatchingColumnTable } from './MatchingColumnTable'
+import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
+import useMatchingColumnsStore from '../store/matchingColumnStore'
+import useMergeToolTipStore from '../store/mergeToolTip'
+import useNetMatchingTableStore from '../store/netMatchingTableStore'
+import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
+import useNodesDuplicationStore from '../store/nodesDuplicationStore'
 import {
   checkDuplication,
   findPairIndex,
   getNetTableFromSummary,
   sortListAlphabetically,
 } from '../utils/helper-functions'
-import { ConfirmationDialog } from '../../ConfirmationDialog'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { NetworkSummary } from '../../../models/NetworkSummaryModel'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import useNodesDuplicationStore from '../store/nodesDuplicationStore'
-import { logUi } from '../../../debug'
-import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
-import { putNetworkSummaryToDb } from '../../../db'
+import { DifferenceIcon, IntersectionIcon,UnionIcon } from './Icon'
+import { MatchingColumnTable } from './MatchingColumnTable'
+import { MatchingTableComp } from './MatchingTableComp'
 
 interface MergeDialogProps {
   open: boolean

@@ -1,15 +1,15 @@
+import { Edge,Network, Node } from '../../NetworkModel'
+import NetworkFn from '../../NetworkModel'
+import { Column,Table } from '../../TableModel'
+import { createTable } from '../../TableModel/impl/InMemoryTable'
+import { NetworkView } from '../../ViewModel'
+import { VisualPropertyName } from '../VisualPropertyName'
+import { VisualStyle } from '../VisualStyle'
 import {
   createNewNetworkView,
   updateNetworkView,
 } from './compute-view-util'
-import { Network, Node, Edge } from '../../NetworkModel'
-import NetworkFn from '../../NetworkModel'
-import { Table, Column } from '../../TableModel'
-import { createTable } from '../../TableModel/impl/InMemoryTable'
-import { VisualStyle } from '../VisualStyle'
 import { createVisualStyle } from './VisualStyleFnImpl'
-import { NetworkView } from '../../ViewModel'
-import { VisualPropertyName } from '../VisualPropertyName'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/compute-view-util.test.ts
 

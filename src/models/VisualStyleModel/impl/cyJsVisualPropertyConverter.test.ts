@@ -1,6 +1,6 @@
-import { getCyjsVpName } from './cyJsVisualPropertyConverter'
 import { VisualPropertyName } from '../VisualPropertyName'
 import { CyjsVisualPropertyName } from './CyjsProperties/CyjsVisualPropertyName'
+import { getCyjsVpName } from './cyJsVisualPropertyConverter'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/cyJsVisualPropertyConverter.test.ts
 

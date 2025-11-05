@@ -1,15 +1,16 @@
 import { useEffect } from 'react'
+
+import { logStore } from '../debug'
+import { useHcxValidatorStore } from '../features/HierarchyViewer/store/HcxValidatorStore'
 import { IdType } from '../models/IdType'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
 import { useTableStore } from './stores/TableStore'
+import { useUiStateStore } from './stores/UiStateStore'
 import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
-import { useUiStateStore } from './stores/UiStateStore'
-import { useHcxValidatorStore } from '../features/HierarchyViewer/store/HcxValidatorStore'
-import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
-import { logStore } from '../debug'
 
 /**
  * Based on the changes in the workspace store, this hook will

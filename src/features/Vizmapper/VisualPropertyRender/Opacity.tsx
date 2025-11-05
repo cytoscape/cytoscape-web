@@ -1,8 +1,8 @@
-import * as React from 'react'
-import debounce from 'lodash.debounce'
-import { Box, Stack, Typography, Slider, Button } from '@mui/material'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
+import { Box, Button,Slider, Stack, Typography } from '@mui/material'
+import debounce from 'lodash.debounce'
+import * as React from 'react'
 
 const percentToOpacity = (val: number): number => +(val / 100).toFixed(2)
 const opacityToPercent = (val: number): number => Math.floor(val * 100)

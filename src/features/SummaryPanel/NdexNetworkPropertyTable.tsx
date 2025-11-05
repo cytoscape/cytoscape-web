@@ -1,27 +1,27 @@
-import React from 'react'
+import Delete from '@mui/icons-material/Delete'
 import {
+  Box,
+  Button,
+  IconButton,
+  Input,
+  MenuItem,
+  Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Select,
-  MenuItem,
-  Input,
-  IconButton,
-  Button,
   Typography,
-  Paper,
-  Box,
 } from '@mui/material'
+import React from 'react'
 
-import Delete from '@mui/icons-material/Delete'
-import { ValueTypeName, ValueType } from '../../models/TableModel'
 import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
-import { serializedStringIsValid } from '../../models/TableModel/impl/ValueTypeImpl'
 import { NetworkProperty } from '../../models/NetworkSummaryModel'
+import { ValueType,ValueTypeName } from '../../models/TableModel'
+import { serializedStringIsValid } from '../../models/TableModel/impl/ValueTypeImpl'
 
 interface NetworkPropertyState extends NetworkProperty {
   valueIsValid: boolean

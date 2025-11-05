@@ -1,18 +1,19 @@
 import { ReactElement, useEffect, useState } from 'react'
+
+import { useNetworkStore } from '../../hooks/stores/NetworkStore'
+import { useRendererStore } from '../../hooks/stores/RendererStore'
+import { useUiStateStore } from '../../hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
-import { useNetworkStore } from '../../hooks/stores/NetworkStore'
-import { MessagePanel } from '../Messages'
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
-import { VisualStyle } from '../../models/VisualStyleModel'
-import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
-import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
+import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkView } from '../../models/ViewModel'
+import { VisualStyle } from '../../models/VisualStyleModel'
+import { MessagePanel } from '../Messages'
 import { NetworkTab } from './NetworkTab'
 import { NetworkTabs } from './NetworkTabs'
-import { Renderer } from '../../models/RendererModel/Renderer'
-import { useRendererStore } from '../../hooks/stores/RendererStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 
 interface NetworkPanelProps {
   networkId: IdType

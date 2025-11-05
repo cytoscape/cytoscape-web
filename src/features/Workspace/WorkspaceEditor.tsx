@@ -1,17 +1,17 @@
+import { ChevronRight } from '@mui/icons-material'
+import { Box, Tooltip } from '@mui/material'
+import { Allotment } from 'allotment'
+import isEqual from 'lodash/isEqual'
+import omit from 'lodash/omit'
 import {
-  Suspense,
   lazy,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
 } from 'react'
-import isEqual from 'lodash/isEqual'
-import omit from 'lodash/omit'
-import { Allotment } from 'allotment'
-import { Box, Tooltip } from '@mui/material'
-
 import {
   Outlet,
   useLocation,
@@ -19,44 +19,41 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 
+import { AppConfigContext } from '../../AppConfigContext'
+import { useCredentialStore } from '../../hooks/stores/CredentialStore'
+import { useLayoutStore } from '../../hooks/stores/LayoutStore'
+import { useMessageStore } from '../../hooks/stores/MessageStore'
+import { useNetworkStore } from '../../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { useLoadCyNetwork } from '../../hooks/useLoadCyNetwork'
 import { useLoadNetworkSummaries } from '../../hooks/useLoadNetworkSummaries'
-import { useTableStore } from '../../hooks/stores/TableStore'
-import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
-import { useNetworkStore } from '../../hooks/stores/NetworkStore'
-import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
-import { IdType } from '../../models/IdType'
-import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
-import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { AppConfigContext } from '../../AppConfigContext'
-import { Workspace } from '../../models/WorkspaceModel'
-import { NetworkView } from '../../models/ViewModel'
-import { useWorkspaceManager } from '../../hooks/useWorkspaceManager'
-
-import { useCredentialStore } from '../../hooks/stores/CredentialStore'
-import { SnackbarMessageList } from '../Messages'
-import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
-
-import { SidePanel } from './SidePanel/SidePanel'
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
-import { Ui } from '../../models/UiModel'
-import { PanelState } from '../../models/UiModel/PanelState'
-import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
-import { LayoutToolsBasePanel } from '../LayoutTools'
+import { useNetworkSummaryManager } from '../../hooks/useNetworkSummaryManager'
 import { useNetworkViewManager } from '../../hooks/useNetworkViewManager'
 import { useTableManager } from '../../hooks/useTableManager'
-import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchyViewerManager'
-import { useNetworkSummaryManager } from '../../hooks/useNetworkSummaryManager'
-import { ChevronRight } from '@mui/icons-material'
-import { Panel } from '../../models/UiModel/Panel'
+import { useWorkspaceManager } from '../../hooks/useWorkspaceManager'
+import { IdType } from '../../models/IdType'
 import { LayoutEngine } from '../../models/LayoutModel'
-import { useLayoutStore } from '../../hooks/stores/LayoutStore'
-import { isHCX } from '../HierarchyViewer/utils/hierarchy-util'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { Ui } from '../../models/UiModel'
+import { Panel } from '../../models/UiModel/Panel'
+import { PanelState } from '../../models/UiModel/PanelState'
+import { NetworkView } from '../../models/ViewModel'
+import { Workspace } from '../../models/WorkspaceModel'
 import { HcxMetaTag } from '../HierarchyViewer/model/HcxMetaTag'
 import { validateHcx } from '../HierarchyViewer/model/impl/hcxValidators'
-import { useMessageStore } from '../../hooks/stores/MessageStore'
 import { useHcxValidatorStore } from '../HierarchyViewer/store/HcxValidatorStore'
+import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchyViewerManager'
+import { isHCX } from '../HierarchyViewer/utils/hierarchy-util'
+import { LayoutToolsBasePanel } from '../LayoutTools'
+import { SnackbarMessageList } from '../Messages'
+import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
+import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
+import { SidePanel } from './SidePanel/SidePanel'
 // Lazy load heavy TableDataLoader forms
 const CreateNetworkFromTableForm = lazy(() =>
   import(
@@ -68,16 +65,16 @@ const JoinTableToNetworkForm = lazy(() =>
     '../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
   ).then((module) => ({ default: module.JoinTableToNetworkForm })),
 )
+import { logUi } from '../../debug'
+import { useAppManager } from '../../externalapps/useAppManager'
+import { useOpaqueAspectStore } from '../../hooks/stores/OpaqueAspectStore'
+import { useRendererFunctionStore } from '../../hooks/stores/RendererFunctionStore'
+import { useUndoStore } from '../../hooks/stores/UndoStore'
+import { CyNetwork, VisualStyle } from '../../models'
+import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
+import { MessageSeverity } from '../../models/MessageModel'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
-import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
-import { useAppManager } from '../../externalapps/useAppManager'
-import { CyNetwork, VisualStyle } from '../../models'
-import { useOpaqueAspectStore } from '../../hooks/stores/OpaqueAspectStore'
-import { MessageSeverity } from '../../models/MessageModel'
-import { useUndoStore } from '../../hooks/stores/UndoStore'
-import { useRendererFunctionStore } from '../../hooks/stores/RendererFunctionStore'
-import { logUi } from '../../debug'
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
 

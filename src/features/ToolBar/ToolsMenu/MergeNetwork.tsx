@@ -1,22 +1,23 @@
-import React, { useState, ReactElement } from 'react'
-import { BaseMenuProps } from '../BaseMenuProps'
 import MenuItem from '@mui/material/MenuItem'
-import MergeDialog from '../../MergeNetworks/components/MergeDialog'
-import { IdType } from '../../../models/IdType'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import React, { ReactElement,useState } from 'react'
+
+import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../../../hooks/stores/TableStore'
+import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { IdType } from '../../../models/IdType'
+import { Network } from '../../../models/NetworkModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
+import { VisualStyle } from '../../../models/VisualStyleModel'
+import { generateUniqueName } from '../../../utils/generate-unique-name'
+import MergeDialog from '../../MergeNetworks/components/MergeDialog'
 import {
   NetworkRecord,
   Pair,
 } from '../../MergeNetworks/models/DataInterfaceForMerge'
-import { generateUniqueName } from '../../../utils/generate-unique-name'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
 import { getNetTableFromSummary } from '../../MergeNetworks/utils/helper-functions'
-import { Network } from '../../../models/NetworkModel'
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-import { VisualStyle } from '../../../models/VisualStyleModel'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)

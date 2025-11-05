@@ -1,9 +1,9 @@
+import { fetchNdexNetwork } from '../api/ndex'
+import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
+import { logApi, logDb } from '../debug'
 import { Cx2 } from '../models/CxModel/Cx2'
 import { createCyNetworkFromCx2 } from '../models/CxModel/impl'
-import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
-import { fetchNdexNetwork } from '../api/ndex'
 import { CyNetwork } from '../models/CyNetworkModel'
-import { logApi, logDb } from '../debug'
 
 /**
  * Hook that returns a function to load a CyNetwork from cache or NDEx.

@@ -1,3 +1,5 @@
+// @ts-expect-error-next-line
+import { NDEx } from '@js4cytoscape/ndex-client'
 import {
   Button,
   Dialog,
@@ -9,15 +11,14 @@ import {
   Typography,
 } from '@mui/material'
 import { useEffect, useState } from 'react'
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
+
 import { fetchMyNdexWorkspaces } from '../../../api/ndex'
-import { useSaveWorkspace } from '../../../hooks/useSaveWorkspaceToNDEx'
-import { useMessageStore } from '../../../hooks/stores/MessageStore'
-import { MessageSeverity } from '../../../models/MessageModel'
-import { useWorkspaceData } from '../../../hooks/useWorkspaceData'
-import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { logUi } from '../../../debug'
+import { useMessageStore } from '../../../hooks/stores/MessageStore'
+import { useSaveWorkspace } from '../../../hooks/useSaveWorkspaceToNDEx'
+import { useWorkspaceData } from '../../../hooks/useWorkspaceData'
+import { MessageSeverity } from '../../../models/MessageModel'
+import { ConfirmationDialog } from '../../ConfirmationDialog'
 
 interface WorkspaceNamingDialogProps {
   openDialog: boolean

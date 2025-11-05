@@ -1,39 +1,40 @@
-import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
+import { useCallback } from 'react'
+import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
+
+import { useAppStore } from '../../hooks/stores/AppStore'
 import {
-  Table,
-  IdType,
   AttributeName,
-  ValueType,
+  IdType,
   Network,
-  VisualStyle,
   NetworkSummary,
+  Table,
+  ValueType,
+  VisualStyle,
 } from '../../models'
+import { SelectedDataScope } from '../../models/AppModel/SelectedDataScope'
+import { SelectedDataType } from '../../models/AppModel/SelectedDataType'
+import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
+import {
+  Format,
+  InputColumn,
+  InputNetwork,
+  Model,
+  ServiceInputDefinition,
+} from '../../models/AppModel/ServiceInputDefinition'
+import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
+import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
+import { TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { NetworkView } from '../../models/ViewModel'
+import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { deleteTask, getTaskResult, getTaskStatus, submitTask } from './api'
 import {
   CytoContainerRequest,
+  CytoContainerRequestId,
   CytoContainerResult,
   CytoContainerResultStatus,
   JsonNode,
-  CytoContainerRequestId,
 } from './model'
-import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
-import { TableRecord } from '../../models/StoreModel/TableStoreModel'
-import { NetworkView } from '../../models/ViewModel'
-import { useCallback } from 'react'
-import { useAppStore } from '../../hooks/stores/AppStore'
-import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
-import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
-import {
-  InputNetwork,
-  ServiceInputDefinition,
-  Model,
-  Format,
-  InputColumn,
-} from '../../models/AppModel/ServiceInputDefinition'
-import { SelectedDataScope } from '../../models/AppModel/SelectedDataScope'
-import { SelectedDataType } from '../../models/AppModel/SelectedDataType'
-import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
 
 const POLL_INTERVAL = 500 // 0.5 seconds
 

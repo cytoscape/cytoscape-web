@@ -1,13 +1,14 @@
 import {
+  Button,
   Dialog,
-  DialogTitle,
+  DialogActions,
   DialogContent,
   DialogContentText,
+  DialogTitle,
   Typography,
-  DialogActions,
-  Button,
 } from '@mui/material'
 import { ReactElement } from 'react'
+
 import { HcxValidationResult } from '../../model/HcxValidator'
 
 export interface HcxValidationSaveDialogProps {

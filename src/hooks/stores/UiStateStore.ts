@@ -1,18 +1,18 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { IdType } from '../../models/IdType'
-import { PanelState } from '../../models/UiModel/PanelState'
-import { Panel } from '../../models/UiModel/Panel'
-import { TableUIState } from '../../models/UiModel/TableUi'
-import { putUiStateToDb } from '../../db'
 
+import { putUiStateToDb } from '../../db'
+import { IdType } from '../../models/IdType'
 import { TableType } from '../../models/StoreModel/TableStoreModel'
+import { UiStateStore } from '../../models/StoreModel/UiStateStoreModel'
+import { Ui } from '../../models/UiModel'
+import { Panel } from '../../models/UiModel/Panel'
+import { PanelState } from '../../models/UiModel/PanelState'
+import { TableUIState } from '../../models/UiModel/TableUi'
 import {
   TableDisplayConfiguration,
   VisualStyleOptions,
 } from '../../models/VisualStyleModel/VisualStyleOptions'
-import { UiStateStore } from '../../models/StoreModel/UiStateStoreModel'
-import { Ui } from '../../models/UiModel'
 
 export const DEFAULT_UI_STATE = {
   panels: {

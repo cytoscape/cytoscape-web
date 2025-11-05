@@ -1,11 +1,12 @@
 import { MenuItem } from '@mui/material'
-import { ReactElement, useState } from 'react'
-import { BaseMenuProps } from '../BaseMenuProps'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { useNavigate } from 'react-router-dom'
-import { ConfirmationDialog } from '../../ConfirmationDialog'
 import debounce from 'lodash/debounce'
+import { ReactElement, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
 import { logUi } from '../../../debug'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { ConfirmationDialog } from '../../ConfirmationDialog'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 export const ResetLocalWorkspaceMenuItem = (
   props: BaseMenuProps,

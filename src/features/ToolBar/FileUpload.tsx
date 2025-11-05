@@ -1,47 +1,47 @@
 import {
-  Stack,
   Button,
-  Title,
   Group,
-  Text,
   MantineProvider,
   Modal,
+  Stack,
+  Text,
+  Title,
 } from '@mantine/core'
 import { Dropzone, FileWithPath } from '@mantine/dropzone'
 import { ModalsProvider } from '@mantine/modals'
-import { v4 as uuidv4 } from 'uuid'
 import Papa from 'papaparse'
+import { PrimeReactProvider } from 'primereact/api'
+import { v4 as uuidv4 } from 'uuid'
 
+import { putNetworkSummaryToDb } from '../../db'
+import { logUi } from '../../debug'
+import { useUrlNavigation } from '../../hooks/navigation/useUrlNavigation'
+import { useMessageStore } from '../../hooks/stores/MessageStore'
+import { useNetworkStore } from '../../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../hooks/stores/OpaqueAspectStore'
+import { useTableStore } from '../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
+import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
 } from '../../models/CxModel/impl/extractor'
+import { validateCX2 } from '../../models/CxModel/impl/validator'
+import { MessageSeverity } from '../../models/MessageModel'
 import { NetworkProperty, Visibility } from '../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
-import { useNetworkStore } from '../../hooks/stores/NetworkStore'
-import { useTableStore } from '../../hooks/stores/TableStore'
-import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
-import { putNetworkSummaryToDb } from '../../db'
-import {
-  useCreateNetworkFromTableStore,
-  CreateNetworkFromTableStep,
-} from '../TableDataLoader/store/createNetworkFromTableStore'
-import { PrimeReactProvider } from 'primereact/api'
-import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
 import { generateUniqueName } from '../../utils/generate-unique-name'
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
-import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { createDataFromLocalSif } from '../../utils/sif-utils'
-import { useOpaqueAspectStore } from '../../hooks/stores/OpaqueAspectStore'
-import { useMessageStore } from '../../hooks/stores/MessageStore'
-import { MessageSeverity } from '../../models/MessageModel'
-import { validateCX2 } from '../../models/CxModel/impl/validator'
 import { validateSif } from '../../utils/sif-utils'
-import { logUi } from '../../debug'
-import { useUrlNavigation } from '../../hooks/navigation/useUrlNavigation'
+import {
+  CreateNetworkFromTableStep,
+  useCreateNetworkFromTableStore,
+} from '../TableDataLoader/store/createNetworkFromTableStore'
 
 interface FileUploadProps {
   show: boolean

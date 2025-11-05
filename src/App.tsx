@@ -1,21 +1,23 @@
-import React, { Suspense, useContext, useEffect } from 'react'
+import './index.css'
+
 import CssBaseline from '@mui/material/CssBaseline'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
-import './index.css'
-import { Error } from './features/Error'
+import React, { Suspense, useContext, useEffect } from 'react'
 import {
   createBrowserRouter,
-  RouterProvider,
-  Route,
   createRoutesFromElements,
+  Route,
+  RouterProvider,
 } from 'react-router-dom'
-import { MessagePanel } from './features/Messages'
+
 import appConfig from './assets/config.json'
-import { KeycloakContext } from './init/keycloak'
-import { useCredentialStore } from './hooks/stores/CredentialStore'
-import { RedirectPanel } from './features/RedirectPanel'
-import ErrorBoundary from './features/ErrorBoundary'
 import { CookieConsentWidget } from './features/CookieConsent'
+import { Error } from './features/Error'
+import ErrorBoundary from './features/ErrorBoundary'
+import { MessagePanel } from './features/Messages'
+import { RedirectPanel } from './features/RedirectPanel'
+import { useCredentialStore } from './hooks/stores/CredentialStore'
+import { KeycloakContext } from './init/keycloak'
 
 const AppShell = React.lazy(() => import('./features/AppShell'))
 const WorkspaceEditor = React.lazy(

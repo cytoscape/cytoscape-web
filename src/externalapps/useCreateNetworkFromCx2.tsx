@@ -1,17 +1,18 @@
 import { useCallback } from 'react'
-import { Cx2 } from '../models/CxModel/Cx2'
-import { CyNetwork } from '../models/CyNetworkModel'
-import { NetworkSummary } from '../models/NetworkSummaryModel'
-import { getBaseSummary } from '../models/NetworkSummaryModel/impl/NetworkSummaryImpl'
+import { v4 as uuidv4 } from 'uuid'
+
+import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../hooks/stores/TableStore'
 import { useViewModelStore } from '../hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
-import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
-import { createCyNetworkFromCx2 } from '../models/CxModel/impl'
-import { v4 as uuidv4 } from 'uuid'
 import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
-import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
+import { Cx2 } from '../models/CxModel/Cx2'
+import { createCyNetworkFromCx2 } from '../models/CxModel/impl'
+import { CyNetwork } from '../models/CyNetworkModel'
+import { NetworkSummary } from '../models/NetworkSummaryModel'
+import { getBaseSummary } from '../models/NetworkSummaryModel/impl/NetworkSummaryImpl'
 
 /**
  * Props for creating a network with a view from a CX2 object.

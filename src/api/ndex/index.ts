@@ -19,14 +19,14 @@ export {
 } from './network-summary'
 
 // Query operations
-export { fetchNdexInterconnectQuery, fetchGeneNamesFromIds } from './query'
+export { fetchGeneNamesFromIds,fetchNdexInterconnectQuery } from './query'
 
 // Workspace operations
 export {
-  fetchMyNdexWorkspaces,
-  fetchMyNdexAccountNetworks,
-  searchNdexNetworks,
   deleteNdexWorkspace,
+  fetchMyNdexAccountNetworks,
+  fetchMyNdexWorkspaces,
+  searchNdexNetworks,
 } from './workspace'
 
 // Permission operations
@@ -34,7 +34,7 @@ export { getNdexNetworkPermission, hasNdexEditPermission } from './permissions'
 
 // Errors
 export {
+  NdexDuplicateKeyErrorMessage,
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
-  NdexDuplicateKeyErrorMessage,
 } from './errors'

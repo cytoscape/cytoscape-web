@@ -1,75 +1,72 @@
-import * as React from 'react'
 import {
   Box,
-  Popover,
-  Typography,
-  Tooltip,
-  Tabs,
-  Tab,
   Divider,
+  Popover,
+  Tab,
+  Tabs,
+  Tooltip,
+  Typography,
 } from '@mui/material'
+import * as React from 'react'
 
+import { IdType } from '../../../models/IdType'
 import {
-  VisualProperty,
-  VisualPropertyValueType,
-  VisualPropertyName,
   EdgeVisualPropertyName,
+  VisualProperty,
+  VisualPropertyName,
+  VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
-
-import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
+import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
+import {
+  Boolean as BooleanRender,
+  BooleanSwitch,
+} from '../VisualPropertyRender/Boolean'
+import { LockColorCheckbox } from '../VisualPropertyRender/Checkbox'
 import { Color, ColorPicker } from '../VisualPropertyRender/Color'
+import {
+  CustomGraphicPicker,
+  CustomGraphicRender,
+} from '../VisualPropertyRender/CustomGraphic'
+import {
+  EdgeArrowShape,
+  EdgeArrowShapePicker,
+} from '../VisualPropertyRender/EdgeArrowShape'
+import { EdgeLine,EdgeLinePicker } from '../VisualPropertyRender/EdgeLine'
+import { Font, FontPicker } from '../VisualPropertyRender/Font'
+import {
+  HorizontalAlign,
+  HorizontalAlignPicker,
+} from '../VisualPropertyRender/HorizontalAlign'
 import {
   NodeBorderLine,
   NodeBorderLinePicker,
 } from '../VisualPropertyRender/NodeBorderLine'
+import {
+  NodeLabelPositionPicker,
+  NodeLabelPositionRender,
+} from '../VisualPropertyRender/NodeLabelPosition'
+import { NodeShape, NodeShapePicker } from '../VisualPropertyRender/NodeShape'
 import { NumberInput, NumberRender } from '../VisualPropertyRender/Number'
-import { Font, FontPicker } from '../VisualPropertyRender/Font'
 import {
-  HorizontalAlignPicker,
-  HorizontalAlign,
-} from '../VisualPropertyRender/HorizontalAlign'
+  Opacity as OpacityRender,
+  OpacitySlider,
+} from '../VisualPropertyRender/Opacity'
 import {
-  VerticalAlignPicker,
+  String as StringRender,
+  StringInput,
+} from '../VisualPropertyRender/String'
+import {
   VerticalAlign,
+  VerticalAlignPicker,
 } from '../VisualPropertyRender/VerticalAlign'
 import {
   Visibility,
   VisibilityPicker,
 } from '../VisualPropertyRender/Visibility'
 import {
-  EdgeArrowShape,
-  EdgeArrowShapePicker,
-} from '../VisualPropertyRender/EdgeArrowShape'
-import { EdgeLinePicker, EdgeLine } from '../VisualPropertyRender/EdgeLine'
-import {
-  StringInput,
-  String as StringRender,
-} from '../VisualPropertyRender/String'
-import {
-  BooleanSwitch,
-  Boolean as BooleanRender,
-} from '../VisualPropertyRender/Boolean'
-
-import {
-  OpacitySlider,
-  Opacity as OpacityRender,
-} from '../VisualPropertyRender/Opacity'
-
-import {
   EmptyVisualPropertyViewBox,
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
-import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
-import {
-  NodeLabelPositionPicker,
-  NodeLabelPositionRender,
-} from '../VisualPropertyRender/NodeLabelPosition'
-import { IdType } from '../../../models/IdType'
-import { LockColorCheckbox } from '../VisualPropertyRender/Checkbox'
-import {
-  CustomGraphicPicker,
-  CustomGraphicRender,
-} from '../VisualPropertyRender/CustomGraphic'
 
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,

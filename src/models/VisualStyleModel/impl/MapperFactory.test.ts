@@ -1,14 +1,14 @@
+import { ValueTypeName } from '../../TableModel'
+import { ContinuousMappingFunction } from '../VisualMappingFunction/ContinuousMappingFunction'
+import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
+import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
+import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import {
+  createContinuousMapper,
   createDiscreteMapper,
   createPassthroughMapper,
-  createContinuousMapper,
 } from './MapperFactory'
-import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
-import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
-import { ContinuousMappingFunction } from '../VisualMappingFunction/ContinuousMappingFunction'
-import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
-import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
-import { ValueTypeName } from '../../TableModel'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/MapperFactory.test.ts
 

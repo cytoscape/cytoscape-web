@@ -1,11 +1,12 @@
-import Popover from '@mui/material/Popover'
 import { Theme, useTheme } from '@mui/material'
-import { SearchTargetSelector } from './SearchTargetSelector'
-import { SearchOperatorSelector } from './SearchOperatorSelector'
-import { SearchButtons } from './SearchButtons'
+import Popover from '@mui/material/Popover'
 import Grid from '@mui/material/Unstable_Grid2'
-import { SearchModeSelector } from './SearchModeSelector'
+
 import { GraphObjectType } from '../../../models/NetworkModel'
+import { SearchButtons } from './SearchButtons'
+import { SearchModeSelector } from './SearchModeSelector'
+import { SearchOperatorSelector } from './SearchOperatorSelector'
+import { SearchTargetSelector } from './SearchTargetSelector'
 
 interface SettingsProps {
   open: boolean

@@ -1,6 +1,6 @@
-import { fetchNdexNetwork, updateNdexNetwork } from './network'
-import { getNdexClient } from './client'
 import { Cx2 } from '../../models/CxModel/Cx2'
+import { getNdexClient } from './client'
+import { fetchNdexNetwork, updateNdexNetwork } from './network'
 
 // Mock the NDEx client module
 jest.mock('./client', () => ({

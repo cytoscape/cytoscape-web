@@ -1,6 +1,7 @@
-import React from 'react'
-import { FontType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box, Button } from '@mui/material'
+import React from 'react'
+
+import { FontType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 
 export function FontPicker(props: {
   currentValue: FontType | null

@@ -1,8 +1,7 @@
 import { VisualPropertyName } from '..'
-
 import {
-  CyjsVisualPropertyType,
   CyjsVisualPropertyName as CyVpName,
+  CyjsVisualPropertyType,
 } from './CyjsProperties/CyjsVisualPropertyName'
 
 const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {

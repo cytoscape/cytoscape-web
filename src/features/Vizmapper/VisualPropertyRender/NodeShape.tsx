@@ -1,17 +1,18 @@
-import { NodeShapeType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box, Button } from '@mui/material'
+import React from 'react'
+
+import { NodeShapeType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import {
+  DiamondIcon,
   EllipseIcon,
+  HexagonIcon,
+  OctagonIcon,
+  ParallelogramIcon,
   RectangleIcon,
   RoundRectangleIcon,
   TriangleIcon,
-  DiamondIcon,
-  OctagonIcon,
-  HexagonIcon,
-  ParallelogramIcon,
   VeeIcon,
 } from '../VisualStyleIcons'
-import React from 'react'
 
 const nodeShapeMap: Record<
   NodeShapeType,

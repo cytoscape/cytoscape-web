@@ -1,15 +1,15 @@
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
+import { PrimeReactProvider } from 'primereact/api'
+import { OverlayPanel } from 'primereact/overlaypanel'
+import { TieredMenu } from 'primereact/tieredmenu'
 import { useRef, useState } from 'react'
-import { DropdownMenuProps } from '../DropdownMenuProps'
 
 import {
   LLMQueryOptionsMenuItem,
   RunLLMQueryMenuItem,
 } from '../../LLMQuery/components'
-import { PrimeReactProvider } from 'primereact/api'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
+import { DropdownMenuProps } from '../DropdownMenuProps'
 
 export const AnalysisMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,

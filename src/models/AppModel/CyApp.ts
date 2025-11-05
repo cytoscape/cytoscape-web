@@ -1,5 +1,5 @@
-import { ComponentMetadata } from './ComponentMetadata'
 import { AppStatus } from './AppStatus'
+import { ComponentMetadata } from './ComponentMetadata'
 
 /**
  * Base interface to define the app object

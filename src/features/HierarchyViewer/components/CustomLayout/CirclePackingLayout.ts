@@ -1,16 +1,16 @@
 import { Core } from 'cytoscape'
-import NetworkFn, { Network } from '../../../../models/NetworkModel'
-import { Table } from '../../../../models/TableModel'
-
 import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
-import { cyNetDag2tree2, findRoot, getMembers } from './DataBuilderUtil'
-import { D3TreeNode } from './D3TreeNode'
-import { NetworkView, NodeView } from '../../../../models/ViewModel'
-import { CirclePackingView } from '../../model/CirclePackingView'
-import { IdType } from '../../../../models/IdType'
+
 import { fetchGeneNamesFromIds } from '../../../../api/ndex'
 import { logUi } from '../../../../debug'
+import { IdType } from '../../../../models/IdType'
+import NetworkFn, { Network } from '../../../../models/NetworkModel'
+import { Table } from '../../../../models/TableModel'
+import { NetworkView, NodeView } from '../../../../models/ViewModel'
+import { CirclePackingView } from '../../model/CirclePackingView'
+import { D3TreeNode } from './D3TreeNode'
+import { cyNetDag2tree2, findRoot, getMembers } from './DataBuilderUtil'
 
 /**
  *

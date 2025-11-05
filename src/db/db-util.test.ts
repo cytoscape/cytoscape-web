@@ -1,19 +1,19 @@
 import { MappingFunctionType } from '../models'
-import {
-  maptoListEntries,
-  listEntriesToMap,
-  serializeNetworkView,
-  deserializeNetworkView,
-  serializeVisualStyle,
-  deserializeVisualStyle,
-  serializeTable,
-  deserializeTable,
-  serializeFilterConfig,
-  deserializeFilterConfig,
-} from './db-util'
 import { DisplayMode } from '../models/FilterModel/DisplayMode'
 import { FilterWidgetType } from '../models/FilterModel/FilterWidgetType'
 import { GraphObjectType } from '../models/NetworkModel'
+import {
+  deserializeFilterConfig,
+  deserializeNetworkView,
+  deserializeTable,
+  deserializeVisualStyle,
+  listEntriesToMap,
+  maptoListEntries,
+  serializeFilterConfig,
+  serializeNetworkView,
+  serializeTable,
+  serializeVisualStyle,
+} from './db-util'
 
 describe('db-util', () => {
   describe('maptoListEntries and listEntriesToMap', () => {

@@ -1,5 +1,5 @@
+import { CircularProgress, Typography } from '@mui/material'
 import Box from '@mui/material/Box'
-import debounce from 'lodash.debounce'
 import Cytoscape, {
   Core,
   EdgeSingular,
@@ -8,15 +8,7 @@ import Cytoscape, {
   Position,
   SingularElementArgument,
 } from 'cytoscape'
-import { CxToCyCanvas } from './annotations/CxToCyCanvas'
-
-import { registerCyExtensions } from './register-cy-extensions'
-
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
-import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
-import { Network } from '../../../models/NetworkModel'
+import debounce from 'lodash.debounce'
 import {
   ReactElement,
   useContext,
@@ -25,28 +17,33 @@ import {
   useRef,
   useState,
 } from 'react'
-import { NetworkView, NodeView } from '../../../models/ViewModel'
-import { IdType } from '../../../models/IdType'
-import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
-import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
-import { addCyElements } from './cyjs-factory'
+
+import { AppConfigContext } from '../../../AppConfigContext'
 import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
+import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from '../../../hooks/stores/RendererFunctionStore'
 import { useRendererStore } from '../../../hooks/stores/RendererStore'
-import { CircularProgress, Typography } from '@mui/material'
+import { useTableStore } from '../../../hooks/stores/TableStore'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
+import { useUndoStack } from '../../../hooks/useUndoStack'
+import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/impl/extractor'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+import { IdType } from '../../../models/IdType'
+import { Network } from '../../../models/NetworkModel'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { NetworkView, NodeView } from '../../../models/ViewModel'
+import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
+import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
 import {
   Orientation,
   PaperSize,
 } from '../../ToolBar/DataMenu/ExportNetworkToImage/PdfExportForm'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-
-import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/impl/extractor'
-
-import { useUndoStack } from '../../../hooks/useUndoStack'
-import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { AppConfigContext } from '../../../AppConfigContext'
+import { CxToCyCanvas } from './annotations/CxToCyCanvas'
+import { addCyElements } from './cyjs-factory'
+import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
+import { registerCyExtensions } from './register-cy-extensions'
 
 registerCyExtensions()
 import { logUi } from '../../../debug'

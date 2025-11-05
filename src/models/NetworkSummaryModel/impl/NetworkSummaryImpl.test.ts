@@ -1,7 +1,7 @@
-import { getBaseSummary } from './NetworkSummaryImpl'
 import { Network } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
 import { Visibility } from '../Visibility'
+import { getBaseSummary } from './NetworkSummaryImpl'
 
 // to run these: npx jest src/models/NetworkSummaryModel/impl/NetworkSummaryImpl.test.ts
 

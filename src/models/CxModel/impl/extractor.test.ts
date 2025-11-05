@@ -1,18 +1,18 @@
 import { Cx2 } from '../Cx2'
+import { CoreAspectTag } from '../Cx2/CoreAspectTag'
 import {
-  getNodes,
+  getAttributeDeclarations,
+  getEdgeAttributes,
+  getEdgeBypasses,
   getEdges,
   getNetworkAttributes,
-  getAttributeDeclarations,
   getNodeAttributes,
-  getEdgeAttributes,
-  getVisualProperties,
   getNodeBypasses,
-  getEdgeBypasses,
-  getVisualEditorProperties,
+  getNodes,
   getOptionalAspects,
+  getVisualEditorProperties,
+  getVisualProperties,
 } from './extractor'
-import { CoreAspectTag } from '../Cx2/CoreAspectTag'
 
 // to run these: npx jest src/models/CxModel/impl/extractor.test.ts
 

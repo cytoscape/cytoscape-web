@@ -1,13 +1,13 @@
-import {
-  getDefaultVisualStyle,
-  DEFAULT_NODE_LABEL_POSITION,
-  DEFAULT_CUSTOM_GRAPHICS_POSITION,
-  DEFAULT_CUSTOM_GRAPHICS,
-  DEFAULT_CUSTOM_GRAPHICS_SIZE,
-} from './DefaultVisualStyle'
 import { VisualPropertyGroup } from '../VisualPropertyGroup'
 import { NodeVisualPropertyName } from '../VisualPropertyName'
 import { EdgeVisualPropertyName } from '../VisualPropertyName'
+import {
+  DEFAULT_CUSTOM_GRAPHICS,
+  DEFAULT_CUSTOM_GRAPHICS_POSITION,
+  DEFAULT_CUSTOM_GRAPHICS_SIZE,
+  DEFAULT_NODE_LABEL_POSITION,
+  getDefaultVisualStyle,
+} from './DefaultVisualStyle'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/DefaultVisualStyle.test.ts
 

@@ -1,6 +1,6 @@
 import { ValueTypeName } from '../../../models/TableModel'
-import { DelimiterType } from './DelimiterType'
 import { ColumnAssignmentType } from './ColumnAssignmentType'
+import { DelimiterType } from './DelimiterType'
 
 export interface ColumnAssignmentState {
   name: string

@@ -1,15 +1,15 @@
+import { Divider } from '@mui/material'
 import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
-
-import { Divider } from '@mui/material'
 import { useState } from 'react'
+
 import { DropdownMenuProps } from '../DropdownMenuProps'
+import { AboutCytoscapeWebMenuItem } from './AboutCytoscapeWebMenuItem'
 import { BugReportMenuItem } from './BugReportMenuItem'
 import { CitationMenuItem } from './CitationMenuItem'
 import { CodeRepositoryMenuItem } from './CodeRepositoryMenuitem'
-import { TutorialMenuItem } from './TutorialMenuItem'
 import { DeveloperMenuItem } from './DeveloperMenuItem'
-import { AboutCytoscapeWebMenuItem } from './AboutCytoscapeWebMenuItem'
+import { TutorialMenuItem } from './TutorialMenuItem'
 
 export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
   const { label } = props

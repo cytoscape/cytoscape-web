@@ -1,10 +1,11 @@
+import FormControl from '@mui/material/FormControl'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import FormLabel from '@mui/material/FormLabel'
 import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import FormControl from '@mui/material/FormControl'
-import FormLabel from '@mui/material/FormLabel'
-import { Operator, SearchOptions } from '../../../models/FilterModel/Search'
+
 import { useFilterStore } from '../../../hooks/stores/FilterStore'
+import { Operator, SearchOptions } from '../../../models/FilterModel/Search'
 
 export const SearchOperatorSelector = (): JSX.Element => {
   const options: SearchOptions = useFilterStore((state) => state.search.options)

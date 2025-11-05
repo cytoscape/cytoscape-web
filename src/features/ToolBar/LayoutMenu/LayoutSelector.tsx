@@ -1,9 +1,10 @@
-import MenuItem from '@mui/material/MenuItem'
 import FormControl from '@mui/material/FormControl'
+import MenuItem from '@mui/material/MenuItem'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
-import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
-import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
 import { ReactElement, useEffect, useState } from 'react'
+
+import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 
 interface PreferredLayoutSelectorProps {
   selectedEngine: string

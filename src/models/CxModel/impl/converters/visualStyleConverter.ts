@@ -3,41 +3,42 @@
  *
  * Converts CX2 format data to VisualStyleModel.
  */
-import uniqWith from 'lodash/uniqWith'
 import isEqual from 'lodash/isEqual'
-import { Cx2 } from '../../Cx2'
-import * as cxUtil from '../extractor'
+import uniqWith from 'lodash/uniqWith'
+
 import { ValueType } from '../../../TableModel'
 import {
-  VisualStyle,
-  VisualPropertyName,
-  VisualPropertyGroup,
-  ContinuousFunctionControlPoint,
-  VisualPropertyValueType,
-  VisualProperty,
   Bypass,
-  DiscreteMappingFunction,
+  ContinuousFunctionControlPoint,
   ContinuousMappingFunction,
-  PassthroughMappingFunction,
+  DiscreteMappingFunction,
   MappingFunctionType,
+  PassthroughMappingFunction,
+  VisualProperty,
+  VisualPropertyGroup,
+  VisualPropertyName,
+  VisualPropertyValueType,
+  VisualStyle,
 } from '../../../VisualStyleModel'
 import {
   CXId,
   CXVisualMappingFunction,
-  cxVisualPropertyConverter,
   CXVisualPropertyConverter,
+  cxVisualPropertyConverter,
   CXVisualPropertyValue,
 } from '../../../VisualStyleModel/impl/cxVisualPropertyConverter'
 import {
   getDefaultVisualStyle,
 } from '../../../VisualStyleModel/impl/DefaultVisualStyle'
-import { VisualStyleOptions } from '../../../VisualStyleModel/VisualStyleOptions'
-import { translateCXEdgeId } from './networkConverter'
 import {
-  nodeVisualProperties,
   edgeVisualProperties,
   networkVisualProperties,
+  nodeVisualProperties,
 } from '../../../VisualStyleModel/impl/VisualStyleFnImpl'
+import { VisualStyleOptions } from '../../../VisualStyleModel/VisualStyleOptions'
+import { Cx2 } from '../../Cx2'
+import * as cxUtil from '../extractor'
+import { translateCXEdgeId } from './networkConverter'
 
 /**
  * Create a visual style from CX2 format

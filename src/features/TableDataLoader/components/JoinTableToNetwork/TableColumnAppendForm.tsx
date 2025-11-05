@@ -1,21 +1,21 @@
 import {
-  Text,
-  Group,
-  SegmentedControl,
-  Space,
-  NumberInput,
-  List,
-  Box,
-  Checkbox,
-  Select,
-  Button,
-  Popover,
-  Tooltip,
-  Divider,
   Alert,
-  Switch,
+  Box,
+  Button,
+  Checkbox,
+  Divider,
+  Group,
+  List,
+  NumberInput,
+  Popover,
   Radio,
+  SegmentedControl,
+  Select,
+  Space,
+  Switch,
+  Text,
   TextInput,
+  Tooltip,
 } from '@mantine/core'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
@@ -26,36 +26,37 @@ import {
 } from '@tabler/icons-react'
 import Papa from 'papaparse'
 import { Column } from 'primereact/column'
+import { DataTable,DataTableValue } from 'primereact/datatable'
+import { useEffect,useState } from 'react'
+
+import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
 import { Column as CyWebColumn } from '../../../../models/TableModel'
-import { DataTableValue, DataTable } from 'primereact/datatable'
-import { useState, useEffect } from 'react'
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { ValueTypeName } from '../../../../models/TableModel'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { ColumnAppendState } from '../../model/ColumnAppendState'
 import { ColumnAppendType } from '../../model/ColumnAppendType'
 import { DelimiterType } from '../../model/DelimiterType'
+import { valueTypeName2Label } from '../../model/impl/CreateNetworkFromTable'
 import {
-  unselectAllColumns,
-  selectAllColumns,
-  validValueTypesCapt,
-  updateColumnAppend,
-  validColumnAppendTypes,
-  updateColumnAppendType,
-  joinRowsToTable,
-  validNetworkKeyColumns,
   findValidRowsToJoin,
+  joinRowsToTable,
+  selectAllColumns,
+  unselectAllColumns,
+  updateColumnAppend,
+  updateColumnAppendType,
+  validColumnAppendTypes,
+  validNetworkKeyColumns,
+  validValueTypesCapt,
 } from '../../model/impl/JoinTableToNetwork'
 import {
   generateInferredColumnAppend,
   validateColumnValues,
 } from '../../model/impl/ParseValues'
-import { ValueTypeNameRender, ValueTypeForm } from '../ValueTypeNameForm'
-import { ColumnAppendTypeRender, ColumnAppendForm } from './ColumnAppendForm'
 import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
-import { valueTypeName2Label } from '../../model/impl/CreateNetworkFromTable'
-import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
-import { useTableStore } from '../../../../hooks/stores/TableStore'
-import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
+import { ValueTypeForm,ValueTypeNameRender } from '../ValueTypeNameForm'
+import { ColumnAppendForm,ColumnAppendTypeRender } from './ColumnAppendForm'
 
 export function TableColumnAppendForm(props: BaseMenuProps) {
   const [loading, setLoading] = useState(false)

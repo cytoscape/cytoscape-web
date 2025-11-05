@@ -1,5 +1,4 @@
 import { ValueType } from '../../TableModel'
-
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualMappingFunction } from '.'
 

@@ -1,5 +1,6 @@
 import { Box, Tab, Tabs } from '@mui/material'
 import { SyntheticEvent, useState } from 'react'
+
 import { getTabContents } from './TabContents'
 
 /**

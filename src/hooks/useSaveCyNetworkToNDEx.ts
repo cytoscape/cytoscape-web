@@ -1,20 +1,20 @@
 import {
-  NetworkSummary,
+  fetchNdexSummaries,
+  getNetworkValidationStatus,
+  updateNdexNetwork,
+} from '../api/ndex'
+import {
   Network,
+  NetworkSummary,
   NetworkView,
   Table,
   VisualStyle,
 } from '../models'
-import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { exportCyNetworkToCx2 } from '../models/CxModel/impl'
-import { OpaqueAspects } from '../models/OpaqueAspectModel'
 import { CyNetwork } from '../models/CyNetworkModel'
+import { OpaqueAspects } from '../models/OpaqueAspectModel'
+import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
-import {
-  updateNdexNetwork,
-  fetchNdexSummaries,
-  getNetworkValidationStatus,
-} from '../api/ndex'
 
 /**
  * Hook that returns a function to save a CyNetwork to NDEx.

@@ -4,12 +4,12 @@
  * Converts CX2 format data to NetworkModel.
  */
 import { IdType } from '../../../IdType'
-import { Network, Node, Edge } from '../../../NetworkModel'
+import { Edge,Network, Node } from '../../../NetworkModel'
 import NetworkFn from '../../../NetworkModel'
-import { addNodes, addEdges } from '../../../NetworkModel/impl/NetworkImpl'
+import { addEdges,addNodes } from '../../../NetworkModel/impl/NetworkImpl'
 import { Cx2 } from '../../Cx2'
-import { Node as CxNode } from '../../Cx2/CoreAspects/Node'
 import { Edge as CxEdge } from '../../Cx2/CoreAspects/Edge'
+import { Node as CxNode } from '../../Cx2/CoreAspects/Node'
 import * as cxUtil from '../extractor'
 
 // cy.js does not allow nodes and edges to have the same ids

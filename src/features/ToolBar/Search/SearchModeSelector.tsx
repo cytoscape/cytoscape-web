@@ -2,9 +2,10 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
-  RadioGroup,
   Radio,
+  RadioGroup,
 } from '@mui/material'
+
 import { useFilterStore } from '../../../hooks/stores/FilterStore'
 
 export const SearchModeSelector = (): JSX.Element => {

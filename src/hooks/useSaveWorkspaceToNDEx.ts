@@ -1,28 +1,28 @@
 import {
+  getNdexClient,
+  TimeOutErrorIndicator,
+  TimeOutErrorMessage,
+} from '../api/ndex'
+import { getWorkspaceFromDb } from '../db'
+import { logApi } from '../debug'
+import {
   CyApp,
-  NetworkSummary,
   Network,
+  NetworkSummary,
   NetworkView,
   VisualStyle,
 } from '../models'
-import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
-import { TableRecord } from '../models/StoreModel/TableStoreModel'
-import { useLoadCyNetwork } from './useLoadCyNetwork'
-import { OpaqueAspects } from '../models/OpaqueAspectModel'
-import { MessageSeverity } from '../models/MessageModel'
-import { useWorkspaceStore } from './stores/WorkspaceStore'
-import { useMessageStore } from './stores/MessageStore'
-import { getWorkspaceFromDb } from '../db'
 import { AppStatus } from '../models/AppModel/AppStatus'
 import { ServiceApp } from '../models/AppModel/ServiceApp'
-import { logApi } from '../debug'
-import {
-  getNdexClient,
-  TimeOutErrorMessage,
-  TimeOutErrorIndicator,
-} from '../api/ndex'
-import { useSaveCyNetworkToNDEx } from './useSaveCyNetworkToNDEx'
+import { MessageSeverity } from '../models/MessageModel'
+import { OpaqueAspects } from '../models/OpaqueAspectModel'
+import { TableRecord } from '../models/StoreModel/TableStoreModel'
+import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
+import { useMessageStore } from './stores/MessageStore'
+import { useWorkspaceStore } from './stores/WorkspaceStore'
+import { useLoadCyNetwork } from './useLoadCyNetwork'
 import { useSaveCyNetworkCopyToNDEx } from './useSaveCyNetworkCopyToNDEx'
+import { useSaveCyNetworkToNDEx } from './useSaveCyNetworkToNDEx'
 
 /**
  * Hook that returns a function to save a workspace to NDEx.

@@ -1,39 +1,39 @@
 import {
-  MenuItem,
   Box,
-  Tooltip,
-  Dialog,
   Button,
-  DialogTitle,
+  Dialog,
+  DialogActions,
   DialogContent,
   DialogContentText,
-  DialogActions,
+  DialogTitle,
+  MenuItem,
+  Tooltip,
 } from '@mui/material'
 import { ReactElement, useContext, useEffect, useState } from 'react'
-import { BaseMenuProps } from '../BaseMenuProps'
-import { hasNdexEditPermission, fetchNdexSummaries } from '../../../api/ndex'
 
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { fetchNdexSummaries,hasNdexEditPermission } from '../../../api/ndex'
+import { TimeOutErrorIndicator,TimeOutErrorMessage } from '../../../api/ndex'
+import { AppConfigContext } from '../../../AppConfigContext'
+import { logUi } from '../../../debug'
+import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
+import { useMessageStore } from '../../../hooks/stores/MessageStore'
 import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
 import { useTableStore } from '../../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { Network } from '../../../models/NetworkModel'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { useMessageStore } from '../../../hooks/stores/MessageStore'
-import { KeycloakContext } from '../../../init/keycloak'
-import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorStore'
-import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Validation/HcxValidationSaveDialog'
-import { NetworkView } from '../../../models/ViewModel'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
-import { TimeOutErrorMessage, TimeOutErrorIndicator } from '../../../api/ndex'
-import { useSaveCyNetworkToNDEx } from '../../../hooks/useSaveCyNetworkToNDEx'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { useSaveCyNetworkCopyToNDEx } from '../../../hooks/useSaveCyNetworkCopyToNDEx'
+import { useSaveCyNetworkToNDEx } from '../../../hooks/useSaveCyNetworkToNDEx'
+import { KeycloakContext } from '../../../init/keycloak'
 import { MessageSeverity } from '../../../models/MessageModel'
-import { logUi } from '../../../debug'
+import { Network } from '../../../models/NetworkModel'
+import { NetworkView } from '../../../models/ViewModel'
+import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Validation/HcxValidationSaveDialog'
+import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorStore'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)

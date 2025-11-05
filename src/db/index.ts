@@ -1,41 +1,38 @@
-import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 import 'dexie-observable'
 
-import config from '../assets/config.json'
+import Dexie, { IndexableType, Table as DxTable } from 'dexie'
+import _ from 'lodash'
 
+import config from '../assets/config.json'
+import { logDb } from '../debug'
+import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
+import { CyApp } from '../models/AppModel/CyApp'
+import { ServiceApp } from '../models/AppModel/ServiceApp'
+import { CyNetwork } from '../models/CyNetworkModel'
+import { FilterConfig } from '../models/FilterModel/FilterConfig'
 import { IdType } from '../models/IdType'
-import NetworkFn, { Node, Edge, Network } from '../models/NetworkModel'
+import NetworkFn, { Edge, Network,Node } from '../models/NetworkModel'
 import { NetworkSummary } from '../models/NetworkSummaryModel'
+import { OpaqueAspects } from '../models/OpaqueAspectModel'
+import { UndoRedoStack } from '../models/StoreModel/UndoStoreModel'
 import { Table } from '../models/TableModel'
+import { Ui } from '../models/UiModel'
+import { NetworkView } from '../models/ViewModel'
 import { VisualStyle } from '../models/VisualStyleModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { Workspace } from '../models/WorkspaceModel'
-import { NetworkView } from '../models/ViewModel'
-import { Ui } from '../models/UiModel'
-import { OpaqueAspects } from '../models/OpaqueAspectModel'
-import { CyNetwork } from '../models/CyNetworkModel'
-import { applyMigrations } from './migrations'
-import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
-import { FilterConfig } from '../models/FilterModel/FilterConfig'
-import { CyApp } from '../models/AppModel/CyApp'
-import { ServiceApp } from '../models/AppModel/ServiceApp'
-import { UndoRedoStack } from '../models/StoreModel/UndoStoreModel'
 import { createWorkspace } from '../models/WorkspaceModel/impl/WorkspaceImpl'
-
-import _ from 'lodash'
-
-import { logDb } from '../debug'
-
 import {
-  serializeVisualStyle,
-  deserializeVisualStyle,
-  serializeNetworkView,
-  deserializeNetworkView,
-  serializeTable,
-  deserializeTable,
-  serializeFilterConfig,
   deserializeFilterConfig,
+  deserializeNetworkView,
+  deserializeTable,
+  deserializeVisualStyle,
+  serializeFilterConfig,
+  serializeNetworkView,
+  serializeTable,
+  serializeVisualStyle,
 } from './db-util'
+import { applyMigrations } from './migrations'
 // Unique, fixed DB name for the Cytoscape Web
 const DB_NAME: string = 'cyweb-db'
 

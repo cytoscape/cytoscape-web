@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
+
 import { IdType } from '../models/IdType'
+import { UpdateEventType } from '../models/StoreModel/NetworkStoreModel'
+import { NetworkView } from '../models/ViewModel'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useViewModelStore } from './stores/ViewModelStore'
-import { NetworkView } from '../models/ViewModel'
-import { UpdateEventType } from '../models/StoreModel/NetworkStoreModel'
 
 /**
  * Based on the changes in the workspace store, this hook will

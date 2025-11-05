@@ -1,12 +1,13 @@
-import { NodeBorderLineType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box, Button } from '@mui/material'
-import {
-  SolidLineIcon,
-  DottedLineIcon,
-  DashedLineIcon,
-  DoubleLineIcon,
-} from '../VisualStyleIcons'
 import React from 'react'
+
+import { NodeBorderLineType } from '../../../models/VisualStyleModel/VisualPropertyValue'
+import {
+  DashedLineIcon,
+  DottedLineIcon,
+  DoubleLineIcon,
+  SolidLineIcon,
+} from '../VisualStyleIcons'
 
 const nodeLineMap: Record<
   NodeBorderLineType,

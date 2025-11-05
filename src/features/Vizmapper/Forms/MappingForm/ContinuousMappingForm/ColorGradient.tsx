@@ -1,9 +1,10 @@
-import * as React from 'react'
 import { Box } from '@mui/material'
-import { color } from 'd3-color'
 import { AxisBottom } from '@visx/axis'
+import { color } from 'd3-color'
 import { ScaleLinear } from 'd3-scale'
+import * as React from 'react'
 import { ContinuousMappingFunction, ValueType } from 'src/models'
+
 import { getMapper } from '../../../../../models/VisualStyleModel/impl/MapperFactory'
 
 export interface ColorGradiientProps {

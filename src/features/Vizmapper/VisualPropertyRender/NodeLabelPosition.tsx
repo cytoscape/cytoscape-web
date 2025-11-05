@@ -1,16 +1,17 @@
-import {
-  NodeLabelPositionType,
-  NodeLabelPositionValueType,
-} from '../../../models/VisualStyleModel/VisualPropertyValue'
+import { MantineProvider, NumberInput } from '@mantine/core'
 import { Box, Button, MenuItem, Select, Typography } from '@mui/material'
-import { DEFAULT_NODE_LABEL_POSITION } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 import React from 'react'
+
+import { DEFAULT_NODE_LABEL_POSITION } from '../../../models/VisualStyleModel/impl/DefaultVisualStyle'
 import {
   NodeLabelOrientationType,
   orientationToPositionMap,
   translateNodePositionToOrientation,
 } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
-import { MantineProvider, NumberInput } from '@mantine/core'
+import {
+  NodeLabelPositionType,
+  NodeLabelPositionValueType,
+} from '../../../models/VisualStyleModel/VisualPropertyValue'
 
 export function NodeLabelPositionPicker(props: {
   currentValue: NodeLabelPositionType | null

@@ -1,9 +1,10 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { BaseMenuProps } from '../BaseMenuProps'
-import { ConfirmationDialog } from '../../ConfirmationDialog'
+
 import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { ConfirmationDialog } from '../../ConfirmationDialog'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 export const RemoveNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const [open, setOpen] = useState<boolean>(false)

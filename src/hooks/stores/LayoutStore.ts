@@ -1,17 +1,17 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { LayoutEngine } from '../../models/LayoutModel/LayoutEngine'
-import { LayoutAlgorithm } from '../../models/LayoutModel/LayoutAlgorithm'
-import { ValueType } from '../../models/TableModel'
 
-import { Property } from '../../models/PropertyModel/Property'
 import {
-  LayoutEngines,
   defAlgorithm,
   defHierarchicalAlgorithm,
   getLayout,
+  LayoutEngines,
 } from '../../models/LayoutModel/impl/layoutSelection'
+import { LayoutAlgorithm } from '../../models/LayoutModel/LayoutAlgorithm'
+import { LayoutEngine } from '../../models/LayoutModel/LayoutEngine'
+import { Property } from '../../models/PropertyModel/Property'
 import { LayoutStore } from '../../models/StoreModel/LayoutStoreModel'
+import { ValueType } from '../../models/TableModel'
 
 /**
  * Store for layout parameters

@@ -1,10 +1,10 @@
-import React from 'react'
 import { SvgIcon } from '@mui/material'
 import { SxProps } from '@mui/system'
+import React from 'react'
 
 import continuousMappingFunctionIcon from '../../assets/continuous_mapping.svg'
-import passthroughMappingFunctionIcon from '../../assets/passthrough_mapping.svg'
 import discreteMappingFunctionIcon from '../../assets/discrete_mapping.svg'
+import passthroughMappingFunctionIcon from '../../assets/passthrough_mapping.svg'
 
 const defaultIconStyle = {
   style: { fontSize: 20, margin: 0 },

@@ -1,20 +1,21 @@
-import { EdgeArrowShapeType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box, Button } from '@mui/material'
+import React from 'react'
+
+import { EdgeArrowShapeType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import {
   CircleArrowIcon,
   DiamondArrowIcon,
-  TeeArrowIcon,
-  TriangleArrowIcon,
-  SquareArrowIcon,
   NoneArrowIcon,
   OpenCircleArrowIcon,
   OpenDiamondArrowIcon,
   OpenSquareArrowIcon,
   OpenTriangleArrowIcon,
-  TriangleCrossArrowIcon,
   OpenTriangleCrossArrowIcon,
+  SquareArrowIcon,
+  TeeArrowIcon,
+  TriangleArrowIcon,
+  TriangleCrossArrowIcon,
 } from '../VisualStyleIcons'
-import React from 'react'
 
 const edgeArrowShapeMap: Record<
   EdgeArrowShapeType,

@@ -9,6 +9,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
+
 import { ValueTypeName } from '../../../models/TableModel'
 import { DelimiterType } from '../model/DelimiterType'
 import { valueTypeName2Label } from '../model/impl/CreateNetworkFromTable'

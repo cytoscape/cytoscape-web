@@ -1,5 +1,13 @@
-import * as React from 'react'
-import { TableColumn } from './TableBrowser'
+import {
+  Alert,
+  Box,
+  Button,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+} from '@mui/material'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
@@ -7,22 +15,14 @@ import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import Tooltip from '@mui/material/Tooltip'
-import {
-  TextField,
-  Button,
-  Alert,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Box,
-  Select,
-} from '@mui/material'
+import * as React from 'react'
 
 import { ValueTypeName } from '../../models/TableModel'
 import {
   VisualProperty,
   VisualPropertyValueType,
 } from '../../models/VisualStyleModel'
+import { TableColumn } from './TableBrowser'
 
 interface TableFormProps {
   column: TableColumn

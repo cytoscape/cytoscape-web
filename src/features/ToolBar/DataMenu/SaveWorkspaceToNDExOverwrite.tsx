@@ -1,14 +1,15 @@
-import React, { useState, useContext } from 'react'
-import { MenuItem, Box, Tooltip } from '@mui/material'
-import { BaseMenuProps } from '../BaseMenuProps'
-import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
+import { Box, MenuItem, Tooltip } from '@mui/material'
+import React, { useContext,useState } from 'react'
+
 import { AppConfigContext } from '../../../AppConfigContext'
+import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
-import { KeycloakContext } from '../../../init/keycloak'
 import { useSaveWorkspace } from '../../../hooks/useSaveWorkspaceToNDEx'
-import { MessageSeverity } from '../../../models/MessageModel'
-import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 import { useWorkspaceData } from '../../../hooks/useWorkspaceData'
+import { KeycloakContext } from '../../../init/keycloak'
+import { MessageSeverity } from '../../../models/MessageModel'
+import { BaseMenuProps } from '../BaseMenuProps'
+import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
   props: BaseMenuProps,

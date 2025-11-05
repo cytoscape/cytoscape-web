@@ -1,23 +1,23 @@
 import { DataTableValue } from 'primereact/datatable'
 import { v4 as uuidv4 } from 'uuid'
 
-import { Table, ValueType, ValueTypeName } from '../../../../models/TableModel'
-import { ColumnAssignmentState } from '../ColumnAssignmentState'
-import { ColumnAssignmentType } from '../ColumnAssignmentType'
-import { DelimiterType } from '../DelimiterType'
-import { parseValue } from './ParseValues'
 import { Network } from '../../../../models/NetworkModel'
+import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
+import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
+import { Table, ValueType, ValueTypeName } from '../../../../models/TableModel'
+import { NetworkView } from '../../../../models/ViewModel'
+import { createViewModel } from '../../../../models/ViewModel/impl/ViewModelImpl'
 import {
   MappingFunctionType,
   VisualPropertyValueTypeName,
   VisualStyle,
 } from '../../../../models/VisualStyleModel'
 import { createVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
-import { createViewModel } from '../../../../models/ViewModel/impl/ViewModelImpl'
-import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
-import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
-import { NetworkView } from '../../../../models/ViewModel'
 import { VisualStyleOptions } from '../../../../models/VisualStyleModel/VisualStyleOptions'
+import { ColumnAssignmentState } from '../ColumnAssignmentState'
+import { ColumnAssignmentType } from '../ColumnAssignmentType'
+import { DelimiterType } from '../DelimiterType'
+import { parseValue } from './ParseValues'
 
 export const DEFAULT_COLUMN_MEANING = ColumnAssignmentType.EdgeAttribute
 export const DEFAULT_COLUMN_DATA_TYPE = ValueTypeName.String

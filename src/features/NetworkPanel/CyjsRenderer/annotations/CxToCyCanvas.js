@@ -1,8 +1,8 @@
+import { COMMON_OS_FONT_STACK_MAP } from './CommonFonts'
 import {
   JAVA_LOGICAL_FONT_FAMILY_LIST,
   JAVA_LOGICAL_FONT_STACK_MAP,
 } from './JavaLogicalFonts'
-import { COMMON_OS_FONT_STACK_MAP } from './CommonFonts'
 
 export class CxToCyCanvas {
   constructor() {

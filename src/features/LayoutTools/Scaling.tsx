@@ -1,15 +1,16 @@
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { Box, IconButton, Stack, Theme, useTheme } from '@mui/material'
 import Slider from '@mui/material/Slider'
-import { useLayoutStore } from '../../hooks/stores/LayoutStore'
-import { IdType } from '../../models/IdType'
-import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
 import { MutableRefObject, useEffect, useRef, useState } from 'react'
-import { NetworkView, NodeView } from '../../models/ViewModel'
-import RefreshIcon from '@mui/icons-material/Refresh'
-import { ScalingType, ScalingTypeSelector } from './ScalingTypeSelector'
-import { calcScale } from './scaling-util'
+
+import { useLayoutStore } from '../../hooks/stores/LayoutStore'
+import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
 import { useUndoStack } from '../../hooks/useUndoStack'
+import { IdType } from '../../models/IdType'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { NetworkView, NodeView } from '../../models/ViewModel'
+import { calcScale } from './scaling-util'
+import { ScalingType, ScalingTypeSelector } from './ScalingTypeSelector'
 
 const marks = [
   {

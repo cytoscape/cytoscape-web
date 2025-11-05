@@ -1,18 +1,19 @@
 import {
-  Select,
-  MenuItem,
-  SelectChangeEvent,
+  Box,
+  Container,
+  FormControl,
   FormControlLabel,
+  FormLabel,
+  MenuItem,
   Radio,
   RadioGroup,
-  FormControl,
-  FormLabel,
-  Container,
-  Box,
+  Select,
+  SelectChangeEvent,
 } from '@mui/material'
-import { Column, Table, ValueTypeName } from '../../../../models/TableModel'
 import { useEffect, useState } from 'react'
+
 import { GraphObjectType } from '../../../../models/NetworkModel'
+import { Column, Table, ValueTypeName } from '../../../../models/TableModel'
 
 interface AttributeSelectorProps {
   enableFilter: boolean

@@ -1,8 +1,9 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useState } from 'react'
-import { BaseMenuProps } from '../BaseMenuProps'
+
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 export const RemoveAllNetworksMenuItem = (
   props: BaseMenuProps,

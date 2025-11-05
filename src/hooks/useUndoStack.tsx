@@ -1,5 +1,6 @@
 import { useCallback, useContext } from 'react'
-import { useVisualStyleStore } from './stores/VisualStyleStore'
+
+import { AppConfigContext } from '../AppConfigContext'
 import {
   Edge,
   EdgeView,
@@ -8,19 +9,18 @@ import {
   TableType,
   ValueType,
 } from '../models'
-
-import { useUndoStore } from './stores/UndoStore'
-import { UndoCommandType } from '../models/StoreModel/UndoStoreModel'
-import { useViewModelStore } from './stores/ViewModelStore'
-import { useTableStore } from './stores/TableStore'
-import { useNetworkStore } from './stores/NetworkStore'
-import { useUiStateStore } from './stores/UiStateStore'
-import { useWorkspaceStore } from './stores/WorkspaceStore'
-import { AppConfigContext } from '../AppConfigContext'
-import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
-import { useRendererStore } from './stores/RendererStore'
-import { useRendererFunctionStore } from './stores/RendererFunctionStore'
 import { DEFAULT_RENDERER_ID } from '../models/RendererModel/impl/defaultRenderer'
+import { UndoCommandType } from '../models/StoreModel/UndoStoreModel'
+import { useNetworkStore } from './stores/NetworkStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
+import { useRendererFunctionStore } from './stores/RendererFunctionStore'
+import { useRendererStore } from './stores/RendererStore'
+import { useTableStore } from './stores/TableStore'
+import { useUiStateStore } from './stores/UiStateStore'
+import { useUndoStore } from './stores/UndoStore'
+import { useViewModelStore } from './stores/ViewModelStore'
+import { useVisualStyleStore } from './stores/VisualStyleStore'
+import { useWorkspaceStore } from './stores/WorkspaceStore'
 
 export const useUndoStack = () => {
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)

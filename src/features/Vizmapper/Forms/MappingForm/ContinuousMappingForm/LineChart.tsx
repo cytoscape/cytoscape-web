@@ -1,10 +1,10 @@
-import * as React from 'react'
+import { AxisBottom,AxisLeft } from '@visx/axis'
+import { LinearGradient } from '@visx/gradient'
+import { Group } from '@visx/group'
 import { scaleLinear as visXScaleLinear } from '@visx/scale'
 import { AreaClosed, LinePath } from '@visx/shape'
-import { Group } from '@visx/group'
-import { AxisLeft, AxisBottom } from '@visx/axis'
-import { LinearGradient } from '@visx/gradient'
 import { extent } from 'd3-array'
+import * as React from 'react'
 
 export interface LineChartProps {
   width: number

@@ -1,14 +1,18 @@
-import * as React from 'react'
+import InfoIcon from '@mui/icons-material/Info'
 import {
   Box,
-  Typography,
-  Tabs,
-  Tab,
   Divider,
-  Tooltip,
   IconButton,
+  Tab,
+  Tabs,
+  Tooltip,
+  Typography,
 } from '@mui/material'
-import InfoIcon from '@mui/icons-material/Info'
+import * as React from 'react'
+import { useState } from 'react'
+
+import { useUiStateStore } from '../../hooks/stores/UiStateStore'
+import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
 import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
   EdgeVisualPropertyName,
@@ -17,23 +21,18 @@ import VisualStyleFn, {
   VisualPropertyValueType,
   VisualStyle,
 } from '../../models/VisualStyleModel'
-
-import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
-
-import { MappingForm } from './Forms/MappingForm'
-import { BypassForm } from './Forms/BypassForm'
-import { DefaultValueForm } from './Forms/DefaultValueForm'
-import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
-import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
-import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
-import { useState } from 'react'
 import {
   getCustomGraphicNodeVps,
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
   getSizePropertyForCustomGraphic,
 } from '../../models/VisualStyleModel/impl/CustomGraphicsImpl'
+import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/DefaultVisualStyle'
+import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
+import { BypassForm } from './Forms/BypassForm'
+import { DefaultValueForm } from './Forms/DefaultValueForm'
+import { MappingForm } from './Forms/MappingForm'
+import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType

@@ -1,6 +1,3 @@
-import { MenuItem as NestedMenuItem } from 'primereact/menuitem'
-import { MenuPathElement } from '../../../models/AppModel/MenuPathElement'
-import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import {
   Box,
   Button,
@@ -15,18 +12,22 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
+import { MenuItem as NestedMenuItem } from 'primereact/menuitem'
 import { useState } from 'react'
-import { IdType } from '../../../models/IdType'
-import { ServiceAppParameter } from '../../../models/AppModel/ServiceAppParameter'
+import React from 'react'
+
+import { logApp } from '../../../debug'
+import { useAppStore } from '../../../hooks/stores/AppStore'
 import { useTableStore } from '../../../hooks/stores/TableStore'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { ParameterUiType } from '../../../models/AppModel/ParameterUiType'
-import { useAppStore } from '../../../hooks/stores/AppStore'
-import { inputColumnFilterFn } from '../../../models/AppModel/impl'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { inputColumnFilterFn } from '../../../models/AppModel/impl'
+import { MenuPathElement } from '../../../models/AppModel/MenuPathElement'
+import { ParameterUiType } from '../../../models/AppModel/ParameterUiType'
+import { ServiceApp } from '../../../models/AppModel/ServiceApp'
+import { ServiceAppParameter } from '../../../models/AppModel/ServiceAppParameter'
+import { IdType } from '../../../models/IdType'
 import { getDomain } from '../../../utils/url-util'
-import React from 'react'
-import { logApp } from '../../../debug'
 
 interface AppMenuItemProps {
   handleClose: () => void

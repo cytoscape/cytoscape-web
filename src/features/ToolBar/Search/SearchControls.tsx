@@ -1,9 +1,10 @@
-import { Box, IconButton } from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
 import SearchIcon from '@mui/icons-material/Search'
 import TuneIcon from '@mui/icons-material/Tune'
-import DeleteIcon from '@mui/icons-material/Delete'
-import { Settings } from './Settings'
+import { Box, IconButton } from '@mui/material'
+
 import { GraphObjectType } from '../../../models/NetworkModel'
+import { Settings } from './Settings'
 
 interface SearchControlsProps {
   searchTerm: string

@@ -1,37 +1,35 @@
-import * as React from 'react'
+import DeleteIcon from '@mui/icons-material/Delete'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import {
   Box,
   Button,
-  TableContainer,
+  Checkbox,
+  Divider,
+  IconButton,
   Table,
-  TableHead,
-  TableRow,
   TableBody,
   TableCell,
-  Checkbox,
-  IconButton,
-  Divider,
-  Typography,
+  TableContainer,
+  TableHead,
+  TableRow,
   Tooltip,
+  Typography,
 } from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
-import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import * as React from 'react'
 
-import { IdType } from '../../../../models/IdType'
-import { ValueType } from '../../../../models/TableModel'
-import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
 import { useTableStore } from '../../../../hooks/stores/TableStore'
-
+import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
+import { useUndoStack } from '../../../../hooks/useUndoStack'
+import { IdType } from '../../../../models/IdType'
+import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
+import { ValueType } from '../../../../models/TableModel'
 import {
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
 import { DiscreteMappingFunction } from '../../../../models/VisualStyleModel/VisualMappingFunction'
-
-import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
 import { VisualPropertyGroup } from '../../../../models/VisualStyleModel/VisualPropertyGroup'
-import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
-import { useUndoStack } from '../../../../hooks/useUndoStack'
+import { VisualPropertyValueForm } from '../VisualPropertyValueForm'
 
 export function DiscreteMappingForm(props: {
   currentNetworkId: IdType

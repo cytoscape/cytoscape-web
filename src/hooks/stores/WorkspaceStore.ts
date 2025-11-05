@@ -1,11 +1,12 @@
 import { create, StateCreator, StoreApi } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
-import { IdType } from '../../models/IdType'
-import { Workspace } from '../../models/WorkspaceModel'
+
 import { deleteDb, putWorkspaceToDb } from '../../db'
-import { WorkspaceStore } from '../../models/StoreModel/WorkspaceStoreModel'
 import { logStore } from '../../debug'
+import { IdType } from '../../models/IdType'
+import { WorkspaceStore } from '../../models/StoreModel/WorkspaceStoreModel'
+import { Workspace } from '../../models/WorkspaceModel'
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',

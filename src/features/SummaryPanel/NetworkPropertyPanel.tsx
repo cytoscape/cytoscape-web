@@ -1,32 +1,32 @@
-import { ReactElement, useState, lazy, Suspense } from 'react'
+import CircleIcon from '@mui/icons-material/Circle'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
 import {
-  Tooltip,
-  IconButton,
   Box,
-  Theme,
-  Typography,
-  Divider,
   Chip,
   CircularProgress,
+  Divider,
+  IconButton,
+  Theme,
+  Tooltip,
+  Typography,
 } from '@mui/material'
 import { blueGrey } from '@mui/material/colors'
 import { useTheme } from '@mui/material/styles'
-import EditIcon from '@mui/icons-material/Edit'
-import DeleteIcon from '@mui/icons-material/Delete'
-import CircleIcon from '@mui/icons-material/Circle'
+import { lazy, ReactElement, Suspense,useState } from 'react'
 
+import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { IdType } from '../../models/IdType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
-import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
 const NetworkPropertyEditor = lazy(() => import('./NdexNetworkPropertyEditor'))
-import { HcxValidationButtonGroup } from '../HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
-import { ConfirmationDialog } from '../ConfirmationDialog'
+import { useUrlNavigation } from '../../hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../../hooks/stores/NetworkStore'
 import { Network } from '../../models'
-import { useUrlNavigation } from '../../hooks/navigation/useUrlNavigation'
+import { ConfirmationDialog } from '../ConfirmationDialog'
+import { HcxValidationButtonGroup } from '../HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
 
 interface NetworkPropertyPanelProps {
   summary: NetworkSummary

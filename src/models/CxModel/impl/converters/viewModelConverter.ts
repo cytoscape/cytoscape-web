@@ -3,21 +3,21 @@
  *
  * Converts CX2 format data to ViewModel.
  */
-import { Cx2 } from '../../Cx2'
 import { IdType } from '../../../IdType'
+import { EdgeView } from '../../../ViewModel/EdgeView'
 import { NetworkView } from '../../../ViewModel/NetworkView'
 import { NodeView } from '../../../ViewModel/NodeView'
-import { EdgeView } from '../../../ViewModel/EdgeView'
-import { translateCXEdgeId } from './networkConverter'
-import * as cxUtil from '../extractor'
-import { Node as CxNode } from '../../Cx2/CoreAspects/Node'
-import { Edge as CxEdge } from '../../Cx2/CoreAspects/Edge'
 import { VisualPropertyValueType } from '../../../VisualStyleModel'
 import {
   EdgeVisualPropertyName,
   NetworkVisualPropertyName,
   NodeVisualPropertyName,
 } from '../../../VisualStyleModel/VisualPropertyName'
+import { Cx2 } from '../../Cx2'
+import { Edge as CxEdge } from '../../Cx2/CoreAspects/Edge'
+import { Node as CxNode } from '../../Cx2/CoreAspects/Node'
+import * as cxUtil from '../extractor'
+import { translateCXEdgeId } from './networkConverter'
 
 /**
  * Internal helper to create a NetworkView from prepared node and edge views

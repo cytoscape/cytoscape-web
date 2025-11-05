@@ -1,38 +1,34 @@
-import uniqWith from 'lodash/uniqWith'
 import isEqual from 'lodash/isEqual'
-
-import { NetworkView } from '../../ViewModel'
+import uniqWith from 'lodash/uniqWith'
 
 import { ValueType } from '../../TableModel'
-
+import { NetworkView } from '../../ViewModel'
 import {
-  VisualStyle,
-  VisualPropertyName,
-  VisualPropertyGroup,
-  ContinuousFunctionControlPoint,
-  VisualPropertyValueType,
-  VisualProperty,
   Bypass,
-  NetworkViewSources,
-  DiscreteMappingFunction,
+  ContinuousFunctionControlPoint,
   ContinuousMappingFunction,
-  PassthroughMappingFunction,
-  MappingFunctionType,
   CustomGraphicsType,
+  DiscreteMappingFunction,
+  MappingFunctionType,
+  NetworkViewSources,
+  PassthroughMappingFunction,
+  VisualProperty,
+  VisualPropertyGroup,
+  VisualPropertyName,
+  VisualPropertyValueType,
+  VisualStyle,
 } from '..'
-
+import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
+import { VisualStyleOptions } from '../VisualStyleOptions'
+import { createNewNetworkView, updateNetworkView } from './compute-view-util'
 import {
   CXCustomGraphicsType,
 } from './cxVisualPropertyConverter'
-
 import {
-  getDefaultVisualStyle,
   DEFAULT_CUSTOM_GRAPHICS,
   DEFAULT_CUSTOM_GRAPHICS_POSITION,
+  getDefaultVisualStyle,
 } from './DefaultVisualStyle'
-import { createNewNetworkView, updateNetworkView } from './compute-view-util'
-import { VisualStyleOptions } from '../VisualStyleOptions'
-import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
 
 const sortByDisplayName = (
   a: VisualProperty<VisualPropertyValueType>,

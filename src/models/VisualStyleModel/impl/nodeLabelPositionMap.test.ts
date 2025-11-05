@@ -1,10 +1,10 @@
+import { NodeLabelPositionType } from '../VisualPropertyValue'
 import {
   computeNodeLabelPosition,
-  translateNodePositionToOrientation,
   NodeLabelOrientationType,
   orientationToPositionMap,
+  translateNodePositionToOrientation,
 } from './nodeLabelPositionMap'
-import { NodeLabelPositionType } from '../VisualPropertyValue'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/nodeLabelPositionMap.test.ts
 

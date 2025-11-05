@@ -1,7 +1,7 @@
-import React from 'react'
 import {
-  Typography,
   Box,
+  Chip,
+  Divider,
   Paper,
   Table,
   TableBody,
@@ -9,10 +9,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
-  Divider,
+  Typography,
 } from '@mui/material'
 import parse from 'html-react-parser'
+import React from 'react'
 
 import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'

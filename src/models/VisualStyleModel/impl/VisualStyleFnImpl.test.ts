@@ -1,15 +1,15 @@
-import {
-  applyVisualStyle,
-  nodeVisualProperties,
-  edgeVisualProperties,
-  networkVisualProperties,
-  createVisualStyle,
-} from './VisualStyleFnImpl'
-import { VisualStyle } from '../VisualStyle'
-import { VisualPropertyGroup } from '../VisualPropertyGroup'
 import NetworkFn from '../../NetworkModel'
 import { createTable } from '../../TableModel/impl/InMemoryTable'
 import { createViewModel } from '../../ViewModel/impl/ViewModelImpl'
+import { VisualPropertyGroup } from '../VisualPropertyGroup'
+import { VisualStyle } from '../VisualStyle'
+import {
+  applyVisualStyle,
+  createVisualStyle,
+  edgeVisualProperties,
+  networkVisualProperties,
+  nodeVisualProperties,
+} from './VisualStyleFnImpl'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/VisualStyleFnImpl.test.ts
 

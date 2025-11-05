@@ -1,10 +1,10 @@
-import {
-  fetchMyNdexWorkspaces,
-  fetchMyNdexAccountNetworks,
-  searchNdexNetworks,
-  deleteNdexWorkspace,
-} from './workspace'
 import { getNdexClient } from './client'
+import {
+  deleteNdexWorkspace,
+  fetchMyNdexAccountNetworks,
+  fetchMyNdexWorkspaces,
+  searchNdexNetworks,
+} from './workspace'
 
 // Mock the NDEx client module
 jest.mock('./client', () => ({

@@ -1,16 +1,17 @@
 import {
-  Typography,
   Box,
-  TextField,
   Button,
-  useTheme,
+  TextField,
   Theme,
+  Typography,
+  useTheme,
 } from '@mui/material'
-import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { useState } from 'react'
+
 import { useAppStore } from '../../hooks/stores/AppStore'
-import { ServiceList } from './ServiceList'
+import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { ExampleServicePanel } from './ExampleServicePanel'
+import { ServiceList } from './ServiceList'
 
 export const ServiceListPanel = () => {
   const theme: Theme = useTheme()

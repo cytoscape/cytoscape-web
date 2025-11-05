@@ -1,5 +1,5 @@
-import { LayoutAlgorithm } from '../../..'
 import { ValueTypeName } from '../../../../TableModel'
+import { LayoutAlgorithm } from '../../..'
 import { LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const cose: LayoutAlgorithm = {

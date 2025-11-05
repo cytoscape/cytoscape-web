@@ -1,16 +1,17 @@
 import {
   Box,
-  Tooltip,
-  TextField,
   Button,
   CircularProgress,
+  TextField,
+  Tooltip,
 } from '@mui/material'
-import { ReactElement, useState, useEffect } from 'react'
+import { ReactElement, useEffect,useState } from 'react'
+
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
-import { MessageSeverity } from '../../../models/MessageModel'
 
 export const LLMQueryResultPanel = (props: {
   height?: number

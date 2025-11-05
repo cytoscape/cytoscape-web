@@ -1,18 +1,18 @@
+import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
+import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
+import { translateCXEdgeId } from '../../CxModel/impl/converters'
 import { IdType } from '../../IdType'
-import { NetworkView } from '../NetworkView'
-import { NodeView } from '../NodeView'
-import { EdgeView } from '../EdgeView'
-import { Node, Edge } from '../../NetworkModel'
+import { Edge,Node } from '../../NetworkModel'
+import { Network } from '../../NetworkModel'
 import { VisualPropertyValueType } from '../../VisualStyleModel'
 import {
   EdgeVisualPropertyName,
   NetworkVisualPropertyName,
   NodeVisualPropertyName,
 } from '../../VisualStyleModel/VisualPropertyName'
-import { Network } from '../../NetworkModel'
-import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
-import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
-import { translateCXEdgeId } from '../../CxModel/impl/converters'
+import { EdgeView } from '../EdgeView'
+import { NetworkView } from '../NetworkView'
+import { NodeView } from '../NodeView'
 
 /**
  * Internal helper to create a NetworkView from prepared node and edge views

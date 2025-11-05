@@ -1,14 +1,14 @@
+import { Column } from '../Column'
+import { Table } from '../Table'
 import {
-  createTable,
-  columns,
   addColumn,
+  columns,
   columnValueSet,
+  createTable,
   insertRow,
   insertRows,
   updateRow,
 } from './InMemoryTable'
-import { Table } from '../Table'
-import { Column } from '../Column'
 
 // to run these: npx jest src/models/TableModel/impl/InMemoryTable.test.ts
 

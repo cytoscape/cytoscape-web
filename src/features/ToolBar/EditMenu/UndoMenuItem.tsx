@@ -1,11 +1,12 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement } from 'react'
-import { BaseMenuProps } from '../BaseMenuProps'
-import { useUndoStack } from '../../../hooks/useUndoStack'
-import { useUndoStore } from '../../../hooks/stores/UndoStore'
-import { IdType } from '../../../models'
+
 import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { useUndoStore } from '../../../hooks/stores/UndoStore'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useUndoStack } from '../../../hooks/useUndoStack'
+import { IdType } from '../../../models'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 export const UndoMenuItem = (props: BaseMenuProps): ReactElement => {
   const { undoLastEdit } = useUndoStack()

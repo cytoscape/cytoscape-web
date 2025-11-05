@@ -1,7 +1,8 @@
 import { NavigateOptions } from 'react-router-dom'
-import { NavigationConfig } from './NavigationConfig'
-import { logHistory } from '../../debug'
+
 import config from '../../assets/config.json'
+import { logHistory } from '../../debug'
+import { NavigationConfig } from './NavigationConfig'
 
 let lastNetworkId: string = '' // Last displayed network ID
 let lastUrlPath: string = '' // Last set URL path

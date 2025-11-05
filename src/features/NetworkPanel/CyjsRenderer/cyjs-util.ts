@@ -13,30 +13,31 @@
  */
 
 import { Collection, Core, SingularElementArgument } from 'cytoscape'
+
 import { IdType } from '../../../models/IdType'
 import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import { View } from '../../../models/ViewModel/View'
 import VisualStyleFn, {
   EdgeArrowShapeType,
   EdgeVisualPropertyName,
+  NodeShapeType,
   NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyName,
   VisualPropertyValueType,
   VisualStyle,
-  NodeShapeType,
 } from '../../../models/VisualStyleModel'
-import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
-import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
-import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
-import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
-import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
-import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
-import { NodeShapeMapping } from './cyjs-factory'
 import {
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
 } from '../../../models/VisualStyleModel/impl/CustomGraphicsImpl'
+import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/CyjsDirectMapper'
+import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/DirectMappingSelector'
+import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsVisualPropertyName'
+import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
+import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
+import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import { NodeShapeMapping } from './cyjs-factory'
 
 /**
  * Helper to update edge arrow shape and fill properties on a Cytoscape.js element.

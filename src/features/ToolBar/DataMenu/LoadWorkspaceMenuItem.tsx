@@ -1,6 +1,7 @@
 import { Box, MenuItem, Tooltip } from '@mui/material'
-import { KeycloakContext } from '../../../init/keycloak'
 import { ReactElement, useContext, useState } from 'react'
+
+import { KeycloakContext } from '../../../init/keycloak'
 import { BaseMenuProps } from '../BaseMenuProps'
 import { LoadWorkspaceDialog } from './LoadWorkspaceDialog'
 

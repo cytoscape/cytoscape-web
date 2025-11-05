@@ -1,4 +1,4 @@
-import { Transaction, Dexie } from 'dexie'
+import { Dexie,Transaction } from 'dexie'
 
 import { logDb } from '../debug'
 export interface DexieMigration {

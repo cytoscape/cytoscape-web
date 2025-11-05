@@ -1,10 +1,10 @@
-import {
-  validMappingsForVP,
-  typesCanBeMapped,
-} from './MappingFunctionImpl'
-import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
-import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { ValueTypeName } from '../../TableModel'
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
+import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
+import {
+  typesCanBeMapped,
+  validMappingsForVP,
+} from './MappingFunctionImpl'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/MappingFunctionImpl.test.ts
 

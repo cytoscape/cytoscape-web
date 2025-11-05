@@ -1,11 +1,10 @@
 import { Rectangle } from '@glideapps/glide-data-grid';
+import { Box } from '@mui/material';
 import React, {
   useMemo,
   useRef
 } from 'react';
 import { usePopper } from 'react-popper';
-
-import { Box } from '@mui/material';
 interface TableBrowserContextMenuProps {
   bounds: Rectangle,
   children: React.ReactNode

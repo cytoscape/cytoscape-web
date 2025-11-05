@@ -1,9 +1,10 @@
 import { Core, NodeCollection, NodeSingular } from 'cytoscape'
+
+import { logUi } from '../../../../debug'
 import { IdType } from '../../../../models/IdType'
 import { Table, ValueType } from '../../../../models/TableModel'
 import { SubsystemTag } from '../../model/HcxMetaTag'
 import { D3TreeNode } from './D3TreeNode'
-import { logUi } from '../../../../debug'
 
 export const DuplicateNodeSeparator = '-'
 /**

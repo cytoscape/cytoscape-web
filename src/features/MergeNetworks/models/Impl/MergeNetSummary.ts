@@ -1,17 +1,18 @@
 import cloneDeep from 'lodash/cloneDeep'
+
+import { logApp } from '../../../../debug'
 import { IdType } from '../../../../models/IdType'
 import {
   NetworkProperty,
   NetworkSummary,
 } from '../../../../models/NetworkSummaryModel'
-import { MatchingTable } from '../MatchingTable'
-import { getMatchingTableRows } from './MatchingTableImpl'
 import {
   isBooleanArray,
   isNumberArray,
   isStringArray,
 } from '../../utils/helper-functions'
-import { logApp } from '../../../../debug'
+import { MatchingTable } from '../MatchingTable'
+import { getMatchingTableRows } from './MatchingTableImpl'
 
 export function mergeNetSummary(
   fromNetworks: IdType[],

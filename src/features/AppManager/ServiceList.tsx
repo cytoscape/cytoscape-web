@@ -1,16 +1,16 @@
+import DeleteIcon from '@mui/icons-material/Delete'
 import {
+  Box,
+  IconButton,
+  Link,
   List,
   ListItem,
   ListItemText,
   Typography,
-  Box,
-  IconButton,
-  Link,
 } from '@mui/material'
-import { ServiceApp } from '../../models/AppModel/ServiceApp'
 
-import DeleteIcon from '@mui/icons-material/Delete'
 import { useAppStore } from '../../hooks/stores/AppStore'
+import { ServiceApp } from '../../models/AppModel/ServiceApp'
 
 export const ServiceList = () => {
   const serviceApps: Record<string, ServiceApp> = useAppStore(

@@ -1,5 +1,5 @@
 import { IdType } from '../IdType'
-import { Table, Column } from '.'
+import { Column,Table } from '.'
 
 export interface TableFn {
   createTable: (id: IdType) => Table

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+
 import { useUiStateStore } from '../hooks/stores/UiStateStore'
 
 export const RedirectPanel = (): JSX.Element => {

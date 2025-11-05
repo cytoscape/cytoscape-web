@@ -1,10 +1,11 @@
-import MenuItem from '@mui/material/MenuItem'
+import { Button, FormHelperText, Stack } from '@mui/material'
 import FormControl from '@mui/material/FormControl'
+import MenuItem from '@mui/material/MenuItem'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
 import { useEffect, useState } from 'react'
-import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStore'
-import { Button, FormHelperText, Stack } from '@mui/material'
+
 import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
+import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStore'
 
 export const StyleSelector = (): JSX.Element => {
   const [selectedStyleName, setSelectedStyleName] = useState<string>('')

@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import {
   Button,
   Checkbox,
@@ -13,14 +12,16 @@ import {
   Paper,
   PaperProps,
 } from '@mui/material'
+import { useEffect, useState } from 'react'
 import Draggable from 'react-draggable'
+
 import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
-import { LayoutSelector } from './LayoutSelector'
-import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
-import { ValueType } from '../../../models/TableModel'
-import { Property } from '../../../models/PropertyModel/Property'
-import { Network } from '../../../models/NetworkModel'
 import { IdType } from '../../../models/IdType'
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { Network } from '../../../models/NetworkModel'
+import { Property } from '../../../models/PropertyModel/Property'
+import { ValueType } from '../../../models/TableModel'
+import { LayoutSelector } from './LayoutSelector'
 import { ValueEditor } from './ValueEditor/ValueEditor'
 
 const DraggablePaper = (props: PaperProps): JSX.Element => {

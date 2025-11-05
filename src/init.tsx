@@ -1,28 +1,26 @@
-import * as ReactDOM from 'react-dom/client'
-import { enableMapSet } from 'immer'
-import React from 'react'
-
 import './index.css'
 
-import appConfig from './assets/config.json'
-import { AppConfigContext } from './AppConfigContext'
+import { enableMapSet } from 'immer'
+import React from 'react'
+import * as ReactDOM from 'react-dom/client'
+
 import { App } from './App'
-
-import { EmailVerificationModal } from './features/EmailVerification'
-import { FeatureAvailabilityProvider } from './features/FeatureAvailability'
-import ErrorBoundary from './features/ErrorBoundary'
-
+import { AppConfigContext } from './AppConfigContext'
+import appConfig from './assets/config.json'
 // this allows immer to work with Map and Set
 import { initializeDebug, logStartup } from './debug'
+import { EmailVerificationModal } from './features/EmailVerification'
+import ErrorBoundary from './features/ErrorBoundary'
+import { FeatureAvailabilityProvider } from './features/FeatureAvailability'
+import { initializeGoogleAnalytics } from './init/google-analytics'
+import { initializeKeycloak, KeycloakContext } from './init/keycloak'
 import {
   INITIAL_LOADING_SCREEN_ID,
   removeLoadingScreenAfterRender,
+  removeMessage,
   updateLoadingMessage,
   updateVersionText,
-  removeMessage,
 } from './init/loading-screen'
-import { initializeGoogleAnalytics } from './init/google-analytics'
-import { initializeKeycloak, KeycloakContext } from './init/keycloak'
 import { initializeTabManager } from './init/tab-manager'
 
 const initializeApp = () => {

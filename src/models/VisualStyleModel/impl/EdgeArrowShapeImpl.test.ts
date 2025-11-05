@@ -1,8 +1,8 @@
+import { EdgeArrowShapeType } from '../VisualPropertyValue'
 import {
   isOpenShape,
   openShapeToFilledShape,
 } from './EdgeArrowShapeImpl'
-import { EdgeArrowShapeType } from '../VisualPropertyValue'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/EdgeArrowShapeImpl.test.ts
 

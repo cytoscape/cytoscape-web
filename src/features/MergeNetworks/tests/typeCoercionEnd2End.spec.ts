@@ -21,16 +21,16 @@ jest.mock('../../../models/NetworkModel/impl/NetworkImpl', () => {
     };
 });
 
-import { Table } from '../../../models/TableModel';
-import { unionMerge } from '../models/Impl/UnionMerge';
-import { Node } from '../../../models/NetworkModel/Node';
-import { Column } from '../../../models/TableModel/Column';
-import { Edge } from '../../../models/NetworkModel/Edge';
-import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
-import { MatchingTableRow } from '../models/MatchingTable';
 import { IdType } from "../../../models/IdType";
 import NetworkFn from "../../../models/NetworkModel";
+import { Edge } from '../../../models/NetworkModel/Edge';
 import { Network } from "../../../models/NetworkModel/Network";
+import { Node } from '../../../models/NetworkModel/Node';
+import { Table } from '../../../models/TableModel';
+import { Column } from '../../../models/TableModel/Column';
+import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
+import { unionMerge } from '../models/Impl/UnionMerge';
+import { MatchingTableRow } from '../models/MatchingTable';
 
 beforeEach(() => {
     jest.resetAllMocks();

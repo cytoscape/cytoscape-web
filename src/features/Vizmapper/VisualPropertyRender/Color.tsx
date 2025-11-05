@@ -1,14 +1,15 @@
-import { ColorType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 import { Box, Button, Tab, Tabs } from '@mui/material'
-import { ChromePicker, SwatchesPicker, CompactPicker } from 'react-color'
-import React from 'react'
 import debounce from 'lodash.debounce'
+import React from 'react'
+import { ChromePicker, CompactPicker,SwatchesPicker } from 'react-color'
+
 import {
   CompactCustomColors,
-  VirdisCustomColors,
-  SequentialCustomColors,
   DivergingCustomColors,
+  SequentialCustomColors,
+  VirdisCustomColors,
 } from '../../../models/VisualStyleModel/impl/CustomColor'
+import { ColorType } from '../../../models/VisualStyleModel/VisualPropertyValue'
 
 export function ColorPicker(props: {
   currentValue: ColorType | null

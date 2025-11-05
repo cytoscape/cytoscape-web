@@ -1,5 +1,5 @@
 import { ValueTypeName } from "../../../models/TableModel";
-import { typeCoercion, getResonableCompatibleConvertionType, isConvertible, getPlainType } from "../utils/attributes-operations";
+import { getPlainType,getResonableCompatibleConvertionType, isConvertible, typeCoercion } from "../utils/attributes-operations";
 
 describe('Test type coercion functions', () => {
     it('should return true if the types are convertible', () => {

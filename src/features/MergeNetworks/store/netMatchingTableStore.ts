@@ -1,12 +1,13 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+
 import { IdType } from '../../../models/IdType'
 import { Column, ValueTypeName } from '../../../models/TableModel'
-import { MatchingTableRow } from '../models/MatchingTable'
-import { filterRows, getMergedType } from '../utils/helper-functions'
-import { NetworkRecord } from '../models/DataInterfaceForMerge'
-import { getResonableCompatibleConvertionType } from '../utils/attributes-operations'
 import { generateUniqueName } from '../../../utils/generate-unique-name'
+import { NetworkRecord } from '../models/DataInterfaceForMerge'
+import { MatchingTableRow } from '../models/MatchingTable'
+import { getResonableCompatibleConvertionType } from '../utils/attributes-operations'
+import { filterRows, getMergedType } from '../utils/helper-functions'
 
 interface NetMatchingTableState {
   rows: MatchingTableRow[]

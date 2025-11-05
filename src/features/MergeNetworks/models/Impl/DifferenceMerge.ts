@@ -1,13 +1,13 @@
 import { IdType } from "../../../../models/IdType";
-import TableFn from "../../../../models/TableModel";
-import { NetworkRecord, Pair } from "../DataInterfaceForMerge";
 import NetworkFn, { Edge, Network, Node } from "../../../../models/NetworkModel";
+import TableFn from "../../../../models/TableModel";
 import { Column } from "../../../../models/TableModel/Column";
 import { ListOfValueType, SingleValueType, ValueType } from "../../../../models/TableModel/ValueType";
+import { addMergedAtt, castAttributes, duplicateAttName,getKeybyAttribute, mergeAttributes, preprocess } from "../../utils/attributes-operations";
+import { removePair } from "../../utils/helper-functions";
+import { NetworkRecord, Pair } from "../DataInterfaceForMerge";
 import { MatchingTable } from "../MatchingTable";
 import { getMergedAttributes, getReversedMergedAttMap } from "./MatchingTableImpl";
-import { removePair } from "../../utils/helper-functions";
-import { preprocess, castAttributes, addMergedAtt, getKeybyAttribute, mergeAttributes, duplicateAttName } from "../../utils/attributes-operations";
 
 export function differenceMerge(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>,

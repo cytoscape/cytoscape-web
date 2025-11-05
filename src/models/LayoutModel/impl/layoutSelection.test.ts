@@ -1,16 +1,16 @@
-import {
-  LayoutEngines,
-  defAlgorithm,
-  defHierarchicalAlgorithm,
-  getLayout,
-  ELE_THRESHOLD,
-  getDefaultLayout,
-} from './layoutSelection'
-import { LayoutEngine } from '../LayoutEngine'
-import { LayoutAlgorithm } from '../LayoutAlgorithm'
+import NetworkFn from '../../NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { getBaseSummary } from '../../NetworkSummaryModel/impl/NetworkSummaryImpl'
-import NetworkFn from '../../NetworkModel'
+import { LayoutAlgorithm } from '../LayoutAlgorithm'
+import { LayoutEngine } from '../LayoutEngine'
+import {
+  defAlgorithm,
+  defHierarchicalAlgorithm,
+  ELE_THRESHOLD,
+  getDefaultLayout,
+  getLayout,
+  LayoutEngines,
+} from './layoutSelection'
 
 // Mock the isHCX function to avoid dependency issues
 jest.mock('../../../features/HierarchyViewer/utils/hierarchy-util', () => ({

@@ -1,16 +1,14 @@
-import { SxProps, Box } from '@mui/material'
+import { Box,SxProps } from '@mui/material'
 
+import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
+import { useUndoStack } from '../../../hooks/useUndoStack'
+import { IdType } from '../../../models/IdType'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import {
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
-import { IdType } from '../../../models/IdType'
-
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-
 import { VisualPropertyValueForm } from './VisualPropertyValueForm'
-import { useUndoStack } from '../../../hooks/useUndoStack'
-import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 
 export function DefaultValueForm(props: {
   visualProperty: VisualProperty<VisualPropertyValueType>

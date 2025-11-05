@@ -1,28 +1,29 @@
 import {
-  List,
-  Stack,
-  Center,
   Button,
-  Title,
+  Center,
+  Container,
   Group,
-  Text,
+  List,
   rem,
   Space,
-  Container,
+  Stack,
+  Text,
+  Title,
 } from '@mantine/core'
+import { Dropzone } from '@mantine/dropzone'
+import { modals } from '@mantine/modals'
+import { notifications } from '@mantine/notifications'
 import { Box } from '@mui/material'
 import { IconUpload, IconX } from '@tabler/icons-react'
-import { Dropzone } from '@mantine/dropzone'
-import { notifications } from '@mantine/notifications'
 import Papa from 'papaparse'
-import { modals } from '@mantine/modals'
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
-import {
-  useJoinTableToNetworkStore,
-  JoinTableToNetworkStep,
-} from '../../store/joinTableToNetworkStore'
+
 import { useMessageStore } from '../../../../hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../../models/MessageModel'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
+import {
+  JoinTableToNetworkStep,
+  useJoinTableToNetworkStore,
+} from '../../store/joinTableToNetworkStore'
 
 export function TableUpload(props: BaseMenuProps) {
   const setFile = useJoinTableToNetworkStore((state) => state.setFile)

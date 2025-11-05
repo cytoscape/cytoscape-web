@@ -1,38 +1,41 @@
-import * as React from 'react'
+import AddCircleIcon from '@mui/icons-material/AddCircle'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
+import ArrowRightIcon from '@mui/icons-material/ArrowRight'
+import Delete from '@mui/icons-material/DisabledByDefault'
+import EditIcon from '@mui/icons-material/Edit'
+import Palette from '@mui/icons-material/Palette'
 import {
-  Button,
   Box,
-  Typography,
+  Button,
+  IconButton,
   Paper,
   Popover,
-  IconButton,
   Tooltip,
+  Typography,
 } from '@mui/material'
-import { scaleLinear } from '@visx/scale'
-import { extent } from 'd3-array'
-
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
-import Delete from '@mui/icons-material/DisabledByDefault'
-import AddCircleIcon from '@mui/icons-material/AddCircle'
-import Palette from '@mui/icons-material/Palette'
-import EditIcon from '@mui/icons-material/Edit'
+import Checkbox from '@mui/material/Checkbox'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import FormGroup from '@mui/material/FormGroup'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
+import { scaleLinear } from '@visx/scale'
+import { extent } from 'd3-array'
+import { color } from 'd3-color'
+import debounce from 'lodash/debounce'
+import * as React from 'react'
+import Draggable from 'react-draggable'
 
-import RdBu from '../../../../../assets/RdBu.png'
-import PuOr from '../../../../../assets/PuOr.png'
-import PRGn from '../../../../../assets/PRGn.png'
-import Spectral from '../../../../../assets/Spectral.png'
 import BrBG from '../../../../../assets/BrBG.png'
-import RdYlGn from '../../../../../assets/RdYlGn.png'
 import PiYG from '../../../../../assets/PiYG.png'
+import PRGn from '../../../../../assets/PRGn.png'
+import PuOr from '../../../../../assets/PuOr.png'
+import RdBu from '../../../../../assets/RdBu.png'
 import RdGy from '../../../../../assets/RdGy.png'
 import RdYlBu from '../../../../../assets/RdYlBu.png'
-
-import { color } from 'd3-color'
-import Draggable from 'react-draggable'
-import debounce from 'lodash/debounce'
-
+import RdYlGn from '../../../../../assets/RdYlGn.png'
+import Spectral from '../../../../../assets/Spectral.png'
+import { useVisualStyleStore } from '../../../../../hooks/stores/VisualStyleStore'
 import { IdType } from '../../../../../models/IdType'
 import {
   VisualProperty,
@@ -40,19 +43,10 @@ import {
 } from '../../../../../models/VisualStyleModel'
 import { ContinuousMappingFunction } from '../../../../../models/VisualStyleModel/VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
-
 import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
-import { useVisualStyleStore } from '../../../../../hooks/stores/VisualStyleStore'
-
 import { ColorGradient } from './ColorGradient'
-import { Handle, addHandle, editHandle, removeHandle } from './Handle'
-
-import FormGroup from '@mui/material/FormGroup'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import Checkbox from '@mui/material/Checkbox'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
-import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
-import ArrowRightIcon from '@mui/icons-material/ArrowRight'
+import { addHandle, editHandle, Handle, removeHandle } from './Handle'
 
 // color mapping form for now
 export function ContinuousColorMappingForm(props: {

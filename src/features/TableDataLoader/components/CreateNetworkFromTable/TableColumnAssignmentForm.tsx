@@ -1,28 +1,32 @@
+import 'primereact/resources/themes/md-light-indigo/theme.css'
+
 import {
-  Center,
-  Button,
-  Title,
-  Text,
-  Space,
+  Alert,
   Box,
-  Popover,
+  Button,
+  Center,
   Divider,
   Group,
-  Tooltip,
-  Alert,
-  Switch,
-  NumberInput,
-  Select,
-  TextInput,
-  Radio,
   Group as MantineGroup,
+  NumberInput,
+  Popover,
+  Radio,
+  Select,
+  Space,
+  Switch,
+  Text,
+  TextInput,
+  Title,
+  Tooltip,
 } from '@mantine/core'
-
+import {
+  IconAlertCircle,
+  IconInfoCircle,
+  IconSettings,
+} from '@tabler/icons-react'
 import Papa from 'papaparse'
-
-import 'primereact/resources/themes/md-light-indigo/theme.css'
-import { DataTable, DataTableValue } from 'primereact/datatable'
 import { Column } from 'primereact/column'
+import { DataTable, DataTableValue } from 'primereact/datatable'
 import {
   useCallback,
   useContext,
@@ -32,28 +36,29 @@ import {
   useState,
 } from 'react'
 
-import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
-import {
-  ColumnAssignmentTypeForm,
-  ColumnAssignmentTypeRender,
-} from './ColumnMeaningForm'
-import {
-  IconAlertCircle,
-  IconInfoCircle,
-  IconSettings,
-} from '@tabler/icons-react'
+import { AppConfigContext } from '../../../../AppConfigContext'
+import { putNetworkSummaryToDb } from '../../../../db'
+import { useUrlNavigation } from '../../../../hooks/navigation/useUrlNavigation'
+import { useNetworkStore } from '../../../../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../../hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
 import { ValueTypeName } from '../../../../models/TableModel'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { ColumnAssignmentState } from '../../model/ColumnAssignmentState'
 import { ColumnAssignmentType } from '../../model/ColumnAssignmentType'
 import { DelimiterType } from '../../model/DelimiterType'
 import {
-  validValueTypes,
-  updateColumnAssignment,
-  validColumnAssignmentTypes,
-  updateColumnType,
   createNetworkFromTableData,
-  unselectAllColumns,
   selectAllColumns,
+  unselectAllColumns,
+  updateColumnAssignment,
+  updateColumnType,
+  validColumnAssignmentTypes,
+  validValueTypes,
   valueTypeName2Label,
 } from '../../model/impl/CreateNetworkFromTable'
 import {
@@ -64,18 +69,12 @@ import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../../store/createNetworkFromTableStore'
-import { putNetworkSummaryToDb } from '../../../../db'
-import { useNetworkStore } from '../../../../hooks/stores/NetworkStore'
-import { useTableStore } from '../../../../hooks/stores/TableStore'
-import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
-import { AppConfigContext } from '../../../../AppConfigContext'
+import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
+import {
+  ColumnAssignmentTypeForm,
+  ColumnAssignmentTypeRender,
+} from './ColumnMeaningForm'
 import { NetworkNameInput } from './NetworkNameInput'
-import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
-import { useNetworkSummaryStore } from '../../../../hooks/stores/NetworkSummaryStore'
-import { useUrlNavigation } from '../../../../hooks/navigation/useUrlNavigation'
 
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)

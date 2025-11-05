@@ -1,12 +1,12 @@
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
+import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
 import {
   CustomGraphicsType,
   NodeLabelPositionType,
 } from '../VisualPropertyValue'
 import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
-import { VisualStyle } from '../VisualStyle'
-import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
-import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
+import { VisualStyle } from '../VisualStyle'
 
 export const DEFAULT_NODE_LABEL_POSITION: NodeLabelPositionType = {
   HORIZONTAL_ALIGN: 'center',

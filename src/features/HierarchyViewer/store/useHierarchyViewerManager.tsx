@@ -1,18 +1,6 @@
-import { useEffect, useState } from 'react'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import {
-  NetworkProperty,
-  NetworkSummary,
-} from '../../../models/NetworkSummaryModel'
-import { IdType } from '../../../models/IdType'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { PanelState } from '../../../models/UiModel/PanelState'
-import { Panel } from '../../../models/UiModel/Panel'
-import { ValueType } from '../../../models/TableModel'
-import { HcxMetaData } from '../model/HcxMetaData'
-import { getHcxProps } from '../utils/hierarchy-util'
 import difference from 'lodash/difference'
+import { useEffect, useState } from 'react'
+
 import {
   deleteNetworkFromDb,
   deleteNetworkViewsFromDb,
@@ -20,9 +8,22 @@ import {
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
 } from '../../../db'
-import { useRendererStore } from '../../../hooks/stores/RendererStore'
-import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
 import { logDb } from '../../../debug'
+import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { useRendererStore } from '../../../hooks/stores/RendererStore'
+import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { IdType } from '../../../models/IdType'
+import {
+  NetworkProperty,
+  NetworkSummary,
+} from '../../../models/NetworkSummaryModel'
+import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
+import { ValueType } from '../../../models/TableModel'
+import { Panel } from '../../../models/UiModel/Panel'
+import { PanelState } from '../../../models/UiModel/PanelState'
+import { HcxMetaData } from '../model/HcxMetaData'
+import { getHcxProps } from '../utils/hierarchy-util'
 
 /**
  *  Switch the panel state based on the network meta data

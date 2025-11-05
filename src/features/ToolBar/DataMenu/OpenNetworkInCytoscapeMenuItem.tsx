@@ -1,22 +1,21 @@
-import { MenuItem, Tooltip, Box } from '@mui/material'
-import { ReactElement } from 'react'
-import { BaseMenuProps } from '../BaseMenuProps'
-
 // @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
+import { Box,MenuItem, Tooltip } from '@mui/material'
+import { ReactElement } from 'react'
 
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
 import { useTableStore } from '../../../hooks/stores/TableStore'
+import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
+import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useOpenNetworkInCytoscape } from '../../../hooks/useOpenInCytoscapeDesktop'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
 import { useFeatureAvailability } from '../../FeatureAvailability'
-import { useOpenNetworkInCytoscape } from '../../../hooks/useOpenInCytoscapeDesktop'
+import { BaseMenuProps } from '../BaseMenuProps'
 
 export const OpenNetworkInCytoscapeMenuItem = ({
   handleClose,

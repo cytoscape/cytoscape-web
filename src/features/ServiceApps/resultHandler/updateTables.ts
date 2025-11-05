@@ -1,9 +1,10 @@
 import { useCallback } from 'react'
-import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { TableType } from '../../../models/StoreModel/TableStoreModel'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { Column, ValueType, Table } from '../../../models'
+
 import { logApp } from '../../../debug'
+import { useTableStore } from '../../../hooks/stores/TableStore'
+import { Column, Table,ValueType } from '../../../models'
+import { TableType } from '../../../models/StoreModel/TableStoreModel'
+import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 interface UpdatedTable {
   id: TableType

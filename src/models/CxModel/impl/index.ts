@@ -11,4 +11,4 @@ export { createCyNetworkFromCx2 } from './converter'
 export { exportCyNetworkToCx2 } from './exporter'
 
 // Validator utilities
-export { validateCX2, isValidCx2Network } from './validator'
+export { isValidCx2Network,validateCX2 } from './validator'

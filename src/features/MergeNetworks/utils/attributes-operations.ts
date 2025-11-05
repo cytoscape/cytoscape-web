@@ -1,4 +1,5 @@
 import isString from 'lodash/isString'
+
 import { IdType } from '../../../models/IdType'
 import TableFn, {
   Column,
@@ -6,15 +7,15 @@ import TableFn, {
   ValueTypeName,
 } from '../../../models/TableModel'
 import {
-  ListOfValueType,
-  SingleValueType,
-} from '../../../models/TableModel/ValueType'
-import {
   isListType,
   isSingleType,
 } from '../../../models/TableModel/impl/ValueTypeImpl'
-import { MatchingTable } from '../models/MatchingTable'
+import {
+  ListOfValueType,
+  SingleValueType,
+} from '../../../models/TableModel/ValueType'
 import { NetworkRecord } from '../models/DataInterfaceForMerge'
+import { MatchingTable } from '../models/MatchingTable'
 
 export function preprocess(
   toNetwork: IdType,
@@ -277,7 +278,7 @@ export function getPlainType(type: ValueTypeName): ValueTypeName {
 export function getResonableCompatibleConvertionType(
   types: Set<ValueTypeName>,
 ): ValueTypeName {
-  let curr = types.values().next().value
+  const curr = types.values().next().value
   let li = isListType(curr)
   let ret = getPlainType(curr)
   for (const type of types) {

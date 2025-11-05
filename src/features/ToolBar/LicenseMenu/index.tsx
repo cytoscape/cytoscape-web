@@ -1,7 +1,8 @@
 import Button from '@mui/material/Button'
-import { useRef, useState } from 'react'
-import { DropdownMenuProps } from '../DropdownMenuProps'
 import { PrimeReactProvider } from 'primereact/api'
+import { useRef, useState } from 'react'
+
+import { DropdownMenuProps } from '../DropdownMenuProps'
 import { LicenseDialog } from './LicenseDialog'
 
 export const LicenseMenu: React.FC<DropdownMenuProps> = (

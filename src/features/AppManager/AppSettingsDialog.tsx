@@ -1,15 +1,16 @@
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
-  useTheme,
   Theme,
+  useTheme,
 } from '@mui/material'
-import { ServiceListPanel } from './ServiceListPanel'
+
 import { AppListPanel } from './AppListPanel'
+import { ServiceListPanel } from './ServiceListPanel'
 
 interface AppSettingsDialogProps {
   openDialog: boolean

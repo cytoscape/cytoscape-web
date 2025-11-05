@@ -1,24 +1,25 @@
-import { IdType } from '../../models/IdType'
-import {
-  AttributeName,
-  Table,
-  ValueType,
-  ValueTypeName,
-} from '../../models/TableModel'
-import { subscribeWithSelector } from 'zustand/middleware'
 import { create, StateCreator, StoreApi } from 'zustand'
+import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
-import { columnValueSet } from '../../models/TableModel/impl/InMemoryTable'
-import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
-import { useWorkspaceStore } from './WorkspaceStore'
+
 import { clearTablesFromDb, deleteTablesFromDb, putTablesToDb } from '../../db'
+import { logStore } from '../../debug'
+import { IdType } from '../../models/IdType'
 import {
   CellEdit,
   TableRecord,
   TableStore,
   TableType,
 } from '../../models/StoreModel/TableStoreModel'
-import { logStore } from '../../debug'
+import {
+  AttributeName,
+  Table,
+  ValueType,
+  ValueTypeName,
+} from '../../models/TableModel'
+import { columnValueSet } from '../../models/TableModel/impl/InMemoryTable'
+import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
+import { useWorkspaceStore } from './WorkspaceStore'
 
 const persist =
   (config: StateCreator<TableStore>) =>

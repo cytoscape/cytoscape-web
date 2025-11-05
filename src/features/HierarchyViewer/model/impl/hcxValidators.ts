@@ -1,14 +1,12 @@
-import { HcxValidationResult } from '../HcxValidator'
-import { HcxVersion } from '../HcxVersion'
-
+import config from '../../../../assets/config.json'
 import {
-  NetworkSummary,
   NetworkProperty,
+  NetworkSummary,
 } from '../../../../models/NetworkSummaryModel'
 import { Table } from '../../../../models/TableModel'
 import { HcxMetaTag, SubsystemTag } from '../HcxMetaTag'
-
-import config from '../../../../assets/config.json'
+import { HcxValidationResult } from '../HcxValidator'
+import { HcxVersion } from '../HcxVersion'
 
 export const HCX_VERSION_0_1: HcxVersion = 'hierarchy_v0.1'
 

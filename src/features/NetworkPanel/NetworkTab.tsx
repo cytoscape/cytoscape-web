@@ -1,8 +1,9 @@
 import { Box } from '@mui/material'
 import { ReactElement } from 'react'
-import { FloatingToolBar } from '../FloatingToolBar'
+
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
+import { FloatingToolBar } from '../FloatingToolBar'
 
 interface NetworkTabProps {
   network: Network

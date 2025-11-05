@@ -1,24 +1,25 @@
 import {
   Box,
+  Checkbox,
   FormControl,
   FormControlLabel,
   MenuItem,
   Select,
-  Checkbox,
   TextField,
   Typography,
 } from '@mui/material'
-import { forwardRef, useImperativeHandle, useState } from 'react'
 //@ts-expect-error
 import { saveAs } from 'file-saver'
+import { forwardRef, useImperativeHandle, useState } from 'react'
+
 import { useRendererFunctionStore } from '../../../../hooks/stores/RendererFunctionStore'
+import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
+import { IdType } from '../../../../models/IdType'
 import {
   ExportFormRef,
   ExportImageFormatProps,
 } from './ExportNetworkToImageMenuItem'
-import { IdType } from '../../../../models/IdType'
-import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
-import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
 
 export const PaperSize = {
   LETTER: 'LETTER',

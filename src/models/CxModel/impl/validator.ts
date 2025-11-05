@@ -1,6 +1,7 @@
+import { z } from 'zod'
+
 import { Cx2 } from '../Cx2'
 import { ValidationIssue, ValidationResult } from '../Cx2/Validator'
-import { z } from 'zod'
 
 export const findAspect = (
   cx: unknown[],

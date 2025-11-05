@@ -12,6 +12,6 @@
  *
  */
 export const AppType = {
-  Service: 'service' as 'service',
-  Client: 'client' as 'client',
+  Service: 'service' as const,
+  Client: 'client' as const,
 } as const

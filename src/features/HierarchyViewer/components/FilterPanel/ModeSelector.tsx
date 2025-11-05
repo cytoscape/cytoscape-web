@@ -1,12 +1,13 @@
 import {
+  Box,
+  Container,
+  FormControl,
   FormControlLabel,
+  FormLabel,
   Radio,
   RadioGroup,
-  FormControl,
-  FormLabel,
-  Container,
-  Box,
 } from '@mui/material'
+
 import { DisplayMode } from '../../../../models/FilterModel/DisplayMode'
 
 interface AttributeSelectorProps {

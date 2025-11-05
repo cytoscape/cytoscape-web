@@ -1,16 +1,16 @@
 import { IdType } from '../IdType'
-import { ValueType, AttributeName, ValueTypeName } from '../TableModel'
+import { AttributeName, ValueType, ValueTypeName } from '../TableModel'
 import {
-  VisualStyle,
+  Bypass,
+  ContinuousFunctionControlPoint,
+  ContinuousMappingFunction,
+  DiscreteMappingFunction,
+  MappingFunctionType,
+  PassthroughMappingFunction,
   VisualPropertyName,
   VisualPropertyValueType,
-  ContinuousFunctionControlPoint,
-  DiscreteMappingFunction,
-  ContinuousMappingFunction,
-  PassthroughMappingFunction,
   VisualPropertyValueTypeName,
-  Bypass,
-  MappingFunctionType,
+  VisualStyle,
 } from '../VisualStyleModel'
 
 export interface VisualStyleState {

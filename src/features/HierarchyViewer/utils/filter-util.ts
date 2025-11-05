@@ -1,7 +1,7 @@
 import {
+  DisplayMode,
   FilterConfig,
   FilterWidgetType,
-  DisplayMode,
 } from '../../../models/FilterModel'
 import { IdType } from '../../../models/IdType'
 import { GraphObjectType } from '../../../models/NetworkModel'

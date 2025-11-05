@@ -1,13 +1,14 @@
 import {
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
   Typography,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
+
 import { logUi } from '../../../debug'
 
 interface LicenseDialogProps {

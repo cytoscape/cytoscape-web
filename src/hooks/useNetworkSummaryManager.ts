@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { useNetworkStore } from './stores/NetworkStore'
-import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
+
 import { Network } from '../models/NetworkModel'
 import { UpdateEventType } from '../models/StoreModel/NetworkStoreModel'
+import { useNetworkStore } from './stores/NetworkStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 
 export const useNetworkSummaryManager = (): void => {
   const update = useNetworkSummaryStore((state) => state.update)

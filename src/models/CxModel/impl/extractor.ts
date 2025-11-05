@@ -1,25 +1,24 @@
-import { Cx2 } from '../Cx2'
-import { Aspect } from '../Cx2/Aspect'
-import {
-  NetworkAttributeValue,
-  NetworkAttributes,
-} from '../Cx2/CoreAspects/NetworkAttributes'
-import { CoreAspectTag } from '../Cx2/CoreAspectTag'
-import { CxDescriptor } from '../Cx2/CxDescriptor'
-import { Node } from '../Cx2/CoreAspects/Node'
-import { Edge } from '../Cx2/CoreAspects/Edge'
-import { AttributeDeclarations } from '../Cx2/CoreAspects/AttributeDeclarations'
-import { VisualProperties } from '../Cx2/CoreAspects/VisualProperties'
-
-import { CxValue } from '../Cx2/CxValue'
-import { Attribute } from '../Cx2/CoreAspects/Attribute'
-import { NodeBypasses } from '../Cx2/CoreAspects/NodeBypasses'
-import { EdgeBypasses } from '../Cx2/CoreAspects/EdgeBypasses'
+import { OpaqueAspects } from '../../OpaqueAspectModel/OpaqueAspects'
 import {
   VisualEditorProperties,
   VisualStyleOptions,
 } from '../../VisualStyleModel/VisualStyleOptions'
-import { OpaqueAspects } from '../../OpaqueAspectModel/OpaqueAspects'
+import { Cx2 } from '../Cx2'
+import { Aspect } from '../Cx2/Aspect'
+import { Attribute } from '../Cx2/CoreAspects/Attribute'
+import { AttributeDeclarations } from '../Cx2/CoreAspects/AttributeDeclarations'
+import { Edge } from '../Cx2/CoreAspects/Edge'
+import { EdgeBypasses } from '../Cx2/CoreAspects/EdgeBypasses'
+import {
+  NetworkAttributes,
+  NetworkAttributeValue,
+} from '../Cx2/CoreAspects/NetworkAttributes'
+import { Node } from '../Cx2/CoreAspects/Node'
+import { NodeBypasses } from '../Cx2/CoreAspects/NodeBypasses'
+import { VisualProperties } from '../Cx2/CoreAspects/VisualProperties'
+import { CoreAspectTag } from '../Cx2/CoreAspectTag'
+import { CxDescriptor } from '../Cx2/CxDescriptor'
+import { CxValue } from '../Cx2/CxValue'
 
 export const CX_ANNOTATIONS_KEY = '__Annotations'
 
@@ -273,15 +272,15 @@ const getOptionalAspects = (cx2: Cx2): OpaqueAspects[] => {
 }
 
 export {
-  getNodes,
+  getAttributeDeclarations,
+  getEdgeAttributes,
+  getEdgeBypasses,
   getEdges,
   getNetworkAttributes,
-  getAttributeDeclarations,
   getNodeAttributes,
-  getEdgeAttributes,
-  getVisualProperties,
   getNodeBypasses,
-  getEdgeBypasses,
-  getVisualEditorProperties,
+  getNodes,
   getOptionalAspects,
+  getVisualEditorProperties,
+  getVisualProperties,
 }

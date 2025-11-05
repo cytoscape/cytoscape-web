@@ -1,5 +1,5 @@
-import { Column, Table } from '..'
 import { IdType } from '../../IdType'
+import { Column, Table } from '..'
 import { AttributeName } from '../AttributeName'
 import { ValueType } from '../ValueType'
 

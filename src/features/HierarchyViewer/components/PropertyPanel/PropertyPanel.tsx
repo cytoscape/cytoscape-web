@@ -7,11 +7,12 @@ import {
   Typography,
   useTheme,
 } from '@mui/material'
-import { ValueType } from '../../../../models/TableModel'
+
 import { useTableStore } from '../../../../hooks/stores/TableStore'
 import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
-import { MessagePanel } from '../../../Messages'
+import { ValueType } from '../../../../models/TableModel'
 import { NetworkView } from '../../../../models/ViewModel'
+import { MessagePanel } from '../../../Messages'
 
 interface PropertyPanelProps {
   networkId: string

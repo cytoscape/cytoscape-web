@@ -1,18 +1,19 @@
-import { AppConfigContext } from '../../AppConfigContext'
-import { IconButton, Tooltip } from '@mui/material'
 import { Share } from '@mui/icons-material'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
+import { IconButton, Tooltip } from '@mui/material'
 import { useContext, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Ui } from '../../models/UiModel'
-import { NetworkView } from '../../models/ViewModel'
+
+import { AppConfigContext } from '../../AppConfigContext'
+import { logUi } from '../../debug'
+import { useMessageStore } from '../../hooks/stores/MessageStore'
+import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
 import { useUiStateStore } from '../../hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { IdType } from '../../models'
-import { useMessageStore } from '../../hooks/stores/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
-import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
-import { logUi } from '../../debug'
+import { Ui } from '../../models/UiModel'
+import { NetworkView } from '../../models/ViewModel'
 
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300

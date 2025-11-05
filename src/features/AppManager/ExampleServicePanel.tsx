@@ -1,8 +1,9 @@
 import { Box, Button, Typography } from '@mui/material'
-import { ServiceApp } from '../../models/AppModel/ServiceApp'
-import { useAppStore } from '../../hooks/stores/AppStore'
 import { useContext } from 'react'
+
 import { AppConfig, AppConfigContext } from '../../AppConfigContext'
+import { useAppStore } from '../../hooks/stores/AppStore'
+import { ServiceApp } from '../../models/AppModel/ServiceApp'
 
 export const ExampleServicePanel = () => {
   const { defaultServices } = useContext<AppConfig>(AppConfigContext)

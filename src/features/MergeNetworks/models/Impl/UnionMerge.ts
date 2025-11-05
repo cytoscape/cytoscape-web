@@ -1,13 +1,13 @@
 import { IdType } from "../../../../models/IdType";
-import TableFn from "../../../../models/TableModel";
-import { NetworkRecord } from "../DataInterfaceForMerge";
 import NetworkFn, { Edge, Network, Node } from "../../../../models/NetworkModel";
+import TableFn from "../../../../models/TableModel";
 import { Column } from "../../../../models/TableModel/Column";
 import { SingleValueType, ValueType } from "../../../../models/TableModel/ValueType";
 import { attributeValueMatcher } from "../../utils/attributes-operations";
+import { addMergedAtt, castAttributes, duplicateAttName,getKeybyAttribute, mergeAttributes, preprocess } from "../../utils/attributes-operations";
+import { NetworkRecord } from "../DataInterfaceForMerge";
 import { MatchingTable } from "../MatchingTable";
 import { getMergedAttributes, getReversedMergedAttMap } from "./MatchingTableImpl";
-import { preprocess, castAttributes, addMergedAtt, getKeybyAttribute, mergeAttributes, duplicateAttName } from "../../utils/attributes-operations";
 
 export function unionMerge(fromNetworks: IdType[], toNetworkId: IdType, networkRecords: Record<IdType, NetworkRecord>,
     nodeAttributeMapping: MatchingTable, edgeAttributeMapping: MatchingTable, matchingAttribute: Record<IdType, Column>,
@@ -90,7 +90,7 @@ export function unionMerge(fromNetworks: IdType[], toNetworkId: IdType, networkR
 
         let shouldAddEdge = true;
         if (mergeWithinNetwork && mergedEdgeIds) {
-            let hasMatched = mergedEdgeIds.some(mergedEdgeId => {
+            const hasMatched = mergedEdgeIds.some(mergedEdgeId => {
                 const originalRow = initialEdgeRows[mergedEdgeId];
                 if (originalRow === undefined) {
                     throw new Error("Edge not found in the merged edge table");
@@ -203,7 +203,7 @@ export function unionMerge(fromNetworks: IdType[], toNetworkId: IdType, networkR
             const mergedEdgeIds = edgeMap.get(`${sourceId}-${targetId}`);
             let shouldAddEdge = true;
             if (mergedEdgeIds !== undefined) { // there is already an edge between the source and target node
-                let hasMatched = mergedEdgeIds.some(mergedEdgeId => {
+                const hasMatched = mergedEdgeIds.some(mergedEdgeId => {
                     const originalRow = mergedEdgeTable.rows.get(mergedEdgeId);
                     if (originalRow === undefined) {
                         throw new Error("Edge not found in the merged edge table");
