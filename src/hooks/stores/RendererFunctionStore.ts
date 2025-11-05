@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 import { IdType } from '../../models/IdType'
+import * as RendererFunctionImpl from '../../models/RendererFunctionModel/impl/rendererFunctionImpl'
 
 interface RendererFunctionStore {
   rendererFunctions: Map<string, Map<string, Function>>
@@ -38,44 +39,26 @@ export const useRendererFunctionStore = create(
       networkId?: IdType,
     ) => {
       set((state) => {
-        if (!state.rendererFunctions.has(rendererName)) {
-          state.rendererFunctions.set(rendererName, new Map<string, Function>())
-        }
-        state.rendererFunctions
-          .get(rendererName)
-          ?.set(functionName, rendererFunction)
-
-        if (networkId) {
-          if (!state.rendererFunctionsByNetworkId.has(networkId)) {
-            state.rendererFunctionsByNetworkId.set(
-              networkId,
-              new Map<string, Map<string, Function>>(),
-            )
-          }
-          if (
-            !state.rendererFunctionsByNetworkId
-              .get(networkId)
-              ?.has(rendererName)
-          ) {
-            state.rendererFunctionsByNetworkId
-              .get(networkId)
-              ?.set(rendererName, new Map<string, Function>())
-          }
-          state.rendererFunctionsByNetworkId
-            .get(networkId)
-            ?.get(rendererName)
-            ?.set(functionName, rendererFunction)
-        }
+        const newState = RendererFunctionImpl.setFunction(
+          state,
+          rendererName,
+          functionName,
+          rendererFunction,
+          networkId,
+        )
+        state.rendererFunctions = newState.rendererFunctions
+        state.rendererFunctionsByNetworkId =
+          newState.rendererFunctionsByNetworkId
+        return state
       })
     },
     getFunction(rendererName, functionName, networkId?: IdType) {
-      if (networkId) {
-        return get()
-          .rendererFunctionsByNetworkId.get(networkId)
-          ?.get(rendererName)
-          ?.get(functionName)
-      }
-      return get().rendererFunctions.get(rendererName)?.get(functionName)
+      return RendererFunctionImpl.getFunction(
+        get(),
+        rendererName,
+        functionName,
+        networkId,
+      )
     },
   })),
 )

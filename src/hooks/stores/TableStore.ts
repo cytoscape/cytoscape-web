@@ -17,7 +17,7 @@ import {
   ValueType,
   ValueTypeName,
 } from '../../models/TableModel'
-import { columnValueSet } from '../../models/TableModel/impl/inMemoryTable'
+import * as TableImpl from '../../models/TableModel/impl/inMemoryTable'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
 import { useWorkspaceStore } from './WorkspaceStore'
 
@@ -81,11 +81,11 @@ export const useTableStore = create(
             const tableToUpdate = table?.[tableTypeKey]
 
             if (tableToUpdate != null) {
-              const column = tableToUpdate.columns[columnIndex]
-              tableToUpdate.columns.splice(columnIndex, 1)
-              tableToUpdate.columns.splice(newColumnIndex, 0, column)
-
-              state.tables[networkId][tableTypeKey] = tableToUpdate
+              state.tables[networkId][tableTypeKey] = TableImpl.moveColumn(
+                tableToUpdate,
+                columnIndex,
+                newColumnIndex,
+              )
             }
 
             return state
@@ -104,30 +104,11 @@ export const useTableStore = create(
               tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
             const tableToUpdate = table[tableTypeKey]
 
-            const columnIndex = tableToUpdate.columns.findIndex(
-              (c) => c.name === currentColumnName,
+            state.tables[networkId][tableTypeKey] = TableImpl.setColumnName(
+              tableToUpdate,
+              currentColumnName,
+              newColumnName,
             )
-            if (columnIndex !== -1) {
-              const column = tableToUpdate.columns[columnIndex]
-              const newColumn = { ...column, name: newColumnName }
-              tableToUpdate.columns[columnIndex] = newColumn
-            }
-
-            const rows = tableToUpdate.rows.values()
-            Array.from(rows).forEach((row) => {
-              const v = row[currentColumnName]
-              delete row[currentColumnName]
-              row[newColumnName] = v
-            })
-            // Object.entries(rows)).forEach(([key, v]) => {
-            //   const value = rows[key]
-            //   if (value != null) {
-            //     delete row[currentColumnName]
-            //     row[newColumnName] = value
-            //   }
-            // })
-
-            state.tables[networkId][tableTypeKey] = tableToUpdate
             return state
           })
         },
@@ -148,18 +129,14 @@ export const useTableStore = create(
                   : 'edgeTable'
               ]
 
-            if (elementIds != null) {
-              elementIds.forEach((id) => {
-                const row = tableToUpdate.rows.get(id)
-                if (row != null) {
-                  row[columnName] = value
-                }
-              })
-            } else {
-              Array.from(tableToUpdate.rows.values()).forEach((row) => {
-                row[columnName] = value
-              })
-            }
+            state.tables[networkId][
+              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            ] = TableImpl.applyValueToElements(
+              tableToUpdate,
+              columnName,
+              value,
+              elementIds,
+            )
             return state
           })
         },
@@ -178,17 +155,9 @@ export const useTableStore = create(
                   : 'edgeTable'
               ]
 
-            const columnIndex = tableToUpdate.columns.findIndex(
-              (c) => c.name === columnName,
-            )
-            if (columnIndex !== -1) {
-              tableToUpdate.columns.splice(columnIndex, 1)
-            }
-
-            const rows = tableToUpdate.rows.values()
-            Array.from(rows).forEach((row) => {
-              delete row[columnName]
-            })
+            state.tables[networkId][
+              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            ] = TableImpl.deleteColumn(tableToUpdate, columnName)
 
             return state
           })
@@ -210,15 +179,14 @@ export const useTableStore = create(
                   : 'edgeTable'
               ]
 
-            tableToUpdate.columns.unshift({
-              name: columnName,
-              type: dataType,
-            })
-
-            const rows = tableToUpdate.rows.values()
-            Array.from(rows).forEach((row) => {
-              row[columnName] = value
-            })
+            state.tables[networkId][
+              tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
+            ] = TableImpl.createColumn(
+              tableToUpdate,
+              columnName,
+              dataType,
+              value,
+            )
 
             return state
           })
@@ -238,9 +206,15 @@ export const useTableStore = create(
             const table = state.tables[networkId]
             const tableToUpdate =
               tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
-            const row = table[tableToUpdate]?.rows.get(rowId)
-            if (row != null) {
-              row[column] = value
+            const tableToModify = table[tableToUpdate]
+
+            if (tableToModify != null) {
+              state.tables[networkId][tableToUpdate] = TableImpl.setValue(
+                tableToModify,
+                rowId,
+                column,
+                value,
+              )
             }
             return state
           })
@@ -254,12 +228,14 @@ export const useTableStore = create(
             const table = state.tables[networkId]
             const tableToUpdate =
               tableType === VisualPropertyGroup.Node ? 'nodeTable' : 'edgeTable'
-            cellEdits.forEach((cellEdit) => {
-              const row = table[tableToUpdate]?.rows.get(cellEdit.row)
-              if (row != null) {
-                row[cellEdit.column] = cellEdit.value
-              }
-            })
+            const tableToModify = table[tableToUpdate]
+
+            if (tableToModify != null) {
+              state.tables[networkId][tableToUpdate] = TableImpl.setValues(
+                tableToModify,
+                cellEdits,
+              )
+            }
             return state
           })
         },
@@ -274,7 +250,7 @@ export const useTableStore = create(
           const table =
             tableType === VisualPropertyGroup.Node ? nodeTable : edgeTable
 
-          return columnValueSet(table, column)
+          return TableImpl.columnValueSet(table, column)
         },
         duplicateColumn(
           networkId: IdType,
@@ -287,24 +263,13 @@ export const useTableStore = create(
             const edgeTable = table[networkId]?.edgeTable
             const tableToUpdate =
               tableType === VisualPropertyGroup.Node ? nodeTable : edgeTable
-            const columnIndex = tableToUpdate.columns.findIndex(
-              (c) => c.name === columnName,
-            )
-            if (columnIndex !== -1) {
-              const columnToDuplicate = tableToUpdate.columns[columnIndex]
-              const newColumn = {
-                ...columnToDuplicate,
-                name: `${columnToDuplicate.name}_copy_${Date.now()}`,
-              }
-              // Add the new column right after the column being duplicated
-              tableToUpdate?.columns.splice(columnIndex + 1, 0, newColumn)
 
-              Array.from((tableToUpdate?.rows ?? new Map()).entries()).forEach(
-                ([nodeId, nodeAttr]) => {
-                  nodeAttr[newColumn.name] = nodeAttr[columnName]
-                  tableToUpdate.rows.set(nodeId, nodeAttr)
-                },
-              )
+            if (tableToUpdate != null) {
+              state.tables[networkId][
+                tableType === VisualPropertyGroup.Node
+                  ? 'nodeTable'
+                  : 'edgeTable'
+              ] = TableImpl.duplicateColumn(tableToUpdate, columnName)
             }
 
             return state
@@ -314,9 +279,9 @@ export const useTableStore = create(
         setTable: (networkId: IdType, tableType: TableType, table: Table) => {
           set((state) => {
             if (tableType === TableType.NODE) {
-              state.tables[networkId].nodeTable = table
+              state.tables[networkId].nodeTable = TableImpl.setTable(table)
             } else {
-              state.tables[networkId].edgeTable = table
+              state.tables[networkId].edgeTable = TableImpl.setTable(table)
             }
             return state
           })
@@ -330,15 +295,33 @@ export const useTableStore = create(
             const table = state.tables
             const nodeTable = table[networkId]?.nodeTable
             const edgeTable = table[networkId]?.edgeTable
-            const nodeRows = nodeTable.rows
-            const edgeRows = edgeTable.rows
+
+            // Determine which rows are in which table
+            const nodeRowIds: IdType[] = []
+            const edgeRowIds: IdType[] = []
+
             rowIds.forEach((rowId) => {
-              if (nodeRows.has(rowId)) {
-                nodeRows.delete(rowId)
-              } else if (edgeRows.has(rowId)) {
-                edgeRows.delete(rowId)
+              if (nodeTable?.rows.has(rowId)) {
+                nodeRowIds.push(rowId)
+              } else if (edgeTable?.rows.has(rowId)) {
+                edgeRowIds.push(rowId)
               }
             })
+
+            if (nodeTable != null && nodeRowIds.length > 0) {
+              state.tables[networkId].nodeTable = TableImpl.deleteRows(
+                nodeTable,
+                nodeRowIds,
+              )
+            }
+
+            if (edgeTable != null && edgeRowIds.length > 0) {
+              state.tables[networkId].edgeTable = TableImpl.deleteRows(
+                edgeTable,
+                edgeRowIds,
+              )
+            }
+
             return state
           })
         },
@@ -360,9 +343,11 @@ export const useTableStore = create(
               tableType === TableType.NODE
                 ? state.tables[networkId].nodeTable
                 : state.tables[networkId].edgeTable
-            Array.from(rows.keys()).forEach((key) => {
-              table.rows.set(key, rows.get(key) ?? {})
-            })
+
+            state.tables[networkId][
+              tableType === TableType.NODE ? 'nodeTable' : 'edgeTable'
+            ] = TableImpl.editRows(table, rows)
+
             return state
           })
         },

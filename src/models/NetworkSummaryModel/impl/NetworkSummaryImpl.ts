@@ -1,48 +1,88 @@
-import { Network } from '../../NetworkModel/Network'
+import { IdType } from '../../IdType'
 import { NetworkSummary } from '../NetworkSummary'
-import { Visibility } from '../Visibility'
 
-interface BaseSummaryProps {
-  name: string
-  network: Network
-  description?: string
+export interface NetworkSummaryState {
+  summaries: Record<IdType, NetworkSummary>
 }
 
-export const getBaseSummary = ({
-  name,
-  network,
-  description,
-}: BaseSummaryProps): NetworkSummary => {
-  const creationTime = new Date(Date.now())
+/**
+ * Add a summary for a network
+ */
+export const add = (
+  state: NetworkSummaryState,
+  networkId: IdType,
+  summary: NetworkSummary,
+): NetworkSummaryState => {
+  return {
+    ...state,
+    summaries: {
+      ...state.summaries,
+      [networkId]: summary,
+    },
+  }
+}
 
-  const summary: NetworkSummary = {
-    isNdex: false,
-    ownerUUID: '',
-    name,
-    isReadOnly: false,
-    subnetworkIds: [],
-    isValid: false,
-    warnings: [],
-    isShowcase: false,
-    isCertified: false,
-    indexLevel: '',
-    hasLayout: false,
-    hasSample: false,
-    cxFileSize: 0,
-    cx2FileSize: 0,
-    properties: [],
-    owner: '',
-    version: '1.0.0',
-    completed: false,
-    visibility: Visibility.PUBLIC,
-    nodeCount: network.nodes.length,
-    edgeCount: network.edges.length,
-    description: description || 'Created by Cytoscape Web.',
-    creationTime,
-    externalId: network.id,
-    isDeleted: false,
-    modificationTime: creationTime,
+/**
+ * Add multiple summaries
+ */
+export const addAll = (
+  state: NetworkSummaryState,
+  summaries: Record<IdType, NetworkSummary>,
+): NetworkSummaryState => {
+  return {
+    ...state,
+    summaries: {
+      ...state.summaries,
+      ...summaries,
+    },
+  }
+}
+
+/**
+ * Update a summary
+ */
+export const update = (
+  state: NetworkSummaryState,
+  networkId: IdType,
+  summaryUpdate: Partial<NetworkSummary>,
+): NetworkSummaryState => {
+  const summary = state.summaries[networkId]
+  if (summary === undefined) {
+    return state
   }
 
-  return summary
+  return {
+    ...state,
+    summaries: {
+      ...state.summaries,
+      [networkId]: {
+        ...summary,
+        ...summaryUpdate,
+      },
+    },
+  }
+}
+
+/**
+ * Delete a summary for a network
+ */
+export const deleteSummary = (
+  state: NetworkSummaryState,
+  networkId: IdType,
+): NetworkSummaryState => {
+  const { [networkId]: deleted, ...restSummaries } = state.summaries
+  return {
+    ...state,
+    summaries: restSummaries,
+  }
+}
+
+/**
+ * Delete all summaries
+ */
+export const deleteAll = (state: NetworkSummaryState): NetworkSummaryState => {
+  return {
+    ...state,
+    summaries: {},
+  }
 }

@@ -3,6 +3,7 @@ import { immer } from 'zustand/middleware/immer'
 
 import { deleteFilterFromDb, putFilterToDb } from '../../db'
 import { logStore } from '../../debug'
+import * as FilterStoreImpl from '../../models/FilterModel/impl/filterStoreImpl'
 import { FilterConfig } from '../../models/FilterModel'
 import { Search, SearchOptions } from '../../models/FilterModel/Search'
 import { SearchState } from '../../models/FilterModel/SearchState'
@@ -65,86 +66,69 @@ export const useFilterStore = create(
     },
     setSearchState: (searchState: SearchState) => {
       set((state) => {
-        state.search.state = searchState
+        const newState = FilterStoreImpl.setSearchState(state, searchState)
+        state.search = newState.search
+        return state
       })
     },
     setConverter: (converter: (result: any) => IdType[]) => {
       set((state) => {
-        state.search.convertResults = converter
+        const newState = FilterStoreImpl.setConverter(state, converter)
+        state.search = newState.search
+        return state
       })
     },
     setQuery: (query: string) => {
       set((state) => {
-        state.search.query = query
+        const newState = FilterStoreImpl.setQuery(state, query)
+        state.search = newState.search
+        return state
       })
     },
-    getIndex: <T>(networkId: IdType) => {
-      return (set as any).getState().search.index[networkId] as T
+    getIndex: <T>(networkId: IdType, type: GraphObjectType) => {
+      return FilterStoreImpl.getIndex(get(), networkId, type) as T
     },
     setIndex: <T>(networkId: string, type: GraphObjectType, index: T) => {
       set((state) => {
-        const indexObject = get().search.index[networkId]
-        if (indexObject === undefined) {
-          if (type === GraphObjectType.NODE) {
-            state.search.index[networkId] = {
-              node: index,
-              edge: undefined,
-            }
-          } else if (type === GraphObjectType.EDGE) {
-            state.search.index[networkId] = {
-              node: undefined,
-              edge: index,
-            }
-          }
-        } else {
-          if (type === GraphObjectType.NODE) {
-            state.search.index[networkId].node = index
-          } else if (type === GraphObjectType.EDGE) {
-            state.search.index[networkId].edge = index
-          }
-        }
+        const newState = FilterStoreImpl.setIndex(
+          state,
+          networkId,
+          type,
+          index,
+        )
+        state.search = newState.search
+        return state
       })
     },
     setOptions: (options: SearchOptions) => {
       set((state) => {
-        state.search.options = options
+        const newState = FilterStoreImpl.setOptions(state, options)
+        state.search = newState.search
+        return state
       })
     },
     setIndexedColumns(networkId, type, columns) {
       set((state) => {
-        const indexedColumns = get().search.indexedColumns[networkId]
-        if (indexedColumns === undefined) {
-          if (type === GraphObjectType.NODE) {
-            state.search.indexedColumns[networkId] = {
-              node: columns,
-              edge: [],
-            }
-          } else if (type === GraphObjectType.EDGE) {
-            state.search.indexedColumns[networkId] = {
-              node: [],
-              edge: columns,
-            }
-          }
-        } else {
-          if (type === GraphObjectType.NODE) {
-            state.search.indexedColumns[networkId].node = columns
-          } else if (type === GraphObjectType.EDGE) {
-            state.search.indexedColumns[networkId].edge = columns
-          }
-        }
+        const newState = FilterStoreImpl.setIndexedColumns(
+          state,
+          networkId,
+          type,
+          columns,
+        )
+        state.search = newState.search
+        return state
       })
     },
     addFilterConfig: (filter: FilterConfig) => {
       set((state) => {
-        const newName = filter.name
-        const existingConfig = state.filterConfigs[newName]
+        const existingConfig = state.filterConfigs[filter.name]
         if (existingConfig !== undefined) {
           logStore.warn(
-            `[${useFilterStore.name}]: Filter config with name ${newName} already exists`,
+            `[${useFilterStore.name}]: Filter config with name ${filter.name} already exists`,
           )
-          return
+          return state
         }
-        state.filterConfigs[newName] = filter
+        const newState = FilterStoreImpl.addFilterConfig(state, filter)
         putFilterToDb(filter)
           .then(() => {
             logStore.info(
@@ -157,18 +141,24 @@ export const useFilterStore = create(
               e,
             )
           })
+        state.filterConfigs = newState.filterConfigs
+        return state
       })
     },
     deleteFilterConfig: (name: string) => {
       set((state) => {
-        delete state.filterConfigs[name]
+        const newState = FilterStoreImpl.deleteFilterConfig(state, name)
         deleteFilterFromDb(name)
+        state.filterConfigs = newState.filterConfigs
+        return state
       })
     },
     updateFilterConfig: (name: string, filter: FilterConfig) => {
       set((state) => {
-        state.filterConfigs[name] = filter
+        const newState = FilterStoreImpl.updateFilterConfig(state, name, filter)
         putFilterToDb(filter)
+        state.filterConfigs = newState.filterConfigs
+        return state
       })
     },
     updateRange: (
@@ -176,20 +166,24 @@ export const useFilterStore = create(
       range: NumberRange | DiscreteRange<ValueType>,
     ) => {
       set((state) => {
-        state.filterConfigs[name].range = range
-        const newFilter = get().filterConfigs[name]
-        putFilterToDb(newFilter)
-          .then(() => {
-            logStore.info(
-              `[${useFilterStore.name}]: Range updated in db: ${name}`,
-            )
-          })
-          .catch((e) => {
-            logStore.error(
-              `[${useFilterStore.name}]: Failed to update range in db: ${name}`,
-              e,
-            )
-          })
+        const newState = FilterStoreImpl.updateRange(state, name, range)
+        const newFilter = newState.filterConfigs[name]
+        if (newFilter) {
+          putFilterToDb(newFilter)
+            .then(() => {
+              logStore.info(
+                `[${useFilterStore.name}]: Range updated in db: ${name}`,
+              )
+            })
+            .catch((e) => {
+              logStore.error(
+                `[${useFilterStore.name}]: Failed to update range in db: ${name}`,
+                e,
+              )
+            })
+        }
+        state.filterConfigs = newState.filterConfigs
+        return state
       })
     },
   })),

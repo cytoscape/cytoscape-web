@@ -9,22 +9,23 @@ import {
 import { logStore } from '../../debug'
 import { IdType } from '../../models/IdType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import * as NetworkSummaryImpl from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { NetworkSummaryStore } from '../../models/StoreModel/NetworkSummaryStoreModel'
 export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore>((set, get) => ({
     summaries: {},
     add: (networkId: IdType, summary: NetworkSummary) => {
       set((state) => {
-        state.summaries[networkId] = summary
+        const newState = NetworkSummaryImpl.add(state, networkId, summary)
         putNetworkSummaryToDb(summary)
-
+        state.summaries = newState.summaries
         return state
       })
     },
     addAll: (summaries: Record<IdType, NetworkSummary>) => {
       set((state) => {
-        state.summaries = { ...state.summaries, ...summaries }
-
+        const newState = NetworkSummaryImpl.addAll(state, summaries)
+        state.summaries = newState.summaries
         return state
       })
     },
@@ -33,15 +34,21 @@ export const useNetworkSummaryStore = create(
       if (summary === undefined) {
         return
       }
-      void putNetworkSummaryToDb({ ...summary, ...summaryUpdate })
+      const updatedSummary = { ...summary, ...summaryUpdate }
+      void putNetworkSummaryToDb(updatedSummary)
       set((state) => {
-        state.summaries[networkId] = { ...summary, ...summaryUpdate }
+        const newState = NetworkSummaryImpl.update(
+          state,
+          networkId,
+          summaryUpdate,
+        )
+        state.summaries = newState.summaries
         return state
       })
     },
     delete: (networkId: IdType) => {
       set((state) => {
-        delete state.summaries[networkId]
+        const newState = NetworkSummaryImpl.deleteSummary(state, networkId)
         void deleteNetworkSummaryFromDb(networkId)
           .then((val) => {
             logStore.info(
@@ -53,13 +60,13 @@ export const useNetworkSummaryStore = create(
               `[${useNetworkSummaryStore.name}]: Error deleting summary: ${err}`,
             )
           })
-
+        state.summaries = newState.summaries
         return state
       })
     },
     deleteAll: () => {
       set((state) => {
-        state.summaries = {}
+        const newState = NetworkSummaryImpl.deleteAll(state)
         clearNetworkSummaryFromDb()
           .then((val) => {
             logStore.info(
@@ -71,7 +78,7 @@ export const useNetworkSummaryStore = create(
               `[${useNetworkSummaryStore.name}]: Failed to clear Summary: ${err}`,
             )
           })
-
+        state.summaries = newState.summaries
         return state
       })
     },

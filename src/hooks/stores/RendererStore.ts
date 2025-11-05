@@ -8,6 +8,7 @@ import { immer } from 'zustand/middleware/immer'
 import { DefaultRenderer } from '../../features/DefaultRenderer'
 import { IdType } from '../../models'
 import { Renderer } from '../../models/RendererModel/Renderer'
+import * as RendererImpl from '../../models/RendererModel/impl/rendererImpl'
 import { ViewPort } from '../../models/RendererModel/ViewPort'
 import { RendererStore } from '../../models/StoreModel/RendererStoreModel'
 
@@ -20,12 +21,16 @@ export const useRendererStore = create(
 
     add: (renderer: Renderer) => {
       set((state) => {
-        state.renderers[renderer.id] = renderer
+        const newState = RendererImpl.add(state, renderer)
+        state.renderers = newState.renderers
+        return state
       })
     },
     delete: (rendererId: string) => {
       set((state) => {
-        delete state.renderers[rendererId]
+        const newState = RendererImpl.deleteRenderer(state, rendererId)
+        state.renderers = newState.renderers
+        return state
       })
     },
 
@@ -35,10 +40,14 @@ export const useRendererStore = create(
       viewport: ViewPort,
     ) => {
       set((state) => {
-        if (!state.viewports[rendererId]) {
-          state.viewports[rendererId] = {}
-        }
-        state.viewports[rendererId][networkId] = viewport
+        const newState = RendererImpl.setViewport(
+          state,
+          rendererId,
+          networkId,
+          viewport,
+        )
+        state.viewports = newState.viewports
+        return state
       })
     },
 
@@ -47,7 +56,7 @@ export const useRendererStore = create(
       networkId: IdType,
     ): ViewPort | undefined => {
       const state = useRendererStore.getState()
-      return state.viewports[rendererId]?.[networkId]
+      return RendererImpl.getViewport(state, rendererId, networkId)
     },
   })),
 )

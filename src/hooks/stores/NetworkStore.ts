@@ -10,6 +10,7 @@ import {
 import { logStore } from '../../debug'
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Edge, Network } from '../../models/NetworkModel'
+import * as NetworkStoreImpl from '../../models/StoreModel/impl/networkStoreImpl'
 import {
   NetworkStore,
   NetworkUpdatedEvent,
@@ -51,7 +52,8 @@ export const useNetworkStore = create(
 
         setNetwork: (networkId: IdType, network: Network) => {
           set((state) => {
-            state.networks.set(networkId, network)
+            const newState = NetworkStoreImpl.setNetwork(state, networkId, network)
+            state.networks = newState.networks
             return state
           })
         },
@@ -60,7 +62,11 @@ export const useNetworkStore = create(
           set((state) => {
             const network = state.networks.get(networkId)
             if (network !== undefined) {
-              NetworkFn.addNode(network, nodeId)
+              const updatedNetwork = NetworkStoreImpl.addNodeToNetwork(
+                network,
+                nodeId,
+              )
+              state.networks.set(networkId, updatedNetwork)
             }
             return state
           })
@@ -69,11 +75,13 @@ export const useNetworkStore = create(
           set((state) => {
             const network = state.networks.get(networkId)
             if (network !== undefined) {
-              NetworkFn.addNodes(network, nodeIds)
+              const updatedNetwork = NetworkStoreImpl.addNodesToNetwork(
+                network,
+                nodeIds,
+              )
+              state.networks.set(networkId, updatedNetwork)
             }
-            return {
-              networks: { ...state.networks },
-            }
+            return state
           })
         },
 
@@ -85,12 +93,14 @@ export const useNetworkStore = create(
           set((state) => {
             const network: Network | undefined = state.networks.get(networkId)
             if (network !== undefined) {
-              NetworkFn.addNodes(network, nodeIds)
-              NetworkFn.addEdges(network, edges)
+              const updatedNetwork = NetworkStoreImpl.addNodesAndEdgesToNetwork(
+                network,
+                nodeIds,
+                edges,
+              )
+              state.networks.set(networkId, updatedNetwork)
             }
-            return {
-              networks: { ...state.networks },
-            }
+            return state
           })
         },
 
@@ -103,29 +113,15 @@ export const useNetworkStore = create(
             }
             const network = state.networks.get(networkId)
             if (network !== undefined) {
-              const deletedElements = NetworkFn.deleteNodes(network, nodeIds)
-              const deletedNodes = deletedElements.nodes()
-              const deletedEdges = deletedElements.edges()
-              const deletedNodeIds = deletedNodes.map((node) => node.id())
-              const deletedEdgeIds = deletedEdges.map((edge) => edge.id())
-
-              // Get edges to be deleted from the deleted edge objects
-              const deletedEdgeObjects: Edge[] = deletedEdges.map((edge) => {
-                const sourceNode: IdType = edge.source().id()
-                const targetNode: IdType = edge.target().id()
-                return {
-                  id: edge.id(),
-                  s: sourceNode,
-                  t: targetNode,
-                }
-              })
-
-              const deleted: string[] = [...deletedNodeIds, ...deletedEdgeIds]
-              const event: NetworkUpdatedEvent = {
+              const { deletedElements, updatedNetwork } =
+                NetworkStoreImpl.deleteNodesFromNetwork(network, nodeIds)
+              const deletedEdgeObjects =
+                NetworkStoreImpl.extractDeletedEdges(deletedElements)
+              const event = NetworkStoreImpl.createDeleteNodesEvent(
                 networkId,
-                type: UpdateEventType.DELETE,
-                payload: deleted,
-              }
+                deletedElements,
+              )
+              state.networks.set(networkId, updatedNetwork)
               state.lastUpdated = event
               deletedConnectingEdges = deletedEdgeObjects
             } else {
@@ -149,15 +145,13 @@ export const useNetworkStore = create(
 
             const network = state.networks.get(networkId)
             if (network !== undefined) {
-              const deletedElements = NetworkFn.deleteEdges(network, edgeIds)
-
-              const deletedEdges = deletedElements.edges()
-              const deletedEdgeIds = deletedEdges.map((edge) => edge.id())
-              const event: NetworkUpdatedEvent = {
+              const { deletedElements, updatedNetwork } =
+                NetworkStoreImpl.deleteEdgesFromNetwork(network, edgeIds)
+              const event = NetworkStoreImpl.createDeleteEdgesEvent(
                 networkId,
-                type: UpdateEventType.DELETE,
-                payload: deletedEdgeIds,
-              }
+                deletedElements,
+              )
+              state.networks.set(networkId, updatedNetwork)
               state.lastUpdated = event
             }
             return state
@@ -168,22 +162,28 @@ export const useNetworkStore = create(
           set((state) => {
             const network = state.networks.get(networkId)
             if (network !== undefined) {
-              NetworkFn.addEdge(network, { id, s, t })
+              const updatedNetwork = NetworkStoreImpl.addEdgeToNetwork(
+                network,
+                id,
+                s,
+                t,
+              )
+              state.networks.set(networkId, updatedNetwork)
             }
-            return {
-              networks: { ...state.networks },
-            }
+            return state
           })
         },
         addEdges: (networkId: IdType, edges: Edge[]) => {
           set((state) => {
             const network = state.networks.get(networkId)
             if (network !== undefined) {
-              NetworkFn.addEdges(network, edges)
+              const updatedNetwork = NetworkStoreImpl.addEdgesToNetwork(
+                network,
+                edges,
+              )
+              state.networks.set(networkId, updatedNetwork)
             }
-            return {
-              networks: { ...state.networks },
-            }
+            return state
           })
         },
 
@@ -202,11 +202,8 @@ export const useNetworkStore = create(
               )
             }
 
-            const newNetworkMap = new Map(state.networks).set(
-              network.id,
-              network,
-            )
-            state.networks = newNetworkMap
+            const newState = NetworkStoreImpl.add(state, network)
+            state.networks = newState.networks
             void putNetworkToDb(network)
               .then(() => {
                 logStore.info(`New network has been added to DB: ${network.id}`)
@@ -218,7 +215,8 @@ export const useNetworkStore = create(
           }),
         delete: (networkId: IdType) =>
           set((state) => {
-            state.networks.delete(networkId)
+            const newState = NetworkStoreImpl.deleteNetwork(state, networkId)
+            state.networks = newState.networks
             void deleteNetworkFromDb(networkId).then(() => {
               logStore.info(
                 `[${useNetworkStore.name}]: Deleted network from db: ${networkId}`,
@@ -228,6 +226,7 @@ export const useNetworkStore = create(
           }),
         deleteAll: () =>
           set((state) => {
+            const newState = NetworkStoreImpl.deleteAll(state)
             clearNetworksFromDb()
               .then(() => {
                 logStore.info(
@@ -239,8 +238,8 @@ export const useNetworkStore = create(
                   `[${useNetworkStore.name}]: Error clearing all networks from db: ${err}`,
                 )
               })
-
-            return { ...state, networks: new Map<IdType, Network>() }
+            state.networks = newState.networks
+            return state
           }),
       })),
     ),

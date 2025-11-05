@@ -13,6 +13,7 @@ import { AppStatus } from '../../models/AppModel/AppStatus'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
+import * as AppStoreImpl from '../../models/StoreModel/impl/appStoreImpl'
 import { ServiceMetadata } from '../../models/AppModel/ServiceMetadata'
 import { AppStore } from '../../models/StoreModel/AppStoreModel'
 
@@ -57,15 +58,10 @@ export const useAppStore = create(
       const serviceApps = await getAllServiceAppsFromDb()
 
       set((state) => {
-        apps.forEach(({ id, cached }) => {
-          if (cached !== undefined) {
-            state.apps[id] = cached
-          }
-        })
-
-        serviceApps.forEach((serviceApp) => {
-          state.serviceApps[serviceApp.url] = serviceApp
-        })
+        const newState = AppStoreImpl.restore(state, apps, serviceApps)
+        state.apps = newState.apps
+        state.serviceApps = newState.serviceApps
+        return state
       })
     },
 
@@ -73,19 +69,15 @@ export const useAppStore = create(
       const { id } = app
       getAppFromDb(id).then((cachedApp: CyApp) => {
         set((state) => {
-          // Add app only when it is not already present
-          if (state.apps[id] === undefined) {
-            // Try DB first
-            if (cachedApp !== undefined) {
-              state.apps[id] = cachedApp
-              return
-            } else {
-              state.apps[id] = app
-              // Will be inactive by default
-              state.apps[id].status = app.status || AppStatus.Inactive
-              putAppToDb(app)
+          const newState = AppStoreImpl.add(state, app, cachedApp)
+          if (newState.apps[id] !== state.apps[id]) {
+            // App was added, persist to DB if it's a new app
+            if (cachedApp === undefined) {
+              putAppToDb(newState.apps[id])
             }
           }
+          state.apps = newState.apps
+          return state
         })
       })
     },
@@ -102,46 +94,56 @@ export const useAppStore = create(
       await putServiceAppToDb(serviceApp)
 
       set((state) => {
-        state.serviceApps[url] = serviceApp
+        const newState = AppStoreImpl.addService(state, serviceApp)
+        state.serviceApps = newState.serviceApps
+        return state
       })
     },
 
     removeService: (url: string) => {
       set((state) => {
-        delete state.serviceApps[url]
+        const newState = AppStoreImpl.removeService(state, url)
         deleteServiceAppFromDb(url).catch((error) => {
           logStore.error(
             `[${useAppStore.name}]: Failed to delete service metadata from ${url}`,
             error,
           )
         })
+        state.serviceApps = newState.serviceApps
+        return state
       })
     },
 
     setStatus: (id: string, status: AppStatus) => {
       set((state) => {
-        state.apps[id].status = status
+        const newState = AppStoreImpl.setStatus(state, id, status)
+        state.apps = newState.apps
+        const newAppState = { ...newState.apps[id] }
+        if (newAppState) {
+          putAppToDb(newAppState)
+        }
+        return state
       })
-
-      const newAppState = { ...get().apps[id] }
-      putAppToDb(newAppState)
     },
 
     setCurrentTask: (task: ServiceAppTask) => {
       set((state) => {
-        state.currentTask = task
+        const newState = AppStoreImpl.setCurrentTask(state, task)
+        state.currentTask = newState.currentTask
+        return state
       })
     },
 
     clearCurrentTask: () => {
       set((state) => {
-        state.currentTask = undefined
+        const newState = AppStoreImpl.clearCurrentTask(state)
+        state.currentTask = newState.currentTask
+        return state
       })
     },
 
     updateServiceParameter(url: string, displayName: string, value: string) {
       set((state) => {
-        // Get the target service app
         const serviceApp = state.serviceApps[url]
         if (serviceApp === undefined) {
           throw new Error(`Service not found for URL: ${url}`)
@@ -154,27 +156,33 @@ export const useAppStore = create(
           throw new Error(`Parameter not found for name: ${displayName}`)
         }
 
-        parameter.value = value
-      })
+        const newState = AppStoreImpl.updateServiceParameter(
+          state,
+          url,
+          displayName,
+          value,
+        )
+        state.serviceApps = newState.serviceApps
 
-      // Update the cached service app
-      putServiceAppToDb({ ...get().serviceApps[url] })
-        .then(() => {
-          logStore.info(
-            `[${useAppStore.name}]: Target column updated for service app: ${url}`,
-          )
-        })
-        .catch((error) => {
-          logStore.error(
-            `[${useAppStore.name}]: Failed to update service app`,
-            error,
-          )
-        })
+        // Update the cached service app
+        putServiceAppToDb({ ...newState.serviceApps[url] })
+          .then(() => {
+            logStore.info(
+              `[${useAppStore.name}]: Target column updated for service app: ${url}`,
+            )
+          })
+          .catch((error) => {
+            logStore.error(
+              `[${useAppStore.name}]: Failed to update service app`,
+              error,
+            )
+          })
+        return state
+      })
     },
 
     updateInputColumn(url: string, name: string, columnName: string) {
       set((state) => {
-        // Get the target service app
         const serviceApp = state.serviceApps[url]
         if (serviceApp === undefined) {
           throw new Error(`Service not found for URL: ${url}`)
@@ -188,22 +196,29 @@ export const useAppStore = create(
           throw new Error(`Input column not found for name: ${name}`)
         }
 
-        inputColumn.columnName = columnName
-      })
+        const newState = AppStoreImpl.updateInputColumn(
+          state,
+          url,
+          name,
+          columnName,
+        )
+        state.serviceApps = newState.serviceApps
 
-      // Update the cached service app
-      putServiceAppToDb({ ...get().serviceApps[url] })
-        .then(() => {
-          logStore.info(
-            `[${useAppStore.name}]: Target column updated for service app: ${url}`,
-          )
-        })
-        .catch((error) => {
-          logStore.error(
-            `[${useAppStore.name}]: Failed to update service app`,
-            error,
-          )
-        })
+        // Update the cached service app
+        putServiceAppToDb({ ...newState.serviceApps[url] })
+          .then(() => {
+            logStore.info(
+              `[${useAppStore.name}]: Target column updated for service app: ${url}`,
+            )
+          })
+          .catch((error) => {
+            logStore.error(
+              `[${useAppStore.name}]: Failed to update service app`,
+              error,
+            )
+          })
+        return state
+      })
     },
   })),
 )

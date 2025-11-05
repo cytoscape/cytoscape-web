@@ -9,6 +9,7 @@ import {
 } from '../../models/LayoutModel/impl/layoutSelection'
 import { LayoutAlgorithm } from '../../models/LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../models/LayoutModel/LayoutEngine'
+import * as LayoutStoreImpl from '../../models/StoreModel/impl/layoutStoreImpl'
 import { Property } from '../../models/PropertyModel/Property'
 import { LayoutStore } from '../../models/StoreModel/LayoutStoreModel'
 import { ValueType } from '../../models/TableModel'
@@ -25,18 +26,20 @@ export const useLayoutStore = create(
 
     setPreferredLayout(engineName: string, algorithmName: string) {
       set((state) => {
-        const algorithm: LayoutAlgorithm | undefined = getLayout(
+        const newState = LayoutStoreImpl.setPreferredLayout(
+          state,
           engineName,
           algorithmName,
         )
-        if (algorithm !== undefined) {
-          state.preferredLayout = algorithm
-        }
+        state.preferredLayout = newState.preferredLayout
+        return state
       })
     },
     setIsRunning(isRunning: boolean) {
       set((state) => {
-        state.isRunning = isRunning
+        const newState = LayoutStoreImpl.setIsRunning(state, isRunning)
+        state.isRunning = newState.isRunning
+        return state
       })
     },
 
@@ -47,57 +50,15 @@ export const useLayoutStore = create(
       propertyValue: T,
     ) {
       set((state) => {
-        const engines = state.layoutEngines
-        const engine: LayoutEngine | undefined = engines.find(
-          (engine: { name: string }) => engine.name === engineName,
+        const newState = LayoutStoreImpl.setLayoutOption(
+          state,
+          engineName,
+          algorithmName,
+          propertyName,
+          propertyValue,
         )
-
-        if (engine === undefined) {
-          return
-        }
-
-        const algorithm = engine.algorithms[algorithmName]
-
-        if (algorithm === undefined) {
-          return
-        }
-
-        const { parameters } = algorithm
-        const prop: any = parameters[propertyName]
-
-        if (prop === undefined) {
-          return
-        }
-
-        const { editables } = algorithm
-
-        // Check actual parameter name.
-        // This should exists before setting the value in editableParameters
-
-        if (editables === undefined) {
-          return
-        }
-        const targetProp = editables[propertyName]
-
-        if (targetProp === undefined) {
-          return
-        }
-
-        const newProp: Property<ValueType> = {
-          ...targetProp,
-          value: propertyValue,
-        }
-        const newEditables = { ...editables, [propertyName]: newProp }
-        const newParams = { ...parameters, [propertyName]: propertyValue }
-        const newAlgorithm = {
-          ...algorithm,
-          parameters: newParams,
-          editables: newEditables,
-        }
-        engine.algorithms = {
-          ...engine.algorithms,
-          [algorithmName]: newAlgorithm,
-        }
+        state.layoutEngines = newState.layoutEngines
+        return state
       })
     },
   })),

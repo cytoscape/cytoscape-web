@@ -165,16 +165,26 @@ export const fetchNdexSubnetworkByQuery = async (
       if (isValidData) {
         return result
       } else {
-        result = await fetchNdexSubnetwork(
-          interactionNetworkId,
-          interactionNetworkUuid,
-          rootNetworkUuid,
-          query,
-          accessToken,
-          interactionNetworkHost,
-        )
+        retryCount++
+        if (retryCount <= MAX_RETRY_COUNT) {
+          result = await fetchNdexSubnetwork(
+            interactionNetworkId,
+            interactionNetworkUuid,
+            rootNetworkUuid,
+            query,
+            accessToken,
+            interactionNetworkHost,
+          )
+          // Validate the retry result before continuing the loop
+          isValidData = isValidNetworkAndViews(
+            result.network,
+            result.networkViews,
+          )
+          if (isValidData) {
+            return result
+          }
+        }
       }
-      retryCount++
     }
 
     // If we still cannot get valid data, throw an error. This might be a network issue.
