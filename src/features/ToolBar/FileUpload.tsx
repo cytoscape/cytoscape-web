@@ -35,9 +35,9 @@ import { validateCX2 } from '../../models/CxModel/impl/validator'
 import { MessageSeverity } from '../../models/MessageModel'
 import { NetworkProperty, Visibility } from '../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
-import { generateUniqueName } from '../../utils/generate-unique-name'
-import { createDataFromLocalSif } from '../../utils/sif-utils'
-import { validateSif } from '../../utils/sif-utils'
+import { generateUniqueName } from '../../utils/generateUniqueName'
+import { createDataFromLocalSif } from '../../utils/sifUtils'
+import { validateSif } from '../../utils/sifUtils'
 import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,

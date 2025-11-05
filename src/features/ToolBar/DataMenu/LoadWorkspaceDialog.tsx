@@ -29,7 +29,7 @@ import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { Workspace } from '../../../models/WorkspaceModel'
-import { dateFormatter } from '../../../utils/date-format'
+import { dateFormatter } from '../../../utils/dateFormat'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean

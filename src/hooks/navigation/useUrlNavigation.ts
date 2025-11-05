@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { NavigationConfig } from './NavigationConfig'
 import { NavigationFunctions } from './NavigationFunctions'
-import { navigateToNetwork, updateSearchParams } from './url-manager'
+import { navigateToNetwork, updateSearchParams } from './urlManager'
 
 /**
  * Custom hook for URL navigation and search parameter management

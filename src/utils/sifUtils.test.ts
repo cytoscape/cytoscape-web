@@ -1,5 +1,5 @@
-import { validateSif } from './sif-utils'
-import { parseSif } from './sif-utils'
+import { validateSif } from './sifUtils'
+import { parseSif } from './sifUtils'
 
 describe('validateSif', () => {
   it('valid SIF with spaces as delimiter', () => {

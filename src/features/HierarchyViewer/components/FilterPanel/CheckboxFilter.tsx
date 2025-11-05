@@ -22,7 +22,7 @@ import {
   DiscreteMappingFunction,
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
-import { getAllDiscreteValues } from '../../utils/filter-util'
+import { getAllDiscreteValues } from '../../utils/filterUtil'
 
 interface CheckboxFilterProps {
   // The network to be filtered

@@ -17,7 +17,7 @@ import { GraphObjectType } from '../../../models/NetworkModel'
 import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { Search } from './Search'
 import { SearchControls } from './SearchControls'
-import { createFuseIndex, filterColumns, runSearch } from './SearchUtils'
+import { createFuseIndex, filterColumns, runSearch } from './searchUtil'
 import { StyledInputBase } from './StyledInputBase'
 
 export const SearchBox = (): JSX.Element => {

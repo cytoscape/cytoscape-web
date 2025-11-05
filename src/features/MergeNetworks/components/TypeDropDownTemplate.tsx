@@ -7,7 +7,7 @@ import { MatchingTableRow } from '../models/MatchingTable'
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
 import useNetMatchingTableStore from '../store/netMatchingTableStore'
 import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
-import { getAllConvertiableTypes } from '../utils/attributes-operations'
+import { getAllConvertiableTypes } from '../utils/attributesOperationsUtil'
 
 interface typeDropDownTemplateProps {
   type: TableView

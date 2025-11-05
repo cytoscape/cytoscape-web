@@ -7,7 +7,7 @@ import { IdType } from '../../../models/IdType'
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { Table } from '../../../models/TableModel'
 import { FilterAspect, FilterAspects } from '../model/FilterAspects'
-import { getAllDiscreteValues } from './filter-util'
+import { getAllDiscreteValues } from './filterUtil'
 
 /**
  * Build FilterConfig objects from FilterAspects

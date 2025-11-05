@@ -27,7 +27,7 @@ import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../hooks/useUndoStack'
 import { IdType } from '../../models'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { removePTags } from '../../utils/remove-p-tags'
+import { removePTags } from '../../utils/removePTags'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 
 interface NetworkPropertyEditorProps {

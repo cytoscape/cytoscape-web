@@ -16,10 +16,10 @@ export { fetchNdexNetwork, updateNdexNetwork } from './network'
 export {
   fetchNdexSummaries,
   getNetworkValidationStatus,
-} from './network-summary'
+} from './networkSummary'
 
 // Query operations
-export { fetchGeneNamesFromIds,fetchNdexInterconnectQuery } from './query'
+export { fetchGeneNamesFromIds, fetchNdexInterconnectQuery } from './query'
 
 // Workspace operations
 export {

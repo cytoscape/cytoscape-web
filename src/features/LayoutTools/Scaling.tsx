@@ -9,7 +9,7 @@ import { useUndoStack } from '../../hooks/useUndoStack'
 import { IdType } from '../../models/IdType'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../models/ViewModel'
-import { calcScale } from './scaling-util'
+import { calcScale } from './scalingUtil'
 import { ScalingType, ScalingTypeSelector } from './ScalingTypeSelector'
 
 const marks = [

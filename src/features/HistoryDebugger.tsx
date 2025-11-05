@@ -1,5 +1,5 @@
-import { Box, Button, Divider,Paper, Typography } from '@mui/material'
-import React, { useEffect,useState } from 'react'
+import { Box, Button, Divider, Paper, Typography } from '@mui/material'
+import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { logUi } from '../debug'
@@ -8,7 +8,7 @@ import {
   clearInternalHistory,
   getHistoryInfo,
   resetNavigationToRoot,
-} from '../hooks/navigation/url-manager'
+} from '../hooks/navigation/urlManager'
 
 export const HistoryDebugger = (): JSX.Element => {
   const [historyLength, setHistoryLength] = useState(window.history.length)

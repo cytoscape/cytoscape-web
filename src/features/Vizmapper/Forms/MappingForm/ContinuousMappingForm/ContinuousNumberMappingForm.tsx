@@ -30,7 +30,7 @@ import { ContinuousMappingFunction } from '../../../../../models/VisualStyleMode
 import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
-import { addHandle, editHandle,Handle, removeHandle } from './Handle'
+import { addHandle, editHandle, Handle, removeHandle } from './handleUtil'
 import { LineChart } from './LineChart'
 
 export function ContinuousNumberMappingForm(props: {

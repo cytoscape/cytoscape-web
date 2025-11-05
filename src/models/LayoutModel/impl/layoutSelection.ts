@@ -1,4 +1,4 @@
-import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
+import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { LayoutAlgorithm } from '../LayoutAlgorithm'
 import { LayoutEngine } from '../LayoutEngine'

@@ -31,7 +31,7 @@ import {
   serializeNetworkView,
   serializeTable,
   serializeVisualStyle,
-} from './db-util'
+} from './serialization'
 import { applyMigrations } from './migrations'
 // Unique, fixed DB name for the Cytoscape Web
 const DB_NAME: string = 'cyweb-db'

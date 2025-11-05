@@ -29,7 +29,7 @@ import {
   Visibility,
 } from '../../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
-import { generateUniqueName } from '../../../utils/generate-unique-name'
+import { generateUniqueName } from '../../../utils/generateUniqueName'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 export const useAddNetworks = (): (({

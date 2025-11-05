@@ -1,4 +1,4 @@
-import { formatBytes } from './byte-conversion'
+import { formatBytes } from './byteConversion'
 
 describe('formatBytes', () => {
   describe('basic functionality', () => {

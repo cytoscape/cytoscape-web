@@ -1,2 +1,3 @@
-export { LayoutAlgorithm } from './LayoutAlgorithm'
-export { LayoutEngine } from './LayoutEngine'
+export type { LayoutAlgorithm } from './LayoutAlgorithm'
+export type { LayoutEngine } from './LayoutEngine'
+export { LayoutAlgorithmType } from './LayoutAlgorithm'

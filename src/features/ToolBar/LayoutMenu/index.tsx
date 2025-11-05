@@ -1,9 +1,9 @@
-import { Box, Divider, MenuItem,Tooltip } from '@mui/material'
+import { Box, Divider, MenuItem, Tooltip } from '@mui/material'
 import Button from '@mui/material/Button'
 import { PrimeReactProvider } from 'primereact/api'
 import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
-import { useEffect,useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { logUi } from '../../../debug'
 import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
@@ -20,7 +20,7 @@ import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { Network } from '../../../models/NetworkModel'
 import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
+import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
 
 interface DropdownMenuProps {
@@ -84,7 +84,6 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     }
   }, [layoutCounter, getRendererFunction])
 
-   
   const target: Network = networks.get(targetNetworkId) ?? ({} as Network)
 
   const summary = useNetworkSummaryStore(

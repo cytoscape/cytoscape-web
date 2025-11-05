@@ -27,7 +27,7 @@ import { ParameterUiType } from '../../../models/AppModel/ParameterUiType'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceAppParameter } from '../../../models/AppModel/ServiceAppParameter'
 import { IdType } from '../../../models/IdType'
-import { getDomain } from '../../../utils/url-util'
+import { getDomain } from '../../../utils/urlUtil'
 
 interface AppMenuItemProps {
   handleClose: () => void

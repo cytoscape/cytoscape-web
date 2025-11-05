@@ -81,8 +81,8 @@ import {
   findPairIndex,
   getNetTableFromSummary,
   sortListAlphabetically,
-} from '../utils/helper-functions'
-import { DifferenceIcon, IntersectionIcon,UnionIcon } from './Icon'
+} from '../utils/mergeNetworkUtil'
+import { DifferenceIcon, IntersectionIcon, UnionIcon } from './Icon'
 import { MatchingColumnTable } from './MatchingColumnTable'
 import { MatchingTableComp } from './MatchingTableComp'
 

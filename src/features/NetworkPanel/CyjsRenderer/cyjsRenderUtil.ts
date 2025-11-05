@@ -37,7 +37,7 @@ import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/Cy
 import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
 import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
-import { NodeShapeMapping } from './cyjs-factory'
+import { NodeShapeMapping } from './cyjsFactoryUtil'
 
 /**
  * Helper to update edge arrow shape and fill properties on a Cytoscape.js element.

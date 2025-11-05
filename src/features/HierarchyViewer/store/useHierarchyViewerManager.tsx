@@ -23,7 +23,7 @@ import { ValueType } from '../../../models/TableModel'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 import { HcxMetaData } from '../model/HcxMetaData'
-import { getHcxProps } from '../utils/hierarchy-util'
+import { getHcxProps } from '../utils/hierarchyUtil'
 
 /**
  *  Switch the panel state based on the network meta data

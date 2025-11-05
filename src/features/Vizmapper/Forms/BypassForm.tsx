@@ -45,7 +45,7 @@ import {
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
-import { getKeybyAttribute } from '../../MergeNetworks/utils/attributes-operations'
+import { getKeybyAttribute } from '../../MergeNetworks/utils/attributesOperationsUtil'
 import {
   LockColorCheckbox,
   LockSizeCheckbox,

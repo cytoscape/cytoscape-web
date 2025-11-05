@@ -15,7 +15,7 @@ import {
 } from '../../../models/TableModel/impl/inMemoryTable'
 import { NetworkRecord, Pair } from '../models/DataInterfaceForMerge'
 import { MatchingTableRow } from '../models/MatchingTable'
-import { getResonableCompatibleConvertionType } from './attributes-operations'
+import { getResonableCompatibleConvertionType } from './attributesOperationsUtil'
 
 // Utility function to find index of a pair in a list
 export const findPairIndex = (pairs: Pair<string, string>[], uuid: string) => {

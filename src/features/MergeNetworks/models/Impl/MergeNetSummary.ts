@@ -10,7 +10,7 @@ import {
   isBooleanArray,
   isNumberArray,
   isStringArray,
-} from '../../utils/helper-functions'
+} from '../../utils/mergeNetworkUtil'
 import { MatchingTable } from '../MatchingTable'
 import { getMatchingTableRows } from './MatchingTableImpl'
 

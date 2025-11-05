@@ -17,7 +17,7 @@ import ExternalComponent from '../../AppManager/ExternalComponent'
 import { TaskStatusDialog } from '../../AppManager/TaskStatusDialog'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { DropdownMenuProps } from '../DropdownMenuProps'
-import { createMenuItems } from './menu-factory'
+import { createMenuItems } from './MenuFactory'
 
 export const AppMenu = (props: DropdownMenuProps) => {
   const theme = useTheme()

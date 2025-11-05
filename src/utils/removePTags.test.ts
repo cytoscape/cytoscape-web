@@ -1,4 +1,4 @@
-import { removePTags } from './remove-p-tags'
+import { removePTags } from './removePTags'
 
 describe('removePTags', () => {
   it.each([

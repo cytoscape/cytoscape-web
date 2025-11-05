@@ -13,7 +13,7 @@ import {
   serializeNetworkView,
   serializeTable,
   serializeVisualStyle,
-} from './db-util'
+} from './serialization'
 
 describe('db-util', () => {
   describe('maptoListEntries and listEntriesToMap', () => {

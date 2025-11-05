@@ -14,7 +14,7 @@ import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../hooks/stores/CredentialStore'
 import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
-import { waitSeconds } from '../utils/wait-seconds'
+import { waitSeconds } from '../utils/waitSeconds'
 
 export const UpdateNetworkDialog = (props: {
   open: boolean

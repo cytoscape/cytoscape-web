@@ -12,7 +12,7 @@ import { initializeDebug, logStartup } from './debug'
 import { EmailVerificationModal } from './features/EmailVerification'
 import ErrorBoundary from './features/ErrorBoundary'
 import { FeatureAvailabilityProvider } from './features/FeatureAvailability'
-import { initializeGoogleAnalytics } from './init/google-analytics'
+import { initializeGoogleAnalytics } from './init/googleAnalytics'
 import { initializeKeycloak, KeycloakContext } from './init/keycloak'
 import {
   INITIAL_LOADING_SCREEN_ID,
@@ -20,8 +20,8 @@ import {
   removeMessage,
   updateLoadingMessage,
   updateVersionText,
-} from './init/loading-screen'
-import { initializeTabManager } from './init/tab-manager'
+} from './init/loadingScreen'
+import { initializeTabManager } from './init/tabManager'
 
 const initializeApp = () => {
   const { urlBaseName } = appConfig

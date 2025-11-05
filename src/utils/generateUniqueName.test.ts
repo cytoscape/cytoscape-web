@@ -1,4 +1,4 @@
-import { generateUniqueName } from './generate-unique-name'
+import { generateUniqueName } from './generateUniqueName'
 
 describe('generateUniqueName', () => {
   describe('basic cases', () => {

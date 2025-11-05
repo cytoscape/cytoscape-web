@@ -13,7 +13,7 @@ import {
 } from './layoutSelection'
 
 // Mock the isHCX function to avoid dependency issues
-jest.mock('../../../features/HierarchyViewer/utils/hierarchy-util', () => ({
+jest.mock('../../../features/HierarchyViewer/utils/hierarchyUtil', () => ({
   isHCX: jest.fn(() => false),
 }))
 

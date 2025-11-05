@@ -46,7 +46,7 @@ import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyl
 import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
 import { ColorGradient } from './ColorGradient'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
-import { addHandle, editHandle, Handle, removeHandle } from './Handle'
+import { addHandle, editHandle, Handle, removeHandle } from './handleUtil'
 
 // color mapping form for now
 export function ContinuousColorMappingForm(props: {

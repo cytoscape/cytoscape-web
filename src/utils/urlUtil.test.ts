@@ -1,6 +1,6 @@
-import { getDomain,isValidUrl } from './url-util'
+import { getDomain,isValidUrl } from './urlUtil'
 
-describe('url-util', () => {
+describe('urlUtil', () => {
   describe('isValidUrl', () => {
     describe('valid URLs', () => {
       test('basic HTTP URLs', () => {

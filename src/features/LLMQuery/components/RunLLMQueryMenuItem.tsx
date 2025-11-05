@@ -1,4 +1,4 @@
-import { Box,MenuItem, Tooltip } from '@mui/material'
+import { Box, MenuItem, Tooltip } from '@mui/material'
 import { Menu } from 'primereact/menu'
 import { ReactElement, useContext } from 'react'
 
@@ -19,7 +19,7 @@ import {
   HcxMetaTag,
   SubsystemTag,
 } from '../../HierarchyViewer/model/HcxMetaTag'
-import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
+import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'

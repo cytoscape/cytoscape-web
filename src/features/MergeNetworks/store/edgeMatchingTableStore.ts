@@ -3,11 +3,11 @@ import { immer } from 'zustand/middleware/immer'
 
 import { IdType } from '../../../models/IdType'
 import { Column, ValueTypeName } from '../../../models/TableModel'
-import { generateUniqueName } from '../../../utils/generate-unique-name'
+import { generateUniqueName } from '../../../utils/generateUniqueName'
 import { NetworkRecord } from '../models/DataInterfaceForMerge'
 import { MatchingTableRow } from '../models/MatchingTable'
-import { getResonableCompatibleConvertionType } from '../utils/attributes-operations'
-import { filterRows, getMergedType } from '../utils/helper-functions'
+import { getResonableCompatibleConvertionType } from '../utils/attributesOperationsUtil'
+import { filterRows, getMergedType } from '../utils/mergeNetworkUtil'
 
 interface EdgeMatchingTableState {
   rows: MatchingTableRow[]

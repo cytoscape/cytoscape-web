@@ -13,7 +13,7 @@ import {
 } from '../../models/TableModel/impl/valueTypeImpl'
 import { ValueType } from '../../models/TableModel/ValueType'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
-import { waitSeconds } from '../../utils/wait-seconds'
+import { waitSeconds } from '../../utils/waitSeconds'
 import { getNdexClient } from './client'
 import { NdexNetworkSummary } from './NdexNetworkSummary'
 

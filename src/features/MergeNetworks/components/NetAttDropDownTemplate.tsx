@@ -11,8 +11,8 @@ import useMatchingColumnsStore from '../store/matchingColumnStore'
 import useNetMatchingTableStore from '../store/netMatchingTableStore'
 import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
 import useNodesDuplicationStore from '../store/nodesDuplicationStore'
-import { getResonableCompatibleConvertionType } from '../utils/attributes-operations'
-import { checkDuplication } from '../utils/helper-functions'
+import { getResonableCompatibleConvertionType } from '../utils/attributesOperationsUtil'
+import { checkDuplication } from '../utils/mergeNetworkUtil'
 
 interface netAttDropDownTemplateProps {
   networkRecords: Record<IdType, NetworkRecord>

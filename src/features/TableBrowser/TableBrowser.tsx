@@ -53,7 +53,7 @@ import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { NetworkView } from '../../models/ViewModel'
 import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualStyleOptions'
-import { isValidUrl } from '../../utils/url-util'
+import { isValidUrl } from '../../utils/urlUtil'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
 import {
   DuplicateIcon,

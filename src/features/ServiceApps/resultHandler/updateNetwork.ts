@@ -25,7 +25,7 @@ import {
 } from '../../../models/CxModel/impl/extractor'
 import { NetworkProperty } from '../../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
-import { generateUniqueName } from '../../../utils/generate-unique-name'
+import { generateUniqueName } from '../../../utils/generateUniqueName'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 export const useUpdateNetwork = (): (({

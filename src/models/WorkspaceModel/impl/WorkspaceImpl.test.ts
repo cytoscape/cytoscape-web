@@ -1,7 +1,7 @@
 import { Workspace } from '../Workspace'
-import { createWorkspace, DEF_WORKSPACE_NAME } from './WorkspaceImpl'
+import { createWorkspace, DEF_WORKSPACE_NAME } from './workspaceImpl'
 
-// to run these: npx jest src/models/WorkspaceModel/impl/WorkspaceImpl.test.ts
+// to run these: npx jest src/models/WorkspaceModel/impl/workspaceImpl.test.ts
 
 describe('WorkspaceImpl', () => {
   describe('createWorkspace', () => {

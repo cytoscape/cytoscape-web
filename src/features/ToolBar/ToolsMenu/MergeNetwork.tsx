@@ -1,5 +1,5 @@
 import MenuItem from '@mui/material/MenuItem'
-import React, { ReactElement,useState } from 'react'
+import React, { ReactElement, useState } from 'react'
 
 import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
@@ -10,13 +10,13 @@ import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { VisualStyle } from '../../../models/VisualStyleModel'
-import { generateUniqueName } from '../../../utils/generate-unique-name'
+import { generateUniqueName } from '../../../utils/generateUniqueName'
 import MergeDialog from '../../MergeNetworks/components/MergeDialog'
 import {
   NetworkRecord,
   Pair,
 } from '../../MergeNetworks/models/DataInterfaceForMerge'
-import { getNetTableFromSummary } from '../../MergeNetworks/utils/helper-functions'
+import { getNetTableFromSummary } from '../../MergeNetworks/utils/mergeNetworkUtil'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {

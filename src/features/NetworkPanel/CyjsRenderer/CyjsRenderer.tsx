@@ -40,10 +40,10 @@ import {
   Orientation,
   PaperSize,
 } from '../../ToolBar/DataMenu/ExportNetworkToImage/PdfExportForm'
-import { CxToCyCanvas } from './annotations/CxToCyCanvas'
-import { addCyElements } from './cyjs-factory'
-import { applyViewModel, createCyjsDataMapper } from './cyjs-util'
-import { registerCyExtensions } from './register-cy-extensions'
+import { CxToCyCanvas } from './annotations/cyjsAnnotationRenderer'
+import { addCyElements } from './cyjsFactoryUtil'
+import { applyViewModel, createCyjsDataMapper } from './cyjsRenderUtil'
+import { registerCyExtensions } from './registerCyExtensions'
 
 registerCyExtensions()
 import { logUi } from '../../../debug'
@@ -1002,7 +1002,7 @@ const CyjsRenderer = ({
         if (cy !== null) {
           // Dynamically import and register export extensions only when needed
           const { registerExportExtensions } = await import(
-            '../../ToolBar/DataMenu/ExportNetworkToImage/register-cy-export-extensions'
+            '../../ToolBar/DataMenu/ExportNetworkToImage/registerCyImageExportExtensions'
           )
           registerExportExtensions()
 
@@ -1026,7 +1026,7 @@ const CyjsRenderer = ({
         if (cy !== null) {
           // Dynamically import and register export extensions only when needed
           const { registerExportExtensions } = await import(
-            '../../ToolBar/DataMenu/ExportNetworkToImage/register-cy-export-extensions'
+            '../../ToolBar/DataMenu/ExportNetworkToImage/registerCyImageExportExtensions'
           )
           registerExportExtensions()
 

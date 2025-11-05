@@ -1,4 +1,4 @@
-import { dateFormatter } from './date-format'
+import { dateFormatter } from './dateFormat'
 
 describe('dateFormatter', () => {
   describe('basic functionality', () => {

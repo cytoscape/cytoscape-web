@@ -39,7 +39,7 @@ import { KeycloakContext } from '../../../init/keycloak'
 import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
-import { dateFormatter } from '../../../utils/date-format'
+import { dateFormatter } from '../../../utils/dateFormat'
 
 interface LoadFromNdexDialogProps {
   open: boolean

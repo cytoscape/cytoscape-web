@@ -1,3 +1,5 @@
+import { logUi } from '../../../debug'
+
 import { IdType } from '../../IdType'
 import { Edge, Network, Node } from '../../NetworkModel'
 import { AttributeName, Column, Table, ValueType } from '../../TableModel'
@@ -113,7 +115,7 @@ export const updateNetworkView = (
   const nodeViewCount = Object.keys(nodeViews).length
   const nodeCount = network.nodes.length
   if (nodeViewCount !== nodeCount) {
-    console.debug(
+    logUi.warn(
       `[${updateNetworkView.name}]: nodeViews.length is not same as network.nodes.length`,
       nodeCount,
       nodeViewCount,
@@ -154,13 +156,11 @@ const nodeViewBuilder = (
   const columns: Column[] = nodeTable.columns
   let idx: number = nodes.length
   if (idx !== nodes.length) {
-    console.debug(
+    logUi.info(
       `[${nodeViewBuilder.name}]: # of nodes does not match to the # of node views:`,
-      idx,
-      nodeViews,
     )
   }
-   
+
   while (idx--) {
     const node = nodes[idx]
     const nodeId = node.id
@@ -168,7 +168,7 @@ const nodeViewBuilder = (
       nodeViews !== undefined ? nodeViews[nodeId] : undefined
 
     if (nodeView === undefined) {
-      console.debug(
+      logUi.warn(
         `[${nodeViewBuilder.name}]: nodeView is undefined. This might break the view.`,
       )
     }
@@ -199,7 +199,7 @@ const edgeViewBuilder = (
   const result: Record<IdType, EdgeView> = {}
   const columns: Column[] = edgeTable.columns
   let idx: number = edges.length
-   
+
   while (idx--) {
     const edge = edges[idx]
     const ev: EdgeView = {
@@ -359,7 +359,7 @@ const computeView = (
     } else if (mapping !== undefined) {
       const mapper: Mapper | undefined = mappers.get(name)
       if (mapper === undefined) {
-        console.debug(
+        logUi.warn(
           `[${computeView.name}]: Mapping is defined, but Mapper for ${name} is not found`,
         )
       } else {

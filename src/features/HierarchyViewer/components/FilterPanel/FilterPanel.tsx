@@ -32,7 +32,7 @@ import {
 import {
   getAllDiscreteValues,
   getDefaultCheckboxFilterConfig,
-} from '../../utils/filter-util'
+} from '../../utils/filterUtil'
 import { AttributeSelector } from './AttributeSelector'
 import { CheckboxFilter } from './CheckboxFilter'
 import { CompatibleVisualProperties } from './CompatibleVisualMappings'

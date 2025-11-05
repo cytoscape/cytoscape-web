@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 
 import { logApp } from '../debug'
-import { isHCX } from '../features/HierarchyViewer/utils/hierarchy-util'
+import { isHCX } from '../features/HierarchyViewer/utils/hierarchyUtil'
 // TODO: Move these from features to other folders
 import { useRunTask } from '../features/ServiceApps'
 import { useServiceResultHandlerManager } from '../features/ServiceApps/resultHandler/serviceResultHandlerManager'

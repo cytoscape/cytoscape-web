@@ -1,4 +1,4 @@
-import { waitSeconds } from './wait-seconds'
+import { waitSeconds } from './waitSeconds'
 
 describe('waitSeconds', () => {
   beforeEach(() => {

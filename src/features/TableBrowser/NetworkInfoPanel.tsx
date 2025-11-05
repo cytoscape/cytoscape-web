@@ -16,7 +16,7 @@ import React from 'react'
 
 import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
-import { dateFormatter } from '../../utils/date-format'
+import { dateFormatter } from '../../utils/dateFormat'
 
 export function NetworkPropertyTable(): React.ReactElement {
   const currentNetworkId = useWorkspaceStore(

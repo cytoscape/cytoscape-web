@@ -16,7 +16,7 @@ import { NetworkRecord, Pair } from '../models/DataInterfaceForMerge'
 import useMatchingColumnsStore from '../store/matchingColumnStore'
 import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
 import useNodesDuplicationStore from '../store/nodesDuplicationStore'
-import { checkDuplication } from '../utils/helper-functions'
+import { checkDuplication } from '../utils/mergeNetworkUtil'
 
 interface MatchingTableProps {
   networkRecords: Record<string, NetworkRecord>
