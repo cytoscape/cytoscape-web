@@ -30,6 +30,7 @@
     "build:analyze": "ANALYZE=true webpack --mode production",
     "lint": "eslint --ext .js,.ts,.jsx,.tsx src",
     "lint:fix": "eslint --ext .js,.ts,.jsx,.tsx src --fix",
+    "lint:react-hooks": "eslint --ext .js,.ts,.jsx,.tsx src 2>&1 | grep -B 1 'react-hooks' | grep -E '(\\.tsx?|\\.jsx?|react-hooks)'",
     "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'",
     "generate-model-diagram": "./scripts/generate-model-diagram-to-png.sh"
   },
@@ -87,6 +88,8 @@
     "mini-css-extract-plugin": "^2.6.1",
     "node-fetch": "^3.2.10",
     "prettier": "^3.3.0",
+    "react-compiler-runtime": "^1.0.0",
+    "react-compiler-webpack": "^0.2.1",
     "terser-webpack-plugin": "^5.3.9",
     "ts-jest": "^29.0.1",
     "ts-loader": "^9.5.1",

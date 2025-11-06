@@ -18,6 +18,11 @@ const { execSync } = require('child_process')
 const ModuleFederationPlugin =
   require('webpack').container.ModuleFederationPlugin
 
+const {
+  defineReactCompilerLoaderOption,
+  reactCompilerLoader,
+} = require('react-compiler-webpack')
+
 // Bundle dependencies as a separate ES moudule
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -56,12 +61,22 @@ module.exports = {
       // look for tsx files to transform into the bundle
       {
         test: /\.tsx?$/,
-        use: {
-          loader: 'ts-loader',
-          options: {
-            configFile: 'tsconfig.json',
+        use: [
+          {
+            loader: reactCompilerLoader,
+            options: defineReactCompilerLoaderOption({
+              // React Compiler options goes here
+              target: '18',
+            }),
           },
-        },
+
+          {
+            loader: 'ts-loader',
+            options: {
+              configFile: 'tsconfig.json',
+            },
+          },
+        ],
         exclude: [/node_modules/, /dist/, /\/apps\//, /scripts/],
       },
       // look for css files to transform into the bundle
