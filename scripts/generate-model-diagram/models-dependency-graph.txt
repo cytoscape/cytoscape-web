@@ -1,0 +1,743 @@
+Dependency Graph
+================================================================================
+
+AppModel/AppComponent.ts
+  File: AppComponent
+  Exports: AppComponent
+  Dependencies:
+    -> AppModel/ComponentType.ts
+
+AppModel/AppStatus.ts
+  File: AppStatus
+  Exports: AppStatus
+  Dependencies: none
+
+AppModel/AppType.ts
+  File: AppType
+  Exports: AppType
+  Dependencies: none
+
+AppModel/ColumnTypeFilter.ts
+  File: ColumnTypeFilter
+  Exports: ColumnTypeFilter
+  Dependencies:
+    -> CxModel/Cx2/CxTypeName.ts
+
+AppModel/ComponentMetadata.ts
+  File: ComponentMetadata
+  Exports: ComponentMetadata
+  Dependencies:
+    -> AppModel/ComponentType.ts
+
+AppModel/ComponentType.ts
+  File: ComponentType
+  Exports: ComponentType
+  Dependencies: none
+
+AppModel/CyApp.ts
+  File: CyApp
+  Exports: CyApp
+  Dependencies:
+    -> AppModel/AppStatus.ts
+    -> AppModel/ComponentMetadata.ts
+
+AppModel/CyWebMenuItem.ts
+  File: CyWebMenuItem
+  Exports: CyWebMenuItem
+  Dependencies:
+    -> AppModel/MenuPathElement.ts
+    -> AppModel/RootMenu.ts
+
+AppModel/MenuPathElement.ts
+  File: MenuPathElement
+  Exports: MenuPathElement
+  Dependencies: none
+
+AppModel/ParameterUiType.ts
+  File: ParameterUiType
+  Exports: ParameterUiType
+  Dependencies: none
+
+AppModel/RootMenu.ts
+  File: RootMenu
+  Exports: RootMenu
+  Dependencies: none
+
+AppModel/SelectedDataScope.ts
+  File: SelectedDataScope
+  Exports: SelectedDataScope
+  Dependencies: none
+
+AppModel/SelectedDataType.ts
+  File: SelectedDataType
+  Exports: SelectedDataType
+  Dependencies: none
+
+AppModel/ServiceApp.ts
+  File: ServiceApp
+  Exports: ServiceApp
+  Dependencies:
+    -> AppModel/ServiceMetadata.ts
+
+AppModel/ServiceAppAction.ts
+  File: ServiceAppAction
+  Exports: ServiceAppAction
+  Dependencies: none
+
+AppModel/ServiceAppParameter.ts
+  File: ServiceAppParameter
+  Exports: ServiceAppParameter
+  Dependencies:
+    -> AppModel/ColumnTypeFilter.ts
+    -> AppModel/ParameterUiType.ts
+    -> AppModel/ValidationType.ts
+
+AppModel/ServiceAppTask.ts
+  File: ServiceAppTask
+  Exports: ServiceAppTask
+  Dependencies:
+    -> AppModel/ServiceStatus.ts
+
+AppModel/ServiceInputDefinition.ts
+  File: ServiceInputDefinition
+  Exports: ServiceInputDefinition, InputColumn, Model, ModelType, Format, FormatType, InputNetwork
+  Dependencies:
+    -> AppModel/SelectedDataScope.ts
+    -> AppModel/SelectedDataType.ts
+
+AppModel/ServiceMetadata.ts
+  File: ServiceMetadata
+  Exports: ServiceMetadata
+  Dependencies:
+    -> AppModel/CyWebMenuItem.ts
+    -> AppModel/ServiceAppAction.ts
+    -> AppModel/ServiceAppParameter.ts
+    -> AppModel/ServiceInputDefinition.ts
+
+AppModel/ServiceStatus.ts
+  File: ServiceStatus
+  Exports: ServiceStatus
+  Dependencies: none
+
+AppModel/ValidationType.ts
+  File: ValidationType
+  Exports: ValidationType
+  Dependencies: none
+
+CxModel/Cx2/Aspect.ts
+  File: Aspect
+  Exports: Aspect
+  Dependencies: none
+
+CxModel/Cx2/CoreAspects/Attribute.ts
+  File: Attribute
+  Exports: Attribute
+  Dependencies:
+    -> CxModel/Cx2/CxValue.ts
+
+CxModel/Cx2/CoreAspects/AttributeDeclarations.ts
+  File: AttributeDeclarations
+  Exports: AttributeDeclarations, AttributeDeclaration, Attributes
+  Dependencies:
+    -> CxModel/Cx2/Aspect.ts
+    -> CxModel/Cx2/CoreAspects/AttributeValue.ts
+
+CxModel/Cx2/CoreAspects/AttributeValue.ts
+  File: AttributeValue
+  Exports: AttributeValue
+  Dependencies:
+    -> CxModel/Cx2/CxTypeName.ts
+    -> CxModel/Cx2/CxValue.ts
+
+CxModel/Cx2/CoreAspects/Edge.ts
+  File: Edge
+  Exports: Edge
+  Dependencies:
+    -> CxModel/Cx2/CoreAspects/Attribute.ts
+
+CxModel/Cx2/CoreAspects/EdgeBypasses.ts
+  File: EdgeBypasses
+  Exports: EdgeBypasses, EdgeBypass, BypassValue
+  Dependencies:
+    -> CxModel/Cx2/Aspect.ts
+
+CxModel/Cx2/CoreAspects/NetworkAttributes.ts
+  File: NetworkAttributes
+  Exports: NetworkAttributes, NetworkAttributeValue
+  Dependencies:
+    -> CxModel/Cx2/Aspect.ts
+    -> CxModel/Cx2/CxValue.ts
+
+CxModel/Cx2/CoreAspects/Node.ts
+  File: Node
+  Exports: Node
+  Dependencies:
+    -> CxModel/Cx2/CoreAspects/Attribute.ts
+
+CxModel/Cx2/CoreAspects/NodeBypasses.ts
+  File: NodeBypasses
+  Exports: NodeBypasses, NodeBypass, BypassValue
+  Dependencies:
+    -> CxModel/Cx2/Aspect.ts
+
+CxModel/Cx2/CoreAspects/VisualProperties.ts
+  File: VisualProperties
+  Exports: VisualProperties, VisualProperty, DefaultVisualProperty
+  Dependencies:
+    -> CxModel/Cx2/Aspect.ts
+
+CxModel/Cx2/CoreAspectTag.ts
+  File: CoreAspectTag
+  Exports: CoreAspectTag
+  Dependencies: none
+
+CxModel/Cx2/CxDescriptor.ts
+  File: CxDescriptor
+  Exports: CxDescriptor
+  Dependencies: none
+
+CxModel/Cx2/CxTypeName.ts
+  File: CxTypeName
+  Exports: CxTypeName
+  Dependencies: none
+
+CxModel/Cx2/CxValue.ts
+  File: CxValue
+  Exports: CxValue
+  Dependencies: none
+
+CxModel/Cx2/MetaData.ts
+  File: MetaData
+  Exports: MetaData, MetaDataValue
+  Dependencies:
+    -> CxModel/Cx2/Aspect.ts
+
+CxModel/Cx2/Status.ts
+  File: Status
+  Exports: Status
+  Dependencies:
+    -> CxModel/Cx2/Aspect.ts
+
+CyNetworkModel/CyNetwork.ts
+  File: CyNetwork
+  Exports: CyNetwork
+  Dependencies:
+    -> StoreModel/UndoStoreModel.ts
+    -> VisualStyleModel/VisualStyleOptions.ts
+
+FilterModel/DiscreteFilterDetails.ts
+  File: DiscreteFilterDetails
+  Exports: DiscreteFilterDetails
+  Dependencies: none
+
+FilterModel/DisplayMode.ts
+  File: DisplayMode
+  Exports: DisplayMode
+  Dependencies: none
+
+FilterModel/Filter.ts
+  File: Filter
+  Exports: Filter
+  Dependencies:
+    -> IdType.ts
+    -> PropertyModel/DiscreteRange.ts
+    -> PropertyModel/NumberRange.ts
+
+FilterModel/FilterConfig.ts
+  File: FilterConfig
+  Exports: FilterConfig
+  Dependencies:
+    -> PropertyModel/DiscreteRange.ts
+    -> PropertyModel/NumberRange.ts
+    -> FilterModel/DiscreteFilterDetails.ts
+    -> FilterModel/DisplayMode.ts
+    -> FilterModel/FilterWidgetType.ts
+    -> FilterModel/SelectionType.ts
+
+FilterModel/FilterUrlParams.ts
+  File: FilterUrlParams
+  Exports: FilterUrlParams
+  Dependencies: none
+
+FilterModel/FilterWidgetType.ts
+  File: FilterWidgetType
+  Exports: FilterWidgetType
+  Dependencies: none
+
+FilterModel/Search.ts
+  File: Search
+  Exports: IndexedColumns, Indices, Search, Operator, SearchOptions
+  Dependencies:
+    -> IdType.ts
+    -> FilterModel/SearchState.ts
+
+FilterModel/SearchState.ts
+  File: SearchState
+  Exports: SearchState
+  Dependencies: none
+
+FilterModel/SelectionType.ts
+  File: SelectionType
+  Exports: SelectionType
+  Dependencies: none
+
+IdType.ts
+  File: IdType
+  Exports: IdType
+  Dependencies: none
+
+LayoutModel/LayoutAlgorithm.ts
+  File: LayoutAlgorithm
+  Exports: LayoutAlgorithmType, LayoutAlgorithm
+  Dependencies:
+    -> PropertyModel/Property.ts
+
+LayoutModel/LayoutEngine.ts
+  File: LayoutEngine
+  Exports: LayoutEngine
+  Dependencies:
+    -> IdType.ts
+    -> LayoutModel/LayoutAlgorithm.ts
+
+MessageModel/Message.ts
+  File: Message
+  Exports: MessageSeverity, MessageSeverityType, Message
+  Dependencies: none
+
+NetworkModel/Edge.ts
+  File: Edge
+  Exports: Edge
+  Dependencies:
+    -> IdType.ts
+    -> NetworkModel/GraphObject.ts
+
+NetworkModel/GraphObject.ts
+  File: GraphObject
+  Exports: GraphObject
+  Dependencies:
+    -> IdType.ts
+
+NetworkModel/GraphObjectType.ts
+  File: GraphObjectType
+  Exports: GraphObjectType
+  Dependencies: none
+
+NetworkModel/Network.ts
+  File: Network
+  Exports: Network
+  Dependencies:
+    -> IdType.ts
+
+NetworkModel/Node.ts
+  File: Node
+  Exports: Node
+  Dependencies:
+    -> NetworkModel/GraphObject.ts
+
+NetworkSummaryModel/NetworkProperty.ts
+  File: NetworkProperty
+  Exports: NetworkProperty
+  Dependencies:
+    -> IdType.ts
+
+NetworkSummaryModel/NetworkSummary.ts
+  File: NetworkSummary
+  Exports: NetworkSummary
+  Dependencies:
+    -> IdType.ts
+    -> NetworkSummaryModel/NetworkProperty.ts
+    -> NetworkSummaryModel/Visibility.ts
+
+NetworkSummaryModel/Visibility.ts
+  File: Visibility
+  Exports: Visibility
+  Dependencies: none
+
+OpaqueAspectModel/OpaqueAspects.ts
+  File: OpaqueAspects
+  Exports: OpaqueAspects
+  Dependencies: none
+
+PropertyModel/DiscreteRange.ts
+  File: DiscreteRange
+  Exports: DiscreteRange
+  Dependencies: none
+
+PropertyModel/NumberRange.ts
+  File: NumberRange
+  Exports: NumberRange
+  Dependencies: none
+
+PropertyModel/Property.ts
+  File: Property
+  Exports: Property
+  Dependencies:
+    -> PropertyModel/DiscreteRange.ts
+    -> PropertyModel/NumberRange.ts
+
+RendererModel/Renderer.ts
+  File: Renderer
+  Exports: Renderer
+  Dependencies: none
+
+RendererModel/ViewPort.ts
+  File: ViewPort
+  Exports: ViewPort
+  Dependencies: none
+
+StoreModel/AppStoreModel.ts
+  File: AppStoreModel
+  Exports: AppState, AppAction, AppStore
+  Dependencies:
+    -> AppModel/AppStatus.ts
+    -> AppModel/CyApp.ts
+    -> AppModel/ServiceApp.ts
+    -> AppModel/ServiceAppTask.ts
+
+StoreModel/CredentialStoreModel.ts
+  File: CredentialStoreModel
+  Exports: CredentialState, CredentialActions, CredentialStore
+  Dependencies: none
+
+StoreModel/LayoutStoreModel.ts
+  File: LayoutStoreModel
+  Exports: LayoutState, LayoutAction, LayoutStore
+  Dependencies: none
+
+StoreModel/MessageStoreModel.ts
+  File: MessageStoreModel
+  Exports: MessageState, MessageAction, MessageStore
+  Dependencies: none
+
+StoreModel/NetworkStoreModel.ts
+  File: NetworkStoreModel
+  Exports: UpdateEventType, NetworkUpdatedEvent, NetworkState, NetworkUpdateActions, NetworkActions, NetworkStore
+  Dependencies:
+    -> IdType.ts
+
+StoreModel/NetworkSummaryStoreModel.ts
+  File: NetworkSummaryStoreModel
+  Exports: NetworkSummaryState, NetworkSummaryActions, NetworkSummaryStore
+  Dependencies:
+    -> IdType.ts
+
+StoreModel/OpaqueAspectStoreModel.ts
+  File: OpaqueAspectStoreModel
+  Exports: OpaqueAspectState, OpaqueAspectActions, OpaqueAspectStore
+  Dependencies:
+    -> IdType.ts
+
+StoreModel/RendererStoreModel.ts
+  File: RendererStoreModel
+  Exports: RendererState, RendererAction, RendererStore
+  Dependencies:
+    -> IdType.ts
+    -> RendererModel/ViewPort.ts
+
+StoreModel/TableStoreModel.ts
+  File: TableStoreModel
+  Exports: TableRecord, TableState, TableType, CellEdit, TableAction, TableStore
+  Dependencies:
+    -> IdType.ts
+
+StoreModel/UiStateStoreModel.ts
+  File: UiStateStoreModel
+  Exports: UiState, UiStateAction, UiStateStore
+  Dependencies:
+    -> IdType.ts
+    -> UiModel/Panel.ts
+    -> UiModel/PanelState.ts
+    -> VisualStyleModel/VisualStyleOptions.ts
+    -> StoreModel/TableStoreModel.ts
+
+StoreModel/UndoStoreModel.ts
+  File: UndoStoreModel
+  Exports: UndoCommandType, Edit, UndoRedoStack, UndoRedoStackState, UndoAction, UndoStore
+  Dependencies:
+    -> IdType.ts
+
+StoreModel/ViewModelStoreModel.ts
+  File: ViewModelStoreModel
+  Exports: ViewModelState, ViewModelAction, ViewModelUpdateActions, ViewModelStore
+  Dependencies:
+    -> IdType.ts
+
+StoreModel/VisualStyleStoreModel.ts
+  File: VisualStyleStoreModel
+  Exports: VisualStyleState, UpdateVisualStyleAction, VisualStyleAction, VisualStyleStore
+  Dependencies:
+    -> IdType.ts
+
+StoreModel/WorkspaceStoreModel.ts
+  File: WorkspaceStoreModel
+  Exports: WorkspaceState, WorkspaceActions, WorkspaceStore
+  Dependencies:
+    -> IdType.ts
+
+TableModel/AttributeName.ts
+  File: AttributeName
+  Exports: AttributeName
+  Dependencies: none
+
+TableModel/Column.ts
+  File: Column
+  Exports: Column
+  Dependencies:
+    -> TableModel/AttributeName.ts
+    -> TableModel/ValueTypeName.ts
+
+TableModel/NetworkAttributes.ts
+  File: NetworkAttributes
+  Exports: NetworkAttributes
+  Dependencies:
+    -> IdType.ts
+
+TableModel/Table.ts
+  File: Table
+  Exports: Table
+  Dependencies:
+    -> IdType.ts
+    -> TableModel/AttributeName.ts
+    -> TableModel/Column.ts
+    -> TableModel/ValueType.ts
+
+TableModel/TableFn.ts
+  File: TableFn
+  Exports: TableFn
+  Dependencies:
+    -> IdType.ts
+
+TableModel/ValueType.ts
+  File: ValueType
+  Exports: ListOfValueType, SingleValueType, ValueType
+  Dependencies: none
+
+TableModel/ValueTypeName.ts
+  File: ValueTypeName
+  Exports: ValueTypeName
+  Dependencies: none
+
+UiModel/NetworkBrowserPanelState.ts
+  File: NetworkBrowserPanelState
+  Exports: NetworkBrowserPanelUIState
+  Dependencies: none
+
+UiModel/NetworkViewUI.ts
+  File: NetworkViewUI
+  Exports: NetworkViewUIState
+  Dependencies: none
+
+UiModel/Panel.ts
+  File: Panel
+  Exports: Panel
+  Dependencies: none
+
+UiModel/PanelState.ts
+  File: PanelState
+  Exports: PanelState
+  Dependencies: none
+
+UiModel/TableUi.ts
+  File: TableUi
+  Exports: ColumnUIState, TableUIState
+  Dependencies: none
+
+UiModel/Ui.ts
+  File: Ui
+  Exports: Ui
+  Dependencies:
+    -> IdType.ts
+    -> VisualStyleModel/VisualStyleOptions.ts
+    -> UiModel/NetworkBrowserPanelState.ts
+    -> UiModel/NetworkViewUI.ts
+    -> UiModel/Panel.ts
+    -> UiModel/PanelState.ts
+    -> UiModel/TableUi.ts
+
+ViewModel/EdgeView.ts
+  File: EdgeView
+  Exports: EdgeView
+  Dependencies:
+    -> ViewModel/View.ts
+
+ViewModel/NetworkView.ts
+  File: NetworkView
+  Exports: NetworkView
+  Dependencies:
+    -> IdType.ts
+    -> ViewModel/EdgeView.ts
+    -> ViewModel/NodeView.ts
+    -> ViewModel/View.ts
+
+ViewModel/NodeView.ts
+  File: NodeView
+  Exports: NodeView
+  Dependencies:
+    -> ViewModel/View.ts
+
+ViewModel/View.ts
+  File: View
+  Exports: View
+  Dependencies:
+    -> IdType.ts
+
+VisualStyleModel/Bypass.ts
+  File: Bypass
+  Exports: Bypass
+  Dependencies:
+    -> IdType.ts
+
+VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction.ts
+  File: ContinuousMappingFunction
+  Exports: ContinuousFunctionControlPoint, ContinuousMappingFunction
+  Dependencies: none
+
+VisualStyleModel/VisualMappingFunction/DiscreteMappingFunction.ts
+  File: DiscreteMappingFunction
+  Exports: DiscreteMappingFunction
+  Dependencies: none
+
+VisualStyleModel/VisualMappingFunction/Mapper.ts
+  File: Mapper
+  Exports: Mapper
+  Dependencies: none
+
+VisualStyleModel/VisualMappingFunction/MappingFunctionType.ts
+  File: MappingFunctionType
+  Exports: MappingFunctionType
+  Dependencies: none
+
+VisualStyleModel/VisualMappingFunction/PassthroughMappingFunction.ts
+  File: PassthroughMappingFunction
+  Exports: PassthroughMappingFunction
+  Dependencies: none
+
+VisualStyleModel/VisualMappingFunction/VisualMappingFunction.ts
+  File: VisualMappingFunction
+  Exports: VisualMappingFunction
+  Dependencies:
+    -> VisualStyleModel/VisualPropertyValueTypeName.ts
+    -> VisualStyleModel/VisualMappingFunction/MappingFunctionType.ts
+
+VisualStyleModel/VisualProperty.ts
+  File: VisualProperty
+  Exports: VisualProperty
+  Dependencies:
+    -> VisualStyleModel/Bypass.ts
+    -> VisualStyleModel/VisualPropertyGroup.ts
+    -> VisualStyleModel/VisualPropertyName.ts
+    -> VisualStyleModel/VisualPropertyValueTypeName.ts
+
+VisualStyleModel/VisualPropertyGroup.ts
+  File: VisualPropertyGroup
+  Exports: VisualPropertyGroup
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyName.ts
+  File: VisualPropertyName
+  Exports: NodeVisualPropertyName, EdgeVisualPropertyName, NetworkVisualPropertyName, VisualPropertyName
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyValue/ColorType.ts
+  File: ColorType
+  Exports: RGB, RGBA, HEX, ColorType
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyValue/CustomGraphicsType.ts
+  File: CustomGraphicsType
+  Exports: CustomGraphicsTypeType, CustomGraphicsNameType, JustificationType, AnchorType, CustomGraphicsPositionType, CustomGraphicsType, PieChartPropertiesType, RingChartPropertiesType, NonePropertiesType
+  Dependencies:
+    -> TableModel/AttributeName.ts
+    -> VisualStyleModel/VisualPropertyValue/ColorType.ts
+
+VisualStyleModel/VisualPropertyValue/EdgeArrowShapeType.ts
+  File: EdgeArrowShapeType
+  Exports: EdgeArrowShapeType
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyValue/EdgeFillType.ts
+  File: EdgeFillType
+  Exports: EdgeFillType
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyValue/EdgeLineType.ts
+  File: EdgeLineType
+  Exports: EdgeLineType
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyValue/FontType.ts
+  File: FontType
+  Exports: FontType
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyValue/LabelType.ts
+  File: LabelType
+  Exports: LabelType
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyValue/NodeBorderLineType.ts
+  File: NodeBorderLineType
+  Exports: NodeBorderLineType
+  Dependencies:
+    -> VisualStyleModel/VisualPropertyValue/EdgeLineType.ts
+
+VisualStyleModel/VisualPropertyValue/NodeLabelPositionType.ts
+  File: NodeLabelPositionType
+  Exports: HorizontalAlignType, VerticalAlignType, NodeLabelPositionValueType, NodeLabelPositionType
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyValue/NodeShapeType.ts
+  File: NodeShapeType
+  Exports: NodeShapeType
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyValue/VisibilityType.ts
+  File: VisibilityType
+  Exports: VisibilityType
+  Dependencies: none
+
+VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts
+  File: VisualPropertyValueType
+  Exports: VisualPropertyValueType
+  Dependencies:
+    -> VisualStyleModel/VisualPropertyValue/ColorType.ts
+    -> VisualStyleModel/VisualPropertyValue/CustomGraphicsType.ts
+    -> VisualStyleModel/VisualPropertyValue/EdgeArrowShapeType.ts
+    -> VisualStyleModel/VisualPropertyValue/EdgeFillType.ts
+    -> VisualStyleModel/VisualPropertyValue/EdgeLineType.ts
+    -> VisualStyleModel/VisualPropertyValue/FontType.ts
+    -> VisualStyleModel/VisualPropertyValue/NodeBorderLineType.ts
+    -> VisualStyleModel/VisualPropertyValue/NodeLabelPositionType.ts
+    -> VisualStyleModel/VisualPropertyValue/NodeShapeType.ts
+    -> VisualStyleModel/VisualPropertyValue/VisibilityType.ts
+
+VisualStyleModel/VisualPropertyValueTypeName.ts
+  File: VisualPropertyValueTypeName
+  Exports: VisualPropertyValueTypeName
+  Dependencies: none
+
+VisualStyleModel/VisualStyle.ts
+  File: VisualStyle
+  Exports: VisualStyle
+  Dependencies:
+    -> VisualStyleModel/VisualProperty.ts
+    -> VisualStyleModel/VisualPropertyName.ts
+
+VisualStyleModel/VisualStyleFn.ts
+  File: VisualStyleFn
+  Exports: NetworkViewSources, VisualStyleFn
+  Dependencies:
+    -> VisualStyleModel/VisualProperty.ts
+    -> VisualStyleModel/VisualStyle.ts
+
+VisualStyleModel/VisualStyleOptions.ts
+  File: VisualStyleOptions
+  Exports: ColumnConfiguration, TableConfig, TableDisplayConfiguration, VisualEditorProperties, VisualStyleOptions
+  Dependencies: none
+
+WorkspaceModel/Workspace.ts
+  File: Workspace
+  Exports: Workspace
+  Dependencies:
+    -> IdType.ts
+
