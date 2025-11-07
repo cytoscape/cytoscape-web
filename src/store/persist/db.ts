@@ -166,7 +166,11 @@ export const initializeDb = async (): Promise<void> => {
   })
 
   if (config.debug) {
-    window.debug.db = db
+    const win = window as unknown as { debug?: Record<string, any> }
+    if (win.debug === undefined) {
+      win.debug = {}
+    }
+    win.debug.db = db
   }
 }
 
@@ -529,11 +533,8 @@ export const putNetworkViewToDb = async (
         return
       }
 
-      const networkViews = await db.cyNetworkViews.get({ id })
-      if (networkViews !== undefined) {
-        const viewList: NetworkView[] = networkViews.views
-        // Add only if the view does not exist
-
+      const viewList = await getNetworkViewsFromDb(id)
+      if (viewList !== undefined) {
         let found = false
         viewList.forEach((v: NetworkView, idx: number) => {
           const key1 = v.viewId
