@@ -166,7 +166,11 @@ export const initializeDb = async (): Promise<void> => {
   })
 
   if (config.debug) {
-    window.debug.db = db
+    const win = window as unknown as { debug?: Record<string, any> }
+    if (win.debug === undefined) {
+      win.debug = {}
+    }
+    win.debug.db = db
   }
 }
 
@@ -508,7 +512,6 @@ export const getNetworkViewsFromDb = async (
     deserializeNetworkView(v),
   ) as NetworkView[]
 }
-
 /**
  * Add a new network view to the DB
  *
@@ -528,10 +531,8 @@ export const putNetworkViewToDb = async (
         )
         return
       }
-
-      const networkViews = await db.cyNetworkViews.get({ id })
-      if (networkViews !== undefined) {
-        const viewList: NetworkView[] = networkViews.views
+      const viewList = await getNetworkViewsFromDb(id)
+      if (viewList !== undefined) {
         // Add only if the view does not exist
 
         let found = false
@@ -597,22 +598,6 @@ export const putNetworkViewsToDb = async (
     logDb.error('[putNetworkViewsToDb] error:', e, id, views)
     throw e
   }
-}
-
-/**
- * Delete a network view from the DB
- *
- * @param id Network model ID
- * @param viewId Network View ID to be deleted
- */
-export const deleteNetworkViewFromDb = async (
-  id: IdType,
-  viewId: IdType,
-): Promise<void> => {
-  await db.transaction('rw', db.cyNetworkViews, async () => {
-    // TODO: delete only one view
-    // await db.cyNetworkViews.delete(id)
-  })
 }
 
 /**
@@ -899,8 +884,10 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
   try {
     const network = await getNetworkFromDb(id)
     const tables = await getTablesFromDb(id)
-    const networkViews: NetworkView[] | undefined =
-      await getNetworkViewsFromDb(id)
+    const networkViewsEntry = await db.cyNetworkViews.get({ id })
+    const networkViews: NetworkView[] | undefined = networkViewsEntry
+      ? networkViewsEntry.views.map((v: any) => deserializeNetworkView(v))
+      : undefined
     const visualStyle = await getVisualStyleFromDb(id)
     const uiState: Ui | undefined = await getUiStateFromDb()
     const vsOptions: Record<IdType, VisualStyleOptions> =
