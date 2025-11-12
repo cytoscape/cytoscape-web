@@ -9,7 +9,7 @@ import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { CyNetwork } from '../CyNetworkModel'
 import { Visibility } from '../NetworkSummaryModel/Visibility'
 import { Cx2 } from './Cx2'
-import { createCyNetworkFromCx2 } from './impl'
+import { createCyNetworkFromCx2, validateCX2 } from './impl'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
@@ -36,6 +36,14 @@ export const fetchUrlCx = async (
       throw new Error(`HTTP error! status: ${fullResponse.status}`)
     }
     const data: Cx2 = await fullResponse.json()
+
+    const validationResult = validateCX2(data)
+    if (!validationResult.isValid) {
+      throw new Error(
+        `Invalid CX2 network: ${Array.from(new Set(validationResult.errors.map((err) => err.message))).join('\n')} \n Please see the CX2 spec for full details https://cytoscape.org/cx/cx2/specification/cytoscape-exchange-format-specification-(version-2)/ `,
+      )
+    }
+
     const uuid = uuidv4()
     const network = createCyNetworkFromCx2(uuid, data)
 

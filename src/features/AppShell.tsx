@@ -150,6 +150,7 @@ const AppShell = (): ReactElement => {
       const summaries = await loadNetworkSummaries(workspace.networkIds, token)
 
       // Process UI state parameters from search params
+      // Update the workspace, uiState and summaries in the stores so react can start to render the workspace editor
       const uiState = (await getUiStateFromDb()) ?? DEFAULT_UI_STATE
       uiState.panels[Panel.LEFT] =
         (search.get(Panel.LEFT) as PanelState) ?? uiState.panels[Panel.LEFT]
@@ -161,6 +162,9 @@ const AppShell = (): ReactElement => {
         search.get('activeTableBrowserTab') != null
           ? Number(search.get('activeTableBrowserTab'))
           : uiState.tableUi.activeTabIndex
+      setUi(uiState)
+
+      // Update the workspace, uiState and summaries in the stores so react can start to render the workspace editor
 
       // Handle importing networks from NDEx
       // /:workspaceId/networks/:networkId
@@ -202,8 +206,14 @@ const AppShell = (): ReactElement => {
         try {
           const res = await fetchUrlCx(value, 10000000)
           const { networkWithView, summary } = res
-          const { network, nodeTable, edgeTable, visualStyle, networkViews } =
-            networkWithView
+          const {
+            network,
+            nodeTable,
+            edgeTable,
+            visualStyle,
+            networkViews,
+            visualStyleOptions,
+          } = networkWithView
           const newNetworkId = network.id
           summaries[newNetworkId] = summary
           await putNetworkSummaryToDb(summary)
@@ -214,14 +224,15 @@ const AppShell = (): ReactElement => {
           // therefore, as a temporary fix, the first operation that should be done is to set the
           // current network to be the new network id
 
-          setVisualStyleOptions(newNetworkId)
+          setVisualStyleOptions(newNetworkId, visualStyleOptions)
           addNewNetwork(network)
           setVisualStyle(newNetworkId, visualStyle)
           setTables(newNetworkId, nodeTable, edgeTable)
           setViewModel(newNetworkId, networkViews[0])
         } catch (error) {
           unableToImportNetworkMessages.push(
-            `Unable to import network from query params. Could not fetch network from url ${value}.`,
+            `Unable to import network from query params at url ${value}.`,
+            `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
           )
         }
       }
@@ -229,13 +240,11 @@ const AppShell = (): ReactElement => {
       if (unableToImportNetworkMessages.length > 0) {
         addMessage({
           message: unableToImportNetworkMessages.join('\n'),
-          duration: 5000,
+          persistent: true,
           severity: MessageSeverity.ERROR,
         })
       }
 
-      // Update the workspace, uiState and summaries in the stores so react can start to render the workspace editor
-      setUi(uiState)
       addSummaries(summaries)
       setWorkspace(workspace)
 

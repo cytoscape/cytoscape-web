@@ -1,5 +1,5 @@
+import React, { useState, useEffect, useMemo } from 'react'
 import { Alert, Snackbar, SnackbarCloseReason } from '@mui/material'
-import React, { useEffect,useState } from 'react'
 
 import { useMessageStore } from '../../hooks/stores/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
@@ -8,6 +8,11 @@ export const SnackbarMessageList = (): React.ReactElement => {
   const [open, setOpen] = useState(false)
   const messages = useMessageStore((state) => state.messages)
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
+
+  const currentMessage = useMemo(
+    () => messages[currentMessageIndex],
+    [messages, currentMessageIndex],
+  )
 
   useEffect(() => {
     if (messages.length > 0 && currentMessageIndex < messages.length) {
@@ -28,6 +33,11 @@ export const SnackbarMessageList = (): React.ReactElement => {
     }
   }, [open, currentMessageIndex, messages.length])
 
+  const advanceMessage = () => {
+    setCurrentMessageIndex((prev) => prev + 1)
+    setOpen(false)
+  }
+
   const handleSnackbarClose = (
     event: React.SyntheticEvent,
     reason: SnackbarCloseReason,
@@ -35,25 +45,39 @@ export const SnackbarMessageList = (): React.ReactElement => {
     if (reason === 'clickaway') {
       return
     }
-    setCurrentMessageIndex(currentMessageIndex + 1)
-    setOpen(false)
+    advanceMessage()
   }
+
+  const handleAlertClose = () => {
+    advanceMessage()
+  }
+
+  const handleAlertClick = () => {
+    if (currentMessage?.persistent) {
+      advanceMessage()
+    }
+  }
+
+  const autoHideDuration =
+    currentMessage?.persistent === true
+      ? undefined
+      : (currentMessage?.duration ?? 5000)
 
   return (
     <Snackbar
       sx={{ zIndex: 9999999 }}
       open={open}
       onClose={handleSnackbarClose}
-      autoHideDuration={messages[currentMessageIndex]?.duration ?? 5000}
+      autoHideDuration={autoHideDuration}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
     >
       <Alert
-        severity={
-          messages[currentMessageIndex]?.severity ?? MessageSeverity.INFO
-        }
+        severity={currentMessage?.severity ?? MessageSeverity.INFO}
         sx={{ width: '100%' }}
+        onClose={handleAlertClose}
+        onClick={handleAlertClick}
       >
-        {messages[currentMessageIndex]?.message}
+        {currentMessage?.message}
       </Alert>
     </Snackbar>
   )

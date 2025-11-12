@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { ReactElement } from 'react'
+import { MouseEvent, ReactElement } from 'react'
 
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
@@ -47,7 +47,23 @@ export const NetworkTab = ({
         // Mount all components in the background but display only the selected one
         display: selected ? 'block' : 'none',
       }}
-      onClick={handleClick}
+      // First click on an inactive renderer should only activate this tab and
+      // must not trigger renderer-level click handlers (e.g. CP background reset).
+      onClickCapture={(event: MouseEvent<HTMLDivElement>) => {
+        if (!isActive) {
+          event.stopPropagation()
+          handleClick?.()
+        }
+      }}
+      // Once active, allow the click to bubble to renderer content while still
+      // notifying the panel (idempotent) to keep activation state in sync.
+      onClick={(event: MouseEvent<HTMLDivElement>) => {
+        if (!isActive) {
+          event.stopPropagation()
+          return
+        }
+        handleClick?.()
+      }}
     >
       {rendererComponent}
       <FloatingToolBar rendererId={renderer.id} />
