@@ -14,10 +14,8 @@ import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
-import {
-  createCyNetworkFromCx2,
-  isValidCx2Network,
-} from '../../../models/CxModel/impl'
+import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
+import { validateCX2 } from '../../../models/CxModel/impl/validator'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
@@ -66,7 +64,9 @@ export const useAddNetworks = (): (({
 
       const validNetworkIds: IdType[] = []
       for (const item of responseObj) {
-        if (isValidCx2Network(item)) {
+        // Validate CX2 data from service app before processing
+        const validationResult = validateCX2(item)
+        if (validationResult.isValid) {
           try {
             let localName = 'Untitled Network'
             let localDescription = ''
@@ -102,7 +102,7 @@ export const useAddNetworks = (): (({
             )
             const localUuid = uuidv4()
 
-            const res = createCyNetworkFromCx2(localUuid, item as Cx2)
+            const res = getCyNetworkFromCx2(localUuid, item as Cx2)
             const {
               network,
               nodeTable,
@@ -159,7 +159,10 @@ export const useAddNetworks = (): (({
             logApp.error(`[${addNetworks.name}]: Error adding network:`, error)
           }
         } else {
-          logApp.warn(`[${addNetworks.name}]: Invalid Cx2Network item:`, item)
+          logApp.warn(
+            `[${addNetworks.name}]: Invalid Cx2Network item: ${validationResult.errorMessage ?? 'Unknown validation error'}`,
+            item,
+          )
         }
       }
       addNetworksToWorkspace(validNetworkIds)

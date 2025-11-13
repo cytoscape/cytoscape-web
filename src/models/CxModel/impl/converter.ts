@@ -20,6 +20,7 @@ import {
   createVisualStyleOptionsFromCx,
 } from './converters'
 import { getOptionalAspects } from './extractor'
+import { validateCX2 } from './validator'
 
 /**
  * Create network data from CX2 format
@@ -28,8 +29,11 @@ import { getOptionalAspects } from './extractor'
  * network topology, tables, visual style, network views, network attributes,
  * visual style options, optional aspects, and undo/redo stack.
  *
+ * **Note:** This function does NOT validate the CX2 data. It assumes the data is already valid.
+ * For external/untrusted CX2 data, use `getCyNetworkFromCx2` instead, which validates before conversion.
+ *
  * @param networkId - Unique identifier for the network
- * @param cxData - CX2 data object
+ * @param cxData - CX2 data object (assumed to be valid)
  * @returns CyNetwork object with all network data
  */
 export const createCyNetworkFromCx2 = (
@@ -67,4 +71,43 @@ export const createCyNetworkFromCx2 = (
     otherAspects,
     undoRedoStack,
   }
+}
+
+/**
+ * Get a CyNetwork from CX2 data with validation
+ *
+ * Validates the CX2 data before converting it to a CyNetwork. This is the recommended
+ * function to use when loading CX2 data from external sources (file uploads, NDEx API,
+ * URLs, service apps, etc.) to ensure data integrity and application stability.
+ *
+ * If validation fails, throws an Error with a formatted error message.
+ *
+ * @param networkId - Unique identifier for the network
+ * @param cxData - CX2 data object to validate and convert
+ * @returns CyNetwork object with all network data
+ * @throws Error if CX2 data validation fails
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   const network = getCyNetworkFromCx2(networkId, cxData)
+ *   // Use network...
+ * } catch (error) {
+ *   // Handle validation error
+ *   console.error('Invalid CX2 network:', error.message)
+ * }
+ * ```
+ */
+export const getCyNetworkFromCx2 = (
+  networkId: string,
+  cxData: Cx2,
+): CyNetwork => {
+  const validationResult = validateCX2(cxData)
+  if (!validationResult.isValid) {
+    throw new Error(
+      validationResult.errorMessage ??
+        'Invalid CX2 network: Unknown validation error',
+    )
+  }
+  return createCyNetworkFromCx2(networkId, cxData)
 }

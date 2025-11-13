@@ -5,7 +5,7 @@
  */
 
 // Converter utilities (CX2 → Internal models)
-export { createCyNetworkFromCx2 } from './converter'
+export { createCyNetworkFromCx2, getCyNetworkFromCx2 } from './converter'
 
 // Exporter utilities (Internal models → CX2)
 export { exportCyNetworkToCx2 } from './exporter'

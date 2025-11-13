@@ -25,7 +25,7 @@ import { useUiStateStore } from '../../hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
-import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
+import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
@@ -80,12 +80,9 @@ export function FileUpload(props: FileUploadProps) {
       const validationResult = validateCX2(json)
 
       if (!validationResult.isValid) {
-        const errorMessages = validationResult.errors
-          .map((err) => err.message)
-          .join('\n')
         addMessage({
           duration: 15000,
-          message: `Failed to parse CX2 file:\n${errorMessages}. \n Please see the CX2 spec for full details https://cytoscape.org/cx/cx2/specification/cytoscape-exchange-format-specification-(version-2)/ `,
+          message: `Failed to parse CX2 file:\n${validationResult.errorMessage ?? 'Unknown validation error'}`,
           severity: MessageSeverity.ERROR,
         })
         return
@@ -123,7 +120,7 @@ export function FileUpload(props: FileUploadProps) {
           })
 
         const localUuid = uuidv4()
-        const res = createCyNetworkFromCx2(localUuid, json)
+        const res = getCyNetworkFromCx2(localUuid, json)
         const {
           network,
           nodeTable,

@@ -10,7 +10,7 @@ import {
 } from '../../../api/ndex'
 import { logApi } from '../../../debug'
 import { Cx2 } from '../../../models/CxModel/Cx2'
-import { createCyNetworkFromCx2 } from '../../../models/CxModel/impl'
+import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
 import { CyNetwork } from '../../../models/CyNetworkModel'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
@@ -104,7 +104,7 @@ const fetchNdexSubnetwork = async (
 ): Promise<CyNetwork> => {
   const interactionNetworkUuidExists =
     interactionNetworkUuid !== undefined && interactionNetworkUuid !== ''
-  const result = interactionNetworkUuidExists
+  const cxData: Cx2 = interactionNetworkUuidExists
     ? await fetchNdexNetwork(interactionNetworkUuid, accessToken, ndexUrl)
     : await fetchNdexInterconnectQuery(
         rootNetworkUuid,
@@ -112,7 +112,8 @@ const fetchNdexSubnetwork = async (
         accessToken,
         ndexUrl,
       )
-  return createCyNetworkFromCx2(interactionNetworkId, result)
+  // getCyNetworkFromCx2 validates the CX2 data before processing
+  return getCyNetworkFromCx2(interactionNetworkId, cxData)
 }
 
 /**

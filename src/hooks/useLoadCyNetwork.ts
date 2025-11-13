@@ -2,7 +2,7 @@ import { fetchNdexNetwork } from '../api/ndex'
 import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
 import { logApi, logDb } from '../debug'
 import { Cx2 } from '../models/CxModel/Cx2'
-import { createCyNetworkFromCx2 } from '../models/CxModel/impl'
+import { getCyNetworkFromCx2 } from '../models/CxModel/impl'
 import { CyNetwork } from '../models/CyNetworkModel'
 
 /**
@@ -44,7 +44,8 @@ export const useLoadCyNetwork = () => {
           `[${loadCyNetwork.name}]: Cache miss for ${networkId}, fetching from NDEx`,
         )
         const cxData: Cx2 = await fetchNdexNetwork(networkId, accessToken)
-        return createCyNetworkFromCx2(networkId, cxData)
+        // getCyNetworkFromCx2 validates the CX2 data before processing
+        return getCyNetworkFromCx2(networkId, cxData)
       }
     } catch (error) {
       logApi.error(`[${loadCyNetwork.name}]: Failed to get network: ${error}`)

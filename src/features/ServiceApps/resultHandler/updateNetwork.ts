@@ -14,10 +14,8 @@ import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
-import {
-  createCyNetworkFromCx2,
-  isValidCx2Network,
-} from '../../../models/CxModel/impl'
+import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
+import { validateCX2 } from '../../../models/CxModel/impl/validator'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
@@ -49,10 +47,15 @@ export const useUpdateNetwork = (): (({
   )
   const updateNetwork = useCallback(
     async ({ responseObj, networkId }: ActionHandlerProps) => {
-      if (!isValidCx2Network(responseObj)) {
+      // Validate CX2 data from service app before processing
+      const validationResult = validateCX2(responseObj)
+      if (!validationResult.isValid) {
         logApi.warn(
-          `[${updateNetwork.name}]: Invalid update network response`,
+          `[${updateNetwork.name}]: Invalid CX2 network from service app: ${validationResult.errors.length} error(s) found`,
           responseObj,
+        )
+        logApi.warn(
+          `[${updateNetwork.name}]: Validation details: ${validationResult.errorMessage}`,
         )
         return
       }
@@ -95,7 +98,7 @@ export const useUpdateNetwork = (): (({
 
         // Delete the old view model
         deleteViewModel(networkId)
-        const res = createCyNetworkFromCx2(networkId, responseObj as Cx2)
+        const res = getCyNetworkFromCx2(networkId, responseObj as Cx2)
         const {
           network,
           nodeTable,
