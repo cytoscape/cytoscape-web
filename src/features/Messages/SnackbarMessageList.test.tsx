@@ -20,15 +20,19 @@ describe('SnackbarMessageList persistent messages', () => {
   })
 
   it('stays visible until the user clicks to dismiss when marked persistent', async () => {
-    useMessageStore.getState().addMessage({
-      message: 'Persistent message',
-      severity: MessageSeverity.INFO,
-      persistent: true,
-    })
-
     render(<SnackbarMessageList />)
 
-    expect(await screen.findByText('Persistent message')).toBeInTheDocument()
+    act(() => {
+      useMessageStore.getState().addMessage({
+        message: 'Persistent message',
+        severity: MessageSeverity.INFO,
+        persistent: true,
+      })
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Persistent message')).toBeInTheDocument()
+    })
 
     act(() => {
       jest.advanceTimersByTime(10000)
@@ -36,7 +40,9 @@ describe('SnackbarMessageList persistent messages', () => {
 
     expect(screen.getByText('Persistent message')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('alert'))
+    act(() => {
+      fireEvent.click(screen.getByRole('alert'))
+    })
 
     await waitFor(() => {
       expect(screen.queryByText('Persistent message')).not.toBeInTheDocument()

@@ -4,6 +4,11 @@ import { NetworkTab } from './NetworkTab'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { Network } from '../../models/NetworkModel'
 
+// Mock FloatingToolBar to avoid importing @cosmograph/cosmos which uses ES modules
+jest.mock('../FloatingToolBar/FloatingToolBar', () => ({
+  FloatingToolBar: () => null,
+}))
+
 describe('NetworkTab click behavior', () => {
   const mockNetwork: Network = {
     id: 'test-network',
