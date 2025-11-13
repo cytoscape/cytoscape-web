@@ -11,11 +11,15 @@ import {
 } from '../../../models/TableModel'
 
 /**
- * Generates a Fuse index from a data table
+ * Generates a Fuse.js index from a data table for fast text search.
  *
- * @param table Data table to be indexed. Node or Edge table
+ * Only String and ListString columns are indexed. The index is configured with:
+ * - Extended search syntax enabled (supports ^, $, !, =, etc.)
+ * - No fuzzy threshold (exact matching by default)
+ * - Location-agnostic matching (matches anywhere in text)
  *
- * @returns Fuse index
+ * @param table Data table to be indexed (Node or Edge table)
+ * @returns Fuse.js index ready for searching
  */
 export const createFuseIndex = (
   table: Table,
@@ -59,6 +63,13 @@ export const createFuseIndex = (
   return new Fuse(list, options)
 }
 
+/**
+ * Filters columns by their value type.
+ *
+ * @param columns Array of columns to filter
+ * @param types Array of value types to include
+ * @returns Set of column names that match the specified types
+ */
 export const filterColumns = (
   columns: Column[],
   types: ValueTypeName[],
@@ -104,6 +115,18 @@ function tokenizeQuery(query: string): string[] {
     .filter((t) => t !== '')
 }
 
+/**
+ * Executes a search query against a Fuse.js index.
+ *
+ * The query is tokenized, and each token is searched independently.
+ * Results are combined based on the operator (AND/OR).
+ *
+ * @param index Fuse.js index to search
+ * @param query Raw query string from user
+ * @param operator Boolean operator to combine token results ('AND' or 'OR')
+ * @param equals If true, uses exact matching; if false, uses fuzzy matching
+ * @returns Array of matching row IDs (as strings)
+ */
 export const runSearch = (
   index: Fuse<Record<string, ValueType>>,
   query: string,

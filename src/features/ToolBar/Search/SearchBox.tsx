@@ -1,6 +1,8 @@
 import Fuse from 'fuse.js'
 import { useEffect, useRef, useState } from 'react'
 
+import { Tooltip } from '@mui/material'
+
 import { logUi } from '../../../debug'
 import { useFilterStore } from '../../../hooks/stores/FilterStore'
 import { useTableStore } from '../../../hooks/stores/TableStore'
@@ -17,6 +19,7 @@ import { GraphObjectType } from '../../../models/NetworkModel'
 import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { Search } from './Search'
 import { SearchControls } from './SearchControls'
+import { SearchExamplesTooltip } from './SearchExamplesTooltip'
 import { createFuseIndex, filterColumns, runSearch } from './searchUtil'
 import { StyledInputBase } from './StyledInputBase'
 
@@ -179,24 +182,45 @@ export const SearchBox = (): JSX.Element => {
   }
 
   return (
-    <Search ref={baseRef}>
-      <StyledInputBase
-        placeholder="Search current network"
-        inputProps={{ 'aria-label': 'search' }}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={handleKeyDown}
-      />
-      <SearchControls
-        searchTerm={query}
-        startSearch={startSearch}
-        clearSearch={clearSearch}
-        anchorEl={anchorEl}
-        setAnchorEl={setAnchorEl}
-        handleOpenSettings={handleOpenSettings}
-        setSearchTargets={setSearchTargets}
-        searchTargets={searchTargets}
-      />
-    </Search>
+    <Tooltip
+      title={<SearchExamplesTooltip />}
+      placement="bottom-start"
+      arrow
+      enterDelay={500}
+      leaveDelay={200}
+      componentsProps={{
+        tooltip: {
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            maxWidth: 'none',
+          },
+        },
+        arrow: {
+          sx: {
+            color: 'rgba(0, 0, 0, 0.9)',
+          },
+        },
+      }}
+    >
+      <Search ref={baseRef}>
+        <StyledInputBase
+          placeholder="Search current network"
+          inputProps={{ 'aria-label': 'search' }}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+        <SearchControls
+          searchTerm={query}
+          startSearch={startSearch}
+          clearSearch={clearSearch}
+          anchorEl={anchorEl}
+          setAnchorEl={setAnchorEl}
+          handleOpenSettings={handleOpenSettings}
+          setSearchTargets={setSearchTargets}
+          searchTargets={searchTargets}
+        />
+      </Search>
+    </Tooltip>
   )
 }
