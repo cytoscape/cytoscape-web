@@ -1,28 +1,3 @@
-/**
- * @fileoverview IndexedDB Database Module for Cytoscape Web
- *
- * This module provides a centralized database interface using Dexie (IndexedDB wrapper)
- * for persisting application state and network data in the browser. It manages:
- *
- * - Network topology data (nodes, edges)
- * - Network metadata and summaries
- * - Table data (node and edge attribute tables)
- * - Visual styles and styling configurations
- * - Network views (camera positions, zoom levels, etc.)
- * - UI state and preferences
- * - Workspace configurations
- * - Filter configurations
- * - Application metadata (CyApps, ServiceApps)
- * - Opaque aspects (CX2 format extensions)
- * - Undo/redo stacks for network editing
- *
- * The database uses a versioned schema that supports migrations when the schema changes.
- * All data is serialized/deserialized to handle complex types (like Maps) that cannot be
- * directly stored in IndexedDB.
- *
- * @module db/index
- */
-
 import 'dexie-observable'
 
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
@@ -58,37 +33,21 @@ import {
   serializeVisualStyle,
 } from './serialization'
 import { applyMigrations } from './migrations'
-
-/**
- * Unique, fixed database name for Cytoscape Web.
- * This name is used consistently across all browser storage instances.
- */
+// Unique, fixed DB name for the Cytoscape Web
 const DB_NAME: string = 'cyweb-db'
 
-/**
- * Current database schema version (integer only).
- *
- * When the database schema changes, increment this version number.
- * If an older version is detected, the migration function will automatically
- * upgrade the existing data to this version.
- *
- * @see applyMigrations
- */
+// Current version of the DB (integer only).
+// If older version is found, the migration
+// function will upgrade the existing data to this version.
 const currentVersion: number = 7
 
 /**
- * Predefined object store names for IndexedDB.
+ * Predefined object store names.
+ * Once this is updated, the upgrade / migration is needed
  *
- * Each object store represents a different type of data persisted in the database.
- * When adding a new object store:
- * 1. Add the name here
- * 2. Add the corresponding primary key in the `Keys` object
- * 3. Add the table property to the `CyDB` class
- * 4. Increment `currentVersion` to trigger a migration
+ * If you need to add a new object store, you need to add the name here
  *
- * @see Keys - Primary keys for each object store
- * @see CyDB - Database class with table definitions
- */
+ * */
 export const ObjectStoreNames = {
   Workspace: 'workspace',
   Summaries: 'summaries',
@@ -110,22 +69,15 @@ export const ObjectStoreNames = {
   UndoStacks: 'undoStacks',
 } as const
 
-/**
- * Type derived from the object store names.
- * Used for type-safe references to object store names.
- */
+// The type derived from the names of object stores
 export type ObjectStoreNames =
   (typeof ObjectStoreNames)[keyof typeof ObjectStoreNames]
 
 /**
- * Primary key definitions for each object store.
+ * Object stores (for V3).
  *
- * Maps each object store name to its primary key field name.
- * The primary key is used by IndexedDB to uniquely identify records.
+ * This defines the primary key for each object store.
  *
- * Note: Most stores use 'id' as the primary key, except:
- * - Summaries: uses 'externalId' (typically NDEx UUID)
- * - ServiceApps: uses 'url' (service endpoint URL)
  */
 const Keys = {
   [ObjectStoreNames.Workspace]: 'id',
@@ -147,22 +99,7 @@ const Keys = {
 } as const
 
 /**
- * Main database class extending Dexie (IndexedDB wrapper).
- *
- * Defines all object stores and their TypeScript types.
- * The database is initialized to the current version and migrations are applied
- * automatically when the schema version changes.
- *
- * Note: Some tables use `any` type because they store serialized data that
- * gets deserialized when retrieved. The actual types are:
- * - Workspace: Workspace
- * - CyTables: { id: IdType, nodeTable: TableWithRecords, edgeTable: TableWithRecords }
- * - CyVisualStyles: { id: IdType, visualStyle: VisualStyleWithRecords }
- * - Summaries: NetworkSummary
- * - CyNetworkViews: { id: IdType, views: NetworkViewWithRecords[] }
- * - UiState: { id: string, ...Ui }
- * - Timestamp: { id: string, timestamp: number }
- * - Filters: { id: string, ...FilterConfigWithRecords }
+ * DB will be initialized to the current version.
  */
 class CyDB extends Dexie {
   [ObjectStoreNames.Workspace]!: DxTable<any>;
@@ -188,19 +125,15 @@ class CyDB extends Dexie {
     super(dbName)
     this.version(currentVersion).stores(Keys)
 
-    // Apply migrations when the database is created or upgraded.
-    // This should only be called once per database instance.
-    // Migrations handle schema changes and data transformations.
+    // This will be applied only when the DB is created and should not be
+    // called multiple times
     applyMigrations(this, currentVersion).catch((err) =>
       logDb.error('[applyMigrations] Failed to apply migrations', err),
     )
   }
 }
 
-/**
- * Global database instance.
- * Initialized at module load time and reused throughout the application.
- */
+// Initialize the DB
 let db: CyDB
 try {
   db = new CyDB(DB_NAME)
@@ -209,23 +142,11 @@ try {
   throw err
 }
 
-/**
- * Initializes and opens the IndexedDB database.
- *
- * This function must be called before using any database operations.
- * It opens the database connection, validates that all expected object stores
- * exist, and sets up event listeners for database lifecycle events.
- *
- * In debug mode, the database instance is exposed on `window.debug.db` for
- * inspection in browser dev tools.
- *
- * @throws Error if database initialization fails
- */
 export const initializeDb = async (): Promise<void> => {
   await db.open()
   logDb.info('[initializeDb] IndexedDB is opened')
 
-  // Validate that all expected object stores are available
+  // Check all object stores are available
   const currentNames = new Set<string>(db.tables.map((table) => table.name))
   Object.values(ObjectStoreNames).forEach((name) => {
     if (!currentNames.has(name)) {
@@ -253,48 +174,23 @@ export const initializeDb = async (): Promise<void> => {
   }
 }
 
-/**
- * Gets the current database schema version.
- *
- * @returns The version number of the database schema
- */
 export const getDatabaseVersion = (): number => {
   return db.verno
 }
 
-/**
- * Gets the database instance.
- *
- * @returns Promise resolving to the CyDB instance
- */
 export const getDb = async (): Promise<CyDB> => {
   return await Promise.resolve(db)
 }
 
-/**
- * Closes the database connection.
- *
- * This should be called when the application is shutting down or
- * when database access is no longer needed.
- */
 export const closeDb = async (): Promise<void> => {
   await db.close()
 }
 
 /**
- * Deletes the current database and creates a new empty one.
+ * Delete the current DB and create a new one
  *
- * WARNING: This operation permanently deletes all stored data including:
- * - Networks, tables, visual styles, views
- * - Workspaces and UI state
- * - Filters, apps, and all other persisted data
+ * - This should create the completely new DB with no data.
  *
- * This is typically used for:
- * - Development/testing purposes
- * - Resetting the application to a clean state
- * - Recovering from database corruption
- *
- * @throws Error if database deletion or recreation fails
  */
 export const deleteDb = async (): Promise<void> => {
   try {
@@ -311,23 +207,15 @@ export const deleteDb = async (): Promise<void> => {
     logDb.error('[DeleteDB] Failed to reset DB', err)
   }
 }
-/**
- * Gets all network IDs stored in the database.
- *
- * @returns Promise resolving to an array of network IDs
- */
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {
   return (await db.cyNetworks.toCollection().primaryKeys()) as IdType[]
 }
-
 /**
- * Persists a network's topology (nodes and edges) to IndexedDB.
  *
- * Only stores the network structure (id, nodes, edges), not associated
- * data like tables, visual styles, or views. Those are stored separately.
+ * Persist network to indexedDB
  *
- * @param network Network object containing id, nodes, and edges
- * @throws Error if the database operation fails
+ * @param network Network object
+ * @returns
  */
 export const putNetworkToDb = async (network: Network): Promise<void> => {
   try {
@@ -341,15 +229,6 @@ export const putNetworkToDb = async (network: Network): Promise<void> => {
   }
 }
 
-/**
- * Extracts only the network topology (id, nodes, edges) from a Network object.
- *
- * This function ensures that only the essential network structure is stored,
- * stripping out any additional properties that may be present on the Network object.
- *
- * @param cyNetwork - Full network object (may contain extra properties)
- * @returns Network object with only id, nodes, and edges
- */
 const cyNetwork2Network = (cyNetwork: Network): Network => {
   const { id } = cyNetwork
   const nodes: Node[] = cyNetwork.nodes
@@ -362,12 +241,6 @@ const cyNetwork2Network = (cyNetwork: Network): Network => {
   }
 }
 
-/**
- * Retrieves a network's topology from IndexedDB.
- *
- * @param id - Network ID to retrieve
- * @returns Promise resolving to Network object, or undefined if not found
- */
 export const getNetworkFromDb = async (
   id: IdType,
 ): Promise<Network | undefined> => {
@@ -377,14 +250,6 @@ export const getNetworkFromDb = async (
   }
 }
 
-/**
- * Deletes a network's topology from IndexedDB.
- *
- * Note: This only deletes the network structure. Associated data (tables,
- * visual styles, views, etc.) must be deleted separately.
- *
- * @param id - Network ID to delete
- */
 export const deleteNetworkFromDb = async (id: IdType): Promise<void> => {
   await db
     .transaction('rw', db.cyNetworks, async () => {
@@ -395,33 +260,13 @@ export const deleteNetworkFromDb = async (id: IdType): Promise<void> => {
     })
 }
 
-/**
- * Deletes all networks from the database.
- *
- * WARNING: This permanently removes all network topology data.
- * Associated tables, styles, and views are not affected.
- */
 export const clearNetworksFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.cyNetworks, async () => {
     await db.cyNetworks.clear()
   })
 }
 
-/**
- * Retrieves node and edge attribute tables for a network.
- *
- * Returns deserialized Table objects with Map-based row storage.
- * If no tables exist for the network, returns empty tables with default IDs.
- *
- * @param id - Network ID
- * @returns Promise resolving to an object with `nodeTable` and `edgeTable` properties
- */
-export const getTablesFromDb = async (
-  id: IdType,
-): Promise<{
-  nodeTable: Table
-  edgeTable: Table
-}> => {
+export const getTablesFromDb = async (id: IdType): Promise<any> => {
   const cached: any = await db.cyTables.get({ id })
 
   if (cached === undefined) {
@@ -438,15 +283,11 @@ export const getTablesFromDb = async (
   }
 }
 /**
- * Persists node and edge attribute tables to IndexedDB.
  *
- * Tables are serialized before storage (Maps converted to arrays) because
- * IndexedDB cannot directly store Map objects.
- *
- * @param id - Network ID to associate the tables with
- * @param nodeTable - Node attribute table
- * @param edgeTable - Edge attribute table
- * @throws Error if the database operation fails
+ * @param id associated with the network
+ * @param nodeTable node table
+ * @param nodeTable edge table
+ * @returns
  */
 export const putTablesToDb = async (
   id: IdType,
@@ -473,36 +314,18 @@ export const putTablesToDb = async (
   }
 }
 
-/**
- * Deletes node and edge tables for a specific network.
- *
- * @param id - Network ID whose tables should be deleted
- */
 export const deleteTablesFromDb = async (id: IdType): Promise<void> => {
   await db.cyTables.delete(id)
 }
 
-/**
- * Deletes all node and edge tables from the database.
- *
- * WARNING: This permanently removes all table data for all networks.
- */
 export const clearTablesFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.cyTables, async () => {
     await db.cyTables.clear()
   })
 }
 
-// ============================================================================
-// Workspace Management
-// ============================================================================
+// Workspace management
 
-/**
- * Persists a workspace to IndexedDB.
- *
- * @param workspace - Workspace object to store
- * @throws Error if the database operation fails
- */
 export const putWorkspaceToDb = async (workspace: Workspace): Promise<void> => {
   try {
     await db.workspace.put({ ...workspace })
@@ -512,13 +335,6 @@ export const putWorkspaceToDb = async (workspace: Workspace): Promise<void> => {
   }
 }
 
-/**
- * Updates specific fields of a workspace in IndexedDB.
- *
- * @param id - Workspace ID to update
- * @param value - Object containing the fields to update (partial Workspace)
- * @returns Promise resolving to the updated record's key
- */
 export const updateWorkspaceDb = async (
   id: IdType,
   value: Record<string, any>,
@@ -526,20 +342,6 @@ export const updateWorkspaceDb = async (
   return await db.workspace.update(id, value)
 }
 
-/**
- * Retrieves a workspace from IndexedDB.
- *
- * Behavior:
- * - If an ID is provided: returns that specific workspace, or creates a new one if not found
- * - If no ID is provided: returns the first workspace found, or creates a new one if none exist
- *
- * NOTE: When multiple workspaces exist and no ID is specified, this function
- * currently returns the first workspace (index 0). In production, this should
- * be updated to select the most recently used or newest workspace.
- *
- * @param id - Optional workspace ID. If undefined or empty, returns first available workspace
- * @returns Promise resolving to a Workspace object (always returns a workspace, creates one if needed)
- */
 export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
   // Check if there is any workspace in the DB
   const workspaceCount: number = await db.workspace.count()
@@ -565,8 +367,7 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       const allWS: Workspace[] = await db.workspace.toArray()
       logDb.info('[getWorkspaceFromDb] All workspaces:', allWS)
 
-      // TODO: In production, pick the newest/most recently used workspace instead of first
-      // This could be based on a timestamp field or lastModified date
+      // TODO: pick the newest one in production
       const lastWs: Workspace = allWS[0]
       logDb.info('[getWorkspaceFromDb] Returning the first workspace:', lastWs)
       return lastWs
@@ -606,44 +407,20 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
   }
 }
 
-// ============================================================================
-// Network Summaries Management
-// ============================================================================
-// Network summaries contain metadata about networks (typically from NDEx).
-// The primary key is 'externalId' (usually an NDEx UUID), not the internal network ID.
+// Network Summaries. For now, it is NDEx Summary
 
-/**
- * Retrieves a network summary by external ID (typically NDEx UUID).
- *
- * @param externalId - External identifier (usually NDEx UUID)
- * @returns Promise resolving to NetworkSummary or undefined if not found
- */
 export const getNetworkSummaryFromDb = async (
   externalId: IdType,
 ): Promise<NetworkSummary | undefined> => {
   return await db.summaries.get({ externalId })
 }
 
-/**
- * Retrieves multiple network summaries by their external IDs.
- *
- * @param externalIds - Array of external identifiers
- * @returns Promise resolving to array of NetworkSummary objects (may include undefined for missing IDs)
- */
 export const getNetworkSummariesFromDb = async (
   externalIds: IdType[],
 ): Promise<NetworkSummary[]> => {
   return await db.summaries.bulkGet(externalIds)
 }
 
-/**
- * Persists a network summary to IndexedDB.
- *
- * The summary's `externalId` field is used as the primary key.
- *
- * @param summary - NetworkSummary object to store
- * @throws Error if the database operation fails
- */
 export const putNetworkSummaryToDb = async (
   summary: NetworkSummary,
 ): Promise<void> => {
@@ -656,42 +433,24 @@ export const putNetworkSummaryToDb = async (
   }
 }
 
-/**
- * Deletes a network summary by external ID.
- *
- * @param externalId - External identifier of the summary to delete
- */
 export const deleteNetworkSummaryFromDb = async (
   externalId: IdType,
 ): Promise<void> => {
   await db.summaries.delete(externalId)
 }
 
-/**
- * Deletes all network summaries from the database.
- *
- * WARNING: This permanently removes all summary metadata.
- */
 export const clearNetworkSummaryFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.summaries, async () => {
     await db.summaries.clear()
   })
 }
 
-// ============================================================================
-// Visual Styles Management
-// ============================================================================
+// Visual Sytles
 interface VisualStyleWithId {
   id: IdType
   visualStyle: VisualStyle
 }
 
-/**
- * Retrieves a visual style for a network.
- *
- * @param id - Network ID
- * @returns Promise resolving to VisualStyle or undefined if not found
- */
 export const getVisualStyleFromDb = async (
   id: IdType,
 ): Promise<VisualStyle | undefined> => {
@@ -705,22 +464,13 @@ export const getVisualStyleFromDb = async (
   }
 }
 
-/**
- * Persists a visual style for a network.
- *
- * The visual style is serialized before storage and associated with the network ID.
- *
- * @param id - Network ID to associate the visual style with
- * @param visualStyle - VisualStyle object to store
- * @throws Error if the database operation fails
- */
 export const putVisualStyleToDb = async (
   id: IdType,
   visualStyle: VisualStyle,
 ): Promise<void> => {
   try {
     await db.transaction('rw', db.cyVisualStyles, async () => {
-      // Need to add ID because VisualStyle type does not include an ID field
+      // Need to add ID because it does not have one
       return await db.cyVisualStyles.put({
         id,
         visualStyle: serializeVisualStyle(visualStyle),
@@ -732,39 +482,28 @@ export const putVisualStyleToDb = async (
   }
 }
 
-/**
- * Deletes a visual style for a network.
- *
- * @param id - Network ID whose visual style should be deleted
- */
 export const deleteVisualStyleFromDb = async (id: IdType): Promise<void> => {
   await db.cyVisualStyles.delete(id)
 }
 
-/**
- * Deletes all visual styles from the database.
- *
- * WARNING: This permanently removes all visual style configurations.
- */
 export const clearVisualStyleFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.cyVisualStyles, async () => {
     await db.cyVisualStyles.clear()
   })
 }
 
-// ============================================================================
-// Network Views Management
-// ============================================================================
-// Network views store camera positions, zoom levels, and other view state
-// for each network. Multiple views per network are supported.
+//
+// Functions for Network Views
+//
+// Now the multiple views are supported
 //
 
 /**
- * Retrieves all network views for a given network ID.
+ * Get all network views for the given network ID
+ * @param id Network ID
+ * @returns NetworkView[] | undefined
  *
- * @param id - Network ID
- * @returns Promise resolving to array of NetworkView objects, or undefined if no views exist
- */
+ **/
 export const getNetworkViewsFromDb = async (
   id: IdType,
 ): Promise<NetworkView[] | undefined> => {
@@ -774,16 +513,10 @@ export const getNetworkViewsFromDb = async (
   ) as NetworkView[]
 }
 /**
- * Adds or updates a network view in the database.
+ * Add a new network view to the DB
  *
- * Behavior:
- * - If a view with the same viewId exists, it is updated
- * - If no viewId is provided, one is generated automatically
- * - If the view doesn't exist, it is added to the list
- *
- * @param id - Network model ID
- * @param view - NetworkView to be added or updated
- * @throws Error if the database operation fails
+ * @param id Network model ID
+ * @param view Network View to be added
  */
 export const putNetworkViewToDb = async (
   id: IdType,
@@ -800,24 +533,22 @@ export const putNetworkViewToDb = async (
       }
       const viewList = await getNetworkViewsFromDb(id)
       if (viewList !== undefined) {
-        // Check if a view with the same viewId already exists
+        // Add only if the view does not exist
+
         let found = false
         viewList.forEach((v: NetworkView, idx: number) => {
           const key1 = v.viewId
           const key2 = view.viewId
           if (key1 === key2) {
-            // Update existing view
             viewList[idx] = view
             found = true
           }
         })
 
         if (!found) {
-          // Generate viewId if not provided
           if (view.viewId === undefined) {
             view.viewId = getNetworkViewId(view, viewList)
           }
-          // Add new view to the list
           viewList.push(view)
         }
 
@@ -844,15 +575,11 @@ export const putNetworkViewToDb = async (
 }
 
 /**
- * Updates multiple network views in the database at once.
  *
- * This replaces all existing views for the network with the provided views.
- * Note: Views with type 'circlePacking' are filtered out before storage.
- * This is likely because circle packing views are temporary or computed on-the-fly.
+ * Update multiple network views to the DB at once
  *
- * @param id - Network model ID
- * @param views - Array of NetworkView objects to store (replaces existing views)
- * @throws Error if the database operation fails
+ * @param id Network model ID
+ * @param views Network Views to be updated
  */
 export const putNetworkViewsToDb = async (
   id: IdType,
@@ -874,9 +601,7 @@ export const putNetworkViewsToDb = async (
 }
 
 /**
- * Deletes all network views for a specific network.
- *
- * @param id - Network ID whose views should be deleted
+ * Delete all network views from the DB for the given network ID
  */
 export const deleteNetworkViewsFromDb = async (id: IdType): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
@@ -885,9 +610,7 @@ export const deleteNetworkViewsFromDb = async (id: IdType): Promise<void> => {
 }
 
 /**
- * Deletes all network views from the database for all networks.
- *
- * WARNING: This permanently removes all view state (camera positions, zoom levels, etc.).
+ * Delete all network views from the DB for the given network ID
  */
 export const clearNetworkViewsFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
@@ -895,21 +618,8 @@ export const clearNetworkViewsFromDb = async (): Promise<void> => {
   })
 }
 
-// ============================================================================
-// UI State Management
-// ============================================================================
-
-/**
- * Default ID for the single UI state record stored in the database.
- * Only one UI state is maintained at a time.
- */
+// UI State
 export const DEFAULT_UI_STATE_ID = 'uistate'
-
-/**
- * Retrieves the current UI state from IndexedDB.
- *
- * @returns Promise resolving to Ui object or undefined if no state exists
- */
 export const getUiStateFromDb = async (): Promise<Ui | undefined> => {
   const uiState = await db.uiState.get({ id: DEFAULT_UI_STATE_ID })
   if (uiState !== undefined) {
@@ -919,12 +629,6 @@ export const getUiStateFromDb = async (): Promise<Ui | undefined> => {
   }
 }
 
-/**
- * Persists the UI state to IndexedDB.
- *
- * @param uiState - Ui object to store
- * @throws Error if the database operation fails
- */
 export const putUiStateToDb = async (uiState: Ui): Promise<void> => {
   try {
     await db.transaction('rw', db.uiState, async () => {
@@ -936,26 +640,13 @@ export const putUiStateToDb = async (uiState: Ui): Promise<void> => {
   }
 }
 
-/**
- * Deletes the UI state from IndexedDB.
- */
 export const deleteUiStateFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.uiState, async () => {
     await db.uiState.delete(DEFAULT_UI_STATE_ID)
   })
 }
 
-/**
- * Default ID for the single timestamp record stored in the database.
- * Used to track the last update time for synchronization purposes.
- */
 export const DEFAULT_TIMESTAMP_ID = 'timestamp'
-
-/**
- * Retrieves the stored timestamp from IndexedDB.
- *
- * @returns Promise resolving to timestamp number or undefined if not set
- */
 export const getTimestampFromDb = async (): Promise<number | undefined> => {
   const ts = await db.timestamp.get({ id: DEFAULT_TIMESTAMP_ID })
   if (ts !== undefined) {
@@ -965,12 +656,6 @@ export const getTimestampFromDb = async (): Promise<number | undefined> => {
   }
 }
 
-/**
- * Persists a timestamp to IndexedDB.
- *
- * @param ts - Timestamp value (typically milliseconds since epoch)
- * @throws Error if the database operation fails
- */
 export const putTimestampToDb = async (ts: number): Promise<void> => {
   try {
     await db.transaction('rw', db.timestamp, async () => {
@@ -983,12 +668,9 @@ export const putTimestampToDb = async (ts: number): Promise<void> => {
 }
 
 /**
- * Persists filter configuration to IndexedDB.
+ * Store filter settings to the DB
  *
- * The filter's name is used as the primary key.
- *
- * @param filterConfig - FilterConfig object to store
- * @throws Error if the database operation fails
+ * @param filterConfig
  */
 export const putFilterToDb = async (
   filterConfig: FilterConfig,
@@ -1005,10 +687,7 @@ export const putFilterToDb = async (
 }
 
 /**
- * Retrieves a filter configuration by name.
- *
- * @param filterName - Name of the filter to retrieve
- * @returns Promise resolving to FilterConfig or undefined if not found
+ * Get filter settings from the DB
  */
 export const getFilterFromDb = async (
   filterName: string,
@@ -1021,9 +700,7 @@ export const getFilterFromDb = async (
 }
 
 /**
- * Deletes a filter configuration from IndexedDB.
- *
- * @param filterName - Name of the filter to delete
+ * Delete filter settings from the DB
  */
 export const deleteFilterFromDb = async (filterName: string): Promise<void> => {
   await db.transaction('rw', db.filters, async () => {
@@ -1031,15 +708,8 @@ export const deleteFilterFromDb = async (filterName: string): Promise<void> => {
   })
 }
 
-// ============================================================================
-// Application Metadata Management
-// ============================================================================
-
 /**
- * Persists a CyApp (Cytoscape App) metadata to IndexedDB.
- *
- * @param app - CyApp object to store
- * @throws Error if the database operation fails
+ * Store CyApps metadata to DB
  */
 export const putAppToDb = async (app: CyApp): Promise<void> => {
   try {
@@ -1052,42 +722,20 @@ export const putAppToDb = async (app: CyApp): Promise<void> => {
   }
 }
 
-/**
- * Retrieves a CyApp by its ID.
- *
- * @param appId - Application ID
- * @returns Promise resolving to CyApp or undefined if not found
- */
 export const getAppFromDb = async (
   appId: string,
 ): Promise<CyApp | undefined> => {
   return await db.apps.get({ id: appId })
 }
 
-/**
- * Deletes a CyApp from IndexedDB.
- *
- * @param appId - Application ID to delete
- */
 export const deleteAppFromDb = async (appId: string): Promise<void> => {
   await db.transaction('rw', db.apps, async () => {
     await db.apps.delete(appId)
   })
 }
 
-// ============================================================================
-// Service Apps Management
-// ============================================================================
-// Service apps are external applications that can be invoked from Cytoscape Web.
-// The primary key is the service URL, not an ID.
-
 /**
- * Persists a ServiceApp to IndexedDB.
- *
- * The service app's URL is used as the primary key.
- *
- * @param serviceApp - ServiceApp object to store
- * @throws Error if the database operation fails
+ * Store Service App URL to DB
  */
 export const putServiceAppToDb = async (
   serviceApp: ServiceApp,
@@ -1102,11 +750,6 @@ export const putServiceAppToDb = async (
   }
 }
 
-/**
- * Retrieves all service apps from IndexedDB.
- *
- * @returns Promise resolving to array of ServiceApp objects (empty array on error)
- */
 export const getAllServiceAppsFromDb = async (): Promise<ServiceApp[]> => {
   try {
     // Fetch all entries as an array
@@ -1122,43 +765,19 @@ export const getAllServiceAppsFromDb = async (): Promise<ServiceApp[]> => {
   }
 }
 
-/**
- * Deletes a service app by its URL.
- *
- * @param url - Service app URL (used as primary key)
- */
 export const deleteServiceAppFromDb = async (url: string): Promise<void> => {
+  // Check the db has the object store or not
   await db.transaction('rw', db.serviceApps, async () => {
     await db.serviceApps.delete(url)
   })
 }
 
-// ============================================================================
-// Opaque Aspects Management
-// ============================================================================
-// Opaque aspects store CX2 format extensions and other network metadata
-// that doesn't fit into the standard data model. These are stored as
-// key-value pairs where values are arrays of aspect objects.
-
-/**
- * Database representation of opaque aspects for a network.
- *
- * Opaque aspects are CX2 format extensions stored as a dictionary where:
- * - Keys are aspect names (e.g., 'cyHiddenAttributes', 'cyGroups')
- * - Values are arrays of aspect objects
- */
+// opaque aspects
 export interface OpaqueAspectsDB {
   id: IdType
   aspects: Record<string, any[]>
 }
 
-/**
- * Persists opaque aspects for a network.
- *
- * @param networkId - Network ID to associate the aspects with
- * @param aspects - Dictionary of aspect names to arrays of aspect objects
- * @throws Error if the database operation fails
- */
 export const putOpaqueAspectsToDb = async (
   networkId: IdType,
   aspects: Record<string, any[]>,
@@ -1173,49 +792,24 @@ export const putOpaqueAspectsToDb = async (
   }
 }
 
-/**
- * Retrieves opaque aspects for a network.
- *
- * @param networkId - Network ID
- * @returns Promise resolving to OpaqueAspectsDB or undefined if not found
- */
 export const getOpaqueAspectsFromDb = async (
   networkId: IdType,
 ): Promise<OpaqueAspectsDB | undefined> => {
   return await db.opaqueAspects.get({ id: networkId })
 }
 
-/**
- * Deletes opaque aspects for a network.
- *
- * @param networkId - Network ID whose aspects should be deleted
- */
 export const deleteOpaqueAspectsFromDb = async (
   networkId: IdType,
 ): Promise<void> => {
   await db.opaqueAspects.delete(networkId)
 }
 
-/**
- * Deletes all opaque aspects from the database.
- *
- * WARNING: This permanently removes all CX2 extension data.
- */
 export const clearOpaqueAspectsFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.opaqueAspects, async () => {
     await db.opaqueAspects.clear()
   })
 }
 
-// ============================================================================
-// Undo/Redo Stack Management
-// ============================================================================
-
-/**
- * Database representation of an undo/redo stack for a network.
- *
- * Stores the history of network edits to support undo/redo functionality.
- */
 export interface UndoRedoStackDB {
   id: IdType
   undoRedoStack: UndoRedoStack
@@ -1238,13 +832,6 @@ export interface CachedNetworkData {
   undoRedoStack?: UndoRedoStack
 }
 
-/**
- * Persists an undo/redo stack for a network.
- *
- * @param networkId - Network ID to associate the stack with
- * @param undoRedoStack - UndoRedoStack object containing undo and redo stacks
- * @throws Error if the database operation fails
- */
 export const putUndoRedoStackToDb = async (
   networkId: IdType,
   undoRedoStack: UndoRedoStack,
@@ -1259,12 +846,6 @@ export const putUndoRedoStackToDb = async (
   }
 }
 
-/**
- * Retrieves the undo/redo stack for a network.
- *
- * @param networkId - Network ID
- * @returns Promise resolving to UndoRedoStackDB or undefined if not found
- */
 export const getUndoRedoStackFromDb = async (
   networkId: IdType,
 ): Promise<UndoRedoStackDB | undefined> => {
@@ -1272,22 +853,12 @@ export const getUndoRedoStackFromDb = async (
   return result
 }
 
-/**
- * Deletes the undo/redo stack for a network.
- *
- * @param networkId - Network ID whose stack should be deleted
- */
 export const deleteUndoRedoStackFromDb = async (
   networkId: IdType,
 ): Promise<void> => {
   await db.undoStacks.delete(networkId)
 }
 
-/**
- * Deletes all undo/redo stacks from the database.
- *
- * WARNING: This permanently removes all edit history for all networks.
- */
 export const clearUndoRedoStackFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.undoStacks, async () => {
     await db.undoStacks.clear()
@@ -1325,8 +896,6 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
     const visualStyleOptions: VisualStyleOptions = vsOptions[id] ?? {}
     const opaqueAspects: OpaqueAspectsDB | undefined =
       await getOpaqueAspectsFromDb(id)
-    // Convert the database format (Record<string, any[]>) to OpaqueAspects format
-    // (array of objects with single key-value pairs)
     const otherAspects: OpaqueAspects[] = opaqueAspects
       ? Object.entries(opaqueAspects.aspects).map(([key, value]) => ({
           [key]: value,
@@ -1371,3 +940,19 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
     throw e
   }
 }
+
+// ============================================================================
+// Database Snapshot (Import/Export)
+// Re-exported from ./snapshot module
+// ============================================================================
+
+export {
+  type DatabaseSnapshot,
+  type DatabaseExportMetadata,
+  type ImportOptions,
+  type ImportResult,
+  exportDatabaseSnapshot,
+  exportDatabaseSnapshotToFile,
+  importDatabaseSnapshot,
+  importDatabaseSnapshotFromFile,
+} from './snapshot'
