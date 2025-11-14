@@ -14,7 +14,7 @@ import {
   HeaderClickedEventArgs,
   Item,
 } from '@glideapps/glide-data-grid'
-import { KeyboardArrowDown,KeyboardArrowUp } from '@mui/icons-material'
+import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
 import { Button, ButtonGroup, Tooltip } from '@mui/material'
 import Box from '@mui/material/Box'
 import Tab from '@mui/material/Tab'
@@ -194,8 +194,6 @@ export default function TableBrowser(props: {
   const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
   const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
 
-  const [showSearch, setShowSearch] = React.useState(false)
-  const onSearchClose = React.useCallback(() => setShowSearch(false), [])
   const [sort, setSort] = React.useState<SortType>({
     column: undefined,
     direction: undefined,
@@ -1463,28 +1461,6 @@ export default function TableBrowser(props: {
       }}
     >
       <Tooltip
-        title="Search"
-        placement="bottom"
-        PopperProps={{
-          modifiers: [
-            {
-              name: 'offset',
-              options: {
-                offset: [0, -24],
-              },
-            },
-          ],
-        }}
-      >
-        <Button
-          sx={{ mr: 1 }}
-          disabled={tables[props.currentNetworkId] === undefined}
-          onClick={() => setShowSearch(!showSearch)}
-        >
-          <span className="icon">&#82;</span>
-        </Button>
-      </Tooltip>
-      <Tooltip
         title="Insert New Column"
         placement="bottom"
         PopperProps={{
@@ -1718,11 +1694,8 @@ export default function TableBrowser(props: {
           rowMarkers={'checkbox'}
           rowMarkerWidth={1}
           rowMarkerStartIndex={minNodeId}
-          showSearch={showSearch}
-          keybindings={{ search: true }}
           onPaste={true}
           getCellsForSelection={true}
-          onSearchClose={onSearchClose}
           onHeaderClicked={onHeaderClicked}
           onColumnMoved={onColMoved}
           onItemHovered={(e) => onItemHovered(e.location)}
@@ -1749,11 +1722,8 @@ export default function TableBrowser(props: {
           rowMarkers={'checkbox'}
           rowMarkerWidth={1}
           rowMarkerStartIndex={minEdgeId}
-          showSearch={showSearch}
-          keybindings={{ search: true }}
           getCellsForSelection={true}
           onPaste={true}
-          onSearchClose={onSearchClose}
           onHeaderClicked={onHeaderClicked}
           onColumnMoved={onColMoved}
           onItemHovered={(e) => onItemHovered(e.location)}
