@@ -14,9 +14,22 @@ import {
   initialState,
 } from './FeatureAvailabilityContext'
 
-const END_POINT = 'http://127.0.0.1:1234/v1/version'
-const POLLING_INTERVAL = 5000
-const reducer = (
+/**
+ * Cytoscape Desktop version endpoint URL.
+ * This endpoint is polled to check if Cytoscape Desktop is running locally.
+ */
+const CYTOSCAPE_ENDPOINT = 'http://127.0.0.1:1234/v1/version'
+
+/**
+ * Polling interval in milliseconds.
+ * The provider checks Cytoscape Desktop availability every 5 seconds.
+ */
+const POLLING_INTERVAL_MS = 5000
+/**
+ * Reducer for feature availability state.
+ * Handles all state updates based on action types.
+ */
+export const featureAvailabilityReducer = (
   state: FeatureAvailabilityState,
   action: FeatureAvailabilityAction,
 ): FeatureAvailabilityState => {
@@ -37,11 +50,17 @@ const reducer = (
 export const FeatureAvailabilityProvider: React.FC<{
   children: ReactNode
 }> = ({ children }) => {
-  const [state, dispatch] = useReducer(reducer, initialState)
+  const [state, dispatch] = useReducer(featureAvailabilityReducer, initialState)
 
-  const pollAvailability = async (abortController: AbortController) => {
+  /**
+   * Polls the Cytoscape Desktop endpoint to check availability.
+   * Updates state based on the response or handles errors gracefully.
+   */
+  const pollCytoscapeDesktopAvailability = async (
+    abortController: AbortController,
+  ) => {
     try {
-      const response = await fetch(END_POINT, {
+      const response = await fetch(CYTOSCAPE_ENDPOINT, {
         signal: abortController.signal,
       })
       if (response.ok) {
@@ -52,7 +71,12 @@ export const FeatureAvailabilityProvider: React.FC<{
         dispatch({ type: FeatureAvailabilityActionType.SET_CYDESK_UNAVAILABLE })
       }
     } catch (error) {
-      if (error.name !== 'AbortError') {
+      // Ignore AbortError (happens during cleanup)
+      // For other errors, mark Cytoscape Desktop as unavailable
+      if (error instanceof Error && error.name !== 'AbortError') {
+        dispatch({ type: FeatureAvailabilityActionType.SET_CYDESK_UNAVAILABLE })
+      } else if (!(error instanceof Error)) {
+        // Handle non-Error objects (shouldn't happen with fetch, but be safe)
         dispatch({ type: FeatureAvailabilityActionType.SET_CYDESK_UNAVAILABLE })
       }
     }
@@ -69,22 +93,29 @@ export const FeatureAvailabilityProvider: React.FC<{
   }, [state.isSafari, state.isCyDeskAvailable])
 
   useEffect(() => {
-    const ua = navigator.userAgent.toLowerCase()
-    const isSafari = ua.includes('safari') && !ua.includes('chrome')
+    // Detect Safari browser (which doesn't support this feature)
+    const userAgent = navigator.userAgent.toLowerCase()
+    const isSafari =
+      userAgent.includes('safari') && !userAgent.includes('chrome')
+
     dispatch({
       type: isSafari
         ? FeatureAvailabilityActionType.SET_IS_SAFARI
         : FeatureAvailabilityActionType.SET_NOT_SAFARI,
     })
+
+    // Skip polling if Safari (feature not supported)
     if (isSafari) {
       return
     }
+
+    // Start polling for Cytoscape Desktop availability
     const abortController = new AbortController()
-
     const intervalId = setInterval(() => {
-      pollAvailability(abortController)
-    }, POLLING_INTERVAL)
+      pollCytoscapeDesktopAvailability(abortController)
+    }, POLLING_INTERVAL_MS)
 
+    // Cleanup: stop polling and abort any in-flight requests
     return () => {
       clearInterval(intervalId)
       abortController.abort()

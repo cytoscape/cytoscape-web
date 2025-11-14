@@ -6,13 +6,14 @@ We are systematically going through code areas (features, modules, utilities, et
 
 1. **Make tests** - Add comprehensive test coverage
 2. **Add documentation** - Create `<area>_docs/` folder or docs file depending on scope
-3. **Clean up low-risk tech debt** - Rename for clarity, move code to appropriate folders if relevant, and other improvements
+3. **Run lint checks** - Ensure code passes ESLint checks, especially React Hooks rules
+4. **Clean up low-risk tech debt** - Rename for clarity, move code to appropriate folders if relevant, and other improvements
 
 ## Process Guidelines
 
 ### Work Order
 
-- **One area at a time** - Complete all three tasks (tests, docs, cleanup) for one code area before moving to the next
+- **One area at a time** - Complete all four tasks (tests, docs, lint, cleanup) for one code area before moving to the next
 - **Order**: Process code areas in the order they appear in the filesystem (or as specified)
 - **Review between areas** - Each area is completed and reviewed before starting the next
 
@@ -92,6 +93,48 @@ For example, in `CyjsRenderer`, documentation should note:
 - Every time a user performs actions on the model, there are **handlers to respond to those changes**
 - Document the handler pattern and state management approach
 
+## Lint Check Requirements
+
+### Purpose
+
+Ensure code passes ESLint checks, especially React Hooks rules, before completing the code area.
+
+### Lint Command
+
+Run ESLint on the code area files:
+
+```bash
+# Lint a specific file
+npx eslint src/features/FeatureAvailability/FeatureAvailabilityProvider.tsx
+
+# Or using npm script
+npm run lint -- src/features/FeatureAvailability/FeatureAvailabilityProvider.tsx
+
+# Lint entire code area directory
+npm run lint -- src/features/FeatureAvailability/
+```
+
+### What Gets Checked
+
+- **React Hooks rules** (`react-hooks/rules-of-hooks`): Ensures hooks are called correctly (not conditionally, in correct order)
+- **Exhaustive deps** (`react-hooks/exhaustive-deps`): Warns about missing dependencies in `useEffect`, `useMemo`, `useCallback`, etc.
+- **React best practices**: JSX usage, component patterns
+- **TypeScript**: Type errors, unused variables
+- **Import sorting**: Import statement ordering
+- **General code quality**: Code style, potential bugs
+
+### Fixing Lint Errors
+
+- **Fix all errors** - All ESLint errors must be resolved
+- **Address warnings** - Address warnings, especially React Hooks exhaustive-deps warnings
+- **Use auto-fix when safe** - Use `npm run lint:fix` for auto-fixable issues, but review changes
+
+### Integration with Other Tasks
+
+- Run lint checks **after** making code changes (tests, cleanup, refactoring)
+- Fix lint errors **before** finalizing documentation
+- Ensure lint passes **before** moving to the next code area
+
 ## Tech Debt Cleanup
 
 ### Scope
@@ -161,14 +204,16 @@ For each code area, deliver:
 
 1. **Test files** - Comprehensive test coverage
 2. **Documentation** - Either `<area>_docs/` folder or `<area>.md` file
-3. **Code improvements** - Renamed variables/functions, moved code to appropriate folders, other cleanup
-4. **Summary** - Brief summary of what was done (tests added, docs created, improvements made)
+3. **Lint verification** - All files pass ESLint checks (especially React Hooks rules)
+4. **Code improvements** - Renamed variables/functions, moved code to appropriate folders, other cleanup
+5. **Summary** - Brief summary of what was done (tests added, docs created, lint checks passed, improvements made)
 
 ## Notes
 
 - Focus on **one code area at a time** for easier review
-- Complete all three tasks (tests, docs, cleanup) before moving to the next area
+- Complete all four tasks (tests, docs, lint, cleanup) before moving to the next area
 - Higher-risk changes require tests and documentation
 - Follow existing patterns and conventions in the codebase
 - When in doubt, ask for clarification rather than making assumptions
 - Adapt the process to the specific type of code being worked on (components, utilities, models, etc.)
+- Always run lint checks after making code changes to catch React Hooks issues early

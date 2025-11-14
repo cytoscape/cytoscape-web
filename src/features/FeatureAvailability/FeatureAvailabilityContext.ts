@@ -17,7 +17,8 @@ export type FeatureAvailabilityActionType =
 
 export type FeatureAvailabilityAction = {
   type: FeatureAvailabilityActionType
-  payload?: any
+  // payload is not currently used but reserved for future extensibility
+  payload?: unknown
 }
 
 export const initialState: FeatureAvailabilityState = {
