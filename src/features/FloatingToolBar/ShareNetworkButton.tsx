@@ -193,6 +193,7 @@ export const ShareNetworkButton = ({
       >
         <span>
           <IconButton
+            data-testid="share-network-button"
             onClick={isLocal ? undefined : handleClick}
             aria-label="share"
             size="small"

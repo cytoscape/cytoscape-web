@@ -1,7 +1,7 @@
 // @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
 import { OpenInNew } from '@mui/icons-material'
-import { Alert, IconButton, Tooltip } from '@mui/material'
+import { IconButton, Tooltip } from '@mui/material'
 
 import { useNetworkStore } from '../../hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
@@ -74,8 +74,9 @@ export const OpenInCytoscapeButton = ({
       <Tooltip title={featureAvailabilityState.tooltip} placement="top" arrow>
         <span>
           <IconButton
+            data-testid="open-in-cytoscape-button"
             onClick={handleClick}
-            aria-label="fit"
+            aria-label="open-in-cytoscape"
             size="small"
             disableFocusRipple={true}
             disabled={

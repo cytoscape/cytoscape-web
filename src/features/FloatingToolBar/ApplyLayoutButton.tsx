@@ -1,6 +1,6 @@
 import { Refresh } from '@mui/icons-material'
 import { Box, IconButton, Tooltip } from '@mui/material'
-import { useEffect,useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { logUi } from '../../debug'
 import { useLayoutStore } from '../../hooks/stores/LayoutStore'
@@ -134,6 +134,7 @@ export const ApplyLayoutButton = ({
 
   const innerButton = (
     <IconButton
+      data-testid="apply-layout-button"
       onClick={handleClick}
       aria-label="apply-layout"
       size="small"
@@ -145,6 +146,7 @@ export const ApplyLayoutButton = ({
 
   const innerButtonDisabled = (
     <IconButton
+      data-testid="apply-layout-button"
       onClick={handleClick}
       aria-label="apply-layout"
       size="small"

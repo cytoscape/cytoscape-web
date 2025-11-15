@@ -57,6 +57,7 @@ export const FitButton = ({
 
   const innerButton = (
     <IconButton
+      data-testid="fit-button"
       onClick={handleClick}
       aria-label={FIT_FUNCTION_NAME}
       size="small"
@@ -68,6 +69,7 @@ export const FitButton = ({
 
   const innerButtonDisabled = (
     <IconButton
+      data-testid="fit-button"
       onClick={handleClick}
       aria-label={FIT_FUNCTION_NAME}
       size="small"

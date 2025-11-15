@@ -20,9 +20,10 @@ export const FloatingToolBar = ({
   networkLabel,
   rendererId,
 }: FloatingToolBarProps): JSX.Element => {
-  const isCirclePackingRenderer = rendererId == 'circlePacking'
+  const isCirclePackingRenderer = rendererId === 'circlePacking'
   return (
     <Box
+      data-testid="floating-toolbar"
       sx={{
         display: 'flex',
         position: 'absolute',
