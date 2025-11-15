@@ -1,7 +1,7 @@
 // @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
 import { OpenInNew } from '@mui/icons-material'
-import { Alert,IconButton, Tooltip } from '@mui/material'
+import { Alert, IconButton, Tooltip } from '@mui/material'
 
 import { useNetworkStore } from '../../hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'

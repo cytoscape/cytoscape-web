@@ -139,8 +139,9 @@ describe('NetworkTab click behavior', () => {
       expect(handleClick).toHaveBeenCalledTimes(1)
       expect(rendererClick).toHaveBeenCalledTimes(1)
 
-      // Reset renderer click mock to isolate FloatingToolBar test
+      // Reset mocks to isolate FloatingToolBar test
       rendererClick.mockClear()
+      handleClick.mockClear()
 
       // Click on FloatingToolBar button - should work independently
       const toolbarButton = screen.getByTestId('floating-toolbar-button')
