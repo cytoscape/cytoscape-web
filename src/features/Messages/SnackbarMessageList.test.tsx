@@ -1,8 +1,9 @@
-import React from 'react'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { SnackbarMessageList } from './SnackbarMessageList'
+import React from 'react'
+
 import { useMessageStore } from '../../hooks/stores/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
+import { SnackbarMessageList } from './SnackbarMessageList'
 
 describe('SnackbarMessageList persistent messages', () => {
   beforeEach(() => {

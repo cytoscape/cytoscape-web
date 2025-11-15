@@ -1,0 +1,225 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Helvetica, Arial, sans-serif","fontSize":"16px","primaryColor":"#FFFFFF","primaryTextColor":"#111827","primaryBorderColor":"#1D4ED8","lineColor":"#1D4ED8","clusterBkg":"#F8FAFC","clusterBorder":"#94A3B8"},"flowchart":{"curve":"basis","defaultRenderer":"elk","htmlLabels":true,"nodeSpacing":120,"rankSpacing":180,"padding":24,"useMaxWidth":false}} }%%
+graph TB
+
+    subgraph stores_subgraph["Stores"]
+        direction TB
+        N0["workspace"]
+        N1["network"]
+        N2["networkSummary"]
+        N3["table"]
+        N4["visualStyle"]
+        N5["viewModel"]
+        N6["uiState"]
+        N7["app"]
+        N8["filter"]
+        N9["layout"]
+        N10["renderer"]
+        N11["rendererFunction"]
+        N12["opaqueAspect"]
+        N13["undo"]
+        N14["message"]
+        N15["credential"]
+    end
+
+    N16["workspace<br/><i style="font-size:12px">Workspace</i>"]
+    N17["networkIds<br/><i style="font-size:12px">string[]</i>"]
+    N16 --> N17
+    N18["networkModified<br/><i style="font-size:12px">object</i>"]
+    N16 --> N18
+    N19["creationTime<br/><i style="font-size:12px">object</i>"]
+    N16 --> N19
+    N20["localModificationTime<br/><i style="font-size:12px">object</i>"]
+    N16 --> N20
+    N0 --> N16
+    N21["networks<br/><i style="font-size:12px">Map<IdType, Network<br/>></i>"]
+    N22["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf</i>"]
+    N21 --> N22
+    N1 --> N21
+    N23["summaries<br/><i style="font-size:12px">Record<IdType,<br/<br/>>NetworkSummary<br/>></i>"]
+    N24["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf</i>"]
+    N25["subnetworkIds<br/><i style="font-size:12px">undefined[]</i>"]
+    N24 --> N25
+    N26["warnings<br/><i style="font-size:12px">undefined[]</i>"]
+    N24 --> N26
+    N27["properties<br/><i style="font-size:12px">properties[]</i>"]
+    N24 --> N27
+    N28["creationTime<br/><i style="font-size:12px">object</i>"]
+    N24 --> N28
+    N29["modificationTime<br/><i style="font-size:12px">object</i>"]
+    N24 --> N29
+    N23 --> N24
+    N2 --> N23
+    N30["tables<br/><i style="font-size:12px">Record<IdType,<br/<br/>>{nodeTable: Table, edgeTable: Table}<br/>></i>"]
+    N31["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf</i>"]
+    N32["nodeTable<br/><i style="font-size:12px">Table</i>"]
+    N31 --> N32
+    N33["edgeTable<br/><i style="font-size:12px">Table</i>"]
+    N31 --> N33
+    N30 --> N31
+    N3 --> N30
+    N34["visualStyles<br/><i style="font-size:12px">Record<IdType,<br/<br/>>VisualStyle<br/>></i>"]
+    N4 --> N34
+    N35["viewModels<br/><i style="font-size:12px">Record<IdType,<br/<br/>>NetworkView[]<br/>></i>"]
+    N36["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf[]</i>"]
+    N35 --> N36
+    N5 --> N35
+    N37["ui<br/><i style="font-size:12px">Ui</i>"]
+    N38["panels<br/><i style="font-size:12px">Record<Panel, PanelState<br/>></i>"]
+    N37 --> N38
+    N39["tableUi<br/><i style="font-size:12px">TableUIState</i>"]
+    N40["columnUiState<br/><i style="font-size:12px">object</i>"]
+    N39 --> N40
+    N37 --> N39
+    N41["networkBrowserPanelUi<br/><i style="font-size:12px">NetworkBrowserPanelUIState</i>"]
+    N37 --> N41
+    N42["visualStyleOptions<br/><i style="font-size:12px">Record<IdType,<br/<br/>>VisualStyleOptions<br/>></i>"]
+    N43["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf</i>"]
+    N42 --> N43
+    N37 --> N42
+    N44["networkViewUi<br/><i style="font-size:12px">NetworkViewUIState</i>"]
+    N37 --> N44
+    N45["customNetworkTabName<br/><i style="font-size:12px">CustomNetworkTabName</i>"]
+    N37 --> N45
+    N6 --> N37
+    N46["apps<br/><i style="font-size:12px">CyApp[]</i>"]
+    N7 --> N46
+    N47["serviceApps<br/><i style="font-size:12px">ServiceApp[]</i>"]
+    N7 --> N47
+    N48["filterConfigs<br/><i style="font-size:12px">FilterConfig[]</i>"]
+    N8 --> N48
+    N49["search<br/><i style="font-size:12px">SearchState</i>"]
+    N50["indexedColumns<br/><i style="font-size:12px">Record<IdType, indexedColumns></i>"]
+    N51["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf</i>"]
+    N50 --> N51
+    N49 --> N50
+    N52["options<br/><i style="font-size:12px">Options</i>"]
+    N49 --> N52
+    N53["index<br/><i style="font-size:12px">Record<IdType, index></i>"]
+    N54["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf</i>"]
+    N53 --> N54
+    N49 --> N53
+    N8 --> N49
+    N55["layoutEngines<br/><i style="font-size:12px">Record<string, LayoutEngine<br/>>[]</i>"]
+    N56["layoutEngines[0]<br/><i style="font-size:12px">object</i>"]
+    N57["algorithms<br/><i style="font-size:12px">Algorithms</i>"]
+    N56 --> N57
+    N55 --> N56
+    N9 --> N55
+    N58["renderers<br/><i style="font-size:12px">Record<string, Renderer<br/>></i>"]
+    N59["cyjs<br/><i style="font-size:12px">Cyjs</i>"]
+    N58 --> N59
+    N10 --> N58
+    N60["viewports<br/><i style="font-size:12px">Record<string, Viewport<br/>></i>"]
+    N61["cyjs<br/><i style="font-size:12px">Record<IdType, cyjs></i>"]
+    N62["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf</i>"]
+    N61 --> N62
+    N60 --> N61
+    N10 --> N60
+    N63["rendererFunctions<br/><i style="font-size:12px">Record<string, RendererFunction<br/>></i>"]
+    N64["cyjs<br/><i style="font-size:12px">object</i>"]
+    N63 --> N64
+    N11 --> N63
+    N65["rendererFunctionsByNetworkId<br/><i style="font-size:12px">Record<IdType,<br/<br/>>RendererFunction<br/>></i>"]
+    N66["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf</i>"]
+    N67["cyjs<br/><i style="font-size:12px">object</i>"]
+    N66 --> N67
+    N65 --> N66
+    N11 --> N65
+    N68["opaqueAspects<br/><i style="font-size:12px">Record<IdType,<br/<br/>>OpaqueAspects<br/>></i>"]
+    N69["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf</i>"]
+    N70["cyTableColumn<br/><i style="font-size:12px">cyTableColumn[]</i>"]
+    N69 --> N70
+    N71["cyHiddenAttributes<br/><i style="font-size:12px">cyHiddenAttributes[]</i>"]
+    N69 --> N71
+    N68 --> N69
+    N12 --> N68
+    N72["undoRedoStacks<br/><i style="font-size:12px">Record<IdType,<br/<br/>>UndoRedoStack<br/>></i>"]
+    N73["ff9c05f4-b502-11ec-b3be-0ac135e8bacf<br/><i style="font-size:12px">Ff9c05f4-b502-11ec-b3be-0ac135e8bacf</i>"]
+    N74["undoStack<br/><i style="font-size:12px">undefined[]</i>"]
+    N73 --> N74
+    N75["redoStack<br/><i style="font-size:12px">undefined[]</i>"]
+    N73 --> N75
+    N72 --> N73
+    N13 --> N72
+    N76["messages<br/><i style="font-size:12px">unknown[]</i>"]
+    N14 --> N76
+    N77["client<br/><i style="font-size:12px">KeycloakClient</i>"]
+    N78["endpoints<br/><i style="font-size:12px">object</i>"]
+    N77 --> N78
+    N15 --> N77
+    N79["summary<br/><i style="font-size:12px">Summary</i>"]
+    N80["networkIds<br/><i style="font-size:12px">string[]</i>"]
+    N79 --> N80
+    N81 --> N79
+    N81 -.-> stores_subgraph
+
+    classDef storeNode fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    classDef recordNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef arrayNode fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef typeNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef primitiveNode fill:#f5f5f5,stroke:#757575,stroke-width:1px
+    class N16 storeNode
+    class N17 arrayNode
+    class N18 typeNode
+    class N19 typeNode
+    class N20 typeNode
+    class N21 storeNode
+    class N22 typeNode
+    class N23 storeNode
+    class N24 typeNode
+    class N25 arrayNode
+    class N26 arrayNode
+    class N27 arrayNode
+    class N28 typeNode
+    class N29 typeNode
+    class N30 storeNode
+    class N31 typeNode
+    class N32 typeNode
+    class N33 typeNode
+    class N34 storeNode
+    class N35 storeNode
+    class N36 arrayNode
+    class N37 storeNode
+    class N38 recordNode
+    class N39 typeNode
+    class N40 typeNode
+    class N41 typeNode
+    class N42 recordNode
+    class N43 typeNode
+    class N44 typeNode
+    class N45 typeNode
+    class N46 storeNode
+    class N47 storeNode
+    class N48 storeNode
+    class N49 storeNode
+    class N50 recordNode
+    class N51 typeNode
+    class N52 typeNode
+    class N53 recordNode
+    class N54 typeNode
+    class N55 storeNode
+    class N56 typeNode
+    class N57 typeNode
+    class N58 storeNode
+    class N59 typeNode
+    class N60 storeNode
+    class N61 recordNode
+    class N62 typeNode
+    class N63 storeNode
+    class N64 typeNode
+    class N65 storeNode
+    class N66 typeNode
+    class N67 typeNode
+    class N68 storeNode
+    class N69 typeNode
+    class N70 arrayNode
+    class N71 arrayNode
+    class N72 storeNode
+    class N73 typeNode
+    class N74 arrayNode
+    class N75 arrayNode
+    class N76 storeNode
+    class N77 storeNode
+    class N78 typeNode
+    class N79 typeNode
+    class N80 arrayNode

@@ -1,5 +1,4 @@
 import { logUi } from '../../../debug'
-
 import { IdType } from '../../IdType'
 import { Edge, Network, Node } from '../../NetworkModel'
 import { AttributeName, Column, Table, ValueType } from '../../TableModel'

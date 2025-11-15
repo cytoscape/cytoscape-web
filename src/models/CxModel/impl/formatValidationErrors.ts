@@ -23,3 +23,4 @@ export const formatValidationErrors = (
   return `Invalid CX2 network. Please see the CX2 spec for full details ${specUrl}`
 }
 
+

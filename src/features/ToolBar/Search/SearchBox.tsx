@@ -1,7 +1,6 @@
+import { Tooltip } from '@mui/material'
 import Fuse from 'fuse.js'
 import { useEffect, useRef, useState } from 'react'
-
-import { Tooltip } from '@mui/material'
 
 import { logUi } from '../../../debug'
 import { useFilterStore } from '../../../hooks/stores/FilterStore'

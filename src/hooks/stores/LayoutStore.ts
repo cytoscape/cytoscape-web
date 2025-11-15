@@ -9,8 +9,8 @@ import {
 } from '../../models/LayoutModel/impl/layoutSelection'
 import { LayoutAlgorithm } from '../../models/LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../models/LayoutModel/LayoutEngine'
-import * as LayoutStoreImpl from '../../models/StoreModel/impl/layoutStoreImpl'
 import { Property } from '../../models/PropertyModel/Property'
+import * as LayoutStoreImpl from '../../models/StoreModel/impl/layoutStoreImpl'
 import { LayoutStore } from '../../models/StoreModel/LayoutStoreModel'
 import { ValueType } from '../../models/TableModel'
 

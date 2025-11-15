@@ -123,3 +123,4 @@ Finds all nodes/edges containing the exact phrase "cell cycle" OR "protein"
 - Users can select whether to search nodes, edges, or both
 - Default is nodes only
 
+

@@ -15,12 +15,12 @@ import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
-import { validateCX2 } from '../../../models/CxModel/impl/validator'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
 } from '../../../models/CxModel/impl/extractor'
+import { validateCX2 } from '../../../models/CxModel/impl/validator'
 import { NetworkProperty } from '../../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
 import { generateUniqueName } from '../../../utils/generateUniqueName'

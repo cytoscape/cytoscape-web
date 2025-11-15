@@ -2,8 +2,8 @@ import Keycloak from 'keycloak-js'
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import * as CredentialStoreImpl from '../../models/StoreModel/impl/credentialStoreImpl'
 import { CredentialStore } from '../../models/StoreModel/CredentialStoreModel'
+import * as CredentialStoreImpl from '../../models/StoreModel/impl/credentialStoreImpl'
 
 export const useCredentialStore = create(
   immer<CredentialStore>((set, get) => ({

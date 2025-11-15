@@ -19,6 +19,7 @@ import {
   VisualPropertyValueType,
   VisualStyle,
 } from '../../models/VisualStyleModel'
+import * as VisualStyleImpl from '../../models/VisualStyleModel/impl/visualStyleImpl'
 import {
   ContinuousMappingFunction,
   DiscreteMappingFunction,
@@ -27,7 +28,6 @@ import {
 } from '../../models/VisualStyleModel/VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyValueTypeName } from '../../models/VisualStyleModel/VisualPropertyValueTypeName'
-import * as VisualStyleImpl from '../../models/VisualStyleModel/impl/visualStyleImpl'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 /**

@@ -13,9 +13,9 @@ import { AppStatus } from '../../models/AppModel/AppStatus'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
-import * as AppStoreImpl from '../../models/StoreModel/impl/appStoreImpl'
 import { ServiceMetadata } from '../../models/AppModel/ServiceMetadata'
 import { AppStore } from '../../models/StoreModel/AppStoreModel'
+import * as AppStoreImpl from '../../models/StoreModel/impl/appStoreImpl'
 
 const sampleUrl = 'https://cd.ndexbio.org/cy/cytocontainer/v1/louvain'
 

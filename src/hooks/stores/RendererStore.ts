@@ -7,8 +7,8 @@ import { immer } from 'zustand/middleware/immer'
 
 import { DefaultRenderer } from '../../features/DefaultRenderer'
 import { IdType } from '../../models'
-import { Renderer } from '../../models/RendererModel/Renderer'
 import * as RendererImpl from '../../models/RendererModel/impl/rendererImpl'
+import { Renderer } from '../../models/RendererModel/Renderer'
 import { ViewPort } from '../../models/RendererModel/ViewPort'
 import { RendererStore } from '../../models/StoreModel/RendererStoreModel'
 

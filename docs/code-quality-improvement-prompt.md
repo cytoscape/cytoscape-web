@@ -57,6 +57,224 @@ The specific code areas to process will be specified when starting the task. Exa
 - Test both happy paths and error cases
 - Mock external dependencies appropriately
 
+### Component Testing Strategy: Extract Hooks for Testability
+
+When testing React components, follow a **two-level testing strategy** that separates business logic from UI rendering:
+
+#### 1. Extract Business Logic to Custom Hooks
+
+**Principle**: Components should be thin UI wrappers. Complex business logic should be extracted into custom hooks.
+
+**Benefits**:
+
+- Hooks can be tested independently with `renderHook` (fast, no React rendering)
+- Components become simpler and easier to test
+- Logic is reusable across components
+- Clear separation of concerns
+
+**Pattern**:
+
+```typescript
+// Extract logic to hook
+const useMyFeature = () => {
+  // Business logic here
+  const [state, setState] = useState(...)
+  const handleAction = () => { /* logic */ }
+
+  return {
+    state,
+    handleAction,
+    // ... other outputs
+  }
+}
+
+// Component uses hook outputs
+const MyComponent = () => {
+  const { state, handleAction } = useMyFeature()
+  return <button onClick={handleAction}>{state}</button>
+}
+```
+
+#### 2. Two-Level Testing Strategy
+
+**Level 1: Test the Hook (Business Logic)**
+
+- Use `renderHook` from `@testing-library/react` to test hooks independently
+- Test business logic, state management, edge cases
+- Fast execution (no React rendering overhead)
+- Focus on "Does the logic work?"
+
+**Example**:
+
+```typescript
+import { renderHook, act } from '@testing-library/react'
+import { useMyFeature } from './useMyFeature'
+
+describe('useMyFeature', () => {
+  it('handles state updates correctly', () => {
+    const { result } = renderHook(() => useMyFeature())
+
+    act(() => {
+      result.current.handleAction()
+    })
+
+    expect(result.current.state).toBe('expected')
+  })
+})
+```
+
+**Level 2: Test the Component (UI Rendering)**
+
+- Mock the hook's return value
+- Test that component renders correctly for given hook outputs
+- Test user interactions (clicks, typing, etc.)
+- Focus on "Does the UI render correctly for given outputs?"
+
+**Example**:
+
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react'
+import { MyComponent } from './MyComponent'
+import { useMyFeature } from './useMyFeature'
+
+jest.mock('./useMyFeature')
+
+describe('MyComponent', () => {
+  it('renders button with state value', () => {
+    useMyFeature.mockReturnValue({
+      state: 'test',
+      handleAction: jest.fn(),
+    })
+
+    render(<MyComponent />)
+    expect(screen.getByText('test')).toBeInTheDocument()
+  })
+
+  it('calls handleAction when clicked', () => {
+    const mockHandleAction = jest.fn()
+    useMyFeature.mockReturnValue({
+      state: '',
+      handleAction: mockHandleAction,
+    })
+
+    render(<MyComponent />)
+    fireEvent.click(screen.getByRole('button'))
+
+    expect(mockHandleAction).toHaveBeenCalled()
+  })
+})
+```
+
+#### 3. When to Extract Hooks
+
+Extract logic to hooks when:
+
+- Component has complex business logic (data transformations, calculations)
+- Component accesses multiple stores (3+ store hooks)
+- Component has complex state management
+- Logic could be reused in other components
+- Testing the component requires complex mocking setup
+
+#### 4. Dependency Injection Pattern (Optional)
+
+For even better testability, consider dependency injection:
+
+```typescript
+// Hook accepts dependencies
+const useMyFeature = (params, deps?: Dependencies) => {
+  // Use injected deps or default to stores
+  const getData = deps?.getData ?? useStore((state) => state.getData)
+  // ...
+}
+
+// Production: use real dependencies from stores
+const deps = useMyFeatureDependencies() // factory that uses stores
+const result = useMyFeature(params, deps)
+
+// Tests: inject mocks
+const mockDeps = { getData: jest.fn() }
+const result = useMyFeature(params, mockDeps)
+```
+
+#### 5. Testing Guidelines
+
+**Hook Tests Should Cover**:
+
+- Business logic correctness
+- State updates and transitions
+- Edge cases and error handling
+- Computed/derived values
+- Side effects (if any)
+
+**Component Tests Should Cover**:
+
+- Rendering for different hook output states
+- User interactions (clicks, typing, etc.)
+- Conditional rendering based on hook outputs
+- Accessibility (ARIA labels, keyboard navigation)
+- Integration with hook functions
+
+**What NOT to Test in Component Tests**:
+
+- Business logic (test that in hook tests)
+- Store internals (mock the hook instead)
+- Implementation details (test behavior, not implementation)
+
+#### 6. Refactoring Existing Components
+
+When refactoring components for testability:
+
+1. **Identify business logic** - What's complex logic vs simple UI?
+2. **Extract pure functions** - Move utility logic to pure functions (no React, no side effects)
+3. **Create custom hook** - Move business logic to hook
+4. **Define dependency interface** - Make dependencies explicit
+5. **Simplify component** - Component should mostly render and delegate
+6. **Write hook tests** - Test logic independently
+7. **Write component tests** - Test UI with mocked hook
+
+**Example Refactoring**:
+
+```typescript
+// Before: Logic mixed with UI
+const MyComponent = () => {
+  const data1 = useStore1(...)  // Must mock
+  const data2 = useStore2(...)  // Must mock
+  const data3 = useStore3(...)  // Must mock
+
+  const handleClick = () => {
+    // 50+ lines of complex logic
+  }
+
+  return <button onClick={handleClick}>Click</button>
+}
+
+// After: Logic in hook, component is thin
+const useMyFeature = () => {
+  const data1 = useStore1(...)
+  const data2 = useStore2(...)
+  const data3 = useStore3(...)
+
+  const handleClick = () => {
+    // 50+ lines of complex logic
+  }
+
+  return { handleClick, /* other outputs */ }
+}
+
+const MyComponent = () => {
+  const { handleClick } = useMyFeature()
+  return <button onClick={handleClick}>Click</button>
+}
+```
+
+#### 7. Resources
+
+For more details on this pattern, see:
+
+- `src/features/FloatingToolBar/FloatingToolBar_docs/TestabilityAnalysis.md`
+- `src/features/FloatingToolBar/FloatingToolBar_docs/TestingStrategy.md`
+- `src/features/FloatingToolBar/FloatingToolBar_docs/RefactoredExample.tsx`
+
 ## Documentation Requirements
 
 ### Purpose
