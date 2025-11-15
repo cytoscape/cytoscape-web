@@ -1,13 +1,13 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useState } from 'react'
 
-import { logUi } from '../../../debug'
 import { importDatabaseSnapshotFromFile } from '../../../db'
+import { logUi } from '../../../debug'
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
-import { DatabaseSnapshotFileUpload } from '../DatabaseSnapshotFileUpload'
 import { BaseMenuProps } from '../BaseMenuProps'
+import { DatabaseSnapshotFileUpload } from '../DatabaseSnapshotFileUpload'
 
 export const ImportDatabaseMenuItem = (props: BaseMenuProps): ReactElement => {
   const [showUpload, setShowUpload] = useState(false)

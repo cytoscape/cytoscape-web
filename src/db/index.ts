@@ -22,6 +22,7 @@ import { VisualStyle } from '../models/VisualStyleModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
 import { Workspace } from '../models/WorkspaceModel'
 import { createWorkspace } from '../models/WorkspaceModel/impl/workspaceImpl'
+import { applyMigrations } from './migrations'
 import {
   deserializeFilterConfig,
   deserializeNetworkView,
@@ -32,7 +33,6 @@ import {
   serializeTable,
   serializeVisualStyle,
 } from './serialization'
-import { applyMigrations } from './migrations'
 // Unique, fixed DB name for the Cytoscape Web
 const DB_NAME: string = 'cyweb-db'
 
@@ -947,12 +947,20 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
 // ============================================================================
 
 export {
-  type DatabaseSnapshot,
   type DatabaseExportMetadata,
-  type ImportOptions,
-  type ImportResult,
+  type DatabaseSnapshot,
   exportDatabaseSnapshot,
   exportDatabaseSnapshotToFile,
   importDatabaseSnapshot,
   importDatabaseSnapshotFromFile,
+  type ImportOptions,
+  type ImportResult,
 } from './snapshot'
+
+// Application state export (includes database + store states)
+export {
+  type ApplicationState,
+  exportApplicationState,
+  exportApplicationStateToFile,
+  manualExportAppState,
+} from './snapshot/exportApplicationState'

@@ -14,8 +14,8 @@ import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { Network } from '../../models/NetworkModel'
 import {
-  getDb,
   getDatabaseVersion,
+  getDb,
   ObjectStoreNames,
   type ObjectStoreNames as ObjectStoreNamesType,
 } from '../index'

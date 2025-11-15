@@ -1,55 +1,55 @@
 import { z } from 'zod'
 
-import { Panel } from '../models/UiModel/Panel'
-import { MappingFunctionType } from '../models/VisualStyleModel/VisualMappingFunction/MappingFunctionType'
-import type { Workspace } from '../models/WorkspaceModel/Workspace'
-import type { Network, Edge, Node } from '../models/NetworkModel'
-import type { Table } from '../models/TableModel/Table'
-import type {
-  TableWithRecords,
-  NetworkViewWithRecords,
-  VisualStyleWithRecords,
-  FilterConfigWithRecords,
-} from './serialization'
-import type { NetworkSummary } from '../models/NetworkSummaryModel/NetworkSummary'
-import type { FilterConfig } from '../models/FilterModel/FilterConfig'
+import type { ComponentMetadata } from '../models/AppModel/ComponentMetadata'
 import type { CyApp } from '../models/AppModel/CyApp'
-import type { ServiceApp } from '../models/AppModel/ServiceApp'
-import type { ServiceAppParameter } from '../models/AppModel/ServiceAppParameter'
-import type { ServiceAppAction } from '../models/AppModel/ServiceAppAction'
-import type {
-  ServiceInputDefinition,
-  InputColumn,
-  InputNetwork,
-} from '../models/AppModel/ServiceInputDefinition'
 import type { CyWebMenuItem } from '../models/AppModel/CyWebMenuItem'
 import type { MenuPathElement } from '../models/AppModel/MenuPathElement'
-import type { ComponentMetadata } from '../models/AppModel/ComponentMetadata'
-import type { NetworkProperty } from '../models/NetworkSummaryModel/NetworkProperty'
-import type { Column } from '../models/TableModel/Column'
-import type { VisualStyle } from '../models/VisualStyleModel/VisualStyle'
-import type { VisualProperty } from '../models/VisualStyleModel/VisualProperty'
-import type { VisualMappingFunction } from '../models/VisualStyleModel/VisualMappingFunction/VisualMappingFunction'
-import type { DiscreteMappingFunction } from '../models/VisualStyleModel/VisualMappingFunction/DiscreteMappingFunction'
+import type { ServiceApp } from '../models/AppModel/ServiceApp'
+import type { ServiceAppAction } from '../models/AppModel/ServiceAppAction'
+import type { ServiceAppParameter } from '../models/AppModel/ServiceAppParameter'
 import type {
-  ContinuousMappingFunction,
-  ContinuousFunctionControlPoint,
-} from '../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
-import type { Ui } from '../models/UiModel/Ui'
-import type { TableUIState, ColumnUIState } from '../models/UiModel/TableUi'
+  InputColumn,
+  InputNetwork,
+  ServiceInputDefinition,
+} from '../models/AppModel/ServiceInputDefinition'
+import type { FilterConfig } from '../models/FilterModel/FilterConfig'
+import type { Edge, Network, Node } from '../models/NetworkModel'
+import type { NetworkProperty } from '../models/NetworkSummaryModel/NetworkProperty'
+import type { NetworkSummary } from '../models/NetworkSummaryModel/NetworkSummary'
+import type { OpaqueAspects } from '../models/OpaqueAspectModel/OpaqueAspects'
+import type { Edit,UndoRedoStack } from '../models/StoreModel/UndoStoreModel'
+import type { Column } from '../models/TableModel/Column'
+import type { Table } from '../models/TableModel/Table'
 import type { NetworkBrowserPanelUIState } from '../models/UiModel/NetworkBrowserPanelState'
 import type { NetworkViewUIState } from '../models/UiModel/NetworkViewUI'
-import type {
-  VisualStyleOptions,
-  TableConfig,
-  ColumnConfiguration,
-  VisualEditorProperties,
-  TableDisplayConfiguration,
-} from '../models/VisualStyleModel/VisualStyleOptions'
-import type { UndoRedoStack, Edit } from '../models/StoreModel/UndoStoreModel'
-import type { OpaqueAspectsDB, UndoRedoStackDB } from './index'
-import type { OpaqueAspects } from '../models/OpaqueAspectModel/OpaqueAspects'
+import { Panel } from '../models/UiModel/Panel'
+import type { ColumnUIState,TableUIState } from '../models/UiModel/TableUi'
+import type { Ui } from '../models/UiModel/Ui'
 import type { NetworkView } from '../models/ViewModel/NetworkView'
+import type {
+  ContinuousFunctionControlPoint,
+  ContinuousMappingFunction,
+} from '../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
+import type { DiscreteMappingFunction } from '../models/VisualStyleModel/VisualMappingFunction/DiscreteMappingFunction'
+import { MappingFunctionType } from '../models/VisualStyleModel/VisualMappingFunction/MappingFunctionType'
+import type { VisualMappingFunction } from '../models/VisualStyleModel/VisualMappingFunction/VisualMappingFunction'
+import type { VisualProperty } from '../models/VisualStyleModel/VisualProperty'
+import type { VisualStyle } from '../models/VisualStyleModel/VisualStyle'
+import type {
+  ColumnConfiguration,
+  TableConfig,
+  TableDisplayConfiguration,
+  VisualEditorProperties,
+  VisualStyleOptions,
+} from '../models/VisualStyleModel/VisualStyleOptions'
+import type { Workspace } from '../models/WorkspaceModel/Workspace'
+import type { OpaqueAspectsDB, UndoRedoStackDB } from './index'
+import type {
+  FilterConfigWithRecords,
+  NetworkViewWithRecords,
+  TableWithRecords,
+  VisualStyleWithRecords,
+} from './serialization'
 
 const IdTypeSchema = z.string().min(1)
 
