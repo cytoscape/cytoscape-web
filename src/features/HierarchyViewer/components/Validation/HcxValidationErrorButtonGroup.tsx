@@ -83,7 +83,10 @@ export const HcxValidationButtonGroup = (
       {validationResult !== undefined && !validationResult.isValid ? (
         <ButtonGroup size="small" variant="outlined">
           <Tooltip title="This HCX network is not valid.  Click to learn how you can fix it.">
-            <IconButton onClick={() => setShowValidationResults(true)}>
+            <IconButton
+              data-testid="hcx-validation-warnings-button"
+              onClick={() => setShowValidationResults(true)}
+            >
               <WarningAmberOutlined
                 sx={{ width: 22, height: 22 }}
                 color="error"
@@ -91,7 +94,10 @@ export const HcxValidationButtonGroup = (
             </IconButton>
           </Tooltip>
           <Tooltip title="Revalidate HCX network">
-            <IconButton onClick={() => revalidateHcx()}>
+            <IconButton
+              data-testid="hcx-validation-revalidate-button"
+              onClick={() => revalidateHcx()}
+            >
               <PublishedWithChanges sx={{ width: 22, height: 22 }} />
             </IconButton>
           </Tooltip>

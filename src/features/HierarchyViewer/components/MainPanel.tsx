@@ -214,6 +214,7 @@ export const MainPanel = (): JSX.Element => {
   return (
     <QueryClientProvider client={queryClient}>
       <Box
+        data-testid="hierarchy-viewer-main-panel"
         sx={{
           width: '100%',
           height: '100%',

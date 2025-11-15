@@ -58,6 +58,7 @@ export const PropertyPanel = ({
 
   return (
     <Box
+      data-testid="property-panel"
       sx={{
         width: '100%',
         height: 'calc(100% - 48px)',

@@ -838,7 +838,13 @@ export const CirclePackingPanel = ({
 
   return (
     <>
-      <svg id={SVG_ID} ref={svgRef} width={'100%'} height={'100%'} />
+      <svg
+        id={SVG_ID}
+        data-testid="circle-packing-svg"
+        ref={svgRef}
+        width={'100%'}
+        height={'100%'}
+      />
       <Tooltip
         open={tooltipOpen}
         title={tooltipContent}

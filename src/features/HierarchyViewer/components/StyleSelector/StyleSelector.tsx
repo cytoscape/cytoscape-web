@@ -10,9 +10,6 @@ import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStor
 export const StyleSelector = (): JSX.Element => {
   const [selectedStyleName, setSelectedStyleName] = useState<string>('')
 
-  const ui = useUiStateStore((state) => state.ui)
-  const { activeNetworkView } = ui
-
   const visualStyles = useVisualStyleSelectorStore(
     (state) => state.sharedVisualStyles,
   )
@@ -33,6 +30,7 @@ export const StyleSelector = (): JSX.Element => {
     <Stack direction="row" spacing={2}>
       <FormControl sx={{ width: '100%', minWidth: 120 }} size="small">
         <Select
+          data-testid="style-selector-dropdown"
           labelId="demo-select-small-label"
           id="demo-select-small"
           value={selectedStyleName}
@@ -50,6 +48,7 @@ export const StyleSelector = (): JSX.Element => {
         <FormHelperText>Shared Visual Style</FormHelperText>
       </FormControl>
       <Button
+        data-testid="style-selector-apply-button"
         variant="contained"
         size="small"
         sx={{ mt: 1 }}

@@ -22,7 +22,7 @@ export const HcxValidationWarningsDialog = (
 ): ReactElement => {
   const { open, onClose, validationResult } = props
   return (
-    <Dialog open={open}>
+    <Dialog open={open} data-testid="hcx-validation-warnings-dialog">
       <DialogTitle>Invalid HCX Network</DialogTitle>
       <DialogContent>
         <DialogContentText>
@@ -46,7 +46,11 @@ export const HcxValidationWarningsDialog = (
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button color="primary" onClick={() => onClose()}>
+        <Button
+          data-testid="hcx-validation-warnings-dialog-close"
+          color="primary"
+          onClick={() => onClose()}
+        >
           Close
         </Button>
       </DialogActions>

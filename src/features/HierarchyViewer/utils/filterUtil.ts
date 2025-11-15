@@ -5,7 +5,7 @@ import {
 } from '../../../models/FilterModel'
 import { IdType } from '../../../models/IdType'
 import { GraphObjectType } from '../../../models/NetworkModel'
-import { Table, ValueType } from '../../../models/TableModel'
+import { ValueType } from '../../../models/TableModel'
 import { VisualMappingFunction } from '../../../models/VisualStyleModel'
 
 export const getDefaultCheckboxFilterConfig = (

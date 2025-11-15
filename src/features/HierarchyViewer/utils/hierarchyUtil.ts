@@ -4,7 +4,6 @@ import { IdType } from '../../../models/IdType'
 import {
   NetworkProperty,
   NetworkSummary,
-  Visibility,
 } from '../../../models/NetworkSummaryModel'
 import { Table, ValueType } from '../../../models/TableModel'
 import { NodeView } from '../../../models/ViewModel'

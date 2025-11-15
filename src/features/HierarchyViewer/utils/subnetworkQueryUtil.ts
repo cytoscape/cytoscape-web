@@ -3,11 +3,7 @@
  *
  * Functions for executing queries and fetching networks via queries.
  */
-import {
-  fetchNdexInterconnectQuery,
-  fetchNdexNetwork,
-  getNdexClient,
-} from '../../../api/ndex'
+import { fetchNdexInterconnectQuery, fetchNdexNetwork } from '../../../api/ndex'
 import { logApi } from '../../../debug'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'

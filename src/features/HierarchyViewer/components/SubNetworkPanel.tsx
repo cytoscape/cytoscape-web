@@ -681,6 +681,7 @@ export const SubNetworkPanel = ({
 
   return (
     <Box
+      data-testid="subnetwork-panel"
       sx={{
         boxSizing: 'border-box',
         height: '100%',

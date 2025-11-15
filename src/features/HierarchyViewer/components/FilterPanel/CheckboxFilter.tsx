@@ -200,6 +200,7 @@ export const CheckboxFilter = ({
           }}
           control={
             <Checkbox
+              data-testid="checkbox-filter-select-all"
               disabled={!enableFilter}
               checked={isAllSelected}
               indeterminate={
@@ -230,6 +231,7 @@ export const CheckboxFilter = ({
               key={option}
               control={
                 <Checkbox
+                  data-testid={`checkbox-filter-option-${option}`}
                   disabled={!enableFilter}
                   sx={checkboxStyle}
                   checked={currentSelectedOptions.values.includes(option)}

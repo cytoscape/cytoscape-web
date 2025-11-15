@@ -254,6 +254,7 @@ export const FilterPanel = () => {
 
   return (
     <Container
+      data-testid="filter-panel"
       disableGutters={true}
       sx={{
         width: '100%',
@@ -309,6 +310,7 @@ export const FilterPanel = () => {
             >
               <Typography>Filter: {selectedFilter.label}</Typography>
               <Switch
+                data-testid="filter-enable-switch"
                 checked={isFilterEnabled}
                 onClick={(event) => {
                   event.stopPropagation()
