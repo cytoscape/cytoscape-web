@@ -30,6 +30,7 @@ export const StringEditor = ({
       secondaryAction={
         <Tooltip arrow placement={'right'} title={description} key={optionName}>
           <TextField
+            data-testid={`layout-value-editor-string-${optionName}`}
             id="standard-basic"
             variant="standard"
             sx={{ maxWidth: '4em', justifyContent: 'right' }}

@@ -49,6 +49,7 @@ export function JoinTableToNetworkForm(props: BaseMenuProps) {
       <PrimeReactProvider>
         <ModalsProvider>
           <Modal
+            data-testid="join-table-to-network-modal"
             zIndex={999999}
             centered
             fullScreen={fullScreen}
@@ -64,6 +65,7 @@ export function JoinTableToNetworkForm(props: BaseMenuProps) {
                     label="Exit Fullscreen"
                   >
                     <ActionIcon
+                      data-testid="join-table-to-network-exit-fullscreen-button"
                       variant="default"
                       onClick={() => setFullScreen(false)}
                     >
@@ -77,6 +79,7 @@ export function JoinTableToNetworkForm(props: BaseMenuProps) {
                     label="Fullscreen"
                   >
                     <ActionIcon
+                      data-testid="join-table-to-network-fullscreen-button"
                       variant="default"
                       onClick={() => setFullScreen(true)}
                     >

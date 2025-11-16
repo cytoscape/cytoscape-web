@@ -126,6 +126,7 @@ export function DiscreteMappingForm(props: {
             <TableRow>
               <TableCell sx={{ maxWidth: '55px' }} padding="checkbox">
                 <Checkbox
+                  data-testid="discrete-mapping-select-all-checkbox"
                   checked={allSelected}
                   indeterminate={someSelected && !allSelected}
                   onClick={() => {
@@ -170,6 +171,7 @@ export function DiscreteMappingForm(props: {
                 <TableRow key={index} hover={true} selected={false}>
                   <TableCell sx={{ maxWidth: '55px' }} padding="checkbox">
                     <Checkbox
+                      data-testid={`discrete-mapping-checkbox-${key}`}
                       onClick={() => toggleSelected(key, selected)}
                       checked={selected}
                     />
@@ -254,6 +256,7 @@ export function DiscreteMappingForm(props: {
                   </TableCell>
                   <TableCell sx={{ maxWidth: '85px' }} align="center">
                     <IconButton
+                      data-testid={`discrete-mapping-delete-button-${key}`}
                       disabled={value == null}
                       onClick={() => {
                         const prevMap = mapping?.vpValueMap ?? new Map()

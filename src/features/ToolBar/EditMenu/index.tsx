@@ -26,6 +26,7 @@ export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
   return (
     <div>
       <Button
+        data-testid="toolbar-edit-menu-button"
         sx={{
           color: 'white',
           textTransform: 'none',
@@ -39,6 +40,7 @@ export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
         {label}
       </Button>
       <Menu
+        data-testid="toolbar-edit-menu"
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}

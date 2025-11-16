@@ -219,6 +219,7 @@ export const NetworkPropertyPanel = ({
             <HcxValidationButtonGroup id={id} />
             <Tooltip title="Edit network properties">
               <IconButton
+                data-testid="network-property-edit-button"
                 size="small"
                 sx={{ width: 25, height: 25 }}
                 onClick={(e) => {
@@ -237,6 +238,7 @@ export const NetworkPropertyPanel = ({
             </Tooltip>
             <Tooltip title="Remove the network from workspace">
               <IconButton
+                data-testid="network-property-delete-button"
                 size="small"
                 sx={{ width: 25, height: 25 }}
                 onClick={(e) => {

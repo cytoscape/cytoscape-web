@@ -373,6 +373,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
       </Group>
       <Group justify="flex-end">
         <Button
+          data-testid="table-column-append-select-all-button"
           size="compact-xs"
           variant="default"
           disabled={columns.every(
@@ -384,6 +385,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
         </Button>
 
         <Button
+          data-testid="table-column-append-select-none-button"
           size="compact-xs"
           variant="default"
           disabled={columns.every(
@@ -610,6 +612,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
         </Popover>
         <Group justify="space-between" gap="lg">
           <Button
+            data-testid="table-column-append-cancel-button"
             disabled={loading}
             variant="default"
             color="primary"
@@ -622,6 +625,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
             label="All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
           >
             <Button
+              data-testid="table-column-append-confirm-button"
               styles={(theme) => ({
                 root: {
                   color: '#FFFFFF',

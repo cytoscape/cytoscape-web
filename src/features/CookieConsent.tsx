@@ -13,6 +13,7 @@ export const CookieConsentWidget: React.FC = () => {
 
   return (
     <CookieConsent
+      data-testid="cookie-consent"
       location="bottom"
       buttonText="Accept"
       declineButtonText="Decline"

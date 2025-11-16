@@ -62,7 +62,12 @@ export const Error = (): ReactElement => {
         </Typography>
       </Grid>
       <Grid item xs={12}>
-        <Button variant="outlined" color={'warning'} onClick={handleReset}>
+        <Button
+          data-testid="error-reset-workspace-button"
+          variant="outlined"
+          color={'warning'}
+          onClick={handleReset}
+        >
           Reset Workspace and Reload Cytoscape
         </Button>
       </Grid>

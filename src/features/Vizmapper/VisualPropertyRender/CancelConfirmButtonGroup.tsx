@@ -13,6 +13,7 @@ export const CancelConfirmButtonGroup = (
   return (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
       <Button
+        data-testid="visual-property-cancel-button"
         color="primary"
         onClick={() => {
           closePopover('cancel')
@@ -21,6 +22,7 @@ export const CancelConfirmButtonGroup = (
         Cancel
       </Button>
       <Button
+        data-testid="visual-property-confirm-button"
         sx={{
           color: '#FFFFFF',
           backgroundColor: '#337ab7',

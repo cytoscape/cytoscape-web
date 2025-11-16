@@ -30,6 +30,7 @@ export function OpacitySlider(props: {
       >
         <VisibilityOffIcon sx={{ color: '#D9D9D9' }} />
         <Slider
+          data-testid="opacity-slider"
           valueLabelDisplay="on"
           value={opacityToPercent(localOpacityValue)}
           onChange={(e, newVal: number) => {
@@ -51,6 +52,7 @@ export function OpacitySlider(props: {
       </Stack>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
         <Button
+          data-testid="opacity-slider-cancel-button"
           color="primary"
           onClick={() => {
             props.closePopover('cancel')
@@ -60,6 +62,7 @@ export function OpacitySlider(props: {
           Cancel
         </Button>
         <Button
+          data-testid="opacity-slider-confirm-button"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

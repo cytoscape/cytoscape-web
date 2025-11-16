@@ -203,6 +203,7 @@ export const SearchBox = (): JSX.Element => {
     >
       <Search ref={baseRef}>
         <StyledInputBase
+          data-testid="search-box-input"
           placeholder="Search current network"
           inputProps={{ 'aria-label': 'search' }}
           value={query}

@@ -21,7 +21,7 @@ export const ScalingTypeSelector = ({
   }
 
   return (
-    <FormControl>
+    <FormControl data-testid="scaling-type-selector">
       <FormLabel id="demo-row-radio-buttons-group-label">Scale</FormLabel>
       <RadioGroup
         row
@@ -33,19 +33,19 @@ export const ScalingTypeSelector = ({
         <FormControlLabel
           key={'width'}
           value="width"
-          control={<Radio />}
+          control={<Radio data-testid="scaling-type-width-radio" />}
           label="Width"
         />
         <FormControlLabel
           key={'height'}
           value="height"
-          control={<Radio />}
+          control={<Radio data-testid="scaling-type-height-radio" />}
           label="Height"
         />
         <FormControlLabel
           key={'both'}
           value="both"
-          control={<Radio />}
+          control={<Radio data-testid="scaling-type-both-radio" />}
           label="Both"
         />
       </RadioGroup>

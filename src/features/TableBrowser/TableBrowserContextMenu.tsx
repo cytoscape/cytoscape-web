@@ -38,12 +38,16 @@ export default function TableBrowserContextMenu(props: TableBrowserContextMenuPr
   });
 
   return (
-    <div ref={popperReference} style={styles.popper}
+    <div
+      data-testid="table-browser-context-menu"
+      ref={popperReference}
+      style={styles.popper}
       {...attributes.popper}
-      {...props}>
+      {...props}
+    >
       <Box sx={{ display: bounds == null ? 'none' : 'element' }}>
         {props.children}
       </Box>
     </div>
-  );
+  )
 }

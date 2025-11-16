@@ -251,6 +251,7 @@ export const MatchingTableComp = React.memo(
                         arrow
                       >
                         <TextField
+                          data-testid={`merge-matching-table-textfield-${row.id}`}
                           key={`${row.id}-matchingAttribute-textField`}
                           fullWidth
                           variant="outlined"
@@ -264,6 +265,7 @@ export const MatchingTableComp = React.memo(
                       </Tooltip>
                     ) : (
                       <TextField
+                        data-testid={`merge-matching-table-textfield-${row.id}`}
                         key={`${row.id}-textField`}
                         fullWidth
                         variant="outlined"

@@ -305,12 +305,14 @@ export default function VizmapperView(props: {
 
   return (
     <Box
+      data-testid="vizmapper"
       sx={{
         width: '100%',
         height: '100%',
       }}
     >
       <Tabs
+        data-testid="vizmapper-tabs"
         value={currentTabIndex}
         TabIndicatorProps={{ sx: { backgroundColor: 'white' } }}
         sx={{
@@ -330,9 +332,18 @@ export default function VizmapperView(props: {
         }}
         onChange={(e, nextTab) => setCurrentTabIndex(nextTab)}
       >
-        <Tab label={<Typography variant="caption">Nodes</Typography>} />
-        <Tab label={<Typography variant="caption">Edges</Typography>} />
-        <Tab label={<Typography variant="caption">Network</Typography>} />
+        <Tab
+          data-testid="vizmapper-nodes-tab"
+          label={<Typography variant="caption">Nodes</Typography>}
+        />
+        <Tab
+          data-testid="vizmapper-edges-tab"
+          label={<Typography variant="caption">Edges</Typography>}
+        />
+        <Tab
+          data-testid="vizmapper-network-tab"
+          label={<Typography variant="caption">Network</Typography>}
+        />
       </Tabs>
       <Box sx={{ display: 'flex', p: 1.5, ml: 0.5, minHeight: '40px' }}>
         <Box

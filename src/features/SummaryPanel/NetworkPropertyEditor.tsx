@@ -73,6 +73,7 @@ const NetworkPropertyEditor = (
   useEffect(() => {
     setLocalSummaryState(summary)
     editor?.commands?.setContent(removePTags(summary.description ?? ''))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summary])
 
   return (
@@ -115,6 +116,7 @@ const NetworkPropertyEditor = (
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <TextField
+              data-testid="network-property-editor-name-input"
               size="small"
               label="Name"
               sx={{ width: '60%', mr: 1, fontSize: 12 }}
@@ -127,6 +129,7 @@ const NetworkPropertyEditor = (
               }}
             ></TextField>
             <TextField
+              data-testid="network-property-editor-version-input"
               size="small"
               label="Version"
               sx={{ width: '20%', fontSize: 12 }}
@@ -237,6 +240,7 @@ const NetworkPropertyEditor = (
           }}
         >
           <Button
+            data-testid="network-property-editor-cancel-button"
             color="primary"
             onClick={(e) => {
               setLocalSummaryState(summary)
@@ -247,6 +251,7 @@ const NetworkPropertyEditor = (
             Cancel
           </Button>
           <Button
+            data-testid="network-property-editor-confirm-button"
             sx={{
               color: '#FFFFFF',
               backgroundColor: '#337ab7',

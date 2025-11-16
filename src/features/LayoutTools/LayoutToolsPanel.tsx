@@ -23,7 +23,10 @@ export const LayoutToolsPanel = (): JSX.Element => {
       : activeNetworkId
 
   return (
-    <Box sx={{ width: '100%', height: '100%', paddingBottom: 1 }}>
+    <Box
+      data-testid="layout-tools-panel"
+      sx={{ width: '100%', height: '100%', paddingBottom: 1 }}
+    >
       <Scaling networkId={targetNetworkId} />
     </Box>
   )

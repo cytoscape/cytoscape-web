@@ -16,6 +16,7 @@ export const LicenseMenu: React.FC<DropdownMenuProps> = (
   return (
     <PrimeReactProvider>
       <Button
+        data-testid="toolbar-license-menu-button"
         sx={{
           color: 'white',
           textTransform: 'none',

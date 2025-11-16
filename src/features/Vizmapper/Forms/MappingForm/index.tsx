@@ -363,6 +363,7 @@ function MappingFormContent(props: {
           sx={{ m: 0.5, fontWeight: 'bold' }}
         >{`${props.visualProperty.displayName} mapping`}</Typography>
         <Button
+          data-testid="mapping-form-remove-button"
           sx={{
             color: '#F50157',
             backgroundColor: 'transparent',
@@ -414,6 +415,7 @@ function MappingFormContent(props: {
           >
             <InputLabel>Column</InputLabel>
             <Select
+              data-testid="mapping-form-column-select"
               defaultValue=""
               value={column}
               label="Column"
@@ -478,6 +480,7 @@ function MappingFormContent(props: {
           <FormControl sx={{ minWidth: '150px' }} size="small">
             <InputLabel>Mapping Type</InputLabel>
             <Select
+              data-testid="mapping-form-type-select"
               defaultValue=""
               value={mappingType}
               label="Mapping Type"
@@ -570,6 +573,7 @@ export function MappingForm(props: {
     <Box sx={props.sx ?? {}}>
       <Box ref={viewBoxRef}>{viewBox}</Box>
       <Popover
+        data-testid="mapping-form-popover"
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
         onClose={() => showForm(null)}

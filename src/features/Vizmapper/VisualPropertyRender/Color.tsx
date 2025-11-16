@@ -33,15 +33,36 @@ export function ColorPicker(props: {
   return (
     <Box>
       <Tabs
+        data-testid="color-picker-tabs"
         value={activeTab}
         onChange={(event, newValue) => setActiveTab(newValue)}
         aria-label="Tab panel"
       >
-        <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Sequential" />
-        <Tab sx={{ pl: 3, pr: 3 }} label="ColorBrewer Diverging" />
-        <Tab sx={{ pl: 3, pr: 3 }} label="Viridis Sequential" />
-        <Tab sx={{ pl: 3, pr: 3 }} label="Swatches" />
-        <Tab sx={{ pl: 3, pr: 3 }} label="Color Picker" />
+        <Tab
+          data-testid="color-picker-sequential-tab"
+          sx={{ pl: 3, pr: 3 }}
+          label="ColorBrewer Sequential"
+        />
+        <Tab
+          data-testid="color-picker-diverging-tab"
+          sx={{ pl: 3, pr: 3 }}
+          label="ColorBrewer Diverging"
+        />
+        <Tab
+          data-testid="color-picker-viridis-tab"
+          sx={{ pl: 3, pr: 3 }}
+          label="Viridis Sequential"
+        />
+        <Tab
+          data-testid="color-picker-swatches-tab"
+          sx={{ pl: 3, pr: 3 }}
+          label="Swatches"
+        />
+        <Tab
+          data-testid="color-picker-picker-tab"
+          sx={{ pl: 3, pr: 3 }}
+          label="Color Picker"
+        />
       </Tabs>
       <Box
         sx={{
@@ -102,6 +123,7 @@ export function ColorPicker(props: {
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
         <Button
+          data-testid="color-picker-cancel-button"
           color="primary"
           onClick={() => {
             props.closePopover('cancel')
@@ -111,6 +133,7 @@ export function ColorPicker(props: {
           Cancel
         </Button>
         <Button
+          data-testid="color-picker-confirm-button"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

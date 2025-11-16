@@ -74,6 +74,7 @@ export const NetworkSeachField = (props: {
       }}
     >
       <TextField
+        data-testid="load-from-ndex-search-input"
         autoFocus
         margin="dense"
         label="Search NDEx"
@@ -84,7 +85,10 @@ export const NetworkSeachField = (props: {
         value={searchValue}
         onKeyDown={handleKeyDown}
       />
-      <IconButton onClick={() => props.startSearch(searchValue)}>
+      <IconButton
+        data-testid="load-from-ndex-search-button"
+        onClick={() => props.startSearch(searchValue)}
+      >
         <Search />
       </IconButton>
     </Box>
@@ -420,6 +424,7 @@ export const LoadFromNdexDialog = (
                 >
                   <TableCell padding="checkbox">
                     <Checkbox
+                      data-testid={`load-from-ndex-network-checkbox-${externalId}`}
                       onClick={() => toggleSelectedNetwork(externalId)}
                       checked={selected}
                     />
@@ -480,6 +485,7 @@ export const LoadFromNdexDialog = (
 
   return (
     <Dialog
+      data-testid="load-from-ndex-dialog"
       onKeyDown={(e) => {
         e.stopPropagation()
         e.preventDefault()
@@ -502,10 +508,12 @@ export const LoadFromNdexDialog = (
       <DialogContent>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs
+            data-testid="load-from-ndex-tabs"
             value={currentTabIndex}
             onChange={(e, val) => setCurrentTabIndex(val)}
           >
             <Tab
+              data-testid="load-from-ndex-search-tab"
               sx={{ textTransform: 'none' }}
               label={<Typography>SEARCH NDEx</Typography>}
             />
@@ -530,10 +538,16 @@ export const LoadFromNdexDialog = (
       >
         <Box sx={{ pl: 2 }}>{successMessage ?? errorMessage ?? ''}</Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Button color="primary" onClick={handleClose} sx={{ mr: 1 }}>
+          <Button
+            data-testid="load-from-ndex-cancel-button"
+            color="primary"
+            onClick={handleClose}
+            sx={{ mr: 1 }}
+          >
             Cancel
           </Button>
           <Button
+            data-testid="load-from-ndex-open-button"
             sx={{
               color: '#FFFFFF',
               backgroundColor: '#337ab7',

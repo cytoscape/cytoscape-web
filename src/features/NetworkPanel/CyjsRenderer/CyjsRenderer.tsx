@@ -1091,6 +1091,7 @@ const CyjsRenderer = ({
         </Box>
       ) : null}
       <Box
+        data-testid="cyjs-renderer"
         sx={{
           width: '100%',
           height: '100%',

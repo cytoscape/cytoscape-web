@@ -33,6 +33,7 @@ export const Settings = ({
 
   return (
     <Popover
+      data-testid="search-settings-popover"
       open={open}
       anchorEl={anchorEl}
       onClose={handleClose}

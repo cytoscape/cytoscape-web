@@ -81,6 +81,7 @@ export const NetworkBrowserPanel = ({
 
   return (
     <Box
+      data-testid="network-browser-panel"
       sx={{
         p: 0,
         margin: 0,
@@ -100,6 +101,7 @@ export const NetworkBrowserPanel = ({
         }}
       >
         <Tabs
+          data-testid="network-browser-panel-tabs"
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -111,12 +113,14 @@ export const NetworkBrowserPanel = ({
           onChange={changeTab}
         >
           <Tab
+            data-testid="network-browser-panel-workspace-tab"
             sx={{ height: '2.5em', minHeight: '2.5em' }}
             icon={<ShareIcon />}
             iconPosition="start"
             label={<Typography variant="body2">WORKSPACE</Typography>}
           />
           <Tab
+            data-testid="network-browser-panel-style-tab"
             sx={{ height: '2.5em', minHeight: '2.5em' }}
             icon={<PaletteIcon />}
             iconPosition="start"
@@ -124,6 +128,7 @@ export const NetworkBrowserPanel = ({
           />
           {showLLMQueryPanel && (
             <Tab
+              data-testid="network-browser-panel-llm-query-tab"
               sx={{ height: '2.5em', minHeight: '2.5em' }}
               icon={
                 <img
@@ -140,11 +145,13 @@ export const NetworkBrowserPanel = ({
         </Tabs>
         {panels.left === PanelState.OPEN ? (
           <ChevronLeft
+            data-testid="network-browser-panel-close-button"
             style={buttonStyle}
             onClick={() => setPanelState(Panel.LEFT, PanelState.CLOSED)}
           />
         ) : (
           <ChevronRight
+            data-testid="network-browser-panel-open-button"
             style={buttonStyle}
             onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
           />

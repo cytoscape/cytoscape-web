@@ -8,7 +8,7 @@ import { LayoutToolsPanel } from './LayoutToolsPanel'
 
 export const LayoutToolsBasePanel = (): JSX.Element => {
   return (
-    <Accordion>
+    <Accordion data-testid="layout-tools-accordion">
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         aria-controls="manual-layout"

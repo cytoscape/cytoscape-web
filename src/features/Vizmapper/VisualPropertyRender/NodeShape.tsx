@@ -85,6 +85,7 @@ export function NodeShapePicker(props: {
       >
         {sortedNodeShapes.map((shape: NodeShapeType) => (
           <Box
+            data-testid={`node-shape-picker-option-${shape}`}
             sx={{
               color: localValue === shape ? 'blue' : 'black',
               fontWeight: localValue === shape ? 'bold' : 'normal',
@@ -111,6 +112,7 @@ export function NodeShapePicker(props: {
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
         <Button
+          data-testid="node-shape-picker-cancel-button"
           color="primary"
           onClick={() => {
             props.closePopover('cancel')
@@ -120,6 +122,7 @@ export function NodeShapePicker(props: {
           Cancel
         </Button>
         <Button
+          data-testid="node-shape-picker-confirm-button"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

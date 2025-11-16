@@ -42,15 +42,24 @@ export const SearchControls = ({
       <Box sx={baseStyle}>
         {searchTerm !== '' ? (
           <DeleteIcon
+            data-testid="search-clear-button"
             sx={{ cursor: 'pointer', color: '#424242' }}
             onClick={clearSearch}
           />
         ) : null}
 
-        <IconButton sx={{ color: '#424242' }} onClick={startSearch}>
+        <IconButton
+          data-testid="search-submit-button"
+          sx={{ color: '#424242' }}
+          onClick={startSearch}
+        >
           <SearchIcon />
         </IconButton>
-        <IconButton sx={{ color: '#424242' }} onClick={handleOpenSettings}>
+        <IconButton
+          data-testid="search-settings-button"
+          sx={{ color: '#424242' }}
+          onClick={handleOpenSettings}
+        >
           <TuneIcon />
         </IconButton>
       </Box>

@@ -24,6 +24,7 @@ export const WarningDialog = ({
   const dialogTitle = title === undefined ? 'Info:' : title
   return (
     <Dialog
+      data-testid="warning-dialog"
       open={open}
       onClose={handleClose}
       aria-labelledby="alert-dialog-title"
@@ -39,7 +40,9 @@ export const WarningDialog = ({
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Close</Button>
+        <Button data-testid="warning-dialog-close" onClick={handleClose}>
+          Close
+        </Button>
       </DialogActions>
     </Dialog>
   )

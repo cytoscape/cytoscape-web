@@ -5,7 +5,6 @@ import { useTableStore } from '../../hooks/stores/TableStore'
 import { useUiStateStore } from '../../hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
-import { Network } from '../../models/NetworkModel'
 import { Table, ValueType } from '../../models/TableModel'
 import { NetworkView } from '../../models/ViewModel'
 import { GraphObjectPropertyPanel } from './GraphObjectPropertyPanel'
@@ -54,6 +53,7 @@ export const PopupPanel = ({
 
   return (
     <Card
+      data-testid="popup-panel"
       variant="outlined"
       sx={{
         position: 'fixed',

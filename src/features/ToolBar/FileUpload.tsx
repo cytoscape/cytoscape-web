@@ -9,7 +9,6 @@ import {
 } from '@mantine/core'
 import { Dropzone, FileWithPath } from '@mantine/dropzone'
 import { ModalsProvider } from '@mantine/modals'
-import Papa from 'papaparse'
 import { PrimeReactProvider } from 'primereact/api'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -104,7 +103,7 @@ export function FileUpload(props: FileUploadProps) {
         const localProperties: NetworkProperty[] = Object.entries(
           networkAttributes,
         )
-          .filter(([key, value]) => {
+          .filter(([key]) => {
             // Exclude 'name' and 'description' as they are handled separately as metadata fields
             // TODO this 'handleCX2File' function should be moved to the extractor or a hook
             return key !== 'name' && key !== 'description'
@@ -437,6 +436,7 @@ export function FileUpload(props: FileUploadProps) {
         <MantineProvider>
           <ModalsProvider>
             <Modal
+              data-testid="file-upload-modal"
               onClose={() => props.handleClose()}
               opened={props.show}
               zIndex={2000}
@@ -448,6 +448,7 @@ export function FileUpload(props: FileUploadProps) {
               }
             >
               <Dropzone
+                data-testid="file-upload-dropzone"
                 multiple={false}
                 maxFiles={1}
                 validator={(file: File) => {
@@ -490,7 +491,7 @@ export function FileUpload(props: FileUploadProps) {
                   style={{ pointerEvents: 'stroke' }}
                 >
                   <Stack align="center">
-                    <Button>Browse</Button>
+                    <Button data-testid="file-upload-browse-button">Browse</Button>
                     <Text size="xl" inline>
                       Drag network file here
                     </Text>

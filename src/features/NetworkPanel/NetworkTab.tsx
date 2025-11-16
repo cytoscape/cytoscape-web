@@ -35,6 +35,7 @@ export const NetworkTab = ({
 
   return (
     <Box
+      data-testid="network-tab"
       sx={{
         boxSizing: 'border-box',
         height: '100%',

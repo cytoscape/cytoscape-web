@@ -79,11 +79,13 @@ export const NetworkTabs = ({
         setSelected(tabIndex)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const rendererList = Object.values(renderers)
   return (
     <Box
+      data-testid="network-tabs"
       sx={{
         width: '100%',
         height: '100%',
@@ -103,6 +105,7 @@ export const NetworkTabs = ({
         }}
       >
         <Tabs
+          data-testid="network-tabs-list"
           sx={{
             display: 'flex',
             alignItems: 'center',

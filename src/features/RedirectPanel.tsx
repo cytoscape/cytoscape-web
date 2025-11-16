@@ -18,7 +18,7 @@ export const RedirectPanel = (): JSX.Element => {
   }, [])
 
   return (
-    <div>
+    <div data-testid="redirect-panel">
       <h6>Invalid URL was given. Redirecting to the application root...</h6>
     </div>
   )

@@ -1623,6 +1623,7 @@ export default function TableBrowser(props: {
 
   return (
     <Box
+      data-testid="table-browser"
       sx={{
         width: '100%',
         height: '100%',
@@ -1645,6 +1646,7 @@ export default function TableBrowser(props: {
         }}
       >
         <Tabs
+          data-testid="table-browser-tabs"
           value={currentTabIndex}
           onChange={handleChange}
           aria-label="tabs"
@@ -1661,9 +1663,18 @@ export default function TableBrowser(props: {
             minHeight: TABS_HEIGHT,
           }}
         >
-          <Tab label={<Typography variant="caption">Nodes</Typography>} />
-          <Tab label={<Typography variant="caption">Edges</Typography>} />
-          <Tab label={<Typography variant="caption">Network</Typography>} />
+          <Tab
+            data-testid="table-browser-nodes-tab"
+            label={<Typography variant="caption">Nodes</Typography>}
+          />
+          <Tab
+            data-testid="table-browser-edges-tab"
+            label={<Typography variant="caption">Edges</Typography>}
+          />
+          <Tab
+            data-testid="table-browser-network-tab"
+            label={<Typography variant="caption">Network</Typography>}
+          />
         </Tabs>
         {panels[Panel.BOTTOM] === PanelState.CLOSED ? (
           <KeyboardArrowUp
@@ -1686,6 +1697,7 @@ export default function TableBrowser(props: {
       <TabPanel value={currentTabIndex} index={0}>
         {tableBrowserToolbar}
         <DataEditor
+          data-testid="table-browser-node-editor"
           onKeyDown={(e) => onKeyDown(e.key)}
           // rowSelectionBlending="mixed"
           ref={nodeDataEditorRef}
@@ -1714,6 +1726,7 @@ export default function TableBrowser(props: {
       <TabPanel value={currentTabIndex} index={1}>
         {tableBrowserToolbar}
         <DataEditor
+          data-testid="table-browser-edge-editor"
           onKeyDown={(e) => onKeyDown(e.key)}
           // rowSelectionBlending="mixed"
           ref={edgeDataEditorRef}

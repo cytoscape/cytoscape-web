@@ -39,6 +39,7 @@ export const AnalysisMenu: React.FC<DropdownMenuProps> = (
   return (
     <PrimeReactProvider>
       <Button
+        data-testid="toolbar-analysis-menu-button"
         sx={{
           color: 'white',
           textTransform: 'none',

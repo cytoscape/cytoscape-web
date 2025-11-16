@@ -153,6 +153,7 @@ export const WorkspaceNamingDialog = ({
   return (
     <>
       <Dialog
+        data-testid="workspace-naming-dialog"
         onClick={(e) => {
           e.stopPropagation()
           e.preventDefault()
@@ -166,6 +167,7 @@ export const WorkspaceNamingDialog = ({
         <DialogTitle>Save Workspace</DialogTitle>
         <DialogContent sx={{ width: '300px' }}>
           <TextField
+            data-testid="workspace-naming-name-input"
             autoFocus
             id="name"
             label="Unique Workspace Name"
@@ -187,10 +189,15 @@ export const WorkspaceNamingDialog = ({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose} color="primary">
+          <Button
+            data-testid="workspace-naming-cancel-button"
+            onClick={onClose}
+            color="primary"
+          >
             Cancel
           </Button>
           <Button
+            data-testid="workspace-naming-save-button"
             disabled={workspaceName.trim().length === 0}
             onClick={onSave}
             sx={{

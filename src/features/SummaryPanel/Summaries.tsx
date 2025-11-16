@@ -14,12 +14,12 @@ export const Summaries = (): ReactElement => {
   }
 
   return (
-    <>
+    <div data-testid="summaries">
       {summaryData.map((summary: NetworkSummary) => {
         return (
           <NetworkPropertyPanel key={summary.externalId} summary={summary} />
         )
       })}
-    </>
+    </div>
   )
 }

@@ -66,6 +66,7 @@ export function NumberInput(props: {
       }}
     >
       <TextField
+        data-testid="number-input-textfield"
         value={value}
         error={!isValid}
         onChange={(e) => {
@@ -86,6 +87,7 @@ export function NumberInput(props: {
         }}
       >
         <Button
+          data-testid="number-input-cancel-button"
           color="primary"
           onClick={() => {
             setValue(String(currentValue ?? 0))
@@ -96,6 +98,7 @@ export function NumberInput(props: {
           Cancel
         </Button>
         <Button
+          data-testid="number-input-confirm-button"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

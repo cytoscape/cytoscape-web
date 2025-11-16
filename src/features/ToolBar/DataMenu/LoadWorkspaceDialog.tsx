@@ -192,6 +192,7 @@ export const LoadWorkspaceDialog: React.FC<{
 
   return (
     <Dialog
+      data-testid="load-workspace-dialog"
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
       open={open}
@@ -225,6 +226,7 @@ export const LoadWorkspaceDialog: React.FC<{
                 >
                   <TableCell padding="checkbox">
                     <Checkbox
+                      data-testid={`load-workspace-checkbox-${workspace.workspaceId}`}
                       checked={selectedWorkspaceId === workspace.workspaceId}
                       onChange={() => handleRowSelect(workspace.workspaceId)}
                       onClick={(e) => e.stopPropagation()}
@@ -258,6 +260,7 @@ export const LoadWorkspaceDialog: React.FC<{
           }}
         >
           <Button
+            data-testid="load-workspace-delete-button"
             sx={{
               color: '#F50157',
               backgroundColor: 'transparent',
@@ -275,10 +278,16 @@ export const LoadWorkspaceDialog: React.FC<{
             Delete Workspace
           </Button>
           <Box sx={{ display: 'flex' }}>
-            <Button color="primary" onClick={handleClose} sx={{ mr: 2 }}>
+            <Button
+              data-testid="load-workspace-cancel-button"
+              color="primary"
+              onClick={handleClose}
+              sx={{ mr: 2 }}
+            >
               Cancel
             </Button>
             <Button
+              data-testid="load-workspace-open-button"
               sx={{
                 color: '#FFFFFF',
                 backgroundColor: '#337ab7',

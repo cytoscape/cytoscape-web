@@ -30,6 +30,7 @@ export const LoginPanel = (props: LoginPanelProps): ReactElement => {
 
   return (
     <Card
+      data-testid="login-panel"
       sx={{
         zIndex: 1000,
         maxWidth: 345,
@@ -69,6 +70,7 @@ export const LoginPanel = (props: LoginPanelProps): ReactElement => {
       </CardContent>
       <CardActions disableSpacing>
         <Button
+          data-testid="login-panel-logout-button"
           variant="outlined"
           startIcon={<LogoutIcon />}
           onClick={props.handleLogout}
@@ -76,6 +78,7 @@ export const LoginPanel = (props: LoginPanelProps): ReactElement => {
           Logout
         </Button>
         <Button
+          data-testid="login-panel-close-button"
           sx={{ marginLeft: '0.5em' }}
           variant="outlined"
           startIcon={<CloseIcon />}

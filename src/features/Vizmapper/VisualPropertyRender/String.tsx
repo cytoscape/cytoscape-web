@@ -17,6 +17,7 @@ export function StringInput(props: {
   return (
     <Box>
       <TextField
+        data-testid="string-input-textfield"
         value={localValue ?? ''}
         type="string"
         onChange={(e) => setLocalValue(e.target.value)}
@@ -25,6 +26,7 @@ export function StringInput(props: {
       </TextField>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
         <Button
+          data-testid="string-input-cancel-button"
           color="primary"
           onClick={() => {
             props.closePopover('cancel')
@@ -34,6 +36,7 @@ export function StringInput(props: {
           Cancel
         </Button>
         <Button
+          data-testid="string-input-confirm-button"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

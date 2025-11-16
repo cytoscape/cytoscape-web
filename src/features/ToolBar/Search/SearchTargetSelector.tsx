@@ -28,6 +28,7 @@ export const SearchTargetSelector = ({
         <FormControlLabel
           control={
             <Checkbox
+              data-testid="search-target-node-checkbox"
               checked={searchTargets[GraphObjectType.NODE]}
               onChange={handleChange}
               name={GraphObjectType.NODE}
@@ -38,6 +39,7 @@ export const SearchTargetSelector = ({
         <FormControlLabel
           control={
             <Checkbox
+              data-testid="search-target-edge-checkbox"
               checked={searchTargets[GraphObjectType.EDGE]}
               onChange={handleChange}
               name={GraphObjectType.EDGE}

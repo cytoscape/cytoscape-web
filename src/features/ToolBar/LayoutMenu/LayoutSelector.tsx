@@ -50,6 +50,7 @@ export const LayoutSelector = ({
   return (
     <FormControl fullWidth variant="standard" sx={{ margin: 0, marginTop: 1 }}>
       <Select
+        data-testid="layout-selector-select"
         labelId="default-layout"
         id="default-layout-select"
         value={getListItem(selectedEngine, selectedAlgorithm)}

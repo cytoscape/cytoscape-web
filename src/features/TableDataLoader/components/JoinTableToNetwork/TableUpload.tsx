@@ -87,6 +87,7 @@ export function TableUpload(props: BaseMenuProps) {
     // <Box sx={{ height: 500 }}>
     <>
       <Dropzone
+        data-testid="join-table-upload-dropzone"
         onDrop={(files: any) => {
           onFileDrop(files[0])
         }}
@@ -127,7 +128,7 @@ export function TableUpload(props: BaseMenuProps) {
           </Dropzone.Reject>
 
           <Stack align="center">
-            <Button>Browse</Button>
+            <Button data-testid="join-table-upload-browse-button">Browse</Button>
             <Text size="xl" inline>
               Or drag a tabular file here
             </Text>

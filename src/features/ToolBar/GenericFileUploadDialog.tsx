@@ -81,6 +81,7 @@ export function GenericFileUploadDialog(
       <MantineProvider>
         <ModalsProvider>
           <Modal
+            data-testid="generic-file-upload-modal"
             onClose={handleClose}
             opened={show}
             zIndex={2000}
@@ -94,6 +95,7 @@ export function GenericFileUploadDialog(
             }
           >
             <Dropzone
+              data-testid="generic-file-upload-dropzone"
               multiple={false}
               maxFiles={1}
               validator={fileValidator}
@@ -111,7 +113,9 @@ export function GenericFileUploadDialog(
                 style={{ pointerEvents: 'stroke' }}
               >
                 <Stack align="center">
-                  <Button>Browse</Button>
+                  <Button data-testid="generic-file-upload-browse-button">
+                    Browse
+                  </Button>
                   <Text size="xl" inline>
                     {description}
                   </Text>

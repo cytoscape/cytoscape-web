@@ -201,6 +201,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
   return (
     <>
       <Button
+        data-testid="toolbar-app-menu-button"
         sx={{
           color: theme.palette.common.white,
           textTransform: 'none',

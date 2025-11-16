@@ -81,6 +81,7 @@ export const MatchingColumnTable = React.memo(
               {toMergeNetworksList.map((net) => (
                 <TableCell key={net[1]}>
                   <Select
+                    data-testid={`merge-matching-column-select-${net[1]}`}
                     value={matchingCols[net[1]]?.name || ''}
                     onChange={handleSetMatchingCols(net[1])}
                   >

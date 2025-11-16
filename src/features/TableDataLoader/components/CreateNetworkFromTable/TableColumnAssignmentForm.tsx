@@ -466,6 +466,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
         <NetworkNameInput />
         <Group>
           <Button
+            data-testid="table-column-assignment-select-all-button"
             size="compact-xs"
             variant="default"
             disabled={columns.every(
@@ -477,6 +478,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           </Button>
 
           <Button
+            data-testid="table-column-assignment-select-none-button"
             size="compact-xs"
             variant="default"
             disabled={columns.every(
@@ -519,7 +521,11 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           shadow="lg"
         >
           <Popover.Target>
-            <Button variant="default" leftSection={<IconSettings />}>
+            <Button
+              data-testid="table-column-assignment-advanced-settings-button"
+              variant="default"
+              leftSection={<IconSettings />}
+            >
               Advanced Settings
             </Button>
           </Popover.Target>
@@ -585,6 +591,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
         </Popover>
         <Group justify="space-between" gap="lg">
           <Button
+            data-testid="table-column-assignment-cancel-button"
             disabled={loading}
             variant="default"
             color="primary"
@@ -598,6 +605,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
             label="All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
           >
             <Button
+              data-testid="table-column-assignment-confirm-button"
               styles={(theme) => ({
                 root: {
                   color: '#FFFFFF',

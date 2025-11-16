@@ -28,8 +28,16 @@ export const SearchOperatorSelector = (): JSX.Element => {
         value={options.operator}
         onChange={handleChange}
       >
-        <FormControlLabel value="AND" control={<Radio />} label="AND" />
-        <FormControlLabel value="OR" control={<Radio />} label="OR" />
+        <FormControlLabel
+          value="AND"
+          control={<Radio data-testid="search-operator-and-radio" />}
+          label="AND"
+        />
+        <FormControlLabel
+          value="OR"
+          control={<Radio data-testid="search-operator-or-radio" />}
+          label="OR"
+        />
       </RadioGroup>
     </FormControl>
   )

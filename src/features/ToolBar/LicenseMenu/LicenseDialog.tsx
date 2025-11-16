@@ -53,7 +53,11 @@ export const LicenseDialog = ({
   }
 
   return (
-    <Dialog open={open} onClose={handleCloseDialog}>
+    <Dialog
+      data-testid="license-dialog"
+      open={open}
+      onClose={handleCloseDialog}
+    >
       <DialogTitle>MIT License</DialogTitle>
       <DialogContent>
         <Typography variant="body1" gutterBottom>
@@ -83,10 +87,15 @@ export const LicenseDialog = ({
         </Typography>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleCloseDialog} color="primary">
+        <Button
+          data-testid="license-dialog-close-button"
+          onClick={handleCloseDialog}
+          color="primary"
+        >
           Close
         </Button>
         <Button
+          data-testid="license-dialog-copy-button"
           onClick={handleCopyText}
           sx={{
             color: '#FFFFFF',

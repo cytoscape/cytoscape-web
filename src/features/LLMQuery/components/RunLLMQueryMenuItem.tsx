@@ -1,9 +1,7 @@
 import { Box, MenuItem, Tooltip } from '@mui/material'
-import { Menu } from 'primereact/menu'
-import { ReactElement, useContext } from 'react'
+import { ReactElement } from 'react'
 
 import { fetchGeneNamesFromIds } from '../../../api/ndex'
-import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
@@ -25,8 +23,6 @@ import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
 
 export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
-
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
@@ -181,7 +177,11 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const menuItem = (
-    <MenuItem disabled={disabled} onClick={runLLMQuery}>
+    <MenuItem
+      data-testid="run-llm-query-menu-item"
+      disabled={disabled}
+      onClick={runLLMQuery}
+    >
       Run LLM Query
     </MenuItem>
   )

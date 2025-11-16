@@ -47,6 +47,7 @@ export const TypeDropDownTemplate = React.memo(
     return (
       <FormControl id={`formcontrol-${rowData.id}-type`}>
         <Select
+          data-testid={`merge-type-dropdown-${rowData.id}`}
           labelId={`select-label-${rowData.id}-type`}
           value={rowData.type}
           onChange={(e) => onDropDownChange(e, rowData)}

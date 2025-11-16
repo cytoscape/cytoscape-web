@@ -17,8 +17,6 @@ import {
 } from '@mui/material'
 import React from 'react'
 
-import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
 import { NetworkProperty } from '../../models/NetworkSummaryModel'
 import { ValueType,ValueTypeName } from '../../models/TableModel'
 import { serializedStringIsValid } from '../../models/TableModel/impl/valueTypeImpl'
@@ -31,9 +29,6 @@ const NetworkPropertyTable = (props: {
   networkProperties: NetworkProperty[]
   setNetworkProperties: (properties: NetworkProperty[]) => void
 }): React.ReactElement => {
-  const currentNetworkId = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
   const { networkProperties, setNetworkProperties } = props
 
   const [localNetworkProperties, setLocalNetworkProperties] = React.useState<
@@ -62,6 +57,7 @@ const NetworkPropertyTable = (props: {
     setLocalNetworkProperties(nextProperties)
     setNetworkProperties(
       nextProperties.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
       ),
     )
@@ -77,6 +73,7 @@ const NetworkPropertyTable = (props: {
     setLocalNetworkProperties(nextProperties)
     setNetworkProperties(
       nextProperties.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
       ),
     )
@@ -107,6 +104,7 @@ const NetworkPropertyTable = (props: {
     if (nextValueIsValid) {
       setNetworkProperties(
         nextProperties.map(
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
         ),
       )
@@ -137,6 +135,7 @@ const NetworkPropertyTable = (props: {
     setLocalNetworkProperties(nextProperties)
     setNetworkProperties(
       nextProperties.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
       ),
     )
@@ -150,13 +149,17 @@ const NetworkPropertyTable = (props: {
 
     setNetworkProperties(
       nextProperties.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ({ valueIsValid, ...ndexNetworkProperty }) => ndexNetworkProperty,
       ),
     )
   }
 
   return (
-    <Paper sx={{ backgroundColor: '#D9D9D9', p: 1, pr: 2, pl: 2 }}>
+    <Paper
+      data-testid="ndex-network-property-table"
+      sx={{ backgroundColor: '#D9D9D9', p: 1, pr: 2, pl: 2 }}
+    >
       <Typography gutterBottom>Network Properties</Typography>
       <TableContainer
         sx={{ height: 300, overflowY: 'scroll' }}
@@ -177,6 +180,7 @@ const NetworkPropertyTable = (props: {
                 <TableRow key={index}>
                   <TableCell>
                     <Select
+                      data-testid={`ndex-network-property-type-select-${index}`}
                       sx={{ fontSize: 14 }}
                       size="small"
                       value={row.dataType}
@@ -199,6 +203,7 @@ const NetworkPropertyTable = (props: {
                   </TableCell>
                   <TableCell>
                     <Input
+                      data-testid={`ndex-network-property-name-input-${index}`}
                       sx={{ fontSize: 14 }}
                       size="small"
                       onChange={(e) => {
@@ -210,6 +215,7 @@ const NetworkPropertyTable = (props: {
                   <TableCell>
                     <Box>
                       <Input
+                        data-testid={`ndex-network-property-value-input-${index}`}
                         type="text"
                         sx={{ fontSize: 14 }}
                         error={!row.valueIsValid}
@@ -222,7 +228,10 @@ const NetworkPropertyTable = (props: {
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <IconButton onClick={() => deleteNetworkProperty(index)}>
+                    <IconButton
+                      data-testid={`ndex-network-property-delete-button-${index}`}
+                      onClick={() => deleteNetworkProperty(index)}
+                    >
                       <Delete />
                     </IconButton>
                   </TableCell>
@@ -233,6 +242,7 @@ const NetworkPropertyTable = (props: {
         </Table>
       </TableContainer>
       <Button
+        data-testid="ndex-network-property-add-button"
         sx={{ mt: 1, width: 'fit-content' }}
         variant="contained"
         onClick={() => addNetworkProperty()}

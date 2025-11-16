@@ -104,7 +104,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const [tableView, setTableView] = useState(TableView.node) // Current table view
   const [errorMessage, setErrorMessage] = useState('') // Error message to display
   const [showError, setShowError] = useState(false) // Flag to show the error message panel
-  const { ndexBaseUrl } = useContext(AppConfigContext) // Base URL for the NDEx server
   const [mergeOpType, setMergeOpType] = useState(MergeType.union) // Type of merge operation
   const [mergeWithinNetwork, setMergeWithinNetwork] = useState(true) // Flag to indicate whether to merge within the same network
   const [mergeOnlyNodes, setMergeOnlyNodes] = useState(false) // Flag to indicate whether to ignore type conflicts
@@ -584,6 +583,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
 
   return (
     <Dialog
+      data-testid="merge-dialog"
       onKeyDown={(e) => {
         e.stopPropagation()
       }}
@@ -611,6 +611,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           onClose={() => setTooltipOpen(false)}
         >
           <IconButton
+            data-testid="merge-dialog-fullscreen-button"
             onClick={handleFullScreenToggle}
             onMouseEnter={() => setTooltipOpen(true)}
             onMouseLeave={() => setTooltipOpen(false)}
@@ -623,12 +624,14 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       <DialogContent sx={{ paddingTop: 0 }}>
         <Box className="toggleButtonGroup">
           <ToggleButtonGroup
+            data-testid="merge-dialog-operation-type"
             value={mergeOpType}
             exclusive
             onChange={handleMergeTypeChange}
             aria-label="text alignment"
           >
             <ToggleButton
+              data-testid="merge-dialog-union-button"
               className="toggleButton"
               classes={{ selected: 'selected' }}
               value={MergeType.union}
@@ -637,6 +640,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               <UnionIcon /> Union
             </ToggleButton>
             <ToggleButton
+              data-testid="merge-dialog-intersection-button"
               className="toggleButton"
               classes={{ selected: 'selected' }}
               value={MergeType.intersection}
@@ -645,6 +649,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               <IntersectionIcon /> Intersection
             </ToggleButton>
             <ToggleButton
+              data-testid="merge-dialog-difference-button"
               className="toggleButton"
               classes={{ selected: 'selected' }}
               value={MergeType.difference}
@@ -865,9 +870,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               sx={{ color: 'orange' }}
             />
             <Typography sx={{ color: 'orange' }}>
-              Some nodes have duplicate values under the 'Matching Column'.
-              Hover over the warning icon or check 'Advanced Options' for
-              details. Enabling 'Merge nodes/edges in the same network' might
+              Some nodes have duplicate values under the &apos;Matching Column&apos;.
+              Hover over the warning icon or check &apos;Advanced Options&apos; for
+              details. Enabling &apos;Merge nodes/edges in the same network&apos; might
               also be an option.
             </Typography>
           </Box>
@@ -981,17 +986,24 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         onConfirm={() => setShowError(false)}
       />
       <DialogActions>
-        <Button onClick={handleClose} color="primary">
+        <Button
+          data-testid="merge-dialog-cancel-button"
+          onClick={handleClose}
+          color="primary"
+        >
           Cancel
         </Button>
         {mergeTooltipIsOpen ? (
           <Tooltip title={mergeTooltipText} placement="top" arrow>
             <span>
-              <Button disabled={true}>Merge</Button>
+              <Button data-testid="merge-dialog-merge-button" disabled={true}>
+                Merge
+              </Button>
             </span>
           </Tooltip>
         ) : (
           <Button
+            data-testid="merge-dialog-merge-button"
             onClick={handleMerge}
             sx={{
               color: '#FFFFFF',

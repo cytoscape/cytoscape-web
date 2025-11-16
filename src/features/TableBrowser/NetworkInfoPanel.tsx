@@ -28,7 +28,11 @@ export function NetworkPropertyTable(): React.ReactElement {
   const properties = networkInfo?.properties ?? []
 
   return (
-    <TableContainer component={Paper} sx={{ height: 200, overflow: 'scroll' }}>
+    <TableContainer
+      data-testid="network-property-table"
+      component={Paper}
+      sx={{ height: 200, overflow: 'scroll' }}
+    >
       <Table sx={{ minWidth: 650 }} size="small" aria-label="simple table">
         <TableHead>
           <TableRow>
@@ -108,7 +112,10 @@ export default function NetworkInfoPanel(props: {
   )
 
   return (
-    <Box sx={{ height: props.height, overflow: 'auto', pl: 1, pr: 1 }}>
+    <Box
+      data-testid="network-info-panel"
+      sx={{ height: props.height, overflow: 'auto', pl: 1, pr: 1 }}
+    >
       {/* Header with name, visibility, version */}
       <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
         <Typography variant="h6">{networkInfo?.name ?? ''}</Typography>

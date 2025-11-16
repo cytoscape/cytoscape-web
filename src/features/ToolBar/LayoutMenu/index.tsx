@@ -311,6 +311,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   return (
     <PrimeReactProvider>
       <Button
+        data-testid="toolbar-layout-menu-button"
         sx={{
           color: 'white',
           textTransform: 'none',

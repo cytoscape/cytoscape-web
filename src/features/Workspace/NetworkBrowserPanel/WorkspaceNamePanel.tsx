@@ -14,6 +14,7 @@ export const WorkspaceNamePanel = () => {
 
   return (
     <Box
+      data-testid="workspace-name-panel"
       sx={{
         width: '100%',
         height: '42px',

@@ -75,6 +75,7 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
 
   return (
     <Dialog
+      data-testid="edit-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
@@ -83,6 +84,7 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
       <DialogTitle>Rename Column</DialogTitle>
       <DialogContent>
         <TextField
+          data-testid="edit-table-column-name-input"
           size="small"
           sx={{ mt: 1, mb: 1 }}
           onChange={(e) => setValue(e.target.value)}
@@ -133,10 +135,15 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
         ) : null}
       </DialogContent>
       <DialogActions>
-        <Button color="primary" onClick={props.onClose}>
+        <Button
+          data-testid="edit-table-column-cancel-button"
+          color="primary"
+          onClick={props.onClose}
+        >
           Cancel
         </Button>
         <Button
+          data-testid="edit-table-column-confirm-button"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',
@@ -175,6 +182,7 @@ export function DeleteTableColumnForm(
   )
   return (
     <Dialog
+      data-testid="delete-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
@@ -221,10 +229,15 @@ export function DeleteTableColumnForm(
         ) : null}
       </DialogContent>
       <DialogActions>
-        <Button color="primary" onClick={props.onClose}>
+        <Button
+          data-testid="delete-table-column-cancel-button"
+          color="primary"
+          onClick={props.onClose}
+        >
           Cancel
         </Button>
         <Button
+          data-testid="delete-table-column-confirm-button"
           sx={{
             color: '#F50157',
             backgroundColor: 'transparent',
@@ -263,6 +276,7 @@ export function CreateTableColumnForm(
     </Tooltip>
   ) : (
     <Button
+      data-testid="create-table-column-confirm-button"
       sx={{
         color: '#FFFFFF',
         backgroundColor: '#337ab7',
@@ -287,6 +301,7 @@ export function CreateTableColumnForm(
 
   return (
     <Dialog
+      data-testid="create-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
@@ -295,6 +310,7 @@ export function CreateTableColumnForm(
       <DialogTitle>Create New Column</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>
         <TextField
+          data-testid="create-table-column-name-input"
           size="small"
           sx={{ mt: 1, mb: 1 }}
           onChange={(e) => setColumnName(e.target.value)}
@@ -304,6 +320,7 @@ export function CreateTableColumnForm(
         <FormControl variant="standard" size="small">
           <InputLabel id="data-type-select">Data type</InputLabel>
           <Select
+            data-testid="create-table-column-type-select"
             size="small"
             labelId="data-type-select"
             value={valueTypeName}
@@ -319,6 +336,7 @@ export function CreateTableColumnForm(
           </Select>
         </FormControl>
         <TextField
+          data-testid="create-table-column-default-value-input"
           size="small"
           sx={{ mt: 1, mb: 1 }}
           onChange={(e) => setDefaultValue(e.target.value)}
@@ -332,6 +350,7 @@ export function CreateTableColumnForm(
 
       <DialogActions>
         <Button
+          data-testid="create-table-column-cancel-button"
           color="primary"
           onClick={() => {
             setColumnName('')

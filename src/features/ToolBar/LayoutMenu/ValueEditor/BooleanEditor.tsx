@@ -34,7 +34,12 @@ export const BooleanEditor = ({
       disablePadding
       secondaryAction={
         <Tooltip arrow placement={'right'} title={description} key={optionName}>
-          <Checkbox edge="end" onChange={handleToggle} checked={checked} />
+          <Checkbox
+            data-testid={`layout-value-editor-boolean-${optionName}`}
+            edge="end"
+            onChange={handleToggle}
+            checked={checked}
+          />
         </Tooltip>
       }
     >

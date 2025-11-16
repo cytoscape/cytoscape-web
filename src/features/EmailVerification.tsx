@@ -23,6 +23,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 }) => {
   return (
     <Dialog
+      data-testid="email-verification-dialog"
       open={true}
       aria-labelledby="email-verification-title"
       aria-describedby="email-verification-description"
@@ -55,6 +56,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
       </DialogContent>
       <DialogActions>
         <Button
+          data-testid="email-verification-verify-button"
           onClick={onVerify}
           sx={{
             color: '#FFFFFF',
@@ -66,7 +68,11 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
         >
           Already Verified
         </Button>
-        <Button onClick={onCancel} color="primary">
+        <Button
+          data-testid="email-verification-cancel-button"
+          onClick={onCancel}
+          color="primary"
+        >
           Log Out
         </Button>
       </DialogActions>

@@ -42,6 +42,7 @@ export const TaskStatusDialog = ({
 
   return (
     <Dialog
+      data-testid="task-status-dialog"
       open={open}
       aria-labelledby="confirmation-dialog-title"
       aria-describedby="confirmation-dialog-description"
@@ -71,7 +72,11 @@ export const TaskStatusDialog = ({
         </div>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} color="primary">
+        <Button
+          data-testid="task-status-dialog-cancel-button"
+          onClick={handleClose}
+          color="primary"
+        >
           Cancel
         </Button>
       </DialogActions>

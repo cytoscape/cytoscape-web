@@ -16,6 +16,7 @@ export const NetworkNameInput = () => {
 
   return (
     <TextInput
+      data-testid="create-network-from-table-name-input"
       value={value}
       onChange={(event) => {
         setValue(event.currentTarget.value)

@@ -92,6 +92,7 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
 
   return (
     <Dialog
+      data-testid="export-network-to-image-dialog"
       onKeyDown={(e) => {
         e.stopPropagation()
       }}
@@ -115,6 +116,7 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
             File Type
           </Typography>
           <Select
+            data-testid="export-network-to-image-file-type-select"
             size="small"
             labelId="label"
             value={fileType}
@@ -128,6 +130,7 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
             File Name
           </Typography>
           <TextField
+            data-testid="export-network-to-image-file-name-input"
             size="small"
             type="text"
             value={fileName}
@@ -145,10 +148,15 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
         </Suspense>
       </DialogContent>
       <DialogActions sx={{ pr: 1 }}>
-        <Button color="primary" onClick={props.handleClose}>
+        <Button
+          data-testid="export-network-to-image-cancel-button"
+          color="primary"
+          onClick={props.handleClose}
+        >
           Cancel
         </Button>
         <Button
+          data-testid="export-network-to-image-confirm-button"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

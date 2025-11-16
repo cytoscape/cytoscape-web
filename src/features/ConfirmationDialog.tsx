@@ -46,6 +46,7 @@ export const ConfirmationDialog = (
 
   return (
     <Dialog
+      data-testid="confirmation-dialog"
       open={open}
       aria-labelledby="confirmation-dialog-title"
       aria-describedby="confirmation-dialog-description"
@@ -57,10 +58,15 @@ export const ConfirmationDialog = (
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleCancel} color="primary">
+        <Button
+          data-testid="confirmation-dialog-cancel"
+          onClick={handleCancel}
+          color="primary"
+        >
           Cancel
         </Button>
         <Button
+          data-testid="confirmation-dialog-confirm"
           onClick={handleConfirm}
           disabled={confirmDisabled ?? false}
           autoFocus

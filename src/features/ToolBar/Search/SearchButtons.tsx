@@ -25,10 +25,19 @@ export const SearchButtons = ({
         margin: 0,
       }}
     >
-      <Button color="inherit" onClick={handleClose}>
+      <Button
+        data-testid="search-settings-close-button"
+        color="inherit"
+        onClick={handleClose}
+      >
         Close
       </Button>
-      <Button color="primary" variant="contained" onClick={startSearch}>
+      <Button
+        data-testid="search-settings-search-button"
+        color="primary"
+        variant="contained"
+        onClick={startSearch}
+      >
         Search
       </Button>
     </Box>

@@ -65,6 +65,7 @@ export const HistoryDebugger = (): JSX.Element => {
 
   return (
     <Paper
+      data-testid="history-debugger"
       sx={{
         position: 'fixed',
         top: 10,
@@ -103,6 +104,7 @@ export const HistoryDebugger = (): JSX.Element => {
 
       <Box sx={{ mt: 1, display: 'flex', gap: 1, flexDirection: 'column' }}>
         <Button
+          data-testid="history-debugger-go-back-button"
           size="small"
           variant="outlined"
           onClick={() => navigate(-1)}
@@ -112,6 +114,7 @@ export const HistoryDebugger = (): JSX.Element => {
         </Button>
 
         <Button
+          data-testid="history-debugger-log-info-button"
           size="small"
           variant="outlined"
           onClick={() => {
@@ -125,6 +128,7 @@ export const HistoryDebugger = (): JSX.Element => {
         </Button>
 
         <Button
+          data-testid="history-debugger-clear-browser-button"
           size="small"
           variant="outlined"
           color="warning"
@@ -134,6 +138,7 @@ export const HistoryDebugger = (): JSX.Element => {
         </Button>
 
         <Button
+          data-testid="history-debugger-clear-internal-button"
           size="small"
           variant="outlined"
           color="secondary"
@@ -143,6 +148,7 @@ export const HistoryDebugger = (): JSX.Element => {
         </Button>
 
         <Button
+          data-testid="history-debugger-reset-root-button"
           size="small"
           variant="contained"
           color="error"

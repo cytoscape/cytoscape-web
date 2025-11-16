@@ -25,7 +25,7 @@ export const AppSettingsDialog = ({
 }: AppSettingsDialogProps) => {
   const theme: Theme = useTheme()
   return (
-    <Dialog open={openDialog}>
+    <Dialog data-testid="app-settings-dialog" open={openDialog}>
       <DialogTitle></DialogTitle>
       <DialogContent>
         <AppListPanel setAppStateUpdated={setAppStateUpdated} />
@@ -34,7 +34,11 @@ export const AppSettingsDialog = ({
       </DialogContent>
       <Divider sx={{ margin: 0 }} />
       <DialogActions>
-        <Button variant="contained" onClick={() => setOpenDialog(false)}>
+        <Button
+          data-testid="app-settings-dialog-close-button"
+          variant="contained"
+          onClick={() => setOpenDialog(false)}
+        >
           Close
         </Button>
       </DialogActions>

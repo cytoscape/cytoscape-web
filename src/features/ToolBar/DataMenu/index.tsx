@@ -135,6 +135,7 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
   return (
     <PrimeReactProvider>
       <Button
+        data-testid="toolbar-data-menu-button"
         sx={{
           color: 'white',
           textTransform: 'none',

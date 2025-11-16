@@ -76,6 +76,7 @@ export const LoginButton = (): ReactElement => {
     <>
       <Tooltip title={tooltipTitle}>
         <Avatar
+          data-testid="login-button"
           sx={{
             bgcolor: parsed.name === undefined ? '#DDDDDD' : deepOrange[400],
             marginLeft: '0.5em',

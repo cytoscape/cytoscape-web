@@ -31,7 +31,7 @@ class ErrorBoundary extends Component<Props, State> {
   public render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div style={{ color: 'red' }}>
+        <div data-testid="error-boundary" style={{ color: 'red' }}>
           <h1>Error: there was an error</h1>
           <p>{'(Add better error message here)'}</p>
         </div>

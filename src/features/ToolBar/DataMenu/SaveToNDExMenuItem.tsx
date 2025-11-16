@@ -297,6 +297,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const dialog = (
     <Dialog
+      data-testid="save-to-ndex-sync-dialog"
       onClose={() => {
         setShowConfirmDialog(false)
         props.handleClose()
@@ -313,6 +314,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
       </DialogContent>
       <DialogActions>
         <Button
+          data-testid="save-to-ndex-overwrite-button"
           onClick={async () => {
             const accessToken = await getToken()
             await overwriteNDExNetwork(accessToken)
@@ -332,6 +334,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
           No, overwrite the network in NDEx
         </Button>
         <Button
+          data-testid="save-to-ndex-copy-button"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

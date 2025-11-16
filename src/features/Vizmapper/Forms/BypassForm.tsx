@@ -266,6 +266,7 @@ function BypassFormContent(props: {
           <TableCell sx={{ textAlign: 'center' }}>
             <Box display="flex" justifyContent="center">
               <IconButton
+                data-testid={`bypass-form-delete-button-${id}`}
                 onClick={() => {
                   postEdit(
                     UndoCommandType.DELETE_BYPASS,
@@ -364,6 +365,7 @@ function BypassFormContent(props: {
         </Box>
       </Box>
       <Accordion
+        data-testid="bypass-form-details-accordion"
         sx={{ margin: '0 !important' }}
         expanded={isAccordionExpanded}
         onChange={handleAccordionToggle}
@@ -394,6 +396,7 @@ function BypassFormContent(props: {
                 <TableRow>
                   <TableCell sx={{ minWidth: 150 }}>
                     <Select
+                      data-testid="bypass-form-element-name-select"
                       size="small"
                       labelId="label"
                       value={eleNameByCol}
@@ -460,6 +463,7 @@ function BypassFormContent(props: {
           sx={{ m: 0.5, fontWeight: 'bold' }}
         >{`${visualProperty.displayName} Bypasses`}</Typography>
         <Button
+          data-testid="bypass-form-remove-all-button"
           sx={{
             color: '#F50157',
             backgroundColor: 'transparent',
@@ -626,6 +630,7 @@ export function BypassForm(props: {
         {viewBox}
       </Box>
       <Popover
+        data-testid="bypass-form-popover"
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
         onClose={() => {

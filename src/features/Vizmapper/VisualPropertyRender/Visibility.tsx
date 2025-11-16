@@ -53,6 +53,7 @@ export function VisibilityPicker(props: {
       >
         {Object.values(VisibilityType).map((visibility: VisibilityType) => (
           <Box
+            data-testid={`visibility-picker-option-${visibility}`}
             sx={{
               color: localValue === visibility ? 'blue' : 'black',
               fontWeight: localValue === visibility ? 'bold' : 'normal',
@@ -77,6 +78,7 @@ export function VisibilityPicker(props: {
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
         <Button
+          data-testid="visibility-picker-cancel-button"
           color="primary"
           onClick={() => {
             props.closePopover('cancel')
@@ -86,6 +88,7 @@ export function VisibilityPicker(props: {
           Cancel
         </Button>
         <Button
+          data-testid="visibility-picker-confirm-button"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

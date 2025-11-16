@@ -19,6 +19,7 @@ export const SidePanel = (): JSX.Element => {
 
   return (
     <Box
+      data-testid="side-panel"
       sx={{
         width: '100%',
         height: '100%',
@@ -40,6 +41,7 @@ export const SidePanel = (): JSX.Element => {
         }}
       >
         <Tabs
+          data-testid="side-panel-tabs"
           value={value}
           onChange={handleChange}
           variant="scrollable"

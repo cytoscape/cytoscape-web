@@ -31,6 +31,7 @@ export const ToolsMenu: React.FC<DropdownMenuProps> = (
   return (
     <PrimeReactProvider>
       <Button
+        data-testid="toolbar-tools-menu-button"
         sx={{
           color: 'white',
           textTransform: 'none',

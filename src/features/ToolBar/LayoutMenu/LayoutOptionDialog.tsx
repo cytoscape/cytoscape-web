@@ -156,6 +156,7 @@ export const LayoutOptionDialog = ({
 
   return (
     <Dialog
+      data-testid="layout-option-dialog"
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
       open={open}
@@ -187,6 +188,7 @@ export const LayoutOptionDialog = ({
             <FormControlLabel
               control={
                 <Checkbox
+                  data-testid="layout-option-dialog-set-default-checkbox"
                   checked={isDefault}
                   disabled={isDefault}
                   onChange={handleDefaultChanged}
@@ -222,10 +224,15 @@ export const LayoutOptionDialog = ({
         </List>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} color="primary">
+        <Button
+          data-testid="layout-option-dialog-close-button"
+          onClick={handleClose}
+          color="primary"
+        >
           Close
         </Button>
         <Button
+          data-testid="layout-option-dialog-apply-button"
           disabled={allDisabled || disabled}
           onClick={handleApply}
           sx={{

@@ -388,6 +388,7 @@ export function VisualPropertyValueForm(
       </Tooltip>
 
       <Popover
+        data-testid="visual-property-value-picker-popover"
         open={valuePicker != null}
         anchorEl={valuePicker}
         disableEscapeKeyDown={true}

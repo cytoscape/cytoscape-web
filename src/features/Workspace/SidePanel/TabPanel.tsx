@@ -15,6 +15,7 @@ export const TabPanel = (props: TabPanelProps): JSX.Element => {
   }
   return (
     <Box
+      data-testid={`side-panel-tab-${index}`}
       role="tabpanel"
       hidden={value !== index}
       id={`sidepanel-${index}`}

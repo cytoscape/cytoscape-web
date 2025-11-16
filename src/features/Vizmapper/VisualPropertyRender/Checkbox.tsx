@@ -28,6 +28,7 @@ export const LockSizeCheckbox = (props: { currentNetworkId: IdType }) => {
     <FormControlLabel
       control={
         <Checkbox
+          data-testid="lock-size-checkbox"
           checked={nodeSizeLocked}
           onChange={handleChange}
           color="primary"
@@ -61,6 +62,7 @@ export const LockColorCheckbox = (props: { currentNetworkId: IdType }) => {
     <FormControlLabel
       control={
         <Checkbox
+          data-testid="arrow-color-matches-edge-checkbox"
           checked={arrowColorMatchesEdge}
           onChange={handleChange}
           color="primary"

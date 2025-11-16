@@ -6,20 +6,15 @@ import omit from 'lodash/omit'
 import {
   lazy,
   Suspense,
-  useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
 } from 'react'
 import {
   Outlet,
-  useLocation,
   useParams,
-  useSearchParams,
 } from 'react-router-dom'
 
-import { AppConfigContext } from '../../AppConfigContext'
 import { useCredentialStore } from '../../hooks/stores/CredentialStore'
 import { useLayoutStore } from '../../hooks/stores/LayoutStore'
 import { useMessageStore } from '../../hooks/stores/MessageStore'
@@ -38,7 +33,6 @@ import { useTableManager } from '../../hooks/useTableManager'
 import { useWorkspaceManager } from '../../hooks/useWorkspaceManager'
 import { IdType } from '../../models/IdType'
 import { LayoutEngine } from '../../models/LayoutModel'
-import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
@@ -93,8 +87,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers for optional features
   useHierarchyViewerManager()
 
-  // Check if the component is initialized
-  const isInitializedRef = useRef<boolean>(false)
   // Indicates if a network failed to load
   const [failedToLoad, setFailedToLoad] = useState<boolean>(false)
   const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
@@ -104,9 +96,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   // Block multiple loading
   const isLoadingRef = useRef<boolean>(false)
-
-  // Server location
-  const { ndexBaseUrl } = useContext(AppConfigContext)
 
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
@@ -134,10 +123,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const setValidationResult = useHcxValidatorStore(
     (state) => state.setValidationResult,
-  )
-
-  const allViewModels: Record<string, NetworkView[]> = useViewModelStore(
-    (state) => state.viewModels,
   )
 
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
@@ -365,6 +350,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         .then(() => {
           // handle the case where the back/forward button is pressed
           setCurrentNetworkId(currentNetworkId)
+          // eslint-disable-next-line react-hooks/exhaustive-deps
         })
         .catch((err) => {
           logUi.error(
@@ -387,7 +373,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         overflow: 'hidden',
       }}
     >
-      <Allotment>
+      <Allotment data-testid="workspace-editor">
         <Allotment
           vertical
           onChange={(sizes: number[]) => {

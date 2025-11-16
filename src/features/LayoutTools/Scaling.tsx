@@ -116,11 +116,12 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
           originalPositions?.set(nodeId, [
             nv.x / (scalingType === 'height' ? 1.0 : scalingFactor),
             nv.y / (scalingType === 'width' ? 1.0 : scalingFactor),
-            nv.z ?? 0 / scalingFactor,
+            (nv.z ?? 0) / scalingFactor,
           ])
         }
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [networkView?.nodeViews])
 
   const handleChange = (event: Event, value: number | number[]): void => {
@@ -168,7 +169,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       positions.set(nodeId, [
         position[0] * scaleX,
         position[1] * scaleY,
-        position[2] ?? 0 * scalingFactor,
+        (position[2] ?? 0) * scalingFactor,
       ])
     })
     postEdit(
@@ -203,7 +204,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   }
 
   const valuetext = (value: number): string => {
-    return `x${calcScale(value)}}`
+    return `x${calcScale(value)}`
   }
 
   const valueLabelFormat = (value: number): string => {
@@ -211,7 +212,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   }
 
   return (
-    <Box>
+    <Box data-testid="scaling-component">
       <ScalingTypeSelector
         scalingType={scalingType}
         setScalingType={setScalingType}
@@ -224,6 +225,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
         alignItems="center"
       >
         <Slider
+          data-testid="scaling-slider"
           aria-label="Scaling marks"
           value={sliderValue}
           step={0.1}
@@ -239,6 +241,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
           onChange={handleChange}
         />
         <IconButton
+          data-testid="scaling-reset-button"
           aria-label="refresh"
           size="large"
           sx={{ marginBottom: theme.spacing(4) }}

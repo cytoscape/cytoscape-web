@@ -30,6 +30,7 @@ export const NumberEditor = ({
       secondaryAction={
         <Tooltip arrow placement={'right'} title={description} key={optionName}>
           <TextField
+            data-testid={`layout-value-editor-number-${optionName}`}
             id="standard-basic"
             variant="standard"
             defaultValue={value}

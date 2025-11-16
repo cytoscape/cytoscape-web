@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
 import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../hooks/stores/CredentialStore'
@@ -47,6 +47,7 @@ export const UpdateNetworkDialog = (props: {
 
   return (
     <Dialog
+      data-testid="update-network-dialog"
       sx={{ zIndex: 10000 }}
       onClose={() => {
         props.onClose()
@@ -62,6 +63,7 @@ export const UpdateNetworkDialog = (props: {
       <DialogActions>
         {loading && <CircularProgress size={30} />}
         <Button
+          data-testid="update-network-dialog-cancel"
           variant="outlined"
           disabled={loading}
           onClick={() => {
@@ -72,6 +74,7 @@ export const UpdateNetworkDialog = (props: {
           Cancel
         </Button>
         <Button
+          data-testid="update-network-dialog-update"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

@@ -80,6 +80,7 @@ export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
   return (
     <PrimeReactProvider>
       <Button
+        data-testid="toolbar-help-menu-button"
         sx={{
           color: 'white',
           textTransform: 'none',

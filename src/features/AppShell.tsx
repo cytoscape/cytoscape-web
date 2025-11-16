@@ -350,6 +350,7 @@ const AppShell = (): ReactElement => {
 
   return (
     <Box
+      data-testid="app-shell"
       sx={{
         width: '100%',
         height: '100vh',

@@ -19,6 +19,7 @@ export const ToolBar = (): JSX.Element => {
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
         <Toolbar
+          data-testid="toolbar"
           variant="dense"
           sx={{ justifyContent: 'space-between', backgroundColor: '#4F4F4F' }}
         >

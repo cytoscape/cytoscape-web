@@ -45,12 +45,14 @@ export const OpenRightPanelButton = ({
     <Tooltip title={title}>
       {toOpen ? (
         <ChevronLeft
+          data-testid="side-panel-open-button"
           sx={buttonStyleOpen}
           onClick={() => setPanelState(Panel.RIGHT, PanelState.OPEN)}
         />
       ) : (
         // Button for closing the panel
         <ChevronRight
+          data-testid="side-panel-close-button"
           sx={buttonStyleClose}
           onClick={() => setPanelState(Panel.RIGHT, PanelState.CLOSED)}
         />
