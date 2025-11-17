@@ -1,0 +1,58 @@
+[
+  {
+    "metaData": [
+      {
+        "name": "nodes",
+        "elementCount": 2,
+        "version": "1.0",
+        "idCounter": 1,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      },
+      {
+        "name": "edges",
+        "elementCount": 1,
+        "version": "1.0",
+        "idCounter": 0,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 0,
+        "v": {
+          "n": "node1"
+        }
+      },
+      {
+        "id": 1,
+        "v": {
+          "n": "node2"
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 0,
+        "s": 0,
+        "t": 1,
+        "v": {
+          "interaction": "interacts"
+        }
+      }
+    ]
+  }
+]

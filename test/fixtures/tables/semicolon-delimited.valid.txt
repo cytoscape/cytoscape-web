@@ -1,0 +1,11 @@
+column1;column2;column3;column4
+Alice;16.93;Charlie;Diana
+New York;18.81;Paris;Tokyo
+Alice;36.69;Charlie;Diana
+New York;93.25;Paris;Tokyo
+Alice;53.34;Charlie;Diana
+New York;99.8;Paris;Tokyo
+Alice;10.26;Charlie;Diana
+New York;83.34;Paris;Tokyo
+Alice;34.34;Charlie;Diana
+New York;76.85;Paris;Tokyo

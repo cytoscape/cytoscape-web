@@ -1,0 +1,15 @@
+node1 interacts node2
+node2 interacts node3
+node3 interacts node4
+node4 interacts node5
+node5 interacts node6
+node6 interacts node7
+node7 interacts node8
+node8 interacts node9
+node9 interacts node10
+node1 interacts node6
+node2 interacts node8
+node7 interacts node10
+node3 interacts node9
+node2 interacts node5
+node8 interacts node3

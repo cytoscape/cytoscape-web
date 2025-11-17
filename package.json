@@ -30,8 +30,7 @@
     "build:analyze": "ANALYZE=true webpack --mode production",
     "lint": "eslint --ext .js,.ts,.jsx,.tsx src",
     "lint:fix": "eslint --ext .js,.ts,.jsx,.tsx src --fix",
-    "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'",
-    "generate-model-diagram": "./scripts/generate-model-diagram-to-png.sh"
+    "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -41,6 +40,7 @@
     "@faker-js/faker": "^7.6.0",
     "@mermaid-js/mermaid-cli": "^11.12.0",
     "@mui/types": "^7.2.0",
+    "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.0",
     "@types/chroma-js": "^2.1.4",
