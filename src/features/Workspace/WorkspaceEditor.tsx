@@ -3,17 +3,8 @@ import { Box, Tooltip } from '@mui/material'
 import { Allotment } from 'allotment'
 import isEqual from 'lodash/isEqual'
 import omit from 'lodash/omit'
-import {
-  lazy,
-  Suspense,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
-import {
-  Outlet,
-  useParams,
-} from 'react-router-dom'
+import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react'
+import { Outlet, useParams } from 'react-router-dom'
 
 import { useCredentialStore } from '../../hooks/stores/CredentialStore'
 import { useLayoutStore } from '../../hooks/stores/LayoutStore'
@@ -59,6 +50,7 @@ const JoinTableToNetworkForm = lazy(() =>
     '../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
   ).then((module) => ({ default: module.JoinTableToNetworkForm })),
 )
+import { AppConfigContext } from '../../AppConfigContext'
 import { logUi } from '../../debug'
 import { useAppManager } from '../../externalapps/useAppManager'
 import { useOpaqueAspectStore } from '../../hooks/stores/OpaqueAspectStore'
@@ -73,8 +65,22 @@ const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
 
 /**
- * The main workspace editor containing all except toolbar
+ * Main workspace editor component that provides the layout and network management interface
  *
+ * Responsibilities:
+ * - Manages workspace layout with resizable panels (left, right, bottom)
+ * - Loads and displays networks from the workspace
+ * - Handles network switching and loading
+ * - Monitors network modifications (view model and visual style changes)
+ * - Applies default layouts to networks without layouts
+ * - Validates HCX networks
+ * - Coordinates with multiple managers and stores
+ *
+ * Layout Structure:
+ * - Left Panel: Network browser and layout tools (collapsible)
+ * - Center: Network renderer (via Outlet and NetworkPanel)
+ * - Bottom Panel: Table browser (resizable)
+ * - Right Panel: Side panel with additional tools (collapsible)
  */
 const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers to the stores
@@ -129,35 +135,41 @@ const WorkSpaceEditor = (): JSX.Element => {
     useWorkspaceStore((state) => state.setNetworkModified)
 
   const addStack = useUndoStore((state) => state.addStack)
-  // listen to view model changes
-  // assume that if the view model change, the network has been modified and set the networkModified flag to true
+
+  /**
+   * Monitors view model changes to detect network modifications
+   * Excludes selection state changes (selectedNodes, selectedEdges) from modification detection
+   * Sets networkModified flag when view model changes and network is not already marked as modified
+   */
   useViewModelStore.subscribe(
     (state) => state.getViewModel(currentNetworkId),
-    (next: NetworkView, prev: NetworkView) => {
-      if (prev === undefined || next === undefined) {
+    (nextViewModel: NetworkView, prevViewModel: NetworkView) => {
+      if (prevViewModel === undefined || nextViewModel === undefined) {
         return
       }
 
-      // primitive compare fn that does not take into account the selection/hover state
-      // this leads to the network having a 'modified' state even though nothing was modified
+      // Compare view models excluding selection state
+      // Selection changes don't count as network modifications
       const viewModelChanged = !isEqual(
-        // omit selection state and hovered element changes as valid viewModel changes
-        omit(prev, ['selectedNodes', 'selectedEdges']),
-        omit(next, ['selectedNodes', 'selectedEdges']),
+        omit(prevViewModel, ['selectedNodes', 'selectedEdges']),
+        omit(nextViewModel, ['selectedNodes', 'selectedEdges']),
       )
 
       const { networkModified } = workspace
-
-      const currentNetworkIsNotModified =
+      const isCurrentNetworkUnmodified =
         networkModified[currentNetworkId] === undefined ||
         networkModified[currentNetworkId] === false
 
-      if (viewModelChanged && currentNetworkIsNotModified) {
+      if (viewModelChanged && isCurrentNetworkUnmodified) {
         setNetworkModified(currentNetworkId, true)
       }
     },
   )
-  // listen to visual style changes
+
+  /**
+   * Monitors visual style changes to detect network modifications
+   * Sets networkModified flag when visual style changes and network is not already marked as modified
+   */
   useVisualStyleStore.subscribe((next, prev) => {
     const nextVisualStyle = next.visualStyles[currentNetworkId] as VisualStyle
     const prevVisualStyle = prev.visualStyles[currentNetworkId] as VisualStyle
@@ -166,14 +178,12 @@ const WorkSpaceEditor = (): JSX.Element => {
     }
 
     const visualStyleChanged = !isEqual(prevVisualStyle, nextVisualStyle)
-
     const { networkModified } = workspace
-
-    const currentNetworkIsNotModified =
+    const isCurrentNetworkUnmodified =
       networkModified[currentNetworkId] === undefined ||
       networkModified[currentNetworkId] === false
 
-    if (visualStyleChanged && currentNetworkIsNotModified) {
+    if (visualStyleChanged && isCurrentNetworkUnmodified) {
       setNetworkModified(currentNetworkId, true)
     }
   })
@@ -216,26 +226,35 @@ const WorkSpaceEditor = (): JSX.Element => {
   const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
 
   /**
-   * Initializations
+   * Sets up window resize listener to update table browser width
+   * Ensures table browser adapts to window size changes
    */
   useEffect(() => {
-    const windowWidthListener = (): void => {
+    const handleWindowResize = (): void => {
       setTableBrowserWidth(window.innerWidth)
     }
-    window.addEventListener('resize', windowWidthListener)
+    window.addEventListener('resize', handleWindowResize)
 
     return () => {
-      window.removeEventListener('resize', windowWidthListener)
+      window.removeEventListener('resize', handleWindowResize)
     }
   }, [])
 
+  /**
+   * Loads a network by ID and populates all related stores
+   * Handles network data, visual styles, tables, views, validation, and layout
+   * @param networkId - The ID of the network to load
+   */
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     try {
       const currentToken = await getToken()
 
       const summaryMap = await loadNetworkSummaries([networkId], currentToken)
       const summary = summaryMap[networkId]
-      const res: CyNetwork = await loadCyNetwork(networkId, currentToken)
+      const cyNetworkData: CyNetwork = await loadCyNetwork(
+        networkId,
+        currentToken,
+      )
       const {
         network,
         nodeTable,
@@ -245,7 +264,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         visualStyleOptions,
         otherAspects,
         undoRedoStack,
-      } = res
+      } = cyNetworkData
 
       setVisualStyleOptions(networkId, visualStyleOptions)
       addNewNetwork(network)
@@ -257,40 +276,48 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
       addStack(networkId, undoRedoStack)
 
+      // Validate HCX networks if applicable
       if (isHCX(summary)) {
-        const version =
+        const hcxVersion =
           summary.properties.find(
             (p) => p.predicateString === HcxMetaTag.ndexSchema,
           )?.value ?? ''
-        const validationRes = validateHcx(version as string, summary, nodeTable)
+        const validationResult = validateHcx(
+          hcxVersion as string,
+          summary,
+          nodeTable,
+        )
 
-        if (!validationRes.isValid) {
+        if (!validationResult.isValid) {
+          const HCX_WARNING_DURATION_MS = 5000
           addMessage({
             message: `This network is not a valid HCX network.  Some features may not work properly.`,
-            duration: 5000,
+            duration: HCX_WARNING_DURATION_MS,
             severity: MessageSeverity.WARNING,
           })
         }
-        setValidationResult(networkId, validationRes)
+        setValidationResult(networkId, validationResult)
       }
 
+      // Apply default layout if network doesn't have one
       if (!summary.hasLayout) {
+        const totalNetworkElements = network.nodes.length + network.edges.length
         const defaultLayout = getDefaultLayout(
           summary,
-          network.nodes.length + network.edges.length,
+          totalNetworkElements,
           maxNetworkElementsThreshold,
         )
 
         if (defaultLayout !== undefined) {
-          const engine: LayoutEngine | undefined = layoutEngines.find(
+          const layoutEngine: LayoutEngine | undefined = layoutEngines.find(
             (engine) => engine.name === defaultLayout.engineName,
           )
 
-          if (engine !== undefined) {
-            const nextSummary = { ...summary, hasLayout: true }
+          if (layoutEngine !== undefined) {
+            const summaryWithLayout = { ...summary, hasLayout: true }
 
             setIsRunning(true)
-            const afterLayout = (
+            const handleLayoutComplete = (
               positionMap: Map<IdType, [number, number]>,
             ): void => {
               updateNodePositions(networkId, positionMap)
@@ -301,23 +328,23 @@ const WorkSpaceEditor = (): JSX.Element => {
                 fitFunction()
               }
 
-              updateSummary(networkId, nextSummary)
+              updateSummary(networkId, summaryWithLayout)
               setIsRunning(false)
               setNetworkModified(networkId, false)
             }
 
-            engine.apply(
+            layoutEngine.apply(
               network.nodes,
               network.edges,
-              afterLayout,
-              engine.algorithms[defaultLayout.algorithmName],
+              handleLayoutComplete,
+              layoutEngine.algorithms[defaultLayout.algorithmName],
             )
           }
         }
       }
-    } catch (e) {
+    } catch (error) {
       logUi.error(
-        `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${e}`,
+        `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${error}`,
       )
       setFailedToLoad(true)
     }
@@ -326,12 +353,14 @@ const WorkSpaceEditor = (): JSX.Element => {
   const params = useParams()
 
   /**
-   * Swap the current network, can be an expensive operation
+   * Swaps the current network when URL parameter changes
+   * This is an expensive operation that loads network data, styles, tables, and views
+   * Uses a loading ref to prevent concurrent loads
    */
   useEffect(
     function swapCurrentNetworkHook() {
-      const currentNetworkId = params.networkId
-      if (currentNetworkId === '' || currentNetworkId === undefined) {
+      const networkIdFromParams = params.networkId
+      if (networkIdFromParams === '' || networkIdFromParams === undefined) {
         // No need to load new network
         return
       }
@@ -343,18 +372,18 @@ const WorkSpaceEditor = (): JSX.Element => {
       isLoadingRef.current = true
       setFailedToLoad(false)
       logUi.info(
-        `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Loading network: ${currentNetworkId}`,
+        `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Loading network: ${networkIdFromParams}`,
       )
 
-      loadCurrentNetworkById(currentNetworkId)
+      loadCurrentNetworkById(networkIdFromParams)
         .then(() => {
-          // handle the case where the back/forward button is pressed
-          setCurrentNetworkId(currentNetworkId)
+          // Handle the case where the back/forward button is pressed
+          setCurrentNetworkId(networkIdFromParams)
           // eslint-disable-next-line react-hooks/exhaustive-deps
         })
-        .catch((err) => {
+        .catch((error) => {
           logUi.error(
-            `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Failed to load network: ${err}`,
+            `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Failed to load network: ${error}`,
           )
         })
         .finally(() => {
@@ -377,10 +406,11 @@ const WorkSpaceEditor = (): JSX.Element => {
         <Allotment
           vertical
           onChange={(sizes: number[]) => {
-            // sizes[0] represents the height of the top pane (network list, network renderer, vizmapper)
-            // sizes[1] represents the height of the bottom pane (table browser)
-            setAllotmentDimensions([sizes[0], sizes[1]])
-            setTableBrowserHeight(sizes[1])
+            // sizes[0] = height of top pane (network list, network renderer, vizmapper)
+            // sizes[1] = height of bottom pane (table browser)
+            const [topPaneHeight, bottomPaneHeight] = sizes
+            setAllotmentDimensions([topPaneHeight, bottomPaneHeight])
+            setTableBrowserHeight(bottomPaneHeight)
           }}
         >
           <Allotment>
@@ -389,6 +419,7 @@ const WorkSpaceEditor = (): JSX.Element => {
             >
               {panels.left === PanelState.CLOSED ? (
                 <Box
+                  data-testid="workspace-editor-left-panel-closed"
                   sx={{
                     height: '100%',
                     display: 'flex',
@@ -399,6 +430,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                 >
                   <Tooltip title="Open network panel" arrow placement="right">
                     <ChevronRight
+                      data-testid="workspace-editor-open-left-panel-button"
                       sx={{ cursor: 'pointer' }}
                       onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
                     />
@@ -406,6 +438,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                 </Box>
               ) : (
                 <Box
+                  data-testid="workspace-editor-left-panel-open"
                   sx={{
                     width: '100%',
                     height: '100%',
@@ -432,7 +465,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                 </Box>
               )}
             </Allotment.Pane>
-            <Allotment.Pane>
+            <Allotment.Pane data-testid="workspace-editor-center-pane">
               <Outlet />
               <NetworkPanel
                 networkId={currentNetworkId}
@@ -441,6 +474,7 @@ const WorkSpaceEditor = (): JSX.Element => {
             </Allotment.Pane>
           </Allotment>
           <Allotment.Pane
+            data-testid="workspace-editor-bottom-pane"
             minSize={28}
             preferredSize={'20%'} // 20% of the total height is the default size
             maxSize={
@@ -449,7 +483,11 @@ const WorkSpaceEditor = (): JSX.Element => {
             }
           >
             <Suspense
-              fallback={<div>{`Loading from NDEx`}</div>}
+              fallback={
+                <div data-testid="workspace-editor-table-browser-loading">
+                  {`Loading from NDEx`}
+                </div>
+              }
               key={currentNetworkId}
             >
               <TableBrowser
@@ -473,7 +511,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         </Allotment>
 
         {panels.right === PanelState.OPEN && (
-          <Allotment.Pane>
+          <Allotment.Pane data-testid="workspace-editor-right-pane">
             <Box
               sx={{
                 width: '100%',

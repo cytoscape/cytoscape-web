@@ -111,7 +111,8 @@ export const initializeTabManager = (
       case TabMessageType.ALIVE:
         activeTabs.add(message.tabId)
         break
-      case (TabMessageType.CLOSED, TabMessageType.RELOAD):
+      case TabMessageType.CLOSED:
+      case TabMessageType.RELOAD:
         activeTabs.delete(message.tabId)
         break
     }

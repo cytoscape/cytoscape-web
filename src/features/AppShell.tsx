@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
+import { ReactElement, useContext, useEffect, useRef } from 'react'
 import {
   Location,
   Outlet,
@@ -45,11 +45,16 @@ import { SyncTabsAction } from './SyncTabs'
 import { ToolBar } from './ToolBar'
 
 /**
+ * Application shell component that provides the main layout structure
  *
- * Empty application shell only with a toolbar
+ * Responsibilities:
+ * - Initializes workspace from database and URL parameters
+ * - Handles network import from URL path and query parameters
+ * - Restores UI state from URL search parameters (panels, filters, selections)
+ * - Manages workspace state and network summaries
+ * - Provides layout structure with toolbar and content area
  *
- *  - Actual contents will be rendered by the router
- *
+ * The actual workspace editor content is rendered by React Router via <Outlet />
  */
 const AppShell = (): ReactElement => {
   const params = useParams()
@@ -86,7 +91,8 @@ const AppShell = (): ReactElement => {
   const initialized = useRef(false)
 
   /**
-   * Restore the node / edge selection states from URL
+   * Restores node and edge selection states from URL search parameters
+   * @param networkId - The network ID to restore selections for
    */
   const restoreSelectionStates = (networkId: string): void => {
     const selectedNodeStr = search.get(SelectionStates.SelectedNodes) ?? ''
@@ -102,7 +108,8 @@ const AppShell = (): ReactElement => {
   }
 
   /**
-   * Restore filter states from URL
+   * Restores filter configuration from URL search parameters
+   * Creates a filter config if FILTER_FOR, FILTER_BY, and FILTER_RANGE are present
    */
   const restoreFilterStates = (): void => {
     const filterFor = search.get(FilterUrlParams.FILTER_FOR)
@@ -127,6 +134,9 @@ const AppShell = (): ReactElement => {
     }
   }
 
+  /**
+   * Restores the active table browser tab index from URL search parameters
+   */
   const restoreTableBrowserTabState = (): void => {
     const tableBrowserTab = search.get('activeTableBrowserTab')
 
@@ -135,6 +145,10 @@ const AppShell = (): ReactElement => {
     }
   }
 
+  /**
+   * Restores the active network view from URL search parameters
+   * Uses a delay to ensure components are ready before restoring
+   */
   const restoreActiveNetworkView = (): void => {
     const activeNetworkView = search.get('activeNetworkView')
     if (activeNetworkView != null) {
@@ -143,8 +157,15 @@ const AppShell = (): ReactElement => {
   }
 
   useEffect(() => {
-    const init = async () => {
-      // Load workspace, summaries in the workspace and authentication token
+    /**
+     * Initializes the application shell by:
+     * 1. Loading workspace and network summaries from database
+     * 2. Processing URL parameters for network imports and UI state
+     * 3. Restoring UI state from URL search parameters
+     * 4. Navigating to the appropriate workspace/network route
+     */
+    const initializeAppShell = async () => {
+      // Load workspace, summaries, and authentication token
       const workspace = await getWorkspaceFromDb()
       const token = await getToken()
       const summaries = await loadNetworkSummaries(workspace.networkIds, token)
@@ -166,19 +187,19 @@ const AppShell = (): ReactElement => {
 
       // Update the workspace, uiState and summaries in the stores so react can start to render the workspace editor
 
-      // Handle importing networks from NDEx
-      // /:workspaceId/networks/:networkId
-      // /...?import=...
-      // 1. Handle import network from url e.g. /:workspaceId/networks/:networkId
+      // Handle importing networks from URL
+      // Two import methods:
+      // 1. From URL path: /:workspaceId/networks/:networkId
+      // 2. From query params: /...?import=https://example.com/network.cx
       const { networkId } = params
-      const networkIdNonEmpty = networkId !== undefined && networkId !== ''
-      const networkIdNotInWorkspace =
-        networkIdNonEmpty && !workspace.networkIds.includes(networkId)
+      const isNetworkIdInUrl = networkId !== undefined && networkId !== ''
+      const isNetworkIdNotInWorkspace =
+        isNetworkIdInUrl && !workspace.networkIds.includes(networkId)
 
-      const unableToImportNetworkMessages = []
+      const importErrorMessages: string[] = []
 
-      if (networkIdNotInWorkspace) {
-        // Check if the network is in NDEx
+      if (isNetworkIdNotInWorkspace) {
+        // Check if the network exists in NDEx
         const newNetworkSummary = (
           await fetchNdexSummaries(networkId, token)
         )?.[0]
@@ -188,24 +209,23 @@ const AppShell = (): ReactElement => {
           workspace.currentNetworkId = networkId
           workspace.networkIds.push(networkId)
         } else {
-          unableToImportNetworkMessages.push(
+          importErrorMessages.push(
             `Unable to import network ${networkId} from ${location.pathname}. ${networkId} does not exist in NDEx`,
           )
         }
-      } else {
-        // TODO: handle network found in workspace
-        // Prompt the user to update the network if it is from NDEx and it has been updated in NDEx
-        // promptUserToUpdateNetwork()
       }
+      // Note: If network is already in workspace, we use the existing network
+      // Future enhancement: Check if network has been updated in NDEx and prompt user to update
 
-      // 2. Handle import network from search params
-      // find all key value search params with key = import. e.g. /...?import=...
-      const IMPORT_KEY = 'import'
-      const importValues = search.getAll(IMPORT_KEY)
-      for (const value of importValues) {
+      // Handle import network from search params (e.g., ?import=https://example.com/network.cx)
+      const IMPORT_QUERY_KEY = 'import'
+      const importUrls = search.getAll(IMPORT_QUERY_KEY)
+      const MAX_NETWORK_FILE_SIZE = 10000000 // 10MB limit for URL imports
+
+      for (const importUrl of importUrls) {
         try {
-          const res = await fetchUrlCx(value, 10000000)
-          const { networkWithView, summary } = res
+          const fetchResult = await fetchUrlCx(importUrl, MAX_NETWORK_FILE_SIZE)
+          const { networkWithView, summary } = fetchResult
           const {
             network,
             nodeTable,
@@ -214,32 +234,33 @@ const AppShell = (): ReactElement => {
             networkViews,
             visualStyleOptions,
           } = networkWithView
-          const newNetworkId = network.id
-          summaries[newNetworkId] = summary
+          const importedNetworkId = network.id
+
+          summaries[importedNetworkId] = summary
           await putNetworkSummaryToDb(summary)
-          workspace.currentNetworkId = newNetworkId
-          workspace.networkIds.push(newNetworkId)
+          workspace.currentNetworkId = importedNetworkId
+          workspace.networkIds.push(importedNetworkId)
 
-          // TODO the db syncing logic in various stores assumes the updated network is the current network
-          // therefore, as a temporary fix, the first operation that should be done is to set the
-          // current network to be the new network id
-
-          setVisualStyleOptions(newNetworkId, visualStyleOptions)
+          // Note: Store operations assume the updated network is the current network
+          // Therefore, we set the current network ID before updating stores
+          setVisualStyleOptions(importedNetworkId, visualStyleOptions)
           addNewNetwork(network)
-          setVisualStyle(newNetworkId, visualStyle)
-          setTables(newNetworkId, nodeTable, edgeTable)
-          setViewModel(newNetworkId, networkViews[0])
+          setVisualStyle(importedNetworkId, visualStyle)
+          setTables(importedNetworkId, nodeTable, edgeTable)
+          setViewModel(importedNetworkId, networkViews[0])
         } catch (error) {
-          unableToImportNetworkMessages.push(
-            `Unable to import network from query params at url ${value}.`,
-            `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error'
+          importErrorMessages.push(
+            `Unable to import network from query params at url ${importUrl}.`,
+            `Error: ${errorMessage}`,
           )
         }
       }
 
-      if (unableToImportNetworkMessages.length > 0) {
+      if (importErrorMessages.length > 0) {
         addMessage({
-          message: unableToImportNetworkMessages.join('\n'),
+          message: importErrorMessages.join('\n'),
           persistent: true,
           severity: MessageSeverity.ERROR,
         })
@@ -251,22 +272,23 @@ const AppShell = (): ReactElement => {
       // Process state restoration parameters after workspace is set
       const hasSearchQueryParams = search.size > 0
       if (hasSearchQueryParams) {
-        // Restore state parameters
+        // Restore state parameters from URL
         restoreSelectionStates(workspace.currentNetworkId)
         restoreTableBrowserTabState()
         restoreFilterStates()
 
         // Restore active network view with a delay to ensure components are ready
+        const NETWORK_VIEW_RESTORE_DELAY_MS = 1000
         setTimeout(() => {
           restoreActiveNetworkView()
-        }, 1000)
+        }, NETWORK_VIEW_RESTORE_DELAY_MS)
       }
 
-      // From '/', navigate to /:workspaceId/networks/:networkId
+      // Navigate to the workspace/network route, clearing search params after processing
       navigate(
         {
           pathname: `/${workspace.id}/networks/${workspace.currentNetworkId}`,
-          search: '', // Clear search params after processing
+          search: '',
         },
         {
           replace: true,
@@ -277,76 +299,10 @@ const AppShell = (): ReactElement => {
     if (!initialized.current) {
       initialized.current = true
       logStartup.info('[AppShell]: Initializing app shell')
-      init()
+      initializeAppShell()
     }
   }, [])
 
-  // const promptUserToUpdateNetwork = async (): Promise<void> => {
-  //           try {
-  //       const token = await getToken()
-  //       const summaryMap = await getSummariesFromCacheOrNdex(
-  //         networkId,
-  //         ndexBaseUrl,
-  //         token,
-  //       )
-  //       const networkSummary = summaryMap[networkId]
-  //       const ndexSummaries = await ndexSummaryFetcher(
-  //         networkId,
-  //         ndexBaseUrl,
-  //         token,
-  //       )
-  //       const ndexSummary = ndexSummaries?.[0]
-  //       const localNetworkOutdated =
-  //         networkSummary?.modificationTime !== undefined &&
-  //         ndexSummary?.modificationTime !== undefined &&
-  //         networkSummary?.modificationTime < ndexSummary?.modificationTime
-
-  //       const localNetworkModified = networkModified[networkId] ?? false
-  //       if (localNetworkOutdated) {
-  //         if (localNetworkModified && authenticated) {
-  //           // local network and ndex network have been modified and the user is authenticated
-  //           // ask the user what they want to do
-  //           setTargetNetworkId(networkId)
-  //           setShowDialog(true)
-  //         } else {
-  //           // the local network has not been modified but it has been modified on NDEx
-  //           // update the network silently
-  //           deleteNetwork(networkId)
-  //           await waitSeconds(1)
-  //           addNetworkIds(networkId)
-  //           await waitSeconds(1)
-  //           setCurrentNetworkId(networkId)
-  //           await waitSeconds(1)
-  //           deleteNetworkModifiedStatus(networkId)
-
-  //           navigateToNetwork({
-  //             workspaceId: id,
-  //             networkId: networkId,
-  //             searchParams: new URLSearchParams(location.search),
-  //             replace: true,
-  //           })
-  //         }
-  //       } else {
-  //         addNetworkIds(networkId)
-  //         await waitSeconds(1)
-  //         setCurrentNetworkId(networkId)
-  //         navigateToNetwork({
-  //           workspaceId: id,
-  //           networkId: networkId,
-  //           searchParams: new URLSearchParams(location.search),
-  //           replace: true,
-  //         })
-  //       }
-  //     } catch (error) {
-  //       const errorMessage: string = error.message
-  //       setErrorMessage(
-  //         `Failed to load the network (${networkId}) entered in the URL (${errorMessage}).
-  //         Please double-check the network ID you entered.
-  //         Your workspace has now been initialized with the last cache.`,
-  //       )
-  //       setShowErrorDialog(true)
-  //     }
-  //   }
 
   return (
     <Box
@@ -359,17 +315,15 @@ const AppShell = (): ReactElement => {
         flexDirection: 'column',
       }}
     >
-      <Box sx={{ p: 0, margin: 0 }}>
+      <Box data-testid="app-shell-toolbar-container" sx={{ p: 0, margin: 0 }}>
         <ToolBar />
       </Box>
-      <Box sx={{ flexGrow: 1, height: '100%', p: 0, margin: 0 }}>
+      <Box
+        data-testid="app-shell-content-container"
+        sx={{ flexGrow: 1, height: '100%', p: 0, margin: 0 }}
+      >
         <Outlet />
       </Box>
-      {/* <UpdateNetworkDialog
-        open={showDialog}
-        networkId={targetNetworkId}
-        onClose={() => setShowDialog(false)}
-      /> */}
       <SyncTabsAction />
     </Box>
   )

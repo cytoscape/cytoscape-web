@@ -58,7 +58,11 @@ The main orchestrator component that manages the hierarchy viewer layout and sta
 
 **Behavior:**
 
-- Detects if the current network is a hierarchy (HCX format) by checking for HCX metadata
+- Detects if the current network is a hierarchy (HCX format) by checking for HCX metadata in networkAttributes:
+  - `ndexSchema: "hierarchy_v0.1"` (required)
+  - `HCX::modelFileCount` (required)
+  - `HCX::interactionNetworkUUID` (optional - for networks with associated interaction networks)
+  - `HCX::interactionNetworkHost` (optional - host for interaction network queries)
 - Registers the Circle Packing renderer if hierarchy is detected
 - Manages selection state and extracts subsystem information from selected nodes
 - Coordinates between Circle Packing view and SubNetwork view
@@ -68,8 +72,8 @@ The main orchestrator component that manages the hierarchy viewer layout and sta
 **Key Features:**
 
 - Automatic hierarchy detection based on network metadata
-- Subsystem selection extraction from table data
-- Query generation for fetching interaction networks
+- Subsystem selection extraction from table data (nodes with `HCX::members` attribute)
+- Query generation for fetching interaction networks using `HCX::interactionNetworkUUID`
 - Root network ID and host management
 
 ### CirclePackingPanel
@@ -100,10 +104,10 @@ Displays the interaction network associated with a selected subsystem.
 
 **Behavior:**
 
-- Fetches interaction network data via NDEx query API
+- Fetches interaction network data via NDEx query API using the `HCX::interactionNetworkUUID` from the HCX network
 - Registers fetched networks to the global network store
 - Applies circle packing layout positioning to nodes based on hierarchy positions
-- Handles filter configuration from network aspects
+- Handles filter configuration from interaction network aspects (not from HCX network)
 - Synchronizes selection between hierarchy and interaction network
 - Shows processing progress during network loading and registration
 - Displays error messages for failed network loads
@@ -113,8 +117,10 @@ Displays the interaction network associated with a selected subsystem.
 - Async network fetching with React Query
 - Progress tracking during network registration
 - Web Worker support for layout calculations (with fallback)
-- Filter configuration extraction from network aspects
+- Filter configuration extraction from interaction network's `filterWidgets` opaque aspect
 - Bidirectional selection synchronization (hierarchy ↔ interaction network)
+
+**Note:** Filter widgets are only present in interaction networks (those with `interactionNetworkUUID`), not in HCX networks themselves. The `filterWidgets` aspect is an opaque aspect containing filter configurations for the interaction network.
 
 ### FilterPanel
 
@@ -127,7 +133,7 @@ Provides filtering capabilities for interaction networks.
 - Provides two display modes: Selection and Show/Hide
 - Integrates with visual style mappings for color coding
 - Updates URL parameters for filter state
-- Only visible for interaction networks (not main hierarchy)
+- Only visible for interaction networks (not main hierarchy or HCX networks)
 
 **Key Features:**
 
@@ -136,6 +142,8 @@ Provides filtering capabilities for interaction networks.
 - Visual mapping integration (colors from visual styles)
 - Display mode selection (Selection vs Show/Hide)
 - URL parameter synchronization
+
+**Note:** Filter configurations are extracted from the interaction network's `filterWidgets` opaque aspect. HCX networks do not contain filter widgets - only interaction networks (those referenced by `HCX::interactionNetworkUUID`) can have filter configurations.
 
 ### PropertyPanel
 
@@ -194,7 +202,7 @@ The HierarchyViewer integrates with the following stores and services:
 
 5. **Web Worker for Layout**: Offloads heavy layout calculations to Web Workers to prevent UI freezing, with synchronous fallback for compatibility.
 
-6. **Filter Integration**: Extracts filter configurations from network aspects, allowing networks to define their own filtering capabilities.
+6. **Filter Integration**: Extracts filter configurations from interaction network's `filterWidgets` opaque aspect. Only interaction networks (those with `interactionNetworkUUID`) can have filter widgets - HCX networks themselves do not contain filters.
 
 7. **HCX Validation**: Validates networks against HCX specification to ensure compatibility and warn users of potential issues.
 
@@ -206,13 +214,17 @@ The HierarchyViewer integrates with the following stores and services:
 
 ## Data Flow
 
-1. **Network Detection**: MainPanel checks network metadata for HCX properties
-2. **Hierarchy Building**: CirclePackingPanel builds D3 hierarchy from network data
+1. **Network Detection**: MainPanel checks networkAttributes for HCX properties:
+   - `ndexSchema: "hierarchy_v0.1"` (required)
+   - `HCX::modelFileCount` (required)
+   - `HCX::interactionNetworkUUID` (optional)
+   - `HCX::interactionNetworkHost` (optional)
+2. **Hierarchy Building**: CirclePackingPanel builds D3 hierarchy from network data using nodes with `HCX::members` attributes
 3. **Subsystem Selection**: User selects subsystem in Circle Packing view
-4. **Query Generation**: MainPanel extracts member nodes and interaction network UUID
-5. **Network Fetching**: SubNetworkPanel fetches interaction network via NDEx query
+4. **Query Generation**: MainPanel extracts member nodes from `HCX::members` attribute and interaction network UUID from `HCX::interactionNetworkUUID`
+5. **Network Fetching**: SubNetworkPanel fetches interaction network via NDEx query using the interaction network UUID
 6. **Network Registration**: Fetched network is registered to stores with layout applied
-7. **Filter Application**: Filter configurations are extracted and applied
+7. **Filter Application**: Filter configurations are extracted from interaction network's `filterWidgets` opaque aspect and applied
 8. **Selection Sync**: Selections are synchronized between views
 
 ## Future Improvements

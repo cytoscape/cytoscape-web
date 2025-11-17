@@ -4,6 +4,9 @@ import React from 'react'
 
 import config from './assets/config.json'
 
+/**
+ * Debug namespace types for organizing debug logs by feature area
+ */
 export const DebugNamespaceType = {
   DB: 'db',
   STORE: 'store',
@@ -19,6 +22,11 @@ export const DebugNamespaceType = {
 export type DebugNamespaceType =
   (typeof DebugNamespaceType)[keyof typeof DebugNamespaceType]
 
+/**
+ * Creates logger functions (info, warn, error) for a given namespace
+ * @param namespace - The debug namespace (e.g., 'db', 'store', 'api')
+ * @returns Object with info, warn, and error logger functions
+ */
 function createLoggers(namespace: DebugNamespaceType) {
   return {
     info: debug(`${namespace}:info`),
@@ -37,6 +45,11 @@ export const logPerformance = createLoggers(DebugNamespaceType.PERFORMANCE)
 export const logHistory = createLoggers(DebugNamespaceType.HISTORY)
 export const logModel = createLoggers(DebugNamespaceType.MODEL)
 
+/**
+ * Initializes debug logging and React component debugging
+ * Enables debug logging if debug mode is enabled in config
+ * Sets up why-did-you-render for React component debugging
+ */
 export const initializeDebug = (): void => {
   // Enable all debug namespaces if debug mode is enabled in config
   if (config.debug) {

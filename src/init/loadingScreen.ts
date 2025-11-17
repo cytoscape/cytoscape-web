@@ -1,7 +1,11 @@
 export const INITIAL_LOADING_SCREEN_ID = 'initial-loading-screen'
 
-export const removeMessage = (id: string): void => {
-  const element = document.getElementById(id)
+/**
+ * Removes a message element from the DOM by its ID
+ * @param elementId - The ID of the element to remove
+ */
+export const removeMessage = (elementId: string): void => {
+  const element = document.getElementById(elementId)
   if (element && element.parentNode) {
     // Immediate removal without fade animation for faster response
     element.parentNode.removeChild(element)
@@ -46,6 +50,10 @@ export const removeLoadingScreenAfterRender = (): void => {
   })
 }
 
+/**
+ * Updates the loading message displayed on the initial loading screen
+ * @param message - The message to display to the user
+ */
 export const updateLoadingMessage = (message: string): void => {
   const loadingScreen = document.getElementById(INITIAL_LOADING_SCREEN_ID)
   if (loadingScreen) {
@@ -61,6 +69,10 @@ export const updateLoadingMessage = (message: string): void => {
 export declare const REACT_APP_VERSION: string
 export declare const REACT_APP_BUILD_TIME: string
 
+/**
+ * Updates the version and build time text in the loading screen
+ * Uses webpack-injected constants for version and build time information
+ */
 export const updateVersionText = (): void => {
   const versionElement = document.getElementById('version-text')
   const buildTimeElement = document.getElementById('build-time-text')
@@ -80,9 +92,9 @@ export const updateVersionText = (): void => {
     let formattedBuildTime = buildTime
     if (buildTime !== 'Unknown') {
       try {
-        const date = new Date(buildTime)
-        formattedBuildTime = date.toLocaleString()
-      } catch (e) {
+        const buildDate = new Date(buildTime)
+        formattedBuildTime = buildDate.toLocaleString()
+      } catch (dateParseError) {
         // If parsing fails, use the raw string
         formattedBuildTime = buildTime
       }

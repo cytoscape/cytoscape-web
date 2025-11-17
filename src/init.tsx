@@ -54,7 +54,7 @@ const initializeApp = () => {
         window.location.origin + urlBaseName + 'silent-check-sso.html',
     })
     .then(async (authenticated) => {
-      let emailUnverified = true
+      let isEmailUnverified = true
       let userName = ''
       let userEmail = ''
 
@@ -65,7 +65,7 @@ const initializeApp = () => {
       if (authenticated) {
         updateLoadingMessage('Verifying user credentials...')
         const verificationStatus = await checkUserVerification()
-        emailUnverified = !verificationStatus.isVerified
+        isEmailUnverified = !verificationStatus.isVerified
         userName = verificationStatus.userName ?? ''
         userEmail = verificationStatus.userEmail ?? ''
       }
@@ -74,7 +74,7 @@ const initializeApp = () => {
 
       const root = ReactDOM.createRoot(rootElement)
       const innerContent =
-        authenticated && emailUnverified ? (
+        authenticated && isEmailUnverified ? (
           <EmailVerificationModal
             userName={userName}
             userEmail={userEmail}
@@ -119,10 +119,12 @@ const initializeApp = () => {
       )
       const errorMessage = document.createElement('h2')
       errorMessage.style.color = 'red'
+      errorMessage.setAttribute('data-testid', 'init-error-message')
       errorMessage.textContent = `Failed to initialize Cytoscape: ${e.error}`
       document.body.appendChild(errorMessage)
 
       const errorMessageSub = document.createElement('h4')
+      errorMessageSub.setAttribute('data-testid', 'init-error-message-sub')
       errorMessageSub.textContent = `Please try reloading this page. If this continues, please contact your administrator`
       document.body.appendChild(errorMessageSub)
     })

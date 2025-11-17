@@ -43,28 +43,38 @@ if (appConfig.urlBaseName !== '') {
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route
-      path="/"
-      element={
-        <Suspense
-          fallback={<MessagePanel message="Preparing your workspace..." />}
-        >
-          <AppShell />
-        </Suspense>
-      }
-      errorElement={<Error />}
-    >
       <Route
-        path=":workspaceId"
+        path="/"
         element={
           <Suspense
-            fallback={<MessagePanel message={'Initializing Workspace...'} />}
+            fallback={
+              <MessagePanel
+                message="Preparing your workspace..."
+                data-testid="app-shell-loading"
+              />
+            }
           >
-            <WorkspaceEditor />
+            <AppShell />
           </Suspense>
         }
         errorElement={<Error />}
       >
+        <Route
+          path=":workspaceId"
+          element={
+            <Suspense
+              fallback={
+                <MessagePanel
+                  message={'Initializing Workspace...'}
+                  data-testid="workspace-editor-loading"
+                />
+              }
+            >
+              <WorkspaceEditor />
+            </Suspense>
+          }
+          errorElement={<Error />}
+        >
         <Route path="networks" element={<div />} errorElement={<Error />} />
         <Route
           path="networks/:networkId"
@@ -98,7 +108,9 @@ export const App = (): React.ReactElement => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <ErrorBoundary>
-        <RouterProvider router={router} />
+        <div data-testid="app-router">
+          <RouterProvider router={router} />
+        </div>
       </ErrorBoundary>
       <CookieConsentWidget />
     </ThemeProvider>

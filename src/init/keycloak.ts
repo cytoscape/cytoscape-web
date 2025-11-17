@@ -20,12 +20,16 @@ export const initializeKeycloak = () => {
     keycloak.logout({ redirectUri: window.location.origin + urlBaseName })
   }
 
-  // Function to parse the error message to get the user information
-  const parseMessage = (
-    message: string,
+  /**
+   * Parses the NDEx error message to extract user information
+   * @param errorMessage - The error message from NDEx API
+   * @returns User name and email if found, null otherwise
+   */
+  const parseUserInfoFromErrorMessage = (
+    errorMessage: string,
   ): { userName: string; userEmail: string } | null => {
-    const pattern = /NDEx user account ([\w.]+) <([\w.]+@[\w.]+)>/
-    const match = message.match(pattern)
+    const userInfoPattern = /NDEx user account ([\w.]+) <([\w.]+@[\w.]+)>/
+    const match = errorMessage.match(userInfoPattern)
 
     if (match) {
       const userName = match[1]
@@ -49,7 +53,9 @@ export const initializeKeycloak = () => {
         e.status === 401 &&
         e.response?.data?.errorCode === 'NDEx_User_Account_Not_Verified'
       ) {
-        const userInfo = parseMessage(e.response?.data?.message)
+        const userInfo = parseUserInfoFromErrorMessage(
+          e.response?.data?.message,
+        )
         return {
           isVerified: false,
           userName: userInfo?.userName,
