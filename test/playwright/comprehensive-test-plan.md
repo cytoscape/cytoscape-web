@@ -52,7 +52,7 @@ The application uses a URL structure of `/:workspaceId/networks/:networkId?param
 - **Search Bar**: Visible with placeholder "Search current network"
 - **Login Button**: "Click to login" button visible in top right
 - **Left Panel**: Workspace panel with WORKSPACE and STYLE tabs visible
-- **Center Panel**: Network view area (initially shows "No network selected")
+- **Center Panel**: Network view area (initially shows "Loading network data..." during initialization, then "No network selected" if no network is loaded)
 - **Bottom Panel**: Table browser with Nodes, Edges, and Network tabs
 - **Workspace Info**: Displays "Untitled Workspace" and creation timestamp
 

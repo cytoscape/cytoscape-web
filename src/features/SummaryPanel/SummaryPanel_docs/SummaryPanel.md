@@ -14,7 +14,9 @@ The SummaryPanel is composed of several components that work together to display
 - **Summaries.tsx**: Container component that lists all network summaries
   - Retrieves summaries from NetworkSummaryStore
   - Maps summaries to NetworkPropertyPanel components
-  - Shows message when no networks are in workspace
+  - Shows loading state during workspace initialization ("Loading workspace...")
+  - Shows empty state message when workspace is initialized but no networks exist ("No networks in workspace")
+  - Prevents flickering of empty state messages during initial load by checking workspace initialization status
 
 - **NetworkPropertyPanel.tsx**: Individual network summary card
   - Displays network name, version, and description

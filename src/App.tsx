@@ -1,6 +1,7 @@
 import './index.css'
 
 import CssBaseline from '@mui/material/CssBaseline'
+import { Box } from '@mui/material'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import React, { Suspense, useContext, useEffect } from 'react'
 import {
@@ -48,10 +49,12 @@ const router = createBrowserRouter(
       element={
         <Suspense
           fallback={
-            <MessagePanel
-              message="Preparing your workspace..."
-              data-testid="app-shell-loading"
-            />
+            <Box sx={{ width: '100%', height: '100vh' }}>
+              <MessagePanel
+                message="Preparing your workspace..."
+                data-testid="app-shell-loading"
+              />
+            </Box>
           }
         >
           <AppShell />
@@ -64,10 +67,12 @@ const router = createBrowserRouter(
         element={
           <Suspense
             fallback={
-              <MessagePanel
-                message={'Initializing Workspace...'}
-                data-testid="workspace-editor-loading"
-              />
+              <Box sx={{ width: '100%', height: '100vh' }}>
+                <MessagePanel
+                  message={'Initializing Workspace...'}
+                  data-testid="workspace-editor-loading"
+                />
+              </Box>
             }
           >
             <WorkspaceEditor />

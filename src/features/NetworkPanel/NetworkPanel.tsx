@@ -74,57 +74,72 @@ const NetworkPanel = ({
     return <MessagePanel message="Failed to load network data" />
   }
 
+  // If we have a networkId prop, we're expecting a network to load
+  // Skip all workspace checks and only check if the network is in the store
+  // This prevents "No network selected" from showing during initial load
+  if (networkId !== '') {
+    const targetNetwork: Network = networks.get(networkId) ?? {
+      id: '', // an empty network
+      nodes: [],
+      edges: [],
+    }
+
+    // If network isn't loaded yet, show loading state
+    if (targetNetwork.id === '') {
+      return <MessagePanel message="Loading network data..." />
+    }
+
+    // Network is loaded, continue to render it
+    const targetId = targetNetwork.id
+    const views: NetworkView[] = networkViews[targetId]
+    const vs: VisualStyle = visualStyles[targetNetwork.id]
+
+    const handleClick = (): void => {
+      setActiveNetworkView(targetNetwork.id)
+    }
+
+    const bgColor = vs?.networkBackgroundColor?.defaultValue as string
+
+    // Show tabs only when multiple views are available
+    if (Object.keys(renderers).length === 1) {
+      return (
+        <NetworkTab
+          network={targetNetwork}
+          renderer={renderers[defaultRendererName]}
+          bgColor={bgColor}
+          isActive={isActive}
+          handleClick={handleClick}
+          selected={true}
+        />
+      )
+    } else {
+      return (
+        <NetworkTabs
+          network={targetNetwork}
+          views={views}
+          renderers={renderers}
+          isActive={isActive}
+          bgColor={bgColor}
+          handleClick={handleClick}
+        />
+      )
+    }
+  }
+
+  // When networkId is empty, check if workspace is still initializing
+  // If workspace hasn't been initialized yet (id is empty), show loading state
+  // This prevents "No network selected" from flashing during initial load
+  if (workspace.id === '') {
+    return <MessagePanel message="Loading network data..." />
+  }
+
+  // Workspace is initialized but no network is selected
   if (workspace.networkIds.length === 0) {
     return <MessagePanel message="No network selected" />
   }
 
-  const targetNetwork: Network = networks.get(networkId) ?? {
-    id: '', // an empty network
-    nodes: [],
-    edges: [],
-  }
-
-  if (targetNetwork.id === '') {
-    return <MessagePanel message="Loading network data..." />
-  }
-
-  const targetId = targetNetwork.id
-
-  // Check network has multiple views or single
-  const views: NetworkView[] = networkViews[targetId]
-  const vs: VisualStyle = visualStyles[targetNetwork.id]
-
-  const handleClick = (): void => {
-    setActiveNetworkView(targetNetwork.id)
-  }
-
-  const bgColor = vs?.networkBackgroundColor?.defaultValue as string
-
-  // Show tabs only when multiple views are available
-  if (Object.keys(renderers).length === 1) {
-    // Use default renderer without tab if there is only one view
-    return (
-      <NetworkTab
-        network={targetNetwork}
-        renderer={renderers[defaultRendererName]}
-        bgColor={bgColor}
-        isActive={isActive}
-        handleClick={handleClick}
-        selected={true}
-      />
-    )
-  } else {
-    return (
-      <NetworkTabs
-        network={targetNetwork}
-        views={views}
-        renderers={renderers}
-        isActive={isActive}
-        bgColor={bgColor}
-        handleClick={handleClick}
-      />
-    )
-  }
+  // This should not be reached, but TypeScript needs it
+  return <MessagePanel message="No network selected" />
 }
 
 export default NetworkPanel

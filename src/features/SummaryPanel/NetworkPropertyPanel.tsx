@@ -256,9 +256,10 @@ export const NetworkPropertyPanel = ({
               display="flex"
               justifyContent="center"
               alignItems="center"
-              minHeight="200px"
+              minHeight="0"
+              height="20px"
             >
-              <CircularProgress />
+              <CircularProgress size={16} />
             </Box>
           }
         >
