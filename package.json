@@ -23,7 +23,8 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
-    "test": "jest",
+    "test:unit": "jest",
+    "test:e2e": "playwright test",
     "build": "webpack --mode production",
     "build:netlify": "BUILD=netlify webpack --mode production",
     "dev": "webpack serve --open --mode development",
