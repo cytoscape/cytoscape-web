@@ -12,3 +12,6 @@ export const DelimiterType = {
 export type DelimiterType =
   | (typeof DelimiterType)[keyof typeof DelimiterType]
   | string
+
+// UI state values for file delimiter selection
+export type FileDelimiterState = 'auto' | 'custom' | 'tab' | 'space' | string

@@ -74,7 +74,7 @@ export function ValueTypeForm(props: ValueTypeFormProps) {
               width: 250,
             },
           }}
-          disabled={!value.startsWith('list_')}
+          disabled={!value?.startsWith('list_')}
           size="xs"
           value={props.delimiter ?? '|'}
           onChange={(e) => props.onChange(value, e as DelimiterType)}

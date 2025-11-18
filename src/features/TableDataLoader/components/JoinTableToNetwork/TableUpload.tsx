@@ -29,6 +29,7 @@ export function TableUpload(props: BaseMenuProps) {
   const setFile = useJoinTableToNetworkStore((state) => state.setFile)
   const goToStep = useJoinTableToNetworkStore((state) => state.goToStep)
   const setRawText = useJoinTableToNetworkStore((state) => state.setRawText)
+  const options = useJoinTableToNetworkStore((state) => state.options)
   const addMessage = useMessageStore((state) => state.addMessage)
 
   const onFileError = (files: any) => {
@@ -46,7 +47,16 @@ export function TableUpload(props: BaseMenuProps) {
       const text = reader.result as string
 
       // Parse CSV here using PapaParse
-      const result = Papa.parse(text)
+      // Determine delimiter: if a custom delimiter is set (and not comma), use it;
+      // otherwise pass undefined to let Papa.parse auto-detect the delimiter
+      const delimiterFromOptions = options.delimiter
+      const isDefaultDelimiter =
+        !delimiterFromOptions || delimiterFromOptions === ','
+      const delimiter = isDefaultDelimiter ? undefined : delimiterFromOptions
+
+      const result = Papa.parse(text, {
+        delimiter,
+      })
 
       const onFileValid = () => {
         setFile(file)

@@ -36,6 +36,7 @@ interface JoinTableToNetworkAction {
   goToStep: (nextStep: JoinTableToNetworkStep) => void
   setFile: (f: File) => void
   setRawText: (s: string) => void
+  setOptions: (options: Partial<JoinTableToNetworkOptions>) => void
   reset: () => void
 }
 
@@ -67,6 +68,11 @@ export const useJoinTableToNetworkStore = create(
     setRawText: (s: string) => {
       set((state) => {
         state.rawText = s
+      })
+    },
+    setOptions: (newOptions: Partial<JoinTableToNetworkOptions>) => {
+      set((state) => {
+        state.options = { ...state.options, ...newOptions }
       })
     },
     reset: () => {
