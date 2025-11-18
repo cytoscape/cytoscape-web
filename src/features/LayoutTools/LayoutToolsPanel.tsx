@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
+import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../models/IdType'
 import { Scaling } from './Scaling'
 

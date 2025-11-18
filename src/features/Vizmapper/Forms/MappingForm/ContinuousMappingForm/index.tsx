@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 import * as React from 'react'
 
-import { useTableStore } from '../../../../../hooks/stores/TableStore'
+import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
 import { IdType } from '../../../../../models/IdType'
 import { Table, ValueTypeName } from '../../../../../models/TableModel'
 import {

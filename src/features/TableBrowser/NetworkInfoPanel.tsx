@@ -14,8 +14,8 @@ import {
 import parse from 'html-react-parser'
 import React from 'react'
 
-import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
+import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
+import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { dateFormatter } from '../../utils/dateFormat'
 
 export function NetworkPropertyTable(): React.ReactElement {
@@ -90,14 +90,14 @@ export default function NetworkInfoPanel(props: {
         (p) => p.predicateString.toLowerCase() === key.toLowerCase(),
       ),
     )
-    .filter((p): p is typeof properties[number] => Boolean(p))
-  
+    .filter((p): p is (typeof properties)[number] => Boolean(p))
+
   // Check NDEx version first, if it is null, then we find version from properties
   const version =
     networkInfo?.version ||
-    properties.find((p) => p.predicateString.toLowerCase() === 'version')
-      ?.value
-      ?.toString() ||
+    properties
+      .find((p) => p.predicateString.toLowerCase() === 'version')
+      ?.value?.toString() ||
     ''
 
   // All other props
@@ -108,7 +108,7 @@ export default function NetworkInfoPanel(props: {
       ) &&
       !p.predicateString.startsWith('__') &&
       p.predicateString.toLowerCase() !== 'description' &&
-      p.predicateString.toLowerCase() !== 'version'
+      p.predicateString.toLowerCase() !== 'version',
   )
 
   return (
@@ -123,11 +123,7 @@ export default function NetworkInfoPanel(props: {
           <Chip sx={{ ml: 1 }} size="small" label={networkInfo.visibility} />
         )}
         {version && (
-          <Chip
-            sx={{ ml: 1 }}
-            size="small"
-            label={`Version: ${version}`}
-          />
+          <Chip sx={{ ml: 1 }} size="small" label={`Version: ${version}`} />
         )}
       </Box>
 

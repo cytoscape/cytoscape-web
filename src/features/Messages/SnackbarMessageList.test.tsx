@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react'
 
-import { useMessageStore } from '../../hooks/stores/MessageStore'
+import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
 import { SnackbarMessageList } from './SnackbarMessageList'
 

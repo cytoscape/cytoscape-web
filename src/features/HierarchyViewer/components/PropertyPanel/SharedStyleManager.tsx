@@ -8,7 +8,7 @@ import {
 } from '@mui/material'
 import { useEffect } from 'react'
 
-import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
+import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
 import { VisualStyle } from '../../../../models/VisualStyleModel'
 import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStore'
 

@@ -4,9 +4,9 @@ import '@mantine/dropzone/styles.css'
 
 import { Dialog, MantineProvider, Modal } from '@mantine/core'
 import { MenuItem } from '@mui/material'
-import { ReactElement, useEffect,useState } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 
-import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
+import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
 import { JoinTableToNetworkForm } from './JoinTableToNetworkForm'

@@ -10,10 +10,10 @@ import {
 import { ReactElement, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
-import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
-import { useCredentialStore } from '../hooks/stores/CredentialStore'
-import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
+import { useUrlNavigation } from '../data/hooks/navigation/useUrlNavigation'
+import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
+import { useNetworkSummaryStore } from '../data/hooks/stores/NetworkSummaryStore'
+import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
 import { waitSeconds } from '../utils/waitSeconds'
 
 export const UpdateNetworkDialog = (props: {

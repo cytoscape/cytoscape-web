@@ -1,10 +1,10 @@
 import { Card, useTheme } from '@mui/material'
 import { ReactElement } from 'react'
 
-import { useTableStore } from '../../hooks/stores/TableStore'
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
-import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
+import { useTableStore } from '../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { Table, ValueType } from '../../models/TableModel'
 import { NetworkView } from '../../models/ViewModel'
 import { GraphObjectPropertyPanel } from './GraphObjectPropertyPanel'
@@ -30,8 +30,8 @@ export const PopupPanel = ({
   const tables = useTableStore((state) => state.tables)
   const nodeTable: Table = tables[networkId]?.nodeTable
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(networkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(networkId),
   )
   const { selectedNodes } = viewModel ?? {}
 

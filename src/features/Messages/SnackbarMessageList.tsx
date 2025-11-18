@@ -1,7 +1,7 @@
 import { Alert, Snackbar, SnackbarCloseReason } from '@mui/material'
 import React, { useEffect, useMemo, useState } from 'react'
 
-import { useMessageStore } from '../../hooks/stores/MessageStore'
+import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
 
 export const SnackbarMessageList = (): React.ReactElement => {

@@ -1,4 +1,4 @@
-import { PublishedWithChanges,WarningAmberOutlined } from '@mui/icons-material'
+import { PublishedWithChanges, WarningAmberOutlined } from '@mui/icons-material'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import {
   Box,
@@ -9,9 +9,9 @@ import {
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 
-import { useMessageStore } from '../../../../hooks/stores/MessageStore'
-import { useNetworkSummaryStore } from '../../../../hooks/stores/NetworkSummaryStore'
-import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { useMessageStore } from '../../../../data/hooks/stores/MessageStore'
+import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { IdType } from '../../../../models/IdType'
 import { MessageSeverity } from '../../../../models/MessageModel'
 import { HcxMetaTag } from '../../model/HcxMetaTag'

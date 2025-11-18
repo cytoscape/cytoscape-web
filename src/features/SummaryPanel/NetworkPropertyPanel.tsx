@@ -15,15 +15,15 @@ import { blueGrey } from '@mui/material/colors'
 import { useTheme } from '@mui/material/styles'
 import { lazy, ReactElement, Suspense, useState } from 'react'
 
-import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
+import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../models/IdType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
 const NetworkPropertyEditor = lazy(() => import('./NetworkPropertyEditor'))
-import { useUrlNavigation } from '../../hooks/navigation/useUrlNavigation'
-import { useNetworkStore } from '../../hooks/stores/NetworkStore'
+import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
+import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { Network } from '../../models'
 import { ConfirmationDialog } from '../ConfirmationDialog'
 import { HcxValidationButtonGroup } from '../HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'

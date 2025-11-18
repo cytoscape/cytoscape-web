@@ -6,7 +6,7 @@ import {
   RadioGroup,
 } from '@mui/material'
 
-import { useFilterStore } from '../../../hooks/stores/FilterStore'
+import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 
 export const SearchModeSelector = (): JSX.Element => {
   const setOptions = useFilterStore((state) => state.setOptions)
@@ -37,20 +37,14 @@ export const SearchModeSelector = (): JSX.Element => {
         <FormControlLabel
           value="exact"
           control={
-            <Radio
-              data-testid="search-mode-exact-radio"
-              color="primary"
-            />
+            <Radio data-testid="search-mode-exact-radio" color="primary" />
           }
           label={<span style={{ whiteSpace: 'nowrap' }}>Exact Match</span>}
         />
         <FormControlLabel
           value="contains"
           control={
-            <Radio
-              data-testid="search-mode-contains-radio"
-              color="primary"
-            />
+            <Radio data-testid="search-mode-contains-radio" color="primary" />
           }
           label={<span style={{ whiteSpace: 'nowrap' }}>Contains</span>}
         />

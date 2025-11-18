@@ -1,8 +1,8 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 
-import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { BaseMenuProps } from '../BaseMenuProps'
 

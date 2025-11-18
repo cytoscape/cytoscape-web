@@ -44,19 +44,19 @@ import React, { useContext, useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import { AppConfigContext } from '../../../AppConfigContext'
-import { putNetworkSummaryToDb } from '../../../db'
+import { putNetworkSummaryToDb } from '../../../data/db'
 import { logUi } from '../../../debug'
-import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
-import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
-import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
-import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { useLoadCyNetwork } from '../../../hooks/useLoadCyNetwork'
+import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
+import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
+import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
+import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useLoadCyNetwork } from '../../../data/hooks/useLoadCyNetwork'
 import { IdType } from '../../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
@@ -870,10 +870,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               sx={{ color: 'orange' }}
             />
             <Typography sx={{ color: 'orange' }}>
-              Some nodes have duplicate values under the &apos;Matching Column&apos;.
-              Hover over the warning icon or check &apos;Advanced Options&apos; for
-              details. Enabling &apos;Merge nodes/edges in the same network&apos; might
-              also be an option.
+              Some nodes have duplicate values under the &apos;Matching
+              Column&apos;. Hover over the warning icon or check &apos;Advanced
+              Options&apos; for details. Enabling &apos;Merge nodes/edges in the
+              same network&apos; might also be an option.
             </Typography>
           </Box>
         )}

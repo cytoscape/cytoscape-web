@@ -8,7 +8,7 @@ import {
   clearInternalHistory,
   getHistoryInfo,
   resetNavigationToRoot,
-} from '../hooks/navigation/urlManager'
+} from '../data/hooks/navigation/urlManager'
 
 export const HistoryDebugger = (): JSX.Element => {
   const [historyLength, setHistoryLength] = useState(window.history.length)

@@ -10,7 +10,7 @@ import {
   Typography,
 } from '@mui/material'
 
-import { useAppStore } from '../../hooks/stores/AppStore'
+import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
 import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
 

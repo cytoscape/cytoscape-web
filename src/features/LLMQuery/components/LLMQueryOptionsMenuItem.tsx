@@ -17,7 +17,7 @@ import {
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 
-import { useMessageStore } from '../../../hooks/stores/MessageStore'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
 import { LLMModel, models } from '../model/LLMModel'

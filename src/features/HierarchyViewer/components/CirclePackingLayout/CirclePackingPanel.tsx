@@ -16,13 +16,13 @@ import {
 // Internal component imports
 import { AppConfigContext } from '../../../../AppConfigContext'
 import { logUi } from '../../../../debug'
-import { useCredentialStore } from '../../../../hooks/stores/CredentialStore'
-import { useFilterStore } from '../../../../hooks/stores/FilterStore'
-import { useRendererFunctionStore } from '../../../../hooks/stores/RendererFunctionStore'
-import { useTableStore } from '../../../../hooks/stores/TableStore'
+import { useCredentialStore } from '../../../../data/hooks/stores/CredentialStore'
+import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
+import { useRendererFunctionStore } from '../../../../data/hooks/stores/RendererFunctionStore'
+import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 // Internal store imports
-import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
+import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
 import { SearchState } from '../../../../models/FilterModel/SearchState'
 import { IdType } from '../../../../models/IdType'
 // Internal model imports

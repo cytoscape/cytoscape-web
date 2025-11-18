@@ -11,8 +11,8 @@ import {
 import * as React from 'react'
 import { useState } from 'react'
 
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
-import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
+import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
+import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
   EdgeVisualPropertyName,
@@ -231,7 +231,6 @@ export default function VizmapperView(props: {
     //   firstValidCustomGraphicVP,
     //   customGraphicVps,
     // )
-
     // nodeVps.push(
     //   <VisualPropertyView
     //     key={firstValidCustomGraphicVP.name}
@@ -239,7 +238,6 @@ export default function VizmapperView(props: {
     //     visualProperty={firstValidCustomGraphicVP}
     //   />,
     // )
-
     // Dont expose custom graphics size properties for now
     // there are rendering limitations in cy.js
     // if (customGraphicsSizeVP) {
@@ -260,7 +258,6 @@ export default function VizmapperView(props: {
     // const imageChartSize1Vp = customGraphicVps.find(
     //   (vp) => vp.name === 'nodeImageChartSize1',
     // )
-
     // if (imageChart1Vp) {
     //   nodeVps.push(
     //     <VisualPropertyView

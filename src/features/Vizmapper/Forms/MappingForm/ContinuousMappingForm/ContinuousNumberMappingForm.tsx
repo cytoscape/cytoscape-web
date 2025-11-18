@@ -20,7 +20,7 @@ import debounce from 'lodash/debounce'
 import * as React from 'react'
 import Draggable from 'react-draggable'
 
-import { useVisualStyleStore } from '../../../../../hooks/stores/VisualStyleStore'
+import { useVisualStyleStore } from '../../../../../data/hooks/stores/VisualStyleStore'
 import { IdType } from '../../../../../models/IdType'
 import {
   VisualProperty,

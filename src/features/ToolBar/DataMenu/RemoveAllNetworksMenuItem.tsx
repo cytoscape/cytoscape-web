@@ -1,7 +1,7 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useState } from 'react'
 
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { BaseMenuProps } from '../BaseMenuProps'
 

@@ -16,7 +16,7 @@ import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
 import { MessagePanel } from './features/Messages'
 import { RedirectPanel } from './features/RedirectPanel'
-import { useCredentialStore } from './hooks/stores/CredentialStore'
+import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { KeycloakContext } from './init/keycloak'
 
 const AppShell = React.lazy(() => import('./features/AppShell'))
@@ -43,38 +43,38 @@ if (appConfig.urlBaseName !== '') {
 
 const router = createBrowserRouter(
   createRoutesFromElements(
+    <Route
+      path="/"
+      element={
+        <Suspense
+          fallback={
+            <MessagePanel
+              message="Preparing your workspace..."
+              data-testid="app-shell-loading"
+            />
+          }
+        >
+          <AppShell />
+        </Suspense>
+      }
+      errorElement={<Error />}
+    >
       <Route
-        path="/"
+        path=":workspaceId"
         element={
           <Suspense
             fallback={
               <MessagePanel
-                message="Preparing your workspace..."
-                data-testid="app-shell-loading"
+                message={'Initializing Workspace...'}
+                data-testid="workspace-editor-loading"
               />
             }
           >
-            <AppShell />
+            <WorkspaceEditor />
           </Suspense>
         }
         errorElement={<Error />}
       >
-        <Route
-          path=":workspaceId"
-          element={
-            <Suspense
-              fallback={
-                <MessagePanel
-                  message={'Initializing Workspace...'}
-                  data-testid="workspace-editor-loading"
-                />
-              }
-            >
-              <WorkspaceEditor />
-            </Suspense>
-          }
-          errorElement={<Error />}
-        >
         <Route path="networks" element={<div />} errorElement={<Error />} />
         <Route
           path="networks/:networkId"

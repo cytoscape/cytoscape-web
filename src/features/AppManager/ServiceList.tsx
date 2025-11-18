@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material'
 
-import { useAppStore } from '../../hooks/stores/AppStore'
+import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 
 export const ServiceList = () => {

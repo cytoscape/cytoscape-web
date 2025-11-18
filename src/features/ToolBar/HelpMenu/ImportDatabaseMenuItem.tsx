@@ -1,9 +1,9 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useState } from 'react'
 
-import { importDatabaseSnapshotFromFile } from '../../../db'
+import { importDatabaseSnapshotFromFile } from '../../../data/db'
 import { logUi } from '../../../debug'
-import { useMessageStore } from '../../../hooks/stores/MessageStore'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { BaseMenuProps } from '../BaseMenuProps'

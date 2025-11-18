@@ -8,7 +8,7 @@ import {
 } from '@mui/material'
 import { useState } from 'react'
 
-import { useAppStore } from '../../hooks/stores/AppStore'
+import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { ExampleServicePanel } from './ExampleServicePanel'
 import { ServiceList } from './ServiceList'

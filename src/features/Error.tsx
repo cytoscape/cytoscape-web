@@ -7,7 +7,7 @@ import {
   useRouteError,
 } from 'react-router-dom'
 
-import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
+import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
 export const Error = (): ReactElement => {
   const error: any = useRouteError()
   const navigate = useNavigate()

@@ -10,7 +10,7 @@ import {
 import React from 'react'
 
 import packageInfo from '../../../../package.json'
-import { getDatabaseVersion } from '../../../db'
+import { getDatabaseVersion } from '../../../data/db'
 import { logUi } from '../../../debug'
 import { BaseMenuProps } from '../BaseMenuProps'
 

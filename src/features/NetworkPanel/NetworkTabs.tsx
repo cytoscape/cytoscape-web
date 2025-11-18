@@ -2,7 +2,7 @@ import { Box, Tab, Tabs } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
+import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkView } from '../../models/ViewModel'

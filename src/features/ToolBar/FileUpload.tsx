@@ -12,18 +12,18 @@ import { ModalsProvider } from '@mantine/modals'
 import { PrimeReactProvider } from 'primereact/api'
 import { v4 as uuidv4 } from 'uuid'
 
-import { putNetworkSummaryToDb } from '../../db'
+import { putNetworkSummaryToDb } from '../../data/db'
 import { logUi } from '../../debug'
-import { useUrlNavigation } from '../../hooks/navigation/useUrlNavigation'
-import { useMessageStore } from '../../hooks/stores/MessageStore'
-import { useNetworkStore } from '../../hooks/stores/NetworkStore'
-import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
-import { useOpaqueAspectStore } from '../../hooks/stores/OpaqueAspectStore'
-import { useTableStore } from '../../hooks/stores/TableStore'
-import { useUiStateStore } from '../../hooks/stores/UiStateStore'
-import { useViewModelStore } from '../../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
+import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
+import { useMessageStore } from '../../data/hooks/stores/MessageStore'
+import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
+import { useTableStore } from '../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import {
   getAttributeDeclarations,
@@ -491,7 +491,9 @@ export function FileUpload(props: FileUploadProps) {
                   style={{ pointerEvents: 'stroke' }}
                 >
                   <Stack align="center">
-                    <Button data-testid="file-upload-browse-button">Browse</Button>
+                    <Button data-testid="file-upload-browse-button">
+                      Browse
+                    </Button>
                     <Text size="xl" inline>
                       Drag network file here
                     </Text>

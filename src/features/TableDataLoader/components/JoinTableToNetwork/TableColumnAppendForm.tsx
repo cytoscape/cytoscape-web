@@ -26,12 +26,12 @@ import {
 } from '@tabler/icons-react'
 import Papa from 'papaparse'
 import { Column } from 'primereact/column'
-import { DataTable,DataTableValue } from 'primereact/datatable'
-import { useEffect,useState } from 'react'
+import { DataTable, DataTableValue } from 'primereact/datatable'
+import { useEffect, useState } from 'react'
 
-import { useTableStore } from '../../../../hooks/stores/TableStore'
-import { useUiStateStore } from '../../../../hooks/stores/UiStateStore'
-import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
+import { useTableStore } from '../../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { Column as CyWebColumn } from '../../../../models/TableModel'
 import { ValueTypeName } from '../../../../models/TableModel'
 import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
@@ -55,8 +55,8 @@ import {
   validateColumnValues,
 } from '../../model/impl/ParseValues'
 import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
-import { ValueTypeForm,ValueTypeNameRender } from '../ValueTypeNameForm'
-import { ColumnAppendForm,ColumnAppendTypeRender } from './ColumnAppendForm'
+import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
+import { ColumnAppendForm, ColumnAppendTypeRender } from './ColumnAppendForm'
 
 export function TableColumnAppendForm(props: BaseMenuProps) {
   const [loading, setLoading] = useState(false)

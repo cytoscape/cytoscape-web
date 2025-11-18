@@ -10,10 +10,10 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material'
-import { ReactElement, useMemo,useState } from 'react'
+import { ReactElement, useMemo, useState } from 'react'
 
 import { logUi } from '../../../debug'
-import { useMessageStore } from '../../../hooks/stores/MessageStore'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { BaseMenuProps } from '../BaseMenuProps'
 

@@ -3,7 +3,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
 import { ReactElement, useEffect, useState } from 'react'
 
-import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
+import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 
 interface PreferredLayoutSelectorProps {

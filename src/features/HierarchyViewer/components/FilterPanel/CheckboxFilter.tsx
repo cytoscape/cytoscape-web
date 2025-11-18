@@ -4,8 +4,8 @@ import Tooltip from '@mui/material/Tooltip'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-import { useFilterStore } from '../../../../hooks/stores/FilterStore'
-import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
+import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
+import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
 import {
   Filter,
   FilterConfig,

@@ -1,7 +1,7 @@
 import { MenuItem } from '@mui/material'
-import React, { lazy,Suspense } from 'react'
+import React, { lazy, Suspense } from 'react'
 
-import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
+import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { BaseMenuProps } from '../../BaseMenuProps'
 
 // Lazy load the ExportImageMenuItem component

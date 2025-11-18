@@ -1,6 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep'
 
-import { putNetworkSummaryToDb } from '../../../../db'
+import { putNetworkSummaryToDb } from '../../../../data/db'
 import { CyNetwork } from '../../../../models/CyNetworkModel'
 import { IdType } from '../../../../models/IdType'
 import { NetworkAttributes } from '../../../../models/NetworkModel'

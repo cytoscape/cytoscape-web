@@ -13,11 +13,11 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { useEffect, useRef,useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-import { useTableStore } from '../../../../hooks/stores/TableStore'
-import { useVisualStyleStore } from '../../../../hooks/stores/VisualStyleStore'
-import { useUndoStack } from '../../../../hooks/useUndoStack'
+import { useTableStore } from '../../../../data/hooks/stores/TableStore'
+import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
+import { useUndoStack } from '../../../../data/hooks/useUndoStack'
 import { IdType } from '../../../../models/IdType'
 import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
 import { AttributeName, ValueTypeName } from '../../../../models/TableModel'

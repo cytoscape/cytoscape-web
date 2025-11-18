@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
 
-import { useAppStore } from '../../hooks/stores/AppStore'
+import { useAppStore } from '../../data/hooks/stores/AppStore'
 import {
   AttributeName,
   IdType,

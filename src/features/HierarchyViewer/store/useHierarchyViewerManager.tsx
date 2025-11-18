@@ -7,12 +7,12 @@ import {
   deleteTablesFromDb,
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
-} from '../../../db'
+} from '../../../data/db'
 import { logDb } from '../../../debug'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { useRendererStore } from '../../../hooks/stores/RendererStore'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import {
   NetworkProperty,

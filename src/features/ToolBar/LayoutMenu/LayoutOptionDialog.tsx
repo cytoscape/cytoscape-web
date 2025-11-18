@@ -15,7 +15,7 @@ import {
 import { useEffect, useState } from 'react'
 import Draggable from 'react-draggable'
 
-import { useLayoutStore } from '../../../hooks/stores/LayoutStore'
+import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { IdType } from '../../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { Network } from '../../../models/NetworkModel'

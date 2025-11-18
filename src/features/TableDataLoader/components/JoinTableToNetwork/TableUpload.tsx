@@ -17,7 +17,7 @@ import { Box } from '@mui/material'
 import { IconUpload, IconX } from '@tabler/icons-react'
 import Papa from 'papaparse'
 
-import { useMessageStore } from '../../../../hooks/stores/MessageStore'
+import { useMessageStore } from '../../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../../models/MessageModel'
 import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import {
@@ -128,7 +128,9 @@ export function TableUpload(props: BaseMenuProps) {
           </Dropzone.Reject>
 
           <Stack align="center">
-            <Button data-testid="join-table-upload-browse-button">Browse</Button>
+            <Button data-testid="join-table-upload-browse-button">
+              Browse
+            </Button>
             <Text size="xl" inline>
               Or drag a tabular file here
             </Text>

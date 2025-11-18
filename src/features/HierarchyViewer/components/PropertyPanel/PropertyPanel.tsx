@@ -8,8 +8,8 @@ import {
   useTheme,
 } from '@mui/material'
 
-import { useTableStore } from '../../../../hooks/stores/TableStore'
-import { useViewModelStore } from '../../../../hooks/stores/ViewModelStore'
+import { useTableStore } from '../../../../data/hooks/stores/TableStore'
+import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
 import { ValueType } from '../../../../models/TableModel'
 import { NetworkView } from '../../../../models/ViewModel'
 import { MessagePanel } from '../../../Messages'

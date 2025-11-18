@@ -1,4 +1,3 @@
- 
 import {
   Box,
   Button,
@@ -16,16 +15,19 @@ import {
   Typography,
 } from '@mui/material'
 import debounce from 'lodash/debounce'
-import React, { ReactElement, useContext,useEffect, useState } from 'react'
+import React, { ReactElement, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { deleteNdexWorkspace,fetchMyNdexWorkspaces } from '../../../api/ndex'
+import {
+  deleteNdexWorkspace,
+  fetchMyNdexWorkspaces,
+} from '../../../data/external-api/ndex'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { logUi } from '../../../debug'
-import { useAppStore } from '../../../hooks/stores/AppStore'
-import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
-import { useMessageStore } from '../../../hooks/stores/MessageStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useAppStore } from '../../../data/hooks/stores/AppStore'
+import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { Workspace } from '../../../models/WorkspaceModel'

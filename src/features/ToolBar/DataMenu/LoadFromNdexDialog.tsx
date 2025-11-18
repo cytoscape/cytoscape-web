@@ -21,20 +21,20 @@ import DialogTitle from '@mui/material/DialogTitle'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
-import { ReactElement, useContext, useEffect,useState } from 'react'
+import { ReactElement, useContext, useEffect, useState } from 'react'
 
 import {
   fetchMyNdexAccountNetworks,
   fetchNdexSummaries,
   searchNdexNetworks,
-} from '../../../api/ndex'
+} from '../../../data/external-api/ndex'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { logUi } from '../../../debug'
-import { useUrlNavigation } from '../../../hooks/navigation/useUrlNavigation'
-import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
-import { useMessageStore } from '../../../hooks/stores/MessageStore'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
+import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { KeycloakContext } from '../../../init/keycloak'
 import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'

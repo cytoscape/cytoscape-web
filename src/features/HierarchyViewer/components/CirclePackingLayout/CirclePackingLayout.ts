@@ -2,7 +2,7 @@ import { Core } from 'cytoscape'
 import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
 
-import { fetchGeneNamesFromIds } from '../../../../api/ndex'
+import { fetchGeneNamesFromIds } from '../../../../data/external-api/ndex'
 import { logUi } from '../../../../debug'
 import { IdType } from '../../../../models/IdType'
 import NetworkFn, { Network } from '../../../../models/NetworkModel'

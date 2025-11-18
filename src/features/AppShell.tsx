@@ -9,25 +9,28 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 
-import { fetchNdexSummaries } from '../api/ndex'
+import { fetchNdexSummaries } from '../data/external-api/ndex'
 import { AppConfigContext } from '../AppConfigContext'
 import {
   getUiStateFromDb,
   getWorkspaceFromDb,
   putNetworkSummaryToDb,
-} from '../db/'
+} from '../data/db/'
 import { logStartup } from '../debug'
-import { useCredentialStore } from '../hooks/stores/CredentialStore'
-import { useFilterStore } from '../hooks/stores/FilterStore'
-import { useMessageStore } from '../hooks/stores/MessageStore'
-import { useNetworkStore } from '../hooks/stores/NetworkStore'
-import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
-import { useTableStore } from '../hooks/stores/TableStore'
-import { DEFAULT_UI_STATE, useUiStateStore } from '../hooks/stores/UiStateStore'
-import { useViewModelStore } from '../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
-import { useLoadNetworkSummaries } from '../hooks/useLoadNetworkSummaries'
+import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
+import { useFilterStore } from '../data/hooks/stores/FilterStore'
+import { useMessageStore } from '../data/hooks/stores/MessageStore'
+import { useNetworkStore } from '../data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../data/hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../data/hooks/stores/TableStore'
+import {
+  DEFAULT_UI_STATE,
+  useUiStateStore,
+} from '../data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
+import { useLoadNetworkSummaries } from '../data/hooks/useLoadNetworkSummaries'
 import { fetchUrlCx } from '../models/CxModel/fetchUrlCxUtil'
 import {
   DisplayMode,
@@ -302,7 +305,6 @@ const AppShell = (): ReactElement => {
       initializeAppShell()
     }
   }, [])
-
 
   return (
     <Box

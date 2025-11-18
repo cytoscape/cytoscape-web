@@ -112,23 +112,23 @@ module.exports = {
       remotes: externalAppsConfig,
       exposes: {
         // Core data models exposed to other Apps
-        './CredentialStore': './src/hooks/stores/CredentialStore.ts',
-        './LayoutStore': './src/hooks/stores/LayoutStore.ts',
-        './MessageStore': './src/hooks/stores/MessageStore.ts',
-        './NetworkStore': './src/hooks/stores/NetworkStore.ts',
-        './NetworkSummaryStore': './src/hooks/stores/NetworkSummaryStore.ts',
-        './OpaqueAspectStore': './src/hooks/stores/OpaqueAspectStore.ts',
-        './RendererStore': './src/hooks/stores/RendererStore.ts',
-        './TableStore': './src/hooks/stores/TableStore.ts',
-        './UiStateStore': './src/hooks/stores/UiStateStore.ts',
-        './ViewModelStore': './src/hooks/stores/ViewModelStore.ts',
-        './VisualStyleStore': './src/hooks/stores/VisualStyleStore.ts',
-        './WorkspaceStore': './src/hooks/stores/WorkspaceStore.ts',
+        './CredentialStore': './src/data/hooks/stores/CredentialStore.ts',
+        './LayoutStore': './src/data/hooks/stores/LayoutStore.ts',
+        './MessageStore': './src/data/hooks/stores/MessageStore.ts',
+        './NetworkStore': './src/data/hooks/stores/NetworkStore.ts',
+        './NetworkSummaryStore': './src/data/hooks/stores/NetworkSummaryStore.ts',
+        './OpaqueAspectStore': './src/data/hooks/stores/OpaqueAspectStore.ts',
+        './RendererStore': './src/data/hooks/stores/RendererStore.ts',
+        './TableStore': './src/data/hooks/stores/TableStore.ts',
+        './UiStateStore': './src/data/hooks/stores/UiStateStore.ts',
+        './ViewModelStore': './src/data/hooks/stores/ViewModelStore.ts',
+        './VisualStyleStore': './src/data/hooks/stores/VisualStyleStore.ts',
+        './WorkspaceStore': './src/data/hooks/stores/WorkspaceStore.ts',
 
         // External Apps
-        './CreateNetwork': './src/externalapps/useCreateNetwork.tsx',
+        './CreateNetwork': './src/data/task/useCreateNetwork.tsx',
         './CreateNetworkFromCx2':
-          './src/externalapps/useCreateNetworkFromCx2.tsx',
+          './src/data/task/useCreateNetworkFromCx2.tsx',
       },
 
       shared: {

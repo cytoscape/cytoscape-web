@@ -1,17 +1,17 @@
 import { useCallback } from 'react'
 
 import { logApi, logStore } from '../../../debug'
-import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import {
   DEF_VIEW_TYPE,
   useViewModelStore,
-} from '../../../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+} from '../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'

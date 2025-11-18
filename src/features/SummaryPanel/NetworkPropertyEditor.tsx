@@ -1,7 +1,7 @@
 import '@mantine/tiptap/styles.css'
 
 import { MantineProvider } from '@mantine/core'
-import { Link,RichTextEditor } from '@mantine/tiptap'
+import { Link, RichTextEditor } from '@mantine/tiptap'
 import {
   Box,
   Button,
@@ -22,9 +22,9 @@ import StarterKit from '@tiptap/starter-kit'
 import isEqual from 'lodash/isEqual'
 import { ReactElement, useEffect, useState } from 'react'
 
-import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../hooks/stores/WorkspaceStore'
-import { useUndoStack } from '../../hooks/useUndoStack'
+import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
+import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { useUndoStack } from '../../data/hooks/useUndoStack'
 import { IdType } from '../../models'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { removePTags } from '../../utils/removePTags'

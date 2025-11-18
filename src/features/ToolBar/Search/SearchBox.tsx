@@ -3,10 +3,10 @@ import Fuse from 'fuse.js'
 import { useEffect, useRef, useState } from 'react'
 
 import { logUi } from '../../../debug'
-import { useFilterStore } from '../../../hooks/stores/FilterStore'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import {
   IndexedColumns,
   Indices,

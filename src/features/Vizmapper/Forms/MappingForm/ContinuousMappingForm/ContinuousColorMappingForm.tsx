@@ -35,7 +35,7 @@ import RdGy from '../../../../../assets/RdGy.png'
 import RdYlBu from '../../../../../assets/RdYlBu.png'
 import RdYlGn from '../../../../../assets/RdYlGn.png'
 import Spectral from '../../../../../assets/Spectral.png'
-import { useVisualStyleStore } from '../../../../../hooks/stores/VisualStyleStore'
+import { useVisualStyleStore } from '../../../../../data/hooks/stores/VisualStyleStore'
 import { IdType } from '../../../../../models/IdType'
 import {
   VisualProperty,

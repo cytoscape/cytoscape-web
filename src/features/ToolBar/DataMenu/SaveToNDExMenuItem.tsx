@@ -11,22 +11,28 @@ import {
 } from '@mui/material'
 import { ReactElement, useContext, useEffect, useState } from 'react'
 
-import { fetchNdexSummaries,hasNdexEditPermission } from '../../../api/ndex'
-import { TimeOutErrorIndicator,TimeOutErrorMessage } from '../../../api/ndex'
+import {
+  fetchNdexSummaries,
+  hasNdexEditPermission,
+} from '../../../data/external-api/ndex'
+import {
+  TimeOutErrorIndicator,
+  TimeOutErrorMessage,
+} from '../../../data/external-api/ndex'
 import { AppConfigContext } from '../../../AppConfigContext'
 import { logUi } from '../../../debug'
-import { useCredentialStore } from '../../../hooks/stores/CredentialStore'
-import { useMessageStore } from '../../../hooks/stores/MessageStore'
-import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
-import { useNetworkSummaryStore } from '../../../hooks/stores/NetworkSummaryStore'
-import { useOpaqueAspectStore } from '../../../hooks/stores/OpaqueAspectStore'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { useSaveCyNetworkCopyToNDEx } from '../../../hooks/useSaveCyNetworkCopyToNDEx'
-import { useSaveCyNetworkToNDEx } from '../../../hooks/useSaveCyNetworkToNDEx'
+import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useSaveCyNetworkCopyToNDEx } from '../../../data/hooks/useSaveCyNetworkCopyToNDEx'
+import { useSaveCyNetworkToNDEx } from '../../../data/hooks/useSaveCyNetworkToNDEx'
 import { KeycloakContext } from '../../../init/keycloak'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { Network } from '../../../models/NetworkModel'

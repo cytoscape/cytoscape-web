@@ -12,11 +12,11 @@ import {
 } from '@mui/material'
 import { useEffect, useState } from 'react'
 
-import { fetchMyNdexWorkspaces } from '../../../api/ndex'
+import { fetchMyNdexWorkspaces } from '../../../data/external-api/ndex'
 import { logUi } from '../../../debug'
-import { useMessageStore } from '../../../hooks/stores/MessageStore'
-import { useSaveWorkspace } from '../../../hooks/useSaveWorkspaceToNDEx'
-import { useWorkspaceData } from '../../../hooks/useWorkspaceData'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { useSaveWorkspace } from '../../../data/hooks/useSaveWorkspaceToNDEx'
+import { useWorkspaceData } from '../../../data/hooks/useWorkspaceData'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 

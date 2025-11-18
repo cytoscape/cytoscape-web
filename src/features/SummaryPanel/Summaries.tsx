@@ -1,6 +1,6 @@
 import { ReactElement } from 'react'
 
-import { useNetworkSummaryStore } from '../../hooks/stores/NetworkSummaryStore'
+import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { MessagePanel } from '../Messages'
 import { NetworkPropertyPanel } from './NetworkPropertyPanel'

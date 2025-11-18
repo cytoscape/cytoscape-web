@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
 import { Tooltip } from '@mui/material'
 
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 

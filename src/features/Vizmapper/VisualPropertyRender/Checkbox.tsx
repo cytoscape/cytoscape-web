@@ -1,8 +1,8 @@
 import { Checkbox, FormControlLabel } from '@mui/material'
 import React from 'react'
 
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 
 export const LockSizeCheckbox = (props: { currentNetworkId: IdType }) => {

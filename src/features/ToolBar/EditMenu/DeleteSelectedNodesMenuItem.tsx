@@ -2,12 +2,12 @@ import { MenuItem } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { target } from '../../../../webpack.config'
-import { useNetworkStore } from '../../../hooks/stores/NetworkStore'
-import { useTableStore } from '../../../hooks/stores/TableStore'
-import { useUiStateStore } from '../../../hooks/stores/UiStateStore'
-import { useViewModelStore } from '../../../hooks/stores/ViewModelStore'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
-import { useUndoStack } from '../../../hooks/useUndoStack'
+import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useUndoStack } from '../../../data/hooks/useUndoStack'
 import {
   Edge,
   EdgeView,

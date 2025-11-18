@@ -12,10 +12,10 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { lazy, ReactElement, Suspense,useRef, useState } from 'react'
+import { lazy, ReactElement, Suspense, useRef, useState } from 'react'
 
-import { useNetworkSummaryStore } from '../../../../hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../../../hooks/stores/WorkspaceStore'
+import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
+import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { BaseMenuProps } from '../../BaseMenuProps'
 
 // Lazy load export forms - only load when user opens export dialog

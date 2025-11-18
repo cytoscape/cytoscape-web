@@ -1,6 +1,6 @@
 import { ComponentType, LazyExoticComponent, Suspense } from 'react'
 
-import { useAppStore } from '../../../hooks/stores/AppStore'
+import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import {
   ComponentType as AppComponentType,
   CyApp,

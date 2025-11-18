@@ -1,7 +1,7 @@
-import { Box,SxProps } from '@mui/material'
+import { Box, SxProps } from '@mui/material'
 
-import { useVisualStyleStore } from '../../../hooks/stores/VisualStyleStore'
-import { useUndoStack } from '../../../hooks/useUndoStack'
+import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { useUndoStack } from '../../../data/hooks/useUndoStack'
 import { IdType } from '../../../models/IdType'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import {

@@ -7,7 +7,7 @@ import {
   getTimestampFromDb,
   getWorkspaceFromDb,
   putTimestampToDb,
-} from '../db'
+} from '../data/db'
 import { logUi } from '../debug'
 
 const markForPageReload = debounce(() => {

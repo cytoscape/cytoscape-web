@@ -4,7 +4,7 @@ import { ReactElement, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { logUi } from '../../../debug'
-import { useWorkspaceStore } from '../../../hooks/stores/WorkspaceStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { BaseMenuProps } from '../BaseMenuProps'
 
