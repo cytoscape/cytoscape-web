@@ -2,6 +2,12 @@
 
 This directory contains comprehensive Playwright end-to-end tests for Cytoscape Web, generated from the test plan in `comprehensive-test-plan.md`.
 
+## Generating and designing tests
+
+- playwright prompts rae in docs/prompts
+- use docs/prompts/playwright-test-planner, docs/props/playwright-test-generator to plan and generate the tests
+- use docs/prompts/playwright-test-healer to fix the tests
+
 ## Component Testability: Using `data-id` Attributes
 
 To make components in `src/` easier to select and interact with in Playwright tests, UI elements are consistently annotated with `data-id` attributes. This approach allows tests to reliably locate elements regardless of DOM structure or styling changes.
