@@ -7,22 +7,24 @@ export const SearchExamplesTooltip = (): JSX.Element => {
         Search Examples:
       </Typography>
       <Typography variant="body2" sx={{ mb: 0.5 }}>
-        • <strong>protein</strong> - Find items containing "protein"
+        • <strong>protein</strong> - Search for "protein"
       </Typography>
       <Typography variant="body2" sx={{ mb: 0.5 }}>
-        • <strong>"gene name"</strong> - Exact phrase match
+        • <strong>YL protein</strong> - Spaces create separate tokens: "YL" and
+        "protein"
       </Typography>
       <Typography variant="body2" sx={{ mb: 0.5 }}>
-        • <strong>protein, YL</strong> - Find items with "protein" OR "YL"
+        • <strong>protein, YL</strong> - Commas create separate tokens:
+        "protein" and "YL"
       </Typography>
       <Typography variant="body2" sx={{ mb: 0.5 }}>
-        • <strong>"cell cycle", protein</strong> - Find items with exact phrase "cell cycle" OR "protein"
+        • <strong>"gene name"</strong> - Quotes prevent tokenization (treats
+        phrase as single token)
       </Typography>
-      <Typography variant="body2">
-        • Use quotes for multi-word exact matches
+      <Typography variant="body2" sx={{ mb: 0.5 }}>
+        • <strong>"cell cycle", protein</strong> - Multiple tokens with a
+        multi-word phrase
       </Typography>
     </Box>
   )
 }
-
-

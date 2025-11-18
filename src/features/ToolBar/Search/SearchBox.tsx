@@ -183,7 +183,7 @@ export const SearchBox = (): JSX.Element => {
   return (
     <Tooltip
       title={<SearchExamplesTooltip />}
-      placement="bottom-start"
+      placement="left"
       arrow
       enterDelay={500}
       leaveDelay={200}
