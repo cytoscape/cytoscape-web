@@ -51,6 +51,7 @@ import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useRendererFunctionStore } from '../../../data/hooks/stores/RendererFunctionStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
@@ -228,6 +229,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
     networkId: IdType,
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
+
+  const getFunction = useRendererFunctionStore((state) => state.getFunction)
 
   // Functions to select networks to merge or undo the selection
   const handleSelectAvailable = (uuid: string) => {
@@ -551,21 +554,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         newNetworkWithView.edgeTable,
       )
       setViewModel(newNetworkId, newNetworkWithView.networkViews[0])
-      const newSummary = { ...networkSummary, hasLayout: true }
+      const newSummary = { ...networkSummary, hasLayout: false }
       await putNetworkSummaryToDb(newSummary)
       addSummaries({ [newNetworkId]: newSummary })
       // Apply layout to the network
-      setIsRunning(true)
-      engine.apply(
-        newNetworkWithView.network.nodes,
-        newNetworkWithView.network.edges,
-        (positionMap) => {
-          updateNodePositions(newNetworkId, positionMap)
-          updateSummary(newNetworkId, newSummary)
-          setIsRunning(false)
-        },
-        defaultLayout,
-      )
       setCurrentNetworkId(newNetworkId)
       navigateToNetwork({
         workspaceId: workspace.id,
