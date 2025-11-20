@@ -1,27 +1,28 @@
+import { ContentCopy, Preview } from '@mui/icons-material'
 import {
-  MenuItem,
+  Box,
+  Button,
+  ButtonGroup,
   Dialog,
-  DialogTitle,
+  DialogActions,
   DialogContent,
+  DialogTitle,
   FormControl,
+  IconButton,
   InputLabel,
+  MenuItem,
   Select,
   TextField,
-  DialogActions,
-  Button,
   Tooltip,
-  Box,
-  ButtonGroup,
-  IconButton,
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
-import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
-import { LLMModel, models } from '../model/LLMModel'
-import { useLLMQueryStore } from '../store'
-import { LLMTemplate, templates } from '../model/LLMTemplate'
-import { ContentCopy, Preview } from '@mui/icons-material'
-import { useMessageStore } from '../../../store/MessageStore'
+
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
+import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
+import { LLMModel, models } from '../model/LLMModel'
+import { LLMTemplate, templates } from '../model/LLMTemplate'
+import { useLLMQueryStore } from '../store'
 
 export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
   const [showTemplatePreview, setShowTemplatePreview] = useState(false)
@@ -42,7 +43,11 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
   const disabled = loading
 
   const menuItem = (
-    <MenuItem disabled={disabled} onClick={() => setShowDialog(true)}>
+    <MenuItem
+      data-testid="llm-query-options-menu-item"
+      disabled={disabled}
+      onClick={() => setShowDialog(true)}
+    >
       LLM Query Options
     </MenuItem>
   )
@@ -65,6 +70,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const dialog = (
     <Dialog
+      data-testid="llm-query-options-dialog"
       onKeyDown={(e) => {
         e.stopPropagation()
       }}
@@ -81,6 +87,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
         <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
           <InputLabel>LLM Model</InputLabel>
           <Select
+            data-testid="llm-query-options-model-select"
             size="small"
             value={localLLMModel}
             label="LLM Model"
@@ -97,6 +104,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
         </FormControl>
         <Tooltip title="You need to add an API key generated in your PAID account">
           <TextField
+            data-testid="llm-query-options-api-key-input"
             size="small"
             value={localLLMApiKey}
             fullWidth
@@ -109,6 +117,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
           <FormControl fullWidth>
             <InputLabel>Prompt</InputLabel>
             <Select
+              data-testid="llm-query-options-template-select"
               size="small"
               value={localLLMTemplate.name}
               label="Prompt"
@@ -133,6 +142,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
           <ButtonGroup size="small" variant="contained" sx={{ ml: 1 }}>
             <Tooltip title="Preview selected prompt">
               <IconButton
+                data-testid="llm-query-options-preview-button"
                 sx={{
                   color: showTemplatePreview ? 'primary.main' : 'inherit',
                 }}
@@ -145,7 +155,11 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
               </IconButton>
             </Tooltip>
             <Tooltip title="Copy selected prompt text">
-              <IconButton aria-label="copy" onClick={handleCopyTemplateClick}>
+              <IconButton
+                data-testid="llm-query-options-copy-button"
+                aria-label="copy"
+                onClick={handleCopyTemplateClick}
+              >
                 <ContentCopy />
               </IconButton>
             </Tooltip>
@@ -164,10 +178,15 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button color="primary" onClick={props.handleClose}>
+        <Button
+          data-testid="llm-query-options-cancel-button"
+          color="primary"
+          onClick={props.handleClose}
+        >
           Cancel
         </Button>
         <Button
+          data-testid="llm-query-options-confirm-button"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

@@ -1,6 +1,6 @@
-import { SelectedDataType } from './SelectedDataType'
 import { SelectedDataScope } from '../AppModel/SelectedDataScope'
 import { ValueTypeName } from '../TableModel'
+import { SelectedDataType } from './SelectedDataType'
 
 export interface ServiceInputDefinition {
   type: SelectedDataType

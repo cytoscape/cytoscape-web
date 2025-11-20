@@ -1,0 +1,22 @@
+import { act, renderHook } from '@testing-library/react'
+
+import { Message, MessageSeverity } from '../../../models/MessageModel'
+import { useMessageStore } from './MessageStore'
+
+describe('useMessageStore', () => {
+  it('should add a message to the store', () => {
+    const message: Message = {
+      message: 'Hello world',
+      duration: 5000,
+      severity: MessageSeverity.INFO,
+    }
+
+    const { result } = renderHook(() => useMessageStore())
+
+    act(() => {
+      result.current.addMessage(message)
+    })
+
+    expect(result.current.messages).toEqual([message])
+  })
+})

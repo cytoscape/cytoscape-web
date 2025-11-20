@@ -1,14 +1,15 @@
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import '@mantine/dropzone/styles.css'
+
 import { Dialog, MantineProvider, Modal } from '@mantine/core'
 import { MenuItem } from '@mui/material'
-import { ReactElement, useState, useEffect } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 
-import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
-import { JoinTableToNetworkForm } from './JoinTableToNetworkForm'
-import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
+import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
+import { JoinTableToNetworkForm } from './JoinTableToNetworkForm'
 
 export const JoinTableToNetworkMenuItem = (
   props: BaseMenuProps,

@@ -1,33 +1,35 @@
 import {
-  List,
-  Stack,
-  Center,
   Button,
-  Title,
+  Center,
+  Container,
   Group,
-  Text,
+  List,
   rem,
   Space,
-  Container,
+  Stack,
+  Text,
+  Title,
 } from '@mantine/core'
+import { Dropzone } from '@mantine/dropzone'
+import { modals } from '@mantine/modals'
+import { notifications } from '@mantine/notifications'
 import { Box } from '@mui/material'
 import { IconUpload, IconX } from '@tabler/icons-react'
-import { Dropzone } from '@mantine/dropzone'
-import { notifications } from '@mantine/notifications'
 import Papa from 'papaparse'
-import { modals } from '@mantine/modals'
-import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
-import {
-  useJoinTableToNetworkStore,
-  JoinTableToNetworkStep,
-} from '../../store/joinTableToNetworkStore'
-import { useMessageStore } from '../../../../store/MessageStore'
+
+import { useMessageStore } from '../../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../../models/MessageModel'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
+import {
+  JoinTableToNetworkStep,
+  useJoinTableToNetworkStore,
+} from '../../store/joinTableToNetworkStore'
 
 export function TableUpload(props: BaseMenuProps) {
   const setFile = useJoinTableToNetworkStore((state) => state.setFile)
   const goToStep = useJoinTableToNetworkStore((state) => state.goToStep)
   const setRawText = useJoinTableToNetworkStore((state) => state.setRawText)
+  const options = useJoinTableToNetworkStore((state) => state.options)
   const addMessage = useMessageStore((state) => state.addMessage)
 
   const onFileError = (files: any) => {
@@ -45,7 +47,16 @@ export function TableUpload(props: BaseMenuProps) {
       const text = reader.result as string
 
       // Parse CSV here using PapaParse
-      const result = Papa.parse(text)
+      // Determine delimiter: if a custom delimiter is set (and not comma), use it;
+      // otherwise pass undefined to let Papa.parse auto-detect the delimiter
+      const delimiterFromOptions = options.delimiter
+      const isDefaultDelimiter =
+        !delimiterFromOptions || delimiterFromOptions === ','
+      const delimiter = isDefaultDelimiter ? undefined : delimiterFromOptions
+
+      const result = Papa.parse(text, {
+        delimiter,
+      })
 
       const onFileValid = () => {
         setFile(file)
@@ -86,6 +97,7 @@ export function TableUpload(props: BaseMenuProps) {
     // <Box sx={{ height: 500 }}>
     <>
       <Dropzone
+        data-testid="join-table-upload-dropzone"
         onDrop={(files: any) => {
           onFileDrop(files[0])
         }}
@@ -126,7 +138,9 @@ export function TableUpload(props: BaseMenuProps) {
           </Dropzone.Reject>
 
           <Stack align="center">
-            <Button>Browse</Button>
+            <Button data-testid="join-table-upload-browse-button">
+              Browse
+            </Button>
             <Text size="xl" inline>
               Or drag a tabular file here
             </Text>

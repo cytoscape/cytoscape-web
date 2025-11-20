@@ -1,28 +1,32 @@
+import 'primereact/resources/themes/md-light-indigo/theme.css'
+
 import {
-  Center,
-  Button,
-  Title,
-  Text,
-  Space,
+  Alert,
   Box,
-  Popover,
+  Button,
+  Center,
   Divider,
   Group,
-  Tooltip,
-  Alert,
-  Switch,
-  NumberInput,
-  Select,
-  TextInput,
-  Radio,
   Group as MantineGroup,
+  NumberInput,
+  Popover,
+  Radio,
+  Select,
+  Space,
+  Switch,
+  Text,
+  TextInput,
+  Title,
+  Tooltip,
 } from '@mantine/core'
-
+import {
+  IconAlertCircle,
+  IconInfoCircle,
+  IconSettings,
+} from '@tabler/icons-react'
 import Papa from 'papaparse'
-
-import 'primereact/resources/themes/md-light-indigo/theme.css'
-import { DataTable, DataTableValue } from 'primereact/datatable'
 import { Column } from 'primereact/column'
+import { DataTable, DataTableValue } from 'primereact/datatable'
 import {
   useCallback,
   useContext,
@@ -32,28 +36,35 @@ import {
   useState,
 } from 'react'
 
-import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
-import {
-  ColumnAssignmentTypeForm,
-  ColumnAssignmentTypeRender,
-} from './ColumnMeaningForm'
-import {
-  IconAlertCircle,
-  IconInfoCircle,
-  IconSettings,
-} from '@tabler/icons-react'
+import { AppConfigContext } from '../../../../AppConfigContext'
+import { putNetworkSummaryToDb } from '../../../../data/db'
+import { useUrlNavigation } from '../../../../data/hooks/navigation/useUrlNavigation'
+import { useNetworkStore } from '../../../../data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { ValueTypeName } from '../../../../models/TableModel'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { ColumnAssignmentState } from '../../model/ColumnAssignmentState'
 import { ColumnAssignmentType } from '../../model/ColumnAssignmentType'
 import { DelimiterType } from '../../model/DelimiterType'
 import {
-  validValueTypes,
-  updateColumnAssignment,
-  validColumnAssignmentTypes,
-  updateColumnType,
+  convertFileDelimiterToEffective,
+  convertFileDelimiterToStorageValue,
+} from '../../model/impl/DelimiterUtils'
+import {
   createNetworkFromTableData,
-  unselectAllColumns,
+  DEFAULT_COLUMN_DATA_TYPE,
+  DEFAULT_COLUMN_MEANING,
   selectAllColumns,
+  unselectAllColumns,
+  updateColumnAssignment,
+  updateColumnType,
+  validColumnAssignmentTypes,
+  validValueTypes,
   valueTypeName2Label,
 } from '../../model/impl/CreateNetworkFromTable'
 import {
@@ -64,18 +75,12 @@ import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../../store/createNetworkFromTableStore'
-import { putNetworkSummaryToDb } from '../../../../store/persist/db'
-import { useNetworkStore } from '../../../../store/NetworkStore'
-import { useTableStore } from '../../../../store/TableStore'
-import { useViewModelStore } from '../../../../store/ViewModelStore'
-import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
-import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
-import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
-import { AppConfigContext } from '../../../../AppConfigContext'
+import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
+import {
+  ColumnAssignmentTypeForm,
+  ColumnAssignmentTypeRender,
+} from './ColumnMeaningForm'
 import { NetworkNameInput } from './NetworkNameInput'
-import { useUiStateStore } from '../../../../store/UiStateStore'
-import { useNetworkSummaryStore } from '../../../../store/NetworkSummaryStore'
-import { useUrlNavigation } from '../../../../store/hooks/useUrlNavigation/useUrlNavigation'
 
 export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
@@ -83,6 +88,8 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
   const reset = useCreateNetworkFromTableStore((state) => state.reset)
   const name = useCreateNetworkFromTableStore((state) => state.name)
+  const options = useCreateNetworkFromTableStore((state) => state.options)
+  const setOptions = useCreateNetworkFromTableStore((state) => state.setOptions)
   const addSummary = useNetworkSummaryStore((state) => state.add)
   const [loading, setLoading] = useState(false)
   const { navigateToNetwork } = useUrlNavigation()
@@ -105,10 +112,25 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
       ? customDecimalDelimiter
       : decimalDelimiter
 
+  // File delimiter state
+  const [fileDelimiter, setFileDelimiter] = useState<string>(() => {
+    const delim = options.delimiter
+    if (!delim || delim === ',') return 'auto'
+    if (delim === '\t') return 'tab'
+    if (delim === ' ') return 'space'
+    return delim
+  })
+  const [customFileDelimiter, setCustomFileDelimiter] = useState<string>('')
+  const effectiveFileDelimiter = convertFileDelimiterToEffective(
+    fileDelimiter,
+    customFileDelimiter,
+  )
+
   const [rows, setRows] = useState<DataTableValue[]>(() => {
     const result = Papa.parse(text, {
       header: useFirstRowAsColumns,
       skipEmptyLines: true,
+      delimiter: effectiveFileDelimiter,
     })
     let headers: string[] = []
     headers = result.meta.fields as string[]
@@ -134,6 +156,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     const result = Papa.parse(text, {
       header: useFirstRowAsColumns,
       skipEmptyLines: true,
+      delimiter: effectiveFileDelimiter,
     })
     let headers: string[] = []
     headers = result.meta.fields as string[]
@@ -171,46 +194,61 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
     const result = Papa.parse(text, {
       header: useFirstRowAsColumns,
       skipEmptyLines: true,
+      delimiter: effectiveFileDelimiter,
     })
     const rows = result.data.slice(skipNLines + (useFirstRowAsColumns ? 0 : 1))
     let headers: string[]
     if (useFirstRowAsColumns) {
       headers = result.meta.fields as string[]
-      setRows(
-        (rows as DataTableValue[]).map((row) => {
-          if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
-            const newRow: Record<string, any> = {}
-            for (const key in row) {
-              if (
-                typeof row[key] === 'string' &&
-                row[key].includes(effectiveDecimalDelimiter)
-              ) {
-                newRow[key] = row[key].replace(effectiveDecimalDelimiter, '.')
-              } else {
-                newRow[key] = row[key]
-              }
+      const transformedRows = (rows as DataTableValue[]).map((row) => {
+        if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
+          const newRow: Record<string, any> = {}
+          for (const key in row) {
+            if (
+              typeof row[key] === 'string' &&
+              row[key].includes(effectiveDecimalDelimiter)
+            ) {
+              newRow[key] = row[key].replace(effectiveDecimalDelimiter, '.')
+            } else {
+              newRow[key] = row[key]
             }
-            return newRow
           }
-          return row
-        }),
-      )
+          return newRow
+        }
+        return row
+      })
+      setRows(transformedRows)
+
       const nextColumns = headers.map((c, i) => {
+        const existingColumn = columns[i] ?? {}
         return {
-          ...(columns[i] ?? {}),
+          ...existingColumn,
           name: headers[i],
+          dataType: existingColumn.dataType ?? DEFAULT_COLUMN_DATA_TYPE,
+          meaning: existingColumn.meaning ?? DEFAULT_COLUMN_MEANING,
+          invalidValues: existingColumn.invalidValues ?? [],
         }
       })
 
-      setColumns(nextColumns)
+      // Validate columns after updating to populate invalidValues
+      const validatedColumns = nextColumns.map((col) => ({
+        ...col,
+        invalidValues: validateColumnValues(col, transformedRows),
+      }))
+
+      setColumns(validatedColumns)
     } else {
       headers = Object.keys(result.data[0] as { [s: string]: string }).map(
         (h, i) => `Column ${i + 1}`,
       )
       const nextColumns = headers.map((c, i) => {
+        const existingColumn = columns[i] ?? {}
         return {
-          ...(columns[i] ?? {}),
+          ...existingColumn,
           name: headers[i],
+          dataType: existingColumn.dataType ?? DEFAULT_COLUMN_DATA_TYPE,
+          meaning: existingColumn.meaning ?? DEFAULT_COLUMN_MEANING,
+          invalidValues: existingColumn.invalidValues ?? [],
         }
       })
 
@@ -243,13 +281,32 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           return row
         }),
       )
+
+      // Validate columns after rows are updated
+      const validatedColumns = nextColumns.map((col) => ({
+        ...col,
+        invalidValues: validateColumnValues(col, nextRows),
+      }))
+
+      setColumns(validatedColumns)
     }
   }, [
     skipNLines,
     useFirstRowAsColumns,
     decimalDelimiter,
     customDecimalDelimiter,
+    effectiveFileDelimiter,
+    text,
   ])
+
+  // Update store when delimiter changes
+  useEffect(() => {
+    const delimiterValue = convertFileDelimiterToStorageValue(
+      fileDelimiter,
+      customFileDelimiter,
+    )
+    setOptions({ delimiter: delimiterValue })
+  }, [fileDelimiter, customFileDelimiter, setOptions])
 
   const onColumnAssignmentTypeChange = (
     index: number,
@@ -384,7 +441,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
               body={(value, opts) => {
                 const { rowIndex } = opts
                 const valueIsInvalid =
-                  columns[i].invalidValues.includes(rowIndex)
+                  columns[i].invalidValues?.includes(rowIndex) ?? false
                 return (
                   <Text size="xs" c={valueIsInvalid ? 'red' : '#a39c9c'}>
                     {value[h.name]}
@@ -467,6 +524,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
         <NetworkNameInput />
         <Group>
           <Button
+            data-testid="table-column-assignment-select-all-button"
             size="compact-xs"
             variant="default"
             disabled={columns.every(
@@ -478,6 +536,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           </Button>
 
           <Button
+            data-testid="table-column-assignment-select-none-button"
             size="compact-xs"
             variant="default"
             disabled={columns.every(
@@ -520,11 +579,60 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
           shadow="lg"
         >
           <Popover.Target>
-            <Button variant="default" leftSection={<IconSettings />}>
+            <Button
+              data-testid="table-column-assignment-advanced-settings-button"
+              variant="default"
+              leftSection={<IconSettings />}
+            >
               Advanced Settings
             </Button>
           </Popover.Target>
           <Popover.Dropdown>
+            <Box mb="md">
+              <Text fw={500} size="sm" mb={4}>
+                File Delimiter
+              </Text>
+              <Radio.Group
+                value={fileDelimiter}
+                onChange={(value) => {
+                  setFileDelimiter(value)
+                  if (value !== 'custom') {
+                    setCustomFileDelimiter('')
+                  }
+                }}
+                size="sm"
+              >
+                <MantineGroup gap="xs">
+                  <Radio value="auto" label="Auto-detect" />
+                  <Radio value="," label="Comma (,)" />
+                  <Radio value=";" label="Semicolon (;)" />
+                  <Radio value="|" label="Pipe (|)" />
+                  <Radio value="tab" label="Tab" />
+                  <Radio value="space" label="Space" />
+                  <Radio value="custom" label="Custom" />
+                </MantineGroup>
+              </Radio.Group>
+              {fileDelimiter === 'custom' && (
+                <TextInput
+                  label="Custom File Delimiter"
+                  value={customFileDelimiter}
+                  onChange={(event) => {
+                    const val = event.currentTarget.value
+                    if (val.length <= 1) setCustomFileDelimiter(val)
+                  }}
+                  placeholder="Enter a single character"
+                  size="sm"
+                  mt="xs"
+                  error={
+                    fileDelimiter === 'custom' &&
+                    customFileDelimiter.length !== 1
+                      ? 'Please enter a single character.'
+                      : undefined
+                  }
+                />
+              )}
+            </Box>
+            <Divider my="sm" />
             <Box mb="md">
               <Text fw={500} size="sm" mb={4}>
                 Decimal Delimiter
@@ -586,6 +694,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
         </Popover>
         <Group justify="space-between" gap="lg">
           <Button
+            data-testid="table-column-assignment-cancel-button"
             disabled={loading}
             variant="default"
             color="primary"
@@ -599,6 +708,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
             label="All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
           >
             <Button
+              data-testid="table-column-assignment-confirm-button"
               styles={(theme) => ({
                 root: {
                   color: '#FFFFFF',

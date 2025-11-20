@@ -1,0 +1,11 @@
+column1 column2 column3 column4
+Alice 22.14 Charlie Diana
+New York 36.92 Paris Tokyo
+Alice 1.65 Charlie Diana
+New York 84.89 Paris Tokyo
+Alice 12.9 Charlie Diana
+New York 55.58 Paris Tokyo
+Alice 100.17 Charlie Diana
+New York 8.07 Paris Tokyo
+Alice 66.04 Charlie Diana
+New York 52.59 Paris Tokyo

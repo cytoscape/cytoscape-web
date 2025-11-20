@@ -1,40 +1,40 @@
 import { Box, Typography } from '@mui/material'
-import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
-import { FloatingToolBar } from '../../../components/FloatingToolBar'
-import { MessagePanel } from '../../../components/Messages'
-import { CyjsRenderer } from '../../../components/NetworkPanel/CyjsRenderer'
-import { IdType } from '../../../models/IdType'
-import { Network } from '../../../models/NetworkModel'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { ndexQueryFetcher } from '../store/ndexQueryFetcher'
-import { useViewModelStore } from '../../../store/ViewModelStore'
-import { Query } from './MainPanel'
-import { useNetworkStore } from '../../../store/NetworkStore'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { useUiStateStore } from '../../../store/UiStateStore'
-import { VisualStyle } from '../../../models/VisualStyleModel'
-import { NetworkView } from '../../../models/ViewModel'
-import { useTableStore } from '../../../store/TableStore'
-import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
-import { useLayoutStore } from '../../../store/LayoutStore'
-import { useCredentialStore } from '../../../store/CredentialStore'
-import { useSubNetworkStore } from '../store/SubNetworkStore'
-
 import { useQuery } from '@tanstack/react-query'
-import { Table, ValueType } from '../../../models/TableModel'
-import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
-import { useFilterStore } from '../../../store/FilterStore'
-import { FilterConfig } from '../../../models/FilterModel'
-import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
-import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
-import { createFilterFromAspect } from '../utils/filter-asprct-util'
-import { CirclePackingType } from './CustomLayout/CirclePackingLayout'
-import { CirclePackingView } from '../model/CirclePackingView'
-import { applyCpLayout } from '../utils/hierarchy-util'
-import { DefaultRenderer } from '../../../store/DefaultRenderer'
-import { useUndoStore } from '../../../store/UndoStore'
+import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
+
+import { AppConfigContext } from '../../../AppConfigContext'
 import { logApi, logUi } from '../../../debug'
+import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
+import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
+import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
+import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
+import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
+import { FilterConfig } from '../../../models/FilterModel'
+import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+import { IdType } from '../../../models/IdType'
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { Network } from '../../../models/NetworkModel'
+import { Table, ValueType } from '../../../models/TableModel'
+import { NetworkView } from '../../../models/ViewModel'
+import { VisualStyle } from '../../../models/VisualStyleModel'
 import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import { DefaultRenderer } from '../../DefaultRenderer'
+import { FloatingToolBar } from '../../FloatingToolBar'
+import { MessagePanel } from '../../Messages'
+import { CyjsRenderer } from '../../NetworkPanel/CyjsRenderer'
+import { CirclePackingView } from '../model/CirclePackingView'
+import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
+import { useSubNetworkStore } from '../store/SubNetworkStore'
+import { createFilterFromAspect } from '../utils/getFilterAspect'
+import { applyCpLayout } from '../utils/hierarchyUtil'
+import { fetchNdexSubnetworkByQuery } from '../utils/subnetworkQueryUtil'
+import { CirclePackingType } from './CirclePackingLayout/CirclePackingLayout'
+import { Query } from './MainPanel'
 
 interface SubNetworkPanelProps {
   // Hierarchy ID
@@ -281,7 +281,7 @@ export const SubNetworkPanel = ({
     queryFn: async ({ queryKey }) => {
       const token = await getToken()
       const keys = queryKey as string[]
-      const data = await ndexQueryFetcher([...keys, token])
+      const data = await fetchNdexSubnetworkByQuery([...keys, token])
       return data
     },
     refetchOnReconnect: 'always',
@@ -681,6 +681,7 @@ export const SubNetworkPanel = ({
 
   return (
     <Box
+      data-testid="subnetwork-panel"
       sx={{
         boxSizing: 'border-box',
         height: '100%',

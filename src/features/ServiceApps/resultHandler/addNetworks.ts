@@ -1,35 +1,34 @@
 import { useCallback } from 'react'
-import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { IdType } from '../../../models/IdType'
-import { useNetworkStore } from '../../../store/NetworkStore'
-import { putNetworkSummaryToDb } from '../../../store/persist/db'
 import { v4 as uuidv4 } from 'uuid'
-import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
-import { ValueType, ValueTypeName } from '../../../models/TableModel'
-import {
-  NdexNetworkProperty,
-  Visibility,
-} from '../../../models/NetworkSummaryModel'
+
+import { putNetworkSummaryToDb } from '../../../data/db'
+import { logApp } from '../../../debug'
+import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
+import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { Cx2 } from '../../../models/CxModel/Cx2'
-import {
-  createDataFromLocalCx2,
-  isValidCx2Network,
-} from '../../../utils/cx-utils'
-import { useUiStateStore } from '../../../store/UiStateStore'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
-import { useTableStore } from '../../../store/TableStore'
-import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
-import { generateUniqueName } from '../../../utils/network-utils'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
+import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
+import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
-} from '../../../models/CxModel/cx2-util'
-import { logApp } from '../../../debug'
-import { useUrlNavigation } from '../../../store/hooks/useUrlNavigation/useUrlNavigation'
+} from '../../../models/CxModel/impl/extractor'
+import { validateCX2 } from '../../../models/CxModel/impl/validator'
+import { IdType } from '../../../models/IdType'
+import {
+  NetworkProperty,
+  Visibility,
+} from '../../../models/NetworkSummaryModel'
+import { ValueType, ValueTypeName } from '../../../models/TableModel'
+import { generateUniqueName } from '../../../utils/generateUniqueName'
+import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 export const useAddNetworks = (): (({
   responseObj,
@@ -63,9 +62,11 @@ export const useAddNetworks = (): (({
         return
       }
 
-      let validNetworkIds: IdType[] = []
+      const validNetworkIds: IdType[] = []
       for (const item of responseObj) {
-        if (isValidCx2Network(item)) {
+        // Validate CX2 data from service app before processing
+        const validationResult = validateCX2(item)
+        if (validationResult.isValid) {
           try {
             let localName = 'Untitled Network'
             let localDescription = ''
@@ -83,7 +84,7 @@ export const useAddNetworks = (): (({
               )
             localDescription = networkAttributes.description ?? localDescription
 
-            const localProperties: NdexNetworkProperty[] = Object.entries(
+            const localProperties: NetworkProperty[] = Object.entries(
               networkAttributes,
             ).map(([key, value]) => {
               return {
@@ -101,13 +102,13 @@ export const useAddNetworks = (): (({
             )
             const localUuid = uuidv4()
 
-            const res = await createDataFromLocalCx2(localUuid, item as Cx2)
+            const res = getCyNetworkFromCx2(localUuid, item as Cx2)
             const {
               network,
               nodeTable,
               edgeTable,
               visualStyle,
-              networkView,
+              networkViews,
               visualStyleOptions,
               otherAspects,
             } = res
@@ -149,7 +150,7 @@ export const useAddNetworks = (): (({
             addNewNetwork(network)
             setVisualStyle(localUuid, visualStyle)
             setTables(localUuid, nodeTable, edgeTable)
-            setViewModel(localUuid, networkView)
+            setViewModel(localUuid, networkViews[0])
             if (otherAspects !== undefined) {
               addAllOpaqueAspects(localUuid, otherAspects)
             }
@@ -158,7 +159,10 @@ export const useAddNetworks = (): (({
             logApp.error(`[${addNetworks.name}]: Error adding network:`, error)
           }
         } else {
-          logApp.warn(`[${addNetworks.name}]: Invalid Cx2Network item:`, item)
+          logApp.warn(
+            `[${addNetworks.name}]: Invalid Cx2Network item: ${validationResult.errorMessage ?? 'Unknown validation error'}`,
+            item,
+          )
         }
       }
       addNetworksToWorkspace(validNetworkIds)

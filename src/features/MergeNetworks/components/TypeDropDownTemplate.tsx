@@ -1,12 +1,13 @@
-import React from 'react'
 import { FormControl, MenuItem, Select, SelectChangeEvent } from '@mui/material'
-import { TableView } from '../models/DataInterfaceForMerge'
-import { getAllConvertiableTypes } from '../utils/attributes-operations'
-import { MatchingTableRow } from '../models/MatchingTable'
+import React from 'react'
+
 import { ValueTypeName } from '../../../models/TableModel'
-import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
+import { TableView } from '../models/DataInterfaceForMerge'
+import { MatchingTableRow } from '../models/MatchingTable'
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
 import useNetMatchingTableStore from '../store/netMatchingTableStore'
+import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
+import { getAllConvertiableTypes } from '../utils/attributesOperationsUtil'
 
 interface typeDropDownTemplateProps {
   type: TableView
@@ -46,6 +47,7 @@ export const TypeDropDownTemplate = React.memo(
     return (
       <FormControl id={`formcontrol-${rowData.id}-type`}>
         <Select
+          data-testid={`merge-type-dropdown-${rowData.id}`}
           labelId={`select-label-${rowData.id}-type`}
           value={rowData.type}
           onChange={(e) => onDropDownChange(e, rowData)}

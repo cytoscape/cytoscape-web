@@ -1,4 +1,3 @@
-import { Cx2 } from '../CxModel/Cx2'
 import { Network } from '../NetworkModel'
 import { Table } from '../TableModel'
 import { NetworkView } from '../ViewModel'
@@ -24,9 +23,6 @@ export interface NetworkViewSources {
 export interface VisualStyleFn {
   // Create the default VisualStyle
   createVisualStyle: () => VisualStyle
-
-  // Create a VisualStyle from a Cx2 object
-  createVisualStyleFromCx: (cx: Cx2) => VisualStyle
 
   /**
    * Compute the view model for the given network from the

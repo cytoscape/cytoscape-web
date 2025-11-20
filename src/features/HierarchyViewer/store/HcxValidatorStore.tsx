@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { HcxValidationResult } from '../model/HcxValidator'
+
 import { IdType } from '../../../models/IdType'
+import { HcxValidationResult } from '../model/HcxValidator'
 interface HcxValidationState {
   validationResults: Record<IdType, HcxValidationResult>
 }

@@ -1,5 +1,5 @@
 import { IdType } from '../IdType'
-import { Node, Edge } from '.'
+import { Edge,Node } from '.'
 
 /**
  * Minimal graph object interface

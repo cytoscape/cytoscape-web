@@ -6,6 +6,7 @@ import {
   IconPlayerPlay,
   IconTarget,
 } from '@tabler/icons-react'
+
 import { ColumnAssignmentType } from '../../model/ColumnAssignmentType'
 import { columnAssingmentType2Label } from '../../model/impl/CreateNetworkFromTable'
 

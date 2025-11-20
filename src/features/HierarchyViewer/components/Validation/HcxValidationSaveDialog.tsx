@@ -1,13 +1,14 @@
 import {
+  Button,
   Dialog,
-  DialogTitle,
+  DialogActions,
   DialogContent,
   DialogContentText,
+  DialogTitle,
   Typography,
-  DialogActions,
-  Button,
 } from '@mui/material'
 import { ReactElement } from 'react'
+
 import { HcxValidationResult } from '../../model/HcxValidator'
 
 export interface HcxValidationSaveDialogProps {
@@ -22,7 +23,7 @@ export const HcxValidationSaveDialog = (
 ): ReactElement => {
   const { open, onClose, onSubmit, validationResult } = props
   return (
-    <Dialog open={open}>
+    <Dialog open={open} data-testid="hcx-validation-save-dialog">
       <DialogTitle>Invalid HCX Network</DialogTitle>
       <DialogContent>
         <DialogContentText>
@@ -49,10 +50,15 @@ export const HcxValidationSaveDialog = (
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button color="primary" onClick={() => onClose()}>
+        <Button
+          data-testid="hcx-validation-save-dialog-cancel"
+          color="primary"
+          onClick={() => onClose()}
+        >
           Cancel
         </Button>
         <Button
+          data-testid="hcx-validation-save-dialog-submit"
           sx={{
             color: '#FFFFFF',
             backgroundColor: '#337ab7',

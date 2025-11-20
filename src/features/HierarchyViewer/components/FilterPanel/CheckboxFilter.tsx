@@ -1,27 +1,28 @@
-import Tooltip from '@mui/material/Tooltip'
-import { Table, ValueType } from '../../../../models/TableModel'
 import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
+import Tooltip from '@mui/material/Tooltip'
 import { useEffect, useState } from 'react'
-import { IdType } from '../../../../models/IdType'
-import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
-import { useViewModelStore } from '../../../../store/ViewModelStore'
-import { GraphObjectType } from '../../../../models/NetworkModel'
-import { NetworkView } from '../../../../models/ViewModel'
-import {
-  DiscreteMappingFunction,
-  VisualPropertyValueType,
-} from '../../../../models/VisualStyleModel'
-import { useFilterStore } from '../../../../store/FilterStore'
+import { useSearchParams } from 'react-router-dom'
+
+import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
+import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
 import {
   Filter,
   FilterConfig,
   getBasicFilter,
 } from '../../../../models/FilterModel'
-import { useSearchParams } from 'react-router-dom'
-import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
-import { useTheme } from '@mui/material/styles'
 import { DiscreteFilterDetails } from '../../../../models/FilterModel/DiscreteFilterDetails'
-import { getAllDiscreteValues } from '../../utils/filter-util'
+import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
+import { IdType } from '../../../../models/IdType'
+import { GraphObjectType } from '../../../../models/NetworkModel'
+import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
+import { Table, ValueType } from '../../../../models/TableModel'
+import { NetworkView } from '../../../../models/ViewModel'
+import {
+  DiscreteMappingFunction,
+  VisualPropertyValueType,
+} from '../../../../models/VisualStyleModel'
+import { getAllDiscreteValues } from '../../utils/filterUtil'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -199,6 +200,7 @@ export const CheckboxFilter = ({
           }}
           control={
             <Checkbox
+              data-testid="checkbox-filter-select-all"
               disabled={!enableFilter}
               checked={isAllSelected}
               indeterminate={
@@ -229,6 +231,7 @@ export const CheckboxFilter = ({
               key={option}
               control={
                 <Checkbox
+                  data-testid={`checkbox-filter-option-${option}`}
                   disabled={!enableFilter}
                   sx={checkboxStyle}
                   checked={currentSelectedOptions.values.includes(option)}

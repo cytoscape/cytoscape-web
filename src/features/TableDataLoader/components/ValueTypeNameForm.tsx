@@ -9,6 +9,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
+
 import { ValueTypeName } from '../../../models/TableModel'
 import { DelimiterType } from '../model/DelimiterType'
 import { valueTypeName2Label } from '../model/impl/CreateNetworkFromTable'
@@ -73,7 +74,7 @@ export function ValueTypeForm(props: ValueTypeFormProps) {
               width: 250,
             },
           }}
-          disabled={!value.startsWith('list_')}
+          disabled={!value?.startsWith('list_')}
           size="xs"
           value={props.delimiter ?? '|'}
           onChange={(e) => props.onChange(value, e as DelimiterType)}

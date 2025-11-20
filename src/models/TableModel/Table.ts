@@ -1,7 +1,7 @@
 import { IdType } from '../IdType'
 import { AttributeName } from './AttributeName'
-import { ValueType } from './ValueType'
 import { Column } from './Column'
+import { ValueType } from './ValueType'
 
 export interface Table {
   readonly id: IdType

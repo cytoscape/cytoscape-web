@@ -1,9 +1,9 @@
-import Keycloak from 'keycloak-js'
-import appConfig from '../assets/config.json'
-import { createContext } from 'react'
-
 // @ts-expect-error-next-line: The @js4cytoscape/ndex-client package does not provide TypeScript types, but runtime usage is known to work safely.
 import { NDEx } from '@js4cytoscape/ndex-client'
+import Keycloak from 'keycloak-js'
+import { createContext } from 'react'
+
+import appConfig from '../assets/config.json'
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
@@ -20,12 +20,16 @@ export const initializeKeycloak = () => {
     keycloak.logout({ redirectUri: window.location.origin + urlBaseName })
   }
 
-  // Function to parse the error message to get the user information
-  const parseMessage = (
-    message: string,
+  /**
+   * Parses the NDEx error message to extract user information
+   * @param errorMessage - The error message from NDEx API
+   * @returns User name and email if found, null otherwise
+   */
+  const parseUserInfoFromErrorMessage = (
+    errorMessage: string,
   ): { userName: string; userEmail: string } | null => {
-    const pattern = /NDEx user account ([\w.]+) <([\w.]+@[\w.]+)>/
-    const match = message.match(pattern)
+    const userInfoPattern = /NDEx user account ([\w.]+) <([\w.]+@[\w.]+)>/
+    const match = errorMessage.match(userInfoPattern)
 
     if (match) {
       const userName = match[1]
@@ -49,7 +53,9 @@ export const initializeKeycloak = () => {
         e.status === 401 &&
         e.response?.data?.errorCode === 'NDEx_User_Account_Not_Verified'
       ) {
-        const userInfo = parseMessage(e.response?.data?.message)
+        const userInfo = parseUserInfoFromErrorMessage(
+          e.response?.data?.message,
+        )
         return {
           isVerified: false,
           userName: userInfo?.userName,

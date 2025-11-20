@@ -1,0 +1,2138 @@
+{
+  "files": [
+    {
+      "path": "AppModel/AppComponent.ts",
+      "fileName": "AppComponent",
+      "imports": [
+        "./ComponentType"
+      ],
+      "exports": [
+        "AppComponent"
+      ],
+      "dependencies": [
+        "AppModel/ComponentType.ts"
+      ]
+    },
+    {
+      "path": "AppModel/AppStatus.ts",
+      "fileName": "AppStatus",
+      "imports": [],
+      "exports": [
+        "AppStatus"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "AppModel/AppType.ts",
+      "fileName": "AppType",
+      "imports": [],
+      "exports": [
+        "AppType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "AppModel/ColumnTypeFilter.ts",
+      "fileName": "ColumnTypeFilter",
+      "imports": [
+        "../CxModel/Cx2/CxTypeName"
+      ],
+      "exports": [
+        "ColumnTypeFilter"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/CxTypeName.ts"
+      ]
+    },
+    {
+      "path": "AppModel/ComponentMetadata.ts",
+      "fileName": "ComponentMetadata",
+      "imports": [
+        "./ComponentType"
+      ],
+      "exports": [
+        "ComponentMetadata"
+      ],
+      "dependencies": [
+        "AppModel/ComponentType.ts"
+      ]
+    },
+    {
+      "path": "AppModel/ComponentType.ts",
+      "fileName": "ComponentType",
+      "imports": [],
+      "exports": [
+        "ComponentType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "AppModel/CyApp.ts",
+      "fileName": "CyApp",
+      "imports": [
+        "./AppStatus",
+        "./ComponentMetadata"
+      ],
+      "exports": [
+        "CyApp"
+      ],
+      "dependencies": [
+        "AppModel/AppStatus.ts",
+        "AppModel/ComponentMetadata.ts"
+      ]
+    },
+    {
+      "path": "AppModel/CyWebMenuItem.ts",
+      "fileName": "CyWebMenuItem",
+      "imports": [
+        "./MenuPathElement",
+        "./RootMenu"
+      ],
+      "exports": [
+        "CyWebMenuItem"
+      ],
+      "dependencies": [
+        "AppModel/MenuPathElement.ts",
+        "AppModel/RootMenu.ts"
+      ]
+    },
+    {
+      "path": "AppModel/MenuPathElement.ts",
+      "fileName": "MenuPathElement",
+      "imports": [],
+      "exports": [
+        "MenuPathElement"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "AppModel/ParameterUiType.ts",
+      "fileName": "ParameterUiType",
+      "imports": [],
+      "exports": [
+        "ParameterUiType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "AppModel/RootMenu.ts",
+      "fileName": "RootMenu",
+      "imports": [],
+      "exports": [
+        "RootMenu"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "AppModel/SelectedDataScope.ts",
+      "fileName": "SelectedDataScope",
+      "imports": [],
+      "exports": [
+        "SelectedDataScope"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "AppModel/SelectedDataType.ts",
+      "fileName": "SelectedDataType",
+      "imports": [],
+      "exports": [
+        "SelectedDataType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "AppModel/ServiceApp.ts",
+      "fileName": "ServiceApp",
+      "imports": [
+        "./ServiceMetadata"
+      ],
+      "exports": [
+        "ServiceApp"
+      ],
+      "dependencies": [
+        "AppModel/ServiceMetadata.ts"
+      ]
+    },
+    {
+      "path": "AppModel/ServiceAppAction.ts",
+      "fileName": "ServiceAppAction",
+      "imports": [],
+      "exports": [
+        "ServiceAppAction"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "AppModel/ServiceAppParameter.ts",
+      "fileName": "ServiceAppParameter",
+      "imports": [
+        "./ColumnTypeFilter",
+        "./ParameterUiType",
+        "./ValidationType"
+      ],
+      "exports": [
+        "ServiceAppParameter"
+      ],
+      "dependencies": [
+        "AppModel/ColumnTypeFilter.ts",
+        "AppModel/ParameterUiType.ts",
+        "AppModel/ValidationType.ts"
+      ]
+    },
+    {
+      "path": "AppModel/ServiceAppTask.ts",
+      "fileName": "ServiceAppTask",
+      "imports": [
+        "./ServiceStatus"
+      ],
+      "exports": [
+        "ServiceAppTask"
+      ],
+      "dependencies": [
+        "AppModel/ServiceStatus.ts"
+      ]
+    },
+    {
+      "path": "AppModel/ServiceInputDefinition.ts",
+      "fileName": "ServiceInputDefinition",
+      "imports": [
+        "../AppModel/SelectedDataScope",
+        "../TableModel",
+        "./SelectedDataType"
+      ],
+      "exports": [
+        "ServiceInputDefinition",
+        "InputColumn",
+        "Model",
+        "ModelType",
+        "Format",
+        "FormatType",
+        "InputNetwork"
+      ],
+      "dependencies": [
+        "AppModel/SelectedDataScope.ts",
+        "AppModel/SelectedDataType.ts"
+      ]
+    },
+    {
+      "path": "AppModel/ServiceMetadata.ts",
+      "fileName": "ServiceMetadata",
+      "imports": [
+        "./CyWebMenuItem",
+        "./ServiceAppAction",
+        "./ServiceAppParameter",
+        "./ServiceInputDefinition"
+      ],
+      "exports": [
+        "ServiceMetadata"
+      ],
+      "dependencies": [
+        "AppModel/CyWebMenuItem.ts",
+        "AppModel/ServiceAppAction.ts",
+        "AppModel/ServiceAppParameter.ts",
+        "AppModel/ServiceInputDefinition.ts"
+      ]
+    },
+    {
+      "path": "AppModel/ServiceStatus.ts",
+      "fileName": "ServiceStatus",
+      "imports": [],
+      "exports": [
+        "ServiceStatus"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "AppModel/ValidationType.ts",
+      "fileName": "ValidationType",
+      "imports": [],
+      "exports": [
+        "ValidationType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "CxModel/Cx2/Aspect.ts",
+      "fileName": "Aspect",
+      "imports": [],
+      "exports": [
+        "Aspect"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "CxModel/Cx2/CoreAspectTag.ts",
+      "fileName": "CoreAspectTag",
+      "imports": [],
+      "exports": [
+        "CoreAspectTag"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "CxModel/Cx2/CoreAspects/Attribute.ts",
+      "fileName": "Attribute",
+      "imports": [
+        "../CxValue"
+      ],
+      "exports": [
+        "Attribute"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/CxValue.ts"
+      ]
+    },
+    {
+      "path": "CxModel/Cx2/CoreAspects/AttributeDeclarations.ts",
+      "fileName": "AttributeDeclarations",
+      "imports": [
+        "../Aspect",
+        "./AttributeValue"
+      ],
+      "exports": [
+        "AttributeDeclarations",
+        "AttributeDeclaration",
+        "Attributes"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/Aspect.ts",
+        "CxModel/Cx2/CoreAspects/AttributeValue.ts"
+      ]
+    },
+    {
+      "path": "CxModel/Cx2/CoreAspects/AttributeValue.ts",
+      "fileName": "AttributeValue",
+      "imports": [
+        "../CxTypeName",
+        "../CxValue"
+      ],
+      "exports": [
+        "AttributeValue"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/CxTypeName.ts",
+        "CxModel/Cx2/CxValue.ts"
+      ]
+    },
+    {
+      "path": "CxModel/Cx2/CoreAspects/Edge.ts",
+      "fileName": "Edge",
+      "imports": [
+        "./Attribute"
+      ],
+      "exports": [
+        "Edge"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/CoreAspects/Attribute.ts"
+      ]
+    },
+    {
+      "path": "CxModel/Cx2/CoreAspects/EdgeBypasses.ts",
+      "fileName": "EdgeBypasses",
+      "imports": [
+        "../Aspect"
+      ],
+      "exports": [
+        "EdgeBypasses",
+        "EdgeBypass",
+        "BypassValue"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/Aspect.ts"
+      ]
+    },
+    {
+      "path": "CxModel/Cx2/CoreAspects/NetworkAttributes.ts",
+      "fileName": "NetworkAttributes",
+      "imports": [
+        "../Aspect",
+        "../CxValue"
+      ],
+      "exports": [
+        "NetworkAttributes",
+        "NetworkAttributeValue"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/Aspect.ts",
+        "CxModel/Cx2/CxValue.ts"
+      ]
+    },
+    {
+      "path": "CxModel/Cx2/CoreAspects/Node.ts",
+      "fileName": "Node",
+      "imports": [
+        "./Attribute"
+      ],
+      "exports": [
+        "Node"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/CoreAspects/Attribute.ts"
+      ]
+    },
+    {
+      "path": "CxModel/Cx2/CoreAspects/NodeBypasses.ts",
+      "fileName": "NodeBypasses",
+      "imports": [
+        "../Aspect"
+      ],
+      "exports": [
+        "NodeBypasses",
+        "NodeBypass",
+        "BypassValue"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/Aspect.ts"
+      ]
+    },
+    {
+      "path": "CxModel/Cx2/CoreAspects/VisualProperties.ts",
+      "fileName": "VisualProperties",
+      "imports": [
+        "../Aspect"
+      ],
+      "exports": [
+        "VisualProperties",
+        "VisualProperty",
+        "DefaultVisualProperty"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/Aspect.ts"
+      ]
+    },
+    {
+      "path": "CxModel/Cx2/CxDescriptor.ts",
+      "fileName": "CxDescriptor",
+      "imports": [],
+      "exports": [
+        "CxDescriptor"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "CxModel/Cx2/CxTypeName.ts",
+      "fileName": "CxTypeName",
+      "imports": [],
+      "exports": [
+        "CxTypeName"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "CxModel/Cx2/CxValue.ts",
+      "fileName": "CxValue",
+      "imports": [],
+      "exports": [
+        "CxValue"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "CxModel/Cx2/MetaData.ts",
+      "fileName": "MetaData",
+      "imports": [
+        "./Aspect"
+      ],
+      "exports": [
+        "MetaData",
+        "MetaDataValue"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/Aspect.ts"
+      ]
+    },
+    {
+      "path": "CxModel/Cx2/Status.ts",
+      "fileName": "Status",
+      "imports": [
+        "./Aspect"
+      ],
+      "exports": [
+        "Status"
+      ],
+      "dependencies": [
+        "CxModel/Cx2/Aspect.ts"
+      ]
+    },
+    {
+      "path": "CyNetworkModel/CyNetwork.ts",
+      "fileName": "CyNetwork",
+      "imports": [
+        "../NetworkModel",
+        "../OpaqueAspectModel",
+        "../StoreModel/UndoStoreModel",
+        "../TableModel",
+        "../ViewModel",
+        "../VisualStyleModel",
+        "../VisualStyleModel/VisualStyleOptions"
+      ],
+      "exports": [
+        "CyNetwork"
+      ],
+      "dependencies": [
+        "StoreModel/UndoStoreModel.ts",
+        "VisualStyleModel/VisualStyleOptions.ts"
+      ]
+    },
+    {
+      "path": "FilterModel/DiscreteFilterDetails.ts",
+      "fileName": "DiscreteFilterDetails",
+      "imports": [],
+      "exports": [
+        "DiscreteFilterDetails"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "FilterModel/DisplayMode.ts",
+      "fileName": "DisplayMode",
+      "imports": [],
+      "exports": [
+        "DisplayMode"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "FilterModel/Filter.ts",
+      "fileName": "Filter",
+      "imports": [
+        "../IdType",
+        "../PropertyModel/DiscreteRange",
+        "../PropertyModel/NumberRange",
+        "../TableModel"
+      ],
+      "exports": [
+        "Filter"
+      ],
+      "dependencies": [
+        "IdType.ts",
+        "PropertyModel/DiscreteRange.ts",
+        "PropertyModel/NumberRange.ts"
+      ]
+    },
+    {
+      "path": "FilterModel/FilterConfig.ts",
+      "fileName": "FilterConfig",
+      "imports": [
+        "../NetworkModel",
+        "../PropertyModel/DiscreteRange",
+        "../PropertyModel/NumberRange",
+        "../TableModel",
+        "../VisualStyleModel",
+        "./DiscreteFilterDetails",
+        "./DisplayMode",
+        "./FilterWidgetType",
+        "./SelectionType"
+      ],
+      "exports": [
+        "FilterConfig"
+      ],
+      "dependencies": [
+        "PropertyModel/DiscreteRange.ts",
+        "PropertyModel/NumberRange.ts",
+        "FilterModel/DiscreteFilterDetails.ts",
+        "FilterModel/DisplayMode.ts",
+        "FilterModel/FilterWidgetType.ts",
+        "FilterModel/SelectionType.ts"
+      ]
+    },
+    {
+      "path": "FilterModel/FilterUrlParams.ts",
+      "fileName": "FilterUrlParams",
+      "imports": [],
+      "exports": [
+        "FilterUrlParams"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "FilterModel/FilterWidgetType.ts",
+      "fileName": "FilterWidgetType",
+      "imports": [],
+      "exports": [
+        "FilterWidgetType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "FilterModel/Search.ts",
+      "fileName": "Search",
+      "imports": [
+        "../IdType",
+        "../NetworkModel",
+        "./SearchState"
+      ],
+      "exports": [
+        "IndexedColumns",
+        "Indices",
+        "Search",
+        "Operator",
+        "SearchOptions"
+      ],
+      "dependencies": [
+        "IdType.ts",
+        "FilterModel/SearchState.ts"
+      ]
+    },
+    {
+      "path": "FilterModel/SearchState.ts",
+      "fileName": "SearchState",
+      "imports": [],
+      "exports": [
+        "SearchState"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "FilterModel/SelectionType.ts",
+      "fileName": "SelectionType",
+      "imports": [],
+      "exports": [
+        "SelectionType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "IdType.ts",
+      "fileName": "IdType",
+      "imports": [],
+      "exports": [
+        "IdType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "LayoutModel/LayoutAlgorithm.ts",
+      "fileName": "LayoutAlgorithm",
+      "imports": [
+        "../PropertyModel/Property",
+        "../TableModel"
+      ],
+      "exports": [
+        "LayoutAlgorithmType",
+        "LayoutAlgorithm"
+      ],
+      "dependencies": [
+        "PropertyModel/Property.ts"
+      ]
+    },
+    {
+      "path": "LayoutModel/LayoutEngine.ts",
+      "fileName": "LayoutEngine",
+      "imports": [
+        "../IdType",
+        "../NetworkModel",
+        "./LayoutAlgorithm"
+      ],
+      "exports": [
+        "LayoutEngine"
+      ],
+      "dependencies": [
+        "IdType.ts",
+        "LayoutModel/LayoutAlgorithm.ts"
+      ]
+    },
+    {
+      "path": "MessageModel/Message.ts",
+      "fileName": "Message",
+      "imports": [],
+      "exports": [
+        "MessageSeverity",
+        "MessageSeverityType",
+        "Message"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "NetworkModel/Edge.ts",
+      "fileName": "Edge",
+      "imports": [
+        "../IdType",
+        "./GraphObject"
+      ],
+      "exports": [
+        "Edge"
+      ],
+      "dependencies": [
+        "IdType.ts",
+        "NetworkModel/GraphObject.ts"
+      ]
+    },
+    {
+      "path": "NetworkModel/GraphObject.ts",
+      "fileName": "GraphObject",
+      "imports": [
+        "../IdType"
+      ],
+      "exports": [
+        "GraphObject"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "NetworkModel/GraphObjectType.ts",
+      "fileName": "GraphObjectType",
+      "imports": [],
+      "exports": [
+        "GraphObjectType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "NetworkModel/Network.ts",
+      "fileName": "Network",
+      "imports": [
+        "../IdType",
+        "."
+      ],
+      "exports": [
+        "Network"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "NetworkModel/Node.ts",
+      "fileName": "Node",
+      "imports": [
+        "./GraphObject"
+      ],
+      "exports": [
+        "Node"
+      ],
+      "dependencies": [
+        "NetworkModel/GraphObject.ts"
+      ]
+    },
+    {
+      "path": "NetworkSummaryModel/NetworkProperty.ts",
+      "fileName": "NetworkProperty",
+      "imports": [
+        "../IdType",
+        "../TableModel"
+      ],
+      "exports": [
+        "NetworkProperty"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "NetworkSummaryModel/NetworkSummary.ts",
+      "fileName": "NetworkSummary",
+      "imports": [
+        "../IdType",
+        "./NetworkProperty",
+        "./Visibility"
+      ],
+      "exports": [
+        "NetworkSummary"
+      ],
+      "dependencies": [
+        "IdType.ts",
+        "NetworkSummaryModel/NetworkProperty.ts",
+        "NetworkSummaryModel/Visibility.ts"
+      ]
+    },
+    {
+      "path": "NetworkSummaryModel/Visibility.ts",
+      "fileName": "Visibility",
+      "imports": [],
+      "exports": [
+        "Visibility"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "OpaqueAspectModel/OpaqueAspects.ts",
+      "fileName": "OpaqueAspects",
+      "imports": [],
+      "exports": [
+        "OpaqueAspects"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "PropertyModel/DiscreteRange.ts",
+      "fileName": "DiscreteRange",
+      "imports": [],
+      "exports": [
+        "DiscreteRange"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "PropertyModel/NumberRange.ts",
+      "fileName": "NumberRange",
+      "imports": [],
+      "exports": [
+        "NumberRange"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "PropertyModel/Property.ts",
+      "fileName": "Property",
+      "imports": [
+        "../TableModel",
+        "./DiscreteRange",
+        "./NumberRange"
+      ],
+      "exports": [
+        "Property"
+      ],
+      "dependencies": [
+        "PropertyModel/DiscreteRange.ts",
+        "PropertyModel/NumberRange.ts"
+      ]
+    },
+    {
+      "path": "RendererModel/Renderer.ts",
+      "fileName": "Renderer",
+      "imports": [
+        "../NetworkModel"
+      ],
+      "exports": [
+        "Renderer"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "RendererModel/ViewPort.ts",
+      "fileName": "ViewPort",
+      "imports": [],
+      "exports": [
+        "ViewPort"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "StoreModel/AppStoreModel.ts",
+      "fileName": "AppStoreModel",
+      "imports": [
+        "../AppModel/AppStatus",
+        "../AppModel/CyApp",
+        "../AppModel/ServiceApp",
+        "../AppModel/ServiceAppTask"
+      ],
+      "exports": [
+        "AppState",
+        "AppAction",
+        "AppStore"
+      ],
+      "dependencies": [
+        "AppModel/AppStatus.ts",
+        "AppModel/CyApp.ts",
+        "AppModel/ServiceApp.ts",
+        "AppModel/ServiceAppTask.ts"
+      ]
+    },
+    {
+      "path": "StoreModel/CredentialStoreModel.ts",
+      "fileName": "CredentialStoreModel",
+      "imports": [],
+      "exports": [
+        "CredentialState",
+        "CredentialActions",
+        "CredentialStore"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "StoreModel/LayoutStoreModel.ts",
+      "fileName": "LayoutStoreModel",
+      "imports": [
+        "../LayoutModel",
+        "../TableModel"
+      ],
+      "exports": [
+        "LayoutState",
+        "LayoutAction",
+        "LayoutStore"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "StoreModel/MessageStoreModel.ts",
+      "fileName": "MessageStoreModel",
+      "imports": [
+        "../MessageModel"
+      ],
+      "exports": [
+        "MessageState",
+        "MessageAction",
+        "MessageStore"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "StoreModel/NetworkStoreModel.ts",
+      "fileName": "NetworkStoreModel",
+      "imports": [
+        "../IdType",
+        "../NetworkModel"
+      ],
+      "exports": [
+        "UpdateEventType",
+        "NetworkUpdatedEvent",
+        "NetworkState",
+        "NetworkUpdateActions",
+        "NetworkActions",
+        "NetworkStore"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "StoreModel/NetworkSummaryStoreModel.ts",
+      "fileName": "NetworkSummaryStoreModel",
+      "imports": [
+        "../IdType",
+        "../NetworkSummaryModel"
+      ],
+      "exports": [
+        "NetworkSummaryState",
+        "NetworkSummaryActions",
+        "NetworkSummaryStore"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "StoreModel/OpaqueAspectStoreModel.ts",
+      "fileName": "OpaqueAspectStoreModel",
+      "imports": [
+        "../IdType",
+        "../OpaqueAspectModel"
+      ],
+      "exports": [
+        "OpaqueAspectState",
+        "OpaqueAspectActions",
+        "OpaqueAspectStore"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "StoreModel/RendererStoreModel.ts",
+      "fileName": "RendererStoreModel",
+      "imports": [
+        "../IdType",
+        "../RendererModel",
+        "../RendererModel/ViewPort"
+      ],
+      "exports": [
+        "RendererState",
+        "RendererAction",
+        "RendererStore"
+      ],
+      "dependencies": [
+        "IdType.ts",
+        "RendererModel/ViewPort.ts"
+      ]
+    },
+    {
+      "path": "StoreModel/TableStoreModel.ts",
+      "fileName": "TableStoreModel",
+      "imports": [
+        "../../models/IdType",
+        "../../models/TableModel"
+      ],
+      "exports": [
+        "TableRecord",
+        "TableState",
+        "TableType",
+        "CellEdit",
+        "TableAction",
+        "TableStore"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "StoreModel/UiStateStoreModel.ts",
+      "fileName": "UiStateStoreModel",
+      "imports": [
+        "../IdType",
+        "../UiModel",
+        "../UiModel/Panel",
+        "../UiModel/PanelState",
+        "../VisualStyleModel/VisualStyleOptions",
+        "./TableStoreModel"
+      ],
+      "exports": [
+        "UiState",
+        "UiStateAction",
+        "UiStateStore"
+      ],
+      "dependencies": [
+        "IdType.ts",
+        "UiModel/Panel.ts",
+        "UiModel/PanelState.ts",
+        "VisualStyleModel/VisualStyleOptions.ts",
+        "StoreModel/TableStoreModel.ts"
+      ]
+    },
+    {
+      "path": "StoreModel/UndoStoreModel.ts",
+      "fileName": "UndoStoreModel",
+      "imports": [
+        "../IdType"
+      ],
+      "exports": [
+        "UndoCommandType",
+        "Edit",
+        "UndoRedoStack",
+        "UndoRedoStackState",
+        "UndoAction",
+        "UndoStore"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "StoreModel/ViewModelStoreModel.ts",
+      "fileName": "ViewModelStoreModel",
+      "imports": [
+        "../IdType",
+        "../ViewModel"
+      ],
+      "exports": [
+        "ViewModelState",
+        "ViewModelAction",
+        "ViewModelUpdateActions",
+        "ViewModelStore"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "StoreModel/VisualStyleStoreModel.ts",
+      "fileName": "VisualStyleStoreModel",
+      "imports": [
+        "../IdType",
+        "../TableModel",
+        "../VisualStyleModel"
+      ],
+      "exports": [
+        "VisualStyleState",
+        "UpdateVisualStyleAction",
+        "VisualStyleAction",
+        "VisualStyleStore"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "StoreModel/WorkspaceStoreModel.ts",
+      "fileName": "WorkspaceStoreModel",
+      "imports": [
+        "../IdType",
+        "../WorkspaceModel"
+      ],
+      "exports": [
+        "WorkspaceState",
+        "WorkspaceActions",
+        "WorkspaceStore"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "TableModel/AttributeName.ts",
+      "fileName": "AttributeName",
+      "imports": [],
+      "exports": [
+        "AttributeName"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "TableModel/Column.ts",
+      "fileName": "Column",
+      "imports": [
+        "./AttributeName",
+        "./ValueTypeName"
+      ],
+      "exports": [
+        "Column"
+      ],
+      "dependencies": [
+        "TableModel/AttributeName.ts",
+        "TableModel/ValueTypeName.ts"
+      ]
+    },
+    {
+      "path": "TableModel/NetworkAttributes.ts",
+      "fileName": "NetworkAttributes",
+      "imports": [
+        "../IdType",
+        "."
+      ],
+      "exports": [
+        "NetworkAttributes"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "TableModel/Table.ts",
+      "fileName": "Table",
+      "imports": [
+        "../IdType",
+        "./AttributeName",
+        "./Column",
+        "./ValueType"
+      ],
+      "exports": [
+        "Table"
+      ],
+      "dependencies": [
+        "IdType.ts",
+        "TableModel/AttributeName.ts",
+        "TableModel/Column.ts",
+        "TableModel/ValueType.ts"
+      ]
+    },
+    {
+      "path": "TableModel/TableFn.ts",
+      "fileName": "TableFn",
+      "imports": [
+        "../IdType",
+        "."
+      ],
+      "exports": [
+        "TableFn"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "TableModel/ValueType.ts",
+      "fileName": "ValueType",
+      "imports": [],
+      "exports": [
+        "ListOfValueType",
+        "SingleValueType",
+        "ValueType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "TableModel/ValueTypeName.ts",
+      "fileName": "ValueTypeName",
+      "imports": [],
+      "exports": [
+        "ValueTypeName"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "UiModel/NetworkBrowserPanelState.ts",
+      "fileName": "NetworkBrowserPanelState",
+      "imports": [],
+      "exports": [
+        "NetworkBrowserPanelUIState"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "UiModel/NetworkViewUI.ts",
+      "fileName": "NetworkViewUI",
+      "imports": [],
+      "exports": [
+        "NetworkViewUIState"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "UiModel/Panel.ts",
+      "fileName": "Panel",
+      "imports": [],
+      "exports": [
+        "Panel"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "UiModel/PanelState.ts",
+      "fileName": "PanelState",
+      "imports": [],
+      "exports": [
+        "PanelState"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "UiModel/TableUi.ts",
+      "fileName": "TableUi",
+      "imports": [],
+      "exports": [
+        "ColumnUIState",
+        "TableUIState"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "UiModel/Ui.ts",
+      "fileName": "Ui",
+      "imports": [
+        "../IdType",
+        "../VisualStyleModel/VisualStyleOptions",
+        "./NetworkBrowserPanelState",
+        "./NetworkViewUI",
+        "./Panel",
+        "./PanelState",
+        "./TableUi"
+      ],
+      "exports": [
+        "Ui"
+      ],
+      "dependencies": [
+        "IdType.ts",
+        "VisualStyleModel/VisualStyleOptions.ts",
+        "UiModel/NetworkBrowserPanelState.ts",
+        "UiModel/NetworkViewUI.ts",
+        "UiModel/Panel.ts",
+        "UiModel/PanelState.ts",
+        "UiModel/TableUi.ts"
+      ]
+    },
+    {
+      "path": "ViewModel/EdgeView.ts",
+      "fileName": "EdgeView",
+      "imports": [
+        "./View"
+      ],
+      "exports": [
+        "EdgeView"
+      ],
+      "dependencies": [
+        "ViewModel/View.ts"
+      ]
+    },
+    {
+      "path": "ViewModel/NetworkView.ts",
+      "fileName": "NetworkView",
+      "imports": [
+        "../IdType",
+        "./EdgeView",
+        "./NodeView",
+        "./View"
+      ],
+      "exports": [
+        "NetworkView"
+      ],
+      "dependencies": [
+        "IdType.ts",
+        "ViewModel/EdgeView.ts",
+        "ViewModel/NodeView.ts",
+        "ViewModel/View.ts"
+      ]
+    },
+    {
+      "path": "ViewModel/NodeView.ts",
+      "fileName": "NodeView",
+      "imports": [
+        "./View"
+      ],
+      "exports": [
+        "NodeView"
+      ],
+      "dependencies": [
+        "ViewModel/View.ts"
+      ]
+    },
+    {
+      "path": "ViewModel/View.ts",
+      "fileName": "View",
+      "imports": [
+        "../IdType",
+        "../VisualStyleModel"
+      ],
+      "exports": [
+        "View"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "VisualStyleModel/Bypass.ts",
+      "fileName": "Bypass",
+      "imports": [
+        "../IdType",
+        "./VisualPropertyValue"
+      ],
+      "exports": [
+        "Bypass"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    },
+    {
+      "path": "VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction.ts",
+      "fileName": "ContinuousMappingFunction",
+      "imports": [
+        "../../TableModel",
+        "../VisualPropertyValue",
+        "."
+      ],
+      "exports": [
+        "ContinuousFunctionControlPoint",
+        "ContinuousMappingFunction"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualMappingFunction/DiscreteMappingFunction.ts",
+      "fileName": "DiscreteMappingFunction",
+      "imports": [
+        "../../TableModel",
+        "../VisualPropertyValue",
+        "."
+      ],
+      "exports": [
+        "DiscreteMappingFunction"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualMappingFunction/Mapper.ts",
+      "fileName": "Mapper",
+      "imports": [
+        "../../TableModel",
+        "../VisualPropertyValue"
+      ],
+      "exports": [
+        "Mapper"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualMappingFunction/MappingFunctionType.ts",
+      "fileName": "MappingFunctionType",
+      "imports": [],
+      "exports": [
+        "MappingFunctionType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualMappingFunction/PassthroughMappingFunction.ts",
+      "fileName": "PassthroughMappingFunction",
+      "imports": [
+        "."
+      ],
+      "exports": [
+        "PassthroughMappingFunction"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualMappingFunction/VisualMappingFunction.ts",
+      "fileName": "VisualMappingFunction",
+      "imports": [
+        "../../TableModel",
+        "../VisualPropertyValue",
+        "../VisualPropertyValueTypeName",
+        "./MappingFunctionType"
+      ],
+      "exports": [
+        "VisualMappingFunction"
+      ],
+      "dependencies": [
+        "VisualStyleModel/VisualPropertyValueTypeName.ts",
+        "VisualStyleModel/VisualMappingFunction/MappingFunctionType.ts"
+      ]
+    },
+    {
+      "path": "VisualStyleModel/VisualProperty.ts",
+      "fileName": "VisualProperty",
+      "imports": [
+        "./Bypass",
+        "./VisualMappingFunction",
+        "./VisualPropertyGroup",
+        "./VisualPropertyName",
+        "./VisualPropertyValue",
+        "./VisualPropertyValueTypeName"
+      ],
+      "exports": [
+        "VisualProperty"
+      ],
+      "dependencies": [
+        "VisualStyleModel/Bypass.ts",
+        "VisualStyleModel/VisualPropertyGroup.ts",
+        "VisualStyleModel/VisualPropertyName.ts",
+        "VisualStyleModel/VisualPropertyValueTypeName.ts"
+      ]
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyGroup.ts",
+      "fileName": "VisualPropertyGroup",
+      "imports": [],
+      "exports": [
+        "VisualPropertyGroup"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyName.ts",
+      "fileName": "VisualPropertyName",
+      "imports": [],
+      "exports": [
+        "NodeVisualPropertyName",
+        "EdgeVisualPropertyName",
+        "NetworkVisualPropertyName",
+        "VisualPropertyName"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/ColorType.ts",
+      "fileName": "ColorType",
+      "imports": [],
+      "exports": [
+        "RGB",
+        "RGBA",
+        "HEX",
+        "ColorType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/CustomGraphicsType.ts",
+      "fileName": "CustomGraphicsType",
+      "imports": [
+        "../../TableModel/AttributeName",
+        "./ColorType"
+      ],
+      "exports": [
+        "CustomGraphicsTypeType",
+        "CustomGraphicsNameType",
+        "JustificationType",
+        "AnchorType",
+        "CustomGraphicsPositionType",
+        "CustomGraphicsType",
+        "PieChartPropertiesType",
+        "RingChartPropertiesType",
+        "NonePropertiesType"
+      ],
+      "dependencies": [
+        "TableModel/AttributeName.ts",
+        "VisualStyleModel/VisualPropertyValue/ColorType.ts"
+      ]
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/EdgeArrowShapeType.ts",
+      "fileName": "EdgeArrowShapeType",
+      "imports": [],
+      "exports": [
+        "EdgeArrowShapeType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/EdgeFillType.ts",
+      "fileName": "EdgeFillType",
+      "imports": [],
+      "exports": [
+        "EdgeFillType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/EdgeLineType.ts",
+      "fileName": "EdgeLineType",
+      "imports": [],
+      "exports": [
+        "EdgeLineType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/FontType.ts",
+      "fileName": "FontType",
+      "imports": [],
+      "exports": [
+        "FontType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/LabelType.ts",
+      "fileName": "LabelType",
+      "imports": [],
+      "exports": [
+        "LabelType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/NodeBorderLineType.ts",
+      "fileName": "NodeBorderLineType",
+      "imports": [
+        "./EdgeLineType"
+      ],
+      "exports": [
+        "NodeBorderLineType"
+      ],
+      "dependencies": [
+        "VisualStyleModel/VisualPropertyValue/EdgeLineType.ts"
+      ]
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/NodeLabelPositionType.ts",
+      "fileName": "NodeLabelPositionType",
+      "imports": [],
+      "exports": [
+        "HorizontalAlignType",
+        "VerticalAlignType",
+        "NodeLabelPositionValueType",
+        "NodeLabelPositionType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/NodeShapeType.ts",
+      "fileName": "NodeShapeType",
+      "imports": [],
+      "exports": [
+        "NodeShapeType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/VisibilityType.ts",
+      "fileName": "VisibilityType",
+      "imports": [],
+      "exports": [
+        "VisibilityType"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "fileName": "VisualPropertyValueType",
+      "imports": [
+        "./ColorType",
+        "./CustomGraphicsType",
+        "./EdgeArrowShapeType",
+        "./EdgeFillType",
+        "./EdgeLineType",
+        "./FontType",
+        "./NodeBorderLineType",
+        "./NodeLabelPositionType",
+        "./NodeShapeType",
+        "./VisibilityType"
+      ],
+      "exports": [
+        "VisualPropertyValueType"
+      ],
+      "dependencies": [
+        "VisualStyleModel/VisualPropertyValue/ColorType.ts",
+        "VisualStyleModel/VisualPropertyValue/CustomGraphicsType.ts",
+        "VisualStyleModel/VisualPropertyValue/EdgeArrowShapeType.ts",
+        "VisualStyleModel/VisualPropertyValue/EdgeFillType.ts",
+        "VisualStyleModel/VisualPropertyValue/EdgeLineType.ts",
+        "VisualStyleModel/VisualPropertyValue/FontType.ts",
+        "VisualStyleModel/VisualPropertyValue/NodeBorderLineType.ts",
+        "VisualStyleModel/VisualPropertyValue/NodeLabelPositionType.ts",
+        "VisualStyleModel/VisualPropertyValue/NodeShapeType.ts",
+        "VisualStyleModel/VisualPropertyValue/VisibilityType.ts"
+      ]
+    },
+    {
+      "path": "VisualStyleModel/VisualPropertyValueTypeName.ts",
+      "fileName": "VisualPropertyValueTypeName",
+      "imports": [],
+      "exports": [
+        "VisualPropertyValueTypeName"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "VisualStyleModel/VisualStyle.ts",
+      "fileName": "VisualStyle",
+      "imports": [
+        "./VisualProperty",
+        "./VisualPropertyName",
+        "./VisualPropertyValue"
+      ],
+      "exports": [
+        "VisualStyle"
+      ],
+      "dependencies": [
+        "VisualStyleModel/VisualProperty.ts",
+        "VisualStyleModel/VisualPropertyName.ts"
+      ]
+    },
+    {
+      "path": "VisualStyleModel/VisualStyleFn.ts",
+      "fileName": "VisualStyleFn",
+      "imports": [
+        "../NetworkModel",
+        "../TableModel",
+        "../ViewModel",
+        "./VisualProperty",
+        "./VisualPropertyValue",
+        "./VisualStyle"
+      ],
+      "exports": [
+        "NetworkViewSources",
+        "VisualStyleFn"
+      ],
+      "dependencies": [
+        "VisualStyleModel/VisualProperty.ts",
+        "VisualStyleModel/VisualStyle.ts"
+      ]
+    },
+    {
+      "path": "VisualStyleModel/VisualStyleOptions.ts",
+      "fileName": "VisualStyleOptions",
+      "imports": [
+        "../TableModel"
+      ],
+      "exports": [
+        "ColumnConfiguration",
+        "TableConfig",
+        "TableDisplayConfiguration",
+        "VisualEditorProperties",
+        "VisualStyleOptions"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "WorkspaceModel/Workspace.ts",
+      "fileName": "Workspace",
+      "imports": [
+        "../IdType"
+      ],
+      "exports": [
+        "Workspace"
+      ],
+      "dependencies": [
+        "IdType.ts"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "AppModel/AppComponent.ts",
+      "to": "AppModel/ComponentType.ts"
+    },
+    {
+      "from": "AppModel/ColumnTypeFilter.ts",
+      "to": "CxModel/Cx2/CxTypeName.ts"
+    },
+    {
+      "from": "AppModel/ComponentMetadata.ts",
+      "to": "AppModel/ComponentType.ts"
+    },
+    {
+      "from": "AppModel/CyApp.ts",
+      "to": "AppModel/AppStatus.ts"
+    },
+    {
+      "from": "AppModel/CyApp.ts",
+      "to": "AppModel/ComponentMetadata.ts"
+    },
+    {
+      "from": "AppModel/CyWebMenuItem.ts",
+      "to": "AppModel/MenuPathElement.ts"
+    },
+    {
+      "from": "AppModel/CyWebMenuItem.ts",
+      "to": "AppModel/RootMenu.ts"
+    },
+    {
+      "from": "AppModel/ServiceApp.ts",
+      "to": "AppModel/ServiceMetadata.ts"
+    },
+    {
+      "from": "AppModel/ServiceAppParameter.ts",
+      "to": "AppModel/ColumnTypeFilter.ts"
+    },
+    {
+      "from": "AppModel/ServiceAppParameter.ts",
+      "to": "AppModel/ParameterUiType.ts"
+    },
+    {
+      "from": "AppModel/ServiceAppParameter.ts",
+      "to": "AppModel/ValidationType.ts"
+    },
+    {
+      "from": "AppModel/ServiceAppTask.ts",
+      "to": "AppModel/ServiceStatus.ts"
+    },
+    {
+      "from": "AppModel/ServiceInputDefinition.ts",
+      "to": "AppModel/SelectedDataScope.ts"
+    },
+    {
+      "from": "AppModel/ServiceInputDefinition.ts",
+      "to": "AppModel/SelectedDataType.ts"
+    },
+    {
+      "from": "AppModel/ServiceMetadata.ts",
+      "to": "AppModel/CyWebMenuItem.ts"
+    },
+    {
+      "from": "AppModel/ServiceMetadata.ts",
+      "to": "AppModel/ServiceAppAction.ts"
+    },
+    {
+      "from": "AppModel/ServiceMetadata.ts",
+      "to": "AppModel/ServiceAppParameter.ts"
+    },
+    {
+      "from": "AppModel/ServiceMetadata.ts",
+      "to": "AppModel/ServiceInputDefinition.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/Attribute.ts",
+      "to": "CxModel/Cx2/CxValue.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/AttributeDeclarations.ts",
+      "to": "CxModel/Cx2/Aspect.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/AttributeDeclarations.ts",
+      "to": "CxModel/Cx2/CoreAspects/AttributeValue.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/AttributeValue.ts",
+      "to": "CxModel/Cx2/CxTypeName.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/AttributeValue.ts",
+      "to": "CxModel/Cx2/CxValue.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/Edge.ts",
+      "to": "CxModel/Cx2/CoreAspects/Attribute.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/EdgeBypasses.ts",
+      "to": "CxModel/Cx2/Aspect.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/NetworkAttributes.ts",
+      "to": "CxModel/Cx2/Aspect.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/NetworkAttributes.ts",
+      "to": "CxModel/Cx2/CxValue.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/Node.ts",
+      "to": "CxModel/Cx2/CoreAspects/Attribute.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/NodeBypasses.ts",
+      "to": "CxModel/Cx2/Aspect.ts"
+    },
+    {
+      "from": "CxModel/Cx2/CoreAspects/VisualProperties.ts",
+      "to": "CxModel/Cx2/Aspect.ts"
+    },
+    {
+      "from": "CxModel/Cx2/MetaData.ts",
+      "to": "CxModel/Cx2/Aspect.ts"
+    },
+    {
+      "from": "CxModel/Cx2/Status.ts",
+      "to": "CxModel/Cx2/Aspect.ts"
+    },
+    {
+      "from": "CyNetworkModel/CyNetwork.ts",
+      "to": "StoreModel/UndoStoreModel.ts"
+    },
+    {
+      "from": "CyNetworkModel/CyNetwork.ts",
+      "to": "VisualStyleModel/VisualStyleOptions.ts"
+    },
+    {
+      "from": "FilterModel/Filter.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "FilterModel/Filter.ts",
+      "to": "PropertyModel/DiscreteRange.ts"
+    },
+    {
+      "from": "FilterModel/Filter.ts",
+      "to": "PropertyModel/NumberRange.ts"
+    },
+    {
+      "from": "FilterModel/FilterConfig.ts",
+      "to": "PropertyModel/DiscreteRange.ts"
+    },
+    {
+      "from": "FilterModel/FilterConfig.ts",
+      "to": "PropertyModel/NumberRange.ts"
+    },
+    {
+      "from": "FilterModel/FilterConfig.ts",
+      "to": "FilterModel/DiscreteFilterDetails.ts"
+    },
+    {
+      "from": "FilterModel/FilterConfig.ts",
+      "to": "FilterModel/DisplayMode.ts"
+    },
+    {
+      "from": "FilterModel/FilterConfig.ts",
+      "to": "FilterModel/FilterWidgetType.ts"
+    },
+    {
+      "from": "FilterModel/FilterConfig.ts",
+      "to": "FilterModel/SelectionType.ts"
+    },
+    {
+      "from": "FilterModel/Search.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "FilterModel/Search.ts",
+      "to": "FilterModel/SearchState.ts"
+    },
+    {
+      "from": "LayoutModel/LayoutAlgorithm.ts",
+      "to": "PropertyModel/Property.ts"
+    },
+    {
+      "from": "LayoutModel/LayoutEngine.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "LayoutModel/LayoutEngine.ts",
+      "to": "LayoutModel/LayoutAlgorithm.ts"
+    },
+    {
+      "from": "NetworkModel/Edge.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "NetworkModel/Edge.ts",
+      "to": "NetworkModel/GraphObject.ts"
+    },
+    {
+      "from": "NetworkModel/GraphObject.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "NetworkModel/Network.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "NetworkModel/Node.ts",
+      "to": "NetworkModel/GraphObject.ts"
+    },
+    {
+      "from": "NetworkSummaryModel/NetworkProperty.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "NetworkSummaryModel/NetworkSummary.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "NetworkSummaryModel/NetworkSummary.ts",
+      "to": "NetworkSummaryModel/NetworkProperty.ts"
+    },
+    {
+      "from": "NetworkSummaryModel/NetworkSummary.ts",
+      "to": "NetworkSummaryModel/Visibility.ts"
+    },
+    {
+      "from": "PropertyModel/Property.ts",
+      "to": "PropertyModel/DiscreteRange.ts"
+    },
+    {
+      "from": "PropertyModel/Property.ts",
+      "to": "PropertyModel/NumberRange.ts"
+    },
+    {
+      "from": "StoreModel/AppStoreModel.ts",
+      "to": "AppModel/AppStatus.ts"
+    },
+    {
+      "from": "StoreModel/AppStoreModel.ts",
+      "to": "AppModel/CyApp.ts"
+    },
+    {
+      "from": "StoreModel/AppStoreModel.ts",
+      "to": "AppModel/ServiceApp.ts"
+    },
+    {
+      "from": "StoreModel/AppStoreModel.ts",
+      "to": "AppModel/ServiceAppTask.ts"
+    },
+    {
+      "from": "StoreModel/NetworkStoreModel.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "StoreModel/NetworkSummaryStoreModel.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "StoreModel/OpaqueAspectStoreModel.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "StoreModel/RendererStoreModel.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "StoreModel/RendererStoreModel.ts",
+      "to": "RendererModel/ViewPort.ts"
+    },
+    {
+      "from": "StoreModel/TableStoreModel.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "StoreModel/UiStateStoreModel.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "StoreModel/UiStateStoreModel.ts",
+      "to": "UiModel/Panel.ts"
+    },
+    {
+      "from": "StoreModel/UiStateStoreModel.ts",
+      "to": "UiModel/PanelState.ts"
+    },
+    {
+      "from": "StoreModel/UiStateStoreModel.ts",
+      "to": "VisualStyleModel/VisualStyleOptions.ts"
+    },
+    {
+      "from": "StoreModel/UiStateStoreModel.ts",
+      "to": "StoreModel/TableStoreModel.ts"
+    },
+    {
+      "from": "StoreModel/UndoStoreModel.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "StoreModel/ViewModelStoreModel.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "StoreModel/VisualStyleStoreModel.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "StoreModel/WorkspaceStoreModel.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "TableModel/Column.ts",
+      "to": "TableModel/AttributeName.ts"
+    },
+    {
+      "from": "TableModel/Column.ts",
+      "to": "TableModel/ValueTypeName.ts"
+    },
+    {
+      "from": "TableModel/NetworkAttributes.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "TableModel/Table.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "TableModel/Table.ts",
+      "to": "TableModel/AttributeName.ts"
+    },
+    {
+      "from": "TableModel/Table.ts",
+      "to": "TableModel/Column.ts"
+    },
+    {
+      "from": "TableModel/Table.ts",
+      "to": "TableModel/ValueType.ts"
+    },
+    {
+      "from": "TableModel/TableFn.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "UiModel/Ui.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "UiModel/Ui.ts",
+      "to": "VisualStyleModel/VisualStyleOptions.ts"
+    },
+    {
+      "from": "UiModel/Ui.ts",
+      "to": "UiModel/NetworkBrowserPanelState.ts"
+    },
+    {
+      "from": "UiModel/Ui.ts",
+      "to": "UiModel/NetworkViewUI.ts"
+    },
+    {
+      "from": "UiModel/Ui.ts",
+      "to": "UiModel/Panel.ts"
+    },
+    {
+      "from": "UiModel/Ui.ts",
+      "to": "UiModel/PanelState.ts"
+    },
+    {
+      "from": "UiModel/Ui.ts",
+      "to": "UiModel/TableUi.ts"
+    },
+    {
+      "from": "ViewModel/EdgeView.ts",
+      "to": "ViewModel/View.ts"
+    },
+    {
+      "from": "ViewModel/NetworkView.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "ViewModel/NetworkView.ts",
+      "to": "ViewModel/EdgeView.ts"
+    },
+    {
+      "from": "ViewModel/NetworkView.ts",
+      "to": "ViewModel/NodeView.ts"
+    },
+    {
+      "from": "ViewModel/NetworkView.ts",
+      "to": "ViewModel/View.ts"
+    },
+    {
+      "from": "ViewModel/NodeView.ts",
+      "to": "ViewModel/View.ts"
+    },
+    {
+      "from": "ViewModel/View.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "VisualStyleModel/Bypass.ts",
+      "to": "IdType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualMappingFunction/VisualMappingFunction.ts",
+      "to": "VisualStyleModel/VisualPropertyValueTypeName.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualMappingFunction/VisualMappingFunction.ts",
+      "to": "VisualStyleModel/VisualMappingFunction/MappingFunctionType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualProperty.ts",
+      "to": "VisualStyleModel/Bypass.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualProperty.ts",
+      "to": "VisualStyleModel/VisualPropertyGroup.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualProperty.ts",
+      "to": "VisualStyleModel/VisualPropertyName.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualProperty.ts",
+      "to": "VisualStyleModel/VisualPropertyValueTypeName.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/CustomGraphicsType.ts",
+      "to": "TableModel/AttributeName.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/CustomGraphicsType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/ColorType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/NodeBorderLineType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/EdgeLineType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/ColorType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/CustomGraphicsType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/EdgeArrowShapeType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/EdgeFillType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/EdgeLineType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/FontType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/NodeBorderLineType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/NodeLabelPositionType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/NodeShapeType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualPropertyValue/VisualPropertyValueType.ts",
+      "to": "VisualStyleModel/VisualPropertyValue/VisibilityType.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualStyle.ts",
+      "to": "VisualStyleModel/VisualProperty.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualStyle.ts",
+      "to": "VisualStyleModel/VisualPropertyName.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualStyleFn.ts",
+      "to": "VisualStyleModel/VisualProperty.ts"
+    },
+    {
+      "from": "VisualStyleModel/VisualStyleFn.ts",
+      "to": "VisualStyleModel/VisualStyle.ts"
+    },
+    {
+      "from": "WorkspaceModel/Workspace.ts",
+      "to": "IdType.ts"
+    }
+  ]
+}

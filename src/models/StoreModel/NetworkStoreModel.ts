@@ -1,5 +1,5 @@
 import { IdType } from '../IdType'
-import { Network, Edge } from '../NetworkModel'
+import { Edge,Network } from '../NetworkModel'
 
 export const UpdateEventType = {
   ADD: 'ADD',

@@ -1,12 +1,13 @@
 import {
+  Box,
+  Container,
+  FormControl,
   FormControlLabel,
+  FormLabel,
   Radio,
   RadioGroup,
-  FormControl,
-  FormLabel,
-  Container,
-  Box,
 } from '@mui/material'
+
 import { DisplayMode } from '../../../../models/FilterModel/DisplayMode'
 
 interface AttributeSelectorProps {
@@ -49,12 +50,12 @@ export const ModeSelector = ({
           <RadioGroup row value={displayMode} onChange={handleModeChange}>
             <FormControlLabel
               value={DisplayMode.SELECT}
-              control={<Radio />}
+              control={<Radio data-testid="mode-selector-selection-radio" />}
               label={'Selection'}
             />
             <FormControlLabel
               value={DisplayMode.SHOW_HIDE}
-              control={<Radio />}
+              control={<Radio data-testid="mode-selector-show-hide-radio" />}
               label={'Show / Hide'}
             />
           </RadioGroup>

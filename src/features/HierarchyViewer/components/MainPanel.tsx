@@ -1,29 +1,30 @@
-import { useEffect, useState } from 'react'
-import { Allotment } from 'allotment'
-import { MessagePanel } from '../../../components/Messages'
 import { Box } from '@mui/material'
-import { SubNetworkPanel } from './SubNetworkPanel'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Allotment } from 'allotment'
+import { useEffect, useState } from 'react'
+
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { HcxMetaData } from '../model/HcxMetaData'
-import { getHcxMetadata } from '../utils/hierarchy-util'
+import { Network } from '../../../models/NetworkModel'
+import { Renderer } from '../../../models/RendererModel/Renderer'
 import { ValueType } from '../../../models/TableModel'
 import { NetworkView } from '../../../models/ViewModel'
-import { useTableStore } from '../../../store/TableStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
-import { SubsystemTag } from '../model/HcxMetaTag'
-import { Network } from '../../../models/NetworkModel'
-import { CirclePackingPanel } from './CustomLayout/CirclePackingPanel'
-import { Renderer } from '../../../models/RendererModel/Renderer'
-import { useRendererStore } from '../../../store/RendererStore'
-import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { VisualStyle } from '../../../models/VisualStyleModel'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import FilterPanel from './FilterPanel/FilterPanel'
-import { DuplicateNodeSeparator } from './CustomLayout/DataBuilderUtil'
+import { MessagePanel } from '../../Messages'
+import { HcxMetaData } from '../model/HcxMetaData'
+import { SubsystemTag } from '../model/HcxMetaTag'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
+import { getHcxMetadata } from '../utils/hierarchyUtil'
+import { CirclePackingPanel } from './CirclePackingLayout/CirclePackingPanel'
+import { DuplicateNodeSeparator } from './CirclePackingLayout/DataBuilderUtil'
+import FilterPanel from './FilterPanel/FilterPanel'
+import { PropertyPanel } from './PropertyPanel/PropertyPanel'
+import { SubNetworkPanel } from './SubNetworkPanel'
 
 export const RENDERER_TAG: string = 'secondary'
 export interface Query {
@@ -213,6 +214,7 @@ export const MainPanel = (): JSX.Element => {
   return (
     <QueryClientProvider client={queryClient}>
       <Box
+        data-testid="hierarchy-viewer-main-panel"
         sx={{
           width: '100%',
           height: '100%',

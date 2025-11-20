@@ -1,5 +1,5 @@
 import { VisualStyle } from '../../../../models/VisualStyleModel'
-import { createVisualStyle } from '../../../../models/VisualStyleModel/impl/VisualStyleFnImpl'
+import { createVisualStyle } from '../../../../models/VisualStyleModel/impl/visualStyleFnImpl'
 
 const DEF_VS: VisualStyle = createVisualStyle()
 const { edgeLineColor, nodeBorderColor, nodeBackgroundColor } = DEF_VS

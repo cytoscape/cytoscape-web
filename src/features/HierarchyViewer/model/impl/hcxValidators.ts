@@ -1,11 +1,12 @@
-import { HcxValidationResult } from '../HcxValidator'
-import { HcxVersion } from '../HcxVersion'
-
-import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel'
+import config from '../../../../assets/config.json'
+import {
+  NetworkProperty,
+  NetworkSummary,
+} from '../../../../models/NetworkSummaryModel'
 import { Table } from '../../../../models/TableModel'
 import { HcxMetaTag, SubsystemTag } from '../HcxMetaTag'
-
-import config from '../../../../assets/config.json'
+import { HcxValidationResult } from '../HcxValidator'
+import { HcxVersion } from '../HcxVersion'
 
 export const HCX_VERSION_0_1: HcxVersion = 'hierarchy_v0.1'
 
@@ -18,14 +19,14 @@ export const hcxVersionValidators = {
   [HCX_VERSION_0_1]: {
     version: HCX_VERSION_0_1,
     validate: (
-      summary: NdexNetworkSummary,
+      summary: NetworkSummary,
       nodeTable: Table,
     ): HcxValidationResult => {
       const warnings: string[] = []
       let isValid = true
       const version =
         summary.properties.find(
-          (p) => p.predicateString === HcxMetaTag.ndexSchema,
+          (p: NetworkProperty) => p.predicateString === HcxMetaTag.ndexSchema,
         )?.value ?? ''
 
       if (!isValidHcxVersion(version as string)) {
@@ -66,7 +67,8 @@ export const hcxVersionValidators = {
 
       if (members !== undefined) {
         const interactionNetworkUUID = summary.properties.find(
-          (p) => p.predicateString === HcxMetaTag.interactionNetworkUUID,
+          (p: NetworkProperty) =>
+            p.predicateString === HcxMetaTag.interactionNetworkUUID,
         )?.value
         if (interactionNetworkUUID === undefined) {
           warnings.push(
@@ -95,7 +97,8 @@ export const hcxVersionValidators = {
 
       if (memberNames !== undefined) {
         const interactionNetworkUUID = summary.properties.find(
-          (p) => p.predicateString === HcxMetaTag.interactionNetworkUUID,
+          (p: NetworkProperty) =>
+            p.predicateString === HcxMetaTag.interactionNetworkUUID,
         )?.value
         if (interactionNetworkUUID === undefined) {
           warnings.push(
@@ -133,7 +136,7 @@ export const hcxVersionValidators = {
 
 export const validateHcx = (
   version: string,
-  summary: NdexNetworkSummary,
+  summary: NetworkSummary,
   nodeTable: Table,
 ): HcxValidationResult => {
   const validator = hcxVersionValidators[version]

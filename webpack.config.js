@@ -47,18 +47,22 @@ module.exports = {
     cyweb: path.resolve(__dirname, './src/index.tsx'),
     'export-network-to-image': path.resolve(
       __dirname,
-      './src/components/ToolBar/DataMenu/ExportNetworkToImage/ExportNetworkToImageEntry.tsx',
+      './src/features/ToolBar/DataMenu/ExportNetworkToImage/ExportNetworkToImageEntry.tsx',
     ),
   },
   devtool: isProduction ? false : 'inline-source-map',
-  stats: 'normal',
   module: {
     rules: [
       // look for tsx files to transform into the bundle
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
-        exclude: [/node_modules/, /dist/, /apps/],
+        use: {
+          loader: 'ts-loader',
+          options: {
+            configFile: 'tsconfig.json',
+          },
+        },
+        exclude: [/node_modules/, /dist/, /\/apps\//, /scripts/],
       },
       // look for css files to transform into the bundle
       {
@@ -108,22 +112,23 @@ module.exports = {
       remotes: externalAppsConfig,
       exposes: {
         // Core data models exposed to other Apps
-        './CredentialStore': './src/store/CredentialStore.ts',
-        './LayoutStore': './src/store/LayoutStore.ts',
-        './MessageStore': './src/store/MessageStore.ts',
-        './NetworkStore': './src/store/NetworkStore.ts',
-        './NetworkSummaryStore': './src/store/NetworkSummaryStore.ts',
-        './OpaqueAspectStore': './src/store/OpaqueAspectStore.ts',
-        './RendererStore': './src/store/RendererStore.ts',
-        './TableStore': './src/store/TableStore.ts',
-        './UiStateStore': './src/store/UiStateStore.ts',
-        './ViewModelStore': './src/store/ViewModelStore.ts',
-        './VisualStyleStore': './src/store/VisualStyleStore.ts',
-        './WorkspaceStore': './src/store/WorkspaceStore.ts',
+        './CredentialStore': './src/data/hooks/stores/CredentialStore.ts',
+        './LayoutStore': './src/data/hooks/stores/LayoutStore.ts',
+        './MessageStore': './src/data/hooks/stores/MessageStore.ts',
+        './NetworkStore': './src/data/hooks/stores/NetworkStore.ts',
+        './NetworkSummaryStore': './src/data/hooks/stores/NetworkSummaryStore.ts',
+        './OpaqueAspectStore': './src/data/hooks/stores/OpaqueAspectStore.ts',
+        './RendererStore': './src/data/hooks/stores/RendererStore.ts',
+        './TableStore': './src/data/hooks/stores/TableStore.ts',
+        './UiStateStore': './src/data/hooks/stores/UiStateStore.ts',
+        './ViewModelStore': './src/data/hooks/stores/ViewModelStore.ts',
+        './VisualStyleStore': './src/data/hooks/stores/VisualStyleStore.ts',
+        './WorkspaceStore': './src/data/hooks/stores/WorkspaceStore.ts',
 
-        // Tasks
-        './CreateNetwork': './src/task/CreateNetwork.tsx',
-        './CreateNetworkFromCx2': './src/task/CreateNetworkFromCx2.tsx',
+        // External Apps
+        './CreateNetwork': './src/data/task/useCreateNetwork.tsx',
+        './CreateNetworkFromCx2':
+          './src/data/task/useCreateNetworkFromCx2.tsx',
       },
 
       shared: {
@@ -144,33 +149,38 @@ module.exports = {
         },
       },
     }),
-    new BundleAnalyzerPlugin({
-      analyzerMode: 'static',
-      openAnalyzer: false,
-      reportFilename: './ba/bundle-report.html',
-      generateStatsFile: true,
-      statsFilename: './ba/bundle-stats.json',
-      statsOptions: {
-        source: false,
-        modules: false,
-        chunks: true,
-        chunkModules: true,
-        chunkOrigins: true,
-        reasons: false,
-        usedExports: true, // Enable for better tree shaking insights
-        providedExports: true, // Enable for better tree shaking insights
-        optimizationBailout: false,
-        errorDetails: false,
-        publicPath: false,
-        timings: true,
-        builtAt: true,
-        assets: true,
-        entrypoints: true,
-        performance: true,
-        hash: true,
-        version: true,
-      },
-    }),
+    // Only run bundle analyzer when ANALYZE=true (faster builds)
+    ...(process.env.ANALYZE
+      ? [
+          new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            openAnalyzer: false,
+            reportFilename: './ba/bundle-report.html',
+            generateStatsFile: true,
+            statsFilename: './ba/bundle-stats.json',
+            statsOptions: {
+              source: false,
+              modules: false,
+              chunks: true,
+              chunkModules: true,
+              chunkOrigins: true,
+              reasons: false,
+              usedExports: true, // Enable for better tree shaking insights
+              providedExports: true, // Enable for better tree shaking insights
+              optimizationBailout: false,
+              errorDetails: false,
+              publicPath: false,
+              timings: true,
+              builtAt: true,
+              assets: true,
+              entrypoints: true,
+              performance: true,
+              hash: true,
+              version: true,
+            },
+          }),
+        ]
+      : []),
 
     new CopyPlugin({
       patterns: [{ from: './silent-check-sso.html', to: '.' }],

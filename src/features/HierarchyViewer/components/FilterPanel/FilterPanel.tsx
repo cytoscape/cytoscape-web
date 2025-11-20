@@ -1,10 +1,5 @@
-import Grid from '@mui/material/Grid'
-import { useEffect, useState } from 'react'
-import { IdType } from '../../../../models/IdType'
-import { useTableStore } from '../../../../store/TableStore'
-import { useUiStateStore } from '../../../../store/UiStateStore'
-import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
-import { GraphObjectType } from '../../../../models/NetworkModel'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import SettingsIcon from '@mui/icons-material/Settings'
 import {
   Accordion,
   AccordionDetails,
@@ -14,29 +9,34 @@ import {
   Switch,
   Typography,
 } from '@mui/material'
-import { AttributeSelector } from './AttributeSelector'
-import { ModeSelector } from './ModeSelector'
-
-import SettingsIcon from '@mui/icons-material/Settings'
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import Grid from '@mui/material/Grid'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+
+import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
+import { useTableStore } from '../../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
+import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
+import { DisplayMode, FilterConfig } from '../../../../models/FilterModel'
+import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
+import { IdType } from '../../../../models/IdType'
+import { GraphObjectType } from '../../../../models/NetworkModel'
+import { Table } from '../../../../models/TableModel'
 import {
   VisualMappingFunction,
   VisualProperty,
   VisualPropertyValueType,
   VisualStyle,
 } from '../../../../models/VisualStyleModel'
-import { CompatibleVisualProperties } from './CompatibleVisualMappings'
-import { CheckboxFilter } from './CheckboxFilter'
-import { useFilterStore } from '../../../../store/FilterStore'
-import { DisplayMode, FilterConfig } from '../../../../models/FilterModel'
-import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
-import { Table } from '../../../../models/TableModel'
 import {
   getAllDiscreteValues,
   getDefaultCheckboxFilterConfig,
-} from '../../utils/filter-util'
+} from '../../utils/filterUtil'
+import { AttributeSelector } from './AttributeSelector'
+import { CheckboxFilter } from './CheckboxFilter'
+import { CompatibleVisualProperties } from './CompatibleVisualMappings'
+import { ModeSelector } from './ModeSelector'
 
 // Default filter name if none exists
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
@@ -254,6 +254,7 @@ export const FilterPanel = () => {
 
   return (
     <Container
+      data-testid="filter-panel"
       disableGutters={true}
       sx={{
         width: '100%',
@@ -309,6 +310,7 @@ export const FilterPanel = () => {
             >
               <Typography>Filter: {selectedFilter.label}</Typography>
               <Switch
+                data-testid="filter-enable-switch"
                 checked={isFilterEnabled}
                 onClick={(event) => {
                   event.stopPropagation()

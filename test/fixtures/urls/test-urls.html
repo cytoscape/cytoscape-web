@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Test Fixtures - Cytoscape Web</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+      border-bottom: 3px solid #3498db;
+      padding-bottom: 10px;
+    }
+    .info {
+      background: #e8f4f8;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 30px;
+      border-left: 4px solid #3498db;
+    }
+    .category {
+      margin-bottom: 40px;
+    }
+    .category-title {
+      font-size: 1.5em;
+      color: #2c3e50;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #ecf0f1;
+    }
+    .test-case {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 15px;
+      transition: box-shadow 0.2s;
+    }
+    .test-case:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .test-case-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .test-case-name {
+      font-weight: 600;
+      font-size: 1.1em;
+      color: #2c3e50;
+      margin-right: 10px;
+    }
+    .test-link {
+      display: inline-block;
+      background: #3498db;
+      color: white;
+      padding: 8px 16px;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 0.9em;
+      transition: background 0.2s;
+      margin-left: auto;
+    }
+    .test-link:hover {
+      background: #2980b9;
+    }
+    .test-link:target {
+      background: #27ae60;
+    }
+    .description {
+      color: #555;
+      margin-bottom: 8px;
+    }
+    .expected {
+      color: #7f8c8d;
+      font-size: 0.9em;
+      font-style: italic;
+    }
+    .url-display {
+      background: #f8f9fa;
+      padding: 8px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85em;
+      color: #555;
+      word-break: break-all;
+      margin-top: 8px;
+    }
+    .stats {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 20px;
+    }
+    .stat {
+      flex: 1;
+    }
+    .stat-label {
+      font-size: 0.9em;
+      color: #7f8c8d;
+    }
+    .stat-value {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>URL Test Fixtures - Cytoscape Web</h1>
+    <div class="info">
+      <strong>Base URL:</strong> http://localhost:5500<br>
+      <strong>Generated:</strong> 11/17/2025, 9:20:31 AM<br>
+      <strong>Total Test Cases:</strong> 18
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total Test Cases</div>
+        <div class="stat-value">18</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Categories</div>
+        <div class="stat-value">7</div>
+      </div>
+    </div>
+    <div class="category">
+      <h2 class="category-title">Network IDs</h2>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">Network ID - Valid</span>
+          <a href="http://localhost:5500/workspace-123/networks/a9763574-c72f-11ed-a79c-005056ae23aa" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Direct network access with valid network ID</div>
+        <div class="expected">Expected: Network loads successfully from URL</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/a9763574-c72f-11ed-a79c-005056ae23aa</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">Network ID - Import Needed</span>
+          <a href="http://localhost:5500/workspace-123/networks/new-network-uuid" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Network ID not in workspace - needs import</div>
+        <div class="expected">Expected: Network is imported from NDEx via URL</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/new-network-uuid</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">Network ID - Invalid</span>
+          <a href="http://localhost:5500/workspace-123/networks/invalid-uuid" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Non-existent network with invalid UUID</div>
+        <div class="expected">Expected: Error handling for invalid network IDs</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/invalid-uuid</div>
+      </div>
+    </div>
+    <div class="category">
+      <h2 class="category-title">Import Parameters</h2>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">Import Parameter - Valid</span>
+          <a href="http://localhost:5500/?import=https%3A%2F%2Fexample.com%2Fnetwork.cx2" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Import network from external URL</div>
+        <div class="expected">Expected: Network imports successfully from external URL</div>
+        <div class="url-display">http://localhost:5500/?import=https%3A%2F%2Fexample.com%2Fnetwork.cx2</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">Import Parameter - Multiple</span>
+          <a href="http://localhost:5500/?import=https%3A%2F%2Fexample.com%2Fnet1.cx2&import=https%3A%2F%2Fexample.com%2Fnet2.cx2" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Multiple network imports from URLs</div>
+        <div class="expected">Expected: Multiple networks import successfully</div>
+        <div class="url-display">http://localhost:5500/?import=https%3A%2F%2Fexample.com%2Fnet1.cx2&import=https%3A%2F%2Fexample.com%2Fnet2.cx2</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">Import Parameter - Invalid URL</span>
+          <a href="http://localhost:5500/?import=not-a-valid-url" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Invalid import URL format</div>
+        <div class="expected">Expected: Error handling for invalid import URLs</div>
+        <div class="url-display">http://localhost:5500/?import=not-a-valid-url</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">Import Parameter - Invalid CX</span>
+          <a href="http://localhost:5500/?import=https%3A%2F%2Fexample.com%2Finvalid-cx.cx2" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Valid URL but invalid CX format</div>
+        <div class="expected">Expected: Validation error handling for invalid CX</div>
+        <div class="url-display">http://localhost:5500/?import=https%3A%2F%2Fexample.com%2Finvalid-cx.cx2</div>
+      </div>
+    </div>
+    <div class="category">
+      <h2 class="category-title">State - Selection</h2>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">State - Selected Nodes</span>
+          <a href="http://localhost:5500/workspace-123/networks/net-456?selectednodes=node1+node2+node3" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Pre-select nodes from URL</div>
+        <div class="expected">Expected: Node selection is restored from URL</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?selectednodes=node1+node2+node3</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">State - Selected Edges</span>
+          <a href="http://localhost:5500/workspace-123/networks/net-456?selectededges=edge1+edge2" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Pre-select edges from URL</div>
+        <div class="expected">Expected: Edge selection is restored from URL</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?selectededges=edge1+edge2</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">State - Selected Both</span>
+          <a href="http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Pre-select both nodes and edges</div>
+        <div class="expected">Expected: Combined selection state is restored</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1</div>
+      </div>
+    </div>
+    <div class="category">
+      <h2 class="category-title">State - Filter</h2>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">State - Filter</span>
+          <a href="http://localhost:5500/workspace-123/networks/net-456?filterFor=node&filterBy=type&filterRange=protein" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Pre-apply filters from URL</div>
+        <div class="expected">Expected: Filter state is restored from URL</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?filterFor=node&filterBy=type&filterRange=protein</div>
+      </div>
+    </div>
+    <div class="category">
+      <h2 class="category-title">State - UI</h2>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">State - Panels</span>
+          <a href="http://localhost:5500/workspace-123/networks/net-456?left=open&right=closed&bottom=open" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Pre-open/close panels from URL</div>
+        <div class="expected">Expected: Panel states are restored from URL</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?left=open&right=closed&bottom=open</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">State - Active Network View</span>
+          <a href="http://localhost:5500/workspace-123/networks/net-456?activeNetworkView=view-1" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Pre-select network view from URL</div>
+        <div class="expected">Expected: Network view selection is restored</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?activeNetworkView=view-1</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">State - Table Browser Tab</span>
+          <a href="http://localhost:5500/workspace-123/networks/net-456?activeTableBrowserTab=1" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Pre-select table browser tab from URL</div>
+        <div class="expected">Expected: Table browser tab selection is restored</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?activeTableBrowserTab=1</div>
+      </div>
+    </div>
+    <div class="category">
+      <h2 class="category-title">State - Combined</h2>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">State - Complete</span>
+          <a href="http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1&filterFor=node&filterBy=type&left=open&right=closed&activeNetworkView=view-1" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">All state parameters combined</div>
+        <div class="expected">Expected: Complete state restoration from URL</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1&filterFor=node&filterBy=type&left=open&right=closed&activeNetworkView=view-1</div>
+      </div>
+    </div>
+    <div class="category">
+      <h2 class="category-title">Invalid URLs</h2>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">Invalid - Workspace ID</span>
+          <a href="http://localhost:5500/invalid-workspace-123!/networks/network-456" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Malformed workspace ID format</div>
+        <div class="expected">Expected: Workspace ID validation error</div>
+        <div class="url-display">http://localhost:5500/invalid-workspace-123!/networks/network-456</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">Invalid - Network ID</span>
+          <a href="http://localhost:5500/workspace-123/networks/not-a-valid-uuid" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Malformed network ID format</div>
+        <div class="expected">Expected: Network ID validation error</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/not-a-valid-uuid</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">Invalid - Query Params</span>
+          <a href="http://localhost:5500/workspace-123/networks/network-456?invalid=param&format&missingValue=" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Malformed query parameter format</div>
+        <div class="expected">Expected: Query parameter parsing error</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/network-456?invalid=param&format&missingValue=</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

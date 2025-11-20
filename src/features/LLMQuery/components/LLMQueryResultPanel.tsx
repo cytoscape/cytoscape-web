@@ -1,16 +1,17 @@
 import {
   Box,
-  Tooltip,
-  TextField,
   Button,
   CircularProgress,
+  TextField,
+  Tooltip,
 } from '@mui/material'
-import { ReactElement, useState, useEffect } from 'react'
-import { useMessageStore } from '../../../store/MessageStore'
-import { useUiStateStore } from '../../../store/UiStateStore'
+import { ReactElement, useEffect, useState } from 'react'
+
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
-import { MessageSeverity } from '../../../models/MessageModel'
 
 export const LLMQueryResultPanel = (props: {
   height?: number
@@ -99,6 +100,7 @@ export const LLMQueryResultPanel = (props: {
     </Tooltip>
   ) : (
     <Button
+      data-testid="llm-query-regenerate-button"
       size="small"
       disabled={loading}
       variant="outlined"
@@ -110,6 +112,7 @@ export const LLMQueryResultPanel = (props: {
 
   return (
     <Box
+      data-testid="llm-query-result-panel"
       sx={{
         overflow: 'scroll',
         width: '100%',
@@ -120,6 +123,7 @@ export const LLMQueryResultPanel = (props: {
       <Box>
         <Tooltip title="enter a comma space seperated list of gene names e.g. 'FOXA1, HNF1A, PDX1' ">
           <TextField
+            data-testid="llm-query-gene-input"
             size="small"
             fullWidth
             label="Gene Query"

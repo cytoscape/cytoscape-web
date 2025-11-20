@@ -1,5 +1,5 @@
 import { IdType } from '../../../models'
-import { applyCpLayout } from '../utils/hierarchy-util'
+import { applyCpLayout } from '../utils/hierarchyUtil'
 
 // Set up the worker context
 self.onmessage = (event) => {

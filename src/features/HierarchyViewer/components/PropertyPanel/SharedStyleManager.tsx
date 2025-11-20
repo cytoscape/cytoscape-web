@@ -7,9 +7,10 @@ import {
   useTheme,
 } from '@mui/material'
 import { useEffect } from 'react'
-import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStore'
+
+import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
 import { VisualStyle } from '../../../../models/VisualStyleModel'
-import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStore'
 
 interface SharedStyleManagerProps {
   networkId: string

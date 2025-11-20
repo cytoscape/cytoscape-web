@@ -35,4 +35,6 @@ export interface ValidationResult {
   warnings: ValidationIssue[]
   /** CX version if found in descriptor */
   version?: string
+  /** Formatted error message (automatically generated when validation fails) */
+  errorMessage?: string
 }

@@ -1,18 +1,16 @@
 export { ColorType } from './ColorType'
-export { NodeShapeType } from './NodeShapeType'
-export { EdgeLineType } from './EdgeLineType'
+export { CustomGraphicsType } from './CustomGraphicsType'
 export { EdgeArrowShapeType } from './EdgeArrowShapeType'
+export { EdgeFillType } from './EdgeFillType'
+export { EdgeLineType } from './EdgeLineType'
 export { FontType } from './FontType'
+export { NodeBorderLineType } from './NodeBorderLineType'
 export {
   HorizontalAlignType,
-  VerticalAlignType,
   NodeLabelPositionType,
   NodeLabelPositionValueType,
+  VerticalAlignType,
 } from './NodeLabelPositionType'
-export { NodeBorderLineType } from './NodeBorderLineType'
+export { NodeShapeType } from './NodeShapeType'
 export { VisibilityType } from './VisibilityType'
-export { EdgeFillType } from './EdgeFillType'
-
 export { VisualPropertyValueType } from './VisualPropertyValueType'
-
-export { CustomGraphicsType } from './CustomGraphicsType'

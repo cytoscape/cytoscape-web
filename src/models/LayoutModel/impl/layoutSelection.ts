@@ -1,10 +1,10 @@
-import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchy-util'
-import { NdexNetworkSummary } from '../../NetworkSummaryModel'
+import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
+import { NetworkSummary } from '../../NetworkSummaryModel'
 import { LayoutAlgorithm } from '../LayoutAlgorithm'
 import { LayoutEngine } from '../LayoutEngine'
-import { CosmosLayout } from './Cosmos/CosmosLayout'
-import { CyjsLayout } from './Cyjs/CyjsLayout'
-import { G6Layout } from './G6/G6Layout'
+import { CosmosLayout } from './Cosmos/cosmosLayout'
+import { CyjsLayout } from './Cyjs/cyjsLayout'
+import { G6Layout } from './G6/g6Layout'
 
 export const LayoutEngines: LayoutEngine[] = [
   G6Layout,
@@ -39,7 +39,7 @@ export const getLayout = (
 export const ELE_THRESHOLD = 1000
 
 export const getDefaultLayout = (
-  summary: NdexNetworkSummary,
+  summary: NetworkSummary,
   numNetworkElements: number,
   maxNetworkElementsThreshold: number,
 ): { engineName: string; algorithmName: string } | undefined => {

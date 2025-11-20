@@ -1,12 +1,11 @@
 import {
-  ErrorResponse,
-  CytoContainerResult,
-  ServiceAlgorithm,
   CytoContainerRequest,
   CytoContainerRequestId,
+  CytoContainerResult,
   CytoContainerResultStatus,
-  ServerStatus
-} from '../model'
+  ErrorResponse,
+  ServerStatus,
+  ServiceAlgorithm} from '../model'
 
 // get task result function
 export const getTaskResult = async (

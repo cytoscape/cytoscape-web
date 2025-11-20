@@ -1,31 +1,28 @@
-import { MenuItem, Tooltip, Box } from '@mui/material'
-import { Menu } from 'primereact/menu'
-import { ReactElement, useContext } from 'react'
-import { BaseMenuProps } from '../../../components/ToolBar/BaseMenuProps'
+import { Box, MenuItem, Tooltip } from '@mui/material'
+import { ReactElement } from 'react'
+
+import { fetchGeneNamesFromIds } from '../../../data/external-api/ndex'
+import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
-import { serializeValueList } from '../../../models/TableModel/impl/ValueTypeImpl'
-import { useCredentialStore } from '../../../store/CredentialStore'
-import { useMessageStore } from '../../../store/MessageStore'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { useTableStore } from '../../../store/TableStore'
-import { useUiStateStore } from '../../../store/UiStateStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
+import { MessageSeverity } from '../../../models/MessageModel'
+import { serializeValueList } from '../../../models/TableModel/impl/valueTypeImpl'
+import { NetworkView } from '../../../models/ViewModel'
 import {
-  SubsystemTag,
   HcxMetaTag,
+  SubsystemTag,
 } from '../../HierarchyViewer/model/HcxMetaTag'
-import { isHCX } from '../../HierarchyViewer/utils/hierarchy-util'
+import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
+import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
-import { NetworkView } from '../../../models/ViewModel'
-import { translateMemberIds } from '../../../utils/ndex-utils'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { MessageSeverity } from '../../../models/MessageModel'
 
 export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
-
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
@@ -85,12 +82,11 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
 
           if (members !== undefined) {
             const token = await getToken()
-            const names = await translateMemberIds({
-              networkUUID: parentInteractionNetworkId as string,
-              ids: members as string[],
-              url: ndexBaseUrl,
-              accessToken: token,
-            })
+            const names = await fetchGeneNamesFromIds(
+              parentInteractionNetworkId as string,
+              members as string[],
+              token,
+            )
 
             geneNames.push(...names)
           } else {
@@ -181,7 +177,11 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const menuItem = (
-    <MenuItem disabled={disabled} onClick={runLLMQuery}>
+    <MenuItem
+      data-testid="run-llm-query-menu-item"
+      disabled={disabled}
+      onClick={runLLMQuery}
+    >
       Run LLM Query
     </MenuItem>
   )

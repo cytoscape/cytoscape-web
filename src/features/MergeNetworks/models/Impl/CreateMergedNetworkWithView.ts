@@ -1,20 +1,21 @@
 import cloneDeep from 'lodash/cloneDeep'
-import { unionMerge } from './UnionMerge'
-import { intersectionMerge } from './IntersectionMerge'
-import { differenceMerge } from './DifferenceMerge'
-import { MatchingTable } from '../MatchingTable'
+
+import { putNetworkSummaryToDb } from '../../../../data/db'
+import { CyNetwork } from '../../../../models/CyNetworkModel'
 import { IdType } from '../../../../models/IdType'
-import { mergeNetSummary } from './MergeNetSummary'
-import { checkAttribute } from '../../utils/attributes-operations'
-import { Column } from '../../../../models/TableModel/Column'
-import { putNetworkSummaryToDb } from '../../../../store/persist/db'
 import { NetworkAttributes } from '../../../../models/NetworkModel'
-import ViewModelFn, { NetworkView } from '../../../../models/ViewModel'
-import { MergeType, NetworkRecord } from '../DataInterfaceForMerge'
-import { NdexNetworkSummary } from '../../../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
+import { Column } from '../../../../models/TableModel/Column'
+import ViewModelFn, { NetworkView } from '../../../../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../../../../models/VisualStyleModel'
-import { NetworkWithView } from '../../../../models/NetworkWithViewModel'
+import { checkAttribute } from '../../utils/attributesOperationsUtil'
+import { MergeType, NetworkRecord } from '../DataInterfaceForMerge'
+import { MatchingTable } from '../MatchingTable'
+import { differenceMerge } from './DifferenceMerge'
+import { intersectionMerge } from './IntersectionMerge'
+import { mergeNetSummary } from './MergeNetSummary'
+import { unionMerge } from './UnionMerge'
 
 export const createMergedNetworkWithView = async (
   fromNetworks: IdType[],
@@ -25,12 +26,12 @@ export const createMergedNetworkWithView = async (
   edgeAttributeMapping: MatchingTable,
   networkAttributeMapping: MatchingTable,
   matchingAttribute: Record<IdType, Column>,
-  netSummaries: Record<IdType, NdexNetworkSummary>,
+  netSummaries: Record<IdType, NetworkSummary>,
   mergeOpType: MergeType = MergeType.union,
   mergeWithinNetwork: boolean = false,
   mergeOnlyNodes: boolean = false,
   strictRemoveMode: boolean = false,
-): Promise<[NetworkWithView, NdexNetworkSummary]> => {
+): Promise<[CyNetwork, NetworkSummary]> => {
   if (
     checkAttribute(
       nodeAttributeMapping,
@@ -99,7 +100,7 @@ export const createMergedNetworkWithView = async (
     : VisualStyleFn.createVisualStyle()
   const newNetworkView: NetworkView = ViewModelFn.createViewModel(newNetwork)
 
-  const networkSummary: NdexNetworkSummary = {
+  const networkSummary: NetworkSummary = {
     isNdex: false,
     ownerUUID: toNetworkId,
     name: networkName,

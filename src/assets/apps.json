@@ -1,12 +1,1 @@
-[
-  {
-    "name": "simpleMenu",
-    "url": "https://cytoscape.org/cytoscape-web-app-examples/simple-menu/remoteEntry.js",
-    "entryPoint": "SimpleMenuApp"
-  },
-  {
-    "name": "simplePanel",
-    "url": "https://cytoscape.org/cytoscape-web-app-examples/simple-panel/remoteEntry.js",
-    "entryPoint": "SimplePanelApp"
-  }
-]
+[]

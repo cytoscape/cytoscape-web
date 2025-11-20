@@ -1,26 +1,35 @@
-jest.mock('../../../models/NetworkModel', () => {
+jest.mock('../../../models/NetworkModel/impl/networkImpl', () => {
     return {
-        default: {
-            createNetwork: jest.fn(),
-            createNetworkFromLists: jest.fn(),
-            addNode: jest.fn(),
-            addNodes: jest.fn(),
-            addEdges: jest.fn(),
-            addEdge: jest.fn()
-        }
+        createNetwork: jest.fn(),
+        createNetworkFromLists: jest.fn(),
+        addNode: jest.fn(),
+        addNodes: jest.fn(),
+        addEdges: jest.fn(),
+        addEdge: jest.fn(),
+        deleteNodes: jest.fn(),
+        deleteEdges: jest.fn(),
+        translateCXEdgeId: jest.fn((id: string) => `e${id}`),
+        isEdgeId: jest.fn((id: string) => id.startsWith('e')),
+        translateEdgeIdToCX: jest.fn((id: string) => id.slice(1)),
+        createFromCyJson: jest.fn(),
+        networkModelToImplNetwork: jest.fn(),
+        createCyJSON: jest.fn(),
+        addNodeRow: jest.fn(),
+        addNodesWithRows: jest.fn(),
+        getInternalNetworkDataStore: jest.fn(),
     };
 });
 
-import { Table } from '../../../models/TableModel';
 import { IdType } from '../../../models/IdType';
 import { Network } from '../../../models/NetworkModel';
 import NetworkFn from '../../../models/NetworkModel';
-import { Node } from '../../../models/NetworkModel/Node';
-import { Column } from '../../../models/TableModel/Column';
 import { Edge } from '../../../models/NetworkModel/Edge';
+import { Node } from '../../../models/NetworkModel/Node';
+import { Table } from '../../../models/TableModel';
+import { Column } from '../../../models/TableModel/Column';
+import { differenceMerge } from '../models/Impl/DifferenceMerge';
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl';
 import { MatchingTable, MatchingTableRow } from '../models/MatchingTable';
-import { differenceMerge } from '../models/Impl/DifferenceMerge';
 
 beforeEach(() => {
     jest.resetAllMocks();
