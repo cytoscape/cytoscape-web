@@ -1,16 +1,13 @@
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
 import {
   Button,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogContentText,
   DialogTitle,
   TextField,
   Typography,
 } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { fetchMyNdexWorkspaces } from '../../../data/external-api/ndex'
 import { logUi } from '../../../debug'
@@ -85,9 +82,15 @@ export const WorkspaceNamingDialog = ({
         workspaceIdToBeOverwritten,
       )
     } catch (e) {
+      const errorMessage =
+        e instanceof Error
+          ? e.message
+          : typeof e === 'string'
+            ? e
+            : 'Unknown error occurred'
       addMessage({
         duration: 4000,
-        message: 'Failed to overwrite the workspace in NDEx',
+        message: `Failed to overwrite the workspace in NDEx: ${errorMessage}`,
         severity: MessageSeverity.ERROR,
       })
       logUi.error(
@@ -108,13 +111,16 @@ export const WorkspaceNamingDialog = ({
     }
     try {
       const accessToken = await getToken()
-      const existingWorkspaces = await fetchMyNdexWorkspaces(accessToken)
-      const workspaceId = existingWorkspaces.find(
+      const existingWorkspaces = await fetchMyNdexWorkspaces(
+        accessToken,
+        ndexBaseUrl,
+      )
+      const existingWorkspaceId = existingWorkspaces.find(
         (workspace) => workspace.name === workspaceName,
       )?.workspaceId
 
-      if (workspaceId) {
-        setWorkspaceIdToBeOverwritten(workspaceId)
+      if (existingWorkspaceId) {
+        setWorkspaceIdToBeOverwritten(existingWorkspaceId)
         setShowConfirmDialog(true)
         return
       } else {
@@ -137,10 +143,16 @@ export const WorkspaceNamingDialog = ({
         )
       }
     } catch (e) {
+      const errorMessage =
+        e instanceof Error
+          ? e.message
+          : typeof e === 'string'
+            ? e
+            : 'Unknown error occurred'
       logUi.error(`[${onSave.name}]: Failed to save the workspace to NDEx`, e)
       addMessage({
         duration: 4000,
-        message: 'Failed to save the workspace to NDEx',
+        message: `Failed to save the workspace to NDEx: ${errorMessage}`,
         severity: MessageSeverity.ERROR,
       })
     }

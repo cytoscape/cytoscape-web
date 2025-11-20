@@ -14,9 +14,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
-import debounce from 'lodash/debounce'
 import React, { ReactElement, useContext, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import {
   deleteNdexWorkspace,
@@ -28,10 +26,11 @@ import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useLoadWorkspace } from '../../../data/hooks/useLoadWorkspace'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { MessageSeverity } from '../../../models/MessageModel'
-import { Workspace } from '../../../models/WorkspaceModel'
 import { dateFormatter } from '../../../utils/dateFormat'
+import { ConfirmationDialog } from '../../ConfirmationDialog'
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
@@ -45,17 +44,13 @@ export const LoadWorkspaceDialog: React.FC<{
   const setWorkspaceIsRemote = useWorkspaceStore((state) => state.setIsRemote)
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
-  const setWorkSpace = useWorkspaceStore((state) => state.set)
-  const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
   const addMessage = useMessageStore((state) => state.addMessage)
   const apps = useAppStore((state) => state.apps)
   const serviceApps = useAppStore((state) => state.serviceApps)
-  const addServiceApp = useAppStore((state) => state.addService)
-  const removeServiceApp = useAppStore((state) => state.removeService)
-  const setAppStatus = useAppStore((state) => state.setStatus)
-  const navigate = useNavigate()
+  const loadWorkspace = useLoadWorkspace()
 
   const [openDialog, setOpenDialog] = useState(false)
+  const [showLoadConfirmDialog, setShowLoadConfirmDialog] = useState(false)
 
   const handleDeleteWorkspaceClick = (): void => {
     setOpenDialog(true)
@@ -70,13 +65,19 @@ export const LoadWorkspaceDialog: React.FC<{
     fetchMyNdexWorkspaces(token)
       .then(setMyWorkspaces)
       .catch((error) => {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Unknown error occurred'
         logUi.error(
           `[${LoadWorkspaceDialog.name}]:[${handleCloseDialog.name}] Error fetching workspaces from NDEx`,
           error,
         )
 
         addMessage({
-          message: 'Failed to fetch workspaces from NDEx',
+          message: `Failed to fetch workspaces from NDEx: ${errorMessage}`,
           duration: 4000,
           severity: MessageSeverity.ERROR,
         })
@@ -94,69 +95,12 @@ export const LoadWorkspaceDialog: React.FC<{
     )
   }
 
-  const handleOpenWorkspace = async (): Promise<void> => {
+  const handleOpenWorkspace = (): void => {
     const selectedWorkspace = myWorkspaces.find(
       (workspace) => workspace.workspaceId === selectedWorkspaceId,
     )
     if (selectedWorkspace) {
-      try {
-        resetWorkspace().then(() => {
-          debounce(() => {
-            navigate('/')
-            setWorkSpace({
-              name: selectedWorkspace.name,
-              id: selectedWorkspace.workspaceId,
-              currentNetworkId: selectedWorkspace.options?.currentNetwork ?? '',
-              networkIds: selectedWorkspace.networkIDs,
-              localModificationTime: selectedWorkspace.modificationTime,
-              creationTime: selectedWorkspace.creationTime,
-              networkModified: {},
-              isRemote: true,
-            } as Workspace)
-            // Add apps
-            const activeApps = new Set(
-              selectedWorkspace.options?.activeApps ?? [],
-            )
-            const currentApps = new Set(
-              Object.keys(apps).filter(
-                (key) => apps[key].status === AppStatus.Active,
-              ),
-            )
-            currentApps.forEach((appKey) => {
-              if (!activeApps.has(appKey)) {
-                setAppStatus(appKey, AppStatus.Inactive)
-              }
-            })
-            activeApps.forEach((appKey) => {
-              if (!currentApps.has(appKey as string)) {
-                setAppStatus(appKey as string, AppStatus.Active)
-              }
-            })
-            // Add service apps
-            const activeServiceApps = new Set(
-              selectedWorkspace.options?.serviceApps ?? [],
-            )
-            const currentServiceApps = new Set(Object.keys(serviceApps))
-            currentServiceApps.forEach((serviceAppKey) => {
-              if (!activeServiceApps.has(serviceAppKey)) {
-                removeServiceApp(serviceAppKey)
-              }
-            })
-            activeServiceApps.forEach((serviceAppKey) => {
-              if (!currentServiceApps.has(serviceAppKey as string)) {
-                addServiceApp(serviceAppKey as string)
-              }
-            })
-          }, 1000)()
-        })
-        handleClose()
-      } catch (e) {
-        addMessage({
-          message: 'Failed to open workspace',
-          duration: 4000,
-          severity: MessageSeverity.ERROR,
-        })
-      }
+      setShowLoadConfirmDialog(true)
     } else {
       addMessage({
         message: 'Selected workspace not found',
@@ -166,28 +110,98 @@ export const LoadWorkspaceDialog: React.FC<{
     }
   }
 
+  const handleConfirmLoadWorkspace = async (): Promise<void> => {
+    const selectedWorkspace = myWorkspaces.find(
+      (workspace) => workspace.workspaceId === selectedWorkspaceId,
+    )
+    if (selectedWorkspace) {
+      try {
+        await loadWorkspace(selectedWorkspace, apps, serviceApps)
+        handleClose()
+        // Reload the page to apply changes
+        window.location.reload()
+      } catch (e) {
+        const errorMessage =
+          e instanceof Error
+            ? e.message
+            : typeof e === 'string'
+              ? e
+              : 'Unknown error occurred'
+        logUi.error(
+          `[${handleConfirmLoadWorkspace.name}]: Failed to open workspace`,
+          e,
+        )
+        addMessage({
+          message: `Failed to open workspace: ${errorMessage}`,
+          duration: 4000,
+          severity: MessageSeverity.ERROR,
+        })
+        setShowLoadConfirmDialog(false)
+      }
+    } else {
+      addMessage({
+        message: 'Selected workspace not found',
+        duration: 4000,
+        severity: MessageSeverity.WARNING,
+      })
+      setShowLoadConfirmDialog(false)
+    }
+  }
+
   const handleConfirmDelete = async (): Promise<void> => {
     if (selectedWorkspaceId !== null) {
       const selectedWorkspace = myWorkspaces.find(
         (workspace) => workspace.workspaceId === selectedWorkspaceId,
       )
       if (selectedWorkspace) {
-        const token = await getToken()
-        await deleteNdexWorkspace(
-          selectedWorkspace.workspaceId,
-          token,
-          ndexBaseUrl,
-        )
-        if (currentWorkspaceId === selectedWorkspace.workspaceId) {
-          setWorkspaceIsRemote(false) //If user wants to delete the current workspace, then mark it as 'local'
+        try {
+          const token = await getToken()
+          await deleteNdexWorkspace(
+            selectedWorkspace.workspaceId,
+            token,
+            ndexBaseUrl,
+          )
+          if (currentWorkspaceId === selectedWorkspace.workspaceId) {
+            setWorkspaceIsRemote(false) //If user wants to delete the current workspace, then mark it as 'local'
+          }
+          await fetchWorkspaces()
+          setSelectedWorkspaceId(null)
+          addMessage({
+            message: 'Workspace deleted successfully',
+            duration: 3000,
+            severity: MessageSeverity.SUCCESS,
+          })
+          window.location.reload()
+        } catch (e) {
+          const errorMessage =
+            e instanceof Error
+              ? e.message
+              : typeof e === 'string'
+                ? e
+                : 'Unknown error occurred'
+          logUi.error(
+            `[${handleConfirmDelete.name}]: Failed to delete workspace`,
+            e,
+          )
+          addMessage({
+            message: `Failed to delete workspace: ${errorMessage}`,
+            duration: 4000,
+            severity: MessageSeverity.ERROR,
+          })
         }
       } else {
-        alert('Selected workspace not found')
+        addMessage({
+          message: 'Selected workspace not found',
+          duration: 4000,
+          severity: MessageSeverity.WARNING,
+        })
       }
-      await fetchWorkspaces()
-      setSelectedWorkspaceId(null)
     } else {
-      alert('No workspace selected')
+      addMessage({
+        message: 'No workspace selected',
+        duration: 4000,
+        severity: MessageSeverity.WARNING,
+      })
     }
     setOpenDialog(false)
   }
@@ -336,6 +350,20 @@ export const LoadWorkspaceDialog: React.FC<{
           </Dialog>
         </Box>
       </DialogActions>
+      <ConfirmationDialog
+        title="Load Workspace"
+        message={
+          selectedWorkspaceId
+            ? `Are you sure you want to load the workspace "${myWorkspaces.find((w) => w.workspaceId === selectedWorkspaceId)?.name}"? This will replace all existing networks in your workspace. This action cannot be undone.`
+            : 'Are you sure you want to load this workspace? This will replace all existing networks in your workspace. This action cannot be undone.'
+        }
+        onConfirm={handleConfirmLoadWorkspace}
+        onCancel={() => setShowLoadConfirmDialog(false)}
+        open={showLoadConfirmDialog}
+        setOpen={setShowLoadConfirmDialog}
+        buttonTitle="Load (cannot be undone)"
+        isAlert={true}
+      />
     </Dialog>
   )
 }

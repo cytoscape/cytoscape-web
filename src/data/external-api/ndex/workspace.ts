@@ -86,3 +86,56 @@ export const deleteNdexWorkspace = async (
   const ndexClient = getNdexClient(accessToken, ndexUrl)
   await ndexClient.deleteCyWebWorkspace(workspaceId)
 }
+
+/**
+ * Creates a new workspace in NDEx.
+ *
+ * @param workspaceData - Workspace data including name, options, and network IDs
+ * @param accessToken - Authentication token
+ * @param ndexUrl - Optional NDEx base URL (defaults to module configuration if not provided)
+ * @returns Promise resolving to the created workspace response with UUID
+ */
+export const createNdexWorkspace = async (
+  workspaceData: {
+    name: string
+    options: {
+      currentNetwork: string
+      activeApps: string[]
+      serviceApps: string[]
+    }
+    networkIDs: string[]
+  },
+  accessToken: string,
+  ndexUrl?: string,
+): Promise<{ uuid: string }> => {
+  const ndexClient = getNdexClient(accessToken, ndexUrl)
+  const response = await ndexClient.createCyWebWorkspace(workspaceData)
+  return response
+}
+
+/**
+ * Updates an existing workspace in NDEx.
+ *
+ * @param workspaceId - Workspace UUID in NDEx
+ * @param workspaceData - Workspace data including name, options, and network IDs
+ * @param accessToken - Authentication token
+ * @param ndexUrl - Optional NDEx base URL (defaults to module configuration if not provided)
+ * @returns Promise resolving when update is complete
+ */
+export const updateNdexWorkspace = async (
+  workspaceId: string,
+  workspaceData: {
+    name: string
+    options: {
+      currentNetwork: string
+      activeApps: string[]
+      serviceApps: string[]
+    }
+    networkIDs: string[]
+  },
+  accessToken: string,
+  ndexUrl?: string,
+): Promise<void> => {
+  const ndexClient = getNdexClient(accessToken, ndexUrl)
+  await ndexClient.updateCyWebWorkspace(workspaceId, workspaceData)
+}

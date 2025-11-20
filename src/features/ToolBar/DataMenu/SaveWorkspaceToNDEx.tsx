@@ -1,4 +1,4 @@
-import { Box, MenuItem, Tooltip } from '@mui/material'
+import { Tooltip } from '@mui/material'
 import React, { useContext, useState } from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
@@ -33,9 +33,18 @@ export const SaveWorkspaceToNDExMenuItem = (
   const enabled = authenticated && allNetworkId.length > 0
 
   const menuItem = (
-    <MenuItem disabled={!enabled} onClick={handleSaveWorkspaceToNDEx}>
+    <div
+      onClick={enabled ? handleSaveWorkspaceToNDEx : undefined}
+      style={{
+        padding: '0.375rem 1rem',
+        cursor: enabled ? 'pointer' : 'not-allowed',
+        lineHeight: '1.5rem',
+        opacity: enabled ? 1 : 0.5,
+        pointerEvents: enabled ? 'auto' : 'none',
+      }}
+    >
       Save Workspace As...
-    </MenuItem>
+    </div>
   )
 
   return (
@@ -60,7 +69,7 @@ export const SaveWorkspaceToNDExMenuItem = (
               : ''
           }
         >
-          <Box>{menuItem}</Box>
+          <span>{menuItem}</span>
         </Tooltip>
       )}
     </>

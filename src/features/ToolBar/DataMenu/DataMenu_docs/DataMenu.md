@@ -75,6 +75,10 @@ The main `DataMenu` component wires these items into a hierarchical menu model.
 - **Close-on-Action Pattern**
   - Every menu item receives `handleClose` to hide the overlay after triggering an action, avoiding menus left open after operations.
 
+## Related Documentation
+
+- `DataMenu_docs/WorkspaceMenuItems.md` - Detailed documentation for workspace menu items (Load, Save, Overwrite)
+
 ## Future Improvements
 
 - Add recent networks/workspaces section for quick reopening.

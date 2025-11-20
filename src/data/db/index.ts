@@ -727,6 +727,20 @@ export const getAppFromDb = async (
   return await db.apps.get({ id: appId })
 }
 
+export const getAllAppsFromDb = async (): Promise<CyApp[]> => {
+  try {
+    const appList: CyApp[] = await db.apps.toArray()
+    return appList
+  } catch (err) {
+    logDb.warn(
+      '[getAllAppsFromDb] Failed to open DB or fetch data',
+      err,
+      db.apps,
+    )
+    return []
+  }
+}
+
 export const deleteAppFromDb = async (appId: string): Promise<void> => {
   await db.transaction('rw', db.apps, async () => {
     await db.apps.delete(appId)

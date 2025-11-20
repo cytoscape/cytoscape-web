@@ -23,10 +23,12 @@ export { fetchGeneNamesFromIds, fetchNdexInterconnectQuery } from './query'
 
 // Workspace operations
 export {
+  createNdexWorkspace,
   deleteNdexWorkspace,
   fetchMyNdexAccountNetworks,
   fetchMyNdexWorkspaces,
   searchNdexNetworks,
+  updateNdexWorkspace,
 } from './workspace'
 
 // Permission operations

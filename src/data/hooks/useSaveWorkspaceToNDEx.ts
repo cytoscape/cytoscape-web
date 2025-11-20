@@ -1,7 +1,8 @@
 import {
-  getNdexClient,
+  createNdexWorkspace,
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
+  updateNdexWorkspace,
 } from '../external-api/ndex'
 import { getWorkspaceFromDb } from '../db'
 import { logApi } from '../../debug'
@@ -61,7 +62,6 @@ export const useSaveWorkspace = () => {
     serviceApps: Record<string, ServiceApp>,
     workspaceToBeOverwritten?: string,
   ): Promise<void> => {
-    const ndexClient = getNdexClient(accessToken)
     // Save all networks to NDEx
     for (const networkId of allNetworkId) {
       let network = networks.get(networkId) as Network
@@ -133,7 +133,13 @@ export const useSaveWorkspace = () => {
           deleteNetworkModifiedStatus(networkId)
         }
       } catch (e) {
-        if (e.message.includes(TimeOutErrorIndicator)) {
+        const errorMessage =
+          e instanceof Error
+            ? e.message
+            : typeof e === 'string'
+              ? e
+              : 'Unknown error occurred'
+        if (errorMessage.includes(TimeOutErrorIndicator)) {
           addMessage({
             message: TimeOutErrorMessage,
             duration: 3000,
@@ -141,9 +147,7 @@ export const useSaveWorkspace = () => {
           })
         } else {
           addMessage({
-            message: `Error: Unable to save ${summary.isNdex ? 'the network' : 'a copy of the local network'}(${summary.name}) to NDEx: ${
-              e.message as string
-            }`,
+            message: `Error: Unable to save ${summary.isNdex ? 'the network' : 'a copy of the local network'}(${summary.name}) to NDEx: ${errorMessage}`,
             duration: 3000,
             severity: MessageSeverity.ERROR,
           })
@@ -155,29 +159,13 @@ export const useSaveWorkspace = () => {
     }
 
     // Save workspace to NDEx
-    const activeApps = Object.keys(apps).filter(
-      (key) => apps[key].status === AppStatus.Active,
-    )
-    const serviceAppNames = Object.keys(serviceApps)
-    const workspace = await getWorkspaceFromDb(currentWorkspaceId)
-    if (isUpdate) {
-      await ndexClient.updateCyWebWorkspace(
-        workspaceToBeOverwritten ?? currentWorkspaceId,
-        {
-          name: workspaceName,
-          options: {
-            currentNetwork: workspace.currentNetworkId,
-            activeApps: activeApps,
-            serviceApps: serviceAppNames,
-          },
-          networkIDs: workspace.networkIds,
-        },
+    try {
+      const activeApps = Object.keys(apps).filter(
+        (key) => apps[key].status === AppStatus.Active,
       )
-      if (workspaceToBeOverwritten) {
-        setId(workspaceToBeOverwritten)
-      }
-    } else {
-      const response = await ndexClient.createCyWebWorkspace({
+      const serviceAppNames = Object.keys(serviceApps)
+      const workspace = await getWorkspaceFromDb(currentWorkspaceId)
+      const workspaceData = {
         name: workspaceName,
         options: {
           currentNetwork: workspace.currentNetworkId,
@@ -185,17 +173,44 @@ export const useSaveWorkspace = () => {
           serviceApps: serviceAppNames,
         },
         networkIDs: workspace.networkIds,
+      }
+
+      if (isUpdate) {
+        const targetWorkspaceId = workspaceToBeOverwritten ?? currentWorkspaceId
+        await updateNdexWorkspace(targetWorkspaceId, workspaceData, accessToken)
+        if (workspaceToBeOverwritten) {
+          setId(workspaceToBeOverwritten)
+        }
+      } else {
+        const response = await createNdexWorkspace(workspaceData, accessToken)
+        const { uuid } = response
+        setId(uuid)
+      }
+      setIsRemote(true)
+      renameWorkspace(workspaceName)
+      addMessage({
+        message: 'Saved workspace to NDEx successfully.',
+        duration: 3000,
+        severity: MessageSeverity.SUCCESS,
       })
-      const { uuid } = response
-      setId(uuid)
+    } catch (e) {
+      const errorMessage =
+        e instanceof Error
+          ? e.message
+          : typeof e === 'string'
+            ? e
+            : 'Unknown error occurred'
+      addMessage({
+        message: `Failed to save workspace to NDEx: ${errorMessage}`,
+        duration: 4000,
+        severity: MessageSeverity.ERROR,
+      })
+      logApi.error(
+        `[${saveWorkspace.name}]: Failed to save workspace to NDEx`,
+        e,
+      )
+      throw e
     }
-    setIsRemote(true)
-    renameWorkspace(workspaceName)
-    addMessage({
-      message: 'Saved workspace to NDEx successfully.',
-      duration: 3000,
-      severity: MessageSeverity.SUCCESS,
-    })
   }
   return saveWorkspace
 }

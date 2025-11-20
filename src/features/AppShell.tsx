@@ -1,4 +1,5 @@
 import { Box } from '@mui/material'
+import cloneDeep from 'lodash/cloneDeep'
 import { ReactElement, useContext, useEffect, useRef } from 'react'
 import {
   Location,
@@ -175,7 +176,11 @@ const AppShell = (): ReactElement => {
 
       // Process UI state parameters from search params
       // Update the workspace, uiState and summaries in the stores so react can start to render the workspace editor
-      const uiState = (await getUiStateFromDb()) ?? DEFAULT_UI_STATE
+      // Create a mutable copy to avoid read-only errors when object comes from IndexedDB
+      const dbUiState = await getUiStateFromDb()
+      const uiState = dbUiState
+        ? cloneDeep(dbUiState)
+        : cloneDeep({ ...DEFAULT_UI_STATE })
       uiState.panels[Panel.LEFT] =
         (search.get(Panel.LEFT) as PanelState) ?? uiState.panels[Panel.LEFT]
       uiState.panels[Panel.RIGHT] =
