@@ -534,7 +534,6 @@ export const putNetworkViewToDb = async (
       const viewList = await getNetworkViewsFromDb(id)
       if (viewList !== undefined) {
         // Add only if the view does not exist
-
         let found = false
         viewList.forEach((v: NetworkView, idx: number) => {
           const key1 = v.viewId

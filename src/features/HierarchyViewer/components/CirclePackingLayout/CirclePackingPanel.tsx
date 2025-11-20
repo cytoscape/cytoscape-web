@@ -1,4 +1,3 @@
-// React imports
 // Third-party imports
 import { Tooltip } from '@mui/material'
 import * as d3Hierarchy from 'd3-hierarchy'
