@@ -69,21 +69,6 @@ export const validateSnapshotStructure = (
     if (typeof metadata !== 'object' || Array.isArray(metadata)) {
       errors.push('Metadata must be an object')
     } else {
-      // Validate version
-      if (typeof metadata.version !== 'number') {
-        errors.push('Metadata.version must be a number')
-      } else if (metadata.version < 1) {
-        errors.push('Metadata.version must be a positive integer')
-      } else if (metadata.version > currentVersion + 1) {
-        errors.push(
-          `Snapshot version (${metadata.version}) is too new. Maximum supported: ${currentVersion + 1}`,
-        )
-      } else if (metadata.version > currentVersion) {
-        warnings.push(
-          `Snapshot version (${metadata.version}) is newer than current version (${currentVersion}). Some features may not be available.`,
-        )
-      }
-
       // Validate exportDate
       if (typeof metadata.exportDate !== 'string') {
         errors.push('Metadata.exportDate must be a string')
