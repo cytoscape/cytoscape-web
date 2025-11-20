@@ -20,8 +20,9 @@ interface DatabaseExportMetadata {
 
 - **Type**: `number`
 - **Description**: Database schema version (currently 7)
-- **Purpose**: Used for validation and migration compatibility checks
+- **Purpose**: Tracked for informational purposes only (not validated during import)
 - **Example**: `7`
+- **Note**: Version validation has been removed. This field is included in exports but is not checked during import.
 
 ### `exportDate`
 
@@ -138,8 +139,8 @@ new webpack.DefinePlugin({
 
 ### Migration
 
-- Validate snapshot compatibility with current app version
-- Warn about version mismatches
+- Track database schema version for reference (not used for validation)
+- Note: Version compatibility checks are not performed during import
 
 ### Audit Trail
 
@@ -150,10 +151,12 @@ new webpack.DefinePlugin({
 
 The metadata is validated during import:
 
-1. **Required fields**: `version`, `exportDate`, `exportVersion` must be present and valid
-2. **Optional fields**: `buildId` and `buildDate` are validated if present
-3. **Version compatibility**: Snapshot version is checked against current database version
+1. **Required fields**: `exportDate`, `exportVersion` must be present and valid
+2. **Version field**: The `version` field is included but **not validated** - any value is accepted
+3. **Optional fields**: `buildId` and `buildDate` are validated if present
 4. **Date validation**: All date fields must be valid ISO 8601 strings
+
+**Note**: Version validation has been removed. The `version` field is tracked for informational purposes only and does not affect import compatibility.
 
 See `src/db/snapshot/snapshotValidator.ts` for validation logic.
 

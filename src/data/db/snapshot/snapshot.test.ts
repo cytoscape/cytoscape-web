@@ -19,12 +19,16 @@ import {
   clearNetworksFromDb,
   closeDb,
   deleteDb,
+  getDb,
   getNetworkFromDb,
+  getWorkspaceFromDb,
   initializeDb,
   ObjectStoreNames,
   putNetworkToDb,
   putTablesToDb,
+  putWorkspaceToDb,
 } from '../index'
+import { createWorkspace } from '../../../models/WorkspaceModel/impl/workspaceImpl'
 import { Network } from '../../../models/NetworkModel'
 import { Table } from '../../../models/TableModel'
 
@@ -150,19 +154,21 @@ describe('Database Snapshot Import/Export', () => {
       )
     })
 
-    it('should reject snapshot with invalid version', async () => {
-      const invalidSnapshot = JSON.stringify({
+    it('should accept snapshot with any version value', async () => {
+      // Version validation has been removed, so any version should be accepted
+      const snapshotWithStringVersion = JSON.stringify({
         metadata: {
-          version: 'not-a-number',
+          version: '7',
           exportDate: new Date().toISOString(),
           exportVersion: '1.0.0',
         },
         data: {},
       })
 
-      await expect(importDatabaseSnapshot(invalidSnapshot)).rejects.toThrow(
-        'Snapshot validation failed',
-      )
+      // Should not throw - version is not validated
+      await expect(
+        importDatabaseSnapshot(snapshotWithStringVersion),
+      ).resolves.toBeDefined()
     })
 
     it('should reject snapshot exceeding size limit', async () => {
@@ -263,7 +269,8 @@ describe('Database Snapshot Import/Export', () => {
       expect(result.errors.length).toBeGreaterThan(0)
     })
 
-    it('should reject snapshot with invalid version', () => {
+    it('should accept snapshot with any version value', () => {
+      // Version validation has been removed
       const snapshot = {
         metadata: {
           version: 'invalid',
@@ -273,20 +280,26 @@ describe('Database Snapshot Import/Export', () => {
         data: {},
       }
       const result = validateSnapshotStructure(snapshot, 7)
-      expect(result.isValid).toBe(false)
+      // Version is not validated, so errors should not mention version
+      const versionErrors = result.errors.filter((e) =>
+        e.toLowerCase().includes('version'),
+      )
+      expect(versionErrors.length).toBe(0)
     })
 
-    it('should warn about newer version', () => {
+    it('should not warn about version differences', () => {
+      // Version validation has been removed, so no warnings about version
       const snapshot = {
         metadata: {
-          version: 8,
+          version: 999,
           exportDate: new Date().toISOString(),
           exportVersion: '1.0.0',
         },
         data: {},
       }
       const result = validateSnapshotStructure(snapshot, 7)
-      expect(result.warnings.length).toBeGreaterThan(0)
+      // Should not have version-related warnings
+      expect(result.warnings.some((w) => w.includes('version'))).toBe(false)
     })
 
     it('should reject non-array data in object stores', () => {
@@ -325,6 +338,78 @@ describe('Database Snapshot Import/Export', () => {
       const file = new File(['{}'], 'test.txt', { type: 'application/json' })
       const result = validateSnapshotFile(file)
       expect(result.warnings.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('importDatabaseSnapshotFromFile', () => {
+    it('should clear all workspaces before importing', async () => {
+      // Create a workspace in the database
+      const db = await getDb()
+      const testWorkspace = createWorkspace()
+      testWorkspace.id = 'test-workspace-1'
+      testWorkspace.name = 'Test Workspace'
+      await putWorkspaceToDb(testWorkspace)
+
+      // Verify workspace exists
+      const workspaceBefore = await getWorkspaceFromDb('test-workspace-1')
+      expect(workspaceBefore).toBeDefined()
+      expect(workspaceBefore.id).toBe('test-workspace-1')
+
+      // Create a snapshot file
+      const snapshotJson = await exportDatabaseSnapshot()
+      const file = new File([snapshotJson], 'test-snapshot.json', {
+        type: 'application/json',
+      })
+
+      // Import the snapshot
+      await importDatabaseSnapshotFromFile(file)
+
+      // Verify workspace was cleared before import, then workspace from snapshot was imported
+      const workspaceCount = await db.workspace.count()
+      expect(workspaceCount).toBe(1)
+      // Verify the workspace from the snapshot was imported
+      const importedWorkspace = await getWorkspaceFromDb('test-workspace-1')
+      expect(importedWorkspace).toBeDefined()
+      expect(importedWorkspace.id).toBe('test-workspace-1')
+    })
+
+    it('should import snapshot after clearing workspaces', async () => {
+      // Create initial workspace and network
+      const testWorkspace = createWorkspace()
+      testWorkspace.id = 'initial-workspace'
+      await putWorkspaceToDb(testWorkspace)
+
+      const testNetwork: Network = {
+        id: 'import-file-test-1',
+        nodes: [{ id: 'n1' }, { id: 'n2' }],
+        edges: [{ id: 'e1', s: 'n1', t: 'n2' }],
+      }
+      await putNetworkToDb(testNetwork)
+
+      // Export snapshot
+      const snapshotJson = await exportDatabaseSnapshot()
+      const file = new File([snapshotJson], 'test-snapshot.json', {
+        type: 'application/json',
+      })
+
+      // Clear networks to simulate fresh state
+      await clearNetworksFromDb()
+
+      // Import from file (should clear workspaces and import data including workspace)
+      const result = await importDatabaseSnapshotFromFile(file)
+
+      expect(result.success).toBe(true)
+      // Workspace should be imported from snapshot
+      const db = await getDb()
+      const workspaceCount = await db.workspace.count()
+      expect(workspaceCount).toBe(1)
+      // Verify the workspace from snapshot was imported
+      const importedWorkspace = await getWorkspaceFromDb('initial-workspace')
+      expect(importedWorkspace).toBeDefined()
+      expect(importedWorkspace.id).toBe('initial-workspace')
+      // Network data should also be imported
+      const imported = await getNetworkFromDb('import-file-test-1')
+      expect(imported).toBeDefined()
     })
   })
 
