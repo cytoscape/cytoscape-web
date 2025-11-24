@@ -86,6 +86,10 @@ const activatedAppIdSet = new Set<string>(loadedApps.map((app) => app.id))
 
 export const useAppManager = (): void => {
   const initRef = useRef<boolean>(false)
+  // Track failed app operations to prevent infinite retries
+  const failedAppIds = useRef<Set<string>>(new Set())
+  // Track last processed app state to prevent unnecessary re-runs
+  const lastAppsState = useRef<string>('')
 
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const registerApp = useAppStore((state) => state.add)
@@ -109,21 +113,51 @@ export const useAppManager = (): void => {
   }, [])
 
   useEffect(() => {
+    // Create a stable string representation of apps state to detect actual changes
+    const currentAppsState = JSON.stringify(
+      Object.keys(apps).map((id) => ({
+        id,
+        status: apps[id]?.status,
+      })),
+    )
+
+    // Skip if state hasn't actually changed (prevents unnecessary re-runs)
+    if (currentAppsState === lastAppsState.current) {
+      return
+    }
+    lastAppsState.current = currentAppsState
+
     appIds.forEach((appId: string) => {
-      if (!apps[appId] && activatedAppIdSet.has(appId)) {
-        //
-        registerApp(loadedApps.find((app) => app.id === appId) as CyApp)
-      } else if (apps[appId] && !activatedAppIdSet.has(appId)) {
-        setStatus(appId, AppStatus.Error)
-      } else if (
-        apps[appId] &&
-        activatedAppIdSet.has(appId) &&
-        apps[appId].status === AppStatus.Error
-      ) {
-        // Activate again
-        setStatus(appId, AppStatus.Active)
+      // Skip if this app has failed before (circuit breaker pattern)
+      if (failedAppIds.current.has(appId)) {
+        logApp.warn(
+          `[${useAppManager.name}]: Skipping ${appId} due to previous failure`,
+        )
+        return
+      }
+
+      try {
+        if (!apps[appId] && activatedAppIdSet.has(appId)) {
+          registerApp(loadedApps.find((app) => app.id === appId) as CyApp)
+        } else if (apps[appId] && !activatedAppIdSet.has(appId)) {
+          setStatus(appId, AppStatus.Error)
+        } else if (
+          apps[appId] &&
+          activatedAppIdSet.has(appId) &&
+          apps[appId].status === AppStatus.Error
+        ) {
+          // Activate again
+          setStatus(appId, AppStatus.Active)
+        }
+      } catch (error) {
+        // Mark app as failed to prevent infinite retries
+        failedAppIds.current.add(appId)
+        logApp.error(
+          `[${useAppManager.name}]: Error processing app ${appId}, marking as failed:`,
+          error,
+        )
       }
     })
     initRef.current = true
-  }, [apps])
+  }, [apps, registerApp, setStatus])
 }

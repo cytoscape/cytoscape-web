@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 import { putUiStateToDb } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 import { IdType } from '../../../models/IdType'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { UiStateStore } from '../../../models/StoreModel/UiStateStoreModel'
@@ -48,7 +49,8 @@ export const useUiStateStore = create(
     setUi: (ui: Ui) => {
       set((state) => {
         state.ui = ui
-        void putUiStateToDb(ui)
+        // Convert Immer proxy to plain object before saving
+        void putUiStateToDb(toPlainObject(ui))
         return state
       })
     },
@@ -121,7 +123,8 @@ export const useUiStateStore = create(
           width,
         )
 
-        void putUiStateToDb(nextUi)
+        // Convert Immer proxy to plain object before saving
+        void putUiStateToDb(toPlainObject(nextUi))
 
         state.ui = nextUi
         return state
@@ -138,7 +141,8 @@ export const useUiStateStore = create(
           visualStyleOptions,
         )
 
-        void putUiStateToDb(nextUi)
+        // Convert Immer proxy to plain object before saving
+        void putUiStateToDb(toPlainObject(nextUi))
 
         state.ui = nextUi
         return state
@@ -152,7 +156,8 @@ export const useUiStateStore = create(
           nodeSizeLocked,
         )
 
-        void putUiStateToDb(nextUi)
+        // Convert Immer proxy to plain object before saving
+        void putUiStateToDb(toPlainObject(nextUi))
 
         state.ui = nextUi
         return state
@@ -166,7 +171,8 @@ export const useUiStateStore = create(
           arrowColorMatchesEdge,
         )
 
-        void putUiStateToDb(nextUi)
+        // Convert Immer proxy to plain object before saving
+        void putUiStateToDb(toPlainObject(nextUi))
 
         state.ui = nextUi
         return state
@@ -183,7 +189,8 @@ export const useUiStateStore = create(
           tableDisplayConfiguration,
         )
 
-        void putUiStateToDb(nextUi)
+        // Convert Immer proxy to plain object before saving
+        void putUiStateToDb(toPlainObject(nextUi))
 
         state.ui = nextUi
         return state

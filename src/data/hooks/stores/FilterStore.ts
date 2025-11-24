@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 import { deleteFilterFromDb, putFilterToDb } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
 import { FilterConfig } from '../../../models/FilterModel'
 import * as FilterStoreImpl from '../../../models/FilterModel/impl/filterStoreImpl'
@@ -124,7 +125,9 @@ export const useFilterStore = create(
           return state
         }
         const newState = FilterStoreImpl.addFilterConfig(state, filter)
-        putFilterToDb(filter)
+        // Convert to plain object before saving (filter may be an Immer proxy)
+        const plainFilter = toPlainObject(filter)
+        putFilterToDb(plainFilter)
           .then(() => {
             logStore.info(
               `[${useFilterStore.name}]: New filter saved to db: ${filter.name}`,
@@ -151,7 +154,9 @@ export const useFilterStore = create(
     updateFilterConfig: (name: string, filter: FilterConfig) => {
       set((state) => {
         const newState = FilterStoreImpl.updateFilterConfig(state, name, filter)
-        putFilterToDb(filter)
+        // Convert to plain object before saving (filter may be an Immer proxy)
+        const plainFilter = toPlainObject(filter)
+        putFilterToDb(plainFilter)
         state.filterConfigs = newState.filterConfigs
         return state
       })
@@ -164,7 +169,9 @@ export const useFilterStore = create(
         const newState = FilterStoreImpl.updateRange(state, name, range)
         const newFilter = newState.filterConfigs[name]
         if (newFilter) {
-          putFilterToDb(newFilter)
+          // Convert Immer proxy to plain object before saving
+          const plainFilter = toPlainObject(newFilter)
+          putFilterToDb(plainFilter)
             .then(() => {
               logStore.info(
                 `[${useFilterStore.name}]: Range updated in db: ${name}`,

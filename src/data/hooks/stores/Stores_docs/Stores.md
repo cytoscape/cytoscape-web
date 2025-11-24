@@ -46,6 +46,23 @@ Key characteristics:
 - UI and workspace stores persist layout and panel state for session continuity
 - Renderer and style stores maintain consistent visualization state across reloads
 
+### Immer Proxy Handling
+
+All stores use Zustand with Immer middleware, which wraps state in Immer proxies. When persisting to IndexedDB, stores use the `toPlainObject` utility function (`src/data/db/serialization`) to convert Immer proxies to plain objects before database operations. This prevents serialization errors and ensures data integrity.
+
+**Stores that persist to IndexedDB:**
+- `AppStore` - App metadata and status
+- `NetworkStore` - Network topology
+- `NetworkSummaryStore` - Network summaries
+- `OpaqueAspectStore` - Opaque aspect data
+- `UiStateStore` - UI state and preferences
+- `UndoStore` - Undo/redo stacks
+- `WorkspaceStore` - Workspace configuration
+- `FilterStore` - Filter configurations
+- `TableStore` - Table data (uses serialization)
+- `ViewModelStore` - Network views (uses serialization)
+- `VisualStyleStore` - Visual styles (uses serialization)
+
 ## Integration Points
 
 - `hooks/*`: Primary consumers; orchestrate async flows and side effects

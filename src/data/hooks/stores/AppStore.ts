@@ -8,6 +8,7 @@ import {
   putAppToDb,
   putServiceAppToDb,
 } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
@@ -73,7 +74,23 @@ export const useAppStore = create(
           if (newState.apps[id] !== state.apps[id]) {
             // App was added, persist to DB if it's a new app
             if (cachedApp === undefined) {
-              putAppToDb(newState.apps[id])
+              try {
+                // Convert to plain object before saving
+                const plainApp = toPlainObject(newState.apps[id])
+                putAppToDb(plainApp).catch((error) => {
+                  logStore.error(
+                    `[${useAppStore.name}]:[add] Failed to persist new app ${id}:`,
+                    error,
+                  )
+                  // Don't throw - prevent error propagation
+                })
+              } catch (cloneError) {
+                logStore.error(
+                  `[${useAppStore.name}]:[add] Failed to clone app ${id} before saving:`,
+                  cloneError,
+                )
+                // Don't throw - prevent error propagation
+              }
             }
           }
           state.apps = newState.apps
@@ -120,7 +137,23 @@ export const useAppStore = create(
         state.apps = newState.apps
         const newAppState = { ...newState.apps[id] }
         if (newAppState) {
-          putAppToDb(newAppState)
+          // Convert to plain object and handle errors to prevent infinite loops
+          try {
+            const plainApp = toPlainObject(newAppState)
+            putAppToDb(plainApp).catch((error) => {
+              logStore.error(
+                `[${useAppStore.name}]:[setStatus] Failed to persist app status for ${id}:`,
+                error,
+              )
+              // Don't throw - prevent error propagation that causes infinite loops
+            })
+          } catch (cloneError) {
+            logStore.error(
+              `[${useAppStore.name}]:[setStatus] Failed to clone app ${id} before saving:`,
+              cloneError,
+            )
+            // Don't throw - prevent error propagation
+          }
         }
         return state
       })

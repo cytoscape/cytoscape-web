@@ -61,7 +61,7 @@ import {
   NetworkVisualPropertyName,
   NodeVisualPropertyName,
 } from '../../models/VisualStyleModel/VisualPropertyName'
-import { deserializeNetworkView, serializeNetworkView } from './serialization'
+import { deserializeNetworkView, serializeNetworkView } from './serialization/mapSerialization'
 import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import type { Network, Node, Edge } from '../../models/NetworkModel'
 import type { Table } from '../../models/TableModel'

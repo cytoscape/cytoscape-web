@@ -102,28 +102,52 @@ export const useLoadWorkspace = (
 
           if (shouldBeActive && !isCurrentlyActive) {
             // App should be active but isn't - update in DB
-            const updatedApp: CyApp = { ...app, status: AppStatus.Active }
-            await putAppToDb(updatedApp)
-            logDb.info(`[loadWorkspace] Activated app: ${app.id}`)
+            try {
+              const updatedApp: CyApp = { ...app, status: AppStatus.Active }
+              await putAppToDb(updatedApp)
+              logDb.info(`[loadWorkspace] Activated app: ${app.id}`)
+            } catch (error) {
+              logDb.error(
+                `[loadWorkspace] Failed to activate app ${app.id}:`,
+                error,
+              )
+              // Continue with other apps even if one fails
+            }
           } else if (!shouldBeActive && isCurrentlyActive) {
             // App should be inactive but is active - update in DB
-            const updatedApp: CyApp = { ...app, status: AppStatus.Inactive }
-            await putAppToDb(updatedApp)
-            logDb.info(`[loadWorkspace] Deactivated app: ${app.id}`)
+            try {
+              const updatedApp: CyApp = { ...app, status: AppStatus.Inactive }
+              await putAppToDb(updatedApp)
+              logDb.info(`[loadWorkspace] Deactivated app: ${app.id}`)
+            } catch (error) {
+              logDb.error(
+                `[loadWorkspace] Failed to deactivate app ${app.id}:`,
+                error,
+              )
+              // Continue with other apps even if one fails
+            }
           }
         }
 
         // Handle apps in currentApps that aren't in DB yet
         for (const appKey of Object.keys(currentApps)) {
           if (!dbApps.find((app) => app.id === appKey)) {
-            const app = currentApps[appKey]
-            const shouldBeActive = activeApps.has(appKey)
-            const updatedApp: CyApp = {
-              ...app,
-              status: shouldBeActive ? AppStatus.Active : AppStatus.Inactive,
+            try {
+              const app = currentApps[appKey]
+              const shouldBeActive = activeApps.has(appKey)
+              const updatedApp: CyApp = {
+                ...app,
+                status: shouldBeActive ? AppStatus.Active : AppStatus.Inactive,
+              }
+              await putAppToDb(updatedApp)
+              logDb.info(`[loadWorkspace] Added app to DB: ${appKey}`)
+            } catch (error) {
+              logDb.error(
+                `[loadWorkspace] Failed to add app ${appKey} to DB:`,
+                error,
+              )
+              // Continue with other apps even if one fails
             }
-            await putAppToDb(updatedApp)
-            logDb.info(`[loadWorkspace] Added app to DB: ${appKey}`)
           }
         }
       } catch (error) {

@@ -5,6 +5,7 @@ import _ from 'lodash'
 
 import config from '../../assets/config.json'
 import { logDb } from '../../debug'
+import { toPlainObject } from './serialization'
 import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
@@ -32,7 +33,7 @@ import {
   serializeNetworkView,
   serializeTable,
   serializeVisualStyle,
-} from './serialization'
+} from './serialization/mapSerialization'
 // Unique, fixed DB name for the Cytoscape Web
 const DB_NAME: string = 'cyweb-db'
 
@@ -712,8 +713,11 @@ export const deleteFilterFromDb = async (filterName: string): Promise<void> => {
  */
 export const putAppToDb = async (app: CyApp): Promise<void> => {
   try {
+    // Convert Immer proxy to plain object before saving to IndexedDB
+    // This prevents "Cannot perform 'Object.prototype.toString' on a proxy that has been revoked" errors
+    const plainApp = toPlainObject(app)
     await db.transaction('rw', db.apps, async () => {
-      await db.apps.put(app)
+      await db.apps.put(plainApp)
     })
   } catch (e) {
     logDb.error('[putAppToDb] error:', e, app)
@@ -754,8 +758,10 @@ export const putServiceAppToDb = async (
   serviceApp: ServiceApp,
 ): Promise<void> => {
   try {
+    // Convert Immer proxy to plain object before saving to IndexedDB
+    const plainServiceApp = toPlainObject(serviceApp)
     await db.transaction('rw', db.serviceApps, async () => {
-      await db.serviceApps.put(serviceApp)
+      await db.serviceApps.put(plainServiceApp)
     })
   } catch (e) {
     logDb.error('[putServiceAppToDb] error:', e, serviceApp)

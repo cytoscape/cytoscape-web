@@ -6,6 +6,7 @@ import {
   deleteNetworkSummaryFromDb,
   putNetworkSummaryToDb,
 } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
@@ -34,7 +35,8 @@ export const useNetworkSummaryStore = create(
       if (summary === undefined) {
         return
       }
-      const updatedSummary = { ...summary, ...summaryUpdate }
+      // Convert Immer proxy to plain object before saving
+      const updatedSummary = toPlainObject({ ...summary, ...summaryUpdate })
       void putNetworkSummaryToDb(updatedSummary)
       set((state) => {
         const newState = NetworkSummaryImpl.update(

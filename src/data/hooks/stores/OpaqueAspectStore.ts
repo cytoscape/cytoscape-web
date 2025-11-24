@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 import { deleteOpaqueAspectsFromDb, putOpaqueAspectsToDb } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 import { IdType } from '../../../models/IdType'
 import { OpaqueAspects } from '../../../models/OpaqueAspectModel'
 import * as OpaqueAspectImpl from '../../../models/OpaqueAspectModel/impl/opaqueAspectImpl'
@@ -19,7 +20,10 @@ export const useOpaqueAspectStore = create(
           aspectName,
           aspectData,
         )
-        const updatedOpaqueAspects = { ...newState.opaqueAspects[networkId] }
+        // Convert Immer proxy to plain object before saving
+        const updatedOpaqueAspects = toPlainObject(
+          newState.opaqueAspects[networkId] || {},
+        )
         void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(
           () => {},
         )
@@ -39,7 +43,10 @@ export const useOpaqueAspectStore = create(
           aspects,
           isUpdate,
         )
-        const updatedOpaqueAspects = { ...newState.opaqueAspects[networkId] }
+        // Convert Immer proxy to plain object before saving
+        const updatedOpaqueAspects = toPlainObject(
+          newState.opaqueAspects[networkId] || {},
+        )
         void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(
           () => {},
         )
@@ -65,9 +72,10 @@ export const useOpaqueAspectStore = create(
           networkId,
           aspectName,
         )
-        const updatedOpaqueAspects = newState.opaqueAspects[networkId]
-          ? { ...newState.opaqueAspects[networkId] }
-          : {}
+        // Convert Immer proxy to plain object before saving
+        const updatedOpaqueAspects = toPlainObject(
+          newState.opaqueAspects[networkId] || {},
+        )
         void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(
           () => {},
         )
@@ -78,7 +86,8 @@ export const useOpaqueAspectStore = create(
     clearAspects: (networkId: string) => {
       set((state) => {
         const newState = OpaqueAspectImpl.clearAspects(state, networkId)
-        void putOpaqueAspectsToDb(networkId, {}).then(() => {})
+        // Empty object doesn't need cloning, but being consistent
+        void putOpaqueAspectsToDb(networkId, toPlainObject({})).then(() => {})
         state.opaqueAspects = newState.opaqueAspects
         return state
       })
@@ -99,7 +108,10 @@ export const useOpaqueAspectStore = create(
           aspectName,
           aspectData,
         )
-        const updatedOpaqueAspects = { ...newState.opaqueAspects[networkId] }
+        // Convert Immer proxy to plain object before saving
+        const updatedOpaqueAspects = toPlainObject(
+          newState.opaqueAspects[networkId] || {},
+        )
         void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(
           () => {},
         )

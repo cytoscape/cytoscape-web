@@ -3,6 +3,7 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
 import { deleteDb, putWorkspaceToDb } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { WorkspaceStore } from '../../../models/StoreModel/WorkspaceStoreModel'
@@ -35,7 +36,9 @@ const persist =
         const newWorkspace = get().workspace
         // const deleted = updated === undefined
         if (lastWorkspace !== newWorkspace && newWorkspace.id !== '') {
-          void putWorkspaceToDb(newWorkspace).then(() => {})
+          // Convert Immer proxy to plain object before saving
+          const plainWorkspace = toPlainObject(newWorkspace)
+          void putWorkspaceToDb(plainWorkspace).then(() => {})
         }
       },
       get,
