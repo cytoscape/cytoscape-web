@@ -191,7 +191,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   useNetworkSummaryManager()
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(100)
-  const [tableBrowserWidth, setTableBrowserWidth] = useState(window.innerWidth)
   const [allotmentDimensions, setAllotmentDimensions] = useState<
     [number, number]
   >([0, 0])
@@ -224,21 +223,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   const getFunction = useRendererFunctionStore((state) => state.getFunction)
 
   const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
-
-  /**
-   * Sets up window resize listener to update table browser width
-   * Ensures table browser adapts to window size changes
-   */
-  useEffect(() => {
-    const handleWindowResize = (): void => {
-      setTableBrowserWidth(window.innerWidth)
-    }
-    window.addEventListener('resize', handleWindowResize)
-
-    return () => {
-      window.removeEventListener('resize', handleWindowResize)
-    }
-  }, [])
 
   /**
    * Loads a network by ID and populates all related stores
@@ -493,7 +477,6 @@ const WorkSpaceEditor = (): JSX.Element => {
               <TableBrowser
                 setHeight={setTableBrowserHeight}
                 height={tableBrowserHeight}
-                width={tableBrowserWidth}
                 currentNetworkId={
                   activeNetworkView === undefined || activeNetworkView === ''
                     ? currentNetworkId

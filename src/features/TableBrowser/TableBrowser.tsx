@@ -31,6 +31,7 @@ import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../data/hooks/useUndoStack'
+import { useWindowSize } from '../../data/hooks/useWindowSize'
 import { IdType } from '../../models/IdType'
 import { CellEdit, TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
@@ -127,8 +128,8 @@ export default function TableBrowser(props: {
   currentNetworkId: IdType
   setHeight: (height: number) => void
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
-  width: number // current width of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
+  const { width } = useWindowSize()
   const { postEdit } = useUndoStack()
   const ui: Ui = useUiStateStore((state) => state.ui)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
@@ -290,7 +291,15 @@ export default function TableBrowser(props: {
   const minNodeId = nodeIds.sort((a, b) => a - b)[0]
   const maxEdgeId = edgeIds.sort((a, b) => b - a)[0]
   const minEdgeId = edgeIds.sort((a, b) => a - b)[0]
-  const modelColumns = currentTableConfig?.columnConfiguration ?? []
+  // Temporary fix: fallback to table columns if tableDisplayConfiguration is not found
+  const modelColumns =
+    currentTableConfig?.columnConfiguration ??
+    currentTable?.columns?.map((col) => ({
+      attributeName: col.name,
+      visible: true,
+      columnWidth: undefined,
+    })) ??
+    []
 
   // Utility function to create a new TableDisplayConfiguration with updates
   const createUpdatedTableDisplayConfiguration = React.useCallback(
@@ -300,12 +309,33 @@ export default function TableBrowser(props: {
       sortDirection?: 'ascending' | 'descending'
     }) => {
       const isNodeTable = currentTable === nodeTable
+      // Temporary fix: create default config from table columns if tableDisplayConfiguration is missing
+      const defaultNodeConfig = {
+        columnConfiguration:
+          nodeTable?.columns?.map((col) => ({
+            attributeName: col.name,
+            visible: true,
+            columnWidth: undefined,
+          })) ?? [],
+        sortColumn: undefined,
+        sortDirection: undefined,
+      }
+      const defaultEdgeConfig = {
+        columnConfiguration:
+          edgeTable?.columns?.map((col) => ({
+            attributeName: col.name,
+            visible: true,
+            columnWidth: undefined,
+          })) ?? [],
+        sortColumn: undefined,
+        sortDirection: undefined,
+      }
       const currentConfig = isNodeTable
-        ? tableDisplayConfiguration.nodeTable
-        : tableDisplayConfiguration.edgeTable
+        ? (tableDisplayConfiguration?.nodeTable ?? defaultNodeConfig)
+        : (tableDisplayConfiguration?.edgeTable ?? defaultEdgeConfig)
       const otherConfig = isNodeTable
-        ? tableDisplayConfiguration.edgeTable
-        : tableDisplayConfiguration.nodeTable
+        ? (tableDisplayConfiguration?.edgeTable ?? defaultEdgeConfig)
+        : (tableDisplayConfiguration?.nodeTable ?? defaultNodeConfig)
 
       const updatedConfig = {
         ...currentConfig,
@@ -637,10 +667,23 @@ export default function TableBrowser(props: {
       )
 
       // Create updated column configuration with moved column
+      // Temporary fix: fallback to table columns if tableDisplayConfiguration is missing
+      const defaultConfig = {
+        columnConfiguration:
+          (currentTable === nodeTable ? nodeTable : edgeTable)?.columns?.map(
+            (col) => ({
+              attributeName: col.name,
+              visible: true,
+              columnWidth: undefined,
+            }),
+          ) ?? [],
+        sortColumn: undefined,
+        sortDirection: undefined,
+      }
       const currentConfig =
         currentTable === nodeTable
-          ? tableDisplayConfiguration.nodeTable
-          : tableDisplayConfiguration.edgeTable
+          ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
+          : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
       const nextColumnConfig = [...currentConfig.columnConfiguration]
       const [movedColumn] = nextColumnConfig.splice(realStartIndex, 1)
       nextColumnConfig.splice(realEndIndex, 0, movedColumn)
@@ -705,10 +748,23 @@ export default function TableBrowser(props: {
         )
 
         // Update the width in the tableDisplayConfiguration using utility function
+        // Temporary fix: fallback to table columns if tableDisplayConfiguration is missing
+        const defaultConfig = {
+          columnConfiguration:
+            (currentTable === nodeTable ? nodeTable : edgeTable)?.columns?.map(
+              (col) => ({
+                attributeName: col.name,
+                visible: true,
+                columnWidth: undefined,
+              }),
+            ) ?? [],
+          sortColumn: undefined,
+          sortDirection: undefined,
+        }
         const currentConfig =
           currentTable === nodeTable
-            ? tableDisplayConfiguration.nodeTable
-            : tableDisplayConfiguration.edgeTable
+            ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
+            : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
         const nextColumnConfig = currentConfig.columnConfiguration.map((col) =>
           col.attributeName === column.id
             ? { ...col, columnWidth: newSize }
@@ -1062,10 +1118,24 @@ export default function TableBrowser(props: {
                   })
 
                   // Update tableDisplayConfiguration for duplicate
+                  // Temporary fix: fallback to table columns if tableDisplayConfiguration is missing
+                  const defaultConfig = {
+                    columnConfiguration:
+                      (currentTable === nodeTable
+                        ? nodeTable
+                        : edgeTable
+                      )?.columns?.map((col) => ({
+                        attributeName: col.name,
+                        visible: true,
+                        columnWidth: undefined,
+                      })) ?? [],
+                    sortColumn: undefined,
+                    sortDirection: undefined,
+                  }
                   const currentConfig =
                     currentTable === nodeTable
-                      ? tableDisplayConfiguration.nodeTable
-                      : tableDisplayConfiguration.edgeTable
+                      ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
+                      : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
                   // Find the duplicated column in the config
                   const duplicatedCol = currentConfig.columnConfiguration.find(
                     (col) => col.attributeName === columnKey,
@@ -1192,10 +1262,24 @@ export default function TableBrowser(props: {
               setNetworkModified(networkId, true)
 
               // Update tableDisplayConfiguration for rename
+              // Temporary fix: fallback to table columns if tableDisplayConfiguration is missing
+              const defaultConfig = {
+                columnConfiguration:
+                  (currentTable === nodeTable
+                    ? nodeTable
+                    : edgeTable
+                  )?.columns?.map((col) => ({
+                    attributeName: col.name,
+                    visible: true,
+                    columnWidth: undefined,
+                  })) ?? [],
+                sortColumn: undefined,
+                sortDirection: undefined,
+              }
               const currentConfig =
                 currentTable === nodeTable
-                  ? tableDisplayConfiguration.nodeTable
-                  : tableDisplayConfiguration.edgeTable
+                  ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
+                  : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
               const newColumnConfig = currentConfig.columnConfiguration.map(
                 (col) =>
                   col.attributeName === selectedColumn.id
@@ -1265,10 +1349,24 @@ export default function TableBrowser(props: {
             setNetworkModified(networkId, true)
 
             // Update tableDisplayConfiguration for delete
+            // Temporary fix: fallback to table columns if tableDisplayConfiguration is missing
+            const defaultConfig = {
+              columnConfiguration:
+                (currentTable === nodeTable
+                  ? nodeTable
+                  : edgeTable
+                )?.columns?.map((col) => ({
+                  attributeName: col.name,
+                  visible: true,
+                  columnWidth: undefined,
+                })) ?? [],
+              sortColumn: undefined,
+              sortDirection: undefined,
+            }
             const currentConfig =
               currentTable === nodeTable
-                ? tableDisplayConfiguration.nodeTable
-                : tableDisplayConfiguration.edgeTable
+                ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
+                : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
             const newColumnConfig = currentConfig.columnConfiguration.filter(
               (col) => col.attributeName !== selectedColumn.id,
             )
@@ -1540,10 +1638,24 @@ export default function TableBrowser(props: {
               setNetworkModified(networkId, true)
 
               // Also add the new column to the tableDisplayConfiguration
+              // Temporary fix: fallback to table columns if tableDisplayConfiguration is missing
+              const defaultConfig = {
+                columnConfiguration:
+                  (currentTable === nodeTable
+                    ? nodeTable
+                    : edgeTable
+                  )?.columns?.map((col) => ({
+                    attributeName: col.name,
+                    visible: true,
+                    columnWidth: undefined,
+                  })) ?? [],
+                sortColumn: undefined,
+                sortDirection: undefined,
+              }
               const currentConfig =
                 currentTable === nodeTable
-                  ? tableDisplayConfiguration.nodeTable
-                  : tableDisplayConfiguration.edgeTable
+                  ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
+                  : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
               const newColumnConfig = [
                 {
                   attributeName: columnName,
@@ -1714,7 +1826,7 @@ export default function TableBrowser(props: {
           overscrollX={10}
           overscrollY={10}
           onColumnResizeEnd={onColumnResize}
-          width={props.width}
+          width={width}
           height={props.height - GRID_GAP}
           getCellContent={getContent}
           onCellEdited={onCellEdited}
@@ -1743,7 +1855,7 @@ export default function TableBrowser(props: {
           overscrollX={10}
           overscrollY={10}
           onColumnResizeEnd={onColumnResize}
-          width={props.width}
+          width={width}
           height={props.height - GRID_GAP}
           getCellContent={getContent}
           onCellEdited={onCellEdited}
