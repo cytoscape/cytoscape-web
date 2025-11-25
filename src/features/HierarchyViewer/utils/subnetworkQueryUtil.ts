@@ -18,6 +18,24 @@ import { NetworkView } from '../../../models/ViewModel'
 const MAX_RETRY_COUNT = 1
 
 /**
+ * Custom error class that includes information about which fetch method was used.
+ */
+export class NdexSubnetworkFetchError extends Error {
+  readonly fetchMethod: 'uuid' | 'interconnect'
+
+  constructor(
+    message: string,
+    fetchMethod: 'uuid' | 'interconnect',
+    cause?: Error,
+  ) {
+    super(message)
+    this.name = 'NdexSubnetworkFetchError'
+    this.fetchMethod = fetchMethod
+    this.cause = cause
+  }
+}
+
+/**
  * Validates that network and network views are consistent.
  *
  * @param network - The network to validate
@@ -103,16 +121,28 @@ const fetchNdexSubnetwork = async (
 ): Promise<CyNetwork> => {
   const interactionNetworkUuidExists =
     interactionNetworkUuid !== undefined && interactionNetworkUuid !== ''
-  const cxData: Cx2 = interactionNetworkUuidExists
-    ? await fetchNdexNetwork(interactionNetworkUuid, accessToken, ndexUrl)
-    : await fetchNdexInterconnectQuery(
-        rootNetworkUuid,
-        query,
-        accessToken,
-        ndexUrl,
-      )
-  // getCyNetworkFromCx2 validates the CX2 data before processing
-  return getCyNetworkFromCx2(interactionNetworkId, cxData)
+
+  try {
+    const cxData: Cx2 = interactionNetworkUuidExists
+      ? await fetchNdexNetwork(interactionNetworkUuid, accessToken, ndexUrl)
+      : await fetchNdexInterconnectQuery(
+          rootNetworkUuid,
+          query,
+          accessToken,
+          ndexUrl,
+        )
+    // getCyNetworkFromCx2 validates the CX2 data before processing
+    return getCyNetworkFromCx2(interactionNetworkId, cxData)
+  } catch (error) {
+    const fetchMethod = interactionNetworkUuidExists ? 'uuid' : 'interconnect'
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error'
+    throw new NdexSubnetworkFetchError(
+      `Failed to fetch network using ${fetchMethod} method: ${errorMessage}`,
+      fetchMethod,
+      error instanceof Error ? error : undefined,
+    )
+  }
 }
 
 /**

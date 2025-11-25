@@ -92,6 +92,8 @@ interface ImportResult {
 
 Imports a database snapshot from a File object.
 
+**⚠️ Important**: This function will **clear all existing workspaces** in IndexedDB before importing the snapshot. All workspace data will be replaced with the imported snapshot data.
+
 ```typescript
 const file = event.target.files[0]
 const result = await importDatabaseSnapshotFromFile(file, {
@@ -106,6 +108,8 @@ const result = await importDatabaseSnapshotFromFile(file, {
 
 **Returns**: `Promise<ImportResult>`
 
+**Note**: Before importing, all workspaces in IndexedDB are automatically cleared to ensure a clean import state.
+
 ## Validation
 
 ### Pre-Import Validation
@@ -119,7 +123,7 @@ Before importing, the snapshot is validated for:
 
 2. **Structure Validation**:
    - Valid JSON format
-   - Required metadata fields
+   - Required metadata fields (version field is included but not validated)
    - Valid object store names
    - Array types for object store data
    - Record count limits (max 1M per store)
@@ -248,9 +252,11 @@ if (!result.success) {
 ## Limitations
 
 1. **Size Limits**: Files larger than 100MB are rejected
-2. **Version Compatibility**: Snapshots from future versions may not be compatible
+2. **Data Replacement**: Importing from file clears all existing workspaces in IndexedDB
 3. **Browser Storage**: Limited by browser's IndexedDB quota
 4. **Performance**: Large imports may take time
+
+**Note**: Version validation has been removed. Snapshots with any version number will be accepted during import.
 
 ## Troubleshooting
 
@@ -258,7 +264,7 @@ if (!result.success) {
 
 - Check that the snapshot file is valid JSON
 - Verify the snapshot has required `metadata` and `data` fields
-- Ensure the snapshot version is compatible
+- Note: Version compatibility is not checked - any version number is accepted
 
 ### Import Partially Succeeds
 

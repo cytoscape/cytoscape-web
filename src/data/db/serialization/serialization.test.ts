@@ -1,7 +1,7 @@
-import { MappingFunctionType } from '../../models'
-import { DisplayMode } from '../../models/FilterModel/DisplayMode'
-import { FilterWidgetType } from '../../models/FilterModel/FilterWidgetType'
-import { GraphObjectType } from '../../models/NetworkModel'
+import { MappingFunctionType } from '../../../models'
+import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+import { FilterWidgetType } from '../../../models/FilterModel/FilterWidgetType'
+import { GraphObjectType } from '../../../models/NetworkModel'
 import {
   deserializeFilterConfig,
   deserializeNetworkView,
@@ -13,7 +13,7 @@ import {
   serializeNetworkView,
   serializeTable,
   serializeVisualStyle,
-} from './serialization'
+} from './mapSerialization'
 
 describe('db-util', () => {
   describe('maptoListEntries and listEntriesToMap', () => {

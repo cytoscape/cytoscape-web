@@ -436,7 +436,26 @@ export const importDatabaseSnapshotFromFile = async (
       )
     }
 
-    const text = await file.text()
+    // Delete all workspaces in IndexedDB before importing
+    const db = await getDb()
+    await db.workspace.clear()
+    logDb.info(
+      '[importDatabaseSnapshotFromFile] All workspaces cleared from IndexedDB',
+    )
+
+    // Use file.text() if available, otherwise fall back to FileReader for test compatibility
+    let text: string
+    if (typeof file.text === 'function') {
+      text = await file.text()
+    } else {
+      // Fallback for environments where file.text() is not available (e.g., some test environments)
+      text = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(reader.error)
+        reader.readAsText(file)
+      })
+    }
     return await importDatabaseSnapshot(text, options)
   } catch (e) {
     logDb.error('[importDatabaseSnapshotFromFile] error:', e)

@@ -49,7 +49,7 @@ import type {
   NetworkViewWithRecords,
   TableWithRecords,
   VisualStyleWithRecords,
-} from './serialization'
+} from './serialization/mapSerialization'
 
 const IdTypeSchema = z.string().min(1)
 

@@ -136,10 +136,23 @@ The database uses custom serialization for complex objects:
 - **Filter Configs**: Serialized filter definitions
 
 Serialization functions are in `serialization.ts`:
+
 - `serializeTable`, `deserializeTable`
 - `serializeNetworkView`, `deserializeNetworkView`
 - `serializeVisualStyle`, `deserializeVisualStyle`
 - `serializeFilterConfig`, `deserializeFilterConfig`
+
+### Immer Proxy Handling
+
+All objects written to IndexedDB are converted from Immer proxies to plain objects using `toPlainObject` from `src/data/db/serialization`. This prevents "Cannot perform 'Object.prototype.toString' on a proxy that has been revoked" errors when serializing Zustand state (which uses Immer) to IndexedDB.
+
+The `toPlainObject` function:
+
+- Uses `structuredClone` when available (modern browsers)
+- Falls back to `JSON.parse(JSON.stringify())` for older browsers
+- Performs manual deep copy as a last resort for edge cases
+
+All store operations that write to IndexedDB automatically use `deepClone` to ensure safe serialization.
 
 ## Snapshot Functionality
 
@@ -148,6 +161,7 @@ The database supports full export/import via snapshots. See `snapshot/` director
 ## Data Validation
 
 The `validator.ts` module provides validation for:
+
 - Network data integrity
 - Table structure validation
 - Visual style validation
@@ -192,6 +206,7 @@ await putWorkspaceToDb(workspace)
 ## Error Handling
 
 All database operations use try-catch blocks and log errors via `logDb`. Operations that fail will:
+
 1. Log the error with context
 2. Throw the error for upstream handling
 3. Maintain transaction integrity (failed transactions are rolled back)
@@ -206,6 +221,7 @@ All database operations use try-catch blocks and log errors via `logDb`. Operati
 ## Testing
 
 See `db.test.ts` for comprehensive test coverage including:
+
 - CRUD operations for all object stores
 - Serialization/deserialization
 - Migration handling
@@ -217,4 +233,3 @@ See `db.test.ts` for comprehensive test coverage including:
 - [Serialization Documentation](./serialization.ts)
 - [Migrations Documentation](./migrations.ts)
 - [Validator Documentation](./validator.ts)
-

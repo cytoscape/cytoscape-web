@@ -36,6 +36,8 @@ const persist =
         const deleted = updated === undefined
         if (!deleted) {
           logStore.info(`Network store updated for network ${currentNetworkId}`)
+          // putNetworkToDb uses cyNetwork2Network which extracts plain data (id, nodes, edges)
+          // so we don't need toPlainObject here - cyNetwork2Network handles the conversion
           await putNetworkToDb(updated)
         }
       },

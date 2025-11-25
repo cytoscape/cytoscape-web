@@ -6,8 +6,8 @@ import {
   VisualProperty,
   VisualPropertyValueType,
   VisualStyle,
-} from '../../models'
-import { FilterConfig } from '../../models/FilterModel/FilterConfig'
+} from '../../../models'
+import { FilterConfig } from '../../../models/FilterModel/FilterConfig'
 
 // Utility type to recursively replace all Map<K, V> with Array<[K, V]>
 type ReplaceMapsWithArrayEntries<T> =

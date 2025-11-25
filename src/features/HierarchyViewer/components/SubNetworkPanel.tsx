@@ -32,7 +32,10 @@ import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { createFilterFromAspect } from '../utils/getFilterAspect'
 import { applyCpLayout } from '../utils/hierarchyUtil'
-import { fetchNdexSubnetworkByQuery } from '../utils/subnetworkQueryUtil'
+import {
+  fetchNdexSubnetworkByQuery,
+  NdexSubnetworkFetchError,
+} from '../utils/subnetworkQueryUtil'
 import { CirclePackingType } from './CirclePackingLayout/CirclePackingLayout'
 import { Query } from './MainPanel'
 
@@ -662,12 +665,29 @@ export const SubNetworkPanel = ({
   }
 
   if (error !== undefined && error !== null) {
-    return (
-      <MessagePanel
-        message={`! Error Loading network: (${error.message})`}
-        showProgress={false}
-      />
-    )
+    let errorMessage: string
+    // Check if it's our custom error type, or if the error has a cause that is our custom error
+    let ndexError: NdexSubnetworkFetchError | null = null
+    if (error instanceof NdexSubnetworkFetchError) {
+      ndexError = error
+    } else if (
+      error instanceof Error &&
+      'cause' in error &&
+      error.cause instanceof NdexSubnetworkFetchError
+    ) {
+      ndexError = error.cause
+    }
+
+    if (ndexError !== null) {
+      if (ndexError.fetchMethod === 'uuid') {
+        errorMessage = `The subsystem with id ${subsystemNodeId} could not be loaded from NDEx. Failed to get network with UUID.`
+      } else {
+        errorMessage = `The subsystem with id ${subsystemNodeId} could not be loaded from NDEx. Failed to execute interconnect query.`
+      }
+    } else {
+      errorMessage = `The subsystem with id ${subsystemNodeId} could not be loaded from NDEx`
+    }
+    return <MessagePanel message={errorMessage} showProgress={false} />
   }
 
   if (queryNetwork === undefined) {

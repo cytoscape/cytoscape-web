@@ -2,6 +2,7 @@ import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 import { putUndoRedoStackToDb } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models'
 import {
@@ -29,7 +30,9 @@ const persist =
         const deleted = updated === undefined
 
         if (!deleted) {
-          await putUndoRedoStackToDb(currentNetworkId, updated).then(() => {})
+          // Convert Immer proxy to plain object before saving
+          const plainStack = toPlainObject(updated)
+          await putUndoRedoStackToDb(currentNetworkId, plainStack).then(() => {})
         }
       },
       get,

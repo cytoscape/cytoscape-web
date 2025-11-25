@@ -11,6 +11,7 @@ The SummaryPanel is composed of several components that work together to display
 ## Component Structure
 
 ### Main Components
+
 - **Summaries.tsx**: Container component that lists all network summaries
   - Retrieves summaries from NetworkSummaryStore
   - Maps summaries to NetworkPropertyPanel components
@@ -40,6 +41,7 @@ The SummaryPanel is composed of several components that work together to display
 ## Behavior
 
 ### Network Display
+
 - Networks are displayed as cards in a vertical list
 - Each card shows:
   - Network name (editable)
@@ -49,11 +51,13 @@ The SummaryPanel is composed of several components that work together to display
   - Delete button (removes network from workspace)
 
 ### Network Navigation
+
 - Clicking on a network card navigates to that network
 - Active network is highlighted with different background color
 - Navigation updates URL and workspace state
 
 ### Property Editing
+
 - Clicking edit button opens a popover editor
 - Editor allows editing:
   - Name: Simple text input
@@ -64,11 +68,13 @@ The SummaryPanel is composed of several components that work together to display
 - Network modified flag is set when properties change
 
 ### Network Deletion
+
 - Delete button removes network from workspace
 - Confirmation dialog may be shown (handled by parent)
 - Deletion updates workspace state
 
 ### Network Properties Table
+
 - Network-level properties can be edited in a table
 - Properties have:
   - Data type (string, number, boolean, list, etc.)
@@ -88,21 +94,25 @@ The SummaryPanel is composed of several components that work together to display
 ## Design Decisions
 
 ### Card-Based Layout
+
 - Cards provide clear visual separation between networks
 - Hover effects indicate interactivity
 - Active network highlighting provides clear feedback
 
 ### Popover Editor
+
 - Popover keeps editor close to the network card
 - Non-modal design allows viewing network while editing
 - Click-outside-to-close provides intuitive interaction
 
 ### Rich Text Description
+
 - Tiptap editor provides formatting capabilities
 - HTML content is stored and rendered
 - Plain text fallback for simple descriptions
 
 ### Property Validation
+
 - Validation happens in real-time as user types
 - Invalid values are visually indicated
 - Validation prevents saving invalid data to store
@@ -115,4 +125,3 @@ The SummaryPanel is composed of several components that work together to display
 - Network grouping/categorization
 - Import/export network summaries
 - Network comparison view
-

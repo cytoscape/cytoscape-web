@@ -32,6 +32,7 @@ Hooks typically follow a consistent pattern:
 ### Workspace and Tables
 
 - `useWorkspaceManager`, `useWorkspaceData`: Manage workspace lifecycle and composing panels
+- `useLoadWorkspace`: Load a remote workspace from NDEx into the database
 - `useTableManager`: Coordinate table selection and actions
 - `useNetworkViewManager`: Manage network views
 - `useNetworkSummaryManager`: Manage network summary interactions
@@ -88,6 +89,55 @@ Hooks typically follow a consistent pattern:
 
 - Stores as the single source of truth
 - Hooks as thin orchestrators, not alternate state containers
+
+## Hook Reference
+
+### useLoadWorkspace
+
+Loads a remote workspace from NDEx into the local database. This hook provides a function that:
+
+1. Clears the current database
+2. Writes the workspace metadata to the database
+3. Updates app statuses based on the workspace's active apps list
+4. Updates service apps (fetches metadata for new ones, removes ones not in the list)
+5. Handles errors gracefully (continues with workspace write even if app/service app updates fail)
+6. Reloads the page after successful completion
+
+**Usage:**
+
+```typescript
+import { useLoadWorkspace } from '../data/hooks/useLoadWorkspace'
+import { useAppStore } from '../data/hooks/stores/AppStore'
+
+const MyComponent = () => {
+  const loadWorkspace = useLoadWorkspace()
+  const apps = useAppStore((state) => state.apps)
+  const serviceApps = useAppStore((state) => state.serviceApps)
+
+  const handleLoad = async (remoteWorkspace: RemoteWorkspace) => {
+    try {
+      await loadWorkspace(remoteWorkspace, apps, serviceApps)
+    } catch (error) {
+      // Handle error
+    }
+  }
+}
+```
+
+**Parameters:**
+
+- `selectedWorkspace`: The remote workspace object from NDEx
+- `currentApps`: Current apps from the app store (used for status updates)
+- `currentServiceApps`: Current service apps from the app store
+
+**Behavior:**
+
+- App statuses are updated in the database to match the workspace's `activeApps` list
+- Service apps are synchronized: removed if not in workspace list, fetched and added if new
+- Errors in app/service app updates are logged but don't prevent workspace loading
+- Page reloads automatically after successful completion to apply all changes
+
+**See also:** `Hooks_docs/useLoadWorkspace.md` for detailed documentation
 
 ## Future Improvements
 
