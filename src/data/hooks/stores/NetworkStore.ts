@@ -7,7 +7,6 @@ import {
   deleteNetworkFromDb,
   putNetworkToDb,
 } from '../../db'
-import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import NetworkFn, { Edge, Network } from '../../../models/NetworkModel'
@@ -37,9 +36,9 @@ const persist =
         const deleted = updated === undefined
         if (!deleted) {
           logStore.info(`Network store updated for network ${currentNetworkId}`)
-          // Convert Immer proxy to plain object before saving
-          const plainNetwork = toPlainObject(updated)
-          await putNetworkToDb(plainNetwork)
+          // putNetworkToDb uses cyNetwork2Network which extracts plain data (id, nodes, edges)
+          // so we don't need toPlainObject here - cyNetwork2Network handles the conversion
+          await putNetworkToDb(updated)
         }
       },
       get,

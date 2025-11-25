@@ -39,6 +39,8 @@ const loadModules = async () => {
                 `[${loadModules.name}]: Error loading external module ${moduleName}:`,
                 e,
               )
+              // Return undefined explicitly so we can check for it later
+              return undefined
             })
           return [moduleName, externalAppModule]
         } catch (e) {
@@ -58,6 +60,15 @@ const loadModules = async () => {
       const moduleName = moduleEntry[0] as string
       const module: any = await moduleEntry[1]
       const entryName: string = appNameMap.get(moduleName) ?? ''
+
+      // Skip if module failed to load (undefined/null)
+      if (!module) {
+        logApp.warn(
+          `[${loadModules.name}]: Module ${moduleName} failed to load, skipping entry point ${entryName}`,
+        )
+        return
+      }
+
       try {
         const cyApp: CyApp = await module[entryName as string]
         if (cyApp !== undefined) {

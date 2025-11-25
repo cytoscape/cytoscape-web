@@ -37,17 +37,33 @@ export const toPlainObject = <T>(obj: T): T => {
     // Fallback to JSON serialization for older browsers
     return JSON.parse(JSON.stringify(obj))
   } catch (e) {
-    // If both fail, log and return a safe copy using manual deep copy
-    logDb.warn('[toPlainObject] Failed to clone object, using fallback:', e)
-    // Manual deep copy as last resort (with cycle detection)
+    // structuredClone fails for objects with functions, symbols, or other non-cloneable types
+    // This is expected for some objects (e.g., Network with Cytoscape.js internals, objects with functions)
+    // Use manual deep copy which skips functions and non-serializable properties
+    const isDataCloneError =
+      e instanceof Error &&
+      (e.name === 'DataCloneError' ||
+        e.message?.includes('could not be cloned') ||
+        e.message?.includes('structuredClone'))
+
+    if (!isDataCloneError) {
+      // Only log unexpected errors, not expected DataCloneError
+      logDb.warn('[toPlainObject] Failed to clone object, using fallback:', e)
+    }
+    // Manual deep copy as last resort (with cycle detection, skips functions)
     return manualDeepCopy(obj, new WeakSet())
   }
 }
 
 // Helper function for manual deep copy with cycle detection
+// Skips functions and other non-serializable types
 const manualDeepCopy = <T>(obj: T, visited: WeakSet<object>): T => {
   if (obj === null || typeof obj !== 'object') {
     return obj
+  }
+  // Skip functions - they cannot be serialized
+  if (typeof obj === 'function') {
+    return undefined as unknown as T
   }
   // Handle circular references
   if (visited.has(obj as object)) {
@@ -61,7 +77,16 @@ const manualDeepCopy = <T>(obj: T, visited: WeakSet<object>): T => {
   const plain: any = {}
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      plain[key] = manualDeepCopy((obj as any)[key], visited)
+      const value = (obj as any)[key]
+      // Skip functions and symbols
+      if (typeof value === 'function' || typeof value === 'symbol') {
+        continue
+      }
+      // Skip internal Cytoscape.js properties that contain functions
+      if (key === '_store' || key === '_private' || key.startsWith('_')) {
+        continue
+      }
+      plain[key] = manualDeepCopy(value, visited)
     }
   }
   return plain
