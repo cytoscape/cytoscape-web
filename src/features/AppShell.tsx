@@ -92,6 +92,9 @@ const AppShell = (): ReactElement => {
   const setActiveNetworkView = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+  const setNetworkViewTabIndex = useUiStateStore(
+    (state) => state.setNetworkViewTabIndex,
+  )
   const initialized = useRef(false)
 
   /**
@@ -146,6 +149,20 @@ const AppShell = (): ReactElement => {
 
     if (tableBrowserTab != null) {
       setActiveTableBrowserIndex(Number(tableBrowserTab))
+    }
+  }
+
+  /**
+   * Restores the active network view tab index from URL search parameters
+   */
+  const restoreNetworkViewTabState = (): void => {
+    const networkViewTab = search.get('activeNetworkViewTab')
+
+    if (networkViewTab != null) {
+      const tabIndex = Number(networkViewTab)
+      if (!isNaN(tabIndex) && tabIndex >= 0) {
+        setNetworkViewTabIndex(tabIndex)
+      }
     }
   }
 
@@ -283,6 +300,7 @@ const AppShell = (): ReactElement => {
         // Restore state parameters from URL
         restoreSelectionStates(workspace.currentNetworkId)
         restoreTableBrowserTabState()
+        restoreNetworkViewTabState()
         restoreFilterStates()
 
         // Restore active network view with a delay to ensure components are ready

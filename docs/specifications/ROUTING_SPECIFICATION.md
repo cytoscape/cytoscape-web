@@ -46,6 +46,7 @@ This specification defines the routing behavior for the Cytoscape Web applicatio
 - `import`: URL to import network from
 - `left`, `right`, `bottom`: Panel states (left -> network list panel, right -> subnetwork panel, bottom -> table browser panel)
 - `activeTableBrowserTab`: Table browser tab index (0 -> nodes, 1 -> edges, 2 -> network)
+- `activeNetworkViewTab`: Network view tab index (0, 1, 2, ...)
 
 Query paramters will set the initial ui state and subsequently removed from the url
 
@@ -103,6 +104,7 @@ Query paramters will set the initial ui state and subsequently removed from the 
 - `filterBy`: Filter attribute name
 - `filterRange`: Filter value range
 - `activeNetworkView`: Active network view identifier
+- `activeNetworkViewTab`: Network view tab index (0, 1, 2, ...)
 - `activeTableBrowserTab`: Table browser tab index
 
 **Error Handling**:
@@ -169,6 +171,7 @@ Query paramters will set the initial ui state and subsequently removed from the 
 
 - `left`, `right`, `bottom`: Panel states
 - `activeTableBrowserTab`: Table browser tab index
+- `activeNetworkViewTab`: Network view tab index
 - `activeNetworkView`: Active network view
 
 **Network State**:
@@ -353,18 +356,28 @@ const restoreTableBrowserTabState = (): void => {
     setActiveTableBrowserIndex(Number(tableBrowserTab))
   }
 }
+
+const restoreNetworkViewTabState = (): void => {
+  const networkViewTab = search.get('activeNetworkViewTab')
+  if (networkViewTab != null) {
+    const tabIndex = Number(networkViewTab)
+    if (!isNaN(tabIndex) && tabIndex >= 0) {
+      setNetworkViewTabIndex(tabIndex)
+    }
+  }
+}
 ```
 
 ## Component Responsibility Status
 
 The current responsibilities of each component and their purpose in fulfilling the routing requirements
 
-- **AppShell.tsx**: Initialize workspace, UI state, process search params
+- **AppShell.tsx**: Initialize workspace, UI state, process search params (including activeNetworkViewTab)
 - **AppShell.tsx**: Check for updates in NDEx (check networkId in NDEx and check timestamps)
 - **AppShell.tsx**: Import networks from URLs/other sources
 - **UrlNavigation Hook**: Navigate to different networks/routes
-- **NetworkTabs.tsx**: Set search parameter for tab ID (propose using new route for views instead)
-- **ShareNetworkButton.tsx**: Generate URLs to share networks
+- **NetworkTabs.tsx**: Display network view tabs (no longer manages URL parameters)
+- **ShareNetworkButton.tsx**: Generate URLs to share networks (includes activeNetworkViewTab)
 - **FilterPanel.tsx**: Set filters for interaction network
 - **Error.tsx**: Reset workspace, navigate to new workspace
 - **UpdateNetworkDialog.tsx**: Navigate to network after deleting it, retrieving update from NDEx

@@ -69,6 +69,7 @@ export const ShareNetworkButton = ({
       ...Object.fromEntries(search.entries()),
       ...panelObj,
       activeTableBrowserTab: `${ui.tableUi.activeTabIndex}`,
+      activeNetworkViewTab: `${ui.networkViewUi.activeTabIndex}`,
     }
     if (targetNetworkId) {
       searchObj.activeNetworkView = targetNetworkId

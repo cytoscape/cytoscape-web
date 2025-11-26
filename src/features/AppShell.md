@@ -47,6 +47,7 @@ The main application shell component that provides layout and initialization.
   - Restores node/edge selections from URL
   - Restores filter configurations from URL
   - Restores table browser tab index from URL
+  - Restores network view tab index from URL
   - Restores active network view from URL (with 1s delay for component readiness)
 
 - **Layout:**
@@ -60,6 +61,7 @@ The main application shell component that provides layout and initialization.
 - **Selections:** `?selectedNodes=node1 node2&selectedEdges=edge1`
 - **Filters:** `?filterFor=node&filterBy=name&filterRange=value1,value2`
 - **Table Browser:** `?activeTableBrowserTab=1`
+- **Network View Tab:** `?activeNetworkViewTab=1`
 - **Network View:** `?activeNetworkView=viewId`
 - **Import:** `?import=https://example.com/network.cx` (can be multiple)
 
