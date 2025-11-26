@@ -51,6 +51,8 @@ export const NetworkTabs = ({
   }, [])
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    // When clicking a tab, always activate the renderer and switch to the clicked tab
+    handleClick?.()
     setSelected(newValue)
   }
 
