@@ -58,6 +58,9 @@ export const CheckboxFilter = ({
   const setBypassMap = useVisualStyleStore((state) => state.setBypassMap)
 
   const getViewModel = useViewModelStore((state) => state.getViewModel)
+  const visualStyleExists = useVisualStyleStore(
+    (state) => state.visualStyles[targetNetworkId] !== undefined,
+  )
   const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const { description, attributeName } = filterConfig
@@ -217,7 +220,7 @@ export const CheckboxFilter = ({
    * Apply filter after initialization if the filter is enabled
    */
   useEffect(() => {
-    if (enableFilter) {
+    if (enableFilter && visualStyleExists) {
       applyFilter()
     }
   }, [])
