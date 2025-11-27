@@ -87,7 +87,7 @@ export const CirclePackingPanel = ({
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
   const [networkSwitched, setNetworkSwitched] = useState<boolean>(false)
   const [expandAll, setExpandAll] = useState<boolean>(false)
-  const [selectedLeaf, setSelectedLeaf] = useState<string>('')
+  const [selectedLeaves, setSelectedLeaves] = useState<string[]>([])
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false)
   const [tooltipContent, setTooltipContent] = useState<string>('')
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
@@ -176,7 +176,7 @@ export const CirclePackingPanel = ({
         }
 
         // Clear the selection in leafs in the selected node
-        setSelectedLeaf('')
+        setSelectedLeaves([])
         setSelectedNodes([])
       } else {
         // This is a leaf node
@@ -189,7 +189,7 @@ export const CirclePackingPanel = ({
         if (parent === null || parent === undefined) return
 
         const selectedChild = d.data.originalId ?? d.data.id
-        setSelectedLeaf(selectedChild)
+        setSelectedLeaves([selectedChild])
 
         if (parent.data.originalId !== undefined) {
           exclusiveSelect(network.id, [parent.data.originalId], [])
@@ -198,7 +198,7 @@ export const CirclePackingPanel = ({
         }
       }
     },
-    [network.id, exclusiveSelect, setSelectedNodes, setSelectedLeaf],
+    [network.id, exclusiveSelect, setSelectedNodes, setSelectedLeaves],
   )
 
   const handleCircleMouseMove = useCallback((e: any) => {
@@ -494,11 +494,18 @@ export const CirclePackingPanel = ({
 
   /**
    * Update selected leaf when hierarchy node names change
+   * This syncs selections in the subnetwork view to this circle packing view
    */
   useEffect(
     function onSelectedHierarchyNodeNamesChange() {
-      if (selectedHierarchyNodeNames.length === 0) return
-      setSelectedLeaf(selectedHierarchyNodeNames[0])
+      // Sync selections from the subnetwork view to the circle packing view
+      if (selectedHierarchyNodeNames.length === 0) {
+        setSelectedLeaves([])
+        displaySelectedNodes(selectedNodeSet, [])
+      } else {
+        setSelectedLeaves(selectedHierarchyNodeNames)
+        displaySelectedNodes(selectedNodeSet, selectedHierarchyNodeNames)
+      }
     },
     [selectedHierarchyNodeNames],
   )
@@ -522,13 +529,13 @@ export const CirclePackingPanel = ({
         setSelectedNodes([])
 
         // Clear the selection in the CP view's leaf node
-        setSelectedLeaf('')
+        setSelectedLeaves([])
 
         // Clear the selection of a circle in the CP view
         exclusiveSelect(network.id, [], [])
 
         // Redraw the CP view
-        displaySelectedNodes(new Set<string>(), '')
+        displaySelectedNodes(new Set<string>(), [])
         logUi.info(
           `[${drawCirclePacking.name}]: Selection in CP cleared: ${selectedNodes.length}`,
         )
@@ -812,7 +819,7 @@ export const CirclePackingPanel = ({
    */
   useEffect(
     function onNodeSelection() {
-      displaySelectedNodes(selectedNodeSet, selectedLeaf)
+      displaySelectedNodes(selectedNodeSet, selectedLeaves)
 
       // Expand circles to the level of the selected node and zoom in to that circle
       if (selectedNodes.length > 0 && networkSwitched) {
@@ -820,7 +827,7 @@ export const CirclePackingPanel = ({
         expandSelectedCircle(selectedNodes[0])
       }
     },
-    [selectedNodes, selectedLeaf],
+    [selectedNodes, selectedLeaves],
   )
 
   /**

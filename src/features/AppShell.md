@@ -140,4 +140,3 @@ The AppShell integrates with the following stores and services:
 5. **State Restoration Optimization:** Reduce or eliminate the 1s delay for network view restoration by using proper component lifecycle hooks
 
 6. **Import Limits:** Make file size limits configurable rather than hardcoded
-

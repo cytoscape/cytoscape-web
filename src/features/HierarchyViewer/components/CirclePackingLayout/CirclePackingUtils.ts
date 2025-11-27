@@ -196,7 +196,7 @@ export const CpDefaults = {
 
 export const displaySelectedNodes = (
   selectedNodeSet: Set<string>,
-  selectedLeaf: string,
+  selectedLeaves: string[],
 ) => {
   d3Selection
     .select('.circle-packing-wrapper')
@@ -204,16 +204,14 @@ export const displaySelectedNodes = (
     .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
       if (selectedNodeSet.has(d.data.id)) {
         return CpDefaults.selectedBorderColor
-      } else if (d.data.name === selectedLeaf) {
+      } else if (selectedLeaves.includes(d.data.name)) {
         return CpDefaults.leafBorderColor
       } else {
         return CpDefaults.borderColor
       }
     })
     .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) =>
-      selectedNodeSet.has(d.data.id) ||
-      d.data.id === selectedLeaf ||
-      d.data.name === selectedLeaf
+      selectedNodeSet.has(d.data.id) || selectedLeaves.includes(d.data.name)
         ? CpDefaults.borderWidthHover
         : CpDefaults.borderWidth,
     )
