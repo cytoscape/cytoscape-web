@@ -299,7 +299,7 @@ export const FilterPanel = () => {
                 margin: 0,
               }}
             >
-              <Typography>Filter: {selectedFilter.label}</Typography>
+              <Typography>Visibility Toggle: {selectedFilter.label}</Typography>
               <Switch
                 data-testid="filter-enable-switch"
                 checked={isFilterEnabled}
