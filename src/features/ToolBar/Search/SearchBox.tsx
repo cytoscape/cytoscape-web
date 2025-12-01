@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { logUi } from '../../../debug'
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import {
@@ -36,9 +37,16 @@ export const SearchBox = (): JSX.Element => {
   const handleOpenSettings = (): void => {
     setAnchorEl(baseRef.current)
   }
+  // This is the ID of network in the selected viewport.
+  const activeNetworkId: IdType = useUiStateStore(
+    (state) => state.ui.activeNetworkView,
+  )
+
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+
+  const networkId: IdType = activeNetworkId ?? currentNetworkId
   // Search query stored in the global store
   const query: string = useFilterStore((state) => state.search.query)
 
@@ -74,7 +82,7 @@ export const SearchBox = (): JSX.Element => {
     (state) => state.search.indexedColumns,
   )
 
-  const tables = useTableStore((state) => state.tables[currentNetworkId])
+  const tables = useTableStore((state) => state.tables[networkId])
   const nodeTable: Table = tables?.nodeTable
   const edgeTable: Table = tables?.edgeTable
 
@@ -82,7 +90,7 @@ export const SearchBox = (): JSX.Element => {
 
   const clearSearch = (): void => {
     setQuery('')
-    exclusiveSelect(currentNetworkId, [], [])
+    exclusiveSelect(networkId, [], [])
 
     setSearchState(SearchState.READY)
   }
@@ -91,7 +99,7 @@ export const SearchBox = (): JSX.Element => {
     setSearchState(SearchState.IN_PROGRESS)
     // Node and edge
     const indices: Indices<Fuse<Record<string, ValueType>>> =
-      indexRecord[currentNetworkId]
+      indexRecord[networkId]
 
     const nodeIndex = indices[GraphObjectType.NODE]
     const edgeIndex = indices[GraphObjectType.EDGE]
@@ -101,7 +109,7 @@ export const SearchBox = (): JSX.Element => {
     }
 
     // Clear selection
-    exclusiveSelect(currentNetworkId, [], [])
+    exclusiveSelect(networkId, [], [])
 
     const operator: Operator = searchOptions.operator
     let nodesToBeSelected: IdType[] = []
@@ -114,12 +122,12 @@ export const SearchBox = (): JSX.Element => {
       edgesToBeSelected = runSearch(edgeIndex, query, operator, exact)
     }
 
-    exclusiveSelect(currentNetworkId, nodesToBeSelected, edgesToBeSelected)
+    exclusiveSelect(networkId, nodesToBeSelected, edgesToBeSelected)
     setSearchState(SearchState.DONE)
   }
 
   const reIndex = (forceUpdate: boolean): void => {
-    if (currentNetworkId === undefined || currentNetworkId === '') {
+    if (networkId === undefined || networkId === '') {
       return
     }
 
@@ -127,8 +135,8 @@ export const SearchBox = (): JSX.Element => {
       return
     }
 
-    const currentIndex = indexRecord[currentNetworkId]
-    const currentIndexedColumns = indexedColumns[currentNetworkId]
+    const currentIndex = indexRecord[networkId]
+    const currentIndexedColumns = indexedColumns[networkId]
 
     if (currentIndexedColumns === undefined || forceUpdate) {
       const nodeColumns = filterColumns(
@@ -140,7 +148,7 @@ export const SearchBox = (): JSX.Element => {
         [ValueTypeName.String, ValueTypeName.ListString],
       )
       setIndexedColumns(
-        currentNetworkId,
+        networkId,
         GraphObjectType.NODE,
         Array.from(nodeColumns),
       )
@@ -154,10 +162,10 @@ export const SearchBox = (): JSX.Element => {
     try {
       if (currentIndex === undefined) {
         const nodeIndex = createFuseIndex(nodeTable)
-        setIndex(currentNetworkId, GraphObjectType.NODE, nodeIndex)
+        setIndex(networkId, GraphObjectType.NODE, nodeIndex)
 
         const edgeIndex = createFuseIndex(edgeTable)
-        setIndex(currentNetworkId, GraphObjectType.EDGE, edgeIndex)
+        setIndex(networkId, GraphObjectType.EDGE, edgeIndex)
       }
     } catch (error) {
       logUi.error(`[${reIndex.name}]: Error indexing`, error)

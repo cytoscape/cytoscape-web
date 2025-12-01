@@ -98,12 +98,14 @@ Query paramters will set the initial ui state and subsequently removed from the 
 
 **Query Parameters** (consumed on load):
 
-- `selectedNodes`: Space-separated list of selected node IDs
-- `selectedEdges`: Space-separated list of selected edge IDs
+- `selectedNodes`: Space-separated list of selected node IDs (for main network)
+- `selectedEdges`: Space-separated list of selected edge IDs (for main network)
+- `selectedSubnetworkNodes`: Space-separated list of selected node IDs (for subnetwork/interaction network, requires `activeNetworkView` parameter)
+- `selectedSubnetworkEdges`: Space-separated list of selected edge IDs (for subnetwork/interaction network, requires `activeNetworkView` parameter)
 - `filterFor`: Filter target (node/edge)
 - `filterBy`: Filter attribute name
 - `filterRange`: Filter value range
-- `activeNetworkView`: Active network view identifier
+- `activeNetworkView`: Active network view identifier (can be hierarchy network or subnetwork ID)
 - `activeNetworkViewTab`: Network view tab index (0, 1, 2, ...)
 - `activeTableBrowserTab`: Table browser tab index
 
@@ -176,8 +178,10 @@ Query paramters will set the initial ui state and subsequently removed from the 
 
 **Network State**:
 
-- `selectedNodes`: Selected node IDs
-- `selectedEdges`: Selected edge IDs
+- `selectedNodes`: Selected node IDs (for main network)
+- `selectedEdges`: Selected edge IDs (for main network)
+- `selectedSubnetworkNodes`: Selected node IDs (for subnetwork/interaction network, requires `activeNetworkView`)
+- `selectedSubnetworkEdges`: Selected edge IDs (for subnetwork/interaction network, requires `activeNetworkView`)
 - `filterFor`, `filterBy`, `filterRange`: Filter configuration
 
 **Import**:

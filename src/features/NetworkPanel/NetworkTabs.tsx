@@ -14,6 +14,7 @@ interface NetworkTabsProps {
   isActive: boolean
   bgColor?: string
   handleClick?: () => void
+  setIsActive?: (active: boolean) => void
 }
 
 export const NetworkTabs = ({
@@ -22,6 +23,7 @@ export const NetworkTabs = ({
   isActive,
   bgColor,
   handleClick,
+  setIsActive,
 }: NetworkTabsProps) => {
   const selected = useUiStateStore(
     (state) => state.ui.networkViewUi.activeTabIndex,
@@ -52,6 +54,7 @@ export const NetworkTabs = ({
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     // When clicking a tab, always activate the renderer and switch to the clicked tab
+    // The isActive state will be set by the useEffect in NetworkPanel based on activeNetworkView
     handleClick?.()
     setSelected(newValue)
   }
@@ -104,7 +107,18 @@ export const NetworkTabs = ({
                 label = customNetworkTabName[renderer.id]
               }
             }
-            return <Tab sx={{ height: '40px' }} key={index} label={label} />
+            return (
+              <Tab
+                sx={{ height: '40px' }}
+                key={index}
+                label={label}
+                onClick={() => {
+                  // When clicking a tab (even if already selected), activate the network view
+                  // This handles the case where onChange doesn't fire for already-selected tabs
+                  handleClick?.()
+                }}
+              />
+            )
           })}
         </Tabs>
       </Box>

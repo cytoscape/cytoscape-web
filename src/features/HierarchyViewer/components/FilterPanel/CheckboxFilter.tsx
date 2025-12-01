@@ -78,6 +78,10 @@ export const CheckboxFilter = ({
 
   // Apply the filter to the table
   const applyFilter = () => {
+    if (!visualStyleExists) {
+      return
+    }
+
     let filtered: IdType[] = []
     // Current range stored in the config
     const discreteRange: DiscreteRange<ValueType> =

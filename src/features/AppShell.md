@@ -44,11 +44,13 @@ The main application shell component that provides layout and initialization.
 
 - **State Restoration:**
   - Restores panel states (left, right, bottom) from URL
-  - Restores node/edge selections from URL
+  - Restores node/edge selections from URL for main network (`selectedNodes`, `selectedEdges`)
+  - Restores subnetwork node/edge selections from URL when `activeNetworkView` is a subnetwork (`selectedSubnetworkNodes`, `selectedSubnetworkEdges`)
   - Restores filter configurations from URL
   - Restores table browser tab index from URL
   - Restores network view tab index from URL
   - Restores active network view from URL (with 1s delay for component readiness)
+  - Restores subnetwork selections after active network view is set (with retry mechanism to wait for subnetwork view model to be created)
 
 - **Layout:**
   - Provides full-height flexbox layout
@@ -58,11 +60,12 @@ The main application shell component that provides layout and initialization.
 **URL Parameter Processing:**
 
 - **Panel States:** `?left=open&right=closed&bottom=open`
-- **Selections:** `?selectedNodes=node1 node2&selectedEdges=edge1`
+- **Selections (Main Network):** `?selectedNodes=node1 node2&selectedEdges=edge1`
+- **Selections (Subnetwork):** `?selectedSubnetworkNodes=node1 node2&selectedSubnetworkEdges=edge1` (requires `activeNetworkView` to be set to subnetwork ID)
 - **Filters:** `?filterFor=node&filterBy=name&filterRange=value1,value2`
 - **Table Browser:** `?activeTableBrowserTab=1`
 - **Network View Tab:** `?activeNetworkViewTab=1`
-- **Network View:** `?activeNetworkView=viewId`
+- **Network View:** `?activeNetworkView=viewId` (can be hierarchy network or subnetwork ID, e.g., `hierarchyId_subsystemId`)
 - **Import:** `?import=https://example.com/network.cx` (can be multiple)
 
 **Design Decisions:**
@@ -71,7 +74,7 @@ The main application shell component that provides layout and initialization.
 
 2. **URL Parameter Clearing:** Clears search params after processing to keep URLs clean and prevent re-processing on navigation
 
-3. **Delayed Network View Restoration:** Uses 1s timeout for network view restoration to ensure components are mounted and ready
+3. **Delayed Network View Restoration:** Uses 1s timeout for network view restoration to ensure components are mounted and ready. Subnetwork selection restoration includes a retry mechanism to wait for the subnetwork view model to be created and registered before attempting to restore selections.
 
 4. **Error Collection:** Collects all import errors and displays them together in a single message, rather than failing on first error
 
@@ -103,8 +106,11 @@ The AppShell integrates with the following stores and services:
 2. **Apply URL Overrides:** Override UI state with URL parameters
 3. **Import Networks:** Process network imports from URL
 4. **Set Stores:** Update all stores with loaded/imported data
-5. **Restore Selections:** Restore selections, filters, and views from URL
-6. **Navigate:** Navigate to final route with clean URL
+5. **Restore Selections:** Restore main network selections from URL (`selectedNodes`, `selectedEdges`)
+6. **Restore Active Network View:** Restore active network view from URL (with 1s delay)
+7. **Restore Subnetwork Selections:** If `activeNetworkView` is a subnetwork, restore subnetwork selections (`selectedSubnetworkNodes`, `selectedSubnetworkEdges`) with retry mechanism
+8. **Restore Filters and Views:** Restore filters, table browser tab, and network view tab from URL
+9. **Navigate:** Navigate to final route with clean URL
 
 ## Design Decisions
 

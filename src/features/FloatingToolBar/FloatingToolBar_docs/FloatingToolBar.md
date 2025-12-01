@@ -85,10 +85,21 @@ Button that copies a shareable URL to the clipboard.
 
 - Generates shareable URL with current UI state and selection
 - Encodes panel states, table browser tab, and network view as URL parameters
-- Encodes selected nodes/edges (limited to 300 items to avoid URL length issues)
+- Encodes selected nodes/edges for the main network (limited to 300 items to avoid URL length issues)
+- When `targetNetworkId` is provided and represents a subnetwork (interaction network with ID containing `_`):
+  - Encodes `activeNetworkView` parameter with the subnetwork ID
+  - Encodes `selectedSubnetworkNodes` parameter with selected nodes in the subnetwork
+  - Encodes `selectedSubnetworkEdges` parameter with selected edges in the subnetwork
+  - Both main network and subnetwork selections can be encoded simultaneously
 - Copies URL to clipboard
 - Shows success message after copying
 - Disabled for local networks (must be saved to NDEx first)
+
+**Subnetwork Detection:**
+
+- Subnetworks are identified by network IDs containing an underscore (`_`)
+- Format: `hierarchyId_subsystemId`
+- Only subnetworks (not hierarchy networks) will have their selection encoded as `selectedSubnetworkNodes`/`selectedSubnetworkEdges`
 
 ## Integration Points
 
@@ -113,11 +124,13 @@ The FloatingToolBar components integrate with the following stores and services:
 
 2. **Network-Specific Fit Priority**: `FitButton` prioritizes network-specific fit functions, allowing different viewports to have independent fit behavior.
 
-3. **Selection Encoding Limit**: `ShareNetworkButton` limits selection encoding to 300 items to avoid URL length issues.
+3. **Selection Encoding Limit**: `ShareNetworkButton` limits selection encoding to 300 items per network (main network and subnetwork separately) to avoid URL length issues.
 
-4. **Feature Availability Check**: `OpenInCytoscapeButton` checks feature availability before enabling, providing better UX.
+4. **Dual Network Selection Support**: `ShareNetworkButton` can encode selections for both the main network (`selectedNodes`/`selectedEdges`) and a subnetwork (`selectedSubnetworkNodes`/`selectedSubnetworkEdges`) simultaneously when `targetNetworkId` represents a subnetwork.
 
-5. **Disabled State for Local Networks**: `ShareNetworkButton` is disabled for local networks, guiding users to save to NDEx first.
+5. **Feature Availability Check**: `OpenInCytoscapeButton` checks feature availability before enabling, providing better UX.
+
+6. **Disabled State for Local Networks**: `ShareNetworkButton` is disabled for local networks, guiding users to save to NDEx first.
 
 ## Future Improvements
 

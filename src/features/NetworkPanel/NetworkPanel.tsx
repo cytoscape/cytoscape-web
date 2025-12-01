@@ -48,10 +48,9 @@ const NetworkPanel = ({
   )
 
   useEffect(() => {
-    if (
-      (networkId === activeNetworkView || activeNetworkView === '') &&
-      enablePopup
-    ) {
+    // Only activate this panel if its networkId exactly matches activeNetworkView
+    // This ensures only one panel is active at a time
+    if (networkId === activeNetworkView && enablePopup) {
       setIsActive(true)
     } else {
       setIsActive(false)
@@ -121,6 +120,7 @@ const NetworkPanel = ({
           isActive={isActive}
           bgColor={bgColor}
           handleClick={handleClick}
+          setIsActive={setIsActive}
         />
       )
     }

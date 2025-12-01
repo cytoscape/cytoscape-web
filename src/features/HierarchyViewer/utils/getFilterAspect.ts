@@ -38,7 +38,7 @@ export const createFilterFromAspect = (
       description: 'Filter nodes / edges by selected values',
       label,
       range: { values: allValues },
-      displayMode: DisplayMode.SHOW_HIDE,
+      displayMode: DisplayMode.SELECT,
       discreteFilterDetails: filter,
     }
 

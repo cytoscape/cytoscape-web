@@ -40,9 +40,11 @@ import {
 } from '../models/FilterModel'
 import { FilterUrlParams } from '../models/FilterModel/FilterUrlParams'
 import { MessageSeverity } from '../models/MessageModel'
+import { IdType } from '../models/IdType'
 import { GraphObjectType } from '../models/NetworkModel'
 import { Panel } from '../models/UiModel/Panel'
 import { PanelState } from '../models/UiModel/PanelState'
+import { NetworkView } from '../models/ViewModel'
 import { SelectionStates } from './FloatingToolBar/ShareNetworkButton'
 import { DEFAULT_FILTER_NAME } from './HierarchyViewer/components/FilterPanel/FilterPanel'
 import { SyncTabsAction } from './SyncTabs'
@@ -135,7 +137,7 @@ const AppShell = (): ReactElement => {
         description: 'Filter nodes / edges by selected values',
         label: 'Interaction edge filter',
         range: { values: filterRange.split(',') },
-        displayMode: DisplayMode.SHOW_HIDE,
+        displayMode: DisplayMode.SELECT,
       }
       addFilterConfig(filterConfig)
     }
@@ -175,6 +177,60 @@ const AppShell = (): ReactElement => {
     if (activeNetworkView != null) {
       setActiveNetworkView(activeNetworkView)
     }
+  }
+
+  /**
+   * Restores subnetwork node and edge selection states from URL search parameters
+   * Only works if activeNetworkView parameter is defined
+   * Uses retry logic to wait for the subnetwork view model to be created
+   * @param activeNetworkViewId - The active network view ID to restore selections for
+   */
+  const restoreSubnetworkSelectionStates = (
+    activeNetworkViewId: string,
+  ): void => {
+    const selectedSubnetworkNodesStr =
+      search.get('selectedSubnetworkNodes') ?? ''
+    const selectedSubnetworkEdgesStr =
+      search.get('selectedSubnetworkEdges') ?? ''
+
+    if (
+      selectedSubnetworkNodesStr === '' &&
+      selectedSubnetworkEdgesStr === ''
+    ) {
+      return
+    }
+
+    const selectedNodes: string[] =
+      selectedSubnetworkNodesStr === ''
+        ? []
+        : selectedSubnetworkNodesStr.split(' ')
+    const selectedEdges: string[] =
+      selectedSubnetworkEdgesStr === ''
+        ? []
+        : selectedSubnetworkEdgesStr.split(' ')
+
+    // Get view model store to check if view model exists
+    const getViewModel: (id: IdType) => NetworkView | undefined =
+      useViewModelStore.getState().getViewModel
+
+    // Retry logic: wait for view model to be created (subnetworks are created dynamically)
+    const tryRestoreSelection = (retryCount: number = 0): void => {
+      const MAX_RETRIES = 10
+      const RETRY_DELAY_MS = 500
+
+      const viewModel = getViewModel(activeNetworkViewId)
+      if (viewModel !== undefined) {
+        // View model exists, restore selection
+        exclusiveSelect(activeNetworkViewId, selectedNodes, selectedEdges)
+      } else if (retryCount < MAX_RETRIES) {
+        // View model doesn't exist yet, retry after delay
+        setTimeout(() => {
+          tryRestoreSelection(retryCount + 1)
+        }, RETRY_DELAY_MS)
+      }
+    }
+
+    tryRestoreSelection()
   }
 
   useEffect(() => {
@@ -303,10 +359,16 @@ const AppShell = (): ReactElement => {
         restoreNetworkViewTabState()
         restoreFilterStates()
 
-        // Restore active network view with a delay to ensure components are ready
+        // Restore active network view and subnetwork selection with a delay to ensure components are ready
+        const activeNetworkViewId = search.get('activeNetworkView')
         const NETWORK_VIEW_RESTORE_DELAY_MS = 1000
         setTimeout(() => {
           restoreActiveNetworkView()
+
+          // Restore subnetwork selection after activeNetworkView is set and components are ready
+          if (activeNetworkViewId != null) {
+            restoreSubnetworkSelectionStates(activeNetworkViewId)
+          }
         }, NETWORK_VIEW_RESTORE_DELAY_MS)
       }
 

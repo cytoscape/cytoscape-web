@@ -21,6 +21,7 @@ The component manages several loading states to provide smooth user experience:
 ### State Priority
 
 The component checks states in the following order:
+
 1. Failed load state (if `failedToLoad` is true)
 2. Network loading (if `networkId` is provided but network not in store)
 3. Workspace initialization (if `workspace.id === ''`)
@@ -32,10 +33,26 @@ The component checks states in the following order:
 **Smooth Loading Experience**: The component prioritizes checking if a `networkId` is provided before checking workspace state. This prevents the "No network selected" message from flashing during initial load when a network is being loaded.
 
 **Workspace Initialization Detection**: By checking `workspace.id === ''`, the component can distinguish between:
+
 - Workspace still initializing (show loading)
 - Workspace initialized but empty (show empty state)
 
 This prevents confusing empty state messages from appearing before the workspace has finished loading.
+
+### Active State Management
+
+The component manages an `isActive` state that determines which network panel is currently active (shown with an orange border). This state is synchronized with the global `activeNetworkView` from `UiStateStore`.
+
+**Activation Logic:**
+
+- A panel becomes active when `networkId === activeNetworkView` and `enablePopup` is true
+- Only one panel can be active at a time (ensured by exact ID matching)
+- The `isActive` state is managed via a `useEffect` that watches `activeNetworkView`, `networkId`, and `enablePopup`
+- When a tab is clicked in `NetworkTabs`, it calls `handleClick()` which sets `activeNetworkView` to the network's ID, triggering the `useEffect` to update `isActive`
+
+**Design Decision:**
+
+- Previously, when `activeNetworkView === ''`, all panels would become active. This was changed to only activate when there's an exact match, ensuring only one panel is active at a time and preventing race conditions.
 
 ## Integration Points
 
@@ -44,4 +61,4 @@ This prevents confusing empty state messages from appearing before the workspace
 - **RendererStore**: Gets available renderers
 - **ViewModelStore**: Gets network views
 - **VisualStyleStore**: Gets visual styles for network background
-
+- **UiStateStore**: Manages `activeNetworkView` state that controls which panel is active

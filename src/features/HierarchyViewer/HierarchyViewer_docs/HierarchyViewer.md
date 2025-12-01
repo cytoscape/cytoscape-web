@@ -27,7 +27,7 @@ HierarchyViewer/
 │   │   ├── FilterPanel.tsx
 │   │   ├── CheckboxFilter.tsx
 │   │   ├── AttributeSelector.tsx
-│   │   └── ModeSelector.tsx
+│   │   └── ModeSelector.tsx            # (Removed - see note below)
 │   ├── PropertyPanel/                   # Node property inspector
 │   │   └── PropertyPanel.tsx
 │   ├── StyleSelector/                    # Visual style selector
@@ -90,6 +90,7 @@ A D3.js-based visualization component that renders hierarchical structures as ne
 - Synchronizes selection with SubNetworkPanel (bidirectional sync between subnetwork view and circle packing view)
 - Applies visual styles from the visual style store
 - Provides fit-to-viewport functionality
+- On initial load with selected leaves (from URL parameters), automatically fits the viewport to show the subsystem containing those leaves
 
 **Key Features:**
 
@@ -98,8 +99,12 @@ A D3.js-based visualization component that renders hierarchical structures as ne
 - Multi-selection support for leaf nodes (stores selected leaves as an array)
 - Search state integration (expands all when search is active)
 - Visual feedback for selected nodes (highlighted borders)
+  - Selected subsystems: orange border (`CpDefaults.selectedBorderColor`)
+  - Selected leaf nodes: red border (`CpDefaults.leafBorderColor`)
 - Tooltip support for hovered elements
 - Selection synchronization with subnetwork view
+- Initial fit to selected leaves: When loading from URL with `selectedSubnetworkNodes`, automatically expands to and fits the subsystem containing those leaf nodes (runs once on initial load only)
+- User click behavior: Normal user clicks on subsystem nodes do not trigger auto-expand/zoom (only happens on initial load from URL)
 
 ### SubNetworkPanel
 
@@ -255,6 +260,11 @@ The HierarchyViewer integrates with the following stores and services:
   - Matching elements: `VisibilityType.Element` (visible)
   - Non-matching elements: `VisibilityType.None` (hidden)
   - Provides more consistent filtering behavior and better integration with visual styles
+
+- **ModeSelector**: Removed from UI
+  - Previously allowed users to choose between SELECT and SHOW_HIDE display modes
+  - SHOW_HIDE mode was removed due to architectural issues (see CyjsRenderer documentation for details)
+  - Filters now always use SELECT mode; visibility is controlled independently through visibility bypass maps
 
 ## Future Improvements
 
