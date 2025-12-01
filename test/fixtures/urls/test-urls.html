@@ -286,17 +286,26 @@
         <div class="expected">Expected: Table browser tab selection is restored</div>
         <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?activeTableBrowserTab=1</div>
       </div>
+      <div class="test-case">
+        <div class="test-case-header">
+          <span class="test-case-name">State - Network View Tab</span>
+          <a href="http://localhost:5500/workspace-123/networks/net-456?activeNetworkViewTab=1" target="_blank" class="test-link">Test →</a>
+        </div>
+        <div class="description">Pre-select network view tab from URL</div>
+        <div class="expected">Expected: Network view tab selection is restored</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?activeNetworkViewTab=1</div>
+      </div>
     </div>
     <div class="category">
       <h2 class="category-title">State - Combined</h2>
       <div class="test-case">
         <div class="test-case-header">
           <span class="test-case-name">State - Complete</span>
-          <a href="http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1&filterFor=node&filterBy=type&left=open&right=closed&activeNetworkView=view-1" target="_blank" class="test-link">Test →</a>
+          <a href="http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1&filterFor=node&filterBy=type&left=open&right=closed&activeNetworkView=view-1&activeNetworkViewTab=1&activeTableBrowserTab=1" target="_blank" class="test-link">Test →</a>
         </div>
         <div class="description">All state parameters combined</div>
         <div class="expected">Expected: Complete state restoration from URL</div>
-        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1&filterFor=node&filterBy=type&left=open&right=closed&activeNetworkView=view-1</div>
+        <div class="url-display">http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1&filterFor=node&filterBy=type&left=open&right=closed&activeNetworkView=view-1&activeNetworkViewTab=1&activeTableBrowserTab=1</div>
       </div>
     </div>
     <div class="category">

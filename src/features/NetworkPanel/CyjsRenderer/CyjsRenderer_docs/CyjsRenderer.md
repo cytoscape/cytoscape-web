@@ -31,8 +31,8 @@ This separation keeps the React component focused on orchestration while delegat
 
 - **`network?: Network`**: The network to render
 - **`displayMode?: DisplayMode`**: How to visualize selection
-  - `SELECT`: Standard selection highlighting
-  - `SHOW_HIDE`: Show selected elements and hide others
+  - `SELECT`: Standard selection highlighting (currently the only supported mode)
+  - `SHOW_HIDE`: **Not currently implemented** - This mode was removed due to architectural issues. See "Show/Hide Mode Removal" section below.
 - **`hasTab?: boolean`**: Whether the renderer lives in a tabbed context (affects sizing/behavior in `NetworkPanel`)
 
 ### Local State & Refs
@@ -46,7 +46,7 @@ This separation keeps the React component focused on orchestration while delegat
 - **Interaction state**
   - `dragStartPosition`: remembers node positions at the start of a drag (for undo/redo)
   - `hoveredElement`, `lastHoveredElement`: track hover state for nodes/edges
-  - `subSelectedEdges`: for show/hide mode when highlighting sub-selections
+  - `subSelectedEdges`: reserved for future show/hide mode implementation
   - `clickSelection`: distinguishes click-based selection from filter-based selection
 
 - **View and style state**
@@ -134,14 +134,42 @@ The core **`renderNetwork(forceFit = true)`** function is responsible for:
 
 `displayMode` influences how selection is visualized:
 
-- **SELECT**:
+- **SELECT** (currently the only supported mode):
   - Selected nodes/edges are highlighted using style mappings
   - Non-selected elements remain visible but visually distinct
 
-- **SHOW_HIDE**:
-  - Selected nodes and their incident edges remain visible
-  - Other nodes/edges can be hidden or dimmed
-  - `subSelectedEdges` is used to highlight edges connected to the selected node(s)
+- **SHOW_HIDE** (not currently implemented):
+  - This mode was removed due to architectural issues. See "Show/Hide Mode Removal" section below.
+  - Note: The `DisplayMode.SHOW_HIDE` enum value still exists in the model for specification compatibility, but it is not used in the UI and is not implemented in the renderer.
+
+### Show/Hide Mode Removal
+
+The `SHOW_HIDE` display mode was removed from the UI and renderer implementation for the following reasons:
+
+1. **Architectural Issues**: The show/hide mode hijacked the application's selection state to map to visibility, creating a fundamental conflict between selection semantics and visibility control.
+
+2. **Selection Bugs**: This approach caused numerous selection-related bugs throughout the application, as selection state was being used for two different purposes (selection and visibility).
+
+3. **Search Functionality**: Search did not work properly with show/hide mode, as the visibility mapping interfered with search result highlighting and selection.
+
+4. **Limited Functionality**: Selection for show/hide mode was barely functional, making it difficult to use effectively.
+
+5. **Limited Use Case**: Show/hide mode was only used for visibility filters for HCX (hierarchical) elements, which have since been replaced with visibility bypass maps that work independently of selection state.
+
+**Current Implementation**: Filters now use visibility bypass maps (`setBypassMap`) to control element visibility through the visual style store, which operates independently of selection state. This provides more consistent filtering behavior and better integration with visual styles.
+
+**Future Work**: Show/hide mode needs to be reworked in the future to properly account for all these cases. A proper implementation would need to:
+
+- Separate visibility control from selection state
+- Ensure search functionality works correctly
+- Provide robust selection behavior
+- Support all use cases beyond just HCX filter visibility
+
+### Selection Behavior
+
+- Selection state is synchronized with the view model store for the network being rendered
+- Only selections in the active network view (determined by `activeNetworkView` from UI state) are interactive
+- When `activeNetworkView` is set to a different network than the one being rendered, selection is disabled to prevent cross-network selection conflicts
 
 ### Undo/Redo for Node Movement
 
@@ -227,4 +255,3 @@ When the user drags nodes:
 - Improve annotation layering and lifecycle management
 - Add richer debugging tools for style/view mapping (e.g., dev overlay)
 - Consider virtualized rendering or level-of-detail strategies for extremely large networks
-

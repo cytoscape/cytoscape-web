@@ -12,6 +12,38 @@ import { CirclePackingView } from '../model/CirclePackingView'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { HcxMetaTag } from '../model/HcxMetaTag'
 
+/**
+ * Checks if a network ID represents a subnetwork (interaction network).
+ *
+ * Subnetworks are networks that are derived from hierarchical networks (HCX format).
+ * They represent interaction networks associated with specific subsystems in a hierarchy.
+ *
+ * **ID Format**: Subnetworks have IDs in the format `hierarchyId_subsystemId`, where:
+ * - `hierarchyId` is the ID of the parent hierarchical network
+ * - `subsystemId` is the ID of the subsystem within the hierarchy
+ * - The underscore (`_`) is used as a separator
+ *
+ * **Examples**:
+ * - `abc123_def456` → subnetwork (contains underscore)
+ * - `hierarchyId_node1` → subnetwork (contains underscore)
+ * - `network123` → not a subnetwork (no underscore)
+ * - `hierarchyId` → not a subnetwork (no underscore)
+ *
+ * @param networkId - The network ID to check
+ * @returns `true` if the network ID represents a subnetwork, `false` otherwise
+ *
+ * @example
+ * ```typescript
+ * isSubnetwork('hierarchyId_subsystemId') // true
+ * isSubnetwork('abc_123') // true
+ * isSubnetwork('network1') // false
+ * isSubnetwork('') // false
+ * ```
+ */
+export const isSubnetwork = (networkId: IdType): boolean => {
+  return networkId.includes('_')
+}
+
 export const getHcxProps = (
   summaryObject: Record<string, any>,
 ): HcxMetaData | undefined => {

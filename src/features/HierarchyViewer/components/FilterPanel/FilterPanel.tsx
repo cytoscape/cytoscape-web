@@ -36,7 +36,6 @@ import {
 import { AttributeSelector } from './AttributeSelector'
 import { CheckboxFilter } from './CheckboxFilter'
 import { CompatibleVisualProperties } from './CompatibleVisualMappings'
-import { ModeSelector } from './ModeSelector'
 
 // Default filter name if none exists
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
@@ -44,10 +43,7 @@ export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 // TODO: Import from CX
 const DEFAULT_EDGE_ATTR_NAME = 'interaction'
 
-// TODO: document this
-const isInteractionNetwork = (networkId: IdType): boolean => {
-  return networkId.includes('_')
-}
+import { isSubnetwork } from '../../utils/hierarchyUtil'
 
 export const FilterPanel = () => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
@@ -77,7 +73,7 @@ export const FilterPanel = () => {
   const targetNetworkId: IdType = activeNetworkId || currentNetworkId
 
   // Hide the entire filter if it is not the main network
-  const shouldApplyFilter: boolean = isInteractionNetwork(targetNetworkId)
+  const shouldApplyFilter: boolean = isSubnetwork(targetNetworkId)
 
   const vs: VisualStyle = styles[activeNetworkId]
 
@@ -93,11 +89,6 @@ export const FilterPanel = () => {
 
   const [selectedObjectType, setSelectedObjectType] = useState<GraphObjectType>(
     GraphObjectType.EDGE,
-  )
-
-  // Visualization mode for the filtered results
-  const [displayMode, setDisplayMode] = useState<DisplayMode>(
-    DisplayMode.SHOW_HIDE,
   )
 
   const targetAttrName: string =
@@ -247,7 +238,7 @@ export const FilterPanel = () => {
     } else {
       // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
     }
-  }, [targetAttrName, selectedObjectType, vs, displayMode])
+  }, [targetAttrName, selectedObjectType, vs])
 
   if (!shouldApplyFilter || selectedFilter === undefined || table === undefined)
     return null
@@ -308,7 +299,7 @@ export const FilterPanel = () => {
                 margin: 0,
               }}
             >
-              <Typography>Filter: {selectedFilter.label}</Typography>
+              <Typography>Visibility Toggle: {selectedFilter.label}</Typography>
               <Switch
                 data-testid="filter-enable-switch"
                 checked={isFilterEnabled}
@@ -333,13 +324,6 @@ export const FilterPanel = () => {
                 selectedType={selectedObjectType}
                 setSelectedValue={setFunction}
                 setSelectedType={setSelectedObjectType}
-              />
-            </Grid>
-            <Grid item sx={{ flex: 1 }}>
-              <ModeSelector
-                enableFilter={true}
-                displayMode={displayMode}
-                setDisplayMode={setDisplayMode}
               />
             </Grid>
           </AccordionDetails>

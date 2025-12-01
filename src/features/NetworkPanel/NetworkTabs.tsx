@@ -1,6 +1,5 @@
 import { Box, Tab, Tabs } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { Network } from '../../models/NetworkModel'
@@ -15,15 +14,8 @@ interface NetworkTabsProps {
   isActive: boolean
   bgColor?: string
   handleClick?: () => void
+  setIsActive?: (active: boolean) => void
 }
-
-/**
- * URL search parameter key for the active network view
- * This is used to store the active tab index in the URL
- * so that it can be restored when the user navigates back to this page
- * or refreshes the page.
- */
-const ACTIVE_NETWORK_VIEW = 'activenetworkview'
 
 export const NetworkTabs = ({
   network,
@@ -31,12 +23,12 @@ export const NetworkTabs = ({
   isActive,
   bgColor,
   handleClick,
+  setIsActive,
 }: NetworkTabsProps) => {
   const selected = useUiStateStore(
     (state) => state.ui.networkViewUi.activeTabIndex,
   )
   const setSelected = useUiStateStore((state) => state.setNetworkViewTabIndex)
-  const [searchParams] = useSearchParams()
 
   const customNetworkTabName = useUiStateStore(
     (state) => state.ui.customNetworkTabName,
@@ -61,26 +53,11 @@ export const NetworkTabs = ({
   }, [])
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    // When clicking a tab, always activate the renderer and switch to the clicked tab
+    // The isActive state will be set by the useEffect in NetworkPanel based on activeNetworkView
+    handleClick?.()
     setSelected(newValue)
-
-    // Update URL search parameter with the selected tab ID
-    const newSearchParams = new URLSearchParams(searchParams)
-    newSearchParams.set(ACTIVE_NETWORK_VIEW, newValue.toString())
-    // setSearchParams(newSearchParams, { replace: true })
   }
-
-  // Read tab ID from URL on initial render and set it as the selected view
-  useEffect(() => {
-    const tabParam = searchParams.get(ACTIVE_NETWORK_VIEW)
-    if (tabParam !== null) {
-      const tabIndex = parseInt(tabParam, 10)
-      const rendererList = Object.values(renderers)
-      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex < rendererList.length) {
-        setSelected(tabIndex)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const rendererList = Object.values(renderers)
   return (
@@ -130,7 +107,18 @@ export const NetworkTabs = ({
                 label = customNetworkTabName[renderer.id]
               }
             }
-            return <Tab sx={{ height: '40px' }} key={index} label={label} />
+            return (
+              <Tab
+                sx={{ height: '40px' }}
+                key={index}
+                label={label}
+                onClick={() => {
+                  // When clicking a tab (even if already selected), activate the network view
+                  // This handles the case where onChange doesn't fire for already-selected tabs
+                  handleClick?.()
+                }}
+              />
+            )
           })}
         </Tabs>
       </Box>

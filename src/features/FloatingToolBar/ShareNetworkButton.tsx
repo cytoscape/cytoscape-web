@@ -10,6 +10,7 @@ import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummarySt
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { isSubnetwork } from '../HierarchyViewer/utils/hierarchyUtil'
 import { IdType } from '../../models'
 import { MessageSeverity } from '../../models/MessageModel'
 import { Ui } from '../../models/UiModel'
@@ -49,9 +50,13 @@ export const ShareNetworkButton = ({
   const ui: Ui = useUiStateStore((state) => state.ui)
   const { panels } = ui
 
-  // This will be used to watch the selection state
+  // Get view models for both current network and target network (if different)
   const networkViewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
+  )
+
+  const targetNetworkViewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(targetNetworkId ?? ''),
   )
 
   const networkSummary = useNetworkSummaryStore(
@@ -69,6 +74,7 @@ export const ShareNetworkButton = ({
       ...Object.fromEntries(search.entries()),
       ...panelObj,
       activeTableBrowserTab: `${ui.tableUi.activeTabIndex}`,
+      activeNetworkViewTab: `${ui.networkViewUi.activeTabIndex}`,
     }
     if (targetNetworkId) {
       searchObj.activeNetworkView = targetNetworkId
@@ -80,69 +86,140 @@ export const ShareNetworkButton = ({
   const getSelectionParams = (): URLSearchParams => {
     const params = new URLSearchParams()
 
-    if (networkViewModel === undefined) {
-      return params
+    // Encode main network selection (currentNetworkId)
+    if (networkViewModel !== undefined) {
+      const selectedNodeCount: number = networkViewModel.selectedNodes.length
+      const selectedEdgeCount: number = networkViewModel.selectedEdges.length
+
+      if (selectedNodeCount > 0 && selectedNodeCount <= MAX_SELECTED_OBJ) {
+        params.set(
+          SelectionStates.SelectedNodes,
+          networkViewModel.selectedNodes.join(' '),
+        )
+      }
+
+      if (selectedEdgeCount > 0 && selectedEdgeCount <= MAX_SELECTED_OBJ) {
+        params.set(
+          SelectionStates.SelectedEdges,
+          networkViewModel.selectedEdges.join(' '),
+        )
+      }
     }
 
-    const selectedNodeCount: number = networkViewModel.selectedNodes.length
-    const selectedEdgeCount: number = networkViewModel.selectedEdges.length
+    // Encode subnetwork selection if targetNetworkId is a subnetwork
+    if (
+      targetNetworkId &&
+      targetNetworkId !== currentNetworkId &&
+      isSubnetwork(targetNetworkId) &&
+      targetNetworkViewModel !== undefined
+    ) {
+      const selectedSubnetworkNodeCount: number =
+        targetNetworkViewModel.selectedNodes.length
+      const selectedSubnetworkEdgeCount: number =
+        targetNetworkViewModel.selectedEdges.length
 
-    if (selectedNodeCount === 0 && selectedEdgeCount === 0) {
-      return params
-    }
+      if (
+        selectedSubnetworkNodeCount > 0 &&
+        selectedSubnetworkNodeCount <= MAX_SELECTED_OBJ
+      ) {
+        params.set(
+          'selectedSubnetworkNodes',
+          targetNetworkViewModel.selectedNodes.join(' '),
+        )
+      }
 
-    if (selectedNodeCount > 0 && selectedNodeCount <= MAX_SELECTED_OBJ) {
-      params.set(
-        SelectionStates.SelectedNodes,
-        networkViewModel.selectedNodes.join(' '),
-      )
-    }
-
-    if (selectedEdgeCount > 0 && selectedEdgeCount <= MAX_SELECTED_OBJ) {
-      params.set(
-        SelectionStates.SelectedEdges,
-        networkViewModel.selectedEdges.join(' '),
-      )
+      if (
+        selectedSubnetworkEdgeCount > 0 &&
+        selectedSubnetworkEdgeCount <= MAX_SELECTED_OBJ
+      ) {
+        params.set(
+          'selectedSubnetworkEdges',
+          targetNetworkViewModel.selectedEdges.join(' '),
+        )
+      }
     }
 
     return params
   }
 
   const setSelection = (params: URLSearchParams): void => {
-    if (networkViewModel === undefined) {
-      return
-    }
+    // Update main network selection params
+    if (networkViewModel !== undefined) {
+      const selectedNodeCount: number = networkViewModel.selectedNodes.length
+      const selectedEdgeCount: number = networkViewModel.selectedEdges.length
 
-    const selectedNodeCount: number = networkViewModel.selectedNodes.length
-    const selectedEdgeCount: number = networkViewModel.selectedEdges.length
-    if (selectedNodeCount === 0 && selectedEdgeCount === 0) {
-      params.delete(SelectionStates.SelectedNodes)
-      params.delete(SelectionStates.SelectedEdges)
-      return
-    }
+      if (selectedNodeCount > 0 && selectedNodeCount <= MAX_SELECTED_OBJ) {
+        params.set(
+          SelectionStates.SelectedNodes,
+          networkViewModel.selectedNodes.join(' '),
+        )
+      } else {
+        params.delete(SelectionStates.SelectedNodes)
+      }
 
-    if (selectedNodeCount > 0 && selectedNodeCount <= MAX_SELECTED_OBJ) {
-      params.set(
-        SelectionStates.SelectedNodes,
-        networkViewModel.selectedNodes.join(' '),
-      )
+      if (selectedEdgeCount > 0 && selectedEdgeCount <= MAX_SELECTED_OBJ) {
+        params.set(
+          SelectionStates.SelectedEdges,
+          networkViewModel.selectedEdges.join(' '),
+        )
+      } else {
+        params.delete(SelectionStates.SelectedEdges)
+      }
     } else {
       params.delete(SelectionStates.SelectedNodes)
+      params.delete(SelectionStates.SelectedEdges)
     }
 
-    if (selectedEdgeCount > 0 && selectedEdgeCount <= MAX_SELECTED_OBJ) {
-      params.set(
-        SelectionStates.SelectedEdges,
-        networkViewModel.selectedEdges.join(' '),
-      )
+    // Update subnetwork selection params
+    if (
+      targetNetworkId &&
+      targetNetworkId !== currentNetworkId &&
+      isSubnetwork(targetNetworkId) &&
+      targetNetworkViewModel !== undefined
+    ) {
+      const selectedSubnetworkNodeCount: number =
+        targetNetworkViewModel.selectedNodes.length
+      const selectedSubnetworkEdgeCount: number =
+        targetNetworkViewModel.selectedEdges.length
+
+      if (
+        selectedSubnetworkNodeCount > 0 &&
+        selectedSubnetworkNodeCount <= MAX_SELECTED_OBJ
+      ) {
+        params.set(
+          'selectedSubnetworkNodes',
+          targetNetworkViewModel.selectedNodes.join(' '),
+        )
+      } else {
+        params.delete('selectedSubnetworkNodes')
+      }
+
+      if (
+        selectedSubnetworkEdgeCount > 0 &&
+        selectedSubnetworkEdgeCount <= MAX_SELECTED_OBJ
+      ) {
+        params.set(
+          'selectedSubnetworkEdges',
+          targetNetworkViewModel.selectedEdges.join(' '),
+        )
+      } else {
+        params.delete('selectedSubnetworkEdges')
+      }
     } else {
-      params.delete(SelectionStates.SelectedEdges)
+      params.delete('selectedSubnetworkNodes')
+      params.delete('selectedSubnetworkEdges')
     }
   }
 
   useEffect(() => {
     setSelection(new URLSearchParams(search))
-  }, [networkViewModel?.selectedNodes, networkViewModel?.selectedEdges])
+  }, [
+    networkViewModel?.selectedNodes,
+    networkViewModel?.selectedEdges,
+    targetNetworkViewModel?.selectedNodes,
+    targetNetworkViewModel?.selectedEdges,
+    targetNetworkId,
+  ])
 
   const copyTextToClipboard = async (text: string): Promise<void> => {
     if ('clipboard' in navigator) {

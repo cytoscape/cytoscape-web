@@ -23,7 +23,7 @@ export const getDefaultCheckboxFilterConfig = (
     description: 'Filter nodes / edges by selected values',
     label: 'Interaction edge filter',
     range: { values },
-    displayMode: DisplayMode.SHOW_HIDE,
+    displayMode: DisplayMode.SELECT,
     visualMapping,
   }
   return filterConfig

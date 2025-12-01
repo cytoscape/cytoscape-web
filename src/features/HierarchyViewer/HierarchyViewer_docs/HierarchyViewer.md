@@ -27,7 +27,7 @@ HierarchyViewer/
 │   │   ├── FilterPanel.tsx
 │   │   ├── CheckboxFilter.tsx
 │   │   ├── AttributeSelector.tsx
-│   │   └── ModeSelector.tsx
+│   │   └── ModeSelector.tsx            # (Removed - see note below)
 │   ├── PropertyPanel/                   # Node property inspector
 │   │   └── PropertyPanel.tsx
 │   ├── StyleSelector/                    # Visual style selector
@@ -86,17 +86,25 @@ A D3.js-based visualization component that renders hierarchical structures as ne
 - Supports zoom and pan interactions
 - Dynamically shows/hides labels based on zoom level
 - Handles node selection (subsystems and leaf nodes)
-- Synchronizes selection with SubNetworkPanel
+- Supports multi-selection of leaf nodes (enables selecting multiple leaves simultaneously)
+- Synchronizes selection with SubNetworkPanel (bidirectional sync between subnetwork view and circle packing view)
 - Applies visual styles from the visual style store
 - Provides fit-to-viewport functionality
+- On initial load with selected leaves (from URL parameters), automatically fits the viewport to show the subsystem containing those leaves
 
 **Key Features:**
 
 - Zoom-based visibility control (shows labels at appropriate zoom levels)
 - Interactive selection (click subsystems to view interactions, click leaf nodes to select)
+- Multi-selection support for leaf nodes (stores selected leaves as an array)
 - Search state integration (expands all when search is active)
 - Visual feedback for selected nodes (highlighted borders)
+  - Selected subsystems: orange border (`CpDefaults.selectedBorderColor`)
+  - Selected leaf nodes: red border (`CpDefaults.leafBorderColor`)
 - Tooltip support for hovered elements
+- Selection synchronization with subnetwork view
+- Initial fit to selected leaves: When loading from URL with `selectedSubnetworkNodes`, automatically expands to and fits the subsystem containing those leaf nodes (runs once on initial load only)
+- User click behavior: Normal user clicks on subsystem nodes do not trigger auto-expand/zoom (only happens on initial load from URL)
 
 ### SubNetworkPanel
 
@@ -130,7 +138,7 @@ Provides filtering capabilities for interaction networks.
 
 - Allows filtering by node or edge attributes
 - Supports checkbox-based discrete filtering
-- Provides two display modes: Selection and Show/Hide
+- Uses visibility bypass maps to show/hide filtered elements (replaces show/hide mode)
 - Integrates with visual style mappings for color coding
 - Updates URL parameters for filter state
 - Only visible for interaction networks (not main hierarchy or HCX networks)
@@ -140,8 +148,16 @@ Provides filtering capabilities for interaction networks.
 - Attribute selection (node or edge attributes)
 - Checkbox filter with select all/clear functionality
 - Visual mapping integration (colors from visual styles)
-- Display mode selection (Selection vs Show/Hide)
+- Visibility-based filtering (uses visual style bypass maps to control element visibility)
 - URL parameter synchronization
+
+**Filtering Implementation:**
+
+- Filters use visibility bypass maps (`setBypassMap`) to control element visibility
+- Matching elements are set to `VisibilityType.Element` (visible)
+- Non-matching elements are set to `VisibilityType.None` (hidden)
+- When no options are selected, all elements are hidden
+- Filtering is applied through the visual style store's bypass map mechanism
 
 **Note:** Filter configurations are extracted from the interaction network's `filterWidgets` opaque aspect. HCX networks do not contain filter widgets - only interaction networks (those referenced by `HCX::interactionNetworkUUID`) can have filter configurations.
 
@@ -196,13 +212,13 @@ The HierarchyViewer integrates with the following stores and services:
 
 2. **Circle Packing for Hierarchy**: Uses D3.js circle packing algorithm to visualize hierarchical structures as nested circles, providing an intuitive representation of parent-child relationships.
 
-3. **Selection Synchronization**: Maintains bidirectional selection synchronization between hierarchy and interaction network, allowing users to explore relationships seamlessly.
+3. **Selection Synchronization**: Maintains bidirectional selection synchronization between hierarchy and interaction network, allowing users to explore relationships seamlessly. Circle packing panel supports multi-selection of leaf nodes, storing selected leaves as an array for enhanced interaction capabilities.
 
 4. **Async Network Loading**: Uses React Query for async network fetching with proper loading states and error handling, preventing UI blocking.
 
 5. **Web Worker for Layout**: Offloads heavy layout calculations to Web Workers to prevent UI freezing, with synchronous fallback for compatibility.
 
-6. **Filter Integration**: Extracts filter configurations from interaction network's `filterWidgets` opaque aspect. Only interaction networks (those with `interactionNetworkUUID`) can have filter widgets - HCX networks themselves do not contain filters.
+6. **Filter Integration**: Extracts filter configurations from interaction network's `filterWidgets` opaque aspect. Only interaction networks (those with `interactionNetworkUUID`) can have filter widgets - HCX networks themselves do not contain filters. Filters use visibility bypass maps to control element visibility, replacing the previous show/hide mode approach.
 
 7. **HCX Validation**: Validates networks against HCX specification to ensure compatibility and warn users of potential issues.
 
@@ -224,8 +240,31 @@ The HierarchyViewer integrates with the following stores and services:
 4. **Query Generation**: MainPanel extracts member nodes from `HCX::members` attribute and interaction network UUID from `HCX::interactionNetworkUUID`
 5. **Network Fetching**: SubNetworkPanel fetches interaction network via NDEx query using the interaction network UUID
 6. **Network Registration**: Fetched network is registered to stores with layout applied
-7. **Filter Application**: Filter configurations are extracted from interaction network's `filterWidgets` opaque aspect and applied
-8. **Selection Sync**: Selections are synchronized between views
+7. **Filter Application**: Filter configurations are extracted from interaction network's `filterWidgets` opaque aspect and applied using visibility bypass maps (matching elements set to visible, non-matching set to hidden)
+8. **Selection Sync**: Selections are synchronized between views (bidirectional sync between circle packing view and subnetwork view, with multi-selection support for leaf nodes)
+
+## Recent Changes
+
+### Multi-Selection Support (v1.0.5)
+
+- **CirclePackingPanel**: Enhanced to support multi-selection of leaf nodes
+  - Changed from single `selectedLeaf` (string) to `selectedLeaves` (array) state
+  - Enables selecting multiple leaf nodes simultaneously
+  - Improved selection synchronization with subnetwork view
+
+### Visibility-Based Filtering (v1.0.5)
+
+- **CheckboxFilter**: Refactored to use visibility bypass maps instead of show/hide mode
+  - Removed show/hide display mode
+  - Filters now use `setBypassMap` to control element visibility through the visual style store
+  - Matching elements: `VisibilityType.Element` (visible)
+  - Non-matching elements: `VisibilityType.None` (hidden)
+  - Provides more consistent filtering behavior and better integration with visual styles
+
+- **ModeSelector**: Removed from UI
+  - Previously allowed users to choose between SELECT and SHOW_HIDE display modes
+  - SHOW_HIDE mode was removed due to architectural issues (see CyjsRenderer documentation for details)
+  - Filters now always use SELECT mode; visibility is controlled independently through visibility bypass maps
 
 ## Future Improvements
 

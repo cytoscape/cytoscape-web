@@ -63,6 +63,7 @@ npm run generate:urls -- --type invalid --error invalid-workspace-id --output te
 - `--right-panel`: Panel state (`open` or `closed`)
 - `--bottom-panel`: Panel state (`open` or `closed`)
 - `--active-network-view`: Active network view ID
+- `--active-network-view-tab`: Network view tab index (number)
 - `--active-table-browser-tab`: Table browser tab index (number)
 
 #### Optional (Invalid URLs)
@@ -118,7 +119,8 @@ Query Parameters:
 - `right`: `open` or `closed`
 - `bottom`: `open` or `closed`
 - `activeNetworkView`: View ID
-- `activeTableBrowserTab`: Tab index (number)
+- `activeNetworkViewTab`: Network view tab index (number)
+- `activeTableBrowserTab`: Table browser tab index (number)
 
 Example:
 ```
@@ -161,6 +163,7 @@ Network ID + Import + Query Parameters:
   - `rightPanel`: string (optional)
   - `bottomPanel`: string (optional)
   - `activeNetworkView`: string (optional)
+  - `activeNetworkViewTab`: number (optional)
   - `activeTableBrowserTab`: number (optional)
   - `baseUrl`: string (optional)
 
@@ -191,7 +194,7 @@ Network ID + Import + Query Parameters:
 
 **Complete State:**
 ```
-/workspace-123/networks/net-456?selectedNodes=n1 n2&selectedEdges=e1&filterFor=node&filterBy=type&filterRange=protein&left=open&right=closed&activeNetworkView=view-1&activeTableBrowserTab=1
+/workspace-123/networks/net-456?selectedNodes=n1 n2&selectedEdges=e1&filterFor=node&filterBy=type&filterRange=protein&left=open&right=closed&activeNetworkView=view-1&activeNetworkViewTab=1&activeTableBrowserTab=1
 ```
 
 #### Invalid URLs
@@ -254,7 +257,7 @@ npm run generate:urls -- --type query --filter-for node --filter-by type --filte
 npm run generate:urls -- --type query --left-panel open --right-panel closed --bottom-panel open --output test/fixtures/urls/state-panels.txt
 
 # Complete state
-npm run generate:urls -- --type combined --selected-nodes "n1 n2" --selected-edges "e1" --filter-for node --filter-by type --left-panel open --right-panel closed --active-network-view view-1 --active-table-browser-tab 1 --output test/fixtures/urls/state-complete.txt
+npm run generate:urls -- --type combined --selected-nodes "n1 n2" --selected-edges "e1" --filter-for node --filter-by type --left-panel open --right-panel closed --active-network-view view-1 --active-network-view-tab 1 --active-table-browser-tab 1 --output test/fixtures/urls/state-complete.txt
 ```
 
 ### Generate invalid URLs

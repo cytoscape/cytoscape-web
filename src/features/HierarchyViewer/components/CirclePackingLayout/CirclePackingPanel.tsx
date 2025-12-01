@@ -81,13 +81,14 @@ export const CirclePackingPanel = ({
   const selectedDepthRef = useRef(0) // For keeping track of the selected node's depth in the hierarchy
   const lastZoomLevelRef = useRef(0) // Keep the last zoom level for comparison
   const updatingNetworkIdRef = useRef<IdType | null>(null) // Track which network is currently being updated
+  const hasInitialFitToSelectedLeaves = useRef(false) // Track if we've done initial fit to selected leaves
 
   // ===== LOCAL STATE =====
   const [transform, setTransform] = useState(d3Zoom.zoomIdentity)
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
   const [networkSwitched, setNetworkSwitched] = useState<boolean>(false)
   const [expandAll, setExpandAll] = useState<boolean>(false)
-  const [selectedLeaf, setSelectedLeaf] = useState<string>('')
+  const [selectedLeaves, setSelectedLeaves] = useState<string[]>([])
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false)
   const [tooltipContent, setTooltipContent] = useState<string>('')
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
@@ -176,7 +177,7 @@ export const CirclePackingPanel = ({
         }
 
         // Clear the selection in leafs in the selected node
-        setSelectedLeaf('')
+        setSelectedLeaves([])
         setSelectedNodes([])
       } else {
         // This is a leaf node
@@ -189,7 +190,7 @@ export const CirclePackingPanel = ({
         if (parent === null || parent === undefined) return
 
         const selectedChild = d.data.originalId ?? d.data.id
-        setSelectedLeaf(selectedChild)
+        setSelectedLeaves([selectedChild])
 
         if (parent.data.originalId !== undefined) {
           exclusiveSelect(network.id, [parent.data.originalId], [])
@@ -198,7 +199,7 @@ export const CirclePackingPanel = ({
         }
       }
     },
-    [network.id, exclusiveSelect, setSelectedNodes, setSelectedLeaf],
+    [network.id, exclusiveSelect, setSelectedNodes, setSelectedLeaves],
   )
 
   const handleCircleMouseMove = useCallback((e: any) => {
@@ -282,6 +283,97 @@ export const CirclePackingPanel = ({
   }
 
   /**
+   * Find the parent subsystem node that contains the selected leaf nodes
+   * @param leafNames - Array of leaf node names
+   * @returns The parent subsystem node ID if found, undefined otherwise
+   */
+  const findParentSubsystemOfLeaves = (
+    leafNames: string[],
+  ): IdType | undefined => {
+    if (
+      circlePackingView === undefined ||
+      circlePackingView.hierarchy === undefined ||
+      leafNames.length === 0
+    ) {
+      return undefined
+    }
+
+    const rootNode =
+      circlePackingView.hierarchy as d3Hierarchy.HierarchyCircularNode<D3TreeNode>
+
+    // Find all leaf nodes that match the selected leaf names
+    const matchingLeaves: d3Hierarchy.HierarchyCircularNode<D3TreeNode>[] = []
+    rootNode.descendants().forEach((node) => {
+      if (node.height === 0 && leafNames.includes(node.data.name)) {
+        matchingLeaves.push(node)
+      }
+    })
+
+    if (matchingLeaves.length === 0) {
+      return undefined
+    }
+
+    // Find the common ancestor (subsystem) of all matching leaves
+    // Start with the first leaf's parent
+    const firstLeaf = matchingLeaves[0]
+    if (firstLeaf.parent === null || firstLeaf.parent === undefined) {
+      return undefined
+    }
+
+    let commonParent: d3Hierarchy.HierarchyCircularNode<D3TreeNode> | null =
+      firstLeaf.parent
+
+    // Check if all leaves share the same parent subsystem
+    for (let i = 1; i < matchingLeaves.length; i++) {
+      const leaf = matchingLeaves[i]
+      if (
+        leaf.parent === null ||
+        leaf.parent === undefined ||
+        commonParent === null
+      ) {
+        return undefined
+      }
+
+      // Find the lowest common ancestor by walking up both trees
+      let leafParent: d3Hierarchy.HierarchyCircularNode<D3TreeNode> | null =
+        leaf.parent
+
+      // Walk up to the same depth
+      while (
+        commonParent !== null &&
+        leafParent !== null &&
+        commonParent.depth > leafParent.depth
+      ) {
+        commonParent = commonParent.parent
+      }
+      while (
+        commonParent !== null &&
+        leafParent !== null &&
+        leafParent.depth > commonParent.depth
+      ) {
+        leafParent = leafParent.parent
+      }
+
+      // Now walk up both until we find the common ancestor
+      while (
+        commonParent !== null &&
+        leafParent !== null &&
+        commonParent !== leafParent
+      ) {
+        commonParent = commonParent.parent
+        leafParent = leafParent.parent
+      }
+    }
+
+    if (commonParent === null || commonParent === undefined) {
+      return undefined
+    }
+
+    // Return the subsystem node ID (use originalId if available)
+    return commonParent.data.originalId ?? commonParent.data.id
+  }
+
+  /**
    * Build or update the circle packing view model
    */
   const buildCirclePackingViewModel = (): void => {
@@ -342,10 +434,8 @@ export const CirclePackingPanel = ({
     function onVisibilityChange() {
       if (!visible) return
 
-      if (selectedNodes.length > 0) {
-        const targetNode: IdType = selectedNodes[0]
-        expandSelectedCircle(targetNode)
-      }
+      // Don't auto-expand on visibility change - only expand on initial load with selected leaves from URL
+      // The expansion is handled in onSelectedHierarchyNodeNamesChange when selected leaves are present
 
       /**
        * Initialize and register the fit function for the circle packing renderer
@@ -494,11 +584,90 @@ export const CirclePackingPanel = ({
 
   /**
    * Update selected leaf when hierarchy node names change
+   * This syncs selections in the subnetwork view to this circle packing view
    */
   useEffect(
     function onSelectedHierarchyNodeNamesChange() {
-      if (selectedHierarchyNodeNames.length === 0) return
-      setSelectedLeaf(selectedHierarchyNodeNames[0])
+      // Sync selections from the subnetwork view to the circle packing view
+      if (selectedHierarchyNodeNames.length === 0) {
+        setSelectedLeaves([])
+        displaySelectedNodes(selectedNodeSet, [])
+        hasInitialFitToSelectedLeaves.current = false
+      } else {
+        setSelectedLeaves(selectedHierarchyNodeNames)
+        displaySelectedNodes(selectedNodeSet, selectedHierarchyNodeNames)
+
+        // On initial load with selected leaves, expand to the subsystem containing them
+        if (!hasInitialFitToSelectedLeaves.current && visible) {
+          hasInitialFitToSelectedLeaves.current = true
+
+          // Determine which subsystem to expand to
+          let subsystemToExpand: IdType | undefined
+
+          // First, check if there's already a selected subsystem
+          if (selectedNodes.length > 0) {
+            subsystemToExpand = selectedNodes[0]
+          } else {
+            // Find the parent subsystem of the selected leaves
+            subsystemToExpand = findParentSubsystemOfLeaves(
+              selectedHierarchyNodeNames,
+            )
+
+            // If found, select it so it expands
+            if (subsystemToExpand !== undefined) {
+              exclusiveSelect(network.id, [subsystemToExpand], [])
+            }
+          }
+
+          // Expand to the subsystem after a short delay to ensure rendering is complete
+          if (
+            subsystemToExpand !== undefined &&
+            circlePackingView !== undefined &&
+            circlePackingView.hierarchy !== undefined
+          ) {
+            setTimeout(() => {
+              expandSelectedCircle(subsystemToExpand!)
+              // Also fit the viewport to show the selected subsystem
+              if (svgRef.current !== null && zoomBehaviorRef.current !== null) {
+                const wrapper = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
+                if (wrapper.node() !== null) {
+                  const subsystemNode = findHierarchyNode(
+                    subsystemToExpand!,
+                    circlePackingView.hierarchy as d3Hierarchy.HierarchyCircularNode<D3TreeNode>,
+                  )
+                  if (subsystemNode !== undefined) {
+                    const { width, height } =
+                      svgRef.current.getBoundingClientRect()
+                    const scale =
+                      Math.min(
+                        width / (subsystemNode.r * 2),
+                        height / (subsystemNode.r * 2),
+                      ) * 0.5 // 0.5 for padding (zoom out more)
+                    const translateX = width / 2 - subsystemNode.x * scale
+                    const translateY = height / 2 - subsystemNode.y * scale
+                    const newTransform = d3Zoom.zoomIdentity
+                      .translate(translateX, translateY)
+                      .scale(scale)
+                    setTransform(newTransform)
+                    const wrapperNode = wrapper.node() as Element
+                    if (
+                      wrapperNode !== null &&
+                      zoomBehaviorRef.current !== null
+                    ) {
+                      zoomBehaviorRef.current.transform(
+                        d3Selection.select(
+                          wrapperNode,
+                        ) as d3Selection.Selection<Element, any, any, any>,
+                        newTransform,
+                      )
+                    }
+                  }
+                }
+              }
+            }, 500)
+          }
+        }
+      }
     },
     [selectedHierarchyNodeNames],
   )
@@ -522,13 +691,13 @@ export const CirclePackingPanel = ({
         setSelectedNodes([])
 
         // Clear the selection in the CP view's leaf node
-        setSelectedLeaf('')
+        setSelectedLeaves([])
 
         // Clear the selection of a circle in the CP view
         exclusiveSelect(network.id, [], [])
 
         // Redraw the CP view
-        displaySelectedNodes(new Set<string>(), '')
+        displaySelectedNodes(new Set<string>(), [])
         logUi.info(
           `[${drawCirclePacking.name}]: Selection in CP cleared: ${selectedNodes.length}`,
         )
@@ -812,15 +981,16 @@ export const CirclePackingPanel = ({
    */
   useEffect(
     function onNodeSelection() {
-      displaySelectedNodes(selectedNodeSet, selectedLeaf)
+      displaySelectedNodes(selectedNodeSet, selectedLeaves)
 
-      // Expand circles to the level of the selected node and zoom in to that circle
-      if (selectedNodes.length > 0 && networkSwitched) {
+      // Don't auto-expand on node selection - only expand on initial load with selected leaves from URL
+      // The expansion is handled in onSelectedHierarchyNodeNamesChange when selected leaves are present
+      // Clear the networkSwitched flag so it doesn't interfere
+      if (networkSwitched) {
         setNetworkSwitched(false)
-        expandSelectedCircle(selectedNodes[0])
       }
     },
-    [selectedNodes, selectedLeaf],
+    [selectedNodes, selectedLeaves],
   )
 
   /**

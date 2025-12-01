@@ -13,7 +13,8 @@ State - Filter,State - Filter,http://localhost:5500/workspace-123/networks/net-4
 State - Panels,State - UI,http://localhost:5500/workspace-123/networks/net-456?left=open&right=closed&bottom=open,Pre-open/close panels from URL,Panel states are restored from URL
 State - Active Network View,State - UI,http://localhost:5500/workspace-123/networks/net-456?activeNetworkView=view-1,Pre-select network view from URL,Network view selection is restored
 State - Table Browser Tab,State - UI,http://localhost:5500/workspace-123/networks/net-456?activeTableBrowserTab=1,Pre-select table browser tab from URL,Table browser tab selection is restored
-State - Complete,State - Combined,http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1&filterFor=node&filterBy=type&left=open&right=closed&activeNetworkView=view-1,All state parameters combined,Complete state restoration from URL
+State - Network View Tab,State - UI,http://localhost:5500/workspace-123/networks/net-456?activeNetworkViewTab=1,Pre-select network view tab from URL,Network view tab selection is restored
+State - Complete,State - Combined,http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1&filterFor=node&filterBy=type&left=open&right=closed&activeNetworkView=view-1&activeNetworkViewTab=1&activeTableBrowserTab=1,All state parameters combined,Complete state restoration from URL
 Invalid - Workspace ID,Invalid URLs,http://localhost:5500/invalid-workspace-123!/networks/network-456,Malformed workspace ID format,Workspace ID validation error
 Invalid - Network ID,Invalid URLs,http://localhost:5500/workspace-123/networks/not-a-valid-uuid,Malformed network ID format,Network ID validation error
 Invalid - Query Params,Invalid URLs,http://localhost:5500/workspace-123/networks/network-456?invalid=param&format&missingValue=,Malformed query parameter format,Query parameter parsing error

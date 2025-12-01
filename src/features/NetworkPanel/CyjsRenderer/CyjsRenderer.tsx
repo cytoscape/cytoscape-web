@@ -97,12 +97,6 @@ const CyjsRenderer = ({
   // Canvas layer state for annotation layers, to clear previous network layers before rendering the next network
   const [annotationLayers, setAnnotationLayers] = useState<any[]>([])
 
-  // Sub-selection state: if show-hide mode is selected, the selected node will be highlighted and others shown too
-  const [subSelectedEdges, setSubSelectedEdges] = useState<IdType[]>([])
-
-  // Selection type (click or filter)
-  const [clickSelection, setClickSelection] = useState<boolean>(false)
-
   // Cytoscape instance and container ref
   const [cy, setCy] = useState<any>(null)
   const cyContainer = useRef(null)
@@ -291,11 +285,6 @@ const CyjsRenderer = ({
     cy.on(
       'boxend',
       debounce((event: EventObject) => {
-        // Do nothing if selection mode is not "select"
-        if (displayMode === DisplayMode.SHOW_HIDE) {
-          return
-        }
-
         const selectedNodes: IdType[] = []
         const selectedEdges: IdType[] = []
         cy.elements()
@@ -337,56 +326,23 @@ const CyjsRenderer = ({
 
       // Handle background click
       if (e.target === cy) {
-        if (
-          displayMode === DisplayMode.SELECT &&
-          shiftOrMetaKeyPressed === false
-        ) {
-          // Deselect all if in select mode and no modifier key is pressed
+        if (shiftOrMetaKeyPressed === false) {
+          // Deselect all if no modifier key is pressed
           exclusiveSelect(id, [], [])
-        } else {
-          if (displayMode === DisplayMode.SHOW_HIDE) {
-            // In show/hide mode, keep all visible edges displayed
-            exclusiveSelect(
-              id,
-              [],
-              cy
-                .edges(':visible')
-                .map((ele: SingularElementArgument) => ele.data('id')),
-            )
-          } else {
-            // do nothing. Keep the selection as-is
-          }
-          // Do nothing, keep selection as-is
         }
       } else if (e.target.isNode() || e.target.isEdge()) {
         // Handle node or edge click
-        if (displayMode === DisplayMode.SHOW_HIDE) {
-          // In show/hide mode, only select nodes or handle edge sub-selection
-          if (e.target.isNode()) {
-            const selectedNodes: IdType[] = []
-            selectedNodes.push(e.target.data('id'))
-            // Keep edges as-is
-            exclusiveSelect(id, selectedNodes, selectedEdges)
-          } else {
-            // Edge is clicked: select it and handle sub-selection
-            const newSelection = e.target.data('id')
-            exclusiveSelect(id, selectedNodes, [newSelection])
-            setClickSelection(true)
-          }
+        if (shiftOrMetaKeyPressed) {
+          toggleSelected(id, [e.target.data('id')])
         } else {
-          // In select mode, handle multi-select or exclusive select
-          if (shiftOrMetaKeyPressed) {
-            toggleSelected(id, [e.target.data('id')])
+          const selectedNodes: IdType[] = []
+          const selectedEdges: IdType[] = []
+          if (e.target.isNode()) {
+            selectedNodes.push(e.target.data('id'))
           } else {
-            const selectedNodes: IdType[] = []
-            const selectedEdges: IdType[] = []
-            if (e.target.isNode()) {
-              selectedNodes.push(e.target.data('id'))
-            } else {
-              selectedEdges.push(e.target.data('id'))
-            }
-            exclusiveSelect(id, selectedNodes, selectedEdges)
+            selectedEdges.push(e.target.data('id'))
           }
+          exclusiveSelect(id, selectedNodes, selectedEdges)
         }
       }
       // Always re-enable selection after tap
@@ -767,16 +723,9 @@ const CyjsRenderer = ({
 
       // Helper functions
       const getCurrentSelection = () => {
-        let currentEdgesToCompare: string[]
-        if (displayMode === DisplayMode.SHOW_HIDE) {
-          currentEdgesToCompare = cy
-            .edges(':visible')
-            .map((ele: any) => ele.data('id'))
-        } else {
-          currentEdgesToCompare = cy
-            .edges(':selected')
-            .map((ele: any) => ele.data('id'))
-        }
+        const currentEdgesToCompare: string[] = cy
+          .edges(':selected')
+          .map((ele: any) => ele.data('id'))
 
         return {
           nodes: cy.nodes(':selected').map((ele: any) => ele.data('id')),
@@ -800,20 +749,12 @@ const CyjsRenderer = ({
 
       const clearAllSelection = () => {
         cy.elements().unselect()
-        if (displayMode === DisplayMode.SELECT) {
-          cy.elements().show()
-        } else {
-          cy.nodes().show()
-          cy.edges().hide()
-        }
+        cy.elements().show()
       }
 
       const updateNodeSelection = () => {
         if (selectedNodes.length === 0) {
           cy.nodes().unselect()
-          if (displayMode === DisplayMode.SHOW_HIDE) {
-            cy.nodes().show()
-          }
         } else {
           cy.nodes().show().unselect()
           cy.nodes()
@@ -828,37 +769,12 @@ const CyjsRenderer = ({
         if (selectedEdges.length === 0) {
           cy.edges().unselect()
         } else {
-          // Set visibility based on display mode
-          if (displayMode === DisplayMode.SHOW_HIDE) {
-            cy.edges().hide()
-          } else {
-            cy.edges().show()
-          }
-
-          // Handle selection logic
-          if (displayMode === DisplayMode.SHOW_HIDE) {
-            const targetEdgeIds = clickSelection
-              ? subSelectedEdges
-              : selectedEdges
-            const newSelectedEdges = cy
-              .edges()
-              .filter((ele: SingularElementArgument) =>
-                targetEdgeIds.includes(ele.data('id')),
-              )
-            newSelectedEdges.show()
-
-            if (clickSelection) {
-              setClickSelection(false)
-            } else {
-              setSubSelectedEdges(selectedEdges)
-            }
-          } else {
-            cy.edges()
-              .filter((ele: SingularElementArgument) =>
-                selectedEdges.includes(ele.data('id')),
-              )
-              .select()
-          }
+          cy.edges().show()
+          cy.edges()
+            .filter((ele: SingularElementArgument) =>
+              selectedEdges.includes(ele.data('id')),
+            )
+            .select()
         }
       }
 
@@ -882,24 +798,6 @@ const CyjsRenderer = ({
   )
 
   /**
-   * Effect to enable or disable Cytoscape.js box selection based on display mode.
-   */
-  useEffect(
-    function onBoxSelectionUpdate() {
-      if (cy === null) {
-        return
-      }
-      if (displayMode === DisplayMode.SHOW_HIDE) {
-        // Disable box selection for show/hide mode
-        cy.boxSelectionEnabled(false)
-      } else {
-        cy.boxSelectionEnabled(true)
-      }
-    },
-    [displayMode],
-  )
-
-  /**
    * Initialize Cytoscape.js instance on mount and clean up on unmount.
    */
   useEffect(function initializeCyjsRenderer() {
@@ -908,7 +806,7 @@ const CyjsRenderer = ({
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
-        boxSelectionEnabled: displayMode === DisplayMode.SELECT ? true : false,
+        boxSelectionEnabled: true,
       })
 
       if (debug) {

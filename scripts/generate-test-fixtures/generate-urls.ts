@@ -28,6 +28,7 @@ const PARAM_LEFT_PANEL = 'left'
 const PARAM_RIGHT_PANEL = 'right'
 const PARAM_BOTTOM_PANEL = 'bottom'
 const PARAM_ACTIVE_NETWORK_VIEW = 'activeNetworkView'
+const PARAM_ACTIVE_NETWORK_VIEW_TAB = 'activeNetworkViewTab'
 const PARAM_ACTIVE_TABLE_BROWSER_TAB = 'activeTableBrowserTab'
 const PARAM_IMPORT = 'import'
 
@@ -55,6 +56,7 @@ interface GenerateQueryParamsURLOptions {
   rightPanel?: string
   bottomPanel?: string
   activeNetworkView?: string
+  activeNetworkViewTab?: number
   activeTableBrowserTab?: number
   baseUrl?: string
 }
@@ -115,6 +117,7 @@ function generateQueryParamsURL(
     rightPanel,
     bottomPanel,
     activeNetworkView,
+    activeNetworkViewTab,
     activeTableBrowserTab,
     baseUrl = DEFAULT_BASE_URL,
   } = options
@@ -155,6 +158,10 @@ function generateQueryParamsURL(
 
   if (activeNetworkView) {
     params.set(PARAM_ACTIVE_NETWORK_VIEW, activeNetworkView)
+  }
+
+  if (activeNetworkViewTab !== undefined) {
+    params.set(PARAM_ACTIVE_NETWORK_VIEW_TAB, activeNetworkViewTab.toString())
   }
 
   if (activeTableBrowserTab !== undefined) {
@@ -214,6 +221,7 @@ function parseArgs(): {
   rightPanel?: string
   bottomPanel?: string
   activeNetworkView?: string
+  activeNetworkViewTab?: number
   activeTableBrowserTab?: number
   error?: ErrorType
   output: string
@@ -334,6 +342,13 @@ function parseArgs(): {
         }
         break
 
+      case '--active-network-view-tab':
+        if (nextArg) {
+          result.activeNetworkViewTab = parseInt(nextArg, 10)
+          i++
+        }
+        break
+
       case '--active-table-browser-tab':
         if (nextArg) {
           result.activeTableBrowserTab = parseInt(nextArg, 10)
@@ -430,6 +445,7 @@ function main(): void {
           rightPanel: args.rightPanel,
           bottomPanel: args.bottomPanel,
           activeNetworkView: args.activeNetworkView,
+          activeNetworkViewTab: args.activeNetworkViewTab,
           activeTableBrowserTab: args.activeTableBrowserTab,
           baseUrl,
         })
@@ -480,6 +496,12 @@ function main(): void {
         }
         if (args.activeNetworkView) {
           params.set(PARAM_ACTIVE_NETWORK_VIEW, args.activeNetworkView)
+        }
+        if (args.activeNetworkViewTab !== undefined) {
+          params.set(
+            PARAM_ACTIVE_NETWORK_VIEW_TAB,
+            args.activeNetworkViewTab.toString(),
+          )
         }
         if (args.activeTableBrowserTab !== undefined) {
           params.set(
