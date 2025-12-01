@@ -55,10 +55,9 @@ export const ShareNetworkButton = ({
     state.getViewModel(currentNetworkId),
   )
 
-  const targetNetworkViewModel: NetworkView | undefined =
-    targetNetworkId && targetNetworkId !== currentNetworkId
-      ? useViewModelStore((state) => state.getViewModel(targetNetworkId))
-      : undefined
+  const targetNetworkViewModel: NetworkView | undefined = useViewModelStore(
+    (state) => state.getViewModel(targetNetworkId ?? ''),
+  )
 
   const networkSummary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],

@@ -153,7 +153,7 @@ export const SearchBox = (): JSX.Element => {
         Array.from(nodeColumns),
       )
       setIndexedColumns(
-        currentNetworkId,
+        networkId,
         GraphObjectType.EDGE,
         Array.from(edgeColumns),
       )

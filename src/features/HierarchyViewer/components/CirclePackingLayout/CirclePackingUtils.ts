@@ -204,14 +204,15 @@ export const displaySelectedNodes = (
     .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
       if (selectedNodeSet.has(d.data.id)) {
         return CpDefaults.selectedBorderColor
-      } else if (selectedLeaves.includes(d.data.name)) {
+      } else if (selectedLeaves.includes(d.data.originalId ?? d.data.id)) {
         return CpDefaults.leafBorderColor
       } else {
         return CpDefaults.borderColor
       }
     })
     .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) =>
-      selectedNodeSet.has(d.data.id) || selectedLeaves.includes(d.data.name)
+      selectedNodeSet.has(d.data.id) ||
+      selectedLeaves.includes(d.data.originalId ?? d.data.id)
         ? CpDefaults.borderWidthHover
         : CpDefaults.borderWidth,
     )
