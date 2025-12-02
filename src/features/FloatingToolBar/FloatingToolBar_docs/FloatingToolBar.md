@@ -86,7 +86,11 @@ Button that copies a shareable URL to the clipboard.
 - Generates shareable URL with current UI state and selection
 - Encodes panel states, table browser tab, and network view as URL parameters
 - Encodes selected nodes/edges for the main network (limited to 300 items to avoid URL length issues)
-- When `targetNetworkId` is provided and represents a subnetwork (interaction network with ID containing `_`):
+- **Target Network ID Resolution:**
+  - Uses `targetNetworkId` prop if provided (typically from subnetwork viewer)
+  - Otherwise, uses `activeNetworkView` from UI state if it differs from `currentNetworkId` (typically when viewing a subnetwork tab in main network panel)
+  - This ensures the correct network view is encoded regardless of where the button is used
+- When the effective target network ID represents a subnetwork (interaction network with ID containing `_`):
   - Encodes `activeNetworkView` parameter with the subnetwork ID
   - Encodes `selectedSubnetworkNodes` parameter with selected nodes in the subnetwork
   - Encodes `selectedSubnetworkEdges` parameter with selected edges in the subnetwork
@@ -100,6 +104,12 @@ Button that copies a shareable URL to the clipboard.
 - Subnetworks are identified by network IDs containing an underscore (`_`)
 - Format: `hierarchyId_subsystemId`
 - Only subnetworks (not hierarchy networks) will have their selection encoded as `selectedSubnetworkNodes`/`selectedSubnetworkEdges`
+
+**Usage Context:**
+
+- **From Main Network Panel**: When viewing a subnetwork tab, automatically detects and includes the subnetwork view in the URL via `activeNetworkView` from UI state
+- **From Subnetwork Viewer**: Uses `targetNetworkId` prop to explicitly specify the subnetwork being viewed
+- Both contexts produce identical URLs with the same `activeNetworkView` parameter, ensuring consistent sharing behavior
 
 ## Integration Points
 
@@ -126,11 +136,13 @@ The FloatingToolBar components integrate with the following stores and services:
 
 3. **Selection Encoding Limit**: `ShareNetworkButton` limits selection encoding to 300 items per network (main network and subnetwork separately) to avoid URL length issues.
 
-4. **Dual Network Selection Support**: `ShareNetworkButton` can encode selections for both the main network (`selectedNodes`/`selectedEdges`) and a subnetwork (`selectedSubnetworkNodes`/`selectedSubnetworkEdges`) simultaneously when `targetNetworkId` represents a subnetwork.
+4. **Dual Network Selection Support**: `ShareNetworkButton` can encode selections for both the main network (`selectedNodes`/`selectedEdges`) and a subnetwork (`selectedSubnetworkNodes`/`selectedSubnetworkEdges`) simultaneously when the effective target network ID represents a subnetwork.
 
-5. **Feature Availability Check**: `OpenInCytoscapeButton` checks feature availability before enabling, providing better UX.
+5. **Automatic Subnetwork Detection**: `ShareNetworkButton` automatically detects when viewing a subnetwork by checking `activeNetworkView` from UI state when `targetNetworkId` is not provided, ensuring consistent URL generation from both main network panel and subnetwork viewer contexts.
 
-6. **Disabled State for Local Networks**: `ShareNetworkButton` is disabled for local networks, guiding users to save to NDEx first.
+6. **Feature Availability Check**: `OpenInCytoscapeButton` checks feature availability before enabling, providing better UX.
+
+7. **Disabled State for Local Networks**: `ShareNetworkButton` is disabled for local networks, guiding users to save to NDEx first.
 
 ## Future Improvements
 
