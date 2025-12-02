@@ -48,15 +48,22 @@ export const ShareNetworkButton = ({
   const { urlBaseName } = useContext(AppConfigContext)
 
   const ui: Ui = useUiStateStore((state) => state.ui)
-  const { panels } = ui
+  const { panels, activeNetworkView } = ui
 
   // Get view models for both current network and target network (if different)
   const networkViewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(currentNetworkId),
   )
 
+  // Determine the target network ID: use provided targetNetworkId, or activeNetworkView if it's different from currentNetworkId
+  const effectiveTargetNetworkId: IdType | undefined =
+    targetNetworkId ??
+    (activeNetworkView !== '' && activeNetworkView !== currentNetworkId
+      ? activeNetworkView
+      : undefined)
+
   const targetNetworkViewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(targetNetworkId ?? ''),
+    (state) => state.getViewModel(effectiveTargetNetworkId ?? ''),
   )
 
   const networkSummary = useNetworkSummaryStore(
@@ -76,8 +83,8 @@ export const ShareNetworkButton = ({
       activeTableBrowserTab: `${ui.tableUi.activeTabIndex}`,
       activeNetworkViewTab: `${ui.networkViewUi.activeTabIndex}`,
     }
-    if (targetNetworkId) {
-      searchObj.activeNetworkView = targetNetworkId
+    if (effectiveTargetNetworkId) {
+      searchObj.activeNetworkView = effectiveTargetNetworkId
     }
     const searchStr = new URLSearchParams(searchObj).toString()
     return searchStr
@@ -106,11 +113,11 @@ export const ShareNetworkButton = ({
       }
     }
 
-    // Encode subnetwork selection if targetNetworkId is a subnetwork
+    // Encode subnetwork selection if effectiveTargetNetworkId is a subnetwork
     if (
-      targetNetworkId &&
-      targetNetworkId !== currentNetworkId &&
-      isSubnetwork(targetNetworkId) &&
+      effectiveTargetNetworkId &&
+      effectiveTargetNetworkId !== currentNetworkId &&
+      isSubnetwork(effectiveTargetNetworkId) &&
       targetNetworkViewModel !== undefined
     ) {
       const selectedSubnetworkNodeCount: number =
@@ -172,9 +179,9 @@ export const ShareNetworkButton = ({
 
     // Update subnetwork selection params
     if (
-      targetNetworkId &&
-      targetNetworkId !== currentNetworkId &&
-      isSubnetwork(targetNetworkId) &&
+      effectiveTargetNetworkId &&
+      effectiveTargetNetworkId !== currentNetworkId &&
+      isSubnetwork(effectiveTargetNetworkId) &&
       targetNetworkViewModel !== undefined
     ) {
       const selectedSubnetworkNodeCount: number =
@@ -218,7 +225,7 @@ export const ShareNetworkButton = ({
     networkViewModel?.selectedEdges,
     targetNetworkViewModel?.selectedNodes,
     targetNetworkViewModel?.selectedEdges,
-    targetNetworkId,
+    effectiveTargetNetworkId,
   ])
 
   const copyTextToClipboard = async (text: string): Promise<void> => {
