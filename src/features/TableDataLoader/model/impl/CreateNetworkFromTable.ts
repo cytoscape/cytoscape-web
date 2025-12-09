@@ -1,9 +1,10 @@
 import { DataTableValue } from 'primereact/datatable'
 import { v4 as uuidv4 } from 'uuid'
 
+import { CyNetwork } from '../../../../models/CyNetworkModel'
 import { Network } from '../../../../models/NetworkModel'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
-import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
+import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Table, ValueType, ValueTypeName } from '../../../../models/TableModel'
 import { NetworkView } from '../../../../models/ViewModel'
 import { createViewModel } from '../../../../models/ViewModel/impl/viewModelImpl'
@@ -168,13 +169,8 @@ export function createNetworkFromTableData(
   uuid?: string,
   name?: string,
 ): {
+  cyNetwork: CyNetwork
   summary: NetworkSummary
-  nodeTable: Table
-  edgeTable: Table
-  network: Network
-  visualStyle: VisualStyle
-  networkView: NetworkView
-  visualStyleOptions: VisualStyleOptions
 } {
   const tgtNodeCol = columns.find(
     (c) => c.meaning === ColumnAssignmentType.TargetNode,
@@ -312,34 +308,10 @@ export function createNetworkFromTableData(
     }
   })
 
-  const summary = {
-    isNdex: false,
-    ownerUUID: networkId,
+  const summary = createNetworkSummary({
+    networkId: network.id,
     name: name ?? 'test',
-    isReadOnly: false,
-    subnetworkIds: [],
-    isValid: false,
-    warnings: [],
-    isShowcase: false,
-    isCertified: false,
-    indexLevel: '',
-    hasLayout: false,
-    hasSample: false,
-    cxFileSize: 0,
-    cx2FileSize: 0,
-    properties: [],
-    owner: '',
-    version: '',
-    completed: false,
-    visibility: Visibility.PUBLIC,
-    nodeCount: network.nodes.length,
-    edgeCount: network.edges.length,
-    description: 'test',
-    creationTime: new Date(Date.now()),
-    externalId: networkId,
-    isDeleted: false,
-    modificationTime: new Date(Date.now()),
-  }
+  })
 
   const networkView = createViewModel(network)
 
@@ -351,7 +323,7 @@ export function createNetworkFromTableData(
   }
 
   // Build visualEditorProperties for UI table display
-  const visualStyleOptions = {
+  const visualStyleOptions: VisualStyleOptions = {
     visualEditorProperties: {
       nodeSizeLocked: false,
       arrowColorMatchesEdge: false,
@@ -372,14 +344,23 @@ export function createNetworkFromTableData(
     },
   }
 
-  return {
-    summary,
+  // Create CyNetwork from all components
+  const cyNetwork: CyNetwork = {
+    network,
     nodeTable,
     edgeTable,
-    network,
     visualStyle,
-    networkView,
+    networkViews: [networkView],
     visualStyleOptions,
+    undoRedoStack: {
+      undoStack: [],
+      redoStack: [],
+    },
+  }
+
+  return {
+    cyNetwork,
+    summary,
   }
 }
 

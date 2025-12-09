@@ -5,6 +5,7 @@ import {
   NetworkProperty,
   NetworkSummary,
 } from '../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { CyNetwork } from '../CyNetworkModel'
 import { Visibility } from '../NetworkSummaryModel/Visibility'
@@ -19,7 +20,7 @@ export const fetchUrlCx = async (
   maxSize: number,
 ): Promise<{
   summary: NetworkSummary
-  networkWithView: CyNetwork
+  cyNetwork: CyNetwork
 }> => {
   try {
     const response = await fetch(url, { method: 'HEAD' }) // Use HEAD request to get headers first
@@ -64,48 +65,30 @@ export const fetchUrlCx = async (
       },
     )
 
-    const summary = {
-      isNdex: false,
-      ownerUUID: uuid,
+    const hasLayout = network.networkViews
+      .map(
+        (v) =>
+          Object.values(v.nodeViews).filter(
+            (nv) =>
+              nv.x !== undefined &&
+              nv.y !== undefined &&
+              nv.x !== 0 &&
+              nv.y !== 0,
+          ).length > 0,
+      )
+      .reduce((acc, cur) => acc || cur, false)
+
+    const summary = createNetworkSummary({
+      networkId: uuid,
       name,
-      isReadOnly: false,
-      subnetworkIds: [],
-      isValid: false,
-      warnings: [],
-      isShowcase: false,
-      isCertified: false,
-      indexLevel: '',
-      hasLayout: network.networkViews
-        .map(
-          (v) =>
-            Object.values(v.nodeViews).filter(
-              (nv) =>
-                nv.x !== undefined &&
-                nv.y !== undefined &&
-                nv.x !== 0 &&
-                nv.y !== 0,
-            ).length > 0,
-        )
-        .reduce((acc, cur) => acc || cur, false),
-      hasSample: false,
-      cxFileSize: 0,
-      cx2FileSize: 0,
-      properties,
-      owner: '',
-      version: '',
-      completed: false,
-      visibility: Visibility.PUBLIC,
-      nodeCount: network.network.nodes.length,
-      edgeCount: network.network.edges.length,
       description,
-      creationTime: new Date(Date.now()),
-      externalId: uuid,
-      isDeleted: false,
-      modificationTime: new Date(Date.now()),
-    }
+      properties,
+      hasLayout,
+      visibility: Visibility.PUBLIC,
+    })
     return {
       summary,
-      networkWithView: network,
+      cyNetwork: network,
     }
   } catch (error) {
     logApi.error(`[${fetchUrlCx.name}]: Failed to fetch URL:`, error)

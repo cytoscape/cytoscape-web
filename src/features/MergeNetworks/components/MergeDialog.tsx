@@ -61,6 +61,7 @@ import { useLoadCyNetwork } from '../../../data/hooks/useLoadCyNetwork'
 import { IdType } from '../../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Column } from '../../../models/TableModel'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import {
@@ -543,26 +544,34 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           strictRemoveMode,
         )
 
-      // Update state stores with the new network and its components
-      setVisualStyleOptions(newNetworkId, newNetworkWithView.visualStyleOptions)
-      addNetworkToWorkspace(newNetworkId)
-      addNewNetwork(newNetworkWithView.network)
-      setVisualStyle(newNetworkId, newNetworkWithView.visualStyle)
-      setTables(
-        newNetworkId,
-        newNetworkWithView.nodeTable,
-        newNetworkWithView.edgeTable,
-      )
-      setViewModel(newNetworkId, newNetworkWithView.networkViews[0])
-      const newSummary = { ...networkSummary, hasLayout: false }
-      await putNetworkSummaryToDb(newSummary)
-      addSummaries({ [newNetworkId]: newSummary })
-      // Apply layout to the network
-      setCurrentNetworkId(newNetworkId)
-      navigateToNetwork({
-        workspaceId: workspace.id,
+      const newSummary = createNetworkSummary({
         networkId: newNetworkId,
-        searchParams: new URLSearchParams(location.search),
+        name: networkSummary.name,
+        description: networkSummary.description,
+        version: networkSummary.version,
+        properties: networkSummary.properties,
+        visibility: networkSummary.visibility,
+        ownerUUID: networkSummary.ownerUUID,
+        externalId: networkSummary.externalId,
+        hasLayout: false, // Merged networks don't have layout initially
+        isNdex: networkSummary.isNdex,
+        isReadOnly: networkSummary.isReadOnly,
+        subnetworkIds: networkSummary.subnetworkIds,
+        isValid: networkSummary.isValid,
+        warnings: networkSummary.warnings,
+        isShowcase: networkSummary.isShowcase,
+        isCertified: networkSummary.isCertified,
+        indexLevel: networkSummary.indexLevel,
+        hasSample: networkSummary.hasSample,
+        cxFileSize: networkSummary.cxFileSize,
+        cx2FileSize: networkSummary.cx2FileSize,
+        owner: networkSummary.owner,
+        completed: networkSummary.completed,
+        isDeleted: networkSummary.isDeleted,
+        creationTime: networkSummary.creationTime,
+        modificationTime: networkSummary.modificationTime,
+      })
+      await registerCyNetwork(newCyNetwork, newSummary, {
         replace: true,
       })
       handleClose()

@@ -23,8 +23,6 @@ export interface NetworkSummary {
   version: string
   completed: boolean
   visibility: Visibility
-  nodeCount: number
-  edgeCount: number
   description: string
   creationTime: Date
   externalId: string

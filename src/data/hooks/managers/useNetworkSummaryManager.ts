@@ -1,3 +1,3 @@
 export const useNetworkSummaryManager = (): void => {
-  // this hook is no longer needed
+  // This hook is no longer needed
 }

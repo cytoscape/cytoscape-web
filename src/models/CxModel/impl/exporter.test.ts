@@ -3,7 +3,7 @@ import { Network } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
 import { NetworkAttributes } from '../../NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
-import { getBaseSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'
+import { createNetworkSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'
 import { Table } from '../../TableModel'
 import { createTable } from '../../TableModel/impl/inMemoryTable'
 import { NetworkView } from '../../ViewModel'
@@ -169,9 +169,9 @@ describe('exporter', () => {
         attributes: {},
       }
 
-      const summary: NetworkSummary = getBaseSummary({
+      const summary: NetworkSummary = createNetworkSummary({
+        networkId: network.id,
         name: 'Test Network from Summary',
-        network,
         description: 'Description from summary',
       })
       summary.version = '2.0'
@@ -547,9 +547,9 @@ describe('exporter', () => {
         },
       }
 
-      const summary: NetworkSummary = getBaseSummary({
+      const summary: NetworkSummary = createNetworkSummary({
+        networkId: network.id,
         name: 'Summary Name',
-        network,
       })
 
       const cyNetwork: CyNetwork = {

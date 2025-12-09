@@ -47,9 +47,9 @@ export const NetworkPropertyPanel = ({
   const networkModels = useNetworkStore((state) => state.networks)
   const networkModel: Network | undefined = networkModels.get(id)
 
-  // If the network model is not loaded, use the summary node and edge counts
-  const nodeCount: number = networkModel?.nodes.length ?? summary.nodeCount
-  const edgeCount: number = networkModel?.edges.length ?? summary.edgeCount
+  // Get node and edge counts from the network model
+  const nodeCount: number = networkModel?.nodes.length ?? 0
+  const edgeCount: number = networkModel?.edges.length ?? 0
 
   const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
     HTMLButtonElement | undefined

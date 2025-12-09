@@ -233,53 +233,15 @@ export function FileUpload(props: FileUploadProps) {
           visualStyleOptions,
         } = res
 
-        const localNodeCount = network.nodes.length
-        const localEdgeCount = network.edges.length
-
-        const summary = {
-          isNdex: false,
-          ownerUUID: localUuid,
-          name,
-          isReadOnly: false,
-          subnetworkIds: [],
-          isValid: false,
-          warnings: [],
-          isShowcase: false,
-          isCertified: false,
-          indexLevel: '',
-          hasLayout: false, // SIF files don't contain layout information
-          hasSample: false,
-          cxFileSize: 0,
-          cx2FileSize: 0,
-          properties: [], // SIF files don't have network properties
-          owner: '',
-          version: '',
-          completed: false,
-          visibility: Visibility.LOCAL,
-          nodeCount: localNodeCount,
-          edgeCount: localEdgeCount,
-          description: 'Imported from SIF file',
-          creationTime: new Date(Date.now()),
-          externalId: localUuid,
-          isDeleted: false,
-          modificationTime: new Date(Date.now()),
-        }
-        await putNetworkSummaryToDb(summary)
-
-        setVisualStyleOptions(localUuid, visualStyleOptions)
-        addNetworkToWorkspace(localUuid)
-        addNewNetwork(network)
-        setVisualStyle(localUuid, visualStyle)
-        setTables(localUuid, nodeTable, edgeTable)
-        setViewModel(localUuid, networkViews[0])
-        addSummary(localUuid, summary)
-        setCurrentNetworkId(localUuid)
-        navigateToNetwork({
-          workspaceId: workspace.id,
+        const summary = createNetworkSummary({
           networkId: localUuid,
-          searchParams: new URLSearchParams(location.search),
-          replace: false,
+          name,
+          description: 'Imported from SIF file',
+          visibility: Visibility.LOCAL,
+          hasLayout: false, // SIF files don't contain layout information
+          properties: [], // SIF files don't have network properties
         })
+        // Use the hook to register the network
       }
     } catch (error) {
       logUi.error(
