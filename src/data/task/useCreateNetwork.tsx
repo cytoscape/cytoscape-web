@@ -15,7 +15,7 @@ import NetworkFn, {
   Node,
 } from '../../models/NetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { getBaseSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { NetworkStore } from '../../models/StoreModel/NetworkStoreModel'
 import {
   TableRecord,
@@ -205,9 +205,9 @@ export const useCreateNetworkWithView = (): (({
 
       // Add all required objects to the network
       const withView: CyNetwork = createViewForNetwork(network, nodeIdMap)
-      const summary: NetworkSummary = getBaseSummary({
+      const summary: NetworkSummary = createNetworkSummary({
+        networkId: network.id,
         name: name || `CyWeb Network (${network.id})`,
-        network,
         description,
       })
 

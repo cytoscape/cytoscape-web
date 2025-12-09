@@ -12,7 +12,7 @@ import { Cx2 } from '../../models/CxModel/Cx2'
 import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { getBaseSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 /**
  * Props for creating a network with a view from a CX2 object.
@@ -68,17 +68,17 @@ export const useCreateNetworkFromCx2 = (): ((
         const name =
           (attributes['name'] as string) ?? `CX2 Network (${network.id})`
         const description = (attributes['description'] as string) ?? ''
-        summary = getBaseSummary({
+        summary = createNetworkSummary({
+          networkId: network.id,
           name,
           description,
-          network,
         })
         summary.version = (attributes['version'] as string) ?? 'unknown'
       } else {
         // Create a basic summary
-        summary = getBaseSummary({
+        summary = createNetworkSummary({
+          networkId: network.id,
           name: `CX2 Network (${network.id})`,
-          network,
         })
       }
 

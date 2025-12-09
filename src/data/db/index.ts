@@ -40,7 +40,7 @@ const DB_NAME: string = 'cyweb-db'
 // Current version of the DB (integer only).
 // If older version is found, the migration
 // function will upgrade the existing data to this version.
-const currentVersion: number = 7
+const currentVersion: number = 8
 
 /**
  * Predefined object store names.
