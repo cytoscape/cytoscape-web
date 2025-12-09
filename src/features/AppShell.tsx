@@ -306,7 +306,7 @@ const AppShell = (): ReactElement => {
       for (const importUrl of importUrls) {
         try {
           const fetchResult = await fetchUrlCx(importUrl, MAX_NETWORK_FILE_SIZE)
-          const { networkWithView, summary } = fetchResult
+          const { cyNetwork, summary } = fetchResult
           const {
             network,
             nodeTable,
@@ -314,7 +314,7 @@ const AppShell = (): ReactElement => {
             visualStyle,
             networkViews,
             visualStyleOptions,
-          } = networkWithView
+          } = cyNetwork
           const importedNetworkId = network.id
 
           summaries[importedNetworkId] = summary

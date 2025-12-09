@@ -16,6 +16,7 @@ import { differenceMerge } from './DifferenceMerge'
 import { intersectionMerge } from './IntersectionMerge'
 import { mergeNetSummary } from './MergeNetSummary'
 import { unionMerge } from './UnionMerge'
+import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 export const createMergedNetworkWithView = async (
   fromNetworks: IdType[],
@@ -100,34 +101,20 @@ export const createMergedNetworkWithView = async (
     : VisualStyleFn.createVisualStyle()
   const newNetworkView: NetworkView = ViewModelFn.createViewModel(newNetwork)
 
-  const networkSummary: NetworkSummary = {
-    isNdex: false,
-    ownerUUID: toNetworkId,
+  const networkSummary: NetworkSummary = createNetworkSummary({
+    networkId: toNetworkId,
     name: networkName,
-    isReadOnly: false,
-    subnetworkIds: [],
-    isValid: false,
-    warnings: [],
-    isShowcase: false,
-    isCertified: false,
-    indexLevel: '',
-    hasLayout: false,
-    hasSample: false,
-    cxFileSize: 0,
-    cx2FileSize: 0,
     properties: mergedNetSummary.flattenedProperties,
     owner: '',
     version: mergedNetSummary.mergedVersion,
     completed: false,
     visibility: Visibility.LOCAL,
-    nodeCount: newNetwork.nodes.length,
-    edgeCount: newNetwork.edges.length,
     description: mergedNetSummary.mergedDescription,
     creationTime: new Date(Date.now()),
     externalId: toNetworkId,
     isDeleted: false,
     modificationTime: new Date(Date.now()),
-  }
+  })
   await putNetworkSummaryToDb(networkSummary)
 
   const undoRedoStack = {

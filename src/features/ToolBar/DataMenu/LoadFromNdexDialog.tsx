@@ -184,39 +184,7 @@ export const LoadFromNdexDialog = (
     try {
       const token = await getToken()
       const summaries = await fetchNdexSummaries(networkIds, token)
-      const invalidNetworkIds: IdType[] = []
-      const validNetworkIds: IdType[] = []
-
-      summaries.forEach((summary) => {
-        if (summary !== undefined) {
-          const networkCanBeSelected = networkPassesSizeThreshold(
-            summary.nodeCount,
-            summary.edgeCount,
-            summary.cx2FileSize,
-          )
-
-          if (!networkCanBeSelected) {
-            invalidNetworkIds.push(summary.externalId)
-          } else {
-            validNetworkIds.push(summary.externalId)
-          }
-        }
-      })
-
-      const failedToLoadNetworks = networkIds.filter(
-        (id) =>
-          !validNetworkIds.includes(id) && !invalidNetworkIds.includes(id),
-      )
-
-      logUi.info(
-        `[${LoadFromNdexDialog.name}]:[${addNDExNetworksToWorkspace.name}]: Valid networks`,
-        validNetworkIds,
-      )
-      logUi.info(
-        `[${LoadFromNdexDialog.name}]:[${addNDExNetworksToWorkspace.name}]: Invalid networks`,
-        invalidNetworkIds,
-      )
-      addNetworks(validNetworkIds)
+      addNetworks(summaries.map((summary) => summary.externalId))
       addSummaries(
         summaries.reduce(
           (acc, summary) => {
@@ -226,7 +194,7 @@ export const LoadFromNdexDialog = (
           {} as Record<IdType, NetworkSummary>,
         ),
       )
-      const nextCurrentNetworkId: IdType | undefined = validNetworkIds[0]
+      const nextCurrentNetworkId: IdType | undefined = summaries[0]?.externalId
 
       if (nextCurrentNetworkId !== undefined) {
         setCurrentNetworkId(nextCurrentNetworkId)
@@ -238,19 +206,7 @@ export const LoadFromNdexDialog = (
         })
       }
 
-      setSuccessMessage(`${validNetworkIds.length} network(s) loaded`)
-      if (failedToLoadNetworks.length > 0) {
-        addMessage({
-          // show a message to the user
-          message: `Failed to load ${failedToLoadNetworks.length} network${failedToLoadNetworks.length > 1 ? 's' : ''} with id${failedToLoadNetworks.length > 1 ? 's' : ''}: ${
-            failedToLoadNetworks.length > 1
-              ? failedToLoadNetworks.slice(0, 3).join(', ') + '...'
-              : failedToLoadNetworks.join(', ')
-          }`,
-          duration: 5000,
-          severity: MessageSeverity.ERROR,
-        })
-      }
+      setSuccessMessage(`${summaries.length} network(s) loaded`)
 
       setSelectedNetworks([])
     } catch (e) {

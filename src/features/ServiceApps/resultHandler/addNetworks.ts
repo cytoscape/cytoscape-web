@@ -29,6 +29,7 @@ import {
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
 import { generateUniqueName } from '../../../utils/generateUniqueName'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
+import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 export const useAddNetworks = (): (({
   responseObj,
@@ -113,36 +114,16 @@ export const useAddNetworks = (): (({
               otherAspects,
             } = res
 
-            const localNodeCount = network.nodes.length
-            const localEdgeCount = network.edges.length
-            const summary = {
-              isNdex: false,
-              ownerUUID: localUuid,
+            const summary = createNetworkSummary({
+              networkId: localUuid,
               name: localName,
-              isReadOnly: false,
-              subnetworkIds: [],
-              isValid: false,
-              warnings: [],
-              isShowcase: false,
-              isCertified: false,
-              indexLevel: '',
-              hasLayout: anyNodeHasPosition,
-              hasSample: false,
-              cxFileSize: 0,
-              cx2FileSize: 0,
-              properties: localProperties,
-              owner: '',
-              version: '',
-              completed: false,
-              visibility: Visibility.PUBLIC,
-              nodeCount: localNodeCount,
-              edgeCount: localEdgeCount,
               description: localDescription,
-              creationTime: new Date(Date.now()),
+              properties: localProperties,
+              hasLayout: anyNodeHasPosition,
+              visibility: Visibility.PUBLIC,
               externalId: localUuid,
-              isDeleted: false,
-              modificationTime: new Date(Date.now()),
-            }
+              ownerUUID: localUuid,
+            })
             await putNetworkSummaryToDb(summary)
 
             addSummaries({ [localUuid]: summary })

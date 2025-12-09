@@ -339,15 +339,16 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
   const handleConfirm = useCallback(async () => {
     const res = createNetworkFromTableData(rows, columns, undefined, name)
 
+    const { cyNetwork, summary } = res
     const {
       network,
       nodeTable,
       edgeTable,
       visualStyle,
-      summary,
-      networkView,
+      networkViews,
       visualStyleOptions,
-    } = res
+    } = cyNetwork
+    const networkView = networkViews[0]
     const newNetworkId = network.id
 
     setLoading(true)

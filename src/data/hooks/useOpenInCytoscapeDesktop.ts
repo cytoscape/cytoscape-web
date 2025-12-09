@@ -13,6 +13,7 @@ import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { NetworkView } from '../../models/ViewModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 export const useOpenNetworkInCytoscape = () => {
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -39,14 +40,15 @@ export const useOpenNetworkInCytoscape = () => {
 
     let exportSummary: any = summary
     if (summary === undefined) {
-      exportSummary = {
+      exportSummary = createNetworkSummary({
+        networkId: network.id,
         name: networkLabel ?? 'Interaction Network',
         properties: [],
         externalId: '',
         isReadOnly: false,
         isShowcase: false,
         owner: '',
-      }
+      })
     }
 
     const cyNetwork: CyNetwork = {

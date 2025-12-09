@@ -571,7 +571,25 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         creationTime: networkSummary.creationTime,
         modificationTime: networkSummary.modificationTime,
       })
-      await registerCyNetwork(newCyNetwork, newSummary, {
+      // Update state stores with the new network and its components
+      setVisualStyleOptions(newNetworkId, newNetworkWithView.visualStyleOptions)
+      addNetworkToWorkspace(newNetworkId)
+      addNewNetwork(newNetworkWithView.network)
+      setVisualStyle(newNetworkId, newNetworkWithView.visualStyle)
+      setTables(
+        newNetworkId,
+        newNetworkWithView.nodeTable,
+        newNetworkWithView.edgeTable,
+      )
+      setViewModel(newNetworkId, newNetworkWithView.networkViews[0])
+      await putNetworkSummaryToDb(newSummary)
+      addSummaries({ [newNetworkId]: newSummary })
+      // Apply layout to the network
+      setCurrentNetworkId(newNetworkId)
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: newNetworkId,
+        searchParams: new URLSearchParams(location.search),
         replace: true,
       })
       handleClose()
