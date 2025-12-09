@@ -26,8 +26,8 @@ interface CreateNetworkFromCx2Props {
 
 /**
  * A custom hook to return a function that creates a CyNetwork from CX2
- * and stores it in Zustand. Modeled after createNetworkWithView in
- * [src/task/CreateNetwork.tsx](src/task/CreateNetwork.tsx).
+ * and stores it in Zustand. Modeled after createNetwork in
+ * [src/task/useCreateNetwork.tsx](src/task/useCreateNetwork.tsx).
  */
 export const useCreateNetworkFromCx2 = (): ((
   props: CreateNetworkFromCx2Props,
@@ -51,7 +51,7 @@ export const useCreateNetworkFromCx2 = (): ((
   const createNetworkFromCx = useCallback(
     ({ cxData }: CreateNetworkFromCx2Props) => {
       // Convert CX2 to a fully populated CyNetwork
-      const withView: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
+      const cyNetwork: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
       const {
         network,
         networkAttributes,
@@ -59,7 +59,7 @@ export const useCreateNetworkFromCx2 = (): ((
         edgeTable,
         visualStyle,
         networkViews,
-      } = withView
+      } = cyNetwork
 
       let summary: NetworkSummary
 
@@ -104,7 +104,7 @@ export const useCreateNetworkFromCx2 = (): ((
         replace: false,
       })
 
-      return withView
+      return cyNetwork
     },
     [
       addNetwork,

@@ -18,7 +18,7 @@ import { mergeNetSummary } from './MergeNetSummary'
 import { unionMerge } from './UnionMerge'
 import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
-export const createMergedNetworkWithView = async (
+export const createMergedNetwork = async (
   fromNetworks: IdType[],
   toNetworkId: IdType,
   networkName: string,
@@ -160,3 +160,4 @@ export const createMergedNetworkWithView = async (
     networkSummary,
   ]
 }
+

@@ -70,7 +70,7 @@ import {
   Pair,
   TableView,
 } from '../models/DataInterfaceForMerge'
-import { createMergedNetworkWithView } from '../models/Impl/CreateMergedNetworkWithView'
+import { createMergedNetwork } from '../models/Impl/CreateMergedNetwork'
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl'
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
 import useMatchingColumnsStore from '../store/matchingColumnStore'
@@ -527,22 +527,21 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           toMergeNetworksList.some((pair) => pair[1] === id),
         ),
       )
-      const [newNetworkWithView, networkSummary] =
-        await createMergedNetworkWithView(
-          [...toMergeNetworksList.map((i) => i[1])],
-          newNetworkId,
-          mergedNetworkName,
-          networkRecords,
-          nodeMatchingTableObj,
-          edgeMatchingTableObj,
-          netMatchingTableObj,
-          matchingCols,
-          summaryRecord,
-          mergeOpType,
-          mergeWithinNetwork,
-          mergeOnlyNodes,
-          strictRemoveMode,
-        )
+      const [newCyNetwork, networkSummary] = await createMergedNetwork(
+        [...toMergeNetworksList.map((i) => i[1])],
+        newNetworkId,
+        mergedNetworkName,
+        networkRecords,
+        nodeMatchingTableObj,
+        edgeMatchingTableObj,
+        netMatchingTableObj,
+        matchingCols,
+        summaryRecord,
+        mergeOpType,
+        mergeWithinNetwork,
+        mergeOnlyNodes,
+        strictRemoveMode,
+      )
 
       const newSummary = createNetworkSummary({
         networkId: newNetworkId,
@@ -572,16 +571,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         modificationTime: networkSummary.modificationTime,
       })
       // Update state stores with the new network and its components
-      setVisualStyleOptions(newNetworkId, newNetworkWithView.visualStyleOptions)
+      setVisualStyleOptions(newNetworkId, newCyNetwork.visualStyleOptions)
       addNetworkToWorkspace(newNetworkId)
-      addNewNetwork(newNetworkWithView.network)
-      setVisualStyle(newNetworkId, newNetworkWithView.visualStyle)
-      setTables(
-        newNetworkId,
-        newNetworkWithView.nodeTable,
-        newNetworkWithView.edgeTable,
-      )
-      setViewModel(newNetworkId, newNetworkWithView.networkViews[0])
+      addNewNetwork(newCyNetwork.network)
+      setVisualStyle(newNetworkId, newCyNetwork.visualStyle)
+      setTables(newNetworkId, newCyNetwork.nodeTable, newCyNetwork.edgeTable)
+      setViewModel(newNetworkId, newCyNetwork.networkViews[0])
       await putNetworkSummaryToDb(newSummary)
       addSummaries({ [newNetworkId]: newSummary })
       // Apply layout to the network
