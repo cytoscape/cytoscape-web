@@ -1,6 +1,8 @@
 // The first valid custom graphic will have only pie charts/ring charts/images in the
 // default value, mapping and bypass.
 
+export const VALID_PIE_CHART_SLICE_INDEX_RANGE = [1, 16] as const
+
 import { IdType } from '../../IdType'
 import { AttributeName, ValueType } from '../../TableModel'
 import { Mapper } from '../VisualMappingFunction'
@@ -78,7 +80,8 @@ export const getSizePropertyForCustomGraphic = (
 
 const sizeValueToCyjsPixelValue = (value: number) => `${value}px`
 
-const angleValueToCyjsPixelValue = (value: number) => `${((90 - value) % 360 + 360) % 360}deg`
+const angleValueToCyjsPixelValue = (value: number) =>
+  `${(((90 - value) % 360) + 360) % 360}deg`
 
 const holeSizeValueToCyjsPixelValue = (value: number) => `${value * 100}%`
 
@@ -139,28 +142,28 @@ export const computePieChartProperties = (
   const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
   const size = Math.min(width, height) - padding
 
-  const angle = pieValues.cy_startAngle ?? 0;
-  
+  const angle = pieValues.cy_startAngle ?? 0
+
   piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
 
   piePairsToAdd.push(['pieStartAngle', angleValueToCyjsPixelValue(angle)])
 
-  const colorsReversed  = pieValues.cy_colors.slice().reverse();
-  const columnsReversed = pieValues.cy_dataColumns.slice().reverse();
-  
+  const colorsReversed = pieValues.cy_colors.slice().reverse()
+  const columnsReversed = pieValues.cy_dataColumns.slice().reverse()
+
   colorsReversed.forEach((color, index) => {
-    const attribute = columnsReversed[index];
-    const attributeValue = row[attribute];
-    const value = (attributeValue ?? 0) as number;
-    const percentage = Math.min(Math.max(0, value / totalValue), 1);
-    const percentageToString = `${percentage * 100}%`;
-  
-    const bgColorSelectorStr      = `pie${index + 1}BackgroundColor`;
-    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`;
-  
-    piePairsToAdd.push([bgColorSelectorStr, color]);
-    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString]);
-  });
+    const attribute = columnsReversed[index]
+    const attributeValue = row[attribute]
+    const value = (attributeValue ?? 0) as number
+    const percentage = Math.min(Math.max(0, value / totalValue), 1)
+    const percentageToString = `${percentage * 100}%`
+
+    const bgColorSelectorStr = `pie${index + 1}BackgroundColor`
+    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`
+
+    piePairsToAdd.push([bgColorSelectorStr, color])
+    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString])
+  })
   return piePairsToAdd
 }
 
@@ -187,33 +190,32 @@ export const computeRingChartProperties = (
   const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
   const size = Math.min(width, height) - padding
 
-  const angle = pieValues.cy_startAngle ?? 0;
+  const angle = pieValues.cy_startAngle ?? 0
 
-  const holeSize = pieValues.cy_holeSize ?? 0.4;
-  
+  const holeSize = pieValues.cy_holeSize ?? 0.4
+
   piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
 
   piePairsToAdd.push(['pieStartAngle', angleValueToCyjsPixelValue(angle)])
 
   piePairsToAdd.push(['pieHole', holeSizeValueToCyjsPixelValue(holeSize)])
 
+  const colorsReversed = pieValues.cy_colors.slice().reverse()
+  const columnsReversed = pieValues.cy_dataColumns.slice().reverse()
 
-  const colorsReversed  = pieValues.cy_colors.slice().reverse();
-  const columnsReversed = pieValues.cy_dataColumns.slice().reverse();
-  
   colorsReversed.forEach((color, index) => {
-    const attribute = columnsReversed[index];
-    const attributeValue = row[attribute];
-    const value = (attributeValue ?? 0) as number;
-    const percentage = Math.min(Math.max(0, value / totalValue), 1);
-    const percentageToString = `${percentage * 100}%`;
-  
-    const bgColorSelectorStr      = `pie${index + 1}BackgroundColor`;
-    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`;
-  
-    piePairsToAdd.push([bgColorSelectorStr, color]);
-    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString]);
-  });
+    const attribute = columnsReversed[index]
+    const attributeValue = row[attribute]
+    const value = (attributeValue ?? 0) as number
+    const percentage = Math.min(Math.max(0, value / totalValue), 1)
+    const percentageToString = `${percentage * 100}%`
+
+    const bgColorSelectorStr = `pie${index + 1}BackgroundColor`
+    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`
+
+    piePairsToAdd.push([bgColorSelectorStr, color])
+    piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString])
+  })
 
   return piePairsToAdd
 }
@@ -245,7 +247,14 @@ export const computeCustomGraphicsProperties = (
   if (value.name === CustomGraphicsNameType.PieChart) {
     return computePieChartProperties(id, value, row, widthVp, heightVp, mappers)
   } else if (value.name === CustomGraphicsNameType.RingChart) {
-    return computeRingChartProperties(id, value, row, widthVp, heightVp, mappers)
+    return computeRingChartProperties(
+      id,
+      value,
+      row,
+      widthVp,
+      heightVp,
+      mappers,
+    )
   } else if (value.name === CustomGraphicsNameType.Image) {
     //TODO implement image properties
     // return computeImageProperties(id, value, row, customGraphicsSizeVp, mappers)
