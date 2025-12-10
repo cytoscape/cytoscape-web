@@ -88,8 +88,8 @@ export const useSaveWorkspace = () => {
             visualStyleOptions,
           } = res)
 
-          if (res.otherAspects) {
-            opaqueAspect = res.otherAspects.reduce(
+          if (res.opaqueAspects) {
+            opaqueAspect = res.opaqueAspects.reduce(
               (acc: OpaqueAspects, aspect: OpaqueAspects) => {
                 const [aspectName, aspectData] = Object.entries(aspect)[0]
                 acc[aspectName] = aspectData

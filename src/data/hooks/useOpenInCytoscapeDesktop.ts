@@ -58,7 +58,8 @@ export const useOpenNetworkInCytoscape = () => {
       visualStyle,
       networkViews: [viewModel],
       visualStyleOptions,
-      otherAspects: opaqueAspects ? [opaqueAspects as any] : undefined,
+      opaqueAspects: opaqueAspects ? [opaqueAspects as any] : [],
+      filterConfigs: [],
       undoRedoStack: {
         undoStack: [],
         redoStack: [],

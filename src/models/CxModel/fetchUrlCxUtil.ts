@@ -48,7 +48,7 @@ export const fetchUrlCx = async (
 
     const urlObj = new URL(url)
     const name =
-      (network.networkAttributes?.attributes?.name as string) ||
+      (networkAttributes.name as string) ||
       `${urlObj.host} (${new Date().toLocaleString()})`
 
     const description = networkAttributes.description ?? ''

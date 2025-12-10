@@ -61,7 +61,10 @@ import {
   NetworkVisualPropertyName,
   NodeVisualPropertyName,
 } from '../../models/VisualStyleModel/VisualPropertyName'
-import { deserializeNetworkView, serializeNetworkView } from './serialization/mapSerialization'
+import {
+  deserializeNetworkView,
+  serializeNetworkView,
+} from './serialization/mapSerialization'
 import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import type { Network, Node, Edge } from '../../models/NetworkModel'
 import type { Table } from '../../models/TableModel'
@@ -554,7 +557,7 @@ describe('CyDB regressions', () => {
 
     expect(cyNetwork.visualStyleOptions).toEqual(visualStyleOptions)
 
-    expect(cyNetwork.otherAspects).toEqual([
+    expect(cyNetwork.opaqueAspects).toEqual([
       {
         layout: [{ nodes: [network.nodes[0].id] }],
       },

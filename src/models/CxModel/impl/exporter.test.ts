@@ -1,7 +1,6 @@
 import { CyNetwork } from '../../CyNetworkModel'
 import { Network } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
-import { NetworkAttributes } from '../../NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { createNetworkSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'
 import { Table } from '../../TableModel'
@@ -25,10 +24,6 @@ describe('exporter', () => {
       const edgeTable = createTable(`${networkId}-edges`)
       const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
       const networkView: NetworkView = createViewModel(network)
-      const networkAttributes: NetworkAttributes = {
-        id: networkId,
-        attributes: {},
-      }
 
       const cyNetwork: CyNetwork = {
         network,
@@ -36,7 +31,22 @@ describe('exporter', () => {
         edgeTable,
         visualStyle,
         networkViews: [networkView],
-        networkAttributes,
+        visualStyleOptions: {
+          visualEditorProperties: {
+            nodeSizeLocked: false,
+            arrowColorMatchesEdge: true,
+            tableDisplayConfiguration: {
+              nodeTable: {
+                columnConfiguration: [],
+              },
+              edgeTable: {
+                columnConfiguration: [],
+              },
+            },
+          },
+        },
+        opaqueAspects: [],
+        filterConfigs: [],
         undoRedoStack: {
           undoStack: [],
           redoStack: [],
@@ -50,7 +60,9 @@ describe('exporter', () => {
       expect(cx2[0].CXVersion).toBe('2.0')
 
       // Check for status
-      const statusAspect = cx2.find((aspect: any) => aspect.hasOwnProperty('status'))
+      const statusAspect = cx2.find((aspect: any) =>
+        aspect.hasOwnProperty('status'),
+      )
       expect(statusAspect).toBeDefined()
       if (statusAspect) {
         expect(statusAspect.status[0].success).toBe(true)
@@ -59,7 +71,7 @@ describe('exporter', () => {
 
     it('should export a CyNetwork with nodes and edges to CX2 format', () => {
       const networkId = 'test-network-2'
-      
+
       // Create a simple network with nodes and edges
       const network = NetworkFn.createNetworkFromLists(
         networkId,
@@ -74,10 +86,6 @@ describe('exporter', () => {
       const edgeTable = createTable(`${networkId}-edges`)
       const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
       const networkView: NetworkView = createViewModel(network)
-      const networkAttributes: NetworkAttributes = {
-        id: networkId,
-        attributes: {},
-      }
 
       const cyNetwork: CyNetwork = {
         network,
@@ -85,7 +93,22 @@ describe('exporter', () => {
         edgeTable,
         visualStyle,
         networkViews: [networkView],
-        networkAttributes,
+        visualStyleOptions: {
+          visualEditorProperties: {
+            nodeSizeLocked: false,
+            arrowColorMatchesEdge: true,
+            tableDisplayConfiguration: {
+              nodeTable: {
+                columnConfiguration: [],
+              },
+              edgeTable: {
+                columnConfiguration: [],
+              },
+            },
+          },
+        },
+        opaqueAspects: [],
+        filterConfigs: [],
         undoRedoStack: {
           undoStack: [],
           redoStack: [],
@@ -95,7 +118,9 @@ describe('exporter', () => {
       const cx2 = exportCyNetworkToCx2(cyNetwork)
 
       // Check for nodes aspect
-      const nodesAspect = cx2.find((aspect: any) => aspect.hasOwnProperty('nodes'))
+      const nodesAspect = cx2.find((aspect: any) =>
+        aspect.hasOwnProperty('nodes'),
+      )
       expect(nodesAspect).toBeDefined()
       if (nodesAspect) {
         expect(nodesAspect.nodes).toHaveLength(3)
@@ -103,7 +128,9 @@ describe('exporter', () => {
       }
 
       // Check for edges aspect
-      const edgesAspect = cx2.find((aspect: any) => aspect.hasOwnProperty('edges'))
+      const edgesAspect = cx2.find((aspect: any) =>
+        aspect.hasOwnProperty('edges'),
+      )
       expect(edgesAspect).toBeDefined()
       if (edgesAspect) {
         expect(edgesAspect.edges).toHaveLength(2)
@@ -120,14 +147,13 @@ describe('exporter', () => {
       const edgeTable = createTable(`${networkId}-edges`)
       const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
       const networkView: NetworkView = createViewModel(network)
-      const networkAttributes: NetworkAttributes = {
-        id: networkId,
-        attributes: {
-          name: 'Test Network',
-          version: '1.0',
-          description: 'A test network',
-        },
-      }
+
+      const summary: NetworkSummary = createNetworkSummary({
+        networkId: network.id,
+        name: 'Test Network',
+        description: 'A test network',
+      })
+      summary.version = '1.0'
 
       const cyNetwork: CyNetwork = {
         network,
@@ -135,25 +161,46 @@ describe('exporter', () => {
         edgeTable,
         visualStyle,
         networkViews: [networkView],
-        networkAttributes,
+        visualStyleOptions: {
+          visualEditorProperties: {
+            nodeSizeLocked: false,
+            arrowColorMatchesEdge: true,
+            tableDisplayConfiguration: {
+              nodeTable: {
+                columnConfiguration: [],
+              },
+              edgeTable: {
+                columnConfiguration: [],
+              },
+            },
+          },
+        },
+        opaqueAspects: [],
+        filterConfigs: [],
         undoRedoStack: {
           undoStack: [],
           redoStack: [],
         },
       }
 
-      const cx2 = exportCyNetworkToCx2(cyNetwork)
+      const cx2 = exportCyNetworkToCx2(cyNetwork, summary)
 
-      // Check for network attributes
+      // Check for network attributes from summary
       const networkAttributesAspect = cx2.find((aspect: any) =>
         aspect.hasOwnProperty('networkAttributes'),
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
-        expect(networkAttributesAspect.networkAttributes[0]).toHaveProperty('name')
-        expect(networkAttributesAspect.networkAttributes[0].name).toBe('Test Network')
+        expect(networkAttributesAspect.networkAttributes[0]).toHaveProperty(
+          'name',
+        )
+        expect(networkAttributesAspect.networkAttributes[0].name).toBe(
+          'Test Network',
+        )
         expect(networkAttributesAspect.networkAttributes[0].version).toBe('1.0')
-        expect(networkAttributesAspect.networkAttributes[0].description).toBe('A test network')
+        expect(networkAttributesAspect.networkAttributes[0].description).toBe(
+          'A test network',
+        )
       }
     })
 
@@ -164,10 +211,6 @@ describe('exporter', () => {
       const edgeTable = createTable(`${networkId}-edges`)
       const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
       const networkView: NetworkView = createViewModel(network)
-      const networkAttributes: NetworkAttributes = {
-        id: networkId,
-        attributes: {},
-      }
 
       const summary: NetworkSummary = createNetworkSummary({
         networkId: network.id,
@@ -182,7 +225,22 @@ describe('exporter', () => {
         edgeTable,
         visualStyle,
         networkViews: [networkView],
-        networkAttributes,
+        visualStyleOptions: {
+          visualEditorProperties: {
+            nodeSizeLocked: false,
+            arrowColorMatchesEdge: true,
+            tableDisplayConfiguration: {
+              nodeTable: {
+                columnConfiguration: [],
+              },
+              edgeTable: {
+                columnConfiguration: [],
+              },
+            },
+          },
+        },
+        opaqueAspects: [],
+        filterConfigs: [],
         undoRedoStack: {
           undoStack: [],
           redoStack: [],
@@ -197,8 +255,12 @@ describe('exporter', () => {
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
-        expect(networkAttributesAspect.networkAttributes[0].name).toBe('Test Network from Summary')
-        expect(networkAttributesAspect.networkAttributes[0].description).toBe('Description from summary')
+        expect(networkAttributesAspect.networkAttributes[0].name).toBe(
+          'Test Network from Summary',
+        )
+        expect(networkAttributesAspect.networkAttributes[0].description).toBe(
+          'Description from summary',
+        )
         expect(networkAttributesAspect.networkAttributes[0].version).toBe('2.0')
       }
     })
@@ -210,10 +272,6 @@ describe('exporter', () => {
       const edgeTable = createTable(`${networkId}-edges`)
       const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
       const networkView: NetworkView = createViewModel(network)
-      const networkAttributes: NetworkAttributes = {
-        id: networkId,
-        attributes: {},
-      }
 
       const cyNetwork: CyNetwork = {
         network,
@@ -221,16 +279,13 @@ describe('exporter', () => {
         edgeTable,
         visualStyle,
         networkViews: [networkView],
-        networkAttributes,
         visualStyleOptions: {
           visualEditorProperties: {
             nodeSizeLocked: true,
             arrowColorMatchesEdge: false,
             tableDisplayConfiguration: {
               nodeTable: {
-                columnConfiguration: [
-                  { attributeName: 'name', visible: true },
-                ],
+                columnConfiguration: [{ attributeName: 'name', visible: true }],
               },
               edgeTable: {
                 columnConfiguration: [
@@ -240,6 +295,8 @@ describe('exporter', () => {
             },
           },
         },
+        opaqueAspects: [],
+        filterConfigs: [],
         undoRedoStack: {
           undoStack: [],
           redoStack: [],
@@ -254,8 +311,14 @@ describe('exporter', () => {
       )
       expect(visualEditorPropertiesAspect).toBeDefined()
       if (visualEditorPropertiesAspect) {
-        expect(visualEditorPropertiesAspect.visualEditorProperties[0].properties.nodeSizeLocked).toBe(true)
-        expect(visualEditorPropertiesAspect.visualEditorProperties[0].properties.arrowColorMatchesEdge).toBe(false)
+        expect(
+          visualEditorPropertiesAspect.visualEditorProperties[0].properties
+            .nodeSizeLocked,
+        ).toBe(true)
+        expect(
+          visualEditorPropertiesAspect.visualEditorProperties[0].properties
+            .arrowColorMatchesEdge,
+        ).toBe(false)
       }
     })
 
@@ -266,10 +329,6 @@ describe('exporter', () => {
       const edgeTable = createTable(`${networkId}-edges`)
       const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
       const networkView: NetworkView = createViewModel(network)
-      const networkAttributes: NetworkAttributes = {
-        id: networkId,
-        attributes: {},
-      }
 
       const cyNetwork: CyNetwork = {
         network,
@@ -277,14 +336,26 @@ describe('exporter', () => {
         edgeTable,
         visualStyle,
         networkViews: [networkView],
-        networkAttributes,
-        otherAspects: [
+        visualStyleOptions: {
+          visualEditorProperties: {
+            nodeSizeLocked: false,
+            arrowColorMatchesEdge: true,
+            tableDisplayConfiguration: {
+              nodeTable: {
+                columnConfiguration: [],
+              },
+              edgeTable: {
+                columnConfiguration: [],
+              },
+            },
+          },
+        },
+        opaqueAspects: [
           {
-            customAspect: [
-              { data: 'value' },
-            ],
+            customAspect: [{ data: 'value' }],
           },
         ],
+        filterConfigs: [],
         undoRedoStack: {
           undoStack: [],
           redoStack: [],
@@ -315,17 +386,12 @@ describe('exporter', () => {
       const edgeTable = createTable(`${networkId}-edges`)
       const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
       const networkView: NetworkView = createViewModel(network)
-      
+
       // Set node positions
       networkView.nodeViews['1'].x = 10
       networkView.nodeViews['1'].y = 20
       networkView.nodeViews['2'].x = 30
       networkView.nodeViews['2'].y = 40
-
-      const networkAttributes: NetworkAttributes = {
-        id: networkId,
-        attributes: {},
-      }
 
       const cyNetwork: CyNetwork = {
         network,
@@ -333,7 +399,22 @@ describe('exporter', () => {
         edgeTable,
         visualStyle,
         networkViews: [networkView],
-        networkAttributes,
+        visualStyleOptions: {
+          visualEditorProperties: {
+            nodeSizeLocked: false,
+            arrowColorMatchesEdge: true,
+            tableDisplayConfiguration: {
+              nodeTable: {
+                columnConfiguration: [],
+              },
+              edgeTable: {
+                columnConfiguration: [],
+              },
+            },
+          },
+        },
+        opaqueAspects: [],
+        filterConfigs: [],
         undoRedoStack: {
           undoStack: [],
           redoStack: [],
@@ -343,7 +424,9 @@ describe('exporter', () => {
       const cx2 = exportCyNetworkToCx2(cyNetwork)
 
       // Check for nodes with positions
-      const nodesAspect = cx2.find((aspect: any) => aspect.hasOwnProperty('nodes'))
+      const nodesAspect = cx2.find((aspect: any) =>
+        aspect.hasOwnProperty('nodes'),
+      )
       expect(nodesAspect).toBeDefined()
       if (nodesAspect) {
         const node1 = nodesAspect.nodes.find((n: any) => n.id === 1)
@@ -389,10 +472,6 @@ describe('exporter', () => {
 
       const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
       const networkView: NetworkView = createViewModel(network)
-      const networkAttributes: NetworkAttributes = {
-        id: networkId,
-        attributes: {},
-      }
 
       const cyNetwork: CyNetwork = {
         network,
@@ -400,7 +479,22 @@ describe('exporter', () => {
         edgeTable,
         visualStyle,
         networkViews: [networkView],
-        networkAttributes,
+        visualStyleOptions: {
+          visualEditorProperties: {
+            nodeSizeLocked: false,
+            arrowColorMatchesEdge: true,
+            tableDisplayConfiguration: {
+              nodeTable: {
+                columnConfiguration: [],
+              },
+              edgeTable: {
+                columnConfiguration: [],
+              },
+            },
+          },
+        },
+        opaqueAspects: [],
+        filterConfigs: [],
         undoRedoStack: {
           undoStack: [],
           redoStack: [],
@@ -415,9 +509,15 @@ describe('exporter', () => {
       )
       expect(attributeDeclarationsAspect).toBeDefined()
       if (attributeDeclarationsAspect) {
-        expect(attributeDeclarationsAspect.attributeDeclarations[0].nodes).toHaveProperty('name')
-        expect(attributeDeclarationsAspect.attributeDeclarations[0].nodes).toHaveProperty('score')
-        expect(attributeDeclarationsAspect.attributeDeclarations[0].edges).toHaveProperty('weight')
+        expect(
+          attributeDeclarationsAspect.attributeDeclarations[0].nodes,
+        ).toHaveProperty('name')
+        expect(
+          attributeDeclarationsAspect.attributeDeclarations[0].nodes,
+        ).toHaveProperty('score')
+        expect(
+          attributeDeclarationsAspect.attributeDeclarations[0].edges,
+        ).toHaveProperty('weight')
       }
     })
 
@@ -523,14 +623,9 @@ describe('exporter', () => {
         expect(edgesAspect.edges).toHaveLength(1)
       }
 
-      // Verify network attributes exist
-      const networkAttributesAspect = exportedCx2.find((aspect: any) =>
-        aspect.hasOwnProperty('networkAttributes'),
-      )
-      expect(networkAttributesAspect).toBeDefined()
-      if (networkAttributesAspect) {
-        expect(networkAttributesAspect.networkAttributes[0]).toHaveProperty('name')
-      }
+      // Network attributes are only exported if a summary is provided
+      // Without a summary, network attributes from the original CX2 are not available
+      // This is expected behavior - network attributes are now stored in NetworkSummary
     })
 
     it('should use networkName parameter to override network name', () => {
@@ -540,12 +635,6 @@ describe('exporter', () => {
       const edgeTable = createTable(`${networkId}-edges`)
       const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
       const networkView: NetworkView = createViewModel(network)
-      const networkAttributes: NetworkAttributes = {
-        id: networkId,
-        attributes: {
-          name: 'Original Name',
-        },
-      }
 
       const summary: NetworkSummary = createNetworkSummary({
         networkId: network.id,
@@ -558,7 +647,22 @@ describe('exporter', () => {
         edgeTable,
         visualStyle,
         networkViews: [networkView],
-        networkAttributes,
+        visualStyleOptions: {
+          visualEditorProperties: {
+            nodeSizeLocked: false,
+            arrowColorMatchesEdge: true,
+            tableDisplayConfiguration: {
+              nodeTable: {
+                columnConfiguration: [],
+              },
+              edgeTable: {
+                columnConfiguration: [],
+              },
+            },
+          },
+        },
+        opaqueAspects: [],
+        filterConfigs: [],
         undoRedoStack: {
           undoStack: [],
           redoStack: [],
@@ -573,9 +677,10 @@ describe('exporter', () => {
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
-        expect(networkAttributesAspect.networkAttributes[0].name).toBe('Override Name')
+        expect(networkAttributesAspect.networkAttributes[0].name).toBe(
+          'Override Name',
+        )
       }
     })
   })
 })
-

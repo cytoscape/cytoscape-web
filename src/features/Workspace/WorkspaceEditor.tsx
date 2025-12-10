@@ -246,7 +246,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         visualStyle,
         networkViews,
         visualStyleOptions,
-        otherAspects,
+        opaqueAspects,
         undoRedoStack,
       } = cyNetworkData
 
@@ -255,9 +255,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       addVisualStyle(networkId, visualStyle)
       addTable(networkId, nodeTable, edgeTable)
       addViewModel(networkId, networkViews[0])
-      if (otherAspects !== undefined) {
-        addAllOpaqueAspects(networkId, otherAspects)
-      }
+      addAllOpaqueAspects(networkId, opaqueAspects)
       addStack(networkId, undoRedoStack)
 
       // Validate HCX networks if applicable

@@ -9,10 +9,10 @@ import {
   getNodeAttributes,
   getNodeBypasses,
   getNodes,
-  getOptionalAspects,
   getVisualEditorProperties,
   getVisualProperties,
 } from './extractor'
+import { createOpaqueAspectsFromCx } from './converters/opaqueAspectsConverter'
 
 // to run these: npx jest src/models/CxModel/impl/extractor.test.ts
 
@@ -36,11 +36,7 @@ describe('extractor', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-            { id: 3 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }, { id: 3 }],
         },
         {
           status: [{ success: true }],
@@ -206,7 +202,9 @@ describe('extractor', () => {
       expect(attributeDeclarations.attributeDeclarations).toHaveLength(1)
       expect(attributeDeclarations.attributeDeclarations[0].nodes).toEqual({})
       expect(attributeDeclarations.attributeDeclarations[0].edges).toEqual({})
-      expect(attributeDeclarations.attributeDeclarations[0].networkAttributes).toEqual({})
+      expect(
+        attributeDeclarations.attributeDeclarations[0].networkAttributes,
+      ).toEqual({})
     })
   })
 
@@ -253,10 +251,7 @@ describe('extractor', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           status: [{ success: true }],
@@ -521,9 +516,16 @@ describe('extractor', () => {
       ]
 
       const visualEditorProperties = getVisualEditorProperties(cx2)
-      expect(visualEditorProperties.visualEditorProperties.nodeSizeLocked).toBe(true)
-      expect(visualEditorProperties.visualEditorProperties.arrowColorMatchesEdge).toBe(false)
-      expect(visualEditorProperties.visualEditorProperties.tableDisplayConfiguration.nodeTable.columnConfiguration).toHaveLength(2)
+      expect(visualEditorProperties.visualEditorProperties.nodeSizeLocked).toBe(
+        true,
+      )
+      expect(
+        visualEditorProperties.visualEditorProperties.arrowColorMatchesEdge,
+      ).toBe(false)
+      expect(
+        visualEditorProperties.visualEditorProperties.tableDisplayConfiguration
+          .nodeTable.columnConfiguration,
+      ).toHaveLength(2)
     })
 
     it('should return default visual editor properties when aspect is missing', () => {
@@ -548,10 +550,20 @@ describe('extractor', () => {
       ]
 
       const visualEditorProperties = getVisualEditorProperties(cx2)
-      expect(visualEditorProperties.visualEditorProperties.nodeSizeLocked).toBe(false)
-      expect(visualEditorProperties.visualEditorProperties.arrowColorMatchesEdge).toBe(false)
-      expect(visualEditorProperties.visualEditorProperties.tableDisplayConfiguration.nodeTable.columnConfiguration).toHaveLength(1)
-      expect(visualEditorProperties.visualEditorProperties.tableDisplayConfiguration.edgeTable.columnConfiguration).toHaveLength(1)
+      expect(visualEditorProperties.visualEditorProperties.nodeSizeLocked).toBe(
+        false,
+      )
+      expect(
+        visualEditorProperties.visualEditorProperties.arrowColorMatchesEdge,
+      ).toBe(false)
+      expect(
+        visualEditorProperties.visualEditorProperties.tableDisplayConfiguration
+          .nodeTable.columnConfiguration,
+      ).toHaveLength(1)
+      expect(
+        visualEditorProperties.visualEditorProperties.tableDisplayConfiguration
+          .edgeTable.columnConfiguration,
+      ).toHaveLength(1)
     })
 
     it('should ensure all attributes from declarations are in column configuration', () => {
@@ -601,23 +613,29 @@ describe('extractor', () => {
       ]
 
       const visualEditorProperties = getVisualEditorProperties(cx2)
-      const nodeConfig = visualEditorProperties.visualEditorProperties.tableDisplayConfiguration.nodeTable.columnConfiguration
-      const edgeConfig = visualEditorProperties.visualEditorProperties.tableDisplayConfiguration.edgeTable.columnConfiguration
+      const nodeConfig =
+        visualEditorProperties.visualEditorProperties.tableDisplayConfiguration
+          .nodeTable.columnConfiguration
+      const edgeConfig =
+        visualEditorProperties.visualEditorProperties.tableDisplayConfiguration
+          .edgeTable.columnConfiguration
 
       // Should have all 3 node attributes
       expect(nodeConfig.length).toBeGreaterThanOrEqual(3)
-      expect(nodeConfig.find(c => c.attributeName === 'name')).toBeDefined()
-      expect(nodeConfig.find(c => c.attributeName === 'score')).toBeDefined()
-      expect(nodeConfig.find(c => c.attributeName === 'type')).toBeDefined()
+      expect(nodeConfig.find((c) => c.attributeName === 'name')).toBeDefined()
+      expect(nodeConfig.find((c) => c.attributeName === 'score')).toBeDefined()
+      expect(nodeConfig.find((c) => c.attributeName === 'type')).toBeDefined()
 
       // Should have all 2 edge attributes
       expect(edgeConfig.length).toBeGreaterThanOrEqual(2)
-      expect(edgeConfig.find(c => c.attributeName === 'weight')).toBeDefined()
-      expect(edgeConfig.find(c => c.attributeName === 'interaction')).toBeDefined()
+      expect(edgeConfig.find((c) => c.attributeName === 'weight')).toBeDefined()
+      expect(
+        edgeConfig.find((c) => c.attributeName === 'interaction'),
+      ).toBeDefined()
     })
   })
 
-  describe('getOptionalAspects', () => {
+  describe('createOpaqueAspectsFromCx', () => {
     it('should extract optional aspects from CX2', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
@@ -625,21 +643,17 @@ describe('extractor', () => {
           nodes: [{ id: 1 }],
         },
         {
-          customAspect1: [
-            { data: 'value1' },
-          ],
+          customAspect1: [{ data: 'value1' }],
         },
         {
-          customAspect2: [
-            { data: 'value2' },
-          ],
+          customAspect2: [{ data: 'value2' }],
         },
         {
           status: [{ success: true }],
         },
       ]
 
-      const optionalAspects = getOptionalAspects(cx2)
+      const optionalAspects = createOpaqueAspectsFromCx(cx2)
       expect(optionalAspects).toHaveLength(2)
       expect(optionalAspects[0]).toHaveProperty('customAspect1')
       expect(optionalAspects[1]).toHaveProperty('customAspect2')
@@ -665,7 +679,7 @@ describe('extractor', () => {
         },
       ]
 
-      const optionalAspects = getOptionalAspects(cx2)
+      const optionalAspects = createOpaqueAspectsFromCx(cx2)
       expect(optionalAspects).toHaveLength(1)
       expect(optionalAspects[0]).toHaveProperty('customAspect')
       expect(optionalAspects[0]).not.toHaveProperty('nodes')
@@ -684,7 +698,7 @@ describe('extractor', () => {
         },
       ]
 
-      const optionalAspects = getOptionalAspects(cx2)
+      const optionalAspects = createOpaqueAspectsFromCx(cx2)
       expect(optionalAspects).toHaveLength(1)
       expect(optionalAspects[0]).toHaveProperty('customAspect')
     })
@@ -700,9 +714,8 @@ describe('extractor', () => {
         },
       ]
 
-      const optionalAspects = getOptionalAspects(cx2)
+      const optionalAspects = createOpaqueAspectsFromCx(cx2)
       expect(optionalAspects).toEqual([])
     })
   })
 })
-

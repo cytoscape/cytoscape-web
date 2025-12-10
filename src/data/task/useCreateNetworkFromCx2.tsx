@@ -54,33 +54,19 @@ export const useCreateNetworkFromCx2 = (): ((
       const cyNetwork: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
       const {
         network,
-        networkAttributes,
         nodeTable,
         edgeTable,
         visualStyle,
         networkViews,
       } = cyNetwork
 
-      let summary: NetworkSummary
-
-      if (networkAttributes) {
-        const { attributes } = networkAttributes
-        const name =
-          (attributes['name'] as string) ?? `CX2 Network (${network.id})`
-        const description = (attributes['description'] as string) ?? ''
-        summary = createNetworkSummary({
-          networkId: network.id,
-          name,
-          description,
-        })
-        summary.version = (attributes['version'] as string) ?? 'unknown'
-      } else {
-        // Create a basic summary
-        summary = createNetworkSummary({
-          networkId: network.id,
-          name: `CX2 Network (${network.id})`,
-        })
-      }
+      // Create a basic summary
+      // Network attributes will be populated from CX2 networkAttributes aspect
+      // when creating the NetworkSummary via getNetworkAttributes/getAttributeDeclarations
+      const summary = createNetworkSummary({
+        networkId: network.id,
+        name: `CX2 Network (${network.id})`,
+      })
 
       // Do not apply layout to the network view
       summary.hasLayout = true

@@ -3,7 +3,6 @@ import cloneDeep from 'lodash/cloneDeep'
 import { putNetworkSummaryToDb } from '../../../../data/db'
 import { CyNetwork } from '../../../../models/CyNetworkModel'
 import { IdType } from '../../../../models/IdType'
-import { NetworkAttributes } from '../../../../models/NetworkModel'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
 import { Column } from '../../../../models/TableModel/Column'
@@ -84,12 +83,6 @@ export const createMergedNetwork = async (
     netSummaries,
   )
 
-  // Todo: merge network attributes also
-  const networkAttributes: NetworkAttributes = {
-    id: toNetworkId,
-    attributes: {},
-  }
-
   const newNetwork = mergedNetwork.network
   const newNodeTable = mergedNetwork.nodeTable
   const newEdgeTable = mergedNetwork.edgeTable
@@ -153,11 +146,11 @@ export const createMergedNetwork = async (
       edgeTable: newEdgeTable,
       visualStyle: newVisualStyle,
       networkViews: [newNetworkView],
-      networkAttributes,
-      undoRedoStack,
       visualStyleOptions,
+      opaqueAspects: [],
+      filterConfigs: [],
+      undoRedoStack,
     },
     networkSummary,
   ]
 }
-

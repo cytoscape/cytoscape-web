@@ -128,7 +128,7 @@ export function FileUpload(props: FileUploadProps) {
           visualStyle,
           networkViews,
           visualStyleOptions,
-          otherAspects,
+          opaqueAspects,
         } = res
 
         const nodesAspect = getNodes(json)
@@ -156,9 +156,7 @@ export function FileUpload(props: FileUploadProps) {
         setTables(localUuid, nodeTable, edgeTable)
         setViewModel(localUuid, networkViews[0])
         addSummary(localUuid, summary)
-        if (otherAspects !== undefined) {
-          addAllOpaqueAspects(localUuid, otherAspects)
-        }
+        addAllOpaqueAspects(localUuid, opaqueAspects)
         setCurrentNetworkId(localUuid)
         navigateToNetwork({
           workspaceId: workspace.id,

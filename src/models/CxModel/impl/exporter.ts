@@ -80,15 +80,16 @@ export const exportCyNetworkToCx2 = (
   const edgeTable = cyNetwork.edgeTable
   const visualStyleOptions = cyNetwork.visualStyleOptions
   const networkView = cyNetwork.networkViews?.[0] // Use first view if available
-  const opaqueAspects: OpaqueAspects | undefined = cyNetwork.otherAspects
-    ? Object.fromEntries(
-        cyNetwork.otherAspects.map((aspect: OpaqueAspects, index: number) => {
-          const key = Object.keys(aspect)[0] || `aspect${index}`
-          const value = Object.values(aspect)[0]
-          return [key, value]
-        }),
-      )
-    : undefined
+  const opaqueAspects: OpaqueAspects | undefined =
+    cyNetwork.opaqueAspects.length > 0
+      ? Object.fromEntries(
+          cyNetwork.opaqueAspects.map((aspect: OpaqueAspects, index: number) => {
+            const key = Object.keys(aspect)[0] || `aspect${index}`
+            const value = Object.values(aspect)[0]
+            return [key, value]
+          }),
+        )
+      : undefined
   // accumulate node/edge attributes into an object
   const attributesAccumulator = (
     attributes: { [key: AttributeName]: { d: ValueTypeName; v?: ValueType } },
@@ -215,17 +216,10 @@ export const exportCyNetworkToCx2 = (
     })
   }
 
-  // Handle name, description, version from summary or networkAttributes
-  const networkNameValue =
-    networkName ??
-    summary?.name ??
-    (cyNetwork.networkAttributes?.attributes?.name as string | undefined)
-  const descriptionValue =
-    summary?.description ??
-    (cyNetwork.networkAttributes?.attributes?.description as string | undefined)
-  const versionValue =
-    summary?.version ??
-    (cyNetwork.networkAttributes?.attributes?.version as string | undefined)
+  // Handle name, description, version from summary
+  const networkNameValue = networkName ?? summary?.name
+  const descriptionValue = summary?.description
+  const versionValue = summary?.version
 
   if (networkNameValue) {
     networkAttributeDeclarations.name = { d: 'string' }

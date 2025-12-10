@@ -59,7 +59,8 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
       visualStyle,
       networkViews: [viewModel],
       visualStyleOptions,
-      otherAspects: opaqueAspects ? [opaqueAspects as any] : undefined,
+      opaqueAspects: [opaqueAspects],
+      filterConfigs: [],
       undoRedoStack: {
         undoStack: [],
         redoStack: [],

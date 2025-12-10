@@ -315,7 +315,7 @@ export const SubNetworkPanel = ({
       return ''
     }
 
-    const { network, visualStyle, networkViews, networkAttributes } = data
+    const { network, visualStyle, networkViews } = data
 
     const { nodes } = network
     const nodeCount = nodes.length
@@ -331,10 +331,8 @@ export const SubNetworkPanel = ({
     }
     const newUuid: string = network.id.toString()
 
-    setNetworkLabel(
-      (networkAttributes?.attributes.name as string) ??
-        'Interaction Network: ' + newUuid,
-    )
+    // Use subNetworkName prop if available, otherwise use network ID
+    setNetworkLabel(subNetworkName || 'Interaction Network: ' + newUuid)
 
     // Add parent network's style to the shared style store
     if (vs[rootNetworkId] === undefined && visualStyle !== undefined) {
@@ -565,15 +563,15 @@ export const SubNetworkPanel = ({
         setProcessingProgress(0)
         setProcessingStage('Initializing...')
 
-        const { network, otherAspects, nodeTable, edgeTable } = data
+        const { network, opaqueAspects, nodeTable, edgeTable } = data
 
         await yieldToUI()
         setProcessingProgress(10)
         setProcessingStage('Processing filter configuration...')
 
         // Check optional data
-        if (otherAspects !== undefined && otherAspects.length > 0) {
-          const filterConfigAspect = otherAspects.find(
+        if (opaqueAspects !== undefined && opaqueAspects.length > 0) {
+          const filterConfigAspect = opaqueAspects.find(
             (aspect: Aspect) => aspect[FILTER_ASPECT_TAG],
           )
           if (filterConfigAspect !== undefined) {

@@ -106,7 +106,7 @@ export const useUpdateNetwork = (): (({
           visualStyle,
           networkViews,
           visualStyleOptions,
-          otherAspects,
+          opaqueAspects,
         } = res
         const localNodeCount = network.nodes.length
         const localEdgeCount = network.edges.length
@@ -122,9 +122,7 @@ export const useUpdateNetwork = (): (({
         setVisualStyleOptions(networkId, visualStyleOptions)
         setTables(networkId, nodeTable, edgeTable)
         setVisualStyle(networkId, visualStyle)
-        if (otherAspects !== undefined) {
-          addAllOpaqueAspects(networkId, otherAspects, true)
-        }
+        addAllOpaqueAspects(networkId, opaqueAspects, true)
         const networkView = networkViews[0]
         setViewModel(networkId, {
           ...networkView,

@@ -64,7 +64,7 @@ export const useRegisterNetwork = () => {
       visualStyle,
       networkViews,
       visualStyleOptions,
-      otherAspects,
+      opaqueAspects,
       undoRedoStack,
     } = cyNetwork
 
@@ -73,12 +73,8 @@ export const useRegisterNetwork = () => {
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
     addViewModel(networkId, networkViews[0])
-    if (otherAspects !== undefined) {
-      addAllOpaqueAspects(networkId, otherAspects)
-    }
-    if (undoRedoStack !== undefined) {
-      addStack(networkId, undoRedoStack)
-    }
+    addAllOpaqueAspects(networkId, opaqueAspects)
+    addStack(networkId, undoRedoStack)
 
     // Validate HCX networks if applicable
     if (isHCX(summary)) {

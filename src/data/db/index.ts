@@ -834,23 +834,6 @@ export interface UndoRedoStackDB {
   undoRedoStack: UndoRedoStack
 }
 
-/**
- * Represents cached network data retrieved from IndexedDB.
- *
- * All fields are optional because data may be partially cached or missing.
- * This type aggregates all network-related data from the database cache.
- */
-export interface CachedNetworkData {
-  network?: Network
-  nodeTable?: Table
-  edgeTable?: Table
-  visualStyle?: VisualStyle
-  networkViews?: NetworkView[]
-  visualStyleOptions?: VisualStyleOptions
-  otherAspects?: OpaqueAspects[]
-  undoRedoStack?: UndoRedoStack
-}
-
 export const putUndoRedoStackToDb = async (
   networkId: IdType,
   undoRedoStack: UndoRedoStack,
@@ -893,7 +876,10 @@ export const clearUndoRedoStackFromDb = async (): Promise<void> => {
  * - Network views
  * - Visual styles and style options
  * - Opaque aspects
+ * - Filter configurations
  * - Undo/redo stack
+ *
+ * Note: Network attributes are stored in NetworkSummary.properties, not in CyNetwork
  *
  * @param id - Network ID to retrieve from cache
  * @returns Promise resolving to CyNetwork object
@@ -913,10 +899,10 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
       uiState?.visualStyleOptions ?? {}
     // Fall back to an empty object if the visual style options are not found
     const visualStyleOptions: VisualStyleOptions = vsOptions[id] ?? {}
-    const opaqueAspects: OpaqueAspectsDB | undefined =
+    const opaqueAspectsDb: OpaqueAspectsDB | undefined =
       await getOpaqueAspectsFromDb(id)
-    const otherAspects: OpaqueAspects[] = opaqueAspects
-      ? Object.entries(opaqueAspects.aspects).map(([key, value]) => ({
+    const opaqueAspects: OpaqueAspects[] = opaqueAspectsDb
+      ? Object.entries(opaqueAspectsDb.aspects).map(([key, value]) => ({
           [key]: value,
         }))
       : []
@@ -927,6 +913,11 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
       undoStack: [],
       redoStack: [],
     }
+
+    // Get filter configs for this network
+    // Filters are stored with network ID as the filter name
+    const filterConfig = await getFilterFromDb(id)
+    const filterConfigs: FilterConfig[] = filterConfig ? [filterConfig] : []
 
     // Ensure all required fields are present
     if (!network) {
@@ -949,7 +940,8 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
       visualStyle,
       networkViews: networkViews,
       visualStyleOptions: visualStyleOptions,
-      otherAspects: otherAspects,
+      opaqueAspects: opaqueAspects,
+      filterConfigs: filterConfigs,
       undoRedoStack: undoRedoStack,
     }
   } catch (e) {

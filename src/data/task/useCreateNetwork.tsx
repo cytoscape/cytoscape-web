@@ -11,7 +11,6 @@ import { CyNetwork } from '../../models/CyNetworkModel'
 import NetworkFn, {
   Edge,
   Network,
-  NetworkAttributes,
   Node,
 } from '../../models/NetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
@@ -137,10 +136,6 @@ const createViewForNetwork = (
   const networkView = createViewModel(network)
   const { nodeTable, edgeTable } = createTableData(network, nodeIdMap)
   const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
-  const networkAttributes: NetworkAttributes = {
-    id: networkId,
-    attributes: {},
-  }
   const undoRedoStack = {
     undoStack: [],
     redoStack: [],
@@ -152,7 +147,6 @@ const createViewForNetwork = (
     edgeTable,
     visualStyle,
     networkViews: [networkView],
-    networkAttributes,
     undoRedoStack,
   }
 

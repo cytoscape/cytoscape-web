@@ -111,7 +111,7 @@ export const useAddNetworks = (): (({
               visualStyle,
               networkViews,
               visualStyleOptions,
-              otherAspects,
+              opaqueAspects,
             } = res
 
             const summary = createNetworkSummary({
@@ -132,9 +132,7 @@ export const useAddNetworks = (): (({
             setVisualStyle(localUuid, visualStyle)
             setTables(localUuid, nodeTable, edgeTable)
             setViewModel(localUuid, networkViews[0])
-            if (otherAspects !== undefined) {
-              addAllOpaqueAspects(localUuid, otherAspects)
-            }
+            addAllOpaqueAspects(localUuid, opaqueAspects)
             validNetworkIds.push(localUuid)
           } catch (error) {
             logApp.error(`[${addNetworks.name}]: Error adding network:`, error)

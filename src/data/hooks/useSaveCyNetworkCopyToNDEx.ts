@@ -47,9 +47,9 @@ export const useSaveCyNetworkCopyToNDEx = () => {
     summary: NetworkSummary,
     nodeTable: Table,
     edgeTable: Table,
-    viewModel?: NetworkView,
-    visualStyleOptions?: VisualStyleOptions,
-    opaqueAspect?: OpaqueAspects,
+    viewModel: NetworkView,
+    visualStyleOptions: VisualStyleOptions,
+    opaqueAspect: OpaqueAspects,
     deleteOriginal?: boolean,
   ): Promise<string> => {
     if (viewModel === undefined) {
@@ -62,11 +62,12 @@ export const useSaveCyNetworkCopyToNDEx = () => {
       visualStyle,
       networkViews: [viewModel],
       visualStyleOptions,
-      otherAspects: opaqueAspect ? [opaqueAspect as any] : undefined,
+      opaqueAspects: opaqueAspect ? [opaqueAspect as OpaqueAspects] : [],
       undoRedoStack: {
         undoStack: [],
         redoStack: [],
       },
+      filterConfigs: [],
     }
     const cx = exportCyNetworkToCx2(
       cyNetwork,

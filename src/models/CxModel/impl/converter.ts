@@ -4,7 +4,7 @@
  * Functions for converting CX2 format data to internal application models.
  */
 import { CyNetwork } from '../../CyNetworkModel'
-import { Network, NetworkAttributes } from '../../NetworkModel'
+import { Network } from '../../NetworkModel'
 import { OpaqueAspects } from '../../OpaqueAspectModel'
 import { Table } from '../../TableModel'
 import { NetworkView } from '../../ViewModel'
@@ -12,22 +12,24 @@ import { VisualStyle } from '../../VisualStyleModel'
 import { VisualStyleOptions } from '../../VisualStyleModel/VisualStyleOptions'
 import { Cx2 } from '../Cx2'
 import {
-  createNetworkAttributesFromCx,
+  createFiltersFromCx,
   createNetworkFromCx,
+  createOpaqueAspectsFromCx,
   createTablesFromCx,
   createViewModelFromCX,
   createVisualStyleFromCx,
   createVisualStyleOptionsFromCx,
 } from './converters'
-import { getOptionalAspects } from './extractor'
 import { validateCX2 } from './validator'
 
 /**
  * Create network data from CX2 format
  *
  * Converts CX2 format data into a complete CyNetwork object with all components:
- * network topology, tables, visual style, network views, network attributes,
- * visual style options, optional aspects, and undo/redo stack.
+ * network topology, tables, visual style, network views, visual style options,
+ * optional aspects, and undo/redo stack.
+ *
+ * Note: Network attributes are converted to NetworkSummary.properties, not stored in CyNetwork
  *
  * **Note:** This function does NOT validate the CX2 data. It assumes the data is already valid.
  * For external/untrusted CX2 data, use `getCyNetworkFromCx2` instead, which validates before conversion.
@@ -47,13 +49,15 @@ export const createCyNetworkFromCx2 = (
   )
   const visualStyle: VisualStyle = createVisualStyleFromCx(cxData)
   const networkView: NetworkView = createViewModelFromCX(networkId, cxData)
-  const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
-    networkId,
-    cxData,
-  )
   const visualStyleOptions: VisualStyleOptions =
     createVisualStyleOptionsFromCx(cxData)
-  const otherAspects: OpaqueAspects[] = getOptionalAspects(cxData)
+  const opaqueAspects: OpaqueAspects[] = createOpaqueAspectsFromCx(cxData)
+  const filterConfigs = createFiltersFromCx(
+    networkId,
+    cxData,
+    nodeTable,
+    edgeTable,
+  )
 
   const undoRedoStack = {
     undoStack: [],
@@ -66,9 +70,9 @@ export const createCyNetworkFromCx2 = (
     edgeTable,
     visualStyle,
     networkViews: [networkView],
-    networkAttributes,
     visualStyleOptions,
-    otherAspects,
+    opaqueAspects,
+    filterConfigs,
     undoRedoStack,
   }
 }
