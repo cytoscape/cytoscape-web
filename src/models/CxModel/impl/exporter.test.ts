@@ -10,6 +10,15 @@ import { NetworkView } from '../../ViewModel'
 import { createViewModel } from '../../ViewModel/impl/viewModelImpl'
 import { VisualStyle } from '../../VisualStyleModel'
 import VisualStyleFn from '../../VisualStyleModel'
+import { CustomGraphicsType } from '../../VisualStyleModel/VisualPropertyValue'
+import { PassthroughMappingFunction } from '../../VisualStyleModel/VisualMappingFunction'
+import { MappingFunctionType } from '../../VisualStyleModel/VisualMappingFunction'
+import { VisualPropertyValueTypeName } from '../../VisualStyleModel/VisualPropertyValueTypeName'
+import {
+  setDefault,
+  setMapping,
+  setBypass,
+} from '../../VisualStyleModel/impl/visualStyleImpl'
 import { Cx2 } from '../Cx2'
 import { createCyNetworkFromCx2 } from './converter'
 import { exportCyNetworkToCx2 } from './exporter'
@@ -50,7 +59,9 @@ describe('exporter', () => {
       expect(cx2[0].CXVersion).toBe('2.0')
 
       // Check for status
-      const statusAspect = cx2.find((aspect: any) => aspect.hasOwnProperty('status'))
+      const statusAspect = cx2.find((aspect: any) =>
+        aspect.hasOwnProperty('status'),
+      )
       expect(statusAspect).toBeDefined()
       if (statusAspect) {
         expect(statusAspect.status[0].success).toBe(true)
@@ -59,7 +70,7 @@ describe('exporter', () => {
 
     it('should export a CyNetwork with nodes and edges to CX2 format', () => {
       const networkId = 'test-network-2'
-      
+
       // Create a simple network with nodes and edges
       const network = NetworkFn.createNetworkFromLists(
         networkId,
@@ -95,7 +106,9 @@ describe('exporter', () => {
       const cx2 = exportCyNetworkToCx2(cyNetwork)
 
       // Check for nodes aspect
-      const nodesAspect = cx2.find((aspect: any) => aspect.hasOwnProperty('nodes'))
+      const nodesAspect = cx2.find((aspect: any) =>
+        aspect.hasOwnProperty('nodes'),
+      )
       expect(nodesAspect).toBeDefined()
       if (nodesAspect) {
         expect(nodesAspect.nodes).toHaveLength(3)
@@ -103,7 +116,9 @@ describe('exporter', () => {
       }
 
       // Check for edges aspect
-      const edgesAspect = cx2.find((aspect: any) => aspect.hasOwnProperty('edges'))
+      const edgesAspect = cx2.find((aspect: any) =>
+        aspect.hasOwnProperty('edges'),
+      )
       expect(edgesAspect).toBeDefined()
       if (edgesAspect) {
         expect(edgesAspect.edges).toHaveLength(2)
@@ -150,10 +165,16 @@ describe('exporter', () => {
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
-        expect(networkAttributesAspect.networkAttributes[0]).toHaveProperty('name')
-        expect(networkAttributesAspect.networkAttributes[0].name).toBe('Test Network')
+        expect(networkAttributesAspect.networkAttributes[0]).toHaveProperty(
+          'name',
+        )
+        expect(networkAttributesAspect.networkAttributes[0].name).toBe(
+          'Test Network',
+        )
         expect(networkAttributesAspect.networkAttributes[0].version).toBe('1.0')
-        expect(networkAttributesAspect.networkAttributes[0].description).toBe('A test network')
+        expect(networkAttributesAspect.networkAttributes[0].description).toBe(
+          'A test network',
+        )
       }
     })
 
@@ -197,8 +218,12 @@ describe('exporter', () => {
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
-        expect(networkAttributesAspect.networkAttributes[0].name).toBe('Test Network from Summary')
-        expect(networkAttributesAspect.networkAttributes[0].description).toBe('Description from summary')
+        expect(networkAttributesAspect.networkAttributes[0].name).toBe(
+          'Test Network from Summary',
+        )
+        expect(networkAttributesAspect.networkAttributes[0].description).toBe(
+          'Description from summary',
+        )
         expect(networkAttributesAspect.networkAttributes[0].version).toBe('2.0')
       }
     })
@@ -228,9 +253,7 @@ describe('exporter', () => {
             arrowColorMatchesEdge: false,
             tableDisplayConfiguration: {
               nodeTable: {
-                columnConfiguration: [
-                  { attributeName: 'name', visible: true },
-                ],
+                columnConfiguration: [{ attributeName: 'name', visible: true }],
               },
               edgeTable: {
                 columnConfiguration: [
@@ -254,8 +277,14 @@ describe('exporter', () => {
       )
       expect(visualEditorPropertiesAspect).toBeDefined()
       if (visualEditorPropertiesAspect) {
-        expect(visualEditorPropertiesAspect.visualEditorProperties[0].properties.nodeSizeLocked).toBe(true)
-        expect(visualEditorPropertiesAspect.visualEditorProperties[0].properties.arrowColorMatchesEdge).toBe(false)
+        expect(
+          visualEditorPropertiesAspect.visualEditorProperties[0].properties
+            .nodeSizeLocked,
+        ).toBe(true)
+        expect(
+          visualEditorPropertiesAspect.visualEditorProperties[0].properties
+            .arrowColorMatchesEdge,
+        ).toBe(false)
       }
     })
 
@@ -280,9 +309,7 @@ describe('exporter', () => {
         networkAttributes,
         otherAspects: [
           {
-            customAspect: [
-              { data: 'value' },
-            ],
+            customAspect: [{ data: 'value' }],
           },
         ],
         undoRedoStack: {
@@ -315,7 +342,7 @@ describe('exporter', () => {
       const edgeTable = createTable(`${networkId}-edges`)
       const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
       const networkView: NetworkView = createViewModel(network)
-      
+
       // Set node positions
       networkView.nodeViews['1'].x = 10
       networkView.nodeViews['1'].y = 20
@@ -343,7 +370,9 @@ describe('exporter', () => {
       const cx2 = exportCyNetworkToCx2(cyNetwork)
 
       // Check for nodes with positions
-      const nodesAspect = cx2.find((aspect: any) => aspect.hasOwnProperty('nodes'))
+      const nodesAspect = cx2.find((aspect: any) =>
+        aspect.hasOwnProperty('nodes'),
+      )
       expect(nodesAspect).toBeDefined()
       if (nodesAspect) {
         const node1 = nodesAspect.nodes.find((n: any) => n.id === 1)
@@ -415,9 +444,15 @@ describe('exporter', () => {
       )
       expect(attributeDeclarationsAspect).toBeDefined()
       if (attributeDeclarationsAspect) {
-        expect(attributeDeclarationsAspect.attributeDeclarations[0].nodes).toHaveProperty('name')
-        expect(attributeDeclarationsAspect.attributeDeclarations[0].nodes).toHaveProperty('score')
-        expect(attributeDeclarationsAspect.attributeDeclarations[0].edges).toHaveProperty('weight')
+        expect(
+          attributeDeclarationsAspect.attributeDeclarations[0].nodes,
+        ).toHaveProperty('name')
+        expect(
+          attributeDeclarationsAspect.attributeDeclarations[0].nodes,
+        ).toHaveProperty('score')
+        expect(
+          attributeDeclarationsAspect.attributeDeclarations[0].edges,
+        ).toHaveProperty('weight')
       }
     })
 
@@ -529,7 +564,9 @@ describe('exporter', () => {
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
-        expect(networkAttributesAspect.networkAttributes[0]).toHaveProperty('name')
+        expect(networkAttributesAspect.networkAttributes[0]).toHaveProperty(
+          'name',
+        )
       }
     })
 
@@ -573,9 +610,344 @@ describe('exporter', () => {
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
-        expect(networkAttributesAspect.networkAttributes[0].name).toBe('Override Name')
+        expect(networkAttributesAspect.networkAttributes[0].name).toBe(
+          'Override Name',
+        )
       }
+    })
+
+    describe('custom graphics export', () => {
+      it('should exclude custom graphics with DEFAULT_CUSTOM_GRAPHICS from defaults', () => {
+        const networkId = 'test-network-custom-graphics-default'
+        const network: Network = NetworkFn.createNetwork(networkId)
+        const nodeTable = createTable(`${networkId}-nodes`)
+        const edgeTable = createTable(`${networkId}-edges`)
+        const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
+        const networkView: NetworkView = createViewModel(network)
+        const networkAttributes: NetworkAttributes = {
+          id: networkId,
+          attributes: {},
+        }
+
+        const cyNetwork: CyNetwork = {
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkViews: [networkView],
+          networkAttributes,
+          undoRedoStack: {
+            undoStack: [],
+            redoStack: [],
+          },
+        }
+
+        const cx2 = exportCyNetworkToCx2(cyNetwork)
+
+        // Check visual properties defaults
+        const visualPropertiesAspect = cx2.find((aspect: any) =>
+          aspect.hasOwnProperty('visualProperties'),
+        )
+        expect(visualPropertiesAspect).toBeDefined()
+        if (visualPropertiesAspect) {
+          const nodeDefaults =
+            visualPropertiesAspect.visualProperties[0].default.node
+          // Custom graphics with DEFAULT_CUSTOM_GRAPHICS should not be in defaults
+          expect(nodeDefaults).not.toHaveProperty('NODE_CUSTOMGRAPHICS_1')
+        }
+      })
+
+      it('should include custom graphics with pie chart in defaults', () => {
+        const networkId = 'test-network-custom-graphics-pie'
+        const network: Network = NetworkFn.createNetwork(networkId)
+        const nodeTable = createTable(`${networkId}-nodes`)
+        const edgeTable = createTable(`${networkId}-edges`)
+        let visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
+        const networkView: NetworkView = createViewModel(network)
+        const networkAttributes: NetworkAttributes = {
+          id: networkId,
+          attributes: {},
+        }
+
+        // Set a pie chart as default for nodeImageChart1
+        const pieChart: CustomGraphicsType = {
+          type: 'chart',
+          name: 'org.cytoscape.PieChart',
+          properties: {
+            cy_range: [0, 100],
+            cy_colorScheme: 'test',
+            cy_startAngle: 0,
+            cy_colors: ['#FF0000', '#00FF00'],
+            cy_dataColumns: ['col1', 'col2'],
+          },
+        }
+
+        visualStyle = setDefault(visualStyle, 'nodeImageChart1', pieChart)
+
+        const cyNetwork: CyNetwork = {
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkViews: [networkView],
+          networkAttributes,
+          undoRedoStack: {
+            undoStack: [],
+            redoStack: [],
+          },
+        }
+
+        const cx2 = exportCyNetworkToCx2(cyNetwork)
+
+        // Check visual properties defaults
+        const visualPropertiesAspect = cx2.find((aspect: any) =>
+          aspect.hasOwnProperty('visualProperties'),
+        )
+        expect(visualPropertiesAspect).toBeDefined()
+        if (visualPropertiesAspect) {
+          const nodeDefaults =
+            visualPropertiesAspect.visualProperties[0].default.node
+          // Custom graphics with pie chart should be in defaults
+          expect(nodeDefaults).toHaveProperty('NODE_CUSTOMGRAPHICS_1')
+          // Size and position should also be included
+          expect(nodeDefaults).toHaveProperty('NODE_CUSTOMGRAPHICS_SIZE_1')
+          expect(nodeDefaults).toHaveProperty('NODE_CUSTOMGRAPHICS_POSITION_1')
+        }
+      })
+
+      it('should include custom graphics with mappings in mappings', () => {
+        const networkId = 'test-network-custom-graphics-mapping'
+        const network: Network = NetworkFn.createNetwork(networkId)
+        const nodeTable = createTable(`${networkId}-nodes`)
+        const edgeTable = createTable(`${networkId}-edges`)
+        let visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
+        const networkView: NetworkView = createViewModel(network)
+        const networkAttributes: NetworkAttributes = {
+          id: networkId,
+          attributes: {},
+        }
+
+        // Set a mapping for nodeImageChart1
+        const mapping: PassthroughMappingFunction = {
+          type: MappingFunctionType.Passthrough,
+          attribute: 'chartType',
+          visualPropertyType: VisualPropertyValueTypeName.CustomGraphic,
+          defaultValue: {
+            type: 'none',
+            name: 'none',
+            properties: {},
+          },
+        }
+
+        visualStyle = setMapping(visualStyle, 'nodeImageChart1', mapping)
+
+        const cyNetwork: CyNetwork = {
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkViews: [networkView],
+          networkAttributes,
+          undoRedoStack: {
+            undoStack: [],
+            redoStack: [],
+          },
+        }
+
+        const cx2 = exportCyNetworkToCx2(cyNetwork)
+
+        // Check visual properties mappings
+        const visualPropertiesAspect = cx2.find((aspect: any) =>
+          aspect.hasOwnProperty('visualProperties'),
+        )
+        expect(visualPropertiesAspect).toBeDefined()
+        if (visualPropertiesAspect) {
+          const nodeMappings =
+            visualPropertiesAspect.visualProperties[0].nodeMapping
+          // Custom graphics with mapping should be in mappings
+          expect(nodeMappings).toHaveProperty('NODE_CUSTOMGRAPHICS_1')
+          // Size and position should also be included
+          expect(nodeMappings).toHaveProperty('NODE_CUSTOMGRAPHICS_SIZE_1')
+          expect(nodeMappings).toHaveProperty('NODE_CUSTOMGRAPHICS_POSITION_1')
+        }
+      })
+
+      it('should include custom graphics with bypasses in bypasses', () => {
+        const networkId = 'test-network-custom-graphics-bypass'
+        const network = NetworkFn.createNetworkFromLists(
+          networkId,
+          [{ id: '1' }, { id: '2' }],
+          [],
+        )
+        const nodeTable = createTable(`${networkId}-nodes`)
+        const edgeTable = createTable(`${networkId}-edges`)
+        let visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
+        const networkView: NetworkView = createViewModel(network)
+        const networkAttributes: NetworkAttributes = {
+          id: networkId,
+          attributes: {},
+        }
+
+        // Set a bypass for nodeImageChart1
+        const pieChart: CustomGraphicsType = {
+          type: 'chart',
+          name: 'org.cytoscape.PieChart',
+          properties: {
+            cy_range: [0, 100],
+            cy_colorScheme: 'test',
+            cy_startAngle: 0,
+            cy_colors: ['#FF0000'],
+            cy_dataColumns: ['col1'],
+          },
+        }
+
+        visualStyle = setBypass(visualStyle, 'nodeImageChart1', ['1'], pieChart)
+
+        const cyNetwork: CyNetwork = {
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkViews: [networkView],
+          networkAttributes,
+          undoRedoStack: {
+            undoStack: [],
+            redoStack: [],
+          },
+        }
+
+        const cx2 = exportCyNetworkToCx2(cyNetwork)
+
+        // Check node bypasses
+        const nodeBypassesAspect = cx2.find((aspect: any) =>
+          aspect.hasOwnProperty('nodeBypasses'),
+        )
+        expect(nodeBypassesAspect).toBeDefined()
+        if (nodeBypassesAspect) {
+          expect(nodeBypassesAspect.nodeBypasses.length).toBeGreaterThan(0)
+          const node1Bypass = nodeBypassesAspect.nodeBypasses.find(
+            (b: any) => b.id === 1,
+          )
+          expect(node1Bypass).toBeDefined()
+          if (node1Bypass) {
+            // Custom graphics with bypass should be in bypasses
+            expect(node1Bypass.v).toHaveProperty('NODE_CUSTOMGRAPHICS_1')
+            // Size and position should also be included
+            expect(node1Bypass.v).toHaveProperty('NODE_CUSTOMGRAPHICS_SIZE_1')
+            expect(node1Bypass.v).toHaveProperty(
+              'NODE_CUSTOMGRAPHICS_POSITION_1',
+            )
+          }
+        }
+      })
+
+      it('should exclude custom graphics without defaults, mappings, or bypasses', () => {
+        const networkId = 'test-network-custom-graphics-exclude'
+        const network: Network = NetworkFn.createNetwork(networkId)
+        const nodeTable = createTable(`${networkId}-nodes`)
+        const edgeTable = createTable(`${networkId}-edges`)
+        const visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
+        const networkView: NetworkView = createViewModel(network)
+        const networkAttributes: NetworkAttributes = {
+          id: networkId,
+          attributes: {},
+        }
+
+        // Visual style has default custom graphics (DEFAULT_CUSTOM_GRAPHICS)
+        // which should be excluded from export
+
+        const cyNetwork: CyNetwork = {
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkViews: [networkView],
+          networkAttributes,
+          undoRedoStack: {
+            undoStack: [],
+            redoStack: [],
+          },
+        }
+
+        const cx2 = exportCyNetworkToCx2(cyNetwork)
+
+        // Check visual properties defaults
+        const visualPropertiesAspect = cx2.find((aspect: any) =>
+          aspect.hasOwnProperty('visualProperties'),
+        )
+        expect(visualPropertiesAspect).toBeDefined()
+        if (visualPropertiesAspect) {
+          const nodeDefaults =
+            visualPropertiesAspect.visualProperties[0].default.node
+          // Custom graphics with only DEFAULT_CUSTOM_GRAPHICS should not be exported
+          expect(nodeDefaults).not.toHaveProperty('NODE_CUSTOMGRAPHICS_1')
+          expect(nodeDefaults).not.toHaveProperty('NODE_CUSTOMGRAPHICS_SIZE_1')
+          expect(nodeDefaults).not.toHaveProperty(
+            'NODE_CUSTOMGRAPHICS_POSITION_1',
+          )
+        }
+      })
+
+      it('should handle multiple custom graphics slots correctly', () => {
+        const networkId = 'test-network-custom-graphics-multiple'
+        const network: Network = NetworkFn.createNetwork(networkId)
+        const nodeTable = createTable(`${networkId}-nodes`)
+        const edgeTable = createTable(`${networkId}-edges`)
+        let visualStyle: VisualStyle = VisualStyleFn.createVisualStyle()
+        const networkView: NetworkView = createViewModel(network)
+        const networkAttributes: NetworkAttributes = {
+          id: networkId,
+          attributes: {},
+        }
+
+        // Set pie chart for slot 1 (should be included)
+        const pieChart: CustomGraphicsType = {
+          type: 'chart',
+          name: 'org.cytoscape.PieChart',
+          properties: {
+            cy_range: [0, 100],
+            cy_colorScheme: 'test',
+            cy_startAngle: 0,
+            cy_colors: ['#FF0000'],
+            cy_dataColumns: ['col1'],
+          },
+        }
+        visualStyle = setDefault(visualStyle, 'nodeImageChart1', pieChart)
+
+        // Slot 2 has DEFAULT_CUSTOM_GRAPHICS (should be excluded)
+        // Slot 3 has no mapping/bypass (should be excluded)
+
+        const cyNetwork: CyNetwork = {
+          network,
+          nodeTable,
+          edgeTable,
+          visualStyle,
+          networkViews: [networkView],
+          networkAttributes,
+          undoRedoStack: {
+            undoStack: [],
+            redoStack: [],
+          },
+        }
+
+        const cx2 = exportCyNetworkToCx2(cyNetwork)
+
+        // Check visual properties defaults
+        const visualPropertiesAspect = cx2.find((aspect: any) =>
+          aspect.hasOwnProperty('visualProperties'),
+        )
+        expect(visualPropertiesAspect).toBeDefined()
+        if (visualPropertiesAspect) {
+          const nodeDefaults =
+            visualPropertiesAspect.visualProperties[0].default.node
+          // Only slot 1 should be included
+          expect(nodeDefaults).toHaveProperty('NODE_CUSTOMGRAPHICS_1')
+          expect(nodeDefaults).toHaveProperty('NODE_CUSTOMGRAPHICS_SIZE_1')
+          expect(nodeDefaults).toHaveProperty('NODE_CUSTOMGRAPHICS_POSITION_1')
+          // Slot 2 should not be included (DEFAULT_CUSTOM_GRAPHICS)
+          expect(nodeDefaults).not.toHaveProperty('NODE_CUSTOMGRAPHICS_2')
+        }
+      })
     })
   })
 })
-

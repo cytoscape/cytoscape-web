@@ -8,14 +8,14 @@ import {
   Button,
   Typography,
 } from '@mui/material'
-import { IdType } from '../../../../../models/IdType'
-import { CustomGraphicsType } from '../../../../../models/VisualStyleModel'
-import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../../models/VisualStyleModel/impl/defaultVisualStyle'
-import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import { IdType } from '../../../../models/IdType'
+import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
+import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../models/VisualStyleModel/impl/defaultVisualStyle'
+import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   PieChartPropertiesType,
   RingChartPropertiesType,
-} from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 
 // Import extracted components
 import { SelectTypeStep, CustomGraphicKind } from './WizardSteps/SelectTypeStep'
@@ -29,6 +29,7 @@ import { PropertiesForm } from './Forms/PropertiesForm'
 // Import custom hook
 import { useCustomGraphicState } from './hooks/useCustomGraphicState'
 
+/** Props for the multi-step wizard dialog */
 /** Props for the multi-step wizard dialog */
 interface CustomGraphicDialogProps {
   open: boolean
@@ -291,4 +292,3 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     </Dialog>
   )
 }
-

@@ -130,7 +130,7 @@ export const useCustomGraphicState = ({
     setCurrentStep(
       hasExistingGraphic ? WizardStep.Preview : WizardStep.SelectType,
     )
-  }, [open, initialValue, hasExistingGraphic])
+  }, [open, initialValue])
 
   const currentProps =
     kind === CustomGraphicsNameType.PieChart ? pieProps : ringProps

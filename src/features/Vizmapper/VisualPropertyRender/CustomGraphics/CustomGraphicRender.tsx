@@ -1,14 +1,15 @@
 import * as React from 'react'
 import { Box } from '@mui/material'
-import { CustomGraphicsType } from '../../../../../models/VisualStyleModel'
+import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
 import {
   CustomGraphicsNameType,
   PieChartPropertiesType,
   RingChartPropertiesType,
-} from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { PieChartRender as PieChartRenderComponent } from './PieChartRender'
 import { RingChartRender as RingChartRenderComponent } from './RingChartRender'
 
+/** Read-only render of chart properties */
 /** Read-only render of chart properties */
 export function CustomGraphicRender(props: {
   value: CustomGraphicsType
@@ -69,4 +70,3 @@ export function CustomGraphicRender(props: {
   // Fallback for other types (like Image in the future)
   return <Box sx={{ p: 1, textAlign: 'center' }}></Box>
 }
-

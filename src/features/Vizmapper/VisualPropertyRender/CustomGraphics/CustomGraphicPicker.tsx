@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { IdType } from '../../../../../models/IdType'
-import { CustomGraphicsType } from '../../../../../models/VisualStyleModel'
+import { IdType } from '../../../../models/IdType'
+import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
 
 import { CustomGraphicDialog } from './CustomGraphicDialog'
 

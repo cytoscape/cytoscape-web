@@ -26,12 +26,16 @@ import { Color, ColorPicker } from '../VisualPropertyRender/Color'
 import {
   CustomGraphicPicker,
   CustomGraphicRender,
-} from '../VisualPropertyRender/CustomGraphic'
+} from '../VisualPropertyRender/CustomGraphics'
+import {
+  CustomGraphicsType,
+  CustomGraphicsTypeType,
+} from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   EdgeArrowShape,
   EdgeArrowShapePicker,
 } from '../VisualPropertyRender/EdgeArrowShape'
-import { EdgeLine,EdgeLinePicker } from '../VisualPropertyRender/EdgeLine'
+import { EdgeLine, EdgeLinePicker } from '../VisualPropertyRender/EdgeLine'
 import { Font, FontPicker } from '../VisualPropertyRender/Font'
 import {
   HorizontalAlign,
@@ -311,6 +315,15 @@ interface VisualPropertyRenderProps {
 export function VisualPropertyValueRender(
   props: VisualPropertyRenderProps,
 ): React.ReactElement {
+  if (props.vpName.includes('nodeImageChart')) {
+    const customGraphic = props.value as CustomGraphicsType
+    if (
+      customGraphic?.type === CustomGraphicsTypeType.None ||
+      customGraphic == null
+    ) {
+      return <EmptyVisualPropertyViewBox />
+    }
+  }
   if (props.value == null) {
     return <EmptyVisualPropertyViewBox />
   }

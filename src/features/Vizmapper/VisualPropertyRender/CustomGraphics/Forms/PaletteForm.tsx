@@ -310,4 +310,3 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
     </Box>
   )
 }
-

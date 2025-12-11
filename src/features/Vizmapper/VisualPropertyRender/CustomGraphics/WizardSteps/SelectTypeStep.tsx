@@ -95,4 +95,3 @@ export const SelectTypeStep: React.FC<SelectTypeStepProps> = ({
     </Box>
   )
 }
-

@@ -370,4 +370,3 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
     </Box>
   )
 }
-

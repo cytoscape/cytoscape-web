@@ -14,6 +14,7 @@ import {
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
+import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
 
 export const getCustomGraphicNodeVps = (
   vps: VisualProperty<VisualPropertyValueType>[],
@@ -29,41 +30,145 @@ export const getNonCustomGraphicVps = (
   return vps.filter((vp) => !vp.name.startsWith('nodeImageChart'))
 }
 
+export const getPieBackgroundColorViewModelProp = (
+  sliceIndex: number,
+): string => {
+  // Check if the index is in the valid range
+  if (
+    sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
+    sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
+  ) {
+    console.debug(
+      `[CustomGraphicsImpl] getPieBackgroundSizeViewModelProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
+    )
+  }
+
+  const propMap: Record<number, SpecialPropertyName> = {
+    1: SpecialPropertyName.Pie1BackgroundColor,
+    2: SpecialPropertyName.Pie2BackgroundColor,
+    3: SpecialPropertyName.Pie3BackgroundColor,
+    4: SpecialPropertyName.Pie4BackgroundColor,
+    5: SpecialPropertyName.Pie5BackgroundColor,
+    6: SpecialPropertyName.Pie6BackgroundColor,
+    7: SpecialPropertyName.Pie7BackgroundColor,
+    8: SpecialPropertyName.Pie8BackgroundColor,
+    9: SpecialPropertyName.Pie9BackgroundColor,
+    10: SpecialPropertyName.Pie10BackgroundColor,
+    11: SpecialPropertyName.Pie11BackgroundColor,
+    12: SpecialPropertyName.Pie12BackgroundColor,
+    13: SpecialPropertyName.Pie13BackgroundColor,
+    14: SpecialPropertyName.Pie14BackgroundColor,
+    15: SpecialPropertyName.Pie15BackgroundColor,
+    16: SpecialPropertyName.Pie16BackgroundColor,
+  }
+
+  return propMap[sliceIndex] || `pie${sliceIndex}BackgroundColor`
+}
+
+export const getPieBackgroundSizeViewModelProp = (
+  sliceIndex: number,
+): string => {
+  // Check if the index is in the valid range
+  if (
+    sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
+    sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
+  ) {
+    console.debug(
+      `[CustomGraphicsImpl] getPieBackgroundSizeViewModelProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
+    )
+  }
+
+  const propMap: Record<number, SpecialPropertyName> = {
+    1: SpecialPropertyName.Pie1BackgroundSize,
+    2: SpecialPropertyName.Pie2BackgroundSize,
+    3: SpecialPropertyName.Pie3BackgroundSize,
+    4: SpecialPropertyName.Pie4BackgroundSize,
+    5: SpecialPropertyName.Pie5BackgroundSize,
+    6: SpecialPropertyName.Pie6BackgroundSize,
+    7: SpecialPropertyName.Pie7BackgroundSize,
+    8: SpecialPropertyName.Pie8BackgroundSize,
+    9: SpecialPropertyName.Pie9BackgroundSize,
+    10: SpecialPropertyName.Pie10BackgroundSize,
+    11: SpecialPropertyName.Pie11BackgroundSize,
+    12: SpecialPropertyName.Pie12BackgroundSize,
+    13: SpecialPropertyName.Pie13BackgroundSize,
+    14: SpecialPropertyName.Pie14BackgroundSize,
+    15: SpecialPropertyName.Pie15BackgroundSize,
+    16: SpecialPropertyName.Pie16BackgroundSize,
+  }
+  return propMap[sliceIndex] || `pie${sliceIndex}BackgroundSize`
+}
+
+/**
+ * Returns all custom graphics related property keys as an array
+ * @returns Array of custom graphics property keys
+ */
+export const getCustomGraphicsPropertyKeys = (): string[] => {
+  const propertyKeys: string[] = []
+
+  // Add the main pie chart properties
+  propertyKeys.push(SpecialPropertyName.PieSize)
+  propertyKeys.push(SpecialPropertyName.PieStartAngle)
+  propertyKeys.push(SpecialPropertyName.PieHole)
+
+  // Add pie background colors for all valid slice indices (1-16)
+  for (
+    let i = VALID_PIE_CHART_SLICE_INDEX_RANGE[0];
+    i <= VALID_PIE_CHART_SLICE_INDEX_RANGE[1];
+    i++
+  ) {
+    propertyKeys.push(getPieBackgroundColorViewModelProp(i))
+  }
+
+  // Add pie background sizes for all valid slice indices (1-16)
+  for (
+    let i = VALID_PIE_CHART_SLICE_INDEX_RANGE[0];
+    i <= VALID_PIE_CHART_SLICE_INDEX_RANGE[1];
+    i++
+  ) {
+    propertyKeys.push(getPieBackgroundSizeViewModelProp(i))
+  }
+
+  return propertyKeys
+}
+
 // Support only default values and bypasses for now
 export const getFirstValidCustomGraphicVp = (
   vps: VisualProperty<VisualPropertyValueType>[],
 ): VisualProperty<CustomGraphicsType> | undefined => {
   const customGraphicNodeVps = getCustomGraphicNodeVps(vps)
+  // helper to test if a CustomGraphicsType is one of the supported chart/image types
+  const isSupportedGraphicsType = (value: CustomGraphicsType) =>
+    value.name === CustomGraphicsNameType.PieChart ||
+    value.name === CustomGraphicsNameType.RingChart ||
+    value.name === CustomGraphicsNameType.Image
 
-  const firstValidCustomGraphicVp = customGraphicNodeVps.find((vp) => {
+  const fullyValid = customGraphicNodeVps.find((vp) => {
     const defaultValue = vp.defaultValue as CustomGraphicsType
-    const mapping = vp.mapping
     const bypassMap = vp.bypassMap
 
-    const isValidCustomGraphicValue = (value: CustomGraphicsType) => {
-      return (
-        value.name === CustomGraphicsNameType.PieChart ||
-        value.name === CustomGraphicsNameType.RingChart ||
-        value.name === CustomGraphicsNameType.Image
-      )
-    }
-
-    const isValidDefaultValue = isValidCustomGraphicValue(defaultValue)
-
-    // Only support default values and bypasses for now
-    // Ignore mappings
-    // const isValidMapping = mapping !== undefined && (mapping)
-
-    const isValidBypassMap = Array.from(bypassMap.values()).every((value) =>
-      isValidCustomGraphicValue(value as CustomGraphicsType),
+    const isValidDefault = isSupportedGraphicsType(defaultValue)
+    const isValidBypass = Array.from(bypassMap.values()).every((v) =>
+      isSupportedGraphicsType(v as CustomGraphicsType),
     )
 
-    if (isValidDefaultValue && isValidBypassMap) {
-      return vp
-    }
+    return isValidDefault && isValidBypass
   })
+  if (fullyValid) {
+    return fullyValid as VisualProperty<CustomGraphicsType>
+  }
 
-  return firstValidCustomGraphicVp as VisualProperty<CustomGraphicsType>
+  // If none of the preferred types are fully valid, pick the first “empty” graphic (None)
+  const emptyGraphic = customGraphicNodeVps.find((vp) => {
+    const defaultValue = vp.defaultValue as CustomGraphicsType
+    return defaultValue.name === CustomGraphicsNameType.None
+  })
+  if (emptyGraphic) {
+    return emptyGraphic as VisualProperty<CustomGraphicsType>
+  }
+
+  // No valid or empty graphics found → return undefined
+  return undefined
 }
 
 export const getSizePropertyForCustomGraphic = (
@@ -82,7 +187,6 @@ const sizeValueToCyjsPixelValue = (value: number) => `${value}px`
 
 const angleValueToCyjsPixelValue = (value: number) =>
   `${(((90 - value) % 360) + 360) % 360}deg`
-
 const holeSizeValueToCyjsPixelValue = (value: number) => `${value * 100}%`
 
 const computeCustomGraphicSizeProperties = (
@@ -144,22 +248,31 @@ export const computePieChartProperties = (
 
   const angle = pieValues.cy_startAngle ?? 0
 
-  piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
+  piePairsToAdd.push([
+    SpecialPropertyName.PieSize,
+    sizeValueToCyjsPixelValue(size),
+  ])
 
-  piePairsToAdd.push(['pieStartAngle', angleValueToCyjsPixelValue(angle)])
+  piePairsToAdd.push([
+    SpecialPropertyName.PieStartAngle,
+    angleValueToCyjsPixelValue(angle),
+  ])
 
   const colorsReversed = pieValues.cy_colors.slice().reverse()
   const columnsReversed = pieValues.cy_dataColumns.slice().reverse()
-
   colorsReversed.forEach((color, index) => {
     const attribute = columnsReversed[index]
     const attributeValue = row[attribute]
     const value = (attributeValue ?? 0) as number
-    const percentage = Math.min(Math.max(0, value / totalValue), 1)
+    // Handle division by zero: if totalValue is 0, distribute slices equally
+    const percentage =
+      totalValue === 0
+        ? 1 / colorsReversed.length
+        : Math.min(Math.max(0, value / totalValue), 1)
     const percentageToString = `${percentage * 100}%`
 
-    const bgColorSelectorStr = `pie${index + 1}BackgroundColor`
-    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`
+    const bgColorSelectorStr = getPieBackgroundColorViewModelProp(index + 1)
+    const pieSliceSizeSelectorStr = getPieBackgroundSizeViewModelProp(index + 1)
 
     piePairsToAdd.push([bgColorSelectorStr, color])
     piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString])
@@ -194,12 +307,20 @@ export const computeRingChartProperties = (
 
   const holeSize = pieValues.cy_holeSize ?? 0.4
 
-  piePairsToAdd.push(['pieSize', sizeValueToCyjsPixelValue(size)])
+  piePairsToAdd.push([
+    SpecialPropertyName.PieSize,
+    sizeValueToCyjsPixelValue(size),
+  ])
 
-  piePairsToAdd.push(['pieStartAngle', angleValueToCyjsPixelValue(angle)])
+  piePairsToAdd.push([
+    SpecialPropertyName.PieStartAngle,
+    angleValueToCyjsPixelValue(angle),
+  ])
 
-  piePairsToAdd.push(['pieHole', holeSizeValueToCyjsPixelValue(holeSize)])
-
+  piePairsToAdd.push([
+    SpecialPropertyName.PieHole,
+    holeSizeValueToCyjsPixelValue(holeSize),
+  ])
   const colorsReversed = pieValues.cy_colors.slice().reverse()
   const columnsReversed = pieValues.cy_dataColumns.slice().reverse()
 
@@ -207,11 +328,15 @@ export const computeRingChartProperties = (
     const attribute = columnsReversed[index]
     const attributeValue = row[attribute]
     const value = (attributeValue ?? 0) as number
-    const percentage = Math.min(Math.max(0, value / totalValue), 1)
+    // Handle division by zero: if totalValue is 0, distribute slices equally
+    const percentage =
+      totalValue === 0
+        ? 1 / colorsReversed.length
+        : Math.min(Math.max(0, value / totalValue), 1)
     const percentageToString = `${percentage * 100}%`
 
-    const bgColorSelectorStr = `pie${index + 1}BackgroundColor`
-    const pieSliceSizeSelectorStr = `pie${index + 1}BackgroundSize`
+    const bgColorSelectorStr = getPieBackgroundColorViewModelProp(index + 1)
+    const pieSliceSizeSelectorStr = getPieBackgroundSizeViewModelProp(index + 1)
 
     piePairsToAdd.push([bgColorSelectorStr, color])
     piePairsToAdd.push([pieSliceSizeSelectorStr, percentageToString])
@@ -256,8 +381,7 @@ export const computeCustomGraphicsProperties = (
       mappers,
     )
   } else if (value.name === CustomGraphicsNameType.Image) {
-    //TODO implement image properties
-    // return computeImageProperties(id, value, row, customGraphicsSizeVp, mappers)
+    return []
   }
 
   return []

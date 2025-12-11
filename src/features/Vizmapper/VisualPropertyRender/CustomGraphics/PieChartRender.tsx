@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Box, Typography } from '@mui/material'
-import { PieChartPropertiesType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import { PieChartPropertiesType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 
 interface PieChartRenderProps {
   properties: PieChartPropertiesType
@@ -64,6 +64,7 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
   // Calculate slice angles (equal distribution for preview)
   const sliceAngle = 360 / cy_dataColumns.length
   const radius = chartSize / 2 - 8 // Leave more padding for better appearance
+  const viewBoxSize = 2 * radius // ViewBox should be symmetric around origin
 
   // Generate SVG path for pie chart slice
   const generateSlicePath = (index: number, color: string) => {
@@ -112,11 +113,11 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
       <svg
         width={chartSize}
         height={chartSize}
-        viewBox={`${-radius} ${-radius} ${chartSize} ${chartSize}`}
+        viewBox={`${-radius} ${-radius} ${viewBoxSize} ${viewBoxSize}`}
         style={{ transform: 'rotate(-90deg)' }} // Start from 12 o'clock
       >
         <g>
-          {cy_dataColumns.map((_, index) => {
+          {cy_dataColumns.map((_col, index) => {
             const color = cy_colors[index] || '#CCCCCC'
             // Reverse the render order to match Cytoscape.js
             const reversedIndex = cy_dataColumns.length - 1 - index
@@ -145,4 +146,3 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
     </Box>
   )
 }
-

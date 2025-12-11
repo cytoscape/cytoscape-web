@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Box, Typography } from '@mui/material'
-import { RingChartPropertiesType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import { RingChartPropertiesType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 
 interface RingChartRenderProps {
   properties: RingChartPropertiesType
@@ -65,6 +65,7 @@ export const RingChartRender: React.FC<RingChartRenderProps> = ({
   const sliceAngle = 360 / cy_dataColumns.length
   const outerRadius = chartSize / 2 - 8 // Leave more padding for better appearance
   const innerRadius = outerRadius * (cy_holeSize || 0.4) // cy_holeSize is a decimal (0-1), default to 0.4
+  const viewBoxSize = 2 * outerRadius // ViewBox should be symmetric around origin
 
   // Generate SVG path for ring chart slice
   const generateSlicePath = (index: number, color: string) => {
@@ -119,11 +120,11 @@ export const RingChartRender: React.FC<RingChartRenderProps> = ({
       <svg
         width={chartSize}
         height={chartSize}
-        viewBox={`${-outerRadius} ${-outerRadius} ${chartSize} ${chartSize}`}
+        viewBox={`${-outerRadius} ${-outerRadius} ${viewBoxSize} ${viewBoxSize}`}
         style={{ transform: 'rotate(-90deg)' }} // Start from 12 o'clock
       >
         <g>
-          {cy_dataColumns.map((_, index) => {
+          {cy_dataColumns.map((_col, index) => {
             const color = cy_colors[index] || '#CCCCCC'
             // Reverse the render order to match Cytoscape.js
             const reversedIndex = cy_dataColumns.length - 1 - index
@@ -152,4 +153,3 @@ export const RingChartRender: React.FC<RingChartRenderProps> = ({
     </Box>
   )
 }
-

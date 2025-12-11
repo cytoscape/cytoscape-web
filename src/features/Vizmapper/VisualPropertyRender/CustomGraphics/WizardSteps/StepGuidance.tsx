@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { Box, Typography } from '@mui/material'
-
 interface StepGuidanceProps {
   title: string
   description: string
@@ -68,4 +67,3 @@ export const StepGuidance: React.FC<StepGuidanceProps> = ({
     </Box>
   )
 }
-

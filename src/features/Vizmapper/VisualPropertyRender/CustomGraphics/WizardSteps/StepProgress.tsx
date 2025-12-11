@@ -131,4 +131,3 @@ export const StepProgress: React.FC<StepProgressProps> = ({
     </Box>
   )
 }
-
