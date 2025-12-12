@@ -22,28 +22,36 @@ export function CustomGraphicRender(props: {
     return <Box sx={{ p: 1, textAlign: 'center' }}></Box>
   }
 
+  // Check if properties exist and are populated (not empty object)
+  if (!value.properties || Object.keys(value.properties).length === 0) {
+    return <Box sx={{ p: 1, textAlign: 'center' }}></Box>
+  }
+
   // Render pie chart
   if (value.name === CustomGraphicsNameType.PieChart) {
     // Type guard ensures properties is PieChartPropertiesType (not NonePropertiesType)
     if (isPieChartProperties(value.properties)) {
       const pieProperties = value.properties
-      return (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            height: '100%',
-          }}
-        >
-          <PieChartRenderComponent
-            properties={pieProperties}
-            size={CHART_CONSTANTS.SIZES.VIEWBOX}
-            showLabels={false}
-          />
-        </Box>
-      )
+      // Ensure properties have required fields before rendering
+      if (pieProperties.cy_dataColumns && pieProperties.cy_dataColumns.length > 0) {
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              height: '100%',
+            }}
+          >
+            <PieChartRenderComponent
+              properties={pieProperties}
+              size={CHART_CONSTANTS.SIZES.VIEWBOX}
+              showLabels={false}
+            />
+          </Box>
+        )
+      }
     }
   }
 
@@ -52,23 +60,26 @@ export function CustomGraphicRender(props: {
     // Type guard ensures properties is RingChartPropertiesType (not NonePropertiesType)
     if (isRingChartProperties(value.properties)) {
       const ringProperties = value.properties
-      return (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            height: '100%',
-          }}
-        >
-          <RingChartRenderComponent
-            properties={ringProperties}
-            size={CHART_CONSTANTS.SIZES.VIEWBOX}
-            showLabels={false}
-          />
-        </Box>
-      )
+      // Ensure properties have required fields before rendering
+      if (ringProperties.cy_dataColumns && ringProperties.cy_dataColumns.length > 0) {
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              height: '100%',
+            }}
+          >
+            <RingChartRenderComponent
+              properties={ringProperties}
+              size={CHART_CONSTANTS.SIZES.VIEWBOX}
+              showLabels={false}
+            />
+          </Box>
+        )
+      }
     }
   }
 

@@ -393,6 +393,11 @@ export function VisualPropertyValueForm(
       <Tooltip title={props.tooltipText}>
         <Box onClick={(e) => showValuePicker(e.currentTarget)}>
           <VisualPropertyValueRender
+            key={`${props.visualProperty.name}-${
+              props.currentValue
+                ? (props.currentValue as any)?.name || 'null'
+                : 'null'
+            }`}
             vpName={props.visualProperty.name}
             value={props.currentValue}
             vpValueType={props.visualProperty.type}
