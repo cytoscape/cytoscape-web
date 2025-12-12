@@ -251,14 +251,11 @@ const CyjsRenderer = ({
     const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
     const { nodeViews, edgeViews } = updatedNetworkView
 
-    // Add nodes and edges to Cytoscape.js
-    addCyElements(
-      cy,
-      Object.values(nodeViews),
-      network.edges,
-      edgeViews,
-      visualEditorProperties,
-    )
+    // Add nodes and edges to Cytoscape.js (with raw data)
+    addCyElements(cy, Object.values(nodeViews), network.edges, edgeViews)
+
+    // Apply transformations and visual editor property overrides via view model
+    applyViewModel(cy, updatedNetworkView, visualEditorProperties)
 
     // Generate and set the Cytoscape.js style
     const newStyle = createCyjsDataMapper(vs)

@@ -48,7 +48,35 @@ import {
 } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
 import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
-import { NodeShapeMapping } from './cyjsFactoryUtil'
+
+/**
+ * Maps application node shape types to Cytoscape.js node shape strings.
+ */
+export const NodeShapeMapping: Record<NodeShapeType, string> = {
+  [NodeShapeType.Parallelogram]: 'rhomboid',
+  [NodeShapeType.RoundRectangle]: 'roundrectangle',
+  [NodeShapeType.Triangle]: 'triangle',
+  [NodeShapeType.Diamond]: 'diamond',
+  [NodeShapeType.Octagon]: 'octagon',
+  [NodeShapeType.Hexagon]: 'hexagon',
+  [NodeShapeType.Ellipse]: 'ellipse',
+  [NodeShapeType.Rectangle]: 'rectangle',
+  [NodeShapeType.Vee]: 'vee',
+}
+
+/**
+ * Transforms a node shape value from application format to Cytoscape.js format.
+ */
+export const transformNodeShape = (value: NodeShapeType): string => {
+  return NodeShapeMapping[value]
+}
+
+/**
+ * Transforms a rotation value from degrees to radians for Cytoscape.js.
+ */
+export const transformRotation = (degrees: number): number => {
+  return (degrees * Math.PI) / 180
+}
 
 /**
  * Helper to update edge arrow shape and fill properties on a Cytoscape.js element.
@@ -136,14 +164,14 @@ vpHandlers.set(
 
 // Handler for node shape: maps application node shape to Cytoscape.js node shape.
 vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value, view) => {
-  obj.data(key, NodeShapeMapping[value as NodeShapeType])
+  obj.data(key, transformNodeShape(value as NodeShapeType))
 })
 
 // Handler for node label rotation: converts degrees to radians for Cytoscape.js.
 vpHandlers.set(
   VisualPropertyName.NodeLabelRotation,
   (obj, key, value, view) => {
-    obj.data(key, (value * Math.PI) / 180)
+    obj.data(key, transformRotation(value))
   },
 )
 
@@ -151,7 +179,7 @@ vpHandlers.set(
 vpHandlers.set(
   VisualPropertyName.EdgeLabelRotation,
   (obj, key, value, view) => {
-    obj.data(key, (value * Math.PI) / 180)
+    obj.data(key, transformRotation(value))
   },
 )
 
