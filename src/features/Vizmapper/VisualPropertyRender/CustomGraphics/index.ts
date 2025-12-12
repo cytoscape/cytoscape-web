@@ -15,9 +15,12 @@ export { StepProgress, WizardStep } from './WizardSteps/StepProgress'
 export { StepGuidance } from './WizardSteps/StepGuidance'
 export { EmptyChartState } from './WizardSteps/EmptyChartState'
 
-// Utilities
-export { PALETTES } from './utils/palettes'
-export { generateRandomColor, pickEvenly } from './utils/colorUtils'
+// Utilities - re-exported from ColorModel for convenience
+export { PALETTES } from '../../../../models/VisualStyleModel/impl/colorPalettes'
+export {
+  generateRandomColor,
+  pickEvenly,
+} from '../../../../models/VisualStyleModel/impl/colorUtils'
 export { CHART_CONSTANTS, COLORS, STYLES } from './utils/constants'
 export {
   calculateChartDimensions,

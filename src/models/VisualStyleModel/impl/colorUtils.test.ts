@@ -1,7 +1,7 @@
-import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
+import { ColorType } from '../VisualPropertyValue/ColorType'
 import { generateRandomColor, pickEvenly } from './colorUtils'
 
-// to run these: npx jest src/features/Vizmapper/VisualPropertyRender/CustomGraphics/utils/colorUtils.test.ts
+// to run these: npx jest src/models/VisualStyleModel/impl/colorUtils.test.ts
 
 describe('colorUtils', () => {
   describe('generateRandomColor', () => {
@@ -180,3 +180,4 @@ describe('colorUtils', () => {
     })
   })
 })
+

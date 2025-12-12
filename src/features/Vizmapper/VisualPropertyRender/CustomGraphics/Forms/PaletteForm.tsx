@@ -15,8 +15,8 @@ import {
 } from '@mui/material'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
-import { PALETTES } from '../utils/palettes'
-import { pickEvenly } from '../utils/colorUtils'
+import { PALETTES } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
+import { pickEvenly } from '../../../../../models/VisualStyleModel/impl/colorUtils'
 import { StepGuidance } from '../WizardSteps/StepGuidance'
 import { COLORS } from '../utils/constants'
 import PaletteIcon from '@mui/icons-material/Palette'
@@ -63,7 +63,8 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
 
   // assign colors evenly based on palette
   const handlePaletteChange = (scheme: string) => {
-    const base = PALETTES[scheme] ?? []
+    const palette = PALETTES[scheme]
+    const base = palette?.colors ?? []
     const newColors = pickEvenly(base, dataColumns.length) as ColorType[]
     onUpdate(scheme, newColors)
     handleClose()
@@ -218,7 +219,9 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
               }}
             >
               {currentPaletteKeys.map((paletteKey) => {
-                const paletteColors = PALETTES[paletteKey]
+                const palette = PALETTES[paletteKey]
+                if (!palette) return null
+                const paletteColors = palette.colors
                 return (
                   <Card
                     key={paletteKey}

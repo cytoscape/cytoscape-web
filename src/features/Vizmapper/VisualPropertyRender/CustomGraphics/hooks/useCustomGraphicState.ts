@@ -11,8 +11,8 @@ import { ColorType } from '../../../../../models/VisualStyleModel/VisualProperty
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
 import { useWorkspaceStore } from '../../../../../data/hooks/stores/WorkspaceStore'
-import { PALETTES } from '../utils/palettes'
-import { pickEvenly } from '../utils/colorUtils'
+import { PALETTES } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
+import { pickEvenly } from '../../../../../models/VisualStyleModel/impl/colorUtils'
 import { hasNumericColumns } from '../utils/numericColumnUtils'
 import { WizardStep } from '../WizardSteps/StepProgress'
 import { CustomGraphicKind } from '../WizardSteps/SelectTypeStep'
@@ -167,7 +167,8 @@ export const useCustomGraphicState = ({
 
   // Handle palette change
   const handlePaletteChange = (scheme: string) => {
-    const base = PALETTES[scheme] ?? []
+    const palette = PALETTES[scheme]
+    const base = palette?.colors ?? []
     const newColors = pickEvenly(
       base,
       currentProps.cy_dataColumns.length,
