@@ -18,6 +18,7 @@ import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { PALETTES } from '../utils/palettes'
 import { pickEvenly } from '../utils/colorUtils'
 import { StepGuidance } from '../WizardSteps/StepGuidance'
+import { COLORS } from '../utils/constants'
 import PaletteIcon from '@mui/icons-material/Palette'
 
 interface PaletteFormProps {
@@ -28,14 +29,14 @@ interface PaletteFormProps {
   hideGuidance?: boolean
 }
 
-// Group palettes by type
+// Group palettes by type - calculated once at module level
 const PALETTE_GROUPS = {
   Sequential: Object.keys(PALETTES).filter((key) =>
     key.startsWith('Sequential'),
   ),
   Diverging: Object.keys(PALETTES).filter((key) => key.startsWith('Diverging')),
   Viridis: Object.keys(PALETTES).filter((key) => key.startsWith('Viridis')),
-}
+} as const
 
 export const PaletteForm: React.FC<PaletteFormProps> = ({
   colorScheme,
@@ -170,8 +171,8 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
               sx={{
                 fontSize: '0.75rem',
                 textTransform: 'none',
-                borderColor: !colorScheme ? '#1976d2' : '#e0e0e0',
-                color: !colorScheme ? '#1976d2' : 'inherit',
+                borderColor: !colorScheme ? COLORS.PRIMARY : COLORS.BORDER,
+                color: !colorScheme ? COLORS.PRIMARY : 'inherit',
               }}
             >
               No Palette
@@ -225,10 +226,10 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
                       cursor: 'pointer',
                       border:
                         colorScheme === paletteKey
-                          ? '2px solid #1976d2'
-                          : '1px solid #e0e0e0',
+                          ? `2px solid ${COLORS.PRIMARY}`
+                          : `1px solid ${COLORS.BORDER}`,
                       '&:hover': {
-                        borderColor: '#1976d2',
+                        borderColor: COLORS.PRIMARY,
                         boxShadow: 3,
                         transform: 'translateY(-2px)',
                       },

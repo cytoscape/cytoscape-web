@@ -9,11 +9,11 @@ import {
 } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
-import { ValueTypeName } from '../../../../../models/TableModel/ValueTypeName'
 import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
 import { useWorkspaceStore } from '../../../../../data/hooks/stores/WorkspaceStore'
 import { PALETTES } from '../utils/palettes'
 import { pickEvenly } from '../utils/colorUtils'
+import { hasNumericColumns } from '../utils/numericColumnUtils'
 import { WizardStep } from '../WizardSteps/StepProgress'
 import { CustomGraphicKind } from '../WizardSteps/SelectTypeStep'
 
@@ -26,11 +26,13 @@ const defaultPieProps: PieChartPropertiesType = {
   cy_dataColumns: [] as AttributeName[],
 }
 
+import { CHART_CONSTANTS } from '../utils/constants'
+
 const defaultRingProps: RingChartPropertiesType = {
   cy_range: [0, 1],
   cy_colorScheme: '',
   cy_startAngle: 0,
-  cy_holeSize: 0.4,
+  cy_holeSize: CHART_CONSTANTS.DEFAULT_HOLE_SIZE,
   cy_colors: [] as ColorType[],
   cy_dataColumns: [] as AttributeName[],
 }
@@ -53,27 +55,7 @@ export const useCustomGraphicState = ({
 
   // Check if the current network has numeric properties in the node table
   const hasNumericProperties = React.useMemo(() => {
-    if (!nodeTable?.rows || !nodeTable?.columns) return false
-
-    const rows = Array.from(nodeTable.rows.values())
-    if (!rows.length) return false
-
-    return nodeTable.columns.some((col) => {
-      const vals = rows.map((r) => r[col.name])
-      const allInts = vals.every((v) => Number.isInteger(v))
-      const allNums = vals.every((v) => typeof v === 'number')
-      const vt = allInts
-        ? ValueTypeName.Integer
-        : allNums
-          ? ValueTypeName.Double
-          : null
-
-      return (
-        vt === ValueTypeName.Integer ||
-        vt === ValueTypeName.Double ||
-        vt === ValueTypeName.Long
-      )
-    })
+    return hasNumericColumns(nodeTable?.columns, nodeTable?.rows)
   }, [nodeTable])
 
   // Determine initial state based on whether a custom graphic exists

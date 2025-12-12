@@ -13,16 +13,15 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import { IdType } from '../../../../../models/IdType'
 import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { ValueTypeName } from '../../../../../models/TableModel/ValueTypeName'
-import { VALID_PIE_CHART_SLICE_INDEX_RANGE } from '../../../../../models/VisualStyleModel/impl/customGraphicsImpl'
 import { StepGuidance } from '../WizardSteps/StepGuidance'
 import { generateRandomColor } from '../utils/colorUtils'
+import { getNumericColumnNames } from '../utils/numericColumnUtils'
+import { CHART_CONSTANTS, COLORS } from '../utils/constants'
+import { OrderControls, DataTableHeader, DataTableRow } from '../components'
 
 interface AttributesFormProps {
   dataColumns: AttributeName[]
@@ -32,8 +31,6 @@ interface AttributesFormProps {
   onUpdate: (dataColumns: AttributeName[], colors: ColorType[]) => void
   hideGuidance?: boolean
 }
-
-const DEFAULT_COLOR = '#000000' as ColorType
 
 export const AttributesForm: React.FC<AttributesFormProps> = ({
   dataColumns,
@@ -48,29 +45,8 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
 
   // only keep numeric columns
   const availableColumns: string[] = React.useMemo(() => {
-    if (!nodeTable?.rows) return []
-
-    const rows = Array.from(nodeTable.rows.values())
-    if (!rows.length) return []
-
-    return nodeTable.columns
-      .filter((col) => {
-        const vals = rows.map((r) => r[col.name])
-        const allInts = vals.every((v) => Number.isInteger(v))
-        const allNums = vals.every((v) => typeof v === 'number')
-        const vt = allInts
-          ? ValueTypeName.Integer
-          : allNums
-            ? ValueTypeName.Double
-            : null
-
-        return (
-          vt === ValueTypeName.Integer ||
-          vt === ValueTypeName.Double ||
-          vt === ValueTypeName.Long
-        )
-      })
-      .map((col) => col.name)
+    if (!nodeTable?.rows || !nodeTable?.columns) return []
+    return getNumericColumnNames(nodeTable.columns, nodeTable.rows)
   }, [nodeTable])
 
   // first unused numeric column or empty
@@ -117,7 +93,7 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
       {showGuidance && (
         <StepGuidance
           title="Getting Started"
-          description={`Add up to ${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]} node attributes to create chart slices. Click 'Add Node Attribute' to begin.`}
+          description={`Add up to ${CHART_CONSTANTS.MAX_SLICES} node attributes to create chart slices. Click 'Add Node Attribute' to begin.`}
         />
       )}
 
@@ -144,124 +120,40 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
             {dataColumns.length}
           </Typography>
           <Typography variant="caption">
-            / {VALID_PIE_CHART_SLICE_INDEX_RANGE[1]} slices
+            / {CHART_CONSTANTS.MAX_SLICES} slices
           </Typography>
         </Box>
       </Box>
 
       {/* Column Headers */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: '70px 1fr 32px 32px',
-          gap: 0.5,
-          alignItems: 'center',
-          px: 0.75,
-          py: 0.25,
-          bgcolor: 'grey.50',
-          borderRadius: 1,
-          mb: 0.5,
-        }}
-      >
-        <Tooltip title="Slice order determines which slice appears first in the chart">
-          <Typography
-            variant="caption"
-            sx={{
-              fontWeight: 'medium',
-              color: 'text.secondary',
-              cursor: 'help',
-            }}
-          >
-            Order
-          </Typography>
-        </Tooltip>
-        <Typography
-          variant="caption"
-          sx={{ fontWeight: 'medium', color: 'text.secondary' }}
-        >
-          Node Attribute
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            fontWeight: 'medium',
-            color: 'text.secondary',
-            textAlign: 'center',
-          }}
-        >
-          Color
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            fontWeight: 'medium',
-            color: 'text.secondary',
-            textAlign: 'center',
-          }}
-        >
-          Remove
-        </Typography>
-      </Box>
+      <DataTableHeader
+        columns={[
+          {
+            label: 'Order',
+            tooltip:
+              'Slice order determines which slice appears first in the chart',
+            width: '70px',
+          },
+          { label: 'Node Attribute', width: '1fr' },
+          { label: 'Color', width: '32px', align: 'center' },
+          { label: 'Remove', width: '32px', align: 'center' },
+        ]}
+      />
 
       {dataColumns.map((col, i) => {
         const options = availableColumns.filter(
           (c) => c === col || !dataColumns.includes(c),
         )
         return (
-          <Box
-            key={i}
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '70px 1fr 32px 32px',
-              alignItems: 'center',
-              p: 0.5,
-              border: '1px solid #eee',
-              borderRadius: 1,
-            }}
-          >
+          <DataTableRow key={i} columns={['70px', '1fr', '32px', '32px']}>
             {/* Slice Order with Up/Down arrows */}
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  bgcolor: 'grey.200',
-                  color: 'text.secondary',
-                  fontSize: '0.7rem',
-                  fontWeight: 'medium',
-                }}
-              >
-                {i + 1}
-              </Box>
-              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                <IconButton
-                  size="small"
-                  onClick={() => moveRow(i, (i - 1 + count) % count)}
-                  disabled={count <= 1}
-                  sx={{ p: 0.25, minWidth: 20, height: 16 }}
-                >
-                  <ArrowUpwardIcon sx={{ fontSize: 12 }} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => moveRow(i, (i + 1) % count)}
-                  disabled={count <= 1}
-                  sx={{ p: 0.25, minWidth: 20, height: 16 }}
-                >
-                  <ArrowDownwardIcon sx={{ fontSize: 12 }} />
-                </IconButton>
-              </Box>
-            </Box>
+            <OrderControls
+              order={i + 1}
+              total={count}
+              onMoveUp={() => moveRow(i, (i - 1 + count) % count)}
+              onMoveDown={() => moveRow(i, (i + 1) % count)}
+              disabled={count <= 1}
+            />
 
             <FormControl
               size="small"
@@ -271,7 +163,11 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
                 labelId={`col-label-${i}`}
                 value={col}
                 onChange={(e: SelectChangeEvent<string>) =>
-                  updateRow(i, e.target.value, colors[i] || '#000000')
+                  updateRow(
+                    i,
+                    e.target.value,
+                    colors[i] || COLORS.DEFAULT_FALLBACK,
+                  )
                 }
               >
                 {options.map((c) => (
@@ -284,7 +180,7 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
 
             <input
               type="color"
-              value={(colors[i] ?? DEFAULT_COLOR) as ColorType}
+              value={(colors[i] ?? COLORS.DEFAULT_FALLBACK) as ColorType}
               onChange={(e) => updateRow(i, col, e.target.value as ColorType)}
               style={{
                 width: 24,
@@ -304,7 +200,7 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
             >
               <DeleteIcon sx={{ fontSize: 16 }} />
             </IconButton>
-          </Box>
+          </DataTableRow>
         )
       })}
 
@@ -317,18 +213,18 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
             onClick={addRow}
             disabled={
               nextDefaultCol === '' ||
-              dataColumns.length >= VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
+              dataColumns.length >= CHART_CONSTANTS.MAX_SLICES
             }
             title={
-              dataColumns.length >= VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
-                ? `Maximum of ${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]} slices reached`
+              dataColumns.length >= CHART_CONSTANTS.MAX_SLICES
+                ? `Maximum of ${CHART_CONSTANTS.MAX_SLICES} slices reached`
                 : nextDefaultCol === ''
                   ? 'No more numeric attributes available to add'
                   : 'Add a numeric attribute to the chart'
             }
             sx={{ color: '#1976d2', textTransform: 'none' }}
           >
-            {dataColumns.length >= VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
+            {dataColumns.length >= CHART_CONSTANTS.MAX_SLICES
               ? 'Maximum Slices Reached'
               : nextDefaultCol === ''
                 ? 'No Attributes Available'
@@ -337,9 +233,9 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
         </Box>
 
         {/* Show message when maximum slices reached */}
-        {dataColumns.length >= VALID_PIE_CHART_SLICE_INDEX_RANGE[1] && (
+        {dataColumns.length >= CHART_CONSTANTS.MAX_SLICES && (
           <StepGuidance
-            title={`Maximum of ${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]} slices reached`}
+            title={`Maximum of ${CHART_CONSTANTS.MAX_SLICES} slices reached`}
             description="You can remove existing attributes using the delete button (🗑️) to make room for different ones, or reorder them using the arrow buttons."
             variant="warning"
           />
@@ -348,7 +244,8 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
         {/* Show helpful message when no numeric attributes are available */}
         {nextDefaultCol === '' &&
           availableColumns.length === 0 &&
-          dataColumns.length < VALID_PIE_CHART_SLICE_INDEX_RANGE[1] && (
+          dataColumns.length === 0 &&
+          dataColumns.length < CHART_CONSTANTS.MAX_SLICES && (
             <StepGuidance
               title="No numeric data available for charts"
               description="To create pie or ring charts, your network nodes need numeric attributes (columns with numbers). Currently, no numeric columns were found in the node table."
@@ -359,7 +256,7 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
         {/* Show message when some attributes exist but none are available to add */}
         {nextDefaultCol === '' &&
           availableColumns.length > 0 &&
-          dataColumns.length < VALID_PIE_CHART_SLICE_INDEX_RANGE[1] && (
+          dataColumns.length < CHART_CONSTANTS.MAX_SLICES && (
             <StepGuidance
               title="All available attributes are already added"
               description="You can remove existing attributes using the delete button (🗑️) to make room for different ones, or reorder them using the arrow buttons."

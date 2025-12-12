@@ -25,11 +25,11 @@ import { StepGuidance } from './WizardSteps/StepGuidance'
 import { AttributesForm } from './Forms/AttributesForm'
 import { PaletteForm } from './Forms/PaletteForm'
 import { PropertiesForm } from './Forms/PropertiesForm'
-
-// Import custom hook
 import { useCustomGraphicState } from './hooks/useCustomGraphicState'
+import { COLORS } from './utils/constants'
+import { isRingChartProperties } from './utils/typeGuards'
+import { FormSection } from './components'
 
-/** Props for the multi-step wizard dialog */
 /** Props for the multi-step wizard dialog */
 interface CustomGraphicDialogProps {
   open: boolean
@@ -141,8 +141,9 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
             <PropertiesForm
               startAngle={currentProps.cy_startAngle}
               holeSize={
-                kind === CustomGraphicsNameType.RingChart
-                  ? (currentProps as RingChartPropertiesType).cy_holeSize
+                kind === CustomGraphicsNameType.RingChart &&
+                isRingChartProperties(currentProps)
+                  ? currentProps.cy_holeSize
                   : undefined
               }
               kind={kind}
@@ -161,7 +162,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
             />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* Reuse step components for editing */}
-              <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
+              <FormSection>
                 <AttributesForm
                   dataColumns={currentProps.cy_dataColumns}
                   colors={currentProps.cy_colors}
@@ -170,10 +171,10 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                   onUpdate={handleAttributesUpdate}
                   hideGuidance={true}
                 />
-              </Box>
+              </FormSection>
 
               {/* Palette Section */}
-              <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
+              <FormSection>
                 <PaletteForm
                   colorScheme={currentProps.cy_colorScheme}
                   colors={currentProps.cy_colors}
@@ -181,10 +182,10 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                   onUpdate={handlePaletteChange}
                   hideGuidance={true}
                 />
-              </Box>
+              </FormSection>
 
               {/* Properties Section */}
-              <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
+              <FormSection>
                 <PropertiesForm
                   startAngle={currentProps.cy_startAngle}
                   holeSize={
@@ -196,7 +197,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                   onUpdate={handlePropertiesUpdate}
                   hideGuidance={true}
                 />
-              </Box>
+              </FormSection>
             </Box>
           </Box>
         )
@@ -225,11 +226,11 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
         <Typography variant="h6">{getStepTitle(currentStep)}</Typography>
         <Button
           sx={{
-            color: '#F50157',
+            color: COLORS.REMOVE,
             backgroundColor: 'transparent',
             '&:hover': {
               color: '#FFFFFF',
-              backgroundColor: '#F50157',
+              backgroundColor: COLORS.REMOVE,
             },
             '&:disabled': {
               backgroundColor: 'transparent',
@@ -279,7 +280,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                   type: 'chart',
                   name: kind,
                   properties: currentProps,
-                })
+                } as CustomGraphicsType)
               } else {
                 goToNextStep()
               }

@@ -1,6 +1,14 @@
 import * as React from 'react'
 import { Box, Typography } from '@mui/material'
 import { RingChartPropertiesType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import {
+  calculateChartDimensions,
+  calculateRadii,
+  calculateSliceAngle,
+  degreesToRadians,
+} from './utils/chartRenderUtils'
+import { CHART_CONSTANTS, COLORS, STYLES } from './utils/constants'
+import { EmptyChartState } from './WizardSteps/EmptyChartState'
 
 interface RingChartRenderProps {
   properties: RingChartPropertiesType
@@ -20,97 +28,87 @@ export const RingChartRender: React.FC<RingChartRenderProps> = ({
   height,
   showLabels = false,
 }) => {
-  // Use size if provided, otherwise use width/height
-  const chartSize = size || Math.min(width || 120, height || 120)
-  const containerWidth = width || chartSize
-  const containerHeight = height || (showLabels ? chartSize + 20 : chartSize)
+  const { chartSize, containerWidth, containerHeight } =
+    calculateChartDimensions(size, width, height)
+  const adjustedContainerHeight = showLabels
+    ? containerHeight + 20
+    : containerHeight
 
   const { cy_startAngle, cy_colors, cy_dataColumns, cy_holeSize } = properties
 
   // If no data columns, show empty state
   if (!cy_dataColumns.length) {
     return (
-      <Box
-        sx={{
-          width: containerWidth,
-          height: containerHeight,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Box
-          sx={{
-            width: chartSize,
-            height: chartSize,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '2px dashed',
-            borderColor: 'grey.300',
-            borderRadius: '50%',
-            bgcolor: 'grey.50',
-          }}
-        >
-          <Typography variant="caption" color="text.secondary">
-            No data
-          </Typography>
-        </Box>
-      </Box>
+      <EmptyChartState
+        size={chartSize}
+        containerWidth={containerWidth}
+        containerHeight={adjustedContainerHeight}
+      />
     )
   }
 
   // Calculate slice angles (equal distribution for preview)
-  const sliceAngle = 360 / cy_dataColumns.length
-  const outerRadius = chartSize / 2 - 8 // Leave more padding for better appearance
-  const innerRadius = outerRadius * (cy_holeSize || 0.4) // cy_holeSize is a decimal (0-1), default to 0.4
-  const viewBoxSize = 2 * outerRadius // ViewBox should be symmetric around origin
+  const sliceAngle = calculateSliceAngle(cy_dataColumns.length)
+  const { outerRadius, innerRadius, viewBoxSize } = calculateRadii(
+    chartSize,
+    cy_holeSize ?? CHART_CONSTANTS.DEFAULT_HOLE_SIZE,
+  )
+
+  // Remove stroke for preview charts to prevent gaps (only use stroke for very large charts)
+  const useStroke = chartSize > 120
 
   // Generate SVG path for ring chart slice
-  const generateSlicePath = (index: number, color: string) => {
-    const startAngle = (cy_startAngle + index * sliceAngle) * (Math.PI / 180)
-    const endAngle =
-      (cy_startAngle + (index + 1) * sliceAngle) * (Math.PI / 180)
+  const generateSlicePath = React.useCallback(
+    (index: number, color: string) => {
+      if (innerRadius === undefined) return null
 
-    const x1 = outerRadius * Math.cos(startAngle)
-    const y1 = outerRadius * Math.sin(startAngle)
-    const x2 = outerRadius * Math.cos(endAngle)
-    const y2 = outerRadius * Math.sin(endAngle)
+      const startAngleRad = degreesToRadians(cy_startAngle + index * sliceAngle)
+      const endAngleRad = degreesToRadians(
+        cy_startAngle + (index + 1) * sliceAngle,
+      )
 
-    const x3 = innerRadius * Math.cos(endAngle)
-    const y3 = innerRadius * Math.sin(endAngle)
-    const x4 = innerRadius * Math.cos(startAngle)
-    const y4 = innerRadius * Math.sin(startAngle)
+      const x1 = outerRadius * Math.cos(startAngleRad)
+      const y1 = outerRadius * Math.sin(startAngleRad)
+      const x2 = outerRadius * Math.cos(endAngleRad)
+      const y2 = outerRadius * Math.sin(endAngleRad)
 
-    const largeArcFlag = sliceAngle > 180 ? 1 : 0
+      const x3 = innerRadius * Math.cos(endAngleRad)
+      const y3 = innerRadius * Math.sin(endAngleRad)
+      const x4 = innerRadius * Math.cos(startAngleRad)
+      const y4 = innerRadius * Math.sin(startAngleRad)
 
-    // Create a proper ring slice path
-    const path = [
-      `M ${x1} ${y1}`, // Start at outer edge
-      `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2}`, // Outer arc
-      `L ${x3} ${y3}`, // Line to inner edge
-      `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4}`, // Inner arc
-      'Z', // Close path
-    ].join(' ')
+      const largeArcFlag = sliceAngle > 180 ? 1 : 0
 
-    return (
-      <path
-        key={index}
-        d={path}
-        fill={color}
-        stroke="#ffffff"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-    )
-  }
+      // Create a proper ring slice path
+      const path = [
+        `M ${x1} ${y1}`, // Start at outer edge
+        `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2}`, // Outer arc
+        `L ${x3} ${y3}`, // Line to inner edge
+        `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4}`, // Inner arc
+        'Z', // Close path
+      ].join(' ')
+
+      return (
+        <path
+          key={index}
+          d={path}
+          fill={color}
+          {...(useStroke && {
+            stroke: STYLES.STROKE_COLOR,
+            strokeWidth: STYLES.STROKE_WIDTH,
+            strokeLinejoin: 'round',
+          })}
+        />
+      )
+    },
+    [cy_startAngle, sliceAngle, outerRadius, innerRadius, useStroke],
+  )
 
   return (
     <Box
       sx={{
         width: containerWidth,
-        height: containerHeight,
+        height: adjustedContainerHeight,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -121,11 +119,15 @@ export const RingChartRender: React.FC<RingChartRenderProps> = ({
         width={chartSize}
         height={chartSize}
         viewBox={`${-outerRadius} ${-outerRadius} ${viewBoxSize} ${viewBoxSize}`}
-        style={{ transform: 'rotate(-90deg)' }} // Start from 12 o'clock
+        style={{
+          transform: `rotate(${STYLES.ROTATION}deg)`,
+          display: 'block',
+        }}
+        preserveAspectRatio="xMidYMid meet"
       >
         <g>
           {cy_dataColumns.map((_col, index) => {
-            const color = cy_colors[index] || '#CCCCCC'
+            const color = cy_colors[index] || COLORS.DEFAULT
             // Reverse the render order to match Cytoscape.js
             const reversedIndex = cy_dataColumns.length - 1 - index
             return generateSlicePath(reversedIndex, color)

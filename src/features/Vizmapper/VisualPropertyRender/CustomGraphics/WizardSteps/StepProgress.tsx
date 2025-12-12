@@ -5,6 +5,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt'
 import PaletteIcon from '@mui/icons-material/Palette'
 import SettingsIcon from '@mui/icons-material/Settings'
 import VisibilityIcon from '@mui/icons-material/Visibility'
+import { COLORS } from '../utils/constants'
 
 export enum WizardStep {
   SelectType = 0,
@@ -45,7 +46,7 @@ export const StepProgress: React.FC<StepProgressProps> = ({
         alignItems: 'center',
         gap: 1,
         p: 1,
-        borderBottom: '1px solid #e0e0e0',
+        borderBottom: `1px solid ${COLORS.BORDER}`,
         bgcolor: '#fafafa',
       }}
     >
@@ -79,8 +80,8 @@ export const StepProgress: React.FC<StepProgressProps> = ({
                   bgcolor: isDisabled
                     ? '#f0f0f0'
                     : currentStep === stepInfo.step
-                      ? '#1976d2'
-                      : '#e0e0e0',
+                      ? COLORS.PRIMARY
+                      : COLORS.BORDER,
                   color: isDisabled
                     ? '#999'
                     : currentStep === stepInfo.step
@@ -121,7 +122,7 @@ export const StepProgress: React.FC<StepProgressProps> = ({
                 sx={{
                   width: 20,
                   height: 1,
-                  bgcolor: isDisabled ? '#f0f0f0' : '#e0e0e0',
+                  bgcolor: isDisabled ? '#f0f0f0' : COLORS.BORDER,
                 }}
               />
             )}

@@ -8,8 +8,9 @@ import {
 } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { PieChartRender as PieChartRenderComponent } from './PieChartRender'
 import { RingChartRender as RingChartRenderComponent } from './RingChartRender'
+import { CHART_CONSTANTS } from './utils/constants'
+import { isPieChartProperties, isRingChartProperties } from './utils/typeGuards'
 
-/** Read-only render of chart properties */
 /** Read-only render of chart properties */
 export function CustomGraphicRender(props: {
   value: CustomGraphicsType
@@ -23,48 +24,52 @@ export function CustomGraphicRender(props: {
 
   // Render pie chart
   if (value.name === CustomGraphicsNameType.PieChart) {
-    const properties = value.properties as PieChartPropertiesType
-    return (
-      <Box
-        sx={{
-          p: 1,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          transform: 'translate(4px, 12px)',
-        }}
-      >
-        <PieChartRenderComponent
-          properties={properties}
-          width={60}
-          height={60}
-          showLabels={true}
-        />
-      </Box>
-    )
+    // Type guard ensures properties is PieChartPropertiesType (not NonePropertiesType)
+    if (isPieChartProperties(value.properties)) {
+      const pieProperties = value.properties
+      return (
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          <PieChartRenderComponent
+            properties={pieProperties}
+            size={CHART_CONSTANTS.SIZES.VIEWBOX}
+            showLabels={false}
+          />
+        </Box>
+      )
+    }
   }
 
   // Render ring chart
   if (value.name === CustomGraphicsNameType.RingChart) {
-    const properties = value.properties as RingChartPropertiesType
-    return (
-      <Box
-        sx={{
-          p: 1,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          transform: 'translate(4px, 12px)',
-        }}
-      >
-        <RingChartRenderComponent
-          properties={properties}
-          width={60}
-          height={60}
-          showLabels={true}
-        />
-      </Box>
-    )
+    // Type guard ensures properties is RingChartPropertiesType (not NonePropertiesType)
+    if (isRingChartProperties(value.properties)) {
+      const ringProperties = value.properties
+      return (
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          <RingChartRenderComponent
+            properties={ringProperties}
+            size={CHART_CONSTANTS.SIZES.VIEWBOX}
+            showLabels={false}
+          />
+        </Box>
+      )
+    }
   }
 
   // Fallback for other types (like Image in the future)
