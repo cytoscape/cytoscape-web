@@ -311,6 +311,8 @@ export function createNetworkFromTableData(
   const summary = createNetworkSummary({
     networkId: network.id,
     name: name ?? 'test',
+    nodeCount: network.nodes.length,
+    edgeCount: network.edges.length,
   })
 
   const networkView = createViewModel(network)

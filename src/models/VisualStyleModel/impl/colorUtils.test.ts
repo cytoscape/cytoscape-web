@@ -1,4 +1,5 @@
 import { ColorType } from '../VisualPropertyValue/ColorType'
+import { ColorPalette } from '../VisualPropertyValue/ColorPalette'
 import { generateRandomColor, pickEvenly } from './colorUtils'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/colorUtils.test.ts
@@ -85,13 +86,13 @@ describe('colorUtils', () => {
     })
 
     it('should return empty array for count <= 0', () => {
-      const base = ['#FF0000', '#00FF00', '#0000FF']
+      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF']
       expect(pickEvenly(base, 0)).toEqual([])
       expect(pickEvenly(base, -1)).toEqual([])
     })
 
     it('should return middle element for count === 1', () => {
-      const base = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF']
+      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF']
       const result = pickEvenly(base, 1)
       expect(result).toHaveLength(1)
       // For 5 elements, middle is index 2 (Math.floor((5-1)/2) = 2)
@@ -99,7 +100,7 @@ describe('colorUtils', () => {
     })
 
     it('should return middle element for count === 1 with even-length base', () => {
-      const base = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00']
+      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00']
       const result = pickEvenly(base, 1)
       expect(result).toHaveLength(1)
       // For 4 elements, middle is index 1 (Math.floor((4-1)/2) = 1)
@@ -107,13 +108,13 @@ describe('colorUtils', () => {
     })
 
     it('should return all elements when count equals base length', () => {
-      const base = ['#FF0000', '#00FF00', '#0000FF']
+      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF']
       const result = pickEvenly(base, 3)
       expect(result).toEqual(base)
     })
 
     it('should return evenly distributed elements when count < base length', () => {
-      const base = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF']
+      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF']
       const result = pickEvenly(base, 3)
       expect(result).toHaveLength(3)
       // Should pick first, middle, and last
@@ -123,7 +124,7 @@ describe('colorUtils', () => {
     })
 
     it('should return evenly distributed elements for count = 2', () => {
-      const base = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00']
+      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00']
       const result = pickEvenly(base, 2)
       expect(result).toHaveLength(2)
       // Should pick first and last
@@ -132,7 +133,7 @@ describe('colorUtils', () => {
     })
 
     it('should cycle through base when count > base length', () => {
-      const base = ['#FF0000', '#00FF00', '#0000FF']
+      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF']
       const result = pickEvenly(base, 7)
       expect(result).toHaveLength(7)
       // Should cycle: [0, 1, 2, 0, 1, 2, 0]
@@ -146,19 +147,19 @@ describe('colorUtils', () => {
     })
 
     it('should handle single element base', () => {
-      const base = ['#FF0000']
+      const base: ColorPalette = ['#FF0000']
       expect(pickEvenly(base, 1)).toEqual(['#FF0000'])
       expect(pickEvenly(base, 3)).toEqual(['#FF0000', '#FF0000', '#FF0000'])
     })
 
     it('should distribute evenly across the range', () => {
-      const base = ['#000000', '#111111', '#222222', '#333333', '#444444']
+      const base: ColorPalette = ['#000000', '#111111', '#222222', '#333333', '#444444']
       const result = pickEvenly(base, 5)
       expect(result).toEqual(base)
     })
 
     it('should handle large count values', () => {
-      const base = ['#FF0000', '#00FF00', '#0000FF']
+      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF']
       const result = pickEvenly(base, 100)
       expect(result).toHaveLength(100)
       // Should cycle through base
@@ -170,13 +171,13 @@ describe('colorUtils', () => {
     })
 
     it('should return correct indices for edge cases', () => {
-      const base = ['a', 'b', 'c', 'd', 'e']
+      const base: ColorPalette = ['#a', '#b', '#c', '#d', '#e'] as ColorPalette
       // count = 1: should return middle (index 2)
-      expect(pickEvenly(base, 1)).toEqual(['c'])
+      expect(pickEvenly(base, 1)).toEqual(['#c'])
       // count = 2: should return first and last
-      expect(pickEvenly(base, 2)).toEqual(['a', 'e'])
+      expect(pickEvenly(base, 2)).toEqual(['#a', '#e'])
       // count = 3: should return first, middle, last
-      expect(pickEvenly(base, 3)).toEqual(['a', 'c', 'e'])
+      expect(pickEvenly(base, 3)).toEqual(['#a', '#c', '#e'])
     })
   })
 })

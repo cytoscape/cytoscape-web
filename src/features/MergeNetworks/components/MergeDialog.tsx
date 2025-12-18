@@ -569,6 +569,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         isDeleted: networkSummary.isDeleted,
         creationTime: networkSummary.creationTime,
         modificationTime: networkSummary.modificationTime,
+        nodeCount: newCyNetwork.network.nodes.length,
+        edgeCount: newCyNetwork.network.edges.length,
       })
       // Update state stores with the new network and its components
       setVisualStyleOptions(newNetworkId, newCyNetwork.visualStyleOptions)

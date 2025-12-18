@@ -126,6 +126,8 @@ export const normalizeNdexSummaries = (
       isDeleted: summary.isDeleted ?? false,
       creationTime: new Date(summary.creationTime),
       modificationTime: new Date(summary.modificationTime),
+      nodeCount: summary.nodeCount,
+      edgeCount: summary.edgeCount,
     })
   })
 }

@@ -85,6 +85,8 @@ export const fetchUrlCx = async (
       properties,
       hasLayout,
       visibility: Visibility.PUBLIC,
+      nodeCount: network.network.nodes.length,
+      edgeCount: network.network.edges.length,
     })
     return {
       summary,

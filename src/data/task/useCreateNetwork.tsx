@@ -209,6 +209,8 @@ export const useCreateNetwork = (): (({
         networkId: network.id,
         name: name || `CyWeb Network (${network.id})`,
         description,
+        nodeCount: network.nodes.length,
+        edgeCount: network.edges.length,
       })
 
       addNetwork(network)

@@ -281,6 +281,8 @@ const NetworkSummarySchema = z.object({
   version: z.string(),
   completed: z.boolean(),
   visibility: z.string(),
+  nodeCount: z.number(),
+  edgeCount: z.number(),
   description: z.string(),
   creationTime: DateSchema,
   externalId: z.string(),

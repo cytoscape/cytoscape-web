@@ -47,6 +47,8 @@ describe('NetworkSummaryImpl', () => {
       expect(summary.isValid).toBe(false)
       expect(summary.completed).toBe(false)
       expect(summary.visibility).toBe('PUBLIC')
+      expect(summary.nodeCount).toBe(0)
+      expect(summary.edgeCount).toBe(0)
     })
 
     it('should create a summary with all options provided', () => {
@@ -79,6 +81,8 @@ describe('NetworkSummaryImpl', () => {
         isDeleted: false,
         creationTime,
         modificationTime,
+        nodeCount: 100,
+        edgeCount: 200,
       })
 
       expect(summary.name).toBe('Test Network')
@@ -104,6 +108,8 @@ describe('NetworkSummaryImpl', () => {
       expect(summary.isDeleted).toBe(false)
       expect(summary.creationTime).toBe(creationTime)
       expect(summary.modificationTime).toBe(modificationTime)
+      expect(summary.nodeCount).toBe(100)
+      expect(summary.edgeCount).toBe(200)
     })
 
     it('should use networkId as default for ownerUUID and externalId', () => {
@@ -144,6 +150,8 @@ describe('NetworkSummaryImpl', () => {
       expect(summary.completed).toBe(false)
       expect(summary.isDeleted).toBe(false)
       expect(summary.visibility).toBe('PUBLIC')
+      expect(summary.nodeCount).toBe(0)
+      expect(summary.edgeCount).toBe(0)
       expect(summary.creationTime).toBeInstanceOf(Date)
       expect(summary.modificationTime).toBeInstanceOf(Date)
     })

@@ -114,6 +114,8 @@ export const createMergedNetwork = async (
     externalId: toNetworkId,
     isDeleted: false,
     modificationTime: new Date(Date.now()),
+    nodeCount: newNetwork.nodes.length,
+    edgeCount: newNetwork.edges.length,
   })
   await putNetworkSummaryToDb(networkSummary)
 

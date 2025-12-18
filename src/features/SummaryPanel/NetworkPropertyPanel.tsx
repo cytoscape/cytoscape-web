@@ -43,13 +43,13 @@ export const NetworkPropertyPanel = ({
   // Need to use ID from the summary since it is different from the currentNetworkId
   const id: IdType = summary.externalId
 
-  // Get the network model from the store to grab the node and edge counts
+  // Get the network model from the store as fallback for node and edge counts
   const networkModels = useNetworkStore((state) => state.networks)
   const networkModel: Network | undefined = networkModels.get(id)
 
-  // Get node and edge counts from the network model
-  const nodeCount: number = networkModel?.nodes.length ?? 0
-  const edgeCount: number = networkModel?.edges.length ?? 0
+  // Prefer counts from summary, fallback to network model if available
+  const nodeCount: number = summary.nodeCount ?? networkModel?.nodes.length ?? 0
+  const edgeCount: number = summary.edgeCount ?? networkModel?.edges.length ?? 0
 
   const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
     HTMLButtonElement | undefined

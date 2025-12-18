@@ -144,6 +144,8 @@ export function FileUpload(props: FileUploadProps) {
           hasLayout: anyNodeHasPosition,
           visibility: Visibility.LOCAL,
           externalId: localUuid,
+          nodeCount: network.nodes.length,
+          edgeCount: network.edges.length,
         })
         await putNetworkSummaryToDb(summary)
         // TODO the db syncing logic in various stores assumes the updated network is the current network
@@ -220,6 +222,8 @@ export function FileUpload(props: FileUploadProps) {
           visibility: Visibility.LOCAL,
           hasLayout: false, // SIF files don't contain layout information
           properties: [], // SIF files don't have network properties
+          nodeCount: network.nodes.length,
+          edgeCount: network.edges.length,
         })
         await putNetworkSummaryToDb(summary)
 

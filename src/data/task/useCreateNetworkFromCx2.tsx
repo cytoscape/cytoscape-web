@@ -72,6 +72,8 @@ export const useCreateNetworkFromCx2 = (): ((
           networkId: network.id,
           name,
           description,
+          nodeCount: network.nodes.length,
+          edgeCount: network.edges.length,
         })
         summary.version = (attributes['version'] as string) ?? 'unknown'
       } else {
@@ -79,6 +81,8 @@ export const useCreateNetworkFromCx2 = (): ((
         summary = createNetworkSummary({
           networkId: network.id,
           name: `CX2 Network (${network.id})`,
+          nodeCount: network.nodes.length,
+          edgeCount: network.edges.length,
         })
       }
 

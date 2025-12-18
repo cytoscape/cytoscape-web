@@ -123,6 +123,8 @@ export const useAddNetworks = (): (({
               visibility: Visibility.PUBLIC,
               externalId: localUuid,
               ownerUUID: localUuid,
+              nodeCount: network.nodes.length,
+              edgeCount: network.edges.length,
             })
             await putNetworkSummaryToDb(summary)
 

@@ -111,6 +111,14 @@ export interface CreateNetworkSummaryOptions {
    * Modification time (defaults to current time)
    */
   modificationTime?: Date
+  /**
+   * Number of nodes in the network (defaults to 0)
+   */
+  nodeCount?: number
+  /**
+   * Number of edges in the network (defaults to 0)
+   */
+  edgeCount?: number
 }
 
 /**
@@ -149,6 +157,8 @@ export const createNetworkSummary = (
     isDeleted = false,
     creationTime = new Date(Date.now()),
     modificationTime = new Date(Date.now()),
+    nodeCount = 0,
+    edgeCount = 0,
   } = options
 
   return {
@@ -170,6 +180,8 @@ export const createNetworkSummary = (
     version,
     completed,
     visibility,
+    nodeCount,
+    edgeCount,
     description,
     creationTime,
     externalId,

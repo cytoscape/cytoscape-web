@@ -48,6 +48,8 @@ export const useOpenNetworkInCytoscape = () => {
         isReadOnly: false,
         isShowcase: false,
         owner: '',
+        nodeCount: network.nodes.length,
+        edgeCount: network.edges.length,
       })
     }
 

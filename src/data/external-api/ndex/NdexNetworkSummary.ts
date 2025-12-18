@@ -11,7 +11,7 @@ import { NdexNetworkProperty } from './NdexNetworkProperty'
  * Properties use NdexNetworkProperty for API consistency.
  *
  * Note: nodeCount and edgeCount are included here because NDEx API returns them,
- * but they are removed during normalization to NetworkSummary.
+ * and they are preserved during normalization to NetworkSummary.
  */
 export type NdexNetworkSummary = Omit<
   NetworkSummary,

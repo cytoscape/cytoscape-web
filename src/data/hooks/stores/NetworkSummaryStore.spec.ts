@@ -42,6 +42,8 @@ describe('useNetworkSummaryStore', () => {
       version: '1.0',
       completed: true,
       visibility: 'PUBLIC',
+      nodeCount: 10,
+      edgeCount: 20,
       description: 'Test network',
       creationTime: new Date(),
       externalId: networkId,
