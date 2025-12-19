@@ -26,37 +26,71 @@ export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
   showLabels = false,
   sticky = false,
 }) => {
+  const hasData = properties.cy_dataColumns.length > 0
+  const chartTypeName =
+    kind === CustomGraphicsNameType.PieChart ? 'Pie Chart' : 'Donut Chart'
+
   const previewBox = (
-      <Box
-        sx={{
-          border: `1px solid ${COLORS.BORDER}`,
-          borderRadius: 1,
-          bgcolor: '#fafafa',
-          p: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 1,
-        }}
-      >
-      <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
-        Custom Graphic Preview
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1.5,
+      }}
+    >
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+        Preview
       </Typography>
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        {kind === CustomGraphicsNameType.PieChart && isPieChartProperties(properties) ? (
-          <PieChartRenderComponent
-            properties={properties}
-            size={size}
-            showLabels={showLabels}
-          />
-        ) : kind === CustomGraphicsNameType.RingChart && isRingChartProperties(properties) ? (
-          <RingChartRenderComponent
-            properties={properties}
-            size={size}
-            showLabels={showLabels}
-          />
-        ) : null}
-      </Box>
+      {hasData ? (
+        <>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: size + 40,
+            }}
+          >
+            {kind === CustomGraphicsNameType.PieChart &&
+            isPieChartProperties(properties) ? (
+              <PieChartRenderComponent
+                properties={properties}
+                size={size}
+                showLabels={showLabels}
+              />
+            ) : kind === CustomGraphicsNameType.RingChart &&
+              isRingChartProperties(properties) ? (
+              <RingChartRenderComponent
+                properties={properties}
+                size={size}
+                showLabels={showLabels}
+              />
+            ) : null}
+          </Box>
+          {showLabels && (
+            <Typography variant="caption" color="text.secondary">
+              {chartTypeName} • {properties.cy_dataColumns.length} slice
+              {properties.cy_dataColumns.length !== 1 ? 's' : ''}
+            </Typography>
+          )}
+        </>
+      ) : (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: size + 40,
+            color: 'text.secondary',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Add attributes to see preview
+          </Typography>
+        </Box>
+      )}
     </Box>
   )
 
@@ -67,8 +101,9 @@ export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
           position: 'sticky',
           top: 0,
           zIndex: 10,
-          bgcolor: 'white',
-          borderBottom: `1px solid ${COLORS.BORDER}`,
+          bgcolor: 'background.paper',
+          borderBottom: 1,
+          borderColor: 'divider',
           pb: 2,
           mb: 2,
         }}

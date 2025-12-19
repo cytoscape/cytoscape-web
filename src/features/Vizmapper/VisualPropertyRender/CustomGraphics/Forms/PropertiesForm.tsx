@@ -1,7 +1,6 @@
 import * as React from 'react'
-import { Box } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import { StepGuidance } from '../WizardSteps/StepGuidance'
 import { CustomGraphicKind } from '../WizardSteps/SelectTypeStep'
 import { CHART_CONSTANTS } from '../utils/constants'
 import { LabelWithTooltip, SliderWithInput } from '../components'
@@ -11,7 +10,6 @@ interface PropertiesFormProps {
   holeSize?: number
   kind: CustomGraphicKind
   onUpdate: (startAngle: number, holeSize?: number) => void
-  hideGuidance?: boolean
 }
 
 export const PropertiesForm: React.FC<PropertiesFormProps> = ({
@@ -19,7 +17,6 @@ export const PropertiesForm: React.FC<PropertiesFormProps> = ({
   holeSize,
   kind,
   onUpdate,
-  hideGuidance = false,
 }) => {
   const handleStartAngleChange = (value: number) => {
     onUpdate(value, holeSize)
@@ -30,19 +27,12 @@ export const PropertiesForm: React.FC<PropertiesFormProps> = ({
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {!hideGuidance && (
-        <StepGuidance
-          title="Step 3: Configure Custom Graphic Properties"
-          description={`Adjust the start angle and ${kind === CustomGraphicsNameType.RingChart ? 'hole size' : 'other properties'} for your chart.`}
-        />
-      )}
-
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Start Angle slider/input */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         <LabelWithTooltip
           label="Start Angle (degrees)"
-          tooltip="0° → 3 o'clock; 90° → 12 o'clock; 180° → 9 o'clock; 270° → 6 o'clock"
+          tooltip="0° = 3 o'clock, 90° = 12 o'clock, 180° = 9 o'clock, 270° = 6 o'clock"
         />
         <SliderWithInput
           value={startAngle}
@@ -52,14 +42,17 @@ export const PropertiesForm: React.FC<PropertiesFormProps> = ({
           onChange={handleStartAngleChange}
           inputProps={{ min: 0, max: 360 }}
         />
+        <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
+          Rotate the starting position of the chart
+        </Typography>
       </Box>
 
-      {/* Hole Size for RingChart only */}
+      {/* Hole Size for Donut Chart only */}
       {kind === CustomGraphicsNameType.RingChart && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <LabelWithTooltip
-            label="Hole Size (0–1)"
-            tooltip="0 → full pie (no hole); 1 → completely hollow (no chart)"
+            label="Hole Size"
+            tooltip="0 = full pie (no hole), 1 = completely hollow. Recommended: 0.3-0.5"
           />
           <SliderWithInput
             value={holeSize ?? CHART_CONSTANTS.DEFAULT_HOLE_SIZE}
@@ -69,6 +62,9 @@ export const PropertiesForm: React.FC<PropertiesFormProps> = ({
             onChange={handleHoleSizeChange}
             inputProps={{ min: 0, max: 1, step: 0.05 }}
           />
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
+            {((holeSize ?? CHART_CONSTANTS.DEFAULT_HOLE_SIZE) * 100).toFixed(0)}% hole size
+          </Typography>
         </Box>
       )}
     </Box>

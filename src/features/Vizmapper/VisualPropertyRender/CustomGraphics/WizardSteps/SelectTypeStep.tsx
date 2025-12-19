@@ -86,7 +86,7 @@ export const SelectTypeStep: React.FC<SelectTypeStepProps> = ({
               <Typography fontSize="1rem">
                 {k === CustomGraphicsNameType.PieChart
                   ? 'Pie Chart'
-                  : 'Ring Chart'}
+                  : 'Donut Chart'}
               </Typography>
             </Box>
           )

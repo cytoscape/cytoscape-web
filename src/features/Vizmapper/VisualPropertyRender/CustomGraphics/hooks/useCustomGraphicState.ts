@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { IdType } from '../../../../../models/IdType'
 import { CustomGraphicsType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
@@ -11,10 +10,7 @@ import { ColorType } from '../../../../../models/VisualStyleModel/VisualProperty
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
 import { useWorkspaceStore } from '../../../../../data/hooks/stores/WorkspaceStore'
-import { PALETTES } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
-import { pickEvenly } from '../../../../../models/VisualStyleModel/impl/colorUtils'
 import { hasNumericColumns } from '../utils/numericColumnUtils'
-import { WizardStep } from '../WizardSteps/StepProgress'
 import { CustomGraphicKind } from '../WizardSteps/SelectTypeStep'
 
 // Default properties
@@ -58,16 +54,6 @@ export const useCustomGraphicState = ({
     return hasNumericColumns(nodeTable?.columns, nodeTable?.rows)
   }, [nodeTable])
 
-  // Determine initial state based on whether a custom graphic exists
-  const hasExistingGraphic =
-    initialValue && initialValue.name !== CustomGraphicsNameType.None
-
-  // Initialize step: if existing graphic, go to preview; otherwise start at step 0
-  const initialStep = hasExistingGraphic
-    ? WizardStep.Preview
-    : WizardStep.SelectType
-
-  const [currentStep, setCurrentStep] = React.useState<WizardStep>(initialStep)
   const [kind, setKind] = React.useState<CustomGraphicKind>(
     CustomGraphicsNameType.PieChart,
   )
@@ -108,10 +94,6 @@ export const useCustomGraphicState = ({
       setRingProps(defaultRingProps)
     }
 
-    // Set initial step based on whether we have an existing graphic
-    setCurrentStep(
-      hasExistingGraphic ? WizardStep.Preview : WizardStep.SelectType,
-    )
   }, [open, initialValue])
 
   const currentProps =
@@ -124,60 +106,25 @@ export const useCustomGraphicState = ({
       ? setPieProps(newProps as PieChartPropertiesType)
       : setRingProps(newProps as RingChartPropertiesType)
 
-  const isLastStep = currentStep === WizardStep.Preview
-
-  // Navigation functions
-  const goToNextStep = () => {
-    // Prevent navigation if no numeric properties and trying to go past SelectType step
-    if (currentStep === WizardStep.SelectType && !hasNumericProperties) {
-      return
-    }
-
-    if (currentStep < WizardStep.Preview) {
-      setCurrentStep(currentStep + 1)
-    }
-  }
-
-  const goToPreviousStep = () => {
-    if (currentStep > WizardStep.SelectType) {
-      setCurrentStep(currentStep - 1)
-    }
-  }
-
   // Handler to remove graphics and reset to defaults
   const handleRemoveCharts = () => {
     setPieProps(defaultPieProps)
     setRingProps(defaultRingProps)
     setKind(CustomGraphicsNameType.PieChart)
-    setCurrentStep(WizardStep.SelectType)
     return DEFAULT_CUSTOM_GRAPHICS
   }
 
-  // Handle attributes update
-  const handleAttributesUpdate = (
+  // Handle attributes and colors update (unified)
+  const handleAttributesAndColorsUpdate = (
     dataColumns: AttributeName[],
     colors: ColorType[],
+    colorScheme: string,
   ) => {
     updateCurrent({
       ...currentProps,
       cy_dataColumns: dataColumns,
       cy_colors: colors,
-    })
-  }
-
-  // Handle palette change
-  const handlePaletteChange = (scheme: string) => {
-    const palette = PALETTES[scheme]
-    const base = palette?.colors ?? []
-    const newColors = pickEvenly(
-      base,
-      currentProps.cy_dataColumns.length,
-    ) as ColorType[]
-
-    updateCurrent({
-      ...currentProps,
-      cy_colorScheme: scheme,
-      cy_colors: newColors,
+      cy_colorScheme: colorScheme,
     })
   }
 
@@ -193,18 +140,12 @@ export const useCustomGraphicState = ({
   }
 
   return {
-    currentStep,
-    setCurrentStep,
     kind,
     setKind,
     currentProps,
-    isLastStep,
     hasNumericProperties,
-    goToNextStep,
-    goToPreviousStep,
     handleRemoveCharts,
-    handleAttributesUpdate,
-    handlePaletteChange,
+    handleAttributesAndColorsUpdate,
     handlePropertiesUpdate,
   }
 }

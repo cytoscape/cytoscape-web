@@ -6,6 +6,7 @@ export { CustomGraphicRender } from './CustomGraphicRender'
 // Form components
 export { AttributesForm } from './Forms/AttributesForm'
 export { PaletteForm } from './Forms/PaletteForm'
+export { AttributesAndColorsForm } from './Forms/AttributesAndColorsForm'
 export { PropertiesForm } from './Forms/PropertiesForm'
 
 // Wizard step components
