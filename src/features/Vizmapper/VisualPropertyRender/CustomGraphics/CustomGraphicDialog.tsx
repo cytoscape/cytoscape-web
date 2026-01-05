@@ -7,13 +7,10 @@ import {
   Box,
   Button,
   Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   IconButton,
   Alert,
+  Divider,
 } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import DeleteIcon from '@mui/icons-material/Delete'
 import PieChartIcon from '@mui/icons-material/PieChart'
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
@@ -46,8 +43,8 @@ interface CustomGraphicDialogProps {
 }
 
 /**
- * Single-page custom graphics dialog with collapsible sections
- * Follows UX principles: progressive disclosure, immediate feedback, visual hierarchy
+ * Single-page custom graphics dialog with two-column layout
+ * Follows UX principles: immediate feedback, visual hierarchy
  */
 export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   open,
@@ -69,26 +66,6 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   // Determine if this is a new chart or editing existing
   const isNewChart =
     !initialValue || initialValue.name === CustomGraphicsNameType.None
-
-  // Accordion expansion state
-  const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
-    () => {
-      // For new charts, expand type selection; for editing, keep all collapsed
-      return isNewChart ? new Set(['type']) : new Set()
-    },
-  )
-
-  const handleSectionChange = (section: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev)
-      if (isExpanded) {
-        next.add(section)
-      } else {
-        next.delete(section)
-      }
-      return next
-    })
-  }
 
   // Handler to remove graphics and reset to defaults
   const handleRemoveChartsClick = () => {
@@ -113,7 +90,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     <Dialog
       open={open}
       onClose={onCancel}
-      maxWidth="md"
+      maxWidth="lg"
       fullWidth
       disableEscapeKeyDown={false}
     >
@@ -147,233 +124,256 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
       </DialogTitle>
 
       <DialogContent dividers sx={{ p: 0 }}>
-        {/* Sticky Preview - Always Visible */}
         <Box
           sx={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 10,
-            bgcolor: 'background.paper',
-            borderBottom: 1,
-            borderColor: 'divider',
-            p: 3,
-            mb: 0,
+            display: 'flex',
+            gap: 0,
+            height: '100%',
+            minHeight: 500,
           }}
         >
-          <CustomGraphicPreview
-            kind={kind}
-            properties={currentProps}
-            size={100}
-            showLabels={true}
-          />
-          {!isValid && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              Add at least one attribute to create a chart
-            </Alert>
-          )}
-        </Box>
-
-        {/* Collapsible Sections */}
-        <Box sx={{ p: 3, pt: 2 }}>
-          {/* Chart Type Selection */}
-          <Accordion
-            expanded={expandedSections.has('type')}
-            onChange={handleSectionChange('type')}
-            sx={{ mb: 2, boxShadow: 1 }}
+          {/* Left Column: Form Sections */}
+          <Box
+            sx={{
+              flex: '1 1 60%',
+              overflowY: 'auto',
+              borderRight: 1,
+              borderColor: 'divider',
+            }}
           >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  width: '100%',
-                }}
-              >
-                <PieChartIcon color="primary" />
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  Chart Type
-                </Typography>
-                <Box sx={{ ml: 'auto', mr: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {kind === CustomGraphicsNameType.PieChart
-                      ? 'Pie Chart'
-                      : 'Donut Chart'}
-                  </Typography>
+            <Box sx={{ p: 3 }}>
+              {/* Chart Type Selection */}
+              <Box sx={{ mb: 4 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1,
+                    mb: 2,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PieChartIcon color="primary" />
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      Chart Type
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      gap: 1,
+                      opacity: hasNumericProperties ? 1 : 0.5,
+                      pointerEvents: hasNumericProperties ? 'auto' : 'none',
+                    }}
+                  >
+                    {(
+                      [
+                        CustomGraphicsNameType.PieChart,
+                        CustomGraphicsNameType.RingChart,
+                      ] as const
+                    ).map((k) => {
+                      const selected = kind === k
+                      const Icon =
+                        k === CustomGraphicsNameType.PieChart
+                          ? PieChartIcon
+                          : DonutLargeIcon
+                      const label =
+                        k === CustomGraphicsNameType.PieChart
+                          ? 'Pie Chart'
+                          : 'Donut Chart'
+                      return (
+                        <Box
+                          key={k}
+                          onClick={() => hasNumericProperties && setKind(k)}
+                          sx={{
+                            cursor: hasNumericProperties
+                              ? 'pointer'
+                              : 'not-allowed',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.75,
+                            px: 1.5,
+                            py: 0.75,
+                            borderRadius: 1,
+                            border: selected ? 2 : 1,
+                            borderColor: selected ? 'primary.main' : 'divider',
+                            bgcolor: selected
+                              ? 'action.selected'
+                              : 'background.paper',
+                            transition: 'all 0.2s ease',
+                            '&:hover': hasNumericProperties
+                              ? {
+                                  borderColor: 'primary.main',
+                                  bgcolor: 'action.hover',
+                                }
+                              : {},
+                            opacity: hasNumericProperties ? 1 : 0.5,
+                          }}
+                        >
+                          <Icon
+                            sx={{
+                              fontSize: 18,
+                              color: selected
+                                ? 'primary.main'
+                                : 'text.secondary',
+                            }}
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: selected ? 600 : 400,
+                              color: selected ? 'primary.main' : 'text.primary',
+                            }}
+                          >
+                            {label}
+                          </Typography>
+                        </Box>
+                      )
+                    })}
+                  </Box>
+                </Box>
+                <Box sx={{ pl: 4 }}>
+                  {!hasNumericProperties && (
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                      <Typography variant="body2">
+                        This network does not have any numeric properties in the
+                        node table. Custom graphics require numeric data to
+                        display values.
+                      </Typography>
+                    </Alert>
+                  )}
                 </Box>
               </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              {!hasNumericProperties && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  <Typography variant="body2">
-                    This network does not have any numeric properties in the node
-                    table. Custom graphics require numeric data to display
-                    values.
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* Attributes & Colors */}
+              <Box sx={{ mb: 4 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mb: 2,
+                  }}
+                >
+                  <ListAltIcon color="primary" />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Attributes & Colors
                   </Typography>
+                </Box>
+                <Box sx={{ pl: 4 }}>
+                  {!hasNumericProperties && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      <Typography variant="body2">
+                        Select numeric attributes from your node table to
+                        visualize in the chart.
+                      </Typography>
+                    </Alert>
+                  )}
+                  <AttributesAndColorsForm
+                    dataColumns={currentProps.cy_dataColumns}
+                    colors={currentProps.cy_colors}
+                    colorScheme={currentProps.cy_colorScheme}
+                    currentNetworkId={currentNetworkId}
+                    onUpdate={handleAttributesAndColorsUpdate}
+                  />
+                </Box>
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* Properties */}
+              <Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mb: 2,
+                  }}
+                >
+                  <SettingsIcon color="primary" />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Chart Properties
+                  </Typography>
+                </Box>
+                <Box sx={{ pl: 4 }}>
+                  {currentProps.cy_dataColumns.length === 0 && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      <Typography variant="body2">
+                        Add attributes above to configure chart properties.
+                      </Typography>
+                    </Alert>
+                  )}
+                  <Box
+                    sx={{
+                      opacity:
+                        currentProps.cy_dataColumns.length === 0 ? 0.5 : 1,
+                      pointerEvents:
+                        currentProps.cy_dataColumns.length === 0
+                          ? 'none'
+                          : 'auto',
+                    }}
+                  >
+                    <PropertiesForm
+                      startAngle={currentProps.cy_startAngle}
+                      holeSize={
+                        kind === CustomGraphicsNameType.RingChart &&
+                        isRingChartProperties(currentProps)
+                          ? currentProps.cy_holeSize
+                          : undefined
+                      }
+                      kind={kind}
+                      onUpdate={handlePropertiesUpdate}
+                    />
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Right Column: Preview */}
+          <Box
+            sx={{
+              flex: '1 1 40%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              p: 3,
+              bgcolor: 'background.default',
+            }}
+          >
+            <Box
+              sx={{
+                width: '100%',
+                maxWidth: 300,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{ mb: 2, fontWeight: 600, color: 'text.secondary' }}
+              >
+                Preview
+              </Typography>
+              <CustomGraphicPreview
+                kind={kind}
+                properties={currentProps}
+                size={200}
+                showLabels={true}
+              />
+              {!isValid && (
+                <Alert severity="info" sx={{ mt: 3, width: '100%' }}>
+                  Add at least one attribute to create a chart
                 </Alert>
               )}
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: 3,
-                  py: 2,
-                  opacity: hasNumericProperties ? 1 : 0.5,
-                  pointerEvents: hasNumericProperties ? 'auto' : 'none',
-                }}
-              >
-                {(
-                  [
-                    CustomGraphicsNameType.PieChart,
-                    CustomGraphicsNameType.RingChart,
-                  ] as const
-                ).map((k) => {
-                  const selected = kind === k
-                  const Icon =
-                    k === CustomGraphicsNameType.PieChart
-                      ? PieChartIcon
-                      : DonutLargeIcon
-                  return (
-                    <Box
-                      key={k}
-                      onClick={() => hasNumericProperties && setKind(k)}
-                      sx={{
-                        cursor: hasNumericProperties
-                          ? 'pointer'
-                          : 'not-allowed',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        p: 2,
-                        borderRadius: 2,
-                        border: selected ? 2 : 1,
-                        borderColor: selected ? 'primary.main' : 'divider',
-                        bgcolor: selected
-                          ? 'action.selected'
-                          : 'background.paper',
-                        minWidth: 140,
-                        transition: 'all 0.2s ease',
-                        '&:hover': hasNumericProperties
-                          ? {
-                              borderColor: 'primary.main',
-                              boxShadow: 2,
-                              transform: 'translateY(-2px)',
-                            }
-                          : {},
-                      }}
-                    >
-                      <Icon
-                        sx={{
-                          fontSize: 48,
-                          color: selected ? 'primary.main' : 'text.secondary',
-                          mb: 1,
-                        }}
-                      />
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          fontWeight: selected ? 600 : 400,
-                          color: selected ? 'primary.main' : 'text.primary',
-                        }}
-                      >
-                        {k === CustomGraphicsNameType.PieChart
-                          ? 'Pie Chart'
-                          : 'Donut Chart'}
-                      </Typography>
-                    </Box>
-                  )
-                })}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-
-          {/* Attributes & Colors */}
-          <Accordion
-            expanded={expandedSections.has('attributes')}
-            onChange={handleSectionChange('attributes')}
-            disabled={!hasNumericProperties}
-            sx={{ mb: 2, boxShadow: 1 }}
-          >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  width: '100%',
-                }}
-              >
-                <ListAltIcon color="primary" />
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  Attributes & Colors
-                </Typography>
-                <Box sx={{ ml: 'auto', mr: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {currentProps.cy_dataColumns.length > 0
-                      ? `${currentProps.cy_dataColumns.length} attribute${
-                          currentProps.cy_dataColumns.length !== 1 ? 's' : ''
-                        }`
-                      : 'No attributes'}
-                  </Typography>
-                </Box>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <AttributesAndColorsForm
-                dataColumns={currentProps.cy_dataColumns}
-                colors={currentProps.cy_colors}
-                colorScheme={currentProps.cy_colorScheme}
-                currentNetworkId={currentNetworkId}
-                onUpdate={handleAttributesAndColorsUpdate}
-              />
-            </AccordionDetails>
-          </Accordion>
-
-          {/* Properties */}
-          <Accordion
-            expanded={expandedSections.has('properties')}
-            onChange={handleSectionChange('properties')}
-            disabled={currentProps.cy_dataColumns.length === 0}
-            sx={{ boxShadow: 1 }}
-          >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  width: '100%',
-                }}
-              >
-                <SettingsIcon color="primary" />
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  Chart Properties
-                </Typography>
-                <Box sx={{ ml: 'auto', mr: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {currentProps.cy_startAngle}° start angle
-                    {kind === CustomGraphicsNameType.RingChart &&
-                      isRingChartProperties(currentProps) &&
-                      ` • ${((currentProps.cy_holeSize ?? 0.4) * 100).toFixed(0)}% hole`}
-                  </Typography>
-                </Box>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <PropertiesForm
-                startAngle={currentProps.cy_startAngle}
-                holeSize={
-                  kind === CustomGraphicsNameType.RingChart &&
-                  isRingChartProperties(currentProps)
-                    ? currentProps.cy_holeSize
-                    : undefined
-                }
-                kind={kind}
-                onUpdate={handlePropertiesUpdate}
-              />
-            </AccordionDetails>
-          </Accordion>
+            </Box>
+          </Box>
         </Box>
       </DialogContent>
 
