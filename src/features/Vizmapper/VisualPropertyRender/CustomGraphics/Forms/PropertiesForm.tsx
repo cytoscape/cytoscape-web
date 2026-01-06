@@ -42,9 +42,6 @@ export const PropertiesForm: React.FC<PropertiesFormProps> = ({
           onChange={handleStartAngleChange}
           inputProps={{ min: 0, max: 360 }}
         />
-        <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
-          Rotate the starting position of the chart
-        </Typography>
       </Box>
 
       {/* Hole Size for Donut Chart only */}
@@ -62,9 +59,6 @@ export const PropertiesForm: React.FC<PropertiesFormProps> = ({
             onChange={handleHoleSizeChange}
             inputProps={{ min: 0, max: 1, step: 0.05 }}
           />
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
-            {((holeSize ?? CHART_CONSTANTS.DEFAULT_HOLE_SIZE) * 100).toFixed(0)}% hole size
-          </Typography>
         </Box>
       )}
     </Box>

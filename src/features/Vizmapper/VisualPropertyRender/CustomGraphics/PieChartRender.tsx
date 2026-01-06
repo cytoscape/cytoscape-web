@@ -16,6 +16,7 @@ interface PieChartRenderProps {
   width?: number
   height?: number
   showLabels?: boolean
+  showIndices?: boolean
 }
 
 /**
@@ -27,6 +28,7 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
   width,
   height,
   showLabels = false,
+  showIndices = false,
 }) => {
   const { chartSize, containerWidth, containerHeight } =
     calculateChartDimensions(size, width, height)
@@ -51,15 +53,20 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
   const sliceAngle = calculateSliceAngle(cy_dataColumns.length)
   const { outerRadius, viewBoxSize } = calculateRadii(chartSize)
 
+  // Convert start angle to match Cytoscape.js coordinate system
+  // Cytoscape uses: (90 - angle) % 360, where 90deg = 12 o'clock
+  // We need to apply the same conversion for alignment
+  const cytoscapeStartAngle = ((90 - cy_startAngle) % 360 + 360) % 360
+
   // Remove stroke for preview charts to prevent gaps (only use stroke for very large charts)
   const useStroke = chartSize > 120
 
   // Generate SVG path for pie chart slice
   const generateSlicePath = React.useCallback(
     (index: number, color: string) => {
-      const startAngleRad = degreesToRadians(cy_startAngle + index * sliceAngle)
+      const startAngleRad = degreesToRadians(cytoscapeStartAngle + index * sliceAngle)
       const endAngleRad = degreesToRadians(
-        cy_startAngle + (index + 1) * sliceAngle,
+        cytoscapeStartAngle + (index + 1) * sliceAngle,
       )
 
       const x1 = outerRadius * Math.cos(startAngleRad)
@@ -90,7 +97,7 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
         />
       )
     },
-    [cy_startAngle, sliceAngle, outerRadius, useStroke],
+    [cytoscapeStartAngle, sliceAngle, outerRadius, useStroke],
   )
 
   return (
@@ -109,7 +116,6 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
         height={chartSize}
         viewBox={`${-outerRadius} ${-outerRadius} ${viewBoxSize} ${viewBoxSize}`}
         style={{
-          transform: `rotate(${STYLES.ROTATION}deg)`,
           display: 'block',
         }}
         preserveAspectRatio="xMidYMid meet"
@@ -119,7 +125,36 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
             const color = cy_colors[index] || COLORS.DEFAULT
             // Reverse the render order to match Cytoscape.js
             const reversedIndex = cy_dataColumns.length - 1 - index
-            return generateSlicePath(reversedIndex, color)
+            const slicePath = generateSlicePath(reversedIndex, color)
+            
+            // Add index label if needed
+            if (showIndices) {
+              const currentSliceAngle = calculateSliceAngle(cy_dataColumns.length)
+              const sliceAngleRad = degreesToRadians(cytoscapeStartAngle + reversedIndex * currentSliceAngle + currentSliceAngle / 2)
+              const labelRadius = outerRadius * 0.6
+              const labelX = labelRadius * Math.cos(sliceAngleRad)
+              const labelY = labelRadius * Math.sin(sliceAngleRad)
+              
+              return (
+                <g key={index}>
+                  {slicePath}
+                  <text
+                    x={labelX}
+                    y={labelY}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill="#000000"
+                    fontSize={chartSize > 150 ? 14 : chartSize > 100 ? 12 : 10}
+                    fontWeight="bold"
+                    transform={`rotate(0 ${labelX} ${labelY})`}
+                  >
+                    {index + 1}
+                  </text>
+                </g>
+              )
+            }
+            
+            return slicePath
           })}
         </g>
       </svg>

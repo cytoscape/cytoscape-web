@@ -27,6 +27,9 @@ interface PaletteFormProps {
   dataColumns: AttributeName[]
   onUpdate: (colorScheme: string, colors: ColorType[]) => void
   hideGuidance?: boolean
+  anchorEl?: HTMLButtonElement | null
+  open?: boolean
+  onClose?: () => void
 }
 
 // Group palettes by type - calculated once at module level
@@ -44,17 +47,32 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
   dataColumns,
   onUpdate,
   hideGuidance = false,
+  anchorEl: externalAnchorEl,
+  open: externalOpen,
+  onClose: externalOnClose,
 }) => {
-  const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null)
+  const [internalAnchorEl, setInternalAnchorEl] =
+    React.useState<HTMLButtonElement | null>(null)
   const [activeTab, setActiveTab] = React.useState(0)
-  const open = Boolean(anchorEl)
+
+  // Use external control if provided, otherwise use internal state
+  const anchorEl =
+    externalAnchorEl !== undefined ? externalAnchorEl : internalAnchorEl
+  const open =
+    externalOpen !== undefined ? externalOpen : Boolean(internalAnchorEl)
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget)
+    if (externalAnchorEl === undefined) {
+      setInternalAnchorEl(event.currentTarget)
+    }
   }
 
   const handleClose = () => {
-    setAnchorEl(null)
+    if (externalOnClose) {
+      externalOnClose()
+    } else {
+      setInternalAnchorEl(null)
+    }
   }
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -75,6 +93,172 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
   // Get the current tab's palette keys
   const tabNames = Object.keys(PALETTE_GROUPS)
   const currentPaletteKeys = Object.values(PALETTE_GROUPS)[activeTab]
+
+  // Render popover content
+  const renderPopoverContent = () => (
+    <Box
+      sx={{
+        p: 2,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 2,
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ fontSize: '0.9rem' }}>
+          Select Color Palette
+        </Typography>
+      </Box>
+
+      {/* Tabs */}
+      <Tabs
+        value={activeTab}
+        onChange={handleTabChange}
+        variant="fullWidth"
+        sx={{
+          mb: 2,
+          '& .MuiTab-root': {
+            fontSize: '0.8rem',
+            textTransform: 'none',
+            minHeight: 32,
+          },
+        }}
+      >
+        {tabNames.map((tabName, index) => (
+          <Tab key={tabName} label={tabName} />
+        ))}
+      </Tabs>
+
+      {/* Palette Grid */}
+      <Box
+        sx={{
+          flex: 1,
+          overflow: 'auto',
+          display: 'flex',
+          justifyContent: 'center',
+          px: 1,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.5,
+            alignItems: 'stretch',
+            width: '100%',
+            maxWidth: 300,
+            py: 0.5,
+          }}
+        >
+          {currentPaletteKeys.map((paletteKey) => {
+            const palette = PALETTES[paletteKey]
+            if (!palette) return null
+            const paletteColors = palette.colors
+            return (
+              <Card
+                key={paletteKey}
+                sx={{
+                  cursor: 'pointer',
+                  border:
+                    colorScheme === paletteKey
+                      ? `2px solid ${COLORS.PRIMARY}`
+                      : `1px solid ${COLORS.BORDER}`,
+                  '&:hover': {
+                    borderColor: COLORS.PRIMARY,
+                    boxShadow: 3,
+                    transform: 'translateY(-2px)',
+                  },
+                  transition: 'all 0.2s ease',
+                  width: '100%',
+                  minHeight: 32,
+                }}
+                onClick={() => handlePaletteChange(paletteKey)}
+              >
+                <CardContent
+                  sx={{
+                    p: 1,
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    '&:last-child': {
+                      pb: 1,
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      height: 20,
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                      gap: 0.5,
+                    }}
+                  >
+                    {paletteColors.map((color, index) => (
+                      <Tooltip key={index} title={color}>
+                        <Box
+                          sx={{
+                            width: 16,
+                            height: 16,
+                            bgcolor: color,
+                            border: '1px solid',
+                            borderColor: 'grey.400',
+                            borderRadius: 0.5,
+                            '&:hover': {
+                              opacity: 0.8,
+                            },
+                          }}
+                        />
+                      </Tooltip>
+                    ))}
+                  </Box>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </Box>
+      </Box>
+    </Box>
+  )
+
+  // If controlled externally, only render the popover
+  if (externalAnchorEl !== undefined) {
+    return (
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        PaperProps={{
+          sx: {
+            maxWidth: 500,
+            width: 500,
+            height: 600,
+            overflow: 'hidden',
+          },
+        }}
+      >
+        {renderPopoverContent()}
+      </Popover>
+    )
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -141,150 +325,12 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
           sx: {
             maxWidth: 500,
             width: 500,
-            height: 800,
+            height: 600,
             overflow: 'hidden',
           },
         }}
       >
-        <Box
-          sx={{
-            p: 2,
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 2,
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ fontSize: '0.9rem' }}>
-              Select Color Palette
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => handlePaletteChange('')}
-              sx={{
-                fontSize: '0.75rem',
-                textTransform: 'none',
-                borderColor: !colorScheme ? COLORS.PRIMARY : COLORS.BORDER,
-                color: !colorScheme ? COLORS.PRIMARY : 'inherit',
-              }}
-            >
-              No Palette
-            </Button>
-          </Box>
-
-          {/* Tabs */}
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            variant="fullWidth"
-            sx={{
-              mb: 2,
-              '& .MuiTab-root': {
-                fontSize: '0.8rem',
-                textTransform: 'none',
-                minHeight: 32,
-              },
-            }}
-          >
-            {tabNames.map((tabName, index) => (
-              <Tab key={tabName} label={tabName} />
-            ))}
-          </Tabs>
-
-          {/* Palette Grid */}
-          <Box
-            sx={{
-              flex: 1,
-              overflow: 'auto',
-              display: 'flex',
-              justifyContent: 'center',
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 0.5,
-                alignItems: 'center',
-                width: '100%',
-                maxWidth: 300,
-              }}
-            >
-              {currentPaletteKeys.map((paletteKey) => {
-                const palette = PALETTES[paletteKey]
-                if (!palette) return null
-                const paletteColors = palette.colors
-                return (
-                  <Card
-                    key={paletteKey}
-                    sx={{
-                      cursor: 'pointer',
-                      border:
-                        colorScheme === paletteKey
-                          ? `2px solid ${COLORS.PRIMARY}`
-                          : `1px solid ${COLORS.BORDER}`,
-                      '&:hover': {
-                        borderColor: COLORS.PRIMARY,
-                        boxShadow: 3,
-                        transform: 'translateY(-2px)',
-                      },
-                      transition: 'all 0.2s ease',
-                      width: '100%',
-                    }}
-                    onClick={() => handlePaletteChange(paletteKey)}
-                  >
-                    <CardContent
-                      sx={{
-                        p: 0.5,
-                        textAlign: 'center',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'center',
-                          height: 16,
-                          borderRadius: 1,
-                          overflow: 'hidden',
-                          gap: 0.5,
-                        }}
-                      >
-                        {paletteColors.map((color, index) => (
-                          <Tooltip key={index} title={color}>
-                            <Box
-                              sx={{
-                                width: 16,
-                                height: 16,
-                                bgcolor: color,
-                                border: '1px solid',
-                                borderColor: 'grey.400',
-                                borderRadius: 0.5,
-                                '&:hover': {
-                                  opacity: 0.8,
-                                },
-                              }}
-                            />
-                          </Tooltip>
-                        ))}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </Box>
-          </Box>
-        </Box>
+        {renderPopoverContent()}
       </Popover>
 
       {/* Show current colors preview */}

@@ -9,7 +9,10 @@ import { PieChartRender as PieChartRenderComponent } from '../PieChartRender'
 import { RingChartRender as RingChartRenderComponent } from '../RingChartRender'
 import { CustomGraphicKind } from './SelectTypeStep'
 import { CHART_CONSTANTS, COLORS } from '../utils/constants'
-import { isPieChartProperties, isRingChartProperties } from '../utils/typeGuards'
+import {
+  isPieChartProperties,
+  isRingChartProperties,
+} from '../utils/typeGuards'
 
 interface CustomGraphicPreviewProps {
   kind: CustomGraphicKind
@@ -17,6 +20,8 @@ interface CustomGraphicPreviewProps {
   size?: number
   showLabels?: boolean
   sticky?: boolean
+  useGrayColors?: boolean
+  showIndices?: boolean
 }
 
 export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
@@ -25,10 +30,22 @@ export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
   size = 80,
   showLabels = false,
   sticky = false,
+  useGrayColors = false,
+  showIndices = false,
 }) => {
   const hasData = properties.cy_dataColumns.length > 0
   const chartTypeName =
     kind === CustomGraphicsNameType.PieChart ? 'Pie Chart' : 'Donut Chart'
+
+  // Create modified properties with gray colors if needed
+  const modifiedProperties = React.useMemo(() => {
+    if (!useGrayColors) return properties
+    const grayColor = '#CCCCCC' as const
+    return {
+      ...properties,
+      cy_colors: properties.cy_dataColumns.map(() => grayColor),
+    }
+  }, [properties, useGrayColors])
 
   const previewBox = (
     <Box
@@ -39,9 +56,6 @@ export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
         gap: 1.5,
       }}
     >
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-        Preview
-      </Typography>
       {hasData ? (
         <>
           <Box
@@ -53,26 +67,57 @@ export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
             }}
           >
             {kind === CustomGraphicsNameType.PieChart &&
-            isPieChartProperties(properties) ? (
+            isPieChartProperties(modifiedProperties) ? (
               <PieChartRenderComponent
-                properties={properties}
+                properties={modifiedProperties}
                 size={size}
-                showLabels={showLabels}
+                showLabels={showLabels && !showIndices}
+                showIndices={showIndices}
               />
             ) : kind === CustomGraphicsNameType.RingChart &&
-              isRingChartProperties(properties) ? (
+              isRingChartProperties(modifiedProperties) ? (
               <RingChartRenderComponent
-                properties={properties}
+                properties={modifiedProperties}
                 size={size}
-                showLabels={showLabels}
+                showLabels={showLabels && !showIndices}
+                showIndices={showIndices}
               />
             ) : null}
           </Box>
-          {showLabels && (
+          {showLabels && !showIndices && (
             <Typography variant="caption" color="text.secondary">
               {chartTypeName} • {properties.cy_dataColumns.length} slice
               {properties.cy_dataColumns.length !== 1 ? 's' : ''}
             </Typography>
+          )}
+          {showIndices && properties.cy_dataColumns.length > 0 && (
+            <Box sx={{ mt: 2, width: '100%', maxWidth: 280 }}>
+              <Box
+                component="ul"
+                sx={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  textAlign: 'left',
+                }}
+              >
+                {properties.cy_dataColumns.map((col, index) => (
+                  <Box
+                    key={index}
+                    component="li"
+                    sx={{
+                      py: 0.5,
+                      fontSize: '0.75rem',
+                      color: 'text.secondary',
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      {index + 1}. {col}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
           )}
         </>
       ) : (
@@ -115,4 +160,3 @@ export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
 
   return previewBox
 }
-

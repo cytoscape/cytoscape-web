@@ -2,17 +2,20 @@ import * as React from 'react'
 import {
   Box,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   IconButton,
-  SelectChangeEvent,
   Button,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Paper,
+  Alert,
   Tooltip,
 } from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
-import AddIcon from '@mui/icons-material/Add'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight'
+import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft'
 import { IdType } from '../../../../../models/IdType'
 import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
@@ -21,7 +24,7 @@ import { StepGuidance } from '../WizardSteps/StepGuidance'
 import { generateRandomColor } from '../../../../../models/VisualStyleModel/impl/colorUtils'
 import { getNumericColumnNames } from '../utils/numericColumnUtils'
 import { CHART_CONSTANTS, COLORS } from '../utils/constants'
-import { OrderControls, DataTableHeader, DataTableRow } from '../components'
+import { OrderControls } from '../components'
 
 interface AttributesFormProps {
   dataColumns: AttributeName[]
@@ -43,39 +46,105 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
   const tables = useTableStore((s) => s.tables)
   const nodeTable = tables[currentNetworkId]?.nodeTable
 
-  // only keep numeric columns
+  // Get all numeric columns
   const availableColumns: string[] = React.useMemo(() => {
     if (!nodeTable?.rows || !nodeTable?.columns) return []
     return getNumericColumnNames(nodeTable.columns, nodeTable.rows)
   }, [nodeTable])
 
-  // first unused numeric column or empty
-  const nextDefaultCol = React.useMemo(() => {
-    return availableColumns.find((c) => !dataColumns.includes(c)) || ''
+  // Get unselected columns
+  const unselectedColumns = React.useMemo(() => {
+    return availableColumns.filter((col) => !dataColumns.includes(col))
   }, [availableColumns, dataColumns])
 
-  const addRow = () =>
-    onUpdate(
-      [...dataColumns, nextDefaultCol],
-      [...colors, generateRandomColor()],
+  // Selection state for both lists
+  const [selectedAvailable, setSelectedAvailable] = React.useState<string[]>([])
+  const [selectedSelected, setSelectedSelected] = React.useState<string[]>([])
+
+  // Handle item selection in available list
+  const handleAvailableToggle = (column: string) => {
+    setSelectedAvailable((prev) =>
+      prev.includes(column)
+        ? prev.filter((c) => c !== column)
+        : [...prev, column],
     )
+  }
 
-  const removeRow = (i: number) =>
-    onUpdate(
-      dataColumns.filter((_, idx) => idx !== i),
-      colors.filter((_, idx) => idx !== i),
+  // Handle item selection in selected list
+  const handleSelectedToggle = (column: string) => {
+    setSelectedSelected((prev) =>
+      prev.includes(column)
+        ? prev.filter((c) => c !== column)
+        : [...prev, column],
     )
+  }
 
-  const updateRow = (i: number, column: AttributeName, color: ColorType) =>
-    onUpdate(
-      dataColumns.map((c, idx) => (idx === i ? column : c)),
-      colors.map((c, idx) => (idx === i ? color : c)),
-    )
+  // Move selected items from available to selected
+  const handleMoveToSelected = () => {
+    if (selectedAvailable.length === 0) return
+    const remaining = selectedAvailable.length + dataColumns.length
+    if (remaining > CHART_CONSTANTS.MAX_SLICES) {
+      // Only move what fits
+      const toMove = selectedAvailable.slice(
+        0,
+        CHART_CONSTANTS.MAX_SLICES - dataColumns.length,
+      )
+      const newColumns = [...dataColumns, ...toMove]
+      const newColors = [...colors, ...toMove.map(() => generateRandomColor())]
+      onUpdate(newColumns, newColors)
+      setSelectedAvailable([])
+    } else {
+      const newColumns = [...dataColumns, ...selectedAvailable]
+      const newColors = [
+        ...colors,
+        ...selectedAvailable.map(() => generateRandomColor()),
+      ]
+      onUpdate(newColumns, newColors)
+      setSelectedAvailable([])
+    }
+  }
 
-  const count = dataColumns.length
+  // Move all available items to selected
+  const handleMoveAllToSelected = () => {
+    const remaining = unselectedColumns.length + dataColumns.length
+    if (remaining > CHART_CONSTANTS.MAX_SLICES) {
+      const toMove = unselectedColumns.slice(
+        0,
+        CHART_CONSTANTS.MAX_SLICES - dataColumns.length,
+      )
+      const newColumns = [...dataColumns, ...toMove]
+      const newColors = [...colors, ...toMove.map(() => generateRandomColor())]
+      onUpdate(newColumns, newColors)
+    } else {
+      const newColumns = [...dataColumns, ...unselectedColumns]
+      const newColors = [
+        ...colors,
+        ...unselectedColumns.map(() => generateRandomColor()),
+      ]
+      onUpdate(newColumns, newColors)
+    }
+    setSelectedAvailable([])
+  }
 
+  // Move selected items from selected to available
+  const handleMoveToAvailable = () => {
+    if (selectedSelected.length === 0) return
+    const indices = selectedSelected.map((col) => dataColumns.indexOf(col))
+    const newColumns = dataColumns.filter((_, idx) => !indices.includes(idx))
+    const newColors = colors.filter((_, idx) => !indices.includes(idx))
+    onUpdate(newColumns, newColors)
+    setSelectedSelected([])
+  }
+
+  // Move all selected items to available
+  const handleMoveAllToAvailable = () => {
+    onUpdate([], [])
+    setSelectedSelected([])
+  }
+
+  // Handle reordering in selected list
   const moveRow = (from: number, to: number) => {
-    if (count <= 1) return
+    if (dataColumns.length <= 1) return
     const newCols = Array.from(dataColumns)
     const newColors = Array.from(colors)
     const [colMoved] = newCols.splice(from, 1)
@@ -88,182 +157,245 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
   const showGuidance = !hideGuidance && dataColumns.length === 0
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {/* Show guidance when no attributes are configured */}
-      {showGuidance && (
-        <StepGuidance
-          title="Getting Started"
-          description={`Add up to ${CHART_CONSTANTS.MAX_SLICES} node attributes to create chart slices. Click 'Add Node Attribute' to begin.`}
-        />
-      )}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Dual List Transfer Component */}
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+        {/* Available Attributes */}
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+            Available Attributes:
+          </Typography>
+          {unselectedColumns.length === 0 ? (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                minHeight: 200,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                {availableColumns.length === 0
+                  ? 'No numeric attributes available'
+                  : 'All attributes selected'}
+              </Typography>
+            </Paper>
+          ) : (
+            <Paper variant="outlined" sx={{ maxHeight: 400, overflow: 'auto' }}>
+              <List dense disablePadding>
+                {unselectedColumns.map((col, index) => {
+                  const isSelected = selectedAvailable.includes(col)
+                  return (
+                    <ListItem
+                      key={col}
+                      disablePadding
+                      onClick={() => handleAvailableToggle(col)}
+                      sx={{
+                        bgcolor: isSelected ? 'action.selected' : 'transparent',
+                        '&:hover': {
+                          bgcolor: isSelected
+                            ? 'action.selected'
+                            : 'action.hover',
+                        },
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <ListItemButton>
+                        <ListItemText
+                          primary={
+                            <Typography variant="body2">
+                              {index + 1}. {col}
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  )
+                })}
+              </List>
+            </Paper>
+          )}
+        </Box>
 
-      {/* Node Attributes & Colors */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <Typography variant="subtitle2">
-          Node Attributes &amp; Colors
-        </Typography>
+        {/* Transfer Buttons */}
         <Box
           sx={{
             display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            px: 1,
-            py: 0.5,
-            borderRadius: 1,
-            bgcolor: 'grey.100',
-            color: 'text.secondary',
-            fontSize: '0.75rem',
-            fontWeight: 'medium',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: 1,
+            pt: 3,
           }}
         >
-          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-            {dataColumns.length}
-          </Typography>
-          <Typography variant="caption">
-            / {CHART_CONSTANTS.MAX_SLICES} slices
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Column Headers */}
-      <DataTableHeader
-        columns={[
-          {
-            label: 'Order',
-            tooltip:
-              'Slice order determines which slice appears first in the chart',
-            width: '70px',
-          },
-          { label: 'Node Attribute', width: '1fr' },
-          { label: 'Color', width: '32px', align: 'center' },
-          { label: 'Remove', width: '32px', align: 'center' },
-        ]}
-      />
-
-      {dataColumns.map((col, i) => {
-        const options = availableColumns.filter(
-          (c) => c === col || !dataColumns.includes(c),
-        )
-        return (
-          <DataTableRow key={i} columns={['70px', '1fr', '32px', '32px']}>
-            {/* Slice Order with Up/Down arrows */}
-            <OrderControls
-              order={i + 1}
-              total={count}
-              onMoveUp={() => moveRow(i, (i - 1 + count) % count)}
-              onMoveDown={() => moveRow(i, (i + 1) % count)}
-              disabled={count <= 1}
-            />
-
-            <FormControl
-              size="small"
-              sx={{ '& .MuiInputBase-root': { height: 32, width: 340 } }}
-            >
-              <Select
-                labelId={`col-label-${i}`}
-                value={col}
-                onChange={(e: SelectChangeEvent<string>) =>
-                  updateRow(
-                    i,
-                    e.target.value,
-                    colors[i] || COLORS.DEFAULT_FALLBACK,
-                  )
+          <Tooltip title="Move selected to Selected Attributes">
+            <span>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleMoveToSelected}
+                disabled={
+                  selectedAvailable.length === 0 ||
+                  dataColumns.length >= CHART_CONSTANTS.MAX_SLICES
                 }
+                sx={{ minWidth: 40, px: 1 }}
               >
-                {options.map((c) => (
-                  <MenuItem key={c} value={c}>
-                    {c}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <input
-              type="color"
-              value={(colors[i] ?? COLORS.DEFAULT_FALLBACK) as ColorType}
-              onChange={(e) => updateRow(i, col, e.target.value as ColorType)}
-              style={{
-                width: 24,
-                height: 24,
-                border: 0,
-                padding: 0,
-                borderRadius: '3px',
-                cursor: 'pointer',
-              }}
-            />
-
-            <IconButton
-              size="small"
-              onClick={() => removeRow(i)}
-              disabled={count <= 1}
-              sx={{ justifySelf: 'center', p: 0.5 }}
-            >
-              <DeleteIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </DataTableRow>
-        )
-      })}
-
-      {/* Add Node Attribute button */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-          <Button
-            startIcon={<AddIcon />}
-            size="small"
-            onClick={addRow}
-            disabled={
-              nextDefaultCol === '' ||
-              dataColumns.length >= CHART_CONSTANTS.MAX_SLICES
-            }
-            title={
-              dataColumns.length >= CHART_CONSTANTS.MAX_SLICES
-                ? `Maximum of ${CHART_CONSTANTS.MAX_SLICES} slices reached`
-                : nextDefaultCol === ''
-                  ? 'No more numeric attributes available to add'
-                  : 'Add a numeric attribute to the chart'
-            }
-            sx={{ color: '#1976d2', textTransform: 'none' }}
-          >
-            {dataColumns.length >= CHART_CONSTANTS.MAX_SLICES
-              ? 'Maximum Slices Reached'
-              : nextDefaultCol === ''
-                ? 'No Attributes Available'
-                : 'ADD NODE ATTRIBUTE'}
-          </Button>
+                <ChevronRightIcon />
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title="Move all to Selected Attributes">
+            <span>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleMoveAllToSelected}
+                disabled={
+                  unselectedColumns.length === 0 ||
+                  dataColumns.length >= CHART_CONSTANTS.MAX_SLICES
+                }
+                sx={{ minWidth: 40, px: 1 }}
+              >
+                <KeyboardDoubleArrowRightIcon />
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title="Move selected to Available Attributes">
+            <span>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleMoveToAvailable}
+                disabled={selectedSelected.length === 0}
+                sx={{ minWidth: 40, px: 1 }}
+              >
+                <ChevronLeftIcon />
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title="Move all to Available Attributes">
+            <span>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleMoveAllToAvailable}
+                disabled={dataColumns.length === 0}
+                sx={{ minWidth: 40, px: 1 }}
+              >
+                <KeyboardDoubleArrowLeftIcon />
+              </Button>
+            </span>
+          </Tooltip>
         </Box>
 
-        {/* Show message when maximum slices reached */}
-        {dataColumns.length >= CHART_CONSTANTS.MAX_SLICES && (
-          <StepGuidance
-            title={`Maximum of ${CHART_CONSTANTS.MAX_SLICES} slices reached`}
-            description="You can remove existing attributes using the delete button (🗑️) to make room for different ones, or reorder them using the arrow buttons."
-            variant="warning"
-          />
-        )}
-
-        {/* Show helpful message when no numeric attributes are available */}
-        {nextDefaultCol === '' &&
-          availableColumns.length === 0 &&
-          dataColumns.length === 0 &&
-          dataColumns.length < CHART_CONSTANTS.MAX_SLICES && (
-            <StepGuidance
-              title="No numeric data available for charts"
-              description="To create pie or ring charts, your network nodes need numeric attributes (columns with numbers). Currently, no numeric columns were found in the node table."
-              variant="warning"
-            />
+        {/* Selected Attributes */}
+        <Box sx={{ flex: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1,
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              Selected Attributes:
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {dataColumns.length}/{CHART_CONSTANTS.MAX_SLICES}
+            </Typography>
+          </Box>
+          {dataColumns.length === 0 ? (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                minHeight: 200,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                No attributes selected
+              </Typography>
+            </Paper>
+          ) : (
+            <Paper variant="outlined" sx={{ maxHeight: 400, overflow: 'auto' }}>
+              <List dense disablePadding>
+                {dataColumns.map((col, index) => {
+                  const isSelected = selectedSelected.includes(col)
+                  return (
+                    <ListItem
+                      key={`${col}-${index}`}
+                      disablePadding
+                      onClick={() => handleSelectedToggle(col)}
+                      sx={{
+                        bgcolor: isSelected ? 'action.selected' : 'transparent',
+                        '&:hover': {
+                          bgcolor: isSelected
+                            ? 'action.selected'
+                            : 'action.hover',
+                        },
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <ListItemButton>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            width: '100%',
+                          }}
+                        >
+                          <OrderControls
+                            order={index + 1}
+                            total={dataColumns.length}
+                            onMoveUp={() =>
+                              moveRow(
+                                index,
+                                (index - 1 + dataColumns.length) %
+                                  dataColumns.length,
+                              )
+                            }
+                            onMoveDown={() =>
+                              moveRow(index, (index + 1) % dataColumns.length)
+                            }
+                            disabled={dataColumns.length <= 1}
+                          />
+                          <ListItemText
+                            primary={
+                              <Typography variant="body2">
+                                {index + 1}. {col}
+                              </Typography>
+                            }
+                            sx={{ flex: 1 }}
+                          />
+                        </Box>
+                      </ListItemButton>
+                    </ListItem>
+                  )
+                })}
+              </List>
+            </Paper>
           )}
-
-        {/* Show message when some attributes exist but none are available to add */}
-        {nextDefaultCol === '' &&
-          availableColumns.length > 0 &&
-          dataColumns.length < CHART_CONSTANTS.MAX_SLICES && (
-            <StepGuidance
-              title="All available attributes are already added"
-              description="You can remove existing attributes using the delete button (🗑️) to make room for different ones, or reorder them using the arrow buttons."
-              variant="warning"
-            />
-          )}
+        </Box>
       </Box>
+
+      {/* Warning messages */}
+      {dataColumns.length >= CHART_CONSTANTS.MAX_SLICES && (
+        <Alert severity="warning">
+          Maximum of {CHART_CONSTANTS.MAX_SLICES} attributes reached. Remove
+          attributes to select different ones.
+        </Alert>
+      )}
+      {availableColumns.length === 0 && (
+        <Alert severity="info">
+          No numeric attributes available in the node table.
+        </Alert>
+      )}
     </Box>
   )
 }
