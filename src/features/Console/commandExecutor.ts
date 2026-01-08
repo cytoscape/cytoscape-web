@@ -214,6 +214,116 @@ const runNodeList = (
   }
 }
 
+const normalizeProperty = (
+  prop: string
+): 'x' | 'y' | 'z' | undefined => {
+  const p = prop
+    .normalize('NFKC')
+    .trim()
+    .toLowerCase()
+    .replace(/[\u00A0]/g, ' ')     // NBSP -> space
+    .replace(/[_\s]+/g, ' ')       // collapse underscores/whitespace
+    .trim()
+
+  if (p === 'x' || p === 'x location') return 'x'
+  if (p === 'y' || p === 'y location') return 'y'
+  if (p === 'z' || p === 'z location') return 'z'
+  console.log(`Unknown property normalization for "${prop}" -> "${p}"`)
+  return undefined
+}
+
+
+const runNodeSetProperties = (
+  parsed: ParsedCommand,
+  currentNetworkId: IdType,
+): CommandResult => {
+  const networkId = resolveNetworkId(parsed.args.network, currentNetworkId)
+  if (!networkId) {
+    return { status: 'error', messages: ['Network not found'] }
+  }
+
+  const nodeIds = resolveIdsFromSpec('node', parsed.args.nodelist, networkId)
+  if (nodeIds.length === 0) {
+    return { status: 'warning', messages: ['No nodes matched the criteria'] }
+  }
+
+  const propertyListRaw = parsed.args.propertylist ?? ''
+  const valueListRaw = parsed.args.valuelist ?? ''
+  const props = toList(propertyListRaw)
+  const values = toList(valueListRaw)
+
+  if (props.length === 0 || values.length === 0) {
+    return {
+      status: 'error',
+      messages: ['propertyList and valueList are required'],
+    }
+  }
+
+  if (props.length !== values.length) {
+    return {
+      status: 'error',
+      messages: [
+        `propertyList length (${props.length}) does not match valueList length (${values.length})`,
+      ],
+    }
+  }
+
+  const pairs: Array<{ key: 'x' | 'y' | 'z'; value: number }> = []
+  for (let i = 0; i < props.length; i++) {
+    const key = normalizeProperty(props[i])
+    if (!key) {
+      return {
+        status: 'error',
+        messages: [
+          `Unknown property "${props[i]}"`,
+          'Supported: x (X Location), y (Y Location), z (Z Location)',
+        ],
+      }
+    }
+    const num = Number(values[i])
+    if (Number.isNaN(num)) {
+      return {
+        status: 'error',
+        messages: [`Value "${values[i]}" is not a number`],
+      }
+    }
+    pairs.push({ key, value: num })
+  }
+
+  const viewModelStore = useViewModelStore.getState()
+  const updateNodePositions = viewModelStore.updateNodePositions
+  const getViewModel = viewModelStore.getViewModel
+  const workspaceStore = useWorkspaceStore.getState()
+
+  const currentView = getViewModel(networkId)
+  const positionMap: Map<IdType, [number, number, number?]> = new Map()
+  nodeIds.forEach((id) => {
+    const nodeView = currentView?.nodeViews[id]
+    const existingX = nodeView?.x ?? 0
+    const existingY = nodeView?.y ?? 0
+    const existingZ = nodeView?.z ?? 0
+    let x = existingX
+    let y = existingY
+    let z = existingZ
+    pairs.forEach((p) => {
+      if (p.key === 'x') x = p.value
+      if (p.key === 'y') y = p.value
+      if (p.key === 'z') z = p.value
+    })
+    positionMap.set(id, [x, y, z])
+  })
+
+  updateNodePositions(networkId, positionMap)
+  workspaceStore.setNetworkModified(networkId, true)
+
+  return {
+    status: 'success',
+    messages: [
+      `Set ${pairs.length} propert${pairs.length === 1 ? 'y' : 'ies'} for ${nodeIds.length} node(s)`,
+    ],
+  }
+}
+
 const runNetworkAdd = (
   parsed: ParsedCommand,
   currentNetworkId: IdType,
@@ -343,9 +453,11 @@ export const executeCommand = (parsed: ParsedCommand): CommandResult => {
     case 'node':
       if (parsed.command === 'list') {
         result = runNodeList(parsed, currentNetworkId)
+      } else if (parsed.command === 'set' && parsed.subcommand === 'properties') {
+        result = runNodeSetProperties(parsed, currentNetworkId)
       } else {
-      result = { status: 'error', messages: [`Unknown node command "${parsed.command}"`] }
-    }
+        result = { status: 'error', messages: [`Unknown node command "${parsed.command}"`] }
+      }
       break
     case 'help':
       result = {
@@ -356,6 +468,7 @@ export const executeCommand = (parsed: ParsedCommand): CommandResult => {
           'network add network=<id|name|current> nodeList=<all|selected|...> edgeList=<all|selected|...>',
           'node list network=<id|name|current> nodeList=<all|selected|...>',
           'node list properties',
+          'node set properties propertyList=<...> valueList=<...> nodeList=<...> [bypass=true|false]',
         ],
       }
       break

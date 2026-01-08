@@ -82,6 +82,31 @@ Add a bottom-console tab that lets users type textual commands to manipulate Cyt
 
     - Future: extend this list with visual style-related properties (e.g., size, color) once style setters are exposed in the command system.
 
+## Command Design (namespace: `node` command: `set properties`)
+
+- **node set properties**: Set the value of one or more properties for the specified nodes.
+
+  - **Arguments**
+    - `bypass=true|false`: When true, locks a visual property (analogous to the “Bypass” column) so mappings are overridden. For position fields, this simply applies the value; for future style fields, bypass means explicit overrides.
+    - `network=current|[column:value|network name]`: Target network; defaults to current. (We do not expose SUID; use network ID or name.)
+    - `nodeList=[nodeColumn:value|node name,...]|all|selected|unselected`: Node selection. `selected/unselected/all` reflect current selection; `COLUMN:VALUE` filters table rows; bare values match the name column; comma-separated values are supported.
+    - `propertyList=<string>`: Comma-separated property names. Use `node list properties` for discoverability. Initial supported: `X Location`, `Y Location`, `Z Location` (maps to x/y/z position fields).
+    - `valueList=<string>`: Comma-separated values aligned to `propertyList` entries.
+  - **Behavior**
+
+    - Resolve network and nodes per filters; apply each property/value pair to the matching nodes. For x/y/z, update node positions in `ViewModelStore` (and persist if required). For future style properties, apply via style setters (bypass when requested).
+    - If counts mismatch between `propertyList` and `valueList`, return an error. If no nodes match, return a warning. If an unknown property is passed, return an error and list supported properties.
+
+    Example output:
+
+    ```
+    node set properties nodeList=selected propertyList="X Location" valueList=0
+      Setting properties for node Q96HN2 (SUID: 5965)
+      Node X Location set to 0
+      Setting properties for node Q9C0C9 (SUID: 5873)
+      Node X Location set to 0
+    ```
+
 ## Execution Pipeline
 
 - New feature folder `src/features/Console` with:

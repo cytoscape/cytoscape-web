@@ -45,11 +45,15 @@ export const parseCommand = (input: string): ParsedCommand | { error: string } =
       args.target = suffix
     }
   } else {
-    // For node list properties (free-form variant)
-    if (namespace === 'node' && command === 'list' && remaining.length > 0) {
+    // For node list/set properties (free-form variant)
+    if (namespace === 'node' && remaining.length > 0) {
       const tail = remaining.join(' ').toLowerCase().trim()
-      if (tail === 'properties') {
+      if (command === 'list' && tail === 'properties') {
         subcommand = 'properties'
+      }
+      if (command === 'set' && tail.startsWith('properties')) {
+        subcommand = 'properties'
+        // allow trailing tokens to still parse key/value pairs if provided
       }
     }
     remaining.forEach((token) => {
