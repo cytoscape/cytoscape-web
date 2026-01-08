@@ -61,8 +61,8 @@ import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
+import BottomPanelTabs from './BottomPanelTabs'
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
-const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
 
 /**
  * Main workspace editor component that provides the layout and network management interface
@@ -384,114 +384,114 @@ const WorkSpaceEditor = (): JSX.Element => {
         height: '100%',
         width: '100%',
         overflow: 'hidden',
+        '& .allotment': { height: '100%' },
       }}
     >
       <Allotment data-testid="workspace-editor">
-        <Allotment
-          vertical
-          onChange={(sizes: number[]) => {
-            // sizes[0] = height of top pane (network list, network renderer, vizmapper)
-            // sizes[1] = height of bottom pane (table browser)
-            const [topPaneHeight, bottomPaneHeight] = sizes
-            setAllotmentDimensions([topPaneHeight, bottomPaneHeight])
-            setTableBrowserHeight(bottomPaneHeight)
-          }}
+        <Allotment.Pane
+          maxSize={panels.left === PanelState.OPEN ? 450 : 18}
+          minSize={18}
         >
-          <Allotment>
-            <Allotment.Pane
-              maxSize={panels.left === PanelState.OPEN ? 450 : 18}
+          {panels.left === PanelState.CLOSED ? (
+            <Box
+              data-testid="workspace-editor-left-panel-closed"
+              sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              {panels.left === PanelState.CLOSED ? (
-                <Box
-                  data-testid="workspace-editor-left-panel-closed"
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Tooltip title="Open network panel" arrow placement="right">
-                    <ChevronRight
-                      data-testid="workspace-editor-open-left-panel-button"
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
-                    />
-                  </Tooltip>
-                </Box>
-              ) : (
-                <Box
-                  data-testid="workspace-editor-left-panel-open"
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    boxSizing: 'border-box',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      minHeight: '3em',
-                      flexGrow: 1,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <NetworkBrowserPanel
-                      allotmentDimensions={allotmentDimensions}
-                    />
-                  </Box>
-                  <Box sx={{ borderTop: '1px solid #AAAAAA' }}>
-                    <LayoutToolsBasePanel />
-                  </Box>
-                </Box>
-              )}
-            </Allotment.Pane>
-            <Allotment.Pane data-testid="workspace-editor-center-pane">
-              <Outlet />
-              <NetworkPanel
-                networkId={currentNetworkId}
-                failedToLoad={failedToLoad}
-              />
-            </Allotment.Pane>
-          </Allotment>
-          <Allotment.Pane
-            data-testid="workspace-editor-bottom-pane"
-            minSize={28}
-            preferredSize={'20%'} // 20% of the total height is the default size
-            maxSize={
-              // Max size is determined by the window height
-              panels.bottom === PanelState.OPEN ? window.innerHeight * 0.9 : 18
-            }
+              <Tooltip title="Open network panel" arrow placement="right">
+                <ChevronRight
+                  data-testid="workspace-editor-open-left-panel-button"
+                  sx={{ cursor: 'pointer' }}
+                  onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
+                />
+              </Tooltip>
+            </Box>
+          ) : (
+            <Box
+              data-testid="workspace-editor-left-panel-open"
+              sx={{
+                width: '100%',
+                height: '100%',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  minHeight: '3em',
+                  flexGrow: 1,
+                  overflow: 'hidden',
+                }}
+              >
+                <NetworkBrowserPanel allotmentDimensions={allotmentDimensions} />
+              </Box>
+              <Box sx={{ borderTop: '1px solid #AAAAAA' }}>
+                <LayoutToolsBasePanel />
+              </Box>
+            </Box>
+          )}
+        </Allotment.Pane>
+
+        <Allotment.Pane>
+          <Box
+            sx={{
+              height: '100%',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
           >
-            <Suspense
-              fallback={
-                <div data-testid="workspace-editor-table-browser-loading">
-                  {`Loading from NDEx`}
-                </div>
-              }
-              key={currentNetworkId}
+            <Allotment
+              vertical
+              defaultSizes={[80, 20]}
+              onChange={(sizes: number[]) => {
+                const [topPaneHeight, bottomPaneHeight] = sizes
+                setAllotmentDimensions([topPaneHeight, bottomPaneHeight])
+                setTableBrowserHeight(bottomPaneHeight)
+              }}
             >
-              <TableBrowser
-                setHeight={setTableBrowserHeight}
-                height={tableBrowserHeight}
-                currentNetworkId={
-                  activeNetworkView === undefined || activeNetworkView === ''
-                    ? currentNetworkId
-                    : activeNetworkView
+              <Allotment.Pane data-testid="workspace-editor-center-pane">
+                <Outlet />
+                <NetworkPanel
+                  networkId={currentNetworkId}
+                  failedToLoad={failedToLoad}
+                />
+              </Allotment.Pane>
+              <Allotment.Pane
+                data-testid="workspace-editor-bottom-pane"
+                minSize={100}
+                preferredSize={Math.max(tableBrowserHeight, 200)}
+                maxSize={
+                  panels.bottom === PanelState.OPEN
+                    ? window.innerHeight * 0.7
+                    : 18
                 }
-              />
-              <JoinTableToNetworkForm
-                handleClose={() => showTableJoinForm(false)}
-              />
-              <CreateNetworkFromTableForm
-                handleClose={() => showCreateNetworkFromTableForm(false)}
-              />
-            </Suspense>
-          </Allotment.Pane>
-        </Allotment>
+              >
+                <Suspense>
+                  <BottomPanelTabs
+                    currentNetworkId={currentNetworkId}
+                    tableBrowserHeight={tableBrowserHeight}
+                    setTableBrowserHeight={setTableBrowserHeight}
+                    activeNetworkView={activeNetworkView}
+                  />
+                  <JoinTableToNetworkForm
+                    handleClose={() => showTableJoinForm(false)}
+                  />
+                  <CreateNetworkFromTableForm
+                    handleClose={() => showCreateNetworkFromTableForm(false)}
+                  />
+                </Suspense>
+              </Allotment.Pane>
+            </Allotment>
+          </Box>
+        </Allotment.Pane>
 
         {panels.right === PanelState.OPEN && (
           <Allotment.Pane data-testid="workspace-editor-right-pane">

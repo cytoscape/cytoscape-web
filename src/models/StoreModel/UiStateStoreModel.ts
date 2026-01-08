@@ -42,6 +42,7 @@ export interface UiStateAction {
     tableDisplayConfiguration: TableDisplayConfiguration,
   ) => void
   setCustomNetworkTabName: (rendererId: IdType, name: string) => void
+  setBottomPanelTabIndex: (index: number) => void
 }
 
 export type UiStateStore = UiState & UiStateAction

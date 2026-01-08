@@ -958,13 +958,34 @@ const CyjsRenderer = ({
         }
       }
 
+      const fitSelectedFunction = (): void => {
+        if (cy !== null) {
+          const selected = cy.elements(':selected')
+          if (selected != null && selected.length > 0) {
+            cy.fit(selected)
+          } else {
+            cy.fit()
+          }
+        }
+      }
+
+      const refreshFunction = (): void => {
+        if (cy !== null) {
+          cy.resize()
+          cy.elements().update()
+          cy.style().update()
+        }
+      }
+
       // Register all renderer functions for the current network id
       setRendererFunction('cyjs', 'fit', fitFunction, id)
+      setRendererFunction('cyjs', 'fitSelected', fitSelectedFunction, id)
       setRendererFunction('cyjs', 'exportPng', exportPngFunction, id)
       setRendererFunction('cyjs', 'exportPdf', exportPdfFunction, id)
       setRendererFunction('cyjs', 'exportSvg', exportSvgFunction, id)
       setRendererFunction('cyjs', 'width', widthFunction, id)
       setRendererFunction('cyjs', 'height', heightFunction, id)
+      setRendererFunction('cyjs', 'refresh', refreshFunction, id)
     },
     [cy, id],
   )

@@ -111,6 +111,18 @@ export const setActiveNetworkBrowserPanelIndex = (
 }
 
 /**
+ * Set bottom panel tab index
+ */
+export const setBottomPanelTabIndex = (ui: Ui, index: number): Ui => {
+  return {
+    ...ui,
+    bottomPanelUi: {
+      activeTabIndex: index,
+    },
+  }
+}
+
+/**
  * Set table UI state
  */
 export const setTableState = (ui: Ui, tableUiState: TableUIState): Ui => {
@@ -307,4 +319,3 @@ export const deserializeColumnUIKey = (
 
   return [str1, str2, str3]
 }
-

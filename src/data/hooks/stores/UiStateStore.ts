@@ -37,6 +37,9 @@ export const DEFAULT_UI_STATE = {
   networkViewUi: {
     activeTabIndex: 0,
   },
+  bottomPanelUi: {
+    activeTabIndex: 0,
+  },
 }
 
 // Re-export for compatibility
@@ -99,6 +102,12 @@ export const useUiStateStore = create(
     setActiveNetworkBrowserPanelIndex: (index: number) => {
       set((state) => {
         state.ui = UiImpl.setActiveNetworkBrowserPanelIndex(state.ui, index)
+        return state
+      })
+    },
+    setBottomPanelTabIndex: (index: number) => {
+      set((state) => {
+        state.ui = UiImpl.setBottomPanelTabIndex(state.ui, index)
         return state
       })
     },

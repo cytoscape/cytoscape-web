@@ -1,5 +1,6 @@
 import { IdType } from '../IdType'
 import { VisualStyleOptions } from '../VisualStyleModel/VisualStyleOptions'
+import { BottomPanelUiState } from './BottomPanelUi'
 import { NetworkBrowserPanelUIState } from './NetworkBrowserPanelState'
 import { NetworkViewUIState } from './NetworkViewUI'
 import { Panel } from './Panel'
@@ -35,4 +36,6 @@ export interface Ui {
 
   // Custom network tab name
   customNetworkTabName?: Record<string, string>
+
+  bottomPanelUi?: BottomPanelUiState
 }
