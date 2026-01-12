@@ -359,6 +359,30 @@ export const addNodeViewDirect = (
 }
 
 /**
+ * Add a node view with position
+ * 
+ * @param networkView - The network view to add the node view to
+ * @param nodeId - The ID of the node
+ * @param position - The position [x, y, z?] of the node
+ * @returns Updated network view with the new node view
+ */
+export const addNodeViewWithPosition = (
+  networkView: NetworkView,
+  nodeId: IdType,
+  position: [number, number, number?],
+): NetworkView => {
+  const nodeView: NodeView = {
+    id: nodeId,
+    x: position[0],
+    y: position[1],
+    z: position[2],
+    values: new Map(),
+  }
+  
+  return addNodeViewDirect(networkView, nodeView)
+}
+
+/**
  * Add a single edge view
  */
 export const addEdgeViewDirect = (

@@ -24,6 +24,8 @@ export const UndoCommandType = {
   APPLY_LAYOUT: 'APPLY_LAYOUT',
   DELETE_NODES: 'DELETE_NODES',
   DELETE_EDGES: 'DELETE_EDGES',
+  CREATE_NODES: 'CREATE_NODES',
+  CREATE_EDGES: 'CREATE_EDGES',
 } as const
 
 export type UndoCommandType =

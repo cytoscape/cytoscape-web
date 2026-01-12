@@ -69,6 +69,65 @@ export const insertRows = (
   }
 }
 
+/**
+ * Add a row with default values for all columns
+ * 
+ * @param table - The table to add the row to
+ * @param rowId - The ID for the new row
+ * @param customValues - Optional custom values to override defaults
+ * @returns Updated table with the new row
+ */
+export const addRowWithDefaults = (
+  table: Table,
+  rowId: IdType,
+  customValues?: Partial<Record<AttributeName, ValueType>>,
+): Table => {
+  // Create default values for all columns
+  const defaultRow: Record<AttributeName, ValueType> = {}
+  
+  table.columns.forEach((column) => {
+    // Set default value based on type
+    switch (column.type) {
+      case ValueTypeName.String:
+        defaultRow[column.name] = ''
+        break
+      case ValueTypeName.Long:
+      case ValueTypeName.Integer:
+      case ValueTypeName.Double:
+        defaultRow[column.name] = 0
+        break
+      case ValueTypeName.Boolean:
+        defaultRow[column.name] = false
+        break
+      case ValueTypeName.ListString:
+        defaultRow[column.name] = []
+        break
+      case ValueTypeName.ListLong:
+      case ValueTypeName.ListInteger:
+      case ValueTypeName.ListDouble:
+        defaultRow[column.name] = []
+        break
+      case ValueTypeName.ListBoolean:
+        defaultRow[column.name] = []
+        break
+      default:
+        defaultRow[column.name] = ''
+    }
+  })
+  
+  // Override with custom values if provided
+  if (customValues) {
+    Object.keys(customValues).forEach((key) => {
+      const value = customValues[key]
+      if (value !== undefined) {
+        defaultRow[key] = value
+      }
+    })
+  }
+  
+  return insertRow(table, [rowId, defaultRow])
+}
+
 export const updateRow = (
   table: Table,
   idRowPair: [IdType, Record<AttributeName, ValueType>],
