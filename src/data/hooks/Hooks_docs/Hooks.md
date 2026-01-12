@@ -29,6 +29,13 @@ Hooks typically follow a consistent pattern:
 - `useSaveCyNetworkToNDEx`, `useSaveCyNetworkCopyToNDEx`, `useSaveWorkspaceToNDEx`: Persist to NDEx
 - `useOpenInCytoscapeDesktop`: Hand off to Cytoscape Desktop
 
+### Network Modification
+
+- `useCreateNode`: Create nodes with full store integration and undo/redo support
+- `useCreateEdge`: Create edges with full store integration and undo/redo support
+- `useDeleteNodes`: Delete nodes with automatic edge cleanup, bypass removal, and undo/redo support
+- `useDeleteEdges`: Delete edges with bypass removal and undo/redo support
+
 ### Workspace and Tables
 
 - `useWorkspaceManager`, `useWorkspaceData`: Manage workspace lifecycle and composing panels
@@ -138,6 +145,129 @@ const MyComponent = () => {
 - Page reloads automatically after successful completion to apply all changes
 
 **See also:** `Hooks_docs/useLoadWorkspace.md` for detailed documentation
+
+### useDeleteNodes
+
+Deletes nodes from a network with full store integration and automatic cleanup. This hook provides a function that:
+
+1. Validates the network and node IDs
+2. Captures node and edge data for undo/redo (views, table rows)
+3. Deletes nodes from the network topology (automatically cascades to connected edges)
+4. Removes node and edge views from the view model
+5. Cleans up visual style bypasses for all deleted elements
+6. Deletes table rows for nodes and edges
+7. Updates network summary counts
+8. Records the operation for undo/redo
+
+**Usage:**
+
+```typescript
+import { useDeleteNodes } from '../data/hooks/useDeleteNodes'
+
+const MyComponent = () => {
+  const { deleteNodes } = useDeleteNodes()
+
+  const handleDelete = (networkId: string, nodeIds: string[]) => {
+    const result = deleteNodes(networkId, nodeIds)
+    
+    if (result.success) {
+      console.log(`Deleted ${result.deletedNodeCount} nodes and ${result.deletedEdgeCount} edges`)
+    } else {
+      console.error(`Delete failed: ${result.error}`)
+    }
+  }
+}
+```
+
+**Parameters:**
+
+- `networkId`: The ID of the network to delete nodes from
+- `nodeIds`: Array of node IDs to delete
+
+**Returns:**
+
+- `DeleteNodesResult` object with:
+  - `success`: Whether the operation succeeded
+  - `deletedNodeCount`: Number of nodes deleted
+  - `deletedEdgeCount`: Number of edges deleted (connected to deleted nodes)
+  - `error`: Error message if the operation failed
+
+**Behavior:**
+
+- Automatically deletes all edges connected to the deleted nodes
+- Removes all visual style bypasses for deleted nodes and edges
+- Updates network summary counts to reflect the new state
+- Records full state for undo/redo (can restore all deleted nodes, edges, views, table data)
+- Does NOT automatically clear selection (caller should handle this)
+
+**Integration with Manager Hooks:**
+
+This hook handles the deletion logic that was previously spread across:
+- `useTableManager`: Table row cleanup
+- `useNetworkViewManager`: View object cleanup and selection updates
+- `useNetworkSummaryManager`: Summary count updates
+
+### useDeleteEdges
+
+Deletes edges from a network with full store integration and automatic cleanup. This hook provides a function that:
+
+1. Validates the network and edge IDs
+2. Captures edge data for undo/redo (views, table rows)
+3. Deletes edges from the network topology
+4. Removes edge views from the view model
+5. Cleans up visual style bypasses for deleted edges
+6. Deletes table rows for edges
+7. Updates network summary counts
+8. Records the operation for undo/redo
+
+**Usage:**
+
+```typescript
+import { useDeleteEdges } from '../data/hooks/useDeleteEdges'
+
+const MyComponent = () => {
+  const { deleteEdges } = useDeleteEdges()
+
+  const handleDelete = (networkId: string, edgeIds: string[]) => {
+    const result = deleteEdges(networkId, edgeIds)
+    
+    if (result.success) {
+      console.log(`Deleted ${result.deletedEdgeCount} edges`)
+    } else {
+      console.error(`Delete failed: ${result.error}`)
+    }
+  }
+}
+```
+
+**Parameters:**
+
+- `networkId`: The ID of the network to delete edges from
+- `edgeIds`: Array of edge IDs to delete
+
+**Returns:**
+
+- `DeleteEdgesResult` object with:
+  - `success`: Whether the operation succeeded
+  - `deletedEdgeCount`: Number of edges deleted
+  - `error`: Error message if the operation failed
+
+**Behavior:**
+
+- Does NOT delete nodes (even if they become disconnected)
+- Removes all visual style bypasses for deleted edges
+- Updates network summary counts to reflect the new state
+- Records full state for undo/redo (can restore all deleted edges, views, table data)
+- Does NOT automatically clear selection (caller should handle this)
+
+**Integration with Manager Hooks:**
+
+Like `useDeleteNodes`, this hook works alongside the manager hooks:
+- `useTableManager`: Also handles table cleanup via DELETE events
+- `useNetworkViewManager`: Also handles view cleanup via DELETE events
+- `useNetworkSummaryManager`: Also handles summary updates via DELETE events
+
+The redundancy is intentional and provides a safety net for direct store calls.
 
 ## Future Improvements
 

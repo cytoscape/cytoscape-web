@@ -18,9 +18,6 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useLoadCyNetwork } from '../../data/hooks/useLoadCyNetwork'
 import { useLoadNetworkSummaries } from '../../data/hooks/useLoadNetworkSummaries'
-import { useNetworkSummaryManager } from '../../data/hooks/useNetworkSummaryManager'
-import { useNetworkViewManager } from '../../data/hooks/useNetworkViewManager'
-import { useTableManager } from '../../data/hooks/useTableManager'
 import { useWorkspaceManager } from '../../data/hooks/useWorkspaceManager'
 import { IdType } from '../../models/IdType'
 import { LayoutEngine } from '../../models/LayoutModel'
@@ -87,8 +84,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   useAppManager() // Register dynamically loaded apps to the store
 
   useWorkspaceManager()
-  useNetworkViewManager()
-  useTableManager()
 
   // Subscribers for optional features
   useHierarchyViewerManager()
@@ -187,8 +182,6 @@ const WorkSpaceEditor = (): JSX.Element => {
       setNetworkModified(currentNetworkId, true)
     }
   })
-
-  useNetworkSummaryManager()
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(100)
   const [allotmentDimensions, setAllotmentDimensions] = useState<

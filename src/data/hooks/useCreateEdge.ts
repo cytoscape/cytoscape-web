@@ -27,9 +27,16 @@ import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { TableType } from '../../models/StoreModel/TableStoreModel'
 import { EdgeView } from '../../models/ViewModel'
+import {
+  createEdgesCore,
+  type EdgeOperationStoreActions,
+  type CreateEdgesParams,
+} from '../../models/CyNetworkModel'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useTableStore } from './stores/TableStore'
 import { useViewModelStore } from './stores/ViewModelStore'
+import { useVisualStyleStore } from './stores/VisualStyleStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useUndoStack } from './useUndoStack'
 
 export interface CreateEdgeOptions {
@@ -44,6 +51,13 @@ export interface CreateEdgeOptions {
    * @default true
    */
   autoSelect?: boolean
+
+  /**
+   * Whether to skip undo/redo recording
+   * @internal - Used by useUndoStack for redo operations
+   * @default false
+   */
+  skipUndo?: boolean
 }
 
 export interface CreateEdgeResult {
@@ -69,16 +83,25 @@ export interface CreateEdgeResult {
 export const useCreateEdge = () => {
   // Network store actions
   const addEdge = useNetworkStore((state) => state.addEdge)
+  const deleteEdgesFromNetwork = useNetworkStore((state) => state.deleteEdges)
   const networks = useNetworkStore((state) => state.networks)
 
   // Table store actions
   const editRows = useTableStore((state) => state.editRows)
+  const deleteRows = useTableStore((state) => state.deleteRows)
   const tables = useTableStore((state) => state.tables)
 
   // ViewModel store actions
   const addEdgeView = useViewModelStore((state) => state.addEdgeView)
+  const deleteViewObjects = useViewModelStore((state) => state.deleteObjects)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const viewModels = useViewModelStore((state) => state.viewModels)
+
+  // Visual style store
+  const visualStyles = useVisualStyleStore((state) => state.visualStyles)
+
+  // Network summary store
+  const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
 
   // Undo/redo support
   const { postEdit } = useUndoStack()
@@ -155,87 +178,62 @@ export const useCreateEdge = () => {
       // Generate unique ID
       const newEdgeId = generateNextEdgeId(networkId)
 
-      // 1. Add edge to network topology
-      addEdge(networkId, newEdgeId, sourceNodeId, targetNodeId)
-
-      // 2. Add table row with default/custom values
+      // Prepare attributes with defaults
       const attributes = options?.attributes ?? {}
       const tableRecord = tables[networkId]
       if (tableRecord?.edgeTable) {
         const hasNameColumn = tableRecord.edgeTable.columns.some(
-          (col) => col.name === 'name',
+          (col: any) => col.name === 'name',
         )
-
-        // Build the row data
-        const rowData: Record<string, ValueType> = {}
-
-        // Set defaults for all columns
-        tableRecord.edgeTable.columns.forEach((column) => {
-          switch (column.type) {
-            case ValueTypeName.String:
-              rowData[column.name] = ''
-              break
-            case ValueTypeName.Long:
-            case ValueTypeName.Integer:
-            case ValueTypeName.Double:
-              rowData[column.name] = 0
-              break
-            case ValueTypeName.Boolean:
-              rowData[column.name] = false
-              break
-            case ValueTypeName.ListString:
-            case ValueTypeName.ListLong:
-            case ValueTypeName.ListInteger:
-            case ValueTypeName.ListDouble:
-            case ValueTypeName.ListBoolean:
-              rowData[column.name] = []
-              break
-            default:
-              rowData[column.name] = ''
-          }
-        })
-
-        // Apply default name if name column exists
         if (hasNameColumn && !attributes.name) {
-          rowData.name = `${sourceNodeId} (interacts with) ${targetNodeId}`
+          attributes.name = `${sourceNodeId} (interacts with) ${targetNodeId}`
         }
-
-        // Override with custom attributes
-        Object.entries(attributes).forEach(([columnName, value]) => {
-          rowData[columnName] = value
-        })
-
-        // Add the row to the table
-        const rowsToAdd = new Map<IdType, Record<string, ValueType>>()
-        rowsToAdd.set(newEdgeId, rowData)
-        editRows(networkId, TableType.EDGE, rowsToAdd)
       }
 
-      // 3. Add edge view
-      const viewModel = viewModels[networkId]
-      if (viewModel) {
-        const edgeView: EdgeView = {
-          id: newEdgeId,
-          values: new Map(),
-        }
-        addEdgeView(networkId, edgeView)
+      // Build store actions object
+      const storeActions: EdgeOperationStoreActions = {
+        deleteEdgesFromNetwork,
+        addEdge,
+        deleteRows,
+        editRows,
+        deleteViewObjects,
+        addEdgeView,
+        updateNetworkSummary,
+        networks,
+        tables,
+        viewModels,
+        visualStyles,
       }
 
-      // 4. Select the new edge if autoSelect is enabled (default: true)
+      // Build params
+      const params: CreateEdgesParams = {
+        networkId,
+        edgeIds: [newEdgeId],
+        sourceId: sourceNodeId,
+        targetId: targetNodeId,
+        attributes,
+      }
+
+      // Call the pure function to create the edge
+      createEdgesCore(params, storeActions)
+
+      // Select the new edge if autoSelect is enabled (default: true)
       const shouldAutoSelect = options?.autoSelect !== false
       if (shouldAutoSelect) {
         exclusiveSelect(networkId, [], [newEdgeId])
       }
 
-      // 5. Record for undo/redo
-      postEdit(
-        UndoCommandType.CREATE_EDGES,
-        `Create Edge ${newEdgeId}`,
-        // Undo: delete the edge
-        [networkId, [newEdgeId]],
-        // Redo: recreate the edge
-        [networkId, [newEdgeId], sourceNodeId, targetNodeId, attributes],
-      )
+      // Record for undo/redo (unless skipUndo is true)
+      if (!options?.skipUndo) {
+        postEdit(
+          UndoCommandType.CREATE_EDGES,
+          `Create Edge ${newEdgeId}`,
+          // Undo: delete the edge
+          [networkId, [newEdgeId]],
+          // Redo: recreate the edge
+          [networkId, [newEdgeId], sourceNodeId, targetNodeId, attributes],
+        )
+      }
 
       return {
         edgeId: newEdgeId,

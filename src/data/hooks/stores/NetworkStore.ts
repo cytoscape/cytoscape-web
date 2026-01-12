@@ -110,6 +110,11 @@ export const useNetworkStore = create(
           })
         },
 
+        /**
+         * @deprecated Do not call directly! Use useDeleteNodes() hook instead.
+         * Direct calls bypass proper cleanup of views, tables, bypasses, and summaries.
+         * @internal Reserved for use by useDeleteNodes hook only.
+         */
         deleteNodes: (networkId: IdType, nodeIds: IdType[]): Edge[] => {
           let deletedConnectingEdges: Edge[] = []
 
@@ -143,6 +148,11 @@ export const useNetworkStore = create(
           // Return the deleted edge objects and this will be used for undo / redo
           return deletedConnectingEdges
         },
+        /**
+         * @deprecated Do not call directly! Use useDeleteEdges() hook instead.
+         * Direct calls bypass proper cleanup of views, tables, bypasses, and summaries.
+         * @internal Reserved for use by useDeleteEdges hook only.
+         */
         deleteEdges: (networkId: IdType, edgeIds: IdType[]) => {
           set((state) => {
             if (edgeIds.length === 0) {

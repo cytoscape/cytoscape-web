@@ -27,9 +27,16 @@ import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { TableType } from '../../models/StoreModel/TableStoreModel'
 import ViewModelFn, { NodeView } from '../../models/ViewModel'
+import {
+  createNodesCore,
+  type NodeOperationStoreActions,
+  type CreateNodesParams,
+} from '../../models/CyNetworkModel'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useTableStore } from './stores/TableStore'
 import { useViewModelStore } from './stores/ViewModelStore'
+import { useVisualStyleStore } from './stores/VisualStyleStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useUndoStack } from './useUndoStack'
 
 export interface CreateNodeOptions {
@@ -44,6 +51,13 @@ export interface CreateNodeOptions {
    * @default true
    */
   autoSelect?: boolean
+
+  /**
+   * Whether to skip undo/redo recording
+   * @internal - Used by useUndoStack for redo operations
+   * @default false
+   */
+  skipUndo?: boolean
 }
 
 export interface CreateNodeResult {
@@ -69,17 +83,25 @@ export interface CreateNodeResult {
 export const useCreateNode = () => {
   // Network store actions
   const addNode = useNetworkStore((state) => state.addNode)
+  const deleteNodesFromNetwork = useNetworkStore((state) => state.deleteNodes)
   const networks = useNetworkStore((state) => state.networks)
 
   // Table store actions
   const editRows = useTableStore((state) => state.editRows)
-  const setValue = useTableStore((state) => state.setValue)
+  const deleteRows = useTableStore((state) => state.deleteRows)
   const tables = useTableStore((state) => state.tables)
 
   // ViewModel store actions
   const addNodeView = useViewModelStore((state) => state.addNodeView)
+  const deleteViewObjects = useViewModelStore((state) => state.deleteObjects)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const viewModels = useViewModelStore((state) => state.viewModels)
+
+  // Visual style store
+  const visualStyles = useVisualStyleStore((state) => state.visualStyles)
+
+  // Network summary store
+  const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
 
   // Undo/redo support
   const { postEdit } = useUndoStack()
@@ -128,90 +150,61 @@ export const useCreateNode = () => {
       // Generate unique ID
       const newNodeId = generateNextNodeId(networkId)
 
-      // 1. Add node to network topology
-      addNode(networkId, newNodeId)
-
-      // 2. Add table row with default/custom values
+      // Prepare attributes with defaults
       const attributes = options?.attributes ?? {}
       const tableRecord = tables[networkId]
       if (tableRecord?.nodeTable) {
         const hasNameColumn = tableRecord.nodeTable.columns.some(
-          (col) => col.name === 'name',
+          (col: any) => col.name === 'name',
         )
-
-        // Build the row data
-        const rowData: Record<string, ValueType> = {}
-
-        // Set defaults for all columns
-        tableRecord.nodeTable.columns.forEach((column) => {
-          switch (column.type) {
-            case ValueTypeName.String:
-              rowData[column.name] = ''
-              break
-            case ValueTypeName.Long:
-            case ValueTypeName.Integer:
-            case ValueTypeName.Double:
-              rowData[column.name] = 0
-              break
-            case ValueTypeName.Boolean:
-              rowData[column.name] = false
-              break
-            case ValueTypeName.ListString:
-            case ValueTypeName.ListLong:
-            case ValueTypeName.ListInteger:
-            case ValueTypeName.ListDouble:
-            case ValueTypeName.ListBoolean:
-              rowData[column.name] = []
-              break
-            default:
-              rowData[column.name] = ''
-          }
-        })
-
-        // Apply default name if name column exists
         if (hasNameColumn && !attributes.name) {
-          rowData.name = `Node ${newNodeId}`
+          attributes.name = `Node ${newNodeId}`
         }
-
-        // Override with custom attributes
-        Object.entries(attributes).forEach(([columnName, value]) => {
-          rowData[columnName] = value
-        })
-
-        // Add the row to the table
-        const rowsToAdd = new Map<IdType, Record<string, ValueType>>()
-        rowsToAdd.set(newNodeId, rowData)
-        editRows(networkId, TableType.NODE, rowsToAdd)
       }
 
-      // 4. Add node view with position
-      const viewModel = viewModels[networkId]
-      if (viewModel) {
-        const nodeView: NodeView = {
-          id: newNodeId,
-          x: position[0],
-          y: position[1],
-          z: position[2],
-          values: new Map(),
-        }
-        addNodeView(networkId, nodeView)
+      // Build store actions object
+      const storeActions: NodeOperationStoreActions = {
+        deleteNodesFromNetwork,
+        addNode,
+        deleteRows,
+        editRows,
+        deleteViewObjects,
+        addNodeView,
+        updateNetworkSummary,
+        networks,
+        tables,
+        viewModels,
+        visualStyles,
       }
 
-      // 5. Select the new node if autoSelect is enabled (default: true)
+      // Build params
+      const params: CreateNodesParams = {
+        networkId,
+        nodeIds: [newNodeId],
+        position,
+        attributes,
+      }
+
+      // Call the pure function to create the node
+      createNodesCore(params, storeActions)
+
+      // Select the new node if autoSelect is enabled (default: true)
       const shouldAutoSelect = options?.autoSelect !== false
       if (shouldAutoSelect) {
         exclusiveSelect(networkId, [newNodeId], [])
       }
 
-      // 6. Record for undo/redo
-      postEdit(
-        UndoCommandType.CREATE_NODES,
-        `Create Node ${newNodeId}`,
-        // Undo: delete the node
-        [networkId, [newNodeId]],
-        // Redo: recreate the node
-        [networkId, [newNodeId], position, attributes],
-      )
+      // Record for undo/redo (unless skipUndo is true)
+      if (!options?.skipUndo) {
+        postEdit(
+          UndoCommandType.CREATE_NODES,
+          `Create Node ${newNodeId}`,
+          // Undo: delete the node
+          [networkId, [newNodeId]],
+          // Redo: recreate the node
+          [networkId, [newNodeId], position, attributes],
+        )
+      }
 
       return {
         nodeId: newNodeId,

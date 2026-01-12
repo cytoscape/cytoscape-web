@@ -4,15 +4,13 @@ import { ReactElement, useEffect, useState } from 'react'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { useDeleteNodes } from '../../../data/hooks/useDeleteNodes'
+import { useCreateEdge } from '../../../data/hooks/useCreateEdge'
 import { NetworkView } from '../../../models'
 import { IdType } from '../../../models/IdType'
 import { BaseMenuProps } from '../BaseMenuProps'
 
-export const DeleteSelectedNodesMenuItem = (
-  props: BaseMenuProps,
-): ReactElement => {
-  const { deleteNodes } = useDeleteNodes()
+export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
+  const { createEdge } = useCreateEdge()
 
   const [disabled, setDisabled] = useState<boolean>(true)
 
@@ -33,34 +31,35 @@ export const DeleteSelectedNodesMenuItem = (
     state.getViewModel(currentNetworkId),
   )
 
-  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
-
   const selectedNodes: IdType[] =
     viewModel !== undefined ? viewModel.selectedNodes : []
 
   useEffect(() => {
-    // Disable the menu item if there are no selected nodes
+    // Disable the menu item if fewer than 2 nodes are selected
     // or if the sub network view is selected
-    if (selectedNodes.length > 0 && targetNetworkId === currentNetworkId) {
+    if (selectedNodes.length >= 2 && targetNetworkId === currentNetworkId) {
       setDisabled(false)
     } else {
       setDisabled(true)
     }
-  }, [selectedNodes, targetNetworkId])
+  }, [selectedNodes, targetNetworkId, currentNetworkId])
 
-  const handleDeleteNodes = (): void => {
+  const handleCreateEdge = (): void => {
     props.handleClose()
 
-    // Delete the selected nodes
-    deleteNodes(currentNetworkId, selectedNodes)
+    // Pick two random nodes from the selected nodes
+    const shuffled = [...selectedNodes].sort(() => Math.random() - 0.5)
+    const sourceNodeId = shuffled[0]
+    const targetNodeId = shuffled[1]
 
-    // Clear the selection
-    exclusiveSelect(currentNetworkId, [], [])
+    // Create the edge between the two nodes
+    createEdge(currentNetworkId, sourceNodeId, targetNodeId)
   }
 
   return (
-    <MenuItem disabled={disabled} onClick={handleDeleteNodes}>
-      Delete Selected Nodes
+    <MenuItem disabled={disabled} onClick={handleCreateEdge}>
+      Create Edge
     </MenuItem>
   )
 }
+
