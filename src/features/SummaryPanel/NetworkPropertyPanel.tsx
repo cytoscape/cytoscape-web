@@ -22,6 +22,7 @@ import { NetworkSummary } from '../../models/NetworkSummaryModel'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
 const NetworkPropertyEditor = lazy(() => import('./NetworkPropertyEditor'))
+import { useDeleteCyNetwork } from '../../data/hooks/useDeleteCyNetwork'
 import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { Network } from '../../models'
@@ -79,7 +80,8 @@ export const NetworkPropertyPanel = ({
   const networkModified =
     useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
 
-  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
+  const { deleteNetwork } = useDeleteCyNetwork()
+
   const onClickDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     setLastOpenedNetworkId(currentNetworkId)
@@ -89,30 +91,6 @@ export const NetworkPropertyPanel = ({
 
   const onConfirmDelete = () => {
     deleteNetwork(id)
-    // deleteSummary(id)
-    const nextNetworkId =
-      lastOpenedNetworkId !== '' && lastOpenedNetworkId !== id
-        ? lastOpenedNetworkId
-        : (workspace.networkIds.filter((networkId) => networkId !== id)?.[0] ??
-          undefined)
-
-    if (nextNetworkId) {
-      setCurrentNetworkId(nextNetworkId)
-      navigateToNetwork({
-        workspaceId: workspace.id,
-        networkId: nextNetworkId,
-        searchParams: new URLSearchParams(location.search),
-        replace: true,
-      })
-    } else {
-      setCurrentNetworkId('')
-      navigateToNetwork({
-        workspaceId: workspace.id,
-        networkId: '',
-        searchParams: new URLSearchParams(location.search),
-        replace: true,
-      })
-    }
   }
 
   const onCancelDelete = () => {

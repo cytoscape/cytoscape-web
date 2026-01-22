@@ -690,9 +690,9 @@ describe('InMemoryTable', () => {
         { name: 'active', type: 'boolean' },
       ]
       const table = createTable('test-table', cols)
-      
+
       const updated = addRowWithDefaults(table, 'row1')
-      
+
       expect(updated.rows.size).toBe(1)
       expect(updated.rows.get('row1')).toEqual({
         name: '',
@@ -708,12 +708,12 @@ describe('InMemoryTable', () => {
         { name: 'active', type: 'boolean' },
       ]
       const table = createTable('test-table', cols)
-      
+
       const updated = addRowWithDefaults(table, 'row1', {
         name: 'Custom Name',
         score: 100,
       })
-      
+
       expect(updated.rows.get('row1')).toEqual({
         name: 'Custom Name',
         score: 100,
@@ -728,9 +728,9 @@ describe('InMemoryTable', () => {
         { name: 'flags', type: 'list_of_boolean' },
       ]
       const table = createTable('test-table', cols)
-      
+
       const updated = addRowWithDefaults(table, 'row1')
-      
+
       expect(updated.rows.get('row1')).toEqual({
         tags: [],
         scores: [],
@@ -740,9 +740,9 @@ describe('InMemoryTable', () => {
 
     it('should work with empty column table', () => {
       const table = createTable('test-table', [])
-      
+
       const updated = addRowWithDefaults(table, 'row1')
-      
+
       expect(updated.rows.size).toBe(1)
       expect(updated.rows.get('row1')).toEqual({})
     })
@@ -751,9 +751,9 @@ describe('InMemoryTable', () => {
       const cols: Column[] = [{ name: 'name', type: 'string' }]
       const initialData = new Map([['row1', { name: 'Existing' }]])
       const table = createTable('test-table', cols, initialData)
-      
+
       const updated = addRowWithDefaults(table, 'row2', { name: 'New Row' })
-      
+
       expect(updated.rows.size).toBe(2)
       expect(updated.rows.get('row1')).toEqual({ name: 'Existing' })
       expect(updated.rows.get('row2')).toEqual({ name: 'New Row' })
@@ -763,13 +763,12 @@ describe('InMemoryTable', () => {
       const cols: Column[] = [{ name: 'name', type: 'string' }]
       const table = createTable('test-table', cols)
       const originalSize = table.rows.size
-      
+
       const updated = addRowWithDefaults(table, 'row1', { name: 'Test' })
-      
+
       expect(table.rows.size).toBe(originalSize)
       expect(updated.rows.size).toBe(originalSize + 1)
       expect(updated).not.toBe(table)
     })
   })
 })
-

@@ -18,7 +18,6 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useLoadCyNetwork } from '../../data/hooks/useLoadCyNetwork'
 import { useLoadNetworkSummaries } from '../../data/hooks/useLoadNetworkSummaries'
-import { useWorkspaceManager } from '../../data/hooks/useWorkspaceManager'
 import { IdType } from '../../models/IdType'
 import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
@@ -82,8 +81,6 @@ const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
 const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers to the stores
   useAppManager() // Register dynamically loaded apps to the store
-
-  useWorkspaceManager()
 
   // Subscribers for optional features
   useHierarchyViewerManager()

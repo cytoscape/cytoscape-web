@@ -57,18 +57,71 @@ export const NetworkTab = ({
         // First click on an inactive renderer should only activate this tab and
         // must not trigger renderer-level click handlers (e.g. CP background reset).
         onClickCapture={(event: MouseEvent<HTMLDivElement>) => {
+          const target = event.target as HTMLElement
+          const isMenu = target.closest('[role="menu"]') !== null
+          const isMenuItem = target.closest('[role="menuitem"]') !== null
+          const isDialog = target.closest('[role="dialog"]') !== null
+          const isDialogButton = target.closest('[role="dialog"] button') !== null || 
+                                 target.closest('.MuiDialog-root button') !== null
+          
+          console.log('[NetworkTab] onClickCapture fired', {
+            isActive,
+            target: target.tagName,
+            targetClass: target.className,
+            isMenu,
+            isMenuItem,
+            isDialog,
+            isDialogButton,
+            targetPath: target.getAttribute('data-testid') || target.id || 'no-id',
+          })
+          
+          // Never intercept menu, menu item, or dialog clicks
+          if (isMenu || isMenuItem || isDialog || isDialogButton) {
+            console.log('[NetworkTab] onClickCapture: Allowing UI control click to pass through')
+            return
+          }
+          
           if (!isActive) {
+            console.log('[NetworkTab] onClickCapture: Tab inactive, stopping propagation and activating')
             event.stopPropagation()
             handleClick?.()
+          } else {
+            console.log('[NetworkTab] onClickCapture: Tab active, allowing event to bubble')
           }
         }}
         // Once active, allow the click to bubble to renderer content while still
         // notifying the panel (idempotent) to keep activation state in sync.
         onClick={(event: MouseEvent<HTMLDivElement>) => {
+          const target = event.target as HTMLElement
+          const isMenu = target.closest('[role="menu"]') !== null
+          const isMenuItem = target.closest('[role="menuitem"]') !== null
+          const isDialog = target.closest('[role="dialog"]') !== null
+          const isDialogButton = target.closest('[role="dialog"] button') !== null || 
+                                 target.closest('.MuiDialog-root button') !== null
+          
+          console.log('[NetworkTab] onClick fired', {
+            isActive,
+            target: target.tagName,
+            targetClass: target.className,
+            isMenu,
+            isMenuItem,
+            isDialog,
+            isDialogButton,
+            targetPath: target.getAttribute('data-testid') || target.id || 'no-id',
+          })
+          
+          // Never intercept menu, menu item, or dialog clicks
+          if (isMenu || isMenuItem || isDialog || isDialogButton) {
+            console.log('[NetworkTab] onClick: Allowing UI control click to pass through')
+            return
+          }
+          
           if (!isActive) {
+            console.log('[NetworkTab] onClick: Tab inactive, stopping propagation')
             event.stopPropagation()
             return
           }
+          console.log('[NetworkTab] onClick: Tab active, calling handleClick')
           handleClick?.()
         }}
       >
