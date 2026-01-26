@@ -7,12 +7,17 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useCreateEdge } from '../../../data/hooks/useCreateEdge'
 import { NetworkView } from '../../../models'
 import { IdType } from '../../../models/IdType'
+import { ValueType } from '../../../models/TableModel'
+import { EdgeCreationDialog } from '../../NetworkPanel/CyjsRenderer/EdgeCreationDialog'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
   const { createEdge } = useCreateEdge()
 
   const [disabled, setDisabled] = useState<boolean>(true)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [pendingSource, setPendingSource] = useState<IdType | null>(null)
+  const [pendingTarget, setPendingTarget] = useState<IdType | null>(null)
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -59,15 +64,38 @@ export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
     }
   }, [selectedNodes, targetNetworkId, currentNetworkId, viewModel])
 
-  const handleCreateEdge = (): void => {
-    props.handleClose()
 
+  const handleCreateEdge = (): void => {
     // Use the first two selected nodes
     const sourceNodeId = selectedNodes[0]
     const targetNodeId = selectedNodes[1]
 
-    // Create the edge between the two nodes
-    createEdge(currentNetworkId, sourceNodeId, targetNodeId)
+    // Open dialog to allow user to set edge attributes
+    setPendingSource(sourceNodeId)
+    setPendingTarget(targetNodeId)
+    setDialogOpen(true)
+    
+  }
+
+  const handleDialogConfirm = (
+    sourceNodeId: IdType,
+    targetNodeId: IdType,
+    attributes: Record<string, ValueType>,
+  ): void => {
+    const result = createEdge(currentNetworkId, sourceNodeId, targetNodeId, {
+      attributes,
+    })
+    if (result.success) {
+      setDialogOpen(false)
+      setPendingSource(null)
+      setPendingTarget(null)
+    }
+  }
+
+  const handleDialogCancel = (): void => {
+    setDialogOpen(false)
+    setPendingSource(null)
+    setPendingTarget(null)
   }
 
   const isCreationEnabled = canCreateInView()
@@ -80,12 +108,24 @@ export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
         : ''
 
   return (
-    <Tooltip title={tooltipText} placement="left">
-      <span>
-        <MenuItem disabled={disabled} onClick={handleCreateEdge}>
-          Create Edge
-        </MenuItem>
-      </span>
-    </Tooltip>
+    <>
+      <Tooltip title={tooltipText} placement="left">
+        <span>
+          <MenuItem disabled={disabled} onClick={handleCreateEdge}>
+            Create Edge
+          </MenuItem>
+        </span>
+      </Tooltip>
+      {pendingSource && pendingTarget && (
+        <EdgeCreationDialog
+          open={dialogOpen}
+          networkId={currentNetworkId}
+          sourceNodeId={pendingSource}
+          targetNodeId={pendingTarget}
+          onCancel={handleDialogCancel}
+          onConfirm={handleDialogConfirm}
+        />
+      )}
+    </>
   )
 }

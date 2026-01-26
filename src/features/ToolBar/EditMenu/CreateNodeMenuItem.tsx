@@ -59,17 +59,17 @@ export const CreateNodeMenuItem = (props: BaseMenuProps): ReactElement => {
     }
   }, [targetNetworkId, currentNetworkId, networkView])
 
-  const handleCreateNode = (): void => {
-    props.handleClose()
 
+  const handleCreateNode = (): void => {
     // Get the viewport center (pan position)
     const viewport = getViewport('cyjs', currentNetworkId)
     const centerX = viewport?.pan.x ?? 0
     const centerY = viewport?.pan.y ?? 0
 
-    // Open dialog with viewport center position
+    // Set dialog state first
     setPendingPosition([centerX, centerY])
     setDialogOpen(true)
+  
   }
 
   const handleDialogConfirm = (

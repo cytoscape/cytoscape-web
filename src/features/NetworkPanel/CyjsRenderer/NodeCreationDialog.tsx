@@ -101,6 +101,8 @@ export const NodeCreationDialog = ({
       maxWidth="lg"
       fullWidth
       disableEscapeKeyDown={false}
+      keepMounted={false}
+      disablePortal={false}
     >
       <DialogTitle
         sx={{
