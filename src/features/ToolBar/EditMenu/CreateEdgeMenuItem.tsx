@@ -77,6 +77,7 @@ export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
     createEdge(currentNetworkId, sourceNodeId, targetNodeId, {
       attributes: {},
     })
+    props.handleClose()
   }
 
   const isCreationEnabled = canCreateInView()

@@ -1248,33 +1248,6 @@ const CyjsRenderer = ({
     }
   }, [edgeCreationMode.active])
 
-  // Debug: Track all document clicks to see event flow
-  useEffect(() => {
-    const handleDocumentClick = (e: MouseEvent): void => {
-      const target = e.target as HTMLElement
-      const isMenu = target.closest('[role="menu"]') !== null
-      const isMenuItem = target.closest('[role="menuitem"]') !== null
-      const isMenuList = target.closest('[role="menulist"]') !== null
-      
-      if (isMenu || isMenuItem || isMenuList) {
-        logUi.info('[CyjsRenderer] Document click detected on menu element', {
-          target: target.tagName,
-          targetClass: target.className,
-          isMenu,
-          isMenuItem,
-          isMenuList,
-          eventPhase: e.eventPhase === 1 ? 'CAPTURE' : e.eventPhase === 2 ? 'AT_TARGET' : 'BUBBLE',
-        })
-      }
-    }
-
-    // Listen in capture phase to see what happens first
-    document.addEventListener('click', handleDocumentClick, true)
-    return () => {
-      document.removeEventListener('click', handleDocumentClick, true)
-    }
-  }, [])
-
   // Handle background click to cancel edge creation mode
   useEffect(() => {
     if (!cy || !edgeCreationMode.active) return

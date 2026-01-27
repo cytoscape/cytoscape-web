@@ -112,6 +112,10 @@ const WorkSpaceEditor = (): JSX.Element => {
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
+  const setActiveNetworkView = useUiStateStore(
+    (state) => state.setActiveNetworkView,
+  )
+
   const { panels, activeNetworkView } = ui
 
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
@@ -353,6 +357,12 @@ const WorkSpaceEditor = (): JSX.Element => {
         .then(() => {
           // Handle the case where the back/forward button is pressed
           setCurrentNetworkId(networkIdFromParams)
+          // Synchronize activeNetworkView with currentNetworkId
+          if (networkIdFromParams === '') {
+            setActiveNetworkView('')
+          } else {
+            setActiveNetworkView(networkIdFromParams)
+          }
           // eslint-disable-next-line react-hooks/exhaustive-deps
         })
         .catch((error) => {

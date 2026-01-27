@@ -70,6 +70,7 @@ export const CreateNodeMenuItem = (props: BaseMenuProps): ReactElement => {
 
     // Create node directly with default empty attributes
     createNode(currentNetworkId, [centerX, centerY], { attributes: {} })
+    props.handleClose()
   }
 
   const isCreationEnabled = canCreateInView()
