@@ -1,6 +1,7 @@
 import { Menu, MenuItem, Tooltip } from '@mui/material'
 import { ReactElement, useEffect } from 'react'
 
+import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { NetworkView } from '../../../models/ViewModel'
 
@@ -18,6 +19,7 @@ interface NetworkContextMenuProps {
   onClose: () => void
   onCreateNode: (position: [number, number]) => void
   onCreateEdgeFromNode: (sourceNodeId: IdType) => void
+  isHierarchy?: boolean
 }
 
 /**
@@ -33,6 +35,7 @@ export const NetworkContextMenu = ({
   onClose,
   onCreateNode,
   onCreateEdgeFromNode,
+  isHierarchy = false,
 }: NetworkContextMenuProps): ReactElement => {
   // Check if current view supports creation
   const canCreateInView = (): boolean => {
@@ -44,50 +47,50 @@ export const NetworkContextMenu = ({
     return viewType === undefined || viewType === 'nodeLink'
   }
 
-  const isCreationEnabled = canCreateInView()
+  const isCreationEnabled = canCreateInView() && !isHierarchy
 
   const handleCreateNode = (event?: React.MouseEvent): void => {
-    console.log('[NetworkContextMenu] handleCreateNode called', {
+    logUi.info('[NetworkContextMenu] handleCreateNode called', {
       hasPosition: !!contextMenu.networkPosition,
       position: contextMenu.networkPosition,
       eventTarget: event?.target,
     })
     
     if (event) {
-      console.log('[NetworkContextMenu] handleCreateNode: Stopping propagation')
+      logUi.info('[NetworkContextMenu] handleCreateNode: Stopping propagation')
       event.stopPropagation()
       event.preventDefault()
     }
     
     if (contextMenu.networkPosition) {
-      console.log('[NetworkContextMenu] handleCreateNode: Calling onCreateNode')
+      logUi.info('[NetworkContextMenu] handleCreateNode: Calling onCreateNode')
       onCreateNode(contextMenu.networkPosition)
     } else {
-      console.warn('[NetworkContextMenu] handleCreateNode: No network position available')
+      logUi.warn('[NetworkContextMenu] handleCreateNode: No network position available')
     }
-    console.log('[NetworkContextMenu] handleCreateNode: Calling onClose')
+    logUi.info('[NetworkContextMenu] handleCreateNode: Calling onClose')
     onClose()
   }
 
   const handleCreateEdgeFromNode = (event?: React.MouseEvent): void => {
-    console.log('[NetworkContextMenu] handleCreateEdgeFromNode called', {
+    logUi.info('[NetworkContextMenu] handleCreateEdgeFromNode called', {
       clickedNodeId: contextMenu.clickedNodeId,
       eventTarget: event?.target,
     })
     
     if (event) {
-      console.log('[NetworkContextMenu] handleCreateEdgeFromNode: Stopping propagation')
+      logUi.info('[NetworkContextMenu] handleCreateEdgeFromNode: Stopping propagation')
       event.stopPropagation()
       event.preventDefault()
     }
     
     if (contextMenu.clickedNodeId) {
-      console.log('[NetworkContextMenu] handleCreateEdgeFromNode: Calling onCreateEdgeFromNode with', contextMenu.clickedNodeId)
+      logUi.info('[NetworkContextMenu] handleCreateEdgeFromNode: Calling onCreateEdgeFromNode with', contextMenu.clickedNodeId)
       onCreateEdgeFromNode(contextMenu.clickedNodeId)
     } else {
-      console.warn('[NetworkContextMenu] handleCreateEdgeFromNode: No clickedNodeId available')
+      logUi.warn('[NetworkContextMenu] handleCreateEdgeFromNode: No clickedNodeId available')
     }
-    console.log('[NetworkContextMenu] handleCreateEdgeFromNode: Calling onClose')
+    logUi.info('[NetworkContextMenu] handleCreateEdgeFromNode: Calling onClose')
     onClose()
   }
 
@@ -98,7 +101,7 @@ export const NetworkContextMenu = ({
 
   // Log when menu state changes
   useEffect(() => {
-    console.log('[NetworkContextMenu] Menu state changed', {
+    logUi.info('[NetworkContextMenu] Menu state changed', {
       open: contextMenu.open,
       clickedOnNode,
       clickedOnEdge,
@@ -109,7 +112,7 @@ export const NetworkContextMenu = ({
     })
   }, [contextMenu.open, clickedOnNode, clickedOnEdge, clickedOnCanvas, contextMenu.clickedNodeId, contextMenu.clickedEdgeId, contextMenu.anchorPosition])
 
-  console.log('[NetworkContextMenu] Rendering menu', {
+  logUi.info('[NetworkContextMenu] Rendering menu', {
     open: contextMenu.open,
     clickedOnNode,
     clickedOnEdge,
@@ -121,7 +124,7 @@ export const NetworkContextMenu = ({
     <Menu
       open={contextMenu.open}
       onClose={(event, reason) => {
-        console.log('[NetworkContextMenu] Menu onClose called', { reason, event })
+        logUi.info('[NetworkContextMenu] Menu onClose called', { reason, event })
         // Type guard: check if event has stopPropagation method
         if (event && typeof (event as any).stopPropagation === 'function') {
           (event as any).stopPropagation()
@@ -129,7 +132,7 @@ export const NetworkContextMenu = ({
         onClose()
       }}
       onClick={(e) => {
-        console.log('[NetworkContextMenu] Menu onClick fired', {
+        logUi.info('[NetworkContextMenu] Menu onClick fired', {
           target: e.target,
           currentTarget: e.currentTarget,
         })
@@ -147,7 +150,7 @@ export const NetworkContextMenu = ({
       MenuListProps={{
         'aria-labelledby': 'network-context-menu',
         onClick: (e) => {
-          console.log('[NetworkContextMenu] MenuList onClick fired', {
+          logUi.info('[NetworkContextMenu] MenuList onClick fired', {
             target: e.target,
             currentTarget: e.currentTarget,
           })
@@ -159,16 +162,18 @@ export const NetworkContextMenu = ({
       {clickedOnCanvas && (
         <Tooltip
           title={
-            !isCreationEnabled
-              ? 'Creation not available in circle packing view. Switch to node-link view to create elements.'
-              : ''
+            isHierarchy
+              ? 'Creation not available for hierarchy networks'
+              : !isCreationEnabled
+                ? 'Creation not available in circle packing view. Switch to node-link view to create elements.'
+                : ''
           }
           placement="left"
         >
           <span>
             <MenuItem 
               onClick={(e) => {
-                console.log('[NetworkContextMenu] Create Node MenuItem onClick fired', {
+                logUi.info('[NetworkContextMenu] Create Node MenuItem onClick fired', {
                   target: e.target,
                   currentTarget: e.currentTarget,
                 })
@@ -186,16 +191,18 @@ export const NetworkContextMenu = ({
       {clickedOnNode && (
         <Tooltip
           title={
-            !isCreationEnabled
-              ? 'Creation not available in circle packing view. Switch to node-link view to create elements.'
-              : ''
+            isHierarchy
+              ? 'Creation not available for hierarchy networks'
+              : !isCreationEnabled
+                ? 'Creation not available in circle packing view. Switch to node-link view to create elements.'
+                : ''
           }
           placement="left"
         >
           <span>
             <MenuItem
               onClick={(e) => {
-                console.log('[NetworkContextMenu] Create Edge MenuItem onClick fired', {
+                logUi.info('[NetworkContextMenu] Create Edge MenuItem onClick fired', {
                   target: e.target,
                   currentTarget: e.currentTarget,
                 })

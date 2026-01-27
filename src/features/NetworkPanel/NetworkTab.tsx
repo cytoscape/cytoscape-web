@@ -1,6 +1,7 @@
 import { Box } from '@mui/material'
 import { MouseEvent, ReactElement } from 'react'
 
+import { logUi } from '../../debug'
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { FloatingToolBar } from '../FloatingToolBar'
@@ -64,7 +65,7 @@ export const NetworkTab = ({
           const isDialogButton = target.closest('[role="dialog"] button') !== null || 
                                  target.closest('.MuiDialog-root button') !== null
           
-          console.log('[NetworkTab] onClickCapture fired', {
+          logUi.info('[NetworkTab] onClickCapture fired', {
             isActive,
             target: target.tagName,
             targetClass: target.className,
@@ -77,16 +78,16 @@ export const NetworkTab = ({
           
           // Never intercept menu, menu item, or dialog clicks
           if (isMenu || isMenuItem || isDialog || isDialogButton) {
-            console.log('[NetworkTab] onClickCapture: Allowing UI control click to pass through')
+            logUi.info('[NetworkTab] onClickCapture: Allowing UI control click to pass through')
             return
           }
           
           if (!isActive) {
-            console.log('[NetworkTab] onClickCapture: Tab inactive, stopping propagation and activating')
+            logUi.info('[NetworkTab] onClickCapture: Tab inactive, stopping propagation and activating')
             event.stopPropagation()
             handleClick?.()
           } else {
-            console.log('[NetworkTab] onClickCapture: Tab active, allowing event to bubble')
+            logUi.info('[NetworkTab] onClickCapture: Tab active, allowing event to bubble')
           }
         }}
         // Once active, allow the click to bubble to renderer content while still
@@ -99,7 +100,7 @@ export const NetworkTab = ({
           const isDialogButton = target.closest('[role="dialog"] button') !== null || 
                                  target.closest('.MuiDialog-root button') !== null
           
-          console.log('[NetworkTab] onClick fired', {
+          logUi.info('[NetworkTab] onClick fired', {
             isActive,
             target: target.tagName,
             targetClass: target.className,
@@ -112,16 +113,16 @@ export const NetworkTab = ({
           
           // Never intercept menu, menu item, or dialog clicks
           if (isMenu || isMenuItem || isDialog || isDialogButton) {
-            console.log('[NetworkTab] onClick: Allowing UI control click to pass through')
+            logUi.info('[NetworkTab] onClick: Allowing UI control click to pass through')
             return
           }
           
           if (!isActive) {
-            console.log('[NetworkTab] onClick: Tab inactive, stopping propagation')
+            logUi.info('[NetworkTab] onClick: Tab inactive, stopping propagation')
             event.stopPropagation()
             return
           }
-          console.log('[NetworkTab] onClick: Tab active, calling handleClick')
+          logUi.info('[NetworkTab] onClick: Tab active, calling handleClick')
           handleClick?.()
         }}
       >

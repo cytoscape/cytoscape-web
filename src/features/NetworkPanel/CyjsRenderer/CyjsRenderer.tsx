@@ -22,6 +22,7 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from '../../../data/hooks/stores/RendererFunctionStore'
+import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
@@ -46,8 +47,6 @@ import { addCyElements } from './cyjsFactoryUtil'
 import { applyViewModel, createCyjsDataMapper } from './cyjsRenderUtil'
 import { registerCyExtensions } from './registerCyExtensions'
 import { NetworkContextMenu, ContextMenuState } from './NetworkContextMenu'
-import { NodeCreationDialog } from './NodeCreationDialog'
-import { EdgeCreationDialog } from './EdgeCreationDialog'
 import { useCreateNode } from '../../../data/hooks/useCreateNode'
 import { useCreateEdge } from '../../../data/hooks/useCreateEdge'
 
@@ -144,7 +143,7 @@ const CyjsRenderer = ({
   const edgeCreationModeRef = useRef(edgeCreationMode)
   useEffect(() => {
     edgeCreationModeRef.current = edgeCreationMode
-    console.log('[CyjsRenderer] edgeCreationMode state changed', {
+    logUi.info('[CyjsRenderer] edgeCreationMode state changed', {
       active: edgeCreationMode.active,
       sourceNodeId: edgeCreationMode.sourceNodeId,
     })
@@ -154,28 +153,16 @@ const CyjsRenderer = ({
       const container = cy.container()
       if (container) {
         if (edgeCreationMode.active) {
-          console.log('[CyjsRenderer] Applying crosshair cursor to Cytoscape container')
+          logUi.info('[CyjsRenderer] Applying crosshair cursor to Cytoscape container')
           container.style.cursor = 'crosshair'
         } else {
-          console.log('[CyjsRenderer] Removing crosshair cursor from Cytoscape container')
+          logUi.info('[CyjsRenderer] Removing crosshair cursor from Cytoscape container')
           container.style.cursor = 'default'
         }
       }
     }
   }, [edgeCreationMode, cy])
 
-  // Dialog state
-  const [nodeDialogOpen, setNodeDialogOpen] = useState(false)
-  const [edgeDialogOpen, setEdgeDialogOpen] = useState(false)
-  const [pendingNodePosition, setPendingNodePosition] = useState<
-    [number, number, number?] | null
-  >(null)
-  const [pendingEdgeSource, setPendingEdgeSource] = useState<IdType | null>(
-    null,
-  )
-  const [pendingEdgeTarget, setPendingEdgeTarget] = useState<IdType | null>(
-    null,
-  )
 
   // Creation hooks
   const { createNode } = useCreateNode()
@@ -372,7 +359,7 @@ const CyjsRenderer = ({
       // Safety check: ensure target is an element with isNode method
       const targetIsNode = typeof e.target.isNode === 'function' && e.target.isNode()
       
-      console.log('[CyjsRenderer] edgeCreationTapHandler fired', {
+      logUi.info('[CyjsRenderer] edgeCreationTapHandler fired', {
         modeActive: currentMode.active,
         sourceNodeId: currentMode.sourceNodeId,
         targetIsNode,
@@ -381,13 +368,13 @@ const CyjsRenderer = ({
       })
       
       if (!currentMode.active || !currentMode.sourceNodeId) {
-        console.log('[CyjsRenderer] edgeCreationTapHandler: Mode not active, returning')
+        logUi.info('[CyjsRenderer] edgeCreationTapHandler: Mode not active, returning')
         return
       }
       
       // Check if target is a node (and has the isNode method)
       if (!targetIsNode) {
-        console.log('[CyjsRenderer] edgeCreationTapHandler: Target is not a node, returning')
+        logUi.info('[CyjsRenderer] edgeCreationTapHandler: Target is not a node, returning')
         return
       }
 
@@ -398,31 +385,24 @@ const CyjsRenderer = ({
       const targetNodeId: IdType = e.target.data('id')
       const sourceNodeId = currentMode.sourceNodeId
 
-      console.log('[CyjsRenderer] edgeCreationTapHandler: Processing edge creation', {
+      logUi.info('[CyjsRenderer] edgeCreationTapHandler: Processing edge creation', {
         sourceNodeId,
         targetNodeId,
       })
 
       // Check for self-loop
       if (targetNodeId === sourceNodeId) {
-        console.log('[CyjsRenderer] edgeCreationTapHandler: Self-loop detected, preventing')
+        logUi.info('[CyjsRenderer] edgeCreationTapHandler: Self-loop detected, preventing')
         // TODO: Show tooltip or prevent self-loop
         return
       }
 
       // Exit edge creation mode
-      console.log('[CyjsRenderer] edgeCreationTapHandler: Exiting edge creation mode and opening dialog')
+      logUi.info('[CyjsRenderer] edgeCreationTapHandler: Exiting edge creation mode and creating edge')
       setEdgeCreationMode({ active: false, sourceNodeId: null })
 
-      // Open edge creation dialog
-      setPendingEdgeSource(sourceNodeId)
-      setPendingEdgeTarget(targetNodeId)
-      setEdgeDialogOpen(true)
-      console.log('[CyjsRenderer] edgeCreationTapHandler: Dialog state set', {
-        pendingEdgeSource: sourceNodeId,
-        pendingEdgeTarget: targetNodeId,
-        edgeDialogOpen: true,
-      })
+      // Create edge directly with default empty attributes
+      createEdge(id, sourceNodeId, targetNodeId, { attributes: {} })
     }
     cy.on('tap', 'node', edgeCreationTapHandler)
 
@@ -435,7 +415,7 @@ const CyjsRenderer = ({
       if (edgeCreationModeRef.current.active) {
         const targetIsNode = typeof e.target.isNode === 'function' && e.target.isNode()
         
-        console.log('[CyjsRenderer] General tap handler: Edge creation mode is active', {
+        logUi.info('[CyjsRenderer] General tap handler: Edge creation mode is active', {
           targetIsNode,
           targetIsCy: e.target === cy,
           targetId: targetIsNode ? e.target.data('id') : null,
@@ -443,12 +423,12 @@ const CyjsRenderer = ({
         
         if (e.target === cy) {
           // Background click: exit edge creation mode
-          console.log('[CyjsRenderer] General tap handler: Background click, exiting edge creation mode')
+          logUi.info('[CyjsRenderer] General tap handler: Background click, exiting edge creation mode')
           setEdgeCreationMode({ active: false, sourceNodeId: null })
         } else if (targetIsNode) {
           // Node click: let the edge creation handler process it
           // Don't do normal selection
-          console.log('[CyjsRenderer] General tap handler: Node clicked in edge creation mode, returning early to let edgeCreationTapHandler process')
+          logUi.info('[CyjsRenderer] General tap handler: Node clicked in edge creation mode, returning early to let edgeCreationTapHandler process')
           return
         }
         // For edges, still allow normal selection even in edge creation mode
@@ -508,7 +488,7 @@ const CyjsRenderer = ({
       const targetIsNode = typeof e.target.isNode === 'function' && e.target.isNode()
       const targetIsEdge = typeof e.target.isEdge === 'function' && e.target.isEdge()
       
-      console.log('[CyjsRenderer] cxttap event fired', {
+      logUi.info('[CyjsRenderer] cxttap event fired', {
         target: e.target,
         isNode: targetIsNode,
         isEdge: targetIsEdge,
@@ -528,7 +508,7 @@ const CyjsRenderer = ({
         id !== '' &&
         id !== activeId
       ) {
-        console.log('[CyjsRenderer] cxttap: Ignoring - network not active', {
+        logUi.info('[CyjsRenderer] cxttap: Ignoring - network not active', {
           activeId,
           currentId: id,
         })
@@ -538,7 +518,7 @@ const CyjsRenderer = ({
       // Get click position in screen coordinates
       const containerElement = cy.container()
       if (!containerElement) {
-        console.warn('[CyjsRenderer] cxttap: No container element')
+        logUi.warn('[CyjsRenderer] cxttap: No container element')
         return
       }
 
@@ -559,16 +539,16 @@ const CyjsRenderer = ({
 
       if (targetIsNode) {
         clickedNodeId = e.target.data('id')
-        console.log('[CyjsRenderer] cxttap: Node clicked', { clickedNodeId })
+        logUi.info('[CyjsRenderer] cxttap: Node clicked', { clickedNodeId })
       } else if (targetIsEdge) {
         clickedEdgeId = e.target.data('id')
-        console.log('[CyjsRenderer] cxttap: Edge clicked', { clickedEdgeId })
+        logUi.info('[CyjsRenderer] cxttap: Edge clicked', { clickedEdgeId })
       } else {
-        console.log('[CyjsRenderer] cxttap: Canvas clicked', { networkPosition })
+        logUi.info('[CyjsRenderer] cxttap: Canvas clicked', { networkPosition })
       }
 
       // Open context menu
-      console.log('[CyjsRenderer] cxttap: Opening context menu', {
+      logUi.info('[CyjsRenderer] cxttap: Opening context menu', {
         anchorPosition: { top: clientY, left: clientX },
         networkPosition: clickedNodeId === null ? networkPosition : null,
         clickedNodeId,
@@ -1217,7 +1197,7 @@ const CyjsRenderer = ({
 
   // Context menu handlers
   const handleContextMenuClose = (): void => {
-    console.log('[CyjsRenderer] handleContextMenuClose called')
+    logUi.info('[CyjsRenderer] handleContextMenuClose called')
     setContextMenu({
       open: false,
       anchorPosition: null,
@@ -1228,68 +1208,31 @@ const CyjsRenderer = ({
   }
 
   const handleCreateNodeFromContext = (position: [number, number]): void => {
-    console.log('[CyjsRenderer] handleCreateNodeFromContext called', { position })
-    setPendingNodePosition(position)
-    setNodeDialogOpen(true)
+    logUi.info('[CyjsRenderer] handleCreateNodeFromContext called', { position })
+    // Create node directly with default empty attributes
+    createNode(id, position, { attributes: {} })
   }
 
   const handleCreateEdgeFromNode = (sourceNodeId: IdType): void => {
-    console.log('[CyjsRenderer] handleCreateEdgeFromNode called', { sourceNodeId })
+    logUi.info('[CyjsRenderer] handleCreateEdgeFromNode called', { sourceNodeId })
     // Enter edge creation mode
-    console.log('[CyjsRenderer] handleCreateEdgeFromNode: Setting edge creation mode to active')
+    logUi.info('[CyjsRenderer] handleCreateEdgeFromNode: Setting edge creation mode to active')
     setEdgeCreationMode({ active: true, sourceNodeId })
-    console.log('[CyjsRenderer] handleCreateEdgeFromNode: Edge creation mode set, cursor should change to crosshair')
+    logUi.info('[CyjsRenderer] handleCreateEdgeFromNode: Edge creation mode set, cursor should change to crosshair')
     
     // Immediately apply cursor to container if available
     if (cy !== null) {
       const container = cy.container()
       if (container) {
-        console.log('[CyjsRenderer] handleCreateEdgeFromNode: Applying crosshair cursor immediately')
+        logUi.info('[CyjsRenderer] handleCreateEdgeFromNode: Applying crosshair cursor immediately')
         container.style.cursor = 'crosshair'
       }
     }
     
     // Log instructions for user
-    console.log('[CyjsRenderer] Edge creation mode activated! Click on another node to create an edge.')
+    logUi.info('[CyjsRenderer] Edge creation mode activated! Click on another node to create an edge.')
   }
 
-  // Dialog handlers
-  const handleNodeDialogConfirm = (
-    position: [number, number, number?],
-    attributes: Record<string, ValueType>,
-  ): void => {
-    const result = createNode(id, position, { attributes })
-    if (result.success) {
-      setNodeDialogOpen(false)
-      setPendingNodePosition(null)
-    }
-  }
-
-  const handleNodeDialogCancel = (): void => {
-    setNodeDialogOpen(false)
-    setPendingNodePosition(null)
-  }
-
-  const handleEdgeDialogConfirm = (
-    sourceNodeId: IdType,
-    targetNodeId: IdType,
-    attributes: Record<string, ValueType>,
-  ): void => {
-    const result = createEdge(id, sourceNodeId, targetNodeId, { attributes })
-    if (result.success) {
-      setEdgeDialogOpen(false)
-      setPendingEdgeSource(null)
-      setPendingEdgeTarget(null)
-    }
-  }
-
-  const handleEdgeDialogCancel = (): void => {
-    setEdgeDialogOpen(false)
-    setPendingEdgeSource(null)
-    setPendingEdgeTarget(null)
-    // Exit edge creation mode if it was active
-    setEdgeCreationMode({ active: false, sourceNodeId: null })
-  }
 
   // Handle ESC key to cancel edge creation mode
   useEffect(() => {
@@ -1314,7 +1257,7 @@ const CyjsRenderer = ({
       const isMenuList = target.closest('[role="menulist"]') !== null
       
       if (isMenu || isMenuItem || isMenuList) {
-        console.log('[CyjsRenderer] Document click detected on menu element', {
+        logUi.info('[CyjsRenderer] Document click detected on menu element', {
           target: target.tagName,
           targetClass: target.className,
           isMenu,
@@ -1404,26 +1347,8 @@ const CyjsRenderer = ({
         onClose={handleContextMenuClose}
         onCreateNode={handleCreateNodeFromContext}
         onCreateEdgeFromNode={handleCreateEdgeFromNode}
+        isHierarchy={summary ? isHCX(summary) : false}
       />
-      {pendingNodePosition && (
-        <NodeCreationDialog
-          open={nodeDialogOpen}
-          networkId={id}
-          position={pendingNodePosition}
-          onCancel={handleNodeDialogCancel}
-          onConfirm={handleNodeDialogConfirm}
-        />
-      )}
-      {pendingEdgeSource && pendingEdgeTarget && (
-        <EdgeCreationDialog
-          open={edgeDialogOpen}
-          networkId={id}
-          sourceNodeId={pendingEdgeSource}
-          targetNodeId={pendingEdgeTarget}
-          onCancel={handleEdgeDialogCancel}
-          onConfirm={handleEdgeDialogConfirm}
-        />
-      )}
     </>
   )
 }
