@@ -20,6 +20,7 @@ import {
   ValueType,
   ValueTypeName,
 } from '../../../models/TableModel'
+import { serializedStringIsValid, serializeValue } from '../../../models/TableModel/impl/valueTypeImpl'
 import { ValueEditor } from '../../ToolBar/LayoutMenu/ValueEditor/ValueEditor'
 
 interface EdgeCreationDialogProps {
@@ -93,6 +94,15 @@ export const EdgeCreationDialog = ({
         defaults[column.name] = 0
       } else if (column.type === ValueTypeName.Boolean) {
         defaults[column.name] = false
+      } else if (column.type === ValueTypeName.ListString) {
+        defaults[column.name] = []
+      } else if (column.type === ValueTypeName.ListInteger || 
+                 column.type === ValueTypeName.ListLong) {
+        defaults[column.name] = []
+      } else if (column.type === ValueTypeName.ListDouble) {
+        defaults[column.name] = []
+      } else if (column.type === ValueTypeName.ListBoolean) {
+        defaults[column.name] = []
       } else {
         defaults[column.name] = ''
       }
@@ -111,8 +121,63 @@ export const EdgeCreationDialog = ({
     }))
   }
 
+  // Validate a single attribute value
+  const isAttributeValid = (columnName: string, value: ValueType, valueType: ValueTypeName): boolean => {
+    const serializedValue = serializeValue(value)
+    return serializedStringIsValid(valueType, serializedValue)
+  }
+
+  // Check if all attributes are valid
+  const getAllInvalidAttributes = (): string[] => {
+    if (!edgeTable) return []
+    const invalid: string[] = []
+    edgeTable.columns.forEach((column) => {
+      const currentValue =
+        attributes[column.name] !== undefined
+          ? attributes[column.name]
+          : column.type === ValueTypeName.Boolean
+            ? false
+            : column.type === ValueTypeName.Integer ||
+                column.type === ValueTypeName.Double ||
+                column.type === ValueTypeName.Long
+              ? 0
+              : column.type === ValueTypeName.ListString ||
+                  column.type === ValueTypeName.ListInteger ||
+                  column.type === ValueTypeName.ListLong ||
+                  column.type === ValueTypeName.ListDouble ||
+                  column.type === ValueTypeName.ListBoolean
+                ? []
+                : ''
+      if (!isAttributeValid(column.name, currentValue, column.type)) {
+        invalid.push(column.name)
+      }
+    })
+    return invalid
+  }
+
+  const invalidAttributes = getAllInvalidAttributes()
+  const hasInvalidAttributes = invalidAttributes.length > 0
+
   const handleConfirm = (): void => {
-    onConfirm(sourceNodeId, targetNodeId, attributes)
+    if (!hasInvalidAttributes) {
+      onConfirm(sourceNodeId, targetNodeId, attributes)
+    }
+  }
+
+  const getColumnDescription = (type: ValueTypeName): string => {
+    const typeLabels: Record<ValueTypeName, string> = {
+      [ValueTypeName.String]: 'Text (string)',
+      [ValueTypeName.Integer]: 'Whole number (integer)',
+      [ValueTypeName.Long]: 'Large whole number (long)',
+      [ValueTypeName.Double]: 'Decimal number (double)',
+      [ValueTypeName.Boolean]: 'True/false (boolean)',
+      [ValueTypeName.ListString]: 'List of text (comma-separated, e.g., "apple, banana, cherry")',
+      [ValueTypeName.ListInteger]: 'List of integers (comma-separated, e.g., "1, 2, 3")',
+      [ValueTypeName.ListLong]: 'List of long integers (comma-separated, e.g., "100, 200, 300")',
+      [ValueTypeName.ListDouble]: 'List of decimals (comma-separated, e.g., "1.5, 2.7, 3.9")',
+      [ValueTypeName.ListBoolean]: 'List of booleans (comma-separated, e.g., "true, false, true")',
+    }
+    return typeLabels[type] || 'Unknown type'
   }
 
   const hasColumns = edgeTable && edgeTable.columns.length > 0
@@ -181,30 +246,112 @@ export const EdgeCreationDialog = ({
               )}
 
               {hasColumns && (
-                <List dense>
-                  {edgeTable.columns.map((column) => (
-                    <ValueEditor
-                      key={column.name}
-                      optionName={column.name}
-                      description={column.name}
-                      valueType={column.type}
-                      value={
-                        attributes[column.name] !== undefined
-                          ? attributes[column.name]
-                          : column.type === ValueTypeName.Boolean
-                            ? false
-                            : column.type === ValueTypeName.Integer ||
-                                column.type === ValueTypeName.Double ||
-                                column.type === ValueTypeName.Long
-                              ? 0
-                              : ''
-                      }
-                      setValue={(optionName: string, value: ValueType) =>
-                        handleAttributeChange(optionName, value)
-                      }
-                    />
-                  ))}
-                </List>
+                <>
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      All fields are optional. Default values are already populated.
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                      <strong>List fields:</strong> Enter comma-separated values (e.g., "value1, value2" or "1, 2, 3").
+                    </Typography>
+                  </Alert>
+                  <Box
+                    component="table"
+                    sx={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      '& tr': {
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                      },
+                      '& tr:last-child': {
+                        borderBottom: 'none',
+                      },
+                    }}
+                  >
+                    <Box component="thead">
+                      <Box component="tr">
+                        <Box
+                          component="th"
+                          sx={{
+                            textAlign: 'left',
+                            py: 1.5,
+                            px: 2,
+                            width: '20%',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            color: 'text.secondary',
+                          }}
+                        >
+                          Attribute
+                        </Box>
+                        <Box
+                          component="th"
+                          sx={{
+                            textAlign: 'left',
+                            py: 1.5,
+                            px: 2,
+                            width: '15%',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            color: 'text.secondary',
+                          }}
+                        >
+                          Type
+                        </Box>
+                        <Box
+                          component="th"
+                          sx={{
+                            textAlign: 'left',
+                            py: 1.5,
+                            px: 2,
+                            width: '65%',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            color: 'text.secondary',
+                          }}
+                        >
+                          Value
+                        </Box>
+                      </Box>
+                    </Box>
+                    <Box component="tbody">
+                      {edgeTable.columns.map((column) => {
+                        const currentValue =
+                          attributes[column.name] !== undefined
+                            ? attributes[column.name]
+                            : column.type === ValueTypeName.Boolean
+                              ? false
+                              : column.type === ValueTypeName.Integer ||
+                                  column.type === ValueTypeName.Double ||
+                                  column.type === ValueTypeName.Long
+                                ? 0
+                                : column.type === ValueTypeName.ListString ||
+                                    column.type === ValueTypeName.ListInteger ||
+                                    column.type === ValueTypeName.ListLong ||
+                                    column.type === ValueTypeName.ListDouble ||
+                                    column.type === ValueTypeName.ListBoolean
+                                  ? []
+                                  : ''
+                        const isValid = isAttributeValid(column.name, currentValue, column.type)
+                        return (
+                          <ValueEditor
+                            key={column.name}
+                            optionName={column.name}
+                            description={getColumnDescription(column.type)}
+                            valueType={column.type}
+                            value={currentValue}
+                            setValue={(optionName: string, value: ValueType) =>
+                              handleAttributeChange(optionName, value)
+                            }
+                            tableLayout={true}
+                            error={!isValid}
+                          />
+                        )
+                      })}
+                    </Box>
+                  </Box>
+                </>
               )}
             </Box>
           </Box>
@@ -269,9 +416,24 @@ export const EdgeCreationDialog = ({
         </Box>
       </DialogContent>
 
+      {hasInvalidAttributes && (
+        <Box sx={{ px: 3, pt: 2 }}>
+          <Alert severity="error">
+            <Typography variant="body2">
+              Cannot create edge: The following fields have invalid values:{' '}
+              <strong>{invalidAttributes.join(', ')}</strong>. Please correct these errors before creating the edge.
+            </Typography>
+          </Alert>
+        </Box>
+      )}
+
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onCancel}>Cancel</Button>
-        <Button variant="contained" onClick={handleConfirm}>
+        <Button 
+          variant="contained" 
+          onClick={handleConfirm}
+          disabled={hasInvalidAttributes}
+        >
           Create Edge
         </Button>
       </DialogActions>
