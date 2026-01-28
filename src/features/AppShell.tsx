@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
 import cloneDeep from 'lodash/cloneDeep'
-import { ReactElement, useContext, useEffect, useRef } from 'react'
+import React, { ReactElement, useContext, useEffect, useRef } from 'react'
 import {
   Location,
   Outlet,
