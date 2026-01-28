@@ -139,6 +139,11 @@ const CyjsRenderer = ({
     active: false,
     sourceNodeId: null,
   })
+
+  // Reset edge creation mode when switching networks
+  useEffect(() => {
+    setEdgeCreationMode({ active: false, sourceNodeId: null })
+  }, [id])
   // Ref to track edge creation mode for event handlers
   const edgeCreationModeRef = useRef(edgeCreationMode)
   useEffect(() => {
@@ -525,13 +530,31 @@ const CyjsRenderer = ({
       const clientX = e.originalEvent.clientX
       const clientY = e.originalEvent.clientY
 
-      // Convert screen coordinates to network coordinates
-      const pos = cy.renderer().projectIntoViewport(clientX, clientY)
-      // Ensure position values are valid numbers (fallback to 0 if undefined/NaN)
-      const networkPosition: [number, number] = [
-        typeof pos.x === 'number' && !isNaN(pos.x) ? pos.x : 0,
-        typeof pos.y === 'number' && !isNaN(pos.y) ? pos.y : 0,
-      ]
+      // Convert click coordinates to network coordinates.
+      //
+      // Cytoscape's renderer projection expects coordinates relative to the container,
+      // not viewport (clientX/clientY). Prefer event-provided model coordinates when available.
+      let networkPosition: [number, number] = [0, 0]
+      const eventPos = (e as any).position
+      if (
+        eventPos &&
+        typeof eventPos.x === 'number' &&
+        !isNaN(eventPos.x) &&
+        typeof eventPos.y === 'number' &&
+        !isNaN(eventPos.y)
+      ) {
+        networkPosition = [eventPos.x, eventPos.y]
+      } else {
+        const rect = containerElement.getBoundingClientRect()
+        const xInContainer = clientX - rect.left
+        const yInContainer = clientY - rect.top
+        const pos = cy.renderer().projectIntoViewport(xInContainer, yInContainer)
+        // Ensure position values are valid numbers (fallback to 0 if undefined/NaN)
+        networkPosition = [
+          typeof pos.x === 'number' && !isNaN(pos.x) ? pos.x : 0,
+          typeof pos.y === 'number' && !isNaN(pos.y) ? pos.y : 0,
+        ]
+      }
 
       // Determine what was clicked
       let clickedNodeId: IdType | null = null

@@ -90,7 +90,65 @@ export const NetworkPropertyPanel = ({
   }
 
   const onConfirmDelete = () => {
-    deleteNetwork(id)
+    // Delete the network without automatic navigation
+    deleteNetwork(id, { navigate: false })
+    
+    // Navigate back to the previously viewed network, same logic as onCancelDelete
+    if (lastOpenedNetworkId !== '') {
+      if (lastOpenedNetworkId !== id) {
+        setCurrentNetworkId(lastOpenedNetworkId)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: lastOpenedNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
+      } else {
+        // If the previous network was the one being deleted, navigate to first available or empty
+        const remainingNetworks = workspace.networkIds.filter((networkId) => networkId !== id)
+        const nextNetworkId = remainingNetworks[0] ?? ''
+        
+        if (nextNetworkId !== '') {
+          setCurrentNetworkId(nextNetworkId)
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: nextNetworkId,
+            searchParams: new URLSearchParams(location.search),
+            replace: true,
+          })
+        } else {
+          setCurrentNetworkId('')
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: '',
+            searchParams: new URLSearchParams(location.search),
+            replace: true,
+          })
+        }
+      }
+    } else {
+      // If no previous network was set, navigate to first available or empty
+      const remainingNetworks = workspace.networkIds.filter((networkId) => networkId !== id)
+      const nextNetworkId = remainingNetworks[0] ?? ''
+      
+      if (nextNetworkId !== '') {
+        setCurrentNetworkId(nextNetworkId)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: nextNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
+      } else {
+        setCurrentNetworkId('')
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: '',
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
+      }
+    }
   }
 
   const onCancelDelete = () => {

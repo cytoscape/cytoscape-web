@@ -49,6 +49,7 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
   const deleteAllViews = useViewModelStore((state) => state.deleteAll)
   const deleteAllVisualStyles = useVisualStyleStore((state) => state.deleteAll)
   const deleteAllTables = useTableStore((state) => state.deleteAll)
+  const deleteAllAspects = useOpaqueAspectStore((state) => state.deleteAll)
   const deleteAllNetworkModifiedStatuses = useWorkspaceStore(
     (state) => state.deleteAllNetworkModifiedStatuses,
   )
@@ -83,8 +84,10 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
 
   const deleteNetwork = (
     id: IdType,
-    options: DeleteNetworkOptions = { navigate: true },
+    options?: DeleteNetworkOptions,
   ): void => {
+    const navigate = options?.navigate ?? true
+
     // Delete from all stores
     deleteNetworkFromStore(id)
     deleteSummary(id)
@@ -106,7 +109,7 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
     deleteNetworkFromWorkspace(id)
 
     // Handle navigation if requested
-    if (options.navigate) {
+    if (navigate) {
       const nextNetworkId =
         workspace.networkIds.filter((networkId) => networkId !== id)?.[0] ?? ''
 
@@ -145,6 +148,7 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
     deleteAllViews()
     deleteAllVisualStyles()
     deleteAllTables()
+    deleteAllAspects()
     deleteAllNetworkModifiedStatuses()
     deleteAllValidationResults()
     setActiveNetworkView('')
