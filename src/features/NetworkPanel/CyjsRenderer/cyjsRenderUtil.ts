@@ -452,6 +452,18 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   }
   cyStyle.push(hoverMapping as CyjsDirectMapper)
 
+  // Add a special class for edge creation target highlighting.
+  const edgeCreationTargetMapping: any = {
+    selector: `.edge-creation-target`,
+    style: {
+      'underlay-color': 'lightgreen',
+      'underlay-padding': 10,
+      'underlay-opacity': 0.5,
+      'underlay-shape': 'roundrectangle',
+    },
+  }
+  cyStyle.push(edgeCreationTargetMapping as CyjsDirectMapper)
+
   return cyStyle
 }
 

@@ -10,6 +10,7 @@ import {
 import { ReactElement, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
+import { useDeleteCyNetwork } from '../data/hooks/useDeleteCyNetwork'
 import { useUrlNavigation } from '../data/hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
 import { useNetworkSummaryStore } from '../data/hooks/stores/NetworkSummaryStore'
@@ -25,7 +26,7 @@ export const UpdateNetworkDialog = (props: {
   const [loading, setLoading] = useState<boolean>(false)
   const { navigateToNetwork } = useUrlNavigation()
   const workspace = useWorkspaceStore((state) => state.workspace)
-  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
+  const { deleteNetwork } = useDeleteCyNetwork()
   const addNetworkIds = useWorkspaceStore((state) => state.addNetworkIds)
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
@@ -38,10 +39,6 @@ export const UpdateNetworkDialog = (props: {
   const { id } = workspace
 
   const summary = useNetworkSummaryStore((state) => state.summaries[networkId])
-
-  const deleteNetworkModifiedStatus = useWorkspaceStore(
-    (state) => state.deleteNetworkModifiedStatus,
-  )
 
   const location = useLocation()
 
@@ -85,11 +82,9 @@ export const UpdateNetworkDialog = (props: {
           disabled={!authenticated || loading}
           onClick={async () => {
             setLoading(true)
-            deleteNetwork(networkId)
+            deleteNetwork(networkId, { navigate: false })
             await waitSeconds(1)
             addNetworkIds(networkId)
-            await waitSeconds(1)
-            deleteNetworkModifiedStatus(networkId)
             await waitSeconds(1)
             setCurrentNetworkId(networkId)
             navigateToNetwork({

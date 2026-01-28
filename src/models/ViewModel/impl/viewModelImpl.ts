@@ -2,7 +2,7 @@ import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
 import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
 import { translateCXEdgeId } from '../../CxModel/impl/converters'
 import { IdType } from '../../IdType'
-import { Edge,Node } from '../../NetworkModel'
+import { Edge, Node } from '../../NetworkModel'
 import { Network } from '../../NetworkModel'
 import { isEdgeId } from '../../NetworkModel/impl/networkImpl'
 import { VisualPropertyValueType } from '../../VisualStyleModel'
@@ -297,7 +297,8 @@ export const updateNodePositions = (
 
   Object.keys(newNodeViews).forEach((nodeId: IdType) => {
     const nodeView: NodeView = newNodeViews[nodeId]
-    const newPosition: [number, number, number?] | undefined = positions.get(nodeId)
+    const newPosition: [number, number, number?] | undefined =
+      positions.get(nodeId)
     if (newPosition !== undefined) {
       const updatedNodeView: NodeView = {
         ...nodeView,
@@ -360,7 +361,7 @@ export const addNodeViewDirect = (
 
 /**
  * Add a node view with position
- * 
+ *
  * @param networkView - The network view to add the node view to
  * @param nodeId - The ID of the node
  * @param position - The position [x, y, z?] of the node
@@ -378,7 +379,7 @@ export const addNodeViewWithPosition = (
     z: position[2],
     values: new Map(),
   }
-  
+
   return addNodeViewDirect(networkView, nodeView)
 }
 

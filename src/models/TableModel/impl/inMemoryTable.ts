@@ -71,7 +71,7 @@ export const insertRows = (
 
 /**
  * Add a row with default values for all columns
- * 
+ *
  * @param table - The table to add the row to
  * @param rowId - The ID for the new row
  * @param customValues - Optional custom values to override defaults
@@ -84,7 +84,7 @@ export const addRowWithDefaults = (
 ): Table => {
   // Create default values for all columns
   const defaultRow: Record<AttributeName, ValueType> = {}
-  
+
   table.columns.forEach((column) => {
     // Set default value based on type
     switch (column.type) {
@@ -114,7 +114,7 @@ export const addRowWithDefaults = (
         defaultRow[column.name] = ''
     }
   })
-  
+
   // Override with custom values if provided
   if (customValues) {
     Object.keys(customValues).forEach((key) => {
@@ -124,7 +124,7 @@ export const addRowWithDefaults = (
       }
     })
   }
-  
+
   return insertRow(table, [rowId, defaultRow])
 }
 
