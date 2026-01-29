@@ -191,7 +191,7 @@ export const Error = (): ReactElement => {
       logDb.info('[Error] Error report sent successfully')
     } catch (e: unknown) {
       logDb.error('[Error] Failed to send error report:', e)
-      setReportError(e instanceof Error ? e.message : 'Failed to send error report')
+      setReportError(e instanceof Error ? (e as Error).message : 'Failed to send error report')
     } finally {
       setIsSendingReport(false)
     }
