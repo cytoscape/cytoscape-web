@@ -243,6 +243,12 @@ export const useUndoStack = () => {
         const networkId: IdType = params[0]
         const nodeIds: IdType[] = params[1]
 
+        // Get fresh network state from store
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (!network) {
+          throw new Error(`Network ${networkId} not found`)
+        }
+
         // Build store actions object
         const storeActions: NodeOperationStoreActions = {
           deleteNodesFromNetwork,
@@ -259,12 +265,18 @@ export const useUndoStack = () => {
         }
 
         // Use the pure function to delete nodes
-        deleteNodesCore(networkId, nodeIds, storeActions)
+        deleteNodesCore(networkId, nodeIds, network, storeActions)
       },
       [UndoCommandType.CREATE_EDGES]: (params: any[]) => {
         // Undo edge creation by deleting the created edges
         const networkId: IdType = params[0]
         const edgeIds: IdType[] = params[1]
+
+        // Get fresh network state from store
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (!network) {
+          throw new Error(`Network ${networkId} not found`)
+        }
 
         // Build store actions object
         const storeActions: EdgeOperationStoreActions = {
@@ -282,7 +294,7 @@ export const useUndoStack = () => {
         }
 
         // Use the pure function to delete edges
-        deleteEdgesCore(networkId, edgeIds, storeActions)
+        deleteEdgesCore(networkId, edgeIds, network, storeActions)
       },
 
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
@@ -422,6 +434,12 @@ export const useUndoStack = () => {
         const networkId: IdType = params[0]
         const edgeIds: IdType[] = params[1]
 
+        // Get fresh network state from store
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (!network) {
+          throw new Error(`Network ${networkId} not found`)
+        }
+
         // Build store actions object
         const storeActions: EdgeOperationStoreActions = {
           deleteEdgesFromNetwork,
@@ -438,12 +456,18 @@ export const useUndoStack = () => {
         }
 
         // Use the pure function to delete edges
-        deleteEdgesCore(networkId, edgeIds, storeActions)
+        deleteEdgesCore(networkId, edgeIds, network, storeActions)
       },
       [UndoCommandType.DELETE_NODES]: (params: any[]) => {
         // Redo node deletion
         const networkId: IdType = params[0]
         const nodeIds: IdType[] = params[1]
+
+        // Get fresh network state from store
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (!network) {
+          throw new Error(`Network ${networkId} not found`)
+        }
 
         // Build store actions object
         const storeActions: NodeOperationStoreActions = {
@@ -461,7 +485,7 @@ export const useUndoStack = () => {
         }
 
         // Use the pure function to delete nodes
-        deleteNodesCore(networkId, nodeIds, storeActions)
+        deleteNodesCore(networkId, nodeIds, network, storeActions)
       },
       [UndoCommandType.CREATE_NODES]: (params: any[]) => {
         // Redo node creation

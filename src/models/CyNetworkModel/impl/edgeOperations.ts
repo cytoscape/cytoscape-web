@@ -66,12 +66,14 @@ export interface DeleteEdgesResult {
  *
  * @param networkId - The network to delete edges from
  * @param edgeIds - Array of edge IDs to delete
+ * @param network - The network object (before deletion) to use for count calculations
  * @param storeActions - All required store actions
  * @returns Information about deleted edges and rows for undo/redo
  */
 export const deleteEdgesCore = (
   networkId: IdType,
   edgeIds: IdType[],
+  network: Network,
   storeActions: EdgeOperationStoreActions,
 ): DeleteEdgesResult => {
   const {
@@ -79,16 +81,13 @@ export const deleteEdgesCore = (
     deleteRows,
     deleteViewObjects,
     updateNetworkSummary,
-    networks,
     tables,
     viewModels,
   } = storeActions
 
-  // Get network and validate
-  const network = networks.get(networkId)
-  if (!network) {
-    throw new Error(`Network ${networkId} not found`)
-  }
+  // Capture original counts BEFORE deletion (network will be mutated)
+  const originalNodeCount = network.nodes.length
+  const originalEdgeCount = network.edges.length
 
   // Collect data before deletion for undo/redo
   const tableRecord = tables[networkId]
@@ -114,7 +113,7 @@ export const deleteEdgesCore = (
     })
   }
 
-  // 1. Delete edges from network topology
+  // 1. Delete edges from network topology (mutates network)
   deleteEdgesFromNetwork(networkId, edgeIds)
 
   // 2. Delete view objects
@@ -124,10 +123,10 @@ export const deleteEdgesCore = (
   deleteRows(networkId, edgeIds)
 
   // 4. Update network summary
-  // Calculate counts from original network since networks Map is a stale snapshot
+  // Use original counts since network was mutated by deleteEdgesFromNetwork
   updateNetworkSummary(networkId, {
-    nodeCount: network.nodes.length,
-    edgeCount: network.edges.length - edgeIds.length,
+    nodeCount: originalNodeCount,
+    edgeCount: originalEdgeCount - edgeIds.length,
   })
 
   return {

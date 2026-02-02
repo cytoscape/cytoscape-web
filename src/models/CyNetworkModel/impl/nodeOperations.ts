@@ -66,12 +66,14 @@ export interface DeleteNodesResult {
  *
  * @param networkId - The network to delete nodes from
  * @param nodeIds - Array of node IDs to delete
+ * @param network - The network object (before deletion) to use for count calculations
  * @param storeActions - All required store actions
  * @returns Information about deleted nodes, edges, and rows for undo/redo
  */
 export const deleteNodesCore = (
   networkId: IdType,
   nodeIds: IdType[],
+  network: Network,
   storeActions: NodeOperationStoreActions,
 ): DeleteNodesResult => {
   const {
@@ -79,16 +81,13 @@ export const deleteNodesCore = (
     deleteRows,
     deleteViewObjects,
     updateNetworkSummary,
-    networks,
     tables,
     viewModels,
   } = storeActions
 
-  // Get network and validate
-  const network = networks.get(networkId)
-  if (!network) {
-    throw new Error(`Network ${networkId} not found`)
-  }
+  // Capture original counts BEFORE deletion (network will be mutated)
+  const originalNodeCount = network.nodes.length
+  const originalEdgeCount = network.edges.length
 
   // Collect data before deletion for undo/redo
   const tableRecord = tables[networkId]
@@ -114,7 +113,7 @@ export const deleteNodesCore = (
     })
   }
 
-  // 1. Delete nodes from network topology (returns deleted connecting edges)
+  // 1. Delete nodes from network topology (mutates network, returns deleted connecting edges)
   const deletedEdges = deleteNodesFromNetwork(networkId, nodeIds)
 
   // Collect deleted edge data for undo/redo
@@ -146,10 +145,10 @@ export const deleteNodesCore = (
   deleteRows(networkId, allDeletedIds)
 
   // 4. Update network summary
-  // Calculate counts from original network since networks Map is a stale snapshot
+  // Use original counts since network was mutated by deleteNodesFromNetwork
   updateNetworkSummary(networkId, {
-    nodeCount: network.nodes.length - nodeIds.length,
-    edgeCount: network.edges.length - deletedEdges.length,
+    nodeCount: originalNodeCount - nodeIds.length,
+    edgeCount: originalEdgeCount - deletedEdges.length,
   })
 
   return {

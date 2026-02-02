@@ -110,8 +110,8 @@ export const useDeleteEdges = () => {
     options?: DeleteEdgesOptions,
   ): DeleteEdgesResult => {
     try {
-      // Validate network exists
-      const network = networks.get(networkId)
+      // Get fresh network state from store (not stale snapshot)
+      const network = useNetworkStore.getState().networks.get(networkId)
       if (!network) {
         return {
           success: false,
@@ -129,6 +129,22 @@ export const useDeleteEdges = () => {
         }
       }
 
+      // Check if any of the requested edges actually exist
+      const edgesToDelete: Edge[] = network.edges.filter((edge) =>
+        edgeIds.includes(edge.id),
+      )
+
+      if (edgesToDelete.length === 0) {
+        return {
+          success: false,
+          deletedEdgeCount: 0,
+          error: 'None of the specified edges exist',
+        }
+      }
+
+      // Filter to only edge IDs that actually exist
+      const existingEdgeIds = edgesToDelete.map((edge) => edge.id)
+
       // Build store actions object
       const storeActions: EdgeOperationStoreActions = {
         deleteEdgesFromNetwork,
@@ -144,13 +160,26 @@ export const useDeleteEdges = () => {
         visualStyles,
       }
 
-      // Call the pure function to delete edges
-      const result = deleteEdgesCore(networkId, edgeIds, storeActions)
+      // Call the pure function to delete edges (only existing ones)
+      // Pass the network we validated to avoid stale snapshot issues
+      const result = deleteEdgesCore(networkId, existingEdgeIds, network, storeActions)
 
-      // Get the actual edge objects for undo
-      const edgesToDelete: Edge[] = network.edges.filter((edge) =>
-        edgeIds.includes(edge.id),
-      )
+      // Clean up visual style bypasses for deleted edges
+      const visualStyle = visualStyles[networkId]
+      if (visualStyle) {
+        // Iterate through all visual properties and remove bypasses
+        Object.keys(visualStyle).forEach((vpName) => {
+          const visualProperty = visualStyle[vpName as VisualPropertyName]
+          if (visualProperty?.bypassMap) {
+            const hasBypassesToDelete = existingEdgeIds.some((id) =>
+              visualProperty.bypassMap.has(id),
+            )
+            if (hasBypassesToDelete) {
+              deleteBypass(networkId, vpName as VisualPropertyName, existingEdgeIds)
+            }
+          }
+        })
+      }
 
       // Record for undo/redo (unless skipUndo is true)
       if (!options?.skipUndo) {

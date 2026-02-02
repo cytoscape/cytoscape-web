@@ -115,8 +115,8 @@ export const useDeleteNodes = () => {
     options?: DeleteNodesOptions,
   ): DeleteNodesResult => {
     try {
-      // Validate network exists
-      const network = networks.get(networkId)
+      // Get fresh network state from store (not stale snapshot)
+      const network = useNetworkStore.getState().networks.get(networkId)
       if (!network) {
         return {
           success: false,
@@ -152,7 +152,30 @@ export const useDeleteNodes = () => {
       }
 
       // Call the pure function to delete nodes
-      const result = deleteNodesCore(networkId, nodeIds, storeActions)
+      // Pass the network we validated to avoid stale snapshot issues
+      const result = deleteNodesCore(networkId, nodeIds, network, storeActions)
+
+      // Clean up visual style bypasses for deleted nodes and edges
+      const visualStyle = visualStyles[networkId]
+      if (visualStyle) {
+        const allDeletedIds = [
+          ...result.deletedNodeIds,
+          ...result.deletedEdges.map((edge) => edge.id),
+        ]
+
+        // Iterate through all visual properties and remove bypasses
+        Object.keys(visualStyle).forEach((vpName) => {
+          const visualProperty = visualStyle[vpName as VisualPropertyName]
+          if (visualProperty?.bypassMap) {
+            const hasBypassesToDelete = allDeletedIds.some((id) =>
+              visualProperty.bypassMap.has(id),
+            )
+            if (hasBypassesToDelete) {
+              deleteBypass(networkId, vpName as VisualPropertyName, allDeletedIds)
+            }
+          }
+        })
+      }
 
       // Record for undo/redo (unless skipUndo is true)
       if (!options?.skipUndo) {
