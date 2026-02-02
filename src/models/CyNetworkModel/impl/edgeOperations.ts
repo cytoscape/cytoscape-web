@@ -124,13 +124,11 @@ export const deleteEdgesCore = (
   deleteRows(networkId, edgeIds)
 
   // 4. Update network summary
-  const updatedNetwork = networks.get(networkId)
-  if (updatedNetwork) {
-    updateNetworkSummary(networkId, {
-      nodeCount: updatedNetwork.nodes.length,
-      edgeCount: updatedNetwork.edges.length,
-    })
-  }
+  // Calculate counts from original network since networks Map is a stale snapshot
+  updateNetworkSummary(networkId, {
+    nodeCount: network.nodes.length,
+    edgeCount: network.edges.length - edgeIds.length,
+  })
 
   return {
     deletedEdgeIds: edgeIds,
@@ -221,12 +219,10 @@ export const createEdgesCore = (
   })
 
   // 4. Update network summary
-  const updatedNetwork = networks.get(networkId)
-  if (updatedNetwork) {
-    updateNetworkSummary(networkId, {
-      nodeCount: updatedNetwork.nodes.length,
-      edgeCount: updatedNetwork.edges.length,
-    })
-  }
+  // Calculate counts from original network since networks Map is a stale snapshot
+  updateNetworkSummary(networkId, {
+    nodeCount: network.nodes.length,
+    edgeCount: network.edges.length + edgeIds.length,
+  })
 }
 

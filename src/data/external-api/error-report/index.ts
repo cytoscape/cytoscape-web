@@ -218,18 +218,6 @@ export const exportPartialSnapshotForNetwork = async (
     const buildTime = process.env.REACT_APP_BUILD_TIME
 
     // Format build ID similar to AboutCytoscapeWebMenuItem
-    const formatDateForHash = (dateString: string): string => {
-      const date = new Date(dateString)
-      const pad = (num: number) => String(num).padStart(2, '0')
-      const month = pad(date.getMonth() + 1)
-      const day = pad(date.getDate())
-      const year = date.getFullYear()
-      const hours = pad(date.getHours())
-      const minutes = pad(date.getMinutes())
-      const seconds = pad(date.getSeconds())
-      return `${month}-${day}-${year}-${hours}-${minutes}-${seconds}`
-    }
-
     const buildId =
       gitCommit && lastCommitTime
         ? `${gitCommit.substring(0, 7)}-${formatDateForHash(lastCommitTime)}`
