@@ -136,6 +136,23 @@ export const useDeleteNodes = () => {
         }
       }
 
+      // Check if any of the requested nodes actually exist
+      const nodesToDelete = network.nodes.filter((node) =>
+        nodeIds.includes(node.id),
+      )
+
+      if (nodesToDelete.length === 0) {
+        return {
+          success: false,
+          deletedNodeCount: 0,
+          deletedEdgeCount: 0,
+          error: 'None of the specified nodes exist',
+        }
+      }
+
+      // Filter to only node IDs that actually exist
+      const existingNodeIds = nodesToDelete.map((node) => node.id)
+
       // Build store actions object
       const storeActions: NodeOperationStoreActions = {
         deleteNodesFromNetwork,
@@ -151,9 +168,9 @@ export const useDeleteNodes = () => {
         visualStyles,
       }
 
-      // Call the pure function to delete nodes
+      // Call the pure function to delete nodes (only existing ones)
       // Pass the network we validated to avoid stale snapshot issues
-      const result = deleteNodesCore(networkId, nodeIds, network, storeActions)
+      const result = deleteNodesCore(networkId, existingNodeIds, network, storeActions)
 
       // Clean up visual style bypasses for deleted nodes and edges
       const visualStyle = visualStyles[networkId]

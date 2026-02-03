@@ -6,6 +6,7 @@ import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
 import { useTableStore } from './stores/TableStore'
 import { useUiStateStore } from './stores/UiStateStore'
+import { useUndoStore } from './stores/UndoStore'
 import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
@@ -36,6 +37,7 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
   const deleteVisualStyle = useVisualStyleStore((state) => state.delete)
   const deleteTables = useTableStore((state) => state.delete)
   const deleteAspects = useOpaqueAspectStore((state) => state.delete)
+  const deleteUndoStack = useUndoStore((state) => state.deleteStack)
   const deleteNetworkModifiedStatus = useWorkspaceStore(
     (state) => state.deleteNetworkModifiedStatus,
   )
@@ -96,6 +98,7 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
     deleteTables(id)
     deleteNetworkModifiedStatus(id)
     deleteAspects(id)
+    deleteUndoStack(id)
 
     if (activeNetworkView === id) {
       setActiveNetworkView('')

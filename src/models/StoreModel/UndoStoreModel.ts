@@ -51,6 +51,7 @@ export interface UndoAction {
   addStack: (networkId: IdType, undoRedoStack: UndoRedoStack) => void
   setUndoStack: (networkId: IdType, undoStack: Edit[]) => void
   setRedoStack: (networkId: IdType, redoStack: Edit[]) => void
+  deleteStack: (networkId: IdType) => void
 }
 
 export type UndoStore = UndoRedoStackState & UndoAction

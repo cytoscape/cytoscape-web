@@ -203,6 +203,15 @@ export const useUndoStack = () => {
         if (deletedEdgeViewModels.length > 0) {
           addEdgeViews(networkId, deletedEdgeViewModels)
         }
+
+        // 4. Restore network summary counts (get network after restoration)
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (network) {
+          updateNetworkSummary(networkId, {
+            nodeCount: network.nodes.length,
+            edgeCount: network.edges.length,
+          })
+        }
       },
       [UndoCommandType.DELETE_NODES]: (params: any[]) => {
         const networkId: IdType = params[0]
@@ -236,6 +245,15 @@ export const useUndoStack = () => {
         }
         if (deletedEdgeViewModels.length > 0) {
           addEdgeViews(networkId, deletedEdgeViewModels)
+        }
+
+        // 4. Restore network summary counts (get network after restoration)
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (network) {
+          updateNetworkSummary(networkId, {
+            nodeCount: network.nodes.length,
+            edgeCount: network.edges.length,
+          })
         }
       },
       [UndoCommandType.CREATE_NODES]: (params: any[]) => {

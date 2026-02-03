@@ -46,6 +46,7 @@ export const useRegisterNetwork = () => {
 
   const layoutEngines = useLayoutStore((state) => state.layoutEngines)
   const setIsRunning = useLayoutStore((state) => state.setIsRunning)
+  const addSummary = useNetworkSummaryStore((state) => state.add)
   const updateSummary = useNetworkSummaryStore((state) => state.update)
   const updateNodePositions = useViewModelStore(
     (state) => state.updateNodePositions,
@@ -73,6 +74,7 @@ export const useRegisterNetwork = () => {
     addVisualStyle(networkId, visualStyle)
     addTable(networkId, nodeTable, edgeTable)
     addViewModel(networkId, networkViews[0])
+    addSummary(networkId, summary)
     if (otherAspects !== undefined) {
       addAllOpaqueAspects(networkId, otherAspects)
     }
