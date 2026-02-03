@@ -78,6 +78,11 @@ export const useUndoStore = create(
           delete state.undoRedoStacks[networkId]
           return state
         }),
+      deleteAllStacks: () =>
+        set((state) => {
+          state.undoRedoStacks = {}
+          return state
+        }),
     })),
   ),
 )

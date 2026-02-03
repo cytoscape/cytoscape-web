@@ -168,12 +168,47 @@ export const useDeleteNodes = () => {
         visualStyles,
       }
 
+      // Capture visual style bypasses before deletion
+      // We need to capture for both nodes and edges (edges will be deleted too)
+      const deletedBypasses = new Map<
+        VisualPropertyName,
+        Map<IdType, any>
+      >()
+      const visualStyle = visualStyles[networkId]
+      if (visualStyle) {
+        // Get all IDs that will be deleted (nodes + their connected edges)
+        // We need to get edges before deletion, so check which edges connect to these nodes
+        const edgesToBeDeleted = network.edges.filter(
+          (edge) =>
+            existingNodeIds.includes(edge.s) ||
+            existingNodeIds.includes(edge.t),
+        )
+        const allDeletedIds = [
+          ...existingNodeIds,
+          ...edgesToBeDeleted.map((edge) => edge.id),
+        ]
+
+        Object.keys(visualStyle).forEach((vpName) => {
+          const visualProperty = visualStyle[vpName as VisualPropertyName]
+          if (visualProperty?.bypassMap) {
+            const bypassesForProperty = new Map<IdType, any>()
+            allDeletedIds.forEach((id) => {
+              if (visualProperty.bypassMap.has(id)) {
+                bypassesForProperty.set(id, visualProperty.bypassMap.get(id))
+              }
+            })
+            if (bypassesForProperty.size > 0) {
+              deletedBypasses.set(vpName as VisualPropertyName, bypassesForProperty)
+            }
+          }
+        })
+      }
+
       // Call the pure function to delete nodes (only existing ones)
       // Pass the network we validated to avoid stale snapshot issues
       const result = deleteNodesCore(networkId, existingNodeIds, network, storeActions)
 
       // Clean up visual style bypasses for deleted nodes and edges
-      const visualStyle = visualStyles[networkId]
       if (visualStyle) {
         const allDeletedIds = [
           ...result.deletedNodeIds,
@@ -208,6 +243,7 @@ export const useDeleteNodes = () => {
             result.deletedEdgeViews,
             result.deletedNodeRows,
             result.deletedEdgeRows,
+            deletedBypasses,
           ],
           // Redo: delete the nodes again
           [networkId, result.deletedNodeIds],

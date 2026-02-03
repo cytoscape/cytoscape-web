@@ -11,6 +11,7 @@ import {
 } from '../../models'
 import { DEFAULT_RENDERER_ID } from '../../models/RendererModel/impl/defaultRenderer'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import {
   deleteNodesCore,
   createNodesCore,
@@ -190,6 +191,10 @@ export const useUndoStack = () => {
           IdType,
           Record<string, ValueType>
         > = params[3]
+        const deletedBypasses: Map<
+          VisualPropertyName,
+          Map<IdType, any>
+        > = params[4] || new Map()
 
         // 1. Add back the deleted edges
         addEdges(networkId, deletedEdges)
@@ -204,7 +209,12 @@ export const useUndoStack = () => {
           addEdgeViews(networkId, deletedEdgeViewModels)
         }
 
-        // 4. Restore network summary counts (get network after restoration)
+        // 4. Restore visual style bypasses
+        deletedBypasses.forEach((bypassMap, vpName) => {
+          setBypassMap(networkId, vpName, bypassMap)
+        })
+
+        // 5. Restore network summary counts (get network after restoration)
         const network = useNetworkStore.getState().networks.get(networkId)
         if (network) {
           updateNetworkSummary(networkId, {
@@ -227,6 +237,10 @@ export const useUndoStack = () => {
           IdType,
           Record<string, ValueType>
         > = params[6]
+        const deletedBypasses: Map<
+          VisualPropertyName,
+          Map<IdType, any>
+        > = params[7] || new Map()
 
         // 1. Add back the deleted nodes and connected edges
         addNodesAndEdges(networkId, nodeIds, deletedEdges)
@@ -247,7 +261,12 @@ export const useUndoStack = () => {
           addEdgeViews(networkId, deletedEdgeViewModels)
         }
 
-        // 4. Restore network summary counts (get network after restoration)
+        // 4. Restore visual style bypasses
+        deletedBypasses.forEach((bypassMap, vpName) => {
+          setBypassMap(networkId, vpName, bypassMap)
+        })
+
+        // 5. Restore network summary counts (get network after restoration)
         const network = useNetworkStore.getState().networks.get(networkId)
         if (network) {
           updateNetworkSummary(networkId, {

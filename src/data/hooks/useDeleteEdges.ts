@@ -160,12 +160,34 @@ export const useDeleteEdges = () => {
         visualStyles,
       }
 
+      // Capture visual style bypasses before deletion
+      const deletedBypasses = new Map<
+        VisualPropertyName,
+        Map<IdType, any>
+      >()
+      const visualStyle = visualStyles[networkId]
+      if (visualStyle) {
+        Object.keys(visualStyle).forEach((vpName) => {
+          const visualProperty = visualStyle[vpName as VisualPropertyName]
+          if (visualProperty?.bypassMap) {
+            const bypassesForProperty = new Map<IdType, any>()
+            existingEdgeIds.forEach((id) => {
+              if (visualProperty.bypassMap.has(id)) {
+                bypassesForProperty.set(id, visualProperty.bypassMap.get(id))
+              }
+            })
+            if (bypassesForProperty.size > 0) {
+              deletedBypasses.set(vpName as VisualPropertyName, bypassesForProperty)
+            }
+          }
+        })
+      }
+
       // Call the pure function to delete edges (only existing ones)
       // Pass the network we validated to avoid stale snapshot issues
       const result = deleteEdgesCore(networkId, existingEdgeIds, network, storeActions)
 
       // Clean up visual style bypasses for deleted edges
-      const visualStyle = visualStyles[networkId]
       if (visualStyle) {
         // Iterate through all visual properties and remove bypasses
         Object.keys(visualStyle).forEach((vpName) => {
@@ -192,6 +214,7 @@ export const useDeleteEdges = () => {
             edgesToDelete,
             result.deletedEdgeViews,
             result.deletedEdgeRows,
+            deletedBypasses,
           ],
           // Redo: delete the edges again
           [networkId, result.deletedEdgeIds],

@@ -52,6 +52,7 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
   const deleteAllVisualStyles = useVisualStyleStore((state) => state.deleteAll)
   const deleteAllTables = useTableStore((state) => state.deleteAll)
   const deleteAllAspects = useOpaqueAspectStore((state) => state.deleteAll)
+  const deleteAllUndoStacks = useUndoStore((state) => state.deleteAllStacks)
   const deleteAllNetworkModifiedStatuses = useWorkspaceStore(
     (state) => state.deleteAllNetworkModifiedStatuses,
   )
@@ -152,6 +153,7 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
     deleteAllVisualStyles()
     deleteAllTables()
     deleteAllAspects()
+    deleteAllUndoStacks()
     deleteAllNetworkModifiedStatuses()
     deleteAllValidationResults()
     setActiveNetworkView('')
