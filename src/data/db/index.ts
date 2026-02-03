@@ -418,7 +418,7 @@ export const getNetworkSummaryFromDb = async (
 
 export const getNetworkSummariesFromDb = async (
   externalIds: IdType[],
-): Promise<NetworkSummary[]> => {
+): Promise<(NetworkSummary | undefined)[]> => {
   return await db.summaries.bulkGet(externalIds)
 }
 
