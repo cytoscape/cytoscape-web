@@ -58,12 +58,15 @@ export const toPlainObject = <T>(obj: T): T => {
 // Helper function for manual deep copy with cycle detection
 // Skips functions and other non-serializable types
 const manualDeepCopy = <T>(obj: T, visited: WeakSet<object>): T => {
-  if (obj === null || typeof obj !== 'object') {
+  if (obj === null) {
     return obj
   }
   // Skip functions - they cannot be serialized
   if (typeof obj === 'function') {
     return undefined as unknown as T
+  }
+  if (typeof obj !== 'object') {
+    return obj
   }
   // Handle circular references
   if (visited.has(obj as object)) {
