@@ -49,8 +49,8 @@ From `ndex/index.ts`:
 - `deleteNdexWorkspace(workspaceId, accessToken?, ndexUrl?)`: Deletes workspace
 
 **Permissions Operations:**
-- `getNetworkPermissions(networkId, accessToken?, ndexUrl?)`: Gets network permissions
-- `updateNetworkPermissions(networkId, permissions, accessToken?, ndexUrl?)`: Updates permissions
+- `getNdexNetworkPermission(networkId, accessToken?, ndexUrl?)`: Gets network permissions
+- `hasNdexEditPermission(networkId, accessToken?, ndexUrl?)`: Checks if the user has edit permission
 
 ### Usage Examples
 
