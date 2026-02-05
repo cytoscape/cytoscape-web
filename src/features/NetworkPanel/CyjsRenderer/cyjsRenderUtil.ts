@@ -30,14 +30,53 @@ import VisualStyleFn, {
 import {
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
+  VALID_PIE_CHART_SLICE_INDEX_RANGE,
+  getCustomGraphicsPropertyKeys,
+  getPieBackgroundColorViewModelProp,
+  getPieBackgroundSizeViewModelProp,
 } from '../../../models/VisualStyleModel/impl/customGraphicsImpl'
 import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/cyjsDirectMapper'
 import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/directMappingSelector'
-import { CyjsVisualPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/cyjsVisualPropertyName'
-import { getCyjsVpName } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
+import {
+  CyjsVisualPropertyName,
+  CyjsVisualPropertyType,
+} from '../../../models/VisualStyleModel/impl/CyjsProperties/cyjsVisualPropertyName'
+import {
+  getCyjsVpName,
+  getPieBackgroundColorCyJsProp,
+  getPieBackgroundSizeCyJsProp,
+} from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
 import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
-import { NodeShapeMapping } from './cyjsFactoryUtil'
+
+/**
+ * Maps application node shape types to Cytoscape.js node shape strings.
+ */
+export const NodeShapeMapping: Record<NodeShapeType, string> = {
+  [NodeShapeType.Parallelogram]: 'rhomboid',
+  [NodeShapeType.RoundRectangle]: 'roundrectangle',
+  [NodeShapeType.Triangle]: 'triangle',
+  [NodeShapeType.Diamond]: 'diamond',
+  [NodeShapeType.Octagon]: 'octagon',
+  [NodeShapeType.Hexagon]: 'hexagon',
+  [NodeShapeType.Ellipse]: 'ellipse',
+  [NodeShapeType.Rectangle]: 'rectangle',
+  [NodeShapeType.Vee]: 'vee',
+}
+
+/**
+ * Transforms a node shape value from application format to Cytoscape.js format.
+ */
+export const transformNodeShape = (value: NodeShapeType): string => {
+  return NodeShapeMapping[value]
+}
+
+/**
+ * Transforms a rotation value from degrees to radians for Cytoscape.js.
+ */
+export const transformRotation = (degrees: number): number => {
+  return (degrees * Math.PI) / 180
+}
 
 /**
  * Helper to update edge arrow shape and fill properties on a Cytoscape.js element.
@@ -125,14 +164,14 @@ vpHandlers.set(
 
 // Handler for node shape: maps application node shape to Cytoscape.js node shape.
 vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value, view) => {
-  obj.data(key, NodeShapeMapping[value as NodeShapeType])
+  obj.data(key, transformNodeShape(value as NodeShapeType))
 })
 
 // Handler for node label rotation: converts degrees to radians for Cytoscape.js.
 vpHandlers.set(
   VisualPropertyName.NodeLabelRotation,
   (obj, key, value, view) => {
-    obj.data(key, (value * Math.PI) / 180)
+    obj.data(key, transformRotation(value))
   },
 )
 
@@ -140,7 +179,7 @@ vpHandlers.set(
 vpHandlers.set(
   VisualPropertyName.EdgeLabelRotation,
   (obj, key, value, view) => {
-    obj.data(key, (value * Math.PI) / 180)
+    obj.data(key, transformRotation(value))
   },
 )
 
@@ -258,9 +297,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
      * Adds Cytoscape.js pie chart style properties for up to 16 slices.
      */
     const addCyjsPieProperties = () => {
-      const MAX_SLICES = 16 // Allocate all 16 slices for flexibility.
-      const pieSizeStyleName = 'pie-size'
-      const pieSizeSelectorStr = 'pieSize'
+      const pieSizeStyleName = 'pie-size' as CyjsVisualPropertyType
+      const pieSizeSelectorStr = SpecialPropertyName.PieSize
       const pieSizeMapping = {
         selector: `node[${pieSizeSelectorStr}]`,
         style: {
@@ -268,8 +306,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         },
       }
 
-      const pieStartAngleStyleName = 'pie-start-angle'
-      const pieStartAngleSelectorStr = 'pieStartAngle'
+      const pieStartAngleStyleName = 'pie-start-angle' as CyjsVisualPropertyType
+      const pieStartAngleSelectorStr = SpecialPropertyName.PieStartAngle
       const pieStartAngleMapping = {
         selector: `node[${pieStartAngleSelectorStr}]`,
         style: {
@@ -278,9 +316,13 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
       }
 
       const pieBackGroundMappings = []
-      for (let i = 1; i <= MAX_SLICES; i++) {
-        const bgColorStyleName = `pie-${i}-background-color`
-        const bgColorSelectorStr = `pie${i}BackgroundColor`
+      for (
+        let i = VALID_PIE_CHART_SLICE_INDEX_RANGE[0];
+        i <= VALID_PIE_CHART_SLICE_INDEX_RANGE[1];
+        i++
+      ) {
+        const bgColorStyleName = getPieBackgroundColorCyJsProp(i)
+        const bgColorSelectorStr = getPieBackgroundColorViewModelProp(i)
         const pieBackgroundColorMapping = {
           selector: `node[${bgColorSelectorStr}]`,
           style: {
@@ -288,8 +330,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           },
         }
 
-        const pieSliceSizeStyleName = `pie-${i}-background-size`
-        const pieSliceSizeSelectorStr = `pie${i}BackgroundSize`
+        const pieSliceSizeStyleName = getPieBackgroundSizeCyJsProp(i)
+        const pieSliceSizeSelectorStr = getPieBackgroundSizeViewModelProp(i)
         const pieSliceSizeMapping = {
           selector: `node[${pieSliceSizeSelectorStr}]`,
           style: {
@@ -313,8 +355,8 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
      * Adds Cytoscape.js ring chart (pie hole) style property.
      */
     const addCyjsRingProperties = () => {
-      const pieHoleSizeStyleName = 'pie-hole'
-      const pieHoleSizeSelectorStr = 'pieHole'
+      const pieHoleSizeStyleName = 'pie-hole' as CyjsVisualPropertyType
+      const pieHoleSizeSelectorStr = SpecialPropertyName.PieHole
       const pieHoleSizeMapping = {
         selector: `node[${pieHoleSizeSelectorStr}]`,
         style: {
@@ -410,6 +452,18 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   }
   cyStyle.push(hoverMapping as CyjsDirectMapper)
 
+  // Add a special class for edge creation target highlighting.
+  const edgeCreationTargetMapping: any = {
+    selector: `.edge-creation-target`,
+    style: {
+      'underlay-color': 'lightgreen',
+      'underlay-padding': 10,
+      'underlay-opacity': 0.5,
+      'underlay-shape': 'roundrectangle',
+    },
+  }
+  cyStyle.push(edgeCreationTargetMapping as CyjsDirectMapper)
+
   return cyStyle
 }
 
@@ -437,6 +491,17 @@ const updateCyElements = <T extends View>(
           vpHandler(obj, key, value, view)
         } else {
           obj.data(key, value)
+        }
+      })
+
+      // Update the cyObject with the custom graphics properties
+      // Custom graphics properties are different from other properties
+      // In between updates, the keys may be removed from the view model
+      // So we need to remove the data from the cyObject
+      const customGraphicsPropertyKeys = getCustomGraphicsPropertyKeys()
+      customGraphicsPropertyKeys.forEach((key) => {
+        if (!view.values.has(key as any)) {
+          obj.removeData(key as any)
         }
       })
 

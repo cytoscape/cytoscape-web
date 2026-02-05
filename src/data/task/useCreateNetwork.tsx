@@ -15,7 +15,7 @@ import NetworkFn, {
   Node,
 } from '../../models/NetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { getBaseSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { NetworkStore } from '../../models/StoreModel/NetworkStoreModel'
 import {
   TableRecord,
@@ -146,7 +146,7 @@ const createViewForNetwork = (
     redoStack: [],
   }
 
-  const cynetwork: CyNetwork = {
+  const cyNetwork: CyNetwork = {
     network,
     nodeTable,
     edgeTable,
@@ -156,10 +156,10 @@ const createViewForNetwork = (
     undoRedoStack,
   }
 
-  return cynetwork
+  return cyNetwork
 }
 
-interface CreateNetworkWithViewProps {
+interface CreateNetworkProps {
   name: string
   description?: string
   edgeList: Array<[IdType, IdType, string?]>
@@ -176,11 +176,11 @@ interface CreateNetworkWithViewProps {
  * After network creation, tables keeps the map of IDs to names.
  *
  */
-export const useCreateNetworkWithView = (): (({
+export const useCreateNetwork = (): (({
   name,
   description,
   edgeList,
-}: CreateNetworkWithViewProps) => CyNetwork) => {
+}: CreateNetworkProps) => CyNetwork) => {
   const addNetwork = useNetworkStore((state: NetworkStore) => state.add)
   const addTable = useTableStore((state: TableStore) => state.add)
   const addViewModel = useViewModelStore((state) => state.add)
@@ -191,8 +191,8 @@ export const useCreateNetworkWithView = (): (({
     (state) => state.createPassthroughMapping,
   )
 
-  const createNetworkWithView = useCallback(
-    ({ name, description, edgeList }: CreateNetworkWithViewProps) => {
+  const createNetwork = useCallback(
+    ({ name, description, edgeList }: CreateNetworkProps) => {
       // Replace original IDs with integer-based IDs
       // Get unique nodes from the edge list
       const nodeSet = new Set<IdType>(
@@ -204,17 +204,19 @@ export const useCreateNetworkWithView = (): (({
       const network: Network = createNetworkFromEdgeList(edgeList, nodeIdMap)
 
       // Add all required objects to the network
-      const withView: CyNetwork = createViewForNetwork(network, nodeIdMap)
-      const summary: NetworkSummary = getBaseSummary({
+      const cyNetwork: CyNetwork = createViewForNetwork(network, nodeIdMap)
+      const summary: NetworkSummary = createNetworkSummary({
+        networkId: network.id,
         name: name || `CyWeb Network (${network.id})`,
-        network,
         description,
+        nodeCount: network.nodes.length,
+        edgeCount: network.edges.length,
       })
 
       addNetwork(network)
-      addVisualStyle(network.id, withView.visualStyle)
-      addTable(network.id, withView.nodeTable, withView.edgeTable)
-      addViewModel(network.id, withView.networkViews[0])
+      addVisualStyle(network.id, cyNetwork.visualStyle)
+      addTable(network.id, cyNetwork.nodeTable, cyNetwork.edgeTable)
+      addViewModel(network.id, cyNetwork.networkViews[0])
       addSummary(network.id, summary)
 
       // Update the Visual Style with minimal settings
@@ -225,10 +227,10 @@ export const useCreateNetworkWithView = (): (({
         ValueTypeName.String,
       )
 
-      return withView
+      return cyNetwork
     },
     [],
   )
 
-  return createNetworkWithView
+  return createNetwork
 }

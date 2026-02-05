@@ -25,11 +25,11 @@ export type JustificationType = 'left' | 'center' | 'right'
 export type AnchorType = 'C' | 'N' | 'S' | 'E' | 'W'
 
 export interface CustomGraphicsPositionType {
-  justification: JustificationType
-  marginX: number
-  marginY: number
-  entityAnchor: AnchorType
-  graphicsAnchor: AnchorType
+  JUSTIFICATION: JustificationType
+  MARGIN_X: number
+  MARGIN_Y: number
+  ENTITY_ANCHOR: AnchorType
+  GRAPHICS_ANCHOR: AnchorType
 }
 
 export interface CustomGraphicsType {

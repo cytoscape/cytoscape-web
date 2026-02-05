@@ -1,4 +1,5 @@
 export { ColorType } from './ColorType'
+export type { ColorPalette, PaletteMetadata, PaletteDefinition } from './ColorPalette'
 export { CustomGraphicsType } from './CustomGraphicsType'
 export { EdgeArrowShapeType } from './EdgeArrowShapeType'
 export { EdgeFillType } from './EdgeFillType'

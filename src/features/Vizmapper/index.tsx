@@ -33,6 +33,7 @@ import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { MappingForm } from './Forms/MappingForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
+import { logUi } from '../../debug'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -204,14 +205,9 @@ export default function VizmapperView(props: {
     return <div></div>
   }
 
-  const customGraphicVps = getCustomGraphicNodeVps(
-    VisualStyleFn.nodeVisualProperties(visualStyle),
-  )
-
-  const nonCustomGraphicVps = getNonCustomGraphicVps(
-    VisualStyleFn.nodeVisualProperties(visualStyle),
-  )
-
+  const allNodeVps = VisualStyleFn.nodeVisualProperties(visualStyle)
+  const customGraphicVps = getCustomGraphicNodeVps(allNodeVps)
+  const nonCustomGraphicVps = getNonCustomGraphicVps(allNodeVps)
   const nodeVps = nonCustomGraphicVps.map((vp) => {
     return (
       <VisualPropertyView
@@ -227,55 +223,17 @@ export default function VizmapperView(props: {
     getFirstValidCustomGraphicVp(customGraphicVps)
 
   if (firstValidCustomGraphicVP !== undefined) {
-    // const customGraphicsSizeVP = getSizePropertyForCustomGraphic(
-    //   firstValidCustomGraphicVP,
-    //   customGraphicVps,
-    // )
-    // nodeVps.push(
-    //   <VisualPropertyView
-    //     key={firstValidCustomGraphicVP.name}
-    //     currentNetworkId={props.networkId}
-    //     visualProperty={firstValidCustomGraphicVP}
-    //   />,
-    // )
-    // Dont expose custom graphics size properties for now
-    // there are rendering limitations in cy.js
-    // if (customGraphicsSizeVP) {
-    //   nodeVps.push(
-    //     <VisualPropertyView
-    //       key={customGraphicsSizeVP.name}
-    //       currentNetworkId={props.networkId}
-    //       visualProperty={customGraphicsSizeVP}
-    //     />,
-    //   )
-    // }
+    nodeVps.push(
+      <VisualPropertyView
+        key={firstValidCustomGraphicVP.name}
+        currentNetworkId={props.networkId}
+        visualProperty={firstValidCustomGraphicVP}
+      />,
+    )
   } else {
-    // There are no existing custom graphics vps set, so let the user
-    // edit the first image chart property
-    // const imageChart1Vp = customGraphicVps.find(
-    //   (vp) => vp.name === 'nodeImageChart1',
-    // )
-    // const imageChartSize1Vp = customGraphicVps.find(
-    //   (vp) => vp.name === 'nodeImageChartSize1',
-    // )
-    // if (imageChart1Vp) {
-    //   nodeVps.push(
-    //     <VisualPropertyView
-    //       key={imageChart1Vp.name}
-    //       currentNetworkId={props.networkId}
-    //       visualProperty={imageChart1Vp}
-    //     />,
-    //   )
-    // }
-    // if (imageChartSize1Vp) {
-    //   nodeVps.push(
-    //     <VisualPropertyView
-    //       key={imageChartSize1Vp.name}
-    //       currentNetworkId={props.networkId}
-    //       visualProperty={imageChartSize1Vp}
-    //     />,
-    //   )
-    // }
+    logUi.error('No valid custom graphics visual properties found', {
+      networkId: props.networkId,
+    })
   }
 
   const edgeVps = VisualStyleFn.edgeVisualProperties(visualStyle).map((vp) => {
