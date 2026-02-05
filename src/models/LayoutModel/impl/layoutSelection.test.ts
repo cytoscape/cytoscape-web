@@ -1,6 +1,6 @@
 import NetworkFn from '../../NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
-import { getBaseSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'
+import { createNetworkSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'
 import { LayoutAlgorithm } from '../LayoutAlgorithm'
 import { LayoutEngine } from '../LayoutEngine'
 import {
@@ -112,7 +112,10 @@ describe('layoutSelection', () => {
   describe('getDefaultLayout', () => {
     it('should return undefined for networks larger than threshold', () => {
       const network = NetworkFn.createNetwork('test-network')
-      const summary = getBaseSummary({ name: 'Test', network })
+      const summary = createNetworkSummary({
+        networkId: network.id,
+        name: 'Test',
+      })
       const numElements = 2000
       const threshold = 1000
 
@@ -123,7 +126,10 @@ describe('layoutSelection', () => {
 
     it('should return layout for small networks', () => {
       const network = NetworkFn.createNetwork('test-network')
-      const summary = getBaseSummary({ name: 'Test', network })
+      const summary = createNetworkSummary({
+        networkId: network.id,
+        name: 'Test',
+      })
       const numElements = 100
       const threshold = 1000
 
@@ -138,7 +144,10 @@ describe('layoutSelection', () => {
 
     it('should return grid layout for networks at threshold', () => {
       const network = NetworkFn.createNetwork('test-network')
-      const summary = getBaseSummary({ name: 'Test', network })
+      const summary = createNetworkSummary({
+        networkId: network.id,
+        name: 'Test',
+      })
       const numElements = ELE_THRESHOLD
       const threshold = 1000
 
@@ -152,7 +161,10 @@ describe('layoutSelection', () => {
 
     it('should return layout for networks above threshold but below max threshold', () => {
       const network = NetworkFn.createNetwork('test-network')
-      const summary = getBaseSummary({ name: 'Test', network })
+      const summary = createNetworkSummary({
+        networkId: network.id,
+        name: 'Test',
+      })
       const numElements = 1500
       const maxThreshold = 2000
 
@@ -163,7 +175,10 @@ describe('layoutSelection', () => {
 
     it('should return undefined when numElements exceeds maxNetworkElementsThreshold', () => {
       const network = NetworkFn.createNetwork('test-network')
-      const summary = getBaseSummary({ name: 'Test', network })
+      const summary = createNetworkSummary({
+        networkId: network.id,
+        name: 'Test',
+      })
       const numElements = 1500
       const maxThreshold = 1000
 
@@ -173,4 +188,3 @@ describe('layoutSelection', () => {
     })
   })
 })
-

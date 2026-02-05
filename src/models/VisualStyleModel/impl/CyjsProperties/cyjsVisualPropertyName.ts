@@ -102,9 +102,9 @@ export type CyjsNodeVisualPropertyTypes =
   | 'pie-size'
   | 'pie-start-angle'
   | 'pie-hole'
-  | 'pie-background-color'
-  | 'pie-background-size'
-  | 'pie-background-opacity'
+  | `pie-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16}-background-opacity`
+  | `pie-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16}-background-color`
+  | `pie-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16}-background-size`
 
 export const CyjsVisualPropertyName = {
   ...CyjsNodeVisualPropertyName,

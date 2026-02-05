@@ -117,8 +117,6 @@ export const useUpdateNetwork = (): (({
           properties: localProperties,
           hasLayout: anyNodeHasPosition,
           description: localDescription,
-          nodeCount: localNodeCount,
-          edgeCount: localEdgeCount,
           modificationTime: new Date(Date.now()),
         })
         setVisualStyleOptions(networkId, visualStyleOptions)

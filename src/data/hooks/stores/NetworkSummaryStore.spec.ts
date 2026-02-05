@@ -123,10 +123,10 @@ describe('useNetworkSummaryStore', () => {
 
       act(() => {
         result.current.add(networkId, summary)
-        result.current.update(networkId, { nodeCount: 20 })
+        result.current.update(networkId, { version: '2.0' })
       })
 
-      expect(result.current.summaries[networkId].nodeCount).toBe(20)
+      expect(result.current.summaries[networkId].version).toBe('2.0')
       expect(result.current.summaries[networkId].externalId).toBe(networkId)
     })
 
@@ -135,7 +135,7 @@ describe('useNetworkSummaryStore', () => {
       const networkId: IdType = 'network-1'
 
       act(() => {
-        result.current.update(networkId, { nodeCount: 20 })
+        result.current.update(networkId, { version: '2.0' })
       })
 
       expect(result.current.summaries[networkId]).toBeUndefined()
@@ -202,9 +202,9 @@ describe('useNetworkSummaryStore', () => {
       expect(result.current.summaries[networkId]).toEqual(summary)
 
       act(() => {
-        result.current.update(networkId, { nodeCount: 30 })
+        result.current.update(networkId, { version: '3.0' })
       })
-      expect(result.current.summaries[networkId].nodeCount).toBe(30)
+      expect(result.current.summaries[networkId].version).toBe('3.0')
 
       act(() => {
         result.current.delete(networkId)

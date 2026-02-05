@@ -19,11 +19,11 @@ export const DEFAULT_NODE_LABEL_POSITION: NodeLabelPositionType = {
 }
 
 export const DEFAULT_CUSTOM_GRAPHICS_POSITION: CustomGraphicsPositionType = {
-  justification: 'center',
-  marginX: 0,
-  marginY: 0,
-  entityAnchor: 'C',
-  graphicsAnchor: 'C',
+  JUSTIFICATION: 'center',
+  MARGIN_X: 0,
+  MARGIN_Y: 0,
+  ENTITY_ANCHOR: 'C',
+  GRAPHICS_ANCHOR: 'C',
 }
 
 export const DEFAULT_CUSTOM_GRAPHICS: CustomGraphicsType = {

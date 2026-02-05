@@ -40,27 +40,27 @@ describe('createNetworkFromTableData', () => {
 
     expect(result.summary.name).toBe('test')
     expect(result.summary.isNdex).toBe(false)
-    expect(result.nodeTable.columns).toEqual([
+    expect(result.cyNetwork.nodeTable.columns).toEqual([
       { name: 'name', type: ValueTypeName.String },
     ])
-    expect(result.nodeTable.rows).toEqual(
+    expect(result.cyNetwork.nodeTable.rows).toEqual(
       new Map([
         ['0', { name: 'A' }],
         ['1', { name: 'B' }],
         ['2', { name: 'C' }],
       ]),
     )
-    expect(result.edgeTable.columns).toEqual([
+    expect(result.cyNetwork.edgeTable.columns).toEqual([
       { name: 'col4', type: ValueTypeName.Integer },
       { name: 'col3', type: ValueTypeName.String },
     ])
-    expect(result.edgeTable.rows).toEqual(
+    expect(result.cyNetwork.edgeTable.rows).toEqual(
       new Map([
         ['e0', { col3: 'Interaction 1', col4: 2 }],
         ['e1', { col3: 'Interaction 2', col4: 1 }],
       ]),
     )
-    expect(result.network).toEqual({
+    expect(result.cyNetwork.network).toEqual({
       id: 'test',
       edges: [
         { id: 'e0', s: '0', t: '1' },
@@ -78,13 +78,13 @@ describe('createNetworkFromTableData', () => {
 
     expect(result.summary.name).toBe('test')
     expect(result.summary.isNdex).toBe(false)
-    expect(result.nodeTable.columns).toEqual([
+    expect(result.cyNetwork.nodeTable.columns).toEqual([
       { name: 'name', type: ValueTypeName.String },
     ])
-    expect(result.nodeTable.rows).toEqual(new Map())
-    expect(result.edgeTable.columns).toEqual([])
-    expect(result.edgeTable.rows).toEqual(new Map())
-    expect(result.network).toEqual({ id: 'test', edges: [], nodes: [] })
+    expect(result.cyNetwork.nodeTable.rows).toEqual(new Map())
+    expect(result.cyNetwork.edgeTable.columns).toEqual([])
+    expect(result.cyNetwork.edgeTable.rows).toEqual(new Map())
+    expect(result.cyNetwork.network).toEqual({ id: 'test', edges: [], nodes: [] })
   })
 
   // Add more test cases as needed

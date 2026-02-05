@@ -306,51 +306,118 @@ export const exportCyNetworkToCx2 = (
   const nonCustomGraphicNodeVps = getNonCustomGraphicVps(
     VisualStyleFn.nodeVisualProperties(vs),
   )
+  const allNodeVps = VisualStyleFn.nodeVisualProperties(vs)
 
-  const validCustomGraphicNodeVps = []
+  // Separate lists for different purposes
+  const customGraphicNodeVpsForDefaults = []
+  const customGraphicNodeVpsForMappings = []
+  const customGraphicNodeVpsForBypasses = []
+
   for (let i = 1; i <= 9; i++) {
     const customGraphicVpName = `nodeImageChart${i}` as NodeVisualPropertyName
     const customGraphicVp = customGraphicNodeVps.find(
       (v) => v.name === customGraphicVpName,
     )
+
     if (customGraphicVp) {
-      const invalidCustomGraphicDefaultValue = isEqual(
+      const customGraphicSizeVpName =
+        `nodeImageChartSize${i}` as NodeVisualPropertyName
+      const customGraphicPositionVpName =
+        `nodeImageChartPosition${i}` as NodeVisualPropertyName
+      const customGraphicSizeVp = allNodeVps.find(
+        (v) => v.name === customGraphicSizeVpName,
+      )
+      const customGraphicPositionVp = allNodeVps.find(
+        (v) => v.name === customGraphicPositionVpName,
+      )
+
+      // Check if this custom graphic has valid defaults (not DEFAULT_CUSTOM_GRAPHICS)
+      const hasValidDefault = !isEqual(
         customGraphicVp.defaultValue,
         DEFAULT_CUSTOM_GRAPHICS,
       )
-      const invalidCustomGraphicMapping = customGraphicVp.mapping === undefined
-      const invalidCustomGraphicBypass = customGraphicVp.bypassMap.size === 0
-      if (
-        invalidCustomGraphicDefaultValue &&
-        invalidCustomGraphicMapping &&
-        invalidCustomGraphicBypass
-      ) {
-        continue
-      } else {
-        const customGraphicSizeVpName =
-          `nodeImageChartSize${i}` as NodeVisualPropertyName
-        const customGraphicPositionVpName =
-          `nodeImageChartPosition${i}` as NodeVisualPropertyName
-        const customGraphicSizeVp = customGraphicNodeVps.find(
-          (v) => v.name === customGraphicSizeVpName,
-        )
-        const customGraphicPositionVp = customGraphicNodeVps.find(
-          (v) => v.name === customGraphicPositionVpName,
-        )
+
+      // Check if this custom graphic has valid mapping
+      const hasValidMapping = customGraphicVp.mapping !== undefined
+
+      // Check if this custom graphic has valid bypasses
+      const hasValidBypasses = customGraphicVp.bypassMap.size > 0
+
+      // Add to defaults list if it has valid defaults (not DEFAULT_CUSTOM_GRAPHICS)
+      if (hasValidDefault) {
         if (customGraphicSizeVp !== undefined) {
-          validCustomGraphicNodeVps.push(customGraphicSizeVp)
+          customGraphicNodeVpsForDefaults.push(customGraphicSizeVp)
         }
         if (customGraphicPositionVp !== undefined) {
-          validCustomGraphicNodeVps.push(customGraphicPositionVp)
+          customGraphicNodeVpsForDefaults.push(customGraphicPositionVp)
         }
-        validCustomGraphicNodeVps.push(customGraphicVp)
+        customGraphicNodeVpsForDefaults.push(customGraphicVp)
+      }
+
+      // Add to mappings list if it has valid mappings
+      if (hasValidMapping) {
+        // Size and position should be included in defaults when custom graphic has mapping
+        if (customGraphicSizeVp !== undefined) {
+          // Only add to defaults if not already added
+          if (!customGraphicNodeVpsForDefaults.includes(customGraphicSizeVp)) {
+            customGraphicNodeVpsForDefaults.push(customGraphicSizeVp)
+          }
+          // Also add to mappings list so they appear in mappings export
+          customGraphicNodeVpsForMappings.push(customGraphicSizeVp)
+        }
+        if (customGraphicPositionVp !== undefined) {
+          // Only add to defaults if not already added
+          if (
+            !customGraphicNodeVpsForDefaults.includes(customGraphicPositionVp)
+          ) {
+            customGraphicNodeVpsForDefaults.push(customGraphicPositionVp)
+          }
+          // Also add to mappings list so they appear in mappings export
+          customGraphicNodeVpsForMappings.push(customGraphicPositionVp)
+        }
+        customGraphicNodeVpsForMappings.push(customGraphicVp)
+      }
+
+      // Add to bypasses list if it has valid bypasses
+      if (hasValidBypasses) {
+        // Size and position should be included in defaults when custom graphic has bypass
+        if (customGraphicSizeVp !== undefined) {
+          // Only add to defaults if not already added
+          if (!customGraphicNodeVpsForDefaults.includes(customGraphicSizeVp)) {
+            customGraphicNodeVpsForDefaults.push(customGraphicSizeVp)
+          }
+          // Also add to bypasses list so they appear in bypasses export
+          customGraphicNodeVpsForBypasses.push(customGraphicSizeVp)
+        }
+        if (customGraphicPositionVp !== undefined) {
+          // Only add to defaults if not already added
+          if (
+            !customGraphicNodeVpsForDefaults.includes(customGraphicPositionVp)
+          ) {
+            customGraphicNodeVpsForDefaults.push(customGraphicPositionVp)
+          }
+          // Also add to bypasses list so they appear in bypasses export
+          customGraphicNodeVpsForBypasses.push(customGraphicPositionVp)
+        }
+        customGraphicNodeVpsForBypasses.push(customGraphicVp)
       }
     }
   }
 
-  const nodePropertiesToExport = [
+  // Create separate property lists for each purpose
+  const nodePropertiesForDefaults = [
     ...nonCustomGraphicNodeVps,
-    ...validCustomGraphicNodeVps,
+    ...customGraphicNodeVpsForDefaults,
+  ]
+
+  const nodePropertiesForMappings = [
+    ...nonCustomGraphicNodeVps,
+    ...customGraphicNodeVpsForMappings,
+  ]
+
+  const nodePropertiesForBypasses = [
+    ...nonCustomGraphicNodeVps,
+    ...customGraphicNodeVpsForBypasses,
   ]
 
   const visualProperties = [
@@ -364,22 +431,89 @@ export const exportCyNetworkToCx2 = (
           vpDefaultsAccumulator,
           {},
         ),
-        node: nodePropertiesToExport.reduce(vpDefaultsAccumulator, {}),
+        node: nodePropertiesForDefaults.reduce(vpDefaultsAccumulator, {}),
       },
-      nodeMapping: nodePropertiesToExport
-        .filter((vp) => vp.mapping != null)
-        .reduce(vpMappingsAccumulator, {}),
+      nodeMapping: nodePropertiesForMappings.reduce(
+        (mappings, vp) => {
+          // Include properties with mappings
+          if (vp.mapping != null) {
+            return vpMappingsAccumulator(mappings, vp)
+          }
+          // Include size/position properties as defaults when associated with custom graphics that have mappings
+          if (
+            vp.name.startsWith('nodeImageChartSize') ||
+            vp.name.startsWith('nodeImageChartPosition')
+          ) {
+            const { name, defaultValue } = vp
+            const cxVPName = vpNameToCXName(name)
+            // Add as default value in mappings structure (CX2 format allows defaults in mappings)
+            if (!mappings[cxVPName]) {
+              ;(mappings as any)[cxVPName] = vpToCX(vp.name, defaultValue)
+            }
+          }
+          return mappings
+        },
+        {} as {
+          [key: CXVPName]: CXVisualMappingFunction<CXVisualPropertyValue>
+        },
+      ) as any,
       edgeMapping: VisualStyleFn.edgeVisualProperties(vs)
         .filter((vp) => vp.mapping != null)
         .reduce(vpMappingsAccumulator, {}),
     },
   ]
 
-  const nodeBypasses = Object.entries(
-    nodePropertiesToExport
-      .filter((vp) => vp.bypassMap.size > 0)
-      .reduce(vpBypassesAccumulator, {}),
-  ).map(([id, bypassObj]) => {
+  // Process bypasses: include size/position in bypass value objects when custom graphic has bypass
+  const bypassesMap = nodePropertiesForBypasses
+    .filter((vp) => vp.bypassMap.size > 0)
+    .reduce(vpBypassesAccumulator, {})
+
+  // Add size/position as defaults to bypass value objects for custom graphics with bypasses
+  for (let i = 1; i <= 9; i++) {
+    const customGraphicVpName = `nodeImageChart${i}` as NodeVisualPropertyName
+    const customGraphicVp = allNodeVps.find(
+      (v) => v.name === customGraphicVpName,
+    )
+
+    if (customGraphicVp && customGraphicVp.bypassMap.size > 0) {
+      const customGraphicSizeVpName =
+        `nodeImageChartSize${i}` as NodeVisualPropertyName
+      const customGraphicPositionVpName =
+        `nodeImageChartPosition${i}` as NodeVisualPropertyName
+      const customGraphicSizeVp = allNodeVps.find(
+        (v) => v.name === customGraphicSizeVpName,
+      )
+      const customGraphicPositionVp = allNodeVps.find(
+        (v) => v.name === customGraphicPositionVpName,
+      )
+
+      // Add size/position to each bypass value object
+      customGraphicVp.bypassMap.forEach((_, id) => {
+        if (bypassesMap[id]) {
+          if (customGraphicSizeVp) {
+            const cxVPName = vpNameToCXName(customGraphicSizeVp.name)
+            if (!bypassesMap[id][cxVPName]) {
+              bypassesMap[id][cxVPName] = vpToCX(
+                customGraphicSizeVp.name,
+                customGraphicSizeVp.defaultValue,
+              )
+            }
+          }
+          if (customGraphicPositionVp) {
+            const cxVPName = vpNameToCXName(customGraphicPositionVp.name)
+            if (!bypassesMap[id][cxVPName]) {
+              bypassesMap[id][cxVPName] = vpToCX(
+                customGraphicPositionVp.name,
+                customGraphicPositionVp.defaultValue,
+              )
+            }
+          }
+        }
+      })
+    }
+  }
+
+  const nodeBypasses = Object.entries(bypassesMap).map(([id, bypassObj]) => {
     return {
       id: parseInt(id),
       v: bypassObj,

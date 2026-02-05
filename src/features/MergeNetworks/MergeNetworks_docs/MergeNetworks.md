@@ -30,7 +30,7 @@ The MergeNetworks feature consists of:
 - **UnionMerge.ts**: Combines all nodes and edges from all networks
 - **IntersectionMerge.ts**: Keeps only nodes/edges present in all networks
 - **DifferenceMerge.ts**: Removes elements from first network that exist in others
-- **CreateMergedNetworkWithView.ts**: Orchestrates merge process
+- **CreateMergedNetwork.ts**: Orchestrates merge process
 
 ### Stores
 - **matchingColumnStore**: Manages column matching configurations

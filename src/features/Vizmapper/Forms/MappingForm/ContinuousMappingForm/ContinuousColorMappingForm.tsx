@@ -4,7 +4,6 @@ import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
 import ArrowRightIcon from '@mui/icons-material/ArrowRight'
 import Delete from '@mui/icons-material/DisabledByDefault'
 import EditIcon from '@mui/icons-material/Edit'
-import Palette from '@mui/icons-material/Palette'
 import {
   Box,
   Button,
@@ -14,11 +13,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import Checkbox from '@mui/material/Checkbox'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import FormGroup from '@mui/material/FormGroup'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { scaleLinear } from '@visx/scale'
 import { extent } from 'd3-array'
 import { color } from 'd3-color'
@@ -26,15 +20,7 @@ import debounce from 'lodash/debounce'
 import * as React from 'react'
 import Draggable from 'react-draggable'
 
-import BrBG from '../../../../../assets/BrBG.png'
-import PiYG from '../../../../../assets/PiYG.png'
-import PRGn from '../../../../../assets/PRGn.png'
-import PuOr from '../../../../../assets/PuOr.png'
-import RdBu from '../../../../../assets/RdBu.png'
-import RdGy from '../../../../../assets/RdGy.png'
-import RdYlBu from '../../../../../assets/RdYlBu.png'
-import RdYlGn from '../../../../../assets/RdYlGn.png'
-import Spectral from '../../../../../assets/Spectral.png'
+import { ColorPalettePicker } from './ColorPalettePicker'
 import { useVisualStyleStore } from '../../../../../data/hooks/stores/VisualStyleStore'
 import { IdType } from '../../../../../models/IdType'
 import {
@@ -93,25 +79,12 @@ export function ContinuousColorMappingForm(props: {
     React.useState<HTMLButtonElement | null>(null)
   const [createHandleAnchorEl, setCreateHandleAnchorEl] =
     React.useState<HTMLButtonElement | null>(null)
-  const [createColorPickerAnchorEl, setColorPickerAnchorEl] =
-    React.useState<HTMLButtonElement | null>(null)
-
   const showMinMaxMenu = (event: React.MouseEvent<HTMLButtonElement>): void => {
     setEditMinMaxAnchorEl(event.currentTarget)
   }
 
   const hideMinMaxMenu = (): void => {
     setEditMinMaxAnchorEl(null)
-  }
-
-  const showColorPickerMenu = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    setColorPickerAnchorEl(event.currentTarget)
-  }
-
-  const hideColorPickerMenu = (): void => {
-    setColorPickerAnchorEl(null)
   }
 
   const showCreateHandleMenu = (
@@ -124,90 +97,42 @@ export function ContinuousColorMappingForm(props: {
     setCreateHandleAnchorEl(null)
   }
 
-  const [isColorBlindChecked, setIsColorBlindChecked] = React.useState(false)
-
-  const handleColorBlindCheckboxChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ): void => {
-    setIsColorBlindChecked(event.target.checked)
-  }
-
-  const [isReverseColorChecked, setIsReverseColorChecked] =
-    React.useState(false)
-
-  const handleReverseColorCheckboxChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ): void => {
-    setIsReverseColorChecked(event.target.checked)
-  }
-
-  const [minPalette, setMinPalette] = React.useState(min.vpValue)
-  const [middlePalette, setMiddlePalette] = React.useState(
-    controlPoints[1].vpValue,
-  )
-  const [maxPalette, setMaxPalette] = React.useState(max.vpValue)
   const [textPalette, setTextPalette] = React.useState('None')
-
   const [buttonText, setButtonText] = React.useState(textPalette)
-  const changeButtonText = (text: string): void => setButtonText(text)
 
-  const handleColorPicker = (): void => {
-    if (!isReverseColorChecked) {
-      const nextMinState = {
-        ...minState,
-        vpValue: maxPalette,
-      }
-
-      const nextMaxState = {
-        ...maxState,
-        vpValue: minPalette,
-      }
-
-      const newHandles = [...handles]
-      newHandles[0].vpValue = maxPalette
-      newHandles[handles.length - 1].vpValue = minPalette
-
-      if (newHandles.length >= 3) {
-        newHandles[1].vpValue = middlePalette
-      }
-
-      updateContinuousMapping(
-        nextMinState,
-        nextMaxState,
-        newHandles,
-        maxPalette,
-        minPalette,
-      )
-      changeButtonText(textPalette)
-      hideColorPickerMenu()
-    } else {
-      const nextMinState = {
-        ...minState,
-        vpValue: minPalette,
-      }
-
-      const nextMaxState = {
-        ...maxState,
-        vpValue: maxPalette,
-      }
-
-      const newHandles = [...handles]
-      newHandles[0].vpValue = minPalette
-      newHandles[handles.length - 1].vpValue = maxPalette
-      if (newHandles.length >= 3) {
-        newHandles[1].vpValue = middlePalette
-      }
-
-      updateContinuousMapping(
-        nextMinState,
-        nextMaxState,
-        newHandles,
-        minPalette,
-        maxPalette,
-      )
-      changeButtonText(textPalette)
-      hideColorPickerMenu()
+  const handlePaletteSelect = (
+    minColor: string,
+    middleColor: string,
+    maxColor: string,
+    paletteName: string,
+  ): void => {
+    const nextMinState = {
+      ...minState,
+      vpValue: minColor,
     }
+
+    const nextMaxState = {
+      ...maxState,
+      vpValue: maxColor,
+    }
+
+    const newHandles = [...handles]
+    newHandles[0].vpValue = minColor
+    newHandles[handles.length - 1].vpValue = maxColor
+
+    if (newHandles.length >= 3) {
+      newHandles[1].vpValue = middleColor
+    }
+
+    updateContinuousMapping(
+      nextMinState,
+      nextMaxState,
+      newHandles,
+      minColor,
+      maxColor,
+    )
+    setTextPalette(paletteName)
+    setButtonText(paletteName)
   }
 
   const NUM_GRADIENT_STEPS = 140
@@ -336,17 +261,6 @@ export function ContinuousColorMappingForm(props: {
     )
   }
 
-  const [colorPalette, setColorPalette] = React.useState('')
-
-  const handleColorPalette = (
-    event: React.MouseEvent<HTMLElement>,
-    newColorPalette: string | null,
-  ): void => {
-    if (newColorPalette !== null) {
-      setColorPalette(newColorPalette)
-    }
-  }
-
   // when someone changes a handle, the new handle values may contain a new min/max value
   // update the min and max accordingly
   React.useEffect(() => {
@@ -422,267 +336,10 @@ export function ContinuousColorMappingForm(props: {
 
   return (
     <Paper sx={{ backgroundColor: '#D9D9D9', p: 2, pr: 8, pl: 8 }}>
-      <Paper
-        sx={{
-          display: 'flex',
-          p: 1,
-          m: 1,
-          ml: 3,
-          mr: 3,
-          justifyContent: 'center',
-          backgroundColor: '#fcfffc',
-          color: '#595858',
-        }}
-      >
-        Current Palette:&ensp;
-        <Button
-          onClick={showColorPickerMenu}
-          variant="outlined"
-          sx={{ color: '#63a5e8' }}
-          size="small"
-          startIcon={<Palette />}
-        >
-          {buttonText}
-        </Button>
-        <Popover
-          open={createColorPickerAnchorEl != null}
-          anchorEl={createColorPickerAnchorEl}
-          onClose={hideColorPickerMenu}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'center',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'center',
-          }}
-        >
-          <Typography align={'center'} sx={{ p: 1 }}>
-            Set Palette
-          </Typography>
-          <ToggleButtonGroup
-            value={colorPalette}
-            onChange={handleColorPalette}
-            orientation="horizontal"
-            exclusive
-            fullWidth={true}
-          >
-            <ToggleButton
-              value="rdbu"
-              aria-label="RdBu"
-              onClick={() => {
-                setMinPalette('#b2182b')
-                setMiddlePalette('#f7f7f7')
-                setMaxPalette('#2166ac')
-                setTextPalette('Red-Blue')
-              }}
-            >
-              <Tooltip title="Red-Blue" placement="right">
-                <img src={RdBu} width="15" height="150" />
-              </Tooltip>
-            </ToggleButton>
-
-            <ToggleButton
-              value="puor"
-              aria-label="PuOr"
-              onClick={() => {
-                setMinPalette('#542788')
-                setMiddlePalette('#f7f7f7')
-                setMaxPalette('#b35806')
-                setTextPalette('Purple-Orange')
-              }}
-            >
-              <Tooltip title="Purple-Orange" placement="right">
-                <img src={PuOr} width="15" height="150" />
-              </Tooltip>
-            </ToggleButton>
-
-            <ToggleButton
-              value="prgn"
-              aria-label="PRGn"
-              onClick={() => {
-                setMinPalette('#762a83')
-                setMiddlePalette('#f7f7f7')
-                setMaxPalette('#1b7837')
-                setTextPalette('Purple-Red-Green')
-              }}
-            >
-              <Tooltip title="Purple-Red-Green" placement="right">
-                <img src={PRGn} width="15" height="150" />
-              </Tooltip>
-            </ToggleButton>
-
-            {!isColorBlindChecked && (
-              <ToggleButton
-                value="spectral"
-                aria-label="Spectral"
-                onClick={() => {
-                  setMinPalette('#d53e4f')
-                  setMiddlePalette('#ffffbf')
-                  setMaxPalette('#3288bd')
-                  setTextPalette('Spectral Colors')
-                }}
-              >
-                <Tooltip title="Spectral Colors" placement="right">
-                  <img src={Spectral} width="15" height="150" />
-                </Tooltip>
-              </ToggleButton>
-            )}
-
-            <ToggleButton
-              value="brbg"
-              aria-label="BrBG"
-              onClick={() => {
-                setMinPalette('#8c510a')
-                setMiddlePalette('#f5f5f5')
-                setMaxPalette('#01665e')
-                setTextPalette('Brown-Blue-Green')
-              }}
-            >
-              <Tooltip title="Brown-Blue-Green" placement="right">
-                <img src={BrBG} width="15" height="150" />
-              </Tooltip>
-            </ToggleButton>
-
-            {!isColorBlindChecked && (
-              <ToggleButton
-                value="rdylgn"
-                aria-label="RdYlGn"
-                onClick={() => {
-                  setMinPalette('#d73027')
-                  setMiddlePalette('#ffffbf')
-                  setMaxPalette('#1a9850')
-                  setTextPalette('Red-Yellow-Green')
-                }}
-              >
-                <Tooltip title="Red-Yellow-Green" placement="right">
-                  <img src={RdYlGn} width="15" height="150" />
-                </Tooltip>
-              </ToggleButton>
-            )}
-
-            <ToggleButton
-              value="piyg"
-              aria-label="PiYG"
-              onClick={() => {
-                setMinPalette('#c51b7d')
-                setMiddlePalette('#f7f7f7')
-                setMaxPalette('#4d9221')
-                setTextPalette('Magenta-Yellow-Green')
-              }}
-            >
-              <Tooltip title="Magenta-Yellow-Green" placement="right">
-                <img src={PiYG} width="15" height="150" />
-              </Tooltip>
-            </ToggleButton>
-
-            {!isColorBlindChecked && (
-              <ToggleButton
-                value="rdgy"
-                aria-label="RdGy"
-                onClick={() => {
-                  setMinPalette('#b2182b')
-                  setMiddlePalette('#ffffff')
-                  setMaxPalette('#4d4d4d')
-                  setTextPalette('Red-Grey')
-                }}
-              >
-                <Tooltip title="Red-Grey" placement="right">
-                  <img src={RdGy} width="15" height="150" />
-                </Tooltip>
-              </ToggleButton>
-            )}
-
-            <ToggleButton
-              value="rdylbu"
-              aria-label="RdYlBu"
-              onClick={() => {
-                setMinPalette('#d73027')
-                setMiddlePalette('#ffffbf')
-                setMaxPalette('#4575b4')
-                setTextPalette('Red-Yellow-Blue')
-              }}
-            >
-              <Tooltip title="Red-Yellow-Blue" placement="right">
-                <img src={RdYlBu} width="15" height="150" />
-              </Tooltip>
-            </ToggleButton>
-          </ToggleButtonGroup>
-
-          <Paper
-            sx={{
-              display: 'flex',
-              p: 1,
-              m: 1,
-              ml: 3,
-              mr: 3,
-              justifyContent: 'space-evenly',
-              backgroundColor: '#fcfffc',
-              color: '#595858',
-            }}
-          >
-            <FormGroup>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={isReverseColorChecked}
-                    onChange={handleReverseColorCheckboxChange}
-                  />
-                }
-                label="reverse colors"
-              />
-            </FormGroup>
-            <FormGroup>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={isColorBlindChecked}
-                    onChange={handleColorBlindCheckboxChange}
-                  />
-                }
-                label="colorblind-friendly"
-              />
-            </FormGroup>
-          </Paper>
-          <Paper
-            sx={{
-              display: 'flex',
-              p: 1,
-              m: 1,
-              ml: 3,
-              mr: 3,
-              justifyContent: 'space-evenly',
-              backgroundColor: '#fcfffc',
-              color: '#595858',
-            }}
-          >
-            <Button
-              color="primary"
-              onClick={() => {
-                hideColorPickerMenu()
-              }}
-              size="small"
-            >
-              Cancel
-            </Button>
-            <Button
-              sx={{
-                color: '#FFFFFF',
-                backgroundColor: '#337ab7',
-                '&:hover': {
-                  backgroundColor: '#285a9b',
-                },
-              }}
-              onClick={() => {
-                handleColorPicker()
-              }}
-              size="small"
-            >
-              Confirm
-            </Button>
-          </Paper>
-        </Popover>
-      </Paper>
+      <ColorPalettePicker
+        currentPaletteName={buttonText}
+        onPaletteSelect={handlePaletteSelect}
+      />
       <Box
         sx={{
           display: 'flex',

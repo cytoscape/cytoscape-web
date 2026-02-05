@@ -6,6 +6,7 @@
 import { logApi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import {
   deserializeValue,
   getSingleTypeFromList,
@@ -99,16 +100,35 @@ export const normalizeNdexSummaries = (
       }
     })
 
-    return {
-      ...summary,
-      properties: normalizedProperties,
-      isNdex: true,
-      version: summary.version ?? '',
-      description: summary.description ?? '',
+    return createNetworkSummary({
+      networkId: summary.externalId,
       name: summary.name ?? '',
+      description: summary.description ?? '',
+      version: summary.version ?? '',
+      properties: normalizedProperties,
+      hasLayout: summary.hasLayout ?? false,
+      visibility: summary.visibility,
+      ownerUUID: summary.ownerUUID,
+      externalId: summary.externalId,
+      isNdex: true,
+      isReadOnly: summary.isReadOnly ?? false,
+      subnetworkIds: summary.subnetworkIds ?? [],
+      isValid: summary.isValid ?? false,
+      warnings: summary.warnings ?? [],
+      isShowcase: summary.isShowcase ?? false,
+      isCertified: summary.isCertified ?? false,
+      indexLevel: summary.indexLevel ?? '',
+      hasSample: summary.hasSample ?? false,
+      cxFileSize: summary.cxFileSize ?? 0,
+      cx2FileSize: summary.cx2FileSize ?? 0,
+      owner: summary.owner ?? '',
+      completed: summary.completed ?? false,
+      isDeleted: summary.isDeleted ?? false,
       creationTime: new Date(summary.creationTime),
       modificationTime: new Date(summary.modificationTime),
-    }
+      nodeCount: summary.nodeCount,
+      edgeCount: summary.edgeCount,
+    })
   })
 }
 

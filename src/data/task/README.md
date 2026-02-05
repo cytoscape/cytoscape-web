@@ -8,13 +8,13 @@ This folder contains hooks and utilities that are **exposed to external applicat
 
 **Module Path:** `cyweb/CreateNetwork`
 
-A custom hook that creates a network from an edge list and stores it in Zustand. Returns a function that takes network creation parameters (name, description, edge list) and returns a `NetworkWithView` object.
+A custom hook that creates a network from an edge list and stores it in Zustand. Returns a function that takes network creation parameters (name, description, edge list) and returns a `CyNetwork` object.
 
 **Usage in External Apps:**
 
 ```typescript
-const createNetwork = useCreateNetworkWithView()
-const networkWithView = createNetwork({
+const createNetwork = useCreateNetwork()
+const cyNetwork = createNetwork({
   name: 'My Network',
   description: 'Network description',
   edgeList: [
@@ -28,13 +28,13 @@ const networkWithView = createNetwork({
 
 **Module Path:** `cyweb/CreateNetworkFromCx2`
 
-A custom hook that creates a network from CX2 (Cytoscape Exchange 2) data and stores it in Zustand. Returns a function that takes CX2 data and returns a `NetworkWithView` object.
+A custom hook that creates a network from CX2 (Cytoscape Exchange 2) data and stores it in Zustand. Returns a function that takes CX2 data and returns a `CyNetwork` object.
 
 **Usage in External Apps:**
 
 ```typescript
 const createNetworkFromCx2 = useCreateNetworkFromCx2()
-const networkWithView = createNetworkFromCx2({
+const cyNetwork = createNetworkFromCx2({
   cxData: cx2Data,
 })
 ```
@@ -180,7 +180,7 @@ These hooks are exposed through Webpack Module Federation in:
 External apps can consume these modules using Module Federation:
 
 ```typescript
-import { useCreateNetworkWithView } from 'cyweb/CreateNetwork'
+import { useCreateNetwork } from 'cyweb/CreateNetwork'
 import { useCreateNetworkFromCx2 } from 'cyweb/CreateNetworkFromCx2'
 ```
 

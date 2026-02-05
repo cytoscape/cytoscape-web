@@ -1,6 +1,11 @@
+import { VALID_PIE_CHART_SLICE_INDEX_RANGE } from './customGraphicsImpl'
 import { VisualPropertyName } from '../VisualPropertyName'
 import { CyjsVisualPropertyName } from './CyjsProperties/cyjsVisualPropertyName'
-import { getCyjsVpName } from './cyJsVisualPropertyConverter'
+import {
+  getCyjsVpName,
+  getPieBackgroundColorCyJsProp,
+  getPieBackgroundSizeCyJsProp,
+} from './cyJsVisualPropertyConverter'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/cyJsVisualPropertyConverter.test.ts
 
@@ -129,5 +134,105 @@ describe('cyJsVisualPropertyConverter', () => {
       })
     })
   })
-})
 
+  describe('getPieBackgroundColorCyJsProp', () => {
+    it('should return correct format for valid indices', () => {
+      expect(getPieBackgroundColorCyJsProp(1)).toBe('pie-1-background-color')
+      expect(getPieBackgroundColorCyJsProp(8)).toBe('pie-8-background-color')
+      expect(getPieBackgroundColorCyJsProp(16)).toBe('pie-16-background-color')
+    })
+
+    it('should return correct format for all valid indices in range', () => {
+      for (let i = 1; i <= 16; i++) {
+        const result = getPieBackgroundColorCyJsProp(i)
+        expect(result).toBe(`pie-${i}-background-color`)
+        expect(typeof result).toBe('string')
+      }
+    })
+
+    it('should handle invalid indices below range', () => {
+      const result = getPieBackgroundColorCyJsProp(0)
+      expect(result).toBe('pie-0-background-color')
+      expect(typeof result).toBe('string')
+    })
+
+    it('should handle invalid indices above range', () => {
+      const result = getPieBackgroundColorCyJsProp(17)
+      expect(result).toBe('pie-17-background-color')
+      expect(typeof result).toBe('string')
+    })
+
+    it('should handle negative indices', () => {
+      const result = getPieBackgroundColorCyJsProp(-1)
+      expect(result).toBe('pie--1-background-color')
+      expect(typeof result).toBe('string')
+    })
+
+    it('should use VALID_PIE_CHART_SLICE_INDEX_RANGE constant', () => {
+      const minIndex = VALID_PIE_CHART_SLICE_INDEX_RANGE[0]
+      const maxIndex = VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
+
+      expect(getPieBackgroundColorCyJsProp(minIndex)).toBe(
+        `pie-${minIndex}-background-color`,
+      )
+      expect(getPieBackgroundColorCyJsProp(maxIndex)).toBe(
+        `pie-${maxIndex}-background-color`,
+      )
+    })
+  })
+
+  describe('getPieBackgroundSizeCyJsProp', () => {
+    it('should return correct format for valid indices', () => {
+      expect(getPieBackgroundSizeCyJsProp(1)).toBe('pie-1-background-size')
+      expect(getPieBackgroundSizeCyJsProp(8)).toBe('pie-8-background-size')
+      expect(getPieBackgroundSizeCyJsProp(16)).toBe('pie-16-background-size')
+    })
+
+    it('should return correct format for all valid indices in range', () => {
+      for (let i = 1; i <= 16; i++) {
+        const result = getPieBackgroundSizeCyJsProp(i)
+        expect(result).toBe(`pie-${i}-background-size`)
+        expect(typeof result).toBe('string')
+      }
+    })
+
+    it('should handle invalid indices below range', () => {
+      const result = getPieBackgroundSizeCyJsProp(0)
+      expect(result).toBe('pie-0-background-size')
+      expect(typeof result).toBe('string')
+    })
+
+    it('should handle invalid indices above range', () => {
+      const result = getPieBackgroundSizeCyJsProp(17)
+      expect(result).toBe('pie-17-background-size')
+      expect(typeof result).toBe('string')
+    })
+
+    it('should handle negative indices', () => {
+      const result = getPieBackgroundSizeCyJsProp(-1)
+      expect(result).toBe('pie--1-background-size')
+      expect(typeof result).toBe('string')
+    })
+
+    it('should use VALID_PIE_CHART_SLICE_INDEX_RANGE constant', () => {
+      const minIndex = VALID_PIE_CHART_SLICE_INDEX_RANGE[0]
+      const maxIndex = VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
+
+      expect(getPieBackgroundSizeCyJsProp(minIndex)).toBe(
+        `pie-${minIndex}-background-size`,
+      )
+      expect(getPieBackgroundSizeCyJsProp(maxIndex)).toBe(
+        `pie-${maxIndex}-background-size`,
+      )
+    })
+
+    it('should return different values for color vs size properties', () => {
+      const colorProp = getPieBackgroundColorCyJsProp(1)
+      const sizeProp = getPieBackgroundSizeCyJsProp(1)
+
+      expect(colorProp).not.toBe(sizeProp)
+      expect(colorProp).toContain('background-color')
+      expect(sizeProp).toContain('background-size')
+    })
+  })
+})

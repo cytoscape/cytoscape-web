@@ -57,6 +57,18 @@ export const NetworkTab = ({
         // First click on an inactive renderer should only activate this tab and
         // must not trigger renderer-level click handlers (e.g. CP background reset).
         onClickCapture={(event: MouseEvent<HTMLDivElement>) => {
+          const target = event.target as HTMLElement
+          const isMenu = target.closest('[role="menu"]') !== null
+          const isMenuItem = target.closest('[role="menuitem"]') !== null
+          const isDialog = target.closest('[role="dialog"]') !== null
+          const isDialogButton = target.closest('[role="dialog"] button') !== null || 
+                                 target.closest('.MuiDialog-root button') !== null
+          
+          // Never intercept menu, menu item, or dialog clicks
+          if (isMenu || isMenuItem || isDialog || isDialogButton) {
+            return
+          }
+          
           if (!isActive) {
             event.stopPropagation()
             handleClick?.()
@@ -65,6 +77,18 @@ export const NetworkTab = ({
         // Once active, allow the click to bubble to renderer content while still
         // notifying the panel (idempotent) to keep activation state in sync.
         onClick={(event: MouseEvent<HTMLDivElement>) => {
+          const target = event.target as HTMLElement
+          const isMenu = target.closest('[role="menu"]') !== null
+          const isMenuItem = target.closest('[role="menuitem"]') !== null
+          const isDialog = target.closest('[role="dialog"]') !== null
+          const isDialogButton = target.closest('[role="dialog"] button') !== null || 
+                                 target.closest('.MuiDialog-root button') !== null
+          
+          // Never intercept menu, menu item, or dialog clicks
+          if (isMenu || isMenuItem || isDialog || isDialogButton) {
+            return
+          }
+          
           if (!isActive) {
             event.stopPropagation()
             return
